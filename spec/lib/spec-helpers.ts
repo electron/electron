@@ -15,6 +15,20 @@ import { REMOTE_TOOLS_SHIM, rewriteForRemoteEval } from './remote-tools';
 export { defer, runCleanupFunctions } from './defer-helpers';
 export { listen } from './net-helpers';
 
+/**
+ * Swallow a loadURL()/loadFile() rejection so it does not surface as an
+ * unhandled rejection when the load is expected to be aborted (e.g. the test
+ * awaits an event and then closes the window). Returns the same promise with
+ * the rejection suppressed.
+ *
+ * Each call site is technical debt: follow-up work should replace these with
+ * an explicit await or a targeted .catch() once the test's actual contract
+ * is understood.
+ */
+export function dangerouslyIgnoreWebContentsLoadResult<T>(p: Promise<T>): Promise<T | void> {
+  return p.catch(() => {});
+}
+
 export const ifit = (condition: boolean) => it.runIf(condition);
 export const ifdescribe = (condition: boolean) => describe.runIf(condition);
 

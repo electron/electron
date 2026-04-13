@@ -7,7 +7,7 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifit } from '../lib/spec-helpers';
+import { ifit, dangerouslyIgnoreWebContentsLoadResult } from '../lib/spec-helpers';
 import { closeAllWindows } from '../lib/window-helpers';
 
 describe('webContents module (serial)', () => {
@@ -162,7 +162,7 @@ describe('webContents module (serial)', () => {
         await w.loadURL('about:blank');
         w.focus();
         const child = new BrowserWindow({ show: false });
-        child.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(child.loadURL('about:blank'));
         child.webContents.focus();
         const currentFocused = w.isFocused();
         const childFocused = child.isFocused();

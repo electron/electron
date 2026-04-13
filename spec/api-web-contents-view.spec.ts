@@ -7,7 +7,7 @@ import { once } from 'node:events';
 import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 import { HexColors, ScreenCapture, hasCapturableScreen, nextFrameTime } from './lib/screen-helpers';
-import { defer, ifdescribe, waitUntil, withDone } from './lib/spec-helpers';
+import { defer, ifdescribe, waitUntil, withDone, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('WebContentsView', () => {
@@ -67,7 +67,7 @@ describe('WebContentsView', () => {
 
     const webContentsView = new WebContentsView();
     const wc = webContentsView.webContents;
-    wc.loadURL('about:blank');
+    dangerouslyIgnoreWebContentsLoadResult(wc.loadURL('about:blank'));
     wc.destroy();
 
     const destroyed = once(wc, 'destroyed');
@@ -82,7 +82,7 @@ describe('WebContentsView', () => {
 
     const webContentsView = new WebContentsView();
     defer(() => webContentsView.webContents.destroy());
-    webContentsView.webContents.loadURL('about:blank');
+    dangerouslyIgnoreWebContentsLoadResult(webContentsView.webContents.loadURL('about:blank'));
 
     expect(
       () =>
@@ -199,7 +199,7 @@ describe('WebContentsView', () => {
       });
     });
 
-    wc.loadURL('data:text/html,<script>window.close()</script>');
+    dangerouslyIgnoreWebContentsLoadResult(wc.loadURL('data:text/html,<script>window.close()</script>'));
 
     const open = await dto;
     expect(open).to.be.false();
@@ -478,7 +478,7 @@ describe('WebContentsView', () => {
         v.setBorderRadius(100);
 
         const readyForCapture = once(v.webContents, 'ready-to-show');
-        v.webContents.loadURL(backgroundUrl);
+        dangerouslyIgnoreWebContentsLoadResult(v.webContents.loadURL(backgroundUrl));
 
         const inset = 10;
         // Adjust for macOS menu bar height which seems to be about 24px
@@ -530,7 +530,7 @@ describe('WebContentsView', () => {
         w.setContentView(v);
 
         const readyForCapture = once(v.webContents, 'ready-to-show');
-        v.webContents.loadURL(backgroundUrl);
+        dangerouslyIgnoreWebContentsLoadResult(v.webContents.loadURL(backgroundUrl));
         await readyForCapture;
 
         const corner = corners[0];

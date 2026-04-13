@@ -7,7 +7,7 @@ import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import { setTimeout } from 'node:timers/promises';
 
-import { defer, ifdescribe, ifit, isWayland } from '../lib/spec-helpers';
+import { defer, ifdescribe, ifit, isWayland, dangerouslyIgnoreWebContentsLoadResult } from '../lib/spec-helpers';
 import { closeAllWindows, closeWindow } from '../lib/window-helpers';
 
 describe('BrowserWindow module (serial)', () => {
@@ -420,9 +420,9 @@ describe('BrowserWindow module (serial)', () => {
       afterEach(closeAllWindows);
       it('focuses window', async () => {
         const w1 = new BrowserWindow({ x: 100, y: 300, width: 300, height: 200 });
-        w1.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w1.loadURL('about:blank'));
         const w2 = new BrowserWindow({ x: 300, y: 300, width: 300, height: 200 });
-        w2.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w2.loadURL('about:blank'));
         const w1Focused = once(w1, 'focus');
         w1.webContents.focus();
         await w1Focused;

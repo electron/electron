@@ -3,6 +3,7 @@ import { BrowserWindow } from 'electron/main';
 import { expect } from 'chai';
 import { afterEach, describe, it } from 'vitest';
 
+import { dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('process._linkedBinding', () => {
@@ -27,7 +28,7 @@ describe('process._linkedBinding', () => {
 
     it('cannot access electron_browser bindings', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       await expect(
         w.webContents.executeJavaScript("void process._linkedBinding('electron_browser_app')")
       ).to.eventually.be.rejectedWith(/Script failed to execute/);
@@ -35,13 +36,13 @@ describe('process._linkedBinding', () => {
 
     it('can access electron_common bindings', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       await w.webContents.executeJavaScript("void process._linkedBinding('electron_common_v8_util')");
     });
 
     it('can access electron_renderer bindings', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       await w.webContents.executeJavaScript("void process._linkedBinding('electron_renderer_ipc')");
     });
   });

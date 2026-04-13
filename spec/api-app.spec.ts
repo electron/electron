@@ -16,7 +16,15 @@ import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { ifdescribe, ifit, isWayland, listen, waitUntil, withDone } from './lib/spec-helpers';
+import {
+  ifdescribe,
+  ifit,
+  isWayland,
+  listen,
+  waitUntil,
+  withDone,
+  dangerouslyIgnoreWebContentsLoadResult
+} from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -494,7 +502,7 @@ describe('app module', () => {
     afterEach(closeAllWindows);
     it('is emitted when visiting a server with a self-signed cert', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL(secureUrl);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(secureUrl));
       await once(app, 'certificate-error');
     });
 
@@ -511,7 +519,7 @@ describe('app module', () => {
 
       it('causes did-fail-load', async () => {
         const w = new BrowserWindow({ show: false });
-        w.loadURL(secureUrl);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(secureUrl));
         await once(w.webContents, 'did-fail-load');
       });
     });
@@ -2421,7 +2429,7 @@ describe('default behavior', () => {
 
     it('should emit a login event on app when a WebContents hits a 401', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL(serverUrl);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(serverUrl));
       const [, webContents] = (await once(app, 'login')) as [any, WebContents];
       expect(webContents).to.equal(w.webContents);
     });

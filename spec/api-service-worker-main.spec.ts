@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { listen, waitUntil } from './lib/spec-helpers';
+import { listen, waitUntil, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 
 // Toggle to add extra debug output
 const DEBUG = !process.env.CI;
@@ -144,7 +144,7 @@ describe('ServiceWorkerMain module', () => {
     });
 
     it('does not crash on script error', async () => {
-      wc.loadURL(`${baseUrl}/index.html?scriptUrl=sw-script-error.js`);
+      dangerouslyIgnoreWebContentsLoadResult(wc.loadURL(`${baseUrl}/index.html?scriptUrl=sw-script-error.js`));
       let serviceWorker;
       const actualStatuses = [];
       for await (const [{ versionId, runningStatus }] of on(serviceWorkers, 'running-status-changed')) {
@@ -301,7 +301,7 @@ describe('ServiceWorkerMain module', () => {
   describe("'versionId' property", () => {
     it('matches the expected value', async () => {
       const runningStatusChanged = once(serviceWorkers, 'running-status-changed');
-      wc.loadURL(`${baseUrl}/index.html`);
+      dangerouslyIgnoreWebContentsLoadResult(wc.loadURL(`${baseUrl}/index.html`));
       const [{ versionId }] = await runningStatusChanged;
       const serviceWorker = serviceWorkers.getWorkerFromVersionID(versionId);
       expect(serviceWorker).to.not.be.undefined();

@@ -8,7 +8,7 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 
 import { emittedUntil } from './lib/events-helpers';
-import { listen } from './lib/spec-helpers';
+import { listen, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('debugger module', () => {
@@ -55,7 +55,7 @@ describe('debugger module', () => {
     });
 
     it("doesn't disconnect an active devtools session", async () => {
-      w.webContents.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadURL('about:blank'));
       const detach = once(w.webContents.debugger, 'detach');
       w.webContents.debugger.attach();
       w.webContents.openDevTools();
@@ -79,7 +79,7 @@ describe('debugger module', () => {
     });
 
     it('returns response', async () => {
-      w.webContents.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadURL('about:blank'));
       w.webContents.debugger.attach();
 
       const params = { expression: '4+2' };
@@ -92,7 +92,7 @@ describe('debugger module', () => {
     });
 
     it('returns response when devtools is opened', async () => {
-      w.webContents.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadURL('about:blank'));
       w.webContents.debugger.attach();
 
       const opened = once(w.webContents, 'devtools-opened');
@@ -113,7 +113,7 @@ describe('debugger module', () => {
         process.platform !== 'win32'
           ? `file://${path.join(fixtures, 'pages', 'a.html')}`
           : `file:///${path.join(fixtures, 'pages', 'a.html').replaceAll('\\', '/')}`;
-      w.webContents.loadURL(url);
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadURL(url));
       w.webContents.debugger.attach();
       const message = emittedUntil(
         w.webContents.debugger,
@@ -129,7 +129,7 @@ describe('debugger module', () => {
     });
 
     it('returns error message when command fails', async () => {
-      w.webContents.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadURL('about:blank'));
       w.webContents.debugger.attach();
 
       const promise = w.webContents.debugger.sendCommand('Test');
@@ -145,7 +145,7 @@ describe('debugger module', () => {
       });
 
       const { url } = await listen(server);
-      w.loadURL(url);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
       // If we do this synchronously, it's fast enough to attach and enable
       // network capture before the load. If we do it before the loadURL, for
       // some reason network capture doesn't get enabled soon enough and we get
@@ -188,7 +188,7 @@ describe('debugger module', () => {
 
       const { url } = await listen(server);
       w.webContents.debugger.sendCommand('Network.enable');
-      w.loadURL(url);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
 
       await loadingFinished;
     });
@@ -226,7 +226,7 @@ describe('debugger module', () => {
     });
 
     it('uses empty sessionId by default', async () => {
-      w.webContents.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadURL('about:blank'));
       w.webContents.debugger.attach();
       const onMessage = once(w.webContents.debugger, 'message');
       await w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });

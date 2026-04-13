@@ -14,7 +14,7 @@ import * as qs from 'node:querystring';
 import { ReadableStream } from 'node:stream/web';
 import * as url from 'node:url';
 
-import { listen, defer, startRemoteControlApp } from './lib/spec-helpers';
+import { listen, defer, startRemoteControlApp, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -896,7 +896,9 @@ describe('webRequest module', () => {
         ses.webRequest.onCompleted(null);
       });
 
-      contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port: `${port}` } });
+      dangerouslyIgnoreWebContentsLoadResult(
+        contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port: `${port}` } })
+      );
       await once(ipcMain, 'websocket-success');
 
       expect(receivedHeaders['/websocket'].Upgrade[0]).to.equal('websocket');

@@ -9,7 +9,7 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { listen } from './lib/spec-helpers';
+import { listen, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 
 const partition = 'service-workers-spec';
 
@@ -55,7 +55,7 @@ describe('session.serviceWorkers', () => {
     });
 
     it('should report one as running once you load a page with a service worker', async () => {
-      w.loadURL(`${baseUrl}/index.html`);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${baseUrl}/index.html`));
       await once(ses.serviceWorkers, 'console-message');
       const workers = ses.serviceWorkers.getAllRunning();
       const ids = Object.keys(workers) as any[] as number[];
@@ -65,7 +65,7 @@ describe('session.serviceWorkers', () => {
 
   describe('getFromVersionID()', () => {
     it('should report the correct script url and scope', async () => {
-      w.loadURL(`${baseUrl}/index.html`);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${baseUrl}/index.html`));
       const eventInfo = await once(ses.serviceWorkers, 'console-message');
       const details: Electron.MessageDetails = eventInfo[1];
       const worker = ses.serviceWorkers.getFromVersionID(details.versionId);
@@ -78,7 +78,7 @@ describe('session.serviceWorkers', () => {
   describe('console-message event', () => {
     it('should correctly keep the source, message and level', async () => {
       const messages: Record<string, Electron.MessageDetails> = {};
-      w.loadURL(`${baseUrl}/index.html?scriptUrl=sw-logs.js`);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${baseUrl}/index.html?scriptUrl=sw-logs.js`));
       for await (const [, details] of on(ses.serviceWorkers, 'console-message')) {
         messages[details.message] = details;
         expect(details).to.have.property('source', 'console-api');

@@ -6,7 +6,7 @@ import { afterAll, beforeAll, describe, it } from 'vitest';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { defer } from './lib/spec-helpers';
+import { defer, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -22,7 +22,7 @@ describe('webFrame module', () => {
     });
     defer(() => w.close());
     const isSafe = once(ipcMain, 'executejs-safe');
-    w.loadURL('about:blank');
+    dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
     const [, wasSafe] = await isSafe;
     expect(wasSafe).to.equal(true);
   });
@@ -38,7 +38,7 @@ describe('webFrame module', () => {
     });
     defer(() => w.close());
     const execError = once(ipcMain, 'executejs-safe');
-    w.loadURL('about:blank');
+    dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
     const [, error] = await execError;
     expect(error).to.not.equal(null, 'Error should not be null');
     expect(error).to.have.property('message', 'Uncaught Error: An object could not be cloned.');

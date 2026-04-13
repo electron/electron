@@ -11,7 +11,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { contextBridge, rewriteForRemoteEval } from './lib/remote-tools';
-import { listen } from './lib/spec-helpers';
+import { listen, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
@@ -48,7 +48,7 @@ describe('contextBridge', () => {
         preload: path.resolve(fixturesPath, 'can-bind-preload.js')
       }
     });
-    w.loadFile(path.resolve(fixturesPath, 'empty.html'));
+    dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.resolve(fixturesPath, 'empty.html')));
     const [, bound] = await once(ipcMain, 'context-bridge-bound');
     expect(bound).to.equal(false);
 
@@ -64,7 +64,7 @@ describe('contextBridge', () => {
         preload: path.resolve(fixturesPath, 'can-bind-preload.js')
       }
     });
-    w.loadFile(path.resolve(fixturesPath, 'empty.html'));
+    dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.resolve(fixturesPath, 'empty.html')));
     const [, bound] = await once(ipcMain, 'context-bridge-bound');
     expect(bound).to.equal(true);
 

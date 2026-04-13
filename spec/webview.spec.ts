@@ -11,7 +11,15 @@ import * as url from 'node:url';
 import { emittedUntil } from './lib/events-helpers';
 import { expect, setTimeout } from './lib/remote-tools';
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
-import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
+import {
+  ifit,
+  ifdescribe,
+  defer,
+  itremote,
+  useRemoteContext,
+  listen,
+  dangerouslyIgnoreWebContentsLoadResult
+} from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 declare let WebView: any;
@@ -98,7 +106,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html')));
       await once(ipcMain, 'pong');
     });
 
@@ -110,7 +118,7 @@ describe('<webview> tag', function () {
           sandbox: true
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html')));
       await once(ipcMain, 'pong');
     });
 
@@ -122,7 +130,7 @@ describe('<webview> tag', function () {
           contextIsolation: true
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html')));
       await once(ipcMain, 'pong');
     });
 
@@ -135,7 +143,7 @@ describe('<webview> tag', function () {
           sandbox: true
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html')));
       await once(ipcMain, 'pong');
     });
 
@@ -146,7 +154,7 @@ describe('<webview> tag', function () {
           webviewTag: true
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-trusted-types.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-trusted-types.html')));
       await once(ipcMain, 'pong');
     });
 
@@ -160,7 +168,7 @@ describe('<webview> tag', function () {
       });
 
       const webview = once(ipcMain, 'webview');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html')));
       const [, type] = await webview;
 
       expect(type).to.equal('undefined', 'WebView still exists');
@@ -179,7 +187,7 @@ describe('<webview> tag', function () {
       const w = new BrowserWindow({ show: false });
       const readyToShowSignal = once(w, 'ready-to-show');
       const pongSignal1 = once(ipcMain, 'pong');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html')));
       await pongSignal1;
       const pongSignal2 = once(ipcMain, 'pong');
       await readyToShowSignal;
@@ -192,7 +200,7 @@ describe('<webview> tag', function () {
 
     it('inherits the parent window visibility state and receives visibilitychange events', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html')));
       const [, visibilityState, hidden] = await once(ipcMain, 'pong');
       expect(visibilityState).to.equal('hidden');
       expect(hidden).to.be.true();
@@ -222,7 +230,7 @@ describe('<webview> tag', function () {
       });
       const didAttachWebview = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
       const webviewDomReady = once(ipcMain, 'webview-dom-ready');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html')));
 
       const [, webContents] = await didAttachWebview;
       const [, id] = await webviewDomReady;
@@ -298,7 +306,9 @@ describe('<webview> tag', function () {
           allowFileAccess: true
         });
 
-        w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
+        dangerouslyIgnoreWebContentsLoadResult(
+          w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'))
+        );
         loadWebView(
           w.webContents,
           {
@@ -369,7 +379,7 @@ describe('<webview> tag', function () {
         }
       });
       const zoomEventPromise = once(ipcMain, 'webview-parent-zoom-level');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-factor.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-factor.html')));
 
       const [, zoomFactor, zoomLevel] = await zoomEventPromise;
       expect(zoomFactor).to.equal(1.2);
@@ -392,7 +402,9 @@ describe('<webview> tag', function () {
         });
       });
 
-      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-change-persist-host.html'));
+      dangerouslyIgnoreWebContentsLoadResult(
+        w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-change-persist-host.html'))
+      );
 
       expect(zoomPromise).to.eventually.deep.equal({
         initialZoomLevel: 2,
@@ -427,7 +439,9 @@ describe('<webview> tag', function () {
         });
       });
 
-      w.loadFile(path.join(fixtures, 'pages', 'webview-custom-zoom-level.html'));
+      dangerouslyIgnoreWebContentsLoadResult(
+        w.loadFile(path.join(fixtures, 'pages', 'webview-custom-zoom-level.html'))
+      );
 
       await promise;
     });
@@ -453,7 +467,7 @@ describe('<webview> tag', function () {
         });
       });
 
-      w.loadFile(path.join(fixtures, 'pages', 'webview-in-page-navigate.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-in-page-navigate.html')));
 
       await promise;
     });
@@ -468,7 +482,9 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-origin-zoom-level.html'));
+      dangerouslyIgnoreWebContentsLoadResult(
+        w.loadFile(path.join(fixtures, 'pages', 'webview-origin-zoom-level.html'))
+      );
 
       const [, zoomLevel] = await once(ipcMain, 'webview-origin-zoom-level');
       expect(zoomLevel).to.equal(2.0);
@@ -487,7 +503,7 @@ describe('<webview> tag', function () {
       });
       const attachPromise = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
       const readyPromise = once(ipcMain, 'dom-ready');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html')));
       const [, webview] = await attachPromise;
       await readyPromise;
       expect(webview.getZoomFactor()).to.equal(1.2);
@@ -527,7 +543,9 @@ describe('<webview> tag', function () {
       const loadPromise = once(w.webContents, 'did-finish-load');
       const readyPromise = once(ipcMain, 'webview-ready');
 
-      w.loadFile(path.join(__dirname, 'fixtures', 'webview', 'fullscreen', 'main.html'));
+      dangerouslyIgnoreWebContentsLoadResult(
+        w.loadFile(path.join(__dirname, 'fixtures', 'webview', 'fullscreen', 'main.html'))
+      );
 
       const [, webview] = await attachPromise;
       await Promise.all([readyPromise, loadPromise]);
@@ -623,7 +641,7 @@ describe('<webview> tag', function () {
       });
 
       const didAttachWebview = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
-      w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html')));
 
       const [, webContents] = await didAttachWebview;
 

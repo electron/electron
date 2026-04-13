@@ -6,7 +6,7 @@ import { afterEach, describe, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -142,8 +142,8 @@ ifdescribe(!skip)('sharedTexture module', () => {
             resolve();
           });
 
-          win.loadFile(htmlPath);
-          osr.loadFile(osrPath);
+          dangerouslyIgnoreWebContentsLoadResult(win.loadFile(htmlPath));
+          dangerouslyIgnoreWebContentsLoadResult(osr.loadFile(osrPath));
         };
 
         app.whenReady().then(() => {
@@ -256,8 +256,8 @@ ifdescribe(!skip)('sharedTexture module', () => {
             resolve();
           });
 
-          win.loadFile(htmlPath);
-          osr.loadFile(osrPath);
+          dangerouslyIgnoreWebContentsLoadResult(win.loadFile(htmlPath));
+          dangerouslyIgnoreWebContentsLoadResult(osr.loadFile(osrPath));
         };
 
         app.whenReady().then(() => {

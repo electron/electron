@@ -11,7 +11,7 @@ import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-import { ifdescribe, ifit, listen } from './lib/spec-helpers';
+import { ifdescribe, ifit, listen, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('shell module', () => {
@@ -116,7 +116,7 @@ describe('shell module', () => {
 
     ifit(!(process.platform === 'win32' && process.arch === 'ia32'))('works in the renderer process', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       await expect(
         w.webContents.executeJavaScript("require('electron').shell.trashItem('does-not-exist')")
       ).to.be.rejectedWith(/does-not-exist|Failed to move item|Failed to create FileOperation/);

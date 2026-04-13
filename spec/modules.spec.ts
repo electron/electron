@@ -8,7 +8,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { ifdescribe, ifit, withDone } from './lib/spec-helpers';
+import { ifdescribe, ifit, withDone, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 const Module = require('node:module') as NodeJS.ModuleInternal;
@@ -26,7 +26,7 @@ describe('modules support', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         await expect(w.webContents.executeJavaScript("{ require('@electron-ci/echo'); null }")).to.be.fulfilled();
       });
 
@@ -57,7 +57,7 @@ describe('modules support', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         await expect(w.webContents.executeJavaScript("{ require('@electron-ci/uv-dlopen'); null }")).to.be.fulfilled();
       });
 
@@ -103,7 +103,7 @@ describe('modules support', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         await expect(w.webContents.executeJavaScript("{ require('electron/lol'); null }")).to.eventually.be.rejected();
       });
 
@@ -131,7 +131,7 @@ describe('modules support', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         await expect(w.webContents.executeJavaScript("{ require('electron'); null }")).to.be.fulfilled();
       });
 
@@ -146,7 +146,7 @@ describe('modules support', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         await expect(w.webContents.executeJavaScript("{ require('electron/main'); null }")).to.be.fulfilled();
       });
 
@@ -167,7 +167,7 @@ describe('modules support', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         await expect(w.webContents.executeJavaScript("{ require('electron/renderer'); null }")).to.be.fulfilled();
       });
 
@@ -188,7 +188,7 @@ describe('modules support', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         await expect(w.webContents.executeJavaScript("{ require('electron/common'); null }")).to.be.fulfilled();
       });
 
@@ -209,7 +209,7 @@ describe('modules support', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         await expect(w.webContents.executeJavaScript("{ require('electron/utility'); null }")).to.be.fulfilled();
       });
 
@@ -308,7 +308,7 @@ describe('modules support', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         const result = await w.webContents.executeJavaScript('typeof require("q").when');
         expect(result).to.equal('function');
       });

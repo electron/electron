@@ -7,7 +7,7 @@ import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { defer, withDone } from './lib/spec-helpers';
+import { defer, withDone, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('ipc main module', () => {
@@ -34,7 +34,7 @@ describe('ipc main module', () => {
           event.returnValue = null;
           done();
         });
-        w.loadFile(path.join(fixtures, 'api', 'send-sync-message.html'));
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'api', 'send-sync-message.html')));
       })
     );
 
@@ -55,7 +55,7 @@ describe('ipc main module', () => {
           event.returnValue = null;
           done();
         });
-        w.loadFile(path.join(fixtures, 'api', 'send-sync-message.html'));
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixtures, 'api', 'send-sync-message.html')));
       })
     );
   });
@@ -92,7 +92,7 @@ describe('ipc main module', () => {
           contextIsolation: false
         }
       });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       const v = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('test-echo', 'hello')

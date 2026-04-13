@@ -8,7 +8,7 @@ import * as http from 'node:http';
 import * as nodePath from 'node:path';
 
 import { HexColors, ScreenCapture, hasCapturableScreen } from './lib/screen-helpers';
-import { ifit, listen, withDone } from './lib/spec-helpers';
+import { ifit, listen, withDone, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('webContents.setWindowOpenHandler', () => {
@@ -175,13 +175,15 @@ describe('webContents.setWindowOpenHandler', () => {
           return { action: 'deny' };
         });
 
-        browserWindow.webContents.loadURL(
-          `data:text/html,${encodeURIComponent(`
+        dangerouslyIgnoreWebContentsLoadResult(
+          browserWindow.webContents.loadURL(
+            `data:text/html,${encodeURIComponent(`
           <form action="http://example.com" target="_blank" method="POST" id="form">
             <input name="key" value="value"></input>
           </form>
           <script>form.submit()</script>
         `)}`
+          )
         );
       });
       const { url, frameName, features, disposition, referrer, postBody } = details;

@@ -155,7 +155,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
           additionalArguments: ['--unsafely-expose-electron-internals-for-testing']
         }
       });
-      w.loadURL('about:blank');
+      w.loadURL('about:blank').catch(() => {});
       w.webContents.once('did-finish-load', () => {
         setTimeout(() => {
           app.quit();

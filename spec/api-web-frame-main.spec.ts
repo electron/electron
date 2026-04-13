@@ -10,7 +10,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { emittedNTimes } from './lib/events-helpers';
-import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { defer, ifit, listen, waitUntil, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('webFrameMain module', () => {
@@ -477,7 +477,7 @@ describe('webFrameMain module', () => {
 
       // frame-with-frame-container.html, frame-with-frame.html, frame.html
       const didFrameFinishLoad = emittedNTimes(w.webContents, 'did-frame-finish-load', 3);
-      w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html')));
 
       for (const [, isMainFrame, frameProcessId, frameRoutingId] of await didFrameFinishLoad) {
         const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
@@ -529,7 +529,7 @@ describe('webFrameMain module', () => {
     it('emits when the main frame is created', async () => {
       const w = new BrowserWindow({ show: false });
       const promise = once(w.webContents, 'frame-created') as Promise<[any, Electron.FrameCreatedDetails]>;
-      w.webContents.loadFile(path.join(subframesPath, 'frame.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadFile(path.join(subframesPath, 'frame.html')));
       const [, details] = await promise;
       expect(details.frame).to.equal(w.webContents.mainFrame);
     });
@@ -539,7 +539,7 @@ describe('webFrameMain module', () => {
       const promise = emittedNTimes(w.webContents, 'frame-created', 2) as Promise<
         [any, Electron.FrameCreatedDetails][]
       >;
-      w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadFile(path.join(subframesPath, 'frame-container.html')));
       const [[, mainDetails], [, nestedDetails]] = await promise;
       expect(mainDetails.frame).to.equal(w.webContents.mainFrame);
       expect(nestedDetails.frame).to.equal(w.webContents.mainFrame.frames[0]);
@@ -570,7 +570,7 @@ describe('webFrameMain module', () => {
     it('emits for top-level frame', async () => {
       const w = new BrowserWindow({ show: false });
       const promise = once(w.webContents.mainFrame, 'dom-ready');
-      w.webContents.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadURL('about:blank'));
       await promise;
     });
 
@@ -585,7 +585,7 @@ describe('webFrameMain module', () => {
           });
         });
       });
-      w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadFile(path.join(subframesPath, 'frame-with-frame.html')));
       await promise;
     });
   });

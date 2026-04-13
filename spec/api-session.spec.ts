@@ -13,7 +13,7 @@ import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { defer, ifit, listen, waitUntil, withDone } from './lib/spec-helpers';
+import { defer, ifit, listen, waitUntil, withDone, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('session module', () => {
@@ -686,7 +686,7 @@ describe('session module', () => {
             resolve({ itemUrl: item.getURL(), itemFilename: item.getFilename(), item });
           });
         });
-      w.loadURL(url);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
       const { item, itemUrl, itemFilename } = await downloadPrevented;
       expect(itemUrl).to.equal(url + '/');
       expect(itemFilename).to.equal('mockFile.txt');
@@ -735,7 +735,7 @@ describe('session module', () => {
       });
       customSession = session.fromPartition(partitionName);
       await customSession.protocol.registerStringProtocol(protocolName, handler);
-      w.loadURL(`${protocolName}://fake-host`);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${protocolName}://fake-host`));
       await once(ipcMain, 'hello');
     });
   });
@@ -977,7 +977,7 @@ describe('session module', () => {
           }
         });
         const w = new BrowserWindow({ show: false });
-        w.loadURL(url);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
       })
     );
   });
@@ -1128,7 +1128,7 @@ describe('session module', () => {
           }
         });
         const w = new BrowserWindow({ show: false });
-        w.loadURL(url);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
       })
     );
   });

@@ -8,7 +8,7 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import * as url from 'node:url';
 
-import { withDone } from '../lib/spec-helpers';
+import { withDone, dangerouslyIgnoreWebContentsLoadResult } from '../lib/spec-helpers';
 import { closeAllWindows } from '../lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, '..', 'fixtures');
@@ -154,7 +154,7 @@ describe('chromium features (serial)', () => {
           done();
         });
 
-        w.loadFile(writablePath);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(writablePath));
 
         w.webContents.once('did-finish-load', () => {
           // @ts-expect-error Undocumented testing method.
@@ -214,7 +214,7 @@ describe('chromium features (serial)', () => {
           done();
         });
 
-        w.loadFile(writablePath);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(writablePath));
 
         w.webContents.once('did-finish-load', () => {
           // @ts-expect-error Undocumented testing method.
@@ -274,7 +274,7 @@ describe('chromium features (serial)', () => {
           done();
         });
 
-        w.loadFile(writablePath);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(writablePath));
 
         w.webContents.once('did-finish-load', () => {
           // @ts-expect-error Undocumented testing method.
@@ -332,7 +332,7 @@ describe('chromium features (serial)', () => {
           done();
         });
 
-        w.loadFile(writablePath);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(writablePath));
 
         w.webContents.once('did-finish-load', () => {
           // @ts-expect-error Undocumented testing method.
@@ -386,7 +386,7 @@ describe('chromium features (serial)', () => {
           done();
         });
 
-        w.loadFile(permPath);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(permPath));
 
         w.webContents.once('did-finish-load', () => {
           // @ts-expect-error Undocumented testing method.
@@ -440,7 +440,7 @@ describe('chromium features (serial)', () => {
           done();
         });
 
-        w.loadFile(permPath);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(permPath));
 
         w.webContents.once('did-finish-load', () => {
           // @ts-expect-error Undocumented testing method.
@@ -504,7 +504,7 @@ describe('chromium features (serial)', () => {
           }
         });
 
-        w.loadFile(writablePath);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(writablePath));
 
         w.webContents.on('did-finish-load', () => {
           // @ts-expect-error Undocumented testing method.

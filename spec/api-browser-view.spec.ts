@@ -6,7 +6,13 @@ import { afterEach, beforeEach, describe, it } from 'vitest';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { defer, runCleanupFunctions, startRemoteControlApp, withDone } from './lib/spec-helpers';
+import {
+  defer,
+  runCleanupFunctions,
+  startRemoteControlApp,
+  withDone,
+  dangerouslyIgnoreWebContentsLoadResult
+} from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 describe('BrowserView module', () => {
@@ -390,7 +396,7 @@ describe('BrowserView module', () => {
       expect(view.ownerWindow).to.be.null('ownerWindow');
 
       w.addBrowserView(view);
-      view.webContents.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(view.webContents.loadURL('about:blank'));
       await once(view.webContents, 'did-finish-load');
 
       expect(view.ownerWindow).to.equal(w);
@@ -402,7 +408,7 @@ describe('BrowserView module', () => {
 
       w.close();
 
-      view.webContents.loadURL(`file://${fixtures}/pages/blank.html`);
+      dangerouslyIgnoreWebContentsLoadResult(view.webContents.loadURL(`file://${fixtures}/pages/blank.html`));
       await once(view.webContents, 'did-finish-load');
 
       // Clean up - the afterEach hook assumes the webContents on w is still alive.
@@ -420,7 +426,7 @@ describe('BrowserView module', () => {
       w2.addBrowserView(view);
       expect(view.ownerWindow).to.equal(w2);
 
-      w2.webContents.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w2.webContents.loadURL('about:blank'));
       await once(w2.webContents, 'did-finish-load');
       w2.close();
     });
@@ -433,7 +439,7 @@ describe('BrowserView module', () => {
       w.addBrowserView(view);
       expect(view.ownerWindow).to.equal(w);
 
-      w.webContents.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.webContents.loadURL('about:blank'));
       await once(w.webContents, 'did-finish-load');
     });
 
@@ -677,7 +683,7 @@ describe('BrowserView module', () => {
       await rc.remotely(() => {
         const { app, BrowserView, BrowserWindow } = require('electron');
         const bv = new BrowserView();
-        bv.webContents.loadURL('about:blank');
+        bv.webContents.loadURL('about:blank').catch(() => {});
         const bw = new BrowserWindow({ show: false });
         bw.addBrowserView(bv);
         setTimeout(() => {
@@ -719,7 +725,9 @@ describe('BrowserView module', () => {
           done();
           return { action: 'deny' };
         });
-        view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
+        dangerouslyIgnoreWebContentsLoadResult(
+          view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'))
+        );
       })
     );
   });

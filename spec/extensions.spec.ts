@@ -22,7 +22,13 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 
 import { emittedNTimes, emittedUntil } from './lib/events-helpers';
-import { ifit, listen, startRemoteControlApp, waitUntil } from './lib/spec-helpers';
+import {
+  ifit,
+  listen,
+  startRemoteControlApp,
+  waitUntil,
+  dangerouslyIgnoreWebContentsLoadResult
+} from './lib/spec-helpers';
 import { expectWarningMessages } from './lib/warning-helpers';
 import { closeAllWindows, closeWindow, cleanupWebContents } from './lib/window-helpers';
 
@@ -552,7 +558,7 @@ describe('chrome extensions', () => {
         webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false }
       });
       try {
-        w.loadURL(url);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
         const [, resp] = await once(ipcMain, 'bg-page-message-response');
         expect(resp.message).to.deep.equal({ some: 'message' });
         expect(resp.sender.id).to.be.a('string');
@@ -720,12 +726,12 @@ describe('chrome extensions', () => {
               const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
               expect(result).to.equal('red');
             });
-            w.loadURL(url);
+            dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
           });
 
           it('should run content script at document_idle', async () => {
             await addExtension('content-script-document-idle');
-            w.loadURL(url);
+            dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
             const result = await w.webContents.executeJavaScript('document.body.style.backgroundColor');
             expect(result).to.equal('red');
           });
@@ -736,7 +742,7 @@ describe('chrome extensions', () => {
               const result = await w.webContents.executeJavaScript('document.documentElement.style.backgroundColor');
               expect(result).to.equal('red');
             });
-            w.loadURL(url);
+            dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
           });
         });
 
@@ -793,7 +799,7 @@ describe('chrome extensions', () => {
           it('applies matching rules in subframes', async () => {
             const detailsPromise = emittedNTimes(w.webContents, 'did-frame-finish-load', 2);
 
-            w.loadURL(`http://127.0.0.1:${port}`);
+            dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`http://127.0.0.1:${port}`));
             const frameEvents = await detailsPromise;
             await Promise.all(
               frameEvents.map(async (frameEvent) => {

@@ -12,7 +12,15 @@ import * as http from 'node:http';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { ifdescribe, ifit, defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers';
+import {
+  ifdescribe,
+  ifit,
+  defer,
+  startRemoteControlApp,
+  repeatedly,
+  listen,
+  dangerouslyIgnoreWebContentsLoadResult
+} from './lib/spec-helpers';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm');
@@ -314,7 +322,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
               show: false,
               webPreferences: { nodeIntegration: true, contextIsolation: false }
             });
-            bw.loadURL('about:blank');
+            dangerouslyIgnoreWebContentsLoadResult(bw.loadURL('about:blank'));
             bw.webContents.executeJavaScript(
               "process._linkedBinding('electron_common_v8_util').triggerFatalErrorForTesting()"
             );
@@ -522,7 +530,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             show: false,
             webPreferences: { nodeIntegration: true, contextIsolation: false }
           });
-          bw.loadURL('about:blank');
+          dangerouslyIgnoreWebContentsLoadResult(bw.loadURL('about:blank'));
           bw.webContents.executeJavaScript('process.crash()');
         });
         await waitForCrash();
@@ -579,7 +587,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
             show: false,
             webPreferences: { nodeIntegration: true, contextIsolation: false }
           });
-          bw.loadURL('about:blank');
+          dangerouslyIgnoreWebContentsLoadResult(bw.loadURL('about:blank'));
           await bw.webContents.executeJavaScript(
             "require('electron').crashReporter.addExtraParameter('hello', 'world')"
           );
@@ -631,7 +639,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
               show: false,
               webPreferences: { nodeIntegration: true, contextIsolation: false }
             });
-            bw.loadURL('about:blank');
+            dangerouslyIgnoreWebContentsLoadResult(bw.loadURL('about:blank'));
             bw.webContents.executeJavaScript('process.crash()');
           });
         } else if (processType === 'sandboxed-renderer') {
@@ -642,7 +650,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
               show: false,
               webPreferences: { sandbox: true, preload, contextIsolation: false }
             });
-            bw.loadURL('about:blank');
+            dangerouslyIgnoreWebContentsLoadResult(bw.loadURL('about:blank'));
           }, preloadPath);
         } else if (processType === 'node') {
           const crashScriptPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');

@@ -7,7 +7,7 @@ import { EventEmitter, once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { defer, listen } from './lib/spec-helpers';
+import { defer, listen, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -247,7 +247,7 @@ describe('ipc module', () => {
 
     it('can send a port to the main process', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       const p = once(ipcMain, 'port');
       await w.webContents.executeJavaScript(
         `(${function () {
@@ -266,7 +266,7 @@ describe('ipc module', () => {
 
     it('can sent a message without a transfer', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       const p = once(ipcMain, 'port');
       await w.webContents.executeJavaScript(
         `(${function () {
@@ -281,7 +281,7 @@ describe('ipc module', () => {
 
     it('throws when the transferable is invalid', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       const p = once(ipcMain, 'port');
       await w.webContents.executeJavaScript(
         `(${function () {
@@ -299,7 +299,7 @@ describe('ipc module', () => {
 
     it('can communicate between main and renderer', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       const p = once(ipcMain, 'port');
       await w.webContents.executeJavaScript(
         `(${function () {
@@ -322,7 +322,7 @@ describe('ipc module', () => {
 
     it('can receive a port from a renderer over a MessagePort connection', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       function fn() {
         const channel1 = new MessageChannel();
         const channel2 = new MessageChannel();
@@ -350,8 +350,8 @@ describe('ipc module', () => {
     it('can forward a port from one renderer to another renderer', async () => {
       const w1 = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       const w2 = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w1.loadURL('about:blank');
-      w2.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w1.loadURL('about:blank'));
+      dangerouslyIgnoreWebContentsLoadResult(w2.loadURL('about:blank'));
       w1.webContents.executeJavaScript(
         `(${function () {
           const channel = new MessageChannel();
@@ -385,7 +385,7 @@ describe('ipc module', () => {
             show: false,
             webPreferences: { nodeIntegration: true, contextIsolation: false }
           });
-          w.loadURL('about:blank');
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
           await w.webContents.executeJavaScript(
             `(${function () {
               const { ipcRenderer } = require('electron');
@@ -409,7 +409,7 @@ describe('ipc module', () => {
             show: false,
             webPreferences: { nodeIntegration: true, contextIsolation: false }
           });
-          w.loadURL('about:blank');
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
           await w.webContents.executeJavaScript(
             `(${async function () {
               const { port2 } = new MessageChannel();
@@ -428,7 +428,7 @@ describe('ipc module', () => {
             show: false,
             webPreferences: { nodeIntegration: true, contextIsolation: false }
           });
-          w.loadURL('about:blank');
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
           ipcMain.once('do-a-gc', () => v8Util.requestGarbageCollectionForTesting());
           await w.webContents.executeJavaScript(
             `(${async function () {
@@ -571,7 +571,7 @@ describe('ipc module', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         await w.webContents.executeJavaScript(
           `(${function () {
             const { ipcRenderer } = require('electron');
@@ -594,7 +594,7 @@ describe('ipc module', () => {
           show: false,
           webPreferences: { nodeIntegration: true, contextIsolation: false }
         });
-        w.loadURL('about:blank');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
         await w.webContents.executeJavaScript(
           `(${function () {
             const { ipcRenderer } = require('electron');
@@ -696,7 +696,7 @@ describe('ipc module', () => {
             show: false,
             webPreferences: { nodeIntegration: true, contextIsolation: false }
           });
-          w.loadURL('about:blank');
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
           await w.webContents.executeJavaScript(
             `(${function () {
               const { ipcRenderer } = require('electron');
@@ -798,7 +798,7 @@ describe('ipc module', () => {
 
     it('receives ipc messages sent from the WebContents', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.executeJavaScript("require('electron').ipcRenderer.send('test', 42)");
       const [, num] = await once(w.webContents.ipc, 'test');
       expect(num).to.equal(42);
@@ -806,7 +806,7 @@ describe('ipc module', () => {
 
     it('receives sync-ipc messages sent from the WebContents', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.ipc.on('test', (event, arg) => {
         event.returnValue = arg * 2;
       });
@@ -816,7 +816,7 @@ describe('ipc module', () => {
 
     it('receives postMessage messages sent from the WebContents, w/ MessagePorts', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.executeJavaScript(
         "require('electron').ipcRenderer.postMessage('test', null, [(new MessageChannel).port1])"
       );
@@ -826,7 +826,7 @@ describe('ipc module', () => {
 
     it('handles invoke messages sent from the WebContents', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.ipc.handle('test', (_event, arg) => arg * 2);
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.invoke('test', 42)");
       expect(result).to.equal(42 * 2);
@@ -834,7 +834,7 @@ describe('ipc module', () => {
 
     it('cascades to ipcMain', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       let gotFromIpcMain = false;
       const ipcMainReceived = new Promise<void>((resolve) =>
         ipcMain.on('test', () => {
@@ -857,7 +857,7 @@ describe('ipc module', () => {
 
     it('overrides ipcMain handlers', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.ipc.handle('test', (_event, arg) => arg * 2);
       ipcMain.handle('test', () => {
         throw new Error('should not be called');
@@ -869,7 +869,7 @@ describe('ipc module', () => {
 
     it('falls back to ipcMain handlers', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       ipcMain.handle('test', (_event, arg) => {
         return arg * 2;
       });
@@ -906,7 +906,7 @@ describe('ipc module', () => {
     afterEach(closeAllWindows);
     it('responds to ipc messages in the main frame', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.executeJavaScript("require('electron').ipcRenderer.send('test', 42)");
       const [, arg] = await once(w.webContents.mainFrame.ipc, 'test');
       expect(arg).to.equal(42);
@@ -914,7 +914,7 @@ describe('ipc module', () => {
 
     it('responds to sync ipc messages in the main frame', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.mainFrame.ipc.on('test', (event, arg) => {
         event.returnValue = arg * 2;
       });
@@ -924,7 +924,7 @@ describe('ipc module', () => {
 
     it('receives postMessage messages sent from the WebContents, w/ MessagePorts', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.executeJavaScript(
         "require('electron').ipcRenderer.postMessage('test', null, [(new MessageChannel).port1])"
       );
@@ -934,7 +934,7 @@ describe('ipc module', () => {
 
     it('handles invoke messages sent from the WebContents', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.mainFrame.ipc.handle('test', (_event, arg) => arg * 2);
       const result = await w.webContents.executeJavaScript("require('electron').ipcRenderer.invoke('test', 42)");
       expect(result).to.equal(42 * 2);
@@ -942,7 +942,7 @@ describe('ipc module', () => {
 
     it('cascades to WebContents and ipcMain', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       let gotFromIpcMain = false;
       let gotFromWebContents = false;
       const ipcMainReceived = new Promise<void>((resolve) =>
@@ -973,7 +973,7 @@ describe('ipc module', () => {
 
     it('overrides ipcMain handlers', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.mainFrame.ipc.handle('test', (_event, arg) => arg * 2);
       ipcMain.handle('test', () => {
         throw new Error('should not be called');
@@ -985,7 +985,7 @@ describe('ipc module', () => {
 
     it('overrides WebContents handlers', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.ipc.handle('test', () => {
         throw new Error('should not be called');
       });
@@ -1000,7 +1000,7 @@ describe('ipc module', () => {
 
     it('falls back to WebContents handlers', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.ipc.handle('test', (_event, arg) => {
         return arg * 2;
       });
@@ -1049,7 +1049,7 @@ describe('ipc module', () => {
         "window.onunload = () => require('electron').ipcRenderer.send('unload'); void 0"
       );
       const onUnloadIpc = once(w.webContents.mainFrame.ipc, 'unload');
-      w.loadURL(`http://127.0.0.1:${port}`); // cross-origin navigation
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`http://127.0.0.1:${port}`)); // cross-origin navigation
       const [{ senderFrame }] = await onUnloadIpc;
       expect(senderFrame.detached).to.be.true();
     });

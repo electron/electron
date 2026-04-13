@@ -6,7 +6,16 @@ import { once } from 'node:events';
 import { Worker } from 'node:worker_threads';
 
 import { expect, fs, path, url } from './lib/remote-tools';
-import { defer, getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext, withDone } from './lib/spec-helpers';
+import {
+  defer,
+  getRemoteContext,
+  ifdescribe,
+  ifit,
+  itremote,
+  useRemoteContext,
+  withDone,
+  dangerouslyIgnoreWebContentsLoadResult
+} from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('asar package', () => {
@@ -32,7 +41,7 @@ describe('asar package', () => {
       });
       const p = path.resolve(asarDir, 'web.asar', 'index.html');
       const dirnameEvent = once(ipcMain, 'dirname');
-      w.loadFile(p);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(p));
       const [, dirname] = await dirnameEvent;
       expect(dirname).to.equal(path.dirname(p));
     });
@@ -53,7 +62,7 @@ describe('asar package', () => {
       });
       const p = path.resolve(asarDir, 'script.asar', 'index.html');
       const ping = once(ipcMain, 'ping');
-      w.loadFile(p);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(p));
       const [, message] = await ping;
       expect(message).to.equal('pong');
     });
@@ -73,7 +82,7 @@ describe('asar package', () => {
         }
       });
       const p = path.resolve(asarDir, 'video.asar', 'index.html');
-      w.loadFile(p);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(p));
       const [, message, error] = await once(ipcMain, 'asar-video');
       if (message === 'ended') {
         expect(error).to.be.null();

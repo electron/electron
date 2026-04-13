@@ -23,7 +23,15 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
-import { ifdescribe, defer, waitUntil, listen, ifit, withDone } from './lib/spec-helpers';
+import {
+  ifdescribe,
+  defer,
+  waitUntil,
+  listen,
+  ifit,
+  withDone,
+  dangerouslyIgnoreWebContentsLoadResult
+} from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -37,7 +45,7 @@ describe('webContents module', () => {
         show: false,
         webPreferences: { webviewTag: true }
       });
-      w.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html')));
 
       (await once(w.webContents, 'did-attach-webview')) as [any, WebContents];
 
@@ -182,7 +190,7 @@ describe('webContents module', () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
       await w.webContents.executeJavaScript("console.log('gesture')", true);
 
-      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'a.html')));
       const [, code, , validatedURL] = await didFailLoad;
       expect(code).to.equal(-3); // ERR_ABORTED
       const { href: expectedURL } = url.pathToFileURL(path.join(__dirname, 'fixtures', 'pages', 'a.html'));
@@ -234,7 +242,7 @@ describe('webContents module', () => {
             contextIsolation: false
           }
         });
-        w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'));
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html')));
         setTimeout(50).then(() => {
           w.webContents.send('test');
         });
@@ -418,7 +426,7 @@ describe('webContents module', () => {
 
       it('executes after page load', async () => {
         const executeJavaScript = w.webContents.executeJavaScript('(() => "test")()');
-        w.loadURL(serverUrl);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(serverUrl));
         const result = await executeJavaScript;
         expect(result).to.equal('test');
       });
@@ -560,10 +568,10 @@ describe('webContents module', () => {
         });
 
         w.webContents.once('did-start-loading', () => {
-          w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`file://${fixturesPath}/pages/blank.html`));
         });
 
-        w.loadURL('data:text/html,<h1>HELLO</h1>');
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL('data:text/html,<h1>HELLO</h1>'));
       })
     );
 
@@ -574,10 +582,10 @@ describe('webContents module', () => {
 
       // @ts-expect-error internal-only event.
       w.webContents.once('-ready-to-commit-navigation', () => {
-        w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`file://${fixturesPath}/pages/blank.html`));
       });
 
-      w.loadURL('data:text/html,<h1>HELLO</h1>');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('data:text/html,<h1>HELLO</h1>'));
     });
 
     it(
@@ -604,9 +612,9 @@ describe('webContents module', () => {
         listen(server)
           .then(({ url }) => {
             w.webContents.once('did-redirect-navigation', () => {
-              w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+              dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`file://${fixturesPath}/pages/blank.html`));
             });
-            w.loadURL(`${url}/302`);
+            dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${url}/302`));
           })
           .catch((e) => {
             server.close();
@@ -758,7 +766,9 @@ describe('webContents module', () => {
         const title = 'Test';
         w.webContents.on('did-finish-load', () => {
           w.setTitle(title);
-          w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html#next`);
+          dangerouslyIgnoreWebContentsLoadResult(
+            w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html#next`)
+          );
         });
         await w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html`);
         w.webContents.navigationHistory.goBack();
@@ -791,7 +801,9 @@ describe('webContents module', () => {
         const title = 'Test';
         w.webContents.on('did-finish-load', () => {
           w.setTitle(title);
-          w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html#next`);
+          dangerouslyIgnoreWebContentsLoadResult(
+            w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html#next`)
+          );
         });
         await w.loadURL(`file://${fixturesPath}/pages/navigation-history-anchor-in-page.html`);
         expect(w.getTitle()).to.equal(title);
@@ -1520,7 +1532,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('supports inserting CSS', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       await w.webContents.insertCSS('body { background-repeat: round; }');
       const result = await w.webContents.executeJavaScript(
         'window.getComputedStyle(document.body).getPropertyValue("background-repeat")'
@@ -1530,7 +1542,7 @@ describe('webContents module', () => {
 
     it('supports removing inserted CSS', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       const key = await w.webContents.insertCSS('body { background-repeat: round; }');
       await w.webContents.removeInsertedCSS(key);
       const result = await w.webContents.executeJavaScript(
@@ -1544,7 +1556,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('supports inspecting an element in the devtools', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       const event = once(w.webContents, 'devtools-opened');
       w.webContents.inspectElement(10, 10);
       await event;
@@ -1774,7 +1786,7 @@ describe('webContents module', () => {
             if (finalNavigation) {
               done();
             } else {
-              w.loadURL(`${standardScheme}://host2`);
+              dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${standardScheme}://host2`));
             }
           } catch (e) {
             done(e);
@@ -1791,7 +1803,7 @@ describe('webContents module', () => {
             done(e);
           }
         });
-        w.loadURL(`${standardScheme}://host1`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${standardScheme}://host1`));
       })
     );
 
@@ -1877,7 +1889,7 @@ describe('webContents module', () => {
           w.webContents.on('dom-ready', () => {
             w.webContents.zoomLevel = 2.0;
           });
-          w.loadURL(`data:text/html,${content}`);
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`data:text/html,${content}`));
         });
       })
     );
@@ -1887,7 +1899,7 @@ describe('webContents module', () => {
       const w2 = new BrowserWindow({ show: false });
 
       const temporaryZoomSet = once(ipcMain, 'temporary-zoom-set');
-      w.loadFile(path.join(fixturesPath, 'pages', 'webframe-zoom.html'));
+      dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixturesPath, 'pages', 'webframe-zoom.html')));
       await temporaryZoomSet;
 
       const finalZoomLevel = w.webContents.getZoomLevel();
@@ -2145,7 +2157,7 @@ describe('webContents module', () => {
         w.close();
       });
       const destroyed = once(w.webContents, 'destroyed');
-      w.loadURL(`${serverUrl}/redirect-cross-site`);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/redirect-cross-site`));
       await destroyed;
       expect(currentRenderViewDeletedEmitted).to.be.false('current-render-view-deleted was emitted');
     });
@@ -2165,7 +2177,7 @@ describe('webContents module', () => {
           resolve();
         });
       });
-      parentWindow.loadURL(`${serverUrl}/first-window-open`);
+      dangerouslyIgnoreWebContentsLoadResult(parentWindow.loadURL(`${serverUrl}/first-window-open`));
       await childWindowCreated;
       childWindow!.webContents.removeListener('current-render-view-deleted' as any, renderViewDeletedHandler);
       parentWindow.close();
@@ -2183,7 +2195,7 @@ describe('webContents module', () => {
         w.close();
       });
       const destroyed = once(w.webContents, 'destroyed');
-      w.loadURL(`${serverUrl}/redirect-cross-site`);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/redirect-cross-site`));
       await destroyed;
       expect(currentRenderViewDeletedEmitted).to.be.true("current-render-view-deleted wasn't emitted");
     });
@@ -2198,7 +2210,7 @@ describe('webContents module', () => {
         w.close();
       });
       const destroyed = once(w.webContents, 'destroyed');
-      w.loadURL(`${serverUrl}/redirect-cross-site`);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/redirect-cross-site`));
       await destroyed;
       const expectedRenderViewDeletedEventCount = 1;
       expect(rvhDeletedCount).to.equal(
@@ -2326,7 +2338,7 @@ describe('webContents module', () => {
         };
         contents.once(e.name as any, () => contents.destroy());
         const destroyed = once(contents, 'destroyed');
-        contents.loadURL(serverUrl + e.url);
+        dangerouslyIgnoreWebContentsLoadResult(contents.loadURL(serverUrl + e.url));
         await destroyed;
       });
     }
@@ -2344,7 +2356,7 @@ describe('webContents module', () => {
             if (count === 0) {
               count += 1;
               expect(color).to.equal('#FFEEDD');
-              w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+              dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html')));
             } else if (count === 1) {
               expect(color).to.be.null();
               done();
@@ -2353,7 +2365,7 @@ describe('webContents module', () => {
             done(e);
           }
         });
-        w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html'));
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html')));
       })
     );
   });
@@ -2370,7 +2382,7 @@ describe('webContents module', () => {
             done();
           }
         });
-        w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(path.join(fixturesPath, 'pages', 'a.html')));
       })
     );
   });
@@ -2441,7 +2453,7 @@ describe('webContents module', () => {
             });
             w.webContents.executeJavaScript('a.click()');
           });
-          w.loadURL(url);
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
         });
       })
     );
@@ -2473,7 +2485,7 @@ describe('webContents module', () => {
             });
             w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")');
           });
-          w.loadURL(url);
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
         });
       })
     );
@@ -2505,7 +2517,7 @@ describe('webContents module', () => {
           });
 
           const promise = once(w.webContents, 'preload-error') as Promise<[any, string, Error]>;
-          w.loadURL('about:blank');
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
 
           const [, preloadPath, error] = await promise;
           expect(preloadPath).to.equal(preload);
@@ -2524,7 +2536,7 @@ describe('webContents module', () => {
           });
 
           const promise = once(w.webContents, 'preload-error') as Promise<[any, string, Error]>;
-          w.loadURL('about:blank');
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
 
           const [, preloadPath, error] = await promise;
           expect(preloadPath).to.equal(preload);
@@ -2543,7 +2555,7 @@ describe('webContents module', () => {
           });
 
           const promise = once(w.webContents, 'preload-error') as Promise<[any, string, Error]>;
-          w.loadURL('about:blank');
+          dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
 
           const [, preloadPath, error] = await promise;
           expect(preloadPath).to.equal(preload);
@@ -3022,7 +3034,9 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
 
       const ready = once(ipcMain, 'ready');
-      w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'));
+      dangerouslyIgnoreWebContentsLoadResult(
+        w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'))
+      );
       await ready;
 
       const sharedWorkers = w.webContents.getAllSharedWorkers();
@@ -3036,7 +3050,9 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
 
       const ready = once(ipcMain, 'ready');
-      w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'));
+      dangerouslyIgnoreWebContentsLoadResult(
+        w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'))
+      );
       await ready;
 
       const sharedWorkers = w.webContents.getAllSharedWorkers();
@@ -3370,7 +3386,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('emits when moveTo is called', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.executeJavaScript('window.moveTo(50, 50)', true);
       const [, rect] = (await once(w.webContents, 'content-bounds-updated')) as [any, Electron.Rectangle];
       const { width, height } = w.getBounds();
@@ -3387,7 +3403,7 @@ describe('webContents module', () => {
 
     it('emits when resizeTo is called', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.executeJavaScript('window.resizeTo(100, 100)', true);
       const [, rect] = (await once(w.webContents, 'content-bounds-updated')) as [any, Electron.Rectangle];
       const { x, y } = w.getBounds();
@@ -3419,7 +3435,7 @@ describe('webContents module', () => {
     it('does not change window bounds if cancelled', async () => {
       const w = new BrowserWindow({ show: false });
       const { width, height } = w.getBounds();
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       w.webContents.once('content-bounds-updated', (e) => e.preventDefault());
       await w.webContents.executeJavaScript('window.resizeTo(100, 100)', true);
       await new Promise(setImmediate);

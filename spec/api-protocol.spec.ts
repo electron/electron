@@ -17,7 +17,7 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { listen, defer, ifit, withDone } from './lib/spec-helpers';
+import { listen, defer, ifit, withDone, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { WebmGenerator } from './lib/video-helpers';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 
@@ -290,7 +290,9 @@ describe('protocol module', () => {
         });
 
         const loaded = once(ipcMain, 'loaded-iframe-custom-protocol');
-        w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'iframe-protocol.html'));
+        dangerouslyIgnoreWebContentsLoadResult(
+          w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'iframe-protocol.html'))
+        );
         await loaded;
       });
 
@@ -901,7 +903,7 @@ describe('protocol module', () => {
       withDone((done) => {
         const filePath = path.join(fixturesPath, 'pages', 'filesystem.html');
         protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
-        w.loadURL(origin);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(origin));
         ipcMain.once('file-system-error', (event, err) => done(err));
         ipcMain.once('file-system-write-end', () => done());
       })
@@ -914,7 +916,7 @@ describe('protocol module', () => {
         ipcMain.once('success', () => done());
         ipcMain.once('failure', (event, err) => done(err));
         protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
-        w.loadURL(origin);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(origin));
       })
     );
   });
@@ -1009,7 +1011,7 @@ describe('protocol module', () => {
       const consoleMessages: string[] = [];
       newContents.on('console-message', (e) => consoleMessages.push(e.message));
       try {
-        newContents.loadURL(standardScheme + '://fake-host');
+        dangerouslyIgnoreWebContentsLoadResult(newContents.loadURL(standardScheme + '://fake-host'));
         const [, response] = await once(ipcMain, 'response');
         expect(response).to.deep.equal(expected);
         expect(consoleMessages.join('\n')).to.match(expectedConsole);
@@ -1116,7 +1118,7 @@ describe('protocol module', () => {
       });
 
       try {
-        newContents.loadURL(testingScheme + '://fake-host');
+        dangerouslyIgnoreWebContentsLoadResult(newContents.loadURL(testingScheme + '://fake-host'));
         const [, response] = await once(ipcMain, 'result');
         expect(response).to.deep.equal(expected);
       } finally {
@@ -1218,7 +1220,7 @@ describe('protocol module', () => {
         });
 
         const w = new BrowserWindow();
-        w.loadFile(filePath);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadFile(filePath));
       })
     );
 
@@ -1533,7 +1535,7 @@ describe('protocol module', () => {
         protocol.unhandle('http-like');
       });
       const w = new BrowserWindow({ show: false });
-      w.loadURL('about:blank');
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL('about:blank'));
       const expectedHashChunks = await w.webContents.executeJavaScript(`
         const dataStream = () =>
           new ReadableStream({

@@ -9,7 +9,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
 import { emittedUntil } from './lib/events-helpers';
-import { listen } from './lib/spec-helpers';
+import { listen, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
@@ -73,7 +73,7 @@ describe('security warnings', () => {
       }
     });
 
-    w.loadURL(`${serverUrl}/base-page-security.html`);
+    dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/base-page-security.html`));
     const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
     expect(message).to.include('Node.js Integration with Remote Content');
   });
@@ -86,7 +86,7 @@ describe('security warnings', () => {
       }
     });
 
-    w.loadURL(`${serverUrl}/base-page-security-onload-message.html`);
+    dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/base-page-security-onload-message.html`));
     const [{ message }] = await emittedUntil(w.webContents, 'console-message', isLoaded);
     expect(message).to.not.include('Node.js Integration with Remote Content');
   });
@@ -102,7 +102,7 @@ describe('security warnings', () => {
           }
         });
 
-        w.loadURL(`${serverUrl}/base-page-security.html`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/base-page-security.html`));
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('Disabled webSecurity');
       });
@@ -114,7 +114,7 @@ describe('security warnings', () => {
         });
 
         useCsp = false;
-        w.loadURL(`${serverUrl}/base-page-security.html`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/base-page-security.html`));
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('Insecure Content-Security-Policy');
       });
@@ -126,7 +126,7 @@ describe('security warnings', () => {
         });
 
         useCsp = true;
-        w.loadURL(`${serverUrl}/base-page-security.html`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/base-page-security.html`));
         let didNotWarn = true;
         w.webContents.on('console-message', () => {
           didNotWarn = false;
@@ -144,7 +144,7 @@ describe('security warnings', () => {
           }
         });
 
-        w.loadURL(`${serverUrl}/base-page-security.html`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/base-page-security.html`));
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('allowRunningInsecureContent');
       });
@@ -158,7 +158,7 @@ describe('security warnings', () => {
           }
         });
 
-        w.loadURL(`${serverUrl}/base-page-security.html`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/base-page-security.html`));
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('experimentalFeatures');
       });
@@ -172,7 +172,7 @@ describe('security warnings', () => {
           }
         });
 
-        w.loadURL(`${serverUrl}/base-page-security.html`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/base-page-security.html`));
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('enableBlinkFeatures');
       });
@@ -183,7 +183,7 @@ describe('security warnings', () => {
           webPreferences
         });
 
-        w.loadURL(`${serverUrl}/webview-allowpopups.html`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/webview-allowpopups.html`));
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('allowpopups');
       });
@@ -194,7 +194,7 @@ describe('security warnings', () => {
           webPreferences
         });
 
-        w.loadURL(`${serverUrl}/insecure-resources.html`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/insecure-resources.html`));
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.include('Insecure Resources');
       });
@@ -205,7 +205,7 @@ describe('security warnings', () => {
           webPreferences
         });
 
-        w.loadURL(`${serverUrl}/insecure-resources.html`);
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${serverUrl}/insecure-resources.html`));
         const [{ message }] = await emittedUntil(w.webContents, 'console-message', messageContainsSecurityWarning);
         expect(message).to.not.include('insecure-resources.html');
       });
