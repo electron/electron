@@ -142,10 +142,58 @@ async function findMatchingFiles (top, test) {
     });
 }
 
+function getDepotToolsEnv () {
+  let depotToolsEnv;
+
+  const findDepotToolsOnPath = () => {
+    const result = childProcess.spawnSync(
+      os.platform() === 'win32' ? 'where' : 'which',
+      ['gclient']
+    );
+
+    if (result.status === 0) {
+      return process.env;
+    }
+  };
+
+  const checkForBuildTools = () => {
+    const result = childProcess.spawnSync(
+      'electron-build-tools',
+      ['show', 'env', '--json'],
+      { shell: true }
+    );
+
+    if (result.status === 0) {
+      return {
+        ...process.env,
+        ...JSON.parse(result.stdout.toString().trim())
+      };
+    }
+  };
+
+  try {
+    depotToolsEnv = checkForBuildTools();
+    if (!depotToolsEnv) depotToolsEnv = findDepotToolsOnPath();
+  } catch {}
+
+  if (!depotToolsEnv) {
+    throw new Error("Couldn't find depot_tools, ensure it's on your PATH");
+  }
+
+  if (!('CHROMIUM_BUILDTOOLS_PATH' in depotToolsEnv)) {
+    throw new Error(
+      'CHROMIUM_BUILDTOOLS_PATH environment variable must be set'
+    );
+  }
+
+  return depotToolsEnv;
+}
+
 module.exports = {
   chunkFilenames,
   findMatchingFiles,
   getCurrentBranch,
+  getDepotToolsEnv,
   getElectronExec,
   getOutDir,
   getAbsoluteElectronExec,
