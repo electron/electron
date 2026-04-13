@@ -677,7 +677,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..94bd32ce1ddd3f8b4315cd06be59d755
  @end
  
  struct NSEdgeAndCornerThicknesses {
-@@ -159,13 +164,30 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
+@@ -159,13 +164,50 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event;
  @implementation NSView (CRFrameViewAdditions)
  // If a mouseDown: falls through to the frame view, turn it into a window drag.
  - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
@@ -688,13 +688,33 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..94bd32ce1ddd3f8b4315cd06be59d755
 +#else
 +  // For MAS builds, approximate the resize direction check.
 +  if (self.window.styleMask & NSWindowStyleMaskResizable) {
-+    constexpr CGFloat kResizeThreshold = 5.0;
++    // Match Electron's frameless resize affordances:
++    // - 5pt resize handles along edges
++    // - 16pt resize hot-zone at corners
++    //
++    // If we misclassify a resize as a drag, we can end up with a window that
++    // moves while it is being resized (most noticeable near corners).
++    constexpr CGFloat kResizeInsideBoundsSize = 5.0;
++    constexpr CGFloat kResizeAreaCornerSize = 16.0;
 +    NSPoint location = event.locationInWindow;
 +    NSRect frame = self.window.frame;
 +    CGFloat width = NSWidth(frame);
 +    CGFloat height = NSHeight(frame);
-+    if (location.x < kResizeThreshold || location.x > width - kResizeThreshold ||
-+        location.y < kResizeThreshold || location.y > height - kResizeThreshold) {
++
++    const bool in_left_edge = location.x < kResizeInsideBoundsSize;
++    const bool in_right_edge = location.x > width - kResizeInsideBoundsSize;
++    const bool in_bottom_edge = location.y < kResizeInsideBoundsSize;
++    const bool in_top_edge = location.y > height - kResizeInsideBoundsSize;
++
++    const bool in_left_corner_zone = location.x < kResizeAreaCornerSize;
++    const bool in_right_corner_zone = location.x > width - kResizeAreaCornerSize;
++    const bool in_bottom_corner_zone = location.y < kResizeAreaCornerSize;
++    const bool in_top_corner_zone = location.y > height - kResizeAreaCornerSize;
++    const bool in_corner = (in_left_corner_zone || in_right_corner_zone) &&
++                           (in_bottom_corner_zone || in_top_corner_zone);
++
++    if (in_left_edge || in_right_edge || in_bottom_edge || in_top_edge ||
++        in_corner) {
 +      return;
 +    }
 +  }
