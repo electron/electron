@@ -3,6 +3,7 @@ import { BaseWindow, BrowserWindow, webContents } from 'electron/main';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 
 import { runCleanupFunctions } from './defer-helpers';
 
@@ -35,17 +36,16 @@ export const closeWindow = async (
   if (assertNotWindows) {
     let windows = BaseWindow.getAllWindows();
     if (windows.length > 0) {
-      setTimeout(async () => {
-        // Wait until next tick to assert that all windows have been closed.
-        windows = BaseWindow.getAllWindows();
-        try {
-          expect(windows).to.have.lengthOf(0);
-        } finally {
-          for (const win of windows) {
-            await ensureWindowIsClosed(win);
-          }
+      // Wait until next tick to assert that all windows have been closed.
+      await setTimeout(0);
+      windows = BaseWindow.getAllWindows();
+      try {
+        expect(windows).to.have.lengthOf(0);
+      } finally {
+        for (const win of windows) {
+          await ensureWindowIsClosed(win);
         }
-      });
+      }
     }
   }
 };

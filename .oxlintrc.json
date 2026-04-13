@@ -19,6 +19,10 @@
     {
       "name": "no-nested-tests",
       "specifier": "./script/lint-plugins/no-nested-tests.mjs"
+    },
+    {
+      "name": "no-unawaited-load",
+      "specifier": "./script/lint-plugins/no-unawaited-load.mjs"
     }
   ],
   "categories": {
@@ -325,7 +329,8 @@
       "rules": {
         "no-only-tests/no-only-tests": "error",
         "remote-tools-imports/no-foreign-imports-in-remote-closure": "error",
-        "no-nested-tests/no-nested-tests": "error"
+        "no-nested-tests/no-nested-tests": "error",
+        "no-unawaited-load/no-unawaited-load": "warn"
       }
     },
     {
