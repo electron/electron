@@ -10,7 +10,7 @@ const electronShim = path.resolve(__dirname, 'electron-shim.cjs');
 // etc.), so the usual cpus-1 default can starve the smaller hosted runners.
 function ciMaxWorkers(): number | undefined {
   if (!process.env.CI || process.platform !== 'darwin') return undefined;
-  return process.arch === 'arm64' ? 2 : 6;
+  return process.arch === 'arm64' ? 3 : 6;
 }
 
 export default defineConfig({
