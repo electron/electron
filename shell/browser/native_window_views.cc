@@ -1914,15 +1914,13 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 #if BUILDFLAG(IS_WIN)
   return std::make_unique<WinFrameView>(this, widget);
 #else
-  if (has_frame() && !has_client_frame()) {
-    return std::make_unique<NativeFrameView>(this, widget);
-  } else {
-    if (has_frame() && has_client_frame()) {
-      return std::make_unique<ClientFrameViewLinux>(this, widget);
-    } else {
-      return std::make_unique<OpaqueFrameView>(this, widget);
-    }
-  }
+  if (!has_frame())
+    return std::make_unique<OpaqueFrameView>(this, widget);
+
+  if (has_client_frame())
+    return std::make_unique<ClientFrameViewLinux>(this, widget);
+
+  return std::make_unique<NativeFrameView>(this, widget);
 #endif
 }
 
