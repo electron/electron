@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Tue, 17 Mar 2026 16:02:53 +0100
+Subject: Merged: [maglev] Avoid eliding Smi checks too aggressively
+
+(cherry picked from commit 433b2912c5cb94ed0979c8284e96e4d08416b620)
+
+Bug: 491884710
+Change-Id: Id73c522c6f55cb05167f436c2ee7f60e0db71840
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7673820
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.6@{#45}
+Cr-Branched-From: e04c3a1a2543bdbee7beac8846c9cbe8f657636f-refs/heads/14.6.202@{#1}
+Cr-Branched-From: 3b0b01e6594ec362369dc16f069012a81748c8ba-refs/heads/main@{#105132}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index ae4d46ff6e17d4087d20f5cf6c7b6731aaa687d4..834263bcc755c1f4c3b515fbdfd2e53dc063f2cd 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -4107,7 +4107,7 @@ void MaglevGraphBuilder::SetKnownValue(ValueNode* node, compiler::ObjectRef ref,
+ 
+ ReduceResult MaglevGraphBuilder::BuildCheckSmi(ValueNode* object,
+                                                bool elidable) {
+-  if (object->StaticTypeIs(broker(), NodeType::kSmi)) return object;
++  if (object->StaticTypeIs(broker(), NodeType::kSmi) && elidable) return object;
+   // Check for the empty type first so that we catch the case where
+   // GetType(object) is already empty.
+   if (IsEmptyNodeType(IntersectType(GetType(object), NodeType::kSmi))) {
