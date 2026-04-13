@@ -4,6 +4,7 @@ import { AssertionError } from 'chai';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
@@ -215,10 +216,12 @@ export function useRemoteContext(opts?: any) {
   beforeAll(async () => {
     remoteContext.unshift(await makeRemoteContext(opts));
   });
-  afterAll(() => {
+  afterAll(async () => {
     const w = remoteContext.shift();
-    if (!w?.isDestroyed()) {
-      w!.close();
+    if (w && !w.isDestroyed()) {
+      const closed = once(w, 'closed');
+      w.close();
+      await closed;
     }
   });
 }

@@ -1,10 +1,11 @@
 import * as chai from 'chai';
-import { beforeEach } from 'vitest';
+import { afterAll, beforeEach } from 'vitest';
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { runCleanupFunctions } from '../lib/defer-helpers';
+import { assertNoWindowsLeaked } from '../lib/window-helpers';
 
 import chaiAsPromised = require('chai-as-promised');
 import dirtyChai = require('dirty-chai');
@@ -35,3 +36,9 @@ beforeEach((ctx) => {
     ctx.skip();
   }
 });
+
+// Runs once per file, after all test-file-level afterAll hooks (setupFiles
+// hooks are outermost). Using afterAll rather than afterEach so suites that
+// intentionally share a window across tests (useRemoteContext, etc.) are not
+// flagged on every test.
+afterAll(assertNoWindowsLeaked);

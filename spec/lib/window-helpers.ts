@@ -3,7 +3,6 @@ import { BaseWindow, BrowserWindow, webContents } from 'electron/main';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
-import { setTimeout } from 'node:timers/promises';
 
 import { runCleanupFunctions } from './defer-helpers';
 
@@ -27,28 +26,23 @@ async function ensureWindowIsClosed(window: BaseWindow | null) {
   }
 }
 
-export const closeWindow = async (
-  window: BaseWindow | null = null,
-  { assertNotWindows } = { assertNotWindows: true }
-) => {
+export const closeWindow = async (window: BaseWindow | null = null) => {
   await ensureWindowIsClosed(window);
+};
 
-  if (assertNotWindows) {
-    let windows = BaseWindow.getAllWindows();
-    if (windows.length > 0) {
-      // Wait until next tick to assert that all windows have been closed.
-      await setTimeout(0);
-      windows = BaseWindow.getAllWindows();
-      try {
-        expect(windows).to.have.lengthOf(0);
-      } finally {
-        for (const win of windows) {
-          await ensureWindowIsClosed(win);
-        }
-      }
+export async function assertNoWindowsLeaked() {
+  const windows = BaseWindow.getAllWindows();
+  try {
+    expect(windows).to.have.lengthOf(
+      0,
+      `${windows.length} window(s) leaked across test boundary (ids: ${windows.map((w) => w.id).join(', ')})`
+    );
+  } finally {
+    for (const win of windows) {
+      await ensureWindowIsClosed(win);
     }
   }
-};
+}
 
 export async function closeAllWindows() {
   // Under vitest, setupFiles-level hooks run after test-file afterEach hooks,
@@ -57,7 +51,7 @@ export async function closeAllWindows() {
   await runCleanupFunctions();
   let windowsClosed = 0;
   for (const w of BaseWindow.getAllWindows()) {
-    await closeWindow(w, { assertNotWindows: false });
+    await closeWindow(w);
     windowsClosed++;
   }
   return windowsClosed;

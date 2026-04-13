@@ -2180,7 +2180,7 @@ describe('BrowserWindow module', () => {
 
         expect(BrowserWindow.getAllWindows()).to.have.lengthOf(2); // w + tabbedWindow
 
-        await closeWindow(tabbedWindow, { assertNotWindows: false });
+        await closeWindow(tabbedWindow);
         expect(BrowserWindow.getAllWindows()).to.have.lengthOf(1); // w
       });
 
@@ -3778,7 +3778,7 @@ describe('BrowserWindow module', () => {
 
         // We don't need the popup anymore, and its parent page can't close it,
         // so let's close it from here before we run any checks.
-        await closeWindow(popupWindow, { assertNotWindows: false });
+        await closeWindow(popupWindow);
 
         const errorPattern =
           /Failed to read a named property 'document' from 'Window': Blocked a frame with origin "(.*?)" from accessing a cross-origin frame./;

@@ -104,7 +104,7 @@ describe('BrowserWindow module (serial)', () => {
         expect(w.isVisible()).to.be.true('parent is visible');
         expect(c.isVisible()).to.be.true('child is visible');
 
-        await closeWindow(c, { assertNotWindows: false });
+        await closeWindow(c);
       });
     });
 
@@ -335,7 +335,7 @@ describe('BrowserWindow module (serial)', () => {
         expect(otherWindow.isFocused()).to.equal(false);
         expect(w.isFocused()).to.equal(true);
 
-        await closeWindow(otherWindow, { assertNotWindows: false });
+        await closeWindow(otherWindow);
         expect(BrowserWindow.getAllWindows()).to.have.lengthOf(1);
       });
 
@@ -390,7 +390,7 @@ describe('BrowserWindow module (serial)', () => {
           w.moveAbove(w2.getMediaSourceId());
         }).to.not.throw();
 
-        await closeWindow(w2, { assertNotWindows: false });
+        await closeWindow(w2);
       });
     });
 
@@ -401,7 +401,7 @@ describe('BrowserWindow module (serial)', () => {
         w2.setFocusable(true);
         w2.focus();
         await w2Focused;
-        await closeWindow(w2, { assertNotWindows: false });
+        await closeWindow(w2);
       });
     });
 
@@ -412,7 +412,7 @@ describe('BrowserWindow module (serial)', () => {
 
         w2.setFocusable(true);
         expect(w2.isFocusable()).to.be.true();
-        await closeWindow(w2, { assertNotWindows: false });
+        await closeWindow(w2);
       });
     });
 
