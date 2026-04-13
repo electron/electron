@@ -256,7 +256,7 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
 
   auto* current = WebWorkerObserver::GetCurrent();
   if (current)
-    current->ContextWillDestroy(context);
+    current->ContextWillDestroy(context, ec->IsAudioWorkletGlobalScope());
 }
 
 void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {

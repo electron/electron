@@ -37,7 +37,8 @@ class WebWorkerObserver {
   WebWorkerObserver& operator=(const WebWorkerObserver&) = delete;
 
   void WorkerScriptReadyForEvaluation(v8::Local<v8::Context> context);
-  void ContextWillDestroy(v8::Local<v8::Context> context);
+  void ContextWillDestroy(v8::Local<v8::Context> context,
+                          bool is_audio_worklet);
 
  private:
   // Full initialization for the first context on a thread.
