@@ -1,0 +1,358 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Simon=20Z=C3=BCnd?= <szuend@chromium.org>
+Date: Fri, 27 Feb 2026 05:20:14 +0000
+Subject: [inspector] Use std::shared_ptr for InspectedContext
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Unfortunately at this point we are not able to move `InspectedContext`
+to the managed C++ heap due to missing Heap* collections and the lack
+of labeling retainer links.
+
+The next best thing we can do for now is use std::shared_ptr for
+InspectedContext and keep an instance on the stack every time we can
+potentially transition into user JS.
+
+R=bmeurer@chromium.org
+
+Fixed: 486927780
+Change-Id: I5e4921521a24cc3cd53ffb6cb5b6b6f9d98490e2
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7613210
+Auto-Submit: Simon Zünd <szuend@chromium.org>
+Reviewed-by: Benedikt Meurer <bmeurer@chromium.org>
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Commit-Queue: Benedikt Meurer <bmeurer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#105489}
+
+diff --git a/src/inspector/custom-preview.cc b/src/inspector/custom-preview.cc
+index 7ab5f00df3dd94b5a76a890699c3ca5b8f7ab83a..7877348e469bf94a3aceec07b3a5a011bb045a62 100644
+--- a/src/inspector/custom-preview.cc
++++ b/src/inspector/custom-preview.cc
+@@ -59,7 +59,7 @@ InjectedScript* getInjectedScript(v8::Local<v8::Context> context,
+   v8::Isolate* isolate = v8::Isolate::GetCurrent();
+   V8InspectorImpl* inspector =
+       static_cast<V8InspectorImpl*>(v8::debug::GetInspector(isolate));
+-  InspectedContext* inspectedContext =
++  std::shared_ptr<InspectedContext> inspectedContext =
+       inspector->getContext(InspectedContext::contextId(context));
+   if (!inspectedContext) return nullptr;
+   return inspectedContext->getInjectedScript(sessionId);
+diff --git a/src/inspector/injected-script.cc b/src/inspector/injected-script.cc
+index 1260f19be6de63bf53d6aab03b820788fc581cfc..920603886858817e08fea593249a5179adee5d75 100644
+--- a/src/inspector/injected-script.cc
++++ b/src/inspector/injected-script.cc
+@@ -1164,7 +1164,7 @@ Response InjectedScript::bindRemoteObjectIfNeeded(
+     v8::Isolate* isolate = v8::Isolate::GetCurrent();
+     V8InspectorImpl* inspector =
+         static_cast<V8InspectorImpl*>(v8::debug::GetInspector(isolate));
+-    InspectedContext* inspectedContext =
++    std::shared_ptr<InspectedContext> inspectedContext =
+         inspector->getContext(InspectedContext::contextId(context));
+     InjectedScript* injectedScript =
+         inspectedContext ? inspectedContext->getInjectedScript(sessionId)
+diff --git a/src/inspector/v8-console-message.cc b/src/inspector/v8-console-message.cc
+index 128bc6cd8e3e204c9aa4a8832783e4079f59bf9d..567c92adf1bf120eca91815e253f3a2872581807 100644
+--- a/src/inspector/v8-console-message.cc
++++ b/src/inspector/v8-console-message.cc
+@@ -258,7 +258,7 @@ V8ConsoleMessage::wrapArguments(V8InspectorSessionImpl* session,
+   int contextGroupId = session->contextGroupId();
+   int contextId = m_contextId;
+   if (m_arguments.empty() || !contextId) return nullptr;
+-  InspectedContext* inspectedContext =
++  std::shared_ptr<InspectedContext> inspectedContext =
+       inspector->getContext(contextGroupId, contextId);
+   if (!inspectedContext) return nullptr;
+ 
+@@ -423,7 +423,7 @@ V8ConsoleMessage::wrapException(V8InspectorSessionImpl* session,
+                                 bool generatePreview) const {
+   if (m_arguments.empty() || !m_contextId) return nullptr;
+   DCHECK_EQ(1u, m_arguments.size());
+-  InspectedContext* inspectedContext =
++  std::shared_ptr<InspectedContext> inspectedContext =
+       session->inspector()->getContext(session->contextGroupId(), m_contextId);
+   if (!inspectedContext) return nullptr;
+ 
+diff --git a/src/inspector/v8-console.cc b/src/inspector/v8-console.cc
+index 0fd24e21c355ba0b296e89dae02e7e79c4738d72..8a14e7fd3da7b3b2d657c8b3a8a4006f62f5173c 100644
+--- a/src/inspector/v8-console.cc
++++ b/src/inspector/v8-console.cc
+@@ -59,7 +59,8 @@ class ConsoleHelper {
+   int groupId() const { return m_inspector->contextGroupId(contextId()); }
+ 
+   InjectedScript* injectedScript(int sessionId) {
+-    InspectedContext* context = m_inspector->getContext(groupId(), contextId());
++    std::shared_ptr<InspectedContext> context =
++        m_inspector->getContext(groupId(), contextId());
+     if (!context) return nullptr;
+     return context->getInjectedScript(sessionId);
+   }
+diff --git a/src/inspector/v8-debugger-agent-impl.cc b/src/inspector/v8-debugger-agent-impl.cc
+index 400f67dfbdf622353f23aabac09cc035ac59ef11..75084c64a3d73f7f974be081d899fc75bd963e0e 100644
+--- a/src/inspector/v8-debugger-agent-impl.cc
++++ b/src/inspector/v8-debugger-agent-impl.cc
+@@ -897,7 +897,8 @@ Response V8DebuggerAgentImpl::getPossibleBreakpoints(
+   {
+     v8::HandleScope handleScope(m_isolate);
+     int contextId = it->second->executionContextId();
+-    InspectedContext* inspected = m_inspector->getContext(contextId);
++    std::shared_ptr<InspectedContext> inspected =
++        m_inspector->getContext(contextId);
+     if (!inspected) {
+       return Response::ServerError("Cannot retrive script context");
+     }
+@@ -942,7 +943,8 @@ Response V8DebuggerAgentImpl::continueToLocation(
+   }
+   V8DebuggerScript* script = it->second.get();
+   int contextId = script->executionContextId();
+-  InspectedContext* inspected = m_inspector->getContext(contextId);
++  std::shared_ptr<InspectedContext> inspected =
++      m_inspector->getContext(contextId);
+   if (!inspected)
+     return Response::ServerError("Cannot continue to specified location");
+   v8::HandleScope handleScope(m_isolate);
+@@ -1001,7 +1003,8 @@ bool V8DebuggerAgentImpl::isFunctionBlackboxed(const String16& scriptId,
+   }
+   if (!m_blackboxedExecutionContexts.empty()) {
+     int contextId = it->second->executionContextId();
+-    InspectedContext* inspected = m_inspector->getContext(contextId);
++    std::shared_ptr<InspectedContext> inspected =
++        m_inspector->getContext(contextId);
+     if (inspected && m_blackboxedExecutionContexts.count(
+                          inspected->uniqueId().toString()) > 0) {
+       return true;
+@@ -1073,7 +1076,8 @@ V8DebuggerAgentImpl::setBreakpointImpl(const String16& breakpointId,
+   v8::debug::BreakpointId debuggerBreakpointId;
+   v8::debug::Location location(lineNumber, columnNumber);
+   int contextId = script->executionContextId();
+-  InspectedContext* inspected = m_inspector->getContext(contextId);
++  std::shared_ptr<InspectedContext> inspected =
++      m_inspector->getContext(contextId);
+   if (!inspected) return nullptr;
+ 
+   {
+@@ -1163,7 +1167,8 @@ Response V8DebuggerAgentImpl::setScriptSource(
+     return Response::ServerError("No script with given id found");
+   }
+   int contextId = it->second->executionContextId();
+-  InspectedContext* inspected = m_inspector->getContext(contextId);
++  std::shared_ptr<InspectedContext> inspected =
++      m_inspector->getContext(contextId);
+   if (!inspected) {
+     return Response::InternalError();
+   }
+@@ -1959,7 +1964,7 @@ void V8DebuggerAgentImpl::didParseSource(
+ 
+   int contextId = script->executionContextId();
+   int contextGroupId = m_inspector->contextGroupId(contextId);
+-  InspectedContext* inspected =
++  std::shared_ptr<InspectedContext> inspected =
+       m_inspector->getContext(contextGroupId, contextId);
+   std::unique_ptr<protocol::DictionaryValue> executionContextAuxData;
+   if (inspected) {
+diff --git a/src/inspector/v8-debugger.cc b/src/inspector/v8-debugger.cc
+index 69fb293610bcb4d9b57c6d852f07f4486c1e3c99..a514972ac2ad76ac26b57ad4959f64b9c9630d9e 100644
+--- a/src/inspector/v8-debugger.cc
++++ b/src/inspector/v8-debugger.cc
+@@ -1452,7 +1452,8 @@ bool V8Debugger::addInternalObject(v8::Local<v8::Context> context,
+                                    v8::Local<v8::Object> object,
+                                    V8InternalValueType type) {
+   int contextId = InspectedContext::contextId(context);
+-  InspectedContext* inspectedContext = m_inspector->getContext(contextId);
++  std::shared_ptr<InspectedContext> inspectedContext =
++      m_inspector->getContext(contextId);
+   return inspectedContext ? inspectedContext->addInternalObject(object, type)
+                           : false;
+ }
+diff --git a/src/inspector/v8-heap-profiler-agent-impl.cc b/src/inspector/v8-heap-profiler-agent-impl.cc
+index b8563c74d5f8813551d095ea7a789ff3fa6c7b9d..33e8954c215aa3f62079e0b270597477a55131fc 100644
+--- a/src/inspector/v8-heap-profiler-agent-impl.cc
++++ b/src/inspector/v8-heap-profiler-agent-impl.cc
+@@ -57,8 +57,9 @@ class ContextNameResolver final : public v8::HeapProfiler::ContextNameResolver {
+       : m_offset(0), m_strings(10000), m_session(session) {}
+ 
+   const char* GetName(v8::Local<v8::Context> context) override {
+-    InspectedContext* inspected_context = m_session->inspector()->getContext(
+-        m_session->contextGroupId(), InspectedContext::contextId(context));
++    std::shared_ptr<InspectedContext> inspected_context =
++        m_session->inspector()->getContext(
++            m_session->contextGroupId(), InspectedContext::contextId(context));
+     if (!inspected_context) return nullptr;
+     String16 name = inspected_context->origin();
+     size_t length = name.length();
+diff --git a/src/inspector/v8-inspector-impl.cc b/src/inspector/v8-inspector-impl.cc
+index 9dae9ef1f3693ddcf6759349c917dbe213cf3578..b57097472e2d55128a3b116c6c613a3cefccfe56 100644
+--- a/src/inspector/v8-inspector-impl.cc
++++ b/src/inspector/v8-inspector-impl.cc
+@@ -237,8 +237,8 @@ void V8InspectorImpl::disconnect(V8InspectorSessionImpl* session) {
+   }
+ }
+ 
+-InspectedContext* V8InspectorImpl::getContext(int groupId,
+-                                              int contextId) const {
++std::shared_ptr<InspectedContext> V8InspectorImpl::getContext(
++    int groupId, int contextId) const {
+   if (!groupId || !contextId) return nullptr;
+ 
+   auto contextGroupIt = m_contexts.find(groupId);
+@@ -247,20 +247,21 @@ InspectedContext* V8InspectorImpl::getContext(int groupId,
+   auto contextIt = contextGroupIt->second->find(contextId);
+   if (contextIt == contextGroupIt->second->end()) return nullptr;
+ 
+-  return contextIt->second.get();
++  return contextIt->second;
+ }
+ 
+-InspectedContext* V8InspectorImpl::getContext(int contextId) const {
++std::shared_ptr<InspectedContext> V8InspectorImpl::getContext(
++    int contextId) const {
+   return getContext(contextGroupId(contextId), contextId);
+ }
+ 
+ v8::MaybeLocal<v8::Context> V8InspectorImpl::contextById(int contextId) {
+-  InspectedContext* context = getContext(contextId);
++  std::shared_ptr<InspectedContext> context = getContext(contextId);
+   return context ? context->context() : v8::MaybeLocal<v8::Context>();
+ }
+ 
+ V8DebuggerId V8InspectorImpl::uniqueDebuggerId(int contextId) {
+-  InspectedContext* context = getContext(contextId);
++  std::shared_ptr<InspectedContext> context = getContext(contextId);
+   internal::V8DebuggerId unique_id;
+   if (context) unique_id = m_debugger->debuggerIdFor(context->contextGroupId());
+ 
+@@ -312,11 +313,13 @@ void V8InspectorImpl::contextCollected(int groupId, int contextId) {
+   if (storageIt != m_consoleStorageMap.end())
+     storageIt->second->contextDestroyed(contextId);
+ 
+-  InspectedContext* inspectedContext = getContext(groupId, contextId);
++  std::shared_ptr<InspectedContext> inspectedContext =
++      getContext(groupId, contextId);
+   if (!inspectedContext) return;
+ 
+   forEachSession(groupId, [&inspectedContext](V8InspectorSessionImpl* session) {
+-    session->runtimeAgent()->reportExecutionContextDestroyed(inspectedContext);
++    session->runtimeAgent()->reportExecutionContextDestroyed(
++        inspectedContext.get());
+   });
+   discardInspectedContext(groupId, contextId);
+ }
+@@ -437,7 +440,7 @@ v8::MaybeLocal<v8::Context> V8InspectorImpl::exceptionMetaDataContext() {
+ 
+ void V8InspectorImpl::discardInspectedContext(int contextGroupId,
+                                               int contextId) {
+-  auto* context = getContext(contextGroupId, contextId);
++  auto context = getContext(contextGroupId, contextId);
+   if (!context) return;
+   m_uniqueIdToContextId.erase(context->uniqueId().pair());
+   m_contexts[contextGroupId]->erase(contextId);
+diff --git a/src/inspector/v8-inspector-impl.h b/src/inspector/v8-inspector-impl.h
+index 6a2c3f7ded1c7894fb0445adfea79bb73ee2ffeb..554203ce28b237406ba80c1a405e9c89f5b67a84 100644
+--- a/src/inspector/v8-inspector-impl.h
++++ b/src/inspector/v8-inspector-impl.h
+@@ -136,8 +136,9 @@ class V8InspectorImpl : public V8Inspector {
+   void discardInspectedContext(int contextGroupId, int contextId);
+   void disconnect(V8InspectorSessionImpl*);
+   V8InspectorSessionImpl* sessionById(int contextGroupId, int sessionId);
+-  InspectedContext* getContext(int groupId, int contextId) const;
+-  InspectedContext* getContext(int contextId) const;
++  std::shared_ptr<InspectedContext> getContext(int groupId,
++                                               int contextId) const;
++  std::shared_ptr<InspectedContext> getContext(int contextId) const;
+   V8_EXPORT_PRIVATE V8Console* console();
+   void forEachContext(int contextGroupId,
+                       const std::function<void(InspectedContext*)>& callback);
+@@ -186,7 +187,7 @@ class V8InspectorImpl : public V8Inspector {
+   MuteExceptionsMap m_muteExceptionsMap;
+ 
+   using ContextByIdMap =
+-      std::unordered_map<int, std::unique_ptr<InspectedContext>>;
++      std::unordered_map<int, std::shared_ptr<InspectedContext>>;
+   using ContextsByGroupMap =
+       std::unordered_map<int, std::unique_ptr<ContextByIdMap>>;
+   ContextsByGroupMap m_contexts;
+diff --git a/src/inspector/v8-inspector-session-impl.cc b/src/inspector/v8-inspector-session-impl.cc
+index d51bd1a56ac200c09ac5116e91893a926a3405d2..1abdf324c1783796fc0f80c2d439ad89e4a077e7 100644
+--- a/src/inspector/v8-inspector-session-impl.cc
++++ b/src/inspector/v8-inspector-session-impl.cc
+@@ -229,7 +229,7 @@ void V8InspectorSessionImpl::discardInjectedScripts() {
+ Response V8InspectorSessionImpl::findInjectedScript(
+     int contextId, InjectedScript*& injectedScript) {
+   injectedScript = nullptr;
+-  InspectedContext* context =
++  std::shared_ptr<InspectedContext> context =
+       m_inspector->getContext(m_contextGroupId, contextId);
+   if (!context)
+     return Response::ServerError("Cannot find context with specified id");
+diff --git a/src/inspector/v8-runtime-agent-impl.cc b/src/inspector/v8-runtime-agent-impl.cc
+index 4ed8f04132dc23e0eca4eaf00af2cbc8daa835ed..aa5d7fcf4b2b2588039acb1750659d4ee117dbbf 100644
+--- a/src/inspector/v8-runtime-agent-impl.cc
++++ b/src/inspector/v8-runtime-agent-impl.cc
+@@ -900,13 +900,13 @@ Response V8RuntimeAgentImpl::addBinding(
+   }
+   if (executionContextId.has_value()) {
+     int contextId = executionContextId.value();
+-    InspectedContext* context =
++    std::shared_ptr<InspectedContext> context =
+         m_inspector->getContext(m_session->contextGroupId(), contextId);
+     if (!context) {
+       return Response::InvalidParams(
+           "Cannot find execution context with given executionContextId");
+     }
+-    addBinding(context, name);
++    addBinding(context.get(), name);
+     return Response::Success();
+   }
+ 
+diff --git a/src/inspector/value-mirror.cc b/src/inspector/value-mirror.cc
+index 17a507a1d721538290cd44e9c2411aebe20a42f5..fdf4417dd2a415c5511c98fa7af7a46a77dfbf38 100644
+--- a/src/inspector/value-mirror.cc
++++ b/src/inspector/value-mirror.cc
+@@ -182,7 +182,8 @@ V8InternalValueType v8InternalValueTypeFrom(v8::Local<v8::Context> context,
+   V8InspectorImpl* inspector = static_cast<V8InspectorImpl*>(
+       v8::debug::GetInspector(v8::Isolate::GetCurrent()));
+   int contextId = InspectedContext::contextId(context);
+-  InspectedContext* inspectedContext = inspector->getContext(contextId);
++  std::shared_ptr<InspectedContext> inspectedContext =
++      inspector->getContext(contextId);
+   if (!inspectedContext) return V8InternalValueType::kNone;
+   return inspectedContext->getInternalType(value.As<v8::Object>());
+ }
+diff --git a/test/inspector/regress/regress-crbug-486927780-expected.txt b/test/inspector/regress/regress-crbug-486927780-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..e1a234aada8e53efb62b853b4d19cfe9f926a8a7
+--- /dev/null
++++ b/test/inspector/regress/regress-crbug-486927780-expected.txt
+@@ -0,0 +1 @@
++Tests that destroying context from inside of console.log does not crash
+diff --git a/test/inspector/regress/regress-crbug-486927780.js b/test/inspector/regress/regress-crbug-486927780.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a156dc247bef43cffdeaf54aabd5650d3c0a046e
+--- /dev/null
++++ b/test/inspector/regress/regress-crbug-486927780.js
+@@ -0,0 +1,25 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++const {session, contextGroup, Protocol} = InspectorTest.start(
++    'Tests that destroying context from inside of console.log does not crash');
++
++const expression = `
++  Error.prepareStackTrace = function(error, trace) {
++    inspector.fireContextDestroyed();
++    return '<mock formatted stack trace>';
++  };
++  console.log(new Error('trigger'));
++`;
++
++(async () => {
++  Protocol.Runtime.enable();
++  contextGroup.createContext('mock-iframe');
++  const {params: {context: {uniqueId}}} =
++      await Protocol.Runtime.onceExecutionContextCreated();
++
++  await Protocol.Runtime.evaluate({expression, uniqueContextId: uniqueId});
++
++  InspectorTest.completeTest();
++})();
