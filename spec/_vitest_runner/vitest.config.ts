@@ -6,6 +6,13 @@ import electronPool from './electron-pool';
 
 const electronShim = path.resolve(__dirname, 'electron-shim.cjs');
 
+// Each worker is a full Electron main process (GPU process, network service,
+// etc.), so the usual cpus-1 default can starve the smaller hosted runners.
+function ciMaxWorkers(): number | undefined {
+  if (!process.env.CI || process.platform !== 'darwin') return undefined;
+  return process.arch === 'arm64' ? 2 : 6;
+}
+
 export default defineConfig({
   resolve: {
     alias: [{ find: /^electron(\/(main|common|renderer))?$/, replacement: electronShim }]
@@ -23,6 +30,7 @@ export default defineConfig({
     sequence: { concurrent: false },
     allowOnly: !process.env.CI,
     retry: process.env.CI ? 3 : 0,
+    maxWorkers: ciMaxWorkers(),
     testTimeout: 30_000,
     hookTimeout: 30_000,
     server: {
