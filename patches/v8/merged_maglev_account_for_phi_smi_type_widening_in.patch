@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius Mercadier <dmercadier@chromium.org>
+Date: Thu, 26 Mar 2026 10:36:49 +0100
+Subject: Merged: [maglev] Account for phi smi type widening in
+ BuildCheckHeapObject
+
+Bug: 495679730
+(cherry picked from commit c1e78b455e3224e286914b5ac241fbea064cb51d)
+
+Change-Id: I77d6f184af8d62a0dbb643c6f34d4a3530b32b63
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7715042
+Auto-Submit: Darius Mercadier <dmercadier@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.6@{#65}
+Cr-Branched-From: e04c3a1a2543bdbee7beac8846c9cbe8f657636f-refs/heads/14.6.202@{#1}
+Cr-Branched-From: 3b0b01e6594ec362369dc16f069012a81748c8ba-refs/heads/main@{#105132}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 834263bcc755c1f4c3b515fbdfd2e53dc063f2cd..9b7e22d44b02dfe32bdfb0f562c90f69551b62f7 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -4151,11 +4151,22 @@ ReduceResult MaglevGraphBuilder::BuildCheckSmi(ValueNode* object,
+ ReduceResult MaglevGraphBuilder::BuildCheckHeapObject(ValueNode* object) {
+   // Check for the empty type first so that we catch the case where
+   // GetType(object) is already empty.
+-  if (IsEmptyNodeType(
+-          IntersectType(GetType(object), NodeType::kAnyHeapObject))) {
++  NodeType initial_type = GetType(object);
++  if (IsEmptyNodeType(IntersectType(initial_type, NodeType::kAnyHeapObject))) {
+     return EmitUnconditionalDeopt(DeoptimizeReason::kSmi);
+   }
+   if (EnsureType(object, NodeType::kAnyHeapObject)) return ReduceResult::Done();
++  if (object->Is<Phi>() && NodeTypeCanBe(initial_type, NodeType::kSmi)) {
++    // If {initial_type} contains kSmi, then phi untagging could widen this to a
++    // HeapNumber. Since the `EnsureType(.. kAnyHeapObject)` above just removed
++    // `kSmi` from the type, we need to make sure that still don't forget that
++    // HeapNumber is actually still a possibility.
++    // TODO(dmercadier): this is only a small band-aid: actually, any
++    // GetType(phi) could return Smi when the actual type ends up being
++    // HeapNumber.
++    NodeInfo* info = GetOrCreateInfoFor(object);
++    info->UnionType(NodeType::kHeapNumber);
++  }
+   return AddNewNode<CheckHeapObject>({object});
+ }
+ 
