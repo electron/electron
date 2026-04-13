@@ -334,6 +334,14 @@
       }
     },
     {
+      "files": ["spec/fixtures/**"],
+      "rules": {
+        "no-unawaited-load/no-unawaited-load": "off",
+        "remote-tools-imports/no-foreign-imports-in-remote-closure": "off",
+        "no-nested-tests/no-nested-tests": "off"
+      }
+    },
+    {
       "files": ["**/*.d.ts"],
       "rules": {
         "no-useless-constructor": "off",
