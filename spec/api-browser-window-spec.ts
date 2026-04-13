@@ -6681,25 +6681,28 @@ describe('BrowserWindow module', () => {
         w.setFullScreen(!w.isFullScreen());
       });
 
-      ifit(process.platform === 'darwin')('does not exit simpleFullScreen when requestFullscreen is called', async () => {
-        const w = new BrowserWindow();
-        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      ifit(process.platform === 'darwin')(
+        'does not exit simpleFullScreen when requestFullscreen is called',
+        async () => {
+          const w = new BrowserWindow();
+          await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
 
-        w.setSimpleFullScreen(true);
-        expect(w.isSimpleFullScreen()).to.be.true('isSimpleFullScreen');
+          w.setSimpleFullScreen(true);
+          expect(w.isSimpleFullScreen()).to.be.true('isSimpleFullScreen');
 
-        const enterHtmlFS = once(w.webContents, 'enter-html-full-screen');
-        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
-        await enterHtmlFS;
+          const enterHtmlFS = once(w.webContents, 'enter-html-full-screen');
+          await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+          await enterHtmlFS;
 
-        expect(w.isSimpleFullScreen()).to.be.true('isSimpleFullScreen after requestFullscreen');
+          expect(w.isSimpleFullScreen()).to.be.true('isSimpleFullScreen after requestFullscreen');
 
-        const leaveHtmlFS = once(w.webContents, 'leave-html-full-screen');
-        await w.webContents.executeJavaScript('document.exitFullscreen()');
-        await leaveHtmlFS;
+          const leaveHtmlFS = once(w.webContents, 'leave-html-full-screen');
+          await w.webContents.executeJavaScript('document.exitFullscreen()');
+          await leaveHtmlFS;
 
-        expect(w.isSimpleFullScreen()).to.be.true('isSimpleFullScreen after exitFullscreen');
-      });
+          expect(w.isSimpleFullScreen()).to.be.true('isSimpleFullScreen after exitFullscreen');
+        }
+      );
 
       it('should not be changed by setKiosk method', async () => {
         const w = new BrowserWindow();
