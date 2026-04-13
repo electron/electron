@@ -24,6 +24,7 @@
 #include <windows.h>
 
 #include "base/no_destructor.h"
+#include "base/strings/utf_string_conversions.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
 #endif
@@ -76,6 +77,7 @@ Notification::Notification(gin::Arguments* args) {
   if (args->GetNext(&opts)) {
     opts.Get("id", &id_);
     opts.Get("groupId", &group_id_);
+    opts.Get("groupTitle", &group_title_);
     opts.Get("title", &title_);
     opts.Get("subtitle", &subtitle_);
     opts.Get("body", &body_);
@@ -108,7 +110,32 @@ gin_helper::Handle<Notification> Notification::New(
     thrower.ThrowError("Cannot create Notification before app is ready");
     return {};
   }
-  return gin_helper::CreateHandle(thrower.isolate(), new Notification(args));
+
+  auto handle =
+      gin_helper::CreateHandle(thrower.isolate(), new Notification(args));
+
+#if BUILDFLAG(IS_WIN)
+  constexpr size_t kMaxTagLength = 64;
+  auto* notif = handle.get();
+  if (!notif->id_.empty() &&
+      base::UTF8ToWide(notif->id_).length() > kMaxTagLength) {
+    thrower.ThrowError(
+        "Notification id exceeds Windows limit of 64 UTF-16 characters");
+    return {};
+  }
+  if (!notif->group_id_.empty() &&
+      base::UTF8ToWide(notif->group_id_).length() > kMaxTagLength) {
+    thrower.ThrowError(
+        "Notification groupId exceeds Windows limit of 64 UTF-16 characters");
+    return {};
+  }
+  if (!notif->group_title_.empty() && notif->group_id_.empty()) {
+    thrower.ThrowError("Notification groupTitle requires groupId to be set");
+    return {};
+  }
+#endif
+
+  return handle;
 }
 
 // Setters
@@ -259,6 +286,7 @@ void Notification::Show() {
       options.urgency = urgency_;
       options.toast_xml = toast_xml_;
       options.group_id = group_id_;
+      options.group_title = group_title_;
       notification_->Show(options);
     }
   }
@@ -349,6 +377,7 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("close", &Notification::Close)
       .SetProperty("id", &Notification::id)
       .SetProperty("groupId", &Notification::group_id)
+      .SetProperty("groupTitle", &Notification::group_title)
       .SetProperty("title", &Notification::title, &Notification::SetTitle)
       .SetProperty("subtitle", &Notification::subtitle,
                    &Notification::SetSubtitle)

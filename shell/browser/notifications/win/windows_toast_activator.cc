@@ -539,9 +539,8 @@ void HandleToastActivation(const std::wstring& invoked_args,
 
   Notification* target = nullptr;
   for (auto* n : presenter->notifications()) {
-    std::wstring tag_hash =
-        base::NumberToWString(base::FastHash(n->notification_id()));
-    if (tag_hash == tag_str) {
+    std::wstring tag = base::UTF8ToWide(n->notification_id());
+    if (tag == tag_str) {
       target = n;
       break;
     }

@@ -71,7 +71,7 @@ void DebugLog(std::string_view log_msg) {
 }
 
 std::wstring GetTag(const std::string_view notification_id) {
-  return base::NumberToWString(base::FastHash(notification_id));
+  return base::UTF8ToWide(notification_id);
 }
 
 // See https://www.hresult.info for HRESULT error codes.
@@ -292,7 +292,7 @@ void WindowsToastNotification::CreateToastNotificationOnBackgroundThread(
   ui_runner->PostTask(
       FROM_HERE,
       base::BindOnce(&WindowsToastNotification::SetupAndShowOnUIThread,
-                     weak_notification, toast_notification));
+                     weak_notification, toast_notification, options.group_id));
 }
 
 // Creates the toast XML document on the background thread. Returns true on
@@ -327,7 +327,8 @@ bool WindowsToastNotification::CreateToastXmlDocument(
     std::u16string toast_xml_str =
         GetToastXml(notification_id, options.title, options.msg, icon_path,
                     options.timeout_type, options.silent, options.actions,
-                    options.has_reply, options.reply_placeholder);
+                    options.has_reply, options.reply_placeholder,
+                    options.group_id, options.group_title);
 
     DebugLog("Toast XML (generated) id=" + notification_id + ": " +
              base::UTF16ToUTF8(toast_xml_str));
@@ -398,7 +399,13 @@ bool WindowsToastNotification::CreateToastNotification(
     return false;
   }
 
-  ScopedHString group(kGroup);
+  // Use provided group_id if non-empty, otherwise fall back to default
+  std::wstring group_str =
+      options.group_id.empty() ? kGroup : base::UTF8ToWide(options.group_id);
+  ScopedHString group(group_str);
+  DebugLog(
+      base::StrCat({"Setting group: ", base::WideToUTF8(group_str),
+                    options.group_id.empty() ? " (default)" : " (custom)"}));
   hr = toast2->put_Group(group);
   if (FAILED(hr)) {
     std::string err = base::StrCat(
@@ -408,7 +415,10 @@ bool WindowsToastNotification::CreateToastNotification(
     return false;
   }
 
-  ScopedHString tag(GetTag(notification_id));
+  std::wstring tag_str = GetTag(notification_id);
+  ScopedHString tag(tag_str);
+  DebugLog(base::StrCat({"Setting tag: ", base::WideToUTF8(tag_str),
+                         " (from id: ", notification_id, ")"}));
   hr = toast2->put_Tag(tag);
   if (FAILED(hr)) {
     std::string err = base::StrCat(
@@ -447,7 +457,8 @@ bool WindowsToastNotification::CreateToastNotification(
 // does not allow calls from background threads.
 void WindowsToastNotification::SetupAndShowOnUIThread(
     base::WeakPtr<Notification> weak_notification,
-    ComPtr<ABI::Windows::UI::Notifications::IToastNotification> notification) {
+    ComPtr<ABI::Windows::UI::Notifications::IToastNotification> notification,
+    const std::string& group_id) {
   auto* notif = static_cast<WindowsToastNotification*>(weak_notification.get());
   if (!notif)
     return;
@@ -463,6 +474,7 @@ void WindowsToastNotification::SetupAndShowOnUIThread(
   }
 
   notif->toast_notification_ = notification;
+  notif->group_id_ = group_id;
 
   // Show notification on UI thread (must be called on UI thread)
   hr = (*toast_notifier_)->Show(notification.Get());
@@ -538,8 +550,14 @@ void WindowsToastNotification::Remove() {
   if (!GetAppUserModelID(&app_id))
     return;
 
-  ScopedHString group(kGroup);
-  ScopedHString tag(GetTag(notification_id()));
+  // Use stored group_id if set, otherwise fall back to default
+  std::wstring group_str =
+      group_id_.empty() ? kGroup : base::UTF8ToWide(group_id_);
+  ScopedHString group(group_str);
+  std::wstring tag_str = GetTag(notification_id());
+  ScopedHString tag(tag_str);
+  DebugLog(base::StrCat({"Removing with group: ", base::WideToUTF8(group_str),
+                         ", tag: ", base::WideToUTF8(tag_str)}));
   notification_history->RemoveGroupedTagWithId(tag, group, app_id);
 }
 
@@ -558,7 +576,9 @@ std::u16string WindowsToastNotification::GetToastXml(
     bool silent,
     const std::vector<NotificationAction>& actions,
     bool has_reply,
-    const std::u16string& reply_placeholder) {
+    const std::u16string& reply_placeholder,
+    const std::string& group_id,
+    const std::u16string& group_title) {
   XmlWriter xml_writer;
   xml_writer.StartWriting();
 
@@ -568,6 +588,15 @@ std::u16string WindowsToastNotification::GetToastXml(
   const bool is_reminder = (timeout_type == u"never");
   if (is_reminder) {
     xml_writer.AddAttribute(kScenario, kReminder);
+  }
+
+  // Add header element if both groupId and groupTitle are present
+  if (!group_id.empty() && !group_title.empty()) {
+    xml_writer.StartElement("header");
+    xml_writer.AddAttribute("id", group_id);
+    xml_writer.AddAttribute("title", base::UTF16ToUTF8(group_title));
+    xml_writer.AddAttribute("arguments", "");
+    xml_writer.EndElement();  // </header>
   }
 
   // <visual>
@@ -642,9 +671,9 @@ std::u16string WindowsToastNotification::GetToastXml(
         // <action>
         xml_writer.StartElement(kAction);
         xml_writer.AddAttribute(kActivationType, kActivationTypeForeground);
-        std::string args = base::StrCat(
-            {"type=action&action=", base::NumberToString(i),
-             "&tag=", base::NumberToString(base::FastHash(notification_id))});
+        std::string args =
+            base::StrCat({"type=action&action=", base::NumberToString(i),
+                          "&tag=", notification_id});
         xml_writer.AddAttribute(kArguments, args.c_str());
         xml_writer.AddAttribute(kContent, base::UTF16ToUTF8(act.text));
         xml_writer.EndElement();  // <action>
@@ -666,9 +695,9 @@ std::u16string WindowsToastNotification::GetToastXml(
         // The button that submits the selection.
         xml_writer.StartElement(kAction);
         xml_writer.AddAttribute(kActivationType, kActivationTypeForeground);
-        std::string args = base::StrCat(
-            {"type=action&action=", base::NumberToString(i),
-             "&tag=", base::NumberToString(base::FastHash(notification_id))});
+        std::string args =
+            base::StrCat({"type=action&action=", base::NumberToString(i),
+                          "&tag=", notification_id});
         xml_writer.AddAttribute(kArguments, args.c_str());
         xml_writer.AddAttribute(
             kContent,
@@ -682,9 +711,7 @@ std::u16string WindowsToastNotification::GetToastXml(
       // <action>
       xml_writer.StartElement(kAction);
       xml_writer.AddAttribute(kActivationType, kActivationTypeForeground);
-      std::string args =
-          base::StrCat({"type=reply&tag=",
-                        base::NumberToString(base::FastHash(notification_id))});
+      std::string args = base::StrCat({"type=reply&tag=", notification_id});
       xml_writer.AddAttribute(kArguments, args.c_str());
       // TODO(codebytere): we should localize this.
       xml_writer.AddAttribute(kContent, "Reply");
@@ -800,10 +827,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   }
 
   std::string notif_id;
-  std::string notif_hash;
   if (notification_) {
     notif_id = notification_->notification_id();
-    notif_hash = base::NumberToString(base::FastHash(notif_id));
   }
 
   bool structured = arguments_w.find(L"&tag=") != std::wstring::npos ||

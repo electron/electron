@@ -85,6 +85,7 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   // Prop Getters
   const std::string& id() const { return id_; }
   const std::string& group_id() const { return group_id_; }
+  const std::u16string& group_title() const { return group_title_; }
   const std::u16string& title() const { return title_; }
   const std::u16string& subtitle() const { return subtitle_; }
   const std::u16string& body() const { return body_; }
@@ -117,6 +118,7 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
  private:
   std::string id_;
   std::string group_id_;
+  std::u16string group_title_;
   std::u16string title_;
   std::u16string subtitle_;
   std::u16string body_;

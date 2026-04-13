@@ -15,7 +15,7 @@ describe('Notification module', () => {
     expect(Notification.isSupported()).to.be.a('boolean');
   });
 
-  ifit(process.platform === 'darwin')('inits and gets id property', () => {
+  ifit(process.platform === 'darwin' || process.platform === 'win32')('inits and gets id property', () => {
     const n = new Notification({
       id: 'my-custom-id',
       title: 'title',
@@ -25,7 +25,7 @@ describe('Notification module', () => {
     expect(n.id).to.equal('my-custom-id');
   });
 
-  ifit(process.platform === 'darwin')('id is read-only', () => {
+  ifit(process.platform === 'darwin' || process.platform === 'win32')('id is read-only', () => {
     const n = new Notification({
       id: 'my-custom-id',
       title: 'title',
@@ -35,7 +35,7 @@ describe('Notification module', () => {
     expect(() => { (n as any).id = 'new-id'; }).to.throw();
   });
 
-  ifit(process.platform === 'darwin')('defaults id to a UUID when not provided', () => {
+  ifit(process.platform === 'darwin' || process.platform === 'win32')('defaults id to a UUID when not provided', () => {
     const n = new Notification({
       title: 'title',
       body: 'body'
@@ -45,7 +45,7 @@ describe('Notification module', () => {
     expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
-  ifit(process.platform === 'darwin')('defaults id to a UUID when empty string is provided', () => {
+  ifit(process.platform === 'darwin' || process.platform === 'win32')('defaults id to a UUID when empty string is provided', () => {
     const n = new Notification({
       id: '',
       title: 'title',
@@ -55,7 +55,7 @@ describe('Notification module', () => {
     expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
-  ifit(process.platform === 'darwin')('inits and gets groupId property', () => {
+  ifit(process.platform === 'darwin' || process.platform === 'win32')('inits and gets groupId property', () => {
     const n = new Notification({
       title: 'title',
       body: 'body',
@@ -65,7 +65,7 @@ describe('Notification module', () => {
     expect(n.groupId).to.equal('E017VKL2N8H|C07RBMNS9EK');
   });
 
-  ifit(process.platform === 'darwin')('groupId is read-only', () => {
+  ifit(process.platform === 'darwin' || process.platform === 'win32')('groupId is read-only', () => {
     const n = new Notification({
       title: 'title',
       body: 'body',
@@ -75,13 +75,89 @@ describe('Notification module', () => {
     expect(() => { (n as any).groupId = 'new-group'; }).to.throw();
   });
 
-  ifit(process.platform === 'darwin')('defaults groupId to empty string when not provided', () => {
+  ifit(process.platform === 'darwin' || process.platform === 'win32')('defaults groupId to empty string when not provided', () => {
     const n = new Notification({
       title: 'title',
       body: 'body'
     });
 
     expect(n.groupId).to.equal('');
+  });
+
+  ifit(process.platform === 'win32')('inits and gets groupTitle property', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body',
+      groupId: 'my-group',
+      groupTitle: 'My Group Title'
+    });
+
+    expect(n.groupTitle).to.equal('My Group Title');
+  });
+
+  ifit(process.platform === 'win32')('groupTitle is read-only', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body',
+      groupId: 'my-group',
+      groupTitle: 'My Group Title'
+    });
+
+    expect(() => { (n as any).groupTitle = 'new-title'; }).to.throw();
+  });
+
+  ifit(process.platform === 'win32')('defaults groupTitle to empty string when not provided', () => {
+    const n = new Notification({
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(n.groupTitle).to.equal('');
+  });
+
+  ifit(process.platform === 'win32')('throws when id exceeds 64 characters', () => {
+    expect(() => {
+      // eslint-disable-next-line no-new
+      new Notification({
+        id: 'a'.repeat(65),
+        title: 'title',
+        body: 'body'
+      });
+    }).to.throw(/id exceeds Windows limit of 64 UTF-16 characters/);
+  });
+
+  ifit(process.platform === 'win32')('throws when groupId exceeds 64 characters', () => {
+    expect(() => {
+      // eslint-disable-next-line no-new
+      new Notification({
+        groupId: 'a'.repeat(65),
+        title: 'title',
+        body: 'body'
+      });
+    }).to.throw(/groupId exceeds Windows limit of 64 UTF-16 characters/);
+  });
+
+  ifit(process.platform === 'win32')('throws when groupTitle is set without groupId', () => {
+    expect(() => {
+      // eslint-disable-next-line no-new
+      new Notification({
+        groupTitle: 'My Group',
+        title: 'title',
+        body: 'body'
+      });
+    }).to.throw(/groupTitle requires groupId to be set/);
+  });
+
+  ifit(process.platform === 'win32')('accepts id and groupId at 64 characters', () => {
+    const n = new Notification({
+      id: 'a'.repeat(64),
+      groupId: 'b'.repeat(64),
+      title: 'title',
+      body: 'body'
+    });
+
+    expect(n.id).to.equal('a'.repeat(64));
+    expect(n.groupId).to.equal('b'.repeat(64));
   });
 
   it('inits, gets and sets basic string properties correctly', () => {
@@ -247,6 +323,31 @@ describe('Notification module', () => {
       n.close();
       await e;
     }
+  });
+
+  ifit(process.platform === 'win32')('can show notification with custom id and groupId', () => {
+    const n = new Notification({
+      id: 'test-custom-id',
+      groupId: 'test-group',
+      title: 'test notification',
+      body: 'test body',
+      silent: true
+    });
+    n.show();
+    n.close();
+  });
+
+  ifit(process.platform === 'win32')('can show notification with groupId and groupTitle', () => {
+    const n = new Notification({
+      id: 'test-custom-id',
+      groupId: 'test-group',
+      groupTitle: 'Test Group Header',
+      title: 'test notification',
+      body: 'test body',
+      silent: true
+    });
+    n.show();
+    n.close();
   });
 
   ifit(process.platform === 'win32')('emits failed event', async () => {
