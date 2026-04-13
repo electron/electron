@@ -5,7 +5,7 @@
       "fromPath": "src/out/Default/args.gn",
       "pattern": [
         {
-          "regexp": "^(.+)[(:](\\d+)[:,](\\d+)\\)?:\\s+(warning|error):\\s+(.*)$",
+          "regexp": "^(.+)[(:](\\d+)[:,](\\d+)\\)?:\\s+(warning|fatal error|error):\\s+(.*)$",
           "file": 1,
           "line": 2,
           "column": 3,
