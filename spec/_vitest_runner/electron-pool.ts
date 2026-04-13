@@ -89,8 +89,13 @@ class ElectronPoolWorker extends ForksPoolWorker {
   private stopping = false;
 
   override send(message: WorkerRequest) {
-    const files = (message as { files?: string[] } | undefined)?.files;
-    if (Array.isArray(files)) this.lastFiles = files;
+    if (message.type === 'run' || message.type === 'collect') {
+      this.lastFiles = message.context.files.map((f) =>
+        typeof f === 'string'
+          ? f
+          : ((f as { filepath?: string; file?: string }).filepath ?? (f as { file?: string }).file ?? String(f))
+      );
+    }
     super.send(message);
   }
 

@@ -8,10 +8,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 const v8 = require('node:v8');
 
-process.on('uncaughtException', (err) => {
-  console.error('Unhandled exception in vitest worker:', err);
+// Catch-and-exit only while bootstrapping. Once vitest's fork worker is
+// loaded it patches process.exit (to throw) and installs its own handlers,
+// so calling process.exit from here would re-throw inside an uncaughtException
+// handler and exit the process with Node's code 7, hiding the real error.
+function bootstrapUncaughtHandler(err) {
+  console.error('Unhandled exception in vitest worker bootstrap:', err);
   process.exit(1);
-});
+}
+process.on('uncaughtException', bootstrapUncaughtHandler);
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
@@ -84,6 +89,8 @@ app
     // Importing this registers the process.on('message') handler that speaks
     // vitest's pool protocol and actually runs the test files.
     await import(path.join(distPath, 'workers/forks.js'));
+    // vitest's worker patches process.exit and owns error handling from here.
+    process.removeListener('uncaughtException', bootstrapUncaughtHandler);
   })
   .catch((err) => {
     console.error('Failed to bootstrap vitest worker:', err);
