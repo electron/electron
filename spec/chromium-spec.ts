@@ -1173,6 +1173,7 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testFile]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1226,6 +1227,7 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testFile]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1277,6 +1279,7 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testFile]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1324,6 +1327,7 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testDir]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1371,6 +1375,7 @@ describe('chromium features', () => {
       w.webContents.once('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testDir]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
@@ -1428,6 +1433,7 @@ describe('chromium features', () => {
       w.webContents.on('did-finish-load', () => {
         // @ts-expect-error Undocumented testing method.
         clipboard._writeFilesForTesting([testFile]);
+        w.webContents.focus();
         w.webContents.paste();
       });
     });
