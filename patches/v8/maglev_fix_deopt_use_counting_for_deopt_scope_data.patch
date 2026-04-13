@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Fri, 9 Jan 2026 15:13:28 +0100
+Subject: [maglev] Fix deopt use counting for deopt scope data
+
+We shouldn't count the deopt use when creating the scope data,
+but only when creating the deopt frame.
+
+If the scope was unused, then we were over counting,
+not really a correctness issue though.
+
+If the scope was used twice, we were under counting and
+we can underflow the counting when removing the use of
+a node.
+
+Fixed: 470566252
+Change-Id: I7b6f5647d1ed1f9a7c915d3682f10cfc71a5924c
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7415271
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#104601}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index c21a41d7da3394bb8f35857e0dcf49a78b218d31..0cb626f1fe54a40425aa9269941f56f9d0791b96 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -424,8 +424,6 @@ class V8_NODISCARD MaglevGraphBuilder::DeoptFrameScopeBase {
+                                : builder->zone()->CloneVector(parameters),
+             builder->GetContext(), maybe_js_target}) {
+     builder->current_interpreter_frame().virtual_objects().Snapshot();
+-    builder->AddDeoptUse(
+-        data_.get<DeoptFrame::BuiltinContinuationFrameData>().context);
+     if (parameters.size() > 0) {
+       if (InlinedAllocation* receiver =
+               parameters[0]->TryCast<InlinedAllocation>()) {
+@@ -434,10 +432,6 @@ class V8_NODISCARD MaglevGraphBuilder::DeoptFrameScopeBase {
+         // meterialized object.
+         receiver->ForceEscaping();
+       }
+-      for (ValueNode* node :
+-           data_.get<DeoptFrame::BuiltinContinuationFrameData>().parameters) {
+-        builder->AddDeoptUse(node);
+-      }
+     } else {
+       DCHECK(data_.get<DeoptFrame::BuiltinContinuationFrameData>()
+                  .parameters.empty());
+@@ -450,10 +444,6 @@ class V8_NODISCARD MaglevGraphBuilder::DeoptFrameScopeBase {
+             *builder->compilation_unit(), builder->GetCurrentSourcePosition(),
+             receiver, builder->GetContext()}) {
+     builder_->current_interpreter_frame().virtual_objects().Snapshot();
+-    builder_->AddDeoptUse(
+-        data_.get<DeoptFrame::ConstructInvokeStubFrameData>().receiver);
+-    builder_->AddDeoptUse(
+-        data_.get<DeoptFrame::ConstructInvokeStubFrameData>().context);
+   }
+ 
+   ~DeoptFrameScopeBase() {
+@@ -1571,8 +1561,9 @@ DeoptFrame* MaglevGraphBuilder::GetLatestCheckpointedFrame() {
+         [&](ValueNode* node, interpreter::Register) { AddDeoptUse(node); });
+     AddDeoptUse(latest_checkpointed_frame_->as_interpreted().closure());
+ 
+-    const EagerDeoptFrameScope* deopt_scope = current_eager_deopt_scope_;
++    EagerDeoptFrameScope* deopt_scope = current_eager_deopt_scope_;
+     if (deopt_scope != nullptr) {
++      AddDeoptUseToScopeData(deopt_scope->data());
+       latest_checkpointed_frame_ = zone()->New<DeoptFrame>(
+           deopt_scope->data(),
+           RecursivelyWrapDeoptFrameWithContinuations(
+@@ -1598,6 +1589,27 @@ MaglevGraphBuilder::GetDeoptFrameForLazyDeopt(bool can_throw) {
+                          result_location, result_size);
+ }
+ 
++void MaglevGraphBuilder::AddDeoptUseToScopeData(DeoptFrame::FrameData& data) {
++  switch (data.tag()) {
++    case DeoptFrame::FrameType::kInterpretedFrame:
++    case DeoptFrame::FrameType::kInlinedArgumentsFrame:
++      // These frames are never created as deopt scope.
++      UNREACHABLE();
++    case DeoptFrame::FrameType::kConstructInvokeStubFrame:
++      AddDeoptUse(
++          data.get<DeoptFrame::ConstructInvokeStubFrameData>().receiver);
++      AddDeoptUse(data.get<DeoptFrame::ConstructInvokeStubFrameData>().context);
++      break;
++    case DeoptFrame::FrameType::kBuiltinContinuationFrame:
++      AddDeoptUse(data.get<DeoptFrame::BuiltinContinuationFrameData>().context);
++      for (ValueNode* node :
++           data.get<DeoptFrame::BuiltinContinuationFrameData>().parameters) {
++        AddDeoptUse(node);
++      }
++      break;
++  }
++}
++
+ DeoptFrame* MaglevGraphBuilder::GetDeoptFrameForLazyDeoptHelper(
+     interpreter::Register result_location, int result_size,
+     LazyDeoptFrameScope* scope, bool mark_accumulator_dead, bool can_throw) {
+@@ -1674,6 +1686,8 @@ DeoptFrame* MaglevGraphBuilder::GetDeoptFrameForLazyDeoptHelper(
+   DCHECK(interpreter::Bytecodes::WritesOrClobbersAccumulator(
+       iterator_.current_bytecode()));
+ 
++  AddDeoptUseToScopeData(scope->data());
++
+   // Mark the accumulator dead in parent frames since we know that the
+   // continuation will write it.
+   return zone()->New<DeoptFrame>(
+diff --git a/src/maglev/maglev-graph-builder.h b/src/maglev/maglev-graph-builder.h
+index 36240b59f2f3447f74e070e9dab396b707211b63..f468d3aeb5955ea1fdfcbce6990a8523f9316e3c 100644
+--- a/src/maglev/maglev-graph-builder.h
++++ b/src/maglev/maglev-graph-builder.h
+@@ -1556,6 +1556,8 @@ class MaglevGraphBuilder {
+   void AddDeoptUse(VirtualObject* alloc);
+   void AddNonEscapingUses(InlinedAllocation* allocation, int use_count);
+ 
++  void AddDeoptUseToScopeData(DeoptFrame::FrameData& data);
++
+   std::optional<VirtualObject*> TryGetNonEscapingArgumentsObject(
+       ValueNode* value);
+ 
