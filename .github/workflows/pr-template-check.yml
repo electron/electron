@@ -39,7 +39,7 @@ jobs:
             }
             const body = context.payload.pull_request.body || '';
             // Allow through if body contains a valid backport line
-            const backportRegex = /Backport of (?:#\d+|https:\/\/github.com\/electron\/electron\/pull\/\d+)/i;
+            const backportRegex = /Backport of (?:#|https:\/\/github.com\/electron\/electron\/pull\/)\d+/i;
             if (backportRegex.test(body)) {
               console.log('Backport PR detected, skipping required section check.');
               return;
