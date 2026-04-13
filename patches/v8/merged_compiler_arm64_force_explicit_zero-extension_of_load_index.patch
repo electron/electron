@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matthias Liedtke <mliedtke@chromium.org>
+Date: Tue, 31 Mar 2026 10:23:36 +0200
+Subject: Merged: [compiler][arm64] Force explicit zero-extension of load index
+
+This is the merge-commit for:
+
+1) [arm64][compiler] Always emit truncation to word32
+     cherry picked from commit 522e74a35cf4e53c3708ea396c299bfbb29d8489
+2) [compiler][arm64] Reenable implicit truncation and force
+   explicit zero-extension of load/store index
+     cherry picked from commit 4ef5cc27aa50b4a7e3096bbbffaf5058a811a2a9
+
+Bug: 496301615
+Change-Id: I3e5e13a90ad0a43768c9cd46a7ebd99d0f6a4e11
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7715044
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Auto-Submit: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.6@{#63}
+Cr-Branched-From: e04c3a1a2543bdbee7beac8846c9cbe8f657636f-refs/heads/14.6.202@{#1}
+Cr-Branched-From: 3b0b01e6594ec362369dc16f069012a81748c8ba-refs/heads/main@{#105132}
+
+diff --git a/src/compiler/backend/arm64/instruction-selector-arm64.cc b/src/compiler/backend/arm64/instruction-selector-arm64.cc
+index b4873427f2becb6010372f7cd7e1d7e7c547a2d5..b764fc15812bade1e267b482e21a83ca6780ed14 100644
+--- a/src/compiler/backend/arm64/instruction-selector-arm64.cc
++++ b/src/compiler/backend/arm64/instruction-selector-arm64.cc
+@@ -484,13 +484,10 @@ bool TryMatchLoadStoreShift(Arm64OperandGenerator* g,
+                             OpIndex index, InstructionOperand* index_op,
+                             InstructionOperand* shift_immediate_op) {
+   if (!selector->CanCover(node, index)) return false;
+-  if (const ChangeOp* change =
+-          selector->Get(index).TryCast<Opmask::kChangeUint32ToUint64>();
+-      change && selector->CanCover(index, change->input())) {
+-    index = change->input();
+-  }
+   const ShiftOp* shift = selector->Get(index).TryCast<Opmask::kShiftLeft>();
+-  if (shift == nullptr) return false;
++  if (shift == nullptr || shift->rep != RegisterRepresentation::WordPtr()) {
++    return false;
++  }
+   if (!g->CanBeLoadStoreShiftImmediate(shift->right(), rep)) return false;
+   *index_op = g->UseRegister(shift->left());
+   *shift_immediate_op = g->UseImmediate(shift->right());
+diff --git a/test/unittests/compiler/arm64/turboshaft-instruction-selector-arm64-unittest.cc b/test/unittests/compiler/arm64/turboshaft-instruction-selector-arm64-unittest.cc
+index a03f6f116503795421e0d3c1583ae2f33e1a4fd6..837870b79852ba6543b8d34865ba3bf4ca97507e 100644
+--- a/test/unittests/compiler/arm64/turboshaft-instruction-selector-arm64-unittest.cc
++++ b/test/unittests/compiler/arm64/turboshaft-instruction-selector-arm64-unittest.cc
+@@ -5872,13 +5872,7 @@ TEST_P(TurboshaftInstructionSelectorMemoryAccessTest, LoadWithShiftedIndex) {
+       m.Return(m.Load(memacc.memory_rep, memacc.result_rep, m.Parameter(0),
+                       m.ChangeUint32ToUint64(index)));
+       Stream s = m.Build();
+-      if (immediate_shift == memacc.memory_rep.SizeInBytesLog2()) {
+-        ASSERT_EQ(1U, s.size());
+-        EXPECT_EQ(memacc.ldr_opcode, s[0]->arch_opcode());
+-        EXPECT_EQ(kMode_Operand2_R_LSL_I, s[0]->addressing_mode());
+-        EXPECT_EQ(3U, s[0]->InputCount());
+-        EXPECT_EQ(1U, s[0]->OutputCount());
+-      } else if (memacc.memory_rep == MemoryRepresentation::Simd128()) {
++      if (memacc.memory_rep == MemoryRepresentation::Simd128()) {
+         ASSERT_EQ(2U, s.size());
+         EXPECT_EQ(memacc.ldr_opcode, s[1]->arch_opcode());
+         EXPECT_EQ(kMode_MRR, s[1]->addressing_mode());
+@@ -5932,13 +5926,7 @@ TEST_P(TurboshaftInstructionSelectorMemoryAccessTest, StoreWithShiftedIndex) {
+               m.Parameter(2), kNoWriteBarrier);
+       m.Return(m.Int32Constant(0));
+       Stream s = m.Build();
+-      if (immediate_shift == memacc.memory_rep.SizeInBytesLog2()) {
+-        ASSERT_EQ(1U, s.size());
+-        EXPECT_EQ(memacc.str_opcode, s[0]->arch_opcode());
+-        EXPECT_EQ(kMode_Operand2_R_LSL_I, s[0]->addressing_mode());
+-        EXPECT_EQ(4U, s[0]->InputCount());
+-        EXPECT_EQ(0U, s[0]->OutputCount());
+-      } else if (memacc.memory_rep == MemoryRepresentation::Simd128()) {
++      if (memacc.memory_rep == MemoryRepresentation::Simd128()) {
+         ASSERT_EQ(2U, s.size());
+         EXPECT_EQ(memacc.str_opcode, s[1]->arch_opcode());
+         EXPECT_EQ(kMode_MRR, s[1]->addressing_mode());
