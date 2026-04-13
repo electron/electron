@@ -32,6 +32,10 @@ namespace printing {
 class PrintJobManager;
 }
 
+namespace metrics {
+class MetricsServiceClient;
+}
+
 namespace electron {
 class ResolveProxyHelper;
 }
@@ -145,6 +149,7 @@ class BrowserProcessImpl : public BrowserProcess {
  private:
   void CreateNetworkQualityObserver();
   void CreateOSCryptAsync();
+  void CreateMetricsServiceClient();
   network::NetworkQualityTracker* GetNetworkQualityTracker();
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -166,6 +171,7 @@ class BrowserProcessImpl : public BrowserProcess {
       network_quality_observer_;
   std::unique_ptr<supervised_user::DeviceParentalControls>
       device_parental_controls_;
+  std::unique_ptr<metrics::MetricsServiceClient> metrics_service_client_;
 
   std::unique_ptr<os_crypt_async::OSCryptAsync> os_crypt_async_;
 };

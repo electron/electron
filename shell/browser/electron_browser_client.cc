@@ -111,6 +111,7 @@
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 #include "shell/browser/session_preferences.h"
+#include "shell/browser/tracing/electron_tracing_delegate.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/usb/electron_usb_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
@@ -1083,6 +1084,11 @@ ElectronBrowserClient::GetNetworkContextsParentDirectory() {
 
 std::string ElectronBrowserClient::GetProduct() {
   return "Chrome/" CHROME_VERSION_STRING;
+}
+
+std::unique_ptr<content::TracingDelegate>
+ElectronBrowserClient::CreateTracingDelegate() {
+  return std::make_unique<ElectronTracingDelegate>();
 }
 
 std::string ElectronBrowserClient::GetUserAgent() {
