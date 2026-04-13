@@ -18,12 +18,31 @@ v8.setFlagsFromString('--expose_gc');
 chai_1.use(require('chai-as-promised'));
 chai_1.use(require('dirty-chai'));
 
+// Mirror of spec/lib/remote-tools.ts for closures rewritten by
+// rewriteForRemoteEval() — each __vite_ssr_import_N__ becomes __rt.
+const __rt = {
+  ...net_helpers_1,
+  ...main_1,
+  expect: chai_1.expect,
+  once: node_events_1.once,
+  setTimeout: promises_1.setTimeout,
+  defer: require('../../../lib/defer-helpers').defer,
+  path: require('node:path'),
+  fs: require('node:fs'),
+  url,
+  http
+};
+
 function fail(message) {
   process.parentPort.postMessage({ ok: false, message });
 }
 
 process.parentPort.on('message', async (e) => {
-  // Equivalent of beforeEach in spec/api-net-spec.ts
+  if (e.data?.type === 'shutdown') {
+    process.exit(0);
+  }
+
+  // Equivalent of beforeEach in spec/api-net.spec.ts
   net_helpers_1.respondNTimes.routeFailure = false;
 
   try {
@@ -37,18 +56,19 @@ process.parentPort.on('message', async (e) => {
     await eval(e.data.fn);
   } catch (err) {
     fail(`${err}`);
-    process.exit(1);
+    return;
   }
 
-  // Equivalent of afterEach in spec/api-net-spec.ts
+  // Equivalent of afterEach in spec/api-net.spec.ts
   if (net_helpers_1.respondNTimes.routeFailure) {
     fail(
       'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
     );
-    process.exit(1);
+    return;
   }
 
   // Test passed
   process.parentPort.postMessage({ ok: true });
-  process.exit(0);
 });
+
+process.parentPort.postMessage({ type: 'ready' });

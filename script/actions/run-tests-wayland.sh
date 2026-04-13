@@ -29,4 +29,5 @@ for _ in {1..100}; do
 	sleep 0.1
 done
 
-node "$@" --ozone-platform=wayland
+export ELECTRON_EXTRA_ARGS="${ELECTRON_EXTRA_ARGS:-} --ozone-platform=wayland"
+node "$@"

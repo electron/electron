@@ -2,9 +2,20 @@ import { expect } from 'chai';
 
 import * as dns from 'node:dns';
 import * as http from 'node:http';
-import { Socket } from 'node:net';
+import * as http2 from 'node:http2';
+import * as https from 'node:https';
+import { AddressInfo, Socket } from 'node:net';
+import * as url from 'node:url';
 
-import { defer, listen } from './spec-helpers';
+import { defer } from './defer-helpers';
+
+export async function listen(server: http.Server | https.Server | http2.Http2SecureServer) {
+  const hostname = '127.0.0.1';
+  await new Promise<void>((resolve) => server.listen(0, hostname, () => resolve()));
+  const { port } = server.address() as AddressInfo;
+  const protocol = server instanceof http.Server ? 'http' : 'https';
+  return { port, hostname, url: url.format({ protocol, hostname, port }) };
+}
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');

@@ -26,7 +26,7 @@ export function getCodesignIdentity() {
 export async function copyMacOSFixtureApp(newDir: string, fixture: string | null = 'initial') {
   const appBundlePath = path.resolve(process.execPath, '../../..');
   const newPath = path.resolve(newDir, 'Electron.app');
-  cp.spawnSync('cp', ['-R', appBundlePath, path.dirname(newPath)]);
+  cp.spawnSync('cp', ['-cR', appBundlePath, path.dirname(newPath)]);
   if (fixture) {
     const appDir = path.resolve(newPath, 'Contents/Resources/app');
     await fs.promises.mkdir(appDir, { recursive: true });

@@ -4,6 +4,8 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
+import { runCleanupFunctions } from './defer-helpers';
+
 async function ensureWindowIsClosed(window: BaseWindow | null) {
   if (window && !window.isDestroyed()) {
     if (window instanceof BrowserWindow && window.webContents && !window.webContents.isDestroyed()) {
@@ -24,34 +26,32 @@ async function ensureWindowIsClosed(window: BaseWindow | null) {
   }
 }
 
-export const closeWindow = async (
-  window: BaseWindow | null = null,
-  { assertNotWindows } = { assertNotWindows: true }
-) => {
+export const closeWindow = async (window: BaseWindow | null = null) => {
   await ensureWindowIsClosed(window);
-
-  if (assertNotWindows) {
-    let windows = BaseWindow.getAllWindows();
-    if (windows.length > 0) {
-      setTimeout(async () => {
-        // Wait until next tick to assert that all windows have been closed.
-        windows = BaseWindow.getAllWindows();
-        try {
-          expect(windows).to.have.lengthOf(0);
-        } finally {
-          for (const win of windows) {
-            await ensureWindowIsClosed(win);
-          }
-        }
-      });
-    }
-  }
 };
 
-export async function closeAllWindows(assertNotWindows = false) {
+export async function assertNoWindowsLeaked() {
+  const windows = BaseWindow.getAllWindows();
+  try {
+    expect(windows).to.have.lengthOf(
+      0,
+      `${windows.length} window(s) leaked across test boundary (ids: ${windows.map((w) => w.id).join(', ')})`
+    );
+  } finally {
+    for (const win of windows) {
+      await ensureWindowIsClosed(win);
+    }
+  }
+}
+
+export async function closeAllWindows() {
+  // Under vitest, setupFiles-level hooks run after test-file afterEach hooks,
+  // so defer()ed cleanups would see already-destroyed windows. Running them
+  // here (the innermost afterEach in practice) preserves the mocha ordering.
+  await runCleanupFunctions();
   let windowsClosed = 0;
   for (const w of BaseWindow.getAllWindows()) {
-    await closeWindow(w, { assertNotWindows });
+    await closeWindow(w);
     windowsClosed++;
   }
   return windowsClosed;
@@ -61,6 +61,7 @@ export async function cleanupWebContents() {
   let webContentsDestroyed = 0;
   const existingWCS = webContents.getAllWebContents();
   for (const contents of existingWCS) {
+    if (contents.isDestroyed()) continue;
     const isDestroyed = once(contents, 'destroyed');
     contents.destroy();
     await isDestroyed;

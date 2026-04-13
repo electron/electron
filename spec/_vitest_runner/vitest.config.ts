@@ -1,0 +1,42 @@
+import { defineConfig } from 'vitest/config';
+
+import * as path from 'node:path';
+
+import electronPool from './electron-pool';
+
+const electronShim = path.resolve(__dirname, 'electron-shim.cjs');
+
+// Each worker is a full Electron main process (GPU process, network service,
+// etc.), so the usual cpus-1 default can starve the smaller hosted runners.
+function ciMaxWorkers(): number | undefined {
+  if (!process.env.CI || process.platform !== 'darwin') return undefined;
+  return process.arch === 'arm64' ? 3 : 6;
+}
+
+export default defineConfig({
+  resolve: {
+    alias: [{ find: /^electron(\/(main|common|renderer))?$/, replacement: electronShim }]
+  },
+  test: {
+    include: ['spec/**/*.spec.ts'],
+    exclude: ['spec/fixtures/**', 'spec/node_modules/**'],
+    setupFiles: ['./spec/_vitest_runner/setup.ts'],
+    // Custom pool: each worker is a real Electron main process.
+    pool: electronPool as any,
+    // Run test *files* in parallel across workers...
+    fileParallelism: true,
+    isolate: true,
+    // ...but keep tests *within* a file sequential.
+    sequence: { concurrent: false },
+    allowOnly: !process.env.CI,
+    retry: process.env.CI ? 3 : 0,
+    maxWorkers: ciMaxWorkers(),
+    testTimeout: 30_000,
+    hookTimeout: 30_000,
+    server: {
+      deps: {
+        external: [/electron-shim\.cjs$/]
+      }
+    }
+  }
+});

@@ -11,6 +11,18 @@
     {
       "name": "no-only-tests",
       "specifier": "./script/lint-plugins/no-only-tests.mjs"
+    },
+    {
+      "name": "remote-tools-imports",
+      "specifier": "./script/lint-plugins/remote-tools-imports.mjs"
+    },
+    {
+      "name": "no-nested-tests",
+      "specifier": "./script/lint-plugins/no-nested-tests.mjs"
+    },
+    {
+      "name": "no-unawaited-load",
+      "specifier": "./script/lint-plugins/no-unawaited-load.mjs"
     }
   ],
   "categories": {
@@ -315,7 +327,18 @@
     {
       "files": ["spec/**/*.ts", "spec/**/*.js", "spec/**/*.mjs"],
       "rules": {
-        "no-only-tests/no-only-tests": "error"
+        "no-only-tests/no-only-tests": "error",
+        "remote-tools-imports/no-foreign-imports-in-remote-closure": "error",
+        "no-nested-tests/no-nested-tests": "error",
+        "no-unawaited-load/no-unawaited-load": "warn"
+      }
+    },
+    {
+      "files": ["spec/fixtures/**"],
+      "rules": {
+        "no-unawaited-load/no-unawaited-load": "off",
+        "remote-tools-imports/no-foreign-imports-in-remote-closure": "off",
+        "no-nested-tests/no-nested-tests": "off"
       }
     },
     {

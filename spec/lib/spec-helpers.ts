@@ -1,51 +1,61 @@
 import { BrowserWindow } from 'electron/main';
 
 import { AssertionError } from 'chai';
-import { SuiteFunction, TestFunction } from 'mocha';
+import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import * as childProcess from 'node:child_process';
+import { once } from 'node:events';
 import * as http from 'node:http';
-import * as http2 from 'node:http2';
-import * as https from 'node:https';
-import * as net from 'node:net';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
-import * as url from 'node:url';
 import * as v8 from 'node:v8';
 
-const addOnly = <T>(fn: Function): T => {
-  const wrapped = (...args: any[]) => {
-    return fn(...args);
-  };
-  (wrapped as any).only = wrapped;
-  (wrapped as any).skip = wrapped;
-  return wrapped as any;
-};
+import { defer } from './defer-helpers';
+import { REMOTE_TOOLS_SHIM, rewriteForRemoteEval } from './remote-tools';
 
-export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
-export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
+export { defer, runCleanupFunctions } from './defer-helpers';
+export { listen } from './net-helpers';
+
+/**
+ * Swallow a loadURL()/loadFile() rejection so it does not surface as an
+ * unhandled rejection when the load is expected to be aborted (e.g. the test
+ * awaits an event and then closes the window). Returns the same promise with
+ * the rejection suppressed.
+ *
+ * Each call site is technical debt: follow-up work should replace these with
+ * an explicit await or a targeted .catch() once the test's actual contract
+ * is understood.
+ */
+export function dangerouslyIgnoreWebContentsLoadResult<T>(p: Promise<T>): Promise<T | void> {
+  return p.catch(() => {});
+}
+
+export const ifit = (condition: boolean) => it.runIf(condition);
+export const ifdescribe = (condition: boolean) => describe.runIf(condition);
+
+type DoneCallback = (err?: unknown) => void;
+
+/**
+ * Adapts a callback-style test (receiving a `done` function) into a
+ * vitest-compatible test that returns a Promise. `done()` resolves,
+ * `done(err)` rejects.
+ */
+export function withDone(fn: (done: DoneCallback) => void): () => Promise<void> {
+  return () =>
+    new Promise<void>((resolve, reject) => {
+      const done: DoneCallback = (err) => {
+        if (err != null) reject(err instanceof Error ? err : new Error(String(err)));
+        else resolve();
+      };
+      fn(done);
+    });
+}
 
 export const isWayland =
   process.platform === 'linux' &&
   (process.env.XDG_SESSION_TYPE === 'wayland' ||
     !!process.env.WAYLAND_DISPLAY ||
     process.argv.includes('--ozone-platform=wayland'));
-
-type CleanupFunction = (() => void) | (() => Promise<void>);
-const cleanupFunctions: CleanupFunction[] = [];
-export async function runCleanupFunctions() {
-  for (const cleanup of cleanupFunctions) {
-    const r = cleanup();
-    if (r instanceof Promise) {
-      await r;
-    }
-  }
-  cleanupFunctions.length = 0;
-}
-
-export function defer(f: CleanupFunction) {
-  cleanupFunctions.unshift(f);
-}
 
 class RemoteControlApp {
   process: childProcess.ChildProcess;
@@ -85,7 +95,9 @@ class RemoteControlApp {
   };
 
   remotely = (script: Function, ...args: any[]): Promise<any> => {
-    return this.remoteEval(`(${script})(...${JSON.stringify(args)})`);
+    return this.remoteEval(
+      `(() => { const __rt = ${REMOTE_TOOLS_SHIM}; return (${rewriteForRemoteEval(script)})(...${JSON.stringify(args)}); })()`
+    );
   };
 }
 
@@ -109,11 +121,17 @@ export async function startRemoteControlApp(extraArgs: string[] = [], options?: 
   return new RemoteControlApp(appProcess, port);
 }
 
-export function waitUntil(callback: () => boolean | Promise<boolean>, opts: { rate?: number; timeout?: number } = {}) {
+export function waitUntil(
+  callback: () => boolean | Promise<boolean>,
+  signal: AbortSignal,
+  opts: { rate?: number; timeout?: number } = {}
+) {
   const { rate = 10, timeout = 10000 } = opts;
   return (async () => {
+    signal.throwIfAborted();
+
     const ac = new AbortController();
-    const signal = ac.signal;
+    const combined = AbortSignal.any([signal, ac.signal]);
     let checkCompleted = false;
     let timedOut = false;
 
@@ -130,19 +148,25 @@ export function waitUntil(callback: () => boolean | Promise<boolean>, opts: { ra
       return result;
     };
 
-    setTimeout(timeout, { signal }).then(() => {
-      timedOut = true;
-      checkCompleted = true;
-    });
+    setTimeout(timeout, undefined, { signal: combined })
+      .then(() => {
+        timedOut = true;
+        checkCompleted = true;
+      })
+      .catch(() => {});
 
     while (checkCompleted === false) {
+      if (signal.aborted) {
+        ac.abort();
+        throw signal.reason ?? new Error('waitUntil aborted');
+      }
       const checkSatisfied = await check();
       if (checkSatisfied === true) {
         ac.abort();
         checkCompleted = true;
         return;
       } else {
-        await setTimeout(rate);
+        await setTimeout(rate, undefined, { signal: combined }).catch(() => {});
       }
     }
 
@@ -189,16 +213,21 @@ export async function getRemoteContext() {
 }
 
 export function useRemoteContext(opts?: any) {
-  before(async () => {
+  beforeAll(async () => {
     remoteContext.unshift(await makeRemoteContext(opts));
   });
-  after(() => {
+  afterAll(async () => {
     const w = remoteContext.shift();
-    w!.close();
+    if (w && !w.isDestroyed()) {
+      const closed = once(w, 'closed');
+      w.close();
+      await closed;
+    }
   });
 }
 
 async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Function, args?: any[]) {
+  const src = rewriteForRemoteEval(fn);
   const wrapped = async () => {
     const w = await getRemoteContext();
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
@@ -207,7 +236,8 @@ async function runRemote(type: 'skip' | 'none' | 'only', name: string, fn: Funct
         const promises_1 = require('node:timers/promises')
         chai_1.use(require('chai-as-promised'))
         chai_1.use(require('dirty-chai'))
-        await (${fn})(...${JSON.stringify(args ?? [])})
+        const __rt = ${REMOTE_TOOLS_SHIM};
+        await (${src})(...${JSON.stringify(args ?? [])})
         return {ok: true};
       } catch (e) {
         return {ok: false, message: e.message}
@@ -242,14 +272,6 @@ export const itremote = Object.assign(
     }
   }
 );
-
-export async function listen(server: http.Server | https.Server | http2.Http2SecureServer) {
-  const hostname = '127.0.0.1';
-  await new Promise<void>((resolve) => server.listen(0, hostname, () => resolve()));
-  const { port } = server.address() as net.AddressInfo;
-  const protocol = server instanceof http.Server ? 'http' : 'https';
-  return { port, hostname, url: url.format({ protocol, hostname, port }) };
-}
 
 export function isTestingBindingAvailable() {
   try {

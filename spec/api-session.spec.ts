@@ -1,0 +1,2359 @@
+import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
+
+import * as auth from 'basic-auth';
+import { expect } from 'chai';
+import * as send from 'send';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it } from 'vitest';
+
+import * as ChildProcess from 'node:child_process';
+import { once } from 'node:events';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
+import * as https from 'node:https';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
+
+import { defer, ifit, listen, waitUntil, withDone, dangerouslyIgnoreWebContentsLoadResult } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+
+describe('session module', () => {
+  const fixtures = path.resolve(__dirname, 'fixtures');
+  const url = 'http://127.0.0.1';
+
+  describe('session.defaultSession', () => {
+    it('returns the default session', () => {
+      expect(session.defaultSession).to.equal(session.fromPartition(''));
+    });
+  });
+
+  describe('session.fromPartition(partition, options)', () => {
+    it('returns existing session with same partition', () => {
+      expect(session.fromPartition('test')).to.equal(session.fromPartition('test'));
+    });
+  });
+
+  describe('session.fromPath(path)', () => {
+    it('returns storage path of a session which was created with an absolute path', () => {
+      const tmppath = require('electron').app.getPath('temp');
+      const ses = session.fromPath(tmppath);
+      expect(ses.storagePath).to.equal(tmppath);
+    });
+  });
+
+  describe('ses.cookies', () => {
+    const name = '0';
+    const value = '0';
+    afterEach(closeAllWindows);
+
+    // Clear cookie of defaultSession after each test.
+    afterEach(async () => {
+      const { cookies } = session.defaultSession;
+      const cs = await cookies.get({ url });
+      for (const c of cs) {
+        await cookies.remove(url, c.name);
+      }
+    });
+
+    const collectCookieChanges = async (cookies: Electron.Cookies, action: () => Promise<void>, count: number) => {
+      const changes: Array<{ cause: string; cookie: Electron.Cookie; removed: boolean }> = [];
+      let listener:
+        | ((event: Electron.Event, cookie: Electron.Cookie, cause: string, removed: boolean) => void)
+        | undefined;
+
+      const changesPromise = new Promise<typeof changes>((resolve) => {
+        listener = (_event, cookie, cause, removed) => {
+          changes.push({ cause, cookie, removed });
+          if (changes.length === count) resolve(changes);
+        };
+        cookies.on('changed', listener);
+      });
+
+      try {
+        await action();
+        return await changesPromise;
+      } finally {
+        if (listener) cookies.removeListener('changed', listener);
+      }
+    };
+
+    it('should get cookies', async () => {
+      const server = http.createServer((req, res) => {
+        res.setHeader('Set-Cookie', [`${name}=${value}`]);
+        res.end('finished');
+        server.close();
+      });
+      const { port } = await listen(server);
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL(`${url}:${port}`);
+      const list = await w.webContents.session.cookies.get({ url });
+      const cookie = list.find((cookie) => cookie.name === name);
+      expect(cookie).to.exist.and.to.have.property('value', value);
+    });
+
+    it('sets cookies', async () => {
+      const { cookies } = session.defaultSession;
+      const name = '1';
+      const value = '1';
+
+      await cookies.set({ url, name, value, expirationDate: Date.now() / 1000 + 120 });
+      const c = (await cookies.get({ url }))[0];
+      expect(c.name).to.equal(name);
+      expect(c.value).to.equal(value);
+      expect(c.session).to.equal(false);
+    });
+
+    it('sets session cookies', async () => {
+      const { cookies } = session.defaultSession;
+      const name = '2';
+      const value = '1';
+
+      await cookies.set({ url, name, value });
+      const c = (await cookies.get({ url }))[0];
+      expect(c.name).to.equal(name);
+      expect(c.value).to.equal(value);
+      expect(c.session).to.equal(true);
+    });
+
+    it('sets cookies without name', async () => {
+      const { cookies } = session.defaultSession;
+      const value = '3';
+
+      await cookies.set({ url, value });
+      const c = (await cookies.get({ url }))[0];
+      expect(c.name).to.be.empty();
+      expect(c.value).to.equal(value);
+    });
+
+    for (const sameSite of <const>['unspecified', 'no_restriction', 'lax', 'strict']) {
+      it(`sets cookies with samesite=${sameSite}`, async () => {
+        const { cookies } = session.defaultSession;
+        const value = 'hithere';
+        await cookies.set({ url, value, sameSite });
+        const c = (await cookies.get({ url }))[0];
+        expect(c.name).to.be.empty();
+        expect(c.value).to.equal(value);
+        expect(c.sameSite).to.equal(sameSite);
+      });
+    }
+
+    it('fails to set cookies with samesite=garbage', async () => {
+      const { cookies } = session.defaultSession;
+      const value = 'hithere';
+      await expect(cookies.set({ url, value, sameSite: 'garbage' as any })).to.eventually.be.rejectedWith(
+        "Failed to convert 'garbage' to an appropriate cookie same site value"
+      );
+    });
+
+    it('gets cookies without url', async () => {
+      const { cookies } = session.defaultSession;
+      const name = '1';
+      const value = '1';
+
+      await cookies.set({ url, name, value, expirationDate: Date.now() / 1000 + 120 });
+      const cs = await cookies.get({ domain: '127.0.0.1' });
+      expect(cs.some((c) => c.name === name && c.value === value)).to.equal(true);
+    });
+
+    it('rejects when setting a cookie with missing required fields', async () => {
+      const { cookies } = session.defaultSession;
+      const name = '1';
+      const value = '1';
+
+      await expect(cookies.set({ url: '', name, value })).to.eventually.be.rejectedWith(
+        'Failed to set cookie - The cookie was set with an invalid Domain attribute.'
+      );
+    });
+
+    it('rejects when setting a cookie with an invalid URL', async () => {
+      const { cookies } = session.defaultSession;
+      const name = '1';
+      const value = '1';
+
+      await expect(cookies.set({ url: 'asdf', name, value })).to.eventually.be.rejectedWith(
+        'Failed to set cookie - The cookie was set with an invalid Domain attribute.'
+      );
+    });
+
+    it('rejects when setting a cookie with an invalid ASCII control character', async () => {
+      const { cookies } = session.defaultSession;
+      const name = 'BadCookie';
+      const value = 'test;test';
+
+      await expect(cookies.set({ url, name, value })).to.eventually.be.rejectedWith(
+        'Failed to set cookie - The cookie contains ASCII control characters'
+      );
+    });
+
+    it('should overwrite previous cookies', async () => {
+      const { cookies } = session.defaultSession;
+      const name = 'DidOverwrite';
+      for (const value of ['No', 'Yes']) {
+        await cookies.set({ url, name, value, expirationDate: Date.now() / 1000 + 120 });
+        const list = await cookies.get({ url });
+
+        expect(list.some((cookie) => cookie.name === name && cookie.value === value)).to.equal(true);
+      }
+    });
+
+    it('should remove cookies', async () => {
+      const { cookies } = session.defaultSession;
+      const name = '2';
+      const value = '2';
+
+      await cookies.set({ url, name, value, expirationDate: Date.now() / 1000 + 120 });
+      await cookies.remove(url, name);
+      const list = await cookies.get({ url });
+
+      expect(list.some((cookie) => cookie.name === name && cookie.value === value)).to.equal(false);
+    });
+
+    // DISABLED-FIXME
+    it('should set cookie for standard scheme', async () => {
+      const { cookies } = session.defaultSession;
+      const domain = 'fake-host';
+      const url = `${standardScheme}://${domain}`;
+      const name = 'custom';
+      const value = '1';
+
+      await cookies.set({ url, name, value, expirationDate: Date.now() / 1000 + 120 });
+      const list = await cookies.get({ url });
+
+      expect(list).to.have.lengthOf(1);
+      expect(list[0]).to.have.property('name', name);
+      expect(list[0]).to.have.property('value', value);
+      expect(list[0]).to.have.property('domain', domain);
+    });
+
+    it('emits a changed event when a cookie is added or removed', async () => {
+      const { cookies } = session.fromPartition('cookies-changed');
+      const name = 'foo';
+      const value = 'bar';
+
+      const a = once(cookies, 'changed');
+      await cookies.set({ url, name, value, expirationDate: Date.now() / 1000 + 120 });
+      const [, setEventCookie, setEventCause, setEventRemoved] = await a;
+
+      const b = once(cookies, 'changed');
+      await cookies.remove(url, name);
+      const [, removeEventCookie, removeEventCause, removeEventRemoved] = await b;
+
+      expect(setEventCookie.name).to.equal(name);
+      expect(setEventCookie.value).to.equal(value);
+      expect(setEventCause).to.equal('inserted');
+      expect(setEventRemoved).to.equal(false);
+
+      expect(removeEventCookie.name).to.equal(name);
+      expect(removeEventCookie.value).to.equal(value);
+      expect(removeEventCause).to.equal('explicit');
+      expect(removeEventRemoved).to.equal(true);
+    });
+
+    it('emits overwrite and inserted events when a cookie is overwritten with a new value', async () => {
+      const { cookies } = session.fromPartition('cookies-overwrite-changed');
+      const name = 'foo';
+      const oldVal = 'bar';
+      const newVal = 'baz';
+      const expected = [
+        { cause: 'overwrite', name, removed: true, value: oldVal },
+        { cause: 'inserted', name, removed: false, value: newVal }
+      ];
+
+      await cookies.set({ url, name, value: oldVal });
+      const changes = await collectCookieChanges(
+        cookies,
+        async () => {
+          await cookies.set({ url, name, value: newVal });
+        },
+        2
+      );
+
+      const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
+      expect(actual).to.deep.equal(expected);
+    });
+
+    it('emits inserted-no-value-change-overwrite when a cookie is overwritten with the same value', async () => {
+      const { cookies } = session.fromPartition('cookies-same-value-overwrite-changed');
+      const name = 'foo';
+      const value = 'bar';
+      const nowSec = Date.now() / 1000;
+      const expected = [
+        { cause: 'overwrite', name, removed: true, value },
+        { cause: 'inserted-no-value-change-overwrite', name, removed: false, value }
+      ];
+
+      await cookies.set({ url, name, value, expirationDate: nowSec + 120 });
+      const changes = await collectCookieChanges(
+        cookies,
+        async () => {
+          await cookies.set({ url, name, value, expirationDate: nowSec + 240 });
+        },
+        2
+      );
+
+      const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
+      expect(actual).to.deep.equal(expected);
+    });
+
+    it('emits expired-overwrite when a cookie is overwritten by an already-expired cookie', async () => {
+      const { cookies } = session.fromPartition('cookies-expired-overwrite-changed');
+      const name = 'foo';
+      const value = 'bar';
+      const nowSec = Date.now() / 1000;
+      const expected = [{ cause: 'expired-overwrite', name, removed: true, value }];
+
+      await cookies.set({ url, name, value, expirationDate: nowSec + 120 });
+      const changes = await collectCookieChanges(
+        cookies,
+        async () => {
+          await cookies.set({ url, name, value, expirationDate: nowSec - 10 });
+        },
+        1
+      );
+
+      const actual = changes.map(({ cookie: { name, value }, cause, removed }) => ({ cause, name, removed, value }));
+      expect(actual).to.deep.equal(expected);
+    });
+
+    describe('ses.cookies.flushStore()', async () => {
+      it('flushes the cookies to disk', async () => {
+        const name = 'foo';
+        const value = 'bar';
+        const { cookies } = session.defaultSession;
+
+        await cookies.set({ url, name, value });
+        await cookies.flushStore();
+      });
+    });
+
+    it('should survive an app restart for persistent partition', { timeout: 60000 }, async () => {
+      const appPath = path.join(fixtures, 'api', 'cookie-app');
+
+      const runAppWithPhase = (phase: string) => {
+        return new Promise((resolve) => {
+          let output = '';
+
+          const appProcess = ChildProcess.spawn(process.execPath, [appPath], { env: { PHASE: phase, ...process.env } });
+
+          appProcess.stdout.on('data', (data) => {
+            output += data;
+          });
+          appProcess.on('exit', () => {
+            resolve(output.replaceAll(/(\r\n|\n|\r)/gm, ''));
+          });
+        });
+      };
+
+      expect(await runAppWithPhase('one')).to.equal('011');
+      expect(await runAppWithPhase('two')).to.equal('110');
+    });
+  });
+
+  describe('domain matching', () => {
+    let testSession: Electron.Session;
+
+    beforeEach(() => {
+      testSession = session.fromPartition(`cookies-domain-test-${Date.now()}`);
+    });
+
+    afterEach(async () => {
+      // Clear cookies after each test
+      await testSession.clearStorageData({ storages: ['cookies'] });
+    });
+
+    // Helper to set a cookie and then test if it's retrieved with a domain filter
+    async function testDomainMatching(setCookieOpts: Electron.CookiesSetDetails, domain: string, expectMatch: boolean) {
+      await testSession.cookies.set(setCookieOpts);
+      const cookies = await testSession.cookies.get({ domain });
+
+      if (expectMatch) {
+        expect(cookies).to.have.lengthOf(1);
+        expect(cookies[0].name).to.equal(setCookieOpts.name);
+        expect(cookies[0].value).to.equal(setCookieOpts.value);
+      } else {
+        expect(cookies).to.have.lengthOf(0);
+      }
+    }
+
+    it('should match exact domain', async () => {
+      await testDomainMatching(
+        {
+          url: 'http://example.com',
+          name: 'exactMatch',
+          value: 'value1',
+          domain: 'example.com'
+        },
+        'example.com',
+        true
+      );
+    });
+
+    it('should match subdomain when filter has leading dot', async () => {
+      await testDomainMatching(
+        {
+          url: 'http://sub.example.com',
+          name: 'subdomainMatch',
+          value: 'value2',
+          domain: '.example.com'
+        },
+        'sub.example.com',
+        true
+      );
+    });
+
+    it('should match subdomain when filter has no leading dot (host-only normalization)', async () => {
+      await testDomainMatching(
+        {
+          url: 'http://sub.example.com',
+          name: 'hostOnlyNormalization',
+          value: 'value3',
+          domain: 'example.com'
+        },
+        'sub.example.com',
+        true
+      );
+    });
+
+    it('should not match unrelated domain', async () => {
+      await testDomainMatching(
+        {
+          url: 'http://example.com',
+          name: 'noMatch',
+          value: 'value4',
+          domain: 'example.com'
+        },
+        'other.com',
+        false
+      );
+    });
+
+    it('should match domain with a leading dot in both cookie and filter', async () => {
+      await testDomainMatching(
+        {
+          url: 'http://example.com',
+          name: 'leadingDotBoth',
+          value: 'value5',
+          domain: '.example.com'
+        },
+        '.example.com',
+        true
+      );
+    });
+
+    it('should handle case insensitivity in domain', async () => {
+      await testDomainMatching(
+        {
+          url: 'http://example.com',
+          name: 'caseInsensitive',
+          value: 'value7',
+          domain: 'Example.com'
+        },
+        'example.com',
+        true
+      );
+    });
+
+    it('should handle IP address matching', async () => {
+      await testDomainMatching(
+        {
+          url: 'http://127.0.0.1',
+          name: 'ipExactMatch',
+          value: 'value8',
+          domain: '127.0.0.1'
+        },
+        '127.0.0.1',
+        true
+      );
+    });
+
+    it('should not match different IP addresses', async () => {
+      await testDomainMatching(
+        {
+          url: 'http://127.0.0.1',
+          name: 'ipMismatch',
+          value: 'value9',
+          domain: '127.0.0.1'
+        },
+        '127.0.0.2',
+        false
+      );
+    });
+
+    it('should handle complex subdomain matching properly', async () => {
+      // Set a cookie with domain .example.com
+      await testSession.cookies.set({
+        url: 'http://a.b.example.com',
+        name: 'complexSubdomain',
+        value: 'value11',
+        domain: '.example.com'
+      });
+
+      // This should match the cookie
+      const cookies1 = await testSession.cookies.get({ domain: 'a.b.example.com' });
+      expect(cookies1).to.have.lengthOf(1);
+      expect(cookies1[0].name).to.equal('complexSubdomain');
+
+      // This should also match
+      const cookies2 = await testSession.cookies.get({ domain: 'b.example.com' });
+      expect(cookies2).to.have.lengthOf(1);
+
+      // This should also match
+      const cookies3 = await testSession.cookies.get({ domain: 'example.com' });
+      expect(cookies3).to.have.lengthOf(1);
+
+      // This should not match
+      const cookies4 = await testSession.cookies.get({ domain: 'otherexample.com' });
+      expect(cookies4).to.have.lengthOf(0);
+    });
+
+    it('should handle multiple cookies with different domains', async () => {
+      // Set two cookies with different domains
+      await testSession.cookies.set({
+        url: 'http://example.com',
+        name: 'cookie1',
+        value: 'domain1',
+        domain: 'example.com'
+      });
+
+      await testSession.cookies.set({
+        url: 'http://other.com',
+        name: 'cookie2',
+        value: 'domain2',
+        domain: 'other.com'
+      });
+
+      // Filter for the first domain
+      const cookies1 = await testSession.cookies.get({ domain: 'example.com' });
+      expect(cookies1).to.have.lengthOf(1);
+      expect(cookies1[0].name).to.equal('cookie1');
+
+      // Filter for the second domain
+      const cookies2 = await testSession.cookies.get({ domain: 'other.com' });
+      expect(cookies2).to.have.lengthOf(1);
+      expect(cookies2[0].name).to.equal('cookie2');
+
+      // Get all cookies
+      const allCookies = await testSession.cookies.get({});
+      expect(allCookies).to.have.lengthOf(2);
+    });
+  });
+
+  describe('ses.clearStorageData(options)', () => {
+    afterEach(closeAllWindows);
+    it('clears localstorage data', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+      await w.webContents.session.clearStorageData({
+        origin: 'file://',
+        storages: ['localstorage']
+      });
+      while ((await w.webContents.executeJavaScript('localStorage.length')) !== 0) {
+        // The storage clear isn't instantly visible to the renderer, so keep
+        // trying until it is.
+      }
+    });
+  });
+
+  describe('shared dictionary APIs', () => {
+    // Shared dictionaries can only be created from real https websites, which we
+    // lack the APIs to fake in CI. If you're working on this code, you can run
+    // the real-internet tests below by uncommenting the `skip` below.
+    // In CI, we'll run simple tests here that ensure that the code in question doesn't
+    // crash, even if we expect it to not return any real dictionaries.
+    it('can get shared dictionary usage info', async () => {
+      expect(await session.defaultSession.getSharedDictionaryUsageInfo()).to.deep.equal([]);
+    });
+
+    it('can get shared dictionary info', async () => {
+      expect(
+        await session.defaultSession.getSharedDictionaryInfo({
+          frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+          topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me'
+        })
+      ).to.deep.equal([]);
+    });
+
+    it('can clear shared dictionary cache', async () => {
+      await session.defaultSession.clearSharedDictionaryCache();
+    });
+
+    it('can clear shared dictionary cache for isolation key', async () => {
+      await session.defaultSession.clearSharedDictionaryCacheForIsolationKey({
+        frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+        topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me'
+      });
+    });
+  });
+
+  describe.skip('shared dictionary APIs (using a real website with real dictionaries)', () => {
+    const appPath = path.join(fixtures, 'api', 'shared-dictionary');
+    const runApp = (
+      command:
+        | 'getSharedDictionaryInfo'
+        | 'getSharedDictionaryUsageInfo'
+        | 'clearSharedDictionaryCache'
+        | 'clearSharedDictionaryCacheForIsolationKey'
+    ) => {
+      return new Promise((resolve) => {
+        let output = '';
+
+        const appProcess = ChildProcess.spawn(process.execPath, [appPath, command]);
+
+        appProcess.stdout.on('data', (data) => {
+          output += data;
+        });
+        appProcess.on('exit', () => {
+          const trimmedOutput = output.replaceAll(/(\r\n|\n|\r)/gm, '');
+
+          try {
+            resolve(JSON.parse(trimmedOutput));
+          } catch (e) {
+            console.error(`Error trying to deserialize ${trimmedOutput}`);
+            throw e;
+          }
+        });
+      });
+    };
+
+    afterEach(() => {
+      fs.rmSync(path.join(fixtures, 'api', 'shared-dictionary', 'user-data-dir'), { recursive: true });
+    });
+
+    it('can get shared dictionary usage info', async () => {
+      // In our fixture, this calls session.defaultSession.getSharedDictionaryUsageInfo()
+      expect(await runApp('getSharedDictionaryUsageInfo')).to.deep.equal([
+        {
+          frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+          topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+          totalSizeBytes: 1198641
+        }
+      ]);
+    });
+
+    it('can get shared dictionary info', async () => {
+      // In our fixture, this calls session.defaultSession.getSharedDictionaryInfo({
+      //   frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+      //   topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me'
+      // })
+      const sharedDictionaryInfo = (await runApp('getSharedDictionaryInfo')) as Electron.SharedDictionaryInfo[];
+
+      expect(sharedDictionaryInfo).to.have.lengthOf(1);
+      expect(sharedDictionaryInfo[0].match).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].hash).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].lastFetchTime).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].responseTime).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].expirationDuration).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].lastUsedTime).to.not.be.undefined();
+      expect(sharedDictionaryInfo[0].size).to.not.be.undefined();
+    });
+
+    it('can clear shared dictionary cache', async () => {
+      // In our fixture, this calls session.defaultSession.clearSharedDictionaryCache()
+      // followed by session.defaultSession.getSharedDictionaryUsageInfo()
+      expect(await runApp('clearSharedDictionaryCache')).to.deep.equal([]);
+    });
+
+    it('can clear shared dictionary cache for isolation key', async () => {
+      // In our fixture, this calls session.defaultSession.clearSharedDictionaryCacheForIsolationKey({
+      //   frameOrigin: 'https://compression-dictionary-transport-threejs-demo.glitch.me',
+      //   topFrameSite: 'https://compression-dictionary-transport-threejs-demo.glitch.me'
+      // })
+      // followed by session.defaultSession.getSharedDictionaryUsageInfo()
+      expect(await runApp('clearSharedDictionaryCacheForIsolationKey')).to.deep.equal([]);
+    });
+  });
+
+  describe('will-download event', () => {
+    afterEach(closeAllWindows);
+    it('can cancel default download behavior', async () => {
+      const w = new BrowserWindow({ show: false });
+      const mockFile = Buffer.alloc(1024);
+      const contentDisposition = 'inline; filename="mockFile.txt"';
+      const downloadServer = http.createServer((req, res) => {
+        res.writeHead(200, {
+          'Content-Length': mockFile.length,
+          'Content-Type': 'application/plain',
+          'Content-Disposition': contentDisposition
+        });
+        res.end(mockFile);
+        downloadServer.close();
+      });
+      const url = (await listen(downloadServer)).url;
+
+      const downloadPrevented: Promise<{ itemUrl: string; itemFilename: string; item: Electron.DownloadItem }> =
+        new Promise((resolve) => {
+          w.webContents.session.once('will-download', function (e, item) {
+            e.preventDefault();
+            resolve({ itemUrl: item.getURL(), itemFilename: item.getFilename(), item });
+          });
+        });
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
+      const { item, itemUrl, itemFilename } = await downloadPrevented;
+      expect(itemUrl).to.equal(url + '/');
+      expect(itemFilename).to.equal('mockFile.txt');
+      // Delay till the next tick.
+      await new Promise(setImmediate);
+      expect(() => item.getURL()).to.throw('DownloadItem used after being destroyed');
+    });
+  });
+
+  describe('ses.protocol', () => {
+    const partitionName = 'temp';
+    const protocolName = 'sp';
+    let customSession: Session;
+    const protocol = session.defaultSession.protocol;
+    const handler = (ignoredError: any, callback: Function) => {
+      callback({ data: "<script>require('electron').ipcRenderer.send('hello')</script>", mimeType: 'text/html' });
+    };
+
+    beforeEach(async () => {
+      customSession = session.fromPartition(partitionName);
+      await customSession.protocol.registerStringProtocol(protocolName, handler);
+    });
+
+    afterEach(async () => {
+      await customSession.protocol.unregisterProtocol(protocolName);
+      customSession = null as any;
+    });
+    afterEach(closeAllWindows);
+
+    it('does not affect defaultSession', () => {
+      const result1 = protocol.isProtocolRegistered(protocolName);
+      expect(result1).to.equal(false);
+
+      const result2 = customSession.protocol.isProtocolRegistered(protocolName);
+      expect(result2).to.equal(true);
+    });
+
+    it('handles requests from partition', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: partitionName,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      customSession = session.fromPartition(partitionName);
+      await customSession.protocol.registerStringProtocol(protocolName, handler);
+      dangerouslyIgnoreWebContentsLoadResult(w.loadURL(`${protocolName}://fake-host`));
+      await once(ipcMain, 'hello');
+    });
+  });
+
+  describe('ses.setProxy(options)', () => {
+    let server: http.Server;
+    let customSession: Electron.Session;
+    let created = false;
+
+    beforeEach(async () => {
+      customSession = session.fromPartition('proxyconfig');
+      if (!created) {
+        // Work around for https://github.com/electron/electron/issues/26166 to
+        // reduce flake
+        await setTimeout(100);
+        created = true;
+      }
+    });
+
+    afterEach(() => {
+      if (server) {
+        server.close();
+      }
+      customSession = null as any;
+    });
+
+    it('allows configuring proxy settings', async () => {
+      const config = { proxyRules: 'http=myproxy:80' };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('PROXY myproxy:80');
+    });
+
+    it('allows removing the implicit bypass rules for localhost', async () => {
+      const config = {
+        proxyRules: 'http=myproxy:80',
+        proxyBypassRules: '<-loopback>'
+      };
+
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://localhost');
+      expect(proxy).to.equal('PROXY myproxy:80');
+    });
+
+    it('allows configuring proxy settings with pacScript', async () => {
+      server = http.createServer((req, res) => {
+        const pac = `
+          function FindProxyForURL(url, host) {
+            return "PROXY myproxy:8132";
+          }
+        `;
+        res.writeHead(200, {
+          'Content-Type': 'application/x-ns-proxy-autoconfig'
+        });
+        res.end(pac);
+      });
+      const { url } = await listen(server);
+      {
+        const config = { pacScript: url };
+        await customSession.setProxy(config);
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal('PROXY myproxy:8132');
+      }
+      {
+        const config = { mode: 'pac_script' as any, pacScript: url };
+        await customSession.setProxy(config);
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal('PROXY myproxy:8132');
+      }
+    });
+
+    it('allows bypassing proxy settings', async () => {
+      const config = {
+        proxyRules: 'http=myproxy:80',
+        proxyBypassRules: '<local>'
+      };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example/');
+      expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `direct`', async () => {
+      const config = { mode: 'direct' as const, proxyRules: 'http=myproxy:80' };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `auto_detect`', async () => {
+      const config = { mode: 'auto_detect' as const };
+      await customSession.setProxy(config);
+    });
+
+    it('allows configuring proxy settings with mode `pac_script`', async () => {
+      const config = { mode: 'pac_script' as const };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('DIRECT');
+    });
+
+    it('allows configuring proxy settings with mode `fixed_servers`', async () => {
+      const config = { mode: 'fixed_servers' as const, proxyRules: 'http=myproxy:80' };
+      await customSession.setProxy(config);
+      const proxy = await customSession.resolveProxy('http://example.com/');
+      expect(proxy).to.equal('PROXY myproxy:80');
+    });
+
+    it('allows configuring proxy settings with mode `system`', async () => {
+      const config = { mode: 'system' as const };
+      await customSession.setProxy(config);
+    });
+
+    it('disallows configuring proxy settings with mode `invalid`', async () => {
+      const config = { mode: 'invalid' as any };
+      await expect(customSession.setProxy(config)).to.eventually.be.rejectedWith(/Invalid mode/);
+    });
+
+    it('reload proxy configuration', async () => {
+      let proxyPort = 8132;
+      server = http.createServer((req, res) => {
+        const pac = `
+          function FindProxyForURL(url, host) {
+            return "PROXY myproxy:${proxyPort}";
+          }
+        `;
+        res.writeHead(200, {
+          'Content-Type': 'application/x-ns-proxy-autoconfig'
+        });
+        res.end(pac);
+      });
+      const { url } = await listen(server);
+      const config = { mode: 'pac_script' as const, pacScript: url };
+      await customSession.setProxy(config);
+      {
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal(`PROXY myproxy:${proxyPort}`);
+      }
+      {
+        proxyPort = 8133;
+        await customSession.forceReloadProxyConfig();
+        const proxy = await customSession.resolveProxy('https://google.com');
+        expect(proxy).to.equal(`PROXY myproxy:${proxyPort}`);
+      }
+    });
+  });
+
+  describe('ses.resolveHost(host)', () => {
+    let customSession: Electron.Session;
+
+    beforeEach(async () => {
+      customSession = session.fromPartition('resolvehost');
+    });
+
+    afterEach(() => {
+      customSession = null as any;
+    });
+
+    it('resolves ipv4.localhost2', async () => {
+      const { endpoints } = await customSession.resolveHost('ipv4.localhost2');
+      expect(endpoints).to.be.a('array');
+      expect(endpoints).to.have.lengthOf(1);
+      expect(endpoints[0].family).to.equal('ipv4');
+      expect(endpoints[0].address).to.equal('10.0.0.1');
+    });
+
+    it('fails to resolve AAAA record for ipv4.localhost2', async () => {
+      await expect(
+        customSession.resolveHost('ipv4.localhost2', {
+          queryType: 'AAAA'
+        })
+      ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+    });
+
+    it('resolves ipv6.localhost2', async () => {
+      const { endpoints } = await customSession.resolveHost('ipv6.localhost2');
+      expect(endpoints).to.be.a('array');
+      expect(endpoints).to.have.lengthOf(1);
+      expect(endpoints[0].family).to.equal('ipv6');
+      expect(endpoints[0].address).to.equal('::1');
+    });
+
+    it('fails to resolve A record for ipv6.localhost2', async () => {
+      await expect(
+        customSession.resolveHost('notfound.localhost2', {
+          queryType: 'A'
+        })
+      ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+    });
+
+    it('fails to resolve notfound.localhost2', async () => {
+      await expect(customSession.resolveHost('notfound.localhost2')).to.eventually.be.rejectedWith(
+        /net::ERR_NAME_NOT_RESOLVED/
+      );
+    });
+  });
+
+  describe('ses.getBlobData()', () => {
+    const scheme = 'cors-blob';
+    const protocol = session.defaultSession.protocol;
+    const url = `${scheme}://host`;
+    afterAll(async () => {
+      await protocol.unregisterProtocol(scheme);
+    });
+    afterEach(closeAllWindows);
+
+    it(
+      'returns blob data for uuid',
+      withDone((done) => {
+        const postData = JSON.stringify({
+          type: 'blob',
+          value: 'hello'
+        });
+        const content = `<html>
+                       <script>
+                       let fd = new FormData();
+                       fd.append('file', new Blob(['${postData}'], {type:'application/json'}));
+                       fetch('${url}', {method:'POST', body: fd });
+                       </script>
+                       </html>`;
+
+        protocol.registerStringProtocol(scheme, (request, callback) => {
+          try {
+            if (request.method === 'GET') {
+              callback({ data: content, mimeType: 'text/html' });
+            } else if (request.method === 'POST') {
+              const uuid = request.uploadData![1].blobUUID;
+              expect(uuid).to.be.a('string');
+              session.defaultSession.getBlobData(uuid!).then((result) => {
+                try {
+                  expect(result.toString()).to.equal(postData);
+                  done();
+                } catch (e) {
+                  done(e);
+                }
+              });
+            }
+          } catch (e) {
+            done(e);
+          }
+        });
+        const w = new BrowserWindow({ show: false });
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
+      })
+    );
+  });
+
+  describe('ses.getBlobData() (gc)', () => {
+    const scheme = 'cors-blob';
+    const protocol = session.defaultSession.protocol;
+    const v8Util = process._linkedBinding('electron_common_v8_util');
+
+    const waitForBlobDataRejection = (uuid: string, signal: AbortSignal) =>
+      waitUntil(async () => {
+        const attempt = session.defaultSession
+          .getBlobData(uuid)
+          .then(() => false)
+          .catch((error) => String(error).includes('Could not get blob data handle'));
+        const deadline = setTimeout(1000).then(() => false);
+        const rejected = await Promise.race([attempt, deadline]);
+        return rejected;
+      }, signal);
+
+    const waitForGarbageCollection = (weak: WeakRef<object>, signal: AbortSignal) =>
+      waitUntil(() => {
+        v8Util.requestGarbageCollectionForTesting();
+        v8Util.runUntilIdle();
+        return weak.deref() === undefined;
+      }, signal);
+
+    const makeContent = (url: string, postData: string) => `<html>
+                       <script>
+                       let fd = new FormData();
+                       fd.append('file', new Blob(['${postData}'], {type:'application/json'}));
+                       fetch('${url}', {method:'POST', body: fd });
+                       </script>
+                       </html>`;
+
+    const registerPostHandler = (scheme: string, content: string, onDataPipe: (dataPipe: unknown) => void) =>
+      new Promise<{ uuid: string }>((resolve, reject) => {
+        protocol.registerStringProtocol(scheme, (request, callback) => {
+          try {
+            if (request.method === 'GET') {
+              callback({ data: content, mimeType: 'text/html' });
+            } else if (request.method === 'POST') {
+              const uploadData = request.uploadData as any;
+              const uuid: string = uploadData[1].blobUUID;
+              const dataPipe = uploadData[1].dataPipe;
+              expect(dataPipe).to.be.ok();
+              onDataPipe(dataPipe);
+              resolve({ uuid });
+              callback('');
+            }
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+
+    afterEach(closeAllWindows);
+
+    it('keeps blob data alive while wrapper is referenced', async () => {
+      const url = `${scheme}://gc-alive-${Date.now()}`;
+      const postData = 'payload';
+      const content = makeContent(url, postData);
+
+      let heldDataPipe: unknown = null;
+      const postInfo = registerPostHandler(scheme, content, (dataPipe) => {
+        heldDataPipe = dataPipe;
+      });
+      try {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(url);
+
+        const { uuid } = await postInfo;
+        v8Util.requestGarbageCollectionForTesting();
+
+        const result = await session.defaultSession.getBlobData(uuid);
+        expect(result.toString()).to.equal(postData);
+        expect(heldDataPipe).to.be.ok();
+      } finally {
+        await protocol.unregisterProtocol(scheme);
+      }
+    });
+
+    it('rejects after wrapper is collected', async (ctx) => {
+      const url = `${scheme}://gc-released-${Date.now()}`;
+      const postData = 'payload';
+      const content = makeContent(url, postData);
+
+      let heldDataPipe: unknown = null;
+      const postInfo = registerPostHandler(scheme, content, (dataPipe) => {
+        heldDataPipe = dataPipe;
+      });
+      try {
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL(url);
+
+        const { uuid } = await postInfo;
+        expect(heldDataPipe).to.be.ok();
+        const weak = new WeakRef(heldDataPipe as object);
+        heldDataPipe = null;
+
+        await waitForGarbageCollection(weak, ctx.signal);
+        await waitForBlobDataRejection(uuid, ctx.signal);
+      } finally {
+        await protocol.unregisterProtocol(scheme);
+      }
+    });
+  });
+
+  describe('ses.getBlobData2()', () => {
+    const scheme = 'cors-blob';
+    const protocol = session.defaultSession.protocol;
+    const url = `${scheme}://host`;
+    afterAll(async () => {
+      await protocol.unregisterProtocol(scheme);
+    });
+    afterEach(closeAllWindows);
+
+    it(
+      'returns blob data for uuid',
+      withDone((done) => {
+        const content = `<html>
+                       <script>
+                       let fd = new FormData();
+                       fd.append("data", new Blob(new Array(65_537).fill('a')));
+                       fetch('${url}', {method:'POST', body: fd });
+                       </script>
+                       </html>`;
+
+        protocol.registerStringProtocol(scheme, (request, callback) => {
+          try {
+            if (request.method === 'GET') {
+              callback({ data: content, mimeType: 'text/html' });
+            } else if (request.method === 'POST') {
+              const uuid = request.uploadData![1].blobUUID;
+              expect(uuid).to.be.a('string');
+              session.defaultSession.getBlobData(uuid!).then((result) => {
+                try {
+                  const data = new Array(65_537).fill('a');
+                  expect(result.toString()).to.equal(data.join(''));
+                  done();
+                } catch (e) {
+                  done(e);
+                }
+              });
+            }
+          } catch (e) {
+            done(e);
+          }
+        });
+        const w = new BrowserWindow({ show: false });
+        dangerouslyIgnoreWebContentsLoadResult(w.loadURL(url));
+      })
+    );
+  });
+
+  describe('ses.setCertificateVerifyProc(callback)', () => {
+    let server: http.Server;
+    let serverUrl: string;
+
+    beforeEach(async () => {
+      const certPath = path.join(fixtures, 'certificates');
+      const options = {
+        key: fs.readFileSync(path.join(certPath, 'server.key')),
+        cert: fs.readFileSync(path.join(certPath, 'server.pem')),
+        ca: [
+          fs.readFileSync(path.join(certPath, 'rootCA.pem')),
+          fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
+        ],
+        rejectUnauthorized: false
+      };
+
+      server = https.createServer(options, (req, res) => {
+        res.writeHead(200);
+        res.end('<title>hello</title>');
+      });
+      serverUrl = (await listen(server)).url;
+    });
+
+    afterEach(
+      withDone((done) => {
+        server.close(done);
+      })
+    );
+    afterEach(closeAllWindows);
+
+    it('accepts the request when the callback is called with 0', async () => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      let validate: () => void;
+      ses.setCertificateVerifyProc(({ hostname, verificationResult, errorCode }, callback) => {
+        if (hostname !== '127.0.0.1') return callback(-3);
+        validate = () => {
+          expect(verificationResult).to.be.oneOf([
+            'net::ERR_CERT_AUTHORITY_INVALID',
+            'net::ERR_CERT_COMMON_NAME_INVALID'
+          ]);
+          expect(errorCode).to.be.oneOf([-202, -200]);
+        };
+        callback(0);
+      });
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      expect(w.webContents.getTitle()).to.equal('hello');
+      expect(validate!).not.to.be.undefined();
+      validate!();
+    });
+
+    it('rejects the request when the callback is called with -2', async () => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      let validate: () => void;
+      ses.setCertificateVerifyProc(({ hostname, certificate, verificationResult, isIssuedByKnownRoot }, callback) => {
+        if (hostname !== '127.0.0.1') return callback(-3);
+        validate = () => {
+          expect(certificate.issuerName).to.equal('Intermediate CA');
+          expect(certificate.subjectName).to.equal('localhost');
+          expect(certificate.issuer.commonName).to.equal('Intermediate CA');
+          expect(certificate.subject.commonName).to.equal('localhost');
+          expect(certificate.issuerCert.issuer.commonName).to.equal('Root CA');
+          expect(certificate.issuerCert.subject.commonName).to.equal('Intermediate CA');
+          expect(certificate.issuerCert.issuerCert.issuer.commonName).to.equal('Root CA');
+          expect(certificate.issuerCert.issuerCert.subject.commonName).to.equal('Root CA');
+          expect(certificate.issuerCert.issuerCert.issuerCert).to.equal(undefined);
+          expect(verificationResult).to.be.oneOf([
+            'net::ERR_CERT_AUTHORITY_INVALID',
+            'net::ERR_CERT_COMMON_NAME_INVALID'
+          ]);
+          expect(isIssuedByKnownRoot).to.be.false();
+        };
+        callback(-2);
+      });
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await expect(w.loadURL(serverUrl)).to.eventually.be.rejectedWith(/ERR_FAILED/);
+      expect(validate!).not.to.be.undefined();
+      validate!();
+    });
+
+    it('saves cached results', async () => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      let numVerificationRequests = 0;
+      ses.setCertificateVerifyProc((e, callback) => {
+        if (e.hostname !== '127.0.0.1') return callback(-3);
+        numVerificationRequests++;
+        callback(-2);
+      });
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await expect(w.loadURL(serverUrl), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/);
+      await once(w.webContents, 'did-stop-loading');
+      await expect(w.loadURL(serverUrl + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
+      expect(numVerificationRequests).to.equal(1);
+    });
+
+    it('does not cancel requests in other sessions', async () => {
+      const ses1 = session.fromPartition(`${Math.random()}`);
+      ses1.setCertificateVerifyProc((opts, cb) => cb(0));
+      const ses2 = session.fromPartition(`${Math.random()}`);
+
+      const req = net.request({ url: serverUrl, session: ses1, credentials: 'include' });
+      req.end();
+      setTimeout().then(() => {
+        ses2.setCertificateVerifyProc((opts, callback) => callback(0));
+      });
+      await expect(
+        new Promise<void>((resolve, reject) => {
+          req.on('error', (err) => {
+            reject(err);
+          });
+          req.on('response', () => {
+            resolve();
+          });
+        })
+      ).to.eventually.be.fulfilled();
+    });
+  });
+
+  describe('ses.clearAuthCache()', () => {
+    it('can clear http auth info from cache', async () => {
+      const ses = session.fromPartition('auth-cache');
+      const server = http.createServer((req, res) => {
+        const credentials = auth(req);
+        if (!credentials || credentials.name !== 'test' || credentials.pass !== 'test') {
+          res.statusCode = 401;
+          res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+          res.end();
+        } else {
+          res.end('authenticated');
+        }
+      });
+      defer(() => {
+        server.close();
+      });
+      const { port } = await listen(server);
+      const fetch = (url: string) =>
+        new Promise((resolve, reject) => {
+          const request = net.request({ url, session: ses });
+          request.on('response', (response) => {
+            let data: string | null = null;
+            response.on('data', (chunk) => {
+              if (!data) {
+                data = '';
+              }
+              data += chunk;
+            });
+            response.on('end', () => {
+              if (!data) {
+                reject(new Error('Empty response'));
+              } else {
+                resolve(data);
+              }
+            });
+            response.on('error', (error: any) => {
+              reject(new Error(error));
+            });
+          });
+          request.on('error', (error: any) => {
+            reject(new Error(error));
+          });
+          request.end();
+        });
+      // the first time should throw due to unauthenticated
+      await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected();
+      // passing the password should let us in
+      expect(await fetch(`http://test:test@127.0.0.1:${port}`)).to.equal('authenticated');
+      // subsequently, the credentials are cached
+      expect(await fetch(`http://127.0.0.1:${port}`)).to.equal('authenticated');
+      await ses.clearAuthCache();
+      // once the cache is cleared, we should get an error again
+      await expect(fetch(`http://127.0.0.1:${port}`)).to.eventually.be.rejected();
+    });
+  });
+
+  describe('DownloadItem', () => {
+    const mockPDF = Buffer.alloc(1024 * 1024 * 5);
+    const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+    const protocolName = 'custom-dl';
+    const contentDisposition = 'inline; filename="mock.pdf"';
+    let port: number;
+    let downloadServer: http.Server;
+
+    beforeAll(async () => {
+      downloadServer = http.createServer((req, res) => {
+        res.writeHead(200, {
+          'Content-Length': mockPDF.length,
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+        });
+        res.end(mockPDF);
+      });
+      port = (await listen(downloadServer)).port;
+    });
+
+    afterAll(async () => {
+      await new Promise((resolve) => downloadServer.close(resolve));
+    });
+
+    afterEach(closeAllWindows);
+
+    const isPathEqual = (path1: string, path2: string) => {
+      return path.relative(path1, path2) === '';
+    };
+    const assertDownload = (state: string, item: Electron.DownloadItem, isCustom = false) => {
+      expect(state).to.equal('completed');
+      expect(item.getFilename()).to.equal('mock.pdf');
+      expect(path.isAbsolute(item.savePath)).to.equal(true);
+      expect(isPathEqual(item.savePath, downloadFilePath)).to.equal(true);
+      if (isCustom) {
+        expect(item.getURL()).to.equal(`${protocolName}://item`);
+      } else {
+        expect(item.getURL()).to.be.equal(`${url}:${port}/`);
+      }
+      expect(item.getMimeType()).to.equal('application/pdf');
+      expect(item.getReceivedBytes()).to.equal(mockPDF.length);
+      expect(item.getTotalBytes()).to.equal(mockPDF.length);
+      expect(item.getContentDisposition()).to.equal(contentDisposition);
+      expect(fs.existsSync(downloadFilePath)).to.equal(true);
+      fs.unlinkSync(downloadFilePath);
+    };
+
+    describe('session.downloadURL', () => {
+      let server: http.Server;
+      afterEach(() => {
+        if (server) {
+          server.close();
+          server = null as unknown as http.Server;
+        }
+      });
+      it('can perform a download', async () => {
+        const willDownload = once(session.defaultSession, 'will-download');
+        session.defaultSession.downloadURL(`${url}:${port}`);
+        const [, item] = await willDownload;
+        item.savePath = downloadFilePath;
+        const [, state] = await once(item, 'done');
+        assertDownload(state, item);
+      });
+
+      it('can perform a download with a valid auth header', async () => {
+        server = http.createServer((req, res) => {
+          const { authorization } = req.headers;
+          if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
+            res.statusCode = 401;
+            res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const downloadDone: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          session.defaultSession.once('will-download', (e, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', () => {
+              try {
+                resolve(item);
+              } catch {}
+            });
+          });
+        });
+
+        session.defaultSession.downloadURL(`${url}:${port}`, {
+          headers: {
+            Authorization: 'Basic i-am-an-auth-header'
+          }
+        });
+
+        const today = Math.floor(Date.now() / 1000);
+        const item = await downloadDone;
+        expect(item.getState()).to.equal('completed');
+        expect(item.getFilename()).to.equal('mock.pdf');
+        expect(item.getMimeType()).to.equal('application/pdf');
+        expect(item.getReceivedBytes()).to.equal(mockPDF.length);
+        expect(item.getTotalBytes()).to.equal(mockPDF.length);
+        expect(item.getPercentComplete()).to.equal(100);
+        expect(item.getCurrentBytesPerSecond()).to.equal(0);
+        expect(item.getContentDisposition()).to.equal(contentDisposition);
+
+        const start = item.getStartTime();
+        const end = item.getEndTime();
+        expect(start).to.be.greaterThan(today);
+        expect(end).to.be.greaterThan(start);
+      });
+
+      it('throws when called with invalid headers', () => {
+        expect(() => {
+          session.defaultSession.downloadURL(`${url}:${port}`, {
+            // @ts-ignore this line is intentionally incorrect
+            headers: 'i-am-a-bad-header'
+          });
+        }).to.throw(/Invalid value for headers - must be an object/);
+      });
+
+      it('correctly handles a download with an invalid auth header', async () => {
+        server = http.createServer((req, res) => {
+          const { authorization } = req.headers;
+          if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
+            res.statusCode = 401;
+            res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const downloadFailed: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          session.defaultSession.once('will-download', (_, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', (e, state) => {
+              console.log(state);
+              try {
+                resolve(item);
+              } catch {}
+            });
+          });
+        });
+
+        session.defaultSession.downloadURL(`${url}:${port}`, {
+          headers: {
+            Authorization: 'wtf-is-this'
+          }
+        });
+
+        const item = await downloadFailed;
+        expect(item.getState()).to.equal('interrupted');
+        expect(item.getReceivedBytes()).to.equal(0);
+        expect(item.getTotalBytes()).to.equal(0);
+      });
+    });
+
+    describe('webContents.downloadURL', () => {
+      let server: http.Server;
+      afterEach(() => {
+        if (server) {
+          server.close();
+          server = null as unknown as http.Server;
+        }
+      });
+      it('can perform a download', async () => {
+        const w = new BrowserWindow({ show: false });
+        const willDownload = once(w.webContents.session, 'will-download');
+        w.webContents.downloadURL(`${url}:${port}`);
+        const [, item] = await willDownload;
+        item.savePath = downloadFilePath;
+        const [, state] = await once(item, 'done');
+        assertDownload(state, item);
+      });
+
+      it('can perform a download with a valid auth header', async () => {
+        server = http.createServer((req, res) => {
+          const { authorization } = req.headers;
+          if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
+            res.statusCode = 401;
+            res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const w = new BrowserWindow({ show: false });
+        const downloadDone: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          w.webContents.session.once('will-download', (e, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', () => {
+              try {
+                resolve(item);
+              } catch {}
+            });
+          });
+        });
+
+        w.webContents.downloadURL(`${url}:${port}`, {
+          headers: {
+            Authorization: 'Basic i-am-an-auth-header'
+          }
+        });
+
+        const item = await downloadDone;
+        expect(item.getState()).to.equal('completed');
+        expect(item.getFilename()).to.equal('mock.pdf');
+        expect(item.getMimeType()).to.equal('application/pdf');
+        expect(item.getReceivedBytes()).to.equal(mockPDF.length);
+        expect(item.getTotalBytes()).to.equal(mockPDF.length);
+        expect(item.getContentDisposition()).to.equal(contentDisposition);
+      });
+
+      it('can perform a download with referer header', async () => {
+        const server = http.createServer((req, res) => {
+          const { referer } = req.headers;
+          if (!referer || !referer.startsWith('http://www.electronjs.org')) {
+            res.statusCode = 403;
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const w = new BrowserWindow({ show: false });
+        const downloadDone: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          w.webContents.session.once('will-download', (e, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', () => {
+              try {
+                resolve(item);
+              } catch {}
+            });
+          });
+        });
+
+        w.webContents.downloadURL(`${url}:${port}`, {
+          headers: {
+            // Setting a Referer header with HTTPS scheme while the download URL's
+            // scheme is HTTP might lead to download failure.
+            referer: 'http://www.electronjs.org'
+          }
+        });
+
+        const item = await downloadDone;
+        expect(item.getState()).to.equal('completed');
+        expect(item.getFilename()).to.equal('mock.pdf');
+        expect(item.getMimeType()).to.equal('application/pdf');
+        expect(item.getReceivedBytes()).to.equal(mockPDF.length);
+        expect(item.getTotalBytes()).to.equal(mockPDF.length);
+        expect(item.getContentDisposition()).to.equal(contentDisposition);
+      });
+
+      it('throws when called with invalid headers', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(() => {
+          w.webContents.downloadURL(`${url}:${port}`, {
+            // @ts-ignore this line is intentionally incorrect
+            headers: 'i-am-a-bad-header'
+          });
+        }).to.throw(/Invalid value for headers - must be an object/);
+      });
+
+      it('correctly handles a download and an invalid auth header', async () => {
+        server = http.createServer((req, res) => {
+          const { authorization } = req.headers;
+          if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
+            res.statusCode = 401;
+            res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const w = new BrowserWindow({ show: false });
+        const downloadFailed: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          w.webContents.session.once('will-download', (_, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', (e, state) => {
+              console.log(state);
+              try {
+                resolve(item);
+              } catch {}
+            });
+          });
+        });
+
+        w.webContents.downloadURL(`${url}:${port}`, {
+          headers: {
+            Authorization: 'wtf-is-this'
+          }
+        });
+
+        const item = await downloadFailed;
+        expect(item.getState()).to.equal('interrupted');
+        expect(item.getReceivedBytes()).to.equal(0);
+        expect(item.getTotalBytes()).to.equal(0);
+      });
+
+      it('can download from custom protocols', async () => {
+        const protocol = session.defaultSession.protocol;
+        const handler = (ignoredError: any, callback: Function) => {
+          callback({ url: `${url}:${port}` });
+        };
+        protocol.registerHttpProtocol(protocolName, handler);
+        const w = new BrowserWindow({ show: false });
+        const willDownload = once(w.webContents.session, 'will-download');
+        w.webContents.downloadURL(`${protocolName}://item`);
+        const [, item] = await willDownload;
+        item.savePath = downloadFilePath;
+        const [, state] = await once(item, 'done');
+        assertDownload(state, item, true);
+      });
+
+      it('can cancel download', async () => {
+        const w = new BrowserWindow({ show: false });
+        const willDownload = once(w.webContents.session, 'will-download');
+        w.webContents.downloadURL(`${url}:${port}/`);
+        const [, item] = await willDownload;
+        item.savePath = downloadFilePath;
+        const itemDone = once(item, 'done');
+        item.cancel();
+        const [, state] = await itemDone;
+        expect(state).to.equal('cancelled');
+        expect(item.getFilename()).to.equal('mock.pdf');
+        expect(item.getMimeType()).to.equal('application/pdf');
+        expect(item.getReceivedBytes()).to.equal(0);
+        expect(item.getTotalBytes()).to.equal(mockPDF.length);
+        expect(item.getContentDisposition()).to.equal(contentDisposition);
+      });
+
+      ifit(process.platform !== 'win32')('can generate a default filename', async () => {
+        const w = new BrowserWindow({ show: false });
+        const willDownload = once(w.webContents.session, 'will-download');
+        w.webContents.downloadURL(`${url}:${port}/?testFilename`);
+        const [, item] = await willDownload;
+        item.savePath = downloadFilePath;
+        const itemDone = once(item, 'done');
+        item.cancel();
+        await itemDone;
+        expect(item.getFilename()).to.equal('download.pdf');
+      });
+
+      it('can set options for the save dialog', async () => {
+        const filePath = path.join(__dirname, 'fixtures', 'mock.pdf');
+        const options = {
+          window: null,
+          title: 'title',
+          message: 'message',
+          buttonLabel: 'buttonLabel',
+          nameFieldLabel: 'nameFieldLabel',
+          defaultPath: '/',
+          filters: [
+            {
+              name: '1',
+              extensions: ['.1', '.2']
+            },
+            {
+              name: '2',
+              extensions: ['.3', '.4', '.5']
+            }
+          ],
+          showsTagField: true,
+          securityScopedBookmarks: true
+        };
+
+        const w = new BrowserWindow({ show: false });
+        const willDownload = once(w.webContents.session, 'will-download');
+        w.webContents.downloadURL(`${url}:${port}`);
+        const [, item] = await willDownload;
+        item.setSavePath(filePath);
+        item.setSaveDialogOptions(options);
+        const itemDone = once(item, 'done');
+        item.cancel();
+        await itemDone;
+        expect(item.getSaveDialogOptions()).to.deep.equal(options);
+      });
+
+      describe('when a save path is specified and the URL is unavailable', () => {
+        it('does not display a save dialog and reports the done state as interrupted', async () => {
+          const w = new BrowserWindow({ show: false });
+          const willDownload = once(w.webContents.session, 'will-download');
+          w.webContents.downloadURL(`file://${path.join(__dirname, 'does-not-exist.txt')}`);
+          const [, item] = await willDownload;
+          item.savePath = downloadFilePath;
+          if (item.getState() === 'interrupted') {
+            item.resume();
+          }
+          const [, state] = await once(item, 'done');
+          expect(state).to.equal('interrupted');
+        });
+      });
+    });
+
+    describe('WebView.downloadURL', () => {
+      it('can perform a download', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+        await w.loadURL('about:blank');
+        function webviewDownload({ fixtures, url, port }: { fixtures: string; url: string; port: string }) {
+          const webview = new (window as any).WebView();
+          webview.addEventListener('did-finish-load', () => {
+            webview.downloadURL(`${url}:${port}/`);
+          });
+          webview.src = `file://${fixtures}/api/blank.html`;
+          document.body.appendChild(webview);
+        }
+        const done: Promise<[string, Electron.DownloadItem]> = new Promise((resolve) => {
+          w.webContents.session.once('will-download', function (e, item) {
+            item.savePath = downloadFilePath;
+            item.on('done', function (e, state) {
+              resolve([state, item]);
+            });
+          });
+        });
+        await w.webContents.executeJavaScript(`(${webviewDownload})(${JSON.stringify({ fixtures, url, port })})`);
+        const [state, item] = await done;
+        assertDownload(state, item);
+      });
+    });
+  });
+
+  describe('ses.createInterruptedDownload(options)', () => {
+    afterEach(closeAllWindows);
+    it('can create an interrupted download item', async () => {
+      const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+      const options = {
+        path: downloadFilePath,
+        urlChain: ['http://127.0.0.1/'],
+        mimeType: 'application/pdf',
+        offset: 0,
+        length: 5242880
+      };
+      const w = new BrowserWindow({ show: false });
+      const p = once(w.webContents.session, 'will-download');
+      w.webContents.session.createInterruptedDownload(options);
+      const [, item] = await p;
+      expect(item.getState()).to.equal('interrupted');
+      item.cancel();
+      expect(item.getURLChain()).to.deep.equal(options.urlChain);
+      expect(item.getMimeType()).to.equal(options.mimeType);
+      expect(item.getReceivedBytes()).to.equal(options.offset);
+      expect(item.getTotalBytes()).to.equal(options.length);
+      expect(item.savePath).to.equal(downloadFilePath);
+    });
+
+    it('can be resumed', async () => {
+      const downloadFilePath = path.join(fixtures, 'logo.png');
+      const rangeServer = http.createServer((req, res) => {
+        const options = { root: fixtures };
+        send(req, req.url!, options)
+          .on('error', (error: any) => {
+            throw error;
+          })
+          .pipe(res);
+      });
+      defer(() => {
+        rangeServer.close();
+      });
+      try {
+        const { url } = await listen(rangeServer);
+        const w = new BrowserWindow({ show: false });
+        const downloadCancelled: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          w.webContents.session.once('will-download', function (e, item) {
+            item.setSavePath(downloadFilePath);
+            item.on('done', function () {
+              resolve(item);
+            });
+            item.cancel();
+          });
+        });
+        const downloadUrl = `${url}/assets/logo.png`;
+        w.webContents.downloadURL(downloadUrl);
+        const item = await downloadCancelled;
+        expect(item.getState()).to.equal('cancelled');
+
+        const options = {
+          path: item.savePath,
+          urlChain: item.getURLChain(),
+          mimeType: item.getMimeType(),
+          offset: item.getReceivedBytes(),
+          length: item.getTotalBytes(),
+          lastModified: item.getLastModifiedTime(),
+          eTag: item.getETag()
+        };
+        const downloadResumed: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          w.webContents.session.once('will-download', function (e, item) {
+            expect(item.getState()).to.equal('interrupted');
+            item.setSavePath(downloadFilePath);
+            item.resume();
+            item.on('done', function () {
+              resolve(item);
+            });
+          });
+        });
+        w.webContents.session.createInterruptedDownload(options);
+        const completedItem = await downloadResumed;
+        expect(completedItem.getState()).to.equal('completed');
+        expect(completedItem.getFilename()).to.equal('logo.png');
+        expect(completedItem.savePath).to.equal(downloadFilePath);
+        expect(completedItem.getURL()).to.equal(downloadUrl);
+        expect(completedItem.getMimeType()).to.equal('image/png');
+        expect(completedItem.getReceivedBytes()).to.equal(14022);
+        expect(completedItem.getTotalBytes()).to.equal(14022);
+        expect(fs.existsSync(downloadFilePath)).to.equal(true);
+      } finally {
+        rangeServer.close();
+      }
+    });
+  });
+
+  describe('ses.setPermissionRequestHandler(handler)', () => {
+    afterEach(closeAllWindows);
+    // These tests are done on an http server because navigator.userAgentData
+    // requires a secure context.
+    let server: http.Server;
+    let serverUrl: string;
+    beforeAll(async () => {
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end('');
+      });
+      serverUrl = (await listen(server)).url;
+    });
+    afterAll(() => {
+      server.close();
+    });
+
+    it('cancels any pending requests when cleared', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'very-temp-permission-handler',
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      const ses = w.webContents.session;
+      ses.setPermissionRequestHandler(() => {
+        ses.setPermissionRequestHandler(null);
+      });
+
+      ses.protocol.interceptStringProtocol('https', (req, cb) => {
+        cb(`<html><script>(${remote})()</script></html>`);
+      });
+
+      const result = once(require('electron').ipcMain, 'message');
+
+      function remote() {
+        (navigator as any).requestMIDIAccess({ sysex: true }).then(
+          () => {},
+          (err: any) => {
+            require('electron').ipcRenderer.send('message', err.name);
+          }
+        );
+      }
+
+      await w.loadURL('https://myfakesite');
+
+      const [, name] = await result;
+      expect(name).to.deep.equal('NotAllowedError');
+    });
+
+    it('successfully resolves when calling legacy getUserMedia', async () => {
+      const ses = session.fromPartition('' + Math.random());
+      ses.setPermissionRequestHandler((_webContents, _permission, callback) => {
+        callback(true);
+      });
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      const { ok, message } = await w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => navigator.getUserMedia({
+          video: true,
+          audio: true,
+        }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
+      `);
+      expect(ok).to.be.true(message);
+    });
+
+    it('successfully rejects when calling legacy getUserMedia', async () => {
+      const ses = session.fromPartition('' + Math.random());
+      ses.setPermissionRequestHandler((_webContents, _permission, callback) => {
+        callback(false);
+      });
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      await expect(
+        w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => navigator.getUserMedia({
+          video: true,
+          audio: true,
+        }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
+      `)
+      ).to.eventually.be.rejectedWith('Permission denied');
+    });
+  });
+
+  describe('ses.setPermissionCheckHandler(handler)', () => {
+    afterEach(closeAllWindows);
+    it('details provides requestingURL for mainFrame', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'very-temp-permission-handler'
+        }
+      });
+      const ses = w.webContents.session;
+      const loadUrl = 'https://myfakesite/';
+      let handlerDetails: Electron.PermissionCheckHandlerHandlerDetails;
+
+      ses.protocol.interceptStringProtocol('https', (req, cb) => {
+        cb("<html><script>console.log('test');</script></html>");
+      });
+
+      ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+        if (permission === 'clipboard-read') {
+          handlerDetails = details;
+          return true;
+        }
+        return false;
+      });
+
+      const readClipboardPermission: any = () => {
+        return w.webContents.executeJavaScript(
+          `
+          navigator.permissions.query({name: 'clipboard-read'})
+              .then(permission => permission.state).catch(err => err.message);
+        `,
+          true
+        );
+      };
+
+      await w.loadURL(loadUrl);
+      const state = await readClipboardPermission();
+      expect(state).to.equal('granted');
+      expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
+    });
+
+    it('details provides requestingURL for cross origin subFrame', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'very-temp-permission-handler'
+        }
+      });
+      const ses = w.webContents.session;
+      const loadUrl = 'https://myfakesite/';
+      let handlerDetails: Electron.PermissionCheckHandlerHandlerDetails;
+
+      ses.protocol.interceptStringProtocol('https', (req, cb) => {
+        cb("<html><script>console.log('test');</script></html>");
+      });
+
+      ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+        if (permission === 'clipboard-read') {
+          handlerDetails = details;
+          return true;
+        }
+        return false;
+      });
+
+      const readClipboardPermission: any = (frame: WebFrameMain) => {
+        return frame.executeJavaScript(
+          `
+          navigator.permissions.query({name: 'clipboard-read'})
+              .then(permission => permission.state).catch(err => err.message);
+        `,
+          true
+        );
+      };
+
+      await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+      w.webContents.executeJavaScript(`
+        var iframe = document.createElement('iframe');
+        iframe.src = '${loadUrl}';
+        iframe.allow = 'clipboard-read';
+        document.body.appendChild(iframe);
+        null;
+      `);
+      const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+      const state = await readClipboardPermission(webFrameMain.fromId(frameProcessId, frameRoutingId));
+      expect(state).to.equal('granted');
+      expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
+      expect(handlerDetails!.isMainFrame).to.be.false();
+      expect(handlerDetails!.embeddingOrigin).to.equal('file:///');
+    });
+
+    it('provides iframe origin as requestingOrigin for media check from cross-origin subFrame', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'very-temp-permission-handler-media'
+        }
+      });
+      const ses = w.webContents.session;
+      const iframeUrl = 'https://myfakesite/';
+      let capturedOrigin: string | undefined;
+      let capturedIsMainFrame: boolean | undefined;
+      let capturedRequestingUrl: string | undefined;
+      let capturedSecurityOrigin: string | undefined;
+
+      ses.protocol.interceptStringProtocol('https', (req, cb) => {
+        cb('<html><body>iframe</body></html>');
+      });
+
+      ses.setPermissionCheckHandler((wc, permission, requestingOrigin, details) => {
+        if (permission === 'media') {
+          capturedOrigin = requestingOrigin;
+          capturedIsMainFrame = details.isMainFrame;
+          capturedRequestingUrl = details.requestingUrl;
+          capturedSecurityOrigin = (details as any).securityOrigin;
+        }
+        return false;
+      });
+
+      try {
+        await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        w.webContents.executeJavaScript(`
+          var iframe = document.createElement('iframe');
+          iframe.src = '${iframeUrl}';
+          iframe.allow = 'camera; microphone';
+          document.body.appendChild(iframe);
+          null;
+        `);
+        const [, , frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
+        const frame = webFrameMain.fromId(frameProcessId, frameRoutingId)!;
+        await frame.executeJavaScript(
+          'navigator.mediaDevices.enumerateDevices().then(() => {}).catch(() => {});',
+          true
+        );
+
+        expect(capturedOrigin).to.equal(iframeUrl);
+        expect(capturedIsMainFrame).to.be.false();
+        expect(capturedRequestingUrl).to.equal(iframeUrl);
+        expect(capturedSecurityOrigin).to.equal(iframeUrl);
+      } finally {
+        ses.protocol.uninterceptProtocol('https');
+        ses.setPermissionCheckHandler(null);
+      }
+    });
+  });
+
+  describe('ses.isPersistent()', () => {
+    afterEach(closeAllWindows);
+
+    it('returns default session as persistent', () => {
+      const w = new BrowserWindow({
+        show: false
+      });
+
+      const ses = w.webContents.session;
+
+      expect(ses.isPersistent()).to.be.true();
+    });
+
+    it('returns persist: session as persistent', () => {
+      const ses = session.fromPartition(`persist:${Math.random()}`);
+      expect(ses.isPersistent()).to.be.true();
+    });
+
+    it('returns temporary session as not persistent', () => {
+      const ses = session.fromPartition(`${Math.random()}`);
+      expect(ses.isPersistent()).to.be.false();
+    });
+  });
+
+  describe('ses.setUserAgent()', () => {
+    afterEach(closeAllWindows);
+
+    it('can be retrieved with getUserAgent()', () => {
+      const userAgent = 'test-agent';
+      const ses = session.fromPartition('' + Math.random());
+      ses.setUserAgent(userAgent);
+      expect(ses.getUserAgent()).to.equal(userAgent);
+    });
+
+    it('sets the User-Agent header for web requests made from renderers', async () => {
+      const userAgent = 'test-agent';
+      const ses = session.fromPartition('' + Math.random());
+      ses.setUserAgent(userAgent, 'en-US,fr,de');
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      let headers: http.IncomingHttpHeaders | null = null;
+      const server = http.createServer((req, res) => {
+        headers = req.headers;
+        res.end();
+        server.close();
+      });
+      const { url } = await listen(server);
+      await w.loadURL(url);
+      expect(headers!['user-agent']).to.equal(userAgent);
+      expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
+    });
+  });
+
+  describe('session-created event', () => {
+    it('is emitted when a session is created', async () => {
+      const sessionCreated = once(app, 'session-created') as Promise<[any, Session]>;
+      const session1 = session.fromPartition('' + Math.random());
+      const [session2] = await sessionCreated;
+      expect(session1).to.equal(session2);
+    });
+  });
+
+  describe('session.storagePage', () => {
+    it('returns a string', () => {
+      expect(session.defaultSession.storagePath).to.be.a('string');
+    });
+
+    it('returns null for in memory sessions', () => {
+      expect(session.fromPartition('in-memory').storagePath).to.equal(null);
+    });
+
+    it('returns different paths for partitions and the default session', () => {
+      expect(session.defaultSession.storagePath).to.not.equal(session.fromPartition('persist:two').storagePath);
+    });
+
+    it('returns different paths for different partitions', () => {
+      expect(session.fromPartition('persist:one').storagePath).to.not.equal(
+        session.fromPartition('persist:two').storagePath
+      );
+    });
+  });
+
+  describe('session.setCodeCachePath()', () => {
+    it('throws when relative or empty path is provided', () => {
+      expect(() => {
+        session.defaultSession.setCodeCachePath('../fixtures');
+      }).to.throw('Absolute path must be provided to store code cache.');
+      expect(() => {
+        session.defaultSession.setCodeCachePath('');
+      }).to.throw('Absolute path must be provided to store code cache.');
+      expect(() => {
+        session.defaultSession.setCodeCachePath(path.join(app.getPath('userData'), 'electron-test-code-cache'));
+      }).to.not.throw();
+    });
+  });
+
+  describe('ses.setSSLConfig()', () => {
+    it('can disable cipher suites', async () => {
+      const ses = session.fromPartition('' + Math.random());
+      const fixturesPath = path.resolve(__dirname, 'fixtures');
+      const certPath = path.join(fixturesPath, 'certificates');
+      const server = https.createServer(
+        {
+          key: fs.readFileSync(path.join(certPath, 'server.key')),
+          cert: fs.readFileSync(path.join(certPath, 'server.pem')),
+          ca: [
+            fs.readFileSync(path.join(certPath, 'rootCA.pem')),
+            fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
+          ],
+          minVersion: 'TLSv1.2',
+          maxVersion: 'TLSv1.2',
+          ciphers: 'AES128-GCM-SHA256'
+        },
+        (req, res) => {
+          res.end('hi');
+        }
+      );
+      const { port } = await listen(server);
+      defer(() => server.close());
+
+      function request() {
+        return new Promise((resolve, reject) => {
+          const r = net.request({
+            url: `https://127.0.0.1:${port}`,
+            session: ses
+          });
+          r.on('response', (res) => {
+            let data = '';
+            res.on('data', (chunk) => {
+              data += chunk.toString('utf8');
+            });
+            res.on('end', () => {
+              resolve(data);
+            });
+          });
+          r.on('error', (err) => {
+            reject(err);
+          });
+          r.end();
+        });
+      }
+
+      await expect(request()).to.be.rejectedWith(/ERR_CERT_AUTHORITY_INVALID/);
+      ses.setSSLConfig({
+        disabledCipherSuites: [0x009c]
+      });
+      await expect(request()).to.be.rejectedWith(/ERR_SSL_VERSION_OR_CIPHER_MISMATCH/);
+    });
+  });
+
+  describe('ses.clearData()', () => {
+    afterEach(closeAllWindows);
+
+    // NOTE: This API clears more than localStorage, but localStorage is a
+    // convenient test target for this API
+    it('clears all data when no options supplied', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
+
+      await w.webContents.session.clearData();
+
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
+    });
+
+    it('clears all data when no options supplied, called twice in parallel', async () => {
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.be.greaterThan(0);
+
+      // This first call is not awaited immediately
+      const clearDataPromise = w.webContents.session.clearData();
+      await w.webContents.session.clearData();
+
+      expect(await w.webContents.executeJavaScript('localStorage.length')).to.equal(0);
+
+      // Await the first promise so it doesn't creep into another test
+      await clearDataPromise;
+    });
+
+    it('only clears specified data categories', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage-and-indexeddb.html'));
+
+      const { webContents } = w;
+      const { session } = webContents;
+
+      await once(ipcMain, 'indexeddb-ready');
+
+      async function queryData(channel: string): Promise<string> {
+        const event = once(ipcMain, `result-${channel}`);
+        webContents.send(`get-${channel}`);
+        return (await event)[1];
+      }
+
+      // Data is in localStorage
+      await expect(queryData('localstorage')).to.eventually.equal('hello localstorage');
+      // Data is in indexedDB
+      await expect(queryData('indexeddb')).to.eventually.equal('hello indexeddb');
+
+      // Clear only indexedDB, not localStorage
+      await session.clearData({ dataTypes: ['indexedDB'] });
+
+      // The localStorage data should still be there
+      await expect(queryData('localstorage')).to.eventually.equal('hello localstorage');
+
+      // The indexedDB data should be gone
+      await expect(queryData('indexeddb')).to.eventually.be.undefined();
+    });
+
+    it('only clears the specified origins', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      const { session } = w.webContents;
+      const { cookies } = session;
+
+      await Promise.all([
+        cookies.set({
+          url: 'https://example.com/',
+          name: 'testdotcom',
+          value: 'testdotcom'
+        }),
+        cookies.set({
+          url: 'https://example.org/',
+          name: 'testdotorg',
+          value: 'testdotorg'
+        })
+      ]);
+
+      await session.clearData({ origins: ['https://example.com'] });
+
+      expect((await cookies.get({ url: 'https://example.com/', name: 'testdotcom' })).length).to.equal(0);
+      expect((await cookies.get({ url: 'https://example.org/', name: 'testdotorg' })).length).to.be.greaterThan(0);
+    });
+
+    it('clears all except the specified origins', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      const { session } = w.webContents;
+      const { cookies } = session;
+
+      await Promise.all([
+        cookies.set({
+          url: 'https://example.com/',
+          name: 'testdotcom',
+          value: 'testdotcom'
+        }),
+        cookies.set({
+          url: 'https://example.org/',
+          name: 'testdotorg',
+          value: 'testdotorg'
+        })
+      ]);
+
+      await session.clearData({ excludeOrigins: ['https://example.com'] });
+
+      expect((await cookies.get({ url: 'https://example.com/', name: 'testdotcom' })).length).to.be.greaterThan(0);
+      expect((await cookies.get({ url: 'https://example.org/', name: 'testdotorg' })).length).to.equal(0);
+    });
+  });
+});
