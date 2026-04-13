@@ -38,6 +38,7 @@
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/network/public/cpp/network_switches.h"
+#include "shell/browser/metrics/electron_metrics_service_client.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/thread_restrictions.h"
@@ -116,6 +117,9 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
   PrefProxyConfigTrackerImpl::RegisterPrefs(pref_registry.get());
+  electron::ElectronMetricsServiceClient::RegisterMetricsPrefs(
+      pref_registry.get());
+
 #if BUILDFLAG(IS_WIN)
   OSCrypt::RegisterLocalPrefs(pref_registry.get());
 #endif
@@ -150,6 +154,10 @@ void BrowserProcessImpl::PreCreateThreads() {
   // this can be created on first use.
   if (!SystemNetworkContextManager::GetInstance())
     SystemNetworkContextManager::CreateInstance(local_state_.get());
+
+  // Needs to be called here as per
+  // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/chrome_browser_main.cc;l=1385-1389;drc=c3bda003554dad21313fb24b7a4f3e1aae6102d9.
+  CreateMetricsServiceClient();
 }
 
 void BrowserProcessImpl::PreMainMessageLoopRun() {
@@ -175,7 +183,8 @@ BrowserProcessImpl::GetMetricsServicesManager() {
 }
 
 metrics::MetricsService* BrowserProcessImpl::metrics_service() {
-  return nullptr;
+  return metrics_service_client_ ? metrics_service_client_->GetMetricsService()
+                                 : nullptr;
 }
 
 ProfileManager* BrowserProcessImpl::profile_manager() {
@@ -434,4 +443,9 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
 
   // Trigger async initialization of OSCrypt key providers.
   os_crypt_async_->GetInstance(base::DoNothing());
+}
+
+void BrowserProcessImpl::CreateMetricsServiceClient() {
+  metrics_service_client_ =
+      std::make_unique<electron::ElectronMetricsServiceClient>();
 }
