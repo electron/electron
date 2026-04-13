@@ -14,6 +14,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
@@ -34,8 +35,8 @@
 
 namespace electron::api {
 
-const gin::WrapperInfo Screen::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                               gin::kElectronScreen};
+const gin::WrapperInfo Screen::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronScreen);
 
 namespace {
 

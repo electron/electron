@@ -17,6 +17,7 @@
 #include "mojo/public/cpp/system/simple_watcher.h"
 #include "net/base/net_errors.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -147,9 +148,8 @@ class DataPipeReader {
 
 }  // namespace
 
-const gin::WrapperInfo DataPipeHolder::kWrapperInfo = {
-    {gin::kEmbedderNativeGin},
-    gin::kElectronDataPipeHolder};
+const gin::WrapperInfo DataPipeHolder::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronDataPipeHolder);
 
 DataPipeHolder::DataPipeHolder(const network::DataElement& element)
     : id_(base::NumberToString(++g_next_id)) {

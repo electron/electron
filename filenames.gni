@@ -680,6 +680,7 @@ filenames = {
     "shell/common/gin_helper/wrappable.cc",
     "shell/common/gin_helper/wrappable.h",
     "shell/common/gin_helper/wrappable_base.h",
+    "shell/common/gin_helper/wrappable_pointer_tags.h",
     "shell/common/heap_snapshot.cc",
     "shell/common/heap_snapshot.h",
     "shell/common/key_weak_map.h",

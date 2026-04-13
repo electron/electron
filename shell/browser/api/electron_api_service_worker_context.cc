@@ -23,6 +23,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
 #include "v8/include/cppgc/allocation.h"
 
@@ -77,9 +78,8 @@ v8::Local<v8::Value> ServiceWorkerRunningInfoToDict(
 
 }  // namespace
 
-const gin::WrapperInfo ServiceWorkerContext::kWrapperInfo = {
-    {gin::kEmbedderNativeGin},
-    gin::kElectronServiceWorkerContext};
+const gin::WrapperInfo ServiceWorkerContext::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronServiceWorkerContext);
 
 ServiceWorkerContext::ServiceWorkerContext(
     v8::Isolate* isolate,

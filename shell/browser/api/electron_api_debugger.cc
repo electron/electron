@@ -19,6 +19,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
@@ -26,8 +27,8 @@ using content::DevToolsAgentHost;
 
 namespace electron::api {
 
-gin::WrapperInfo Debugger::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                           gin::kElectronDebugger};
+gin::WrapperInfo Debugger::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronDebugger);
 
 Debugger::Debugger(content::WebContents* web_contents)
     : content::WebContentsObserver{web_contents}, web_contents_{web_contents} {}
