@@ -56,6 +56,10 @@
 #include "shell/common/crash_keys.h"
 #endif
 
+#if BUILDFLAG(IS_WIN)
+#include <windows.h>
+#endif
+
 #define ELECTRON_BROWSER_BINDINGS(V)      \
   V(electron_browser_app)                 \
   V(electron_browser_auto_updater)        \
@@ -534,6 +538,28 @@ NodeBindings::~NodeBindings() {
   uv_sem_post(&embed_sem_);
 
   WakeupEmbedThread();
+
+#if BUILDFLAG(IS_WIN)
+  // On Windows the embed thread parks in GetQueuedCompletionStatus inside
+  // PollEvents, and the WakeupEmbedThread() call above wakes it via
+  // uv_async_send -> POST_COMPLETION_FOR_REQ. However, libuv's
+  // uv_async_send is a no-op when its internal `async_sent` flag is
+  // already set, and that flag is only cleared by uv_run processing the
+  // pending async. If something has called set_uv_env(nullptr) before
+  // this destructor runs (e.g. WebWorkerObserver::ContextWillDestroy
+  // ahead of a deferred ~NodeBindings on a pooled worklet thread),
+  // UvRunOnce early-returns and the flag is never cleared, so the
+  // wakeup above is silently dropped and uv_thread_join blocks forever.
+  //
+  // Post a dummy completion packet directly to the loop's IOCP so the
+  // embed thread breaks out of GetQueuedCompletionStatus regardless of
+  // libuv's internal state. PollEvents will return with overlapped ==
+  // nullptr, the embed loop will see embed_closed_ and exit cleanly.
+  // Linux/Mac don't need this because uv_async_send writes to a real
+  // file descriptor that epoll/kqueue is watching, so the wakeup is
+  // observable at the OS level regardless of libuv-internal flags.
+  PostQueuedCompletionStatus(uv_loop_->iocp, 0, 0, nullptr);
+#endif
 
   // Wait for everything to be done.
   uv_thread_join(&embed_thread_);
