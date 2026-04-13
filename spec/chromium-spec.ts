@@ -1536,6 +1536,27 @@ describe('chromium features', () => {
       expect(data).to.equal('function function function function function');
     });
 
+    it('AudioWorklet keeps node integration across pooled worker threads', async () => {
+      // Regression test for https://github.com/electron/electron/issues/41263.
+      // Blink pools the AudioWorklet backing thread (Chromium CL:5270028) so
+      // the Nth+ AudioWorklet on a page reuses the same thread; the page
+      // creates several AudioWorklet contexts in sequence and asserts node
+      // integration is wired up in every one of them.
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: true,
+          contextIsolation: false
+        }
+      });
+
+      w.loadURL(`file://${fixturesPath}/pages/audio-worklet.html`);
+      const [, results] = await once(ipcMain, 'audio-worklet-result');
+      expect(results).to.be.an('array').with.length.greaterThan(0);
+      for (const r of results) expect(r).to.equal('ok');
+    });
+
     describe('SharedWorker', () => {
       it('can work', async () => {
         const w = new BrowserWindow({ show: false });

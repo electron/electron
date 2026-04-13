@@ -28,6 +28,7 @@
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_global_scope.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_settings.h"  // nogncheck
+#include "third_party/blink/renderer/core/workers/worklet_global_scope.h"  // nogncheck
 
 #if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
 #define ENABLE_WEB_ASSEMBLY_TRAP_HANDLER_LINUX
@@ -216,10 +217,19 @@ bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
   // owing to an inability to customize sandbox policies in these workers
   // given that they're run out-of-process.
   // Also avoid creating a Node.js environment for worklet global scope
-  // created on the main thread.
+  // created on the main thread — those share the page's V8 context where
+  // Node is already wired up.
   if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope() ||
       ec->IsMainThreadWorkletGlobalScope())
     return false;
+
+  // Off-main-thread worklets (AudioWorklet, PaintWorklet, AnimationWorklet,
+  // SharedStorageWorklet) have their own dedicated worker thread but do not
+  // derive from WorkerGlobalScope, so check for them separately and read the
+  // flag from WorkletGlobalScope, which copies it out of the same
+  // WorkerSettings as dedicated workers do.
+  if (auto* wlgs = blink::DynamicTo<blink::WorkletGlobalScope>(ec))
+    return wlgs->NodeIntegrationInWorker();
 
   auto* wgs = blink::DynamicTo<blink::WorkerGlobalScope>(ec);
   if (!wgs)
@@ -256,7 +266,7 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
 
   auto* current = WebWorkerObserver::GetCurrent();
   if (current)
-    current->ContextWillDestroy(context, ec->IsAudioWorkletGlobalScope());
+    current->ContextWillDestroy(context);
 }
 
 void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {

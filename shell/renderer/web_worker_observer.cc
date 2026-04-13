@@ -15,6 +15,7 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 
 namespace electron {
 
@@ -22,6 +23,23 @@ namespace {
 
 static base::NoDestructor<base::ThreadLocalOwnedPointer<WebWorkerObserver>>
     lazy_tls;
+
+// Returns true if `context` belongs to a worklet that runs on a thread
+// pooled by Blink's WorkletThreadHolder, where the worker thread can be
+// reused for multiple worklet contexts. For these scopes the
+// WebWorkerObserver and its NodeBindings must outlive the v8::Context so
+// the next pooled context can reuse them — Node.js cannot be re-initialized
+// on the same thread (the allocator shim only loads once). See callers of
+// blink::WorkletThreadHolder in third_party/blink for the authoritative
+// list.
+bool IsPooledWorkletContext(v8::Local<v8::Context> context) {
+  auto* ec = blink::ExecutionContext::From(context);
+  if (!ec)
+    return false;
+  return ec->IsAudioWorkletGlobalScope() || ec->IsPaintWorkletGlobalScope() ||
+         ec->IsAnimationWorkletGlobalScope() ||
+         ec->IsSharedStorageWorkletGlobalScope();
+}
 
 }  // namespace
 
@@ -204,11 +222,12 @@ void WebWorkerObserver::ShareEnvironmentWithContext(
   }
 }
 
-void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context,
-                                           bool is_audio_worklet) {
+void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
   node::Environment* env = node::Environment::GetCurrent(context);
   if (!env)
     return;
+
+  const bool is_pooled_worklet = IsPooledWorkletContext(context);
 
   active_context_count_--;
 
@@ -237,6 +256,20 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context,
         emit_v.As<v8::Function>()
             ->Call(ctx, env->process_object(), 1, args)
             .FromMaybe(v8::Local<v8::Value>());
+        // We are mid-teardown and about to destroy the worker's
+        // node::Environment, so we cannot let an exception thrown by an
+        // 'exit' listener propagate back into Blink (it would assert in
+        // V8::FromJustIsNothing on the next call into V8). Log it and
+        // explicitly reset the TryCatch so the destructor doesn't rethrow.
+        if (try_catch.HasCaught()) {
+          if (auto message = try_catch.Message(); !message.IsEmpty()) {
+            std::string str;
+            if (gin::ConvertFromV8(isolate, message->Get(), &str))
+              LOG(ERROR) << "Exception thrown from worker 'exit' handler: "
+                         << str;
+          }
+          try_catch.Reset();
+        }
       }
     }
 
@@ -253,23 +286,24 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context,
     // ElectronBindings is tracking node environments.
     electron_bindings_->EnvironmentDestroyed(env);
 
-    // For non-AudioWorklet contexts (e.g., PaintWorklet, dedicated workers)
-    // Blink does not pool the worker thread, so tear down the observer
-    // synchronously while the worker thread is still in a clean state.
-    // Deferring teardown to the thread-exit TLS callback hangs on Windows:
-    // after set_uv_env(nullptr) the embed thread parks in
+    // For non-pooled worker contexts (e.g., dedicated workers) Blink does
+    // not reuse the worker thread, so tear down the observer synchronously
+    // while the worker thread is still in a clean state. Deferring teardown
+    // to the thread-exit TLS callback hangs on Windows: after
+    // set_uv_env(nullptr) the embed thread parks in
     // GetQueuedCompletionStatus and the later WakeupEmbedThread() from
     // ~NodeBindings can be lost, causing uv_thread_join to block forever
     // and the renderer to deadlock during navigation.
     //
-    // For AudioWorklet, threads are pooled (Chromium CL:5270028) and the
-    // same NodeBindings/embed thread must be reused for the next context
-    // on the thread because Node.js cannot be re-initialized on the same
-    // thread (the allocator shim can only be loaded once). In that case
-    // we keep the observer alive and let the next
+    // For pooled worklet contexts (AudioWorklet, PaintWorklet,
+    // AnimationWorklet, SharedStorageWorklet — see
+    // blink::WorkletThreadHolder) the same NodeBindings/embed thread must
+    // be reused for the next context on the thread because Node.js cannot
+    // be re-initialized on the same thread (the allocator shim only loads
+    // once). In that case we keep the observer alive and let the next
     // WorkerScriptReadyForEvaluation call InitializeNewEnvironment on the
     // (now empty) environments_ set.
-    if (!is_audio_worklet) {
+    if (!is_pooled_worklet) {
       lazy_tls->Set(nullptr);  // destroys *this; do not access members below
       return;
     }
