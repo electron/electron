@@ -1912,23 +1912,15 @@ views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
 std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
     views::Widget* widget) {
 #if BUILDFLAG(IS_WIN)
-  auto frame_view = std::make_unique<WinFrameView>();
-  frame_view->Init(this, widget);
-  return frame_view;
+  return std::make_unique<WinFrameView>(this, widget);
 #else
-  if (has_frame() && !has_client_frame()) {
-    return std::make_unique<NativeFrameView>(this, widget);
-  } else {
-    if (has_frame() && has_client_frame()) {
-      auto frame_view = std::make_unique<ClientFrameViewLinux>();
-      frame_view->Init(this, widget);
-      return frame_view;
-    } else {
-      auto frame_view = std::make_unique<OpaqueFrameView>();
-      frame_view->Init(this, widget);
-      return frame_view;
-    }
-  }
+  if (!has_frame())
+    return std::make_unique<OpaqueFrameView>(this, widget);
+
+  if (has_client_frame())
+    return std::make_unique<ClientFrameViewLinux>(this, widget);
+
+  return std::make_unique<NativeFrameView>(this, widget);
 #endif
 }
 

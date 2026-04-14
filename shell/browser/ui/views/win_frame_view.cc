@@ -25,19 +25,15 @@
 
 namespace electron {
 
-WinFrameView::WinFrameView() = default;
-
-WinFrameView::~WinFrameView() = default;
-
-void WinFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
-  window_ = window;
-  frame_ = frame;
-
+WinFrameView::WinFrameView(NativeWindowViews* window, views::Widget* frame)
+    : FramelessView{window, frame} {
   if (window->IsWindowControlsOverlayEnabled()) {
     caption_button_container_ =
         AddChildView(std::make_unique<WinCaptionButtonContainer>(this));
   }
 }
+
+WinFrameView::~WinFrameView() = default;
 
 void WinFrameView::InvalidateCaptionButtons() {
   if (!caption_button_container_)
@@ -261,7 +257,7 @@ void WinFrameView::LayoutWindowControlsOverlay() {
   window()->NotifyLayoutWindowControlsOverlay();
 }
 
-bool WinFrameView::GetShouldPaintAsActive() {
+bool WinFrameView::GetShouldPaintAsActive() const {
   return ShouldPaintAsActive();
 }
 
