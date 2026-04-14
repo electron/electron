@@ -30,7 +30,7 @@ npx install-electron --no
 Electron [distributes experimental releases of future major versions](./electron-timelines.md)
 via npm as well.
 
-Nightly builds contain the latest build from the `main` branch:
+Nightly builds contain the latest changes from the `main` branch:
 
 ```sh
 npm install electron-nightly --save-dev
