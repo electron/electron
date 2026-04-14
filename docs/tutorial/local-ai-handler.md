@@ -9,7 +9,7 @@ hide_title: true
 
 > **This API is experimental.** It may change or be removed in future Electron releases.
 
-Electron supports [Prompt API](https://github.com/webmachinelearning/prompt-api)
+Electron supports Chromium's experimental [Prompt API](https://github.com/webmachinelearning/prompt-api)
 (`LanguageModel`) web API by letting you route calls to a local LLM running in a
 [utility process](../api/utility-process.md). Web content calls
 `LanguageModel.create()` and `LanguageModel.prompt()` like it would in any
@@ -24,7 +24,7 @@ The local AI handler architecture involves three processes:
 2. **Utility process** — runs a script that calls
    [`localAIHandler.setPromptAPIHandler()`](../api/local-ai-handler.md#localaihandlersetpromptapihandlerhandler-experimental)
    to supply a `LanguageModel` subclass.
-3. **Renderer process** — web content uses the standard `LanguageModel` API
+3. **Renderer process** — web content uses the `LanguageModel` API from Chromium's experimental Prompt API
    (e.g. `LanguageModel.create()`, `model.prompt()`).
 
 When a renderer calls the Prompt API, Electron proxies the request through the
