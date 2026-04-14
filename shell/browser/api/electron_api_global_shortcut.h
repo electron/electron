@@ -11,42 +11,47 @@
 #include "base/functional/callback_forward.h"
 #include "base/memory/weak_ptr.h"
 #include "extensions/common/extension_id.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "gin/per_isolate_data.h"
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.h"
 
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
-
 namespace electron::api {
 
-class GlobalShortcut final
-    : private ui::GlobalAcceleratorListener::Observer,
-      public gin_helper::DeprecatedWrappable<GlobalShortcut> {
+class GlobalShortcut final : public gin::Wrappable<GlobalShortcut>,
+                             private ui::GlobalAcceleratorListener::Observer,
+                             public gin::PerIsolateData::DisposeObserver {
  public:
-  static gin_helper::Handle<GlobalShortcut> Create(v8::Isolate* isolate);
+  static GlobalShortcut* Create(v8::Isolate* isolate);
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor* visitor) const override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+
+  // gin::PerIsolateData::DisposeObserver
+  void OnBeforeDispose(v8::Isolate* isolate) override {}
+  void OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) override;
+  void OnDisposed() override {}
+
+  // Make public for cppgc::MakeGarbageCollected.
+  explicit GlobalShortcut(v8::Isolate* isolate);
+  ~GlobalShortcut() override;
 
   // disable copy
   GlobalShortcut(const GlobalShortcut&) = delete;
   GlobalShortcut& operator=(const GlobalShortcut&) = delete;
-
- protected:
-  GlobalShortcut();
-  ~GlobalShortcut() override;
 
  private:
   typedef std::map<ui::Accelerator, base::RepeatingClosure>
       AcceleratorCallbackMap;
   typedef std::map<std::string, base::RepeatingClosure> CommandCallbackMap;
 
+  void Dispose();
   bool RegisterAll(const std::vector<ui::Accelerator>& accelerators,
                    const base::RepeatingClosure& callback);
   bool Register(const ui::Accelerator& accelerator,
@@ -55,6 +60,7 @@ class GlobalShortcut final
   void Unregister(const ui::Accelerator& accelerator);
   void UnregisterSome(const std::vector<ui::Accelerator>& accelerators);
   void UnregisterAll();
+  void UnregisterAllInternal();
   void SetSuspended(bool suspend);
   bool IsSuspended();
 
@@ -65,8 +71,9 @@ class GlobalShortcut final
 
   AcceleratorCallbackMap accelerator_callback_map_;
   CommandCallbackMap command_callback_map_;
+  bool is_disposed_ = false;
 
-  base::WeakPtrFactory<GlobalShortcut> weak_ptr_factory_{this};
+  gin::WeakCellFactory<GlobalShortcut> weak_factory_{this};
 };
 
 }  // namespace electron::api
