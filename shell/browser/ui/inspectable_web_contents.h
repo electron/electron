@@ -268,6 +268,14 @@ class InspectableWebContents
   std::unique_ptr<InspectableWebContentsView> view_;
 
   bool frontend_loaded_ = false;
+
+  // Re-entrancy guard: ShowDevTools triggers focus on the DevTools WebContents,
+  // which fires JS events whose microtask checkpoint can re-entrantly call
+  // CloseDevTools(). Destroying the WebContents or its widget while the focus
+  // notification is still iterating observers is a CHECK/UAF. These flags defer
+  // the close until the show path has fully unwound.
+  bool is_showing_devtools_ = false;
+  bool close_devtools_pending_ = false;
   scoped_refptr<content::DevToolsAgentHost> agent_host_;
   std::unique_ptr<content::DevToolsFrontendHost> frontend_host_;
   std::unique_ptr<DevToolsEmbedderMessageDispatcher>
