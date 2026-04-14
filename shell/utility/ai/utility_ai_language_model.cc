@@ -205,11 +205,11 @@ class PromptResponder {
     abort_controller_.Reset(isolate, abort_controller);
     language_model_.Reset(isolate, language_model);
     responder_.Bind(std::move(pending_responder));
-    responder_.set_disconnect_handler(
-        base::BindOnce(&PromptResponder::DeleteThis, base::Unretained(this)));
+    responder_.set_disconnect_handler(base::BindOnce(
+        &PromptResponder::DeleteThis, weak_ptr_factory_.GetWeakPtr()));
 
     destroy_subscription_ = model->AddDestroyObserver(base::BindRepeating(
-        &PromptResponder::OnModelDestroyed, base::Unretained(this)));
+        &PromptResponder::OnModelDestroyed, weak_ptr_factory_.GetWeakPtr()));
 
     Respond(isolate, value);
   }
