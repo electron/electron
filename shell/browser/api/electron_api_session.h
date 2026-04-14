@@ -57,6 +57,7 @@ struct PreloadScript;
 
 namespace api {
 
+class Extensions;
 class NetLog;
 class Protocol;
 class ServiceWorkerContext;
@@ -166,7 +167,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ClearSharedDictionaryCacheForIsolationKey(
       const gin_helper::Dictionary& options);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
-  v8::Local<v8::Value> Extensions(v8::Isolate* isolate);
+  api::Extensions* Extensions(v8::Isolate* isolate);
   api::Protocol* Protocol();
   api::ServiceWorkerContext* ServiceWorkerContext();
   WebRequest* WebRequest(v8::Isolate* isolate);
@@ -213,7 +214,7 @@ class Session final : public gin::Wrappable<Session>,
 
   // Cached gin_helper::Wrappable objects.
   v8::TracedReference<v8::Value> cookies_;
-  v8::TracedReference<v8::Value> extensions_;
+  cppgc::Member<api::Extensions> extensions_;
   cppgc::Member<api::Protocol> protocol_;
   cppgc::Member<api::NetLog> net_log_;
   cppgc::Member<api::ServiceWorkerContext> service_worker_context_;
