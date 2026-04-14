@@ -180,6 +180,12 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await expectRejectedWithError(/unable to create/);
     });
 
+    it('rejects if null returned', async () => {
+      await forkAndRegisterHandler('return-null-handler.js');
+
+      await expectRejectedWithError(/unable to create/);
+    });
+
     it('rejects when no handler is registered', async () => {
       await expectRejectedWithError(/unable to create/);
     });

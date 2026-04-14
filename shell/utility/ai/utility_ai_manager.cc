@@ -193,11 +193,14 @@ v8::Global<v8::Object>& UtilityAIManager::GetLanguageModelClass() {
         return language_model_class_;
       }
 
-      if (!val->IsObject() ||
-          !val->ToObject(isolate->GetCurrentContext())
-               .ToLocalChecked()
-               ->IsConstructor() ||
-          !UtilityAILanguageModel::IsLanguageModelClass(isolate, val)) {
+      if (val->IsNull()) {
+        // The handler chose not to provide a class.
+        return language_model_class_;
+      } else if (!val->IsObject() ||
+                 !val->ToObject(isolate->GetCurrentContext())
+                      .ToLocalChecked()
+                      ->IsConstructor() ||
+                 !UtilityAILanguageModel::IsLanguageModelClass(isolate, val)) {
         auto err = v8::Exception::TypeError(
             gin::StringToV8(isolate, "Must provide a constructible class"));
         node::errors::TriggerUncaughtException(isolate, err, {});
