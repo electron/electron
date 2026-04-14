@@ -74,6 +74,11 @@ class UtilityProcessWrapper final
 
   void Shutdown(uint32_t exit_code);
 
+  gin::WeakCell<UtilityProcessWrapper>* GetWeakCell(
+      cppgc::AllocationHandle& allocation_handle) {
+    return weak_factory_.GetWeakCell(allocation_handle);
+  }
+
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;
   static const char* GetClassName() { return "UtilityProcess"; }

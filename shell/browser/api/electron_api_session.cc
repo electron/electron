@@ -67,6 +67,7 @@
 #include "shell/browser/api/electron_api_net_log.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/api/electron_api_service_worker_context.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/browser.h"
@@ -103,6 +104,7 @@
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
+#include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1559,7 +1561,7 @@ v8::Local<v8::Value> Session::ClearData(gin::Arguments* const args) {
 void Session::RegisterLocalAIHandler(gin_helper::ErrorThrower thrower,
                                      v8::Local<v8::Value> val) {
   auto* isolate = JavascriptEnvironment::GetIsolate();
-  gin_helper::Handle<UtilityProcessWrapper> handler;
+  UtilityProcessWrapper* handler = nullptr;
 
   if (!(val->IsNull() || gin::ConvertFromV8(isolate, val, &handler))) {
     thrower.ThrowTypeError("Must pass null or UtilityProcess");
@@ -1569,8 +1571,9 @@ void Session::RegisterLocalAIHandler(gin_helper::ErrorThrower thrower,
   auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
   DCHECK(prefs);
 
-  if (!handler.IsEmpty()) {
-    prefs->SetLocalAIHandler(handler->GetWeakPtr());
+  if (handler) {
+    auto& allocation_handle = isolate->GetCppHeap()->GetAllocationHandle();
+    prefs->SetLocalAIHandler(handler->GetWeakCell(allocation_handle));
   } else {
     prefs->SetLocalAIHandler(nullptr);
   }

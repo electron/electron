@@ -12,8 +12,10 @@
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/weak_document_ptr.h"
+#include "gin/weak_cell.h"
 #include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/session_preferences.h"
 #include "third_party/blink/public/mojom/ai/ai_common.mojom.h"
@@ -53,9 +55,10 @@ void ProxyingAIManager::AddReceiver(
 const mojo::Remote<blink::mojom::AIManager>&
 ProxyingAIManager::GetAIManagerRemote(const SessionPreferences& session_prefs) {
   if (!ai_manager_remote_.is_bound()) {
-    auto* local_ai_handler = session_prefs.GetLocalAIHandler().get();
+    gin::WeakCell<api::UtilityProcessWrapper>* local_ai_handler =
+        session_prefs.GetLocalAIHandler();
 
-    if (local_ai_handler) {
+    if (local_ai_handler && local_ai_handler->Get()) {
       auto* rfh = rfh_.AsRenderFrameHostIfValid();
       DCHECK(rfh);
 
@@ -67,7 +70,7 @@ ProxyingAIManager::GetAIManagerRemote(const SessionPreferences& session_prefs) {
         web_contents_id = web_contents->ID();
       }
 
-      local_ai_handler->BindAIManager(
+      local_ai_handler->Get()->BindAIManager(
           web_contents_id, rfh->GetLastCommittedOrigin(),
           ai_manager_remote_.BindNewPipeAndPassReceiver());
     }

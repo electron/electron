@@ -7,6 +7,9 @@
 #include "base/logging.h"
 #include "base/memory/ptr_util.h"
 #include "content/public/browser/browser_context.h"
+#include "gin/weak_cell.h"
+#include "shell/browser/api/electron_api_utility_process.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace electron {
 
@@ -28,6 +31,17 @@ SessionPreferences::~SessionPreferences() = default;
 SessionPreferences* SessionPreferences::FromBrowserContext(
     content::BrowserContext* context) {
   return static_cast<SessionPreferences*>(context->GetUserData(&kLocatorKey));
+}
+
+gin::WeakCell<api::UtilityProcessWrapper>*
+SessionPreferences::GetLocalAIHandler() const {
+  return local_ai_handler_.Get();
+}
+
+void SessionPreferences::SetLocalAIHandler(
+    gin::WeakCell<api::UtilityProcessWrapper>* handler) {
+  local_ai_handler_ = handler;
+  ai_handler_changed_callbacks_.Notify();
 }
 
 base::CallbackListSubscription SessionPreferences::AddAIHandlerChangedCallback(

@@ -9,10 +9,10 @@
 
 #include "base/callback_list.h"
 #include "base/files/file_path.h"
-#include "base/memory/weak_ptr.h"
 #include "base/supports_user_data.h"
-#include "shell/browser/api/electron_api_utility_process.h"
+#include "gin/weak_cell.h"
 #include "shell/browser/preload_script.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace content {
 class BrowserContext;
@@ -37,14 +37,8 @@ class SessionPreferences : public base::SupportsUserData::Data {
 
   bool HasServiceWorkerPreloadScript();
 
-  const base::WeakPtr<api::UtilityProcessWrapper>& GetLocalAIHandler() const {
-    return local_ai_handler_;
-  }
-
-  void SetLocalAIHandler(base::WeakPtr<api::UtilityProcessWrapper> handler) {
-    local_ai_handler_ = handler;
-    ai_handler_changed_callbacks_.Notify();
-  }
+  gin::WeakCell<api::UtilityProcessWrapper>* GetLocalAIHandler() const;
+  void SetLocalAIHandler(gin::WeakCell<api::UtilityProcessWrapper>* handler);
 
   base::CallbackListSubscription AddAIHandlerChangedCallback(
       base::RepeatingClosure callback);
@@ -56,7 +50,8 @@ class SessionPreferences : public base::SupportsUserData::Data {
   static int kLocatorKey;
 
   std::vector<PreloadScript> preload_scripts_;
-  base::WeakPtr<api::UtilityProcessWrapper> local_ai_handler_;
+  cppgc::WeakPersistent<gin::WeakCell<api::UtilityProcessWrapper>>
+      local_ai_handler_;
   base::RepeatingClosureList ai_handler_changed_callbacks_;
 };
 
