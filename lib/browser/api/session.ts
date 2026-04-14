@@ -15,7 +15,7 @@ let fakeVideoWindowId = -1;
 const kMacOsNativePickerId = -4;
 const systemPickerVideoSource = Object.create(null);
 Object.defineProperty(systemPickerVideoSource, 'id', {
-  get () {
+  get() {
     return `window:${kMacOsNativePickerId}:${fakeVideoWindowId--}`;
   }
 });
@@ -73,13 +73,18 @@ Session.prototype.setPreloads = function (preloads) {
     .forEach((script) => {
       this.unregisterPreloadScript(script.id);
     });
-  preloads.map(filePath => ({
-    type: 'frame',
-    filePath,
-    _deprecated: true
-  }) as Electron.PreloadScriptRegistration).forEach(script => {
-    this.registerPreloadScript(script);
-  });
+  preloads
+    .map(
+      (filePath) =>
+        ({
+          type: 'frame',
+          filePath,
+          _deprecated: true
+        }) as Electron.PreloadScriptRegistration
+    )
+    .forEach((script) => {
+      this.registerPreloadScript(script);
+    });
 };
 
 Session.prototype.getAllExtensions = deprecate.moveAPI(
@@ -120,7 +125,7 @@ Session.prototype.registerLocalAIHandler = function (handler: UtilityProcess | n
 export default {
   fromPartition,
   fromPath,
-  get defaultSession () {
+  get defaultSession() {
     return fromPartition('');
   }
 };

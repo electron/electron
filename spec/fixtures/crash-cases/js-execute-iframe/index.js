@@ -3,7 +3,7 @@ const { app, BrowserWindow } = require('electron');
 const net = require('node:net');
 const path = require('node:path');
 
-function createWindow () {
+function createWindow() {
   const mainWindow = new BrowserWindow({
     webPreferences: {
       nodeIntegration: true,
@@ -43,9 +43,7 @@ server.on('error', (err) => {
   throw err;
 });
 
-const p = process.platform === 'win32'
-  ? path.join('\\\\?\\pipe', process.cwd(), 'myctl')
-  : '/tmp/echo.sock';
+const p = process.platform === 'win32' ? path.join('\\\\?\\pipe', process.cwd(), 'myctl') : '/tmp/echo.sock';
 
 server.listen(p, () => {
   console.log('server bound');

@@ -12,10 +12,10 @@ This will be upstreamed to Chromium.
 Change-Id: I89a6a076ae35cbaf12a93c517223a524bab3dff0
 
 diff --git a/third_party/blink/renderer/modules/ai/language_model.cc b/third_party/blink/renderer/modules/ai/language_model.cc
-index c176575f2dcc049e478d5388ae1934aa3bc59786..b8eda3dd8733b1e7e92f70a8c75678df4a0314c8 100644
+index d60d6fd742b870360e25190db15da9e94eccc5f1..3435c3a38a5e356845d43623832038473e9db66f 100644
 --- a/third_party/blink/renderer/modules/ai/language_model.cc
 +++ b/third_party/blink/renderer/modules/ai/language_model.cc
-@@ -190,6 +190,9 @@ class CloneLanguageModelClient
+@@ -193,6 +193,9 @@ class CloneLanguageModelClient
          client_remote;
      receiver_.Bind(client_remote.InitWithNewPipeAndPassReceiver(),
                     language_model->GetTaskRunner());
@@ -25,7 +25,7 @@ index c176575f2dcc049e478d5388ae1934aa3bc59786..b8eda3dd8733b1e7e92f70a8c75678df
      language_model_->GetAILanguageModelRemote()->Fork(std::move(client_remote));
    }
    ~CloneLanguageModelClient() override = default;
-@@ -232,6 +235,11 @@ class CloneLanguageModelClient
+@@ -235,6 +238,11 @@ class CloneLanguageModelClient
      Cleanup();
    }
  
@@ -37,7 +37,7 @@ index c176575f2dcc049e478d5388ae1934aa3bc59786..b8eda3dd8733b1e7e92f70a8c75678df
    void ResetReceiver() override { receiver_.reset(); }
  
   private:
-@@ -262,6 +270,8 @@ class AppendClient : public GarbageCollected<AppendClient>,
+@@ -265,6 +273,8 @@ class AppendClient : public GarbageCollected<AppendClient>,
      mojo::PendingRemote<mojom::blink::ModelStreamingResponder> client_remote;
      receiver_.Bind(client_remote.InitWithNewPipeAndPassReceiver(),
                     language_model->GetTaskRunner());
@@ -46,7 +46,7 @@ index c176575f2dcc049e478d5388ae1934aa3bc59786..b8eda3dd8733b1e7e92f70a8c75678df
      language_model_->GetAILanguageModelRemote()->Append(
          std::move(prompts), std::move(client_remote));
    }
-@@ -317,6 +327,11 @@ class AppendClient : public GarbageCollected<AppendClient>,
+@@ -320,6 +330,11 @@ class AppendClient : public GarbageCollected<AppendClient>,
      Cleanup();
    }
  

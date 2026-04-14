@@ -7,6 +7,7 @@ name: Clean Source Cache
 on:
   schedule:
     - cron: "0 0 * * *"
+  workflow_dispatch:
 
 permissions: {}
 
@@ -16,6 +17,8 @@ jobs:
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
     container:
       image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
       options: --user root
@@ -23,12 +26,130 @@ jobs:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
         - /mnt/win-cache:/mnt/win-cache
     steps:
+    - name: Get Disk Space Before Cleanup
+      id: disk-before
+      shell: bash
+      run: |
+        echo "Disk space before cleanup:"
+        df -h /mnt/cross-instance-cache
+        df -h /mnt/win-cache
+        CROSS_FREE_BEFORE=$(df -k /mnt/cross-instance-cache | tail -1 | awk '{print $4}')
+        CROSS_TOTAL=$(df -k /mnt/cross-instance-cache | tail -1 | awk '{print $2}')
+        WIN_FREE_BEFORE=$(df -k /mnt/win-cache | tail -1 | awk '{print $4}')
+        WIN_TOTAL=$(df -k /mnt/win-cache | tail -1 | awk '{print $2}')
+        echo "cross_free_kb=$CROSS_FREE_BEFORE" >> $GITHUB_OUTPUT
+        echo "cross_total_kb=$CROSS_TOTAL" >> $GITHUB_OUTPUT
+        echo "win_free_kb=$WIN_FREE_BEFORE" >> $GITHUB_OUTPUT
+        echo "win_total_kb=$WIN_TOTAL" >> $GITHUB_OUTPUT
+
     - name: Cleanup Source Cache
       shell: bash
       run: |
-        df -h /mnt/cross-instance-cache
         find /mnt/cross-instance-cache -type f -mtime +15 -delete
+        find /mnt/win-cache -type f -mtime +15 -delete
+
+    - name: Get Disk Space After Cleanup
+      id: disk-after
+      shell: bash
+      run: |
+        echo "Disk space after cleanup:"
         df -h /mnt/cross-instance-cache
         df -h /mnt/win-cache
-        find /mnt/win-cache -type f -mtime +15 -delete
-        df -h /mnt/win-cache
+        CROSS_FREE_AFTER=$(df -k /mnt/cross-instance-cache | tail -1 | awk '{print $4}')
+        WIN_FREE_AFTER=$(df -k /mnt/win-cache | tail -1 | awk '{print $4}')
+        echo "cross_free_kb=$CROSS_FREE_AFTER" >> $GITHUB_OUTPUT
+        echo "win_free_kb=$WIN_FREE_AFTER" >> $GITHUB_OUTPUT
+
+    - name: Log Disk Space to Datadog
+      if: ${{ env.DD_API_KEY != '' }}
+      shell: bash
+      env:
+        CROSS_FREE_BEFORE: ${{ steps.disk-before.outputs.cross_free_kb }}
+        CROSS_FREE_AFTER: ${{ steps.disk-after.outputs.cross_free_kb }}
+        CROSS_TOTAL: ${{ steps.disk-before.outputs.cross_total_kb }}
+        WIN_FREE_BEFORE: ${{ steps.disk-before.outputs.win_free_kb }}
+        WIN_FREE_AFTER: ${{ steps.disk-after.outputs.win_free_kb }}
+        WIN_TOTAL: ${{ steps.disk-before.outputs.win_total_kb }}
+      run: |
+        TIMESTAMP=$(date +%s)
+
+        CROSS_FREE_BEFORE_GB=$(awk "BEGIN {printf \"%.2f\", $CROSS_FREE_BEFORE / 1024 / 1024}")
+        CROSS_FREE_AFTER_GB=$(awk "BEGIN {printf \"%.2f\", $CROSS_FREE_AFTER / 1024 / 1024}")
+        CROSS_FREED_GB=$(awk "BEGIN {printf \"%.2f\", ($CROSS_FREE_AFTER - $CROSS_FREE_BEFORE) / 1024 / 1024}")
+        CROSS_TOTAL_GB=$(awk "BEGIN {printf \"%.2f\", $CROSS_TOTAL / 1024 / 1024}")
+
+        WIN_FREE_BEFORE_GB=$(awk "BEGIN {printf \"%.2f\", $WIN_FREE_BEFORE / 1024 / 1024}")
+        WIN_FREE_AFTER_GB=$(awk "BEGIN {printf \"%.2f\", $WIN_FREE_AFTER / 1024 / 1024}")
+        WIN_FREED_GB=$(awk "BEGIN {printf \"%.2f\", ($WIN_FREE_AFTER - $WIN_FREE_BEFORE) / 1024 / 1024}")
+        WIN_TOTAL_GB=$(awk "BEGIN {printf \"%.2f\", $WIN_TOTAL / 1024 / 1024}")
+
+        echo "cross-instance-cache: free before=${CROSS_FREE_BEFORE_GB}GB, after=${CROSS_FREE_AFTER_GB}GB, freed=${CROSS_FREED_GB}GB, total=${CROSS_TOTAL_GB}GB"
+        echo "win-cache: free before=${WIN_FREE_BEFORE_GB}GB, after=${WIN_FREE_AFTER_GB}GB, freed=${WIN_FREED_GB}GB, total=${WIN_TOTAL_GB}GB"
+
+        curl -s -X POST "https://api.datadoghq.com/api/v2/series" \
+          -H "Content-Type: application/json" \
+          -H "DD-API-KEY: ${DD_API_KEY}" \
+          -d @- << EOF
+        {
+          "series": [
+            {
+              "metric": "electron.src_cache.disk.free_space_before_cleanup_gb",
+              "points": [{"timestamp": ${TIMESTAMP}, "value": ${CROSS_FREE_BEFORE_GB}}],
+              "type": 3,
+              "unit": "gigabyte",
+              "tags": ["volume:cross-instance-cache", "platform:linux"]
+            },
+            {
+              "metric": "electron.src_cache.disk.free_space_after_cleanup_gb",
+              "points": [{"timestamp": ${TIMESTAMP}, "value": ${CROSS_FREE_AFTER_GB}}],
+              "type": 3,
+              "unit": "gigabyte",
+              "tags": ["volume:cross-instance-cache", "platform:linux"]
+            },
+            {
+              "metric": "electron.src_cache.disk.space_freed_gb",
+              "points": [{"timestamp": ${TIMESTAMP}, "value": ${CROSS_FREED_GB}}],
+              "type": 3,
+              "unit": "gigabyte",
+              "tags": ["volume:cross-instance-cache", "platform:linux"]
+            },
+            {
+              "metric": "electron.src_cache.disk.total_space_gb",
+              "points": [{"timestamp": ${TIMESTAMP}, "value": ${CROSS_TOTAL_GB}}],
+              "type": 3,
+              "unit": "gigabyte",
+              "tags": ["volume:cross-instance-cache", "platform:linux"]
+            },
+            {
+              "metric": "electron.src_cache.disk.free_space_before_cleanup_gb",
+              "points": [{"timestamp": ${TIMESTAMP}, "value": ${WIN_FREE_BEFORE_GB}}],
+              "type": 3,
+              "unit": "gigabyte",
+              "tags": ["volume:win-cache", "platform:linux"]
+            },
+            {
+              "metric": "electron.src_cache.disk.free_space_after_cleanup_gb",
+              "points": [{"timestamp": ${TIMESTAMP}, "value": ${WIN_FREE_AFTER_GB}}],
+              "type": 3,
+              "unit": "gigabyte",
+              "tags": ["volume:win-cache", "platform:linux"]
+            },
+            {
+              "metric": "electron.src_cache.disk.space_freed_gb",
+              "points": [{"timestamp": ${TIMESTAMP}, "value": ${WIN_FREED_GB}}],
+              "type": 3,
+              "unit": "gigabyte",
+              "tags": ["volume:win-cache", "platform:linux"]
+            },
+            {
+              "metric": "electron.src_cache.disk.total_space_gb",
+              "points": [{"timestamp": ${TIMESTAMP}, "value": ${WIN_TOTAL_GB}}],
+              "type": 3,
+              "unit": "gigabyte",
+              "tags": ["volume:win-cache", "platform:linux"]
+            }
+          ]
+        }
+        EOF
+
+        echo "Disk space metrics logged to Datadog"

@@ -7,7 +7,7 @@ import { ELECTRON_DIR } from '../lib/utils';
 export enum PreType {
   NONE = 'none',
   PARTIAL = ' partial',
-  FULL = 'full',
+  FULL = 'full'
 }
 
 const getCurrentDate = () => {
@@ -26,14 +26,14 @@ export const isStable = (v: string) => {
   return !!(parsed && parsed.prerelease.length === 0);
 };
 
-export async function nextAlpha (v: string) {
+export async function nextAlpha(v: string) {
   const next = semver.coerce(semver.clean(v));
   const tagBlob = spawnSync('git', ['tag', '--list', '-l', `v${next}-alpha.*`], {
     cwd: ELECTRON_DIR,
     encoding: 'utf8',
     stdio: ['inherit', 'pipe', 'pipe']
   });
-  const tags = tagBlob.stdout.split('\n').filter(e => e !== '');
+  const tags = tagBlob.stdout.split('\n').filter((e) => e !== '');
   tags.sort((t1, t2) => {
     const a = parseInt(t1.split('.').pop()!, 10);
     const b = parseInt(t2.split('.').pop()!, 10);
@@ -44,14 +44,14 @@ export async function nextAlpha (v: string) {
   return tags.length === 0 ? `${next}-alpha.1` : semver.inc(tags.pop()!, 'prerelease')!;
 }
 
-export async function nextBeta (v: string) {
+export async function nextBeta(v: string) {
   const next = semver.coerce(semver.clean(v));
   const tagBlob = spawnSync('git', ['tag', '--list', '-l', `v${next}-beta.*`], {
     cwd: ELECTRON_DIR,
     encoding: 'utf8',
     stdio: ['inherit', 'pipe', 'pipe']
   });
-  const tags = tagBlob.stdout.split('\n').filter(e => e !== '');
+  const tags = tagBlob.stdout.split('\n').filter((e) => e !== '');
   tags.sort((t1, t2) => {
     const a = parseInt(t1.split('.').pop()!, 10);
     const b = parseInt(t2.split('.').pop()!, 10);
@@ -62,7 +62,7 @@ export async function nextBeta (v: string) {
   return tags.length === 0 ? `${next}-beta.1` : semver.inc(tags.pop()!, 'prerelease')!;
 }
 
-export async function nextNightly (v: string) {
+export async function nextNightly(v: string) {
   let next = semver.valid(semver.coerce(v));
   const pre = `nightly.${getCurrentDate()}`;
 
@@ -80,7 +80,7 @@ export async function nextNightly (v: string) {
   return `${next}-${pre}`;
 }
 
-async function getLastMajorForMain () {
+async function getLastMajorForMain() {
   let branchNames;
   const result = spawnSync('git', ['branch', '-a', '--remote', '--list', 'origin/[0-9]*-x-y'], {
     cwd: ELECTRON_DIR,
@@ -89,14 +89,14 @@ async function getLastMajorForMain () {
   });
   if (result.status === 0) {
     branchNames = result.stdout.trim().split('\n');
-    const filtered = branchNames.map(b => b.replace('origin/', ''));
+    const filtered = branchNames.map((b) => b.replace('origin/', ''));
     return getNextReleaseBranch(filtered);
   } else {
     throw new Error('Release branches could not be fetched.');
   }
 }
 
-function getNextReleaseBranch (branches: string[]) {
-  const converted = branches.map(b => b.replace(/-/g, '.').replace('x', '0').replace('y', '0'));
-  return converted.reduce((v1, v2) => semver.gt(v1, v2) ? v1 : v2);
+function getNextReleaseBranch(branches: string[]) {
+  const converted = branches.map((b) => b.replace(/-/g, '.').replace('x', '0').replace('y', '0'));
+  return converted.reduce((v1, v2) => (semver.gt(v1, v2) ? v1 : v2));
 }

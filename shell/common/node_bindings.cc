@@ -51,6 +51,7 @@
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
 #include "third_party/electron_node/src/module_wrap.h"
+#include "v8/include/v8-statistics.h"
 
 #if !IS_MAS_BUILD()
 #include "shell/common/crash_keys.h"
@@ -200,6 +201,25 @@ void V8OOMErrorCallback(const char* location, const v8::OOMDetails& details) {
   }
   if (details.detail) {
     electron::crash_keys::SetCrashKey("electron.v8-oom.detail", details.detail);
+  }
+
+  // TryGetCurrent() instead of GetCurrent() to avoid FATAL if no isolate.
+  v8::Isolate* isolate = v8::Isolate::TryGetCurrent();
+  if (isolate) {
+    v8::HeapStatistics stats;
+    isolate->GetHeapStatistics(&stats);
+    electron::crash_keys::SetCrashKey(
+        "electron.v8-oom.heap.used",
+        base::NumberToString(stats.used_heap_size()));
+    electron::crash_keys::SetCrashKey(
+        "electron.v8-oom.heap.total",
+        base::NumberToString(stats.total_heap_size()));
+    electron::crash_keys::SetCrashKey(
+        "electron.v8-oom.heap.limit",
+        base::NumberToString(stats.heap_size_limit()));
+    electron::crash_keys::SetCrashKey(
+        "electron.v8-oom.heap.total_available",
+        base::NumberToString(stats.total_available_size()));
   }
 #endif
 
@@ -530,14 +550,7 @@ NodeBindings::NodeBindings(BrowserEnvironment browser_env)
       uv_loop_{InitEventLoop(browser_env, &worker_loop_)} {}
 
 NodeBindings::~NodeBindings() {
-  // Quit the embed thread.
-  embed_closed_ = true;
-  uv_sem_post(&embed_sem_);
-
-  WakeupEmbedThread();
-
-  // Wait for everything to be done.
-  uv_thread_join(&embed_thread_);
+  StopPolling();
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
@@ -546,6 +559,36 @@ NodeBindings::~NodeBindings() {
   // Clean up worker loop
   if (in_worker_loop())
     stop_and_close_uv_loop(uv_loop_);
+}
+
+void NodeBindings::StopPolling() {
+  if (!initialized_)
+    return;
+
+  // Tell the embed thread to quit.
+  embed_closed_ = true;
+
+  // The embed thread alternates between uv_sem_wait (waiting for UvRunOnce
+  // to finish) and PollEvents (waiting for I/O). Wake it from both.
+  uv_sem_post(&embed_sem_);
+  WakeupEmbedThread();
+
+  // Wait for it to exit.
+  uv_thread_join(&embed_thread_);
+
+  // Drain any leftover semaphore posts so the next embed thread starts
+  // in a clean lock-step state. A stale count can occur if UvRunOnce
+  // posted sem_post concurrently with our StopPolling sem_post — the
+  // embed thread consumed one to see embed_closed_ and exited, leaving
+  // the other unconsumed. Without draining, the next EmbedThreadRunner
+  // would fall through uv_sem_wait immediately, breaking the intended
+  // one-post-per-UvRunOnce protocol.
+  while (uv_sem_trywait(&embed_sem_) == 0) {
+  }
+
+  // Allow PrepareEmbedThread + StartPolling to restart.
+  embed_closed_ = false;
+  initialized_ = false;
 }
 
 node::IsolateData* NodeBindings::isolate_data(
@@ -934,12 +977,21 @@ void NodeBindings::PrepareEmbedThread() {
   if (initialized_)
     return;
 
-  // Add dummy handle for libuv, otherwise libuv would quit when there is
-  // nothing to do.
-  uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
+  // The async handle and semaphore live for the lifetime of this
+  // NodeBindings instance (destroyed in ~NodeBindings), but the embed
+  // thread itself may be stopped and restarted via StopPolling /
+  // PrepareEmbedThread for pooled worklet contexts. Only init the
+  // handles once.
+  if (!embed_thread_prepared_) {
+    // Add dummy handle for libuv, otherwise libuv would quit when there is
+    // nothing to do.
+    uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
 
-  // Start worker that will interrupt main loop when having uv events.
-  uv_sem_init(&embed_sem_, 0);
+    // Start worker that will interrupt main loop when having uv events.
+    uv_sem_init(&embed_sem_, 0);
+    embed_thread_prepared_ = true;
+  }
+
   uv_thread_create(&embed_thread_, EmbedThreadRunner, this);
 }
 

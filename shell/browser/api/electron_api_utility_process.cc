@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_utility_process.h"
 
 #include <map>
+#include <unordered_map>
 #include <utility>
 
 #include "base/files/file_util.h"
@@ -19,6 +20,7 @@
 #include "content/public/browser/service_process_host.h"
 #include "content/public/common/result_codes.h"
 #include "gin/object_template_builder.h"
+#include "gin/persistent.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "shell/browser/api/message_port.h"
@@ -31,11 +33,13 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/mojom/blob/blob.mojom.h"
+#include "v8/include/cppgc/allocation.h"
 
 #if BUILDFLAG(IS_POSIX)
 #include "base/posix/eintr_wrapper.h"
@@ -55,20 +59,34 @@ namespace electron {
 
 namespace {
 
-base::IDMap<api::UtilityProcessWrapper*, base::ProcessId>&
-GetAllUtilityProcessWrappers() {
-  static base::NoDestructor<
-      base::IDMap<api::UtilityProcessWrapper*, base::ProcessId>>
-      s_all_utility_process_wrappers;
-  return *s_all_utility_process_wrappers;
+// Maps process IDs to their UtilityProcessWrapper instances.
+struct UtilityProcessRegistry {
+  void Add(base::ProcessId pid, api::UtilityProcessWrapper* wrapper) {
+    map_.emplace(pid, wrapper);
+  }
+  void Remove(base::ProcessId pid) { map_.erase(pid); }
+  api::UtilityProcessWrapper* Lookup(base::ProcessId pid) {
+    auto it = map_.find(pid);
+    return it != map_.end() ? it->second.Get() : nullptr;
+  }
+
+ private:
+  std::unordered_map<base::ProcessId,
+                     cppgc::WeakPersistent<api::UtilityProcessWrapper>>
+      map_;
+};
+
+UtilityProcessRegistry& GetAllUtilityProcessWrappers() {
+  static base::NoDestructor<UtilityProcessRegistry> registry;
+  return *registry;
 }
 
 }  // namespace
 
 namespace api {
 
-gin::DeprecatedWrapperInfo UtilityProcessWrapper::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+const gin::WrapperInfo UtilityProcessWrapper::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronUtilityProcess);
 
 UtilityProcessWrapper::UtilityProcessWrapper(
     node::mojom::NodeServiceParamsPtr params,
@@ -80,6 +98,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     bool create_network_observer,
     bool disclaim_responsibility)
     : create_network_observer_(create_network_observer) {
+  auto& allocation_handle =
+      JavascriptEnvironment::GetIsolate()->GetCppHeap()->GetAllocationHandle();
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
   base::win::ScopedHandle stderr_write(nullptr);
@@ -198,12 +218,13 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 #endif
           .WithProcessCallback(
               base::BindOnce(&UtilityProcessWrapper::OnServiceProcessLaunch,
-                             weak_factory_.GetWeakPtr()))
+                             gin::WrapPersistent(
+                                 weak_factory_.GetWeakCell(allocation_handle))))
           .Pass());
 
-  node_service_remote_.set_disconnect_with_reason_handler(
-      base::BindOnce(&UtilityProcessWrapper::OnServiceProcessDisconnected,
-                     weak_factory_.GetWeakPtr()));
+  node_service_remote_.set_disconnect_with_reason_handler(base::BindOnce(
+      &UtilityProcessWrapper::OnServiceProcessDisconnected,
+      gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
 
   // We use a separate message pipe to support postMessage API
   // instead of the existing receiver interface so that we can
@@ -218,7 +239,8 @@ UtilityProcessWrapper::UtilityProcessWrapper(
       base::SingleThreadTaskRunner::GetCurrentDefault());
   connector_->set_incoming_receiver(this);
   connector_->set_connection_error_handler(base::BindOnce(
-      &UtilityProcessWrapper::CloseConnectorPort, weak_factory_.GetWeakPtr()));
+      &UtilityProcessWrapper::CloseConnectorPort,
+      gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
 
   params->url_loader_factory_params = CreateURLLoaderFactoryParams();
   node_service_remote_->Initialize(std::move(params),
@@ -228,7 +250,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   network_service_gone_subscription_ =
       content::RegisterNetworkServiceProcessGoneHandler(base::BindRepeating(
           &UtilityProcessWrapper::CreateAndSendURLLoaderFactory,
-          weak_factory_.GetWeakPtr()));
+          gin::WrapPersistent(weak_factory_.GetWeakCell(allocation_handle))));
 }
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
@@ -239,7 +261,7 @@ void UtilityProcessWrapper::OnServiceProcessLaunch(
     const base::Process& process) {
   DCHECK(node_service_remote_.is_connected());
   pid_ = process.Pid();
-  GetAllUtilityProcessWrappers().AddWithID(this, pid_);
+  GetAllUtilityProcessWrappers().Add(pid_, this);
   if (stdout_read_fd_ != -1)
     EmitWithoutEvent("stdout", stdout_read_fd_);
   if (stderr_read_fd_ != -1)
@@ -280,7 +302,7 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
 #endif
   }
   EmitWithoutEvent("exit", exit_code);
-  Unpin();
+  keep_alive_.Clear();
 }
 
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
@@ -472,25 +494,25 @@ void UtilityProcessWrapper::BindAIManager(
 #endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 // static
-raw_ptr<UtilityProcessWrapper> UtilityProcessWrapper::FromProcessId(
+UtilityProcessWrapper* UtilityProcessWrapper::FromProcessId(
     base::ProcessId pid) {
   auto* utility_process_wrapper = GetAllUtilityProcessWrappers().Lookup(pid);
-  return !!utility_process_wrapper ? utility_process_wrapper : nullptr;
+  return utility_process_wrapper ? utility_process_wrapper : nullptr;
 }
 
 // static
-gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
+UtilityProcessWrapper* UtilityProcessWrapper::Create(
     gin::Arguments* const args) {
   if (!Browser::Get()->is_ready()) {
     args->ThrowTypeError(
         "utilityProcess cannot be created before app is ready.");
-    return {};
+    return nullptr;
   }
 
   gin_helper::Dictionary dict;
   if (!args->GetNext(&dict)) {
     args->ThrowTypeError("Options must be an object.");
-    return {};
+    return nullptr;
   }
 
   std::u16string display_name;
@@ -505,19 +527,19 @@ gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   dict.Get("modulePath", &params->script);
   if (dict.Has("args") && !dict.Get("args", &params->args)) {
     args->ThrowTypeError("Invalid value for args");
-    return {};
+    return nullptr;
   }
 
   gin_helper::Dictionary opts;
   if (dict.Get("options", &opts)) {
     if (opts.Has("env") && !opts.Get("env", &env_map)) {
       args->ThrowTypeError("Invalid value for env");
-      return {};
+      return nullptr;
     }
 
     if (opts.Has("execArgv") && !opts.Get("execArgv", &params->exec_args)) {
       args->ThrowTypeError("Invalid value for execArgv");
-      return {};
+      return nullptr;
     }
 
     opts.Get("serviceName", &display_name);
@@ -543,17 +565,13 @@ gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
     opts.Get("disclaim", &disclaim_responsibility);
 #endif
   }
-  auto handle = gin_helper::CreateHandle(
-      args->isolate(),
-      new UtilityProcessWrapper(
-          std::move(params), display_name, std::move(stdio), env_map,
-          current_working_directory, use_plugin_helper, create_network_observer,
-          disclaim_responsibility));
-  handle->Pin(args->isolate());
-  return handle;
+  v8::Isolate* isolate = args->isolate();
+  return cppgc::MakeGarbageCollected<UtilityProcessWrapper>(
+      isolate->GetCppHeap()->GetAllocationHandle(), std::move(params),
+      display_name, std::move(stdio), env_map, current_working_directory,
+      use_plugin_helper, create_network_observer, disclaim_responsibility);
 }
 
-// static
 gin::ObjectTemplateBuilder UtilityProcessWrapper::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin_helper::EventEmitterMixin<
@@ -563,8 +581,17 @@ gin::ObjectTemplateBuilder UtilityProcessWrapper::GetObjectTemplateBuilder(
       .SetProperty("pid", &UtilityProcessWrapper::GetOSProcessId);
 }
 
-const char* UtilityProcessWrapper::GetTypeName() {
-  return "UtilityProcessWrapper";
+void UtilityProcessWrapper::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<UtilityProcessWrapper>::Trace(visitor);
+  visitor->Trace(weak_factory_);
+}
+
+const gin::WrapperInfo* UtilityProcessWrapper::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* UtilityProcessWrapper::GetHumanReadableName() const {
+  return "Electron / UtilityProcess";
 }
 
 }  // namespace api

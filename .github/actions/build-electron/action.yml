@@ -48,19 +48,15 @@ runs:
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Download previous object checksums
-      uses: dawidd6/action-download-artifact@09b07ec687d10771279a426c79925ee415c12906 # v17
-      if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' }}
-      with:
-        name: object_checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
-        commit: ${{ case(github.event_name == 'push', github.event.before, github.event.pull_request.base.sha) }}
-        path: src
-        if_no_artifact_found: ignore
-    - name: Move previous object checksums
       shell: bash
-      run: |
-        if [ -f src/object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json ]; then
-          mv src/object-checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json src/previous-object-checksums.json
-        fi
+      if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' }}
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        ARTIFACT_NAME: object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json
+        SEARCH_BRANCH: ${{ case(github.event_name == 'push', github.ref_name, github.event.pull_request.base.ref) }}
+        REPO: ${{ github.repository }}
+        OUTPUT_PATH: src/previous-object-checksums.json
+      run: node src/electron/.github/actions/build-electron/download-previous-object-checksums.mjs
     - name: Build Electron ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
@@ -232,7 +228,17 @@ runs:
       if: ${{ inputs.is-release == 'true' }}
       run: |
         cd src
-        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $GN_EXTRA_ARGS"
+        # Reuse the hermetic mac_sdk_path that `e build` wrote for out/Default so
+        # out/ffmpeg builds against the same SDK instead of the runner's system Xcode.
+        # The path has to live under root_build_dir, so copy the symlink tree and
+        # rewrite Default -> ffmpeg.
+        MAC_SDK_ARG=""
+        if [ "$(uname)" = "Darwin" ]; then
+          mkdir -p out/ffmpeg
+          cp -a out/Default/xcode_links out/ffmpeg/
+          MAC_SDK_ARG=$(sed -n 's|^\(mac_sdk_path = "//out/\)Default/|\1ffmpeg/|p' out/Default/args.gn)
+        fi
+        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $MAC_SDK_ARG $GN_EXTRA_ARGS"
         e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg
     - name: Remove Clang problem matcher
       shell: bash

@@ -28,7 +28,7 @@ process.parentPort.on('message', (e) => {
   process.parentPort.postMessage('ack');
 });
 
-async function waitForAbort (signal, messageType) {
+async function waitForAbort(signal, messageType) {
   await once(signal, 'abort');
   process.parentPort.postMessage({ type: messageType });
   throw new Error('Aborted');
@@ -36,7 +36,7 @@ async function waitForAbort (signal, messageType) {
 
 localAIHandler.setPromptAPIHandler(() => {
   const ControllableLanguageModel = class extends LanguageModel {
-    static async create (options) {
+    static async create(options) {
       process.parentPort.postMessage({ type: 'create-called', options });
       if (createResponse === 'reject') {
         return Promise.reject(new Error('Model is unavailable'));
@@ -49,7 +49,7 @@ localAIHandler.setPromptAPIHandler(() => {
       });
     }
 
-    static async availability (options) {
+    static async availability(options) {
       process.parentPort.postMessage({ type: 'availability-called', options });
       if (availabilityState === 'reject') {
         return Promise.reject(new Error('Model is unavailable'));
@@ -57,7 +57,7 @@ localAIHandler.setPromptAPIHandler(() => {
       return availabilityState;
     }
 
-    async prompt (input, options) {
+    async prompt(input, options) {
       process.parentPort.postMessage({ type: 'prompt-called', input, options });
       if (promptResponse === 'reject') {
         return Promise.reject(new Error('Model is unavailable'));
@@ -67,7 +67,7 @@ localAIHandler.setPromptAPIHandler(() => {
       return promptResponse;
     }
 
-    async append (input, options) {
+    async append(input, options) {
       process.parentPort.postMessage({ type: 'append-called', input, options });
       if (appendResponse === 'reject') {
         return Promise.reject(new Error('Append failed'));
@@ -76,7 +76,7 @@ localAIHandler.setPromptAPIHandler(() => {
       }
     }
 
-    async measureContextUsage (input, options) {
+    async measureContextUsage(input, options) {
       process.parentPort.postMessage({ type: 'measure-called', input, options });
       if (measureResponse === 'reject') {
         return Promise.reject(new Error('Measure failed'));
@@ -86,7 +86,7 @@ localAIHandler.setPromptAPIHandler(() => {
       return measureResponse;
     }
 
-    async clone (options) {
+    async clone(options) {
       process.parentPort.postMessage({ type: 'clone-called', options });
       if (cloneResponse === 'reject') {
         return Promise.reject(new Error('Clone failed'));
@@ -101,7 +101,7 @@ localAIHandler.setPromptAPIHandler(() => {
       });
     }
 
-    destroy () {
+    destroy() {
       process.parentPort.postMessage({ type: 'destroy-called' });
     }
   };

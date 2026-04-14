@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 31 Mar 2026 09:03:39 +0900
+Subject: chore: register node as a dynamic trace category prefix
+
+This allows Node.js trace categories to be treated as dynamic Perfetto
+categories in the Chromium build. Without this, the categories
+must be registered in the static registry base/trace_event/builtin_categories.h
+which is backed by constexpr function ValidateCategories() that
+recursively validates to a depth of index + longest_category_name_length,
+adding the node categories exceeds the current constexpr recursion depth
+of 512 and requires additional patching to add `-fconstexpr-depth` to //base
+target. Given neither the static nor the dynamic registration can be
+upstreamed, the minimal of the two changes is chosen here.
+
+diff --git a/base/trace_event/builtin_categories.h b/base/trace_event/builtin_categories.h
+index 85c6f973788938b6a48a7a89e9fa803dc1030580..ae25a8188d57ff4c15e9a20e91629d585314db87 100644
+--- a/base/trace_event/builtin_categories.h
++++ b/base/trace_event/builtin_categories.h
+@@ -14,6 +14,7 @@ PERFETTO_DEFINE_TEST_CATEGORY_PREFIXES("cat",
+                                        "foo",
+                                        "test",
+                                        "kTest",
++                                       "node",
+                                        "noise",
+                                        "Testing",
+                                        "NotTesting",

@@ -12,6 +12,7 @@ import { app } from 'electron/main';
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
 
+import { once } from 'node:events';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
 
@@ -19,13 +20,14 @@ import { ifdescribe } from './lib/spec-helpers';
 
 const fixturesPath = path.join(__dirname, 'fixtures');
 
-const skip = process.platform !== 'linux' ||
-             process.arch === 'ia32' ||
-             process.arch.indexOf('arm') === 0 ||
-             !process.env.DBUS_SESSION_BUS_ADDRESS;
+const skip =
+  process.platform !== 'linux' ||
+  process.arch === 'ia32' ||
+  process.arch.indexOf('arm') === 0 ||
+  !process.env.DBUS_SESSION_BUS_ADDRESS;
 
 ifdescribe(!skip)('Notification module (dbus)', () => {
-  let mock: any, Notification, getCalls: any, reset: any;
+  let mock: any, Notification: any, getCalls: any, emitSignal: any, reset: any;
   const realAppName = app.name;
   const realAppVersion = app.getVersion();
   const appName = 'api-notification-dbus-spec';
@@ -45,7 +47,20 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
     const getInterface = promisify(service.getInterface.bind(service));
     mock = await getInterface(path, iface);
     getCalls = promisify(mock.GetCalls.bind(mock));
+    emitSignal = promisify(mock.EmitSignal.bind(mock));
     reset = promisify(mock.Reset.bind(mock));
+
+    // Override GetCapabilities to include "actions" so that libnotify
+    // registers the "default" action callback on notifications.
+    const addMethod = promisify(mock.AddMethod.bind(mock));
+    await addMethod(
+      serviceName,
+      'GetCapabilities',
+      '',
+      'as',
+      'ret = ["body", "body-markup", "icon-static", "image/svg+xml", ' +
+        '"private-synchronous", "append", "private-icon-only", "truncation", "actions"]'
+    );
   });
 
   after(async () => {
@@ -57,8 +72,8 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
   });
 
   describe(`Notification module using ${serviceName}`, () => {
-    function onMethodCalled (done: () => void) {
-      function cb (name: string) {
+    function onMethodCalled(done: () => void) {
+      function cb(name: string) {
         console.log(`onMethodCalled: ${name}`);
         if (name === 'Notify') {
           mock.removeListener('MethodCalled', cb);
@@ -69,7 +84,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
       return cb;
     }
 
-    function unmarshalDBusNotifyHints (dbusHints: any) {
+    function unmarshalDBusNotifyHints(dbusHints: any) {
       const o: Record<string, any> = {};
       for (const hint of dbusHints) {
         const key = hint[0];
@@ -79,7 +94,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
       return o;
     }
 
-    function unmarshalDBusNotifyArgs (dbusArgs: any) {
+    function unmarshalDBusNotifyArgs(dbusArgs: any) {
       return {
         app_name: dbusArgs[0][1][0],
         replaces_id: dbusArgs[1][1][0],
@@ -91,7 +106,7 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
       };
     }
 
-    before(done => {
+    before((done) => {
       mock.on('MethodCalled', onMethodCalled(done));
       // lazy load Notification after we listen to MethodCalled mock signal
       Notification = require('electron').Notification;
@@ -122,15 +137,54 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
         app_icon: '',
         title: 'title',
         body: 'body',
-        actions: [],
+        actions: ['default', 'View'],
         hints: {
           append: 'true',
-          image_data: [3, 3, 12, true, 8, 4, Buffer.from([255, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 76, 255, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 38, 255, 255, 0, 0, 0, 255, 0, 0, 0, 0])],
+          image_data: [
+            3,
+            3,
+            12,
+            true,
+            8,
+            4,
+            Buffer.from([
+              255, 0, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 76, 255, 0, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 38, 255, 255, 0,
+              0, 0, 255, 0, 0, 0, 0
+            ])
+          ],
           'desktop-entry': appName,
           'sender-pid': process.pid,
           urgency: 1
         }
       });
+    });
+  });
+
+  describe('ActivationToken on notification click', () => {
+    it('should emit click when ActionInvoked is sent by the daemon', async () => {
+      const n = new Notification({ title: 'activation-token-test', body: 'test' });
+      const clicked = once(n, 'click');
+
+      n.show();
+
+      // getCalls returns all D-Bus method calls. The mock assigns sequential
+      // notification IDs starting at 1 for each Notify call.
+      const calls = await getCalls();
+      const notifyCalls = calls.filter((c: any) => c[1] === 'Notify');
+      const notificationId = notifyCalls.length;
+
+      // Simulate the notification daemon emitting ActivationToken (FDN 1.2)
+      // followed by ActionInvoked for a "default" click.
+      emitSignal('org.freedesktop.Notifications', 'ActivationToken', 'us', [
+        ['u', notificationId],
+        ['s', 'test-activation-token']
+      ]);
+      emitSignal('org.freedesktop.Notifications', 'ActionInvoked', 'us', [
+        ['u', notificationId],
+        ['s', 'default']
+      ]);
+
+      await clicked;
     });
   });
 });

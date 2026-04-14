@@ -18,7 +18,7 @@ v8.setFlagsFromString('--expose_gc');
 chai_1.use(require('chai-as-promised'));
 chai_1.use(require('dirty-chai'));
 
-function fail (message) {
+function fail(message) {
   process.parentPort.postMessage({ ok: false, message });
 }
 
@@ -42,7 +42,9 @@ process.parentPort.on('message', async (e) => {
 
   // Equivalent of afterEach in spec/api-net-spec.ts
   if (net_helpers_1.respondNTimes.routeFailure) {
-    fail('Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error');
+    fail(
+      'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+    );
     process.exit(1);
   }
 

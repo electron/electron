@@ -8,6 +8,7 @@
 #include "base/process/process.h"
 #include "base/process/process_metrics.h"
 #include "shell/common/api/electron_bindings.h"
+#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -204,6 +205,9 @@ class PreloadRealmLifetimeController
   std::unique_ptr<base::ProcessMetrics> metrics_;
   raw_ptr<ServiceWorkerData> service_worker_data_;
 
+  GC_PLUGIN_IGNORE(
+      "Intentional GC root to keep this object alive until the context is "
+      "destroyed")
   blink::Persistent<PreloadRealmLifetimeController> self_;
 };
 

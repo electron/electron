@@ -22,8 +22,6 @@
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "content/common/frame.mojom-forward.h"
-#include "content/public/browser/browser_thread.h"
-#include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/javascript_dialog_manager.h"
@@ -33,9 +31,6 @@
 #include "content/public/common/stop_find_action.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
-#include "shell/browser/api/electron_api_debugger.h"
-#include "shell/browser/api/electron_api_session.h"
-#include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
@@ -43,13 +38,10 @@
 #include "shell/browser/preload_script.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
-#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
-#include "shell/common/web_contents_utility.mojom.h"
 #include "ui/base/models/image_model.h"
 #include "v8/include/cppgc/persistent.h"
 
@@ -66,8 +58,14 @@ struct DeviceEmulationParams;
 // enum class PermissionType;
 }  // namespace blink
 
+namespace base {
+class FilePath;
+class Value;
+}  // namespace base
+
 namespace content {
 enum class KeyboardEventProcessingResult;
+class DevToolsAgentHost;
 class WebContents;
 }  // namespace content
 
@@ -78,6 +76,8 @@ class Arguments;
 namespace gin_helper {
 class Dictionary;
 class ErrorThrower;
+template <typename T>
+class Handle;
 template <typename T>
 class Promise;
 }  // namespace gin_helper
@@ -110,7 +110,9 @@ class OffScreenWebContentsView;
 namespace api {
 
 class BaseWindow;
+class Debugger;
 class FrameSubscriber;
+class Session;
 
 // Wrapper around the content::WebContents.
 class WebContents final : public ExclusiveAccessContext,
@@ -195,7 +197,6 @@ class WebContents final : public ExclusiveAccessContext,
   int32_t GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   [[nodiscard]] Type type() const { return type_; }
-  bool Equal(const WebContents* web_contents) const;
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void Reload();
   void ReloadIgnoringCache();
@@ -379,7 +380,7 @@ class WebContents final : public ExclusiveAccessContext,
   content::RenderFrameHost* Opener();
   content::RenderFrameHost* FocusedFrame();
 
-  WebContentsZoomController* GetZoomController() { return zoom_controller_; }
+  [[nodiscard]] WebContentsZoomController* GetZoomController() const;
 
   void AddObserver(ExtendedWebContentsObserver* obs) {
     observers_.AddObserver(obs);
@@ -856,11 +857,6 @@ class WebContents final : public ExclusiveAccessContext,
   // dialog_manager_, so we can make sure inspectable_web_contents_ is
   // destroyed before dialog_manager_, otherwise a crash would happen.
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
-
-  // The zoom controller for this webContents.
-  // Note: owned by inspectable_web_contents_, so declare this *after*
-  // that field to ensure the dtor destroys them in the right order.
-  raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
 
   std::optional<GURL> pending_unload_url_ = std::nullopt;
 

@@ -167,7 +167,7 @@ index 34b4e7c1b449312e9cb517be192a39a6b5286e3c..4f39415717f423b9a87f83779851e08b
                             FinishStartSandboxedProcessOnLauncherThread,
                         this));
 diff --git a/content/browser/service_host/service_process_host_impl.cc b/content/browser/service_host/service_process_host_impl.cc
-index d9c14f91747bde0e76056d7f2f2ada166e67f994..09335acac17f526fb8d8e42e4b2d993b11045786 100644
+index 4c0b23afb38066f4d29ead2d5705ae2b58ddca34..b79eb508bdfc1ae08dce254cfa57ab6c9b7bfc8a 100644
 --- a/content/browser/service_host/service_process_host_impl.cc
 +++ b/content/browser/service_host/service_process_host_impl.cc
 @@ -69,6 +69,21 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
@@ -584,10 +584,10 @@ index 4159eef9e1f54c82ac0d8ad6437925dd3c6fa3ec..b835257f686635b91f80c2d6651fb735
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/content/public/browser/service_process_host.cc b/content/public/browser/service_process_host.cc
-index d1bc550a891979e2d41d8d5b18a2f9287468e460..5d255f628788bc8b40d8df0039b08c06ffec8730 100644
+index a3970c9358d7e03b58e646c85a488d97609c44fd..1afc67fab97a3bb9515afefb8a3f051147d1d678 100644
 --- a/content/public/browser/service_process_host.cc
 +++ b/content/public/browser/service_process_host.cc
-@@ -53,12 +53,62 @@ ServiceProcessHost::Options::WithExtraCommandLineSwitches(
+@@ -53,6 +53,26 @@ ServiceProcessHost::Options::WithExtraCommandLineSwitches(
    return *this;
  }
  
@@ -614,6 +614,7 @@ index d1bc550a891979e2d41d8d5b18a2f9287468e460..5d255f628788bc8b40d8df0039b08c06
  ServiceProcessHost::Options& ServiceProcessHost::Options::WithProcessCallback(
      base::OnceCallback<void(const base::Process&)> callback) {
    process_callback = std::move(callback);
+@@ -68,6 +88,36 @@ ServiceProcessHost::Options& ServiceProcessHost::Options::WithObserver(
    return *this;
  }
  
@@ -651,18 +652,18 @@ index d1bc550a891979e2d41d8d5b18a2f9287468e460..5d255f628788bc8b40d8df0039b08c06
  ServiceProcessHost::Options&
  ServiceProcessHost::Options::WithPreloadedLibraries(
 diff --git a/content/public/browser/service_process_host.h b/content/public/browser/service_process_host.h
-index 0062d2cb6634b8b29977a0312516b1b13936b40a..888ff36d70c83010f1f45e9eeb2dd6b573158db5 100644
+index ea68aa0d16c46ad53b63e10027e81503610051d9..ac1ffa290b59d964931a312a911efbecc5eb04ac 100644
 --- a/content/public/browser/service_process_host.h
 +++ b/content/public/browser/service_process_host.h
-@@ -14,6 +14,7 @@
- #include "base/command_line.h"
+@@ -15,6 +15,7 @@
  #include "base/functional/callback.h"
+ #include "base/memory/weak_ptr.h"
  #include "base/observer_list_types.h"
 +#include "base/process/launch.h"
  #include "base/process/process_handle.h"
  #include "content/common/content_export.h"
  #include "content/public/browser/service_process_info.h"
-@@ -28,6 +29,10 @@
+@@ -29,6 +30,10 @@
  #include "base/types/pass_key.h"
  #endif  // BUILDFLAG(IS_WIN)
  
@@ -673,7 +674,7 @@ index 0062d2cb6634b8b29977a0312516b1b13936b40a..888ff36d70c83010f1f45e9eeb2dd6b5
  namespace base {
  class Process;
  }  // namespace base
-@@ -94,11 +99,40 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -98,6 +103,16 @@ class CONTENT_EXPORT ServiceProcessHost {
      // Specifies extra command line switches to append before launch.
      Options& WithExtraCommandLineSwitches(std::vector<std::string> switches);
  
@@ -690,8 +691,10 @@ index 0062d2cb6634b8b29977a0312516b1b13936b40a..888ff36d70c83010f1f45e9eeb2dd6b5
      // Specifies a callback to be invoked with service process once it's
      // launched. Will be on UI thread.
      Options& WithProcessCallback(
-         base::OnceCallback<void(const base::Process&)>);
- 
+@@ -111,6 +126,24 @@ class CONTENT_EXPORT ServiceProcessHost {
+     // the service process terminates, notifications are silently skipped.
+     // Will be called on the UI thread.
+     Options& WithObserver(base::WeakPtr<Observer> observer);
 +    // Specifies the working directory for the launched process.
 +    Options& WithCurrentDirectory(const base::FilePath& cwd);
 +
@@ -710,11 +713,10 @@ index 0062d2cb6634b8b29977a0312516b1b13936b40a..888ff36d70c83010f1f45e9eeb2dd6b5
 +    // Specifies if the process should disclaim TCC responsibility.
 +    Options& WithDisclaimResponsibility(bool disclaim_responsibility);
 +#endif  // BUILDFLAG(IS_MAC)
-+
+ 
  #if BUILDFLAG(IS_WIN)
      // Specifies libraries to preload before the sandbox is locked down. Paths
-     // should be absolute paths. Libraries will be preloaded before sandbox
-@@ -127,11 +161,26 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -140,12 +173,27 @@ class CONTENT_EXPORT ServiceProcessHost {
      std::optional<GURL> site;
      std::optional<int> child_flags;
      std::vector<std::string> extra_switches;
@@ -725,6 +727,7 @@ index 0062d2cb6634b8b29977a0312516b1b13936b40a..888ff36d70c83010f1f45e9eeb2dd6b5
 +    base::FileHandleMappingVector fds_to_remap;
 +#endif
      base::OnceCallback<void(const base::Process&)> process_callback;
+     base::WeakPtr<Observer> observer;
  #if BUILDFLAG(IS_WIN)
      std::vector<base::FilePath> preload_libraries;
  #endif  // BUILDFLAG(IS_WIN)
@@ -740,7 +743,7 @@ index 0062d2cb6634b8b29977a0312516b1b13936b40a..888ff36d70c83010f1f45e9eeb2dd6b5
 +#endif  // BUILDFLAG(IS_MAC)
    };
  
-   // An interface which can be implemented and registered/unregistered with
+   // An interface which can be implemented and used with
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
 index 5c92eec064e36fa4be5a57a769a4091a18e3396d..b705450708560c0ae8b386d7efdb5c526964c629 100644
 --- a/sandbox/policy/win/sandbox_win.cc

@@ -9,7 +9,7 @@ import { getChromiumVersionFromDEPS } from './lib/utils.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ELECTRON_DIR = resolve(__dirname, '..');
 
-function getCommonTags () {
+function getCommonTags() {
   const tags = [];
 
   if (process.env.TARGET_ARCH) tags.push(`target-arch:${process.env.TARGET_ARCH}`);
@@ -25,7 +25,7 @@ function getCommonTags () {
   return tags;
 }
 
-async function uploadSeriesToDatadog (series) {
+async function uploadSeriesToDatadog(series) {
   await fetch('https://api.datadoghq.com/api/v2/series', {
     method: 'POST',
     headers: {
@@ -36,7 +36,7 @@ async function uploadSeriesToDatadog (series) {
   });
 }
 
-async function uploadCacheHitRateStats (hitRate, stats) {
+async function uploadCacheHitRateStats(hitRate, stats) {
   const timestamp = Math.round(new Date().getTime() / 1000);
   const tags = getCommonTags();
 
@@ -63,7 +63,7 @@ async function uploadCacheHitRateStats (hitRate, stats) {
   await uploadSeriesToDatadog(series);
 }
 
-async function uploadObjectChangeStats (stats) {
+async function uploadObjectChangeStats(stats) {
   const timestamp = Math.round(new Date().getTime() / 1000);
   const tags = getCommonTags();
 
@@ -101,8 +101,11 @@ async function uploadObjectChangeStats (stats) {
   await uploadSeriesToDatadog(series);
 }
 
-async function main () {
-  const { positionals: [filename], values } = parseArgs({
+async function main() {
+  const {
+    positionals: [filename],
+    values
+  } = parseArgs({
     allowPositionals: true,
     options: {
       'upload-stats': {
@@ -134,7 +137,7 @@ async function main () {
 
   if ((inputObjectChecksums || outputObjectChecksums) && !outDir) {
     throw new Error('--out-dir is required when using --input-object-checksums or --output-object-checksums');
-  } else if (outDir && (!inputObjectChecksums && !outputObjectChecksums)) {
+  } else if (outDir && !inputObjectChecksums && !outputObjectChecksums) {
     throw new Error('--out-dir only makes sense with --input-object-checksums or --output-object-checksums');
   }
 
@@ -147,10 +150,12 @@ async function main () {
     throw new Error('could not find stats=build.Stats in log');
   }
 
-  const stats = Object.fromEntries(match[1].split(',').map(part => {
-    const [key, value] = part.trim().split(':');
-    return [key, parseInt(value)];
-  }));
+  const stats = Object.fromEntries(
+    match[1].split(',').map((part) => {
+      const [key, value] = part.trim().split(':');
+      return [key, parseInt(value)];
+    })
+  );
   const hitRate = stats.CacheHit / (stats.Remote + stats.CacheHit + stats.LocalFallback);
 
   const messagePrefix = process.env.GITHUB_ACTIONS ? '::notice title=Build Stats::' : '';
@@ -164,9 +169,10 @@ async function main () {
     const currentVersion = getChromiumVersionFromDEPS(depsContent);
 
     // Calculate the SHA256 for each object file under `outDir`
-    const objectFiles = await fs.readdir(outDir, { encoding: 'utf8', recursive: true });
+    const files = await fs.readdir(outDir, { encoding: 'utf8', recursive: true });
+    const objectFiles = files.filter((file) => file.endsWith('.o') || file.endsWith('.obj'));
     const checksums = {};
-    for (const file of objectFiles.filter(f => f.endsWith('.o'))) {
+    for (const file of objectFiles) {
       const content = await fs.readFile(resolve(outDir, file));
       checksums[file] = createHash('sha256').update(content).digest('hex');
     }

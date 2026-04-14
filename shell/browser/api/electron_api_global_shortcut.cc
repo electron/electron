@@ -232,6 +232,30 @@ void GlobalShortcut::UnregisterAll() {
   }
 }
 
+void GlobalShortcut::SetSuspended(bool suspend) {
+  if (!electron::Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return;
+  }
+  if (ui::GlobalAcceleratorListener::GetInstance()) {
+    ui::GlobalAcceleratorListener::GetInstance()->SetShortcutHandlingSuspended(
+        suspend);
+  }
+}
+
+bool GlobalShortcut::IsSuspended() {
+  if (!electron::Browser::Get()->is_ready()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowError("globalShortcut cannot be used before the app is ready");
+    return false;
+  }
+  if (ui::GlobalAcceleratorListener::GetInstance())
+    return ui::GlobalAcceleratorListener::GetInstance()
+        ->IsShortcutHandlingSuspended();
+  return false;
+}
+
 // static
 gin_helper::Handle<GlobalShortcut> GlobalShortcut::Create(
     v8::Isolate* isolate) {
@@ -247,7 +271,9 @@ gin::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
       .SetMethod("unregister", &GlobalShortcut::Unregister)
-      .SetMethod("unregisterAll", &GlobalShortcut::UnregisterAll);
+      .SetMethod("unregisterAll", &GlobalShortcut::UnregisterAll)
+      .SetMethod("setSuspended", &GlobalShortcut::SetSuspended)
+      .SetMethod("isSuspended", &GlobalShortcut::IsSuspended);
 }
 
 const char* GlobalShortcut::GetTypeName() {

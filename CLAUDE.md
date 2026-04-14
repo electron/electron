@@ -1,5 +1,14 @@
 # Electron Development Guide
 
+## Running node_modules binaries
+
+**Never use `npx`.** It is considered dangerous because it can silently fetch and execute arbitrary packages from the registry. Always run binaries through one of these safer mechanisms instead:
+
+1. **Preferred** — spawn the executable directly from `node_modules/.bin/<tool>` (or the platform equivalent on Windows). This is what `script/lint.js` does for `oxlint`.
+2. **Acceptable** — invoke via `yarn <tool>` or `yarn run <tool>`, which resolves to the locally installed version without the registry fallback that `npx` performs.
+
+This rule applies to shell commands you run yourself and to any scripts you author or modify in this repo.
+
 ## Project Overview
 
 Electron is a framework for building cross-platform desktop applications using web technologies. It embeds Chromium for rendering and Node.js for backend functionality.
@@ -171,6 +180,10 @@ e test                    # Run full test suite
 
 When working on the `roller/chromium/main` branch to upgrade Chromium activate the "Electron Chromium Upgrade" skill.
 
+## Node.js Upgrade Workflow
+
+When working on the `roller/node/main` branch to upgrade Node.js activate the "Electron Node.js Upgrade" skill.
+
 ## Pull Requests
 
 PR bodies must always include a `Notes:` section as the **last line** of the body. This is a consumer-facing release note for Electron app developers — describe the user-visible fix or change, not internal implementation details. Use `Notes: none` if there is no user-facing change.
@@ -201,12 +214,13 @@ gh label list --repo electron/electron --search target/ --json name,color --jq '
 ## Code Style
 
 **C++:** Follows Chromium style, enforced by clang-format
-**TypeScript/JavaScript:** ESLint configuration in `.eslintrc.json`
+**TypeScript/JavaScript:** [oxlint](https://oxc.rs/docs/guide/usage/linter) configuration in `.oxlintrc.json`
 
 **Linting:**
 
 ```bash
 npm run lint              # Run all linters
+npm run lint:js           # Run oxlint over all JS/TS/MJS sources
 npm run lint:clang-format # C++ formatting
 npm run lint:api-history  # Validate API history YAML blocks in docs
 ```

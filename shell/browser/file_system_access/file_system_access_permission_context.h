@@ -116,10 +116,6 @@ class FileSystemAccessPermissionContext
       content::GlobalRenderFrameHostId frame_id,
       EntriesAllowedByEnterprisePolicyCallback callback) override;
 
-  enum class Access { kRead, kWrite, kReadWrite };
-
-  enum class RequestType { kNewPermission, kRestorePermissions };
-
   void RevokeActiveGrants(const url::Origin& origin,
                           const base::FilePath& file_path = base::FilePath());
 
@@ -196,7 +192,8 @@ class FileSystemAccessPermissionContext
 
   std::map<url::Origin, base::DictValue> id_pathinfo_map_;
 
-  std::map<base::FilePath, base::OnceCallback<void(SensitiveEntryResult)>>
+  std::map<base::FilePath,
+           std::vector<base::OnceCallback<void(SensitiveEntryResult)>>>
       callback_map_;
 
   std::unique_ptr<ChromeFileSystemAccessPermissionContext::BlockPathRules>

@@ -39,10 +39,10 @@ index 6c7ec195fa64e3a1a718811192c9f6fdbf9463c6..c11744d2246c3df138cdb91f1d4459c6
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index e3fa1bdc048a59dd64dae19b2372119335686643..b5ceb81ecc4d0274a411267e975ea413fe75a222 100644
+index fe26e2aeba6fc03201373693d4afa2b78c89e54a..ab880a04a9638b348192a4c85785bc769e7dd83b 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -1555,6 +1555,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
+@@ -1562,6 +1562,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
    CHECK_GE(mouse_event.GetType(), WebInputEvent::Type::kMouseTypeFirst);
    CHECK_LE(mouse_event.GetType(), WebInputEvent::Type::kMouseTypeLast);
  
@@ -54,10 +54,10 @@ index e3fa1bdc048a59dd64dae19b2372119335686643..b5ceb81ecc4d0274a411267e975ea413
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 396b6dfe5f0d447b8f5642db639cc77d98cd6a9e..188e433ce4ab125737beb931b568e179aa8c7b6f 100644
+index 6910e1e54995027933abc5724afac9129df7519c..8011e752e23f62162cb2fff2461dfe5948af6dad 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4589,6 +4589,12 @@ void WebContentsImpl::RenderWidgetWasResized(
+@@ -4586,6 +4586,12 @@ void WebContentsImpl::RenderWidgetWasResized(
                               width_changed);
  }
  
@@ -71,7 +71,7 @@ index 396b6dfe5f0d447b8f5642db639cc77d98cd6a9e..188e433ce4ab125737beb931b568e179
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index bc95997724b0a6733e2b1917d47c7e23e35f6a06..4c0b251ed0ff52d3ead027f738931dfe807c53cc 100644
+index 48cbaff6b6adf2b0ead49e2a85302165291f4182..d8c33a304eaed2d3669284c1a7a5e6e631d65b5e 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1133,6 +1133,7 @@ class CONTENT_EXPORT WebContentsImpl

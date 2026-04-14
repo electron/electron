@@ -14,7 +14,7 @@
 #include "services/device/public/mojom/wake_lock_provider.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -43,9 +43,8 @@ struct Converter<device::mojom::WakeLockType> {
 
 namespace electron::api {
 
-const gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {
-    {gin::kEmbedderNativeGin},
-    gin::kElectronPowerSaveBlocker};
+const gin::WrapperInfo PowerSaveBlocker::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronPowerSaveBlocker);
 
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
     : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension) {}
@@ -53,11 +52,9 @@ PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
 PowerSaveBlocker::~PowerSaveBlocker() = default;
 
 // static
-gin_helper::Handle<PowerSaveBlocker> PowerSaveBlocker::Create(
-    v8::Isolate* isolate) {
-  return gin_helper::CreateHandle(
-      isolate, cppgc::MakeGarbageCollected<PowerSaveBlocker>(
-                   isolate->GetCppHeap()->GetAllocationHandle(), isolate));
+PowerSaveBlocker* PowerSaveBlocker::Create(v8::Isolate* isolate) {
+  return cppgc::MakeGarbageCollected<PowerSaveBlocker>(
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate);
 }
 
 const gin::WrapperInfo* PowerSaveBlocker::wrapper_info() const {

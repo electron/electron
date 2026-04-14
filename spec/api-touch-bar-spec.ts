@@ -6,7 +6,18 @@ import * as path from 'node:path';
 
 import { closeWindow } from './lib/window-helpers';
 
-const { TouchBarButton, TouchBarColorPicker, TouchBarGroup, TouchBarLabel, TouchBarOtherItemsProxy, TouchBarPopover, TouchBarScrubber, TouchBarSegmentedControl, TouchBarSlider, TouchBarSpacer } = TouchBar;
+const {
+  TouchBarButton,
+  TouchBarColorPicker,
+  TouchBarGroup,
+  TouchBarLabel,
+  TouchBarOtherItemsProxy,
+  TouchBarPopover,
+  TouchBarScrubber,
+  TouchBarSegmentedControl,
+  TouchBarSlider,
+  TouchBarSpacer
+} = TouchBar;
 
 describe('TouchBar module', () => {
   it('throws an error when created without an options object', () => {
@@ -69,18 +80,18 @@ describe('TouchBar module', () => {
           const label = new TouchBarLabel({ label: 'bar' });
           const touchBar = new TouchBar({
             items: [
-              new TouchBarButton({ label: 'foo', backgroundColor: '#F00', click: () => { } }),
+              new TouchBarButton({ label: 'foo', backgroundColor: '#F00', click: () => {} }),
               new TouchBarButton({
                 icon: path.join(__dirname, 'fixtures', 'assets', 'logo.png'),
                 iconPosition: 'right',
-                click: () => { }
+                click: () => {}
               }),
-              new TouchBarColorPicker({ selectedColor: '#F00', change: () => { } }),
+              new TouchBarColorPicker({ selectedColor: '#F00', change: () => {} }),
               new TouchBarGroup({ items: new TouchBar({ items: [new TouchBarLabel({ label: 'hello' })] }) }),
               label,
               new TouchBarOtherItemsProxy(),
               new TouchBarPopover({ items: new TouchBar({ items: [new TouchBarButton({ label: 'pop' })] }) }),
-              new TouchBarSlider({ label: 'slide', value: 5, minValue: 2, maxValue: 75, change: () => { } }),
+              new TouchBarSlider({ label: 'slide', value: 5, minValue: 2, maxValue: 75, change: () => {} }),
               new TouchBarSpacer({ size: 'large' }),
               new TouchBarSegmentedControl({
                 segmentStyle: 'capsule',
@@ -130,6 +141,6 @@ describe('TouchBar module', () => {
           window.emit('-touch-bar-interaction', {}, (button as any).id);
         });
       });
-    };
+    }
   });
 });

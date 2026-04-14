@@ -2,24 +2,24 @@ const { localAIHandler, LanguageModel } = require('electron/utility');
 
 localAIHandler.setPromptAPIHandler(() => {
   const BasicLanguageModel = class extends LanguageModel {
-    static async create () {
+    static async create() {
       return new BasicLanguageModel({
         contextUsage: 0,
         contextWindow: 12345
       });
     }
 
-    async prompt () {
+    async prompt() {
       this.contextUsage += 10;
 
       return 'foobar';
     }
 
-    async append () {
+    async append() {
       this.contextUsage += 5;
     }
 
-    async measureContextUsage () {
+    async measureContextUsage() {
       return 42;
     }
   };

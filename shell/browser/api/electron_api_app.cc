@@ -76,7 +76,10 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -369,8 +372,8 @@ struct Converter<net::SecureDnsMode> {
 
 namespace electron::api {
 
-gin::WrapperInfo App::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                      gin::kElectronApp};
+gin::WrapperInfo App::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronApp);
 
 namespace {
 
@@ -989,17 +992,15 @@ std::string App::GetLocaleCountryCode() {
   WCHAR locale_name[LOCALE_NAME_MAX_LENGTH] = {0};
 
   if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SISO3166CTRYNAME,
-                      (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR)) ||
+                      locale_name, std::size(locale_name)) ||
       GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT, LOCALE_SISO3166CTRYNAME,
-                      (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR))) {
+                      locale_name, std::size(locale_name))) {
     base::WideToUTF8(locale_name, wcslen(locale_name), &region);
   }
 #elif BUILDFLAG(IS_MAC)
   CFLocaleRef locale = CFLocaleCopyCurrent();
-  CFStringRef value = CFStringRef(
-      static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
+  auto value =
+      static_cast<CFStringRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode));
   if (value != nil) {
     char temporaryCString[3];
     const CFIndex kCStringSize = sizeof(temporaryCString);

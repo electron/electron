@@ -16,12 +16,13 @@
 #include "content/public/browser/storage_partition.h"
 #include "electron/electron_version.h"
 #include "gin/object_template_builder.h"
+#include "gin/persistent.h"
 #include "net/log/net_log_capture_mode.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
@@ -81,8 +82,8 @@ void ResolvePromiseWithNetError(gin_helper::Promise<void> promise,
 
 namespace api {
 
-gin::WrapperInfo NetLog::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                         gin::kElectronNetLog};
+gin::WrapperInfo NetLog::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronNetLog);
 
 NetLog::NetLog(ElectronBrowserContext* const browser_context)
     : browser_context_(browser_context) {
@@ -147,8 +148,9 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   file_task_runner_->PostTaskAndReplyWithResult(
       FROM_HERE, base::BindOnce(OpenFileForWriting, log_path),
       base::BindOnce(&NetLog::StartNetLogAfterCreateFile,
-                     weak_ptr_factory_.GetWeakPtr(), capture_mode,
-                     max_file_size, std::move(custom_constants)));
+                     gin::WrapPersistent(weak_factory_.GetWeakCell(
+                         args->isolate()->GetCppHeap()->GetAllocationHandle())),
+                     capture_mode, max_file_size, std::move(custom_constants)));
 
   return handle;
 }
@@ -234,6 +236,11 @@ const gin::WrapperInfo* NetLog::wrapper_info() const {
 
 const char* NetLog::GetHumanReadableName() const {
   return "Electron / NetLog";
+}
+
+void NetLog::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<NetLog>::Trace(visitor);
+  visitor->Trace(weak_factory_);
 }
 
 // static

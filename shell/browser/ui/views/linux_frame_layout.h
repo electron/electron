@@ -44,6 +44,9 @@ class LinuxFrameLayout {
                                                   CSDStyle csd_style);
 
   // Insets from the transparent widget border to the opaque part of the window.
+  // Returns empty insets when maximized or fullscreen unless |restored| is
+  // true. Matches Chromium's OpaqueBrowserFrameViewLayout::FrameBorderInsets.
+  gfx::Insets FrameBorderInsets(bool restored) const;
   virtual gfx::Insets RestoredFrameBorderInsets() const;
   // Insets for parts of the surface that should be counted for user input.
   virtual gfx::Insets GetInputInsets() const;

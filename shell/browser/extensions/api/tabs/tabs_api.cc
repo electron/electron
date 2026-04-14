@@ -27,6 +27,7 @@
 #include "extensions/common/permissions/permissions_data.h"
 #include "extensions/common/switches.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/extensions/electron_extension_tab_util.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 #include "shell/browser/window_list.h"
@@ -138,7 +139,7 @@ bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
   // If |tab_id| is specified, look for the tab. Otherwise default to selected
   // tab in the current window.
   CHECK_GE(execute_tab_id_, 0);
-  auto* contents = electron::api::WebContents::FromID(execute_tab_id_);
+  auto* contents = GetElectronTabById(execute_tab_id_, browser_context());
   if (!contents) {
     return false;
   }
@@ -191,7 +192,7 @@ bool ExecuteCodeInTabFunction::CanExecuteScriptOnPage(std::string* error) {
 
 ScriptExecutor* ExecuteCodeInTabFunction::GetScriptExecutor(
     std::string* error) {
-  auto* contents = electron::api::WebContents::FromID(execute_tab_id_);
+  auto* contents = GetElectronTabById(execute_tab_id_, browser_context());
   if (!contents)
     return nullptr;
   return contents->script_executor();
@@ -228,7 +229,7 @@ ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
   }
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -335,7 +336,7 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
   int tab_id = params->tab_id;
 
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -367,7 +368,7 @@ ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -394,13 +395,11 @@ ExtensionFunction::ResponseAction TabsGetZoomFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
-  double zoom_level = contents->GetZoomController()->GetZoomLevel();
-  double zoom_factor = blink::ZoomLevelToZoomFactor(zoom_level);
-
+  const double zoom_factor = contents->GetZoomFactor();
   return RespondNow(ArgumentList(tabs::GetZoom::Results::Create(zoom_factor)));
 }
 
@@ -410,13 +409,13 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
-  auto* zoom_controller = contents->GetZoomController();
-  WebContentsZoomController::ZoomMode zoom_mode =
-      contents->GetZoomController()->zoom_mode();
+  const auto* zoom_controller = contents->GetZoomController();
+  const WebContentsZoomController::ZoomMode zoom_mode =
+      zoom_controller->zoom_mode();
   tabs::ZoomSettings zoom_settings;
   ZoomModeToZoomSettings(zoom_mode, &zoom_settings);
   zoom_settings.default_zoom_factor =
@@ -434,7 +433,7 @@ ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 
@@ -610,7 +609,7 @@ ExtensionFunction::ResponseAction TabsUpdateFunction::Run() {
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
-  auto* contents = electron::api::WebContents::FromID(tab_id);
+  auto* contents = GetElectronTabById(tab_id, browser_context());
   if (!contents)
     return RespondNow(Error("No such tab"));
 

@@ -147,6 +147,25 @@ config("branding") {
 
 config("electron_lib_config") {
   include_dirs = [ "." ]
+  cflags = []
+  if (is_clang && clang_use_chrome_plugins) {
+    # The plugin is built directly into clang, so there's no need to load it
+    # dynamically.
+    cflags += [
+      "-Xclang",
+      "-add-plugin",
+      "-Xclang",
+      "blink-gc-plugin",
+      "-Xclang",
+      "-plugin-arg-blink-gc-plugin",
+      "-Xclang",
+      "check-directory=electron/shell/",
+      "-Xclang",
+      "-plugin-arg-blink-gc-plugin",
+      "-Xclang",
+      "check-directory=gin/",
+    ]
+  }
 }
 
 # We generate the definitions twice here, once in //electron/electron.d.ts
@@ -490,6 +509,7 @@ source_set("electron_lib") {
     "//components/pref_registry",
     "//components/prefs",
     "//components/security_state/content",
+    "//components/tracing:tracing_metrics",
     "//components/upload_list",
     "//components/user_prefs",
     "//components/viz/host",
@@ -786,6 +806,7 @@ source_set("electron_lib") {
       "//components/zoom",
       "//extensions/browser",
       "//extensions/browser/api:api_provider",
+      "//extensions/browser/mime_handler:stream_info",
       "//extensions/browser/updater",
       "//extensions/common",
       "//extensions/common:core_api_provider",
@@ -1654,6 +1675,7 @@ action("node_version_header") {
 action("generate_node_headers") {
   deps = [ ":generate_config_gypi" ]
   script = "script/node/generate_node_headers.py"
+  args = [ rebase_path("$root_gen_dir") ]
   outputs = [ "$root_gen_dir/node_headers.json" ]
 }
 

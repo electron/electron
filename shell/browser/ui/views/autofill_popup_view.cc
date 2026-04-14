@@ -111,7 +111,7 @@ void AutofillPopupView::Show() {
   auto* host = popup_->frame_host_->GetRenderViewHost()->GetWidget();
   host->AddKeyPressEventCallback(keypress_callback_);
 
-  NotifyAccessibilityEventDeprecated(ax::mojom::Event::kMenuStart, true);
+  GetViewAccessibility().NotifyEvent(ax::mojom::Event::kMenuStart, true);
 }
 
 void AutofillPopupView::Hide() {
@@ -122,7 +122,7 @@ void AutofillPopupView::Hide() {
   }
 
   RemoveObserver();
-  NotifyAccessibilityEventDeprecated(ax::mojom::Event::kMenuEnd, true);
+  GetViewAccessibility().NotifyEvent(ax::mojom::Event::kMenuEnd, true);
 
   if (GetWidget()) {
     GetWidget()->Close();
@@ -165,7 +165,7 @@ void AutofillPopupView::OnSelectedRowChanged(
     int selected = current_row_selection.value_or(-1);
     if (selected == -1 || static_cast<size_t>(selected) >= children().size())
       return;
-    children().at(selected)->NotifyAccessibilityEventDeprecated(
+    children().at(selected)->GetViewAccessibility().NotifyEvent(
         ax::mojom::Event::kSelection, true);
   }
 }

@@ -3,7 +3,7 @@ let ipc: NodeJS.IpcRendererImpl | undefined;
 /**
  * Get IPCRenderer implementation for the current process.
  */
-export function getIPCRenderer () {
+export function getIPCRenderer() {
   if (ipc) return ipc;
   const ipcBinding = process._linkedBinding('electron_renderer_ipc');
   switch (process.type) {
@@ -14,4 +14,4 @@ export function getIPCRenderer () {
     default:
       throw new Error(`Cannot create IPCRenderer for '${process.type}' process`);
   }
-};
+}

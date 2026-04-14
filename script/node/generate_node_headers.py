@@ -31,13 +31,6 @@ def LoadPythonDictionary(path):
             )
         return file_data
 
-def get_out_dir():
-    out_dir = 'Testing'
-    override = os.environ.get('ELECTRON_OUT_DIR')
-    if override is not None:
-        out_dir = override
-    return os.path.join(SRC_DIR, 'out', out_dir)
-
 if __name__ == '__main__':
     node_root_dir = os.path.join(SRC_DIR, 'third_party/electron_node')
     out = {}
@@ -61,7 +54,7 @@ if __name__ == '__main__':
                 hs = {'files': sorted(files), 'dest_dir': dest_dir}
                 out['headers'].append(hs)
 
-    root_gen_dir = os.path.join(get_out_dir(), 'gen')
+    root_gen_dir = os.path.abspath(sys.argv[1])
     config_gypi_path = os.path.join(root_gen_dir, 'config.gypi')
     node_headers_dir = os.path.join(root_gen_dir, 'node_headers')
 

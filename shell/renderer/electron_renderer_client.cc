@@ -25,6 +25,7 @@
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_global_scope.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_settings.h"  // nogncheck
+#include "third_party/blink/renderer/core/workers/worklet_global_scope.h"  // nogncheck
 
 namespace electron {
 
@@ -85,6 +86,9 @@ void ElectronRendererClient::DidCreateScriptContext(
     v8::Isolate* const isolate,
     v8::Local<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
+  RendererClientBase::DidCreateScriptContext(isolate, renderer_context,
+                                             render_frame);
+
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
 
@@ -206,10 +210,19 @@ bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
   // owing to an inability to customize sandbox policies in these workers
   // given that they're run out-of-process.
   // Also avoid creating a Node.js environment for worklet global scope
-  // created on the main thread.
+  // created on the main thread — those share the page's V8 context where
+  // Node is already wired up.
   if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope() ||
       ec->IsMainThreadWorkletGlobalScope())
     return false;
+
+  // Off-main-thread worklets (AudioWorklet, PaintWorklet, AnimationWorklet,
+  // SharedStorageWorklet) have their own dedicated worker thread but do not
+  // derive from WorkerGlobalScope, so check for them separately and read the
+  // flag from WorkletGlobalScope, which copies it out of the same
+  // WorkerSettings as dedicated workers do.
+  if (auto* wlgs = blink::DynamicTo<blink::WorkletGlobalScope>(ec))
+    return wlgs->NodeIntegrationInWorker();
 
   auto* wgs = blink::DynamicTo<blink::WorkerGlobalScope>(ec);
   if (!wgs)
@@ -228,25 +241,30 @@ bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
+  RendererClientBase::WorkerScriptReadyForEvaluationOnWorkerThread(context);
+
   auto* ec = blink::ExecutionContext::From(context);
   if (!WorkerHasNodeIntegration(ec))
     return;
 
   auto* current = WebWorkerObserver::GetCurrent();
-  if (current)
-    return;
-  WebWorkerObserver::Create()->WorkerScriptReadyForEvaluation(context);
+  if (!current)
+    current = WebWorkerObserver::Create();
+  current->WorkerScriptReadyForEvaluation(context);
 }
 
 void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
   auto* ec = blink::ExecutionContext::From(context);
-  if (!WorkerHasNodeIntegration(ec))
-    return;
+  if (WorkerHasNodeIntegration(ec)) {
+    auto* current = WebWorkerObserver::GetCurrent();
+    if (current)
+      current->ContextWillDestroy(context);
+  }
 
-  auto* current = WebWorkerObserver::GetCurrent();
-  if (current)
-    current->ContextWillDestroy(context);
+  // Call base class last: OOM callback deregistration must happen after
+  // all other cleanup that might still trigger V8 heap operations.
+  RendererClientBase::WillDestroyWorkerContextOnWorkerThread(context);
 }
 
 void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {

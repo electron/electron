@@ -8,6 +8,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/common/gin_helper/accessor.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_util.h"
 
 namespace gin {

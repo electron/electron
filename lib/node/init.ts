@@ -25,8 +25,11 @@ cp.fork = (modulePath, args?, options?: cp.ForkOptions) => {
     args = [];
   }
   // Fallback to original fork to report arg type errors.
-  if (typeof modulePath !== 'string' || !Array.isArray(args) ||
-      (typeof options !== 'object' && typeof options !== 'undefined')) {
+  if (
+    typeof modulePath !== 'string' ||
+    !Array.isArray(args) ||
+    (typeof options !== 'object' && typeof options !== 'undefined')
+  ) {
     return originalFork(modulePath, args, options);
   }
   // When forking a child script, we setup a special environment to make

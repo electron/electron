@@ -262,7 +262,7 @@ index 68a3095a49caf472c83b93b5cef66e5549a2d7cc..aa371ba5576f9fbaf5558e39704f7eb8
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index 2b75860754f8192141f61aa78c2ab5008eb795f1..d94d681e42948324a4eb179977a56862b7119d70 100644
+index a3c5e2ccc611dbab868099b377b05d28422055fe..eb0412e5ebf43b7ce7558d629cb27db967bb86ec 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -4,6 +4,7 @@
@@ -270,10 +270,10 @@ index 2b75860754f8192141f61aa78c2ab5008eb795f1..d94d681e42948324a4eb179977a56862
  #include "content/browser/renderer_host/code_cache_host_impl.h"
  
 +#include <algorithm>
+ #include <stdint.h>
+ 
  #include <optional>
- #include <string_view>
- #include <utility>
-@@ -42,6 +43,7 @@
+@@ -51,6 +52,7 @@
  #include "third_party/perfetto/include/perfetto/tracing/track_event_args.h"
  #include "url/gurl.h"
  #include "url/origin.h"
@@ -281,7 +281,7 @@ index 2b75860754f8192141f61aa78c2ab5008eb795f1..d94d681e42948324a4eb179977a56862
  
  using blink::mojom::CacheStorageError;
  
-@@ -56,6 +58,10 @@ enum class Operation {
+@@ -65,6 +67,10 @@ enum class Operation {
    kWrite,
  };
  
@@ -289,10 +289,10 @@ index 2b75860754f8192141f61aa78c2ab5008eb795f1..d94d681e42948324a4eb179977a56862
 +  return std::ranges::contains(url::GetCodeCacheSchemes(), process_lock.GetProcessLockURL().scheme());
 +}
 +
+ // TODO(crbug.com/492899973): Refactor to use `RenderFrameHost*`.
  bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
                                              ChildProcessId render_process_id,
-                                             Operation operation) {
-@@ -67,42 +73,56 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
+@@ -77,42 +83,56 @@ bool CheckSecurityForAccessingCodeCacheData(const GURL& resource_url,
        ChildProcessSecurityPolicyImpl::GetInstance()->GetProcessLock(
            render_process_id);
  
@@ -372,7 +372,7 @@ index 2b75860754f8192141f61aa78c2ab5008eb795f1..d94d681e42948324a4eb179977a56862
    }
  
    if (operation == Operation::kWrite) {
-@@ -190,6 +210,7 @@ std::optional<GURL> GetOriginLock(ChildProcessId render_process_id) {
+@@ -200,6 +220,7 @@ std::optional<GURL> GetOriginLock(ChildProcessId render_process_id) {
        process_lock.MatchesScheme(url::kHttpsScheme) ||
        process_lock.MatchesScheme(content::kChromeUIScheme) ||
        process_lock.MatchesScheme(content::kChromeUIUntrustedScheme) ||

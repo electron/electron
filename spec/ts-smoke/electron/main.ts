@@ -1,5 +1,6 @@
 /* eslint-disable */
 
+import { clipboard, crashReporter, nativeImage, shell } from 'electron/common';
 import {
   app,
   autoUpdater,
@@ -24,7 +25,6 @@ import {
   utilityProcess
 } from 'electron/main';
 
-import { clipboard, crashReporter, nativeImage, shell } from 'electron/common';
 import * as path from 'node:path';
 
 // Quick start
@@ -59,7 +59,11 @@ app.whenReady().then(() => {
   mainWindow.loadURL(`file://${__dirname}/index.html`);
   mainWindow.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greatReferrer' });
   mainWindow.webContents.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greatReferrer' });
-  mainWindow.webContents.loadURL('file://foo/bar', { userAgent: 'cool-agent', httpReferrer: 'greatReferrer', postData: [{ type: 'rawData', bytes: Buffer.from([123]) }] });
+  mainWindow.webContents.loadURL('file://foo/bar', {
+    userAgent: 'cool-agent',
+    httpReferrer: 'greatReferrer',
+    postData: [{ type: 'rawData', bytes: Buffer.from([123]) }]
+  });
 
   mainWindow.webContents.openDevTools();
   mainWindow.webContents.toggleDevTools();
@@ -87,20 +91,22 @@ app.whenReady().then(() => {
   mainWindow.webContents.print({ silent: true, printBackground: false });
   mainWindow.webContents.print();
 
-  mainWindow.webContents.printToPDF({
-    margins: {
-      top: 1
-    },
-    printBackground: true,
-    pageRanges: '1-3',
-    landscape: true,
-    pageSize: {
-      width: 100,
-      height: 100
-    }
-  }).then((data: Buffer) => console.log(data));
+  mainWindow.webContents
+    .printToPDF({
+      margins: {
+        top: 1
+      },
+      printBackground: true,
+      pageRanges: '1-3',
+      landscape: true,
+      pageSize: {
+        width: 100,
+        height: 100
+      }
+    })
+    .then((data: Buffer) => console.log(data));
 
-  mainWindow.webContents.printToPDF({}).then(data => console.log(data));
+  mainWindow.webContents.printToPDF({}).then((data) => console.log(data));
 
   mainWindow.webContents.executeJavaScript('return true;').then((v: boolean) => console.log(v));
   mainWindow.webContents.executeJavaScript('return true;', true).then((v: boolean) => console.log(v));
@@ -144,10 +150,10 @@ app.whenReady().then(() => {
   });
 
   mainWindow.webContents.debugger.sendCommand('Network.enable');
-  mainWindow.webContents.capturePage().then(image => {
+  mainWindow.webContents.capturePage().then((image) => {
     console.log(image.toDataURL());
   });
-  mainWindow.webContents.capturePage({ x: 0, y: 0, width: 100, height: 200 }).then(image => {
+  mainWindow.webContents.capturePage({ x: 0, y: 0, width: 100, height: 200 }).then((image) => {
     console.log(image.toPNG());
   });
 });
@@ -183,21 +189,21 @@ app.getLocale();
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
 app.clearRecentDocuments();
 const dockMenu = Menu.buildFromTemplate([
-  <Electron.MenuItemConstructorOptions> {
+  <Electron.MenuItemConstructorOptions>{
     label: 'New Window',
     click: () => {
       console.log('New Window');
     }
   },
-  <Electron.MenuItemConstructorOptions> {
+  <Electron.MenuItemConstructorOptions>{
     label: 'New Window with Settings',
     submenu: [
-      <Electron.MenuItemConstructorOptions> { label: 'Basic' },
-      <Electron.MenuItemConstructorOptions> { label: 'Pro' }
+      <Electron.MenuItemConstructorOptions>{ label: 'Basic' },
+      <Electron.MenuItemConstructorOptions>{ label: 'Pro' }
     ]
   },
-  <Electron.MenuItemConstructorOptions> { label: 'New Command...' },
-  <Electron.MenuItemConstructorOptions> {
+  <Electron.MenuItemConstructorOptions>{ label: 'New Command...' },
+  <Electron.MenuItemConstructorOptions>{
     label: 'Edit',
     submenu: [
       {
@@ -241,7 +247,7 @@ app.dock?.setIcon('/path/to/icon.png');
 app.setBadgeCount(app.getBadgeCount() + 1);
 
 app.setUserTasks([
-  <Electron.Task> {
+  <Electron.Task>{
     program: process.execPath,
     arguments: '--new-window',
     iconPath: process.execPath,
@@ -262,7 +268,8 @@ app.setJumpList([
       { type: 'file', path: 'C:\\Projects\\project2.proj' }
     ]
   },
-  { // has a name so type is assumed to be "custom"
+  {
+    // has a name so type is assumed to be "custom"
     name: 'Tools',
     items: [
       {
@@ -284,12 +291,14 @@ app.setJumpList([
         iconIndex: 0,
         description: 'Runs Tool B',
         workingDirectory: path.dirname(process.execPath)
-      }]
+      }
+    ]
   },
   {
     type: 'frequent'
   },
-  { // has no name and no type so type is assumed to be "tasks"
+  {
+    // has no name and no type so type is assumed to be "tasks"
     items: [
       {
         type: 'task',
@@ -307,7 +316,8 @@ app.setJumpList([
         program: process.execPath,
         args: '--recover-project',
         description: 'Recover Project'
-      }]
+      }
+    ]
   }
 ]);
 
@@ -366,11 +376,17 @@ const browserOptions = {
 };
 
 if (process.platform === 'win32') {
-  systemPreferences.on('color-changed', () => { console.log('color changed'); });
+  systemPreferences.on('color-changed', () => {
+    console.log('color changed');
+  });
   // @ts-expect-error Removed API
-  systemPreferences.on('inverted-color-scheme-changed', (_, inverted) => console.log(inverted ? 'inverted' : 'not inverted'));
+  systemPreferences.on('inverted-color-scheme-changed', (_, inverted) =>
+    console.log(inverted ? 'inverted' : 'not inverted')
+  );
   // @ts-expect-error Removed API
-  systemPreferences.on('high-contrast-color-scheme-changed', (_, highContrast) => console.log(highContrast ? 'high contrast' : 'not high contrast'));
+  systemPreferences.on('high-contrast-color-scheme-changed', (_, highContrast) =>
+    console.log(highContrast ? 'high contrast' : 'not high contrast')
+  );
   console.log('Color for menu is', systemPreferences.getColor('menu'));
   // @ts-expect-error Removed API
   systemPreferences.isAeroGlassEnabled();
@@ -505,7 +521,7 @@ const options = {
 contentTracing.startRecording(options).then(() => {
   console.log('Tracing started');
   setTimeout(function () {
-    contentTracing.stopRecording('').then(path => {
+    contentTracing.stopRecording('').then((path) => {
       console.log(`Tracing data recorded to ${path}`);
     });
   }, 5000);
@@ -523,14 +539,16 @@ dialog.showOpenDialogSync({
 });
 
 // variant with browserWindow
-dialog.showOpenDialog(win3, {
-  title: 'Testing showOpenDialog',
-  defaultPath: '/var/log/syslog',
-  filters: [{ name: '', extensions: [''] }],
-  properties: ['openFile', 'openDirectory', 'multiSelections']
-}).then(ret => {
-  console.log(ret);
-});
+dialog
+  .showOpenDialog(win3, {
+    title: 'Testing showOpenDialog',
+    defaultPath: '/var/log/syslog',
+    filters: [{ name: '', extensions: [''] }],
+    properties: ['openFile', 'openDirectory', 'multiSelections']
+  })
+  .then((ret) => {
+    console.log(ret);
+  });
 
 // variants without browserWindow
 dialog.showMessageBox({ message: 'test', type: 'warning' });
@@ -566,7 +584,9 @@ desktopCapturer.getSources({ types: ['unknown'] });
 const ret = globalShortcut.register('ctrl+x', () => {
   console.log('ctrl+x is pressed');
 });
-if (!ret) { console.log('registration fails'); }
+if (!ret) {
+  console.log('registration fails');
+}
 
 // Check whether a shortcut is registered.
 console.log(globalShortcut.isRegistered('ctrl+x'));
@@ -618,7 +638,14 @@ menuItem.click = (passedMenuItem: Electron.MenuItem, browserWindow: Electron.Bro
 // https://github.com/electron/electron/blob/main/docs/api/menu.md
 
 let menu = new Menu();
-menu.append(new MenuItem({ label: 'MenuItem1', click: () => { console.log('item 1 clicked'); } }));
+menu.append(
+  new MenuItem({
+    label: 'MenuItem1',
+    click: () => {
+      console.log('item 1 clicked');
+    }
+  })
+);
 menu.append(new MenuItem({ type: 'separator' }));
 menu.append(new MenuItem({ label: 'MenuItem2', type: 'checkbox', checked: true }));
 menu.insert(0, menuItem);
@@ -629,7 +656,7 @@ const pos = screen.getCursorScreenPoint();
 menu.popup({ x: pos.x, y: pos.y });
 
 // main.js
-const template = <Electron.MenuItemConstructorOptions[]> [
+const template = <Electron.MenuItemConstructorOptions[]>[
   {
     label: 'Electron',
     submenu: [
@@ -668,7 +695,9 @@ const template = <Electron.MenuItemConstructorOptions[]> [
       {
         label: 'Quit',
         accelerator: 'Command+Q',
-        click: () => { app.quit(); }
+        click: () => {
+          app.quit();
+        }
       }
     ]
   },
@@ -940,7 +969,9 @@ console.log(`The powerSaveBlocker is ${stopped ? 'stopped' : 'not stopped'}`);
 // https://github.com/electron/electron/blob/main/docs/api/protocol.md
 
 app.whenReady().then(() => {
-  protocol.registerSchemesAsPrivileged([{ scheme: 'https', privileges: { standard: true, allowServiceWorkers: true } }]);
+  protocol.registerSchemesAsPrivileged([
+    { scheme: 'https', privileges: { standard: true, allowServiceWorkers: true } }
+  ]);
 
   protocol.registerFileProtocol('atom', (request, callback) => {
     callback(`${__dirname}/${request.url}`);
@@ -1128,46 +1159,58 @@ app.whenReady().then(() => {
 shell.showItemInFolder('/home/user/Desktop/test.txt');
 shell.trashItem('/home/user/Desktop/test.txt').then(() => {});
 
-shell.openPath('/home/user/Desktop/test.txt').then(err => {
+shell.openPath('/home/user/Desktop/test.txt').then((err) => {
   if (err) console.log(err);
 });
 
-shell.openExternal('https://github.com', {
-  activate: false
-}).then(() => {});
+shell
+  .openExternal('https://github.com', {
+    activate: false
+  })
+  .then(() => {});
 
 shell.beep();
 
-shell.writeShortcutLink('/home/user/Desktop/shortcut.lnk', 'update', shell.readShortcutLink('/home/user/Desktop/shortcut.lnk'));
+shell.writeShortcutLink(
+  '/home/user/Desktop/shortcut.lnk',
+  'update',
+  shell.readShortcutLink('/home/user/Desktop/shortcut.lnk')
+);
 
 // cookies
 // https://github.com/electron/electron/blob/main/docs/api/cookies.md
 {
   // Query all cookies.
-  session.defaultSession.cookies.get({})
-    .then(cookies => {
+  session.defaultSession.cookies
+    .get({})
+    .then((cookies) => {
       console.log(cookies);
-    }).catch((error: Error) => {
+    })
+    .catch((error: Error) => {
       console.log(error);
     });
 
   // Query all cookies associated with a specific url.
-  session.defaultSession.cookies.get({ url: 'http://www.github.com' })
-    .then(cookies => {
+  session.defaultSession.cookies
+    .get({ url: 'http://www.github.com' })
+    .then((cookies) => {
       console.log(cookies);
-    }).catch((error: Error) => {
+    })
+    .catch((error: Error) => {
       console.log(error);
     });
 
   // Set a cookie with the given cookie data;
   // may overwrite equivalent cookies if they exist.
   const cookie = { url: 'http://www.github.com', name: 'dummy_name', value: 'dummy' };
-  session.defaultSession.cookies.set(cookie)
-    .then(() => {
+  session.defaultSession.cookies.set(cookie).then(
+    () => {
       // success
-    }, (error: Error) => {
+    },
+    (error: Error) => {
       console.error(error);
-    });
+    }
+  );
 }
 
 // session
@@ -1327,10 +1370,7 @@ win4.webContents.on('context-menu', (event, params) => {
 // https://github.com/electron/electron/blob/main/docs/api/touch-bar.md
 
 const touchBar = new TouchBar({
-  items: [
-    new TouchBar.TouchBarButton({ label: '' }),
-    new TouchBar.TouchBarLabel({ label: '' })
-  ]
+  items: [new TouchBar.TouchBarButton({ label: '' }), new TouchBar.TouchBarLabel({ label: '' })]
 });
 
 mainWindow.setTouchBar(touchBar);

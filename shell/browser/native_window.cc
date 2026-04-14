@@ -31,11 +31,6 @@
 #include "shell/browser/ui/views/frameless_view.h"
 #endif
 
-#if BUILDFLAG(IS_WIN)
-#include "ui/display/win/screen_win.h"
-#include "ui/views/views_features.h"
-#endif
-
 #if defined(USE_OZONE)
 #include "ui/base/ui_base_features.h"
 #include "ui/ozone/public/ozone_platform.h"
@@ -70,31 +65,6 @@ struct Converter<electron::NativeWindow::TitleBarStyle> {
 }  // namespace gin
 
 namespace electron {
-
-namespace {
-
-#if BUILDFLAG(IS_WIN)
-gfx::Size GetExpandedWindowSize(const NativeWindow* window,
-                                bool transparent,
-                                gfx::Size size) {
-  if (!base::FeatureList::IsEnabled(
-          views::features::kEnableTransparentHwndEnlargement) ||
-      !transparent) {
-    return size;
-  }
-
-  gfx::Size min_size = display::win::GetScreenWin()->ScreenToDIPSize(
-      window->GetAcceleratedWidget(), gfx::Size{64, 64});
-
-  // Some AMD drivers can't display windows that are less than 64x64 pixels,
-  // so expand them to be at least that size. http://crbug.com/286609
-  gfx::Size expanded(std::max(size.width(), min_size.width()),
-                     std::max(size.height(), min_size.height()));
-  return expanded;
-}
-#endif
-
-}  // namespace
 
 NativeWindow::NativeWindow(const int32_t base_window_id,
                            const gin_helper::Dictionary& options,
@@ -140,24 +110,10 @@ NativeWindow::~NativeWindow() {
 
 void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   // Setup window from options.
-  if (int x, y; options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
-    SetPosition(gfx::Point{x, y});
-
-#if BUILDFLAG(IS_WIN)
-    // FIXME(felixrieseberg): Dirty, dirty workaround for
-    // https://github.com/electron/electron/issues/10862
-    // Somehow, we need to call `SetBounds` twice to get
-    // usable results. The root cause is still unknown.
-    SetPosition(gfx::Point{x, y});
-#endif
-  } else if (bool center; options.Get(options::kCenter, &center) && center) {
-    Center();
-  }
-
   const bool use_content_size =
       options.ValueOrDefault(options::kUseContentSize, false);
 
-  // On Linux and Window we may already have maximum size defined.
+  // On Linux and Windows we may already have minimum and maximum size defined.
   extensions::SizeConstraints size_constraints(
       use_content_size ? GetContentSizeConstraints() : GetSizeConstraints());
 
@@ -184,9 +140,31 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     size_constraints.set_maximum_size(gfx::Size(max_width, max_height));
 
   if (use_content_size) {
+    gfx::Size clamped = size_constraints.ClampSize(GetContentSize());
+    if (clamped != GetContentSize()) {
+      SetContentSize(clamped);
+    }
     SetContentSizeConstraints(size_constraints);
   } else {
+    gfx::Size clamped = size_constraints.ClampSize(GetSize());
+    if (clamped != GetSize()) {
+      SetSize(clamped);
+    }
     SetSizeConstraints(size_constraints);
+  }
+
+  if (int x, y; options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
+    SetPosition(gfx::Point{x, y});
+
+#if BUILDFLAG(IS_WIN)
+    // FIXME(felixrieseberg): Dirty, dirty workaround for
+    // https://github.com/electron/electron/issues/10862
+    // Somehow, we need to call `SetBounds` twice to get
+    // usable results. The root cause is still unknown.
+    SetPosition(gfx::Point{x, y});
+#endif
+  } else if (bool center; options.Get(options::kCenter, &center) && center) {
+    Center();
   }
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   if (bool val; options.Get(options::kClosable, &val))
@@ -390,15 +368,7 @@ gfx::Size NativeWindow::GetContentMinimumSize() const {
 }
 
 gfx::Size NativeWindow::GetContentMaximumSize() const {
-  const auto size_constraints = GetContentSizeConstraints();
-  gfx::Size maximum_size = size_constraints.GetMaximumSize();
-
-#if BUILDFLAG(IS_WIN)
-  if (size_constraints.HasMaximumSize())
-    maximum_size = GetExpandedWindowSize(this, transparent(), maximum_size);
-#endif
-
-  return maximum_size;
+  return GetContentSizeConstraints().GetMaximumSize();
 }
 
 void NativeWindow::SetSheetOffset(const double offsetX, const double offsetY) {

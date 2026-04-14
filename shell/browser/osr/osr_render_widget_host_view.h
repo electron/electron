@@ -28,7 +28,7 @@
 #include "shell/browser/osr/osr_video_consumer.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
-#include "third_party/blink/public/mojom/widget/record_content_to_visible_time_request.mojom-forward.h"
+#include "third_party/blink/public/common/page/content_to_visible_time_request.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
 #include "ui/compositor/compositor.h"
@@ -159,9 +159,10 @@ class OffScreenRenderWidgetHostView
   void OverrideDisplayFeatureForEmulation(
       const content::DisplayFeature* display_feature) override {}
   void NotifyHostAndDelegateOnWasShown(
-      blink::mojom::RecordContentToVisibleTimeRequestPtr) final;
+      std::optional<blink::RecordContentToVisibleTimeRequest>
+          visible_time_request) final;
   void RequestSuccessfulPresentationTimeFromHostOrDelegate(
-      blink::mojom::RecordContentToVisibleTimeRequestPtr) final;
+      blink::RecordContentToVisibleTimeRequest visible_time_request) final;
   void CancelSuccessfulPresentationTimeRequestForHostAndDelegate() final;
   viz::SurfaceId GetCurrentSurfaceId() const override;
   std::unique_ptr<content::SyntheticGestureTarget>

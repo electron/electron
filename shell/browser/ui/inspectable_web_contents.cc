@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "base/base64.h"
+#include "base/containers/fixed_flat_set.h"
 #include "base/containers/span.h"
 #include "base/dcheck_is_on.h"
 #include "base/memory/raw_ptr.h"
@@ -24,6 +25,7 @@
 #include "base/values.h"
 #include "build/util/chromium_git_revision.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+#include "chrome/common/pref_names.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -52,6 +54,7 @@
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/platform_util.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/logging/logging_utils.h"
@@ -153,12 +156,15 @@ GURL GetDevToolsURL(bool can_dock) {
   return GURL(url_string);
 }
 
-void OnOpenItemComplete(const base::FilePath& path, const std::string& result) {
-  platform_util::ShowItemInFolder(path);
-}
-
 constexpr base::TimeDelta kInitialBackoffDelay = base::Milliseconds(250);
 constexpr base::TimeDelta kMaxBackoffDelay = base::Seconds(10);
+
+constexpr auto kValidDockStates = base::MakeFixedFlatSet<std::string_view>(
+    {"bottom", "left", "right", "undocked"});
+
+bool IsValidDockState(const std::string& state) {
+  return kValidDockStates.contains(state);
+}
 
 }  // namespace
 
@@ -394,7 +400,7 @@ void InspectableWebContents::SetDockState(const std::string& state) {
     can_dock_ = false;
   } else {
     can_dock_ = true;
-    dock_state_ = state;
+    dock_state_ = (state.empty() || IsValidDockState(state)) ? state : "right";
   }
 }
 
@@ -559,7 +565,13 @@ void InspectableWebContents::LoadCompleted() {
           pref_service_->GetDict(kDevToolsPreferences);
       const std::string* current_dock_state =
           prefs.FindString("currentDockState");
-      base::RemoveChars(*current_dock_state, "\"", &dock_state_);
+      if (current_dock_state) {
+        std::string sanitized;
+        base::RemoveChars(*current_dock_state, "\"", &sanitized);
+        dock_state_ = IsValidDockState(sanitized) ? sanitized : "right";
+      } else {
+        dock_state_ = "right";
+      }
     }
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
     auto* api_web_contents = api::WebContents::From(GetWebContents());
@@ -735,8 +747,22 @@ void InspectableWebContents::ShowItemInFolder(
     return;
 
   base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-  platform_util::OpenPath(path.DirName(),
-                          base::BindOnce(&OnOpenItemComplete, path));
+
+  // Only reveal paths that fall under a DevTools workspace folder the user has
+  // explicitly added. The DevTools frontend is renderer-hosted and may be
+  // attacker-controlled, so it must not be able to point this at arbitrary
+  // filesystem locations.
+  const base::DictValue& added_paths =
+      pref_service_->GetDict(prefs::kDevToolsFileSystemPaths);
+  const bool under_registered_root =
+      std::ranges::any_of(added_paths, [&path](const auto& entry) {
+        const base::FilePath root = base::FilePath::FromUTF8Unsafe(entry.first);
+        return root == path || root.IsParent(path);
+      });
+  if (!under_registered_root)
+    return;
+
+  platform_util::ShowItemInFolder(path);
 }
 
 void InspectableWebContents::SaveToFile(const std::string& url,

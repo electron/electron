@@ -63,6 +63,7 @@
 #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
+#include "pdf/pdf_features.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
@@ -73,6 +74,7 @@
 #include "services/network/public/cpp/resource_request_body.h"
 #include "services/network/public/cpp/self_deleting_url_loader_factory.h"
 #include "services/network/public/cpp/url_loader_factory_builder.h"
+#include "services/network/public/cpp/web_sandbox_flags.h"
 #include "shell/app/electron_crash_reporter_client.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_crash_reporter.h"
@@ -109,6 +111,7 @@
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 #include "shell/browser/session_preferences.h"
+#include "shell/browser/tracing/electron_tracing_delegate.h"
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/usb/electron_usb_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
@@ -130,6 +133,7 @@
 #include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
@@ -937,7 +941,9 @@ void HandleExternalProtocolInUI(
     const GURL& url,
     content::WeakDocumentPtr document_ptr,
     content::WebContents::OnceGetter web_contents_getter,
-    bool has_user_gesture) {
+    bool has_user_gesture,
+    bool is_primary_main_frame,
+    network::mojom::WebSandboxFlags sandbox_flags) {
   content::WebContents* web_contents = std::move(web_contents_getter).Run();
   if (!web_contents)
     return;
@@ -954,6 +960,30 @@ void HandleExternalProtocolInUI(
     // take the current main frame and declare it responsible for the
     // transition.
     rfh = web_contents->GetPrimaryMainFrame();
+  }
+
+  // Sandboxed iframes without one of the appropriate sandbox-escape tokens
+  // must not be able to launch external protocol handlers. This mirrors
+  // chrome/browser/chrome_content_browser_client.cc; see crbug.com/1148777.
+  if (!is_primary_main_frame) {
+    using SandboxFlags = network::mojom::WebSandboxFlags;
+    auto allow = [sandbox_flags](SandboxFlags flag) {
+      return (sandbox_flags & flag) == SandboxFlags::kNone;
+    };
+    const bool allowed = allow(SandboxFlags::kTopNavigationToCustomProtocols) ||
+                         (allow(SandboxFlags::kTopNavigationByUserActivation) &&
+                          has_user_gesture);
+    if (!allowed) {
+      rfh->AddMessageToConsole(
+          blink::mojom::ConsoleMessageLevel::kError,
+          "Navigation to external protocol blocked by sandbox, because it "
+          "doesn't contain any of: "
+          "'allow-top-navigation-to-custom-protocols', "
+          "'allow-top-navigation-by-user-activation', "
+          "'allow-top-navigation', or 'allow-popups'. See "
+          "https://chromestatus.com/feature/5680742077038592");
+      return;
+    }
   }
 
   GURL escaped_url(base::EscapeExternalHandlerValue(url.spec()));
@@ -984,7 +1014,8 @@ bool ElectronBrowserClient::HandleExternalProtocol(
                      initiator_document
                          ? initiator_document->GetWeakDocumentPtr()
                          : content::WeakDocumentPtr(),
-                     std::move(web_contents_getter), has_user_gesture));
+                     std::move(web_contents_getter), has_user_gesture,
+                     is_primary_main_frame, sandbox_flags));
   return true;
 }
 
@@ -1061,6 +1092,11 @@ ElectronBrowserClient::GetNetworkContextsParentDirectory() {
 
 std::string ElectronBrowserClient::GetProduct() {
   return "Chrome/" CHROME_VERSION_STRING;
+}
+
+std::unique_ptr<content::TracingDelegate>
+ElectronBrowserClient::CreateTracingDelegate() {
+  return std::make_unique<ElectronTracingDelegate>();
 }
 
 std::string ElectronBrowserClient::GetUserAgent() {
@@ -1617,6 +1653,46 @@ std::string ElectronBrowserClient::GetApplicationLocale() {
 bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
   // Enable site isolation. It is off by default in Chromium <= 69.
   return true;
+}
+
+bool ElectronBrowserClient::ShouldEnableSubframeZoom() {
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  return chrome_pdf::features::IsOopifPdfEnabled();
+#else
+  return false;
+#endif
+}
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+std::optional<network::CrossOriginEmbedderPolicy>
+ElectronBrowserClient::MaybeOverrideLocalURLCrossOriginEmbedderPolicy(
+    content::NavigationHandle* navigation_handle) {
+  if (!chrome_pdf::features::IsOopifPdfEnabled() ||
+      !navigation_handle->IsPdf()) {
+    return std::nullopt;
+  }
+
+  content::RenderFrameHost* pdf_extension = navigation_handle->GetParentFrame();
+  if (!pdf_extension) {
+    return std::nullopt;
+  }
+
+  content::RenderFrameHost* pdf_embedder = pdf_extension->GetParent();
+  CHECK(pdf_embedder);
+  return pdf_embedder->GetCrossOriginEmbedderPolicy();
+}
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
+bool ElectronBrowserClient::DoesSiteRequireDedicatedProcess(
+    content::BrowserContext* browser_context,
+    const GURL& effective_site_url) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  return GetEnabledExtensionFromEffectiveURL(browser_context,
+                                             effective_site_url) != nullptr;
+#else
+  return content::ContentBrowserClient::DoesSiteRequireDedicatedProcess(
+      browser_context, effective_site_url);
+#endif
 }
 
 void ElectronBrowserClient::BindHostReceiverForRenderer(

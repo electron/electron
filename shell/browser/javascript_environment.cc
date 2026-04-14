@@ -17,12 +17,15 @@
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
 #include "gin/array_buffer.h"
+#include "gin/public/isolate_holder.h"
 #include "gin/v8_initializer.h"
 #include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
 #include "third_party/blink/public/common/switches.h"
 #include "third_party/electron_node/src/node_wasm_web_api.h"
+#include "v8/include/v8-isolate.h"
+#include "v8/include/v8-locker.h"
 
 namespace {
 v8::Isolate* g_isolate;
@@ -61,12 +64,12 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
     : isolate_holder_{CreateIsolateHolder(
           Initialize(event_loop, setup_wasm_streaming),
           &max_young_generation_size_)},
-      isolate_{isolate_holder_->isolate()},
-      locker_{std::make_unique<v8::Locker>(isolate_)} {
-  isolate_->Enter();
+      locker_{std::make_unique<v8::Locker>(isolate())} {
+  v8::Isolate* const isolate = this->isolate();
+  isolate->Enter();
 
-  v8::HandleScope scope(isolate_);
-  auto context = node::NewContext(isolate_);
+  v8::HandleScope scope{isolate};
+  auto context = node::NewContext(isolate);
   CHECK(!context.IsEmpty());
 
   context->Enter();
@@ -74,21 +77,23 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
 
 JavascriptEnvironment::~JavascriptEnvironment() {
   DCHECK_NE(platform_, nullptr);
+  v8::Isolate* isolate = this->isolate();
 
   {
-    v8::HandleScope scope(isolate_);
-    isolate_->GetCurrentContext()->Exit();
+    v8::HandleScope scope{isolate};
+    isolate->GetCurrentContext()->Exit();
   }
-  isolate_->Exit();
+  isolate->Exit();
   g_isolate = nullptr;
 
   // Deinit gin::IsolateHolder prior to calling NodePlatform::UnregisterIsolate.
   // Otherwise cppgc::internal::Sweeper::Start will try to request a task runner
   // from the NodePlatform with an already unregistered isolate.
   locker_.reset();
+  DCHECK(!microtasks_runner_);
   isolate_holder_.reset();
 
-  platform_->UnregisterIsolate(isolate_);
+  platform_->UnregisterIsolate(isolate);
 }
 
 v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
@@ -135,6 +140,10 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
   return isolate;
 }
 
+v8::Isolate* JavascriptEnvironment::isolate() const {
+  return isolate_holder_->isolate();
+}
+
 // static
 v8::Isolate* JavascriptEnvironment::GetIsolate() {
   CHECK(g_isolate);
@@ -155,10 +164,11 @@ void JavascriptEnvironment::DestroyMicrotasksRunner() {
   // parameters.
   isolate_holder_->WillDestroyMicrotasksRunner();
   {
-    v8::HandleScope scope(isolate_);
+    v8::HandleScope scope{isolate()};
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
+  microtasks_runner_.reset();
 }
 
 }  // namespace electron

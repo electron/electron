@@ -58,7 +58,7 @@ class RendererClientBase : public content::ContentRendererClient
 
   virtual void DidCreateScriptContext(v8::Isolate* isolate,
                                       v8::Local<v8::Context> context,
-                                      content::RenderFrame* render_frame) = 0;
+                                      content::RenderFrame* render_frame);
   virtual void WillReleaseScriptContext(v8::Isolate* isolate,
                                         v8::Local<v8::Context> context,
                                         content::RenderFrame* render_frame) = 0;
@@ -141,6 +141,10 @@ class RendererClientBase : public content::ContentRendererClient
       const GURL& service_worker_scope,
       const GURL& script_url,
       const blink::ServiceWorkerToken& service_worker_token) override;
+  void WorkerScriptReadyForEvaluationOnWorkerThread(
+      v8::Local<v8::Context> context) override;
+  void WillDestroyWorkerContextOnWorkerThread(
+      v8::Local<v8::Context> context) override;
   void WebViewCreated(blink::WebView* web_view,
                       bool was_created_by_renderer,
                       const url::Origin* outermost_origin) override;

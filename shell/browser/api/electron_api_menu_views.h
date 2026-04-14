@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "base/containers/flat_map.h"
-#include "base/memory/weak_ptr.h"
+#include "gin/weak_cell.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
@@ -18,6 +18,8 @@ class MenuViews : public Menu {
  public:
   explicit MenuViews(gin::Arguments* args);
   ~MenuViews() override;
+
+  void Trace(cppgc::Visitor*) const override;
 
  protected:
   // Menu
@@ -36,7 +38,7 @@ class MenuViews : public Menu {
   // window ID -> open context menu
   base::flat_map<int32_t, std::unique_ptr<views::MenuRunner>> menu_runners_;
 
-  base::WeakPtrFactory<MenuViews> weak_factory_{this};
+  gin::WeakCellFactory<MenuViews> weak_cell_factory_{this};
 };
 
 }  // namespace electron::api

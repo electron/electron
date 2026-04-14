@@ -10,6 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/notimplemented.h"
 #include "base/path_service.h"
@@ -20,7 +21,6 @@
 #include "components/os_crypt/sync/os_crypt.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/json_pref_store.h"
-#include "components/prefs/overlay_user_pref_store.h"
 #include "components/prefs/pref_registry.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -39,6 +39,7 @@
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/network/public/cpp/network_switches.h"
+#include "shell/browser/metrics/electron_metrics_service_client.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/thread_restrictions.h"
@@ -139,6 +140,8 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   PrefServiceFactory prefs_factory;
   auto pref_registry = base::MakeRefCounted<PrefRegistrySimple>();
   PrefProxyConfigTrackerImpl::RegisterPrefs(pref_registry.get());
+  electron::ElectronMetricsServiceClient::RegisterMetricsPrefs(
+      pref_registry.get());
 
 #if BUILDFLAG(IS_WIN)
   OSCrypt::RegisterLocalPrefs(pref_registry.get());
@@ -153,16 +156,19 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   ApplyProxyModeFromCommandLine(in_memory_pref_store());
   prefs_factory.set_command_line_prefs(in_memory_pref_store());
 
-  // Only use a persistent prefs store when cookie encryption is enabled as that
-  // is the only key that needs it
   base::FilePath prefs_path;
   CHECK(base::PathService::Get(electron::DIR_SESSION_DATA, &prefs_path));
+  if (!base::DirectoryExists(prefs_path))
+    base::CreateDirectory(prefs_path);
   prefs_path = prefs_path.Append(FILE_PATH_LITERAL("Local State"));
+
   electron::ScopedAllowBlockingForElectron allow_blocking;
   scoped_refptr<JsonPrefStore> user_pref_store =
       base::MakeRefCounted<JsonPrefStore>(prefs_path);
   user_pref_store->ReadPrefs();
   prefs_factory.set_user_prefs(user_pref_store);
+  DCHECK(user_pref_store->IsInitializationComplete());
+
   local_state_ = prefs_factory.Create(std::move(pref_registry));
 }
 
@@ -176,6 +182,10 @@ void BrowserProcessImpl::PreCreateThreads() {
   // this can be created on first use.
   if (!SystemNetworkContextManager::GetInstance())
     SystemNetworkContextManager::CreateInstance(local_state_.get());
+
+  // Needs to be called here as per
+  // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/chrome_browser_main.cc;l=1385-1389;drc=c3bda003554dad21313fb24b7a4f3e1aae6102d9.
+  CreateMetricsServiceClient();
 }
 
 void BrowserProcessImpl::PreMainMessageLoopRun() {
@@ -201,7 +211,8 @@ BrowserProcessImpl::GetMetricsServicesManager() {
 }
 
 metrics::MetricsService* BrowserProcessImpl::metrics_service() {
-  return nullptr;
+  return metrics_service_client_ ? metrics_service_client_->GetMetricsService()
+                                 : nullptr;
 }
 
 ProfileManager* BrowserProcessImpl::profile_manager() {
@@ -455,9 +466,9 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
   // The DPAPI key provider requires OSCrypt::Init to have already been called
   // to initialize the key storage. This happens in
   // BrowserMainPartsWin::PreCreateMainMessageLoop.
-  providers.emplace_back(std::make_pair(
+  providers.emplace_back(
       /*precedence=*/10u,
-      std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state())));
+      std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state()));
 #endif  // BUILDFLAG(IS_WIN)
 
 #if BUILDFLAG(IS_LINUX)
@@ -499,12 +510,17 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
 
 #if BUILDFLAG(IS_MAC)
   if (base::FeatureList::IsEnabled(features::kUseKeychainKeyProvider)) {
-    providers.emplace_back(std::make_pair(
+    providers.emplace_back(
         /*precedence=*/10u,
-        std::make_unique<os_crypt_async::KeychainKeyProvider>()));
+        std::make_unique<os_crypt_async::KeychainKeyProvider>());
   }
 #endif  // BUILDFLAG(IS_MAC)
 
   os_crypt_async_ =
       std::make_unique<os_crypt_async::OSCryptAsync>(std::move(providers));
+}
+
+void BrowserProcessImpl::CreateMetricsServiceClient() {
+  metrics_service_client_ =
+      std::make_unique<electron::ElectronMetricsServiceClient>();
 }

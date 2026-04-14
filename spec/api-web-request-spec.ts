@@ -25,10 +25,7 @@ describe('webRequest module', () => {
       res.setHeader('Location', 'http://' + req.rawHeaders[1]);
       res.end();
     } else if (req.url === '/contentDisposition') {
-      res.writeHead(200, [
-        'content-disposition',
-        Buffer.from('attachment; filename=aa中aa.txt').toString('binary')
-      ]);
+      res.writeHead(200, ['content-disposition', Buffer.from('attachment; filename=aa中aa.txt').toString('binary')]);
       const content = req.url;
       res.end(content);
     } else {
@@ -47,18 +44,21 @@ describe('webRequest module', () => {
   let http2URL: string;
 
   const certPath = path.join(fixturesPath, 'certificates');
-  const h2server = http2.createSecureServer({
-    key: fs.readFileSync(path.join(certPath, 'server.key')),
-    cert: fs.readFileSync(path.join(certPath, 'server.pem'))
-  }, async (req, res) => {
-    if (req.method === 'POST') {
-      const chunks = [];
-      for await (const chunk of req) chunks.push(chunk);
-      res.end(Buffer.concat(chunks).toString('utf8'));
-    } else {
-      res.end('<html></html>');
+  const h2server = http2.createSecureServer(
+    {
+      key: fs.readFileSync(path.join(certPath, 'server.key')),
+      cert: fs.readFileSync(path.join(certPath, 'server.pem'))
+    },
+    async (req, res) => {
+      if (req.method === 'POST') {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        res.end(Buffer.concat(chunks).toString('utf8'));
+      } else {
+        res.end('<html></html>');
+      }
     }
-  });
+  );
 
   before(async () => {
     protocol.registerStringProtocol('cors', (req, cb) => cb(''));
@@ -83,7 +83,7 @@ describe('webRequest module', () => {
   });
   after(() => contents.destroy());
 
-  async function ajax (url: string, options = {}) {
+  async function ajax(url: string, options = {}) {
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
   }
 
@@ -92,7 +92,10 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(null);
     });
 
-    const cancel = (details: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+    const cancel = (
+      details: Electron.OnBeforeRequestListenerDetails,
+      callback: (response: Electron.CallbackResponse) => void
+    ) => {
       callback({ cancel: true });
     };
 
@@ -131,7 +134,10 @@ describe('webRequest module', () => {
     });
 
     it('can filter URLs with multiple excludeUrls patterns', async () => {
-      const filter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'filter/exclude1/*', defaultURL + 'filter/exclude2/*'] };
+      const filter = {
+        urls: [defaultURL + 'filter/*'],
+        excludeUrls: [defaultURL + 'filter/exclude1/*', defaultURL + 'filter/exclude2/*']
+      };
       ses.webRequest.onBeforeRequest(filter, cancel);
       expect((await ajax(`${defaultURL}filter/exclude1/test`)).data).to.equal('/filter/exclude1/test');
       expect((await ajax(`${defaultURL}filter/exclude2/test`)).data).to.equal('/filter/exclude2/test');
@@ -159,14 +165,22 @@ describe('webRequest module', () => {
     });
 
     it('can filter URLs, excludeUrls and types', async () => {
-      const filter1: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['xhr'] };
+      const filter1: Electron.WebRequestFilter = {
+        urls: [defaultURL + 'filter/*'],
+        excludeUrls: [defaultURL + 'exclude/*'],
+        types: ['xhr']
+      };
       ses.webRequest.onBeforeRequest(filter1, cancel);
 
       expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
       expect((await ajax(`${defaultURL}exclude/test`)).data).to.equal('/exclude/test');
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
 
-      const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], excludeUrls: [defaultURL + 'exclude/*'], types: ['stylesheet'] };
+      const filter2: Electron.WebRequestFilter = {
+        urls: [defaultURL + 'filter/*'],
+        excludeUrls: [defaultURL + 'exclude/*'],
+        types: ['stylesheet']
+      };
       ses.webRequest.onBeforeRequest(filter2, cancel);
       expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
       expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
@@ -176,16 +190,21 @@ describe('webRequest module', () => {
     // allowExtensions changes how URLPattern works, so we add extra tests that ensure that filters still work as expected.
     describe('with protocol.registerSchemesAsPrivileged() and allowExtensions', () => {
       it('will filter http URLs properly', async () => {
-        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const rc = await startRemoteControlApp([
+          '--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"'
+        ]);
         const called = await rc.remotely(async (url: string) => {
           const { BrowserWindow, session } = require('electron/main');
 
           let called = false;
 
-          session.defaultSession.webRequest.onBeforeRequest({ urls: ['http://*/*'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
-            called = true;
-            callback({ cancel: true });
-          });
+          session.defaultSession.webRequest.onBeforeRequest(
+            { urls: ['http://*/*'] },
+            (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+              called = true;
+              callback({ cancel: true });
+            }
+          );
 
           const w = new BrowserWindow({ show: false });
           await w.loadURL('about:blank');
@@ -200,16 +219,21 @@ describe('webRequest module', () => {
       });
 
       it('will not call webRequest.onBeforeRequest for non-custom protocol URLs that do not match the filter', async () => {
-        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const rc = await startRemoteControlApp([
+          '--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"'
+        ]);
         const called = await rc.remotely(async (url: string) => {
           const { BrowserWindow, session } = require('electron/main');
 
           let called = false;
 
-          session.defaultSession.webRequest.onBeforeRequest({ urls: ['https://*/*'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
-            called = true;
-            callback({ cancel: true });
-          });
+          session.defaultSession.webRequest.onBeforeRequest(
+            { urls: ['https://*/*'] },
+            (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+              called = true;
+              callback({ cancel: true });
+            }
+          );
 
           const w = new BrowserWindow({ show: false });
           await w.loadURL('about:blank');
@@ -224,7 +248,9 @@ describe('webRequest module', () => {
       });
 
       it('will call webRequest.onBeforeRequest for custom protocol URLs with <all_urls> filter', async () => {
-        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const rc = await startRemoteControlApp([
+          '--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"'
+        ]);
         const { called, responseText } = await rc.remotely(async () => {
           const { net, protocol, session } = require('electron/main');
 
@@ -232,10 +258,13 @@ describe('webRequest module', () => {
 
           let called = false;
 
-          session.defaultSession.webRequest.onBeforeRequest({ urls: ['<all_urls>'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
-            called = true;
-            callback({ cancel: false });
-          });
+          session.defaultSession.webRequest.onBeforeRequest(
+            { urls: ['<all_urls>'] },
+            (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+              called = true;
+              callback({ cancel: false });
+            }
+          );
 
           const response = await net.fetch('custom://app/test');
           const responseText = await response.text();
@@ -249,7 +278,9 @@ describe('webRequest module', () => {
       });
 
       it('will not call webRequest.onBeforeRequest for custom protocol URLs that do not match the filter', async () => {
-        const rc = await startRemoteControlApp(['--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"']);
+        const rc = await startRemoteControlApp([
+          '--boot-eval="protocol.registerSchemesAsPrivileged([{ scheme: \'custom\', privileges: { allowExtensions: true } }]);"'
+        ]);
         const { called, responseText } = await rc.remotely(async () => {
           const { net, protocol, session } = require('electron/main');
 
@@ -257,10 +288,13 @@ describe('webRequest module', () => {
 
           let called = false;
 
-          session.defaultSession.webRequest.onBeforeRequest({ urls: ['http://*/*'] }, (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
-            called = true;
-            callback({ cancel: false });
-          });
+          session.defaultSession.webRequest.onBeforeRequest(
+            { urls: ['http://*/*'] },
+            (_: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+              called = true;
+              callback({ cancel: false });
+            }
+          );
 
           const response = await net.fetch('custom://app/test');
           const responseText = await response.text();
@@ -305,10 +339,12 @@ describe('webRequest module', () => {
         expect(data).to.deep.equal(postData);
         callback({ cancel: true });
       });
-      await expect(ajax(defaultURL, {
-        method: 'POST',
-        body: qs.stringify(postData)
-      })).to.eventually.be.rejected();
+      await expect(
+        ajax(defaultURL, {
+          method: 'POST',
+          body: qs.stringify(postData)
+        })
+      ).to.eventually.be.rejected();
     });
 
     it('can redirect the request', async () => {
@@ -385,10 +421,10 @@ describe('webRequest module', () => {
       defer(() => contents.close());
       await contents.loadURL(http2URL);
 
-      function makeStreamFromPipe (pipe: any): ReadableStream {
+      function makeStreamFromPipe(pipe: any): ReadableStream {
         const buf = new Uint8Array(1024 * 1024 /* 1 MB */);
         return new ReadableStream({
-          async pull (controller) {
+          async pull(controller) {
             try {
               const rv = await pipe.read(buf);
               if (rv > 0) {
@@ -405,7 +441,9 @@ describe('webRequest module', () => {
 
       ses.webRequest.onBeforeRequest(async (details, callback) => {
         const chunks = [];
-        for await (const chunk of makeStreamFromPipe((details.uploadData[0] as any).body)) { chunks.push(chunk); }
+        for await (const chunk of makeStreamFromPipe((details.uploadData[0] as any).body)) {
+          chunks.push(chunk);
+        }
         callback({});
       });
 
@@ -549,11 +587,13 @@ describe('webRequest module', () => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders);
         onSendHeadersCalled = true;
       });
-      await ajax(url.format({
-        pathname: path.join(fixturesPath, 'blank.html').replaceAll('\\', '/'),
-        protocol: 'file',
-        slashes: true
-      }));
+      await ajax(
+        url.format({
+          pathname: path.join(fixturesPath, 'blank.html').replaceAll('\\', '/'),
+          protocol: 'file',
+          slashes: true
+        })
+      );
       expect(onSendHeadersCalled).to.be.true();
     });
 
@@ -769,25 +809,25 @@ describe('webRequest module', () => {
   describe('WebSocket connections', () => {
     it('can be proxyed', async () => {
       // Setup server.
-      const reqHeaders : { [key: string] : any } = {};
+      const reqHeaders: { [key: string]: any } = {};
       let server = http.createServer((req, res) => {
         reqHeaders[req.url!] = req.headers;
         res.setHeader('foo1', 'bar1');
         res.end('ok');
       });
       let wss = new WebSocket.Server({ noServer: true });
-      wss.on('connection', function connection (ws) {
-        ws.on('message', function incoming (message) {
+      wss.on('connection', function connection(ws) {
+        ws.on('message', function incoming(message) {
           if (message === 'foo') {
             ws.send('bar');
           }
         });
       });
-      server.on('upgrade', function upgrade (request, socket, head) {
+      server.on('upgrade', function upgrade(request, socket, head) {
         const pathname = new URL(request.url!, `http://${request.headers.host}`).pathname;
         if (pathname === '/websocket') {
           reqHeaders[request.url!] = request.headers;
-          wss.handleUpgrade(request, socket as Socket, head, function done (ws) {
+          wss.handleUpgrade(request, socket as Socket, head, function done(ws) {
             wss.emit('connection', ws, request);
           });
         }
@@ -800,7 +840,7 @@ describe('webRequest module', () => {
       const ses = session.fromPartition('WebRequestWebSocket');
 
       // Setup listeners.
-      const receivedHeaders : { [key: string] : any } = {};
+      const receivedHeaders: { [key: string]: any } = {};
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         details.requestHeaders.foo = 'bar';
         callback({ requestHeaders: details.requestHeaders });
@@ -869,7 +909,7 @@ describe('webRequest module', () => {
       const wssAuth = new WebSocket.Server({ noServer: true });
       const expected = 'Basic ' + Buffer.from('user:pass').toString('base64');
 
-      wssAuth.on('connection', ws => {
+      wssAuth.on('connection', (ws) => {
         ws.send('Authenticated!');
       });
 
@@ -886,7 +926,7 @@ describe('webRequest module', () => {
           return;
         }
 
-        wssAuth.handleUpgrade(req, socket as Socket, head, ws => {
+        wssAuth.handleUpgrade(req, socket as Socket, head, (ws) => {
           wssAuth.emit('connection', ws, req);
         });
       });

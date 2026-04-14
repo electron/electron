@@ -440,13 +440,11 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   if (window)
     window->AddPreTargetHandler(this);
 
-#if BUILDFLAG(IS_LINUX)
-  // We need to set bounds again after widget init for two reasons:
-  // 1. For CSD windows, user-specified bounds need  to be inflated by frame
-  //    insets, but the frame view isn't available at first.
-  // 2. The widget clamps bounds to fit the screen, but we want to allow
-  //    windows larger than the display.
-  SetBounds(gfx::Rect(GetPosition(), size), false);
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
+  // The initial params.bounds was applied before the frame view existed, so
+  // non-client insets weren't accounted for and bounds need to be set again.
+  if (!GetRestoredFrameBorderInsets().IsEmpty())
+    SetBounds(gfx::Rect(GetPosition(), size), false);
 #endif
 }
 
@@ -906,7 +904,9 @@ gfx::Rect NativeWindowViews::GetNormalBounds() const {
   if (IsMaximized() && transparent())
     return restore_bounds_;
 #endif
-  return WidgetToLogicalBounds(widget()->GetRestoredBounds());
+  gfx::Rect bounds = widget()->GetRestoredBounds();
+  bounds.Inset(GetRestoredFrameBorderInsets());
+  return bounds;
 }
 
 void NativeWindowViews::SetContentSizeConstraints(
@@ -1269,7 +1269,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
       SetClassLongPtr(GetAcceleratedWidget(), GCLP_HBRBACKGROUND,
                       reinterpret_cast<LONG_PTR>(brush));
   if (previous_brush)
-    DeleteObject((HBRUSH)previous_brush);
+    DeleteObject(reinterpret_cast<HBRUSH>(previous_brush));
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
   SkColor compositor_color = background_color;
@@ -1468,11 +1468,11 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   //  the ::GetWindowLongPtr or ::SetWindowLongPtr functions with "nIndex" set
   //  to "GWLP_HWNDPARENT" which actually means the window owner.
   HWND hwndParent = parent ? parent->GetAcceleratedWidget() : nullptr;
-  if (hwndParent ==
-      (HWND)::GetWindowLongPtr(GetAcceleratedWidget(), GWLP_HWNDPARENT))
+  if (hwndParent == reinterpret_cast<HWND>(::GetWindowLongPtr(
+                        GetAcceleratedWidget(), GWLP_HWNDPARENT)))
     return;
   ::SetWindowLongPtr(GetAcceleratedWidget(), GWLP_HWNDPARENT,
-                     (LONG_PTR)hwndParent);
+                     reinterpret_cast<LONG_PTR>(hwndParent));
   // Ensures the visibility
   if (IsVisible()) {
     WINDOWPLACEMENT wp;
@@ -1676,17 +1676,24 @@ NativeWindowHandle NativeWindowViews::GetNativeWindowHandle() const {
 
 gfx::Rect NativeWindowViews::LogicalToWidgetBounds(
     const gfx::Rect& bounds) const {
+  // Use widget() directly since NativeWindowViews::IsMaximized() can
+  // call GetBounds and end up in a loop.
+  if (widget()->IsMaximized() || widget()->IsFullscreen())
+    return bounds;
+
   gfx::Rect widget_bounds(bounds);
   const gfx::Insets frame_insets = GetRestoredFrameBorderInsets();
   widget_bounds.Outset(
       gfx::Outsets::TLBR(frame_insets.top(), frame_insets.left(),
                          frame_insets.bottom(), frame_insets.right()));
-
   return widget_bounds;
 }
 
 gfx::Rect NativeWindowViews::WidgetToLogicalBounds(
     const gfx::Rect& bounds) const {
+  if (widget()->IsMaximized() || widget()->IsFullscreen())
+    return bounds;
+
   gfx::Rect logical_bounds(bounds);
   logical_bounds.Inset(GetRestoredFrameBorderInsets());
   return logical_bounds;

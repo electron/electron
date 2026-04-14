@@ -10,8 +10,6 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "base/memory/raw_ref.h"
-#include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
 #include "electron/buildflags/buildflags.h"
@@ -22,7 +20,6 @@
 #include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/ipc_dispatcher.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 
@@ -61,7 +58,10 @@ struct PreloadScript;
 
 namespace api {
 
+class Extensions;
 class NetLog;
+class Protocol;
+class ServiceWorkerContext;
 class WebRequest;
 
 class Session final : public gin::Wrappable<Session>,
@@ -104,8 +104,8 @@ class Session final : public gin::Wrappable<Session>,
   Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context);
   ~Session() override;
 
-  ElectronBrowserContext* browser_context() const {
-    return &browser_context_.get();
+  [[nodiscard]] ElectronBrowserContext* browser_context() const {
+    return browser_context_;
   }
 
   // gin::Wrappable
@@ -168,9 +168,9 @@ class Session final : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ClearSharedDictionaryCacheForIsolationKey(
       const gin_helper::Dictionary& options);
   v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
-  v8::Local<v8::Value> Extensions(v8::Isolate* isolate);
-  v8::Local<v8::Value> Protocol(v8::Isolate* isolate);
-  v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
+  api::Extensions* Extensions(v8::Isolate* isolate);
+  api::Protocol* Protocol();
+  api::ServiceWorkerContext* ServiceWorkerContext();
   WebRequest* WebRequest(v8::Isolate* isolate);
   api::NetLog* NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
@@ -217,10 +217,10 @@ class Session final : public gin::Wrappable<Session>,
 
   // Cached gin_helper::Wrappable objects.
   v8::TracedReference<v8::Value> cookies_;
-  v8::TracedReference<v8::Value> extensions_;
-  v8::TracedReference<v8::Value> protocol_;
+  cppgc::Member<api::Extensions> extensions_;
+  cppgc::Member<api::Protocol> protocol_;
   cppgc::Member<api::NetLog> net_log_;
-  v8::TracedReference<v8::Value> service_worker_context_;
+  cppgc::Member<api::ServiceWorkerContext> service_worker_context_;
   cppgc::Member<api::WebRequest> web_request_;
 
   raw_ptr<v8::Isolate> isolate_;
@@ -228,7 +228,7 @@ class Session final : public gin::Wrappable<Session>,
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
 
-  const raw_ref<ElectronBrowserContext> browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 
   gin::WeakCellFactory<Session> weak_factory_{this};
 

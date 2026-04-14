@@ -237,14 +237,8 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // set.  If this check is failing we may need to re-add that workaround
   DCHECK(base::SingleThreadTaskRunner::HasCurrentDefault());
 
-  // The ProxyResolverV8 has setup a complete V8 environment, in order to
-  // avoid conflicts we only initialize our V8 environment after that.
-  js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
-
-  v8::Isolate* const isolate = js_env_->isolate();
-  v8::HandleScope scope(isolate);
-
-  // Enable trap handlers before user script execution.
+  // Enable trap handlers before creating the V8 isolate. V8 initialization
+  // calls IsTrapHandlerEnabled() which prevents later EnableTrapHandler calls.
 #if ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_MAC)) && \
      defined(ARCH_CPU_X86_64)) ||                                       \
     ((BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)) && defined(ARCH_CPU_ARM64))
@@ -252,6 +246,13 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
     electron::SetUpWebAssemblyTrapHandler();
   }
 #endif
+
+  // The ProxyResolverV8 has setup a complete V8 environment, in order to
+  // avoid conflicts we only initialize our V8 environment after that.
+  js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
+
+  v8::Isolate* const isolate = js_env_->isolate();
+  v8::HandleScope scope(isolate);
 
   node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
   // Create the global environment.
@@ -602,7 +603,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
       auto& process = it.GetData().GetProcess();
       if (!process.IsValid())
         continue;
-      auto utility_process_wrapper =
+      auto* utility_process_wrapper =
           api::UtilityProcessWrapper::FromProcessId(process.Pid());
       if (utility_process_wrapper)
         utility_process_wrapper->Shutdown(0 /* exit_code */);
@@ -617,6 +618,8 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   node_bindings_->set_uv_env(nullptr);
   node_env_.reset();
 
+  browser_.reset();
+  js_env_.reset();
   ElectronBrowserContext::DestroyAllContexts();
 
   fake_browser_process_->PostMainMessageLoopRun();

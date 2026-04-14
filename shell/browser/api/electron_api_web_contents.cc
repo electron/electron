@@ -47,11 +47,13 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/desktop_streams_registry.h"
 #include "content/public/browser/devtools_agent_host.h"
+#include "content/public/browser/download_manager.h"
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
@@ -90,9 +92,11 @@
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/browser/api/electron_api_debugger.h"
+#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/message_port.h"
+#include "shell/browser/api/save_page_handler.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
@@ -910,14 +914,15 @@ WebContents::WebContents(v8::Isolate* isolate,
     session = Session::FromPartition(isolate, "");
   }
   session_ = session;
+  ElectronBrowserContext* const browser_context = session->browser_context();
+  DCHECK(browser_context != nullptr);
 
   std::unique_ptr<content::WebContents> web_contents;
   if (is_guest()) {
     scoped_refptr<content::SiteInstance> site_instance =
-        content::SiteInstance::CreateForURL(session->browser_context(),
+        content::SiteInstance::CreateForURL(browser_context,
                                             GURL("chrome-guest://fake-host"));
-    content::WebContents::CreateParams params(session->browser_context(),
-                                              site_instance);
+    content::WebContents::CreateParams params{browser_context, site_instance};
     guest_delegate_ =
         std::make_unique<WebViewGuestDelegate>(embedder_->web_contents(), this);
     params.guest_delegate = guest_delegate_.get();
@@ -945,7 +950,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     SkColor bc = ParseCSSColor(background_color_str).value_or(SK_ColorWHITE);
     bool transparent = bc == SK_ColorTRANSPARENT;
 
-    content::WebContents::CreateParams params(session->browser_context());
+    content::WebContents::CreateParams params{browser_context};
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
         offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
@@ -956,22 +961,23 @@ WebContents::WebContents(v8::Isolate* isolate,
     web_contents = content::WebContents::Create(params);
     view->SetWebContents(web_contents.get());
   } else {
-    content::WebContents::CreateParams params(session->browser_context());
+    content::WebContents::CreateParams params{browser_context};
     params.initially_hidden = !initially_shown;
     web_contents = content::WebContents::Create(params);
   }
 
-  InitWithSessionAndOptions(isolate, std::move(web_contents),
-                            session->browser_context(), options);
+  InitWithSessionAndOptions(isolate, std::move(web_contents), browser_context,
+                            options);
 }
 
 void WebContents::InitZoomController(content::WebContents* web_contents,
                                      const gin_helper::Dictionary& options) {
-  WebContentsZoomController::CreateForWebContents(web_contents);
-  zoom_controller_ = WebContentsZoomController::FromWebContents(web_contents);
+  WebContentsZoomController* const zoom_controller =
+      WebContentsZoomController::GetOrCreateForWebContents(web_contents);
+
   double zoom_factor;
   if (options.Get(options::kZoomFactor, &zoom_factor))
-    zoom_controller_->SetDefaultZoomFactor(zoom_factor);
+    zoom_controller->SetDefaultZoomFactor(zoom_factor);
 
   // Nothing to do with ZoomController, but this function gets called in all
   // init cases!
@@ -1767,7 +1773,8 @@ bool WebContents::CheckMediaAccessPermission(
       content::WebContents::FromRenderFrameHost(render_frame_host);
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
-  return permission_helper->CheckMediaAccessPermission(security_origin, type);
+  return permission_helper->CheckMediaAccessPermission(render_frame_host,
+                                                       security_origin, type);
 }
 
 void WebContents::RequestMediaAccessPermission(
@@ -2450,16 +2457,9 @@ int32_t WebContents::GetProcessID() const {
 }
 
 base::ProcessId WebContents::GetOSProcessID() const {
-  base::ProcessHandle process_handle = web_contents()
-                                           ->GetPrimaryMainFrame()
-                                           ->GetProcess()
-                                           ->GetProcess()
-                                           .Handle();
-  return base::GetProcId(process_handle);
-}
-
-bool WebContents::Equal(const WebContents* web_contents) const {
-  return ID() == web_contents->ID();
+  const auto& process =
+      web_contents()->GetPrimaryMainFrame()->GetProcess()->GetProcess();
+  return process.IsValid() ? process.Pid() : base::kNullProcessId;
 }
 
 GURL WebContents::GetURL() const {
@@ -2890,8 +2890,8 @@ v8::Local<v8::Promise> WebContents::SavePage(
     return handle;
   }
 
-  auto* handler = new SavePageHandler(web_contents(), std::move(promise));
-  handler->Handle(full_file_path, save_type);
+  auto* handler = new SavePageHandler{std::move(promise)};
+  handler->Handle(full_file_path, save_type, web_contents());
 
   return handle;
 }
@@ -3153,16 +3153,18 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
         .Set(printing::kSettingMediaSizeIsDefault, true);
   };
 
-  const bool use_default_size =
-      print_settings.FindBool(kUseDefaultPrinterPageSize).value_or(false);
-  std::optional<gfx::Size> paper_size;
-  if (use_default_size)
-    paper_size = GetPrinterDefaultPaperSize(base::UTF16ToUTF8(info.second));
+  if (!print_settings.Find(printing::kSettingMediaSize)) {
+    const bool use_default_size =
+        print_settings.FindBool(kUseDefaultPrinterPageSize).value_or(false);
+    std::optional<gfx::Size> paper_size;
+    if (use_default_size)
+      paper_size = GetPrinterDefaultPaperSize(base::UTF16ToUTF8(info.second));
 
-  print_settings.Set(
-      printing::kSettingMediaSize,
-      paper_size ? make_media_size(paper_size->height(), paper_size->width())
-                 : make_media_size(297000, 210000));
+    print_settings.Set(
+        printing::kSettingMediaSize,
+        paper_size ? make_media_size(paper_size->height(), paper_size->width())
+                   : make_media_size(297000, 210000));
+  }
 
   content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents.get());
   if (!rfh)
@@ -3868,12 +3870,16 @@ gfx::Size WebContents::GetSizeForNewRenderView(content::WebContents* wc) {
   return {};
 }
 
+WebContentsZoomController* WebContents::GetZoomController() const {
+  return WebContentsZoomController::FromWebContents(web_contents());
+}
+
 void WebContents::SetZoomLevel(double level) {
-  zoom_controller_->SetZoomLevel(level);
+  GetZoomController()->SetZoomLevel(level);
 }
 
 double WebContents::GetZoomLevel() const {
-  return zoom_controller_->GetZoomLevel();
+  return GetZoomController()->GetZoomLevel();
 }
 
 void WebContents::SetZoomFactor(gin_helper::ErrorThrower thrower,
@@ -3893,7 +3899,7 @@ double WebContents::GetZoomFactor() const {
 }
 
 void WebContents::SetTemporaryZoomLevel(double level) {
-  zoom_controller_->SetTemporaryZoomLevel(level);
+  GetZoomController()->SetTemporaryZoomLevel(level);
 }
 
 std::optional<PreloadScript> WebContents::GetPreloadScript() const {
@@ -4503,7 +4509,8 @@ void WebContents::OnDevToolsSearchCompleted(
 
 void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.
-  if (enter_fullscreen && owner_window()->IsFullscreen()) {
+  if (enter_fullscreen && (owner_window()->IsFullscreen() ||
+                           owner_window()->IsSimpleFullScreen())) {
     native_fullscreen_ = true;
     UpdateHtmlApiFullscreen(true);
     return;
@@ -4588,7 +4595,6 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
-      .SetMethod("equal", &WebContents::Equal)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("reload", &WebContents::Reload)
       .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)

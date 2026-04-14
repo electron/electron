@@ -17,6 +17,7 @@
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
 #include "base/strings/string_util.h"
 #include "base/types/pass_key.h"
@@ -76,6 +77,7 @@
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/net/resolve_host_function.h"
+#include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -92,6 +94,7 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
@@ -544,14 +547,13 @@ const void* kElectronApiSessionKey = &kElectronApiSessionKey;
 
 }  // namespace
 
-gin::WrapperInfo Session::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                          gin::kElectronSession};
+gin::WrapperInfo Session::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronSession);
 
 Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : isolate_(isolate),
       network_emulation_token_(base::UnguessableToken::Create()),
-      browser_context_{
-          raw_ref<ElectronBrowserContext>::from_ptr(browser_context)} {
+      browser_context_{browser_context} {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   data->AddDisposeObserver(this);
   // Observe DownloadManager to get download notifications.
@@ -559,9 +561,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
   SessionPreferences::CreateForBrowserContext(browser_context);
 
-  protocol_.Reset(
-      isolate,
-      Protocol::Create(isolate, browser_context->protocol_registry()).ToV8());
+  protocol_ = Protocol::Create(isolate, browser_context->protocol_registry());
 
   browser_context->SetUserData(
       kElectronApiSessionKey,
@@ -584,16 +584,21 @@ Session::~Session() {
 }
 
 void Session::Dispose() {
-  if (keep_alive_) {
-    browser_context()->GetDownloadManager()->RemoveObserver(this);
+  if (!keep_alive_)
+    return;
+
+  ElectronBrowserContext* const browser_context = this->browser_context();
+  if (!browser_context)
+    return;
+
+  browser_context->GetDownloadManager()->RemoveObserver(this);
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-    if (auto* service =
-            SpellcheckServiceFactory::GetForContext(browser_context())) {
-      service->SetHunspellObserver(nullptr);
-    }
-#endif
+  if (auto* service =
+          SpellcheckServiceFactory::GetForContext(browser_context)) {
+    service->SetHunspellObserver(nullptr);
   }
+#endif
 }
 
 void Session::OnDownloadCreated(content::DownloadManager* manager,
@@ -1339,28 +1344,24 @@ v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
   return cookies_.Get(isolate);
 }
 
-v8::Local<v8::Value> Session::Extensions(v8::Isolate* isolate) {
+api::Extensions* Session::Extensions(v8::Isolate* isolate) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  if (extensions_.IsEmptyThreadSafe()) {
-    v8::Local<v8::Value> handle;
-    handle = Extensions::Create(isolate, browser_context()).ToV8();
-    extensions_.Reset(isolate, handle);
-  }
+  if (!extensions_)
+    extensions_ = Extensions::Create(isolate, browser_context());
 #endif
-  return extensions_.Get(isolate);
+  return extensions_.Get();
 }
 
-v8::Local<v8::Value> Session::Protocol(v8::Isolate* isolate) {
-  return protocol_.Get(isolate);
+api::Protocol* Session::Protocol() {
+  return protocol_.Get();
 }
 
-v8::Local<v8::Value> Session::ServiceWorkerContext(v8::Isolate* isolate) {
-  if (service_worker_context_.IsEmptyThreadSafe()) {
-    v8::Local<v8::Value> handle;
-    handle = ServiceWorkerContext::Create(isolate, browser_context()).ToV8();
-    service_worker_context_.Reset(isolate, handle);
+api::ServiceWorkerContext* Session::ServiceWorkerContext() {
+  if (!service_worker_context_) {
+    service_worker_context_ = ServiceWorkerContext::Create(
+        JavascriptEnvironment::GetIsolate(), browser_context());
   }
-  return service_worker_context_.Get(isolate);
+  return service_worker_context_.Get();
 }
 
 WebRequest* Session::WebRequest(v8::Isolate* isolate) {
@@ -1896,6 +1897,7 @@ void Session::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
   data->RemoveDisposeObserver(this);
   Dispose();
   weak_factory_.Invalidate();
+  browser_context_ = nullptr;
   keep_alive_.Clear();
 }
 

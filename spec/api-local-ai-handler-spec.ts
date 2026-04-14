@@ -10,13 +10,17 @@ import { closeAllWindows } from './lib/window-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 
-function getFixturePath (fixtureName: string) {
+function getFixturePath(fixtureName: string) {
   return path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), fixtureName);
 }
 
 // Await fn and listen for a message of the given type, returning the message once received
 // Used to listen for a message triggered as a side effect of fn, where we don't care about the result of fn
-async function listenForMessage (aiHandler: Electron.UtilityProcess, messageType: string, fn: () => Promise<void> | void) {
+async function listenForMessage(
+  aiHandler: Electron.UtilityProcess,
+  messageType: string,
+  fn: () => Promise<void> | void
+) {
   const messages = on(aiHandler, 'message');
   await fn();
 
@@ -31,7 +35,7 @@ async function listenForMessage (aiHandler: Electron.UtilityProcess, messageType
 
 // Call fn and await a message of the given type, returning the message and the promise returned by fn
 // Used to listen for a message triggered as a side effect of fn, where we do care about the result of fn
-async function waitForMessage (aiHandler: Electron.UtilityProcess, messageType: string, fn: () => Promise<unknown>) {
+async function waitForMessage(aiHandler: Electron.UtilityProcess, messageType: string, fn: () => Promise<unknown>) {
   let promise: Promise<unknown>;
 
   await listenForMessage(aiHandler, messageType, () => {
@@ -46,7 +50,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
   let w: Electron.BrowserWindow;
 
-  async function forkAndRegisterHandler (fixtureName: string) {
+  async function forkAndRegisterHandler(fixtureName: string) {
     const aiHandler = utilityProcess.fork(getFixturePath(fixtureName));
     await once(aiHandler, 'spawn');
     w.webContents.session.registerLocalAIHandler(aiHandler);
@@ -54,7 +58,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     return aiHandler;
   }
 
-  async function sendControllableMessage (aiHandler: Electron.UtilityProcess, message: unknown) {
+  async function sendControllableMessage(aiHandler: Electron.UtilityProcess, message: unknown) {
     const ackEvent = once(aiHandler, 'message');
     aiHandler.postMessage(message);
     await ackEvent;
@@ -140,7 +144,10 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-availability', value: 'downloading' });
 
-      const options = { expectedInputs: [{ type: 'image' }, { type: 'text', languages: ['en', 'fr'] }], expectedOutputs: [{ type: 'image' }, { type: 'text', languages: ['en', 'fr'] }] };
+      const options = {
+        expectedInputs: [{ type: 'image' }, { type: 'text', languages: ['en', 'fr'] }],
+        expectedOutputs: [{ type: 'image' }, { type: 'text', languages: ['en', 'fr'] }]
+      };
 
       const message = once(aiHandler, 'message');
       await w.webContents.executeJavaScript(`LanguageModel.availability(${JSON.stringify(options)})`);
@@ -152,12 +159,18 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
   });
 
   describe('LanguageModel.create()', () => {
-    async function expectRejectedWithError (message: string | RegExp, options?: Object) {
+    async function expectRejectedWithError(message: string | RegExp, options?: Object) {
       // Unwrap the error message because NotAllowedError won't serialize
       if (options) {
-        await expect(w.webContents.executeJavaScript(`LanguageModel.create(${JSON.stringify(options)}).catch(err => { throw err.message; })`)).to.eventually.be.rejectedWith(message);
+        await expect(
+          w.webContents.executeJavaScript(
+            `LanguageModel.create(${JSON.stringify(options)}).catch(err => { throw err.message; })`
+          )
+        ).to.eventually.be.rejectedWith(message);
       } else {
-        await expect(w.webContents.executeJavaScript('LanguageModel.create().catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(message);
+        await expect(
+          w.webContents.executeJavaScript('LanguageModel.create().catch(err => { throw err.message; })')
+        ).to.eventually.be.rejectedWith(message);
       }
     }
 
@@ -208,13 +221,17 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('creates a LanguageModel instance from a valid handler', async () => {
       await forkAndRegisterHandler('default-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model instanceof LanguageModel)')).to.equal(true);
+      expect(
+        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model instanceof LanguageModel)')
+      ).to.equal(true);
     });
 
     it('passes initialPrompts to create()', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
 
-      const options = { initialPrompts: [{ role: 'system', content: [{ type: 'text', value: 'You are Electron AI' }] }] };
+      const options = {
+        initialPrompts: [{ role: 'system', content: [{ type: 'text', value: 'You are Electron AI' }] }]
+      };
 
       const message = await listenForMessage(aiHandler, 'create-called', async () => {
         await w.webContents.executeJavaScript(`LanguageModel.create(${JSON.stringify(options)})`);
@@ -222,13 +239,18 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       expect(message.options).to.have.property('signal');
       delete message.options.signal;
-      expect(message.options).to.deep.equal({ initialPrompts: options.initialPrompts.map(prompt => ({ ...prompt, prefix: false })) });
+      expect(message.options).to.deep.equal({
+        initialPrompts: options.initialPrompts.map((prompt) => ({ ...prompt, prefix: false }))
+      });
     });
 
     it('passes expectedInputs and expectedOutputs options', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
 
-      const options = { expectedInputs: [{ type: 'image' }, { type: 'text', languages: ['en', 'fr'] }], expectedOutputs: [{ type: 'text', languages: ['en', 'fr'] }] };
+      const options = {
+        expectedInputs: [{ type: 'image' }, { type: 'text', languages: ['en', 'fr'] }],
+        expectedOutputs: [{ type: 'text', languages: ['en', 'fr'] }]
+      };
 
       const message = await listenForMessage(aiHandler, 'create-called', async () => {
         await w.webContents.executeJavaScript(`LanguageModel.create(${JSON.stringify(options)})`);
@@ -244,7 +266,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-create', value: 'wait-for-abort' });
 
       const message = await listenForMessage(aiHandler, 'create-aborted', async () => {
-        await expect(w.webContents.executeJavaScript('LanguageModel.create({ signal: AbortSignal.timeout(500) }).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/signal timed out/);
+        await expect(
+          w.webContents.executeJavaScript(
+            'LanguageModel.create({ signal: AbortSignal.timeout(500) }).catch(err => { throw err.message; })'
+          )
+        ).to.eventually.be.rejectedWith(/signal timed out/);
       });
 
       expect(message).not.null();
@@ -253,17 +279,29 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('exposes contextUsage and contextWindow on the created model', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => ({ contextUsage: model.contextUsage, contextWindow: model.contextWindow }))')).to.deep.equal({ contextUsage: 0, contextWindow: 12345 });
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => ({ contextUsage: model.contextUsage, contextWindow: model.contextWindow }))'
+        )
+      ).to.deep.equal({ contextUsage: 0, contextWindow: 12345 });
     });
   });
 
   describe('LanguageModel.prompt()', () => {
-    async function expectRejectedWithError (message: string | RegExp, prompt: string, options?: Object) {
+    async function expectRejectedWithError(message: string | RegExp, prompt: string, options?: Object) {
       // Unwrap the error message because NotAllowedError won't serialize
       if (options) {
-        await expect(w.webContents.executeJavaScript(`LanguageModel.create().then(model => model.prompt(${JSON.stringify(prompt)}, ${JSON.stringify(options)})).catch(err => { throw err.message; })`)).to.eventually.be.rejectedWith(message);
+        await expect(
+          w.webContents.executeJavaScript(
+            `LanguageModel.create().then(model => model.prompt(${JSON.stringify(prompt)}, ${JSON.stringify(options)})).catch(err => { throw err.message; })`
+          )
+        ).to.eventually.be.rejectedWith(message);
       } else {
-        await expect(w.webContents.executeJavaScript(`LanguageModel.create().then(model => model.prompt(${JSON.stringify(prompt)})).catch(err => { throw err.message; })`)).to.eventually.be.rejectedWith(message);
+        await expect(
+          w.webContents.executeJavaScript(
+            `LanguageModel.create().then(model => model.prompt(${JSON.stringify(prompt)})).catch(err => { throw err.message; })`
+          )
+        ).to.eventually.be.rejectedWith(message);
       }
     }
 
@@ -284,7 +322,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('rejects after the model has been destroyed', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => { model.destroy(); return model.prompt("Test") }).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(
+        w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => { model.destroy(); return model.prompt("Test") }).catch(err => { throw err.message; })'
+        )
+      ).to.eventually.be.rejectedWith(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during prompt', async () => {
@@ -292,7 +334,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-prompt-response', value: 'wait-for-abort' });
 
       const { promise } = await waitForMessage(aiHandler, 'prompt-called', () => {
-        return w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Test")).catch(err => { throw err.message; })');
+        return w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.prompt("Test")).catch(err => { throw err.message; })'
+        );
       });
 
       aiHandler.kill();
@@ -306,7 +350,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-prompt-response', value: 'wait-for-abort' });
 
       const { promise } = await waitForMessage(aiHandler, 'prompt-called', () => {
-        return w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Test")).catch(err => { throw err.message; })');
+        return w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.prompt("Test")).catch(err => { throw err.message; })'
+        );
       });
 
       w.webContents.session.registerLocalAIHandler(null);
@@ -317,35 +363,46 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('returns a string response from the handler', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')).to.equal('foobar');
+      expect(
+        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
+      ).to.equal('foobar');
     });
 
     it('returns a ReadableStream response from the handler', async () => {
       await forkAndRegisterHandler('streaming-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')).to.equal('Hello World');
+      expect(
+        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
+      ).to.equal('Hello World');
     });
 
     it('passes string input to the handler', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
 
       const message = await listenForMessage(aiHandler, 'prompt-called', async () => {
-        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt(\'hello world\'))');
+        await w.webContents.executeJavaScript("LanguageModel.create().then(model => model.prompt('hello world'))");
       });
 
-      expect(message.input).to.deep.equal([{ role: 'user', content: [{ type: 'text', value: 'hello world' }], prefix: false }]);
+      expect(message.input).to.deep.equal([
+        { role: 'user', content: [{ type: 'text', value: 'hello world' }], prefix: false }
+      ]);
     });
 
     it('passes LanguageModelMessage[] input to the handler', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
 
-      const input = [{ role: 'user', content: [{ type: 'text', value: 'hello' }] }, { role: 'assistant', content: [{ type: 'text', value: 'hi' }] }];
+      const input = [
+        { role: 'user', content: [{ type: 'text', value: 'hello' }] },
+        { role: 'assistant', content: [{ type: 'text', value: 'hi' }] }
+      ];
 
       const message = await listenForMessage(aiHandler, 'prompt-called', async () => {
-        await w.webContents.executeJavaScript(`LanguageModel.create().then(model => model.prompt(${JSON.stringify(input)}))`);
+        await w.webContents.executeJavaScript(
+          `LanguageModel.create().then(model => model.prompt(${JSON.stringify(input)}))`
+        );
       });
 
-      expect(message.input).to.deep.equal(input.map(msg => ({ ...msg, prefix: false })));
+      expect(message.input).to.deep.equal(input.map((msg) => ({ ...msg, prefix: false })));
     });
 
     it('passes responseConstraint option to the handler', async () => {
@@ -354,7 +411,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       const responseConstraint = { type: 'object', properties: { name: { type: 'string' } } };
 
       const message = await listenForMessage(aiHandler, 'prompt-called', async () => {
-        await w.webContents.executeJavaScript(`LanguageModel.create().then(model => model.prompt('test', { responseConstraint: ${JSON.stringify(responseConstraint)} }))`);
+        await w.webContents.executeJavaScript(
+          `LanguageModel.create().then(model => model.prompt('test', { responseConstraint: ${JSON.stringify(responseConstraint)} }))`
+        );
       });
 
       expect(message.options.responseConstraint).to.deep.equal(responseConstraint);
@@ -365,7 +424,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-prompt-response', value: 'wait-for-abort' });
 
       const message = await listenForMessage(aiHandler, 'prompt-aborted', async () => {
-        await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/signal timed out/);
+        await expect(
+          w.webContents.executeJavaScript(
+            'LanguageModel.create().then(model => model.prompt("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
+          )
+        ).to.eventually.be.rejectedWith(/signal timed out/);
       });
 
       expect(message).not.null();
@@ -374,21 +437,38 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('updates contextUsage after a prompt', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => ({ contextUsage: model.contextUsage }))')).to.deep.equal({ contextUsage: 0 });
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(async (model) => { await model.prompt("hello world"); return { contextUsage: model.contextUsage } })')).to.deep.equal({ contextUsage: 10 });
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => ({ contextUsage: model.contextUsage }))'
+        )
+      ).to.deep.equal({ contextUsage: 0 });
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(async (model) => { await model.prompt("hello world"); return { contextUsage: model.contextUsage } })'
+        )
+      ).to.deep.equal({ contextUsage: 10 });
     });
   });
 
   describe('LanguageModel.promptStreaming()', () => {
-    const collectStream = 'async (stream) => { const reader = stream.getReader(); let r = ""; while (true) { const { done, value } = await reader.read(); if (done) return r; r += value; } }';
+    const collectStream =
+      'async (stream) => { const reader = stream.getReader(); let r = ""; while (true) { const { done, value } = await reader.read(); if (done) return r; r += value; } }';
 
-    async function expectRejectedWithError (message: string | RegExp, prompt: string, options?: Object) {
+    async function expectRejectedWithError(message: string | RegExp, prompt: string, options?: Object) {
       const collectStreamFn = collectStream;
       // Unwrap the error message because NotAllowedError won't serialize
       if (options) {
-        await expect(w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStreamFn}; return collect(model.promptStreaming(${JSON.stringify(prompt)}, ${JSON.stringify(options)})); }).catch(err => { throw err.message; })`)).to.eventually.be.rejectedWith(message);
+        await expect(
+          w.webContents.executeJavaScript(
+            `LanguageModel.create().then(async (model) => { const collect = ${collectStreamFn}; return collect(model.promptStreaming(${JSON.stringify(prompt)}, ${JSON.stringify(options)})); }).catch(err => { throw err.message; })`
+          )
+        ).to.eventually.be.rejectedWith(message);
       } else {
-        await expect(w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStreamFn}; return collect(model.promptStreaming(${JSON.stringify(prompt)})); }).catch(err => { throw err.message; })`)).to.eventually.be.rejectedWith(message);
+        await expect(
+          w.webContents.executeJavaScript(
+            `LanguageModel.create().then(async (model) => { const collect = ${collectStreamFn}; return collect(model.promptStreaming(${JSON.stringify(prompt)})); }).catch(err => { throw err.message; })`
+          )
+        ).to.eventually.be.rejectedWith(message);
       }
     }
 
@@ -415,7 +495,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('rejects after the model has been destroyed', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      await expect(w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { model.destroy(); const collect = ${collectStream}; return collect(model.promptStreaming("Test")); }).catch(err => { throw err.message; })`)).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(
+        w.webContents.executeJavaScript(
+          `LanguageModel.create().then(async (model) => { model.destroy(); const collect = ${collectStream}; return collect(model.promptStreaming("Test")); }).catch(err => { throw err.message; })`
+        )
+      ).to.eventually.be.rejectedWith(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during prompt', async () => {
@@ -423,7 +507,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-prompt-response', value: 'wait-for-abort' });
 
       const { promise } = await waitForMessage(aiHandler, 'prompt-called', () => {
-        return w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("Test")); }).catch(err => { throw err.message; })`);
+        return w.webContents.executeJavaScript(
+          `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("Test")); }).catch(err => { throw err.message; })`
+        );
       });
 
       aiHandler.kill();
@@ -437,7 +523,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-prompt-response', value: 'wait-for-abort' });
 
       const { promise } = await waitForMessage(aiHandler, 'prompt-called', () => {
-        return w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("Test")); }).catch(err => { throw err.message; })`);
+        return w.webContents.executeJavaScript(
+          `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("Test")); }).catch(err => { throw err.message; })`
+        );
       });
 
       w.webContents.session.registerLocalAIHandler(null);
@@ -448,35 +536,52 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('returns a string response from the handler', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("Hi")); })`)).to.equal('foobar');
+      expect(
+        await w.webContents.executeJavaScript(
+          `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("Hi")); })`
+        )
+      ).to.equal('foobar');
     });
 
     it('returns a ReadableStream response from the handler', async () => {
       await forkAndRegisterHandler('streaming-language-model.js');
 
-      expect(await w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("Hi")); })`)).to.equal('Hello World');
+      expect(
+        await w.webContents.executeJavaScript(
+          `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("Hi")); })`
+        )
+      ).to.equal('Hello World');
     });
 
     it('passes string input to the handler', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
 
       const message = await listenForMessage(aiHandler, 'prompt-called', async () => {
-        await w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming('hello world')); })`);
+        await w.webContents.executeJavaScript(
+          `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming('hello world')); })`
+        );
       });
 
-      expect(message.input).to.deep.equal([{ role: 'user', content: [{ type: 'text', value: 'hello world' }], prefix: false }]);
+      expect(message.input).to.deep.equal([
+        { role: 'user', content: [{ type: 'text', value: 'hello world' }], prefix: false }
+      ]);
     });
 
     it('passes LanguageModelMessage[] input to the handler', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
 
-      const input = [{ role: 'user', content: [{ type: 'text', value: 'hello' }] }, { role: 'assistant', content: [{ type: 'text', value: 'hi' }] }];
+      const input = [
+        { role: 'user', content: [{ type: 'text', value: 'hello' }] },
+        { role: 'assistant', content: [{ type: 'text', value: 'hi' }] }
+      ];
 
       const message = await listenForMessage(aiHandler, 'prompt-called', async () => {
-        await w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming(${JSON.stringify(input)})); })`);
+        await w.webContents.executeJavaScript(
+          `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming(${JSON.stringify(input)})); })`
+        );
       });
 
-      expect(message.input).to.deep.equal(input.map(msg => ({ ...msg, prefix: false })));
+      expect(message.input).to.deep.equal(input.map((msg) => ({ ...msg, prefix: false })));
     });
 
     it('passes responseConstraint option to the handler', async () => {
@@ -485,7 +590,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       const responseConstraint = { type: 'object', properties: { name: { type: 'string' } } };
 
       const message = await listenForMessage(aiHandler, 'prompt-called', async () => {
-        await w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming('test', { responseConstraint: ${JSON.stringify(responseConstraint)} })); })`);
+        await w.webContents.executeJavaScript(
+          `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming('test', { responseConstraint: ${JSON.stringify(responseConstraint)} })); })`
+        );
       });
 
       expect(message.options.responseConstraint).to.deep.equal(responseConstraint);
@@ -496,7 +603,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-prompt-response', value: 'wait-for-abort' });
 
       const message = await listenForMessage(aiHandler, 'prompt-aborted', async () => {
-        await expect(w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("test", { signal: AbortSignal.timeout(500) })); }).catch(err => { throw err.message; })`)).to.eventually.be.rejectedWith(/signal timed out/);
+        await expect(
+          w.webContents.executeJavaScript(
+            `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; return collect(model.promptStreaming("test", { signal: AbortSignal.timeout(500) })); }).catch(err => { throw err.message; })`
+          )
+        ).to.eventually.be.rejectedWith(/signal timed out/);
       });
 
       expect(message).not.null();
@@ -505,8 +616,16 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('updates contextUsage after a prompt', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => ({ contextUsage: model.contextUsage }))')).to.deep.equal({ contextUsage: 0 });
-      expect(await w.webContents.executeJavaScript(`LanguageModel.create().then(async (model) => { const collect = ${collectStream}; await collect(model.promptStreaming("hello world")); return { contextUsage: model.contextUsage }; })`)).to.deep.equal({ contextUsage: 10 });
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => ({ contextUsage: model.contextUsage }))'
+        )
+      ).to.deep.equal({ contextUsage: 0 });
+      expect(
+        await w.webContents.executeJavaScript(
+          `LanguageModel.create().then(async (model) => { const collect = ${collectStream}; await collect(model.promptStreaming("hello world")); return { contextUsage: model.contextUsage }; })`
+        )
+      ).to.deep.equal({ contextUsage: 10 });
     });
   });
 
@@ -515,13 +634,21 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-append-response', value: 'reject' });
 
-      await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/error occurred/);
+      await expect(
+        w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })'
+        )
+      ).to.eventually.be.rejectedWith(/error occurred/);
     });
 
     it('rejects after the model has been destroyed', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => { model.destroy(); return model.append("Test") }).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(
+        w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => { model.destroy(); return model.append("Test") }).catch(err => { throw err.message; })'
+        )
+      ).to.eventually.be.rejectedWith(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during append', async () => {
@@ -529,7 +656,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-append-response', value: 'wait-for-abort' });
 
       const { promise } = await waitForMessage(aiHandler, 'append-called', () => {
-        return w.webContents.executeJavaScript('LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })');
+        return w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })'
+        );
       });
 
       aiHandler.kill();
@@ -543,7 +672,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-append-response', value: 'wait-for-abort' });
 
       const { promise } = await waitForMessage(aiHandler, 'append-called', () => {
-        return w.webContents.executeJavaScript('LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })');
+        return w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })'
+        );
       });
 
       w.webContents.session.registerLocalAIHandler(null);
@@ -554,7 +685,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('appends a message without producing a response', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })')).to.be.undefined();
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.append("Test")).catch(err => { throw err.message; })'
+        )
+      ).to.be.undefined();
     });
 
     it('plumbs the abort signal through', async () => {
@@ -562,7 +697,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-append-response', value: 'wait-for-abort' });
 
       const message = await listenForMessage(aiHandler, 'append-aborted', async () => {
-        await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => model.append("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/signal timed out/);
+        await expect(
+          w.webContents.executeJavaScript(
+            'LanguageModel.create().then(model => model.append("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
+          )
+        ).to.eventually.be.rejectedWith(/signal timed out/);
       });
 
       expect(message).not.null();
@@ -571,8 +710,16 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('updates contextUsage after append', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => ({ contextUsage: model.contextUsage }))')).to.deep.equal({ contextUsage: 0 });
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(async (model) => { await model.append("hello world"); return { contextUsage: model.contextUsage } })')).to.deep.equal({ contextUsage: 5 });
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => ({ contextUsage: model.contextUsage }))'
+        )
+      ).to.deep.equal({ contextUsage: 0 });
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(async (model) => { await model.append("hello world"); return { contextUsage: model.contextUsage } })'
+        )
+      ).to.deep.equal({ contextUsage: 5 });
     });
   });
 
@@ -581,20 +728,32 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-measure-response', value: 'invalid' });
 
-      await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/usage cannot be calculated/);
+      await expect(
+        w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err.message; })'
+        )
+      ).to.eventually.be.rejectedWith(/usage cannot be calculated/);
     });
 
     it('rejects when handler promise rejects', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-measure-response', value: 'reject' });
 
-      await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/usage cannot be calculated/);
+      await expect(
+        w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err.message; })'
+        )
+      ).to.eventually.be.rejectedWith(/usage cannot be calculated/);
     });
 
     it('rejects after the model has been destroyed', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => { model.destroy(); return model.measureContextUsage("Test") }).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(
+        w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => { model.destroy(); return model.measureContextUsage("Test") }).catch(err => { throw err.message; })'
+        )
+      ).to.eventually.be.rejectedWith(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during call', async () => {
@@ -602,7 +761,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-measure-response', value: 'wait-for-abort' });
 
       const { promise } = await waitForMessage(aiHandler, 'measure-called', () => {
-        return w.webContents.executeJavaScript('LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err?.message ?? "Unknown Error"; })');
+        return w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err?.message ?? "Unknown Error"; })'
+        );
       });
 
       aiHandler.kill();
@@ -616,7 +777,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-measure-response', value: 'wait-for-abort' });
 
       const { promise } = await waitForMessage(aiHandler, 'measure-called', () => {
-        return w.webContents.executeJavaScript('LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err?.message ?? "Unknown Error"; })');
+        return w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.measureContextUsage("Test")).catch(err => { throw err?.message ?? "Unknown Error"; })'
+        );
       });
 
       w.webContents.session.registerLocalAIHandler(null);
@@ -627,7 +790,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('returns the token count for the given input', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.measureContextUsage("hello world"))')).to.equal(42);
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.measureContextUsage("hello world"))'
+        )
+      ).to.equal(42);
     });
 
     // TODO(dsanders11): Upstream Chromium issue prevents this test from passing as
@@ -637,7 +804,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-measure-response', value: 'wait-for-abort' });
 
       const message = await listenForMessage(aiHandler, 'measure-aborted', async () => {
-        await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => model.measureContextUsage("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/signal timed out/);
+        await expect(
+          w.webContents.executeJavaScript(
+            'LanguageModel.create().then(model => model.measureContextUsage("test", { signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
+          )
+        ).to.eventually.be.rejectedWith(/signal timed out/);
       });
 
       expect(message).not.null();
@@ -649,20 +820,32 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-clone-response', value: 'invalid' });
 
-      await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/cannot be cloned/);
+      await expect(
+        w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })'
+        )
+      ).to.eventually.be.rejectedWith(/cannot be cloned/);
     });
 
     it('rejects when clone() promise rejects', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-clone-response', value: 'reject' });
 
-      await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/cannot be cloned/);
+      await expect(
+        w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })'
+        )
+      ).to.eventually.be.rejectedWith(/cannot be cloned/);
     });
 
     it('rejects after the original model has been destroyed', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => { model.destroy(); return model.clone(); }).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/has been destroyed/);
+      await expect(
+        w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => { model.destroy(); return model.clone(); }).catch(err => { throw err.message; })'
+        )
+      ).to.eventually.be.rejectedWith(/has been destroyed/);
     });
 
     it('rejects if the utility process dies during clone', async () => {
@@ -670,7 +853,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-clone-response', value: 'wait-for-abort' });
 
       const { promise } = await waitForMessage(aiHandler, 'clone-called', () => {
-        return w.webContents.executeJavaScript('LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })');
+        return w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })'
+        );
       });
 
       aiHandler.kill();
@@ -684,7 +869,9 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-clone-response', value: 'wait-for-abort' });
 
       const { promise } = await waitForMessage(aiHandler, 'clone-called', () => {
-        return w.webContents.executeJavaScript('LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })');
+        return w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.clone()).catch(err => { throw err.message; })'
+        );
       });
 
       w.webContents.session.registerLocalAIHandler(null);
@@ -695,19 +882,25 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('returns a new LanguageModel instance', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.clone()).then(cloned => cloned instanceof LanguageModel)')).to.equal(true);
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.clone()).then(cloned => cloned instanceof LanguageModel)'
+        )
+      ).to.equal(true);
     });
 
     it('preserves context from the original model', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript(`
+      expect(
+        await w.webContents.executeJavaScript(`
         LanguageModel.create().then(async (model) => {
           await model.prompt("hello");
           const cloned = await model.clone();
           return { contextUsage: cloned.contextUsage, contextWindow: cloned.contextWindow };
         })
-      `)).to.deep.equal({ contextUsage: 10, contextWindow: 12345 });
+      `)
+      ).to.deep.equal({ contextUsage: 10, contextWindow: 12345 });
     });
 
     it('plumbs the abort signal through', async () => {
@@ -715,7 +908,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await sendControllableMessage(aiHandler, { command: 'set-clone-response', value: 'wait-for-abort' });
 
       const message = await listenForMessage(aiHandler, 'clone-aborted', async () => {
-        await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => model.clone({ signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/signal timed out/);
+        await expect(
+          w.webContents.executeJavaScript(
+            'LanguageModel.create().then(model => model.clone({ signal: AbortSignal.timeout(500) })).catch(err => { throw err.message; })'
+          )
+        ).to.eventually.be.rejectedWith(/signal timed out/);
       });
 
       expect(message).not.null();
@@ -727,7 +924,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
 
       const message = await listenForMessage(aiHandler, 'destroy-called', async () => {
-        await expect(w.webContents.executeJavaScript('LanguageModel.create().then(model => { model.destroy(); return model.prompt("Test"); }).catch(err => { throw err.message; })')).to.eventually.be.rejectedWith(/has been destroyed/);
+        await expect(
+          w.webContents.executeJavaScript(
+            'LanguageModel.create().then(model => { model.destroy(); return model.prompt("Test"); }).catch(err => { throw err.message; })'
+          )
+        ).to.eventually.be.rejectedWith(/has been destroyed/);
       });
 
       expect(message).not.null();
@@ -772,7 +973,11 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('can be called multiple times without error', async () => {
       await forkAndRegisterHandler('basic-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => { model.destroy(); model.destroy(); model.destroy(); return true; })')).to.equal(true);
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => { model.destroy(); model.destroy(); model.destroy(); return true; })'
+        )
+      ).to.equal(true);
     });
   });
 
@@ -869,17 +1074,33 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await forkAndRegisterHandler('default-language-model.js');
 
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')).to.equal('');
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.append("Hi"))')).to.be.undefined();
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.measureContextUsage("Hi"))')).to.equal(0);
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.clone()).then(cloned => cloned instanceof LanguageModel)')).to.equal(true);
+      expect(
+        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
+      ).to.equal('');
+      expect(
+        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.append("Hi"))')
+      ).to.be.undefined();
+      expect(
+        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model.measureContextUsage("Hi"))')
+      ).to.equal(0);
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => model.clone()).then(cloned => cloned instanceof LanguageModel)'
+        )
+      ).to.equal(true);
     });
 
     it('can use the base LanguageModel class directly without subclassing', async () => {
       await forkAndRegisterHandler('default-language-model.js');
 
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => model instanceof LanguageModel)')).to.equal(true);
-      expect(await w.webContents.executeJavaScript('LanguageModel.create().then(model => ({ contextUsage: model.contextUsage, contextWindow: model.contextWindow }))')).to.deep.equal({ contextUsage: 0, contextWindow: 0 });
+      expect(
+        await w.webContents.executeJavaScript('LanguageModel.create().then(model => model instanceof LanguageModel)')
+      ).to.equal(true);
+      expect(
+        await w.webContents.executeJavaScript(
+          'LanguageModel.create().then(model => ({ contextUsage: model.contextUsage, contextWindow: model.contextWindow }))'
+        )
+      ).to.deep.equal({ contextUsage: 0, contextWindow: 0 });
     });
   });
 
@@ -934,9 +1155,13 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       try {
         // basic-language-model returns 'foobar'
-        expect(await w1.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')).to.equal('foobar');
+        expect(
+          await w1.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
+        ).to.equal('foobar');
         // default-language-model returns ''
-        expect(await w2.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')).to.equal('');
+        expect(
+          await w2.webContents.executeJavaScript('LanguageModel.create().then(model => model.prompt("Hi"))')
+        ).to.equal('');
       } finally {
         ses1.registerLocalAIHandler(null);
         ses2.registerLocalAIHandler(null);

@@ -45,14 +45,19 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
 
   // For Windows 8 and later, a new "connected standby" mode has been added and
   // we must explicitly register for its notifications.
-  RegisterSuspendResumeNotification(static_cast<HANDLE>(window_),
-                                    DEVICE_NOTIFY_WINDOW_HANDLE);
+  power_notify_handle_ = RegisterSuspendResumeNotification(
+      static_cast<HANDLE>(window_), DEVICE_NOTIFY_WINDOW_HANDLE);
+  PLOG_IF(ERROR, !power_notify_handle_)
+      << "RegisterSuspendResumeNotification failed";
 }
 
 void PowerMonitor::DestroyPlatformSpecificMonitors() {
   if (window_) {
     WTSUnRegisterSessionNotification(window_);
-    UnregisterSuspendResumeNotification(static_cast<HANDLE>(window_));
+    if (power_notify_handle_) {
+      UnregisterSuspendResumeNotification(power_notify_handle_);
+      power_notify_handle_ = nullptr;
+    }
     gfx::SetWindowUserData(window_, nullptr);
     DestroyWindow(window_);
     window_ = nullptr;
@@ -90,7 +95,8 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
     }
     if (should_treat_as_current_session) {
       if (wparam == WTS_SESSION_LOCK) {
-        // SelfKeepAlive prevents GC of this object, so Unretained is safe.
+        // JS module reference prevents GC of this object, so Unretained is
+        // safe.
         content::GetUIThreadTaskRunner({})->PostTask(
             FROM_HERE,
             base::BindOnce([](PowerMonitor* pm) { pm->Emit("lock-screen"); },

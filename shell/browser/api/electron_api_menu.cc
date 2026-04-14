@@ -20,8 +20,10 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/models/image_model.h"
+#include "v8/include/cppgc/persistent.h"
 
 #if BUILDFLAG(IS_MAC)
 
@@ -50,8 +52,8 @@ struct Converter<SharingItem> {
 
 namespace electron::api {
 
-const gin::WrapperInfo Menu::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                             gin::kElectronMenu};
+const gin::WrapperInfo Menu::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronMenu);
 
 Menu::Menu(gin::Arguments* args)
     : model_(std::make_unique<ElectronMenuModel>(this)) {
@@ -69,6 +71,11 @@ Menu::Menu(gin::Arguments* args)
 
 Menu::~Menu() {
   RemoveModelObserver();
+}
+
+void Menu::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<Menu>::Trace(visitor);
+  visitor->Trace(parent_);
 }
 
 void Menu::RemoveModelObserver() {
@@ -189,20 +196,11 @@ void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
 }
 
 base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
-  // return ((callback, ref) => { callback() }).bind(null, callback, this)
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  v8::Local<v8::Object> self;
-  if (GetWrapper(isolate).ToLocal(&self)) {
-    v8::Global<v8::Value> ref(isolate, self);
-    return base::BindOnce(
-        [](base::OnceClosure callback, v8::Global<v8::Value> ref) {
-          std::move(callback).Run();
-        },
-        std::move(callback), std::move(ref));
-  } else {
-    return base::DoNothing();
-  }
+  return base::BindOnce(
+      [](base::OnceClosure callback, cppgc::Persistent<Menu> prevent_gc) {
+        std::move(callback).Run();
+      },
+      std::move(callback), cppgc::Persistent<Menu>(this));
 }
 
 void Menu::InsertItemAt(int index,
@@ -264,46 +262,13 @@ int Menu::GetItemCount() const {
   return model_->GetItemCount();
 }
 
-int Menu::GetCommandIdAt(int index) const {
-  return model_->GetCommandIdAt(index);
-}
-
-std::u16string Menu::GetLabelAt(int index) const {
-  return model_->GetLabelAt(index);
-}
-
-std::u16string Menu::GetSublabelAt(int index) const {
-  return model_->GetSecondaryLabelAt(index);
-}
-
-std::u16string Menu::GetToolTipAt(int index) const {
-  return model_->GetToolTipAt(index);
-}
-
 std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
   model_->GetAcceleratorAtWithParams(index, true, &accelerator);
   return accelerator.GetShortcutText();
 }
 
-bool Menu::IsItemCheckedAt(int index) const {
-  return model_->IsItemCheckedAt(index);
-}
-
-bool Menu::IsEnabledAt(int index) const {
-  return model_->IsEnabledAt(index);
-}
-
-bool Menu::IsVisibleAt(int index) const {
-  return model_->IsVisibleAt(index);
-}
-
-bool Menu::WorksWhenHiddenAt(int index) const {
-  return model_->WorksWhenHiddenAt(index);
-}
-
 void Menu::OnMenuWillClose() {
-  keep_alive_.Clear();
   Emit("menu-will-close");
 }
 
@@ -325,16 +290,7 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setRole", &Menu::SetRole)
       .SetMethod("setCustomType", &Menu::SetCustomType)
       .SetMethod("clear", &Menu::Clear)
-      .SetMethod("getIndexOfCommandId", &Menu::GetIndexOfCommandId)
       .SetMethod("getItemCount", &Menu::GetItemCount)
-      .SetMethod("getCommandIdAt", &Menu::GetCommandIdAt)
-      .SetMethod("getLabelAt", &Menu::GetLabelAt)
-      .SetMethod("getSublabelAt", &Menu::GetSublabelAt)
-      .SetMethod("getToolTipAt", &Menu::GetToolTipAt)
-      .SetMethod("isItemCheckedAt", &Menu::IsItemCheckedAt)
-      .SetMethod("isEnabledAt", &Menu::IsEnabledAt)
-      .SetMethod("worksWhenHiddenAt", &Menu::WorksWhenHiddenAt)
-      .SetMethod("isVisibleAt", &Menu::IsVisibleAt)
       .SetMethod("popupAt", &Menu::PopupAt)
       .SetMethod("closePopupAt", &Menu::ClosePopupAt)
       .SetMethod("_getAcceleratorTextAt", &Menu::GetAcceleratorTextAtForTesting)

@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "base/containers/span.h"
-#include "base/memory/memory_pressure_listener.h"
+#include "base/memory/memory_pressure_listener_registry.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/utf_string_conversions.h"
@@ -624,7 +624,7 @@ class WebFrameRenderer final
     blink::WebFrame* web_frame = render_frame->GetWebFrame();
     if (web_frame->IsWebLocalFrame()) {
       web_frame->ToWebLocalFrame()->GetDocument().RemoveInsertedStyleSheet(
-          blink::WebString::FromUTF16(key));
+          blink::WebString::FromUtf16(key));
     }
   }
 
@@ -652,7 +652,7 @@ class WebFrameRenderer final
       return handle;
     }
 
-    const blink::WebScriptSource source{blink::WebString::FromUTF16(code)};
+    const blink::WebScriptSource source{blink::WebString::FromUtf16(code)};
 
     bool has_user_gesture = false;
     if (auto next = args->PeekNext(); !next.IsEmpty() && next->IsBoolean()) {
@@ -731,7 +731,7 @@ class WebFrameRenderer final
         return handle;
       }
 
-      sources.emplace_back(blink::WebString::FromUTF16(code),
+      sources.emplace_back(blink::WebString::FromUtf16(code),
                            blink::WebURL(GURL(url)));
     }
 
@@ -810,7 +810,7 @@ class WebFrameRenderer final
 
   void ClearCache(v8::Isolate* isolate) {
     blink::WebCache::Clear();
-    base::MemoryPressureListener::NotifyMemoryPressure(
+    base::MemoryPressureListenerRegistry::NotifyMemoryPressure(
         base::MEMORY_PRESSURE_LEVEL_CRITICAL);
   }
 

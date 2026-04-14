@@ -15,7 +15,11 @@ process.argv.splice(1, 1, entryScript);
 // These are used by C++ to more easily identify these objects.
 v8Util.setHiddenValue(global, 'isReadableStream', (val: unknown) => val instanceof ReadableStream);
 v8Util.setHiddenValue(global, 'isLanguageModel', (val: unknown) => val instanceof LanguageModel);
-v8Util.setHiddenValue(global, 'isLanguageModelClass', (val: any) => Object.is(val, LanguageModel) || val?.prototype instanceof LanguageModel || false);
+v8Util.setHiddenValue(
+  global,
+  'isLanguageModelClass',
+  (val: any) => Object.is(val, LanguageModel) || val?.prototype instanceof LanguageModel || false
+);
 
 // Import common settings.
 require('@electron/internal/common/init');
@@ -43,7 +47,9 @@ parentPort.on('removeListener', (name: string) => {
 });
 
 // Finally load entry script.
-const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
+const { runEntryPointWithESMLoader } = __non_webpack_require__(
+  'internal/modules/run_main'
+) as typeof import('@node/lib/internal/modules/run_main');
 const mainEntry = pathToFileURL(entryScript);
 
 runEntryPointWithESMLoader(async (cascadedLoader: any) => {

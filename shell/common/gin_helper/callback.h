@@ -13,6 +13,7 @@
 #include "shell/common/gin_helper/function_template.h"
 #include "shell/common/gin_helper/locker.h"
 #include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-context.h"
 #include "v8/include/v8-function.h"
 #include "v8/include/v8-microtask-queue.h"
 // Implements safe conversions between JS functions and base::RepeatingCallback.
@@ -118,11 +119,6 @@ using Translator = base::RepeatingCallback<void(gin::Arguments* args)>;
 v8::Local<v8::Value> CreateFunctionFromTranslator(v8::Isolate* isolate,
                                                   const Translator& translator,
                                                   bool one_time);
-v8::Local<v8::Value> BindFunctionWith(v8::Isolate* isolate,
-                                      v8::Local<v8::Context> context,
-                                      v8::Local<v8::Function> func,
-                                      v8::Local<v8::Value> arg1,
-                                      v8::Local<v8::Value> arg2);
 
 // Calls callback with Arguments.
 template <typename Sig>
