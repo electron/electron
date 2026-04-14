@@ -135,7 +135,7 @@ jobs:
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Run Clang-Tidy
       run: |
-        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH}
+        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
 
         export GN_EXTRA_ARGS="target_cpu=\"${TARGET_ARCH}\""
         if [ "${{ inputs.target-platform }}" = "win" ]; then
