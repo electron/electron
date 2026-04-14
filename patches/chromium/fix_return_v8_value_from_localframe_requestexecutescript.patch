@@ -59,10 +59,10 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 7d2ca9a3f6049fa240b10d2261b76ca740aca2cb..00c57eeda5d4e096327918bef2eccfada2a61b04 100644
+index a19e0d26eff54bade17d6d0e1d0bd4b81ac12263..1cff5cbe4b687ee3048c0e022c768455ba5297f2 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -3203,6 +3203,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -3198,6 +3198,7 @@ void LocalFrame::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,
@@ -70,7 +70,7 @@ index 7d2ca9a3f6049fa240b10d2261b76ca740aca2cb..00c57eeda5d4e096327918bef2eccfad
      BackForwardCacheAware back_forward_cache_aware,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_behavior) {
-@@ -3260,7 +3261,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -3255,7 +3256,7 @@ void LocalFrame::RequestExecuteScript(
    PausableScriptExecutor::CreateAndRun(
        script_state, std::move(script_sources), execute_script_policy,
        user_gesture, evaluation_timing, blocking_option, want_result_option,
@@ -211,7 +211,7 @@ index f2c94689450f0333a144ccf82cf147c194896e6b..1c2e9fe36c297f7d614d9ca290e4d13c
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index c81386204c74af904f97bf087c811cbcae38ca6d..d9804280fd811ead5cd96c710aba6ccabe4118bf 100644
+index 8b27e705ead8bf3c25e33646c5f5bb3bc388427b..449affab6b0a587918ea7f4feacf358406439c98 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
 @@ -300,6 +300,7 @@ void ExecuteScriptsInMainWorld(

@@ -103,7 +103,7 @@ index 8482d7fab12634e6b9a8d5f9bab6c7e428bb99ee..4f131fbfc9350352bce4430f92b9f2cf
    void WillInitializeWorkerContext() override;
    void WillDestroyWorkerContext(v8::Local<v8::Context> context) override;
 diff --git a/extensions/renderer/dispatcher.cc b/extensions/renderer/dispatcher.cc
-index fd3960fce4c61c5c530c817bd12e1ba1698b8db6..48a159d7d5ea57b4533fdaf38fe79a74c490207a 100644
+index aa301fd0551de27ff23be8cdaa0f4ffadca21b61..8da3d8996c3044810a9fcd49a991553728cba151 100644
 --- a/extensions/renderer/dispatcher.cc
 +++ b/extensions/renderer/dispatcher.cc
 @@ -530,6 +530,7 @@ void Dispatcher::DidInitializeServiceWorkerContextOnWorkerThread(
@@ -127,7 +127,7 @@ index c2a6eb257469647183167dad78f1ea42fa3922bb..3423e3a8315c5fc5958ec75adf3a844f
        int64_t service_worker_version_id,
        const GURL& service_worker_scope,
 diff --git a/extensions/renderer/extension_frame_helper.cc b/extensions/renderer/extension_frame_helper.cc
-index 1ab0e8afc84b8e14f3a7f241f8d24ceac0abf188..2d1dbc6f57a0c6ba91194dde5da4de9d0bd5d383 100644
+index 5273756a5fca9337b2bffa61e09b988fe7ba3f1b..1e26053159afd86852b10ee11ac76ac5e858fc54 100644
 --- a/extensions/renderer/extension_frame_helper.cc
 +++ b/extensions/renderer/extension_frame_helper.cc
 @@ -449,6 +449,7 @@ void ExtensionFrameHelper::DidCreateScriptContext(

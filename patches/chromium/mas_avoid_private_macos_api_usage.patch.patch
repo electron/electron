@@ -388,10 +388,10 @@ index f240dc22ee391c98c8768af7141b7447b6507cc6..69bfbbf0f58ca3b05a601bea87b14dcf
  
  using crypto::apple::KeychainV2;
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index 2ee822cd0c8293c7a742ef4a07499043643f7ac0..3b1c34e213b0990b8f0823228a1a02c5bf0c7198 100644
+index f75238dedb47ff7927c715f21befede9cdc97615..e90e275b33bb88c6b1e8a7044ca6eb382460b467 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -58,6 +58,7 @@ component("sync") {
+@@ -52,6 +52,7 @@ component("sync") {
      deps += [
        "//components/os_crypt/common:keychain_password_mac",
        "//crypto:mock_apple_keychain",
@@ -974,7 +974,7 @@ index 664e12c07204feeb5be16581fe51e8adc4b898dd..38159d146cdf71f84611d58e2983418a
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 41634a9509f07b5dccdcb1061a5a3f2e40ba5b25..432f8bcab075bacb71cd8db797b4db9128fed829 100644
+index d97c6ea69b13c4872a7241ac9b45983286c6d1e7..937e88c551d5810ef01ab5c6f0457f24ac01a565 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -361,6 +361,7 @@ source_set("browser") {
@@ -2140,7 +2140,7 @@ index ef031ba14e4c649f6f3a5718ac521e6b424d64cb..38e528450196b4dbd5fa6a25b96baa10
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index fc7c0b77d85b32c7eb9ca3508c181e6d0b6fd7f3..65140c3f06f3d838d5ed92c013b1ceeffb7e88c1 100644
+index e4b9053c9333598ec0347ec84a4d898d8eedca6a..f08d8343a6bb665be57c9e6766476c71efa47143 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,13 @@ component("base") {

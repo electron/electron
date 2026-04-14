@@ -687,7 +687,7 @@ index ca71560874a0189068dd11fbc039f5673bf6bd96..a8551d95e64da2afbc1685b2df8f1fc3
                        mojom::PrintFailureReason reason) override;
  
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index ac2f719be566020d9f41364560c12e6d6d0fe3d8..16d758a6936f66148a196761cfb875f68c1818d7 100644
+index 322b05494aef956443a55cb0533dbb19f683470c..2cf9ef41cbd31e43bdbbd776f3af00581731f4bc 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -299,7 +299,7 @@ enum PrintFailureReason {
@@ -710,7 +710,7 @@ index ac2f719be566020d9f41364560c12e6d6d0fe3d8..16d758a6936f66148a196761cfb875f6
    PrintingFailed(int32 cookie, PrintFailureReason reason);
  
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 9aaa7f0cc69330958d5597174e792888861c3903..4142bec67a545971f70aea4fbece56a704a96ff0 100644
+index 7c63f29d4b6a53aabf56a8d6e97f335de718a98f..6cb155ae94ec8491a94640ef3bebfdd9f9489f29 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -54,6 +54,7 @@
