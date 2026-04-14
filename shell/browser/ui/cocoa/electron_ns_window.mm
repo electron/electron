@@ -332,6 +332,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
 }
 
 - (BOOL)canBecomeMainWindow {
+  if (shell_ && !shell_->has_frame() && shell_->parent())
+    return NO;
   return !self.disableKeyOrMainWindow;
 }
 
