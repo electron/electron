@@ -17,7 +17,6 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/session_preferences.h"
 #include "third_party/blink/public/mojom/ai/ai_common.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_proofreader.mojom.h"
@@ -31,11 +30,11 @@ ProxyingAIManager::ProxyingAIManager(content::BrowserContext* browser_context,
                                      content::RenderFrameHost* rfh)
     : browser_context_(browser_context),
       rfh_(rfh ? rfh->GetWeakDocumentPtr() : content::WeakDocumentPtr()) {
-  auto* session_prefs =
-      SessionPreferences::FromBrowserContext(browser_context_);
-  if (session_prefs) {
+  gin::WeakCell<api::Session>* session =
+      api::Session::FromBrowserContext(browser_context_);
+  if (session && session->Get()) {
     ai_handler_changed_subscription_ =
-        session_prefs->AddAIHandlerChangedCallback(
+        session->Get()->AddAIHandlerChangedCallback(
             base::BindRepeating(&ProxyingAIManager::OnAIHandlerChanged,
                                 weak_ptr_factory_.GetWeakPtr()));
   }
@@ -53,12 +52,12 @@ void ProxyingAIManager::AddReceiver(
 }
 
 const mojo::Remote<blink::mojom::AIManager>&
-ProxyingAIManager::GetAIManagerRemote(const SessionPreferences& session_prefs) {
+ProxyingAIManager::GetAIManagerRemote() {
   if (!ai_manager_remote_.is_bound()) {
-    gin::WeakCell<api::UtilityProcessWrapper>* local_ai_handler =
-        session_prefs.GetLocalAIHandler();
+    gin::WeakCell<api::Session>* session =
+        api::Session::FromBrowserContext(browser_context_);
 
-    if (local_ai_handler && local_ai_handler->Get()) {
+    if (session && session->Get() && session->Get()->LocalAIHandler()) {
       auto* rfh = rfh_.AsRenderFrameHostIfValid();
       DCHECK(rfh);
 
@@ -70,7 +69,7 @@ ProxyingAIManager::GetAIManagerRemote(const SessionPreferences& session_prefs) {
         web_contents_id = web_contents->ID();
       }
 
-      local_ai_handler->Get()->BindAIManager(
+      session->Get()->LocalAIHandler()->BindAIManager(
           web_contents_id, rfh->GetLastCommittedOrigin(),
           ai_manager_remote_.BindNewPipeAndPassReceiver());
     }
@@ -82,10 +81,6 @@ ProxyingAIManager::GetAIManagerRemote(const SessionPreferences& session_prefs) {
 void ProxyingAIManager::CanCreateLanguageModel(
     blink::mojom::AILanguageModelCreateOptionsPtr options,
     CanCreateLanguageModelCallback callback) {
-  auto* session_prefs =
-      SessionPreferences::FromBrowserContext(browser_context_);
-  DCHECK(session_prefs);
-
   // Default to unavailable. This ensures the callback is always invoked
   // even if there is no registered utility process handler, or the
   // process crashes.
@@ -94,7 +89,7 @@ void ProxyingAIManager::CanCreateLanguageModel(
       blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
 
   // Proxy the call through to the utility process
-  auto& ai_manager = GetAIManagerRemote(*session_prefs);
+  auto& ai_manager = GetAIManagerRemote();
 
   if (ai_manager.is_bound()) {
     ai_manager->CanCreateLanguageModel(std::move(options), std::move(cb));
@@ -105,12 +100,8 @@ void ProxyingAIManager::CreateLanguageModel(
     mojo::PendingRemote<blink::mojom::AIManagerCreateLanguageModelClient>
         client,
     blink::mojom::AILanguageModelCreateOptionsPtr options) {
-  auto* session_prefs =
-      SessionPreferences::FromBrowserContext(browser_context_);
-  DCHECK(session_prefs);
-
   // Proxy the call through to the utility process
-  auto& ai_manager = GetAIManagerRemote(*session_prefs);
+  auto& ai_manager = GetAIManagerRemote();
 
   if (!ai_manager.is_bound()) {
     mojo::Remote<blink::mojom::AIManagerCreateLanguageModelClient>

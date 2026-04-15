@@ -7,22 +7,15 @@
 
 #include <vector>
 
-#include "base/callback_list.h"
 #include "base/files/file_path.h"
 #include "base/supports_user_data.h"
-#include "gin/weak_cell.h"
 #include "shell/browser/preload_script.h"
-#include "v8/include/cppgc/persistent.h"
 
 namespace content {
 class BrowserContext;
 }
 
 namespace electron {
-
-namespace api {
-class UtilityProcessWrapper;
-}
 
 class SessionPreferences : public base::SupportsUserData::Data {
  public:
@@ -37,12 +30,6 @@ class SessionPreferences : public base::SupportsUserData::Data {
 
   bool HasServiceWorkerPreloadScript();
 
-  gin::WeakCell<api::UtilityProcessWrapper>* GetLocalAIHandler() const;
-  void SetLocalAIHandler(gin::WeakCell<api::UtilityProcessWrapper>* handler);
-
-  base::CallbackListSubscription AddAIHandlerChangedCallback(
-      base::RepeatingClosure callback);
-
  private:
   SessionPreferences();
 
@@ -50,9 +37,6 @@ class SessionPreferences : public base::SupportsUserData::Data {
   static int kLocatorKey;
 
   std::vector<PreloadScript> preload_scripts_;
-  cppgc::WeakPersistent<gin::WeakCell<api::UtilityProcessWrapper>>
-      local_ai_handler_;
-  base::RepeatingClosureList ai_handler_changed_callbacks_;
 };
 
 }  // namespace electron

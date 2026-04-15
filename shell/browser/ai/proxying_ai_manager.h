@@ -12,7 +12,6 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
-#include "shell/browser/session_preferences.h"
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_proofreader.mojom-forward.h"
@@ -46,8 +45,8 @@ class ProxyingAIManager : public base::SupportsUserData::Data,
  private:
   // Lazily bind the AIManager remote so that the developer can
   // set the local AI handler after this class is already created
-  [[nodiscard]] const mojo::Remote<blink::mojom::AIManager>& GetAIManagerRemote(
-      const SessionPreferences& session_prefs);
+  [[nodiscard]] const mojo::Remote<blink::mojom::AIManager>&
+  GetAIManagerRemote();
 
   void OnAIHandlerChanged();
 

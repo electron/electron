@@ -173,6 +173,9 @@ class Session final : public gin::Wrappable<Session>,
   api::ServiceWorkerContext* ServiceWorkerContext();
   WebRequest* WebRequest(v8::Isolate* isolate);
   api::NetLog* NetLog(v8::Isolate* isolate);
+  api::UtilityProcessWrapper* LocalAIHandler();
+  base::CallbackListSubscription AddAIHandlerChangedCallback(
+      base::RepeatingClosure callback);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
   v8::Local<v8::Promise> CloseAllConnections();
   v8::Local<v8::Value> GetPath(v8::Isolate* isolate);
@@ -222,8 +225,11 @@ class Session final : public gin::Wrappable<Session>,
   cppgc::Member<api::NetLog> net_log_;
   cppgc::Member<api::ServiceWorkerContext> service_worker_context_;
   cppgc::Member<api::WebRequest> web_request_;
+  cppgc::Member<api::UtilityProcessWrapper> local_ai_handler_;
 
   raw_ptr<v8::Isolate> isolate_;
+
+  base::RepeatingClosureList local_ai_handler_changed_callbacks_;
 
   // The client id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;

@@ -1379,6 +1379,15 @@ NetLog* Session::NetLog(v8::Isolate* isolate) {
   return net_log_;
 }
 
+UtilityProcessWrapper* Session::LocalAIHandler() {
+  return local_ai_handler_;
+}
+
+base::CallbackListSubscription Session::AddAIHandlerChangedCallback(
+    base::RepeatingClosure callback) {
+  return local_ai_handler_changed_callbacks_.Add(std::move(callback));
+}
+
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
                                 const GURL& url,
                                 int num_sockets_to_preconnect) {
@@ -1568,15 +1577,8 @@ void Session::RegisterLocalAIHandler(gin_helper::ErrorThrower thrower,
     return;
   }
 
-  auto* prefs = SessionPreferences::FromBrowserContext(browser_context());
-  DCHECK(prefs);
-
-  if (handler) {
-    auto& allocation_handle = isolate->GetCppHeap()->GetAllocationHandle();
-    prefs->SetLocalAIHandler(handler->GetWeakCell(allocation_handle));
-  } else {
-    prefs->SetLocalAIHandler(nullptr);
-  }
+  local_ai_handler_ = handler;
+  local_ai_handler_changed_callbacks_.Notify();
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -1885,6 +1887,7 @@ void Session::Trace(cppgc::Visitor* visitor) const {
   visitor->Trace(service_worker_context_);
   visitor->Trace(web_request_);
   visitor->Trace(weak_factory_);
+  visitor->Trace(local_ai_handler_);
 }
 
 const gin::WrapperInfo* Session::wrapper_info() const {
