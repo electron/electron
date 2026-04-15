@@ -224,6 +224,44 @@ describe('utilityProcess module', () => {
       expect(details.name).to.equal(name);
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
+
+    ifit(!isWindows32Bit)('does not keep stale observers for crashed processes without JS references', async () => {
+      const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+      const logExpectedCrash = (phase: string) => {
+        console.error(
+          `[expected crash] utilityProcess regression forcing ${phase} crash; signal 11 + backtrace expected`
+        );
+      };
+      const waitForCollection = async (weakChild: WeakRef<ReturnType<typeof utilityProcess.fork>>) => {
+        for (let i = 0; i < 30; ++i) {
+          await setImmediate();
+          v8Util.requestGarbageCollectionForTesting();
+          if (weakChild.deref() === undefined) {
+            return true;
+          }
+        }
+        return false;
+      };
+
+      const name = 'Node Utility Process';
+      const firstCrash = waitForCrash(name);
+      logExpectedCrash('first');
+      let child: ReturnType<typeof utilityProcess.fork> | null = utilityProcess.fork(
+        path.join(fixturesPath, 'crash.js')
+      );
+      const weakChild = new WeakRef(child!);
+      child = null;
+
+      const firstDetails = await firstCrash;
+      expect(firstDetails.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
+      expect(await waitForCollection(weakChild)).to.equal(true);
+
+      const secondCrash = waitForCrash(name);
+      logExpectedCrash('second');
+      utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
+      const secondDetails = await secondCrash;
+      expect(secondDetails.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
+    });
   });
 
   describe('app.getAppMetrics()', () => {
