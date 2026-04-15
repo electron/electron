@@ -187,7 +187,7 @@ void Tray::OnDragEnded() {
 
 void Tray::Destroy() {
   Unpin();
-  menu_.Reset();
+  menu_.Clear();
   tray_icon_.reset();
 }
 
@@ -342,7 +342,7 @@ void Tray::Focus() {
 void Tray::PopUpContextMenu(gin::Arguments* args) {
   if (!CheckAlive())
     return;
-  gin_helper::Handle<Menu> menu;
+  Menu* menu = nullptr;
   gfx::Point pos;
 
   v8::Local<v8::Value> first_arg;
@@ -360,8 +360,8 @@ void Tray::PopUpContextMenu(gin::Arguments* args) {
     }
   }
 
-  tray_icon_->PopUpContextMenu(
-      pos, menu.IsEmpty() ? nullptr : menu->model()->GetWeakPtr());
+  tray_icon_->PopUpContextMenu(pos,
+                               menu ? menu->model()->GetWeakPtr() : nullptr);
 }
 
 void Tray::CloseContextMenu() {
@@ -374,12 +374,12 @@ void Tray::SetContextMenu(gin_helper::ErrorThrower thrower,
                           v8::Local<v8::Value> arg) {
   if (!CheckAlive())
     return;
-  gin_helper::Handle<Menu> menu;
+  Menu* menu = nullptr;
   if (arg->IsNull()) {
-    menu_.Reset();
+    menu_.Clear();
     tray_icon_->SetContextMenu(nullptr);
   } else if (gin::ConvertFromV8(thrower.isolate(), arg, &menu)) {
-    menu_.Reset(thrower.isolate(), menu.ToV8());
+    menu_ = menu;
     tray_icon_->SetContextMenu(menu->model());
   } else {
     thrower.ThrowTypeError("Must pass Menu or null");
