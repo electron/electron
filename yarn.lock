@@ -9657,12 +9657,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-addon-api@npm:*":
-  version: 8.5.0
-  resolution: "node-addon-api@npm:8.5.0"
+"node-addon-api@npm:*, node-addon-api@npm:^8.3.0":
+  version: 8.7.0
+  resolution: "node-addon-api@npm:8.7.0"
   dependencies:
     node-gyp: "npm:latest"
-  checksum: 10c0/e4de0b4e70998fed7ef41933946f60565fc3a17cb83b7d626a0c0bb1f734cf7852e0e596f12681e7c8ed424163ee3cdbb4f0abaa9cc269d03f48834c263ba162
+  checksum: 10c0/31a03b00f6b0753ab08360952fdf80a1abb619dcf8125fa1ab07e3a414da050963440c3a86c77a0334c0be7a71acb5e242dc468b79201ee6151c7b943afe946d
   languageName: node
   linkType: hard
 
@@ -9672,15 +9672,6 @@ __metadata:
   dependencies:
     node-gyp: "npm:latest"
   checksum: 10c0/20eb231362cc07c62d9839164473744d985be5d82685214f3750d990d9f61ef366e0ba112a766c925d640ed29b2a500b83568e895dc2444dcd5db01e615aac2b
-  languageName: node
-  linkType: hard
-
-"node-addon-api@npm:^8.3.0":
-  version: 8.7.0
-  resolution: "node-addon-api@npm:8.7.0"
-  dependencies:
-    node-gyp: "npm:latest"
-  checksum: 10c0/31a03b00f6b0753ab08360952fdf80a1abb619dcf8125fa1ab07e3a414da050963440c3a86c77a0334c0be7a71acb5e242dc468b79201ee6151c7b943afe946d
   languageName: node
   linkType: hard
 
