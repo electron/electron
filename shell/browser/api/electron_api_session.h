@@ -225,7 +225,7 @@ class Session final : public gin::Wrappable<Session>,
   cppgc::Member<api::NetLog> net_log_;
   cppgc::Member<api::ServiceWorkerContext> service_worker_context_;
   cppgc::Member<api::WebRequest> web_request_;
-  cppgc::Member<api::UtilityProcessWrapper> local_ai_handler_;
+  cppgc::WeakMember<api::UtilityProcessWrapper> local_ai_handler_;
 
   raw_ptr<v8::Isolate> isolate_;
 
