@@ -116,8 +116,7 @@ void PrintViewManagerElectron::SetupScriptedPrintPreview(
   mojo::ReportBadMessage(kInvalidSetupScriptedPrintPreviewCall);
 }
 
-void PrintViewManagerElectron::ShowScriptedPrintPreview(
-    bool source_is_modifiable) {
+void PrintViewManagerElectron::ShowScriptedPrintPreview() {
   mojo::ReportBadMessage(kInvalidShowScriptedPrintPreviewCall);
 }
 
