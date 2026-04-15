@@ -165,3 +165,4 @@ feat_allow_enabling_extensions_on_custom_protocols.patch
 cherry-pick-d8b01057f740.patch
 cherry-pick-89b42d2d3326.patch
 cherry-pick-1fd9cf824950.patch
+fix_initialize_com_on_desktopmedialistcapturethread_on_windows.patch
