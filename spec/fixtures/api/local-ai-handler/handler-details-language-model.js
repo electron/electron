@@ -4,8 +4,8 @@ let callCount = 0;
 
 process.parentPort.on('message', (e) => {
   const { command } = e.data;
-  if (command === 'clear-handler') {
-    localAIHandler.setPromptAPIHandler(null);
+  if (command === 'set-null-handler') {
+    localAIHandler.setPromptAPIHandler(() => null);
   }
   process.parentPort.postMessage('ack');
 });

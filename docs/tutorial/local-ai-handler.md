@@ -22,7 +22,7 @@ The local AI handler architecture involves three processes:
 1. **Main process** — creates `UtilityProcess`, and then registers it to handle
    Prompt API calls for a given session via [`ses.registerLocalAIHandler()`](../api/session.md#sesregisterlocalaihandlerhandler-experimental).
 2. **Utility process** — runs a script that calls
-   [`localAIHandler.setPromptAPIHandler()`](../api/local-ai-handler.md#localaihandlersetpromptapihandlerhandler-experimental)
+   [`localAIHandler.setPromptAPIHandler()`](../api/local-ai-handler.md#localaihandlersetpromptapihandlerpromptapihandler-experimental)
    to supply a `LanguageModel` subclass.
 3. **Renderer process** — web content uses the `LanguageModel` API from Chromium's experimental Prompt API
    (e.g. `LanguageModel.create()`, `model.prompt()`).

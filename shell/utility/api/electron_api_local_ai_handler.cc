@@ -25,21 +25,17 @@ void SetHandlerChangedCallback(base::RepeatingClosure callback) {
 
 void SetPromptAPIHandler(v8::Isolate* isolate, v8::Local<v8::Value> val) {
   PromptAPIHandler handler;
-  if (!(val->IsNull() || gin::ConvertFromV8(isolate, val, &handler))) {
+  if (!gin::ConvertFromV8(isolate, val, &handler)) {
     isolate->ThrowException(v8::Exception::TypeError(
-        gin::StringToV8(isolate, "Must pass null or function")));
+        gin::StringToV8(isolate, "Must pass a function")));
     return;
   }
 
-  if (val->IsNull()) {
-    GetPromptAPIHandler() = std::nullopt;
-  } else {
-    GetPromptAPIHandler() = handler;
+  GetPromptAPIHandler() = handler;
 
-    auto& cb = GetHandlerChangedCallbackStorage();
-    if (cb) {
-      cb.Run();
-    }
+  auto& cb = GetHandlerChangedCallbackStorage();
+  if (cb) {
+    cb.Run();
   }
 }
 

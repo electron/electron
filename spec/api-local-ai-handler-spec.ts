@@ -1144,21 +1144,17 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       expect(message2.callCount).to.equal(2);
     });
 
-    it('can be cleared by calling with null', async () => {
+    it('rejects new bindings after handler is changed to return null', async () => {
       const aiHandler = await forkAndRegisterHandler('handler-details-language-model.js');
 
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
 
-      // Clear the handler inside the utility process
-      await sendControllableMessage(aiHandler, { command: 'clear-handler' });
-
-      // Existing Prompt API bindings should still work until the page is reloaded
+      // Change the handler to return null for all new bindings
+      await sendControllableMessage(aiHandler, { command: 'set-null-handler' });
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
 
       // Load a new page to get a fresh Prompt API binding
       await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
-
-      // Should be unavailable since setPromptAPIHandler(null) was called in the utility process
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
     });
   });
