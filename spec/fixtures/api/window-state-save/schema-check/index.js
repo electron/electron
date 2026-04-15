@@ -12,7 +12,7 @@ app.whenReady().then(() => {
     height: 300,
     name: 'test-window-state-schema',
     windowStatePersistence: true,
-    show: false
+    show: true
   });
 
   w.close();
