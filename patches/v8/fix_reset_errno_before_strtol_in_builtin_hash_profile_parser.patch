@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Wed, 15 Apr 2026 05:12:38 +0000
+Subject: fix: reset errno before strtol in builtin_hash profile parser
+
+The builtin_hash branch in EnsureInitProfileData() checks errno after
+strtol but never resets it to 0 first, so a stale errno from any prior
+operation causes CHECK(errno == 0 && ...) to crash mksnapshot with
+SIGTRAP. Observed on 32-bit linux-arm release builds where v8 init
+leaves errno=EINVAL before profile parsing. The block_hint branch
+already resets errno; this brings builtin_hash to parity.
+
+diff --git a/src/builtins/profile-data-reader.cc b/src/builtins/profile-data-reader.cc
+index 22c5c6c0f4539c16d4ecdc3ab40be5a723a8d61d..cdc31cb8d15f630cd0ecd5fef6946d75588c8199 100644
+--- a/src/builtins/profile-data-reader.cc
++++ b/src/builtins/profile-data-reader.cc
+@@ -93,6 +93,7 @@ EnsureInitProfileData() {
+         std::getline(line_stream, token, '\t');
+         CHECK(line_stream.eof());
+         char* end = nullptr;
++        errno = 0;
+         int hash = static_cast<int>(strtol(token.c_str(), &end, 0));
+         CHECK(errno == 0 && end != token.c_str());
+         ProfileDataFromFileInternal& block_count = (*data.get())[builtin_name];
+@@ -142,6 +143,7 @@ EnsureInitProfileData() {
+       std::getline(line_stream, token, ',');
+       CHECK(line_stream.eof());
+       char* end = nullptr;
++      errno = 0;
+       int hash = static_cast<int>(strtol(token.c_str(), &end, 0));
+       CHECK(errno == 0 && end != token.c_str());
+       ProfileDataFromFileInternal& hints_and_hash = (*data.get())[builtin_name];
