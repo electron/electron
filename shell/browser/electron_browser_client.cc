@@ -1295,13 +1295,14 @@ void ElectronBrowserClient::
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
 
-bool ElectronBrowserClient::ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
-    std::string_view scheme,
+bool ElectronBrowserClient::ShouldTreatAsFirstPartyWhenTopLevel(
+    const url::Origin& top_frame_origin,
     bool is_embedded_origin_secure) {
-  if (is_embedded_origin_secure && scheme == content::kChromeUIScheme)
+  if (is_embedded_origin_secure &&
+      top_frame_origin.scheme() == content::kChromeUIScheme)
     return true;
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  return scheme == extensions::kExtensionScheme;
+  return top_frame_origin.scheme() == extensions::kExtensionScheme;
 #else
   return false;
 #endif

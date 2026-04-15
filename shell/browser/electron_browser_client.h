@@ -269,8 +269,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool force_no_https_upgrade,
       scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner)
       override;
-  bool ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
-      std::string_view scheme,
+  bool ShouldTreatAsFirstPartyWhenTopLevel(
+      const url::Origin& top_frame_origin,
       bool is_embedded_origin_secure) override;
   void OverrideURLLoaderFactoryParams(
       content::BrowserContext* browser_context,
