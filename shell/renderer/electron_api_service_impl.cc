@@ -21,24 +21,22 @@
 #include "shell/renderer/electron_ipc_native.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
-#include "third_party/blink/public/common/loader/referrer_utils.h"
 #include "third_party/blink/public/mojom/frame/user_activation_notification_type.mojom-shared.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
-#include "third_party/blink/public/platform/web_string.h"
 #include "third_party/blink/public/web/blink.h"
-#include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_frame_widget.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
-#include "third_party/blink/renderer/core/dom/node.h"               // nogncheck
-#include "third_party/blink/renderer/core/frame/local_frame.h"      // nogncheck
-#include "third_party/blink/renderer/core/frame/visual_viewport.h"  // nogncheck
-#include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
-#include "third_party/blink/renderer/core/html/canvas/html_canvas_element.h"  // nogncheck
-#include "third_party/blink/renderer/core/input/event_handler.h"  // nogncheck
-#include "third_party/blink/renderer/core/layout/hit_test_location.h"  // nogncheck
-#include "third_party/blink/renderer/core/layout/hit_test_result.h"  // nogncheck
-#include "third_party/blink/renderer/core/page/page.h"  // nogncheck
+#include "third_party/blink/renderer/core/dom/document.h"
+#include "third_party/blink/renderer/core/dom/node.h"
+#include "third_party/blink/renderer/core/frame/local_frame.h"
+#include "third_party/blink/renderer/core/frame/visual_viewport.h"
+#include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"
+#include "third_party/blink/renderer/core/html/canvas/html_canvas_element.h"
+#include "third_party/blink/renderer/core/input/event_handler.h"
+#include "third_party/blink/renderer/core/layout/hit_test_location.h"
+#include "third_party/blink/renderer/core/layout/hit_test_result.h"
+#include "third_party/blink/renderer/core/page/page.h"
 #include "ui/gfx/geometry/point_conversions.h"
 #include "ui/gfx/geometry/point_f.h"
 #include "url/gurl.h"
@@ -114,14 +112,11 @@ mojom::ImageSaveInfoPtr GetImageSaveInfo(content::RenderFrame* render_frame,
     return nullptr;
   }
 
-  const blink::WebDocument document = web_frame->GetDocument();
-  if (document.IsNull())
-    return nullptr;
-
+  blink::Document& document = image_node->GetDocument();
   info->frame_url = GURL(document.Url());
-  info->referrer_policy = blink::ReferrerUtils::NetToMojoReferrerPolicy(
-      document.GetReferrerPolicy());
+  info->referrer_policy = document.GetReferrerPolicy();
   info->is_image_media_plugin_document =
+      document.IsImageDocument() || document.IsMediaDocument() ||
       document.IsPluginDocument() || info->frame_url == info->src_url;
 
   return info;

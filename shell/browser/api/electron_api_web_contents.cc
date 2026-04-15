@@ -44,7 +44,6 @@
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/browser/renderer_host/navigation_controller_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_frame_host_manager.h"  // nogncheck
-#include "content/browser/renderer_host/render_view_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
@@ -488,12 +487,20 @@ void RequestImageSaveInfoAt(
   if (!target_rwh)
     return;
 
-  auto* target_rvh = content::RenderViewHostImpl::From(target_rwh);
-  if (!target_rvh)
-    return;
+  content::RenderFrameHost* frame_host = nullptr;
+  api_web_contents->GetWebContents()->ForEachRenderFrameHostWithAction(
+      [&](content::RenderFrameHost* candidate) {
+        if (!candidate->IsRenderFrameLive())
+          return content::WebContents::FrameIterationAction::kContinue;
+        if (candidate->GetView() != target_view.get())
+          return content::WebContents::FrameIterationAction::kContinue;
+        if (candidate->GetRenderWidgetHost() != target_rwh)
+          return content::WebContents::FrameIterationAction::kContinue;
 
-  auto* frame_host = target_rvh->GetMainRenderFrameHost();
-  if (!frame_host || !frame_host->IsRenderFrameLive())
+        frame_host = candidate;
+        return content::WebContents::FrameIterationAction::kStop;
+      });
+  if (!frame_host)
     return;
 
   auto electron_renderer =
