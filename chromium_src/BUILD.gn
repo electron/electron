@@ -391,12 +391,12 @@ static_library("chrome") {
       sources += [
         "//chrome/browser/pdf/chrome_pdf_stream_delegate.cc",
         "//chrome/browser/pdf/chrome_pdf_stream_delegate.h",
+        "//chrome/browser/pdf/mime_handler_stream_manager.cc",
+        "//chrome/browser/pdf/mime_handler_stream_manager.h",
         "//chrome/browser/pdf/pdf_extension_util.cc",
         "//chrome/browser/pdf/pdf_extension_util.h",
         "//chrome/browser/pdf/pdf_help_bubble_handler_factory.cc",
         "//chrome/browser/pdf/pdf_help_bubble_handler_factory.h",
-        "//chrome/browser/pdf/pdf_viewer_stream_manager.cc",
-        "//chrome/browser/pdf/pdf_viewer_stream_manager.h",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.cc",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
       ]
