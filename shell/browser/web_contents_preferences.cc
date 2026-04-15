@@ -149,6 +149,8 @@ void WebContentsPreferences::Clear() {
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
   deprecated_paste_enabled_ = false;
   focus_on_navigation_ = true;
+  default_minimum_page_scale_factor_ = std::nullopt;
+  default_maximum_page_scale_factor_ = std::nullopt;
 
 #if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
@@ -276,6 +278,12 @@ bool WebContentsPreferences::SetImageAnimationPolicy(std::string policy) {
     return true;
   }
   return false;
+}
+
+void WebContentsPreferences::SetVisualZoomLevelLimits(float min_level,
+                                                      float max_level) {
+  default_minimum_page_scale_factor_ = min_level;
+  default_maximum_page_scale_factor_ = max_level;
 }
 
 bool WebContentsPreferences::IsSandboxed() const {
@@ -471,6 +479,13 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->v8_cache_options = v8_cache_options_;
 
   prefs->dom_paste_enabled = deprecated_paste_enabled_;
+
+  if (default_minimum_page_scale_factor_)
+    prefs->default_minimum_page_scale_factor =
+        *default_minimum_page_scale_factor_;
+  if (default_maximum_page_scale_factor_)
+    prefs->default_maximum_page_scale_factor =
+        *default_maximum_page_scale_factor_;
 }
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(WebContentsPreferences);

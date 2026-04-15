@@ -69,6 +69,7 @@ class WebContentsPreferences
   }
   bool ShouldIgnoreMenuShortcuts() const { return ignore_menu_shortcuts_; }
   bool SetImageAnimationPolicy(std::string policy);
+  void SetVisualZoomLevelLimits(float min_level, float max_level);
   bool ShouldDisableHtmlFullscreenWindowResize() const {
     return disable_html_fullscreen_window_resize_;
   }
@@ -135,6 +136,8 @@ class WebContentsPreferences
   blink::mojom::V8CacheOptions v8_cache_options_;
   bool deprecated_paste_enabled_ = false;
   bool focus_on_navigation_;
+  std::optional<float> default_minimum_page_scale_factor_;
+  std::optional<float> default_maximum_page_scale_factor_;
 
 #if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;
