@@ -22,7 +22,6 @@
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
-#include "v8/include/cppgc/prefinalizer.h"
 #include "v8/include/v8-forward.h"
 
 namespace gin {
@@ -45,8 +44,6 @@ class UtilityProcessWrapper final
       private mojo::MessageReceiver,
       public node::mojom::NodeServiceClient,
       public content::ServiceProcessHost::Observer {
-  CPPGC_USING_PRE_FINALIZER(UtilityProcessWrapper, Dispose);
-
  public:
   enum class IOHandle : size_t { STDIN = 0, STDOUT = 1, STDERR = 2 };
   enum class IOType { IO_PIPE, IO_INHERIT, IO_IGNORE };
@@ -78,8 +75,6 @@ class UtilityProcessWrapper final
       v8::Isolate* isolate) override;
 
  private:
-  void Dispose();
-
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
 

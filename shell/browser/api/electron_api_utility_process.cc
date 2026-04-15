@@ -250,10 +250,6 @@ UtilityProcessWrapper::UtilityProcessWrapper(
 }
 
 UtilityProcessWrapper::~UtilityProcessWrapper() {
-  Dispose();
-}
-
-void UtilityProcessWrapper::Dispose() {
   content::ServiceProcessHost::RemoveObserver(this);
 }
 
@@ -283,7 +279,7 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
     GetAllUtilityProcessWrappers().Remove(pid_);
 
   pid_ = base::kNullProcessId;
-  Dispose();
+  content::ServiceProcessHost::RemoveObserver(this);
   CloseConnectorPort();
   if (killed_) {
 #if BUILDFLAG(IS_POSIX)
