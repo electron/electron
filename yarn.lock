@@ -648,6 +648,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@electron-ci/virtual-display@file:./fixtures/native-addon/virtual-display/::locator=electron-test-main%40workspace%3Aspec":
+  version: 1.0.0
+  resolution: "@electron-ci/virtual-display@file:./fixtures/native-addon/virtual-display/#./fixtures/native-addon/virtual-display/::hash=f58379&locator=electron-test-main%40workspace%3Aspec"
+  dependencies:
+    bindings: "npm:^1.5.0"
+    node-addon-api: "npm:^8.3.0"
+  checksum: 10c0/63fcfa5aafb26e8ef725039d73932618cfdfa9e47861cb021c3eb43b2ae06b49209bc1483a19ef6bbd96a4ed857278998d0a08fd86981a84572256fc44e71a9f
+  languageName: node
+  linkType: hard
+
+"@electron-ci/virtual-display@workspace:spec/fixtures/native-addon/virtual-display":
+  version: 0.0.0-use.local
+  resolution: "@electron-ci/virtual-display@workspace:spec/fixtures/native-addon/virtual-display"
+  dependencies:
+    bindings: "npm:^1.5.0"
+    node-addon-api: "npm:^8.3.0"
+    node-gyp: "npm:^11.1.0"
+  languageName: unknown
+  linkType: soft
+
 "@electron/asar@npm:^3.2.13":
   version: 3.2.13
   resolution: "@electron/asar@npm:3.2.13"
@@ -3356,7 +3376,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bindings@npm:^1.2.1":
+"bindings@npm:^1.2.1, bindings@npm:^1.5.0":
   version: 1.5.0
   resolution: "bindings@npm:1.5.0"
   dependencies:
@@ -4750,6 +4770,7 @@ __metadata:
     "@electron-ci/is-valid-window": "npm:*"
     "@electron-ci/osr-gpu": "npm:*"
     "@electron-ci/uv-dlopen": "npm:*"
+    "@electron-ci/virtual-display": "file:./fixtures/native-addon/virtual-display/"
     "@electron/fuses": "npm:^1.8.0"
     "@electron/packager": "npm:^18.3.2"
     "@types/basic-auth": "npm:^1.1.8"
@@ -9654,6 +9675,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"node-addon-api@npm:^8.3.0":
+  version: 8.7.0
+  resolution: "node-addon-api@npm:8.7.0"
+  dependencies:
+    node-gyp: "npm:latest"
+  checksum: 10c0/31a03b00f6b0753ab08360952fdf80a1abb619dcf8125fa1ab07e3a414da050963440c3a86c77a0334c0be7a71acb5e242dc468b79201ee6151c7b943afe946d
+  languageName: node
+  linkType: hard
+
 "node-fetch@npm:^2.6.1":
   version: 2.6.8
   resolution: "node-fetch@npm:2.6.8"
@@ -9693,7 +9723,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-gyp@npm:^11.4.2, node-gyp@npm:latest":
+"node-gyp@npm:^11.1.0, node-gyp@npm:^11.4.2, node-gyp@npm:latest":
   version: 11.5.0
   resolution: "node-gyp@npm:11.5.0"
   dependencies:
