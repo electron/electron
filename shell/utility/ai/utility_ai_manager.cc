@@ -287,6 +287,16 @@ void UtilityAIManager::CanCreateLanguageModel(
     blink::mojom::AILanguageModelCreateOptionsPtr options,
     CanCreateLanguageModelCallback callback) {
   v8::Global<v8::Object>& language_model_class = GetLanguageModelClass();
+  {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope{isolate};
+    v8::Global<v8::Object>& module_object =
+        electron::api::local_ai_handler::GetModuleObject();
+    if (!module_object.IsEmpty()) {
+      gin_helper::EmitEvent(isolate, module_object.Get(isolate),
+                            "-can-create-language-model");
+    }
+  }
   blink::mojom::ModelAvailabilityCheckResult availability =
       blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown;
 

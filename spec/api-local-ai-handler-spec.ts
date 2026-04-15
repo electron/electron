@@ -93,6 +93,17 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
     });
 
+    it('returns "available" when late registered handler reports available', async () => {
+      const aiHandler = await forkAndRegisterHandler('delayed-prompt-handler.js');
+
+      await listenForMessage(aiHandler, 'in-progress-prompt-handler-call', async () => {
+        await w.webContents.executeJavaScript('const availability = LanguageModel.availability()');
+      });
+      await sendControllableMessage(aiHandler, { command: 'set-handler' });
+
+      expect(await w.webContents.executeJavaScript('availability')).to.equal('available');
+    });
+
     it('returns "downloadable" when handler reports downloadable', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-availability', value: 'downloadable' });
@@ -131,12 +142,20 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
     });
 
-    it('returns "unavailable" if not registered', async () => {
-      expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
+    it('returns "unavailable" if the utility process dies without ever setting a handler', async () => {
+      const aiHandler = await forkAndRegisterHandler('delayed-prompt-handler.js');
+
+      await listenForMessage(aiHandler, 'in-progress-prompt-handler-call', async () => {
+        await w.webContents.executeJavaScript('const availability = LanguageModel.availability()');
+      });
+
+      aiHandler.kill();
+      await once(aiHandler, 'exit');
+
+      expect(await w.webContents.executeJavaScript('availability')).to.equal('unavailable');
     });
 
-    it('returns "unavailable" if registered but utility process has not set handler', async () => {
-      await forkAndRegisterHandler('no-language-model.js');
+    it('returns "unavailable" if not registered', async () => {
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('unavailable');
     });
 
@@ -211,6 +230,21 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       await expect(promise).to.eventually.be.rejectedWith(/unable to create/);
     });
 
+    it('rejects if the utility process dies without ever setting a handler', async () => {
+      const aiHandler = await forkAndRegisterHandler('delayed-prompt-handler.js');
+
+      await listenForMessage(aiHandler, 'in-progress-prompt-handler-call', async () => {
+        await w.webContents.executeJavaScript(
+          'const pending = LanguageModel.create().then(model => model instanceof LanguageModel).catch(err => { throw err.message; })'
+        );
+      });
+
+      aiHandler.kill();
+      await once(aiHandler, 'exit');
+
+      await expect(w.webContents.executeJavaScript('pending')).to.eventually.be.rejectedWith(/unable? to create/);
+    });
+
     it('rejects if the handler gets unregistered during creation', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
       await sendControllableMessage(aiHandler, { command: 'set-create', value: 'wait-for-abort' });
@@ -230,6 +264,60 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       expect(
         await w.webContents.executeJavaScript('LanguageModel.create().then(model => model instanceof LanguageModel)')
       ).to.equal(true);
+    });
+
+    it('creates a LanguageModel instance from a valid handler registered late', async () => {
+      const aiHandler = await forkAndRegisterHandler('delayed-prompt-handler.js');
+
+      await listenForMessage(aiHandler, 'in-progress-prompt-handler-call', async () => {
+        await w.webContents.executeJavaScript(
+          'const pending = LanguageModel.create().then(model => model instanceof LanguageModel).catch(err => { throw err.message; })'
+        );
+      });
+      await sendControllableMessage(aiHandler, { command: 'set-handler' });
+
+      expect(await w.webContents.executeJavaScript('pending')).to.equal(true);
+    });
+
+    it('evicts the oldest pending binding when the max queue size is exceeded', async () => {
+      const aiHandler = await forkAndRegisterHandler('delayed-prompt-handler.js');
+
+      const createWindow = async () => {
+        const win = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            enableBlinkFeatures: 'AIPromptAPI,AIPromptAPIMultimodalInput'
+          }
+        });
+        await win.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        return win;
+      };
+
+      // Create 11 windows, each calling LanguageModel.create() before the handler is set.
+      // The pending queue has a max size of 10, so the 11th evicts the 1st.
+      const windows = [];
+      for (let i = 0; i < 11; i++) {
+        const win = i === 0 ? w : await createWindow();
+        windows.push(win);
+        await listenForMessage(aiHandler, 'in-progress-prompt-handler-call', async () => {
+          await win.webContents.executeJavaScript(
+            'const success = LanguageModel.create().then(model => model instanceof LanguageModel).catch(err => { throw err.message; })'
+          );
+        });
+      }
+
+      // The first window's create() should have been rejected (evicted from queue).
+      await expect(windows[0].webContents.executeJavaScript('success')).to.eventually.be.rejectedWith(
+        /unable to create/
+      );
+
+      // Set the handler so remaining pending bindings get flushed.
+      await sendControllableMessage(aiHandler, { command: 'set-handler' });
+
+      // The remaining windows should now succeed.
+      for (let i = 1; i < 11; i++) {
+        expect(await windows[i].webContents.executeJavaScript('success')).to.equal(true);
+      }
     });
 
     it('passes initialPrompts to create()', async () => {

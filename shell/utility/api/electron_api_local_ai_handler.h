@@ -23,6 +23,10 @@ void SetPromptAPIHandler(v8::Isolate* isolate, v8::Local<v8::Value> value);
 
 [[nodiscard]] std::optional<PromptAPIHandler>& GetPromptAPIHandler();
 
+[[nodiscard]] v8::Global<v8::Object>& GetModuleObject();
+
+void SetHandlerChangedCallback(base::RepeatingClosure callback);
+
 }  // namespace electron::api::local_ai_handler
 
 #endif  // ELECTRON_SHELL_UTILITY_API_ELECTRON_LOCAL_AI_HANDLER_H_

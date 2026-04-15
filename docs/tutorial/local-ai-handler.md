@@ -159,6 +159,19 @@ win.webContents.session.registerLocalAIHandler(null)
 After clearing, any `LanguageModel.create()` calls from renderers using that
 session will fail.
 
+## Late handler registration
+
+If a renderer uses the Prompt API after `ses.registerLocalAIHandler()` has been
+called, but before  `localAIHandler.setPromptAPIHandler()` has been called in
+the utility process, the request is not immediately rejected. Instead, Electron
+queues pending requests. Once `setPromptAPIHandler()` is called, all queued
+requests are flushed and handled normally.
+
+If too many requests arrive before the handler is set, the **oldest** pending
+request is dropped and pending promises will reject in the renderer. Call
+`setPromptAPIHandler()` as early as possible in your utility process script
+to avoid hitting this.
+
 ## Security considerations
 
 The `details` object passed to your handler includes `webContentsId` and

@@ -14,6 +14,15 @@
 
 namespace electron::api::local_ai_handler {
 
+base::RepeatingClosure& GetHandlerChangedCallbackStorage() {
+  static base::NoDestructor<base::RepeatingClosure> callback;
+  return *callback;
+}
+
+void SetHandlerChangedCallback(base::RepeatingClosure callback) {
+  GetHandlerChangedCallbackStorage() = std::move(callback);
+}
+
 void SetPromptAPIHandler(v8::Isolate* isolate, v8::Local<v8::Value> val) {
   PromptAPIHandler handler;
   if (!(val->IsNull() || gin::ConvertFromV8(isolate, val, &handler))) {
@@ -26,12 +35,22 @@ void SetPromptAPIHandler(v8::Isolate* isolate, v8::Local<v8::Value> val) {
     GetPromptAPIHandler() = std::nullopt;
   } else {
     GetPromptAPIHandler() = handler;
+
+    auto& cb = GetHandlerChangedCallbackStorage();
+    if (cb) {
+      cb.Run();
+    }
   }
 }
 
 std::optional<PromptAPIHandler>& GetPromptAPIHandler() {
   static base::NoDestructor<std::optional<PromptAPIHandler>> prompt_api_handler;
   return *prompt_api_handler;
+}
+
+v8::Global<v8::Object>& GetModuleObject() {
+  static base::NoDestructor<v8::Global<v8::Object>> module_object;
+  return *module_object;
 }
 
 }  // namespace electron::api::local_ai_handler
@@ -43,6 +62,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  electron::api::local_ai_handler::GetModuleObject().Reset(isolate, exports);
   gin_helper::Dictionary dict{isolate, exports};
   dict.SetMethod("setPromptAPIHandler",
                  &electron::api::local_ai_handler::SetPromptAPIHandler);
