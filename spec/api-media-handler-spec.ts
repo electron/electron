@@ -4,6 +4,7 @@ import { expect } from 'chai';
 
 import * as http from 'node:http';
 
+import { captureWithTabSourceId } from './lib/media-helpers';
 import { ifit, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
@@ -23,33 +24,6 @@ describe('setDisplayMediaRequestHandler', () => {
   after(() => {
     server.close();
   });
-
-  const captureWithTabSourceId = async (requestingWindow: BrowserWindow, chromeMediaSourceId: string) => {
-    return requestingWindow.webContents.executeJavaScript(`
-      navigator.mediaDevices.getUserMedia({
-        video: {
-          mandatory: {
-            chromeMediaSource: 'tab',
-            chromeMediaSourceId: ${JSON.stringify(chromeMediaSourceId)},
-          },
-        },
-      }).then((stream) => {
-        const result = {
-          ok: stream instanceof MediaStream,
-          href: location.href,
-          origin: location.origin,
-          videoTrackCount: stream.getVideoTracks().length,
-        };
-        stream.getTracks().forEach((track) => track.stop());
-        return result;
-      }, (error) => ({
-        ok: false,
-        href: location.href,
-        message: error.message,
-        origin: location.origin,
-      }))
-    `);
-  };
 
   ifit(process.platform !== 'darwin')('works when calling getDisplayMedia', async function () {
     if ((await desktopCapturer.getSources({ types: ['screen'] })).length === 0) {
