@@ -137,7 +137,8 @@ jobs:
       run: |
         e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
 
-        export GN_EXTRA_ARGS="target_cpu=\"${TARGET_ARCH}\""
+        # For macOS use_remoteexec=false will cause GN errors, so even though we're doing no remote build, set it
+        export GN_EXTRA_ARGS="use_remoteexec=true target_cpu=\"${TARGET_ARCH}\""
         if [ "${{ inputs.target-platform }}" = "win" ]; then
           export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
         fi
