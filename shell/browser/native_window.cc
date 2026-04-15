@@ -897,7 +897,7 @@ void NativeWindow::SaveWindowState() {
   }
 
   ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
-  const base::Value::Dict* existing_prefs = update->FindDict(window_name_);
+  const base::DictValue* existing_prefs = update->FindDict(window_name_);
 
   // When the window is in a special display mode (fullscreen, kiosk, or
   // maximized), save the previously stored window bounds instead of
@@ -915,7 +915,7 @@ void NativeWindow::SaveWindowState() {
     }
   }
 
-  base::Value::Dict window_preferences;
+  base::DictValue window_preferences;
   window_preferences.Set(electron::kLeft, bounds.x());
   window_preferences.Set(electron::kTop, bounds.y());
   window_preferences.Set(electron::kRight, bounds.right());
@@ -948,7 +948,7 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
     return;
 
   const base::Value& value = prefs_->GetValue(electron::kWindowStates);
-  const base::Value::Dict* window_preferences =
+  const base::DictValue* window_preferences =
       value.is_dict() ? value.GetDict().FindDict(window_name_) : nullptr;
 
   if (!window_preferences)
@@ -1027,7 +1027,7 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
 
   if (restore_display_mode_) {
     restore_display_mode_callback_ = base::BindOnce(
-        [](NativeWindow* window, base::Value::Dict prefs) {
+        [](NativeWindow* window, base::DictValue prefs) {
           if (auto kiosk = prefs.FindBool(electron::kKiosk); kiosk && *kiosk) {
             window->SetKiosk(true);
           } else if (auto fs = prefs.FindBool(electron::kFullscreen);
