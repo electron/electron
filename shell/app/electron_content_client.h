@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "content/public/common/content_client.h"
+#include "url/origin.h"
 
 namespace electron {
 
@@ -33,6 +34,8 @@ class ElectronContentClient : public content::ContentClient {
   void AddContentDecryptionModules(
       std::vector<content::CdmInfo>* cdms,
       std::vector<media::CdmHostFilePath>* cdm_host_file_paths) override;
+  bool IsFilePickerAllowedForCrossOriginSubframe(
+      const url::Origin& origin) override;
 };
 
 }  // namespace electron
