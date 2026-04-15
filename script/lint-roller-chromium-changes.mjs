@@ -275,7 +275,7 @@ async function main() {
   if (hasErrors) {
     console.log('  NOTE: Add "Skip-Lint: <reason>" to a commit message to skip linting that commit.');
   }
-  process.exit(hasErrors && process.env.CI ? 1 : 0);
+  process.exit(hasErrors ? 1 : 0);
 }
 
 if ((await fs.realpath(process.argv[1])) === fileURLToPath(import.meta.url)) {

@@ -57,12 +57,10 @@ const int kCaptionButtonBottomPadding = 3;
 // The content edge images have a shadow built into them.
 const int OpaqueFrameView::kContentEdgeShadowThickness = 2;
 
-OpaqueFrameView::OpaqueFrameView()
-    : frame_background_(std::make_unique<views::FrameBackground>()) {}
-OpaqueFrameView::~OpaqueFrameView() = default;
-
-void OpaqueFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
-  FramelessView::Init(window, frame);
+OpaqueFrameView::OpaqueFrameView(NativeWindowViews* window,
+                                 views::Widget* frame)
+    : FramelessView{window, frame},
+      frame_background_{std::make_unique<views::FrameBackground>()} {
   linux_frame_layout_ = LinuxFrameLayout::Create(
       window, window->HasShadow(), LinuxFrameLayout::CSDStyle::kCustom);
 
@@ -100,6 +98,7 @@ void OpaqueFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
                           base::Unretained(frame),
                           views::Widget::ClosedReason::kCloseButtonClicked));
 }
+OpaqueFrameView::~OpaqueFrameView() = default;
 
 int OpaqueFrameView::ResizingBorderHitTest(const gfx::Point& point) {
   return ResizingBorderHitTestImpl(

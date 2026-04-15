@@ -23,10 +23,9 @@ class WinFrameView : public FramelessView {
   METADATA_HEADER(WinFrameView, FramelessView)
 
  public:
-  WinFrameView();
+  WinFrameView(NativeWindowViews* window, views::Widget* frame);
   ~WinFrameView() override;
 
-  void Init(NativeWindowViews* window, views::Widget* frame) override;
   void InvalidateCaptionButtons() override;
 
   // views::FrameView:
@@ -50,7 +49,7 @@ class WinFrameView : public FramelessView {
   int TitlebarMaximizedVisualHeight() const;
 
   // Returns true if the frame should be painted as active.
-  bool GetShouldPaintAsActive();
+  [[nodiscard]] bool GetShouldPaintAsActive() const;
 
  protected:
   // views::View:

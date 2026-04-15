@@ -21,14 +21,10 @@ const int kResizeAreaCornerSize = 16;
 
 }  // namespace
 
-FramelessView::FramelessView() = default;
+FramelessView::FramelessView(NativeWindowViews* window, views::Widget* frame)
+    : window_{window}, frame_{frame} {}
 
 FramelessView::~FramelessView() = default;
-
-void FramelessView::Init(NativeWindowViews* window, views::Widget* frame) {
-  window_ = window;
-  frame_ = frame;
-}
 
 gfx::Insets FramelessView::RestoredFrameBorderInsets() const {
   return gfx::Insets();

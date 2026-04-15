@@ -9,8 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
-#include "chrome/browser/media/webrtc/native_desktop_media_list.h"
+#include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
 
@@ -23,8 +22,7 @@ namespace electron::api {
 
 class DesktopCapturer final
     : public gin_helper::DeprecatedWrappable<DesktopCapturer>,
-      public gin_helper::Pinnable<DesktopCapturer>,
-      private DesktopMediaListObserver {
+      public gin_helper::Pinnable<DesktopCapturer> {
  public:
   struct Source {
     DesktopMediaList::Source media_list_source;
@@ -55,57 +53,24 @@ class DesktopCapturer final
   DesktopCapturer& operator=(const DesktopCapturer&) = delete;
 
  protected:
-  explicit DesktopCapturer(v8::Isolate* isolate);
+  DesktopCapturer();
   ~DesktopCapturer() override;
 
  private:
-  // DesktopMediaListObserver:
-  void OnSourceAdded(int index) override {}
-  void OnSourceRemoved(int index) override {}
-  void OnSourceMoved(int old_index, int new_index) override {}
-  void OnSourceNameChanged(int index) override {}
-  void OnSourceThumbnailChanged(int index) override {}
-  void OnSourcePreviewChanged(size_t index) override {}
-  void OnDelegatedSourceListSelection() override {}
-  void OnDelegatedSourceListDismissed() override {}
+  class ListObserver;
 
-  using OnceCallback = base::OnceClosure;
-
-  class DesktopListListener : public DesktopMediaListObserver {
-   public:
-    DesktopListListener(OnceCallback update_callback,
-                        OnceCallback failure_callback,
-                        bool skip_thumbnails);
-    ~DesktopListListener() override;
-
-   protected:
-    void OnSourceAdded(int index) override {}
-    void OnSourceRemoved(int index) override {}
-    void OnSourceMoved(int old_index, int new_index) override {}
-    void OnSourceNameChanged(int index) override {}
-    void OnSourceThumbnailChanged(int index) override;
-    void OnSourcePreviewChanged(size_t index) override {}
-    void OnDelegatedSourceListSelection() override;
-    void OnDelegatedSourceListDismissed() override;
-
-   private:
-    OnceCallback update_callback_;
-    OnceCallback failure_callback_;
-    bool have_selection_ = false;
-    bool have_thumbnail_ = false;
-  };
-
-  void UpdateSourcesList(DesktopMediaList* list);
+  void OnListReady(DesktopMediaList* list);
+  void CollectSourcesFrom(DesktopMediaList* list);
   void HandleFailure();
   void HandleSuccess();
 
-  std::unique_ptr<DesktopListListener> window_listener_;
-  std::unique_ptr<DesktopListListener> screen_listener_;
+  std::unique_ptr<ListObserver> window_observer_;
+  std::unique_ptr<ListObserver> screen_observer_;
   std::unique_ptr<DesktopMediaList> window_capturer_;
   std::unique_ptr<DesktopMediaList> screen_capturer_;
   std::vector<DesktopCapturer::Source> captured_sources_;
-  bool capture_window_ = false;
-  bool capture_screen_ = false;
+  int pending_lists_ = 0;
+  bool finished_ = false;
   bool fetch_window_icons_ = false;
 #if BUILDFLAG(IS_WIN)
   bool using_directx_capturer_ = false;

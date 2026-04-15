@@ -36,7 +36,17 @@ jobs:
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
+      - name: Get project item status
+        uses: dsanders11/project-actions/get-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
+        id: get-item
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          project-number: 118
+          fail-if-item-not-found: false
       - name: Set status to Needs Review
+        if: >-
+          (steps.get-item.outputs.field-status == '🛑 Needs Submitter Response'
+          || steps.get-item.outputs.field-status == '🟡 WIP')
         uses: dsanders11/project-actions/edit-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
         with:
           token: ${{ steps.generate-token.outputs.token }}
