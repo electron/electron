@@ -441,8 +441,11 @@ jobs:
     permissions:
       contents: read
     needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, windows-x64, windows-x86, windows-arm64]
-    if: always() && github.repository == 'electron/electron' && !contains(needs.*.result, 'failure')
+    if: always() && github.repository == 'electron/electron'
     steps:
+    - name: Fail if any needed job failed or was cancelled
+      if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+      run: exit 1
     - name: GitHub Actions Jobs Done
       run: |
         echo "All GitHub Actions Jobs are done"
