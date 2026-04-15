@@ -5,18 +5,36 @@ import { ElectronReleaseRepo } from './types';
 
 const cachedTokens = Object.create(null);
 
+const SUDOWOODO_OIDC_AUDIENCE = 'sudowoodo-broker';
+
+async function getActionsIdToken (): Promise<string> {
+  const { ACTIONS_ID_TOKEN_REQUEST_URL, ACTIONS_ID_TOKEN_REQUEST_TOKEN } = process.env;
+  if (!ACTIONS_ID_TOKEN_REQUEST_URL || !ACTIONS_ID_TOKEN_REQUEST_TOKEN) {
+    throw new Error(
+      'ACTIONS_ID_TOKEN_REQUEST_URL/_TOKEN not set — the job needs `permissions: id-token: write` to mint an OIDC token for the sudowoodo exchange'
+    );
+  }
+  const { value } = await got(ACTIONS_ID_TOKEN_REQUEST_URL + '&audience=' + SUDOWOODO_OIDC_AUDIENCE, {
+    headers: {
+      authorization: 'Bearer ' + ACTIONS_ID_TOKEN_REQUEST_TOKEN
+    }
+  }).json<{ value: string }>();
+  return value;
+}
+
 async function ensureToken (repo: ElectronReleaseRepo) {
   if (!cachedTokens[repo]) {
     cachedTokens[repo] = await (async () => {
-      const { ELECTRON_GITHUB_TOKEN, SUDOWOODO_EXCHANGE_URL, SUDOWOODO_EXCHANGE_TOKEN } = process.env;
+      const { ELECTRON_GITHUB_TOKEN, SUDOWOODO_EXCHANGE_URL } = process.env;
       if (ELECTRON_GITHUB_TOKEN) {
         return ELECTRON_GITHUB_TOKEN;
       }
 
-      if (SUDOWOODO_EXCHANGE_URL && SUDOWOODO_EXCHANGE_TOKEN) {
+      if (SUDOWOODO_EXCHANGE_URL) {
+        const idToken = await getActionsIdToken();
         const resp = await got.post(SUDOWOODO_EXCHANGE_URL + '?repo=' + repo, {
           headers: {
-            Authorization: SUDOWOODO_EXCHANGE_TOKEN
+            Authorization: 'Bearer ' + idToken
           },
           throwHttpErrors: false
         });
