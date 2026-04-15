@@ -35,7 +35,7 @@ index a0f78583334fdf4912b897e88d8ce518773dbfb1..300c5a3b806222e46388d2f0d906737c
          execution_context->GetScheduler()
              ->ToFrameScheduler()
 diff --git a/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc b/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
-index 936f5ebe28caa993ed5de0f7de3613fa338e263f..961ac8091aa82128e1cfb8800a7efcb80d100a05 100644
+index 909b796c5ccf8ccd30982ec482e6ec404deaa193..d27ffcda5739ed684751e90998c396ebbe498665 100644
 --- a/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
 +++ b/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
 @@ -13,10 +13,12 @@
@@ -51,7 +51,7 @@ index 936f5ebe28caa993ed5de0f7de3613fa338e263f..961ac8091aa82128e1cfb8800a7efcb8
  #include "third_party/blink/renderer/core/inspector/thread_debugger_common_impl.h"
  #include "third_party/blink/renderer/core/loader/worker_fetch_context.h"
  #include "third_party/blink/renderer/core/origin_trials/origin_trial_context.h"
-@@ -135,6 +137,14 @@ void ThreadedWorkletMessagingProxy::Initialize(
+@@ -134,6 +136,14 @@ void ThreadedWorkletMessagingProxy::Initialize(
    DCHECK(csp);
  
    LocalFrameClient* frame_client = window->GetFrame()->Client();
@@ -66,8 +66,8 @@ index 936f5ebe28caa993ed5de0f7de3613fa338e263f..961ac8091aa82128e1cfb8800a7efcb8
    auto global_scope_creation_params =
        std::make_unique<GlobalScopeCreationParams>(
            window->Url(), mojom::blink::ScriptType::kModule, global_scope_name,
-@@ -147,8 +157,7 @@ void ThreadedWorkletMessagingProxy::Initialize(
-           window->GetHttpsState(), worker_clients,
+@@ -145,8 +155,7 @@ void ThreadedWorkletMessagingProxy::Initialize(
+           window->IsSecureContext(), window->GetHttpsState(), worker_clients,
            frame_client->CreateWorkerContentSettingsClient(),
            OriginTrialContext::GetInheritedTrialFeatures(window).get(),
 -          base::UnguessableToken::Create(),
@@ -114,10 +114,10 @@ index 45c60dd2c44b05fdd279f759069383479823c7f2..33a2a0337efb9a46293e11d0d09b3fc1
    GenericFontFamilySettings generic_font_family_settings_;
  };
 diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.cc b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
-index b5300dea97f20d72a807543a6da0baf61d21955f..a7030c1ba6851b26c765c7b05cd26e1453866719 100644
+index 33c8264eb736baa80bd220d6bdb3c034a0dcc716..d5ab8c2a2e6dd5fcb46239e278232ea561e3a084 100644
 --- a/third_party/blink/renderer/core/workers/worklet_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
-@@ -32,6 +32,7 @@
+@@ -31,6 +31,7 @@
  #include "third_party/blink/renderer/core/script/modulator.h"
  #include "third_party/blink/renderer/core/workers/global_scope_creation_params.h"
  #include "third_party/blink/renderer/core/workers/worker_reporting_proxy.h"
@@ -125,9 +125,9 @@ index b5300dea97f20d72a807543a6da0baf61d21955f..a7030c1ba6851b26c765c7b05cd26e14
  #include "third_party/blink/renderer/core/workers/worker_thread.h"
  #include "third_party/blink/renderer/core/workers/worklet_module_responses_map.h"
  #include "third_party/blink/renderer/core/workers/worklet_module_tree_client.h"
-@@ -110,6 +111,10 @@ WorkletGlobalScope::WorkletGlobalScope(
+@@ -109,6 +110,10 @@ WorkletGlobalScope::WorkletGlobalScope(
        parent_cross_origin_isolated_capability_(
-           creation_params->cross_origin_isolated_capability),
+           creation_params->parent_cross_origin_isolated_capability),
        parent_is_isolated_context_(creation_params->parent_is_isolated_context),
 +      node_integration_in_worker_(
 +          creation_params->worker_settings
@@ -137,10 +137,10 @@ index b5300dea97f20d72a807543a6da0baf61d21955f..a7030c1ba6851b26c765c7b05cd26e14
    DCHECK((thread_type_ == ThreadType::kMainThread && frame_) ||
           (thread_type_ == ThreadType::kOffMainThread && worker_thread_));
 diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.h b/third_party/blink/renderer/core/workers/worklet_global_scope.h
-index c7dd62900f0de48ab992a7c99058f5b6d98212cf..47ceea11ec9db6b67cef6945d165f46c868f4ca5 100644
+index de5cda8614fbd79d3cc3fc8cdff9d61326463a17..25c55785961e426845e5a27eaddd05952ced2c9c 100644
 --- a/third_party/blink/renderer/core/workers/worklet_global_scope.h
 +++ b/third_party/blink/renderer/core/workers/worklet_global_scope.h
-@@ -140,6 +140,13 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+@@ -146,6 +146,13 @@ class CORE_EXPORT WorkletGlobalScope
    // Returns the WorkletToken that uniquely identifies this worklet.
    virtual WorkletToken GetWorkletToken() const = 0;
  
@@ -154,7 +154,7 @@ index c7dd62900f0de48ab992a7c99058f5b6d98212cf..47ceea11ec9db6b67cef6945d165f46c
    // Returns the ExecutionContextToken that uniquely identifies the parent
    // context that created this worklet. Note that this will always be a
    // LocalFrameToken.
-@@ -207,6 +214,11 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+@@ -213,6 +220,11 @@ class CORE_EXPORT WorkletGlobalScope
    // TODO(crbug.com/1206150): We need a spec for this capability.
    const bool parent_is_isolated_context_;
  
