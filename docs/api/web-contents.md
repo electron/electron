@@ -1585,6 +1585,20 @@ Centers the current text selection in web page.
 
 Copy the image at the given position to the clipboard.
 
+#### `contents.saveImageAt(x, y)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51056
+```
+-->
+
+* `x` Integer
+* `y` Integer
+
+Shows a save dialog and saves the image at the given position to disk.
+
 #### `contents.copyVideoFrameAt(x, y)`
 
 * `x` Integer
