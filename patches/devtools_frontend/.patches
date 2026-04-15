@@ -1,2 +1,3 @@
 chore_expose_ui_to_allow_electron_to_set_dock_side.patch
 feat_allow_enabling_extension_panels_on_custom_protocols.patch
+fix_context_selector_not_showing_execution_contexts.patch
