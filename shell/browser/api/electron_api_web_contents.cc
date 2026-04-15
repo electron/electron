@@ -464,6 +464,8 @@ constexpr char kFooterTemplate[] = "footerTemplate";
 constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
 constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
 constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
+constexpr char kDpiHorizontal[] = "horizontal";
+constexpr char kDpiVertical[] = "vertical";
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 constexpr std::string_view CursorTypeToString(
@@ -3400,12 +3402,12 @@ void WebContents::Print(gin::Arguments* const args) {
     // Keep backward compatibility with internal key names as a fallback.
     settings.Set(printing::kSettingDpiHorizontal,
                  dpi.ValueOrDefault(
-                     "horizontal",
+                     printing::kDpiHorizontal,
                      dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72)));
-    settings.Set(
-        printing::kSettingDpiVertical,
-        dpi.ValueOrDefault(
-            "vertical", dpi.ValueOrDefault(printing::kSettingDpiVertical, 72)));
+    settings.Set(printing::kSettingDpiVertical,
+                 dpi.ValueOrDefault(
+                     printing::kDpiVertical,
+                     dpi.ValueOrDefault(printing::kSettingDpiVertical, 72)));
   }
 
   print_task_runner_->PostTaskAndReplyWithResult(
