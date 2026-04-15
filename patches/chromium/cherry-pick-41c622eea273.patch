@@ -16,10 +16,10 @@ Commit-Queue: Wang, Wei4 <wei4.wang@intel.com>
 Cr-Commit-Position: refs/heads/main@{#1602966}
 
 diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tflite/graph_builder_tflite.cc
-index 5d7ec3e1aabf3014266c7a0b15198c49b2e93dc7..2754e597c7f6dd580369d348197d1ffa98722d6b 100644
+index 28aea1bf23601330e4dd60d4d124905800a0846c..d9cdbf3c71fad5c5da6e688c57d7ef4ef46da668 100644
 --- a/services/webnn/tflite/graph_builder_tflite.cc
 +++ b/services/webnn/tflite/graph_builder_tflite.cc
-@@ -6765,6 +6765,68 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
+@@ -6548,6 +6548,68 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
      return base::unexpected("Pool2d in tflite doesn't support dilations.");
    }
  
@@ -88,19 +88,13 @@ index 5d7ec3e1aabf3014266c7a0b15198c49b2e93dc7..2754e597c7f6dd580369d348197d1ffa
    ::tflite::BuiltinOperator operator_code;
    std::optional<TensorInfo> quantized_output;
    const mojom::Operand& input_operand = GetOperand(pool2d.input_operand_id);
-@@ -6792,15 +6854,8 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
- 
-   const auto& input_shape = input_operand.descriptor.shape();
+@@ -6573,9 +6635,6 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
    CHECK_EQ(input_shape.size(), 4u);
--  const mojom::Operand& output_operand = GetOperand(pool2d.output_operand_id);
--  const auto& output_shape = output_operand.descriptor.shape();
    const webnn::Size2d<uint32_t> input_size2d = {.height = input_shape[1],
                                                  .width = input_shape[2]};
--  const webnn::Size2d<uint32_t> output_size2d = {.height = output_shape[1],
--                                                 .width = output_shape[2]};
 -  webnn::Size2d<uint32_t> filter_size2d = {
 -      .height = pool2d.window_dimensions->height,
 -      .width = pool2d.window_dimensions->width};
-   ASSIGN_OR_RETURN(TfLitePadding padding_mode,
-                    GetPool2dTfLitePaddingMode(
-                        *pool2d.padding, input_size2d, filter_size2d,
+   ASSIGN_OR_RETURN(
+       TfLitePadding padding_mode,
+       GetTfLitePaddingMode(*pool2d.padding, input_size2d, filter_size2d,
