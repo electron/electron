@@ -24,6 +24,33 @@ describe('setDisplayMediaRequestHandler', () => {
     server.close();
   });
 
+  const captureWithTabSourceId = async (requestingWindow: BrowserWindow, chromeMediaSourceId: string) => {
+    return requestingWindow.webContents.executeJavaScript(`
+      navigator.mediaDevices.getUserMedia({
+        video: {
+          mandatory: {
+            chromeMediaSource: 'tab',
+            chromeMediaSourceId: ${JSON.stringify(chromeMediaSourceId)},
+          },
+        },
+      }).then((stream) => {
+        const result = {
+          ok: stream instanceof MediaStream,
+          href: location.href,
+          origin: location.origin,
+          videoTrackCount: stream.getVideoTracks().length,
+        };
+        stream.getTracks().forEach((track) => track.stop());
+        return result;
+      }, (error) => ({
+        ok: false,
+        href: location.href,
+        message: error.message,
+        origin: location.origin,
+      }))
+    `);
+  };
+
   ifit(process.platform !== 'darwin')('works when calling getDisplayMedia', async function () {
     if ((await desktopCapturer.getSources({ types: ['screen'] })).length === 0) {
       return this.skip();
@@ -415,6 +442,37 @@ describe('setDisplayMediaRequestHandler', () => {
     `);
     expect(ok).to.be.false();
     expect(message).to.equal('Invalid state');
+  });
+
+  it('works when mediaDevices.getUserMedia uses a tab source id from webContents.getMediaSourceId', async () => {
+    const sourceWindow = new BrowserWindow({ show: false });
+    const requestingWindow = new BrowserWindow({ show: false });
+    await Promise.all([sourceWindow.loadURL(serverUrl), requestingWindow.loadURL(serverUrl)]);
+
+    const sourceId = sourceWindow.webContents.getMediaSourceId(requestingWindow.webContents);
+    const { ok, message, origin, videoTrackCount } = await captureWithTabSourceId(requestingWindow, sourceId);
+
+    expect(ok).to.be.true(message);
+    expect(origin).to.equal(new URL(serverUrl).origin);
+    expect(videoTrackCount).to.equal(1);
+  });
+
+  it('rejects a tab source id when used from a different requesting webContents', async () => {
+    const sourceWindow = new BrowserWindow({ show: false });
+    const registeredRequesterWindow = new BrowserWindow({ show: false });
+    const otherRequesterWindow = new BrowserWindow({ show: false });
+    await Promise.all([
+      sourceWindow.loadURL(serverUrl),
+      registeredRequesterWindow.loadURL(serverUrl),
+      otherRequesterWindow.loadURL(serverUrl)
+    ]);
+
+    const sourceId = sourceWindow.webContents.getMediaSourceId(registeredRequesterWindow.webContents);
+    const { ok, message, origin } = await captureWithTabSourceId(otherRequesterWindow, sourceId);
+
+    expect(ok).to.be.false();
+    expect(message).to.match(/Invalid state|Error starting tab capture/);
+    expect(origin).to.equal(new URL(serverUrl).origin);
   });
 
   it('can remove a displayMediaRequestHandler', async () => {
