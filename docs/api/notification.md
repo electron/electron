@@ -82,7 +82,7 @@ Returns `Promise<Notification[]>` - Resolves with an array of `Notification` obj
 
 Each returned `Notification` is a live object connected to the corresponding delivered notification. Interaction events (`click`, `reply`, `action`, `close`) will fire on these objects when the user interacts with the notification in Notification Center. This is useful after an app restart to re-attach event handlers to notifications from a previous session.
 
-The returned notifications have their `id`, `groupId`, `title`, `subtitle`, and `body` properties populated from what macOS provides. Other properties (e.g., `actions`, `silent`, `icon`) are not available from delivered notifications and will have default values.
+The returned notifications have their `id`, `groupId`, `title`, `subtitle`, and `body` properties populated from information available in the Notification Center. Other properties (e.g., `actions`, `silent`, `icon`) are not available from delivered notifications and will have default values.
 
 > [!NOTE]
 > Like all macOS notification APIs, this method requires the application to be
