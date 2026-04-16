@@ -12,6 +12,7 @@ import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
+import { captureWithTabSourceId } from './lib/media-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
 import { cleanupWebContents, closeAllWindows } from './lib/window-helpers';
 
@@ -1797,9 +1798,33 @@ describe('webContents module', () => {
 
   describe('getMediaSourceId()', () => {
     afterEach(closeAllWindows);
-    it('returns a valid stream id', () => {
-      const w = new BrowserWindow({ show: false });
-      expect(w.webContents.getMediaSourceId(w.webContents)).to.be.a('string').that.is.not.empty();
+    let server: http.Server;
+    let serverUrl: string;
+
+    before(async () => {
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end('');
+      });
+      serverUrl = (await listen(server)).url;
+    });
+
+    after(() => {
+      server.close();
+    });
+
+    it('returns a stream id that can be used by the registered requester', async () => {
+      const sourceWindow = new BrowserWindow({ show: false });
+      const requesterWindow = new BrowserWindow({ show: false });
+      await Promise.all([sourceWindow.loadURL(serverUrl), requesterWindow.loadURL(serverUrl)]);
+
+      const streamId = sourceWindow.webContents.getMediaSourceId(requesterWindow.webContents);
+      const { ok, message, origin, videoTrackCount } = await captureWithTabSourceId(requesterWindow, streamId);
+
+      expect(streamId).to.be.a('string').that.is.not.empty();
+      expect(ok, message).to.equal(true);
+      expect(origin).to.equal(new url.URL(serverUrl).origin);
+      expect(videoTrackCount).to.equal(1);
     });
   });
 

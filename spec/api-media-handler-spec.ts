@@ -4,6 +4,7 @@ import { expect } from 'chai';
 
 import * as http from 'node:http';
 
+import { captureWithTabSourceId } from './lib/media-helpers';
 import { ifit, listen } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
@@ -415,6 +416,37 @@ describe('setDisplayMediaRequestHandler', () => {
     `);
     expect(ok).to.be.false();
     expect(message).to.equal('Invalid state');
+  });
+
+  it('works when mediaDevices.getUserMedia uses a tab source id from webContents.getMediaSourceId', async () => {
+    const sourceWindow = new BrowserWindow({ show: false });
+    const requestingWindow = new BrowserWindow({ show: false });
+    await Promise.all([sourceWindow.loadURL(serverUrl), requestingWindow.loadURL(serverUrl)]);
+
+    const sourceId = sourceWindow.webContents.getMediaSourceId(requestingWindow.webContents);
+    const { ok, message, origin, videoTrackCount } = await captureWithTabSourceId(requestingWindow, sourceId);
+
+    expect(ok).to.be.true(message);
+    expect(origin).to.equal(new URL(serverUrl).origin);
+    expect(videoTrackCount).to.equal(1);
+  });
+
+  it('rejects a tab source id when used from a different requesting webContents', async () => {
+    const sourceWindow = new BrowserWindow({ show: false });
+    const registeredRequesterWindow = new BrowserWindow({ show: false });
+    const otherRequesterWindow = new BrowserWindow({ show: false });
+    await Promise.all([
+      sourceWindow.loadURL(serverUrl),
+      registeredRequesterWindow.loadURL(serverUrl),
+      otherRequesterWindow.loadURL(serverUrl)
+    ]);
+
+    const sourceId = sourceWindow.webContents.getMediaSourceId(registeredRequesterWindow.webContents);
+    const { ok, message, origin } = await captureWithTabSourceId(otherRequesterWindow, sourceId);
+
+    expect(ok).to.be.false();
+    expect(message).to.match(/Invalid state|Error starting tab capture/);
+    expect(origin).to.equal(new URL(serverUrl).origin);
   });
 
   it('can remove a displayMediaRequestHandler', async () => {
