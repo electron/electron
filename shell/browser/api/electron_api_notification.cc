@@ -389,10 +389,13 @@ v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
 
   presenter->GetDeliveredNotifications(base::BindOnce(
       [](gin_helper::Promise<v8::Local<v8::Value>> promise,
-         electron::NotificationPresenter* presenter,
          std::vector<electron::NotificationInfo> notifications) {
         v8::Isolate* isolate = promise.isolate();
         v8::HandleScope handle_scope(isolate);
+
+        auto* presenter =
+            static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+                ->GetNotificationPresenter();
 
         v8::Local<v8::Array> result =
             v8::Array::New(isolate, notifications.size());
@@ -424,7 +427,7 @@ v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
 
         promise.Resolve(result.As<v8::Value>());
       },
-      std::move(promise), presenter));
+      std::move(promise)));
 
   return handle;
 }
