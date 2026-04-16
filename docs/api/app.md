@@ -882,6 +882,13 @@ Returns `string` - Name of the application handling the protocol, or an empty
 This method returns the application name of the default handler for the protocol
 (aka URI scheme) of a URL.
 
+> [!NOTE]
+> On Linux this method resolves the handler by spawning `xdg-mime query
+> default` and waiting for it to exit, which is significantly slower than
+> the system APIs used on macOS (`LSCopyDefaultApplicationURLForURL`) and
+> Windows (`AssocQueryString`). Callers that invoke this method on a hot
+> path should cache the result.
+
 ### `app.getApplicationInfoForProtocol(url)` _macOS_ _Windows_
 
 * `url` string - a URL with the protocol name to check. Unlike the other
