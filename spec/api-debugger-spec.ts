@@ -204,9 +204,11 @@ describe('debugger module', () => {
 
       const onMessage = (_event: Electron.Event, method: string, params: any) => {
         if (method === 'Fetch.requestPaused') {
-          continueRequests.push(w.webContents.debugger.sendCommand('Fetch.continueRequest', {
-            requestId: params.requestId
-          }));
+          continueRequests.push(
+            w.webContents.debugger.sendCommand('Fetch.continueRequest', {
+              requestId: params.requestId
+            })
+          );
         }
       };
 
