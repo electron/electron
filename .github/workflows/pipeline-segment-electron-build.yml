@@ -189,6 +189,22 @@ jobs:
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
+    - name: Download custom siso binary (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: siso-windows-amd64
+        path: ${{ runner.temp }}/siso
+    - name: Set SISO_PATH (Windows)
+      if: ${{ inputs.target-platform == 'win' }}
+      run: |
+        SISO_BIN="${RUNNER_TEMP}/siso/siso.exe"
+        if [ ! -f "$SISO_BIN" ]; then
+          echo "error: expected siso binary at $SISO_BIN" >&2
+          exit 1
+        fi
+        echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"
+        echo "Using custom siso binary at $SISO_BIN"
     - name: Build Electron
       if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' || inputs.target-variant == 'darwin') }}
       uses: ./src/electron/.github/actions/build-electron
