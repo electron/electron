@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron/main';
+import { BrowserWindow, type WebContents } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -88,6 +88,57 @@ describe('debugger module', () => {
       expect(res.result.value).to.equal(6);
 
       w.webContents.debugger.detach();
+    });
+
+    it('reloads webview guests without reloading the embedder window', async () => {
+      w.destroy();
+      w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        webPreferences: {
+          webviewTag: true
+        }
+      });
+
+      let requestCount = 0;
+      server = http.createServer((_req, res) => {
+        requestCount += 1;
+        res.setHeader('Content-Type', 'text/html');
+        res.end(`<html><body>${requestCount}</body></html>`);
+      });
+      const { url } = await listen(server);
+      const attached = once(w.webContents, 'did-attach-webview') as Promise<
+        [Electron.Event, WebContents]
+      >;
+      const hostUrl = `data:text/html,${encodeURIComponent(
+        `<webview src="${url}"></webview>`
+      )}`;
+      await w.loadURL(hostUrl);
+      const [, guest] = await attached;
+      if (guest.isLoading()) {
+        await once(guest, 'did-finish-load');
+      }
+
+      const hostMainFrameNavigations: string[] = [];
+      w.webContents.on(
+        'did-start-navigation',
+        (_event, navigationUrl, _isInPlace, isMainFrame) => {
+          if (isMainFrame) {
+            hostMainFrameNavigations.push(navigationUrl);
+          }
+        }
+      );
+
+      guest.debugger.attach();
+      const guestReloaded = once(guest, 'did-finish-load');
+      const result = await guest.debugger.sendCommand('Page.reload');
+      await guestReloaded;
+      guest.debugger.detach();
+
+      expect(result).to.deep.equal({});
+      expect(requestCount).to.equal(2);
+      expect(hostMainFrameNavigations).to.deep.equal([]);
     });
 
     it('returns response when devtools is opened', async () => {

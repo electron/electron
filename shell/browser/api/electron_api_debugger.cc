@@ -12,6 +12,7 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "content/public/browser/devtools_agent_host.h"
+#include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/web_contents.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
@@ -153,6 +154,18 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   std::string session_id;
   if (args->GetNext(&session_id) && session_id.empty()) {
     promise.RejectWithErrorMessage("Empty session id is not allowed");
+    return handle;
+  }
+
+  if (method == "Page.reload" && session_id.empty()) {
+    // Match DevTools frontend reload handling instead of dispatching raw CDP.
+    const bool ignore_cache =
+        command_params.FindBool("ignoreCache").value_or(false);
+    web_contents_->GetController().Reload(
+        ignore_cache ? content::ReloadType::BYPASSING_CACHE
+                     : content::ReloadType::NORMAL,
+        /* check_for_repost */ true);
+    promise.Resolve(base::DictValue());
     return handle;
   }
 
