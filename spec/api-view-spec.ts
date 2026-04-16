@@ -152,4 +152,24 @@ describe('View', () => {
       }, 350);
     });
   });
+
+  describe('view.setBackgroundBlur', () => {
+    it('can be set to various values', () => {
+      w = new BaseWindow({ show: false });
+      const v = new View();
+      w.setContentView(v);
+      v.setBackgroundBlur(0);
+      v.setBackgroundBlur(10);
+      v.setBackgroundBlur(-10);
+      v.setBackgroundBlur(100);
+      v.setBackgroundBlur(-100);
+    });
+
+    it('does not throw when set before being added to a window', () => {
+      const v = new View();
+      expect(() => {
+        v.setBackgroundBlur(10);
+      }).to.not.throw();
+    });
+  });
 });

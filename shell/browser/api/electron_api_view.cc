@@ -518,6 +518,12 @@ void View::ApplyBorderRadius() {
 }
 
 void View::SetBackgroundBlur(int blur_radius) {
+  if (!view_)
+    return;
+
+  if (blur_radius < 0)
+    blur_radius = 0;
+
   ui::Layer* layer = GetLayer();
 
   if (!layer)
