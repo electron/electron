@@ -11,7 +11,7 @@ were not rendered while still taking space in the dropdown.
 Pending CL: https://chromium-review.googlesource.com/c/devtools/devtools-frontend/+/7761316
 
 diff --git a/front_end/panels/console/ConsoleContextSelector.ts b/front_end/panels/console/ConsoleContextSelector.ts
-index f933dbd6dbdfadd2ea8b78e473d9506350825037..09f590fff0263875b1727bdf7e8dd57a17603ee3 100644
+index f933dbd6dbdfadd2ea8b78e473d9506350825037..d8aa3f9811f1857a9b30231ed8ff59e709e3383c 100644
 --- a/front_end/panels/console/ConsoleContextSelector.ts
 +++ b/front_end/panels/console/ConsoleContextSelector.ts
 @@ -303,7 +303,7 @@ interface ViewInput {
@@ -19,7 +19,7 @@ index f933dbd6dbdfadd2ea8b78e473d9506350825037..09f590fff0263875b1727bdf7e8dd57a
  
  const DEFAULT_VIEW: View = (input, _output, target): void => {
 -  if (!input.title || !input.subtitle) {
-+  if (!input.title && !input.subtitle) {
++  if (!input.title) {
      render(nothing, target);
      return;
    }
