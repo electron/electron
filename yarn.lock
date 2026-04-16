@@ -650,11 +650,11 @@ __metadata:
 
 "@electron-ci/virtual-display@file:./fixtures/native-addon/virtual-display/::locator=electron-test-main%40workspace%3Aspec":
   version: 1.0.0
-  resolution: "@electron-ci/virtual-display@file:./fixtures/native-addon/virtual-display/#./fixtures/native-addon/virtual-display/::hash=f58379&locator=electron-test-main%40workspace%3Aspec"
+  resolution: "@electron-ci/virtual-display@file:./fixtures/native-addon/virtual-display/#./fixtures/native-addon/virtual-display/::hash=bd2fbd&locator=electron-test-main%40workspace%3Aspec"
   dependencies:
     bindings: "npm:^1.5.0"
     node-addon-api: "npm:^8.3.0"
-  checksum: 10c0/63fcfa5aafb26e8ef725039d73932618cfdfa9e47861cb021c3eb43b2ae06b49209bc1483a19ef6bbd96a4ed857278998d0a08fd86981a84572256fc44e71a9f
+  checksum: 10c0/483e7a355d1d6f4883a4e891ba55736a1e384abf524fb625a00a1242ee401daf58366e416d952f16a6b8ccaf9cdfa4a3f39c027c1a6d55e979ecfdcae87257cc
   languageName: node
   linkType: hard
 
