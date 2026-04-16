@@ -1109,7 +1109,9 @@ void WebContents::DeleteThisIfAlive() {
 void WebContents::Destroy() {
   // The content::WebContents should be destroyed asynchronously when possible
   // as user may choose to destroy WebContents during an event of it.
-  if (Browser::Get()->is_shutting_down() || is_guest()) {
+  if (Browser::Get()->is_shutting_down()) {
+    DeleteThisIfAlive();
+  } else if (is_guest() && is_safe_to_delete_ && !is_emitting_event_) {
     DeleteThisIfAlive();
   } else {
     content::GetUIThreadTaskRunner({})->PostTask(
@@ -1367,17 +1369,21 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
+  base::AutoReset<bool> resetter(&is_emitting_event_, true);
   if (!Emit("content-bounds-updated", rect))
     observers_.Notify(&ExtendedWebContentsObserver::OnSetContentBounds, rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
-  Emit("close");
+  {
+    base::AutoReset<bool> resetter(&is_emitting_event_, true);
+    Emit("close");
 
-  auto* autofill_driver_factory =
-      AutofillDriverFactory::FromWebContents(web_contents());
-  if (autofill_driver_factory) {
-    autofill_driver_factory->CloseAllPopups();
+    auto* autofill_driver_factory =
+        AutofillDriverFactory::FromWebContents(web_contents());
+    if (autofill_driver_factory) {
+      autofill_driver_factory->CloseAllPopups();
+    }
   }
 
   Destroy();
@@ -1869,6 +1875,7 @@ void WebContents::FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
+  base::AutoReset<bool> resetter(&is_emitting_event_, true);
   const auto id = render_view_host->GetProcess()->GetID().GetUnsafeValue();
   // This event is necessary for tracking any states with respect to
   // intermediate render view hosts aka speculative render view hosts. Currently
@@ -2108,6 +2115,9 @@ void WebContents::DidFinishNavigation(
 
   if (!navigation_handle->HasCommitted())
     return;
+
+  base::AutoReset<bool> resetter(&is_emitting_event_, true);
+
   bool is_main_frame = navigation_handle->IsInMainFrame();
   content::RenderFrameHost* frame_host =
       navigation_handle->GetRenderFrameHost();
@@ -2117,9 +2127,6 @@ void WebContents::DidFinishNavigation(
     frame_routing_id = frame_host->GetRoutingID();
   }
   if (!navigation_handle->IsErrorPage()) {
-    // FIXME: All the Emit() calls below could potentially result in |this|
-    // being destroyed (by JS listening for the event and calling
-    // webContents.destroy()).
     auto url = navigation_handle->GetURL();
     bool is_same_document = navigation_handle->IsSameDocument();
     if (is_same_document) {
