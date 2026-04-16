@@ -44,4 +44,10 @@ void NotificationPresenter::CloseNotificationWithId(
   }
 }
 
+void NotificationPresenter::GetDeliveredNotifications(
+    GetDeliveredNotificationsCallback callback) {
+  // Default: return empty list. Overridden on macOS.
+  std::move(callback).Run({});
+}
+
 }  // namespace electron
