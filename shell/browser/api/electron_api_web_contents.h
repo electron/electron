@@ -871,8 +871,14 @@ class WebContents final : public ExclusiveAccessContext,
   const scoped_refptr<base::TaskRunner> print_task_runner_;
 #endif
 
-  // Track navigation state in order to avoid potential re-entrancy crashes.
+  // Track navigation state in order to avoid potential re-entrancy crashes
+  // in LoadURL. Checked by LoadURL to reject re-entrant navigation attempts.
   bool is_safe_to_delete_ = true;
+
+  // Set to true while dispatching JS events via Emit(). When true, Destroy()
+  // defers guest WebContents deletion to prevent use-after-free when a JS
+  // handler calls webContents.destroy() mid-emission.
+  bool is_emitting_event_ = false;
 
   // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
