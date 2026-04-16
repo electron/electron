@@ -102,12 +102,21 @@ Notification::Notification(gin::Arguments* args) {
 
 Notification::Notification(const NotificationInfo& info)
     : id_(info.id),
-      group_id_(info.group_id),
+      raw_group_id_(info.group_id),
       title_(base::UTF8ToUTF16(info.title)),
       subtitle_(base::UTF8ToUTF16(info.subtitle)),
       body_(base::UTF8ToUTF16(info.body)),
       is_restored_(true),
-      presenter_(nullptr) {}
+      presenter_(nullptr) {
+#if BUILDFLAG(IS_WIN)
+  // Filter out the Windows default group ("Notifications") from the
+  // JS-visible groupId — it's an internal implementation detail.
+  if (raw_group_id_ != "Notifications")
+    group_id_ = raw_group_id_;
+#else
+  group_id_ = raw_group_id_;
+#endif
+}
 
 Notification::~Notification() {
   if (notification_) {
@@ -441,8 +450,8 @@ v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
           // by a WeakPtr (API -> platform) and a raw delegate pointer
           // (platform -> API, cleared in ~Notification).
           auto* notif = new Notification(info);
-          notif->notification_ =
-              presenter->CreateNotification(notif, notif->id_);
+          notif->notification_ = presenter->CreateNotification(
+              notif, notif->id_, notif->raw_group_id_);
           if (notif->notification_)
             notif->notification_->Restore();
 

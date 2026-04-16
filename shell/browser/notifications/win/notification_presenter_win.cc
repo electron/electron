@@ -88,6 +88,11 @@ std::wstring NotificationPresenterWin::SaveIconToFilesystem(
   return path.value();
 }
 
+void NotificationPresenterWin::GetDeliveredNotifications(
+    GetDeliveredNotificationsCallback callback) {
+  std::move(callback).Run(WindowsToastNotification::GetNotificationHistory());
+}
+
 Notification* NotificationPresenterWin::CreateNotificationObject(
     NotificationDelegate* delegate) {
   return new WindowsToastNotification(delegate, this);

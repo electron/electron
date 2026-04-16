@@ -124,6 +124,7 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
  private:
   std::string id_;
   std::string group_id_;
+  std::string raw_group_id_;
   std::u16string group_title_;
   std::u16string title_;
   std::u16string subtitle_;
