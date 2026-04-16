@@ -32,6 +32,7 @@
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/common/constants.h"  // nogncheck
+#include "components/pdf/common/pdf_util.h"   // nogncheck
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
@@ -215,6 +216,15 @@ void ElectronContentClient::AddContentDecryptionModules(
     }
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
   }
+}
+
+bool ElectronContentClient::IsFilePickerAllowedForCrossOriginSubframe(
+    const url::Origin& origin) {
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+  return IsPdfExtensionOrigin(origin);
+#else
+  return false;
+#endif
 }
 
 }  // namespace electron
