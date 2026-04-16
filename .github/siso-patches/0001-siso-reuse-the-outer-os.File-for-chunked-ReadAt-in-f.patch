@@ -1,0 +1,47 @@
+From 85b561ea4dbc76ba98af020b970f3aa6b20fdb9e Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sam@electronjs.org>
+Date: Wed, 8 Apr 2026 23:24:15 -0700
+Subject: [PATCH] siso: reuse the outer *os.File for chunked ReadAt in
+ fileParser.readFile
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The per-chunk goroutine currently re-opens fname to get its own handle
+for ReadAt. (*os.File).ReadAt is documented as safe for concurrent
+calls on the same File (on Windows it is ReadFile with an OVERLAPPED
+offset, so there is no shared seek state), so the extra open is
+redundant — the goroutines can share the outer f.
+
+Besides halving the CreateFileW calls per subninja, this avoids an
+intermittent 'The parameter is incorrect.' (ERROR_INVALID_PARAMETER)
+from bindflt.sys when out/ is a mapped directory inside a Windows
+container: bindflt's handle-relative NtCreateFile path races when a
+second relative open arrives while the first handle to the same target
+is still being set up. Absolute paths and single opens do not trigger
+it; see microsoft/Windows-Containers#<tbd>.
+---
+ siso/toolsupport/ninjautil/file_parser.go | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/siso/toolsupport/ninjautil/file_parser.go b/siso/toolsupport/ninjautil/file_parser.go
+index 8c18d084..63116662 100644
+--- a/siso/toolsupport/ninjautil/file_parser.go
++++ b/siso/toolsupport/ninjautil/file_parser.go
+@@ -111,13 +111,6 @@ func (p *fileParser) readFile(ctx context.Context, fname string) ([]byte, error)
+ 		eg.Go(func() error {
+ 			p.sema <- struct{}{}
+ 			defer func() { <-p.sema }()
+-			f, err := os.Open(fname)
+-			if err != nil {
+-				return err
+-			}
+-			defer func() {
+-				_ = f.Close()
+-			}()
+ 			for len(chunkBuf) > 0 {
+ 				n, err := f.ReadAt(chunkBuf, pos)
+ 				if err != nil {
+-- 
+2.53.0
+
