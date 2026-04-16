@@ -75,6 +75,28 @@ index b925434940baeeb6b06882242ca947736866d175..d067b47e7e30a95740fe0275c7044570
    if (!receiver_val->IsObject()) {
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
+diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
+index 91b80b4fb44c26e95503556064e7429b8cbf4639..1a468abbf42161ffdebe2176bd2c7a8c9e119532 100644
+--- a/src/node_sqlite.cc
++++ b/src/node_sqlite.cc
+@@ -729,7 +729,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
+   }
+ 
+   DatabaseSyncLimits* limits;
+-  ASSIGN_OR_RETURN_UNWRAP(&limits, info.This(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&limits, info.HolderV2(), Intercepted::kNo);
+ 
+   Environment* env = limits->env();
+   Isolate* isolate = env->isolate();
+@@ -761,7 +761,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
+   }
+ 
+   DatabaseSyncLimits* limits;
+-  ASSIGN_OR_RETURN_UNWRAP(&limits, info.This(), Intercepted::kNo);
++  ASSIGN_OR_RETURN_UNWRAP(&limits, info.HolderV2(), Intercepted::kNo);
+ 
+   Environment* env = limits->env();
+   Isolate* isolate = env->isolate();
 diff --git a/src/node_util.cc b/src/node_util.cc
 index af42a3bd72c3f4aa6aff4a95231f3f3da5008176..e9f4c1cdb60c03dce210f49e18dda57a4934a8b5 100644
 --- a/src/node_util.cc
