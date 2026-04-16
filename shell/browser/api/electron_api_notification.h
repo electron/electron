@@ -80,6 +80,11 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   explicit Notification(gin::Arguments* args);
   ~Notification() override;
 
+  // Private constructor for restored notifications (used by GetHistory).
+  // Does not set presenter_ or parse options — only populates fields from
+  // the delivered notification info.
+  explicit Notification(const NotificationInfo& info);
+
   void Show();
   void Close();
 

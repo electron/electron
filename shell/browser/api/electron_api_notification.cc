@@ -96,14 +96,30 @@ Notification::Notification(gin::Arguments* args) {
     opts.Get("toastXml", &toast_xml_);
   }
 
-    if (id_.empty())
-      id_ = base::Uuid::GenerateRandomV4().AsLowercaseString();
-  }
+  if (id_.empty())
+    id_ = base::Uuid::GenerateRandomV4().AsLowercaseString();
 }
 
+Notification::Notification(const NotificationInfo& info)
+    : id_(info.id),
+      group_id_(info.group_id),
+      title_(base::UTF8ToUTF16(info.title)),
+      subtitle_(base::UTF8ToUTF16(info.subtitle)),
+      body_(base::UTF8ToUTF16(info.body)),
+      is_restored_(true),
+      presenter_(nullptr) {}
+
 Notification::~Notification() {
-  if (notification_)
+  if (notification_) {
     notification_->set_delegate(nullptr);
+    // For restored notifications, destroy the platform notification to remove
+    // it from the presenter's set. The platform-level is_restored_ flag ensures
+    // this won't remove the notification from Notification Center.
+    // For normal notifications, Close() is called before destruction which
+    // already cleans up, so notification_ will be null here.
+    if (is_restored_)
+      notification_->Destroy();
+  }
 }
 
 // static
@@ -270,6 +286,11 @@ void Notification::Close() {
 
 // Showing notifications
 void Notification::Show() {
+  // Restored notifications are read-only snapshots from Notification Center.
+  // Re-showing them would remove the original and create a duplicate.
+  if (is_restored_)
+    return;
+
   Close();
   if (presenter_) {
     notification_ = presenter_->CreateNotification(this, id_);
@@ -393,31 +414,37 @@ v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
         v8::Isolate* isolate = promise.isolate();
         v8::HandleScope handle_scope(isolate);
 
-        auto* presenter =
-            static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
-                ->GetNotificationPresenter();
+        // The browser client may have been torn down by the time this
+        // callback fires — null-check to avoid a use-after-free.
+        auto* browser_client = ElectronBrowserClient::Get();
+        if (!browser_client) {
+          promise.Resolve(v8::Array::New(isolate).As<v8::Value>());
+          return;
+        }
+
+        auto* presenter = static_cast<ElectronBrowserClient*>(browser_client)
+                              ->GetNotificationPresenter();
+        if (!presenter) {
+          promise.Resolve(v8::Array::New(isolate).As<v8::Value>());
+          return;
+        }
 
         v8::Local<v8::Array> result =
             v8::Array::New(isolate, notifications.size());
         for (size_t i = 0; i < notifications.size(); i++) {
           const auto& info = notifications[i];
 
-          // Create a live Notification object for each delivered notification.
-          auto* notif = new Notification(/*args=*/nullptr);
-          notif->id_ = info.id;
-          notif->group_id_ = info.group_id;
-          notif->title_ = base::UTF8ToUTF16(info.title);
-          notif->subtitle_ = base::UTF8ToUTF16(info.subtitle);
-          notif->body_ = base::UTF8ToUTF16(info.body);
-          notif->is_restored_ = true;
-
-          // Register with the presenter so click/reply events route here.
-          if (presenter) {
-            notif->notification_ =
-                presenter->CreateNotification(notif, notif->id_);
-            if (notif->notification_)
-              notif->notification_->Restore();
-          }
+          // Create a restored Notification object for each delivered
+          // notification. The API object is owned by V8 GC (via
+          // CreateHandle), while CreateNotification creates a separate
+          // platform notification owned by the presenter. They are connected
+          // by a WeakPtr (API -> platform) and a raw delegate pointer
+          // (platform -> API, cleared in ~Notification).
+          auto* notif = new Notification(info);
+          notif->notification_ =
+              presenter->CreateNotification(notif, notif->id_);
+          if (notif->notification_)
+            notif->notification_->Restore();
 
           auto handle = gin_helper::CreateHandle(isolate, notif);
           result
@@ -469,7 +496,6 @@ const char* Notification::GetTypeName() {
 void Notification::WillBeDestroyed() {
   ClearWeak();
 }
-
 }  // namespace electron::api
 
 namespace {
