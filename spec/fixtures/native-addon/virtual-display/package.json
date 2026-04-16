@@ -14,7 +14,6 @@
     "node-addon-api": "^8.3.0"
   },
   "devDependencies": {
-    "@types/jest": "^30.0.0",
     "node-gyp": "^11.1.0"
   }
 }

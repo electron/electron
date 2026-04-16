@@ -648,6 +648,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@electron-ci/virtual-display@file:./fixtures/native-addon/virtual-display/::locator=electron-test-main%40workspace%3Aspec":
+  version: 1.0.0
+  resolution: "@electron-ci/virtual-display@file:./fixtures/native-addon/virtual-display/#./fixtures/native-addon/virtual-display/::hash=bd2fbd&locator=electron-test-main%40workspace%3Aspec"
+  dependencies:
+    bindings: "npm:^1.5.0"
+    node-addon-api: "npm:^8.3.0"
+  checksum: 10c0/483e7a355d1d6f4883a4e891ba55736a1e384abf524fb625a00a1242ee401daf58366e416d952f16a6b8ccaf9cdfa4a3f39c027c1a6d55e979ecfdcae87257cc
+  languageName: node
+  linkType: hard
+
+"@electron-ci/virtual-display@workspace:spec/fixtures/native-addon/virtual-display":
+  version: 0.0.0-use.local
+  resolution: "@electron-ci/virtual-display@workspace:spec/fixtures/native-addon/virtual-display"
+  dependencies:
+    bindings: "npm:^1.5.0"
+    node-addon-api: "npm:^8.3.0"
+    node-gyp: "npm:^11.1.0"
+  languageName: unknown
+  linkType: soft
+
 "@electron/asar@npm:^3.2.13":
   version: 3.2.13
   resolution: "@electron/asar@npm:3.2.13"
@@ -3356,7 +3376,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bindings@npm:^1.2.1":
+"bindings@npm:^1.2.1, bindings@npm:^1.5.0":
   version: 1.5.0
   resolution: "bindings@npm:1.5.0"
   dependencies:
@@ -4750,6 +4770,7 @@ __metadata:
     "@electron-ci/is-valid-window": "npm:*"
     "@electron-ci/osr-gpu": "npm:*"
     "@electron-ci/uv-dlopen": "npm:*"
+    "@electron-ci/virtual-display": "file:./fixtures/native-addon/virtual-display/"
     "@electron/fuses": "npm:^1.8.0"
     "@electron/packager": "npm:^18.3.2"
     "@types/basic-auth": "npm:^1.1.8"
@@ -9636,12 +9657,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-addon-api@npm:*":
-  version: 8.5.0
-  resolution: "node-addon-api@npm:8.5.0"
+"node-addon-api@npm:*, node-addon-api@npm:^8.3.0":
+  version: 8.7.0
+  resolution: "node-addon-api@npm:8.7.0"
   dependencies:
     node-gyp: "npm:latest"
-  checksum: 10c0/e4de0b4e70998fed7ef41933946f60565fc3a17cb83b7d626a0c0bb1f734cf7852e0e596f12681e7c8ed424163ee3cdbb4f0abaa9cc269d03f48834c263ba162
+  checksum: 10c0/31a03b00f6b0753ab08360952fdf80a1abb619dcf8125fa1ab07e3a414da050963440c3a86c77a0334c0be7a71acb5e242dc468b79201ee6151c7b943afe946d
   languageName: node
   linkType: hard
 
@@ -9693,7 +9714,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-gyp@npm:^11.4.2, node-gyp@npm:latest":
+"node-gyp@npm:^11.1.0, node-gyp@npm:^11.4.2, node-gyp@npm:latest":
   version: 11.5.0
   resolution: "node-gyp@npm:11.5.0"
   dependencies:
