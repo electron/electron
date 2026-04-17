@@ -200,6 +200,15 @@ jobs:
         generate-sas-token: 'true'
         target-platform: win
 
+  # Build a patched siso binary for Windows CI in parallel with checkout-windows.
+  # The Windows build jobs download the resulting artifact and use it via SISO_PATH.
+  build-siso-windows:
+    needs: setup
+    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
+    permissions:
+      contents: read
+
   # GN Check Jobs
   macos-gn-check:
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
@@ -385,7 +394,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
-    needs: checkout-windows
+    needs: [checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -406,7 +415,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-windows
+    needs: [checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -425,7 +434,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-windows
+    needs: [checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -443,9 +452,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, windows-x64, windows-x86, windows-arm64]
-    if: always() && github.repository == 'electron/electron' && !contains(needs.*.result, 'failure')
+    needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, build-siso-windows, windows-x64, windows-x86, windows-arm64]
+    if: always() && github.repository == 'electron/electron'
     steps:
+    - name: Fail if any needed job failed or was cancelled
+      if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+      run: exit 1
     - name: GitHub Actions Jobs Done
       run: |
         echo "All GitHub Actions Jobs are done"
