@@ -80,7 +80,7 @@ index 94ee727830545ff1576685722c0fd0dd215131cf..ba70aca429e33c12215dfd67d3855245
    }
  
 diff --git a/components/remote_cocoa/common/native_widget_ns_window.mojom b/components/remote_cocoa/common/native_widget_ns_window.mojom
-index 2ab3386c5391f77da36158d67e894dcd84c273f4..faadcb76a9fd1947604eca83b384964fefe8c9c2 100644
+index a41254c1f31654c1326b4bf1f29237bdf44bbe5a..8ca5673a225b69b5630383ed9673653ba03a0e97 100644
 --- a/components/remote_cocoa/common/native_widget_ns_window.mojom
 +++ b/components/remote_cocoa/common/native_widget_ns_window.mojom
 @@ -98,6 +98,9 @@ struct NativeWidgetNSWindowInitParams {

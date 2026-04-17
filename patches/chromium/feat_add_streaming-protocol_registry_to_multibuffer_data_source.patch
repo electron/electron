@@ -17,7 +17,7 @@ which removed range-requests-supported on non-http protocols. See https://issues
 for more information.
 
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
-index 93232261d339e2398edc2dfd49373ffd995bb32f..3f337528faa9ff9681096b037fc0d20e4cc6fce9 100644
+index ea0a0599154eb9371ecfc8a764e54812b2b9616d..cf3f5bfaf0ce44fa9017dee234bae07863e84c1b 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.cc
 @@ -12,8 +12,10 @@
@@ -74,7 +74,7 @@ index 93232261d339e2398edc2dfd49373ffd995bb32f..3f337528faa9ff9681096b037fc0d20e
  
  void MultiBufferDataSource::SetReader(
 diff --git a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
-index 463973a9ede5bc6e2f0a78336fb8c947df4ef901..dee25a4939df3626f493c22a1fc42e5baa84159b 100644
+index b4a05b9a4ba4522a4f0fd0d6f0470d54d2c6d974..4c70cf26872c40dfe9d0cad3aff4215f19514a32 100644
 --- a/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 +++ b/third_party/blink/renderer/platform/media/multi_buffer_data_source.h
 @@ -19,6 +19,7 @@
@@ -94,7 +94,7 @@ index 463973a9ede5bc6e2f0a78336fb8c947df4ef901..dee25a4939df3626f493c22a1fc42e5b
  // A data source capable of loading URLs and buffering the data using an
  // in-memory sliding window.
  //
-@@ -104,6 +107,8 @@ class PLATFORM_EXPORT MultiBufferDataSource
+@@ -106,6 +109,8 @@ class PLATFORM_EXPORT MultiBufferDataSource
      return url_data_->mime_type();
    }
  
@@ -104,7 +104,7 @@ index 463973a9ede5bc6e2f0a78336fb8c947df4ef901..dee25a4939df3626f493c22a1fc42e5b
    using InitializeCB = base::OnceCallback<void(bool)>;
    void Initialize(InitializeCB init_cb) override;
 diff --git a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
-index 9d7baea06f37e6c5411be25de0a76e599b1e16b3..a1d04c96b9c9a52cc025cdc11bdf9ec453496f8f 100644
+index 5af370831c84569e450f144659ba9a9d963b0883..c2ba83b8b39ea912d3497edaacdccc1f9288cfaa 100644
 --- a/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 +++ b/third_party/blink/renderer/platform/media/resource_multi_buffer_data_provider.cc
 @@ -8,6 +8,7 @@
@@ -123,7 +123,7 @@ index 9d7baea06f37e6c5411be25de0a76e599b1e16b3..a1d04c96b9c9a52cc025cdc11bdf9ec4
  #include "third_party/blink/renderer/platform/media/resource_fetch_context.h"
  #include "third_party/blink/renderer/platform/media/url_index.h"
  #include "third_party/blink/renderer/platform/weborigin/security_origin.h"
-@@ -313,6 +315,16 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
+@@ -314,6 +316,16 @@ void ResourceMultiBufferDataProvider::DidReceiveResponse(
        do_fail = true;
      }
    } else {

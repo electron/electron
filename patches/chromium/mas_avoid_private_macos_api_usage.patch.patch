@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 93d39dd432702f26f29c802ef8148e06808aaf0d..5759b061f39924c48cde8f956a57f1417b174dac 100644
+index 62c7e05c5212cb6278f646def2415cee725b9632..4a23946923c153e1dde5bcd839c139a60a89beea 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1083,6 +1083,7 @@ component("base") {
@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 993992980f7b72cbd8266ee6aa54a973077e04b5..50a5b6f87c67d0c2508c697104a4ee1a29fe0238 100644
+index a47be61b7d570370aa9427facbe0c85abfbe0810..b3953175756c0b99eb2a9d62704b94179d2e4da7 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -979,6 +979,7 @@ if (is_clang_or_gcc) {
+@@ -980,6 +980,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -1020,7 +1020,7 @@ index 4cecf7a28fbf85f6e4ed2290b872b5d3e8e0c008..d49abe8b6a867407ef5442a4e45efc18
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index aa34fd7b4720e549e0f66e72bf0753e86c2e7510..2e0b9fe4f4825125b1f8fc46b713fbc7f15bce1e 100644
+index 6eab22fa2589038c402fe4bf0a54e42fda5eb1dd..6e5c03522683f1c19d4b9c9e65c1f4716b9c3f49 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -53,6 +53,7 @@
@@ -1042,7 +1042,7 @@ index aa34fd7b4720e549e0f66e72bf0753e86c2e7510..2e0b9fe4f4825125b1f8fc46b713fbc7
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1725,10 +1728,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1721,10 +1724,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1055,7 +1055,7 @@ index aa34fd7b4720e549e0f66e72bf0753e86c2e7510..2e0b9fe4f4825125b1f8fc46b713fbc7
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1780,9 +1785,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1776,9 +1781,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1067,7 +1067,7 @@ index aa34fd7b4720e549e0f66e72bf0753e86c2e7510..2e0b9fe4f4825125b1f8fc46b713fbc7
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2312,20 +2319,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2308,20 +2315,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 5e2e37ad868e650ab606bda8f18b62b609356b90..462fde8c9b20b9a7af11230f84b99fc9930ae0ca 100644
+index 3b268d6b09ab3d76f700e9e7012f6c66439e2330..7042581ab0e580184429ed5b20d992e45652af42 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -700,6 +700,7 @@ static_library("test_support") {
@@ -1217,7 +1217,7 @@ index 5e2e37ad868e650ab606bda8f18b62b609356b90..462fde8c9b20b9a7af11230f84b99fc9
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3448,6 +3452,7 @@ test("content_unittests") {
+@@ -3449,6 +3453,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1378,7 +1378,7 @@ index 75178516b53665c82195f795c5e4498c588e51c9..10e453a18813d3078dc4f01ab040acc6
  }  // namespace
  #endif
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index fe250ad7f81a503f2db084e6b55dafc06e35e2fb..23ae43042df5cd5bf08db5d1c736be6daee96e06 100644
+index cad0b9c1a0df019ea655d29ca00e026db27e3700..f92ef61759c93130f84345f4ccf39c031cf08168 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -223,6 +223,8 @@ source_set("dns") {
@@ -2140,7 +2140,7 @@ index ef031ba14e4c649f6f3a5718ac521e6b424d64cb..38e528450196b4dbd5fa6a25b96baa10
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index e4b9053c9333598ec0347ec84a4d898d8eedca6a..f08d8343a6bb665be57c9e6766476c71efa47143 100644
+index 44b0a9ce3c14550ee13a5b82571d1b48023dbb72..4ef63e5677b72172aa907cffb77d1941715ecdfd 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,13 @@ component("base") {
@@ -2157,7 +2157,7 @@ index e4b9053c9333598ec0347ec84a4d898d8eedca6a..f08d8343a6bb665be57c9e6766476c71
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -503,6 +510,12 @@ component("base") {
+@@ -510,6 +517,12 @@ component("base") {
      "//url",
    ]
  
@@ -2359,10 +2359,10 @@ index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c50
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index a6b9b6f133fbc218c980d57da7207a5f9c23506b..5d4cea751f0a80289590fa88acc82edcca454a49 100644
+index ec506ef2b38dbfdad27e9d46cfc36171aa19b214..cd48e2c4713f5b98bc8b3054f7fa4cf7263988f5 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -736,6 +736,8 @@ component("views") {
+@@ -743,6 +743,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2371,7 +2371,7 @@ index a6b9b6f133fbc218c980d57da7207a5f9c23506b..5d4cea751f0a80289590fa88acc82edc
    }
  
    if (is_win) {
-@@ -1152,6 +1154,8 @@ source_set("test_support") {
+@@ -1159,6 +1161,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
