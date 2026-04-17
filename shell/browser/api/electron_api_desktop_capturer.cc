@@ -192,7 +192,8 @@ BOOL CALLBACK EnumDisplayMonitorsCallback(HMONITOR monitor,
 
 // Give native capturers a few refresh/capture cycles to populate the list
 // before returning the current snapshot. This preserves the old behavior of
-// making progress even when some sources never produce thumbnails.
+// making progress even when some sources never produce thumbnails (e.g., a
+// password manager window that's marked as uncapturable).
 constexpr base::TimeDelta kDesktopCapturerReadyTimeout = base::Seconds(3);
 
 }  // namespace
