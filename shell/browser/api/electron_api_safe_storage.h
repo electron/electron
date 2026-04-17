@@ -10,7 +10,6 @@
 
 #include "build/build_config.h"
 #include "components/os_crypt/async/common/encryptor.h"
-#include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable.h"
@@ -35,8 +34,7 @@ class Handle;
 
 namespace electron::api {
 
-class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage>,
-                          public gin_helper::EventEmitterMixin<SafeStorage> {
+class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
  public:
   static gin_helper::Handle<SafeStorage> Create(v8::Isolate* isolate);
 
