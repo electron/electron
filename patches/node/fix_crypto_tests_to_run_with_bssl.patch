@@ -250,7 +250,7 @@ index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf2187
  s.pipe(h).on('data', common.mustCall(function(c) {
    assert.strictEqual(c, expect);
 diff --git a/test/parallel/test-crypto-key-objects-raw.js b/test/parallel/test-crypto-key-objects-raw.js
-index f301cc1942fd9a46ea91e18e580504d09ce53e48..95d4e1fc7671233e017177025813f46bad50f2f0 100644
+index f301cc1942fd9a46ea91e18e580504d09ce53e48..a025c74d8832e55999f7513e9525d48533670c4b 100644
 --- a/test/parallel/test-crypto-key-objects-raw.js
 +++ b/test/parallel/test-crypto-key-objects-raw.js
 @@ -34,10 +34,13 @@ const { hasOpenSSL } = require('../common/crypto');
@@ -270,6 +270,15 @@ index f301cc1942fd9a46ea91e18e580504d09ce53e48..95d4e1fc7671233e017177025813f46b
      const pubKeyObj = crypto.createPublicKey(
        fixtures.readKey(pub, 'ascii'));
      const privKeyObj = crypto.createPrivateKey(
+@@ -58,7 +61,7 @@ const { hasOpenSSL } = require('../common/crypto');
+   }
+ 
+   // DH keys also don't support raw formats
+-  {
++  if (!process.features.openssl_is_boringssl) {
+     const privKeyObj = crypto.createPrivateKey(
+       fixtures.readKey('dh_private.pem', 'ascii'));
+     assert.throws(() => privKeyObj.export({ format: 'raw-private' }),
 @@ -224,7 +227,9 @@ if (hasOpenSSL(3, 5)) {
    assert.throws(() => ecPriv.export({ format: 'raw-seed' }),
                  { code: 'ERR_CRYPTO_INCOMPATIBLE_KEY_OPTIONS' });
