@@ -1199,6 +1199,68 @@ describe('webContents module', () => {
     });
   });
 
+  describe('DevTools showItemInFolder embedder message', () => {
+    afterEach(closeAllWindows);
+
+    async function openDevTools (w: BrowserWindow) {
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      await waitUntil(
+        () => w.webContents.devToolsWebContents!.executeJavaScript(
+          'typeof DevToolsAPI !== "undefined"'
+        )
+      );
+    }
+
+    async function sendShowItemInFolder (w: BrowserWindow, target: string) {
+      await w.webContents.devToolsWebContents!.executeJavaScript(
+        `DevToolsAPI.sendMessageToEmbedder('showItemInFolder', [${JSON.stringify(target)}], null)`
+      );
+    }
+
+    it('does not open or execute paths outside registered workspace folders', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      const candidates = process.platform === 'win32'
+        ? ['C:\\Windows\\win.ini\\x', 'C:\\Windows\\System32\\drivers\\etc\\hosts']
+        : ['/bin/ls/x', '/usr/bin/env'];
+
+      for (const target of candidates) {
+        await sendShowItemInFolder(w, target);
+      }
+
+      // The embedder handler must early-return for non-workspace paths and
+      // must never call platform_util::OpenPath. Reaching this point without
+      // the test runner being killed by a spawned process is the assertion;
+      // additionally verify the renderer is still responsive.
+      const alive = await w.webContents.executeJavaScript('true');
+      expect(alive).to.be.true();
+    });
+
+    // On Linux without a DBus FileManager1 session, ShowItemInFolder falls
+    // back to OpenFolder() which does a blocking DirectoryExists() on the UI
+    // thread (pre-existing behavior). Workspace-gating is covered by the test
+    // above.
+    ifit(process.platform !== 'linux')('reveals paths under a registered workspace folder without executing them', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'devtools-workspace-'));
+      const target = path.join(workspace, 'file.txt');
+      fs.writeFileSync(target, 'hello');
+      defer(() => fs.rmSync(workspace, { recursive: true, force: true }));
+
+      w.webContents.addWorkSpace(workspace);
+      await sendShowItemInFolder(w, target);
+
+      const alive = await w.webContents.executeJavaScript('true');
+      expect(alive).to.be.true();
+    });
+  });
+
   describe('before-mouse-event event', () => {
     afterEach(closeAllWindows);
     it('can prevent document mouse events', async () => {

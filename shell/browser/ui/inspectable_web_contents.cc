@@ -23,6 +23,7 @@
 #include "base/uuid.h"
 #include "base/values.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+#include "chrome/common/pref_names.h"
 #include "components/embedder_support/user_agent_utils.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
@@ -150,10 +151,6 @@ GURL GetDevToolsURL(bool can_dock) {
   auto url_string = absl::StrFormat(
       kChromeUIDevToolsURL, GetRemoteBaseURL().spec(), can_dock ? "true" : "");
   return GURL(url_string);
-}
-
-void OnOpenItemComplete(const base::FilePath& path, const std::string& result) {
-  platform_util::ShowItemInFolder(path);
 }
 
 constexpr base::TimeDelta kInitialBackoffDelay = base::Milliseconds(250);
@@ -747,8 +744,22 @@ void InspectableWebContents::ShowItemInFolder(
     return;
 
   base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-  platform_util::OpenPath(path.DirName(),
-                          base::BindOnce(&OnOpenItemComplete, path));
+
+  // Only reveal paths that fall under a DevTools workspace folder the user has
+  // explicitly added. The DevTools frontend is renderer-hosted and may be
+  // attacker-controlled, so it must not be able to point this at arbitrary
+  // filesystem locations.
+  const base::Value::Dict& added_paths =
+      pref_service_->GetDict(prefs::kDevToolsFileSystemPaths);
+  const bool under_registered_root =
+      std::ranges::any_of(added_paths, [&path](const auto& entry) {
+        const base::FilePath root = base::FilePath::FromUTF8Unsafe(entry.first);
+        return root == path || root.IsParent(path);
+      });
+  if (!under_registered_root)
+    return;
+
+  platform_util::ShowItemInFolder(path);
 }
 
 void InspectableWebContents::SaveToFile(const std::string& url,
