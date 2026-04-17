@@ -249,9 +249,6 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
     if (!need_thumbnails_)
       return true;
 
-    if (list_->GetSourceCount() == 0)
-      return true;
-
     // are all the tumbnails ready?
     for (int i = 0; i < list_->GetSourceCount(); ++i) {
       if (list_->GetSource(i).thumbnail.isNull())
