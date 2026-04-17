@@ -400,9 +400,7 @@ UtilityAILanguageModel::UtilityAILanguageModel(
 }
 
 UtilityAILanguageModel::~UtilityAILanguageModel() {
-  if (!is_destroyed_) {
-    Destroy();
-  }
+  Destroy();
 }
 
 base::CallbackListSubscription UtilityAILanguageModel::AddDestroyObserver(
@@ -539,7 +537,7 @@ void UtilityAILanguageModel::Append(
   auto SendResponse =
       [](base::WeakPtr<UtilityAILanguageModel> weak_ptr, v8::Isolate* isolate,
          mojo::RemoteSetElementId responder_id, v8::Local<v8::Value> result) {
-        if (!weak_ptr)
+        if (!weak_ptr || weak_ptr->is_destroyed_)
           return;
         weak_ptr->abort_controllers_.erase(responder_id);
 
@@ -564,7 +562,7 @@ void UtilityAILanguageModel::Append(
     auto catch_cb = base::BindOnce(
         [](base::WeakPtr<UtilityAILanguageModel> weak_ptr,
            mojo::RemoteSetElementId responder_id, v8::Local<v8::Value> result) {
-          if (!weak_ptr)
+          if (!weak_ptr || weak_ptr->is_destroyed_)
             return;
           weak_ptr->abort_controllers_.erase(responder_id);
 
@@ -671,7 +669,7 @@ void UtilityAILanguageModel::MeasureInputUsage(
                         v8::Isolate* isolate,
                         MeasureInputUsageCallback callback,
                         v8::Local<v8::Value> result) {
-    if (weak_ptr) {
+    if (weak_ptr && !weak_ptr->is_destroyed_) {
       weak_ptr->measure_abort_controllers_.erase(abort_it);
     }
 
@@ -703,7 +701,7 @@ void UtilityAILanguageModel::MeasureInputUsage(
         [](base::WeakPtr<UtilityAILanguageModel> weak_ptr,
            std::list<v8::Global<v8::Object>>::iterator abort_it,
            MeasureInputUsageCallback callback, v8::Local<v8::Value> result) {
-          if (weak_ptr) {
+          if (weak_ptr && !weak_ptr->is_destroyed_) {
             weak_ptr->measure_abort_controllers_.erase(abort_it);
           }
           std::move(callback).Run(std::nullopt);
