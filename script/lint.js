@@ -117,6 +117,7 @@ const LINTERS = [
     test: (filename) => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
     run: (opts, filenames) => {
       const env = {
+        ...getDepotToolsEnv(),
         CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
       };
       const clangFormatFlags = opts.fix ? ['--fix'] : [];
@@ -132,6 +133,7 @@ const LINTERS = [
     test: (filename) => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
     run: (opts, filenames) => {
       const env = {
+        ...getDepotToolsEnv(),
         CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
       };
       const clangFormatFlags = opts.fix ? ['--fix'] : [];
