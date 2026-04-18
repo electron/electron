@@ -40,6 +40,8 @@
 #include "shell/common/options_switches.h"
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
+#include "ui/platform_window/platform_window.h"
+#include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #include "ui/compositor/compositor.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/insets.h"
@@ -1349,6 +1351,20 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
               static_cast<x11::Window>(GetAcceleratedWidget()),
           .source_bitmap = x11::Pixmap::None,
       });
+    }
+  } else {
+    // Wayland: use SetInputRegion via the platform window to control
+    // which areas of the surface accept input events.
+    auto* host = widget()->GetNativeWindow()->GetHost();
+    auto* linux_host = static_cast<views::DesktopWindowTreeHostLinux*>(host);
+    if (linux_host && linux_host->platform_window()) {
+      if (ignore) {
+        linux_host->platform_window()->SetInputRegion(
+            std::optional<std::vector<gfx::Rect>>(
+                std::vector<gfx::Rect>{{0, 0, 1, 1}}));
+      } else {
+        linux_host->platform_window()->SetInputRegion(std::nullopt);
+      }
     }
   }
 #endif
