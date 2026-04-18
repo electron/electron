@@ -1,0 +1,54 @@
+From b173791bf4026a6bb43124f7c5f46cfa4539c014 Mon Sep 17 00:00:00 2001
+From: p0-tato <smartphonewithbear@gmail.com>
+Date: Mon, 13 Apr 2026 14:50:07 -0700
+Subject: [PATCH] Fix dangling pointers in OpenXrSpatialFrameworkManager
+
+Pointers to vector elements were collected during emplace_back,
+which invalidates them on reallocation. Split into two loops
+and reserve the correct capacity.
+
+Bug: 497724498
+Change-Id: I204534bc1bd1522fe03db86f03c2c3e0d285631c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7735242
+Commit-Queue: Brian Sheedy <bsheedy@chromium.org>
+Reviewed-by: Brian Sheedy <bsheedy@chromium.org>
+Reviewed-by: Brandon Jones <bajones@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1613990}
+---
+
+diff --git a/AUTHORS b/AUTHORS
+index 44daf5c..675d2c1 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -738,6 +738,7 @@
+ Jihun Brent Kim <devgrapher@gmail.com>
+ Jihwan Marc Kim <bluewhale.marc@gmail.com>
+ Jihye Hyun <jijinny26@gmail.com>
++Jihyeon Jeong <smartphonewithbear@gmail.com>
+ Jihyeon Lee <wlgus7464@gmail.com>
+ Jim Wu <lofoz.tw@gmail.com>
+ Jin Yang <jin.a.yang@intel.com>
+diff --git a/device/vr/openxr/openxr_spatial_framework_manager.cc b/device/vr/openxr/openxr_spatial_framework_manager.cc
+index 2fd3609..b6f82c5 100644
+--- a/device/vr/openxr/openxr_spatial_framework_manager.cc
++++ b/device/vr/openxr/openxr_spatial_framework_manager.cc
+@@ -74,12 +74,15 @@
+   // to help abstract some of the details of creating the child structs, even
+   // though at present we only have a configuration base.
+   std::vector<OpenXrSpatialCapabilityConfigurationBase> capability_configs;
+-  std::vector<XrSpatialCapabilityConfigurationBaseHeaderEXT*>
+-      capability_config_ptrs;
++  capability_configs.reserve(capability_configuration.size());
+   for (auto& [capability, components] : capability_configuration) {
+     capability_configs.emplace_back(capability, components);
+-    capability_config_ptrs.push_back(
+-        capability_configs.back().GetAsBaseHeader());
++  }
++
++  std::vector<XrSpatialCapabilityConfigurationBaseHeaderEXT*>
++      capability_config_ptrs;
++  for (auto& config : capability_configs) {
++    capability_config_ptrs.push_back(config.GetAsBaseHeader());
+   }
+ 
+   XrSpatialContextCreateInfoEXT create_info = {
