@@ -1,0 +1,115 @@
+From c215f8e6f0492ef6840b43ab2657be2eafbeda1f Mon Sep 17 00:00:00 2001
+From: Anders Hartvoll Ruud <andruud@chromium.org>
+Date: Tue, 17 Mar 2026 18:43:46 -0700
+Subject: [PATCH] Iterate on copy of layout subtree roots during LFV::PerformLayout()
+
+During iteration of LocalFrameView::layout_subtree_root_list_
+in PerformLayout(), we can do interleaved style and layout tree
+building due to e.g. container queries. Such layout tree rebuilds
+can destroy the LayoutObjects being subtree roots,
+and call LocalFrameView::ClearLayoutSubtreeRoot() in the process,
+modifying layout_subtree_root_list_ during the iteration.
+
+To fix this, iterate on a copy of the layout subtree roots instead.
+Note that even though we do clear layout_subtree_root_list_ immediately
+after iteration, we can not just std::move the list to a local,
+since we need to discover (and skip) the roots that were removed
+during previous iterations.
+
+Fixed: 491994185
+Change-Id: I729e3df6e938533467ff4d45e66c666fe27a83c0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7669842
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Reviewed-by: Morten Stenshorne <mstensho@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1600948}
+---
+
+diff --git a/third_party/blink/renderer/core/frame/local_frame_view.cc b/third_party/blink/renderer/core/frame/local_frame_view.cc
+index 3e8c8cc2..f11dd3cb 100644
+--- a/third_party/blink/renderer/core/frame/local_frame_view.cc
++++ b/third_party/blink/renderer/core/frame/local_frame_view.cc
+@@ -756,9 +756,17 @@
+           ++add_result.stored_value->value;
+         }
+       }
+-      for (auto& root : layout_subtree_root_list_.Ordered()) {
+-        bool should_rebuild_fragments = false;
++      HeapVector<LayoutObjectWithDepth> ordered_roots =
++          layout_subtree_root_list_.Ordered();
++      for (LayoutObjectWithDepth& root : ordered_roots) {
+         LayoutObject& root_layout_object = *root;
++        if (!layout_subtree_root_list_.Contains(root_layout_object)) {
++          // A previous iteration removed the entry from the list.
++          // This can happen when interleaved style recalc sets the element
++          // associated the layout subtree root to display:none.
++          continue;
++        }
++        bool should_rebuild_fragments = false;
+         LayoutBox* container_box = root->ContainingNGBox();
+         if (container_box) {
+           auto it = fragment_tree_spines.find(container_box);
+diff --git a/third_party/blink/renderer/core/layout/depth_ordered_layout_object_list.cc b/third_party/blink/renderer/core/layout/depth_ordered_layout_object_list.cc
+index f4df5f1..36d51800 100644
+--- a/third_party/blink/renderer/core/layout/depth_ordered_layout_object_list.cc
++++ b/third_party/blink/renderer/core/layout/depth_ordered_layout_object_list.cc
+@@ -93,6 +93,10 @@
+   return depth;
+ }
+ 
++bool DepthOrderedLayoutObjectList::Contains(LayoutObject& object) const {
++  return Unordered().Contains(&object);
++}
++
+ const HeapHashSet<Member<LayoutObject>>&
+ DepthOrderedLayoutObjectList::Unordered() const {
+   return data_->objects();
+diff --git a/third_party/blink/renderer/core/layout/depth_ordered_layout_object_list.h b/third_party/blink/renderer/core/layout/depth_ordered_layout_object_list.h
+index c22ce8c..94d953c 100644
+--- a/third_party/blink/renderer/core/layout/depth_ordered_layout_object_list.h
++++ b/third_party/blink/renderer/core/layout/depth_ordered_layout_object_list.h
+@@ -59,6 +59,7 @@
+   int size() const;
+   CORE_EXPORT bool IsEmpty() const;
+ 
++  bool Contains(LayoutObject&) const;
+   const HeapHashSet<Member<LayoutObject>>& Unordered() const;
+   const HeapVector<LayoutObjectWithDepth>& Ordered();
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-conditional/container-queries/crashtests/chrome-bug-491994185-crash.html b/third_party/blink/web_tests/external/wpt/css/css-conditional/container-queries/crashtests/chrome-bug-491994185-crash.html
+new file mode 100644
+index 0000000..cf27c578
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-conditional/container-queries/crashtests/chrome-bug-491994185-crash.html
+@@ -0,0 +1,32 @@
++<!DOCTYPE html>
++<title>Crash Test: Layout subtree root becoming display:none</title>
++<link rel="help" href="https://issues.chromium.org/issues/491994185">
++<style>
++  #container {
++    container-type: inline-size;
++  }
++  @container (min-width: 300px) {
++    #victim { display: none; }
++  }
++</style>
++<div style="contain:strict;">
++  <div id="herring"></div>
++</div>
++<div>
++  <div style="contain:strict; width:400px;">
++    <div id="containerResizer" style="width:10px;">
++      <div id="container">
++        <div id="victim" style="contain:strict;">
++          <div id="innerElm"></div>
++        </div>
++      </div>
++    </div>
++  </div>
++</div>
++<script>
++  document.body.offsetTop;
++  innerElm.style.height = '40px';
++  herring.style.height = '60px';
++  containerResizer.style.width = '400px';
++  document.body.offsetTop;
++</script>
