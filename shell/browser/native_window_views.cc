@@ -239,12 +239,16 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
 
   if (gin_helper::Dictionary od; options.Get(options::ktitleBarOverlay, &od)) {
     if (std::string val; od.Get(options::kOverlayButtonColor, &val)) {
-      bool success = content::ParseCssColorString(val, &overlay_button_color_);
+      SkColor overlay_button_color;
+      bool success = content::ParseCssColorString(val, &overlay_button_color);
       DCHECK(success);
+      overlay_button_color_ = overlay_button_color;
     }
     if (std::string val; od.Get(options::kOverlaySymbolColor, &val)) {
-      bool success = content::ParseCssColorString(val, &overlay_symbol_color_);
+      SkColor overlay_symbol_color;
+      bool success = content::ParseCssColorString(val, &overlay_symbol_color);
       DCHECK(success);
+      overlay_symbol_color_ = overlay_symbol_color;
     }
   }
 
