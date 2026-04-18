@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommy Steimel <steimel@chromium.org>
+Date: Tue, 31 Mar 2026 16:11:55 -0700
+Subject: [Media Session] Don't assume there is still 1 normal player
+
+There are some actions in MediaSessionImpl that are only available when
+there is exactly 1 normal player, so when they're called, there's a
+DCHECK that we do in fact have 1 normal player. However, since Mojo
+calls are asynchronous, it's possible for one of these actions to be
+legitimately called with 1 normal player, but by the time it runs there
+are either 0 or 2+ normal players.
+
+This CL changes these instances to no longer DCHECK that there is 1
+normal player and instead just early return if there isn't.
+
+Bug: 497412658
+Change-Id: I0fdf3c6779c224db996091b2fd463bc3cb9464f3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7719021
+Reviewed-by: Benjamin Keen <bkeen@google.com>
+Commit-Queue: Tommy Steimel <steimel@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1608166}
+
+diff --git a/content/browser/media/session/media_session_impl.cc b/content/browser/media/session/media_session_impl.cc
+index a93dc34bffc95d792971e79bdc69faf1f3862a4a..5a7c93bf12121c4c617fb079dc77f4392dd29a84 100644
+--- a/content/browser/media/session/media_session_impl.cc
++++ b/content/browser/media/session/media_session_impl.cc
+@@ -1278,7 +1278,6 @@ void MediaSessionImpl::EnterPictureInPicture() {
+     return;
+   }
+ 
+-  DCHECK_EQ(normal_players_.size(), 1u);
+   if (normal_players_.size() != 1u) {
+     // There should be one and only one player when we enter picture-in-picture.
+     return;
+@@ -1343,13 +1342,23 @@ void MediaSessionImpl::Raise() {
+ }
+ 
+ void MediaSessionImpl::SetMute(bool mute) {
+-  DCHECK_EQ(normal_players_.size(), 1u);
++  // The SetMute action should only be available when there is one normal
++  // player, though due to the asynchronous nature of mojo, we may no longer
++  // have 1 normal player. In that case, just return.
++  if (normal_players_.size() != 1u) {
++    return;
++  }
+   normal_players_.begin()->first.observer->OnSetMute(
+       normal_players_.begin()->first.player_id, mute);
+ }
+ 
+ void MediaSessionImpl::RequestMediaRemoting() {
+-  DCHECK_EQ(normal_players_.size(), 1u);
++  // The RequestMediaRemoting action should only be available when there is one
++  // normal player, though due to the asynchronous nature of mojo, we may no
++  // longer have 1 normal player. In that case, just return.
++  if (normal_players_.size() != 1u) {
++    return;
++  }
+   normal_players_.begin()->first.observer->OnRequestMediaRemoting(
+       normal_players_.begin()->first.player_id);
+ }

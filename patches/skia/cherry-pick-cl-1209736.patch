@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Mon, 13 Apr 2026 14:30:46 -0400
+Subject: [skp] Validate image lattice counts
+
+Bug: 502103414
+Fixed: 502440240
+Change-Id: Id13b2dfd30830c238d19914f3231f76383cee80b
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1208956
+Reviewed-by: Kaylee Lubick <kjlubick@google.com>
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+(cherry picked from commit 3d08a21145b080f644d6b6a621ae33a452d27a35)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1209736
+
+diff --git a/src/core/SkCanvasPriv.cpp b/src/core/SkCanvasPriv.cpp
+index 65f181b4e8176279dc9b7ac02658b65f91374094..64e8563d6966e564c83680fc15161bbc44cf1412 100644
+--- a/src/core/SkCanvasPriv.cpp
++++ b/src/core/SkCanvasPriv.cpp
+@@ -25,6 +25,7 @@
+ #include "src/core/SkWriteBuffer.h"
+ #include "src/core/SkWriter32.h"
+ 
++#include <limits>
+ #include <utility>
+ #include <cstdint>
+ 
+@@ -55,13 +56,25 @@ SkAutoCanvasMatrixPaint::~SkAutoCanvasMatrixPaint() {
+ 
+ bool SkCanvasPriv::ReadLattice(SkReadBuffer& buffer, SkCanvas::Lattice* lattice) {
+     lattice->fXCount = buffer.readInt();
++    if (lattice->fXCount < 0) {
++        return false;
++    }
+     lattice->fXDivs = buffer.skipT<int32_t>(lattice->fXCount);
+     lattice->fYCount = buffer.readInt();
++    if (lattice->fYCount < 0) {
++        return false;
++    }
+     lattice->fYDivs = buffer.skipT<int32_t>(lattice->fYCount);
+     int flagCount = buffer.readInt();
+     lattice->fRectTypes = nullptr;
+     lattice->fColors = nullptr;
++    // flagCount was serialized as (xCount + 1) * (yCount + 1) if there were rect types and colors,
++    // so if that isn't still the case the buffer is invalid.
+     if (flagCount) {
++        if (flagCount < 0 || (uint64_t) flagCount != ((uint64_t) lattice->fXCount + 1) *
++                                                     ((uint64_t) lattice->fYCount + 1)) {
++            return false;
++        }
+         lattice->fRectTypes = buffer.skipT<SkCanvas::Lattice::RectType>(flagCount);
+         lattice->fColors = buffer.skipT<SkColor>(flagCount);
+     }

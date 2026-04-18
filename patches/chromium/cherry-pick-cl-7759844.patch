@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: p0-tato <smartphonewithbear@gmail.com>
+Date: Tue, 14 Apr 2026 13:14:30 -0700
+Subject: [M146] Fix dangling pointers in OpenXrSpatialFrameworkManager
+
+Original change's description:
+> Fix dangling pointers in OpenXrSpatialFrameworkManager
+>
+> Pointers to vector elements were collected during emplace_back,
+> which invalidates them on reallocation. Split into two loops
+> and reserve the correct capacity.
+>
+> Bug: 497724498
+> Change-Id: I204534bc1bd1522fe03db86f03c2c3e0d285631c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7735242
+> Commit-Queue: Brian Sheedy <bsheedy@chromium.org>
+> Reviewed-by: Brian Sheedy <bsheedy@chromium.org>
+> Reviewed-by: Brandon Jones <bajones@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1613990}
+
+(cherry picked from commit b173791bf4026a6bb43124f7c5f46cfa4539c014)
+
+Bug: 502440265,497724498
+Change-Id: I204534bc1bd1522fe03db86f03c2c3e0d285631c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7759844
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7680@{#3944}
+Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
+
+diff --git a/AUTHORS b/AUTHORS
+index fb0796cabdec4419e953306608a5b816ea1f2662..ae5c9f4c4bb4e616833bf1c8c5910b45bab24b2c 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -717,6 +717,7 @@ Jihoon Chung <jihoon@gmail.com>
+ Jihun Brent Kim <devgrapher@gmail.com>
+ Jihwan Marc Kim <bluewhale.marc@gmail.com>
+ Jihye Hyun <jijinny26@gmail.com>
++Jihyeon Jeong <smartphonewithbear@gmail.com>
+ Jihyeon Lee <wlgus7464@gmail.com>
+ Jim Wu <lofoz.tw@gmail.com>
+ Jin Yang <jin.a.yang@intel.com>
+diff --git a/device/vr/openxr/openxr_spatial_framework_manager.cc b/device/vr/openxr/openxr_spatial_framework_manager.cc
+index 520f25230c427bf775333910530d1ad841f3ad71..5c93d694aa5a2259c683f1d521611046293195a2 100644
+--- a/device/vr/openxr/openxr_spatial_framework_manager.cc
++++ b/device/vr/openxr/openxr_spatial_framework_manager.cc
+@@ -71,12 +71,15 @@ OpenXrSpatialFrameworkManager::OpenXrSpatialFrameworkManager(
+   // to help abstract some of the details of creating the child structs, even
+   // though at present we only have a configuration base.
+   std::vector<OpenXrSpatialCapabilityConfigurationBase> capability_configs;
+-  std::vector<XrSpatialCapabilityConfigurationBaseHeaderEXT*>
+-      capability_config_ptrs;
++  capability_configs.reserve(capability_configuration.size());
+   for (auto& [capability, components] : capability_configuration) {
+     capability_configs.emplace_back(capability, components);
+-    capability_config_ptrs.push_back(
+-        capability_configs.back().GetAsBaseHeader());
++  }
++
++  std::vector<XrSpatialCapabilityConfigurationBaseHeaderEXT*>
++      capability_config_ptrs;
++  for (auto& config : capability_configs) {
++    capability_config_ptrs.push_back(config.GetAsBaseHeader());
+   }
+ 
+   XrSpatialContextCreateInfoEXT create_info = {
