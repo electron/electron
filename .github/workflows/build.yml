@@ -67,12 +67,13 @@ jobs:
         filters: |
           docs:
             - 'docs/**'
+            - '.claude/**'
             - README.md
             - SECURITY.md
             - CONTRIBUTING.md
             - CODE_OF_CONDUCT.md
           src:
-            - '!docs/**'
+            - '!{docs,.claude}/**'
     - name: Set Outputs for Build Image SHA & Docs Only
       id: set-output
       run: |
