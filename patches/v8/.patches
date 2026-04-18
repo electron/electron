@@ -3,3 +3,4 @@ build_warn_instead_of_abort_on_builtin_pgo_profile_mismatch.patch
 cherry-pick-b54c7841e2cd.patch
 cherry-pick-ba0258ba9609.patch
 cherry-pick-036e5e8f69be.patch
+cherry-pick-07398289d921.patch

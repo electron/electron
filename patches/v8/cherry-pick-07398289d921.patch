@@ -1,0 +1,172 @@
+From 07398289d921facaa713a6f2d1c411ec1ae1f695 Mon Sep 17 00:00:00 2001
+From: Paolo Severini <paolosev@microsoft.com>
+Date: Tue, 31 Mar 2026 13:05:12 +0200
+Subject: [PATCH] [compiler] Fix FrameStateFunctionInfo comparison for JS-to-Wasm frames
+
+The equality operator for FrameStateFunctionInfo did not compare the
+wasm signature field in JSToWasmFrameStateFunctionInfo. This could
+cause CSE to incorrectly merge FrameState nodes with different wasm
+signatures, leading to the deoptimizer using the wrong return type
+when materializing a JS-to-Wasm builtin continuation frame.
+
+Bug: 497404188
+Change-Id: I671cda5784089dd9875d90c5f48e8580cb5fa697
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7709449
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Reviewed-by: Daniel Lehmann <dlehmann@chromium.org>
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106175}
+---
+
+diff --git a/src/compiler/frame-states.cc b/src/compiler/frame-states.cc
+index 7c15107..5312f07 100644
+--- a/src/compiler/frame-states.cc
++++ b/src/compiler/frame-states.cc
+@@ -37,11 +37,12 @@
+ bool operator==(FrameStateFunctionInfo const& lhs,
+                 FrameStateFunctionInfo const& rhs) {
+ #if V8_HOST_ARCH_X64
+-// If this static_assert fails, then you've probably added a new field to
+-// FrameStateFunctionInfo. Make sure to take it into account in this equality
+-// function, and update the static_assert.
++// If these static_asserts fail, then you've probably added a new field to
++// FrameStateFunctionInfo or JSToWasmFrameStateFunctionInfo. Make sure to
++// take it into account in this function, and update the static_assert.
+ #if V8_ENABLE_WEBASSEMBLY
+   static_assert(sizeof(FrameStateFunctionInfo) == 40);
++  static_assert(sizeof(JSToWasmFrameStateFunctionInfo) == 48);
+ #else
+   static_assert(sizeof(FrameStateFunctionInfo) == 32);
+ #endif
+@@ -52,6 +53,18 @@
+       lhs.wasm_function_index() != rhs.wasm_function_index()) {
+     return false;
+   }
++
++  // JSToWasmFrameStateFunctionInfo has an additional signature_ field.
++  // Two frame states with different wasm signatures must not compare equal,
++  // otherwise CSE/GVN can merge them and the deoptimizer will use the wrong
++  // signature to materialize the continuation frame.
++  if (lhs.type() == FrameStateType::kJSToWasmBuiltinContinuation &&
++      rhs.type() == FrameStateType::kJSToWasmBuiltinContinuation) {
++    if (static_cast<const JSToWasmFrameStateFunctionInfo&>(lhs).signature() !=
++        static_cast<const JSToWasmFrameStateFunctionInfo&>(rhs).signature()) {
++      return false;
++    }
++  }
+ #endif
+ 
+   return lhs.type() == rhs.type() &&
+diff --git a/src/compiler/frame-states.h b/src/compiler/frame-states.h
+index 1faaa59..e17798a 100644
+--- a/src/compiler/frame-states.h
++++ b/src/compiler/frame-states.h
+@@ -108,6 +108,10 @@
+         bytecode_array_(bytecode_array) {
+   }
+ 
++  // Prevent slicing when copying through base-class references.
++  FrameStateFunctionInfo(const FrameStateFunctionInfo&) = delete;
++  FrameStateFunctionInfo& operator=(const FrameStateFunctionInfo&) = delete;
++
+   int local_count() const { return local_count_; }
+   uint16_t parameter_count() const { return parameter_count_; }
+   uint16_t parameter_count_without_receiver() const {
+diff --git a/test/mjsunit/regress/wasm/regress-497404188.js b/test/mjsunit/regress/wasm/regress-497404188.js
+new file mode 100644
+index 0000000..54992bd
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-497404188.js
+@@ -0,0 +1,92 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbofan --no-maglev
++
++// Regression test for a type confusion in the deoptimizer caused by missing
++// signature comparison in FrameStateFunctionInfo::operator==.
++// Two wasm functions with different return types (externref vs i64) but
++// identical parameter signatures can have their JSToWasmBuiltinContinuation
++// frame states merged by CSE. On lazy deopt, the deoptimizer then uses the
++// wrong signature to materialize the result, reading a tagged reference as
++// an untagged i64 or vice versa.
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++function makeInstance(callback) {
++  const builder = new WasmModuleBuilder();
++  const callback_index = builder.addImport('env', 'callback', kSig_v_v);
++
++  // Mutable Wasm globals to hold the return values for the two functions. The
++  // callback can modify these to trigger deopt at the right moment and test
++  // that the correct type is materialized after deopt.
++  const g_ref =
++      builder.addGlobal(kWasmExternRef, true, false).exportAs('g_ref');
++  const g_i64 = builder.addGlobal(kWasmI64, true, false).exportAs('g_i64');
++
++  // Returns an externref global after calling the callback (which may trigger
++  // deopt).
++  builder.addFunction('return_ref', kSig_r_v)
++      .addBody([
++        kExprCallFunction, callback_index,
++        kExprGlobalGet, g_ref.index,
++      ])
++      .exportFunc();
++
++  // Returns an i64 global after calling the callback (which may trigger deopt).
++  builder.addFunction('return_i64', kSig_l_v)
++      .addBody([
++        kExprCallFunction, callback_index,
++        kExprGlobalGet, g_i64.index,
++      ])
++      .exportFunc();
++
++  return builder.instantiate({env: {callback}}).exports;
++}
++
++(function testNoTypeConfusionOnLazyDeopt() {
++  let arm_deopt = false;
++
++  function ProtoForI64() {}
++  function ProtoForRef() {}
++
++  const exports_ = makeInstance(() => {
++    // Trigger deopt by changing the prototype after optimization.
++    if (arm_deopt) {
++      ProtoForRef.prototype.deopt_marker = 1;
++    }
++  });
++
++  // Install wasm getters with different return types on different prototypes.
++  Object.defineProperty(
++      ProtoForI64.prototype, 'x', {get: exports_.return_i64});
++  Object.defineProperty(
++      ProtoForRef.prototype, 'x', {get: exports_.return_ref});
++
++  function foo(o) {
++    return o.x;
++  }
++
++  const obj_i64 = new ProtoForI64();
++  const obj_ref = new ProtoForRef();
++
++  const sentinel = {tag: 'sentinel'};
++  exports_.g_ref.value = sentinel;
++  exports_.g_i64.value = 42n;
++
++  // Train the function with both receiver types.
++  %PrepareFunctionForOptimization(foo);
++  for (let i = 0; i < 20; ++i) {
++    foo(obj_i64);
++    foo(obj_ref);
++  }
++
++  // Optimize and run once without deopt.
++  %OptimizeFunctionOnNextCall(foo);
++  assertEquals(42n, foo(obj_i64));
++
++  arm_deopt = true;
++  const result = foo(obj_ref);
++  assertEquals(sentinel, result);
++})();
