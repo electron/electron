@@ -1,0 +1,217 @@
+From 847b11ad2fa3f99154fb2ceb117b622ced7fa96c Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Fri, 10 Apr 2026 12:19:11 -0700
+Subject: [PATCH] Fix crashes when restoring <selectedcontent> with <input>
+
+When restoring form control state, the DOM could be modified to add or
+remove more listed elements to the form if a select element is being
+restored which has a selectedcontent element.
+
+Fixed: 499384399
+Change-Id: I18f69c30ae25396c53625f7a3172626b79de3ae3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7732030
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Dominic Farolino <dom@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1613032}
+---
+
+diff --git a/third_party/blink/renderer/core/html/forms/form_controller.cc b/third_party/blink/renderer/core/html/forms/form_controller.cc
+index abacf37..c4cb596 100644
+--- a/third_party/blink/renderer/core/html/forms/form_controller.cc
++++ b/third_party/blink/renderer/core/html/forms/form_controller.cc
+@@ -492,8 +492,10 @@
+   if (!document_->HasFinishedParsing())
+     return;
+   EventQueueScope scope;
+-  const ListedElement::List& elements = form.ListedElements();
+-  for (const auto& control : elements) {
++  // Make a copy of the list because the DOM could be modified during
++  // restoration of a <select> with a <selectedcontent> element.
++  ListedElement::List elements_copy(form.ListedElements());
++  for (const auto& control : elements_copy) {
+     if (!control->ClassSupportsStateRestore())
+       continue;
+     if (OwnerFormForState(*control) != &form)
+@@ -550,7 +552,11 @@
+     return;
+   HeapHashSet<Member<HTMLFormElement>> finished_forms;
+   EventQueueScope scope;
+-  for (auto& control : document_state_->GetControlList()) {
++  // Make a copy of the list because the DOM could be modified during
++  // restoration of a <select> with a <selectedcontent> element.
++  DocumentState::ControlList control_list_copy(
++      document_state_->GetControlList());
++  for (auto& control : control_list_copy) {
+     auto* owner = OwnerFormForState(*control);
+     if (!owner)
+       RestoreControlStateFor(*control);
+diff --git a/third_party/blink/web_tests/VirtualTestSuites b/third_party/blink/web_tests/VirtualTestSuites
+index d301e85..2ed156543 100644
+--- a/third_party/blink/web_tests/VirtualTestSuites
++++ b/third_party/blink/web_tests/VirtualTestSuites
+@@ -3029,7 +3029,7 @@
+     ],
+     "bases": [
+       "external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-in-option-crash.html",
+-      "external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.html",
++      "external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html",
+       "external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-color.html",
+       "external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-nested.html",
+       "external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontentelement-attr.tentative.html"
+diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/resources/selectedcontent-input.html b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/resources/selectedcontent-input.html
+new file mode 100644
+index 0000000..847f42a
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/resources/selectedcontent-input.html
+@@ -0,0 +1,27 @@
++<!DOCTYPE html>
++<style>
++select,::picker(select) {
++  appearance: base-select;
++}
++</style>
++<form action="blank.html">
++  <select>
++    <button>
++      <selectedcontent></selectedcontent>
++    </button>
++    <option id=one>one</option>
++    <option id=two>two</option>
++  </select>
++</form>
++
++<script>
++window.createInput = () => {
++  const selectedcontent = document.querySelector('selectedcontent');
++  const input = document.createElement('input');
++  window.input = input;
++  input.name = 'input';
++  selectedcontent.innerHTML = '';
++  selectedcontent.appendChild(input);
++};
++window.createInput();
++</script>
+diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.html b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.html
+deleted file mode 100644
+index da5fe450..0000000
+--- a/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.html
++++ /dev/null
+@@ -1,35 +0,0 @@
+-<!DOCTYPE html>
+-<link rel=author href="mailto:jarhar@chromium.org">
+-<link rel=help href="https://github.com/whatwg/html/issues/9799">
+-<script src="/resources/testharness.js"></script>
+-<script src="/resources/testharnessreport.js"></script>
+-<script src="/resources/testdriver.js"></script>
+-<script src="/resources/testdriver-vendor.js"></script>
+-
+-<iframe src="resources/selectedcontent-restore-iframe.html"></iframe>
+-
+-<script>
+-const iframe = document.querySelector('iframe');
+-promise_test(async () => {
+-  await new Promise(resolve => iframe.onload = resolve);
+-  await test_driver.bless();
+-
+-  iframe.contentDocument.querySelector('select').value = 'two';
+-  assert_equals(iframe.contentDocument.querySelector('select').value, 'two',
+-    'Assining two to select.value should work.');
+-  iframe.contentDocument.querySelector('form').submit();
+-  await new Promise(resolve => iframe.onload = resolve);
+-
+-  await test_driver.bless();
+-  iframe.contentWindow.history.back();
+-  await new Promise(resolve => iframe.onload = resolve);
+-  await new Promise(requestAnimationFrame);
+-  await new Promise(requestAnimationFrame);
+-
+-  assert_equals(iframe.contentDocument.querySelector('select').value, 'two',
+-    'The selects value should be restored after navigating back.');
+-  assert_equals(iframe.contentDocument.querySelector('selectedcontent').innerHTML,
+-    iframe.contentDocument.querySelector('option[value=two]').innerHTML,
+-    'selectedcontent.innerHTML should match the selected <option>');
+-}, '<selectedcontent> should be up to date after form restoration.');
+-</script>
+diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html
+new file mode 100644
+index 0000000..1d0064659c
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html
+@@ -0,0 +1,76 @@
++<!DOCTYPE html>
++<link rel=author href="mailto:jarhar@chromium.org">
++<link rel=help href="https://github.com/whatwg/html/issues/9799">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<script src="/resources/testdriver.js"></script>
++<script src="/resources/testdriver-vendor.js"></script>
++
++<!-- This test is marked optional because form control restoration is not explicitly specified. -->
++
++<iframe id=iframe1 src="resources/selectedcontent-restore-iframe.html"></iframe>
++<iframe id=iframe2 src="resources/selectedcontent-input.html"></iframe>
++
++<script>
++const iframe1 = document.getElementById('iframe1');
++const iframe2 = document.getElementById('iframe2');
++const iframe1load = new Promise(resolve => iframe1.onload = resolve);
++const iframe2load = new Promise(resolve => iframe2.onload = resolve);
++
++promise_test(async () => {
++  await iframe1load;
++  await test_driver.bless();
++
++  iframe1.contentDocument.querySelector('select').value = 'two';
++  assert_equals(iframe1.contentDocument.querySelector('select').value, 'two',
++    'Assigning two to select.value should work.');
++  iframe1.contentDocument.querySelector('form').submit();
++  await new Promise(resolve => iframe1.onload = resolve);
++
++  await test_driver.bless();
++  iframe1.contentWindow.history.back();
++  // Form controls are restored immediately after the load event is fired, so
++  // one rAF is added after awaiting the load event. See
++  // LocalDOMWindow::DispatchLoadAndPageshowEvents.
++  await new Promise(resolve => iframe1.onload = resolve);
++  await new Promise(requestAnimationFrame);
++
++  assert_equals(iframe1.contentDocument.querySelector('select').value, 'two',
++    'The selects value should be restored after navigating back.');
++  assert_equals(iframe1.contentDocument.querySelector('selectedcontent').innerHTML,
++    iframe1.contentDocument.querySelector('option[value=two]').innerHTML,
++    'selectedcontent.innerHTML should match the selected <option>');
++}, '<selectedcontent> should be up to date after form restoration.');
++
++promise_test(async () => {
++  await iframe2load;
++  await test_driver.bless();
++
++  iframe2.contentDocument.querySelector('select').value = 'two';
++  iframe2.contentWindow.createInput();
++  iframe2.contentDocument.querySelector('input').value = 'value';
++  iframe2.contentDocument.querySelector('form').submit();
++  await new Promise(resolve => iframe2.onload = resolve);
++
++  await test_driver.bless();
++  iframe2.contentWindow.history.back();
++  // Form controls are restored immediately after the load event is fired, so
++  // one rAF is added after awaiting the load event. See
++  // LocalDOMWindow::DispatchLoadAndPageshowEvents.
++  await new Promise(resolve => iframe2.onload = resolve);
++  await new Promise(requestAnimationFrame);
++
++  // A crash would happen here because the form restoration code would iterate
++  // over all of the form controls and remove an input element to restore during
++  // restoration of the selectedcontent element, then try to restore the
++  // disconnected input.
++
++  assert_equals(iframe2.contentDocument.querySelector('select').value, 'two',
++    'The selects value should be restored after navigating back.');
++  assert_equals(iframe2.contentDocument.querySelector('selectedcontent').innerHTML,
++    iframe2.contentDocument.getElementById('two').innerHTML,
++    'selectedcontent.innerHTML should match the selected <option>');
++  assert_equals(iframe2.contentWindow.input.value, '',
++    'The text inputs value should not be restored because it was removed before restoring.');
++}, '<input> inside <selectedcontent> should be restored after form submission.');
++</script>
