@@ -1,7 +1,7 @@
-From 847b11ad2fa3f99154fb2ceb117b622ced7fa96c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Joey Arhar <jarhar@chromium.org>
 Date: Fri, 10 Apr 2026 12:19:11 -0700
-Subject: [PATCH] Fix crashes when restoring <selectedcontent> with <input>
+Subject: Fix crashes when restoring <selectedcontent> with <input>
 
 When restoring form control state, the DOM could be modified to add or
 remove more listed elements to the form if a select element is being
@@ -14,13 +14,12 @@ Reviewed-by: Joey Arhar <jarhar@chromium.org>
 Commit-Queue: Joey Arhar <jarhar@chromium.org>
 Reviewed-by: Dominic Farolino <dom@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1613032}
----
 
 diff --git a/third_party/blink/renderer/core/html/forms/form_controller.cc b/third_party/blink/renderer/core/html/forms/form_controller.cc
-index abacf37..c4cb596 100644
+index abacf373d30debc17498eaeb7cd940972aed2a3a..c4cb59678eeacc2d3fb9f69a30df8674154dbf37 100644
 --- a/third_party/blink/renderer/core/html/forms/form_controller.cc
 +++ b/third_party/blink/renderer/core/html/forms/form_controller.cc
-@@ -492,8 +492,10 @@
+@@ -492,8 +492,10 @@ void FormController::RestoreControlStateIn(HTMLFormElement& form) {
    if (!document_->HasFinishedParsing())
      return;
    EventQueueScope scope;
@@ -33,7 +32,7 @@ index abacf37..c4cb596 100644
      if (!control->ClassSupportsStateRestore())
        continue;
      if (OwnerFormForState(*control) != &form)
-@@ -550,7 +552,11 @@
+@@ -550,7 +552,11 @@ void FormController::RestoreAllControlsInDocumentOrder() {
      return;
    HeapHashSet<Member<HTMLFormElement>> finished_forms;
    EventQueueScope scope;
@@ -47,10 +46,10 @@ index abacf37..c4cb596 100644
      if (!owner)
        RestoreControlStateFor(*control);
 diff --git a/third_party/blink/web_tests/VirtualTestSuites b/third_party/blink/web_tests/VirtualTestSuites
-index d301e85..2ed156543 100644
+index ef47961c57cd15f8c59a4554165568c7f13c0d0a..54331107dd22c6b534327ffd5c282ca3220345de 100644
 --- a/third_party/blink/web_tests/VirtualTestSuites
 +++ b/third_party/blink/web_tests/VirtualTestSuites
-@@ -3029,7 +3029,7 @@
+@@ -3067,7 +3067,7 @@
      ],
      "bases": [
        "external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-in-option-crash.html",
@@ -61,7 +60,7 @@ index d301e85..2ed156543 100644
        "external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontentelement-attr.tentative.html"
 diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/resources/selectedcontent-input.html b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/resources/selectedcontent-input.html
 new file mode 100644
-index 0000000..847f42a
+index 0000000000000000000000000000000000000000..847f42ac304835c2049cf434a4dec68814ad533c
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/resources/selectedcontent-input.html
 @@ -0,0 +1,27 @@
@@ -94,7 +93,7 @@ index 0000000..847f42a
 +</script>
 diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.html b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.html
 deleted file mode 100644
-index da5fe450..0000000
+index da5fe450abbae0d19826021f114cc6388f97bc57..0000000000000000000000000000000000000000
 --- a/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.html
 +++ /dev/null
 @@ -1,35 +0,0 @@
@@ -135,7 +134,7 @@ index da5fe450..0000000
 -</script>
 diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html
 new file mode 100644
-index 0000000..1d0064659c
+index 0000000000000000000000000000000000000000..1d0064659cd9df06d6267261bf0b39b3fb29aeef
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html
 @@ -0,0 +1,76 @@

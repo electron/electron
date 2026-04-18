@@ -1,7 +1,7 @@
-From b173791bf4026a6bb43124f7c5f46cfa4539c014 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: p0-tato <smartphonewithbear@gmail.com>
 Date: Mon, 13 Apr 2026 14:50:07 -0700
-Subject: [PATCH] Fix dangling pointers in OpenXrSpatialFrameworkManager
+Subject: Fix dangling pointers in OpenXrSpatialFrameworkManager
 
 Pointers to vector elements were collected during emplace_back,
 which invalidates them on reallocation. Split into two loops
@@ -14,13 +14,12 @@ Commit-Queue: Brian Sheedy <bsheedy@chromium.org>
 Reviewed-by: Brian Sheedy <bsheedy@chromium.org>
 Reviewed-by: Brandon Jones <bajones@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1613990}
----
 
 diff --git a/AUTHORS b/AUTHORS
-index 44daf5c..675d2c1 100644
+index 700ad1f495549eac39242e5d3b489245eb1b633d..5ef10597084e19b283209ee9833c56a7a0346187 100644
 --- a/AUTHORS
 +++ b/AUTHORS
-@@ -738,6 +738,7 @@
+@@ -736,6 +736,7 @@ Jihoon Chung <jihoon@gmail.com>
  Jihun Brent Kim <devgrapher@gmail.com>
  Jihwan Marc Kim <bluewhale.marc@gmail.com>
  Jihye Hyun <jijinny26@gmail.com>
@@ -29,10 +28,10 @@ index 44daf5c..675d2c1 100644
  Jim Wu <lofoz.tw@gmail.com>
  Jin Yang <jin.a.yang@intel.com>
 diff --git a/device/vr/openxr/openxr_spatial_framework_manager.cc b/device/vr/openxr/openxr_spatial_framework_manager.cc
-index 2fd3609..b6f82c5 100644
+index 2fd3609f277dc425d38a9acf9895b1ad02d64c72..b6f82c5c2999073aad9c43811fe9561c670992f9 100644
 --- a/device/vr/openxr/openxr_spatial_framework_manager.cc
 +++ b/device/vr/openxr/openxr_spatial_framework_manager.cc
-@@ -74,12 +74,15 @@
+@@ -74,12 +74,15 @@ OpenXrSpatialFrameworkManager::OpenXrSpatialFrameworkManager(
    // to help abstract some of the details of creating the child structs, even
    // though at present we only have a configuration base.
    std::vector<OpenXrSpatialCapabilityConfigurationBase> capability_configs;

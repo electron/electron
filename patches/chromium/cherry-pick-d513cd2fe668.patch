@@ -1,7 +1,7 @@
-From d513cd2fe6684b38bc02c3df59bfc5183bf4e1fd Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kenichi Ishibashi <bashi@chromium.org>
 Date: Fri, 10 Apr 2026 17:14:24 -0700
-Subject: [PATCH] [CORS] Block forbidden methods for no-cors requests
+Subject: [CORS] Block forbidden methods for no-cors requests
 
 Previously, forbidden methods like TRACE and TRACK were allowed when
 the request mode was no-cors, and only CONNECT was unconditionally
@@ -17,13 +17,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7743444
 Reviewed-by: mmenke <mmenke@chromium.org>
 Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1613186}
----
 
 diff --git a/services/network/cors/cors_url_loader_factory.cc b/services/network/cors/cors_url_loader_factory.cc
-index 6a1eb07..bf02d66 100644
+index 6a1eb075b0ed581bf81c43a0439da12eff20664c..bf02d6663b47413e47ebfe9ae4ba5799787f69ae 100644
 --- a/services/network/cors/cors_url_loader_factory.cc
 +++ b/services/network/cors/cors_url_loader_factory.cc
-@@ -910,13 +910,8 @@
+@@ -910,13 +910,8 @@ bool CorsURLLoaderFactory::IsValidRequest(
      return false;
    }
  
@@ -40,10 +39,10 @@ index 6a1eb07..bf02d66 100644
      return false;
    }
 diff --git a/services/network/cors/cors_url_loader_unittest.cc b/services/network/cors/cors_url_loader_unittest.cc
-index e9bbbc2..23a9e809 100644
+index e9bbbc2013e6fb9498bec0982c045ea8b937a207..23a9e8093aa8d6cafb9a949d4a1dae86bd52a99d 100644
 --- a/services/network/cors/cors_url_loader_unittest.cc
 +++ b/services/network/cors/cors_url_loader_unittest.cc
-@@ -109,11 +109,10 @@
+@@ -109,11 +109,10 @@ TEST_F(CorsURLLoaderTest, ForbiddenMethods) {
      std::string forbidden_method;
      bool expect_allowed_for_no_cors;
    } kTestCases[] = {

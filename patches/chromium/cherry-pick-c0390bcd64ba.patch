@@ -1,7 +1,7 @@
-From c0390bcd64ba1fd6594fbc9f6246a1649662d683 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Fergal Daly <fergal@chromium.org>
-Date: Mon, 06 Apr 2026 19:49:06 -0700
-Subject: [PATCH] Fix UAF in FileSystemAccessChangeSource.
+Date: Mon, 6 Apr 2026 19:49:06 -0700
+Subject: Fix UAF in FileSystemAccessChangeSource.
 
 `DidInitialize` calls any outstanding initialization callbacks but a
 callback can delete this. The code guards against this in its access
@@ -21,13 +21,12 @@ Auto-Submit: Fergal Daly <fergal@chromium.org>
 Reviewed-by: Ming-Ying Chung <mych@chromium.org>
 Commit-Queue: Ming-Ying Chung <mych@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1610499}
----
 
 diff --git a/content/browser/file_system_access/file_system_access_change_source.cc b/content/browser/file_system_access/file_system_access_change_source.cc
-index 566dc1e..48bd867 100644
+index 566dc1ea40b43a54b33d70e82a20ff5695b57b5e..48bd867a9d3d140eaf515ea7bc1613231f7e79e9 100644
 --- a/content/browser/file_system_access/file_system_access_change_source.cc
 +++ b/content/browser/file_system_access/file_system_access_change_source.cc
-@@ -71,13 +71,14 @@
+@@ -71,13 +71,14 @@ void FileSystemAccessChangeSource::DidInitialize(
    CHECK(!initialization_result_.has_value());
    CHECK(!initialization_callbacks_.empty());
  
@@ -47,7 +46,7 @@ index 566dc1e..48bd867 100644
  
 diff --git a/content/browser/file_system_access/file_system_access_change_source_unittest.cc b/content/browser/file_system_access/file_system_access_change_source_unittest.cc
 new file mode 100644
-index 0000000..b0f15909
+index 0000000000000000000000000000000000000000..b0f15909bebda29fc2ec689a6d3b15d797dcc722
 --- /dev/null
 +++ b/content/browser/file_system_access/file_system_access_change_source_unittest.cc
 @@ -0,0 +1,146 @@
@@ -198,10 +197,10 @@ index 0000000..b0f15909
 +
 +}  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ec792aa..8071300 100644
+index 4521cc9e247c44248627c12b9eda0961f837d744..6ea61eb47fcde420261a9dd7e7e3feefa31f87d2 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -2676,6 +2676,7 @@
+@@ -2680,6 +2680,7 @@ test("content_unittests") {
      "../browser/fenced_frame/redacted_fenced_frame_config_mojom_traits_unittest.cc",
      "../browser/file_system/browser_file_system_helper_unittest.cc",
      "../browser/file_system/file_system_operation_runner_unittest.cc",

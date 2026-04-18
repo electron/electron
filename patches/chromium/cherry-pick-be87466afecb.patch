@@ -1,7 +1,7 @@
-From be87466afecb1bbcb29ad8b87bd88a6ba6d0dda0 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jonathan Ross <jonross@chromium.org>
-Date: Wed, 08 Apr 2026 17:15:45 -0700
-Subject: [PATCH] gl: Make DCOMPSurfaceRegistry thread-safe
+Date: Wed, 8 Apr 2026 17:15:45 -0700
+Subject: gl: Make DCOMPSurfaceRegistry thread-safe
 
 DCOMPSurfaceRegistry is accessed from both the GPU IO thread (via
 GpuServiceImpl) and the GPU main scheduler thread (via DCOMPTexture).
@@ -17,13 +17,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7737061
 Reviewed-by: Sunny Sachanandani <sunnyps@chromium.org>
 Commit-Queue: Jonathan Ross <jonross@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1611867}
----
 
 diff --git a/ui/gl/BUILD.gn b/ui/gl/BUILD.gn
-index 3584b69..1cb66199 100644
+index 3584b693370b5199456608a26ceb763f6e9c3446..1cb66199a0b8adf2035a05fecc411c67180f7e80 100644
 --- a/ui/gl/BUILD.gn
 +++ b/ui/gl/BUILD.gn
-@@ -552,6 +552,7 @@
+@@ -552,6 +552,7 @@ test("gl_unittests") {
    if (is_win) {
      sources += [
        "dcomp_presenter_unittest.cc",
@@ -32,7 +31,7 @@ index 3584b69..1cb66199 100644
        "gl_fence_win_unittest.cc",
        "hdr_metadata_helper_win_unittest.cc",
 diff --git a/ui/gl/dcomp_surface_registry.cc b/ui/gl/dcomp_surface_registry.cc
-index 352cc29..410f76f 100644
+index 352cc298b9ea97361ae2a7d668b7d7e9eb455cd5..410f76f8980438abae32b6c89e7083ae48cf1699 100644
 --- a/ui/gl/dcomp_surface_registry.cc
 +++ b/ui/gl/dcomp_surface_registry.cc
 @@ -3,8 +3,11 @@
@@ -47,7 +46,7 @@ index 352cc29..410f76f 100644
  
  namespace gl {
  
-@@ -20,8 +23,11 @@
+@@ -20,8 +23,11 @@ base::UnguessableToken DCOMPSurfaceRegistry::RegisterDCOMPSurfaceHandle(
      base::win::ScopedHandle surface) {
    DVLOG(1) << __func__;
    base::UnguessableToken token = base::UnguessableToken::Create();
@@ -61,7 +60,7 @@ index 352cc29..410f76f 100644
    DVLOG(1) << __func__ << ": Surface handle registered with token " << token;
    return token;
  }
-@@ -29,12 +35,14 @@
+@@ -29,12 +35,14 @@ base::UnguessableToken DCOMPSurfaceRegistry::RegisterDCOMPSurfaceHandle(
  void DCOMPSurfaceRegistry::UnregisterDCOMPSurfaceHandle(
      const base::UnguessableToken& token) {
    DVLOG(1) << __func__;
@@ -77,7 +76,7 @@ index 352cc29..410f76f 100644
    if (surface_iter != surface_handle_map_.end()) {
      // Take ownership.
 diff --git a/ui/gl/dcomp_surface_registry.h b/ui/gl/dcomp_surface_registry.h
-index 803a3cc6..7cd9fdb 100644
+index 803a3cc6398f0777504063118920998869086d7f..7cd9fdbfe8669bc97d4b664fdb29573ec2ea26de 100644
 --- a/ui/gl/dcomp_surface_registry.h
 +++ b/ui/gl/dcomp_surface_registry.h
 @@ -7,6 +7,7 @@
@@ -88,7 +87,7 @@ index 803a3cc6..7cd9fdb 100644
  #include "base/unguessable_token.h"
  #include "base/win/scoped_handle.h"
  #include "ui/gl/gl_export.h"
-@@ -44,7 +45,9 @@
+@@ -44,7 +45,9 @@ class GL_EXPORT DCOMPSurfaceRegistry {
    ~DCOMPSurfaceRegistry();
  
    base::flat_map<base::UnguessableToken, base::win::ScopedHandle>
@@ -101,7 +100,7 @@ index 803a3cc6..7cd9fdb 100644
  }  // namespace gl
 diff --git a/ui/gl/dcomp_surface_registry_unittest.cc b/ui/gl/dcomp_surface_registry_unittest.cc
 new file mode 100644
-index 0000000..595e238
+index 0000000000000000000000000000000000000000..595e2388e9f50df33214359ecef0c135d94610b8
 --- /dev/null
 +++ b/ui/gl/dcomp_surface_registry_unittest.cc
 @@ -0,0 +1,118 @@

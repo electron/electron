@@ -1,7 +1,7 @@
-From dc5e20c4c055d6952854a566d520211c6d505f74 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sunny Sachanandani <sunnyps@chromium.org>
-Date: Wed, 08 Apr 2026 16:29:57 -0700
-Subject: [PATCH] [gpu] Fix OOB write due to unvalidated get_offset
+Date: Wed, 8 Apr 2026 16:29:57 -0700
+Subject: [gpu] Fix OOB write due to unvalidated get_offset
 
 A compromised GPU process can provide an invalid get_offset to the
 CommandBufferHelper (e.g., via shared memory). This offset is used to
@@ -22,13 +22,12 @@ Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
 Auto-Submit: Sunny Sachanandani <sunnyps@chromium.org>
 Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1611853}
----
 
 diff --git a/gpu/command_buffer/client/cmd_buffer_helper.cc b/gpu/command_buffer/client/cmd_buffer_helper.cc
-index ccda45b1..5aea0c81 100644
+index ccda45b133c6a9f2ee60ccc8900bd4a4ce328394..5aea0c81b29b3507099f399c374f3cb372a3100e 100644
 --- a/gpu/command_buffer/client/cmd_buffer_helper.cc
 +++ b/gpu/command_buffer/client/cmd_buffer_helper.cc
-@@ -158,6 +158,17 @@
+@@ -158,6 +158,17 @@ void CommandBufferHelper::UpdateCachedState(const CommandBuffer::State& state) {
    service_on_old_buffer_ =
        (state.set_get_buffer_count != set_get_buffer_count_);
    cached_get_offset_ = service_on_old_buffer_ ? 0 : state.get_offset;
@@ -47,10 +46,10 @@ index ccda45b1..5aea0c81 100644
    // Don't transition from a lost context to a working context.
    context_lost_ |= error::IsError(state.error);
 diff --git a/gpu/command_buffer/client/cmd_buffer_helper_test.cc b/gpu/command_buffer/client/cmd_buffer_helper_test.cc
-index 5b1e5fa..31e4671 100644
+index 5b1e5fae133ef75a99dab4ba1f8d2beddef68138..31e46714756ee30bf2fc3353693b6d49be8f6076 100644
 --- a/gpu/command_buffer/client/cmd_buffer_helper_test.cc
 +++ b/gpu/command_buffer/client/cmd_buffer_helper_test.cc
-@@ -70,6 +70,8 @@
+@@ -70,6 +70,8 @@ class CommandBufferHelperTest : public testing::Test {
      return helper_->immediate_entry_count_;
    }
  
@@ -59,7 +58,7 @@ index 5b1e5fa..31e4671 100644
    // Adds a command to the buffer through the helper, while adding it as an
    // expected call on the API mock.
    void AddCommandWithExpect(error::Error _return,
-@@ -655,6 +657,17 @@
+@@ -655,6 +657,17 @@ TEST_F(CommandBufferHelperTest, IsContextLost) {
    EXPECT_TRUE(helper_->IsContextLost());
  }
  
