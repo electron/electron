@@ -1,7 +1,7 @@
-From b149a5c62d76ab536929afc5bba2b2774da46102 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Geoff Lang <geofflang@chromium.org>
 Date: Fri, 27 Mar 2026 16:13:31 -0400
-Subject: [PATCH] GL: Fix pack state for BlitGL::copySubTextureCPUReadback
+Subject: GL: Fix pack state for BlitGL::copySubTextureCPUReadback
 
 copySubTextureCPUReadback does both ReadPixels and TexImage calls and
 needs to make sure the client's pack states are not used. It does this
@@ -13,13 +13,12 @@ Change-Id: I93dcabf52edd6e4e08f999aaa0d96d1fc325211a
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7708753
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
 Commit-Queue: Geoff Lang <geofflang@chromium.org>
----
 
 diff --git a/src/libANGLE/renderer/gl/BlitGL.cpp b/src/libANGLE/renderer/gl/BlitGL.cpp
-index b156d2d..154be25 100644
+index 19780ad029525229cae6a9d07bf6e82dd72ee1aa..787405f204c3adf773b96e943c5f70e8e2aa7e5e 100644
 --- a/src/libANGLE/renderer/gl/BlitGL.cpp
 +++ b/src/libANGLE/renderer/gl/BlitGL.cpp
-@@ -859,10 +859,10 @@
+@@ -852,10 +852,10 @@ angle::Result BlitGL::copySubTextureCPUReadback(const gl::Context *context,
          readFunction     = angle::ReadColor<angle::R8G8B8A8, GLfloat>;
      }
  
@@ -34,7 +33,7 @@ index b156d2d..154be25 100644
      ANGLE_GL_TRY(context, mFunctions->readPixels(readPixelsArea.x, readPixelsArea.y,
                                                   readPixelsArea.width, readPixelsArea.height,
                                                   readPixelsFormat, GL_UNSIGNED_BYTE, sourceMemory));
-@@ -877,10 +877,10 @@
+@@ -870,10 +870,10 @@ angle::Result BlitGL::copySubTextureCPUReadback(const gl::Context *context,
          destInternalFormatInfo.format, destInternalFormatInfo.componentType, readPixelsArea.width,
          readPixelsArea.height, 1, unpackFlipY, unpackPremultiplyAlpha, unpackUnmultiplyAlpha);
  
@@ -50,7 +49,7 @@ index b156d2d..154be25 100644
      nativegl::TexSubImageFormat texSubImageFormat =
          nativegl::GetTexSubImageFormat(mFunctions, mFeatures, destFormat, destType);
 diff --git a/src/tests/capture_replay_tests/capture_replay_expectations.txt b/src/tests/capture_replay_tests/capture_replay_expectations.txt
-index 74e572d..201c64a 100644
+index 74e572d7a9ecb1503fdb46d273b77ab07375719f..201c64ab200def996ffd7d0f8f85a60446e3ba5b 100644
 --- a/src/tests/capture_replay_tests/capture_replay_expectations.txt
 +++ b/src/tests/capture_replay_tests/capture_replay_expectations.txt
 @@ -80,6 +80,7 @@
@@ -62,10 +61,10 @@ index 74e572d..201c64a 100644
  # The following tests fail with forceRobustResourceInit
  # They were accidentally passing until http://crrev/c/5588816
 diff --git a/src/tests/gl_tests/CopyTextureTest.cpp b/src/tests/gl_tests/CopyTextureTest.cpp
-index cd9bc97..44effc4 100644
+index cd9bc970b7f646b3e9f037cca3d9e623f8f6afb3..44effc45e132819396c792fbcf947c320bbed0a4 100644
 --- a/src/tests/gl_tests/CopyTextureTest.cpp
 +++ b/src/tests/gl_tests/CopyTextureTest.cpp
-@@ -1988,6 +1988,50 @@
+@@ -1988,6 +1988,50 @@ TEST_P(CopyTextureTestDest, AlphaCopyWithRGB)
      EXPECT_PIXEL_COLOR_EQ(0, 0, expectedPixels);
  }
  

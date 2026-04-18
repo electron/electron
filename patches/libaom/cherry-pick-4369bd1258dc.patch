@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: James Zern <jzern@google.com>
 Date: Fri, 27 Mar 2026 10:56:13 -0700
-Subject: [PATCH] av1_nonrd_pick_inter_mode_sb: add missing ref_frame_flags
- check
+Subject: av1_nonrd_pick_inter_mode_sb: add missing ref_frame_flags check
 
 Before calling `set_block_source_sad()` ensure `LAST_FRAME` is
 available. Fixes a crash that may present as a use after free (UAF).
@@ -10,12 +9,9 @@ available. Fixes a crash that may present as a use after free (UAF).
 Bug: 495477995, 495996858
 Change-Id: I61452ce412fb9071c3370b4350ed8878013a8355
 (cherry picked from commit 4369bd1258dc99fa759916d9aba6509cdda9d877)
----
- av1/encoder/nonrd_pickmode.c | 1 +
- 1 file changed, 1 insertion(+)
 
 diff --git a/av1/encoder/nonrd_pickmode.c b/av1/encoder/nonrd_pickmode.c
-index f201006232..0f2a1c780a 100644
+index f2010062323b0ff4a1236ef63516d9b2d8f3007a..0f2a1c780a56a51f69bba8893fea9d9ad98b85a3 100644
 --- a/av1/encoder/nonrd_pickmode.c
 +++ b/av1/encoder/nonrd_pickmode.c
 @@ -3440,6 +3440,7 @@ void av1_nonrd_pick_inter_mode_sb(AV1_COMP *cpi, TileDataEnc *tile_data,

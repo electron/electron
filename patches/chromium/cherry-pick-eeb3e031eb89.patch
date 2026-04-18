@@ -1,7 +1,7 @@
-From eeb3e031eb8986048b34489743e711d28345e134 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Eugene Zemtsov <eugene@chromium.org>
 Date: Mon, 13 Apr 2026 22:52:33 -0700
-Subject: [PATCH] [M146] media: Zero-copy VP9 alpha decoding in VpxVideoDecoder
+Subject: [M146] media: Zero-copy VP9 alpha decoding in VpxVideoDecoder
 
 Original change's description:
 > media: Zero-copy VP9 alpha decoding in VpxVideoDecoder
@@ -30,13 +30,12 @@ Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
 Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
 Cr-Commit-Position: refs/branch-heads/7680@{#3937}
 Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
----
 
 diff --git a/media/base/frame_buffer_pool.cc b/media/base/frame_buffer_pool.cc
-index e90f070..e2aa3a9 100644
+index e90f07036baab4056398c93a03f8751bbfaa5d69..e2aa3a9243e3ce45b5087853eb2bd7d7dae7acfe 100644
 --- a/media/base/frame_buffer_pool.cc
 +++ b/media/base/frame_buffer_pool.cc
-@@ -56,7 +56,6 @@
+@@ -56,7 +56,6 @@ struct FrameBufferPool::FrameBuffer {
    // Not using std::vector<uint8_t> as resize() calls take a really long time
    // for large buffers.
    BytesArray data;
@@ -44,7 +43,7 @@ index e90f070..e2aa3a9 100644
    bool held_by_library = false;
    // Needs to be a counter since a frame buffer might be used multiple times.
    int held_by_frame = 0;
-@@ -148,31 +147,6 @@
+@@ -148,31 +147,6 @@ void FrameBufferPool::ReleaseFrameBuffer(void* fb_priv) {
    }
  }
  
@@ -76,7 +75,7 @@ index e90f070..e2aa3a9 100644
  base::OnceClosure FrameBufferPool::CreateFrameCallback(void* fb_priv) {
    base::AutoLock lock(lock_);
  
-@@ -210,10 +184,9 @@
+@@ -210,10 +184,9 @@ bool FrameBufferPool::OnMemoryDump(
    size_t bytes_reserved = 0;
    for (const auto& frame_buffer : frame_buffers_) {
      if (IsUsedLocked(frame_buffer.get())) {
@@ -90,10 +89,10 @@ index e90f070..e2aa3a9 100644
  
    memory_dump->AddScalar(base::trace_event::MemoryAllocatorDump::kNameSize,
 diff --git a/media/base/frame_buffer_pool.h b/media/base/frame_buffer_pool.h
-index ac839b8..2ccb0167 100644
+index ac839b8e8bfa00d2fea203be5248a56f04cecc71..2ccb01676b0e8e1e3ca1b3cb60f2883538f2f13c 100644
 --- a/media/base/frame_buffer_pool.h
 +++ b/media/base/frame_buffer_pool.h
-@@ -48,11 +48,6 @@
+@@ -48,11 +48,6 @@ class MEDIA_EXPORT FrameBufferPool
    // Called when a frame buffer allocation is no longer needed.
    void ReleaseFrameBuffer(void* fb_priv);
  
@@ -106,10 +105,10 @@ index ac839b8..2ccb0167 100644
    // |fb_priv| must be a value previously returned by GetFrameBuffer(). The
    // callback may be called on any thread.
 diff --git a/media/base/frame_buffer_pool_unittest.cc b/media/base/frame_buffer_pool_unittest.cc
-index a5b7bff2..4cfdb15 100644
+index a5b7bff2b8af3d2f9a531e894ec28e31e7823ac0..4cfdb1520cc18548fd91b2cca8b03a0124de944f 100644
 --- a/media/base/frame_buffer_pool_unittest.cc
 +++ b/media/base/frame_buffer_pool_unittest.cc
-@@ -32,12 +32,6 @@
+@@ -32,12 +32,6 @@ TEST(FrameBufferPool, BasicFunctionality) {
    EXPECT_NE(buf1.data(), buf2.data());
    std::ranges::fill(buf2, 0);
  
@@ -122,7 +121,7 @@ index a5b7bff2..4cfdb15 100644
    EXPECT_EQ(2u, pool->get_pool_size_for_testing());
  
    // Frames are not released immediately, so this should still show two frames.
-@@ -52,7 +46,6 @@
+@@ -52,7 +46,6 @@ TEST(FrameBufferPool, BasicFunctionality) {
    EXPECT_EQ(1u, pool->get_pool_size_for_testing());
  
    std::ranges::fill(buf1, 0);
@@ -131,10 +130,10 @@ index a5b7bff2..4cfdb15 100644
    // This will release all memory since we're in the shutdown state.
    std::move(frame_release_cb).Run();
 diff --git a/media/filters/vpx_video_decoder.cc b/media/filters/vpx_video_decoder.cc
-index 0be38f7e..32cd3c4 100644
+index 0be38f7ee110a0084854c571784e9dd3c8144f51..32cd3c423f4f01aa4cbe21ae71bf149f26a1deee 100644
 --- a/media/filters/vpx_video_decoder.cc
 +++ b/media/filters/vpx_video_decoder.cc
-@@ -269,7 +269,21 @@
+@@ -269,7 +269,21 @@ bool VpxVideoDecoder::ConfigureDecoder(const VideoDecoderConfig& config) {
  
    DCHECK(!vpx_codec_alpha_);
    vpx_codec_alpha_ = InitializeVpxContext(config);
@@ -157,7 +156,7 @@ index 0be38f7e..32cd3c4 100644
  }
  
  void VpxVideoDecoder::CloseDecoder() {
-@@ -576,20 +590,13 @@
+@@ -576,20 +590,13 @@ bool VpxVideoDecoder::CopyVpxImageToVideoFrame(
    if (memory_pool_) {
      DCHECK_EQ(VideoCodec::kVP9, config_.codec());
      if (vpx_image_alpha) {
@@ -183,7 +182,7 @@ index 0be38f7e..32cd3c4 100644
        *video_frame = VideoFrame::WrapExternalYuvaData(
            codec_format, coded_size, gfx::Rect(visible_size), natural_size,
            vpx_image->stride[VPX_PLANE_Y], vpx_image->stride[VPX_PLANE_U],
-@@ -605,8 +612,14 @@
+@@ -605,8 +612,14 @@ bool VpxVideoDecoder::CopyVpxImageToVideoFrame(
      if (!(*video_frame))
        return false;
  
@@ -201,10 +200,10 @@ index 0be38f7e..32cd3c4 100644
    }
  
 diff --git a/media/filters/vpx_video_decoder.h b/media/filters/vpx_video_decoder.h
-index 7bcba31..2ab37676 100644
+index 7bcba319954ed43175e42c2dc1b991c5b6129138..2ab3767680ee408215bf2debb6f85c033f45af68 100644
 --- a/media/filters/vpx_video_decoder.h
 +++ b/media/filters/vpx_video_decoder.h
-@@ -104,8 +104,8 @@
+@@ -104,8 +104,8 @@ class MEDIA_EXPORT VpxVideoDecoder : public OffloadableVideoDecoder {
    std::unique_ptr<vpx_codec_ctx> vpx_codec_;
    std::unique_ptr<vpx_codec_ctx> vpx_codec_alpha_;
  
@@ -216,10 +215,10 @@ index 7bcba31..2ab37676 100644
    VideoFramePool frame_pool_;
  
 diff --git a/media/filters/vpx_video_decoder_unittest.cc b/media/filters/vpx_video_decoder_unittest.cc
-index c7f6d13..5203645 100644
+index c7f6d13bd825425230b63d87c13466e49f3c3c59..5203645bc8ec89dd93827fc0cbebb92e803faac1 100644
 --- a/media/filters/vpx_video_decoder_unittest.cc
 +++ b/media/filters/vpx_video_decoder_unittest.cc
-@@ -176,6 +176,28 @@
+@@ -176,6 +176,28 @@ class VpxVideoDecoderTest : public testing::Test {
      output_frames_.push_back(std::move(frame));
    }
  
@@ -248,7 +247,7 @@ index c7f6d13..5203645 100644
    MOCK_METHOD1(DecodeDone, void(DecoderStatus));
  
    base::test::TaskEnvironment task_env_;
-@@ -293,6 +315,68 @@
+@@ -293,6 +315,68 @@ TEST_F(VpxVideoDecoderTest, SimpleFrameReuse) {
    EXPECT_EQ(old_y_data, output_frames_.back()->data(VideoFrame::Plane::kY));
  }
  
@@ -317,7 +316,7 @@ index c7f6d13..5203645 100644
  TEST_F(VpxVideoDecoderTest, SimpleFormatChange) {
    scoped_refptr<DecoderBuffer> large_frame =
        ReadTestDataFile("vp9-I-frame-1280x720");
-@@ -312,9 +396,41 @@
+@@ -312,9 +396,41 @@ TEST_F(VpxVideoDecoderTest, FrameValidAfterPoolDestruction) {
  
    // Write to the Y plane. The memory tools should detect a
    // use-after-free if the storage was actually removed by pool destruction.
@@ -362,7 +361,7 @@ index c7f6d13..5203645 100644
  }
  
  // The test stream uses profile 2, which needs high bit depth support in libvpx.
-@@ -362,8 +478,7 @@
+@@ -362,8 +478,7 @@ TEST_F(VpxVideoDecoderTest, MemoryPoolAllowsMultipleDisplay) {
    Destroy();
  
    // ASAN will be very unhappy with this line if the above is incorrect.

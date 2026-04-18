@@ -1,7 +1,8 @@
-From 07398289d921facaa713a6f2d1c411ec1ae1f695 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Paolo Severini <paolosev@microsoft.com>
 Date: Tue, 31 Mar 2026 13:05:12 +0200
-Subject: [PATCH] [compiler] Fix FrameStateFunctionInfo comparison for JS-to-Wasm frames
+Subject: [compiler] Fix FrameStateFunctionInfo comparison for JS-to-Wasm
+ frames
 
 The equality operator for FrameStateFunctionInfo did not compare the
 wasm signature field in JSToWasmFrameStateFunctionInfo. This could
@@ -16,13 +17,12 @@ Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
 Reviewed-by: Daniel Lehmann <dlehmann@chromium.org>
 Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#106175}
----
 
 diff --git a/src/compiler/frame-states.cc b/src/compiler/frame-states.cc
-index 7c15107..5312f07 100644
+index 7c15107243dd233cf3a4f4fa0b4d61557201ce7e..5312f07b5feb7c356e907d43d3bbc6bd35525e90 100644
 --- a/src/compiler/frame-states.cc
 +++ b/src/compiler/frame-states.cc
-@@ -37,11 +37,12 @@
+@@ -37,11 +37,12 @@ std::ostream& operator<<(std::ostream& os, OutputFrameStateCombine const& sc) {
  bool operator==(FrameStateFunctionInfo const& lhs,
                  FrameStateFunctionInfo const& rhs) {
  #if V8_HOST_ARCH_X64
@@ -38,7 +38,7 @@ index 7c15107..5312f07 100644
  #else
    static_assert(sizeof(FrameStateFunctionInfo) == 32);
  #endif
-@@ -52,6 +53,18 @@
+@@ -52,6 +53,18 @@ bool operator==(FrameStateFunctionInfo const& lhs,
        lhs.wasm_function_index() != rhs.wasm_function_index()) {
      return false;
    }
@@ -58,10 +58,10 @@ index 7c15107..5312f07 100644
  
    return lhs.type() == rhs.type() &&
 diff --git a/src/compiler/frame-states.h b/src/compiler/frame-states.h
-index 1faaa59..e17798a 100644
+index 1faaa599bd7d83ad372eec823ebc553a4ec0745a..e17798a1a8e3a127aa6aa7bb2466d2efda02e75a 100644
 --- a/src/compiler/frame-states.h
 +++ b/src/compiler/frame-states.h
-@@ -108,6 +108,10 @@
+@@ -108,6 +108,10 @@ class FrameStateFunctionInfo {
          bytecode_array_(bytecode_array) {
    }
  
@@ -74,7 +74,7 @@ index 1faaa59..e17798a 100644
    uint16_t parameter_count_without_receiver() const {
 diff --git a/test/mjsunit/regress/wasm/regress-497404188.js b/test/mjsunit/regress/wasm/regress-497404188.js
 new file mode 100644
-index 0000000..54992bd
+index 0000000000000000000000000000000000000000..54992bd37cdeeb81d9d542462c075e8601dcec83
 --- /dev/null
 +++ b/test/mjsunit/regress/wasm/regress-497404188.js
 @@ -0,0 +1,92 @@

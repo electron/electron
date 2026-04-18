@@ -1,7 +1,7 @@
-From bb8d4c29dfdb477f221c76fde63e0f3db65734fc Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sunny Sachanandani <sunnyps@chromium.org>
 Date: Fri, 10 Apr 2026 23:37:43 -0700
-Subject: [PATCH] [M146] [gpu] Fix OOB write due to unvalidated get_offset
+Subject: [M146] [gpu] Fix OOB write due to unvalidated get_offset
 
 Original change's description:
 > [gpu] Fix OOB write due to unvalidated get_offset
@@ -38,13 +38,12 @@ Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
 Cr-Commit-Position: refs/branch-heads/7680@{#3919}
 Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
----
 
 diff --git a/gpu/command_buffer/client/cmd_buffer_helper.cc b/gpu/command_buffer/client/cmd_buffer_helper.cc
-index ccda45b1..5aea0c81 100644
+index ccda45b133c6a9f2ee60ccc8900bd4a4ce328394..5aea0c81b29b3507099f399c374f3cb372a3100e 100644
 --- a/gpu/command_buffer/client/cmd_buffer_helper.cc
 +++ b/gpu/command_buffer/client/cmd_buffer_helper.cc
-@@ -158,6 +158,17 @@
+@@ -158,6 +158,17 @@ void CommandBufferHelper::UpdateCachedState(const CommandBuffer::State& state) {
    service_on_old_buffer_ =
        (state.set_get_buffer_count != set_get_buffer_count_);
    cached_get_offset_ = service_on_old_buffer_ ? 0 : state.get_offset;
@@ -63,10 +62,10 @@ index ccda45b1..5aea0c81 100644
    // Don't transition from a lost context to a working context.
    context_lost_ |= error::IsError(state.error);
 diff --git a/gpu/command_buffer/client/cmd_buffer_helper_test.cc b/gpu/command_buffer/client/cmd_buffer_helper_test.cc
-index 1b9254d..009a87e 100644
+index 1b9254d318ae770ca980d2fed1399a69438afa10..009a87e8bf7a3475f63cd51206868dec187f5e06 100644
 --- a/gpu/command_buffer/client/cmd_buffer_helper_test.cc
 +++ b/gpu/command_buffer/client/cmd_buffer_helper_test.cc
-@@ -67,6 +67,8 @@
+@@ -67,6 +67,8 @@ class CommandBufferHelperTest : public testing::Test {
      return helper_->immediate_entry_count_;
    }
  
@@ -75,7 +74,7 @@ index 1b9254d..009a87e 100644
    // Adds a command to the buffer through the helper, while adding it as an
    // expected call on the API mock.
    void AddCommandWithExpect(error::Error _return,
-@@ -655,6 +657,17 @@
+@@ -655,6 +657,17 @@ TEST_F(CommandBufferHelperTest, IsContextLost) {
    EXPECT_TRUE(helper_->IsContextLost());
  }
  

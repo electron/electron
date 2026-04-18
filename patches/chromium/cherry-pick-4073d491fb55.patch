@@ -1,7 +1,8 @@
-From 4073d491fb559e9efe56759b92dfe387f490ed5a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Matt Menke <mmenke@chromium.org>
 Date: Fri, 27 Mar 2026 09:19:35 -0700
-Subject: [PATCH] Make SpdySession::CreateStream() call DoDrainSession() asynchronously.
+Subject: Make SpdySession::CreateStream() call DoDrainSession()
+ asynchronously.
 
 Calling it synchronously would tear down all SpdyStreams immediately,
 informing their consumers of the error. This could have side effects
@@ -26,13 +27,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7701714
 Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
 Commit-Queue: mmenke <mmenke@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1606281}
----
 
 diff --git a/net/socket/socket_test_util.cc b/net/socket/socket_test_util.cc
-index aee8b6b..b3aedad 100644
+index 957ebf883fef96af8fea16cb883e8c663dce8b2b..eb811b8b5dc382cf1fbd4cc75a63c416d71f746b 100644
 --- a/net/socket/socket_test_util.cc
 +++ b/net/socket/socket_test_util.cc
-@@ -1258,7 +1258,7 @@
+@@ -1251,7 +1251,7 @@ void MockTCPClientSocket::Disconnect() {
  bool MockTCPClientSocket::IsConnected() const {
    if (!data_)
      return false;
@@ -42,10 +42,10 @@ index aee8b6b..b3aedad 100644
  
  bool MockTCPClientSocket::IsConnectedAndIdle() const {
 diff --git a/net/socket/socket_test_util.h b/net/socket/socket_test_util.h
-index 4c342ac8..b16e08dc 100644
+index 204fcd3eb95a283783f508153137328e162bbde9..78ebf2140902f14e1f6506c6a1e3654e5fc8c4ff 100644
 --- a/net/socket/socket_test_util.h
 +++ b/net/socket/socket_test_util.h
-@@ -451,6 +451,12 @@
+@@ -447,6 +447,12 @@ class SocketDataProvider {
    MockConnect connect_data() const { return connect_; }
    void set_connect_data(const MockConnect& connect) { connect_ = connect; }
  
@@ -58,7 +58,7 @@ index 4c342ac8..b16e08dc 100644
   private:
    // Called to inform subclasses of initialization.
    virtual void Reset() = 0;
-@@ -463,6 +469,8 @@
+@@ -459,6 +465,8 @@ class SocketDataProvider {
    // This reflects the default state of TCPClientSockets.
    bool no_delay_ = true;
  
@@ -68,10 +68,10 @@ index 4c342ac8..b16e08dc 100644
    int keep_alive_delay_ = 0;
  
 diff --git a/net/spdy/spdy_session.cc b/net/spdy/spdy_session.cc
-index a02c75e..8be9156 100644
+index 7465a28030a65eb4964e537134c60ac64ab54f25..9dfbb5dd63802add67931d2aa0b06aa62d6d7be1 100644
 --- a/net/spdy/spdy_session.cc
 +++ b/net/spdy/spdy_session.cc
-@@ -1720,7 +1720,9 @@
+@@ -1682,7 +1682,9 @@ int SpdySession::CreateStream(const SpdyStreamRequest& request,
    UMA_HISTOGRAM_BOOLEAN("Net.SpdySession.CreateStreamWithSocketConnected",
                          socket_->IsConnected());
    if (!socket_->IsConnected()) {
@@ -82,7 +82,7 @@ index a02c75e..8be9156 100644
          ERR_CONNECTION_CLOSED,
          "Tried to create SPDY stream for a closed socket connection.");
      return ERR_CONNECTION_CLOSED;
-@@ -2725,6 +2727,23 @@
+@@ -2674,6 +2676,23 @@ void SpdySession::DoDrainSession(Error err,
    MaybePostWriteLoop();
  }
  
@@ -107,10 +107,10 @@ index a02c75e..8be9156 100644
    DCHECK(stream);
    stream->LogStreamError(status, "Abandoned.");
 diff --git a/net/spdy/spdy_session.h b/net/spdy/spdy_session.h
-index c211f813..baad481 100644
+index b36f8fae637e49cb82141cf59d123a49c9c931ac..a5896d76fbd73c5dfd0abcae77d5dfaadbaa3d54 100644
 --- a/net/spdy/spdy_session.h
 +++ b/net/spdy/spdy_session.h
-@@ -876,6 +876,15 @@
+@@ -857,6 +857,15 @@ class NET_EXPORT SpdySession
                        const std::string& description,
                        bool force_send_go_away = false);
  
@@ -127,10 +127,10 @@ index c211f813..baad481 100644
    // reason other than being requested to by the stream.
    void LogAbandonedStream(SpdyStream* stream, Error status);
 diff --git a/net/spdy/spdy_session_unittest.cc b/net/spdy/spdy_session_unittest.cc
-index 8882c20..2e00c65 100644
+index 44c9ea47b39fe8c3efbe5e39f0b6d028fa73af97..6e808d05d16f144afdfdae229ec4c8f110d4fde0 100644
 --- a/net/spdy/spdy_session_unittest.cc
 +++ b/net/spdy/spdy_session_unittest.cc
-@@ -980,10 +980,14 @@
+@@ -976,10 +976,14 @@ TEST_F(SpdySessionTest, CreateStreamAfterGoAway) {
    EXPECT_TRUE(session_->IsStreamActive(1));
  
    SpdyStreamRequest stream_request;
@@ -148,7 +148,7 @@ index 8882c20..2e00c65 100644
    EXPECT_THAT(rv, IsError(ERR_FAILED));
  
    EXPECT_TRUE(session_);
-@@ -2930,6 +2934,62 @@
+@@ -2835,6 +2839,62 @@ TEST_F(SpdySessionTest, CancelTwoStalledCreateStream) {
    EXPECT_EQ(0u, pending_create_stream_queue_size(LOWEST));
  }
  

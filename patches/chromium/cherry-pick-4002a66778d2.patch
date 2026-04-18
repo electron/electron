@@ -1,7 +1,7 @@
-From 4002a66778d2aef40fb7d72c580d7bbc10115ea8 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Vasiliy Telezhnikov <vasilyt@chromium.org>
-Date: Wed, 01 Apr 2026 11:19:52 -0700
-Subject: [PATCH] Fix potential double free in deserializing CopyOutputResults
+Date: Wed, 1 Apr 2026 11:19:52 -0700
+Subject: Fix potential double free in deserializing CopyOutputResults
 
 Skia always runs release proc of the SkBitmap::installPixels [1].
 
@@ -13,13 +13,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7718978
 Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
 Reviewed-by: Joe Mason <joenotcharles@google.com>
 Cr-Commit-Position: refs/heads/main@{#1608675}
----
 
 diff --git a/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc b/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
-index 59fbc85e..9d6bdd42 100644
+index 59fbc85e257778d1743688716b314ed983f2f324..9d6bdd42622dffd90d39d6977bdec169baf98170 100644
 --- a/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
 +++ b/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
-@@ -111,12 +111,14 @@
+@@ -111,12 +111,14 @@ bool StructTraits<viz::mojom::BitmapInSharedMemoryDataView, SkBitmap>::Read(
      return false;
    }
  

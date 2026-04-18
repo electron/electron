@@ -1,7 +1,10 @@
-From a6357144e7bfc5c8ecc7220de4e95b7aa799b221 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Lukasz Anforowicz <lukasza@chromium.org>
-Date: Wed, 01 Apr 2026 15:44:32 -0700
-Subject: [PATCH] [rust png] Invalidate `already_started_frame_` after clearing frames.
+Date: Wed, 1 Apr 2026 15:44:32 -0700
+Subject: [rust png] Invalidate `already_started_frame_` after clearing frames.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 This CL ensures that `already_started_frame_` doesn't become stale
 after:
@@ -18,10 +21,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7703000
 Reviewed-by: Daniel Cheng <dcheng@chromium.org>
 Commit-Queue: Łukasz Anforowicz <lukasza@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1608827}
----
 
 diff --git a/third_party/blink/renderer/platform/graphics/image_frame_generator_test.cc b/third_party/blink/renderer/platform/graphics/image_frame_generator_test.cc
-index 8a853696..0bda0dd 100644
+index 8a8536968c9b0c08ce0962ac9c6b551b8a76e0ba..0bda0dd5b6ed0edd62322b74fbaaa10cdf926475 100644
 --- a/third_party/blink/renderer/platform/graphics/image_frame_generator_test.cc
 +++ b/third_party/blink/renderer/platform/graphics/image_frame_generator_test.cc
 @@ -26,6 +26,7 @@
@@ -43,7 +45,7 @@ index 8a853696..0bda0dd 100644
  #include "third_party/blink/renderer/platform/wtf/vector.h"
  
  namespace blink {
-@@ -413,4 +416,65 @@
+@@ -413,4 +416,65 @@ TEST_F(ImageFrameGeneratorTest, clearMultiFrameDecoder) {
    EXPECT_EQ(kNotFound, requested_clear_except_frame_);
  }
  
@@ -110,10 +112,10 @@ index 8a853696..0bda0dd 100644
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/image-decoders/png/png_image_decoder_test.cc b/third_party/blink/renderer/platform/image-decoders/png/png_image_decoder_test.cc
-index 5f647c0..5fbd931 100644
+index ae4343652b2bd536a70846a73d7c35befb6584e6..b47a2c1da2156440a5dfa6b6f601c9dd8dc5db47 100644
 --- a/third_party/blink/renderer/platform/image-decoders/png/png_image_decoder_test.cc
 +++ b/third_party/blink/renderer/platform/image-decoders/png/png_image_decoder_test.cc
-@@ -871,6 +871,53 @@
+@@ -879,6 +879,53 @@ TEST(AnimatedPNGTests, IncrementalDecodeOfDifferentFrame) {
    EXPECT_EQ(frame1->GetStatus(), ImageFrame::kFrameComplete);
  }
  
@@ -168,10 +170,10 @@ index 5f647c0..5fbd931 100644
  // (IDAT), invalidates the decoder.
  TEST(AnimatedPNGTests, VerifyIENDBeforeIDATInvalidatesDecoder) {
 diff --git a/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.cc b/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.cc
-index a6766b5d..f4a8c84 100644
+index a6766b5d51ddf64eab40ebe838e0a5daaef44dba..f4a8c849986d41d36baffa11d66b3d9bdc9bdc96 100644
 --- a/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.cc
 +++ b/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.cc
-@@ -301,6 +301,11 @@
+@@ -301,6 +301,11 @@ void SkiaImageDecoderBase::Decode(wtf_size_t index) {
      UpdateAggressivePurging(current_frame_index);
  
      if (frame.GetStatus() == ImageFrame::kFrameEmpty) {
@@ -183,7 +185,7 @@ index a6766b5d..f4a8c84 100644
        wtf_size_t required_previous_frame_index =
            frame.RequiredPreviousFrameIndex();
        if (required_previous_frame_index == kNotFound) {
-@@ -404,6 +409,7 @@
+@@ -404,6 +409,7 @@ void SkiaImageDecoderBase::Decode(wtf_size_t index) {
        options.fPriorFrame = prior_frame_;
        options.fZeroInitialized = SkCodec::kNo_ZeroInitialized;
  
@@ -192,10 +194,10 @@ index a6766b5d..f4a8c84 100644
            codec_->startIncrementalDecode(image_info, frame.Bitmap().getPixels(),
                                           frame.Bitmap().rowBytes(), &options);
 diff --git a/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.h b/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.h
-index ab2c197..86726262 100644
+index ab2c197704a522261ffa40171ca31f03c0cdbf1c..86726262a31b09c602de4697fa5cc8e2bd51fd7e 100644
 --- a/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.h
 +++ b/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.h
-@@ -98,8 +98,9 @@
+@@ -98,8 +98,9 @@ class PLATFORM_EXPORT SkiaImageDecoderBase : public ImageDecoder {
    const wtf_size_t reading_offset_ = 0;
  
    // Number of a frame for which calling `SkCodec::incrementalDecode` is okay.

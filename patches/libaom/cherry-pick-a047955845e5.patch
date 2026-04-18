@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Marco Paniconi <marpan@google.com>
 Date: Sun, 29 Mar 2026 20:27:20 -0700
-Subject: [PATCH] Set force_mv_inter_layer earlier in skip_inter_mode
+Subject: Set force_mv_inter_layer earlier in skip_inter_mode
 
 For nonrd_pickmode: move the setting of
 force_mv_inter_layer earlier in the
@@ -21,13 +21,9 @@ assert check for scaled_ref in combined_motion_search.
 Bug: 495477995, 495996858
 Change-Id: I578d19156d97a50546edc9422bc3581566f1236e
 (cherry picked from commit a047955845e50e43786d51cdefcfc9e87804ed61)
----
- av1/encoder/nonrd_pickmode.c | 44 +++++++++++++++++++++---------------
- test/svc_datarate_test.cc    | 34 ++++++++++++++++++++++++++--
- 2 files changed, 58 insertions(+), 20 deletions(-)
 
 diff --git a/av1/encoder/nonrd_pickmode.c b/av1/encoder/nonrd_pickmode.c
-index 0f2a1c780a..942b8ab23a 100644
+index 0f2a1c780a56a51f69bba8893fea9d9ad98b85a3..942b8ab23a2d448877c8801940fee4d0baae9aef 100644
 --- a/av1/encoder/nonrd_pickmode.c
 +++ b/av1/encoder/nonrd_pickmode.c
 @@ -192,7 +192,7 @@ static int combined_motion_search(AV1_COMP *cpi, MACROBLOCK *x,
@@ -103,7 +99,7 @@ index 0f2a1c780a..942b8ab23a 100644
    if (cpi->oxcf.tune_cfg.content == AOM_CONTENT_SCREEN &&
        !x->force_zeromv_skip_for_blk) {
 diff --git a/test/svc_datarate_test.cc b/test/svc_datarate_test.cc
-index 0df678212a..2f68ba7a21 100644
+index 0df678212acb0519aa4420ae57186840e12c682c..2f68ba7a214932b284a6eacbe1a9b5b474b6c659 100644
 --- a/test/svc_datarate_test.cc
 +++ b/test/svc_datarate_test.cc
 @@ -247,6 +247,7 @@ class DatarateTestSVC

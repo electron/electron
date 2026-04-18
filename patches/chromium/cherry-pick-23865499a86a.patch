@@ -1,7 +1,7 @@
-From 23865499a86aa3afc10f7ce06cf875448ba2ad9b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Fergal Daly <fergal@chromium.org>
 Date: Sun, 12 Apr 2026 20:37:39 -0700
-Subject: [PATCH] [M146] Fix UAF in FileSystemAccessChangeSource.
+Subject: [M146] Fix UAF in FileSystemAccessChangeSource.
 
 Original change's description:
 > Fix UAF in FileSystemAccessChangeSource.
@@ -35,13 +35,12 @@ Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.i
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/7680@{#3929}
 Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
----
 
 diff --git a/content/browser/file_system_access/file_system_access_change_source.cc b/content/browser/file_system_access/file_system_access_change_source.cc
-index 566dc1e..48bd867 100644
+index 566dc1ea40b43a54b33d70e82a20ff5695b57b5e..48bd867a9d3d140eaf515ea7bc1613231f7e79e9 100644
 --- a/content/browser/file_system_access/file_system_access_change_source.cc
 +++ b/content/browser/file_system_access/file_system_access_change_source.cc
-@@ -71,13 +71,14 @@
+@@ -71,13 +71,14 @@ void FileSystemAccessChangeSource::DidInitialize(
    CHECK(!initialization_result_.has_value());
    CHECK(!initialization_callbacks_.empty());
  
@@ -61,7 +60,7 @@ index 566dc1e..48bd867 100644
  
 diff --git a/content/browser/file_system_access/file_system_access_change_source_unittest.cc b/content/browser/file_system_access/file_system_access_change_source_unittest.cc
 new file mode 100644
-index 0000000..b0f15909
+index 0000000000000000000000000000000000000000..b0f15909bebda29fc2ec689a6d3b15d797dcc722
 --- /dev/null
 +++ b/content/browser/file_system_access/file_system_access_change_source_unittest.cc
 @@ -0,0 +1,146 @@
@@ -212,10 +211,10 @@ index 0000000..b0f15909
 +
 +}  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index d368b24..fa04ab07 100644
+index 07cbf495717714d71d977a8820e08050c3062526..f5d72a89c7229bf8e897c90660feca482ac82594 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -2652,6 +2652,7 @@
+@@ -2656,6 +2656,7 @@ test("content_unittests") {
      "../browser/fenced_frame/redacted_fenced_frame_config_mojom_traits_unittest.cc",
      "../browser/file_system/browser_file_system_helper_unittest.cc",
      "../browser/file_system/file_system_operation_runner_unittest.cc",

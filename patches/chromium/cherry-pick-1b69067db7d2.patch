@@ -1,7 +1,7 @@
-From 1b69067db7d25ea4208e1eadf4472b4fab1a5759 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Vasilii Sukhanov <vasilii@chromium.org>
-Date: Wed, 08 Apr 2026 07:48:21 -0700
-Subject: [PATCH] Fix cross-domain password leak via manual-fallback preview
+Date: Wed, 8 Apr 2026 07:48:21 -0700
+Subject: Fix cross-domain password leak via manual-fallback preview
 
 In PasswordManualFallbackFlow::DidSelectSuggestion, when a user selects
 a password suggestion, the browser process sends the cleartext password
@@ -17,13 +17,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7735152
 Commit-Queue: Vasilii Sukhanov <vasilii@chromium.org>
 Reviewed-by: Anna Tsvirchkova <atsvirchkova@google.com>
 Cr-Commit-Position: refs/heads/main@{#1611490}
----
 
 diff --git a/components/password_manager/core/browser/password_manual_fallback_flow.cc b/components/password_manager/core/browser/password_manual_fallback_flow.cc
-index 6fd5468..47bd86d5 100644
+index d65be8e82a2a8dd202d5eb1644ea3db9f59c18d4..14e18916fbac51665f9f94d99c8bc6ef8afbc112 100644
 --- a/components/password_manager/core/browser/password_manual_fallback_flow.cc
 +++ b/components/password_manager/core/browser/password_manual_fallback_flow.cc
-@@ -213,12 +213,13 @@
+@@ -211,12 +211,13 @@ void PasswordManualFallbackFlow::DidSelectSuggestion(
        if (!form) {
          return;
        }
@@ -40,10 +39,10 @@ index 6fd5468..47bd86d5 100644
      }
      case autofill::SuggestionType::kPasswordFieldByFieldFilling:
 diff --git a/components/password_manager/core/browser/password_manual_fallback_flow_unittest.cc b/components/password_manager/core/browser/password_manual_fallback_flow_unittest.cc
-index 8b51bbc..b99c653 100644
+index 866ca1f10b017f48a444742788f3965320647f7c..8789288a9630a921fe0cf79680cf41a54c619e38 100644
 --- a/components/password_manager/core/browser/password_manual_fallback_flow_unittest.cc
 +++ b/components/password_manager/core/browser/password_manual_fallback_flow_unittest.cc
-@@ -656,7 +656,7 @@
+@@ -656,7 +656,7 @@ TEST_F(PasswordManualFallbackFlowTest,
    EXPECT_CALL(driver(), PreviewSuggestionById(form.username_element_renderer_id,
                                                form.password_element_renderer_id,
                                                std::u16string(u"username"),
@@ -52,7 +51,7 @@ index 8b51bbc..b99c653 100644
    Suggestion suggestion = autofill::test::CreateAutofillSuggestion(
        SuggestionType::kPasswordEntry, u"google.com",
        CreateTestPasswordDetails());
-@@ -667,6 +667,40 @@
+@@ -667,6 +667,40 @@ TEST_F(PasswordManualFallbackFlowTest,
    flow().DidSelectSuggestion(suggestion);
  }
  
@@ -93,7 +92,7 @@ index 8b51bbc..b99c653 100644
  // Test that only password field is previewed if the credential doesn't have
  // a username saved for it.
  TEST_F(PasswordManualFallbackFlowTest,
-@@ -687,7 +721,7 @@
+@@ -687,7 +721,7 @@ TEST_F(PasswordManualFallbackFlowTest,
    EXPECT_CALL(driver(), PreviewSuggestionById(FieldRendererId(),
                                                form.password_element_renderer_id,
                                                std::u16string(),

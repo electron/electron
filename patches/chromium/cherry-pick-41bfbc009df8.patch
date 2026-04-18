@@ -1,7 +1,7 @@
-From 41bfbc009df8336d2c813cd3963e75a28a022e43 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tommy Steimel <steimel@chromium.org>
 Date: Tue, 31 Mar 2026 16:11:55 -0700
-Subject: [PATCH] [Media Session] Don't assume there is still 1 normal player
+Subject: [Media Session] Don't assume there is still 1 normal player
 
 There are some actions in MediaSessionImpl that are only available when
 there is exactly 1 normal player, so when they're called, there's a
@@ -19,13 +19,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7719021
 Reviewed-by: Benjamin Keen <bkeen@google.com>
 Commit-Queue: Tommy Steimel <steimel@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1608166}
----
 
 diff --git a/content/browser/media/session/media_session_impl.cc b/content/browser/media/session/media_session_impl.cc
-index 542bd7e..24115ab 100644
+index 542bd7ee9ab011b94d41517286334b75a94b47f8..24115ab4024a981334f1f9111d9017b37bf634b4 100644
 --- a/content/browser/media/session/media_session_impl.cc
 +++ b/content/browser/media/session/media_session_impl.cc
-@@ -1290,7 +1290,6 @@
+@@ -1290,7 +1290,6 @@ void MediaSessionImpl::EnterPictureInPicture() {
      return;
    }
  
@@ -33,7 +32,7 @@ index 542bd7e..24115ab 100644
    if (normal_players_.size() != 1u) {
      // There should be one and only one player when we enter picture-in-picture.
      return;
-@@ -1355,13 +1354,23 @@
+@@ -1355,13 +1354,23 @@ void MediaSessionImpl::Raise() {
  }
  
  void MediaSessionImpl::SetMute(bool mute) {

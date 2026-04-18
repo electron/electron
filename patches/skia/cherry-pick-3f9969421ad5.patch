@@ -1,7 +1,7 @@
-From 3f9969421ad5d0b544b2013ea1386864589511e5 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kalvin Lee <kdlee@chromium.org>
 Date: Fri, 27 Mar 2026 16:37:30 +0900
-Subject: [PATCH] Terracotta-Phase-1: Reorder member destruction
+Subject: Terracotta-Phase-1: Reorder member destruction
 
 This is a speculative patch. Please see the bug for details.
 
@@ -11,13 +11,12 @@ Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1196676
 Reviewed-by: Michael Ludwig <michaelludwig@google.com>
 Commit-Queue: Michael Ludwig <michaelludwig@google.com>
 Reviewed-by: Thomas Smith <thomsmit@google.com>
----
 
 diff --git a/include/gpu/graphite/Context.h b/include/gpu/graphite/Context.h
-index 84ec802..d81e3fe 100644
+index d3a8ce563713d5a6866b4efa8dcdfa959c92ff09..9397220c2662798c69008343b36e925ad6e4a768 100644
 --- a/include/gpu/graphite/Context.h
 +++ b/include/gpu/graphite/Context.h
-@@ -406,8 +406,8 @@
+@@ -403,8 +403,8 @@ private:
  
      sk_sp<SharedContext> fSharedContext;
      std::unique_ptr<ResourceProvider> fResourceProvider;

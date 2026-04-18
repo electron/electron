@@ -1,7 +1,7 @@
-From 0566b2f5f0d1f218d9990eba838af16826d2e7e3 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michael Ludwig <michaelludwig@google.com>
-Date: Wed, 01 Apr 2026 09:48:48 -0400
-Subject: [PATCH] Use 16-bit size for ResourceKeys
+Date: Wed, 1 Apr 2026 09:48:48 -0400
+Subject: Use 16-bit size for ResourceKeys
 
 Internally, ResourceKey required the size to fit into a uint16_t so this
 makes that explicit in the public API. It also changes how the size is
@@ -22,10 +22,9 @@ Change-Id: I6ac4f17628b9a2e1a777c473b74e6d1f5c68b27d
 Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1199497
 Reviewed-by: Robert Phillips <robertphillips@google.com>
 Commit-Queue: Michael Ludwig <michaelludwig@google.com>
----
 
 diff --git a/src/gpu/ResourceKey.h b/src/gpu/ResourceKey.h
-index f8dee79..19851a6 100644
+index f8dee7983036a95d2f5fd7404553916b5c616e83..19851a67653669058361570c615d9be45dc5153a 100644
 --- a/src/gpu/ResourceKey.h
 +++ b/src/gpu/ResourceKey.h
 @@ -19,6 +19,7 @@
@@ -36,7 +35,7 @@ index f8dee79..19851a6 100644
  #include <new>
  #include <utility>
  
-@@ -77,14 +78,10 @@
+@@ -77,14 +78,10 @@ public:
          }
  
      protected:
@@ -54,7 +53,7 @@ index f8dee79..19851a6 100644
          }
  
      private:
-@@ -92,7 +89,7 @@
+@@ -92,7 +89,7 @@ public:
      };
  
  protected:
@@ -63,7 +62,7 @@ index f8dee79..19851a6 100644
  
      ResourceKey() { this->reset(); }
  
-@@ -118,10 +115,10 @@
+@@ -118,10 +115,10 @@ protected:
          return *this;
      }
  
@@ -76,7 +75,7 @@ index f8dee79..19851a6 100644
  
      /** ptr to the key data, excluding meta-data (hash, domain, etc).  */
      const uint32_t* data() const {
-@@ -149,14 +146,17 @@
+@@ -149,14 +146,17 @@ protected:
  private:
      enum MetaDataIdx {
          kHash_MetaDataIdx,
@@ -96,7 +95,7 @@ index f8dee79..19851a6 100644
  
      void validate() const {
          SkASSERT(this->isValid());
-@@ -197,7 +197,7 @@
+@@ -197,7 +197,7 @@ private:
  class ScratchKey : public ResourceKey {
  public:
      /** Uniquely identifies the type of resource that is cached as scratch. */
@@ -105,7 +104,7 @@ index f8dee79..19851a6 100644
  
      /** Generate a unique ResourceType. */
      static ResourceType GenerateResourceType();
-@@ -219,7 +219,7 @@
+@@ -219,7 +219,7 @@ public:
  
      class Builder : public ResourceKey::Builder {
      public:
@@ -114,7 +113,7 @@ index f8dee79..19851a6 100644
                  : ResourceKey::Builder(key, type, data32Count) {}
      };
  };
-@@ -240,7 +240,7 @@
+@@ -240,7 +240,7 @@ public:
   */
  class UniqueKey : public ResourceKey {
  public:
@@ -123,7 +122,7 @@ index f8dee79..19851a6 100644
      /** Generate a Domain for unique keys. */
      static Domain GenerateDomain();
  
-@@ -279,17 +279,17 @@
+@@ -279,17 +279,17 @@ public:
  
      class Builder : public ResourceKey::Builder {
      public:
@@ -144,7 +143,7 @@ index f8dee79..19851a6 100644
              SkASSERT(&innerKey != key);
              // add the inner key to the end of the key so that op[] can be indexed normally.
              uint32_t* innerKeyData = &this->operator[](extraData32Cnt);
-@@ -300,9 +300,15 @@
+@@ -300,9 +300,15 @@ public:
          }
  
      private:
@@ -164,7 +163,7 @@ index f8dee79..19851a6 100644
      };
  
 diff --git a/src/gpu/ganesh/GrStyle.cpp b/src/gpu/ganesh/GrStyle.cpp
-index 5d7bc9c..d1bdcf5 100644
+index 5d7bc9c1d971bbcf3df0fa720f660f23dfdcbab5..d1bdcf5a117b61f3a8ac3010d6d3cc3702f82ced 100644
 --- a/src/gpu/ganesh/GrStyle.cpp
 +++ b/src/gpu/ganesh/GrStyle.cpp
 @@ -18,8 +18,18 @@
@@ -187,10 +186,10 @@ index 5d7bc9c..d1bdcf5 100644
          size += 2 + style.dashIntervalCnt();
      } else if (style.pathEffect()) {
 diff --git a/src/gpu/ganesh/GrStyle.h b/src/gpu/ganesh/GrStyle.h
-index 41b0ce9..252b975 100644
+index 41b0ce9db13e57db63cd1949dc87b9c20023fcc6..252b975e1e66dd654326449f3c9cbc317b8a2fda 100644
 --- a/src/gpu/ganesh/GrStyle.h
 +++ b/src/gpu/ganesh/GrStyle.h
-@@ -74,6 +74,8 @@
+@@ -74,6 +74,8 @@ public:
       * into a key. This occurs when there is a path effect that is not a dash. The key can
       * either reflect just the path effect (if one) or the path effect and the strokerec. Note
       * that a simple fill has a zero sized key.
@@ -200,7 +199,7 @@ index 41b0ce9..252b975 100644
      static int KeySize(const GrStyle&, Apply, uint32_t flags = 0);
  
 diff --git a/src/gpu/ganesh/geometry/GrStyledShape.cpp b/src/gpu/ganesh/geometry/GrStyledShape.cpp
-index 3c2b942..6aa4daa 100644
+index 3c2b942aa6c614a6312e6695309cb9fc8dd6f5d5..6aa4daa3f8d76ab0dfe062dfb2f4b1503a8a5e1f 100644
 --- a/src/gpu/ganesh/geometry/GrStyledShape.cpp
 +++ b/src/gpu/ganesh/geometry/GrStyledShape.cpp
 @@ -19,6 +19,7 @@
@@ -211,7 +210,7 @@ index 3c2b942..6aa4daa 100644
  #include <utility>
  
  
-@@ -141,12 +142,12 @@
+@@ -141,12 +142,12 @@ static void write_path_key_from_data(const SkPath& path, uint32_t* origKey) {
      SkASSERT(key - origKey == path_key_from_data_size(path));
  }
  
@@ -227,7 +226,7 @@ index 3c2b942..6aa4daa 100644
      switch(fShape.type()) {
          case GrShape::Type::kPoint:
              static_assert(0 == sizeof(SkPoint) % sizeof(uint32_t));
-@@ -170,11 +171,13 @@
+@@ -170,11 +171,13 @@ int GrStyledShape::unstyledKeySize() const {
              break;
          case GrShape::Type::kPath: {
              if (0 == fGenID) {
@@ -243,7 +242,7 @@ index 3c2b942..6aa4daa 100644
              } else {
                  count++; // Just adds the gen ID.
              }
-@@ -251,6 +254,7 @@
+@@ -251,6 +254,7 @@ void GrStyledShape::writeUnstyledKey(uint32_t* key) const {
  
  void GrStyledShape::setInheritedKey(const GrStyledShape &parent, GrStyle::Apply apply,
                                      SkScalar scale) {
@@ -251,7 +250,7 @@ index 3c2b942..6aa4daa 100644
      SkASSERT(!fInheritedKey.count());
      // If the output shape turns out to be simple, then we will just use its geometric key
      if (fShape.isPath()) {
-@@ -264,7 +268,7 @@
+@@ -264,7 +268,7 @@ void GrStyledShape::setInheritedKey(const GrStyledShape &parent, GrStyle::Apply
          bool useParentGeoKey = !parentCnt;
          if (useParentGeoKey) {
              parentCnt = parent.unstyledKeySize();
@@ -260,7 +259,7 @@ index 3c2b942..6aa4daa 100644
                  // The parent's geometry has no key so we will have no key.
                  fGenID = 0;
                  return;
-@@ -283,7 +287,12 @@
+@@ -283,7 +287,12 @@ void GrStyledShape::setInheritedKey(const GrStyledShape &parent, GrStyle::Apply
              // we try to get a key for the shape.
              fGenID = 0;
              return;
@@ -274,10 +273,10 @@ index 3c2b942..6aa4daa 100644
          if (useParentGeoKey) {
              // This will be the geo key.
 diff --git a/src/gpu/ganesh/geometry/GrStyledShape.h b/src/gpu/ganesh/geometry/GrStyledShape.h
-index 97db583..ed43453 100644
+index 97db583a5cf8aa8c7fe8c0e054ef622ca6945744..ed4345355478121dfedb1a894e159b80c4fca304 100644
 --- a/src/gpu/ganesh/geometry/GrStyledShape.h
 +++ b/src/gpu/ganesh/geometry/GrStyledShape.h
-@@ -252,11 +252,11 @@
+@@ -252,11 +252,11 @@ public:
  
      /**
       * Gets the size of the key for the shape represented by this GrStyledShape (ignoring its
@@ -293,10 +292,10 @@ index 97db583..ed43453 100644
      /**
       * Writes unstyledKeySize() bytes into the provided pointer. Assumes that there is enough
 diff --git a/src/gpu/ganesh/image/GrImageUtils.cpp b/src/gpu/ganesh/image/GrImageUtils.cpp
-index a88ff15..8fd9ea6 100644
+index a88ff15c0a59f1a5f417aa37f243385503a3dfd9..8fd9ea6a55e4a77c793c7af2361aab7e06c63f08 100644
 --- a/src/gpu/ganesh/image/GrImageUtils.cpp
 +++ b/src/gpu/ganesh/image/GrImageUtils.cpp
-@@ -683,8 +683,7 @@
+@@ -683,8 +683,7 @@ GrSurfaceProxyView FindOrMakeCachedMipmappedView(GrRecordingContext* rContext,
      SkASSERT(baseKey.isValid());
      skgpu::UniqueKey mipmappedKey;
      static const skgpu::UniqueKey::Domain kMipmappedDomain = skgpu::UniqueKey::GenerateDomain();
@@ -307,10 +306,10 @@ index a88ff15..8fd9ea6 100644
      }
      SkASSERT(mipmappedKey.isValid());
 diff --git a/src/gpu/ganesh/ops/TriangulatingPathRenderer.cpp b/src/gpu/ganesh/ops/TriangulatingPathRenderer.cpp
-index 4f22dc7..ce194c7 100644
+index 124e51842eafbf7d3b010ca3232731d549515a9b..1bf3038847223c8167fa60c852c23216d186c5cc 100644
 --- a/src/gpu/ganesh/ops/TriangulatingPathRenderer.cpp
 +++ b/src/gpu/ganesh/ops/TriangulatingPathRenderer.cpp
-@@ -284,8 +284,7 @@
+@@ -282,8 +282,7 @@ private:
          bool inverseFill = shape.inverseFilled();
  
          static constexpr int kClipBoundsCnt = sizeof(devClipBounds) / sizeof(uint32_t);
@@ -321,10 +320,10 @@ index 4f22dc7..ce194c7 100644
          shape.writeUnstyledKey(&builder[0]);
          // For inverse fills, the tessellation is dependent on clip bounds.
 diff --git a/src/gpu/graphite/GraphiteResourceKey.h b/src/gpu/graphite/GraphiteResourceKey.h
-index 12e72d1..d52f009 100644
+index 12e72d1b24f45ac5885a125cb3d52cb648a55402..d52f0099a722aaf2a4b655abf6bf8c0ea26dcf57 100644
 --- a/src/gpu/graphite/GraphiteResourceKey.h
 +++ b/src/gpu/graphite/GraphiteResourceKey.h
-@@ -46,7 +46,7 @@
+@@ -46,7 +46,7 @@ public:
  
      class Builder : public ResourceKey::Builder {
      public:
@@ -334,10 +333,10 @@ index 12e72d1..d52f009 100644
      };
  };
 diff --git a/src/gpu/graphite/RasterPathUtils.cpp b/src/gpu/graphite/RasterPathUtils.cpp
-index 1d8b556..8557d35 100644
+index 1d8b5563e41bf8e3f515438c666760b228c3947c..8557d35bc4803cf71224457d103c3a9ce874012c 100644
 --- a/src/gpu/graphite/RasterPathUtils.cpp
 +++ b/src/gpu/graphite/RasterPathUtils.cpp
-@@ -140,7 +140,7 @@
+@@ -140,7 +140,7 @@ skgpu::UniqueKey GeneratePathMaskKey(const Shape& shape,
      skgpu::UniqueKey maskKey;
      {
          static const skgpu::UniqueKey::Domain kDomain = skgpu::UniqueKey::GenerateDomain();
@@ -346,7 +345,7 @@ index 1d8b556..8557d35 100644
          if (!strokeRec.isHairlineStyle() && !strokeRec.isFillStyle()) {
              // Add space for width and miter if needed
              styleKeySize += 2;
-@@ -185,66 +185,56 @@
+@@ -185,66 +185,56 @@ skgpu::UniqueKey GenerateClipMaskKey(uint32_t stackRecordID,
      skgpu::UniqueKey maskKey;
      // if the element list is too large we just use the stackRecordID
      if (elementsForMask->size() <= kMaxShapeCountForKey) {
@@ -377,39 +376,24 @@ index 1d8b556..8557d35 100644
 -            Rect unclippedBounds = Rect::InfiniteInverted();
 -            for (int i = 0; i < elementsForMask->size(); ++i) {
 -                const ClipStack::Element* element = (*elementsForMask)[i];
- 
+-
 -                // Add transform key and get packed fractional translation bits
 -                uint32_t fracBits = add_transform_key(&builder,
 -                                                      elementKeyIndex,
 -                                                      element->fLocalToDevice);
 -                uint32_t opBits = static_cast<uint32_t>(element->fOp);
 -                builder[elementKeyIndex + 4] = fracBits | (opBits << 16);
-+        skgpu::UniqueKey::Builder builder(&maskKey, kDomain, keySize, "Clip Path Mask");
-+        int elementKeyIndex = 0;
-+        Rect unclippedBounds = Rect::InfiniteInverted();
-+        for (int i = 0; i < elementsForMask->size(); ++i) {
-+            const ClipStack::Element* element = (*elementsForMask)[i];
- 
+-
 -                const Shape& shape = element->fShape;
 -                shape.writeKey(&builder[elementKeyIndex + kXformKeySize],
 -                               /*includeInverted=*/true);
-+            // Add transform key and get packed fractional translation bits
-+            uint32_t fracBits = add_transform_key(&builder,
-+                                                    elementKeyIndex,
-+                                                    element->fLocalToDevice);
-+            uint32_t opBits = static_cast<uint32_t>(element->fOp);
-+            builder[elementKeyIndex + 4] = fracBits | (opBits << 16);
- 
+-
 -                elementKeyIndex += kXformKeySize + shape.keySize();
-+            const Shape& shape = element->fShape;
-+            shape.writeKey(&builder[elementKeyIndex + kXformKeySize],
-+                            /*includeInverted=*/true);
- 
+-
 -                Rect transformedBounds = element->fLocalToDevice.mapRect(element->fShape.bounds());
 -                unclippedBounds.join(transformedBounds);
 -            }
-+            elementKeyIndex += kXformKeySize + shape.keySize();
- 
+-
 -            // The keyBounds are the maskDeviceBounds relative to the full transformed mask. We use
 -            // this to ensure we capture the situation where the maskDeviceBounds are equal in two
 -            // cases but actually enclose different regions of the full mask due to an integer
@@ -429,9 +413,29 @@ index 1d8b556..8557d35 100644
 -
 -            *usesPathKey = true;
 -            return maskKey;
++
++        skgpu::UniqueKey::Builder builder(&maskKey, kDomain, keySize, "Clip Path Mask");
++        int elementKeyIndex = 0;
++        Rect unclippedBounds = Rect::InfiniteInverted();
++        for (int i = 0; i < elementsForMask->size(); ++i) {
++            const ClipStack::Element* element = (*elementsForMask)[i];
++
++            // Add transform key and get packed fractional translation bits
++            uint32_t fracBits = add_transform_key(&builder,
++                                                    elementKeyIndex,
++                                                    element->fLocalToDevice);
++            uint32_t opBits = static_cast<uint32_t>(element->fOp);
++            builder[elementKeyIndex + 4] = fracBits | (opBits << 16);
++
++            const Shape& shape = element->fShape;
++            shape.writeKey(&builder[elementKeyIndex + kXformKeySize],
++                            /*includeInverted=*/true);
++
++            elementKeyIndex += kXformKeySize + shape.keySize();
++
 +            Rect transformedBounds = element->fLocalToDevice.mapRect(element->fShape.bounds());
 +            unclippedBounds.join(transformedBounds);
-         }
++        }
 +
 +        // The keyBounds are the maskDeviceBounds relative to the full transformed mask. We use
 +        // this to ensure we capture the situation where the maskDeviceBounds are equal in two
@@ -448,7 +452,7 @@ index 1d8b556..8557d35 100644
 +
 +            builder[elementKeyIndex] = keyBounds->left() | (keyBounds->top() << 16);
 +            builder[elementKeyIndex+1] = keyBounds->right() | (keyBounds->bottom() << 16);
-+        }
+         }
 +
 +        *usesPathKey = true;
 +        return maskKey;
@@ -456,10 +460,10 @@ index 1d8b556..8557d35 100644
  
      // Either we have too many elements or at least one shape can't create a key
 diff --git a/src/gpu/graphite/ResourceProvider.cpp b/src/gpu/graphite/ResourceProvider.cpp
-index 4e3a338..46ee283 100644
+index cd67a8af6fe60c2239dc6cfc7adaa8604ef3743a..80ce839d942b96f6ba7eb0456881a986accfe145 100644
 --- a/src/gpu/graphite/ResourceProvider.cpp
 +++ b/src/gpu/graphite/ResourceProvider.cpp
-@@ -165,7 +165,7 @@
+@@ -177,7 +177,7 @@ sk_sp<Sampler> ResourceProvider::findOrCreateCompatibleSampler(const SamplerDesc
          // immutable sampler details into the SamplerDesc, so there is no need to delegate to Caps
          // to create a specific key.
          const SkSpan<const uint32_t>& samplerData = samplerDesc.asSpan();
@@ -468,7 +472,7 @@ index 4e3a338..46ee283 100644
  
          for (size_t i = 0; i < samplerData.size(); i++) {
              builder[i] = samplerData[i];
-@@ -219,8 +219,8 @@
+@@ -231,8 +231,8 @@ sk_sp<Buffer> ResourceProvider::findOrCreateBuffer(
          // For the key we need ((sizeof(size_t) + (sizeof(uint32_t) - 1)) / (sizeof(uint32_t))
          // uint32_t's for the size and one uint32_t for the rest.
          static_assert(sizeof(uint32_t) == 4);
@@ -480,10 +484,10 @@ index 4e3a338..46ee283 100644
          SkASSERT(static_cast<uint32_t>(type) < (1u << 4));
          SkASSERT(static_cast<uint32_t>(accessPattern) < (1u << 2));
 diff --git a/src/gpu/graphite/dawn/DawnCaps.cpp b/src/gpu/graphite/dawn/DawnCaps.cpp
-index 1fa2883..df356fb 100644
+index 3717790e1413401c0fbf12ff4cebd31132153ffd..1c281e3e7fd0299fb14d7fa8c763690bf68bae6b 100644
 --- a/src/gpu/graphite/dawn/DawnCaps.cpp
 +++ b/src/gpu/graphite/dawn/DawnCaps.cpp
-@@ -1054,7 +1054,7 @@
+@@ -1016,7 +1016,7 @@ uint32_t DawnCaps::getRenderPassDescKeyForPipeline(const RenderPassDesc& renderP
             loadResolveAttachmentKey;
  }
  
@@ -492,7 +496,7 @@ index 1fa2883..df356fb 100644
  
  UniqueKey DawnCaps::makeGraphicsPipelineKey(const GraphicsPipelineDesc& pipelineDesc,
                                              const RenderPassDesc& renderPassDesc) const {
-@@ -1272,7 +1272,7 @@
+@@ -1234,7 +1234,7 @@ void DawnCaps::buildKeyForTexture(SkISize dimensions,
      SkASSERT(static_cast<uint32_t>(dawnInfo.fUsage) < (1u << 28)); // usage is remaining 28 bits
  
      // We need two uint32_ts for dimensions, 1 for format, and 1 for the rest of the key;
@@ -502,10 +506,10 @@ index 1fa2883..df356fb 100644
  #if !defined(__EMSCRIPTEN__)
      // If we are using ycbcr texture/sampling, more key information is needed.
 diff --git a/src/gpu/graphite/geom/AnalyticBlurMask.cpp b/src/gpu/graphite/geom/AnalyticBlurMask.cpp
-index 97f38ba..5a118bf 100644
+index 97f38ba054f66249d70c739cea0318f4d3e30203..5a118bf8b1792be4400a5a43db2d936366157fd0 100644
 --- a/src/gpu/graphite/geom/AnalyticBlurMask.cpp
 +++ b/src/gpu/graphite/geom/AnalyticBlurMask.cpp
-@@ -375,7 +375,7 @@
+@@ -375,7 +375,7 @@ std::optional<AnalyticBlurMask> AnalyticBlurMask::MakeRRect(Recorder* recorder,
      static const UniqueKey::Domain kRRectBlurDomain = UniqueKey::GenerateDomain();
      UniqueKey key;
      {
@@ -515,10 +519,10 @@ index 97f38ba..5a118bf 100644
          // TODO: We should discretize the sigma to perceptibly meaningful changes to the table,
          // as well as the underlying the round rect geometry.
 diff --git a/src/gpu/graphite/geom/Shape.cpp b/src/gpu/graphite/geom/Shape.cpp
-index 29898fb..2465dcf 100644
+index 29898fb00507aa64317ffd78354f36a18ca0a7b0..2465dcfb9fc92b678e67520e7b0e104d8514c147 100644
 --- a/src/gpu/graphite/geom/Shape.cpp
 +++ b/src/gpu/graphite/geom/Shape.cpp
-@@ -183,8 +183,8 @@
+@@ -183,8 +183,8 @@ void write_path_key_from_data(const SkPath& path, uint32_t* origKey) {
  }
  } // anonymous namespace
  
@@ -529,7 +533,7 @@ index 29898fb..2465dcf 100644
      switch(this->type()) {
          case Type::kLine:
              static_assert(0 == sizeof(skvx::float4) % sizeof(uint32_t));
-@@ -207,7 +207,7 @@
+@@ -207,7 +207,7 @@ int Shape::keySize() const {
              if (!this->path().isEmpty()) {
                  int dataKeySize = path_key_from_data_size(this->path());
                  if (dataKeySize >= 0) {
@@ -539,10 +543,10 @@ index 29898fb..2465dcf 100644
                      count++; // Just adds the gen ID.
                  }
 diff --git a/src/gpu/graphite/geom/Shape.h b/src/gpu/graphite/geom/Shape.h
-index 8c02945..30dd8ff 100644
+index 8c02945b7090779385a82aa4a8d257dad758e331..30dd8fffb797aee0c8a85093f5d5cdb97ef1a0fa 100644
 --- a/src/gpu/graphite/geom/Shape.h
 +++ b/src/gpu/graphite/geom/Shape.h
-@@ -184,7 +184,7 @@
+@@ -184,7 +184,7 @@ public:
      /**
       * Gets the size of the key for the shape represented by this Shape.
       */
@@ -552,11 +556,11 @@ index 8c02945..30dd8ff 100644
      /**
       * Writes keySize() bytes into the provided pointer. Assumes that there is enough
 diff --git a/src/gpu/graphite/mtl/MtlCaps.mm b/src/gpu/graphite/mtl/MtlCaps.mm
-index c959c9d..5e8639b 100644
+index 7816ca699def160c1aa56afb28463d3c9d77926f..e5939af8fef877c297e98195e111860c88b0e876 100644
 --- a/src/gpu/graphite/mtl/MtlCaps.mm
 +++ b/src/gpu/graphite/mtl/MtlCaps.mm
-@@ -855,7 +855,7 @@
- 
+@@ -949,7 +949,7 @@ MTLPixelFormat format_from_compression(SkTextureCompressionType compression) {
+     return {formatInfo.fColorTypeInfos.get(), formatInfo.fColorTypeInfoCount};
  }
  
 -static constexpr int kMtlGraphicsPipelineKeyData32Count = 4;
@@ -564,7 +568,7 @@ index c959c9d..5e8639b 100644
  
  UniqueKey MtlCaps::makeGraphicsPipelineKey(const GraphicsPipelineDesc& pipelineDesc,
                                             const RenderPassDesc& renderPassDesc) const {
-@@ -1017,7 +1017,7 @@
+@@ -1193,7 +1193,7 @@ MTLPixelFormat format_from_compression(SkTextureCompressionType compression) {
      SkASSERT(static_cast<uint32_t>(isFBOnly)    < (1u << 1));
  
      // We need two uint32_ts for dimensions, 2 for format, and 1 for the rest of the key;
@@ -574,10 +578,10 @@ index c959c9d..5e8639b 100644
      GraphiteResourceKey::Builder builder(key, type, kNum32DataCnt);
  
 diff --git a/src/gpu/graphite/vk/VulkanCaps.cpp b/src/gpu/graphite/vk/VulkanCaps.cpp
-index 7f264b7..17acc95 100644
+index 799d90b03c54cee89b24281e25c46813adef5046..f5ae0b882af66050b3e90c121675ab1b3a4ec870 100644
 --- a/src/gpu/graphite/vk/VulkanCaps.cpp
 +++ b/src/gpu/graphite/vk/VulkanCaps.cpp
-@@ -1961,7 +1961,7 @@
+@@ -2087,7 +2087,7 @@ bool VulkanCaps::msaaTextureRenderToSingleSampledSupport(const TextureInfo& info
  
  // 4 uint32s for the render step id, paint id, compatible render pass description, and write
  // swizzle.
@@ -586,7 +590,7 @@ index 7f264b7..17acc95 100644
  
  static constexpr int kPipelineKeyRenderStepIDIndex = 0;
  static constexpr int kPipelineKeyPaintParamsIDIndex = 1;
-@@ -2047,15 +2047,15 @@
+@@ -2173,15 +2173,15 @@ void VulkanCaps::buildKeyForTexture(SkISize dimensions,
      SkASSERT(vkInfo.fAspectMask                 < (1u << 11)); // aspectMask is bits 8 - 19
  
      // We need two uint32_ts for dimensions and 3 for miscellaneous information.
@@ -608,10 +612,10 @@ index 7f264b7..17acc95 100644
              (ycbcrInfo.isValid() ? kNum32FormatDataCntYcbcr : kNum32FormatDataCntNoYcbcr);
  
 diff --git a/src/gpu/graphite/vk/VulkanResourceProvider.cpp b/src/gpu/graphite/vk/VulkanResourceProvider.cpp
-index d20a267..d145b3c 100644
+index bb2f400250c569b73120f857133cafcca51c1c77..f66c6d0d2cf8c8bb4b34c7479445185c3a3c7cf4 100644
 --- a/src/gpu/graphite/vk/VulkanResourceProvider.cpp
 +++ b/src/gpu/graphite/vk/VulkanResourceProvider.cpp
-@@ -223,7 +223,7 @@
+@@ -218,7 +218,7 @@ GraphiteResourceKey build_desc_set_key(const SkSpan<DescriptorData>& requestedDe
      }
  
      GraphiteResourceKey key;
@@ -620,7 +624,7 @@ index d20a267..d145b3c 100644
  
      for (int i = 0; i < keyData.size(); i++) {
          builder[i] = keyData[i];
-@@ -570,7 +570,7 @@
+@@ -548,7 +548,7 @@ sk_sp<VulkanYcbcrConversion> VulkanResourceProvider::findOrCreateCompatibleYcbcr
      GraphiteResourceKey key;
      {
          static const ResourceType kType = GraphiteResourceKey::GenerateResourceType();
@@ -630,10 +634,10 @@ index d20a267..d145b3c 100644
          GraphiteResourceKey::Builder builder(&key, kType, kKeySize);
          ImmutableSamplerInfo packedInfo = VulkanYcbcrConversion::ToImmutableSamplerInfo(ycbcrInfo);
 diff --git a/src/utils/SkShadowUtils.cpp b/src/utils/SkShadowUtils.cpp
-index dc74faa..982c9c1 100644
+index 68da13ca9b048cd0d1dc9b62090c17793a11b3a1..9c3ef544ffda6ba72c2972f020ac2a06232484b6 100644
 --- a/src/utils/SkShadowUtils.cpp
 +++ b/src/utils/SkShadowUtils.cpp
-@@ -358,7 +358,10 @@
+@@ -358,7 +358,10 @@ public:
      const SkMatrix& viewMatrix() const { return *fViewMatrix; }
  #if defined(SK_GANESH)
      /** Negative means the vertices should not be cached for this path. */

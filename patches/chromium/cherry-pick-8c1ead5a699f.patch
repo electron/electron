@@ -1,7 +1,7 @@
-From 8c1ead5a699f53f1915f3187d2bcfac725c46815 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Hiroki Nakagawa <nhiroki@chromium.org>
 Date: Sun, 29 Mar 2026 18:12:59 -0700
-Subject: [PATCH] Prerender: Update PrerenderNewTabHandle destruction
+Subject: Prerender: Update PrerenderNewTabHandle destruction
 
 Updates PrerenderNewTabHandle::CancelPrerendering to be a static method
 CancelPrerenderingAndDestroy that takes ownership of the handle.
@@ -19,13 +19,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7710193
 Reviewed-by: Huanpo Lin <robertlin@chromium.org>
 Commit-Queue: Hiroki Nakagawa <nhiroki@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1606854}
----
 
 diff --git a/content/browser/preloading/prerender/prerender_browsertest.cc b/content/browser/preloading/prerender/prerender_browsertest.cc
-index 4f953e31..5376a026 100644
+index 0b8550aad9a12563f870cd07f35338e4484ca5d0..3b18b20c19366dd124d75f544243d9bcc919b9dc 100644
 --- a/content/browser/preloading/prerender/prerender_browsertest.cc
 +++ b/content/browser/preloading/prerender/prerender_browsertest.cc
-@@ -4312,6 +4312,39 @@
+@@ -3903,6 +3903,39 @@ IN_PROC_BROWSER_TEST_F(PrerenderTargetHintBrowserTest,
        PrerenderFinalStatus::kTabClosedWithoutUserGesture);
  }
  
@@ -66,10 +65,10 @@ index 4f953e31..5376a026 100644
  // navigation results in an empty response with 404 status.
  IN_PROC_BROWSER_TEST_P(PrerenderTargetAgnosticBrowserTest,
 diff --git a/content/browser/preloading/prerender/prerender_host_registry.cc b/content/browser/preloading/prerender/prerender_host_registry.cc
-index 74f68ef..90258672 100644
+index 0cdaa3f62b31cf4abe7f568e480c3c5d354516f2..26e71de66d6e3ad2ace9e2bf1ad4fa7e416cae0a 100644
 --- a/content/browser/preloading/prerender/prerender_host_registry.cc
 +++ b/content/browser/preloading/prerender/prerender_host_registry.cc
-@@ -1114,14 +1114,8 @@
+@@ -1133,14 +1133,8 @@ bool PrerenderHostRegistry::CancelNewTabHostInternal(
    prerender_new_tab_handle_by_id_.erase(iter);
    NotifyCancel(handle->prerender_host_id(), reason);
  
@@ -86,7 +85,7 @@ index 74f68ef..90258672 100644
  
    return true;
  }
-@@ -1804,6 +1798,7 @@
+@@ -1829,6 +1823,7 @@ void PrerenderHostRegistry::DeletePendingDeletionHosts(
  }
  
  void PrerenderHostRegistry::SchedulePendingDeletionPrerenderNewTabHandle(
@@ -95,10 +94,10 @@ index 74f68ef..90258672 100644
    CHECK(!pending_deletion_new_tab_prerender_handle_);
    pending_deletion_new_tab_prerender_handle_ = std::move(handle);
 diff --git a/content/browser/preloading/prerender/prerender_host_registry.h b/content/browser/preloading/prerender/prerender_host_registry.h
-index 4eaf15d..e42bc2f 100644
+index 7f84a1edac3fdbdd3904940a7cff453d71bcd866..d3d41e1c42605d5b317b28fc75102beece44643c 100644
 --- a/content/browser/preloading/prerender/prerender_host_registry.h
 +++ b/content/browser/preloading/prerender/prerender_host_registry.h
-@@ -286,6 +286,9 @@
+@@ -288,6 +288,9 @@ class CONTENT_EXPORT PrerenderHostRegistry
  
    PrerenderHostId GetPrerenderHostIdForNavigation(
        NavigationRequest* navigation_request);
@@ -108,7 +107,7 @@ index 4eaf15d..e42bc2f 100644
  
   private:
    // WebContentsObserver implementation:
-@@ -308,8 +311,6 @@
+@@ -310,8 +313,6 @@ class CONTENT_EXPORT PrerenderHostRegistry
    void ScheduleToDeleteAbandonedHost(
        std::unique_ptr<PrerenderHost> prerender_host,
        const PrerenderCancellationReason& cancellation_reason);
@@ -118,7 +117,7 @@ index 4eaf15d..e42bc2f 100644
    void DeleteAbandonedHosts();
  
 diff --git a/content/browser/preloading/prerender/prerender_new_tab_handle.cc b/content/browser/preloading/prerender/prerender_new_tab_handle.cc
-index 5c4bc5e..99b5bd9 100644
+index 5c4bc5e6ff6a0fdb6911db60f286899a36f4266b..99b5bd9648649db43a70e091e9837bf75ac87a89 100644
 --- a/content/browser/preloading/prerender/prerender_new_tab_handle.cc
 +++ b/content/browser/preloading/prerender/prerender_new_tab_handle.cc
 @@ -10,6 +10,7 @@
@@ -129,7 +128,7 @@ index 5c4bc5e..99b5bd9 100644
  #include "content/browser/web_contents/web_contents_impl.h"
  #include "content/common/frame.mojom.h"
  #include "content/public/browser/web_contents_delegate.h"
-@@ -103,9 +104,29 @@
+@@ -103,9 +104,29 @@ PrerenderHostId PrerenderNewTabHandle::StartPrerendering(
    return prerender_host_id_;
  }
  
@@ -162,10 +161,10 @@ index 5c4bc5e..99b5bd9 100644
  
  std::unique_ptr<WebContentsImpl>
 diff --git a/content/browser/preloading/prerender/prerender_new_tab_handle.h b/content/browser/preloading/prerender/prerender_new_tab_handle.h
-index 7f36ebf..8d4f3f4 100644
+index eae10a2834f66463919b81e8fe02d8e115edef0a..bfb969ca9894b2edddb92efcee73793f38bcaf48 100644
 --- a/content/browser/preloading/prerender/prerender_new_tab_handle.h
 +++ b/content/browser/preloading/prerender/prerender_new_tab_handle.h
-@@ -49,8 +49,10 @@
+@@ -49,8 +49,10 @@ class PrerenderNewTabHandle {
        const PreloadingPredictor& enacting_predictor,
        PreloadingConfidence confidence);
  

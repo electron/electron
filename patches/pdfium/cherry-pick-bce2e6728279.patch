@@ -1,7 +1,7 @@
-From bce2e672827992dcd7289e2872ca10c5c20bf056 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tom Sepez <tsepez@google.com>
-Date: Tue, 07 Apr 2026 15:50:30 -0700
-Subject: [PATCH] Use safe arithmetic in CFX_PSRenderer::DrawDIBits()
+Date: Tue, 7 Apr 2026 15:50:30 -0700
+Subject: Use safe arithmetic in CFX_PSRenderer::DrawDIBits()
 
 Hardening suggestion from the AI bot.
 
@@ -10,13 +10,12 @@ Change-Id: Ie521629d06ba944f610b941a8c9e9505fa29aea7
 Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/145731
 Reviewed-by: Lei Zhang <thestig@chromium.org>
 Commit-Queue: Tom Sepez <tsepez@chromium.org>
----
 
 diff --git a/core/fxge/win32/cfx_psrenderer.cpp b/core/fxge/win32/cfx_psrenderer.cpp
-index b38f1a2..b8710e5 100644
+index b38f1a2b7c3271769e609763be2e183f2890ebb3..b8710e50ed01233b2aefbf1760e26e05964b315e 100644
 --- a/core/fxge/win32/cfx_psrenderer.cpp
 +++ b/core/fxge/win32/cfx_psrenderer.cpp
-@@ -620,8 +620,16 @@
+@@ -620,8 +620,16 @@ bool CFX_PSRenderer::DrawDIBits(RetainPtr<const CFX_DIBBase> bitmap,
          encoder_iface_->pJpegEncodeFunc(bitmap, &output_buf, &output_size)) {
        filter = "/DCTDecode filter ";
      } else {

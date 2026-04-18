@@ -1,7 +1,7 @@
-From 8b08fb7c9dce04058690f441b21963f4f83fa194 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: p0-tato <smartphonewithbear@gmail.com>
 Date: Tue, 14 Apr 2026 13:14:30 -0700
-Subject: [PATCH] [M146] Fix dangling pointers in OpenXrSpatialFrameworkManager
+Subject: [M146] Fix dangling pointers in OpenXrSpatialFrameworkManager
 
 Original change's description:
 > Fix dangling pointers in OpenXrSpatialFrameworkManager
@@ -28,13 +28,12 @@ Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.g
 Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/7680@{#3944}
 Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
----
 
 diff --git a/AUTHORS b/AUTHORS
-index 7cc777b..505480b 100644
+index 7cc777b399ab46f88b6b1809bf6fd0cb22170694..505480b09c1d41b1facf4e2b165bad86b1815127 100644
 --- a/AUTHORS
 +++ b/AUTHORS
-@@ -729,6 +729,7 @@
+@@ -729,6 +729,7 @@ Jihoon Chung <jihoon@gmail.com>
  Jihun Brent Kim <devgrapher@gmail.com>
  Jihwan Marc Kim <bluewhale.marc@gmail.com>
  Jihye Hyun <jijinny26@gmail.com>
@@ -43,10 +42,10 @@ index 7cc777b..505480b 100644
  Jim Wu <lofoz.tw@gmail.com>
  Jin Yang <jin.a.yang@intel.com>
 diff --git a/device/vr/openxr/openxr_spatial_framework_manager.cc b/device/vr/openxr/openxr_spatial_framework_manager.cc
-index 520f2523..5c93d69 100644
+index 520f25230c427bf775333910530d1ad841f3ad71..5c93d694aa5a2259c683f1d521611046293195a2 100644
 --- a/device/vr/openxr/openxr_spatial_framework_manager.cc
 +++ b/device/vr/openxr/openxr_spatial_framework_manager.cc
-@@ -71,12 +71,15 @@
+@@ -71,12 +71,15 @@ OpenXrSpatialFrameworkManager::OpenXrSpatialFrameworkManager(
    // to help abstract some of the details of creating the child structs, even
    // though at present we only have a configuration base.
    std::vector<OpenXrSpatialCapabilityConfigurationBase> capability_configs;

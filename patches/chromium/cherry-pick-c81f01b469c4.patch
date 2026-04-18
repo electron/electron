@@ -1,7 +1,8 @@
-From c81f01b469c4eae60e312ebe8b1b691d454609e9 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
 Date: Tue, 31 Mar 2026 10:03:10 -0700
-Subject: [PATCH] [a11y] Fix uninitialized memory in get_columnHeaderCells/get_rowHeaderCells
+Subject: [a11y] Fix uninitialized memory in
+ get_columnHeaderCells/get_rowHeaderCells
 
 Both get_columnHeaderCells and get_rowHeaderCells allocate a COM array
 via CoTaskMemAlloc, but report the requested array size
@@ -21,13 +22,12 @@ Commit-Queue: Kevin Babbitt <kbabbitt@microsoft.com>
 Auto-Submit: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
 Commit-Queue: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
 Cr-Commit-Position: refs/heads/main@{#1607938}
----
 
 diff --git a/ui/accessibility/platform/ax_platform_node_win.cc b/ui/accessibility/platform/ax_platform_node_win.cc
-index 967ae08..688f4ee 100644
+index 773834c969ff28b0038d27af2c0351120dba8fc2..f374a0f2e202f2f6eccbab230211f593748974c8 100644
 --- a/ui/accessibility/platform/ax_platform_node_win.cc
 +++ b/ui/accessibility/platform/ax_platform_node_win.cc
-@@ -4285,7 +4285,7 @@
+@@ -4258,7 +4258,7 @@ IFACEMETHODIMP AXPlatformNodeWin::get_columnHeaderCells(
      }
    }
  
@@ -36,7 +36,7 @@ index 967ae08..688f4ee 100644
    return S_OK;
  }
  
-@@ -4341,7 +4341,7 @@
+@@ -4312,7 +4312,7 @@ IFACEMETHODIMP AXPlatformNodeWin::get_rowHeaderCells(
      }
    }
  
