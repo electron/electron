@@ -1,0 +1,66 @@
+From 036e5e8f69be9fddc80bdbac10406186be2fa5b5 Mon Sep 17 00:00:00 2001
+From: Nico Hartmann <nicohartmann@chromium.org>
+Date: Wed, 25 Mar 2026 12:11:21 +0100
+Subject: [PATCH] [turbofan] Grow ContextAccess' depth field to 31 bits
+
+Fixed: 495273999
+Change-Id: I1ce294051aad3f413744386223976cd9c8b24bca
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7698216
+Commit-Queue: Nico Hartmann <nicohartmann@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Auto-Submit: Nico Hartmann <nicohartmann@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106031}
+---
+
+diff --git a/src/compiler/js-operator.cc b/src/compiler/js-operator.cc
+index a598cbc..46a4346 100644
+--- a/src/compiler/js-operator.cc
++++ b/src/compiler/js-operator.cc
+@@ -152,16 +152,14 @@
+   return OpParameter<CallRuntimeParameters>(op);
+ }
+ 
+-
+ ContextAccess::ContextAccess(size_t depth, size_t index, bool immutable)
+-    : immutable_(immutable),
+-      depth_(static_cast<uint16_t>(depth)),
++    : immutable_and_depth_(ImmutableField::encode(immutable) |
++                           DepthField::encode(static_cast<uint32_t>(depth))),
+       index_(static_cast<uint32_t>(index)) {
+-  DCHECK(depth <= std::numeric_limits<uint16_t>::max());
++  CHECK_EQ(depth, DepthField::decode(immutable_and_depth_));
+   DCHECK(index <= std::numeric_limits<uint32_t>::max());
+ }
+ 
+-
+ bool operator==(ContextAccess const& lhs, ContextAccess const& rhs) {
+   return lhs.depth() == rhs.depth() && lhs.index() == rhs.index() &&
+          lhs.immutable() == rhs.immutable();
+diff --git a/src/compiler/js-operator.h b/src/compiler/js-operator.h
+index ac3b4c0..a2c4fa4 100644
+--- a/src/compiler/js-operator.h
++++ b/src/compiler/js-operator.h
+@@ -354,15 +354,19 @@
+  public:
+   ContextAccess(size_t depth, size_t index, bool immutable);
+ 
+-  size_t depth() const { return depth_; }
++  size_t depth() const { return DepthField::decode(immutable_and_depth_); }
+   size_t index() const { return index_; }
+-  bool immutable() const { return immutable_; }
++  bool immutable() const {
++    return ImmutableField::decode(immutable_and_depth_);
++  }
+ 
+  private:
++  using ImmutableField = base::BitField<bool, 0, 1>;
++  using DepthField = ImmutableField::Next<uint32_t, 31>;
++
+   // For space reasons, we keep this tightly packed, otherwise we could just use
+   // a simple int/int/bool POD.
+-  const bool immutable_;
+-  const uint16_t depth_;
++  uint32_t immutable_and_depth_;
+   const uint32_t index_;
+ };
+ 
