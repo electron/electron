@@ -152,3 +152,4 @@ fix_use_fresh_lazynow_for_onendworkitemimpl_after_didruntask.patch
 cherry-pick-b173791bf402.patch
 cherry-pick-be87466afecb.patch
 cherry-pick-c0390bcd64ba.patch
+cherry-pick-1b69067db7d2.patch
