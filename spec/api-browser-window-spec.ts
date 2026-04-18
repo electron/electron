@@ -2666,6 +2666,27 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.setAlwaysOnTop(flag, level)', () => {
     let w: BrowserWindow;
+    const alwaysOnTopStressIterations = 1000;
+    const alwaysOnTopSettleTimeout = 5000;
+
+    const waitForAlwaysOnTop = async (alwaysOnTop: boolean, label: string) => {
+      try {
+        await waitUntil(() => w.isAlwaysOnTop() === alwaysOnTop, {
+          rate: 50,
+          timeout: alwaysOnTopSettleTimeout
+        });
+      } catch (error) {
+        throw new Error(`${label}: ${(error as Error).message}`);
+      }
+    };
+
+    const setAlwaysOnTopAndWaitForState = async (alwaysOnTop: boolean, label: string) => {
+      const alwaysOnTopChanged = once(w, 'always-on-top-changed') as Promise<[any, boolean]>;
+      w.setAlwaysOnTop(alwaysOnTop);
+      const [, emittedAlwaysOnTop] = await alwaysOnTopChanged;
+      expect(emittedAlwaysOnTop).to.equal(alwaysOnTop, `${label}: unexpected event payload`);
+      await waitForAlwaysOnTop(alwaysOnTop, label);
+    };
 
     afterEach(closeAllWindows);
 
@@ -2698,12 +2719,23 @@ describe('BrowserWindow module', () => {
     });
 
     it('causes the right value to be emitted on `always-on-top-changed`', async () => {
-      const alwaysOnTopChanged = once(w, 'always-on-top-changed') as Promise<[any, boolean]>;
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
-      w.setAlwaysOnTop(true);
-      const [, alwaysOnTop] = await alwaysOnTopChanged;
-      expect(alwaysOnTop).to.be.true('is not alwaysOnTop');
+      await setAlwaysOnTopAndWaitForState(true, 'single transition');
     });
+
+    ifit(process.platform === 'win32')(
+      'eventually becomes consistent with the emitted value after repeated transitions',
+      async function () {
+        this.timeout(120000);
+
+        expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
+
+        for (let i = 0; i < alwaysOnTopStressIterations; i++) {
+          await setAlwaysOnTopAndWaitForState(true, `iteration ${i + 1} enable`);
+          await setAlwaysOnTopAndWaitForState(false, `iteration ${i + 1} disable`);
+        }
+      }
+    );
 
     ifit(process.platform === 'darwin')('honors the alwaysOnTop level of a child window', () => {
       w = new BrowserWindow({ show: false });
