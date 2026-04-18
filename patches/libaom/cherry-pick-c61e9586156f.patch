@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Wan-Teh Chang <wtc@google.com>
+Date: Wed, 1 Apr 2026 18:57:32 -0700
+Subject: [PATCH] Change cm back to const in combined_motion_search
+
+The local variable cm in combined_motion_search() was changed to a
+non-const pointer so that it could be passed to get_ref_scale_factors().
+There is a get_ref_scale_factors_const() function for this purpose.
+
+A follow-up to commit a047955.
+
+Bug: 495477995, 495996858
+Change-Id: Ic8b66f8060247a3487a7740fe5383c6e5455fa10
+(cherry picked from commit c61e9586156f0023ad31e8a6abb0dfdcfd820927)
+---
+ av1/encoder/nonrd_pickmode.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/av1/encoder/nonrd_pickmode.c b/av1/encoder/nonrd_pickmode.c
+index 942b8ab23a..29539b1856 100644
+--- a/av1/encoder/nonrd_pickmode.c
++++ b/av1/encoder/nonrd_pickmode.c
+@@ -192,7 +192,7 @@ static int combined_motion_search(AV1_COMP *cpi, MACROBLOCK *x,
+                                   int *rate_mv, int64_t best_rd_sofar,
+                                   int use_base_mv) {
+   MACROBLOCKD *xd = &x->e_mbd;
+-  AV1_COMMON *cm = &cpi->common;
++  const AV1_COMMON *cm = &cpi->common;
+   const SPEED_FEATURES *sf = &cpi->sf;
+   MB_MODE_INFO *mi = xd->mi[0];
+   int step_param = (sf->rt_sf.fullpel_search_step_param)
+@@ -207,7 +207,7 @@ static int combined_motion_search(AV1_COMP *cpi, MACROBLOCK *x,
+   int cost_list[5];
+   int search_subpel = 1;
+ 
+-  if (av1_is_scaled(get_ref_scale_factors(cm, ref))) {
++  if (av1_is_scaled(get_ref_scale_factors_const(cm, ref))) {
+     const YV12_BUFFER_CONFIG *scaled_ref = av1_get_scaled_ref_frame(cpi, ref);
+     (void)scaled_ref;
+     assert(scaled_ref != NULL);
