@@ -29,7 +29,7 @@ index 0000000000000000000000000000000000000000..f03fa9460eb702e8cc444caeb5455554
 +Date:   Mon Dec 1 22:26:34 2025 +0200
 +
 +    tif_jpeg: reject mismatched JPEG data precision to avoid write overflow
-+    
++
 +    Ensure TIFF BitsPerSample matches both BITS_IN_JSAMPLE and the JPEG
 +    header data_precision for JPEG-compressed images. This prevents
 +    under-sized scanline buffers that can lead to write buffer overflows

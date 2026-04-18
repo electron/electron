@@ -26,7 +26,7 @@ index 0000000000000000000000000000000000000000..354033027f1add7850e86ed21a7ac1f0
 +Date:   Thu Mar 12 22:57:35 2026 +0100
 +
 +    check for overflow
-+    
++
 +    Thanks to Guanni Qu for detecting & reporting the issue
 +
 +diff --git a/src/cmslut.c b/src/cmslut.c
@@ -35,19 +35,19 @@ index 0000000000000000000000000000000000000000..354033027f1add7850e86ed21a7ac1f0
 ++++ b/src/cmslut.c
 +@@ -468,12 +468,12 @@ cmsUInt32Number CubeSize(const cmsUInt32Number Dims[], cmsUInt32Number b)
 +     for (rv = 1; b > 0; b--) {
-+ 
++
 +         dim = Dims[b-1];
 +-        if (dim <= 1) return 0;  // Error
 +-
 +-        rv *= dim;
-++        if (dim <= 1) return 0;  
-+ 
+++        if (dim <= 1) return 0;
++
 +         // Check for overflow
 +         if (rv > UINT_MAX / dim) return 0;
 ++
 ++        rv *= dim;
 +     }
-+ 
++
 +     // Again, prevent overflow
 diff --git a/third_party/lcms/README.pdfium b/third_party/lcms/README.pdfium
 index 2a279325d3796fcedbf8bee95b26f26855d35d91..2f27874525e687208db6a8eadf27ac4f54e3cfcd 100644
@@ -69,7 +69,7 @@ index 22a16b327ff7e9813ec9618ac5acf76f3cb4fb70..11361de45cc9bac5b5194762ed524ff7
 -        if (dim <= 1) return 0;  // Error
 -
 -        rv *= dim;
-+        if (dim <= 1) return 0;  
++        if (dim <= 1) return 0;
  
          // Check for overflow
          if (rv > UINT_MAX / dim) return 0;
