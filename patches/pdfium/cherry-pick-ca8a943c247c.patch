@@ -1,0 +1,71 @@
+From ca8a943c247c208fd7a9cd21b4de049f22b93070 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Fri, 27 Mar 2026 14:52:16 -0700
+Subject: [PATCH] Patch an overflow in libtiff
+
+Apply fix [1] from upstream, which is not in the most recent versioned
+release.
+
+[1] https://gitlab.com/libtiff/libtiff/-/commit/0f726d9
+
+Bug: 496907110
+Change-Id: Ic8665879ebdd4445f473e9a1e156cfc42c294d51
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/145550
+Reviewed-by: Andy Phan <andyphan@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+---
+
+diff --git a/third_party/libtiff/0034-tiff-jpeg-overflow.patch b/third_party/libtiff/0034-tiff-jpeg-overflow.patch
+new file mode 100644
+index 0000000..f03fa94
+--- /dev/null
++++ b/third_party/libtiff/0034-tiff-jpeg-overflow.patch
+@@ -0,0 +1,25 @@
++commit 0f726d9477a11e15eb67ca349c03907f6cfb82a9
++Author: Mikhail Khachaiants <mkhachaiants@gmail.com>
++Date:   Mon Dec 1 22:26:34 2025 +0200
++
++    tif_jpeg: reject mismatched JPEG data precision to avoid write overflow
++    
++    Ensure TIFF BitsPerSample matches both BITS_IN_JSAMPLE and the JPEG
++    header data_precision for JPEG-compressed images. This prevents
++    under-sized scanline buffers that can lead to write buffer overflows
++    in jdcolor.c/null_convert when decoding malformed inputs.
++
++diff --git a/libtiff/tif_jpeg.c b/libtiff/tif_jpeg.c
++index aba5f99b..4d6370b5 100644
++--- a/libtiff/tif_jpeg.c
+++++ b/libtiff/tif_jpeg.c
++@@ -1282,7 +1282,8 @@ int TIFFJPEGIsFullStripRequired(TIFF *tif)
++     sp->cinfo.d.data_precision = td->td_bitspersample;
++     sp->cinfo.d.bits_in_jsample = td->td_bitspersample;
++ #else
++-    if (sp->cinfo.d.data_precision != td->td_bitspersample)
+++    if (td->td_bitspersample != BITS_IN_JSAMPLE ||
+++        sp->cinfo.d.data_precision != td->td_bitspersample)
++     {
++         TIFFErrorExtR(tif, module, "Improper JPEG data precision");
++         return (0);
+diff --git a/third_party/libtiff/README.pdfium b/third_party/libtiff/README.pdfium
+index 9953e76..e3f352d 100644
+--- a/third_party/libtiff/README.pdfium
++++ b/third_party/libtiff/README.pdfium
+@@ -19,3 +19,4 @@
+ 0028-nstrips-OOM.patch: return error for excess number of tiles/strips.
+ 0031-safe_size_ingtStripContig.patch: return error if the size to read overflow from int32.
+ 0033-avail-out-overflow.patch: signed comparison in PixarLogDecode().
++0034-tiff-jpeg-overflow.patch: reject mismatched JPEG data precision.
+diff --git a/third_party/libtiff/tif_jpeg.c b/third_party/libtiff/tif_jpeg.c
+index 5281457..a9764f0 100644
+--- a/third_party/libtiff/tif_jpeg.c
++++ b/third_party/libtiff/tif_jpeg.c
+@@ -1287,7 +1287,8 @@
+     sp->cinfo.d.data_precision = td->td_bitspersample;
+     sp->cinfo.d.bits_in_jsample = td->td_bitspersample;
+ #else
+-    if (sp->cinfo.d.data_precision != td->td_bitspersample)
++    if (td->td_bitspersample != BITS_IN_JSAMPLE ||
++        sp->cinfo.d.data_precision != td->td_bitspersample)
+     {
+         TIFFErrorExtR(tif, module, "Improper JPEG data precision");
+         return (0);
