@@ -630,8 +630,9 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
   observers_.Notify(&NativeWindowObserver::OnWindowLeaveHtmlFullScreen);
 }
 
-void NativeWindow::NotifyWindowAlwaysOnTopChanged() {
-  observers_.Notify(&NativeWindowObserver::OnWindowAlwaysOnTopChanged);
+void NativeWindow::NotifyWindowAlwaysOnTopChanged(const bool is_always_on_top) {
+  observers_.Notify(&NativeWindowObserver::OnWindowAlwaysOnTopChanged,
+                    is_always_on_top);
 }
 
 void NativeWindow::NotifyWindowExecuteAppCommand(

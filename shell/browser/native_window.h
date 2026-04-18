@@ -333,7 +333,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
-  void NotifyWindowAlwaysOnTopChanged();
+  void NotifyWindowAlwaysOnTopChanged(bool is_always_on_top);
   void NotifyWindowExecuteAppCommand(std::string_view command_name);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
                                      base::DictValue details);
