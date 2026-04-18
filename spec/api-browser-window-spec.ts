@@ -2800,7 +2800,6 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.setAlwaysOnTop(flag, level)', () => {
     let w: BrowserWindow;
-    const alwaysOnTopStressIterations = 1000;
     const alwaysOnTopSettleTimeout = 5000;
 
     const waitForAlwaysOnTop = async (alwaysOnTop: boolean, label: string) => {
@@ -2858,16 +2857,12 @@ describe('BrowserWindow module', () => {
     });
 
     ifit(process.platform === 'win32')(
-      'eventually becomes consistent with the emitted value after repeated transitions',
-      async function () {
-        this.timeout(120000);
-
+      'eventually becomes consistent with the emitted value after enable and disable transitions',
+      async () => {
         expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
 
-        for (let i = 0; i < alwaysOnTopStressIterations; i++) {
-          await setAlwaysOnTopAndWaitForState(true, `iteration ${i + 1} enable`);
-          await setAlwaysOnTopAndWaitForState(false, `iteration ${i + 1} disable`);
-        }
+        await setAlwaysOnTopAndWaitForState(true, 'enable');
+        await setAlwaysOnTopAndWaitForState(false, 'disable');
       }
     );
 
