@@ -1,0 +1,39 @@
+From 4002a66778d2aef40fb7d72c580d7bbc10115ea8 Mon Sep 17 00:00:00 2001
+From: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Date: Wed, 01 Apr 2026 11:19:52 -0700
+Subject: [PATCH] Fix potential double free in deserializing CopyOutputResults
+
+Skia always runs release proc of the SkBitmap::installPixels [1].
+
+[1] https://source.chromium.org/chromium/chromium/src/+/main:third_party/skia/include/core/SkBitmap.h;drc=405f385dce2db578ff3b2301686d231ee8f0b042;l=586
+
+Bug: 497846428
+Change-Id: I4d3fd2e676fa7aa74e1022cbd2c9d9db8970a90c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7718978
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Reviewed-by: Joe Mason <joenotcharles@google.com>
+Cr-Commit-Position: refs/heads/main@{#1608675}
+---
+
+diff --git a/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc b/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
+index 59fbc85e..9d6bdd42 100644
+--- a/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
++++ b/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
+@@ -111,12 +111,14 @@
+     return false;
+   }
+ 
+-  if (!sk_bitmap->installPixels(image_info, mapping_ptr->memory(),
++  // Skia guarantees that it will call release proc, so we pass release()'ed
++  // pointer into it.
++  void* bitmap_memory = mapping_ptr->memory();
++  if (!sk_bitmap->installPixels(image_info, bitmap_memory,
+                                 data.row_bytes(), &DeleteSharedMemoryMapping,
+-                                mapping_ptr.get())) {
++                                mapping_ptr.release())) {
+     return false;
+   }
+-  mapping_ptr.release();
+   return true;
+ }
+ 
