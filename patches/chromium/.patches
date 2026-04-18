@@ -151,3 +151,4 @@ fix_initialize_com_on_desktopmedialistcapturethread_on_windows.patch
 fix_use_fresh_lazynow_for_onendworkitemimpl_after_didruntask.patch
 cherry-pick-b173791bf402.patch
 cherry-pick-be87466afecb.patch
+cherry-pick-c0390bcd64ba.patch
