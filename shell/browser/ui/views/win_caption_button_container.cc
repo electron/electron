@@ -137,7 +137,7 @@ void WinCaptionButtonContainer::OnWidgetBoundsChanged(
 }
 
 void WinCaptionButtonContainer::UpdateBackground() {
-  const SkColor bg_color = frame_view_->window()->overlay_button_color();
+  const SkColor bg_color = frame_view_->window()->overlay_button_color().or_else(SkColoir());
   const SkAlpha theme_alpha = SkColorGetA(bg_color);
   SetBackground(views::CreateSolidBackground(bg_color));
   SetPaintToLayer();
