@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kalvin Lee <kdlee@chromium.org>
+Date: Fri, 27 Mar 2026 16:37:30 +0900
+Subject: Terracotta-Phase-1: Reorder member destruction
+
+This is a speculative patch. Please see the bug for details.
+
+Bug: b/496393742
+Change-Id: Ib574a0086f92abda83715b36a0d1e7a99e9edd67
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1196676
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+diff --git a/include/gpu/graphite/Context.h b/include/gpu/graphite/Context.h
+index 2fd8be109fdac17cc6c5f9585aac33f176cff915..9e9af4390144584378ac6403ee498ec2bc6f2a7e 100644
+--- a/include/gpu/graphite/Context.h
++++ b/include/gpu/graphite/Context.h
+@@ -391,8 +391,8 @@ private:
+ 
+     sk_sp<SharedContext> fSharedContext;
+     std::unique_ptr<ResourceProvider> fResourceProvider;
+-    std::unique_ptr<QueueManager> fQueueManager;
+     std::unique_ptr<ClientMappedBufferManager> fMappedBufferManager;
++    std::unique_ptr<QueueManager> fQueueManager;
+     std::unique_ptr<const skcpu::ContextImpl> fCPUContext;
+ 
+     // In debug builds we guard against improper thread handling. This guard is passed to the

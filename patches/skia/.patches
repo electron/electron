@@ -1,3 +1,6 @@
 graphite_add_insertstatus_koutoforderrecording.patch
 cherry-pick-03d405099043.patch
 cherry-pick-7911bee5d90e.patch
+cherry-pick-1199497.patch
+cherry-pick-1196676.patch
+cherry-pick-1208956.patch

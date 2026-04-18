@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Thu, 26 Mar 2026 15:09:23 -0700
+Subject: Patch an overflow in Little CMS
+
+Apply fix [1] from upstream, which is not in the most recent versioned
+release.
+
+[1] https://github.com/mm2/Little-CMS/commit/e0641b1828d0a1af5ecb1b11fe22f24fceefd4bc
+
+Bug: 496618639
+Change-Id: I89309d9cddf15c053cdffed341e50e5616e68b74
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/145450
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+
+diff --git a/third_party/lcms/0036-cubesize-overflow.patch b/third_party/lcms/0036-cubesize-overflow.patch
+new file mode 100644
+index 0000000000000000000000000000000000000000..1167469288d2c4faeb624acf48bd6ff831705db5
+--- /dev/null
++++ b/third_party/lcms/0036-cubesize-overflow.patch
+@@ -0,0 +1,28 @@
++commit e0641b1828d0a1af5ecb1b11fe22f24fceefd4bc
++Author: Marti Maria <marti.maria@littlecms.com>
++Date:   Thu Mar 12 22:57:35 2026 +0100
++
++    check for overflow
++
++    Thanks to Guanni Qu for detecting & reporting the issue
++
++diff --git a/src/cmslut.c b/src/cmslut.c
++index a60baf9..65c935f 100644
++--- a/src/cmslut.c
+++++ b/src/cmslut.c
++@@ -468,12 +468,12 @@ cmsUInt32Number CubeSize(const cmsUInt32Number Dims[], cmsUInt32Number b)
++     for (rv = 1; b > 0; b--) {
++
++         dim = Dims[b-1];
++-        if (dim <= 1) return 0;  // Error
++-
++-        rv *= dim;
+++        if (dim <= 1) return 0;
++
++         // Check for overflow
++         if (rv > UINT_MAX / dim) return 0;
+++
+++        rv *= dim;
++     }
++
++     // Again, prevent overflow
+diff --git a/third_party/lcms/README.pdfium b/third_party/lcms/README.pdfium
+index 2a279325d3796fcedbf8bee95b26f26855d35d91..2f27874525e687208db6a8eadf27ac4f54e3cfcd 100644
+--- a/third_party/lcms/README.pdfium
++++ b/third_party/lcms/README.pdfium
+@@ -25,3 +25,4 @@ Local Modifications:
+ 0033-opt-integer-overflow.patch: Protect against integer overflow.
+ 0034-dead-code.patch: Remove dead code.
+ 0035-func-ptr-mixup.patch: Prevent mixing up function pointer types.
++0036-cubesize-overflow.patch: Check for overflow in CubeSize().
+diff --git a/third_party/lcms/src/cmslut.c b/third_party/lcms/src/cmslut.c
+index 22a16b327ff7e9813ec9618ac5acf76f3cb4fb70..53d5e11680b7132e78d7c7cd0b7bcd11a099f6ed 100644
+--- a/third_party/lcms/src/cmslut.c
++++ b/third_party/lcms/src/cmslut.c
+@@ -467,12 +467,12 @@ cmsUInt32Number CubeSize(const cmsUInt32Number Dims[], cmsUInt32Number b)
+     for (rv = 1; b > 0; b--) {
+ 
+         dim = Dims[b-1];
+-        if (dim <= 1) return 0;  // Error
+-
+-        rv *= dim;
++        if (dim <= 1) return 0;
+ 
+         // Check for overflow
+         if (rv > UINT_MAX / dim) return 0;
++
++        rv *= dim;
+     }
+ 
+     return rv;

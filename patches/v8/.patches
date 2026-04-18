@@ -10,3 +10,6 @@ inspector_use_std_shared_ptr_for_inspectedcontext.patch
 merged_maglev_avoid_eliding_smi_checks_too_aggressively.patch
 merged_compiler_arm64_force_explicit_zero-extension_of_load_index.patch
 merged_maglev_account_for_phi_smi_type_widening_in.patch
+cherry-pick-7698216.patch
+cherry-pick-7709449.patch
+cherry-pick-7702700.patch

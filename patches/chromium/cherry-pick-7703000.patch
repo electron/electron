@@ -1,0 +1,211 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lukasz Anforowicz <lukasza@chromium.org>
+Date: Wed, 1 Apr 2026 15:44:32 -0700
+Subject: [rust png] Invalidate `already_started_frame_` after clearing frames.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This CL ensures that `already_started_frame_` doesn't become stale
+after:
+
+* Re-allocating the memory buffer backing a frame.
+* Failing a call to `startIncrementalDecode`
+
+The regression tests in this CL have been mostly created by Gemini CLI
+and then reviewed and cleaned up by the author.
+
+Fixed: 496282147
+Change-Id: I92349cc2a0d7b9d1d401ab7256cb941a4d8383d1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7703000
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: Łukasz Anforowicz <lukasza@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1608827}
+
+diff --git a/third_party/blink/renderer/platform/graphics/image_frame_generator_test.cc b/third_party/blink/renderer/platform/graphics/image_frame_generator_test.cc
+index 8a8536968c9b0c08ce0962ac9c6b551b8a76e0ba..0bda0dd5b6ed0edd62322b74fbaaa10cdf926475 100644
+--- a/third_party/blink/renderer/platform/graphics/image_frame_generator_test.cc
++++ b/third_party/blink/renderer/platform/graphics/image_frame_generator_test.cc
+@@ -26,6 +26,7 @@
+ #include "third_party/blink/renderer/platform/graphics/image_frame_generator.h"
+ 
+ #include <memory>
++
+ #include "base/features.h"
+ #include "base/location.h"
+ #include "base/test/metrics/histogram_tester.h"
+@@ -39,8 +40,10 @@
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
+ #include "third_party/blink/renderer/platform/testing/testing_platform_support.h"
++#include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ #include "third_party/blink/renderer/platform/wtf/shared_buffer.h"
++#include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
+ #include "third_party/blink/renderer/platform/wtf/vector.h"
+ 
+ namespace blink {
+@@ -413,4 +416,65 @@ TEST_F(ImageFrameGeneratorTest, clearMultiFrameDecoder) {
+   EXPECT_EQ(kNotFound, requested_clear_except_frame_);
+ }
+ 
++// This is a regression test for https://crbug.com/496282147.
++//
++// This is a more realistic, product-like, almost-end-to-end version of the
++// `AnimatedPNGTests.ClearingPartiallyDecodedFrame` unit test.
++TEST_F(ImageFrameGeneratorTest, ClearingPartiallyDecodedFrame) {
++  StringBuilder file_path;
++  file_path.Append(test::BlinkWebTestsDir());
++  file_path.Append(
++      "/images/resources/png-animated-three-independent-frames.png");
++  std::optional<Vector<char>> full_data_vec =
++      test::ReadFromFile(file_path.ToString());
++  ASSERT_TRUE(full_data_vec);
++  base::span<const uint8_t> full_data = base::as_byte_span(*full_data_vec);
++  SkISize size(50, 50);
++
++  // Can't reuse `generator_` from `SetUp`, because it sets `is_multi_frame` to
++  // `false`.  Can't use `SetFrameCount`, because this test needs to use a real
++  // `SkiaImageDecoderBase` decoder, rather than `UseMockImageDecoderFactory`.
++  constexpr bool kIsMultiframe = true;
++  const Vector<SkISize> kSupportedSizes = {};
++  generator_ =
++      ImageFrameGenerator::Create(size, kIsMultiframe, ColorBehavior::kTag,
++                                  cc::AuxImage::kDefault, kSupportedSizes);
++
++  // Partially decode frame 1.
++  //
++  // `fcTL` chunk starts at offset 180.  `fdAT` at 218.
++  // Let's provide 240 bytes - in the middle of `fdAT` chunk.
++  //
++  // After this step `SkiaImageDecoderBase::already_started_frame_` is `1`.
++  SkBitmap bitmap;
++  bitmap.allocN32Pixels(size.width(), size.height());
++  cc::PaintImage::GeneratorClientId client_id =
++      cc::PaintImage::GetNextGeneratorClientId();
++  auto partial_data = SharedBuffer::Create(full_data.first(240u));
++  auto segment_reader = SegmentReader::CreateFromSharedBuffer(partial_data);
++  bool success = generator_->DecodeAndScale(segment_reader.get(),
++                                            /*all_data_received=*/false, 1,
++                                            bitmap.pixmap(), client_id);
++  EXPECT_TRUE(success);
++
++  // Decode an out-of-bounds frame to clear the cache and transitively call
++  // `ImageFrame::ClearPixelData`.
++  success = generator_->DecodeAndScale(segment_reader.get(),
++                                       /*all_data_received=*/false, 1000,
++                                       bitmap.pixmap(), client_id);
++  EXPECT_FALSE(success);
++
++  // Resume decoding of frame 1.  Despite starting with
++  // `SkiaImageDecoderBase::already_started_frame_` set to `1` this operation
++  // needs to call `SkCodec::startIncrementalDecode` because the old buffer has
++  // been freed in the previous step.
++  auto full_shared_buffer = SharedBuffer::Create(full_data);
++  auto full_segment_reader =
++      SegmentReader::CreateFromSharedBuffer(full_shared_buffer);
++  success = generator_->DecodeAndScale(full_segment_reader.get(),
++                                       /*all_data_received=*/true, 1,
++                                       bitmap.pixmap(), client_id);
++  EXPECT_TRUE(success);
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/image-decoders/png/png_image_decoder_test.cc b/third_party/blink/renderer/platform/image-decoders/png/png_image_decoder_test.cc
+index 2ed7dc23ee17f3dfd7ac29de1890c66f9294db56..d72890affec251e6be9444875d03a2af9ccb4528 100644
+--- a/third_party/blink/renderer/platform/image-decoders/png/png_image_decoder_test.cc
++++ b/third_party/blink/renderer/platform/image-decoders/png/png_image_decoder_test.cc
+@@ -879,6 +879,53 @@ TEST(AnimatedPNGTests, IncrementalDecodeOfDifferentFrame) {
+   EXPECT_EQ(frame1->GetStatus(), ImageFrame::kFrameComplete);
+ }
+ 
++// This is a regression test for https://crbug.com/496282147.
++//
++// This test uses `blink::ImageDecoder` and `blink::ImageFrame` APIs in a way
++// that doesn't necessarily reflect how they would actually be used in the
++// product (e.g. calling `ClearPixelData` and/or calling `Append` instead of
++// `SetData`).  This nevertheless seems like a valid test, because:
++//
++// * Supporting all usage patterns allowed by the public APIs (and the type
++//   system) seems more robust then 1) adding extra requirements on the caller
++//   of these APIs (such as never clearing a partially decoded frame), and/or 2)
++//   discovering the callers that may violate such requirements.
++// * A separate `ImageFrameGeneratorTest.ClearingPartiallyDecodedFrame` test
++//   shows how a similr usage pattern is indeed reachable via web-exposed APIs.
++TEST(AnimatedPNGTests, ClearingPartiallyDecodedFrame) {
++  Vector<char> full_data = ReadFile(
++      "/images/resources/"
++      "png-animated-idat-part-of-animation.png");
++  ASSERT_FALSE(full_data.empty());
++  auto decoder = CreatePNGDecoder();
++
++  // Provide only enough data for the first frame to be partial.
++  const size_t kPartialDataSize = 160;
++  scoped_refptr<SharedBuffer> data =
++      SharedBuffer::Create(base::span(full_data).first(kPartialDataSize));
++  decoder->SetData(data.get(), false);
++
++  // Partially decode frame 0.
++  ImageFrame* frame0 = decoder->DecodeFrameBufferAtIndex(0);
++  ASSERT_TRUE(frame0);
++  EXPECT_EQ(frame0->GetStatus(), ImageFrame::kFramePartial);
++
++  // Manually clear frame 0 pixel data.
++  frame0->ClearPixelData();
++
++  // Provide more data by appending to the same `SharedBuffer`.
++  // This avoids clobbering the decoder state with a new `SetData` call.
++  data->Append(base::span(full_data).subspan(kPartialDataSize));
++
++  // Try to decode frame 0 again.  This verifies that
++  // `SkCodec::startIncrementalDecode` has been called to reinitialize decoding
++  // state - avoiding writing to the memory buffer that has been freed by
++  // `ClearPixelData` above.
++  frame0 = decoder->DecodeFrameBufferAtIndex(0);
++  ASSERT_TRUE(frame0);
++  EXPECT_EQ(frame0->GetStatus(), ImageFrame::kFrameComplete);
++}
++
+ // Verify that a malformatted PNG, where the IEND appears before any frame data
+ // (IDAT), invalidates the decoder.
+ TEST(AnimatedPNGTests, VerifyIENDBeforeIDATInvalidatesDecoder) {
+diff --git a/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.cc b/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.cc
+index 81237ef2529fb3846878f1c3378ed5fb345742e4..4353363044e01dd8299db230be6dc5b06d056e5b 100644
+--- a/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.cc
++++ b/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.cc
+@@ -305,6 +305,11 @@ void SkiaImageDecoderBase::Decode(wtf_size_t index) {
+     UpdateAggressivePurging(current_frame_index);
+ 
+     if (frame.GetStatus() == ImageFrame::kFrameEmpty) {
++      // `AllocatePixelData` (or `TakeBitmapDataIfWritable` / `CopyBitmapData`)
++      // calls mean that we can't reuse old buffer pointers that may have been
++      // stashed in `SkCodec` by previous `startIncrementalDecode` calls.
++      already_started_frame_.reset();
++
+       wtf_size_t required_previous_frame_index =
+           frame.RequiredPreviousFrameIndex();
+       if (required_previous_frame_index == kNotFound) {
+@@ -408,6 +413,7 @@ void SkiaImageDecoderBase::Decode(wtf_size_t index) {
+       options.fPriorFrame = prior_frame_;
+       options.fZeroInitialized = SkCodec::kNo_ZeroInitialized;
+ 
++      already_started_frame_.reset();
+       SkCodec::Result start_incremental_decode_result =
+           codec_->startIncrementalDecode(image_info, frame.Bitmap().getPixels(),
+                                          frame.Bitmap().rowBytes(), &options);
+diff --git a/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.h b/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.h
+index 8664eac0738e029afde17ecd5dfe4d2a3e3d939e..17a1fba8a157fc92ebf549082088a2359bdf715d 100644
+--- a/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.h
++++ b/third_party/blink/renderer/platform/image-decoders/skia/skia_image_decoder_base.h
+@@ -99,8 +99,9 @@ class PLATFORM_EXPORT SkiaImageDecoderBase : public ImageDecoder {
+   const wtf_size_t reading_offset_ = 0;
+ 
+   // Number of a frame for which calling `SkCodec::incrementalDecode` is okay.
+-  // Set after calling `SkCodec::startIncrementalDecode` and reset after
+-  // `SkCodec::incrementalDecode` succeeds or encounters a non-resumable error.
++  // Set after calling `SkCodec::startIncrementalDecode` and reset after either
++  // 1) the memory buffer of that frame was reset or 2) the frame was completely
++  // decoded (successfully, or with a non-resumable error).
+   std::optional<wtf_size_t> already_started_frame_;
+ 
+   // The HDR metadata that was read from the codec.

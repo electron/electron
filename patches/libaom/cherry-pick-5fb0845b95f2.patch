@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Zern <jzern@google.com>
+Date: Fri, 27 Mar 2026 10:56:13 -0700
+Subject: av1_nonrd_pick_inter_mode_sb: add missing ref_frame_flags check
+
+Before calling `set_block_source_sad()` ensure `LAST_FRAME` is
+available. Fixes a crash that may present as a use after free (UAF).
+
+Bug: 495477995, 495996858, 500599336
+Change-Id: I61452ce412fb9071c3370b4350ed8878013a8355
+(cherry picked from commit 4369bd1258dc99fa759916d9aba6509cdda9d877)
+
+diff --git a/av1/encoder/nonrd_pickmode.c b/av1/encoder/nonrd_pickmode.c
+index d7d26369bef6143ce85bf6880f042f2d72e269b5..6811530a71c44b3339e4535e24eec3e5d0c9ffba 100644
+--- a/av1/encoder/nonrd_pickmode.c
++++ b/av1/encoder/nonrd_pickmode.c
+@@ -3418,6 +3418,7 @@ void av1_nonrd_pick_inter_mode_sb(AV1_COMP *cpi, TileDataEnc *tile_data,
+       !x->force_zeromv_skip_for_blk &&
+       x->content_state_sb.source_sad_nonrd != kZeroSad &&
+       x->source_variance == 0 && bsize < cm->seq_params->sb_size &&
++      (cpi->ref_frame_flags & AOM_LAST_FLAG) &&
+       search_state.yv12_mb[LAST_FRAME][0].width == cm->width &&
+       search_state.yv12_mb[LAST_FRAME][0].height == cm->height) {
+     set_block_source_sad(cpi, x, bsize, &search_state.yv12_mb[LAST_FRAME][0]);
