@@ -1,0 +1,374 @@
+From eeb3e031eb8986048b34489743e711d28345e134 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Mon, 13 Apr 2026 22:52:33 -0700
+Subject: [PATCH] [M146] media: Zero-copy VP9 alpha decoding in VpxVideoDecoder
+
+Original change's description:
+> media: Zero-copy VP9 alpha decoding in VpxVideoDecoder
+>
+> Configures the VP9 alpha decoder to use `memory_pool_` for external
+> frame buffers, eliminating the need for `libyuv::CopyPlane`.
+>
+> The `VideoFrame` now wraps the alpha data directly from the pool using
+> a second destruction observer. `AllocateAlphaPlaneForFrameBuffer` and
+> `alpha_data` tracking are removed from `FrameBufferPool`.
+>
+> Bug: 500066234
+> Change-Id: I6e7cf13bcc8a5a1759acfd51961859c4c57fcbf2
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7737984
+> Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+> Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1611919}
+
+(cherry picked from commit fc79e8cc2dfcc8f7ec8ee9cf0acf0993f32aec27)
+
+Bug: 501314839,500066234
+Change-Id: I6e7cf13bcc8a5a1759acfd51961859c4c57fcbf2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7757063
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7680@{#3937}
+Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
+---
+
+diff --git a/media/base/frame_buffer_pool.cc b/media/base/frame_buffer_pool.cc
+index e90f070..e2aa3a9 100644
+--- a/media/base/frame_buffer_pool.cc
++++ b/media/base/frame_buffer_pool.cc
+@@ -56,7 +56,6 @@
+   // Not using std::vector<uint8_t> as resize() calls take a really long time
+   // for large buffers.
+   BytesArray data;
+-  BytesArray alpha_data;
+   bool held_by_library = false;
+   // Needs to be a counter since a frame buffer might be used multiple times.
+   int held_by_frame = 0;
+@@ -148,31 +147,6 @@
+   }
+ }
+ 
+-base::span<uint8_t> FrameBufferPool::AllocateAlphaPlaneForFrameBuffer(
+-    size_t min_size,
+-    void* fb_priv) {
+-  base::AutoLock lock(lock_);
+-  DCHECK(fb_priv);
+-
+-  auto* frame_buffer = static_cast<FrameBuffer*>(fb_priv);
+-  DCHECK(IsUsedLocked(frame_buffer));
+-  if (frame_buffer->alpha_data.size() < min_size) {
+-    // Free the existing |alpha_data| first so that the memory can be reused,
+-    // if possible. Note that the new array is purposely not initialized.
+-    frame_buffer->alpha_data = {};
+-    uint8_t* data = nullptr;
+-    if (force_allocation_error_ ||
+-        !base::UncheckedMalloc(min_size, reinterpret_cast<void**>(&data)) ||
+-        !data) {
+-      return {};
+-    }
+-    // SAFETY: We have just allocated `min_size` of memory for `data`.
+-    frame_buffer->alpha_data =
+-        UNSAFE_BUFFERS(BytesArray::FromOwningPointer(data, min_size));
+-  }
+-  return frame_buffer->alpha_data;
+-}
+-
+ base::OnceClosure FrameBufferPool::CreateFrameCallback(void* fb_priv) {
+   base::AutoLock lock(lock_);
+ 
+@@ -210,10 +184,9 @@
+   size_t bytes_reserved = 0;
+   for (const auto& frame_buffer : frame_buffers_) {
+     if (IsUsedLocked(frame_buffer.get())) {
+-      bytes_used += frame_buffer->data.size() + frame_buffer->alpha_data.size();
++      bytes_used += frame_buffer->data.size();
+     }
+-    bytes_reserved +=
+-        frame_buffer->data.size() + frame_buffer->alpha_data.size();
++    bytes_reserved += frame_buffer->data.size();
+   }
+ 
+   memory_dump->AddScalar(base::trace_event::MemoryAllocatorDump::kNameSize,
+diff --git a/media/base/frame_buffer_pool.h b/media/base/frame_buffer_pool.h
+index ac839b8..2ccb0167 100644
+--- a/media/base/frame_buffer_pool.h
++++ b/media/base/frame_buffer_pool.h
+@@ -48,11 +48,6 @@
+   // Called when a frame buffer allocation is no longer needed.
+   void ReleaseFrameBuffer(void* fb_priv);
+ 
+-  // Allocates (or reuses) room for an alpha plane on a given frame buffer.
+-  // |fb_priv| must be a value previously returned by GetFrameBuffer().
+-  base::span<uint8_t> AllocateAlphaPlaneForFrameBuffer(size_t min_size,
+-                                                       void* fb_priv);
+-
+   // Generates a "no_longer_needed" closure that holds a reference to this pool;
+   // |fb_priv| must be a value previously returned by GetFrameBuffer(). The
+   // callback may be called on any thread.
+diff --git a/media/base/frame_buffer_pool_unittest.cc b/media/base/frame_buffer_pool_unittest.cc
+index a5b7bff2..4cfdb15 100644
+--- a/media/base/frame_buffer_pool_unittest.cc
++++ b/media/base/frame_buffer_pool_unittest.cc
+@@ -32,12 +32,6 @@
+   EXPECT_NE(buf1.data(), buf2.data());
+   std::ranges::fill(buf2, 0);
+ 
+-  auto alpha = pool->AllocateAlphaPlaneForFrameBuffer(kBufferSize, priv1);
+-  ASSERT_FALSE(alpha.empty());
+-  EXPECT_NE(alpha.data(), buf1.data());
+-  EXPECT_NE(alpha.data(), buf2.data());
+-  std::ranges::fill(alpha, 0);
+-
+   EXPECT_EQ(2u, pool->get_pool_size_for_testing());
+ 
+   // Frames are not released immediately, so this should still show two frames.
+@@ -52,7 +46,6 @@
+   EXPECT_EQ(1u, pool->get_pool_size_for_testing());
+ 
+   std::ranges::fill(buf1, 0);
+-  std::ranges::fill(alpha, 0);
+ 
+   // This will release all memory since we're in the shutdown state.
+   std::move(frame_release_cb).Run();
+diff --git a/media/filters/vpx_video_decoder.cc b/media/filters/vpx_video_decoder.cc
+index 0be38f7e..32cd3c4 100644
+--- a/media/filters/vpx_video_decoder.cc
++++ b/media/filters/vpx_video_decoder.cc
+@@ -269,7 +269,21 @@
+ 
+   DCHECK(!vpx_codec_alpha_);
+   vpx_codec_alpha_ = InitializeVpxContext(config);
+-  return !!vpx_codec_alpha_;
++  if (!vpx_codec_alpha_) {
++    return false;
++  }
++
++  if (config.codec() == VideoCodec::kVP9) {
++    if (vpx_codec_set_frame_buffer_functions(
++            vpx_codec_alpha_.get(), &GetVP9FrameBuffer, &ReleaseVP9FrameBuffer,
++            memory_pool_.get())) {
++      DLOG(ERROR) << "Failed to configure external buffers for alpha. "
++                  << vpx_codec_error(vpx_codec_alpha_.get());
++      return false;
++    }
++  }
++
++  return true;
+ }
+ 
+ void VpxVideoDecoder::CloseDecoder() {
+@@ -576,20 +590,13 @@
+   if (memory_pool_) {
+     DCHECK_EQ(VideoCodec::kVP9, config_.codec());
+     if (vpx_image_alpha) {
++      CHECK_GT(vpx_image_alpha->stride[VPX_PLANE_Y], 0);
+       size_t alpha_plane_size =
+           vpx_image_alpha->stride[VPX_PLANE_Y] * vpx_image_alpha->d_h;
+-      auto alpha_plane = memory_pool_->AllocateAlphaPlaneForFrameBuffer(
+-          alpha_plane_size, vpx_image->fb_priv);
+-      if (alpha_plane.empty()) {
+-        error_status_ = DecoderStatus::Codes::kOutOfMemory;
+-        // In case of OOM, abort copy.
+-        return false;
+-      }
+-      libyuv::CopyPlane(vpx_image_alpha->planes[VPX_PLANE_Y],
+-                        vpx_image_alpha->stride[VPX_PLANE_Y],
+-                        alpha_plane.data(),
+-                        vpx_image_alpha->stride[VPX_PLANE_Y],
+-                        vpx_image_alpha->d_w, vpx_image_alpha->d_h);
++      // SAFETY: libvpx guarantees that the Y plane has at least `stride * d_h`
++      // bytes available.
++      auto alpha_plane = UNSAFE_BUFFERS(base::span<uint8_t>(
++          vpx_image_alpha->planes[VPX_PLANE_Y], alpha_plane_size));
+       *video_frame = VideoFrame::WrapExternalYuvaData(
+           codec_format, coded_size, gfx::Rect(visible_size), natural_size,
+           vpx_image->stride[VPX_PLANE_Y], vpx_image->stride[VPX_PLANE_U],
+@@ -605,8 +612,14 @@
+     if (!(*video_frame))
+       return false;
+ 
+-    video_frame->get()->AddDestructionObserver(
+-        memory_pool_->CreateFrameCallback(vpx_image->fb_priv));
++    (*video_frame)
++        ->AddDestructionObserver(
++            memory_pool_->CreateFrameCallback(vpx_image->fb_priv));
++    if (vpx_image_alpha) {
++      (*video_frame)
++          ->AddDestructionObserver(
++              memory_pool_->CreateFrameCallback(vpx_image_alpha->fb_priv));
++    }
+     return true;
+   }
+ 
+diff --git a/media/filters/vpx_video_decoder.h b/media/filters/vpx_video_decoder.h
+index 7bcba31..2ab37676 100644
+--- a/media/filters/vpx_video_decoder.h
++++ b/media/filters/vpx_video_decoder.h
+@@ -104,8 +104,8 @@
+   std::unique_ptr<vpx_codec_ctx> vpx_codec_;
+   std::unique_ptr<vpx_codec_ctx> vpx_codec_alpha_;
+ 
+-  // |memory_pool_| is a single-threaded memory pool used for VP9 decoding
+-  // with no alpha. |frame_pool_| is used for all other cases.
++  // |memory_pool_| is a thread-safe memory pool used for zero-copy VP9 decoding
++  // (both with and without alpha). |frame_pool_| is used for VP8.
+   scoped_refptr<FrameBufferPool> memory_pool_;
+   VideoFramePool frame_pool_;
+ 
+diff --git a/media/filters/vpx_video_decoder_unittest.cc b/media/filters/vpx_video_decoder_unittest.cc
+index c7f6d13..5203645 100644
+--- a/media/filters/vpx_video_decoder_unittest.cc
++++ b/media/filters/vpx_video_decoder_unittest.cc
+@@ -176,6 +176,28 @@
+     output_frames_.push_back(std::move(frame));
+   }
+ 
++  // Extracts the compressed video data from the AVPacket and also checks for
++  // side data containing an alpha channel. If found, it copies the alpha data
++  // into the DecoderBuffer's side data. This is necessary because FFmpeg
++  // demuxes alpha channel data as side data associated with the video packet.
++  static scoped_refptr<DecoderBuffer> CreateBufferWithAlphaFromPacket(
++      const AVPacket* packet) {
++    auto buffer = DecoderBuffer::CopyFrom(AVPacketData(*packet));
++    size_t side_data_size = 0;
++    uint8_t* side_data_ptr = av_packet_get_side_data(
++        packet, AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL, &side_data_size);
++    if (side_data_size > 8) {
++      // SAFETY: The best we can do here is trust the size reported by ffmpeg.
++      auto side_data =
++          UNSAFE_BUFFERS(base::span(side_data_ptr, side_data_size));
++      if (base::U64FromBigEndian(side_data.first<8u>()) == 1) {
++        buffer->WritableSideData().alpha_data =
++            base::HeapArray<uint8_t>::CopiedFrom(side_data.subspan(8u));
++      }
++    }
++    return buffer;
++  }
++
+   MOCK_METHOD1(DecodeDone, void(DecoderStatus));
+ 
+   base::test::TaskEnvironment task_env_;
+@@ -293,6 +315,68 @@
+   EXPECT_EQ(old_y_data, output_frames_.back()->data(VideoFrame::Plane::kY));
+ }
+ 
++TEST_F(VpxVideoDecoderTest, SimpleAlphaFrameReuse) {
++  VideoDecoderConfig config = TestVideoConfig::Normal(VideoCodec::kVP9);
++  config.Initialize(
++      config.codec(), config.profile(),
++      VideoDecoderConfig::AlphaMode::kHasAlpha, config.color_space_info(),
++      config.video_transformation(), config.coded_size(), config.visible_rect(),
++      config.natural_size(), config.extra_data(), config.encryption_scheme());
++  InitializeWithConfig(config);
++  scoped_refptr<DecoderBuffer> alpha_frame = ReadTestDataFile("bear-vp9a.webm");
++
++  // Read frames from the webm file.
++  InMemoryUrlProtocol protocol(*alpha_frame, false);
++  FFmpegGlue glue(&protocol);
++  ASSERT_TRUE(glue.OpenContext());
++
++  auto packet = ScopedAVPacket::Allocate();
++
++  // Decode first frame
++  ASSERT_GE(av_read_frame(glue.format_context(), packet.get()), 0);
++  auto buffer = CreateBufferWithAlphaFromPacket(packet.get());
++  Decode(buffer);
++  av_packet_unref(packet.get());
++
++  ASSERT_EQ(1u, output_frames_.size());
++  scoped_refptr<VideoFrame> frame = std::move(output_frames_.front());
++  EXPECT_EQ(PIXEL_FORMAT_I420A, frame->format());
++  const uint8_t* old_y_data = frame->data(VideoFrame::Plane::kY);
++  const uint8_t* old_a_data = frame->data(VideoFrame::Plane::kA);
++  output_frames_.pop_back();
++
++  // Clear frame reference to return the frame to the pool.
++  frame = nullptr;
++
++  // Decode second frame.
++  Decode(buffer);
++  const uint8_t* mid_y_data =
++      output_frames_.front()->data(VideoFrame::Plane::kY);
++  const uint8_t* mid_a_data =
++      output_frames_.front()->data(VideoFrame::Plane::kA);
++  output_frames_.clear();
++
++  // Issuing another decode should reuse buffers from the pool.
++  Decode(buffer);
++
++  ASSERT_EQ(1u, output_frames_.size());
++  const uint8_t* new_y_data =
++      output_frames_.back()->data(VideoFrame::Plane::kY);
++  const uint8_t* new_a_data =
++      output_frames_.back()->data(VideoFrame::Plane::kA);
++
++  // The pool is shared, so buffers might be reused in a different order (e.g. Y
++  // might get the buffer previously used for A). Because libvpx allocates the
++  // new frame before releasing the old reference frame, we need to check across
++  // all previously allocated buffers.
++  bool reused_y = new_y_data == old_y_data || new_y_data == old_a_data ||
++                  new_y_data == mid_y_data || new_y_data == mid_a_data;
++  bool reused_a = new_a_data == old_y_data || new_a_data == old_a_data ||
++                  new_a_data == mid_y_data || new_a_data == mid_a_data;
++  EXPECT_TRUE(reused_y);
++  EXPECT_TRUE(reused_a);
++}
++
+ TEST_F(VpxVideoDecoderTest, SimpleFormatChange) {
+   scoped_refptr<DecoderBuffer> large_frame =
+       ReadTestDataFile("vp9-I-frame-1280x720");
+@@ -312,9 +396,41 @@
+ 
+   // Write to the Y plane. The memory tools should detect a
+   // use-after-free if the storage was actually removed by pool destruction.
+-  memset(output_frames_.front()->writable_data(VideoFrame::Plane::kY), 0xff,
+-         output_frames_.front()->rows(VideoFrame::Plane::kY) *
+-             output_frames_.front()->stride(VideoFrame::Plane::kY));
++  std::ranges::fill(
++      output_frames_.front()->writable_span(VideoFrame::Plane::kY), 0xff);
++}
++
++TEST_F(VpxVideoDecoderTest, AlphaFrameValidAfterPoolDestruction) {
++  VideoDecoderConfig config = TestVideoConfig::Normal(VideoCodec::kVP9);
++  config.Initialize(
++      config.codec(), config.profile(),
++      VideoDecoderConfig::AlphaMode::kHasAlpha, config.color_space_info(),
++      config.video_transformation(), config.coded_size(), config.visible_rect(),
++      config.natural_size(), config.extra_data(), config.encryption_scheme());
++  InitializeWithConfig(config);
++  scoped_refptr<DecoderBuffer> alpha_frame = ReadTestDataFile("bear-vp9a.webm");
++
++  InMemoryUrlProtocol protocol(*alpha_frame, false);
++  FFmpegGlue glue(&protocol);
++  ASSERT_TRUE(glue.OpenContext());
++
++  auto packet = ScopedAVPacket::Allocate();
++  ASSERT_GE(av_read_frame(glue.format_context(), packet.get()), 0);
++  auto buffer = CreateBufferWithAlphaFromPacket(packet.get());
++  Decode(std::move(buffer));
++  av_packet_unref(packet.get());
++
++  ASSERT_EQ(1u, output_frames_.size());
++  EXPECT_EQ(PIXEL_FORMAT_I420A, output_frames_.front()->format());
++
++  Destroy();
++
++  // Write to the Y and A planes. The memory tools should detect a
++  // use-after-free if the storage was actually removed by pool destruction.
++  std::ranges::fill(
++      output_frames_.front()->writable_span(VideoFrame::Plane::kY), 0xff);
++  std::ranges::fill(
++      output_frames_.front()->writable_span(VideoFrame::Plane::kA), 0xff);
+ }
+ 
+ // The test stream uses profile 2, which needs high bit depth support in libvpx.
+@@ -362,8 +478,7 @@
+   Destroy();
+ 
+   // ASAN will be very unhappy with this line if the above is incorrect.
+-  memset(last_frame->writable_data(VideoFrame::Plane::kY), 0,
+-         last_frame->row_bytes(VideoFrame::Plane::kY));
++  std::ranges::fill(last_frame->writable_span(VideoFrame::Plane::kY), 0);
+ }
+ #endif  // !defined(LIBVPX_NO_HIGH_BIT_DEPTH) && !defined(ARCH_CPU_ARM_FAMILY)
+ 
