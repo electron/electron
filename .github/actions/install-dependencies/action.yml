@@ -28,17 +28,21 @@ runs:
         echo "Skipping yarn build on linux arm"
       else
         # Pre-seed the node-gyp header cache so the parallel native-addon
-        # builds below don't race on a cold ~/.cache/node-gyp.
-        for i in 1 2 3; do
-          if node node_modules/.bin/node-gyp install; then
-            break
-          fi
-          if [ "$i" = "3" ]; then
-            echo "node-gyp header pre-seed failed after 3 attempts" >&2
-            exit 1
-          fi
-          echo "node-gyp header pre-seed failed (attempt $i), retrying in 5s..." >&2
-          sleep 5
-        done
+        # builds below don't race on a cold cache. Linux build containers
+        # already ship a warm cache (electron/build-images#68), so only do
+        # this on macOS / Windows runners.
+        if [ "$(uname -s)" != "Linux" ]; then
+          for i in 1 2 3; do
+            if node node_modules/.bin/node-gyp install; then
+              break
+            fi
+            if [ "$i" = "3" ]; then
+              echo "node-gyp header pre-seed failed after 3 attempts" >&2
+              exit 1
+            fi
+            echo "node-gyp header pre-seed failed (attempt $i), retrying in 5s..." >&2
+            sleep 5
+          done
+        fi
         node script/yarn.js install --immutable
       fi
