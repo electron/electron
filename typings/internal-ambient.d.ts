@@ -256,6 +256,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_session'): SessionBinding;
     _linkedBinding(name: 'electron_browser_screen'): { createScreen(): Electron.Screen };
     _linkedBinding(name: 'electron_browser_service_worker_main'): ServiceWorkerMainBinding;
+    _linkedBinding(name: 'electron_browser_system_audio_capture'): { createSystemAudioCapture(): ElectronInternal.SystemAudioCapture; };
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };
     _linkedBinding(name: 'electron_browser_view'): { View: Electron.View };

@@ -82,6 +82,7 @@
   V(electron_browser_service_worker_main) \
   V(electron_browser_session)             \
   V(electron_browser_screen)              \
+  V(electron_browser_system_audio_capture) \
   V(electron_browser_system_preferences)  \
   V(electron_browser_base_window)         \
   V(electron_browser_tray)                \

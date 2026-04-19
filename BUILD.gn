@@ -664,7 +664,10 @@ source_set("electron_lib") {
       "UserNotifications.framework",
     ]
 
-    weak_frameworks = [ "QuickLookThumbnailing.framework" ]
+    weak_frameworks = [
+      "QuickLookThumbnailing.framework",
+      "ScreenCaptureKit.framework",
+    ]
 
     sources += [
       "shell/browser/ui/views/autofill_popup_view.cc",

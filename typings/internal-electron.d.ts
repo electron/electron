@@ -262,6 +262,39 @@ declare namespace Electron {
 }
 
 declare namespace ElectronInternal {
+  interface SystemAudioPcmFrameMeta {
+    sampleRate: number;
+    channels: number;
+    sequence: number;
+    timestampMs: number;
+    fromSystem: boolean;
+    source: 'system' | 'fallback';
+  }
+
+  interface SystemAudioCaptureDiagnostics {
+    permissionPreflight: boolean;
+    usingSystemCapture: boolean;
+    lastStartSystemCaptureSucceeded: boolean;
+    systemFrameCallbacks: number;
+    fallbackFrameCallbacks: number;
+    queuedFrameDepth: number;
+    queueMaxDepth: number;
+    queueDroppedFrames: number;
+    queueUnderrunFrames: number;
+    lastError: string;
+  }
+
+  type SystemAudioFrameHandler =
+    (pcm: number[], meta: SystemAudioPcmFrameMeta) => void;
+
+  interface SystemAudioCapture {
+    startHandling(): boolean;
+    stopHandling(): void;
+    getCaptureDiagnostics(): SystemAudioCaptureDiagnostics;
+    _onframe?: SystemAudioFrameHandler;
+    _onerror?: (error: string) => void;
+  }
+
   interface DesktopCapturer {
     startHandling(captureWindow: boolean, captureScreen: boolean, thumbnailSize: Electron.Size, fetchWindowIcons: boolean): void;
     _onerror?: (error: string) => void;
