@@ -17,7 +17,7 @@ Commit-Queue: Lei Zhang <thestig@chromium.org>
 
 diff --git a/third_party/lcms/0036-cubesize-overflow.patch b/third_party/lcms/0036-cubesize-overflow.patch
 new file mode 100644
-index 0000000000000000000000000000000000000000..354033027f1add7850e86ed21a7ac1f045a823ac
+index 0000000000000000000000000000000000000000..1167469288d2c4faeb624acf48bd6ff831705db5
 --- /dev/null
 +++ b/third_party/lcms/0036-cubesize-overflow.patch
 @@ -0,0 +1,28 @@
@@ -59,7 +59,7 @@ index 2a279325d3796fcedbf8bee95b26f26855d35d91..2f27874525e687208db6a8eadf27ac4f
  0035-func-ptr-mixup.patch: Prevent mixing up function pointer types.
 +0036-cubesize-overflow.patch: Check for overflow in CubeSize().
 diff --git a/third_party/lcms/src/cmslut.c b/third_party/lcms/src/cmslut.c
-index 22a16b327ff7e9813ec9618ac5acf76f3cb4fb70..11361de45cc9bac5b5194762ed524ff7debca8e6 100644
+index 22a16b327ff7e9813ec9618ac5acf76f3cb4fb70..53d5e11680b7132e78d7c7cd0b7bcd11a099f6ed 100644
 --- a/third_party/lcms/src/cmslut.c
 +++ b/third_party/lcms/src/cmslut.c
 @@ -467,12 +467,12 @@ cmsUInt32Number CubeSize(const cmsUInt32Number Dims[], cmsUInt32Number b)

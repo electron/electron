@@ -20,7 +20,7 @@ Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.g
 
 diff --git a/third_party/libtiff/0034-tiff-jpeg-overflow.patch b/third_party/libtiff/0034-tiff-jpeg-overflow.patch
 new file mode 100644
-index 0000000000000000000000000000000000000000..f03fa9460eb702e8cc444caeb545555474cf0783
+index 0000000000000000000000000000000000000000..ba6086a38adfa0bd7726affda0f11381e04501e5
 --- /dev/null
 +++ b/third_party/libtiff/0034-tiff-jpeg-overflow.patch
 @@ -0,0 +1,25 @@
