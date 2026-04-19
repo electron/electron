@@ -985,7 +985,9 @@ describe('protocol module', () => {
             .catch(e => ({ body: null, error: String(e) }))
         `);
         expect(body).to.not.equal(secret, 'http origin read no-cors:// body via fetch()');
-        expect(error).to.be.a('string').and.match(/Failed to fetch/);
+        expect(error)
+          .to.be.a('string')
+          .and.match(/Failed to fetch/);
         expect(consoleMessages.join('\n')).to.match(/has been blocked by CORS policy/);
       });
 
@@ -1029,10 +1031,13 @@ describe('protocol module', () => {
 
       it('still allows cross-origin <img> loads (no-cors subresource)', async () => {
         protocol.unhandle('no-cors');
-        protocol.handle('no-cors', () =>
-          new Response(fs.readFileSync(path.join(fixturesPath, 'assets', 'logo.png')), {
-            headers: { 'content-type': 'image/png' }
-          }));
+        protocol.handle(
+          'no-cors',
+          () =>
+            new Response(fs.readFileSync(path.join(fixturesPath, 'assets', 'logo.png')), {
+              headers: { 'content-type': 'image/png' }
+            })
+        );
         await w.loadURL(remoteUrl);
         const { ok, width } = await w.webContents.executeJavaScript(`
           new Promise(resolve => {
@@ -1048,8 +1053,7 @@ describe('protocol module', () => {
 
       it('allows same-origin fetch on a standard supportFetchAPI-only scheme', async () => {
         await w.loadURL('no-cors-standard://app/page');
-        const body = await w.webContents.executeJavaScript(
-          "fetch('no-cors-standard://app/data').then(r => r.text())");
+        const body = await w.webContents.executeJavaScript("fetch('no-cors-standard://app/data').then(r => r.text())");
         expect(body).to.equal(secret);
       });
 
@@ -1057,8 +1061,11 @@ describe('protocol module', () => {
         await w.loadURL('no-cors-standard://app/page');
         handlerCalls = [];
         const error = await w.webContents.executeJavaScript(
-          "fetch('no-cors-standard://other/data').then(() => null, e => String(e))");
-        expect(error).to.be.a('string').and.match(/Failed to fetch/);
+          "fetch('no-cors-standard://other/data').then(() => null, e => String(e))"
+        );
+        expect(error)
+          .to.be.a('string')
+          .and.match(/Failed to fetch/);
         expect(handlerCalls).to.deep.equal([]);
       });
 
@@ -1066,8 +1073,7 @@ describe('protocol module', () => {
         protocol.handle('cors', () => new Response('ok'));
         defer(() => protocol.unhandle('cors'));
         await w.loadURL(remoteUrl);
-        const body = await w.webContents.executeJavaScript(
-          "fetch('cors://host/').then(r => r.text())");
+        const body = await w.webContents.executeJavaScript("fetch('cors://host/').then(r => r.text())");
         expect(body).to.equal('ok');
       });
 
