@@ -1,0 +1,187 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Paniconi <marpan@google.com>
+Date: Sun, 29 Mar 2026 20:27:20 -0700
+Subject: Set force_mv_inter_layer earlier in skip_inter_mode
+
+For nonrd_pickmode: move the setting of
+force_mv_inter_layer earlier in the
+skip_inter_mode_nonrd(), to make sure it always
+get set (in case of false return in that function).
+
+Thie prevents the usage of a scaled_ref in pickmode
+(combined_motion search) when it has actually not been
+set/scaled in av1_scale_references (before encoding).
+
+Fixes a crash for use after free (UAF), reported
+in the issues below.
+
+Added svc unittest to generate the issue. Also added
+assert check for scaled_ref in combined_motion_search.
+
+Bug: 495477995, 495996858
+Change-Id: I578d19156d97a50546edc9422bc3581566f1236e
+(cherry picked from commit a047955845e50e43786d51cdefcfc9e87804ed61)
+
+diff --git a/av1/encoder/nonrd_pickmode.c b/av1/encoder/nonrd_pickmode.c
+index 0f2a1c780a56a51f69bba8893fea9d9ad98b85a3..942b8ab23a2d448877c8801940fee4d0baae9aef 100644
+--- a/av1/encoder/nonrd_pickmode.c
++++ b/av1/encoder/nonrd_pickmode.c
+@@ -192,7 +192,7 @@ static int combined_motion_search(AV1_COMP *cpi, MACROBLOCK *x,
+                                   int *rate_mv, int64_t best_rd_sofar,
+                                   int use_base_mv) {
+   MACROBLOCKD *xd = &x->e_mbd;
+-  const AV1_COMMON *cm = &cpi->common;
++  AV1_COMMON *cm = &cpi->common;
+   const SPEED_FEATURES *sf = &cpi->sf;
+   MB_MODE_INFO *mi = xd->mi[0];
+   int step_param = (sf->rt_sf.fullpel_search_step_param)
+@@ -207,6 +207,14 @@ static int combined_motion_search(AV1_COMP *cpi, MACROBLOCK *x,
+   int cost_list[5];
+   int search_subpel = 1;
+ 
++  if (av1_is_scaled(get_ref_scale_factors(cm, ref))) {
++    const YV12_BUFFER_CONFIG *scaled_ref = av1_get_scaled_ref_frame(cpi, ref);
++    (void)scaled_ref;
++    assert(scaled_ref != NULL);
++    assert(scaled_ref->y_crop_width == cm->width &&
++           scaled_ref->y_crop_height == cm->height);
++  }
++
+   start_mv = get_fullmv_from_mv(&ref_mv);
+ 
+   if (!use_base_mv)
+@@ -2490,6 +2498,23 @@ static AOM_FORCE_INLINE bool skip_inter_mode_nonrd(
+       (*this_mode != GLOBALMV || *ref_frame != LAST_FRAME))
+     return true;
+ 
++  *force_mv_inter_layer = 0;
++  if (cpi->ppi->use_svc && svc->spatial_layer_id > 0 &&
++      ((*ref_frame == LAST_FRAME && svc->skip_mvsearch_last) ||
++       (*ref_frame == GOLDEN_FRAME && svc->skip_mvsearch_gf) ||
++       (*ref_frame == ALTREF_FRAME && svc->skip_mvsearch_altref))) {
++    // Only test mode if NEARESTMV/NEARMV is (svc_mv.mv.col, svc_mv.mv.row),
++    // otherwise set NEWMV to (svc_mv.mv.col, svc_mv.mv.row).
++    // Skip newmv and filter search.
++    *force_mv_inter_layer = 1;
++    if (*this_mode == NEWMV) {
++      search_state->frame_mv[*this_mode][*ref_frame] = svc_mv;
++    } else if (search_state->frame_mv[*this_mode][*ref_frame].as_int !=
++               svc_mv.as_int) {
++      return true;
++    }
++  }
++
+   // If the segment reference frame feature is enabled then do nothing if the
+   // current ref frame is not allowed.
+   if (segfeature_active(seg, segment_id, SEG_LVL_REF_FRAME)) {
+@@ -2565,23 +2590,6 @@ static AOM_FORCE_INLINE bool skip_inter_mode_nonrd(
+     return true;
+   }
+ 
+-  *force_mv_inter_layer = 0;
+-  if (cpi->ppi->use_svc && svc->spatial_layer_id > 0 &&
+-      ((*ref_frame == LAST_FRAME && svc->skip_mvsearch_last) ||
+-       (*ref_frame == GOLDEN_FRAME && svc->skip_mvsearch_gf) ||
+-       (*ref_frame == ALTREF_FRAME && svc->skip_mvsearch_altref))) {
+-    // Only test mode if NEARESTMV/NEARMV is (svc_mv.mv.col, svc_mv.mv.row),
+-    // otherwise set NEWMV to (svc_mv.mv.col, svc_mv.mv.row).
+-    // Skip newmv and filter search.
+-    *force_mv_inter_layer = 1;
+-    if (*this_mode == NEWMV) {
+-      search_state->frame_mv[*this_mode][*ref_frame] = svc_mv;
+-    } else if (search_state->frame_mv[*this_mode][*ref_frame].as_int !=
+-               svc_mv.as_int) {
+-      return true;
+-    }
+-  }
+-
+   // For screen content: skip mode testing based on source_sad.
+   if (cpi->oxcf.tune_cfg.content == AOM_CONTENT_SCREEN &&
+       !x->force_zeromv_skip_for_blk) {
+diff --git a/test/svc_datarate_test.cc b/test/svc_datarate_test.cc
+index 0df678212acb0519aa4420ae57186840e12c682c..2f68ba7a214932b284a6eacbe1a9b5b474b6c659 100644
+--- a/test/svc_datarate_test.cc
++++ b/test/svc_datarate_test.cc
+@@ -247,6 +247,7 @@ class DatarateTestSVC
+     external_resize_pattern_ = 0;
+     dynamic_tl_ = false;
+     dynamic_scale_factors_ = false;
++    disable_last_ref_ = false;
+   }
+ 
+   void PreEncodeFrameHook(::libaom_test::VideoSource *video,
+@@ -302,7 +303,7 @@ class DatarateTestSVC
+         spatial_layer_id, multi_ref_, comp_pred_,
+         (video->frame() % cfg_.kf_max_dist) == 0, dynamic_enable_disable_mode_,
+         rps_mode_, rps_recovery_frame_, simulcast_mode_, use_last_as_scaled_,
+-        use_last_as_scaled_single_ref_);
++        use_last_as_scaled_single_ref_, disable_last_ref_);
+     if (intra_only_ == 1 && frame_sync_ > 0) {
+       // Set an Intra-only frame on SL0 at frame_sync_.
+       // In order to allow decoding to start on SL0 in mid-sequence we need to
+@@ -964,7 +965,7 @@ class DatarateTestSVC
+       int multi_ref, int comp_pred, int is_key_frame,
+       int dynamic_enable_disable_mode, int rps_mode, int rps_recovery_frame,
+       int simulcast_mode, bool use_last_as_scaled,
+-      bool use_last_as_scaled_single_ref) {
++      bool use_last_as_scaled_single_ref, bool disable_last_ref) {
+     int lag_index = 0;
+     int base_count = frame_cnt >> 2;
+     layer_id->spatial_layer_id = spatial_layer;
+@@ -1164,6 +1165,11 @@ class DatarateTestSVC
+     if (dynamic_enable_disable_mode == 1 &&
+         layer_id->spatial_layer_id == number_spatial_layers_ - 1)
+       ref_frame_config->reference[0] = 0;
++    // Always disable LAST reference under this flag. use GOLDEN reference.
++    if (disable_last_ref) {
++      ref_frame_config->reference[0] = 0;
++      ref_frame_config->reference[3] = 1;
++    }
+     return layer_flags;
+   }
+ 
+@@ -1508,6 +1514,23 @@ class DatarateTestSVC
+     CheckDatarate(0.80, 1.60);
+   }
+ 
++  virtual void BasicRateTargetingSVC1TL2SLDisableLASTTest() {
++    SetUpCbr();
++    cfg_.g_error_resilient = 0;
++
++    ::libaom_test::I420VideoSource video("hantro_collage_w352h288.yuv", 352,
++                                         288, 30, 1, 0, 300);
++    const int bitrate_array[2] = { 300, 600 };
++    cfg_.rc_target_bitrate = bitrate_array[GET_PARAM(4)];
++    ResetModel();
++    disable_last_ref_ = true;
++    screen_mode_ = true;
++    ASSERT_NO_FATAL_FAILURE(RunLoop(&video));
++#if CONFIG_AV1_DECODER
++    EXPECT_EQ((int)GetMismatchFrames(), 0);
++#endif
++  }
++
+   virtual void BasicRateTargetingSVC3TL3SLIntraStartDecodeBaseMidSeq() {
+     SetUpCbr();
+     cfg_.rc_max_quantizer = 56;
+@@ -2380,6 +2403,7 @@ class DatarateTestSVC
+   int external_resize_pattern_;
+   bool dynamic_tl_;
+   bool dynamic_scale_factors_;
++  bool disable_last_ref_;
+ };
+ 
+ // Check basic rate targeting for CBR, for 3 temporal layers, 1 spatial.
+@@ -2458,6 +2482,12 @@ TEST_P(DatarateTestSVC, BasicRateTargetingSVC1TL2SL) {
+   BasicRateTargetingSVC1TL2SLTest();
+ }
+ 
++// Check basic rate targeting for CBR, for 2 spatial layers, 1 temporal.
++// Disable the usage of LAST referenc frame.
++TEST_P(DatarateTestSVC, BasicRateTargetingSVC1TL2SLDisableLAST) {
++  BasicRateTargetingSVC1TL2SLDisableLASTTest();
++}
++
+ // Check basic rate targeting for CBR, for 3 spatial layers, 3 temporal,
+ // with Intra-only frame inserted in the stream. Verify that we can start
+ // decoding the SL0 stream at the intra_only frame in mid-sequence.

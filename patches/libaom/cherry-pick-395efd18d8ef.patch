@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Zern <jzern@google.com>
+Date: Wed, 1 Apr 2026 20:56:24 -0700
+Subject: av1_nonrd_pick_inter_mode_sb: normalize ref frame check
+
+Prefer `search_state.use_ref_frame_mask[]` over `cpi->ref_frame_flags`.
+These are equivalent and checking the former is more consistent with the
+rest of the function. This is a follow up to:
+ 4369bd1258 av1_nonrd_pick_inter_mode_sb: add missing ref_frame_flags check
+
+Bug: 495477995, 495996858
+Change-Id: Ie4bd1f4c80c4182add35c7a9c1977c15ce97d3bd
+(cherry picked from commit 395efd18d8ef31d8452a0336e848c02072feffe7)
+
+diff --git a/av1/encoder/nonrd_pickmode.c b/av1/encoder/nonrd_pickmode.c
+index 29539b18566c37d0e81975f54429f699907f619e..54d497af619cb7f59f3797c87dd3208c2b2448da 100644
+--- a/av1/encoder/nonrd_pickmode.c
++++ b/av1/encoder/nonrd_pickmode.c
+@@ -3448,7 +3448,7 @@ void av1_nonrd_pick_inter_mode_sb(AV1_COMP *cpi, TileDataEnc *tile_data,
+       !x->force_zeromv_skip_for_blk &&
+       x->content_state_sb.source_sad_nonrd != kZeroSad &&
+       x->source_variance == 0 && bsize < cm->seq_params->sb_size &&
+-      (cpi->ref_frame_flags & AOM_LAST_FLAG) &&
++      search_state.use_ref_frame_mask[LAST_FRAME] &&
+       search_state.yv12_mb[LAST_FRAME][0].width == cm->width &&
+       search_state.yv12_mb[LAST_FRAME][0].height == cm->height) {
+     set_block_source_sad(cpi, x, bsize, &search_state.yv12_mb[LAST_FRAME][0]);

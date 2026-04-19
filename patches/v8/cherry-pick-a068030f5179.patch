@@ -1,0 +1,194 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Thu, 26 Mar 2026 10:39:16 +0100
+Subject: [maglev] Use transitive IsEscaping check for inlined allocations
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Check if a virtual object is escaping transitively.
+
+Rename non-transitive function to HasEscapeUses instead.
+
+Fixed: 495751197
+Change-Id: I1df519079515b522974708f5419a81b5cbee7ade
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7702700
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106064}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 6b754b4d8592f0214f731dc9b298b3aab59527f2..7d47edc6dfbe5daa5e89647ea38c4e8ec21a522c 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -4646,19 +4646,20 @@ void MaglevGraphBuilder::BuildInitializeStore_TrustedPointer(
+   CHECK(!result.IsDoneWithAbort());
+ }
+ 
+-namespace {
+-bool IsEscaping(Graph* graph, InlinedAllocation* alloc) {
+-  if (alloc->IsEscaping()) return true;
+-  auto it = graph->allocations_elide_map().find(alloc);
+-  if (it == graph->allocations_elide_map().end()) return false;
++bool MaglevGraphBuilder::IsEscaping(InlinedAllocation* alloc) {
++  if (alloc->HasEscapingUses()) return true;
++  auto it = graph_->allocations_elide_map().find(alloc);
++  if (it == graph_->allocations_elide_map().end()) return false;
+   for (InlinedAllocation* inner_alloc : it->second) {
+-    if (IsEscaping(graph, inner_alloc)) {
++    if (IsEscaping(inner_alloc)) {
+       return true;
+     }
+   }
+   return false;
+ }
+ 
++namespace {
++
+ bool VerifyIsNotEscaping(VirtualObjectList vos, InlinedAllocation* alloc) {
+   for (VirtualObject* vo : vos) {
+     if (vo->allocation() == alloc) continue;
+@@ -4668,7 +4669,7 @@ bool VerifyIsNotEscaping(VirtualObjectList vos, InlinedAllocation* alloc) {
+       if (!nested_value->Is<InlinedAllocation>()) return true;
+       ValueNode* nested_alloc = nested_value->Cast<InlinedAllocation>();
+       if (nested_alloc == alloc) {
+-        if (vo->allocation()->IsEscaping() ||
++        if (vo->allocation()->HasEscapingUses() ||
+             !VerifyIsNotEscaping(vos, vo->allocation())) {
+           escaped = true;
+         }
+@@ -4687,6 +4688,7 @@ bool MaglevGraphBuilder::CanTrackObjectChanges(ValueNode* receiver,
+   if (!v8_flags.maglev_object_tracking) return false;
+   if (!receiver->Is<InlinedAllocation>()) return false;
+   InlinedAllocation* alloc = receiver->Cast<InlinedAllocation>();
++  if (IsEscaping(alloc)) return false;
+   if (mode == TrackObjectMode::kStore) {
+     // If we have two objects A and B, such that A points to B (it contains B in
+     // one of its field), we cannot change B without also changing A, even if
+@@ -4695,7 +4697,6 @@ bool MaglevGraphBuilder::CanTrackObjectChanges(ValueNode* receiver,
+         graph_->allocations_elide_map().end()) {
+       return false;
+     }
+-    if (alloc->IsEscaping()) return false;
+     // Ensure object is escaped if we are within a try-catch block. This is
+     // crucial because a deoptimization point inside the catch handler could
+     // re-materialize objects differently, depending on whether the throw
+@@ -4704,9 +4705,6 @@ bool MaglevGraphBuilder::CanTrackObjectChanges(ValueNode* receiver,
+     // the try-block started,  but for now, err on the side of caution and
+     // always escape.
+     if (IsInsideTryBlock()) return false;
+-  } else {
+-    DCHECK_EQ(mode, TrackObjectMode::kLoad);
+-    if (IsEscaping(graph_, alloc)) return false;
+   }
+   // We don't support loop phis inside VirtualObjects, so any access inside a
+   // loop should escape the object, except for objects that were created since
+@@ -9195,7 +9193,7 @@ MaybeReduceResult MaglevGraphBuilder::TryReduceArrayIteratorPrototypeNext(
+     VirtualObject* array = iterated_object->Cast<InlinedAllocation>()->object();
+     // TODO(victorgomes): Remove this once we track changes in the inlined
+     // allocated object.
+-    if (iterated_object->Cast<InlinedAllocation>()->IsEscaping()) {
++    if (IsEscaping(iterated_object->Cast<InlinedAllocation>())) {
+       FAIL("allocation is escaping, map could have been changed");
+     }
+     // TODO(victorgomes): This effectively disable the optimization for `for-of`
+@@ -12315,7 +12313,7 @@ MaglevGraphBuilder::TryGetNonEscapingArgumentsObject(ValueNode* value) {
+   }
+   // TODO(victorgomes): We can probably loosen the IsNotEscaping requirement if
+   // we keep track of the arguments object changes so far.
+-  if (alloc->IsEscaping()) return {};
++  if (IsEscaping(alloc)) return {};
+   VirtualObject* object = alloc->object();
+   if (!object->has_static_map()) return {};
+   // TODO(victorgomes): Support simple JSArray forwarding.
+diff --git a/src/maglev/maglev-graph-builder.h b/src/maglev/maglev-graph-builder.h
+index 6b162e22b09b008a470612b5689323749891e5fd..1bf3400df6da6d15c959d74a722c6ecfa08b3ac1 100644
+--- a/src/maglev/maglev-graph-builder.h
++++ b/src/maglev/maglev-graph-builder.h
+@@ -1447,6 +1447,7 @@ class MaglevGraphBuilder {
+       ValueNode* object, ValueNode* callable,
+       compiler::FeedbackSource feedback_source);
+ 
++  bool IsEscaping(InlinedAllocation* allocation);
+   VirtualObject* GetObjectFromAllocation(InlinedAllocation* allocation);
+   VirtualObject* GetModifiableObjectFromAllocation(
+       InlinedAllocation* allocation);
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index d6282a00ebb327be9ed431e764fbe6a92abf72d5..d224c28bf639e952c8b7eaff1f28ce650cf1f33e 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -6119,7 +6119,7 @@ class InlinedAllocation : public FixedInputValueNodeT<1, InlinedAllocation> {
+     DCHECK(!HasBeenAnalysed());
+     non_escaping_use_count_ += n;
+   }
+-  bool IsEscaping() const {
++  bool HasEscapingUses() const {
+     DCHECK(!HasBeenAnalysed());
+     return use_count_ > non_escaping_use_count_;
+   }
+diff --git a/src/maglev/maglev-post-hoc-optimizations-processors.h b/src/maglev/maglev-post-hoc-optimizations-processors.h
+index a7740283358d90383f366d29fea9360f1fd8661b..715cef1c67f9fdca830530fd438b3b6334922413 100644
+--- a/src/maglev/maglev-post-hoc-optimizations-processors.h
++++ b/src/maglev/maglev-post-hoc-optimizations-processors.h
+@@ -382,7 +382,7 @@ class AnyUseMarkingProcessor {
+       auto* alloc = it.first;
+       if (alloc->HasBeenAnalysed()) continue;
+       // Check if all its uses are non escaping.
+-      if (alloc->IsEscaping()) {
++      if (alloc->HasEscapingUses()) {
+         // Escape this allocation and all its dependencies.
+         EscapeAllocation(graph, alloc, it.second);
+       } else {
+diff --git a/test/mjsunit/maglev/regress-495751197.js b/test/mjsunit/maglev/regress-495751197.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b6e5baefea2a5d626bff5716f23a2ceadab01bad
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-495751197.js
+@@ -0,0 +1,47 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++let do_transition = false;
++let marker = {x: 1.337};
++
++Object.defineProperty(Object.prototype, '_leak', {
++  get() {
++    if (do_transition) {
++      this[1][0] = marker;
++    }
++    return this;
++  },
++  configurable: true
++});
++
++function target(iter) {
++  return iter.next().value;
++}
++
++function inner() {
++  var leaked;
++  // Forces WithContext creation. _leak triggers the runtime call.
++  with (arguments) { leaked = _leak; }
++  return target.apply(null, arguments);
++}
++
++function outer() {
++  let a = [1.1, 2.2, 3.3];
++  let iter = a.values();
++  return inner(iter, a);
++}
++
++%PrepareFunctionForOptimization(target);
++%PrepareFunctionForOptimization(inner);
++%PrepareFunctionForOptimization(outer);
++
++outer(); outer(); outer();
++
++%OptimizeMaglevOnNextCall(outer);
++
++do_transition = true;
++let r = outer();
++assertFalse(typeof r === "number");

@@ -1,0 +1,179 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hiroki Nakagawa <nhiroki@chromium.org>
+Date: Sun, 29 Mar 2026 18:12:59 -0700
+Subject: Prerender: Update PrerenderNewTabHandle destruction
+
+Updates PrerenderNewTabHandle::CancelPrerendering to be a static method
+CancelPrerenderingAndDestroy that takes ownership of the handle.
+
+Defers the destruction of PrerenderNewTabHandle using DeleteSoon() to
+ensure the owned WebContentsImpl is not destroyed synchronously during
+processing or iteration of handles.
+
+Adds a browser test NewTabPrerenderCancellationByBrowsingDataRemover to
+verify safe destruction.
+
+Bug: 497053588
+Change-Id: I97944ce9a5d1df486adb3e2438a8b381ee9f298e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7710193
+Reviewed-by: Huanpo Lin <robertlin@chromium.org>
+Commit-Queue: Hiroki Nakagawa <nhiroki@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1606854}
+
+diff --git a/content/browser/preloading/prerender/prerender_browsertest.cc b/content/browser/preloading/prerender/prerender_browsertest.cc
+index 0b8550aad9a12563f870cd07f35338e4484ca5d0..3b18b20c19366dd124d75f544243d9bcc919b9dc 100644
+--- a/content/browser/preloading/prerender/prerender_browsertest.cc
++++ b/content/browser/preloading/prerender/prerender_browsertest.cc
+@@ -3903,6 +3903,39 @@ IN_PROC_BROWSER_TEST_F(PrerenderTargetHintBrowserTest,
+       PrerenderFinalStatus::kTabClosedWithoutUserGesture);
+ }
+ 
++// Tests that trigger cancellation via BrowsingDataRemover (e.g.,
++// Clear-Site-Data) is handled safely without causing Use-After-Free due to
++// synchronous destruction of the WebContentsImpl during iteration.
++IN_PROC_BROWSER_TEST_F(PrerenderTargetHintBrowserTest,
++                       NewTabPrerenderCancellationByBrowsingDataRemover) {
++  const GURL initial_url = GetUrl("/empty.html");
++  const GURL prerendering_url = GetUrl("/empty.html?prerender");
++
++  // Navigate to an initial page.
++  ASSERT_TRUE(NavigateToURL(shell(), initial_url));
++
++  // Start prerendering.
++  PrerenderHostId host_id = prerender_helper()->AddPrerender(
++      prerendering_url, /*eagerness=*/std::nullopt, "_blank");
++  auto* prerender_web_contents =
++      test::PrerenderTestHelper::GetPrerenderWebContents(host_id);
++  WebContentsDestroyedWatcher wc_destroyed_watcher(prerender_web_contents);
++
++  // Trigger browsing data removal which will call CancelHostsByOriginFilter.
++  BrowsingDataRemover* remover =
++      web_contents_impl()->GetBrowserContext()->GetBrowsingDataRemover();
++  BrowsingDataRemoverCompletionObserver completion_observer(remover);
++  remover->RemoveAndReply(base::Time::Min(), base::Time::Max(),
++                          BrowsingDataRemover::DATA_TYPE_CACHE,
++                          BrowsingDataRemover::ORIGIN_TYPE_UNPROTECTED_WEB,
++                          &completion_observer);
++  completion_observer.BlockUntilCompletion();
++
++  // WebContents created for the new-tab trigger will be destroyed safely.
++  wc_destroyed_watcher.Wait();
++  EXPECT_FALSE(prerender_helper()->HasNewTabHandle(host_id));
++}
++
+ // Tests that prerendering is cancelled if a network request for the
+ // navigation results in an empty response with 404 status.
+ IN_PROC_BROWSER_TEST_P(PrerenderTargetAgnosticBrowserTest,
+diff --git a/content/browser/preloading/prerender/prerender_host_registry.cc b/content/browser/preloading/prerender/prerender_host_registry.cc
+index 0cdaa3f62b31cf4abe7f568e480c3c5d354516f2..26e71de66d6e3ad2ace9e2bf1ad4fa7e416cae0a 100644
+--- a/content/browser/preloading/prerender/prerender_host_registry.cc
++++ b/content/browser/preloading/prerender/prerender_host_registry.cc
+@@ -1133,14 +1133,8 @@ bool PrerenderHostRegistry::CancelNewTabHostInternal(
+   prerender_new_tab_handle_by_id_.erase(iter);
+   NotifyCancel(handle->prerender_host_id(), reason);
+ 
+-  if (reason.final_status() == PrerenderFinalStatus::kSpeculationRuleRemoved) {
+-    auto& new_tab_registry = handle->GetPrerenderHostRegistry();
+-    new_tab_registry.SchedulePendingDeletionPrerenderNewTabHandle(
+-        std::move(handle));
+-    new_tab_registry.CancelHost(prerender_host_id, reason);
+-  } else {
+-    handle->CancelPrerendering(reason);
+-  }
++  PrerenderNewTabHandle::CancelPrerenderingAndDestroy(std::move(handle),
++                                                      reason);
+ 
+   return true;
+ }
+@@ -1829,6 +1823,7 @@ void PrerenderHostRegistry::DeletePendingDeletionHosts(
+ }
+ 
+ void PrerenderHostRegistry::SchedulePendingDeletionPrerenderNewTabHandle(
++    base::PassKey<PrerenderNewTabHandle>,
+     std::unique_ptr<PrerenderNewTabHandle> handle) {
+   CHECK(!pending_deletion_new_tab_prerender_handle_);
+   pending_deletion_new_tab_prerender_handle_ = std::move(handle);
+diff --git a/content/browser/preloading/prerender/prerender_host_registry.h b/content/browser/preloading/prerender/prerender_host_registry.h
+index 7f84a1edac3fdbdd3904940a7cff453d71bcd866..d3d41e1c42605d5b317b28fc75102beece44643c 100644
+--- a/content/browser/preloading/prerender/prerender_host_registry.h
++++ b/content/browser/preloading/prerender/prerender_host_registry.h
+@@ -288,6 +288,9 @@ class CONTENT_EXPORT PrerenderHostRegistry
+ 
+   PrerenderHostId GetPrerenderHostIdForNavigation(
+       NavigationRequest* navigation_request);
++  void SchedulePendingDeletionPrerenderNewTabHandle(
++      base::PassKey<PrerenderNewTabHandle>,
++      std::unique_ptr<PrerenderNewTabHandle> handle);
+ 
+  private:
+   // WebContentsObserver implementation:
+@@ -310,8 +313,6 @@ class CONTENT_EXPORT PrerenderHostRegistry
+   void ScheduleToDeleteAbandonedHost(
+       std::unique_ptr<PrerenderHost> prerender_host,
+       const PrerenderCancellationReason& cancellation_reason);
+-  void SchedulePendingDeletionPrerenderNewTabHandle(
+-      std::unique_ptr<PrerenderNewTabHandle> handle);
+ 
+   void DeleteAbandonedHosts();
+ 
+diff --git a/content/browser/preloading/prerender/prerender_new_tab_handle.cc b/content/browser/preloading/prerender/prerender_new_tab_handle.cc
+index 5c4bc5e6ff6a0fdb6911db60f286899a36f4266b..99b5bd9648649db43a70e091e9837bf75ac87a89 100644
+--- a/content/browser/preloading/prerender/prerender_new_tab_handle.cc
++++ b/content/browser/preloading/prerender/prerender_new_tab_handle.cc
+@@ -10,6 +10,7 @@
+ #include "content/browser/preloading/preloading_data_impl.h"
+ #include "content/browser/preloading/prerender/prerender_host.h"
+ #include "content/browser/preloading/prerender/prerender_host_registry.h"
++#include "content/browser/preloading/prerender/prerender_metrics.h"
+ #include "content/browser/web_contents/web_contents_impl.h"
+ #include "content/common/frame.mojom.h"
+ #include "content/public/browser/web_contents_delegate.h"
+@@ -103,9 +104,29 @@ PrerenderHostId PrerenderNewTabHandle::StartPrerendering(
+   return prerender_host_id_;
+ }
+ 
+-void PrerenderNewTabHandle::CancelPrerendering(
++// static
++void PrerenderNewTabHandle::CancelPrerenderingAndDestroy(
++    std::unique_ptr<PrerenderNewTabHandle> handle,
+     const PrerenderCancellationReason& reason) {
+-  GetPrerenderHostRegistry().CancelHost(prerender_host_id_, reason);
++  auto& registry = handle->GetPrerenderHostRegistry();
++  PrerenderHostId host_id = handle->prerender_host_id();
++
++  if (reason.final_status() == PrerenderFinalStatus::kSpeculationRuleRemoved) {
++    // Defer destruction of the handle until the pagehide event is fired in a
++    // prerendered page in a new tab. The event is fired only when prerendering
++    // is intentionally cancelled by an initiator page (i.e., Speculation rule
++    // is removed).
++    registry.SchedulePendingDeletionPrerenderNewTabHandle(
++        base::PassKey<PrerenderNewTabHandle>(), std::move(handle));
++  } else {
++    // Defer destruction of the handle to avoid synchronous destruction of the
++    // owned WebContentsImpl. This prevents Use-After-Free if this is called
++    // while iterating over a snapshot of raw pointers to all WebContents (e.g.,
++    // in BrowsingDataRemoverImpl::RemoveImpl).
++    base::SingleThreadTaskRunner::GetCurrentDefault()->DeleteSoon(
++        FROM_HERE, std::move(handle));
++  }
++  registry.CancelHost(host_id, reason);
+ }
+ 
+ std::unique_ptr<WebContentsImpl>
+diff --git a/content/browser/preloading/prerender/prerender_new_tab_handle.h b/content/browser/preloading/prerender/prerender_new_tab_handle.h
+index eae10a2834f66463919b81e8fe02d8e115edef0a..bfb969ca9894b2edddb92efcee73793f38bcaf48 100644
+--- a/content/browser/preloading/prerender/prerender_new_tab_handle.h
++++ b/content/browser/preloading/prerender/prerender_new_tab_handle.h
+@@ -49,8 +49,10 @@ class PrerenderNewTabHandle {
+       const PreloadingPredictor& enacting_predictor,
+       PreloadingConfidence confidence);
+ 
+-  // Cancels prerendering started in `web_contents_`.
+-  void CancelPrerendering(const PrerenderCancellationReason& reason);
++  // Cancels prerendering and schedules the destruction of the handle.
++  static void CancelPrerenderingAndDestroy(
++      std::unique_ptr<PrerenderNewTabHandle> handle,
++      const PrerenderCancellationReason& reason);
+ 
+   // Passes the ownership of `web_contents_` to the caller if it's available for
+   // new tab navigation with given params.

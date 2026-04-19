@@ -1,0 +1,213 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matt Menke <mmenke@chromium.org>
+Date: Fri, 27 Mar 2026 09:19:35 -0700
+Subject: Make SpdySession::CreateStream() call DoDrainSession()
+ asynchronously.
+
+Calling it synchronously would tear down all SpdyStreams immediately,
+informing their consumers of the error. This could have side effects
+that affect the caller trying to create the stream, so was unsafe.
+
+This does introduce a state where a SpdySession is going away, but
+neither DoDrainSession() nor StartGoingAway() was invoked. The
+SpdySession never reached such a state before this CL, but this state
+was used before - when there was a network change, we used to move
+SpdySessions into such a state. This behavior was removed because we
+ended up never actually closing those sockets, which could effectively
+blackhole a destination. Since this CL posts a task to drain the
+session, that shouldn't happen here.
+
+The code is robust against extra DoDrainSession() calls, so it should
+be fine if the session discovers through another path it should start
+draining or otherwise going away,
+
+Bug: 493628982
+Change-Id: I23f1517b67fb55edd50d6e8fc8f1b4d8328e8ec5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7701714
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Commit-Queue: mmenke <mmenke@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1606281}
+
+diff --git a/net/socket/socket_test_util.cc b/net/socket/socket_test_util.cc
+index 957ebf883fef96af8fea16cb883e8c663dce8b2b..eb811b8b5dc382cf1fbd4cc75a63c416d71f746b 100644
+--- a/net/socket/socket_test_util.cc
++++ b/net/socket/socket_test_util.cc
+@@ -1251,7 +1251,7 @@ void MockTCPClientSocket::Disconnect() {
+ bool MockTCPClientSocket::IsConnected() const {
+   if (!data_)
+     return false;
+-  return connected_ && !peer_closed_connection_;
++  return connected_ && !peer_closed_connection_ && !data_->silently_closed();
+ }
+ 
+ bool MockTCPClientSocket::IsConnectedAndIdle() const {
+diff --git a/net/socket/socket_test_util.h b/net/socket/socket_test_util.h
+index 204fcd3eb95a283783f508153137328e162bbde9..78ebf2140902f14e1f6506c6a1e3654e5fc8c4ff 100644
+--- a/net/socket/socket_test_util.h
++++ b/net/socket/socket_test_util.h
+@@ -447,6 +447,12 @@ class SocketDataProvider {
+   MockConnect connect_data() const { return connect_; }
+   void set_connect_data(const MockConnect& connect) { connect_ = connect; }
+ 
++  // Makes IsConnected() start returning false for any socket using `this`,
++  // without any read or write error. Useful for simulating cases where an
++  // IsConnected() call is the first time a socket is revealed to be closed.
++  void set_silently_closed() { silently_closed_ = true; }
++  bool silently_closed() const { return silently_closed_; }
++
+  private:
+   // Called to inform subclasses of initialization.
+   virtual void Reset() = 0;
+@@ -459,6 +465,8 @@ class SocketDataProvider {
+   // This reflects the default state of TCPClientSockets.
+   bool no_delay_ = true;
+ 
++  bool silently_closed_ = false;
++
+   KeepAliveState keep_alive_state_ = KeepAliveState::kDefault;
+   int keep_alive_delay_ = 0;
+ 
+diff --git a/net/spdy/spdy_session.cc b/net/spdy/spdy_session.cc
+index 7465a28030a65eb4964e537134c60ac64ab54f25..9dfbb5dd63802add67931d2aa0b06aa62d6d7be1 100644
+--- a/net/spdy/spdy_session.cc
++++ b/net/spdy/spdy_session.cc
+@@ -1682,7 +1682,9 @@ int SpdySession::CreateStream(const SpdyStreamRequest& request,
+   UMA_HISTOGRAM_BOOLEAN("Net.SpdySession.CreateStreamWithSocketConnected",
+                         socket_->IsConnected());
+   if (!socket_->IsConnected()) {
+-    DoDrainSession(
++    // Since there may be a consumer of the session on the stack, can't call
++    // DoDrainSession() synchronously, as it may result in reentrancy.
++    DoDrainSessionAsync(
+         ERR_CONNECTION_CLOSED,
+         "Tried to create SPDY stream for a closed socket connection.");
+     return ERR_CONNECTION_CLOSED;
+@@ -2674,6 +2676,23 @@ void SpdySession::DoDrainSession(Error err,
+   MaybePostWriteLoop();
+ }
+ 
++void SpdySession::DoDrainSessionAsync(Error err,
++                                      std::string description,
++                                      bool force_send_go_away) {
++  // Make this unavailable to prevent consumers from pulling it from the session
++  // pool again, which could result in an infinite loop, or otherwise running
++  // into this error again rather than trying a new connection.
++  MakeUnavailable(err);
++
++  // This will close the socket and inform consumers asynchronously. If
++  // something happens before this task runs (like a read error), that should
++  // not cause issues, since DoDrainSession() does nothing if already draining.
++  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++      FROM_HERE,
++      base::BindOnce(&SpdySession::DoDrainSession, weak_factory_.GetWeakPtr(),
++                     err, std::move(description), force_send_go_away));
++}
++
+ void SpdySession::LogAbandonedStream(SpdyStream* stream, Error status) {
+   DCHECK(stream);
+   stream->LogStreamError(status, "Abandoned.");
+diff --git a/net/spdy/spdy_session.h b/net/spdy/spdy_session.h
+index b36f8fae637e49cb82141cf59d123a49c9c931ac..a5896d76fbd73c5dfd0abcae77d5dfaadbaa3d54 100644
+--- a/net/spdy/spdy_session.h
++++ b/net/spdy/spdy_session.h
+@@ -857,6 +857,15 @@ class NET_EXPORT SpdySession
+                       const std::string& description,
+                       bool force_send_go_away = false);
+ 
++  // Immediately marks a session as unavailable, to prevent reuse, and posts a
++  // task to call DoDrainSession (if the session is drained for some other
++  // reason in the meantime, that is fine). This should be used instead of
++  // DoDrainSession when there may be a consumer of the SpdySession on the
++  // stack, so as to avoid reentrancy.
++  void DoDrainSessionAsync(Error err,
++                           std::string description,
++                           bool force_send_go_away = false);
++
+   // Called right before closing a (possibly-inactive) stream for a
+   // reason other than being requested to by the stream.
+   void LogAbandonedStream(SpdyStream* stream, Error status);
+diff --git a/net/spdy/spdy_session_unittest.cc b/net/spdy/spdy_session_unittest.cc
+index 44c9ea47b39fe8c3efbe5e39f0b6d028fa73af97..6e808d05d16f144afdfdae229ec4c8f110d4fde0 100644
+--- a/net/spdy/spdy_session_unittest.cc
++++ b/net/spdy/spdy_session_unittest.cc
+@@ -976,10 +976,14 @@ TEST_F(SpdySessionTest, CreateStreamAfterGoAway) {
+   EXPECT_TRUE(session_->IsStreamActive(1));
+ 
+   SpdyStreamRequest stream_request;
++  // Note that `can_send_early` is needed to bypass confirming the handshake. If
++  // this regresses, may need to do what other tests to, and use
++  // CreateStreamSynchronously() to create an initial SpdyStream and set up the
++  // socket.
+   int rv = stream_request.StartRequest(
+-      SPDY_REQUEST_RESPONSE_STREAM, session_, test_url_, false, MEDIUM,
+-      SocketTag(), NetLogWithSource(), CompletionOnceCallback(),
+-      TRAFFIC_ANNOTATION_FOR_TESTS);
++      SPDY_REQUEST_RESPONSE_STREAM, session_, test_url_,
++      /*can_send_early=*/true, MEDIUM, SocketTag(), NetLogWithSource(),
++      CompletionOnceCallback(), TRAFFIC_ANNOTATION_FOR_TESTS);
+   EXPECT_THAT(rv, IsError(ERR_FAILED));
+ 
+   EXPECT_TRUE(session_);
+@@ -2835,6 +2839,62 @@ TEST_F(SpdySessionTest, CancelTwoStalledCreateStream) {
+   EXPECT_EQ(0u, pending_create_stream_queue_size(LOWEST));
+ }
+ 
++// Check that SpdyStreamRequest::StartRequest() does not synchronously notify
++// live streams of their destruction when it notices the socket has been closed.
++// This can racily happen when a new request occurs before a read error from the
++// socket is processed. This synchronously informing other streams of their
++// destruction could result in modifying objects that are on the top of the
++// callstack due to shared state, which can lead to bugs.
++TEST_F(SpdySessionTest,
++       SpdyStreamRequestStartRequestAsynchronouslyNotifiesOtherStreams) {
++  StaticSocketDataProvider data;
++  session_deps_.socket_factory->AddSocketDataProvider(&data);
++  AddSSLSocketData();
++
++  CreateNetworkSession();
++  CreateSpdySession();
++
++  // Create a stream on the session, and set up a delegate to watch it.
++  base::WeakPtr<SpdyStream> spdy_stream =
++      CreateStreamSynchronously(SPDY_REQUEST_RESPONSE_STREAM, session_,
++                                test_url_, MEDIUM, NetLogWithSource());
++  test::StreamDelegateDoNothing delegate(spdy_stream);
++  spdy_stream->SetDelegate(&delegate);
++
++  // Close the socket, without a read/write event, to simulate the
++  // StartRequest() being the first call to notice the socket is closed.
++  data.set_silently_closed();
++
++  // Start a StreamRequest request. Note that `can_send_early` must be true to
++  // avoid calling MockSSLClientSocket::ConfirmHandshake(), will cause the
++  // request not to check the state of the connection, while it waits for the
++  // SSL handshake to be confirmed (that handshake confirmation check will also
++  // cause the MockSSLClientSocket to CHECK, if it happens, as the socket is
++  // closed).
++  SpdyStreamRequest request;
++  int rv = request.StartRequest(
++      SPDY_REQUEST_RESPONSE_STREAM, session_, test_url_,
++      /*can_send_early=*/true, LOWEST, SocketTag(), NetLogWithSource(),
++      base::BindOnce([](int result) {
++        ADD_FAILURE()
++            << "Callback should not be invoked on synchronous completion";
++      }),
++      TRAFFIC_ANNOTATION_FOR_TESTS);
++  // The request should synchronously fail.
++  EXPECT_THAT(rv, IsError(ERR_CONNECTION_CLOSED));
++
++  // The session should be flagged as going away, and should no longer be
++  // available but should still exist.
++  EXPECT_TRUE(session_->IsGoingAway());
++  EXPECT_FALSE(HasSpdySession(spdy_session_pool_, key_));
++  // The first stream should not have been closed synchronously. Instead, a task
++  // should have been posted to close it.
++  EXPECT_FALSE(delegate.StreamIsClosed());
++
++  // Wait for the stream to be closed.
++  EXPECT_THAT(delegate.WaitForClose(), IsError(ERR_CONNECTION_CLOSED));
++}
++
+ // Test that SpdySession::DoReadLoop reads data from the socket
+ // without yielding.  This test makes 32k - 1 bytes of data available
+ // on the socket for reading. It then verifies that it has read all
