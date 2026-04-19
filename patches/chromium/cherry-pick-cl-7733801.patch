@@ -119,7 +119,7 @@ index 581b9b988a56333c423e86aa6df57449f59549d3..fba6dc5343361631915933388a6b6c2a
    void DeleteAbandonedHosts();
  
 diff --git a/content/browser/preloading/prerender/prerender_new_tab_handle.cc b/content/browser/preloading/prerender/prerender_new_tab_handle.cc
-index c7abc38585e70963a2c4bd9e0d146d9305e4f6a4..4a825939945c69ff21265e90354d6cb6cdee77ad 100644
+index c7abc38585e70963a2c4bd9e0d146d9305e4f6a4..bc61814500955f2a5e8894d5a2410f52138f315f 100644
 --- a/content/browser/preloading/prerender/prerender_new_tab_handle.cc
 +++ b/content/browser/preloading/prerender/prerender_new_tab_handle.cc
 @@ -10,6 +10,7 @@
@@ -141,7 +141,7 @@ index c7abc38585e70963a2c4bd9e0d146d9305e4f6a4..4a825939945c69ff21265e90354d6cb6
      const PrerenderCancellationReason& reason) {
 -  GetPrerenderHostRegistry().CancelHost(prerender_host_id_, reason);
 +  auto& registry = handle->GetPrerenderHostRegistry();
-+  PrerenderHostId host_id = handle->prerender_host_id();
++  FrameTreeNodeId host_id = handle->prerender_host_id_;
 +
 +  if (reason.final_status() == PrerenderFinalStatus::kSpeculationRuleRemoved) {
 +    // Defer destruction of the handle until the pagehide event is fired in a
