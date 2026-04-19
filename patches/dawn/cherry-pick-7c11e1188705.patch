@@ -1,0 +1,118 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lokbondo Kung <lokokung@google.com>
+Date: Tue, 7 Apr 2026 19:22:22 -0700
+Subject: [dawn][native] Check for waiting for idle before updating serials.
+
+- In the ExecutionQueue, we need to make sure to check whether a thread
+  is waiting for idle prior to updating the completed serial. Otherwise,
+  as the bug below points out, it's possible for the thread that's
+  waiting for idle (which just waits for the completed serial to reach
+  a certain value), to complete and destroy the Queue before the rest of
+  the UpdateSerial call completes.
+
+Bug: 497969820
+Change-Id: I7b9dba50f4ccb1aa8dfced122801e17db3ee4e0e
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/300595
+Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+Commit-Queue: Loko Kung <lokokung@google.com>
+
+diff --git a/src/dawn/native/ExecutionQueue.cpp b/src/dawn/native/ExecutionQueue.cpp
+index 8be4e707e92ce1b3d94e4bb8fec3e332e8f17fb3..2bb5a6af253f17178332da4088fefbf922463b08 100644
+--- a/src/dawn/native/ExecutionQueue.cpp
++++ b/src/dawn/native/ExecutionQueue.cpp
+@@ -253,20 +253,21 @@ void ExecutionQueueBase::UpdateCompletedSerialTo(QueuePriority priority,
+ }
+ 
+ void ExecutionQueueBase::UpdateCompletedSerialToInternal(QueuePriority priority,
+-                                                         ExecutionSerial completedSerial,
+-                                                         bool forceTasks) {
++                                                         ExecutionSerial newCompletedSerial,
++                                                         bool forceTasksForDestroy) {
+     QueuePriorityArray<std::vector<Ref<SerialProcessor>>>* processors = nullptr;
+     std::vector<Task> tasks;
+ 
+-    // We update the completed serial as soon as possible before waiting for callback rights so
+-    // that we almost always process as many callbacks as possible.
+-    ExecutionSerial serial = mCompletedSerial.Use([&](auto old) {
+-        *old = std::max(*old, static_cast<uint64_t>(completedSerial));
+-        return ExecutionSerial(*old);
+-    });
+-
+-    mState.Use<NotifyType::None>([&](auto state) {
+-        if (state->mWaitingForIdle && !forceTasks) {
++    // Note that we need to determine whether we are waiting for idle before updating the completed
++    // serial because some backends WaitForIdleForDestructionImpl may be implemented via a call to
++    // WaitForQueueSerial which (by default without overrides), waits on the completed serial value.
++    // If we updated the serial value before checking the other pieces of state, a thread destroying
++    // the Queue calling WaitForIdleForDestruction, could end up being woken up and destroying the
++    // Queue device before the rest of this function completes. By checking the state first before
++    // updating the serial, however, we avoid waking up the thread that's waiting for idle until we
++    // have completed using the queue.
++    bool waitingForIdle = mState.Use<NotifyType::None>([&](auto state) {
++        if (state->mWaitingForIdle && !forceTasksForDestroy) {
+             // If we are waiting for idle, then the callbacks will be fired there. It is currently
+             // necessary to avoid calling the callbacks in this function and doing it in the
+             // |WaitForIdleForDestruction| call because |WaitForIdleForDestruction| is called while
+@@ -274,8 +275,11 @@ void ExecutionQueueBase::UpdateCompletedSerialToInternal(QueuePriority priority,
+             // device lock. As a result, if the main thread is waiting for idle, and another thread
+             // is trying to update the completed serial and call callbacks, it could deadlock. Once
+             // we update |WaitForIdleForDestruction| to release the device lock on the wait, we may
+-            // be able to simplify the code here.
+-            return;
++            // be able to simplify the code here. Note that skipping this when
++            // |forceTasksForDestroy| is currently ok because that branch is only called when we are
++            // also holding the device lock, either via a Destroy or via an error that is being
++            // handled.
++            return true;
+         }
+ 
+         // Wait until we can exclusively call callbacks.
+@@ -284,16 +288,22 @@ void ExecutionQueueBase::UpdateCompletedSerialToInternal(QueuePriority priority,
+         // Call all callbacks that for the given priority and anything of higher priority as well.
+         processors = &state->mWaitingProcessors;
+         for (QueuePriority p = QueuePriority::Highest; p >= priority; p -= 1) {
+-            PopWaitingTasksInto(serial, state->mWaitingTasks[p], tasks);
++            PopWaitingTasksInto(newCompletedSerial, state->mWaitingTasks[p], tasks);
+         }
+         state->mCallingCallbacks = true;
++        return false;
++    });
++
++    // Update the serial now that we know whether we are waiting for idle.
++    mCompletedSerial.Use([&](auto completedSerial) {
++        *completedSerial = std::max(*completedSerial, static_cast<uint64_t>(newCompletedSerial));
+     });
+ 
+     // Always call the processors before processing individual tasks.
+     if (processors) {
+         for (QueuePriority p = QueuePriority::Highest; p >= priority; p -= 1) {
+             for (auto& processor : (*processors)[p]) {
+-                processor->UpdateCompletedSerialTo(serial);
++                processor->UpdateCompletedSerialTo(newCompletedSerial);
+             }
+         }
+     }
+@@ -304,7 +314,9 @@ void ExecutionQueueBase::UpdateCompletedSerialToInternal(QueuePriority priority,
+         task();
+     }
+ 
+-    mState->mCallingCallbacks = false;
++    if (!waitingForIdle) {
++        mState->mCallingCallbacks = false;
++    }
+ }
+ 
+ MaybeError ExecutionQueueBase::EnsureCommandsFlushed(ExecutionSerial serial) {
+diff --git a/src/dawn/native/ExecutionQueue.h b/src/dawn/native/ExecutionQueue.h
+index 9140f9eb08458fd7163dfa724e5452f800c7dc6f..c0bfd75e2d9e6701e7f61a09c3d10b1ef5c3c200 100644
+--- a/src/dawn/native/ExecutionQueue.h
++++ b/src/dawn/native/ExecutionQueue.h
+@@ -183,7 +183,7 @@ class ExecutionQueueBase : public ApiObjectBase {
+ 
+     void UpdateCompletedSerialToInternal(QueuePriority priority,
+                                          ExecutionSerial completedSerial,
+-                                         bool forceTasks = false);
++                                         bool forceTasksForDestroy = false);
+ 
+     // |mCompletedSerial| tracks the last completed command serial that the fence has returned.
+     // |mLastSubmittedSerial| tracks the last submitted command serial.
