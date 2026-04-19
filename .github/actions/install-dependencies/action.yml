@@ -33,7 +33,7 @@ runs:
         # this on macOS / Windows runners.
         if [ "$(uname -s)" != "Linux" ]; then
           for i in 1 2 3; do
-            if node node_modules/.bin/node-gyp install; then
+            if node node_modules/node-gyp/bin/node-gyp.js install; then
               break
             fi
             if [ "$i" = "3" ]; then
