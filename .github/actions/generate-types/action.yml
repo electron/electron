@@ -20,6 +20,20 @@ runs:
         cd electron
       fi
       git checkout $(cat $ELECTRON_DIR/${{ inputs.sha-file }})
+      node script/yarn.js install --immutable --mode=skip-build
+      if [ -x node_modules/.bin/node-gyp ]; then
+        for i in 1 2 3; do
+          if node node_modules/.bin/node-gyp install; then
+            break
+          fi
+          if [ "$i" = "3" ]; then
+            echo "node-gyp header pre-seed failed after 3 attempts" >&2
+            exit 1
+          fi
+          echo "node-gyp header pre-seed failed (attempt $i), retrying in 5s..." >&2
+          sleep 5
+        done
+      fi
       node script/yarn.js install --immutable
       echo "#!/usr/bin/env node\nglobal.x=1" > node_modules/typescript/bin/tsc
       node node_modules/.bin/electron-docs-parser --dir=./ --outDir=./ --moduleVersion=0.0.0-development

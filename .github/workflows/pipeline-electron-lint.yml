@@ -87,6 +87,18 @@ jobs:
         # but then we would lint its contents (at least gn format), and it doesn't pass it.
 
         cd src/electron
+        node script/yarn.js install --immutable --mode=skip-build
+        for i in 1 2 3; do
+          if node node_modules/.bin/node-gyp install; then
+            break
+          fi
+          if [ "$i" = "3" ]; then
+            echo "node-gyp header pre-seed failed after 3 attempts" >&2
+            exit 1
+          fi
+          echo "node-gyp header pre-seed failed (attempt $i), retrying in 5s..." >&2
+          sleep 5
+        done
         node script/yarn.js install --immutable
         node script/yarn.js lint
     - name: Run Script Typechecker
