@@ -20,6 +20,7 @@ For guides on Electron app development, see
 * [V8 Development](v8-development.md)
 * [Testing](testing.md)
 * [Debugging](debugging.md)
+* [Internal System Audio Capture API](internal-system-audio-capture.md)
 * [Patches](patches.md)
 
 ## Getting Started
