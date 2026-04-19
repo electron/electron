@@ -215,6 +215,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__atomic/atomic_lock_free.h",
   "//third_party/libc++/src/include/__atomic/atomic_ref.h",
   "//third_party/libc++/src/include/__atomic/atomic_sync.h",
+  "//third_party/libc++/src/include/__atomic/atomic_waitable_traits.h",
   "//third_party/libc++/src/include/__atomic/check_memory_order.h",
   "//third_party/libc++/src/include/__atomic/contention_t.h",
   "//third_party/libc++/src/include/__atomic/fence.h",
