@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Fri, 27 Mar 2026 16:13:31 -0400
+Subject: GL: Fix pack state for BlitGL::copySubTextureCPUReadback
+
+copySubTextureCPUReadback does both ReadPixels and TexImage calls and
+needs to make sure the client's pack states are not used. It does this
+but in the wrong order causing an invalid pack state to be used for the
+ReadPixels call.
+
+Bug: chromium:490170083
+Change-Id: I93dcabf52edd6e4e08f999aaa0d96d1fc325211a
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7708753
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/renderer/gl/BlitGL.cpp b/src/libANGLE/renderer/gl/BlitGL.cpp
+index d217627cd97dc60478adc54546be8bb050deaf25..6ff4e31e163c8566a2ac1a453444000fd7b4b1ba 100644
+--- a/src/libANGLE/renderer/gl/BlitGL.cpp
++++ b/src/libANGLE/renderer/gl/BlitGL.cpp
+@@ -852,10 +852,10 @@ angle::Result BlitGL::copySubTextureCPUReadback(const gl::Context *context,
+         readFunction     = angle::ReadColor<angle::R8G8B8A8, GLfloat>;
+     }
+ 
+-    gl::PixelUnpackState unpack;
+-    unpack.alignment = 1;
+-    ANGLE_TRY(mStateManager->setPixelUnpackState(context, unpack));
+-    ANGLE_TRY(mStateManager->setPixelUnpackBuffer(context, nullptr));
++    gl::PixelPackState pack;
++    pack.alignment = 1;
++    ANGLE_TRY(mStateManager->setPixelPackState(context, pack));
++    ANGLE_TRY(mStateManager->setPixelPackBuffer(context, nullptr));
+     ANGLE_GL_TRY(context, mFunctions->readPixels(readPixelsArea.x, readPixelsArea.y,
+                                                  readPixelsArea.width, readPixelsArea.height,
+                                                  readPixelsFormat, GL_UNSIGNED_BYTE, sourceMemory));
+@@ -870,10 +870,10 @@ angle::Result BlitGL::copySubTextureCPUReadback(const gl::Context *context,
+         destInternalFormatInfo.format, destInternalFormatInfo.componentType, readPixelsArea.width,
+         readPixelsArea.height, 1, unpackFlipY, unpackPremultiplyAlpha, unpackUnmultiplyAlpha);
+ 
+-    gl::PixelPackState pack;
+-    pack.alignment = 1;
+-    ANGLE_TRY(mStateManager->setPixelPackState(context, pack));
+-    ANGLE_TRY(mStateManager->setPixelPackBuffer(context, nullptr));
++    gl::PixelUnpackState unpack;
++    unpack.alignment = 1;
++    ANGLE_TRY(mStateManager->setPixelUnpackState(context, unpack));
++    ANGLE_TRY(mStateManager->setPixelUnpackBuffer(context, nullptr));
+ 
+     nativegl::TexSubImageFormat texSubImageFormat =
+         nativegl::GetTexSubImageFormat(mFunctions, mFeatures, destFormat, destType);
+diff --git a/src/tests/capture_replay_tests/capture_replay_expectations.txt b/src/tests/capture_replay_tests/capture_replay_expectations.txt
+index 17385b1ffdfa84ad726ea73a508fa63e8e1195e9..33949119413d5d198f40d1f61cb881a8901b7549 100644
+--- a/src/tests/capture_replay_tests/capture_replay_expectations.txt
++++ b/src/tests/capture_replay_tests/capture_replay_expectations.txt
+@@ -77,6 +77,7 @@
+ 42264831 : FramebufferTest_ES3.AttachmentsWithUnequalDimensions/* = SKIP_FOR_CAPTURE
+ 42264831 : FramebufferTest_ES3.ChangeAttachmentThenInvalidateAndDraw/* = SKIP_FOR_CAPTURE
+ 42264831 : FramebufferTest_ES3.RenderAndInvalidateImmutableTextureWithBeyondMaxLevel/* = SKIP_FOR_CAPTURE
++490170083 : CopyTextureTestES3.SRGBWithPackParameters/* = SKIP_FOR_CAPTURE
+ 
+ # The following tests fail with forceRobustResourceInit
+ # They were accidentally passing until http://crrev/c/5588816
+diff --git a/src/tests/gl_tests/CopyTextureTest.cpp b/src/tests/gl_tests/CopyTextureTest.cpp
+index d968371375b6e31b7f15d593aaf48067300a0a99..f0d33c10bdfa0704b40ea7de9bf608d740d593c7 100644
+--- a/src/tests/gl_tests/CopyTextureTest.cpp
++++ b/src/tests/gl_tests/CopyTextureTest.cpp
+@@ -1988,6 +1988,50 @@ TEST_P(CopyTextureTestDest, AlphaCopyWithRGB)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, expectedPixels);
+ }
+ 
++// Regression test for TextureGL doing CPU readback when a PBO is bound
++TEST_P(CopyTextureTestES3, SRGBWithPackParameters)
++{
++    ANGLE_SKIP_TEST_IF(!checkExtensions());
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_EXT_sRGB"));
++
++    GLColor originalPixels(50u, 100u, 150u, 155u);
++
++    glBindTexture(GL_TEXTURE_2D, mTextures[1]);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, &originalPixels);
++    EXPECT_GL_NO_ERROR();
++
++    glBindTexture(GL_TEXTURE_2D, mTextures[0]);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB_ALPHA_EXT, 1, 1, 0, GL_SRGB_ALPHA_EXT, GL_UNSIGNED_BYTE,
++                 nullptr);
++    EXPECT_GL_NO_ERROR();
++
++    GLFramebuffer dstFBO;
++    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, dstFBO);
++    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mTextures[0],
++                           0);
++
++    // Should have no effect on the copy
++    glPixelStorei(GL_PACK_SKIP_PIXELS, 100);
++    glPixelStorei(GL_PACK_SKIP_ROWS, 100);
++    glPixelStorei(GL_PACK_ROW_LENGTH, 100);
++    glPixelStorei(GL_PACK_ALIGNMENT, 8);
++    EXPECT_GL_NO_ERROR();
++
++    std::array<uint8_t, 100 * 100 * 4 * 2> bigPackBuffer = {0};
++    glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, bigPackBuffer.data());
++
++    glCopySubTextureCHROMIUM(mTextures[1], 0, GL_TEXTURE_2D, mTextures[0], 0, 0, 0, 0, 0, 1, 1,
++                             false, false, false);
++    EXPECT_GL_NO_ERROR();
++
++    glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
++    glPixelStorei(GL_PACK_SKIP_ROWS, 0);
++    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
++    glPixelStorei(GL_PACK_ALIGNMENT, 1);
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, originalPixels);
++}
++
+ // Bug where TEXTURE_SWIZZLE_RGBA was not reset after the Luminance workaround. (crbug.com/1022080)
+ TEST_P(CopyTextureTestES3, LuminanceWorkaroundTextureSwizzleBug)
+ {

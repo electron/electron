@@ -1,0 +1,210 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fergal Daly <fergal@chromium.org>
+Date: Mon, 6 Apr 2026 19:49:06 -0700
+Subject: Fix UAF in FileSystemAccessChangeSource.
+
+`DidInitialize` calls any outstanding initialization callbacks but a
+callback can delete this. The code guards against this in its access
+of `initialization_callbacks_` but not `initialization_result_`.
+
+This fix keeps a copy of the result on the stack.
+
+This also adds a test which fails with ASAN before the fix is applied
+and passes after.
+
+The basic test code was written by Gemini.
+
+Fixed: 497880137
+Change-Id: I046831db23cb4b8e41964910e2aede9b1be0db7f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7728464
+Auto-Submit: Fergal Daly <fergal@chromium.org>
+Reviewed-by: Ming-Ying Chung <mych@chromium.org>
+Commit-Queue: Ming-Ying Chung <mych@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1610499}
+
+diff --git a/content/browser/file_system_access/file_system_access_change_source.cc b/content/browser/file_system_access/file_system_access_change_source.cc
+index 566dc1ea40b43a54b33d70e82a20ff5695b57b5e..48bd867a9d3d140eaf515ea7bc1613231f7e79e9 100644
+--- a/content/browser/file_system_access/file_system_access_change_source.cc
++++ b/content/browser/file_system_access/file_system_access_change_source.cc
+@@ -71,13 +71,14 @@ void FileSystemAccessChangeSource::DidInitialize(
+   CHECK(!initialization_result_.has_value());
+   CHECK(!initialization_callbacks_.empty());
+ 
+-  initialization_result_ = std::move(result);
++  // The callbacks may cause |this| to be deleted, so we should only use
++  // stack-based objects below.
++  initialization_result_ = result->Clone();
+ 
+-  // Move the callbacks to the stack since they may cause |this| to be deleted.
+   auto initialization_callbacks = std::move(initialization_callbacks_);
+   initialization_callbacks_.clear();
+   for (auto& callback : initialization_callbacks) {
+-    std::move(callback).Run(initialization_result_->Clone());
++    std::move(callback).Run(result->Clone());
+   }
+ }
+ 
+diff --git a/content/browser/file_system_access/file_system_access_change_source_unittest.cc b/content/browser/file_system_access/file_system_access_change_source_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..b0f15909bebda29fc2ec689a6d3b15d797dcc722
+--- /dev/null
++++ b/content/browser/file_system_access/file_system_access_change_source_unittest.cc
+@@ -0,0 +1,146 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "content/browser/file_system_access/file_system_access_change_source.h"
++
++#include "base/files/scoped_temp_dir.h"
++#include "base/functional/bind.h"
++#include "base/memory/scoped_refptr.h"
++#include "base/task/sequenced_task_runner.h"
++#include "base/test/task_environment.h"
++#include "base/test/test_future.h"
++#include "content/browser/file_system_access/file_system_access_watch_scope.h"
++#include "storage/browser/file_system/file_system_context.h"
++#include "storage/browser/file_system/file_system_url.h"
++#include "storage/browser/quota/quota_manager_proxy.h"
++#include "storage/browser/test/test_file_system_context.h"
++#include "testing/gmock/include/gmock/gmock.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/public/mojom/file_system_access/file_system_access_error.mojom.h"
++
++namespace content {
++
++namespace {
++
++class MockRawChangeObserver
++    : public FileSystemAccessChangeSource::RawChangeObserver {
++ public:
++  MOCK_METHOD(void,
++              OnRawChange,
++              (const storage::FileSystemURL& changed_url,
++               bool error,
++               const FileSystemAccessChangeSource::ChangeInfo& change_info,
++               const FileSystemAccessWatchScope& scope),
++              (override));
++  MOCK_METHOD(void,
++              OnUsageChange,
++              (size_t old_usage,
++               size_t new_usage,
++               const FileSystemAccessWatchScope& scope),
++              (override));
++  MOCK_METHOD(void,
++              OnSourceBeingDestroyed,
++              (FileSystemAccessChangeSource * source),
++              (override));
++};
++
++class FakeChangeSource : public FileSystemAccessChangeSource {
++ public:
++  FakeChangeSource(
++      FileSystemAccessWatchScope scope,
++      scoped_refptr<storage::FileSystemContext> file_system_context)
++      : FileSystemAccessChangeSource(std::move(scope),
++                                     std::move(file_system_context)) {}
++  ~FakeChangeSource() override = default;
++
++  // FileSystemAccessChangeSource:
++  void Initialize(
++      base::OnceCallback<void(blink::mojom::FileSystemAccessErrorPtr)>
++          on_source_initialized) override {
++    base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
++        FROM_HERE, base::BindOnce(std::move(on_source_initialized),
++                                  blink::mojom::FileSystemAccessError::New(
++                                      blink::mojom::FileSystemAccessStatus::kOk,
++                                      base::File::FILE_OK, "")));
++  }
++
++  void Signal(const storage::FileSystemURL& changed_url,
++              bool error = false,
++              ChangeInfo change_info = ChangeInfo()) {
++    NotifyOfChange(changed_url, error, change_info);
++  }
++};
++
++}  // namespace
++
++class FileSystemAccessChangeSourceTest : public testing::Test {
++ public:
++  FileSystemAccessChangeSourceTest()
++      : task_environment_(base::test::TaskEnvironment::MainThreadType::IO) {}
++
++  void SetUp() override {
++    ASSERT_TRUE(dir_.CreateUniqueTempDir());
++    file_system_context_ = storage::CreateFileSystemContextForTesting(
++        /*quota_manager_proxy=*/nullptr, dir_.GetPath());
++  }
++
++ protected:
++  base::test::TaskEnvironment task_environment_;
++  base::ScopedTempDir dir_;
++  scoped_refptr<storage::FileSystemContext> file_system_context_;
++};
++
++TEST_F(FileSystemAccessChangeSourceTest, CreateAndInitialize) {
++  auto file_path = dir_.GetPath().AppendASCII("file");
++  auto file_url = file_system_context_->CreateCrackedFileSystemURL(
++      blink::StorageKey(), storage::kFileSystemTypeLocal, file_path);
++
++  auto scope = FileSystemAccessWatchScope::GetScopeForFileWatch(file_url);
++  FakeChangeSource source(scope, file_system_context_);
++
++  base::test::TestFuture<blink::mojom::FileSystemAccessErrorPtr> future;
++  source.EnsureInitialized(future.GetCallback());
++  EXPECT_EQ(future.Get()->status, blink::mojom::FileSystemAccessStatus::kOk);
++}
++
++TEST_F(FileSystemAccessChangeSourceTest, NotifyOfChange) {
++  auto file_path = dir_.GetPath().AppendASCII("file");
++  auto file_url = file_system_context_->CreateCrackedFileSystemURL(
++      blink::StorageKey(), storage::kFileSystemTypeLocal, file_path);
++
++  auto scope = FileSystemAccessWatchScope::GetScopeForFileWatch(file_url);
++  FakeChangeSource source(scope, file_system_context_);
++
++  MockRawChangeObserver observer;
++  source.AddObserver(&observer);
++
++  EXPECT_CALL(observer, OnRawChange(testing::Eq(file_url), testing::IsFalse(),
++                                    testing::_, testing::Eq(scope)));
++  source.Signal(file_url);
++
++  source.RemoveObserver(&observer);
++}
++
++// A callback passed to `EnsureInitialized` may result in `this` being
++// destroyed. This tests that `DidInitialize` (which calls the callbacks) is
++// robust to that situation. See https://crbug.com/497880137.
++TEST_F(FileSystemAccessChangeSourceTest, TestDestroyFromInitializeCallback) {
++  auto file_path = dir_.GetPath().AppendASCII("file");
++  auto file_url = file_system_context_->CreateCrackedFileSystemURL(
++      blink::StorageKey(), storage::kFileSystemTypeLocal, file_path);
++
++  auto scope = FileSystemAccessWatchScope::GetScopeForFileWatch(file_url);
++  FakeChangeSource* source = new FakeChangeSource(scope, file_system_context_);
++
++  source->EnsureInitialized(base::BindOnce(
++      [](FakeChangeSource* source, blink::mojom::FileSystemAccessErrorPtr) {
++        delete source;
++      },
++      base::Unretained(source)));
++  base::test::TestFuture<blink::mojom::FileSystemAccessErrorPtr> future;
++  source->EnsureInitialized(future.GetCallback());
++  EXPECT_EQ(future.Get()->status, blink::mojom::FileSystemAccessStatus::kOk);
++}
++
++}  // namespace content
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index b1c219d8e905cbaee8b280d62e625705759151a1..f6bc3d47d5195c4ad4abd611be360b618afb19b1 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -2649,6 +2649,7 @@ test("content_unittests") {
+     "../browser/fenced_frame/redacted_fenced_frame_config_mojom_traits_unittest.cc",
+     "../browser/file_system/browser_file_system_helper_unittest.cc",
+     "../browser/file_system/file_system_operation_runner_unittest.cc",
++    "../browser/file_system_access/file_system_access_change_source_unittest.cc",
+     "../browser/file_system_access/file_system_access_directory_handle_impl_unittest.cc",
+     "../browser/file_system_access/file_system_access_file_handle_impl_unittest.cc",
+     "../browser/file_system_access/file_system_access_file_modification_host_impl_unittest.cc",

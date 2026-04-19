@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
+Date: Tue, 31 Mar 2026 10:03:10 -0700
+Subject: [a11y] Fix uninitialized memory in
+ get_columnHeaderCells/get_rowHeaderCells
+
+Both get_columnHeaderCells and get_rowHeaderCells allocate a COM array
+via CoTaskMemAlloc, but report the requested array size
+(column_header_ids.size()) to the caller instead of the number of
+successfully populated elements (index). If a node lookup fails
+mid-iteration, the trailing array slots contain uninitialized memory
+that the COM marshaller will treat as valid IUnknown* pointers.
+
+This CL fixes both methods to return the actual populated count
+(index), matching the pattern already used by get_targets.
+
+Fixed: 40833630
+Change-Id: I596745388199d61eef8261fe0ae6e1d3e773f240
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7717598
+Reviewed-by: Kevin Babbitt <kbabbitt@microsoft.com>
+Commit-Queue: Kevin Babbitt <kbabbitt@microsoft.com>
+Auto-Submit: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
+Commit-Queue: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1607938}
+
+diff --git a/ui/accessibility/platform/ax_platform_node_win.cc b/ui/accessibility/platform/ax_platform_node_win.cc
+index 230185e91c0fb7f6bfb191f967188f85c33e4de1..624268dbb75e957d6401561195a69023c5c0bdc1 100644
+--- a/ui/accessibility/platform/ax_platform_node_win.cc
++++ b/ui/accessibility/platform/ax_platform_node_win.cc
+@@ -4263,7 +4263,7 @@ IFACEMETHODIMP AXPlatformNodeWin::get_columnHeaderCells(
+     }
+   }
+ 
+-  *n_column_header_cells = static_cast<LONG>(column_header_ids.size());
++  *n_column_header_cells = static_cast<LONG>(index);
+   return S_OK;
+ }
+ 
+@@ -4316,7 +4316,7 @@ IFACEMETHODIMP AXPlatformNodeWin::get_rowHeaderCells(
+     }
+   }
+ 
+-  *n_row_header_cells = static_cast<LONG>(row_header_ids.size());
++  *n_row_header_cells = static_cast<LONG>(index);
+   return S_OK;
+ }
+ 

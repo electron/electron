@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sunny Sachanandani <sunnyps@chromium.org>
+Date: Wed, 8 Apr 2026 16:29:57 -0700
+Subject: [gpu] Fix OOB write due to unvalidated get_offset
+
+A compromised GPU process can provide an invalid get_offset to the
+CommandBufferHelper (e.g., via shared memory). This offset is used to
+calculate available space and could lead to out-of-bounds writes in the
+Browser process if not validated.
+
+This change adds a bounds check in
+CommandBufferHelper::UpdateCachedState to ensure that the cached
+get_offset is within the valid range [0, total_entry_count_]. If an
+invalid offset is detected, it forces a context loss, frees the ring
+buffer, and marks the helper as unusable, preventing further operations.
+
+Bug: 498782145
+Test: CommandBufferHelperTest.*
+Change-Id: I8c64e546ecdc90a5a22d15e57ff762a86a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7739951
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Auto-Submit: Sunny Sachanandani <sunnyps@chromium.org>
+Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1611853}
+
+diff --git a/gpu/command_buffer/client/cmd_buffer_helper.cc b/gpu/command_buffer/client/cmd_buffer_helper.cc
+index ccda45b133c6a9f2ee60ccc8900bd4a4ce328394..5aea0c81b29b3507099f399c374f3cb372a3100e 100644
+--- a/gpu/command_buffer/client/cmd_buffer_helper.cc
++++ b/gpu/command_buffer/client/cmd_buffer_helper.cc
+@@ -158,6 +158,17 @@ void CommandBufferHelper::UpdateCachedState(const CommandBuffer::State& state) {
+   service_on_old_buffer_ =
+       (state.set_get_buffer_count != set_get_buffer_count_);
+   cached_get_offset_ = service_on_old_buffer_ ? 0 : state.get_offset;
++
++  if (!service_on_old_buffer_ &&
++      (cached_get_offset_ < 0 || cached_get_offset_ > total_entry_count_)) {
++    command_buffer_->ForceLostContext(error::kGuilty);
++    FreeRingBuffer();
++    usable_ = false;
++    context_lost_ = true;
++    cached_get_offset_ = 0;  // Safe fallback
++    return;
++  }
++
+   cached_last_token_read_ = state.token;
+   // Don't transition from a lost context to a working context.
+   context_lost_ |= error::IsError(state.error);
+diff --git a/gpu/command_buffer/client/cmd_buffer_helper_test.cc b/gpu/command_buffer/client/cmd_buffer_helper_test.cc
+index 9119a79e0e092d146bc80d2af3d2602bb5d78692..faa5807a427f8a09b07ef03b322eb4f7f557beb3 100644
+--- a/gpu/command_buffer/client/cmd_buffer_helper_test.cc
++++ b/gpu/command_buffer/client/cmd_buffer_helper_test.cc
+@@ -67,6 +67,8 @@ class CommandBufferHelperTest : public testing::Test {
+     return helper_->immediate_entry_count_;
+   }
+ 
++  int32_t TotalEntryCount() const { return helper_->total_entry_count_; }
++
+   // Adds a command to the buffer through the helper, while adding it as an
+   // expected call on the API mock.
+   void AddCommandWithExpect(error::Error _return,
+@@ -655,6 +657,17 @@ TEST_F(CommandBufferHelperTest, IsContextLost) {
+   EXPECT_TRUE(helper_->IsContextLost());
+ }
+ 
++TEST_F(CommandBufferHelperTest, TestInvalidGetOffset) {
++  EXPECT_FALSE(helper_->IsContextLost());
++  EXPECT_TRUE(helper_->usable());
++
++  command_buffer_->SetGetOffsetForTest(TotalEntryCount() + 1);
++  helper_->RefreshCachedToken();  // calls UpdateCachedState internally.
++
++  EXPECT_TRUE(helper_->IsContextLost());
++  EXPECT_FALSE(helper_->usable());
++}
++
+ // Checks helper's 'flush generation' updates.
+ TEST_F(CommandBufferHelperTest, TestFlushGeneration) {
+   // Explicit flushing only.
