@@ -212,6 +212,11 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
   UpdateFrameHints();
 }
 
+void ElectronDesktopWindowTreeHostLinux::SetIgnoreMouseEvents(bool ignore) {
+  ignore_mouse_events_ = ignore;
+  UpdateFrameHints();
+}
+
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
   if (base::FeatureList::IsEnabled(features::kWaylandWindowDecorations)) {
     auto* const layout = native_window_view_->GetLinuxFrameLayout();
@@ -224,15 +229,20 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     const gfx::Size widget_size = GetWidget()->GetWindowBoundsInScreen().size();
 
     if (SupportsClientFrameShadow()) {
-      auto insets = CalculateInsetsInDIP(window_state);
-      if (insets.IsEmpty()) {
-        window->SetInputRegion(std::nullopt);
-      } else {
-        gfx::Rect input_bounds(widget_size);
-        input_bounds.Inset(insets - layout->GetInputInsets());
-        input_bounds = gfx::ScaleToEnclosingRect(input_bounds, scale);
+      if (ignore_mouse_events_) {
         window->SetInputRegion(
-            std::optional<std::vector<gfx::Rect>>({input_bounds}));
+            std::optional<std::vector<gfx::Rect>>({gfx::Rect()}));
+      } else {
+        auto insets = CalculateInsetsInDIP(window_state);
+        if (insets.IsEmpty()) {
+          window->SetInputRegion(std::nullopt);
+        } else {
+          gfx::Rect input_bounds(widget_size);
+          input_bounds.Inset(insets - layout->GetInputInsets());
+          input_bounds = gfx::ScaleToEnclosingRect(input_bounds, scale);
+          window->SetInputRegion(
+              std::optional<std::vector<gfx::Rect>>({input_bounds}));
+        }
       }
     }
 

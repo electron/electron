@@ -41,7 +41,15 @@
 #include "ui/aura/window_tree_host.h"
 #include "ui/base/hit_test.h"
 #include "ui/platform_window/platform_window.h"
+#include "ui/views/background.h"
+#include "ui/views/controls/webview/webview.h"
+#include "ui/views/view_utils.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
+#include "ui/views/widget/native_widget_private.h"
+#include "ui/views/widget/widget.h"
+#include "ui/views/window/client_view.h"
+#include "ui/views/window/frame_view.h"
+#include "ui/views/window/non_client_view.h"
 #include "ui/compositor/compositor.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/insets.h"
@@ -49,14 +57,6 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_ui_types.h"
 #include "ui/ozone/public/ozone_platform.h"
-#include "ui/views/background.h"
-#include "ui/views/controls/webview/webview.h"
-#include "ui/views/view_utils.h"
-#include "ui/views/widget/native_widget_private.h"
-#include "ui/views/widget/widget.h"
-#include "ui/views/window/client_view.h"
-#include "ui/views/window/frame_view.h"
-#include "ui/views/window/non_client_view.h"
 #include "ui/wm/core/shadow_types.h"
 #include "ui/wm/core/window_util.h"
 
@@ -1353,18 +1353,14 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
       });
     }
   } else {
-    // Wayland: use SetInputRegion via the platform window to control
-    // which areas of the surface accept input events.
-    auto* host = widget()->GetNativeWindow()->GetHost();
-    auto* linux_host = static_cast<views::DesktopWindowTreeHostLinux*>(host);
-    if (linux_host && linux_host->platform_window()) {
-      if (ignore) {
-        linux_host->platform_window()->SetInputRegion(
-            std::optional<std::vector<gfx::Rect>>(
-                std::vector<gfx::Rect>{{0, 0, 1, 1}}));
-      } else {
-        linux_host->platform_window()->SetInputRegion(std::nullopt);
-      }
+    // Wayland: delegate to the host to control input region.
+    // The host's UpdateFrameHints() will apply the ignore state while
+    // preserving CSD shadow regions.
+    auto* host = views::DesktopWindowTreeHostLinux::GetHostForWidget(
+        widget()->GetNativeWindow()->GetHost()->GetAcceleratedWidget());
+    if (auto* electron_host =
+            static_cast<ElectronDesktopWindowTreeHostLinux*>(host)) {
+      electron_host->SetIgnoreMouseEvents(ignore);
     }
   }
 #endif
