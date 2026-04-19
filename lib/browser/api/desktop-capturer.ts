@@ -53,45 +53,50 @@ export async function getSources(args: Electron.SourcesOptions) {
     }
   }
 
+  let resolveGetSources!: (value: ElectronInternal.GetSourcesResult[]) => void;
+  let rejectGetSources!: (reason?: any) => void;
+
   const getSources = new Promise<ElectronInternal.GetSourcesResult[]>((resolve, reject) => {
-    let capturer: ElectronInternal.DesktopCapturer | null = createDesktopCapturer();
+    resolveGetSources = resolve;
+    rejectGetSources = reject;
+  });
 
-    const stopRunning = () => {
-      if (capturer) {
-        delete capturer._onerror;
-        delete capturer._onfinished;
-        capturer = null;
+  // Register in currentlyRunning BEFORE startHandling so that synchronous
+  // completion (e.g. when no capturers are created) can properly clean up.
+  currentlyRunning.push({ options, getSources });
 
-        if (process.platform === 'darwin') {
-          for (const win of BrowserWindow.getAllWindows()) {
-            if (resizableValues.has(win.id)) {
-              win.resizable = resizableValues.get(win.id);
-            }
+  let capturer: ElectronInternal.DesktopCapturer | null = createDesktopCapturer();
+
+  const stopRunning = () => {
+    if (capturer) {
+      delete capturer._onerror;
+      delete capturer._onfinished;
+      capturer = null;
+
+      if (process.platform === 'darwin') {
+        for (const win of BrowserWindow.getAllWindows()) {
+          if (resizableValues.has(win.id)) {
+            win.resizable = resizableValues.get(win.id);
           }
         }
       }
-      // Remove from currentlyRunning once we resolve or reject
-      currentlyRunning = currentlyRunning.filter((running) => running.options !== options);
-    };
+    }
+    // Remove from currentlyRunning once we resolve or reject
+    currentlyRunning = currentlyRunning.filter((running) => running.options !== options);
+  };
 
-    capturer._onerror = (error: string) => {
-      stopRunning();
-      // eslint-disable-next-line prefer-promise-reject-errors
-      reject(error);
-    };
+  capturer._onerror = (error: string) => {
+    stopRunning();
+    // eslint-disable-next-line prefer-promise-reject-errors
+    rejectGetSources(error);
+  };
 
-    capturer._onfinished = (sources: Electron.DesktopCapturerSource[]) => {
-      stopRunning();
-      resolve(sources);
-    };
+  capturer._onfinished = (sources: Electron.DesktopCapturerSource[]) => {
+    stopRunning();
+    resolveGetSources(sources);
+  };
 
-    capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons);
-  });
-
-  currentlyRunning.push({
-    options,
-    getSources
-  });
+  capturer.startHandling(captureWindow, captureScreen, thumbnailSize, fetchWindowIcons);
 
   return getSources;
 }
