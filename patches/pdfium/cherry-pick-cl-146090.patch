@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@google.com>
+Date: Fri, 10 Apr 2026 13:46:58 -0700
+Subject: [M146] Use safe arithmetic in CFX_PSRenderer::DrawDIBits()
+
+Original change's description:
+> Use safe arithmetic in CFX_PSRenderer::DrawDIBits()
+>
+> Hardening suggestion from the AI bot.
+>
+> Bug: 500036290
+> Change-Id: Ie521629d06ba944f610b941a8c9e9505fa29aea7
+> Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/145731
+> Reviewed-by: Lei Zhang <thestig@chromium.org>
+> Commit-Queue: Tom Sepez <tsepez@chromium.org>
+
+(cherry picked from commit bce2e672827992dcd7289e2872ca10c5c20bf056)
+
+Bug: 500599685,500036290
+Change-Id: Ie521629d06ba944f610b941a8c9e9505fa29aea7
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/146090
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/core/fxge/win32/cfx_psrenderer.cpp b/core/fxge/win32/cfx_psrenderer.cpp
+index 461d930f6ad32dd962cabc79d4dad354d20a9aee..d652135a54686a7e1a9e55914e7adbeb887d8d9e 100644
+--- a/core/fxge/win32/cfx_psrenderer.cpp
++++ b/core/fxge/win32/cfx_psrenderer.cpp
+@@ -620,8 +620,16 @@ bool CFX_PSRenderer::DrawDIBits(RetainPtr<const CFX_DIBBase> bitmap,
+         encoder_iface_->pJpegEncodeFunc(bitmap, &output_buf, &output_size)) {
+       filter = "/DCTDecode filter ";
+     } else {
+-      int src_pitch = width * bytes_per_pixel;
+-      output_size = height * src_pitch;
++      FX_SAFE_UINT32 safe_pitch = bytes_per_pixel;
++      safe_pitch *= width;
++      FX_SAFE_UINT32 safe_output_size = safe_pitch;
++      safe_output_size *= height;
++      if (!safe_output_size.IsValid()) {
++        WriteString("\nQ\n");
++        return false;
++      }
++      uint32_t src_pitch = safe_pitch.ValueOrDie();
++      output_size = safe_output_size.ValueOrDie();
+       output_buf = FX_Alloc(uint8_t, output_size);
+       for (int row = 0; row < height; row++) {
+         const uint8_t* src_scan = bitmap->GetScanline(row).data();
