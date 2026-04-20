@@ -42,7 +42,7 @@ index 9876c4bb6ecd2e5b8879f153811cd0a0a22997aa..2c4bf03452eb10fec52c38a361b6aad9
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
-index e8fedf2d5d5072e00afd493ac2ac44748212b02e..6fcbe244871d25b2151d39160149aaa50dc96012 100644
+index 9778ea548e81d719f1ca01f9e6fb8cfb821d4103..d6178dba6faa94778203d615b0638bd5afb4f9da 100644
 --- a/test/parallel/test-crypto-authenticated.js
 +++ b/test/parallel/test-crypto-authenticated.js
 @@ -627,21 +627,25 @@ for (const test of TEST_CASES) {
@@ -130,13 +130,20 @@ index e8fedf2d5d5072e00afd493ac2ac44748212b02e..6fcbe244871d25b2151d39160149aaa5
    const rfcTestCases = TEST_CASES.filter(({ algo, tampered }) => {
      return algo === 'chacha20-poly1305' && tampered === false;
    });
-@@ -771,4 +781,6 @@ for (const test of TEST_CASES) {
+@@ -771,10 +781,12 @@ for (const test of TEST_CASES) {
    assert.throws(() => {
      decipher.final();
    }, /Unsupported state or unable to authenticate data/);
 +} else {
 +  common.printSkipMessage('Skipping unsupported chacha20-poly1305 test');
  }
+ 
+ // Refs: https://github.com/nodejs/node/issues/62342
+-{
++if (ciphers.includes('aes-128-ccm')) {
+   const key = crypto.randomBytes(16);
+   const nonce = crypto.randomBytes(13);
+ 
 diff --git a/test/parallel/test-crypto-cipheriv-decipheriv.js b/test/parallel/test-crypto-cipheriv-decipheriv.js
 index 6742722f9e90914b4dc8c079426d10040d476f72..8801ddfe7023fd0f7d5657b86a9164d75765322e 100644
 --- a/test/parallel/test-crypto-cipheriv-decipheriv.js
@@ -298,6 +305,49 @@ index d22281abbd5c3cab3aaa3ac494301fa6b4a8a968..5f0c6a4aed2e868a1a1049212edf2187
  
  s.pipe(h).on('data', common.mustCall(function(c) {
    assert.strictEqual(c, expect);
+diff --git a/test/parallel/test-crypto-key-objects-raw.js b/test/parallel/test-crypto-key-objects-raw.js
+index f301cc1942fd9a46ea91e18e580504d09ce53e48..95d4e1fc7671233e017177025813f46bad50f2f0 100644
+--- a/test/parallel/test-crypto-key-objects-raw.js
++++ b/test/parallel/test-crypto-key-objects-raw.js
+@@ -34,10 +34,13 @@ const { hasOpenSSL } = require('../common/crypto');
+ 
+ // Key types that don't support raw-* formats
+ {
+-  for (const [type, pub, priv] of [
++  const unsupportedKeyTypes = [
+     ['rsa', 'rsa_public_2048.pem', 'rsa_private_2048.pem'],
+-    ['dsa', 'dsa_public.pem', 'dsa_private.pem'],
+-  ]) {
++  ];
++  if (!process.features.openssl_is_boringssl) {
++    unsupportedKeyTypes.push(['dsa', 'dsa_public.pem', 'dsa_private.pem']);
++  }
++  for (const [type, pub, priv] of unsupportedKeyTypes) {
+     const pubKeyObj = crypto.createPublicKey(
+       fixtures.readKey(pub, 'ascii'));
+     const privKeyObj = crypto.createPrivateKey(
+@@ -224,7 +227,9 @@ if (hasOpenSSL(3, 5)) {
+   assert.throws(() => ecPriv.export({ format: 'raw-seed' }),
+                 { code: 'ERR_CRYPTO_INCOMPATIBLE_KEY_OPTIONS' });
+ 
+-  for (const type of ['ed25519', 'ed448', 'x25519', 'x448']) {
++  const seedKeyTypes = process.features.openssl_is_boringssl ?
++    ['ed25519', 'x25519'] : ['ed25519', 'ed448', 'x25519', 'x448'];
++  for (const type of seedKeyTypes) {
+     const priv = crypto.createPrivateKey(
+       fixtures.readKey(`${type}_private.pem`, 'ascii'));
+     assert.throws(() => priv.export({ format: 'raw-seed' }),
+@@ -392,7 +397,9 @@ if (hasOpenSSL(3, 5)) {
+ 
+ // x25519, ed25519, x448, and ed448 cannot be used as 'ec' namedCurve values
+ {
+-  for (const type of ['ed25519', 'x25519', 'ed448', 'x448']) {
++  const curveTypes = process.features.openssl_is_boringssl ?
++    ['ed25519', 'x25519'] : ['ed25519', 'x25519', 'ed448', 'x448'];
++  for (const type of curveTypes) {
+     const priv = crypto.createPrivateKey(
+       fixtures.readKey(`${type}_private.pem`, 'ascii'));
+     const pub = crypto.createPublicKey(
 diff --git a/test/parallel/test-crypto-key-objects-to-crypto-key.js b/test/parallel/test-crypto-key-objects-to-crypto-key.js
 index 141e51d1ab74a4fc3b176b303807fb1cf2a58ce1..ba4fc881aa72ba7c39e8ae227a08be0ecf501c6f 100644
 --- a/test/parallel/test-crypto-key-objects-to-crypto-key.js
@@ -990,6 +1040,38 @@ index ae203e1005de0ab4370bd611f4f2ae64bb7a9a6a..216ce5fd14001183e7deb2abadc93178
 +} else {
 +  common.printSkipMessage('Skipping RSA key import tests');
  }
+diff --git a/test/parallel/test-webcrypto-promise-prototype-pollution.mjs b/test/parallel/test-webcrypto-promise-prototype-pollution.mjs
+index b4fbedba5e32423821879a856cc56716bacb77fe..a927089fbf1f04710b66ecdc0d870c722f501f6a 100644
+--- a/test/parallel/test-webcrypto-promise-prototype-pollution.mjs
++++ b/test/parallel/test-webcrypto-promise-prototype-pollution.mjs
+@@ -59,17 +59,19 @@ await subtle.deriveKey(
+   true,
+   ['encrypt', 'decrypt']);
+ 
+-const wrappingKey = await subtle.generateKey(
+-  { name: 'AES-KW', length: 256 }, true, ['wrapKey', 'unwrapKey']);
++if (!process.features.openssl_is_boringssl) {
++  const wrappingKey = await subtle.generateKey(
++    { name: 'AES-KW', length: 256 }, true, ['wrapKey', 'unwrapKey']);
+ 
+-const keyToWrap = await subtle.generateKey(
+-  { name: 'AES-CBC', length: 256 }, true, ['encrypt', 'decrypt']);
++  const keyToWrap = await subtle.generateKey(
++    { name: 'AES-CBC', length: 256 }, true, ['encrypt', 'decrypt']);
+ 
+-const wrapped = await subtle.wrapKey('raw', keyToWrap, wrappingKey, 'AES-KW');
++  const wrapped = await subtle.wrapKey('raw', keyToWrap, wrappingKey, 'AES-KW');
+ 
+-await subtle.unwrapKey(
+-  'raw', wrapped, wrappingKey, 'AES-KW',
+-  { name: 'AES-CBC', length: 256 }, true, ['encrypt', 'decrypt']);
++  await subtle.unwrapKey(
++    'raw', wrapped, wrappingKey, 'AES-KW',
++    { name: 'AES-CBC', length: 256 }, true, ['encrypt', 'decrypt']);
++}
+ 
+ const { privateKey } = await subtle.generateKey(
+   { name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index bd788ec4ed88289d35798b8af8c9490a68e081a2..c6a6f33490595faabaefc9b58afdd813f0887258 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
