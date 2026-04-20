@@ -123,11 +123,51 @@ index d4438f7fd61598afac2c1e3184721a759d22b10c..156fee33b3813fe4d94a1c9585f217a9
  
  assert(!node_enable_inspector || node_use_openssl,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index f25ca01d6ef016489371a3a1c9d8500da65e8023..2c816bef8d64f3e0ba2993c4885641620ee64272 100644
+index 6506dcea3f4f88a7781975fae1ee5f8b87d4dfb2..a077ad673fdf7eab61878940e5fef43921c2e453 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -760,6 +760,7 @@ void BuiltinLoader::RegisterExternalReferences(
-   registry->Register(GetNatives);
+@@ -455,6 +455,30 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+   return value.As<Function>();
+ }
+ 
++MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
++    Local<Context> context,
++    const char* id,
++    LocalVector<String>* parameters,
++    Realm* optional_realm) {
++  Isolate* isolate = Isolate::GetCurrent();
++  const BuiltinSource* builtin_source = LoadBuiltinSource(isolate, id);
++  if (builtin_source == nullptr) {
++    THROW_ERR_MODULE_NOT_FOUND(isolate, "Cannot find module %s", id);
++    return MaybeLocal<Function>();
++  }
++  std::string filename_s = std::string("node:") + builtin_source->id;
++  Local<String> filename = OneByteString(isolate, filename_s);
++  Local<String> source = builtin_source->source.ToStringChecked(isolate);
++  ScriptOrigin origin(filename, 0, 0, true);
++  ScriptCompiler::Source script_source(source, origin);
++  return ScriptCompiler::CompileFunction(context,
++                                         &script_source,
++                                         parameters->size(),
++                                         parameters->data(),
++                                         0,
++                                         nullptr);
++}
++
+ MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
+                                                 const char* id,
+                                                 Realm* realm) {
+@@ -741,7 +765,7 @@ MaybeLocal<Module> BuiltinLoader::LoadBuiltinSourceTextModule(Realm* realm,
+   // Pre-fetch all dependencies.
+   if (requests->Length() > 0) {
+     for (int i = 0; i < requests->Length(); i++) {
+-      Local<ModuleRequest> req = requests->Get(context, i).As<ModuleRequest>();
++      Local<ModuleRequest> req = requests->Get(i).As<ModuleRequest>();
+       std::string specifier =
+           Utf8Value(isolate, req->GetSpecifier()).ToString();
+       std::string resolved_id = ResolveRequestForBuiltin(specifier);
+@@ -900,6 +924,7 @@ void BuiltinLoader::RegisterExternalReferences(
+   registry->Register(ImportBuiltinSourceTextModule);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);
 +  EmbedderRegisterExternalReferencesForInternalizedBuiltinCode(registry);
@@ -135,7 +175,7 @@ index f25ca01d6ef016489371a3a1c9d8500da65e8023..2c816bef8d64f3e0ba2993c488564162
  
  }  // namespace builtins
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 7a7b84337feb67960819472e43192dbdc151e299..bcdd50f635757f41287c87df1db9cd3b55c4b6b9 100644
+index e4af1f42f4442b4c1ec94cf25d8d811f0e82d89e..490f429986e43653e0dd2048d9e3bd2e99ae44b2 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -75,6 +75,8 @@ using BuiltinCodeCacheMap =
@@ -147,6 +187,20 @@ index 7a7b84337feb67960819472e43192dbdc151e299..bcdd50f635757f41287c87df1db9cd3b
  
  // Handles compilation and caching of built-in JavaScript modules and
  // bootstrap scripts, whose source are bundled into the binary as static data.
+@@ -104,6 +106,13 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+   v8::MaybeLocal<v8::Function> LookupAndCompileFunction(
+       v8::Local<v8::Context> context, const char* id, Realm* optional_realm);
+ 
++  // Overload that accepts custom parameters for embedder scripts.
++  v8::MaybeLocal<v8::Function> LookupAndCompileFunction(
++      v8::Local<v8::Context> context,
++      const char* id,
++      v8::LocalVector<v8::String>* parameters,
++      Realm* optional_realm);
++
+   v8::MaybeLocal<v8::Value> CompileAndCallWith(v8::Local<v8::Context> context,
+                                                const char* id,
+                                                int argc,
 diff --git a/tools/js2c.cc b/tools/js2c.cc
 old mode 100644
 new mode 100755
