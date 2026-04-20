@@ -18,6 +18,7 @@ jobs:
       pull-requests: read
     outputs:
       has-patches: ${{ steps.filter.outputs.patches }}
+      build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
@@ -33,6 +34,9 @@ jobs:
           patches:
             - DEPS
             - 'patches/**'
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
 
   apply-patches:
     needs: setup
@@ -41,7 +45,7 @@ jobs:
     permissions:
       contents: read
     container:
-      image: ghcr.io/electron/build:a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
