@@ -132,10 +132,10 @@ index d213eb4d327485143d2fdac1d8074b30d31649b0..cb0ecc3d28ff5e9467b92f90a5a2738a
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 4a38cbcd6d3d9dd85cda882852c53720938ea10d..8c10fbd09f224b8f81283a3de9d9de54595c3cbb 100644
+index 943b4fce4fd903d77a96cda68f2bb1f81813efa7..ec74565d9adb70ff46f0ddf2449ba022e3f0ecb9 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -4203,6 +4203,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
+@@ -4201,6 +4201,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
    return PositionTryFallback(scoped_name, tactic_list);
  }
  
@@ -203,10 +203,10 @@ index 19cda703154dab9397827ab6ea66c2ca446c644d..dd5943c511886f4e39b2e7f10e67e60f
      return result;
    }
 diff --git a/third_party/blink/renderer/platform/BUILD.gn b/third_party/blink/renderer/platform/BUILD.gn
-index 92f2a2d7d2f6d819e20d1833b79f1c38af5ed08e..18cd0271bb2fc48fc3eb6fe7a29dce98eebc4da2 100644
+index 71420d495390d90fdaf17dd3118d60cf7baa9163..10e359db3615dc0a5c33338a1f4f861246daa707 100644
 --- a/third_party/blink/renderer/platform/BUILD.gn
 +++ b/third_party/blink/renderer/platform/BUILD.gn
-@@ -1675,6 +1675,8 @@ component("platform") {
+@@ -1677,6 +1677,8 @@ component("platform") {
      "widget/widget_base.h",
      "widget/widget_base_client.h",
      "windows_keyboard_codes.h",
@@ -314,7 +314,7 @@ index 18f283e625101318ee14b50e6e765dfd1c9a1a44..44a3a55974c9e4b9e715574075f25661
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 68f247eee4b2aed40b5f4700eaad85e97b64a77d..0c1df8b1dcff425f1bbbb3ce847b4505a3b09d06 100644
+index 0c8b952721cfd4fad4c43505208485f0f5df120b..0c2dac1001e3b44e0242d81bea0e9c245c7f8d11 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -215,6 +215,10 @@

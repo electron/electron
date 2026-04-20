@@ -139,7 +139,7 @@ index a258b94a8122c74b6f98f4b88b710371291fcfe4..2bcee4b775a2a39fbbe3c070a5db6081
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 75a82bc82ebe8e7b5b51b760cf4258cfd65a2df5..4b29c955c3347e2907c0d064834d917cc95ac546 100644
+index 5c01e07d7d605e2d5291b637f461296c859e18a5..fdba3c24ab72b44cdf94e722623b6f64a592e634 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -238,6 +238,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -170,7 +170,7 @@ index 75a82bc82ebe8e7b5b51b760cf4258cfd65a2df5..4b29c955c3347e2907c0d064834d917c
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 93a47570d4854a3136fc4ac7f46d2f3d5c55db6c..78b720d556fb4f3f316baedaa70e56b1a171ab6a 100644
+index 45f97088b254c82c8d5c043ce23942f8c81b46d8..3738a5170fba4f544a750047ee1d1a5d11e5eff3 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -324,6 +324,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -195,7 +195,7 @@ index 93a47570d4854a3136fc4ac7f46d2f3d5c55db6c..78b720d556fb4f3f316baedaa70e56b1
      // If set, the window size will follow the content preferred size.
      bool autosize = false;
  
-@@ -1285,6 +1293,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1289,6 +1297,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // with it. TYPE_CONTROL and TYPE_TOOLTIP is not considered top level.
    bool is_top_level() const { return is_top_level_; }
  
@@ -207,7 +207,7 @@ index 93a47570d4854a3136fc4ac7f46d2f3d5c55db6c..78b720d556fb4f3f316baedaa70e56b1
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1730,6 +1743,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1734,6 +1747,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  

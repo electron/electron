@@ -152,7 +152,7 @@ index 8fded9303e74737d82ca6d54e00807ebabf6c1ac..c0b66eb9a62f8f75e3c4de43f467ddd0
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index e4bf28930fb2283869792dee2b8616061fe2078f..8e16ac255d520117fc32940b5f98fde2e402375d 100644
+index f8c8a7e80d27a1c22b2c8ecea2d27379762b0934..58bac9b83b30f9c20f1b527657f02e09a8468707 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
 @@ -164,6 +164,8 @@ String PermissionNameToString(PermissionName name) {

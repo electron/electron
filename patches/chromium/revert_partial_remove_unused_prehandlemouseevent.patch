@@ -6,7 +6,7 @@ Subject: Revert: partial "Remove unused PreHandleMouseEvent"
 Refs https://chromium-review.googlesource.com/c/chromium/src/+/6880411
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.cc b/content/browser/renderer_host/render_widget_host_delegate.cc
-index 0311764d146eb7306b52e02432609f3caa272a62..8f9f471a8d207a88ae59c069977ecaac70a09bb4 100644
+index f180bddd6d6bd9074c658b2a02437195456ed2a3..2762f6ad129ebc143a87acf8fb7634553df51537 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.cc
 +++ b/content/browser/renderer_host/render_widget_host_delegate.cc
 @@ -13,6 +13,11 @@
@@ -22,7 +22,7 @@ index 0311764d146eb7306b52e02432609f3caa272a62..8f9f471a8d207a88ae59c069977ecaac
      const input::NativeWebKeyboardEvent& event) {
    return KeyboardEventProcessingResult::NOT_HANDLED;
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 6c7ec195fa64e3a1a718811192c9f6fdbf9463c6..c11744d2246c3df138cdb91f1d4459c65367872c 100644
+index 26e6b534768615579dbaa7958527f01c8ed528ca..0461d27686a09940482aa212908359fdef4356e8 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -104,6 +104,12 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
@@ -54,10 +54,10 @@ index 51de31af6c1961cc8838df122b50e5b8aabcfc67..c07b50f06930e7d20bef4f8ea8cfa33d
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index bb9767990f61f71226d2be88a1210b431f35a668..79c3eb23da5fb33dc3a32f7baa11e5615b9b77ba 100644
+index 8205540a9a0c9d3533b4afda04049afbb496fbcb..cf43ec59a26a59d2431d277e840f26decd029ee3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4554,6 +4554,12 @@ void WebContentsImpl::RenderWidgetWasResized(
+@@ -4561,6 +4561,12 @@ void WebContentsImpl::RenderWidgetWasResized(
                               width_changed);
  }
  
@@ -71,10 +71,10 @@ index bb9767990f61f71226d2be88a1210b431f35a668..79c3eb23da5fb33dc3a32f7baa11e561
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 6dac6fe05ed8684d2c54b4e1c7d77fe18651c410..0b0abb1f66df46315d6bb5275888aab7c44ac2c2 100644
+index 3f454f1d647da4b33cc66f84547021d699776b00..196e07fc0d2f874b68eced73f89ce3d9eb0c3ea4 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1125,6 +1125,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1130,6 +1130,7 @@ class CONTENT_EXPORT WebContentsImpl
  
    double GetPendingZoomLevel(RenderWidgetHostImpl* rwh) override;
  
