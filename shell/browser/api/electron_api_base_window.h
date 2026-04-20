@@ -90,7 +90,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowLeaveFullScreen() override;
   void OnWindowEnterHtmlFullScreen() override;
   void OnWindowLeaveHtmlFullScreen() override;
-  void OnWindowAlwaysOnTopChanged() override;
+  void OnWindowAlwaysOnTopChanged(bool is_always_on_top) override;
   void OnExecuteAppCommand(std::string_view command_name) override;
   void OnTouchBarItemResult(const std::string& item_id,
                             const base::Value::Dict& details) override;
