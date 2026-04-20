@@ -14,18 +14,6 @@ To update an existing project to use the latest stable version:
 npm install --save-dev electron@latest
 ```
 
-## Versioning scheme
-
-There are several major changes from our 1.x strategy outlined below. Each change is intended to satisfy the needs and priorities of developers/maintainers and app developers.
-
-1. Strict use of the [SemVer](#semver) spec
-2. Introduction of semver-compliant `-beta` tags
-3. Introduction of [conventional commit messages](https://conventionalcommits.org/)
-4. Well-defined stabilization branches
-5. The `main` branch is versionless; only stabilization branches contain version information
-
-We will cover in detail how git branching works, how npm tagging works, what developers should expect to see, and how one can backport changes.
-
 ## SemVer
 
 Below is a table explicitly mapping types of changes to their corresponding category of SemVer (e.g. Major, Minor, Patch).
@@ -34,7 +22,7 @@ Below is a table explicitly mapping types of changes to their corresponding cate
 | ------------------------------- | ---------------------------------- | ----------------------------- |
 | Electron breaking API changes   | Electron non-breaking API changes  | Electron bug fixes            |
 | Node.js major version updates   | Node.js minor version updates      | Node.js patch version updates |
-| Chromium version updates        |                                    | fix-related chromium patches  |
+| Chromium version updates        |                                    | fix-related Chromium patches  |
 
 For more information, see the [Semantic Versioning 2.0.0](https://semver.org/) spec.
 
@@ -44,68 +32,189 @@ Note that most Chromium updates will be considered breaking. Fixes that can be b
 
 Stabilization branches are branches that run parallel to `main`, taking in only cherry-picked commits that are related to security or stability. These branches are never merged back to `main`.
 
-![Stabilization Branches](../images/versioning-sketch-1.png)
-
-Since Electron 8, stabilization branches are always **major** version lines, and named against the following template `$MAJOR-x-y` e.g. `8-x-y`.  Prior to that we used **minor** version lines and named them as `$MAJOR-$MINOR-x` e.g. `2-0-x`.
-
-We allow for multiple stabilization branches to exist simultaneously, one for each supported version. For more details on which versions are supported, see our [Electron Releases](./electron-timelines.md) doc.
-
-![Multiple Stability Branches](../images/versioning-sketch-2.png)
-
-Older lines will not be supported by the Electron project, but other groups can take ownership and backport stability and security fixes on their own. We discourage this, but recognize that it makes life easier for many app developers.
-
-## Beta releases and bug fixes
-
-Developers want to know which releases are _safe_ to use. Even seemingly innocent features can introduce regressions in complex applications. At the same time, locking to a fixed version is dangerous because you’re ignoring security patches and bug fixes that may have come out since your version. Our goal is to allow the following standard semver ranges in `package.json` :
-
-* Use `~2.0.0` to admit only stability or security related fixes to your `2.0.0` release.
-* Use `^2.0.0` to admit non-breaking _reasonably stable_ feature work as well as security and bug fixes.
-
-What’s important about the second point is that apps using `^` should still be able to expect a reasonable level of stability. To accomplish this, SemVer allows for a _pre-release identifier_ to indicate a particular version is not yet _safe_ or _stable_.
-
-Whatever you choose, you will periodically have to bump the version in your `package.json` as breaking changes are a fact of Chromium life.
-
-The process is as follows:
-
-1. All new major and minor releases lines begin with a beta series indicated by SemVer prerelease tags of `beta.N`, e.g. `2.0.0-beta.1`. After the first beta, subsequent beta releases must meet all of the following conditions:
-    1. The change is backwards API-compatible (deprecations are allowed)
-    2. The risk to meeting our stability timeline must be low.
-2. If allowed changes need to be made once a release is beta, they are applied and the prerelease tag is incremented, e.g. `2.0.0-beta.2`.
-3. If a particular beta release is _generally regarded_ as stable, it will be re-released as a stable build, changing only the version information. e.g. `2.0.0`. After the first stable, all changes must be backwards-compatible bug or security fixes.
-4. If future bug fixes or security patches need to be made once a release is stable, they are applied and the _patch_ version is incremented
-e.g. `2.0.1`.
-
-Specifically, the above means:
-
-1. Admitting non-breaking-API changes before Week 3 in the beta cycle is okay, even if those changes have the potential to cause moderate side-effects.
-2. Admitting feature-flagged changes, that do not otherwise alter existing code paths, at most points in the beta cycle is okay. Users can explicitly enable those flags in their apps.
-3. Admitting features of any sort after Week 3 in the beta cycle is 👎 without a very good reason.
-
-For each major and minor bump, you should expect to see something like the following:
-
-```plaintext
-2.0.0-beta.1
-2.0.0-beta.2
-2.0.0-beta.3
-2.0.0
-2.0.1
-2.0.2
+```mermaid
+gitGraph
+    commit
+    commit
+    branch N-x-y
+    checkout main
+    commit id:"fix-1"
+    checkout N-x-y
+    cherry-pick id:"fix-1"
+    checkout main
+    commit id:"fix-2"
+    checkout N-x-y
+    cherry-pick id:"fix-2"
+    checkout main
+    commit
+    commit
 ```
 
-An example lifecycle in pictures:
+Since Electron 8, stabilization branches are always **major** version lines, and named against the following template `$MAJOR-x-y` e.g. `8-x-y`. (Prior to that, we used **minor** version lines and named them as `$MAJOR-$MINOR-x` e.g. `2-0-x`.)
 
-* A new release branch is created that includes the latest set of features. It is published as `2.0.0-beta.1`.
-![New Release Branch](../images/versioning-sketch-3.png)
-* A bug fix comes into master that can be backported to the release branch. The patch is applied, and a new beta is published as `2.0.0-beta.2`.
-![Bugfix Backport to Beta](../images/versioning-sketch-4.png)
-* The beta is considered _generally stable_ and it is published again as a non-beta under `2.0.0`.
-![Beta to Stable](../images/versioning-sketch-5.png)
-* Later, a zero-day exploit is revealed and a fix is applied to master. We backport the fix to the `2-0-x` line and release `2.0.1`.
-![Security Backports](../images/versioning-sketch-6.png)
+We allow for multiple stabilization branches to exist simultaneously, one for each supported version.
 
-A few examples of how various SemVer ranges will pick up new releases:
+> [!TIP]
+> For more details on which versions are supported, see our [Electron Releases](./electron-timelines.md) doc.
 
-![Semvers and Releases](../images/versioning-sketch-7.png)
+```mermaid
+gitGraph
+    commit
+    branch "41-x-y"
+    checkout main
+    commit
+    commit
+    commit id:"fix-a"
+    checkout "41-x-y"
+    cherry-pick id:"fix-a"
+    checkout main
+    commit
+    commit id:"fix-b"
+    checkout "41-x-y"
+    cherry-pick id:"fix-b"
+    checkout main
+    commit
+    branch "42-x-y"
+    checkout main
+    commit
+    commit id:"fix-c"
+    checkout "41-x-y"
+    cherry-pick id:"fix-c"
+    checkout "42-x-y"
+    cherry-pick id:"fix-c"
+    checkout main
+    commit
+    commit id:"fix-d"
+    checkout "41-x-y"
+    cherry-pick id:"fix-d"
+    checkout "42-x-y"
+    cherry-pick id:"fix-d"
+    checkout main
+    commit
+```
+
+Older lines will not be supported by the Electron project.
+
+## Release cycle
+
+Electron follows an **8-week regular release cycle** where key milestones correspond to
+matching dates in the Chromium release cycle.
+
+```mermaid
+gantt
+    title Electron release cycle
+    dateFormat  YYYY-MM-DD
+    axisFormat  Week %W
+    todayMarker off
+    section v41
+    Alpha phase                    :a1, 2026-01-01, 4w
+    M146 enters Chrome beta        :milestone, bm1, after a1, 0d
+    Beta phase                     :b1, after a1, 4w
+    M146 enters Chrome stable      :milestone, s1, after b1, 0d
+    Supported until v44 release    :active, after b1, 12w
+    section v42
+    Alpha phase                    :a2, after b1, 4w
+    M148 enters Chrome beta        :milestone, bm2, after a2, 0d
+    Beta phase                     :b2, after a2, 4w
+    M148 enters Chrome stable      :milestone, s2, after b2, 0d
+    Supported until v45 release    :active, after b2, 4w
+```
+
+### Example
+
+When Electron 41 hits its stable release, the release line for Electron 42 is branched off of `main`.
+Its first alpha release is created with all the changes contained on `main`:
+
+```mermaid
+gitGraph
+    commit
+    commit
+    commit
+    branch "42-x-y"
+    checkout "42-x-y"
+    commit tag:"v42.0.0-alpha.1"
+```
+
+A bug fix comes into `main` that can be backported to the release branch. The patch is applied,
+and it is published in the next `v42.0.0-alpha.2` release.
+
+```mermaid
+gitGraph
+    commit
+    commit
+    commit
+    branch "42-x-y"
+    checkout "42-x-y"
+    commit id:"42.0.0-alpha.1" tag:"v42.0.0-alpha.1"
+    checkout "main"
+    commit
+    commit id:"fix-1"
+    checkout "42-x-y"
+    cherry-pick id:"fix-1" tag:"v42.0.0-alpha.2"
+```
+
+The version of Chromium that powers Electron 42 hits Chrome's beta channel. The `alpha` line is
+promoted to `beta`.
+
+```mermaid
+gitGraph
+    commit
+    commit
+    commit
+    branch "42-x-y"
+    checkout "42-x-y"
+    commit id:"42.0.0-alpha.1" tag:"v42.0.0-alpha.1"
+    checkout "main"
+    commit
+    commit id:"fix-1"
+    checkout "42-x-y"
+    cherry-pick id:"fix-1" tag:"v42.0.0-alpha.2"
+    checkout "main"
+    commit
+    commit
+    commit id:"fix-2"
+    checkout "42-x-y"
+    cherry-pick id:"fix-2" tag:"v42.0.0-beta.1"
+```
+
+Beta releases continue weekly until Electron 42 is promoted to stable and the same cycle starts again
+with `43-x-y`. Later, a zero-day exploit is revealed and a fix is applied to `main`. We backport the
+fix to the `42-x-y` line and release `42.0.1`.
+
+```mermaid
+gitGraph
+    commit
+    commit
+    commit
+    branch "42-x-y"
+    checkout "42-x-y"
+    commit id:"42.0.0-alpha.1" tag:"v42.0.0-alpha.1"
+    checkout "main"
+    commit
+    commit id:"fix-1"
+    checkout "42-x-y"
+    cherry-pick id:"fix-1" tag:"v42.0.0-alpha.2"
+    checkout "main"
+    commit
+    commit
+    commit id:"fix-2"
+    checkout "42-x-y"
+    cherry-pick id:"fix-2" tag:"v42.0.0-beta.1"
+    checkout "main"
+    commit id:"fix-3"
+    checkout "42-x-y"
+    cherry-pick id:"fix-3" tag:"v42.0.0"
+    checkout "main"
+    branch "43-x-y"
+    checkout "43-x-y"
+    commit id:"43.0.0-alpha.1" tag:"v43.0.0-alpha.1"
+    checkout "main"
+    commit id:"security-fix"
+    checkout "42-x-y"
+    cherry-pick id:"security-fix" tag:"v42.0.1"
+    checkout "43-x-y"
+    cherry-pick id:"security-fix" tag:"v43.0.0-alpha.2"
+```
 
 ### Backport request process
 
@@ -136,10 +245,9 @@ The `electron/electron` repository also enforces squash merging, so you only nee
 
 ## Versioned `main` branch
 
-* The `main` branch will always contain the next major version `X.0.0-nightly.DATE` in its `package.json`.
+* The `main` branch always corresponds to the major version above the current pre-release line.
 * Release branches are never merged back to `main`.
-* Release branches _do_ contain the correct version in their `package.json`.
-* As soon as a release branch is cut for a major, `main` must be bumped to the next major (i.e. `main` is always versioned as the next theoretical release branch).
+* All `package.json` values are fixed at `0.0.0-development`.
 
 ## Historical versioning (Electron 1.X)
 
@@ -147,6 +255,29 @@ Electron versions _< 2.0_ did not conform to the [SemVer](https://semver.org) sp
 
 Here is an example of the 1.x strategy:
 
-![1.x Versioning](../images/versioning-sketch-0.png)
+```mermaid
+---
+config:
+  gitGraph:
+    mainBranchName: 'master'
+---
+gitGraph
+    commit
+    branch "bugfix-1"
+    checkout "bugfix-1"
+    commit
+    checkout master
+    merge "bugfix-1" tag:"1.8.1"
+    branch "feature"
+    checkout "feature"
+    commit
+    checkout master
+    merge "feature" tag:"1.8.2"
+    branch "bugfix-2"
+    checkout "bugfix-2"
+    commit
+    checkout master
+    merge "bugfix-2" tag:"1.8.3"
+```
 
 An app developed with `1.8.1` cannot take the `1.8.3` bug fix without either absorbing the `1.8.2` feature, or by backporting the fix and maintaining a new release line.
