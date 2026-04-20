@@ -3455,7 +3455,7 @@ describe('BrowserWindow module', () => {
 
   describe('post-construction web content viewport', () => {
     afterEach(closeAllWindows);
-    it('matches content bounds', async () => {
+    it('matches content size', async () => {
       const w = new BrowserWindow({ show: true, width: 800, height: 600 });
 
       await w.loadURL('about:blank');
