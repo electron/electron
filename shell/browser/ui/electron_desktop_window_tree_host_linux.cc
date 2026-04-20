@@ -229,7 +229,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     const gfx::Size widget_size = GetWidget()->GetWindowBoundsInScreen().size();
 
     if (SupportsClientFrameShadow()) {
-      if (ignore_mouse_events_) {
+      if (ignore_mouse_events_ && native_window_view_->IsTranslucent()) {
         window->SetInputRegion(
             std::optional<std::vector<gfx::Rect>>({gfx::Rect()}));
       } else {
