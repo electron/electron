@@ -105,21 +105,25 @@ electron_mac_bundle_id = branding.mac_bundle_id
 if (override_electron_version != "") {
   electron_version = override_electron_version
 } else {
-  # When building from source code tarball there is no git tag available and
+  # When building from a source code tarball there is no git tag available and
   # builders must explicitly pass override_electron_version in gn args.
+  #
+  # Resolve the real locations of packed-refs and HEAD via git so that this
+  # also works when electron/ is a `git worktree` (where .git is a file, not a
+  # directory, and GN's read_file cannot follow the gitdir indirection).
+  electron_git_ref_paths =
+      exec_script("script/get-git-ref-paths.py", [], "list lines")
+
   # This read_file call will assert if there is no git information, without it
   # gn will generate a malformed build configuration and ninja will get into
   # infinite loop.
-  read_file(".git/packed-refs", "string")
+  read_file(electron_git_ref_paths[0], "string")
 
   # Set electron version from git tag.
   electron_version = exec_script("script/get-git-version.py",
                                  [],
                                  "trim string",
-                                 [
-                                   ".git/packed-refs",
-                                   ".git/HEAD",
-                                 ])
+                                 electron_git_ref_paths)
 }
 
 if (is_mas_build) {
