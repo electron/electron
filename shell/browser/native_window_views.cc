@@ -940,12 +940,18 @@ extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
     return extensions::SizeConstraints();
   extensions::SizeConstraints constraints;
   if (size_constraints_->HasMaximumSize()) {
-    constraints.set_maximum_size(WindowSizeToContentSizeBuggy(
-        GetAcceleratedWidget(), size_constraints_->GetMaximumSize()));
+    const gfx::Size widget_size =
+        LogicalToWidgetBounds(gfx::Rect(size_constraints_->GetMaximumSize()))
+            .size();
+    constraints.set_maximum_size(
+        WindowSizeToContentSizeBuggy(GetAcceleratedWidget(), widget_size));
   }
   if (size_constraints_->HasMinimumSize()) {
-    constraints.set_minimum_size(WindowSizeToContentSizeBuggy(
-        GetAcceleratedWidget(), size_constraints_->GetMinimumSize()));
+    const gfx::Size widget_size =
+        LogicalToWidgetBounds(gfx::Rect(size_constraints_->GetMinimumSize()))
+            .size();
+    constraints.set_minimum_size(
+        WindowSizeToContentSizeBuggy(GetAcceleratedWidget(), widget_size));
   }
   return constraints;
 }
@@ -1718,8 +1724,8 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
 #if BUILDFLAG(IS_WIN)
     HWND hwnd = GetAcceleratedWidget();
     gfx::Rect dpi_bounds = DIPToScreenRect(hwnd, bounds);
-    window_bounds =
-        ScreenToDIPRect(hwnd, ncv->GetWindowBoundsForClientBounds(dpi_bounds));
+    window_bounds = WidgetToLogicalBounds(
+        ScreenToDIPRect(hwnd, ncv->GetWindowBoundsForClientBounds(dpi_bounds)));
 #else
     window_bounds = WidgetToLogicalBounds(
         ncv->GetWindowBoundsForClientBounds(window_bounds));
