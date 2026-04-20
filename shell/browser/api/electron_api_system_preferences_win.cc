@@ -200,7 +200,7 @@ LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
                                             WPARAM wparam,
                                             LPARAM lparam) {
   if (message == WM_DWMCOLORIZATIONCOLORCHANGED) {
-    DWORD new_color = (DWORD)wparam;
+    DWORD new_color = static_cast<DWORD>(wparam);
     std::string new_color_string = hexColorDWORDToRGBA(new_color);
     if (new_color_string != current_color_) {
       Emit("accent-color-changed", hexColorDWORDToRGBA(new_color));
