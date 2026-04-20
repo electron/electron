@@ -135,7 +135,7 @@ void InspectableWebContentsView::ShowDevTools(bool activate) {
     devtools_web_view_->SetWebContents(
         inspectable_web_contents_->GetDevToolsWebContents());
     devtools_web_view_->RequestFocus();
-    DeprecatedLayoutImmediately();
+    InvalidateLayout();
   }
 }
 
@@ -173,7 +173,7 @@ void InspectableWebContentsView::CloseDevTools() {
   } else {
     devtools_web_view_->SetVisible(false);
     devtools_web_view_->SetWebContents(nullptr);
-    DeprecatedLayoutImmediately();
+    InvalidateLayout();
   }
 }
 
@@ -223,7 +223,7 @@ void InspectableWebContentsView::SetIsDocked(bool docked, bool activate) {
 void InspectableWebContentsView::SetContentsResizingStrategy(
     const DevToolsContentsResizingStrategy& strategy) {
   strategy_.CopyFrom(strategy);
-  DeprecatedLayoutImmediately();
+  InvalidateLayout();
 }
 
 void InspectableWebContentsView::SetTitle(const std::u16string& title) {
