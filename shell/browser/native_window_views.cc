@@ -1134,16 +1134,18 @@ bool NativeWindowViews::IsClosable() const {
 #endif
 }
 
-void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
+void NativeWindowViews::SetAlwaysOnTop(const ui::ZOrderLevel z_order,
                                        const std::string& level,
-                                       int relativeLevel) {
-  bool level_changed = z_order != widget()->GetZOrderLevel();
+                                       const int relativeLevel) {
+  const bool level_changed = z_order != widget()->GetZOrderLevel();
+  const bool always_on_top = z_order != ui::ZOrderLevel::kNormal;
+
   widget()->SetZOrderLevel(z_order);
 
 #if BUILDFLAG(IS_WIN)
   // Reset the placement flag.
   behind_task_bar_ = false;
-  if (z_order != ui::ZOrderLevel::kNormal) {
+  if (always_on_top) {
     // On macOS the window is placed behind the Dock for the following levels.
     // Re-use the same names on Windows to make it easier for the user.
     static constexpr auto levels = base::MakeFixedFlatSet<std::string_view>(
@@ -1153,10 +1155,8 @@ void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
 #endif
   MoveBehindTaskBarIfNeeded();
 
-  // This must be notified at the very end or IsAlwaysOnTop
-  // will not yet have been updated to reflect the new status
   if (level_changed)
-    NativeWindow::NotifyWindowAlwaysOnTopChanged();
+    NativeWindow::NotifyWindowAlwaysOnTopChanged(always_on_top);
 }
 
 ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() const {
