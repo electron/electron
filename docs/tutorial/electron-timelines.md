@@ -2,28 +2,53 @@
 
 Electron frequently releases major versions alongside every other Chromium release.
 This document focuses on the release cadence and version support policy.
-For a more in-depth guide on our git branches and how Electron uses semantic versions,
-check out our [Electron Versioning](./electron-versioning.md) doc.
+
+> [!TIP]
+> See the [Electron Versioning](./electron-versioning.md) document for more details
+> on how Electron is versioned.
 
 ## Timeline
 
 [Electron's Release Schedule](https://releases.electronjs.org/schedule) lists a schedule of Electron major releases showing key milestones including alpha, beta, and stable release dates, as well as end-of-life dates and dependency versions.
 
-:::info Official support dates may change
+> [!IMPORTANT]
+> Electron's official support policy is the latest 3 stable releases. Our stable
+> release and end-of-life dates are determined by Chromium, and may be subject to
+> change. While we try to keep our planned release and end-of-life dates frequently
+> updated here, future dates may change if affected by upstream scheduling changes,
+> and may not always be accurately reflected.
+>
+> See [Chromium's public release schedule](https://chromiumdash.appspot.com/schedule) for
+> definitive information about Chromium's scheduled release dates.
 
-Electron's official support policy is the latest 3 stable releases. Our stable
-release and end-of-life dates are determined by Chromium, and may be subject to
-change. While we try to keep our planned release and end-of-life dates frequently
-updated here, future dates may change if affected by upstream scheduling changes,
-and may not always be accurately reflected.
+Electron's cadence between major version releases is 8 weeks long. Before each major
+version hits stable, it goes through a four-week **alpha** phase and a four-week
+**beta** phase.
 
- See [Chromium's public release schedule](https://chromiumdash.appspot.com/schedule) for
- definitive information about Chromium's scheduled release dates.
-
- :::
+```mermaid
+gantt
+    title Electron release cycle
+    dateFormat  YYYY-MM-DD
+    axisFormat  Week %W
+    todayMarker off
+    section v41
+    Alpha phase                    :a1, 2026-01-19, 4w
+    M146 enters Chrome beta        :milestone, bm1, after a1, 0d
+    Beta phase                     :b1, after a1, 4w
+    M146 enters Chrome stable      :milestone, s1, after b1, 0d
+    Supported until v44 release    :active, after b1, 12w
+    section v42
+    Alpha phase                    :a2, after b1, 4w
+    M148 enters Chrome beta        :milestone, bm2, after a2, 0d
+    Beta phase                     :b2, after a2, 4w
+    M148 enters Chrome stable      :milestone, s2, after b2, 0d
+    Supported until v45 release    :active, after b2, 4w
+```
 
 **Notes:**
 
+* Alphas are generally less stable than beta releases. The cutoff between the two
+  corresponds to when the underlying Chromium version enters Chrome's Beta channel.
 * The `-alpha.1`, `-beta.1`, and `stable` dates are our solid release dates.
 * We strive for weekly alpha/beta releases, but we often release more than scheduled.
 * All dates are our goals but there may be reasons for adjusting the stable deadline, such as security bugs.
@@ -38,10 +63,11 @@ and may not always be accurately reflected.
 ## Version support policy
 
 The latest three _stable_ major versions are supported by the Electron team.
-For example, if the latest release is 6.1.x, then the 5.0.x as well
-as the 4.2.x series are supported. We only support the latest minor release
+
+For example, if the latest release is 42.1.x, then the 41.0.x as well
+as the 40.2.x series are supported. We only support the latest minor release
 for each stable release series. This means that in the case of a security fix,
-6.1.x will receive the fix, but we will not release a new version of 6.0.x.
+42.1.x will receive the fix, but we will not release a new version of 42.0.x.
 
 The latest stable release unilaterally receives all fixes from `main`,
 and the version prior to that receives the vast majority of those fixes
@@ -50,11 +76,8 @@ only security fixes directly.
 
 ### Chromium version support
 
-:::info Chromium release schedule
-
-Chromium's public release schedule is [here](https://chromiumdash.appspot.com/schedule).
-
-:::
+> [!TIP]
+> Chromium's public release schedule is [here](https://chromiumdash.appspot.com/schedule).
 
 Electron targets Chromium even-number versions, releasing every 8 weeks in concert
 with Chromium's 4-week release schedule. For example, Electron 26 uses Chromium 116, while Electron 27 uses Chromium 118.
@@ -82,3 +105,7 @@ and that number is reduced to two in major version 10, the three-argument versio
 continue to work until, at minimum, major version 12. Past the minimum two-version
 threshold, we will attempt to support backwards compatibility beyond two versions
 until the maintainers feel the maintenance burden is too high to continue doing so.
+
+> [!TIP]
+> For a canonical list of breaking changes, see the [Breaking Changes](../breaking-changes.md)
+> document.
