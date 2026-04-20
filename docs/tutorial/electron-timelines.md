@@ -32,7 +32,7 @@ gantt
     axisFormat  Week %W
     todayMarker off
     section v41
-    Alpha phase                    :a1, 2026-01-01, 4w
+    Alpha phase                    :a1, 2026-01-19, 4w
     M146 enters Chrome beta        :milestone, bm1, after a1, 0d
     Beta phase                     :b1, after a1, 4w
     M146 enters Chrome stable      :milestone, s1, after b1, 0d
@@ -48,8 +48,7 @@ gantt
 **Notes:**
 
 * Alphas are generally less stable than beta releases. The cutoff between the two
-  corresponds to when the underlying Chromium version is promoted from the Canary to
-  Beta channel.
+  corresponds to when the underlying Chromium version enters Chrome's Beta channel.
 * The `-alpha.1`, `-beta.1`, and `stable` dates are our solid release dates.
 * We strive for weekly alpha/beta releases, but we often release more than scheduled.
 * All dates are our goals but there may be reasons for adjusting the stable deadline, such as security bugs.

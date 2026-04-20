@@ -107,7 +107,7 @@ gantt
     axisFormat  Week %W
     todayMarker off
     section v41
-    Alpha phase                    :a1, 2026-01-01, 4w
+    Alpha phase                    :a1, 2026-01-19, 4w
     M146 enters Chrome beta        :milestone, bm1, after a1, 0d
     Beta phase                     :b1, after a1, 4w
     M146 enters Chrome stable      :milestone, s1, after b1, 0d
@@ -246,6 +246,8 @@ The `electron/electron` repository also enforces squash merging, so you only nee
 ## Versioned `main` branch
 
 * The `main` branch always corresponds to the major version above the current pre-release line.
+* Unstable nightly releases of `main` are released under the [`electron-nightly`](https://www.npmjs.com/package/electron-nightly)
+  package on npm.
 * Release branches are never merged back to `main`.
 * All `package.json` values are fixed at `0.0.0-development`.
 
