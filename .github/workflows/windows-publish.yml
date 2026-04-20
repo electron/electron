@@ -6,8 +6,8 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb'
-        required: true
+        default: ''
+        required: false
       upload-to-storage:
         description: 'Uploads to Azure storage'
         required: false
@@ -21,12 +21,28 @@ on:
 permissions: {}
 
 jobs:
+  setup:
+    if: github.repository == 'electron/electron'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+      with:
+        override: ${{ inputs.build-image-sha }}
+
   checkout-windows:
+    needs: setup
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
     container:
-      image: ghcr.io/electron/build:${{ inputs.build-image-sha }}
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root --device /dev/fuse --cap-add SYS_ADMIN
       volumes:
         - /mnt/win-cache:/mnt/win-cache
@@ -36,8 +52,6 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
       TARGET_OS: 'win'
       ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
-    outputs:
-      build-image-sha: ${{ inputs.build-image-sha }}
     steps:
     - name: Checkout Electron
       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
@@ -53,7 +67,7 @@ jobs:
   # Build the patched siso binary in parallel with checkout-windows; the
   # publish-*-win jobs consume it via SISO_PATH.
   build-siso-windows:
-    if: github.repository == 'electron/electron'
+    needs: setup
     uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
     permissions:
       contents: read
