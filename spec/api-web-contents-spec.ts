@@ -1234,6 +1234,12 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false, width: 800, height: 600 });
       await w.loadURL('about:blank');
 
+      // wait for it to be shown, visible
+      const shown = once(w, 'show');
+      w.show();
+      await shown;
+      await waitUntil(async () => (await w.webContents.executeJavaScript('document.visibilityState')) === 'visible');
+
       const initial = await getViewportSize(w);
 
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
