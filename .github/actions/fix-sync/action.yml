@@ -117,7 +117,7 @@ runs:
       run : |
         cd src/third_party/angle
         rm -f .git/objects/info/alternates
-        git remote set-url origin https://chromium.googlesource.com/angle/angle.git
+        git remote set-url origin https://github.com/google/angle.git
         cp .git/config .git/config.backup
         git remote remove origin
         mv .git/config.backup .git/config
