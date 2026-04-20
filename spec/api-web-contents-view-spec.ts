@@ -256,12 +256,17 @@ describe('WebContentsView', () => {
       await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
 
-      const viewportSize = await v.webContents.executeJavaScript(
-        '({ width: window.innerWidth, height: window.innerHeight })'
-      );
-      const contentBounds = w.getContentBounds();
-      expect(viewportSize.width).to.equal(contentBounds.width);
-      expect(viewportSize.height).to.equal(contentBounds.height);
+      // The attach path may lay out synchronously or via deferred invalidation,
+      // but the viewport should settle to the content bounds in either case.
+      await expect(
+        waitUntil(async () => {
+          const viewportSize = await v.webContents.executeJavaScript(
+            '({ width: window.innerWidth, height: window.innerHeight })'
+          );
+          const contentBounds = w.getContentBounds();
+          return viewportSize.width === contentBounds.width && viewportSize.height === contentBounds.height;
+        })
+      ).to.eventually.be.fulfilled();
     });
 
     it('is initially visible if load happens after attach', async () => {
