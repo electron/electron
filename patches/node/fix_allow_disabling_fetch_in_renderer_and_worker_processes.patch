@@ -9,10 +9,10 @@ conflict with Blink's in renderer and worker processes.
 We should try to upstream some version of this.
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index f05686608297e538f0a6f65abb389281bced4291..c8da076f80a559b9ee6d2ffed831b088c15c8e88 100644
+index ba9fcc3a3abf48f7ab4416a7ec13e689fd5802c7..4311a6e35ab85876b24c03036e5d91d5adb5c369 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -1820,6 +1820,14 @@ changes:
+@@ -1802,6 +1802,14 @@ changes:
  
  Disable using [syntax detection][] to determine module type.
  
@@ -27,7 +27,7 @@ index f05686608297e538f0a6f65abb389281bced4291..c8da076f80a559b9ee6d2ffed831b088
  ### `--no-experimental-global-navigator`
  
  <!-- YAML
-@@ -3499,6 +3507,7 @@ one is included in the list below.
+@@ -3516,6 +3524,7 @@ one is included in the list below.
  * `--no-addons`
  * `--no-async-context-frame`
  * `--no-deprecation`
@@ -36,7 +36,7 @@ index f05686608297e538f0a6f65abb389281bced4291..c8da076f80a559b9ee6d2ffed831b088
  * `--no-experimental-repl-await`
  * `--no-experimental-sqlite`
 diff --git a/doc/node.1 b/doc/node.1
-index 9a0f5beb5b995fb92b31514c166e1c76e18d8ca9..fab0b24b630e755658b58a7281df1dacc4b7f32a 100644
+index bed0774b43a21a75eac7466905d7c06d6e9f4f8a..ebc364bbd79972f012a7489853530adc87b580a6 100644
 --- a/doc/node.1
 +++ b/doc/node.1
 @@ -201,6 +201,9 @@ Enable transformation of TypeScript-only syntax into JavaScript code.
@@ -50,7 +50,7 @@ index 9a0f5beb5b995fb92b31514c166e1c76e18d8ca9..fab0b24b630e755658b58a7281df1dac
  Disable experimental support for the WebSocket API.
  .
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 9a99ff6d44320c0e28f4a787d24ea98ae1c96196..8f5810267d1ba430bae02be141f087f2a5d3cf9f 100644
+index 4a42dd66f451eece98fded909a72dd5ffcfd9708..a693e35135fc8f7e918e1410a104d4607ece5489 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -117,6 +117,7 @@ function prepareExecution(options) {
@@ -61,7 +61,7 @@ index 9a99ff6d44320c0e28f4a787d24ea98ae1c96196..8f5810267d1ba430bae02be141f087f2
    setupWebsocket();
    setupEventsource();
    setupCodeCoverage();
-@@ -345,6 +346,16 @@ function setupWarningHandler() {
+@@ -350,6 +351,16 @@ function setupWarningHandler() {
    }
  }
  
@@ -79,10 +79,10 @@ index 9a99ff6d44320c0e28f4a787d24ea98ae1c96196..8f5810267d1ba430bae02be141f087f2
  function setupWebsocket() {
    if (getOptionValue('--no-experimental-websocket')) {
 diff --git a/src/node_options.cc b/src/node_options.cc
-index f6f81f50c8bd91a72ca96093dc64c183bd58039b..aa18dab6e4171d8a7f0af4b7db1b8c2c07191859 100644
+index 79d7c8cac002ba85b95c1d58a8e7cbf84fc35e89..cf66678164f4fca371f853c8afe3c0b7e7e3bc82 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -545,7 +545,11 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
+@@ -551,7 +551,11 @@ EnvironmentOptionsParser::EnvironmentOptionsParser() {
              &EnvironmentOptions::experimental_eventsource,
              kAllowedInEnvvar,
              false);
