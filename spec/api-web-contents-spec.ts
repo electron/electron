@@ -3187,6 +3187,16 @@ describe('webContents module', () => {
       expect(pdfInfo.numPages).to.equal(3);
     });
 
+    it('recovers after a prior call fails with an invalid page range', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
+      await expect(w.webContents.printToPDF({ pageRanges: '999' })).to.eventually.be.rejected();
+
+      const data = await w.webContents.printToPDF({});
+      const pdfInfo = await readPDF(data);
+      expect(pdfInfo.numPages).to.equal(1);
+    });
+
     it('does not tag PDFs by default', async () => {
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
