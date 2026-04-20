@@ -431,7 +431,7 @@ class WebContents final : public ExclusiveAccessContext,
   void SetTemporaryZoomLevel(double level);
 
   void SetImageAnimationPolicy(const std::string& new_policy);
-  void SetVisualZoomLevelLimits(double min_level, double max_level);
+  void SetVisualZoomLevelLimits(float min_level, float max_level);
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const content::RenderWidgetHost& rfh,

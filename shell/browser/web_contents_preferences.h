@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_PREFERENCES_H_
 
 #include <map>
+#include <optional>
 #include <string>
 #include <vector>
 

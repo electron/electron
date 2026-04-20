@@ -4024,11 +4024,10 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   web_contents()->OnWebPreferencesChanged();
 }
 
-void WebContents::SetVisualZoomLevelLimits(double min_level, double max_level) {
+void WebContents::SetVisualZoomLevelLimits(float min_level, float max_level) {
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences) {
-    web_preferences->SetVisualZoomLevelLimits(static_cast<float>(min_level),
-                                              static_cast<float>(max_level));
+    web_preferences->SetVisualZoomLevelLimits(min_level, max_level);
   }
 
   // Touchpad pinch-to-zoom for child frames (webview guests) is handled by the
@@ -4037,8 +4036,7 @@ void WebContents::SetVisualZoomLevelLimits(double min_level, double max_level) {
     auto* embedder_prefs =
         WebContentsPreferences::From(embedder_->web_contents());
     if (embedder_prefs) {
-      embedder_prefs->SetVisualZoomLevelLimits(static_cast<float>(min_level),
-                                               static_cast<float>(max_level));
+      embedder_prefs->SetVisualZoomLevelLimits(min_level, max_level);
       embedder_->web_contents()->OnWebPreferencesChanged();
     }
   }
