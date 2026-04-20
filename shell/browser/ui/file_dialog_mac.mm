@@ -57,16 +57,16 @@
   NSPopUpButton* button = (NSPopUpButton*)sender;
   NSInteger selectedItemIndex = [button indexOfSelectedItem];
   NSArray* list = [self fileTypesList];
-  NSArray* fileTypes = [list objectAtIndex:selectedItemIndex];
+  NSArray* contentTypes = [list objectAtIndex:selectedItemIndex];
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  // If we meet a '*' file extension, we allow all file types.
-  if ([fileTypes count] == 0 || [fileTypes containsObject:@"*"])
-    [[self savePanel] setAllowedFileTypes:nil];
-  else
-    [[self savePanel] setAllowedFileTypes:fileTypes];
-#pragma clang diagnostic pop
+  // If we meet a '*' file extension (represented as UTType wildcard),
+  // we allow all file types.
+  if ([contentTypes count] == 0 ||
+      [contentTypes containsObject:[UTType typeWithFilenameExtension:@"*"]]) {
+    [[self savePanel] setAllowedContentTypes:nil];
+  } else {
+    [[self savePanel] setAllowedContentTypes:contentTypes];
+  }
 }
 
 @end
@@ -103,7 +103,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 
   // Create array to keep file types and their name.
   for (const Filter& filter : filters) {
-    NSMutableOrderedSet* file_type_set =
+    NSMutableOrderedSet* content_types_set =
         [NSMutableOrderedSet orderedSetWithCapacity:filters.size()];
     [filter_names addObject:@(filter.first.c_str())];
 
@@ -117,27 +117,41 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
         ext.erase(0, pos + 1);
       }
 
-      [file_type_set addObject:@(ext.c_str())];
+      if (ext == "*") {
+        [content_types_set addObject:[UTType typeWithFilenameExtension:@"*"]];
+        break;
+      }
+
+      // First try to create a UTType conforming to package type, which is
+      // necessary for custom macOS packages like .rtfd to be recognized
+      // properly in file dialogs. If that fails, fall back to the regular
+      // method.
+      UTType* packageType = [UTType typeWithIdentifier:@"com.apple.package"];
+      UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())
+                                   conformingToType:packageType];
+      if (!utt) {
+        utt = [UTType typeWithFilenameExtension:@(ext.c_str())];
+      }
+      if (utt) {
+        [content_types_set addObject:utt];
+      }
     }
 
-    [file_types_list addObject:[file_type_set array]];
+    [file_types_list addObject:[content_types_set array]];
   }
 
-  // Passing empty array to setAllowedFileTypes will cause exception.
-  NSArray* file_types = nil;
+  // Passing empty array to setAllowedContentTypes will cause exception.
+  NSArray* content_types = nil;
   NSUInteger count = [file_types_list count];
   if (count > 0) {
-    file_types = [[file_types_list objectAtIndex:0] allObjects];
+    content_types = [[file_types_list objectAtIndex:0] allObjects];
     // If we meet a '*' file extension, we allow all the file types and no
     // need to set the specified file types.
-    if ([file_types count] == 0 || [file_types containsObject:@"*"])
-      file_types = nil;
+    if ([content_types count] == 0)
+      content_types = nil;
   }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  [dialog setAllowedFileTypes:file_types];
-#pragma clang diagnostic pop
+  [dialog setAllowedContentTypes:content_types];
 
   if (count <= 1)
     return;  // don't add file format picker
