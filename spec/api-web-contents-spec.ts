@@ -1201,6 +1201,11 @@ describe('webContents module', () => {
 
   describe('openDevTools() API', () => {
     afterEach(closeAllWindows);
+
+    async function getViewportSize(w: BrowserWindow) {
+      return await w.webContents.executeJavaScript('({ width: window.innerWidth, height: window.innerHeight })');
+    }
+
     it('can show window with activation', async () => {
       const w = new BrowserWindow({ show: false });
       const focused = once(w, 'focus');
@@ -1223,6 +1228,42 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'detach', activate: false });
       await devtoolsOpened;
       expect(w.webContents.isDevToolsOpened()).to.be.true();
+    });
+
+    it('updates and restores the inspected page viewport for right-docked DevTools', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+
+      const initial = await getViewportSize(w);
+
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'right', activate: false });
+      await devtoolsOpened;
+
+      await expect(
+        waitUntil(async () => {
+          const viewport = await getViewportSize(w);
+          return viewport.width < initial.width;
+        })
+      ).to.eventually.be.fulfilled();
+
+      const dockedRight = await getViewportSize(w);
+      expect(dockedRight.width).to.be.lessThan(initial.width);
+      expect(dockedRight.height).to.be.closeTo(initial.height, 50);
+
+      const devtoolsClosed = once(w.webContents, 'devtools-closed');
+      w.webContents.closeDevTools();
+      await devtoolsClosed;
+
+      await expect(
+        waitUntil(async () => {
+          const restoredViewport = await getViewportSize(w);
+          return restoredViewport.width === initial.width && restoredViewport.height === initial.height;
+        })
+      ).to.eventually.be.fulfilled();
+
+      const restoredViewport = await getViewportSize(w);
+      expect(restoredViewport).to.deep.equal(initial);
     });
 
     it('can show a DevTools window with custom title', async () => {
