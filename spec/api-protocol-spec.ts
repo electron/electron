@@ -34,7 +34,7 @@ const unregisterProtocol = protocol.unregisterProtocol;
 const uninterceptProtocol = protocol.uninterceptProtocol;
 
 const text = 'valar morghulis';
-const protocolName = 'no-cors';
+const protocolName = 'cors';
 const postData = {
   name: 'post test',
   type: 'string'
@@ -924,7 +924,149 @@ describe('protocol module', () => {
       });
     });
 
-    // DISABLED-FIXME: Figure out why this test is failing
+    // A scheme registered with only {supportFetchAPI: true} (no
+    // {corsEnabled: true}) must not be readable cross-origin.
+    describe('cross-origin enforcement for supportFetchAPI-only schemes', () => {
+      const secret = 'secret-token-9d4f2c';
+      let remoteUrl: string;
+      let handlerCalls: string[];
+
+      beforeEach(async () => {
+        handlerCalls = [];
+        protocol.handle('no-cors', (req) => {
+          handlerCalls.push(req.url);
+          return new Response(secret, { headers: { 'content-type': 'text/plain' } });
+        });
+        protocol.handle('no-cors-standard', (req) => {
+          handlerCalls.push(req.url);
+          if (new URL(req.url).pathname === '/page') {
+            return new Response('<!doctype html><body>page', {
+              headers: { 'content-type': 'text/html' }
+            });
+          }
+          return new Response(secret, { headers: { 'content-type': 'text/plain' } });
+        });
+        const server = http.createServer((req, res) => {
+          res.setHeader('content-type', 'text/html');
+          res.end('<!doctype html><body>remote');
+        });
+        defer(() => server.close());
+        ({ url: remoteUrl } = await listen(server));
+      });
+
+      afterEach(() => {
+        protocol.unhandle('no-cors');
+        protocol.unhandle('no-cors-standard');
+      });
+
+      it('blocks a remote http origin from reading the response body via fetch()', async () => {
+        await w.loadURL(remoteUrl);
+        const consoleMessages: string[] = [];
+        w.webContents.on('console-message', (e) => consoleMessages.push(e.message));
+        const { body, error } = await w.webContents.executeJavaScript(`
+          fetch('no-cors://host/secret')
+            .then(r => r.text()).then(body => ({ body, error: null }))
+            .catch(e => ({ body: null, error: String(e) }))
+        `);
+        expect(body).to.not.equal(secret, 'http origin read no-cors:// body via fetch()');
+        expect(error)
+          .to.be.a('string')
+          .and.match(/Failed to fetch/);
+        expect(consoleMessages.join('\n')).to.match(/has been blocked by CORS policy/);
+      });
+
+      it('blocks a remote http origin from reading the response body via XHR', async () => {
+        await w.loadURL(remoteUrl);
+        const { body, errored } = await w.webContents.executeJavaScript(`
+          new Promise(resolve => {
+            const x = new XMLHttpRequest();
+            x.onload = () => resolve({ body: x.responseText, errored: false });
+            x.onerror = () => resolve({ body: null, errored: true });
+            x.open('GET', 'no-cors://host/secret');
+            x.send();
+          })
+        `);
+        expect(body).to.not.equal(secret, 'http origin read no-cors:// body via XHR');
+        expect(errored).to.be.true();
+      });
+
+      it('does not invoke the protocol handler for a blocked cross-origin CORS request', async () => {
+        await w.loadURL(remoteUrl);
+        await w.webContents.executeJavaScript(`
+          fetch('no-cors://host/secret', {
+            method: 'PUT',
+            headers: { 'x-custom': '1' },
+            body: 'x'
+          }).catch(() => 0)
+        `);
+        expect(handlerCalls).to.deep.equal([]);
+      });
+
+      it('returns an opaque response for cross-origin fetch with mode: no-cors', async () => {
+        await w.loadURL(remoteUrl);
+        const { type, status, body } = await w.webContents.executeJavaScript(`
+          fetch('no-cors://host/secret', { mode: 'no-cors' })
+            .then(async r => ({ type: r.type, status: r.status, body: await r.text() }))
+        `);
+        expect(type).to.equal('opaque');
+        expect(status).to.equal(0);
+        expect(body).to.equal('');
+      });
+
+      it('still allows cross-origin <img> loads (no-cors subresource)', async () => {
+        protocol.unhandle('no-cors');
+        protocol.handle(
+          'no-cors',
+          () =>
+            new Response(fs.readFileSync(path.join(fixturesPath, 'assets', 'logo.png')), {
+              headers: { 'content-type': 'image/png' }
+            })
+        );
+        await w.loadURL(remoteUrl);
+        const { ok, width } = await w.webContents.executeJavaScript(`
+          new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => resolve({ ok: true, width: img.naturalWidth });
+            img.onerror = () => resolve({ ok: false, width: 0 });
+            img.src = 'no-cors://host/logo.png';
+          })
+        `);
+        expect(ok).to.be.true();
+        expect(width).to.be.greaterThan(0);
+      });
+
+      it('allows same-origin fetch on a standard supportFetchAPI-only scheme', async () => {
+        await w.loadURL('no-cors-standard://app/page');
+        const body = await w.webContents.executeJavaScript("fetch('no-cors-standard://app/data').then(r => r.text())");
+        expect(body).to.equal(secret);
+      });
+
+      it('blocks cross-origin fetch on a standard supportFetchAPI-only scheme', async () => {
+        await w.loadURL('no-cors-standard://app/page');
+        handlerCalls = [];
+        const error = await w.webContents.executeJavaScript(
+          "fetch('no-cors-standard://other/data').then(() => null, e => String(e))"
+        );
+        expect(error)
+          .to.be.a('string')
+          .and.match(/Failed to fetch/);
+        expect(handlerCalls).to.deep.equal([]);
+      });
+
+      it('does not affect cross-origin fetch to a corsEnabled scheme', async () => {
+        protocol.handle('cors', () => new Response('ok'));
+        defer(() => protocol.unhandle('cors'));
+        await w.loadURL(remoteUrl);
+        const body = await w.webContents.executeJavaScript("fetch('cors://host/').then(r => r.text())");
+        expect(body).to.equal('ok');
+      });
+
+      it('does not affect main-process net.fetch', async () => {
+        const body = await net.fetch('no-cors://host/secret').then((r) => r.text());
+        expect(body).to.equal(secret);
+      });
+    });
+
     it('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
       await allowsCORSRequests('no-cors', ['failed xhr', 'failed fetch'], /has been blocked by CORS policy/, () => {
         const { ipcRenderer } = require('electron');
@@ -1489,9 +1631,9 @@ describe('protocol module', () => {
     });
 
     it('can receive streaming fetch upload', async () => {
-      protocol.handle('no-cors', (req) => new Response(req.body));
-      defer(() => { protocol.unhandle('no-cors'); });
-      await contents.loadURL('no-cors://foo');
+      protocol.handle('cors', (req) => new Response(req.body));
+      defer(() => { protocol.unhandle('cors'); });
+      await contents.loadURL('cors://foo');
       const fetchBodyResult = await contents.executeJavaScript(`
         const stream = new ReadableStream({
           async start(controller) {
@@ -1513,12 +1655,12 @@ describe('protocol module', () => {
         session.defaultSession.webRequest.onBeforeRequest(null);
       });
 
-      protocol.handle('no-cors', (req) => {
+      protocol.handle('cors', (req) => {
         console.log('handle', req.url, req.method);
         return new Response(req.body);
       });
-      defer(() => { protocol.unhandle('no-cors'); });
-      await contents.loadURL('no-cors://foo');
+      defer(() => { protocol.unhandle('cors'); });
+      await contents.loadURL('cors://foo');
       const fetchBodyResult = await contents.executeJavaScript(`
         const stream = new ReadableStream({
           async start(controller) {
@@ -1532,9 +1674,9 @@ describe('protocol module', () => {
     });
 
     it('can receive an error from streaming fetch upload', async () => {
-      protocol.handle('no-cors', (req) => new Response(req.body));
-      defer(() => { protocol.unhandle('no-cors'); });
-      await contents.loadURL('no-cors://foo');
+      protocol.handle('cors', (req) => new Response(req.body));
+      defer(() => { protocol.unhandle('cors'); });
+      await contents.loadURL('cors://foo');
       const fetchBodyResult = await contents.executeJavaScript(`
         const stream = new ReadableStream({
           async start(controller) {
@@ -1549,12 +1691,12 @@ describe('protocol module', () => {
     it('gets an error from streaming fetch upload when the renderer dies', async () => {
       let gotRequest: Function;
       const receivedRequest = new Promise<Request>(resolve => { gotRequest = resolve; });
-      protocol.handle('no-cors', (req) => {
+      protocol.handle('cors', (req) => {
         if (/fetch/.test(req.url)) gotRequest(req);
         return new Response();
       });
-      defer(() => { protocol.unhandle('no-cors'); });
-      await contents.loadURL('no-cors://foo');
+      defer(() => { protocol.unhandle('cors'); });
+      await contents.loadURL('cors://foo');
       contents.executeJavaScript(`
         const stream = new ReadableStream({
           async start(controller) {
