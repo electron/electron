@@ -534,10 +534,10 @@ void DesktopCapturer::HandleSuccess() {
   v8::HandleScope scope(isolate);
   gin_helper::CallMethod(this, "_onfinished", captured_sources_);
 
-  window_observer_.reset();
-  screen_observer_.reset();
   screen_capturer_.reset();
   window_capturer_.reset();
+  window_observer_.reset();
+  screen_observer_.reset();
 
   Unpin();
 }
@@ -553,10 +553,10 @@ void DesktopCapturer::HandleFailure() {
 
   gin_helper::CallMethod(this, "_onerror", "Failed to get sources.");
 
-  window_observer_.reset();
-  screen_observer_.reset();
   screen_capturer_.reset();
   window_capturer_.reset();
+  window_observer_.reset();
+  screen_observer_.reset();
 
   Unpin();
 }
