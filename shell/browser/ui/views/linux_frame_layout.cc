@@ -12,6 +12,7 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
 #include "third_party/skia/include/core/SkRRect.h"
+#include "ui/base/ui_base_types.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/gfx/geometry/skia_conversions.h"
 #include "ui/linux/linux_ui.h"
@@ -171,7 +172,8 @@ float LinuxCSDNativeFrameLayout::GetTopCornerRadiusDip() const {
 
 ui::WindowFrameProvider* LinuxCSDNativeFrameLayout::GetFrameProvider() const {
   return ui::LinuxUiTheme::GetForProfile(nullptr)->GetWindowFrameProvider(
-      !host_supports_client_frame_shadow_, tiled(), window_->IsMaximized());
+      ui::FrameType::kDefault, !host_supports_client_frame_shadow_, tiled(),
+      window_->IsMaximized());
 }
 
 // Used for Chromium-like custom CSD

@@ -26,7 +26,6 @@ class NativeWindowViews;
 
 class ElectronDesktopWindowTreeHostLinux
     : public views::DesktopWindowTreeHostLinux,
-      private ui::NativeThemeObserver,
       private ui::DeviceScaleFactorObserver {
  public:
   ElectronDesktopWindowTreeHostLinux(
