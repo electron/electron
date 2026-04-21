@@ -1510,6 +1510,86 @@ describe('app module', () => {
     it('returns an empty string for a bogus protocol', () => {
       expect(app.getApplicationNameForProtocol('bogus-protocol://')).to.equal('');
     });
+
+    ifdescribe(process.platform === 'linux')('on Linux with mocked XDG dirs', () => {
+      const fixtureApp = path.join(fixturesPath, 'api', 'protocol-name');
+      const desktopFileId = 'mock-browser.desktop';
+      const mockScheme = 'mockproto';
+      const mockMimeType = `x-scheme-handler/${mockScheme}`;
+
+      function spawnWithXdgMock(url: string, xdgDir: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+          const child = cp.spawn(process.execPath, [fixtureApp, url], {
+            env: {
+              ...process.env,
+              XDG_DATA_HOME: xdgDir,
+              XDG_DATA_DIRS: xdgDir,
+              XDG_CONFIG_HOME: xdgDir
+            },
+            stdio: ['ignore', 'pipe', 'pipe']
+          });
+          let stdout = '';
+          let stderr = '';
+          child.stdout.on('data', (d: Buffer) => {
+            stdout += d;
+          });
+          child.stderr.on('data', (d: Buffer) => {
+            stderr += d;
+          });
+          child.on('close', (code) => {
+            if (code !== 0) {
+              reject(new Error(`Fixture exited with code ${code}: ${stderr}`));
+              return;
+            }
+
+            try {
+              const parsed = JSON.parse(stdout);
+              resolve(parsed.name.trimEnd());
+            } catch {
+              reject(new Error(`Failed to parse output: ${stdout}\nstderr: ${stderr}`));
+            }
+          });
+          child.on('error', reject);
+        });
+      }
+
+      let xdgDir: string;
+      before(() => {
+        xdgDir = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'electron-xdg-'));
+        const appsDir = path.join(xdgDir, 'applications');
+        fs.mkdirSync(appsDir, { recursive: true });
+
+        fs.writeFileSync(
+          path.join(appsDir, desktopFileId),
+          [
+            '[Desktop Entry]',
+            'Name=Mock Browser',
+            'Exec=/usr/bin/true %u',
+            'Type=Application',
+            `MimeType=${mockMimeType};`
+          ].join('\n')
+        );
+
+        fs.writeFileSync(
+          path.join(xdgDir, 'mimeapps.list'),
+          ['[Default Applications]', `${mockMimeType}=${desktopFileId}`].join('\n')
+        );
+      });
+
+      after(() => {
+        fs.rmSync(xdgDir, { recursive: true, force: true });
+      });
+
+      it('returns the desktop file ID for a registered protocol', async () => {
+        const name = await spawnWithXdgMock(`${mockScheme}://`, xdgDir);
+        expect(name).to.equal(desktopFileId);
+      });
+
+      it('returns an empty string for an unregistered protocol', async () => {
+        const name = await spawnWithXdgMock('unregistered-proto://', xdgDir);
+        expect(name).to.equal('');
+      });
+    });
   });
 
   ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
