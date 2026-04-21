@@ -3371,6 +3371,21 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('post-construction web content viewport', () => {
+    afterEach(closeAllWindows);
+    it('matches content bounds', async () => {
+      const w = new BrowserWindow({ show: true, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+
+      const viewport = await w.webContents.executeJavaScript(
+        '({ width: window.innerWidth, height: window.innerHeight })'
+      );
+      const contentBounds = w.getContentBounds();
+      expect(contentBounds.width).to.equal(viewport.width);
+      expect(contentBounds.height).to.equal(viewport.height);
+    });
+  });
+
   // On Wayland, hidden windows may not have mapped surfaces or finalized geometry
   // until shown. Tests that depend on real geometry or frame events may need
   // to show the window first.
