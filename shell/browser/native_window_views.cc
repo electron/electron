@@ -965,10 +965,18 @@ void NativeWindowViews::SetResizable(bool resizable) {
       gfx::Size window_size = GetSize();
       SetSizeConstraints(extensions::SizeConstraints(window_size, window_size));
     }
+    // Forcing OnSizeConstraintsChanged on Windows when !thick_frame_ would
+    // cause HWNDMessageHandler::SizeConstraintsChanged() to add WS_THICKFRAME
+    // based on CanResize(), which destroys transparency on layered windows.
+    // Min/max are still enforced through WM_GETMINMAXINFO directly from the
+    // widget delegate.
+#if BUILDFLAG(IS_WIN)
+    if (thick_frame_ && widget() && widget()->widget_delegate())
+      widget()->OnSizeConstraintsChanged();
+    UpdateThickFrame();
+#else
     if (widget() && widget()->widget_delegate())
       widget()->OnSizeConstraintsChanged();
-#if BUILDFLAG(IS_WIN)
-    UpdateThickFrame();
 #endif
   }
 }
