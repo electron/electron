@@ -1460,7 +1460,7 @@ describe('app module', () => {
       const mockScheme = 'mockproto';
       const mockMimeType = `x-scheme-handler/${mockScheme}`;
 
-      function spawnWithXdgMock(
+      function spawnWithXdgMock (
         url: string,
         xdgDataHome: string,
         xdgConfigHome: string,
