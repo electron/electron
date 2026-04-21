@@ -175,6 +175,10 @@ auto_filenames = {
     "docs/api/structures/window-session-end-event.md",
   ]
 
+  node_header_sources = [
+    "../third_party/electron_node/tools/install.py",
+  ]
+
   sandbox_bundle_deps = [
     "lib/common/api/native-image.ts",
     "lib/common/define-properties.ts",

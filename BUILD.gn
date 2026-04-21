@@ -1670,29 +1670,9 @@ action("node_version_header") {
 action("generate_node_headers") {
   deps = [ ":generate_config_gypi" ]
   script = "script/node/generate_node_headers.py"
-  args = [ rebase_path("$root_gen_dir") ]
+  inputs = auto_filenames.node_header_sources
   outputs = [ "$root_gen_dir/node_headers.json" ]
-
-  # Inputs that trigger regeneration when node or v8 headers change.
-  # The install.py script determines which headers to copy.
-  inputs = [
-    "$node_dir/tools/install.py",
-
-    # Key node headers - changes here indicate a Node.js update
-    "$node_dir/src/node.h",
-    "$node_dir/src/node_api.h",
-    "$node_dir/src/js_native_api.h",
-    "$node_dir/src/js_native_api_types.h",
-    "$node_dir/src/node_api_types.h",
-
-    # Inspector headers (commonly updated)
-    "$node_dir/src/inspector/target_agent.h",
-
-    # V8 headers - changes here indicate a V8 update
-    "//v8/include/v8.h",
-    "//v8/include/v8-version.h",
-    "//v8/include/v8config.h",
-  ]
+  args = [ rebase_path("$root_gen_dir") ]
 }
 
 action("tar_node_headers") {
