@@ -34,7 +34,8 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
     content::FrameTreeNodeId frame_tree_node_id,
     blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
     const GURL& original_url,
-    const std::string& internal_id) {
+    const std::string& internal_id,
+    const std::string& mime_type) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   content::WebContents* web_contents =
@@ -57,9 +58,9 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
 
   // If the mime handler uses MimeHandlerViewGuest, the MimeHandlerViewGuest
   // will take ownership of the stream.
-  GURL handler_url(
-      extensions::Extension::GetBaseURLFromExtensionId(extension_id).spec() +
-      handler->handler_url());
+  GURL handler_url = handler->GetHandlerUrl(mime_type);
+  if (!handler_url.is_valid())
+    return;
 
   int tab_id = -1;
   auto* api_contents = electron::api::WebContents::From(web_contents);
