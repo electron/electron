@@ -1453,6 +1453,132 @@ describe('app module', () => {
     it('returns an empty string for a bogus protocol', () => {
       expect(app.getApplicationNameForProtocol('bogus-protocol://')).to.equal('');
     });
+
+    ifdescribe(process.platform === 'linux')('on Linux with mocked XDG dirs', () => {
+      const fixtureApp = path.join(fixturesPath, 'api', 'protocol-name');
+      const desktopFileId = 'mock-browser.desktop';
+      const mockScheme = 'mockproto';
+      const mockMimeType = `x-scheme-handler/${mockScheme}`;
+
+      function spawnWithXdgMock (
+        url: string,
+        xdgDataHome: string,
+        xdgConfigHome: string,
+        xdgBinDir: string
+      ): Promise<string> {
+        return new Promise((resolve, reject) => {
+          const child = cp.spawn(process.execPath, [fixtureApp, url], {
+            env: {
+              ...process.env,
+              PATH: [xdgBinDir, process.env.PATH].filter(Boolean).join(':'),
+              XDG_DATA_HOME: xdgDataHome,
+              XDG_DATA_DIRS: [xdgDataHome, process.env.XDG_DATA_DIRS].filter(Boolean).join(':'),
+              XDG_CONFIG_HOME: xdgConfigHome
+            },
+            stdio: ['ignore', 'pipe', 'pipe']
+          });
+          let stdout = '';
+          let stderr = '';
+          child.stdout.on('data', (d: Buffer) => {
+            stdout += d;
+          });
+          child.stderr.on('data', (d: Buffer) => {
+            stderr += d;
+          });
+          child.on('close', (code) => {
+            if (code !== 0) {
+              reject(new Error(`Fixture exited with code ${code}: ${stderr}`));
+              return;
+            }
+
+            try {
+              const parsed = JSON.parse(stdout);
+              resolve(parsed.name.trimEnd());
+            } catch {
+              reject(new Error(`Failed to parse output: ${stdout}\nstderr: ${stderr}`));
+            }
+          });
+          child.on('error', reject);
+        });
+      }
+
+      let xdgDir: string;
+      let xdgDataHome: string;
+      let xdgConfigHome: string;
+      let xdgBinDir: string;
+      before(() => {
+        xdgDir = fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'electron-xdg-'));
+        xdgDataHome = path.join(xdgDir, 'data');
+        xdgConfigHome = path.join(xdgDir, 'config');
+        xdgBinDir = path.join(xdgDir, 'bin');
+        const appsDir = path.join(xdgDataHome, 'applications');
+        fs.mkdirSync(appsDir, { recursive: true });
+        fs.mkdirSync(xdgConfigHome, { recursive: true });
+        fs.mkdirSync(xdgBinDir, { recursive: true });
+
+        fs.writeFileSync(
+          path.join(appsDir, desktopFileId),
+          [
+            '[Desktop Entry]',
+            'Name=Mock Browser',
+            'Exec=/usr/bin/true %u',
+            'Type=Application',
+            `MimeType=${mockMimeType};`
+          ].join('\n')
+        );
+
+        const mimeAppsContents = [
+          '[Default Applications]',
+          `${mockMimeType}=${desktopFileId}`,
+          '',
+          '[Added Associations]',
+          `${mockMimeType}=${desktopFileId};`
+        ].join('\n');
+
+        fs.writeFileSync(path.join(xdgConfigHome, 'mimeapps.list'), mimeAppsContents);
+        fs.writeFileSync(path.join(appsDir, 'mimeapps.list'), mimeAppsContents);
+        fs.writeFileSync(path.join(appsDir, 'defaults.list'), mimeAppsContents);
+
+        // Different xdg-utils versions resolve custom XDG dirs differently, so
+        // prepend a deterministic xdg-mime shim for this test.
+        const xdgMimePath = path.join(xdgBinDir, 'xdg-mime');
+        fs.writeFileSync(
+          xdgMimePath,
+          [
+            '#!/bin/sh',
+            'if [ "$1" != "query" ] || [ "$2" != "default" ]; then',
+            '  exit 1',
+            'fi',
+            'mime="$3"',
+            'for list in "$XDG_CONFIG_HOME/mimeapps.list" "$XDG_DATA_HOME/applications/mimeapps.list" "$XDG_DATA_HOME/applications/defaults.list"; do',
+            '  if [ -f "$list" ]; then',
+            '    result=$(grep "^$mime=" "$list" | head -n 1 | cut -d= -f2 | cut -d";" -f1)',
+            '    if [ -n "$result" ]; then',
+            '      printf "%s\\n" "$result"',
+            '      exit 0',
+            '    fi',
+            '  fi',
+            'done',
+            'exit 0'
+          ].join('\n')
+        );
+        fs.chmodSync(xdgMimePath, 0o755);
+      });
+
+      after(() => {
+        fs.rmSync(xdgDir, { recursive: true, force: true });
+      });
+
+      it('returns the desktop file ID for a registered protocol', async () => {
+        const name = await spawnWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome, xdgBinDir);
+        expect(name).to.equal(desktopFileId);
+      });
+
+      it('returns an empty string for an unregistered protocol', async () => {
+        const name = await spawnWithXdgMock('unregistered-proto://', xdgDataHome, xdgConfigHome, xdgBinDir);
+        expect(name).to.equal('');
+      });
+    });
   });
 
   ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
