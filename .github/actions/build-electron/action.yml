@@ -89,6 +89,10 @@ runs:
         } else {
           e build --target electron:testing_build
         }
+        if ($LASTEXITCODE -ne 0) {
+          Write-Host "e build failed with exit code $LASTEXITCODE"
+          exit $LASTEXITCODE
+        }
         Copy-Item out\Default\.ninja_log out\electron_ninja_log
         node electron\script\check-symlinks.js
 
