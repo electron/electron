@@ -12,6 +12,7 @@ buildflag_header("buildflags") {
     "ENABLE_PDF_VIEWER=$enable_pdf_viewer",
     "ENABLE_ELECTRON_EXTENSIONS=$enable_electron_extensions",
     "ENABLE_BUILTIN_SPELLCHECKER=$enable_builtin_spellchecker",
+    "ENABLE_PROMPT_API=$enable_prompt_api",
     "OVERRIDE_LOCATION_PROVIDER=$enable_fake_location_provider",
   ]
 

@@ -67,6 +67,7 @@
 #include "shell/browser/api/electron_api_net_log.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/api/electron_api_service_worker_context.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/browser.h"
@@ -103,6 +104,7 @@
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
+#include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1377,6 +1379,15 @@ NetLog* Session::NetLog(v8::Isolate* isolate) {
   return net_log_;
 }
 
+UtilityProcessWrapper* Session::LocalAIHandler() {
+  return local_ai_handler_;
+}
+
+base::CallbackListSubscription Session::AddAIHandlerChangedCallback(
+    base::RepeatingClosure callback) {
+  return local_ai_handler_changed_callbacks_.Add(std::move(callback));
+}
+
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
                                 const GURL& url,
                                 int num_sockets_to_preconnect) {
@@ -1554,6 +1565,20 @@ v8::Local<v8::Value> Session::ClearData(gin::Arguments* const args) {
                      std::move(origins), filter_mode, origin_matching_mode);
 
   return promise_handle;
+}
+
+void Session::RegisterLocalAIHandler(gin_helper::ErrorThrower thrower,
+                                     v8::Local<v8::Value> val) {
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  UtilityProcessWrapper* handler = nullptr;
+
+  if (!(val->IsNull() || gin::ConvertFromV8(isolate, val, &handler))) {
+    thrower.ThrowTypeError("Must pass null or UtilityProcess");
+    return;
+  }
+
+  local_ai_handler_ = handler;
+  local_ai_handler_changed_callbacks_.Notify();
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -1842,6 +1867,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setCodeCachePath", &Session::SetCodeCachePath)
       .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
       .SetMethod("clearData", &Session::ClearData)
+      .SetMethod("_registerLocalAIHandler", &Session::RegisterLocalAIHandler)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("extensions", &Session::Extensions)
       .SetProperty("netLog", &Session::NetLog)
@@ -1861,6 +1887,7 @@ void Session::Trace(cppgc::Visitor* visitor) const {
   visitor->Trace(service_worker_context_);
   visitor->Trace(web_request_);
   visitor->Trace(weak_factory_);
+  visitor->Trace(local_ai_handler_);
 }
 
 const gin::WrapperInfo* Session::wrapper_info() const {

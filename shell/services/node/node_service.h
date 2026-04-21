@@ -6,7 +6,10 @@
 #define ELECTRON_SHELL_SERVICES_NODE_NODE_SERVICE_H_
 
 #include <memory>
+#include <vector>
 
+#include "base/containers/circular_deque.h"
+#include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -68,7 +71,31 @@ class NodeService : public node::mojom::NodeService {
   void UpdateURLLoaderFactory(
       node::mojom::URLLoaderFactoryParamsPtr params) override;
 
+#if BUILDFLAG(ENABLE_PROMPT_API)
+  void BindAIManager(
+      node::mojom::BindAIManagerParamsPtr params,
+      mojo::PendingReceiver<blink::mojom::AIManager> ai_manager) override;
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
  private:
+#if BUILDFLAG(ENABLE_PROMPT_API)
+  struct PendingAIManagerBinding {
+    PendingAIManagerBinding(
+        node::mojom::BindAIManagerParamsPtr params,
+        mojo::PendingReceiver<blink::mojom::AIManager> receiver);
+    ~PendingAIManagerBinding();
+    PendingAIManagerBinding(PendingAIManagerBinding&&);
+    PendingAIManagerBinding& operator=(PendingAIManagerBinding&&);
+
+    node::mojom::BindAIManagerParamsPtr params;
+    mojo::PendingReceiver<blink::mojom::AIManager> receiver;
+  };
+
+  void FlushPendingAIManagerBindings();
+
+  static constexpr size_t kMaxPendingAIManagerBindings = 10;
+  base::circular_deque<PendingAIManagerBinding> pending_ai_manager_bindings_;
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
   // This needs to be initialized first so that it can be destroyed last
   // after the node::Environment is destroyed. This ensures that if
   // there are crashes in the node::Environment destructor, they

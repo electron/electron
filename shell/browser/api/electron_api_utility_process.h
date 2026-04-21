@@ -13,6 +13,7 @@
 #include "base/environment.h"
 #include "base/process/process_handle.h"
 #include "content/public/browser/service_process_host.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/message.h"
@@ -23,6 +24,10 @@
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
 #include "v8/include/v8-forward.h"
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 namespace gin {
 class Arguments;
@@ -61,7 +66,18 @@ class UtilityProcessWrapper final
   static UtilityProcessWrapper* Create(gin::Arguments* args);
   static UtilityProcessWrapper* FromProcessId(base::ProcessId pid);
 
+#if BUILDFLAG(ENABLE_PROMPT_API)
+  void BindAIManager(std::optional<int32_t> web_contents_id,
+                     const url::Origin& security_origin,
+                     mojo::PendingReceiver<blink::mojom::AIManager> ai_manager);
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
   void Shutdown(uint32_t exit_code);
+
+  gin::WeakCell<UtilityProcessWrapper>* GetWeakCell(
+      cppgc::AllocationHandle& allocation_handle) {
+    return weak_factory_.GetWeakCell(allocation_handle);
+  }
 
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;
