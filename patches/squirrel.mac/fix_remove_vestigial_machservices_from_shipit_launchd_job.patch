@@ -24,14 +24,17 @@ anyway and the trigger is a harmless no-op. Unlike launchctl kickstart,
 this preserves KeepAlive.SuccessfulExit respawn behavior because launchd
 treats the activation as a legitimate on-demand event.
 
-Additionally, set ResetAtClose on the MachServices registration so
-launchd tears down and recreates the port when ShipIt exits. Without
-this, the unread trigger message would remain in the port's kernel
-queue, creating standing demand that causes launchd to respawn ShipIt
-after a successful exit(0) — defeating KeepAlive.SuccessfulExit = NO.
+The trigger message stays in the Mach port's kernel queue (ShipIt has
+no XPC listener), which creates standing demand that provides the
+on-demand activity needed for KeepAlive retries in on-demand-only mode.
+To prevent this standing demand from also respawning ShipIt after a
+successful exit(0), ShipIt now drains its Mach service port before each
+exit(EXIT_SUCCESS) via bootstrap_check_in + mach_msg. On failure exits,
+the message is left in place so launchd treats the KeepAlive respawn as
+demand-backed.
 
 diff --git a/Squirrel/SQRLShipItLauncher.m b/Squirrel/SQRLShipItLauncher.m
-index 6a9151d..1eee3df 100644
+index 6a9151d..58932ff 100644
 --- a/Squirrel/SQRLShipItLauncher.m
 +++ b/Squirrel/SQRLShipItLauncher.m
 @@ -10,6 +10,7 @@
@@ -42,17 +45,7 @@ index 6a9151d..1eee3df 100644
  #import <Security/Security.h>
  #import <ServiceManagement/ServiceManagement.h>
  #import <launch.h>
-@@ -50,14 +51,16 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
- 				@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
- 			};
-
-+			// ResetAtClose flushes the port on exit so a stale trigger
-+			// message does not create standing demand after exit(0).
- 			jobDict[@(LAUNCH_JOBKEY_MACHSERVICES)] = @{
--				jobLabel: @YES
-+				jobLabel: @{ @"ResetAtClose": @YES }
- 			};
-
+@@ -57,7 +58,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
  			NSMutableArray *arguments = [[NSMutableArray alloc] init];
  			[arguments addObject:[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path];
 
@@ -61,7 +54,7 @@ index 6a9151d..1eee3df 100644
  			[arguments addObject:jobLabel];
 
  			// We need to pass the path to ShipIt rather than having ShipIt
-@@ -154,6 +157,17 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
+@@ -154,6 +155,17 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
  				return [RACSignal error:CFBridgingRelease(cfError)];
  			}
 
@@ -79,3 +72,62 @@ index 6a9151d..1eee3df 100644
  			return [RACSignal empty];
  		}]
  		flatten]
+diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
+index acf5451..cffc6c5 100644
+--- a/Squirrel/ShipIt-main.m
++++ b/Squirrel/ShipIt-main.m
+@@ -15,6 +15,8 @@
+
+ #include <spawn.h>
+ #include <sys/wait.h>
++#include <mach/mach.h>
++#include <servers/bootstrap.h>
+
+ #import "NSError+SQRLVerbosityExtensions.h"
+ #import "RACSignal+SQRLTransactionExtensions.h"
+@@ -63,6 +65,22 @@ static BOOL clearInstallationAttempts(NSString *applicationIdentifier) {
+ 	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+ }
+
++// Drain the Mach service port registered via MachServices in the launchd
++// job dictionary. Call before exit(0) so that no unread trigger message
++// remains, which would create standing demand and cause launchd to
++// respawn the job even after a successful exit.
++static void drainMachServicePort(const char *serviceName) {
++	mach_port_t port = MACH_PORT_NULL;
++	kern_return_t kr = bootstrap_check_in(bootstrap_port, serviceName, &port);
++	if (kr != KERN_SUCCESS || port == MACH_PORT_NULL) return;
++
++	struct { mach_msg_header_t header; char body[256]; } msg;
++	while (mach_msg(&msg.header, MACH_RCV_MSG | MACH_RCV_TIMEOUT,
++	                0, sizeof(msg), port, 0, MACH_PORT_NULL) == KERN_SUCCESS) {}
++
++	mach_port_deallocate(mach_task_self(), port);
++}
++
+ // Waits for all instances of the target application (as described in the
+ // `request`) to exit, then sends completed.
+ static RACSignal *waitForTerminationIfNecessary(SQRLShipItRequest *request) {
+@@ -206,12 +224,14 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
+ 			if ([[error domain] isEqual:SQRLInstallerErrorDomain] && [error code] == SQRLInstallerErrorAppStillRunning) {
+ 				NSLog(@"Installation cancelled: %@", error);
+ 				clearInstallationAttempts(applicationIdentifier);
++				drainMachServicePort(applicationIdentifier.UTF8String);
+ 				exit(EXIT_SUCCESS);
+ 			} else {
+ 				NSLog(@"Installation error: %@", error);
+ 				exit(EXIT_FAILURE);
+ 			}
+ 		} completed:^{
++			drainMachServicePort(applicationIdentifier.UTF8String);
+ 			exit(EXIT_SUCCESS);
+ 		}];
+ }
+@@ -249,6 +269,7 @@ int main(int argc, const char * argv[]) {
+ 				NSLog(@"Successfully launched application at %@", shipItStateURL);
+ 			}
+ #pragma clang diagnostic pop
++			drainMachServicePort(jobLabel);
+ 			exit(EXIT_SUCCESS);
+ 		} else {
+ 			NSLog(@"Detected this as an install request");
