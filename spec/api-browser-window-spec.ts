@@ -51,6 +51,9 @@ const isBeforeUnload = (event: Event, level: number, message: string) => {
   return (message === 'beforeunload');
 };
 
+const getViewportSize = (w: BrowserWindow) =>
+  w.webContents.executeJavaScript('[window.innerWidth, window.innerHeight]');
+
 describe('BrowserWindow module', () => {
   it('sets the correct class name on the prototype', () => {
     expect(BrowserWindow.prototype.constructor.name).to.equal('BrowserWindow');
@@ -3079,14 +3082,13 @@ describe('BrowserWindow module', () => {
 
     it('preserves the web content viewport after setting vibrancy', async () => {
       const w = new BrowserWindow({ show: true, width: 800, height: 600 });
-      const getViewportSize = () => w.webContents.executeJavaScript('[window.innerWidth, window.innerHeight]');
 
       await w.loadURL('about:blank');
       const contentSize = w.getContentSize();
-      expect(await getViewportSize()).to.deep.equal(contentSize);
+      expect(await getViewportSize(w)).to.deep.equal(contentSize);
 
       w.setVibrancy('titlebar');
-      expect(await getViewportSize()).to.deep.equal(contentSize);
+      expect(await getViewportSize(w)).to.deep.equal(contentSize);
     });
   });
 
@@ -3387,11 +3389,9 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('matches content bounds', async () => {
       const w = new BrowserWindow({ show: true, width: 800, height: 600 });
-      const getViewportSize = () => w.webContents.executeJavaScript('[window.innerWidth, window.innerHeight]');
 
       await w.loadURL('about:blank');
-
-      expect(await getViewportSize()).to.deep.equal(w.getContentSize());
+      expect(await getViewportSize(w)).to.deep.equal(w.getContentSize());
     });
   });
 
