@@ -3076,6 +3076,22 @@ describe('BrowserWindow module', () => {
         w.setVibrancy('i-am-not-a-valid-vibrancy-type' as any);
       }).to.not.throw();
     });
+
+    it('preserves the web content viewport after setting vibrancy', async () => {
+      const w = new BrowserWindow({ show: true, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+
+      const contentSize = w.getContentSize();
+      const getViewportSize = () => w.webContents.executeJavaScript('[window.innerWidth, window.innerHeight]');
+
+      const before = await getViewportSize();
+      expect(before).to.deep.equal(contentSize);
+
+      w.setVibrancy('titlebar');
+
+      const after = await getViewportSize();
+      expect(after).to.deep.equal(contentSize);
+    });
   });
 
   ifdescribe(process.platform === 'darwin')('trafficLightPosition', () => {
