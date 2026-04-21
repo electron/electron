@@ -231,7 +231,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
       - name: Find Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/find-project@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
+        uses: dsanders11/project-actions/find-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         id: find-prev-release-board
         with:
           fail-if-project-not-found: false
@@ -239,7 +239,7 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
       - name: Close Previous Release Project Board
         if: ${{ steps.find-prev-release-board.outputs.number }}
-        uses: dsanders11/project-actions/close-project@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
+        uses: dsanders11/project-actions/close-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         with:
           project-number: ${{ steps.find-prev-release-board.outputs.number }}
           token: ${{ steps.generate-token.outputs.token }}

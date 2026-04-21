@@ -20,7 +20,7 @@ jobs:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Remove from issue triage
-        uses: dsanders11/project-actions/delete-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
+        uses: dsanders11/project-actions/delete-item@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 90
