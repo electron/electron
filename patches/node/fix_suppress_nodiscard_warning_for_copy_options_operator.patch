@@ -7,10 +7,10 @@ libc++ added [[nodiscard]] to std::filesystem::copy_options operator|=
 which causes build failures with -Werror.
 
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 547455bb5011677719a8de1f98cb447561bce6aa..385db5fd6fe5db6bb7ff17e98309b6cd605a82d3 100644
+index 56b6cd5c39d5e72efd24b7aba1f28dab91a6144e..adac1a04793cc9876c46a508e5c6e5241697311c 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3460,11 +3460,11 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
+@@ -3501,11 +3501,11 @@ static void CpSyncCopyDir(const FunctionCallbackInfo<Value>& args) {
  
    auto file_copy_opts = std::filesystem::copy_options::recursive;
    if (force) {

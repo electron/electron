@@ -337,10 +337,10 @@ index 141e51d1ab74a4fc3b176b303807fb1cf2a58ce1..ba4fc881aa72ba7c39e8ae227a08be0e
      assert.throws(() => {
        publicKey.toCryptoKey(algorithm === 'Ed25519' ? 'X25519' : 'Ed25519', true, []);
 diff --git a/test/parallel/test-crypto-key-objects.js b/test/parallel/test-crypto-key-objects.js
-index e8359ed6d0362c6e8da8be08b0fd42245fa7ae47..bd8211d98261a1acc928e849bf713578c85ff877 100644
+index 6c1c3fd3afa448f4a84da6c33873bb2a7a1d6c31..257c34b13995b54c9bd4ec5ffb2e2ba7d0f915f1 100644
 --- a/test/parallel/test-crypto-key-objects.js
 +++ b/test/parallel/test-crypto-key-objects.js
-@@ -302,11 +302,11 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -319,11 +319,11 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
    }, hasOpenSSL3 ? {
      message: 'error:1E08010C:DECODER routines::unsupported',
    } : {
@@ -355,7 +355,7 @@ index e8359ed6d0362c6e8da8be08b0fd42245fa7ae47..bd8211d98261a1acc928e849bf713578
    });
  
    // This should not abort either: https://github.com/nodejs/node/issues/29904
-@@ -329,12 +329,12 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -346,12 +346,12 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
      message: /error:1E08010C:DECODER routines::unsupported/,
      library: 'DECODER routines'
    } : {
@@ -371,7 +371,7 @@ index e8359ed6d0362c6e8da8be08b0fd42245fa7ae47..bd8211d98261a1acc928e849bf713578
    { private: fixtures.readKey('ed25519_private.pem', 'ascii'),
      public: fixtures.readKey('ed25519_public.pem', 'ascii'),
      keyType: 'ed25519',
-@@ -344,17 +344,6 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -361,17 +361,6 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
        d: 'wVK6M3SMhQh3NK-7GRrSV-BVWQx1FO5pW8hhQeu_NdA',
        kty: 'OKP'
      } },
@@ -389,7 +389,7 @@ index e8359ed6d0362c6e8da8be08b0fd42245fa7ae47..bd8211d98261a1acc928e849bf713578
    { private: fixtures.readKey('x25519_private.pem', 'ascii'),
      public: fixtures.readKey('x25519_public.pem', 'ascii'),
      keyType: 'x25519',
-@@ -364,18 +353,37 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -381,18 +370,37 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
        d: 'mL_IWm55RrALUGRfJYzw40gEYWMvtRkesP9mj8o8Omc',
        kty: 'OKP'
      } },
@@ -432,7 +432,7 @@ index e8359ed6d0362c6e8da8be08b0fd42245fa7ae47..bd8211d98261a1acc928e849bf713578
    const keyType = info.keyType;
  
    {
-@@ -417,7 +425,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -461,7 +469,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
    }
  });
  
@@ -441,7 +441,7 @@ index e8359ed6d0362c6e8da8be08b0fd42245fa7ae47..bd8211d98261a1acc928e849bf713578
    { private: fixtures.readKey('ec_p256_private.pem', 'ascii'),
      public: fixtures.readKey('ec_p256_public.pem', 'ascii'),
      keyType: 'ec',
-@@ -429,17 +437,6 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -473,17 +481,6 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
        x: 'X0mMYR_uleZSIPjNztIkAS3_ud5LhNpbiIFp6fNf2Gs',
        y: 'UbJuPy2Xi0lW7UYTBxPK3yGgDu9EAKYIecjkHX5s2lI'
      } },
@@ -459,7 +459,7 @@ index e8359ed6d0362c6e8da8be08b0fd42245fa7ae47..bd8211d98261a1acc928e849bf713578
    { private: fixtures.readKey('ec_p384_private.pem', 'ascii'),
      public: fixtures.readKey('ec_p384_public.pem', 'ascii'),
      keyType: 'ec',
-@@ -465,7 +462,25 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -509,7 +506,25 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
        y: 'Ad3flexBeAfXceNzRBH128kFbOWD6W41NjwKRqqIF26vmgW_8COldGKZjFkOSEASxPB' +
           'cvA2iFJRUyQ3whC00j0Np'
      } },
@@ -486,7 +486,7 @@ index e8359ed6d0362c6e8da8be08b0fd42245fa7ae47..bd8211d98261a1acc928e849bf713578
    const { keyType, namedCurve } = info;
  
    {
-@@ -540,7 +555,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -623,7 +638,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
      format: 'pem',
      passphrase: Buffer.alloc(1024, 'a')
    }), {
@@ -495,7 +495,7 @@ index e8359ed6d0362c6e8da8be08b0fd42245fa7ae47..bd8211d98261a1acc928e849bf713578
    });
  
    const publicKey = createPublicKey(publicDsa);
-@@ -566,7 +581,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -649,7 +664,7 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
  
  {
    // Test RSA-PSS.
@@ -504,7 +504,7 @@ index e8359ed6d0362c6e8da8be08b0fd42245fa7ae47..bd8211d98261a1acc928e849bf713578
      // This key pair does not restrict the message digest algorithm or salt
      // length.
      const publicPem = fixtures.readKey('rsa_pss_public_2048.pem');
-@@ -625,6 +640,8 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
+@@ -708,6 +723,8 @@ const privateDsa = fixtures.readKey('dsa_private_encrypted_1025.pem',
      }, {
        code: 'ERR_CRYPTO_INCOMPATIBLE_KEY_OPTIONS'
      });
@@ -544,7 +544,7 @@ index 75cb4800ff1bd51fedd7bc4e2d7e6af6f4f48346..b4363c31592763235116d970a5f45d4c
  {
    // Default outputLengths.
 diff --git a/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js b/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
-index 37eab463deae472a78102c9fc6e03d4b642854ce..99e8c47702c55a9518ff093a58d87c753bec3aa8 100644
+index aef1012098fbb95d009093b27dbf204420f74269..99761be00162ed4e7b9c9b536e2d8861f185d687 100644
 --- a/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
 +++ b/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
 @@ -4,6 +4,10 @@ const common = require('../common');
@@ -612,7 +612,7 @@ index eafdfe392bde8eb1fde1dc7e7e9ae51682c74b87..2907e0175379266c90acb9df829d1028
    };
    assert.throws(() => crypto.scrypt('pass', 'salt', 1, options, () => {}),
 diff --git a/test/parallel/test-crypto-sign-verify.js b/test/parallel/test-crypto-sign-verify.js
-index a66f0a94efd7c952c1d2320fbc7a39fe3a88a8a1..dc5846db0e3dcf8f7cb5f7efcdbc81c1d767ab88 100644
+index 1900f244b8491ae422963a5145663ea20e55ce27..cf7f641710c26e2ae42af34b6379e15627428bb1 100644
 --- a/test/parallel/test-crypto-sign-verify.js
 +++ b/test/parallel/test-crypto-sign-verify.js
 @@ -33,7 +33,7 @@ const keySize = 2048;
@@ -646,21 +646,22 @@ index a66f0a94efd7c952c1d2320fbc7a39fe3a88a8a1..dc5846db0e3dcf8f7cb5f7efcdbc81c1
    });
  }
  
-@@ -423,11 +423,13 @@ assert.throws(
-     public: fixtures.readKey('ed25519_public.pem', 'ascii'),
+@@ -424,12 +424,14 @@ assert.throws(
      algo: null,
-     sigLen: 64 },
+     sigLen: 64,
+     raw: true },
 +  /*
    { private: fixtures.readKey('ed448_private.pem', 'ascii'),
      public: fixtures.readKey('ed448_public.pem', 'ascii'),
      algo: null,
      supportsContext: true,
-     sigLen: 114 },
+     sigLen: 114,
+     raw: true },
 +    */
    { private: fixtures.readKey('rsa_private_2048.pem', 'ascii'),
      public: fixtures.readKey('rsa_public_2048.pem', 'ascii'),
      algo: 'sha1',
-@@ -547,7 +549,7 @@ assert.throws(
+@@ -573,7 +575,7 @@ assert.throws(
  
  {
    const data = Buffer.from('Hello world');
@@ -726,10 +727,10 @@ index d21a6bd3d98d6db26cc82896e62da2869cf22842..21c46682f548e299a51409454f2bca34
  // Make sure memory isn't released before being returned
  console.log(crypto.randomBytes(16));
 diff --git a/test/parallel/test-tls-client-auth.js b/test/parallel/test-tls-client-auth.js
-index 04bf40b9a9e1ac6b92e98e3c4201c3e6e427d70c..495a7590be29370900659d1385afcbbb99a1fbf8 100644
+index 67aed40914c9fe87b654e28be942a530ec8ecd92..aac870c3075bc8d52543912ba41b5a1e9424480f 100644
 --- a/test/parallel/test-tls-client-auth.js
 +++ b/test/parallel/test-tls-client-auth.js
-@@ -110,7 +110,7 @@ if (tls.DEFAULT_MAX_VERSION === 'TLSv1.3') connect({
+@@ -111,7 +111,7 @@ if (tls.DEFAULT_MAX_VERSION === 'TLSv1.3') connect({
    // and sends a fatal Alert to the client that the client discovers there has
    // been a fatal error.
    pair.client.conn.once('error', common.mustCall((err) => {
@@ -805,10 +806,10 @@ index 53fcc0b16b5bd6f50c334fb7cc5671e31c1546b9..da428f1320e9e7bd1683724806a7438e
          client.end();
          server.close();
 diff --git a/test/parallel/test-tls-set-sigalgs.js b/test/parallel/test-tls-set-sigalgs.js
-index 985ca13ba2ac7d58f87c263c7654c4f4087efddf..21c199bdb12739f82a075c4e10e08faf8c587cf4 100644
+index 1bce814f3e86042901395bc72afc0ccdfb840eee..ef2719a88685240a813541187e4f1a1ef7eb242d 100644
 --- a/test/parallel/test-tls-set-sigalgs.js
 +++ b/test/parallel/test-tls-set-sigalgs.js
-@@ -65,13 +65,14 @@ test('RSA-PSS+SHA256:RSA-PSS+SHA512:ECDSA+SHA256',
+@@ -65,14 +65,15 @@ test('RSA-PSS+SHA256:RSA-PSS+SHA512:ECDSA+SHA256',
       'RSA-PSS+SHA256:ECDSA+SHA256',
       ['RSA-PSS+SHA256', 'ECDSA+SHA256']);
  
@@ -816,8 +817,9 @@ index 985ca13ba2ac7d58f87c263c7654c4f4087efddf..21c199bdb12739f82a075c4e10e08faf
 +  'ERR_SSL_NO_COMMON_SIGNATURE_ALGORITHMS' : 'ERR_SSL_NO_SHARED_SIGNATURE_ALGORITHMS';
 +
  // Do not have shared sigalgs.
- const handshakeErr = hasOpenSSL(3, 2) ?
-   'ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE' : 'ERR_SSL_SSLV3_ALERT_HANDSHAKE_FAILURE';
+ const handshakeErr = hasOpenSSL(4, 0) ?
+   'ERR_SSL_TLS_ALERT_HANDSHAKE_FAILURE' : hasOpenSSL(3, 2) ?
+     'ERR_SSL_SSL/TLS_ALERT_HANDSHAKE_FAILURE' : 'ERR_SSL_SSLV3_ALERT_HANDSHAKE_FAILURE';
  test('RSA-PSS+SHA384', 'ECDSA+SHA256',
 -     undefined, handshakeErr,
 -     'ERR_SSL_NO_SHARED_SIGNATURE_ALGORITHMS');

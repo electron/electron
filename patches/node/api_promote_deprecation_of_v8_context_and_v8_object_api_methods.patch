@@ -44,7 +44,7 @@ index 37d83e41b618a07aca98118260abe9618f11256d..26d5c1bd3c8191fce1d22b969996b6bf
  
  template <typename T>
 diff --git a/src/base_object.cc b/src/base_object.cc
-index 404e2aa8c88d0cc0e6717c01e0df68899c64cc32..16462f305a2ac6b6c3d7b85024f2e52648c4300c 100644
+index 8a14a8c32626f98c2afa402786e1b6b2fbbb0988..946e60ea2d0ffe984328185a0e7762603be8e0dd 100644
 --- a/src/base_object.cc
 +++ b/src/base_object.cc
 @@ -45,7 +45,8 @@ BaseObject::~BaseObject() {
@@ -72,7 +72,7 @@ index 777335321fc9037d91d88fb5852bbf5b05f50d0a..3dceb8b5448fd4971245f7408db4cae1
  
  inline Environment* Environment::GetCurrent(
 diff --git a/src/histogram.cc b/src/histogram.cc
-index 836a51b0e5aa4b1910604537c8b380038c27a7db..c4634e42fd2e5a27b0139a9b1716bc04875be469 100644
+index 2bcfcbdd9547db136c5992335a76dd3190886d6d..c34a83c9ccc83ec2973228a32cf0a51d29b4d681 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
 @@ -136,7 +136,8 @@ HistogramBase::HistogramBase(
@@ -116,7 +116,7 @@ index 836a51b0e5aa4b1910604537c8b380038c27a7db..c4634e42fd2e5a27b0139a9b1716bc04
  
  std::unique_ptr<worker::TransferData>
 diff --git a/src/js_udp_wrap.cc b/src/js_udp_wrap.cc
-index 51e4f8c45ffd38fcf925ab8d283b3b88f2a35832..0c30c8b4609e4870c0ccfc5e9e465248c20763b8 100644
+index 6b35871d92ceb1b1eead21e328088cf87a10fa6e..57c96645fa0fdb7ed77c0a36c877b2628b7f0571 100644
 --- a/src/js_udp_wrap.cc
 +++ b/src/js_udp_wrap.cc
 @@ -55,8 +55,9 @@ JSUDPWrap::JSUDPWrap(Environment* env, Local<Object> obj)
@@ -207,10 +207,10 @@ index 0af487a9abc9ee1783367ac86b0016ab89e02006..c01cef477aaba52f9894943acede7fb2
  
  inline Realm* Realm::GetCurrent(
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index e34d24d51d5c090b560d06f727043f20924e6f46..07615933c858a17515836a29f7e27ace4b81e6ff 100644
+index c3e995adf437413fe956e45c2ccc704d8737de59..8561933060ac30e3559d7ce2ac633d25f1e4d6ec 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
-@@ -1400,7 +1400,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
+@@ -1461,7 +1461,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
    // For the moment we do not set any internal fields in ArrayBuffer
    // or ArrayBufferViews, so just return nullptr.
    if (holder->IsArrayBuffer() || holder->IsArrayBufferView()) {
@@ -220,7 +220,7 @@ index e34d24d51d5c090b560d06f727043f20924e6f46..07615933c858a17515836a29f7e27ace
      return StartupData{nullptr, 0};
    }
  
-@@ -1420,7 +1421,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
+@@ -1481,7 +1482,8 @@ StartupData SerializeNodeContextInternalFields(Local<Object> holder,
                       *holder);
  
    BaseObject* object_ptr = static_cast<BaseObject*>(
@@ -296,7 +296,7 @@ index 29a4c29f3d3822394d23c453899cdd6aae280f3f..2a953d6390d5e4e251e54c1e847d4e5e
  
  }  // namespace node
 diff --git a/src/udp_wrap.cc b/src/udp_wrap.cc
-index 150ef0f0400bed9df4f4b1a4c20ec4045ef7a5f6..2ca2ac177c6b5edc3b40712a40ff4a36e96904dc 100644
+index 6f3e68b79f1c7089b8c17a6ed5cd33eee4078b02..e09cd7a553464060619ecf4ac51e028382e2e148 100644
 --- a/src/udp_wrap.cc
 +++ b/src/udp_wrap.cc
 @@ -126,8 +126,8 @@ void UDPWrapBase::set_listener(UDPListener* listener) {
