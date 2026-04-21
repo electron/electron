@@ -62,6 +62,51 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(ok).to.be.true(message);
   });
 
+  it('includes preferredDisplaySurface in the request object', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let mediaRequest: any = null;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      mediaRequest = request;
+      callback({ video: request.frame });
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(
+      `
+      navigator.mediaDevices.getDisplayMedia({
+        video: { displaySurface: 'monitor' },
+        audio: false,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `,
+      true
+    );
+    expect(ok).to.be.true(message);
+    expect(mediaRequest.preferredDisplaySurface).to.be.a('string');
+    expect(mediaRequest.preferredDisplaySurface).to.equal('monitor');
+  });
+
+  it('defaults preferredDisplaySurface to none when not specified', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let mediaRequest: any = null;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      mediaRequest = request;
+      callback({ video: request.frame });
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(
+      `
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `,
+      true
+    );
+    expect(ok).to.be.true(message);
+    expect(mediaRequest.preferredDisplaySurface).to.equal('none');
+  });
+
   it('does not crash when using a bogus ID', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;

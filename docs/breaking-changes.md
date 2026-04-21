@@ -14,6 +14,15 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (43.0)
 
+### Deprecated: `desktopCapturer.getSources()`
+
+The `desktopCapturer.getSources()` API has been deprecated. Applications should use
+[`session.setDisplayMediaRequestHandler`](api/session.md#sessetdisplaymediarequesthandlerhandler-opts)
+instead, which aligns with the web-standard `navigator.mediaDevices.getDisplayMedia()` API.
+
+See the [migration guide](api/desktop-capturer.md#migrating-from-getsources-to-setdisplaymediarequesthandler)
+for detailed instructions and examples.
+
 ### Behavior Changed: Dialog methods default to Downloads directory
 
 The `defaultPath` option for the following methods now defaults to the user's Downloads folder (or their home directory if Downloads doesn't exist) when not explicitly provided:

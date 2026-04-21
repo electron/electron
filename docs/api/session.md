@@ -1010,22 +1010,18 @@ via the `navigator.mediaDevices.getDisplayMedia` API. Use the
 [desktopCapturer](desktop-capturer.md) API to choose which stream(s) to grant
 access to.
 
-`useSystemPicker` allows an application to use the system picker instead of providing a specific video source from `getSources`.
+`useSystemPicker` allows an application to use the native OS picker instead of providing a specific video source from the handler callback.
 This option is experimental, and currently available for MacOS 15+ only. If the system picker is available and `useSystemPicker`
 is set to `true`, the handler will not be invoked.
 
 ```js
-const { session, desktopCapturer } = require('electron')
+const { session } = require('electron')
 
 session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-  desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-    // Grant access to the first screen found.
-    callback({ video: sources[0] })
-  })
-  // Use the system picker if available.
-  // Note: this is currently experimental. If the system picker
-  // is available, it will be used and the media request handler
-  // will not be invoked.
+  // Allow the tab to capture itself.
+  callback({ video: request.frame })
+  // On macOS 15+, use the native system picker if available.
+  // When the system picker is used, the handler will not be invoked.
 }, { useSystemPicker: true })
 ```
 
