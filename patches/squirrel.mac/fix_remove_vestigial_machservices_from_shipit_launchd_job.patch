@@ -17,15 +17,21 @@ MachServices registration was left behind, creating a trigger that
 launchd waits on but nothing ever fires.
 
 Fix: after SMJobSubmit, open a lightweight XPC connection to the
-registered Mach service name. This satisfies launchd's on-demand trigger
-and causes it to start ShipIt immediately. In normal operation (no
-pending update), the job starts via KeepAlive anyway and the trigger
-is a harmless no-op. Critically, unlike launchctl kickstart,
-this approach preserves KeepAlive.SuccessfulExit respawn behavior
-because launchd treats the activation as a legitimate on-demand event.
+registered Mach service name and send an empty message. This satisfies
+launchd's on-demand trigger and causes it to start ShipIt immediately.
+In normal operation (no pending update), the job starts via KeepAlive
+anyway and the trigger is a harmless no-op. Unlike launchctl kickstart,
+this preserves KeepAlive.SuccessfulExit respawn behavior because launchd
+treats the activation as a legitimate on-demand event.
+
+Additionally, set ResetAtClose on the MachServices registration so
+launchd tears down and recreates the port when ShipIt exits. Without
+this, the unread trigger message would remain in the port's kernel
+queue, creating standing demand that causes launchd to respawn ShipIt
+after a successful exit(0) — defeating KeepAlive.SuccessfulExit = NO.
 
 diff --git a/Squirrel/SQRLShipItLauncher.m b/Squirrel/SQRLShipItLauncher.m
-index 6a9151d92f399184fff9854eb00ea506165bbbe2..58932ff0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6 100644
+index 6a9151d..1eee3df 100644
 --- a/Squirrel/SQRLShipItLauncher.m
 +++ b/Squirrel/SQRLShipItLauncher.m
 @@ -10,6 +10,7 @@
@@ -36,7 +42,17 @@ index 6a9151d92f399184fff9854eb00ea506165bbbe2..58932ff0a1b2c3d4e5f6a7b8c9d0e1f2
  #import <Security/Security.h>
  #import <ServiceManagement/ServiceManagement.h>
  #import <launch.h>
-@@ -57,7 +58,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
+@@ -50,14 +51,16 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
+ 				@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
+ 			};
+
++			// ResetAtClose flushes the port on exit so a stale trigger
++			// message does not create standing demand after exit(0).
+ 			jobDict[@(LAUNCH_JOBKEY_MACHSERVICES)] = @{
+-				jobLabel: @YES
++				jobLabel: @{ @"ResetAtClose": @YES }
+ 			};
+
  			NSMutableArray *arguments = [[NSMutableArray alloc] init];
  			[arguments addObject:[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path];
 
@@ -45,7 +61,7 @@ index 6a9151d92f399184fff9854eb00ea506165bbbe2..58932ff0a1b2c3d4e5f6a7b8c9d0e1f2
  			[arguments addObject:jobLabel];
 
  			// We need to pass the path to ShipIt rather than having ShipIt
-@@ -154,6 +155,17 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
+@@ -154,6 +157,17 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
  				return [RACSignal error:CFBridgingRelease(cfError)];
  			}
 
