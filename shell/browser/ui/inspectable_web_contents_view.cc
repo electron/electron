@@ -23,6 +23,16 @@
 #include "ui/views/window/client_view.h"
 
 namespace electron {
+namespace {
+
+void FlushPendingRootLayout(views::View* view) {
+  view->InvalidateLayout();
+
+  if (views::Widget* widget = view->GetWidget())
+    widget->LayoutRootViewIfNecessary();
+}
+
+}  // namespace
 
 class DevToolsWindowDelegate : public views::ClientView,
                                public views::WidgetDelegate {
@@ -135,7 +145,7 @@ void InspectableWebContentsView::ShowDevTools(bool activate) {
     devtools_web_view_->SetWebContents(
         inspectable_web_contents_->GetDevToolsWebContents());
     devtools_web_view_->RequestFocus();
-    InvalidateLayout();
+    FlushPendingRootLayout(this);
   }
 }
 
@@ -173,7 +183,7 @@ void InspectableWebContentsView::CloseDevTools() {
   } else {
     devtools_web_view_->SetVisible(false);
     devtools_web_view_->SetWebContents(nullptr);
-    InvalidateLayout();
+    FlushPendingRootLayout(this);
   }
 }
 
@@ -223,7 +233,7 @@ void InspectableWebContentsView::SetIsDocked(bool docked, bool activate) {
 void InspectableWebContentsView::SetContentsResizingStrategy(
     const DevToolsContentsResizingStrategy& strategy) {
   strategy_.CopyFrom(strategy);
-  InvalidateLayout();
+  FlushPendingRootLayout(this);
 }
 
 void InspectableWebContentsView::SetTitle(const std::u16string& title) {
