@@ -104,7 +104,7 @@ describe('cpp heap', () => {
           const canTraceJSReferences = containsRetainingPath(state.snapshot, [
             'C++ Persistent roots',
             'Electron / Session',
-            'Cookies'
+            'Electron / Cookies'
           ]);
           return numSessions && canTraceJSReferences;
         },
@@ -112,6 +112,56 @@ describe('cpp heap', () => {
         path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true);
+    });
+  });
+
+  describe('cookies module', () => {
+    it('should return the same Cookies instance for the same session', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const result = await remotely(async () => {
+        const { session } = require('electron');
+        const ses = session.fromPartition('cookies-identity');
+        const cookies1 = ses.cookies;
+        const cookies2 = ses.cookies;
+        return cookies1 === cookies2;
+      });
+      expect(result).to.equal(true, 'cookies getter should return the same instance');
+    });
+
+    it('should survive GC when only referenced through session', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { session } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          // Access cookies to create the C++ object, then drop the JS reference.
+          const ses = session.defaultSession;
+          let cookies: any = ses.cookies;
+          await cookies.get({});
+          cookies = null;
+
+          // Force GC — the Cookies object should survive because
+          // Session traces it via cppgc::Member.
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const stillAlive = containsRetainingPath(state.snapshot, [
+            'C++ Persistent roots',
+            'Electron / Session',
+            'Electron / Cookies'
+          ]);
+          return stillAlive;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'Cookies should survive GC when traced from Session');
     });
   });
 
