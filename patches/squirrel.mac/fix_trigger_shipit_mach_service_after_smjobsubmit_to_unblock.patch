@@ -28,13 +28,14 @@ The trigger message stays in the Mach port's kernel queue (ShipIt has
 no XPC listener), which creates standing demand that provides the
 on-demand activity needed for KeepAlive retries in on-demand-only mode.
 To prevent this standing demand from also respawning ShipIt after a
-successful exit(0), ShipIt now drains its Mach service port before each
-exit(EXIT_SUCCESS) via bootstrap_check_in + mach_msg. On failure exits,
-the message is left in place so launchd treats the KeepAlive respawn as
-demand-backed.
+successful exit(0), ShipIt claims the Mach service port via
+bootstrap_check_in before each exit(EXIT_SUCCESS); process exit then
+destroys the receive right and every queued message with it, and launchd
+recreates a fresh empty port. On failure exits, the message is left in
+place so launchd treats the KeepAlive respawn as demand-backed.
 
 diff --git a/Squirrel/SQRLShipItLauncher.m b/Squirrel/SQRLShipItLauncher.m
-index 6a9151d92f399184fff9854eb00ea506165bbbe2..58932ff961311ba59670a5974f6026a2775c7ecb 100644
+index 6a9151d92f399184fff9854eb00ea506165bbbe2..a087f20043fa79a07391ed065031396d7ec6fce4 100644
 --- a/Squirrel/SQRLShipItLauncher.m
 +++ b/Squirrel/SQRLShipItLauncher.m
 @@ -10,6 +10,7 @@
@@ -54,26 +55,32 @@ index 6a9151d92f399184fff9854eb00ea506165bbbe2..58932ff961311ba59670a5974f6026a2
  			[arguments addObject:jobLabel];
  
  			// We need to pass the path to ShipIt rather than having ShipIt
-@@ -154,6 +155,17 @@ + (RACSignal *)launchPrivileged:(BOOL)privileged {
+@@ -154,6 +155,23 @@ + (RACSignal *)launchPrivileged:(BOOL)privileged {
  				return [RACSignal error:CFBridgingRelease(cfError)];
  			}
  
-+			// Trigger on-demand launch by connecting to the Mach service.
-+			// When macOS has a pending system update, launchd puts the user
-+			// domain in on-demand-only mode and won't start jobs unless
-+			// an on-demand event (like a Mach port connection) fires.
-+			xpc_connection_t trigger = xpc_connection_create_mach_service(self.shipItJobLabel.UTF8String, NULL, 0);
-+			if (trigger) {
++			// Trigger an on-demand launch by sending a message to the job's
++			// Mach service. When loginwindow begins a restart (e.g. for a
++			// pending macOS update) it puts the per-user launchd domain into
++			// on-demand-only mode, which defers RunAtLoad/KeepAlive spawns
++			// but still honors real IPC demand. The system domain is not
++			// affected, so this is only needed for the unprivileged path.
++			if (!privileged) {
++				xpc_connection_t trigger = xpc_connection_create_mach_service(self.shipItJobLabel.UTF8String, NULL, 0);
 +				xpc_connection_set_event_handler(trigger, ^(xpc_object_t __unused event) {});
 +				xpc_connection_resume(trigger);
 +				xpc_connection_send_message(trigger, xpc_dictionary_create(NULL, NULL, 0));
++				// send_message is async; keep the connection alive until the
++				// message is actually on the wire so ARC releasing `trigger`
++				// at end-of-scope can't drop it first.
++				xpc_connection_send_barrier(trigger, ^{ (void)trigger; });
 +			}
 +
  			return [RACSignal empty];
  		}]
  		flatten]
 diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
-index acf545199dbf1831fe8a73155c6e4d0db4047934..cffc6c5b9c714d955e84d7267f7bd5854171b08c 100644
+index acf545199dbf1831fe8a73155c6e4d0db4047934..0bb33129524391d821e1e7077568d4b8eaa664db 100644
 --- a/Squirrel/ShipIt-main.m
 +++ b/Squirrel/ShipIt-main.m
 @@ -15,6 +15,8 @@
@@ -85,30 +92,26 @@ index acf545199dbf1831fe8a73155c6e4d0db4047934..cffc6c5b9c714d955e84d7267f7bd585
  
  #import "NSError+SQRLVerbosityExtensions.h"
  #import "RACSignal+SQRLTransactionExtensions.h"
-@@ -63,6 +65,22 @@ static BOOL clearInstallationAttempts(NSString *applicationIdentifier) {
+@@ -63,6 +65,18 @@ static BOOL clearInstallationAttempts(NSString *applicationIdentifier) {
  	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
  }
  
-+// Drain the Mach service port registered via MachServices in the launchd
-+// job dictionary. Call before exit(0) so that no unread trigger message
-+// remains, which would create standing demand and cause launchd to
-+// respawn the job even after a successful exit.
++// Claim the Mach service port registered via MachServices in the launchd
++// job dictionary so that any queued trigger message is destroyed when we
++// exit(0). bootstrap_check_in transfers the receive right into this task;
++// process exit then destroys that right along with every queued message,
++// and launchd recreates a fresh, empty port. Without this, the unread
++// trigger message would remain as standing demand and launchd would
++// respawn the job immediately after a successful exit.
 +static void drainMachServicePort(const char *serviceName) {
 +	mach_port_t port = MACH_PORT_NULL;
-+	kern_return_t kr = bootstrap_check_in(bootstrap_port, serviceName, &port);
-+	if (kr != KERN_SUCCESS || port == MACH_PORT_NULL) return;
-+
-+	struct { mach_msg_header_t header; char body[256]; } msg;
-+	while (mach_msg(&msg.header, MACH_RCV_MSG | MACH_RCV_TIMEOUT,
-+	                0, sizeof(msg), port, 0, MACH_PORT_NULL) == KERN_SUCCESS) {}
-+
-+	mach_port_deallocate(mach_task_self(), port);
++	(void)bootstrap_check_in(bootstrap_port, serviceName, &port);
 +}
 +
  // Waits for all instances of the target application (as described in the
  // `request`) to exit, then sends completed.
  static RACSignal *waitForTerminationIfNecessary(SQRLShipItRequest *request) {
-@@ -206,12 +224,14 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
+@@ -206,12 +220,14 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
  			if ([[error domain] isEqual:SQRLInstallerErrorDomain] && [error code] == SQRLInstallerErrorAppStillRunning) {
  				NSLog(@"Installation cancelled: %@", error);
  				clearInstallationAttempts(applicationIdentifier);
@@ -123,11 +126,3 @@ index acf545199dbf1831fe8a73155c6e4d0db4047934..cffc6c5b9c714d955e84d7267f7bd585
  			exit(EXIT_SUCCESS);
  		}];
  }
-@@ -249,6 +269,7 @@ int main(int argc, const char * argv[]) {
- 				NSLog(@"Successfully launched application at %@", shipItStateURL);
- 			}
- #pragma clang diagnostic pop
-+			drainMachServicePort(jobLabel);
- 			exit(EXIT_SUCCESS);
- 		} else {
- 			NSLog(@"Detected this as an install request");
