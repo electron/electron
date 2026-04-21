@@ -13,6 +13,7 @@ permissions: {}
 jobs:
   check-signed-commits:
     name: Check signed commits in PR
+    if: github.event.pull_request.state == 'open'
     runs-on: ubuntu-slim
     permissions:
       contents: read
