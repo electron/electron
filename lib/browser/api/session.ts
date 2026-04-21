@@ -7,20 +7,21 @@ import { net } from 'electron/main';
 const { fromPartition, fromPath, Session } = process._linkedBinding('electron_browser_session');
 const { isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
 
-// Fake video window that activates the native system picker
-// This is used to get around the need for a screen/window
-// id in Chrome's desktopCapturer.
-let fakeVideoWindowId = -1;
-// See content/public/browser/desktop_media_id.h
+// Generates a source that triggers the native macOS SCContentSharingPicker.
+// The magic ID kMacOsNativePickerId (-4) is recognized by the Chromium
+// content layer (see content/public/browser/desktop_media_id.h) and routes
+// to ScreenCaptureKitDeviceMac which presents the native picker.
+// Each request needs a unique window_id so Chromium treats them as distinct
+// streams (it deduplicates by DesktopMediaID).
+let nextNativePickerWindowId = -1;
 const kMacOsNativePickerId = -4;
-const systemPickerVideoSource = Object.create(null);
-Object.defineProperty(systemPickerVideoSource, 'id', {
-  get() {
-    return `window:${kMacOsNativePickerId}:${fakeVideoWindowId--}`;
-  }
-});
-systemPickerVideoSource.name = '';
-Object.freeze(systemPickerVideoSource);
+
+function createNativePickerSource () {
+  return {
+    id: `window:${kMacOsNativePickerId}:${nextNativePickerWindowId--}`,
+    name: ''
+  };
+}
 
 Session.prototype._init = function () {
   addIpcDispatchListeners(this);
@@ -50,7 +51,9 @@ Session.prototype.setDisplayMediaRequestHandler = function (handler, opts) {
 
   this._setDisplayMediaRequestHandler(async (req, callback) => {
     if (opts && opts.useSystemPicker && isDisplayMediaSystemPickerAvailable()) {
-      return callback({ video: systemPickerVideoSource });
+      // On macOS 15+, use the native SCContentSharingPicker. This bypasses
+      // the JS handler and lets the OS present its own picker UI.
+      return callback({ video: createNativePickerSource() });
     }
 
     return handler(req, callback);
