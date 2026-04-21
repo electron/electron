@@ -125,6 +125,12 @@ ElectronExtensionsBrowserClient::GetContextRedirectedToOriginal(
   return GetOriginalContext(context);
 }
 
+content::BrowserContext* ElectronExtensionsBrowserClient::
+    GetContextRedirectedToOriginalWithoutAshInternals(
+        content::BrowserContext* context) {
+  return GetOriginalContext(context);
+}
+
 content::BrowserContext* ElectronExtensionsBrowserClient::GetContextOwnInstance(
     content::BrowserContext* context) {
   return context;
