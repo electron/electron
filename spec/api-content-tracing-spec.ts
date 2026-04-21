@@ -9,6 +9,7 @@ import { setTimeout } from 'node:timers/promises';
 
 import { ifdescribe, ifit, startRemoteControlApp } from './lib/spec-helpers';
 
+const isCI = !!process.env.CI;
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 // FIXME: The tests are skipped on linux arm/arm64
@@ -169,12 +170,21 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
     });
   });
 
-  describe.skip('enableHeapProfiling', () => {
+  describe('enableHeapProfiling', function () {
+    const enableHeapProfilingTestTimeout = 120000;
+
+    this.timeout(enableHeapProfilingTestTimeout);
+
     const checkForHeapDumps = async (options?: EnableHeapProfilingOptions | false) => {
-      const rc = await startRemoteControlApp();
+      const rc = await startRemoteControlApp([`--remote-app-timeout=${enableHeapProfilingTestTimeout}`]);
 
       const { hasBrowserProcessHeapDump, hasRendererProcessHeapDump, hasUtilityProcessHeapDump } = await rc.remotely(
-        async (utilityProcessPath: string, options: EnableHeapProfilingOptions | false | undefined) => {
+        async (
+          htmlPath: string,
+          utilityProcessPath: string,
+          options: EnableHeapProfilingOptions | false | undefined,
+          isCI: boolean
+        ) => {
           const { contentTracing, BrowserWindow, utilityProcess } = require('electron');
           const { once } = require('node:events');
           const fs = require('node:fs');
@@ -200,25 +210,26 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
 
           if (options !== false) await contentTracing.enableHeapProfiling(options);
 
-          const interval = 1000;
           await contentTracing.startRecording({
             included_categories: ['disabled-by-default-memory-infra'],
             excluded_categories: ['*'],
             memory_dump_config: {
-              triggers: [{ mode: 'detailed', periodic_interval_ms: interval }]
+              triggers: [{ mode: 'detailed', periodic_interval_ms: 1000 }]
             }
           });
 
           // Launch a renderer process
           const window = new BrowserWindow({ show: false });
-          await window.webContents.loadURL('about:blank');
+          await window.webContents.loadFile(htmlPath);
 
           // Launch a utility process
           const utility = utilityProcess.fork(utilityProcessPath);
           await once(utility, 'spawn');
 
           // Collect heap dumps
-          await setTimeout(2 * interval);
+          // - We wait for a long time because sometimes processes take a few seconds to start sending heap dumps.
+          // - CI machines are slower, so we wait longer there than when running locally.
+          await setTimeout(isCI ? 10000 : 4000);
 
           const path = await contentTracing.stopRecording();
           const data = fs.readFileSync(path, 'utf8');
@@ -236,8 +247,10 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
             hasUtilityProcessHeapDump
           };
         },
+        path.join(fixturesPath, 'api', 'content-tracing', 'index.html'),
         path.join(fixturesPath, 'api', 'content-tracing', 'utility.js'),
-        options
+        options,
+        isCI
       );
 
       const [code] = await once(rc.process, 'exit');
