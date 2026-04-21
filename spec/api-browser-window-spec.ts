@@ -3079,18 +3079,14 @@ describe('BrowserWindow module', () => {
 
     it('preserves the web content viewport after setting vibrancy', async () => {
       const w = new BrowserWindow({ show: true, width: 800, height: 600 });
-      await w.loadURL('about:blank');
-
-      const contentSize = w.getContentSize();
       const getViewportSize = () => w.webContents.executeJavaScript('[window.innerWidth, window.innerHeight]');
 
-      const before = await getViewportSize();
-      expect(before).to.deep.equal(contentSize);
+      await w.loadURL('about:blank');
+      const contentSize = w.getContentSize();
+      expect(await getViewportSize()).to.deep.equal(contentSize);
 
       w.setVibrancy('titlebar');
-
-      const after = await getViewportSize();
-      expect(after).to.deep.equal(contentSize);
+      expect(await getViewportSize()).to.deep.equal(contentSize);
     });
   });
 
@@ -3391,14 +3387,11 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('matches content bounds', async () => {
       const w = new BrowserWindow({ show: true, width: 800, height: 600 });
+      const getViewportSize = () => w.webContents.executeJavaScript('[window.innerWidth, window.innerHeight]');
+
       await w.loadURL('about:blank');
 
-      const viewport = await w.webContents.executeJavaScript(
-        '({ width: window.innerWidth, height: window.innerHeight })'
-      );
-      const contentBounds = w.getContentBounds();
-      expect(contentBounds.width).to.equal(viewport.width);
-      expect(contentBounds.height).to.equal(viewport.height);
+      expect(await getViewportSize()).to.deep.equal(w.getContentSize());
     });
   });
 
