@@ -45,11 +45,6 @@ namespace net {
 class ProxyConfig;
 }
 
-namespace v8 {
-template <typename T>
-class TracedReference;
-}
-
 namespace electron {
 
 class ElectronBrowserContext;
@@ -57,6 +52,7 @@ struct PreloadScript;
 
 namespace api {
 
+class Cookies;
 class Extensions;
 class NetLog;
 class Protocol;
@@ -166,7 +162,7 @@ class Session final : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ClearSharedDictionaryCache();
   v8::Local<v8::Promise> ClearSharedDictionaryCacheForIsolationKey(
       const gin_helper::Dictionary& options);
-  v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
+  api::Cookies* Cookies(v8::Isolate* isolate);
   api::Extensions* Extensions(v8::Isolate* isolate);
   api::Protocol* Protocol();
   api::ServiceWorkerContext* ServiceWorkerContext();
@@ -212,8 +208,7 @@ class Session final : public gin::Wrappable<Session>,
   void SetDisplayMediaRequestHandler(v8::Isolate* isolate,
                                      v8::Local<v8::Value> val);
 
-  // Cached gin_helper::Wrappable objects.
-  v8::TracedReference<v8::Value> cookies_;
+  cppgc::Member<api::Cookies> cookies_;
   cppgc::Member<api::Extensions> extensions_;
   cppgc::Member<api::Protocol> protocol_;
   cppgc::Member<api::NetLog> net_log_;

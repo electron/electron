@@ -103,7 +103,6 @@
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
-#include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "shell/browser/api/electron_api_extensions.h"
@@ -1336,12 +1335,11 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo() {
   return handle;
 }
 
-v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
-  if (cookies_.IsEmptyThreadSafe()) {
-    auto handle = Cookies::Create(isolate, browser_context());
-    cookies_.Reset(isolate, handle.ToV8());
+api::Cookies* Session::Cookies(v8::Isolate* isolate) {
+  if (!cookies_) {
+    cookies_ = Cookies::Create(isolate, browser_context());
   }
-  return cookies_.Get(isolate);
+  return cookies_;
 }
 
 api::Extensions* Session::Extensions(v8::Isolate* isolate) {
