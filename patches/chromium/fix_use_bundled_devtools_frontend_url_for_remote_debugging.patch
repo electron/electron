@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Om Ghante <omghante@users.noreply.github.com>
+Date: Mon, 21 Apr 2026 23:30:00 +0530
+Subject: fix: use bundled devtools frontend URL for remote debugging
+
+When using --remote-debugging-port, the DevTools HTTP handler constructs
+a devtoolsFrontendUrl included in the /json response. Chrome's
+chrome://inspect page uses this URL to load the DevTools frontend when
+the user clicks "Inspect".
+
+Previously, the URL was only set to the local bundled path
+(/devtools/inspector.html) when CHROMIUM_GIT_REVISION was missing
+(all zeros). When a real git revision was present—as is always the case
+in Electron builds—the URL pointed to Google's CDN
+(chrome-devtools-frontend.appspot.com). If the CDN did not have the
+exact revision (common for Electron's custom Chromium builds), Chrome
+would receive a 404 and the DevTools page would appear empty.
+
+This patch changes the condition to prefer the bundled frontend URL
+whenever HasBundledFrontendResources() returns true, regardless of the
+git revision. The remote CDN URL is now only used as a fallback when
+bundled resources are not available.
+
+Fixes: https://github.com/electron/electron/issues/51035
+
+diff --git a/content/browser/devtools/devtools_http_handler.cc b/content/browser/devtools/devtools_http_handler.cc
+--- a/content/browser/devtools/devtools_http_handler.cc
++++ b/content/browser/devtools/devtools_http_handler.cc
+@@ -544,8 +544,7 @@ std::string DevToolsHttpHandler::GetFrontendURLInternal(
+     const std::string& host) {
+   std::string frontend_url;
+   const std::string git_revision = CHROMIUM_GIT_REVISION;
+-  if (git_revision == kMissingGitRevision &&
+-      delegate_->HasBundledFrontendResources()) {
++  if (delegate_->HasBundledFrontendResources()) {
+     frontend_url = "/devtools/inspector.html";
+   } else {
+     std::string type = agent_host->GetType();
