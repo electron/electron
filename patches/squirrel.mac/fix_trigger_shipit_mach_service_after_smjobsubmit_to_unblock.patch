@@ -28,11 +28,12 @@ The trigger message stays in the Mach port's kernel queue (ShipIt has
 no XPC listener), which creates standing demand that provides the
 on-demand activity needed for KeepAlive retries in on-demand-only mode.
 To prevent this standing demand from also respawning ShipIt after a
-successful exit(0), ShipIt claims the Mach service port via
-bootstrap_check_in before each exit(EXIT_SUCCESS); process exit then
-destroys the receive right and every queued message with it, and launchd
-recreates a fresh empty port. On failure exits, the message is left in
-place so launchd treats the KeepAlive respawn as demand-backed.
+successful exit(0), ShipIt checks in for its Mach service port and
+dequeues every pending message before each exit(EXIT_SUCCESS). Checking
+in alone is not sufficient: launchd tracks demand independently of the
+port's lifetime and will respawn the job if the message was never read.
+On failure exits, the message is left in place so launchd treats the
+KeepAlive respawn as demand-backed.
 
 diff --git a/Squirrel/SQRLShipItLauncher.m b/Squirrel/SQRLShipItLauncher.m
 index 6a9151d92f399184fff9854eb00ea506165bbbe2..a087f20043fa79a07391ed065031396d7ec6fce4 100644
@@ -80,7 +81,7 @@ index 6a9151d92f399184fff9854eb00ea506165bbbe2..a087f20043fa79a07391ed065031396d
  		}]
  		flatten]
 diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
-index acf545199dbf1831fe8a73155c6e4d0db4047934..0bb33129524391d821e1e7077568d4b8eaa664db 100644
+index acf545199dbf1831fe8a73155c6e4d0db4047934..e26c0f11870ddbe801e572b1696af484231bf1dc 100644
 --- a/Squirrel/ShipIt-main.m
 +++ b/Squirrel/ShipIt-main.m
 @@ -15,6 +15,8 @@
@@ -92,26 +93,36 @@ index acf545199dbf1831fe8a73155c6e4d0db4047934..0bb33129524391d821e1e7077568d4b8
  
  #import "NSError+SQRLVerbosityExtensions.h"
  #import "RACSignal+SQRLTransactionExtensions.h"
-@@ -63,6 +65,18 @@ static BOOL clearInstallationAttempts(NSString *applicationIdentifier) {
+@@ -63,6 +65,28 @@ static BOOL clearInstallationAttempts(NSString *applicationIdentifier) {
  	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
  }
  
-+// Claim the Mach service port registered via MachServices in the launchd
-+// job dictionary so that any queued trigger message is destroyed when we
-+// exit(0). bootstrap_check_in transfers the receive right into this task;
-+// process exit then destroys that right along with every queued message,
-+// and launchd recreates a fresh, empty port. Without this, the unread
-+// trigger message would remain as standing demand and launchd would
-+// respawn the job immediately after a successful exit.
++// Drain the Mach service port registered via MachServices in the launchd
++// job dictionary before exit(0) so launchd sees no outstanding demand and
++// does not immediately respawn the job. bootstrap_check_in transfers the
++// receive right into this task, but that alone is not sufficient: launchd
++// tracks demand independently of the port's lifetime, so the queued
++// trigger message must be explicitly dequeued. On failure exits the
++// message is intentionally left queued so the KeepAlive respawn is
++// demand-backed while the launchd domain is in on-demand-only mode.
 +static void drainMachServicePort(const char *serviceName) {
 +	mach_port_t port = MACH_PORT_NULL;
-+	(void)bootstrap_check_in(bootstrap_port, serviceName, &port);
++	if (bootstrap_check_in(bootstrap_port, serviceName, &port) != KERN_SUCCESS) return;
++
++	struct {
++		mach_msg_header_t header;
++		uint8_t body[4096];
++	} msg;
++	while (mach_msg(&msg.header, MACH_RCV_MSG | MACH_RCV_TIMEOUT,
++	                0, sizeof(msg), port, 0, MACH_PORT_NULL) == KERN_SUCCESS) {
++		mach_msg_destroy(&msg.header);
++	}
 +}
 +
  // Waits for all instances of the target application (as described in the
  // `request`) to exit, then sends completed.
  static RACSignal *waitForTerminationIfNecessary(SQRLShipItRequest *request) {
-@@ -206,12 +220,14 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
+@@ -206,12 +230,14 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
  			if ([[error domain] isEqual:SQRLInstallerErrorDomain] && [error code] == SQRLInstallerErrorAppStillRunning) {
  				NSLog(@"Installation cancelled: %@", error);
  				clearInstallationAttempts(applicationIdentifier);
