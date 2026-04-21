@@ -21,6 +21,7 @@
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "base/feature_list.h"
 #include "chrome/browser/pdf/mime_handler_stream_manager.h"
+#include "chrome/browser/pdf/pdf_handler_stream_delegate.h"
 #include "extensions/common/constants.h"
 #include "pdf/pdf_features.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -77,7 +78,8 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
     pdf::MimeHandlerStreamManager::Create(web_contents);
     pdf::MimeHandlerStreamManager::FromWebContents(web_contents)
         ->AddStreamContainer(frame_tree_node_id, internal_id,
-                             std::move(stream_container));
+                             std::move(stream_container),
+                             std::make_unique<pdf::PdfHandlerStreamDelegate>());
     return;
   }
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
