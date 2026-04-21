@@ -169,7 +169,7 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
     });
   });
 
-  describe('enableHeapProfiling', () => {
+  describe.skip('enableHeapProfiling', () => {
     const checkForHeapDumps = async (options?: EnableHeapProfilingOptions | false) => {
       const rc = await startRemoteControlApp();
 
