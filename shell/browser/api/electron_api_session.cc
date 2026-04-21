@@ -553,6 +553,7 @@ gin::WrapperInfo Session::kWrapperInfo =
 Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : isolate_(isolate),
       network_emulation_token_(base::UnguessableToken::Create()),
+      network_emulation_client_id_(base::UnguessableToken::Create()),
       browser_context_{browser_context} {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   data->AddDisposeObserver(this);
@@ -827,6 +828,7 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetNetworkConditions(network_emulation_token_,
+                                        network_emulation_client_id_,
                                         std::move(matched_conditions));
 }
 
@@ -835,6 +837,7 @@ void Session::DisableNetworkEmulation() {
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   std::vector<network::mojom::MatchedNetworkConditionsPtr> network_conditions;
   network_context->SetNetworkConditions(network_emulation_token_,
+                                        network_emulation_client_id_,
                                         std::move(network_conditions));
 }
 
