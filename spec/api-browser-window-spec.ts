@@ -67,6 +67,9 @@ const isBeforeUnload = (event: Event, level: number, message: string) => {
   return message === 'beforeunload';
 };
 
+const getViewportSize = (w: BrowserWindow) =>
+  w.webContents.executeJavaScript('[window.innerWidth, window.innerHeight]');
+
 describe('BrowserWindow module', () => {
   it('sets the correct class name on the prototype', () => {
     expect(BrowserWindow.prototype.constructor.name).to.equal('BrowserWindow');
@@ -3141,6 +3144,17 @@ describe('BrowserWindow module', () => {
         w.setVibrancy('i-am-not-a-valid-vibrancy-type' as any);
       }).to.not.throw();
     });
+
+    it('preserves the web content viewport after setting vibrancy', async () => {
+      const w = new BrowserWindow({ show: true, width: 800, height: 600 });
+
+      await w.loadURL('about:blank');
+      const contentSize = w.getContentSize();
+      expect(await getViewportSize(w)).to.deep.equal(contentSize);
+
+      w.setVibrancy('titlebar');
+      expect(await getViewportSize(w)).to.deep.equal(contentSize);
+    });
   });
 
   ifdescribe(process.platform === 'darwin')('trafficLightPosition', () => {
@@ -3436,6 +3450,16 @@ describe('BrowserWindow module', () => {
       expect(contentSize).to.deep.equal([400, 400]);
       const size = w.getSize();
       expect(size).to.deep.equal([400, 400]);
+    });
+  });
+
+  describe('post-construction web content viewport', () => {
+    afterEach(closeAllWindows);
+    it('matches content size', async () => {
+      const w = new BrowserWindow({ show: true, width: 800, height: 600 });
+
+      await w.loadURL('about:blank');
+      expect(await getViewportSize(w)).to.deep.equal(w.getContentSize());
     });
   });
 
