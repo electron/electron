@@ -959,6 +959,7 @@ extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
 
 void NativeWindowViews::SetResizable(bool resizable) {
   if (resizable != resizable_) {
+    const gfx::Size window_size = GetSize();
     resizable_ = resizable;
     // On Linux there is no "resizable" property of a window, we have to set
     // both the minimum and maximum size to the window size to achieve it.
@@ -969,7 +970,6 @@ void NativeWindowViews::SetResizable(bool resizable) {
       SetSizeConstraints(old_size_constraints_);
     } else {
       old_size_constraints_ = GetSizeConstraints();
-      gfx::Size window_size = GetSize();
       SetSizeConstraints(extensions::SizeConstraints(window_size, window_size));
     }
     // Forcing OnSizeConstraintsChanged on Windows when !thick_frame_ would
@@ -981,6 +981,9 @@ void NativeWindowViews::SetResizable(bool resizable) {
     if (thick_frame_ && widget() && widget()->widget_delegate())
       widget()->OnSizeConstraintsChanged();
     UpdateThickFrame();
+    // Re-apply the size since the frame insets may have changed.
+    SetSize(window_size);
+
 #else
     if (widget() && widget()->widget_delegate())
       widget()->OnSizeConstraintsChanged();
