@@ -7,7 +7,7 @@ Subject: fix: trigger ShipIt Mach service after SMJobSubmit to unblock
 When a macOS system update is pending (downloaded but not yet installed),
 launchd puts the user domain (gui/<uid>) into "on-demand-only mode".
 In this mode, launchd only starts jobs triggered by an on-demand event
-such as a Mach port connection — KeepAlive and RunAtLoad are suppressed.
+such as a Mach port connection -- KeepAlive and RunAtLoad are suppressed.
 
 ShipIt's launchd job registers a MachServices endpoint, but nothing ever
 connects to it. The MachServices key was originally used when ShipIt was
@@ -34,7 +34,7 @@ the message is left in place so launchd treats the KeepAlive respawn as
 demand-backed.
 
 diff --git a/Squirrel/SQRLShipItLauncher.m b/Squirrel/SQRLShipItLauncher.m
-index 6a9151d..58932ff 100644
+index 6a9151d92f399184fff9854eb00ea506165bbbe2..58932ff961311ba59670a5974f6026a2775c7ecb 100644
 --- a/Squirrel/SQRLShipItLauncher.m
 +++ b/Squirrel/SQRLShipItLauncher.m
 @@ -10,6 +10,7 @@
@@ -45,19 +45,19 @@ index 6a9151d..58932ff 100644
  #import <Security/Security.h>
  #import <ServiceManagement/ServiceManagement.h>
  #import <launch.h>
-@@ -57,7 +58,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
+@@ -57,7 +58,7 @@ + (RACSignal *)shipItJobDictionary {
  			NSMutableArray *arguments = [[NSMutableArray alloc] init];
  			[arguments addObject:[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path];
-
+ 
 -			// Pass in the service name so ShipIt knows how to broadcast itself.
 +			// Pass in the job label so ShipIt can identify itself.
  			[arguments addObject:jobLabel];
-
+ 
  			// We need to pass the path to ShipIt rather than having ShipIt
-@@ -154,6 +155,17 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
+@@ -154,6 +155,17 @@ + (RACSignal *)launchPrivileged:(BOOL)privileged {
  				return [RACSignal error:CFBridgingRelease(cfError)];
  			}
-
+ 
 +			// Trigger on-demand launch by connecting to the Mach service.
 +			// When macOS has a pending system update, launchd puts the user
 +			// domain in on-demand-only mode and won't start jobs unless
@@ -73,22 +73,22 @@ index 6a9151d..58932ff 100644
  		}]
  		flatten]
 diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
-index acf5451..cffc6c5 100644
+index acf545199dbf1831fe8a73155c6e4d0db4047934..cffc6c5b9c714d955e84d7267f7bd5854171b08c 100644
 --- a/Squirrel/ShipIt-main.m
 +++ b/Squirrel/ShipIt-main.m
 @@ -15,6 +15,8 @@
-
+ 
  #include <spawn.h>
  #include <sys/wait.h>
 +#include <mach/mach.h>
 +#include <servers/bootstrap.h>
-
+ 
  #import "NSError+SQRLVerbosityExtensions.h"
  #import "RACSignal+SQRLTransactionExtensions.h"
 @@ -63,6 +65,22 @@ static BOOL clearInstallationAttempts(NSString *applicationIdentifier) {
  	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
  }
-
+ 
 +// Drain the Mach service port registered via MachServices in the launchd
 +// job dictionary. Call before exit(0) so that no unread trigger message
 +// remains, which would create standing demand and cause launchd to
