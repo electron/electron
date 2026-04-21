@@ -983,6 +983,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `videoRequested` Boolean - true if the web content requested a video stream.
     * `audioRequested` Boolean - true if the web content requested an audio stream.
     * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
+    * `preferredDisplaySurface` String - The preferred display surface type requested by the web content. Can be `monitor`, `window`, `browser`, or `none`. This corresponds to the [`displaySurface`](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/displaySurface) constraint in `getDisplayMedia()`.
   * `callback` Function
     * `streams` Object
       * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
