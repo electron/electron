@@ -45,11 +45,6 @@ namespace net {
 class ProxyConfig;
 }
 
-namespace v8 {
-template <typename T>
-class TracedReference;
-}
-
 namespace electron {
 
 class ElectronBrowserContext;
