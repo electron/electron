@@ -27,6 +27,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/win/notification_presenter_win.h"
+#include "shell/browser/notifications/win/windows_toast_activator.h"
 #include "shell/browser/win/scoped_hstring.h"
 #include "shell/common/application_info.h"
 #include "third_party/libxml/chromium/xml_writer.h"
@@ -35,6 +36,12 @@
 
 using ABI::Windows::Data::Xml::Dom::IXmlDocument;
 using ABI::Windows::Data::Xml::Dom::IXmlDocumentIO;
+using ABI::Windows::Foundation::IPropertyValue;
+using ABI::Windows::Foundation::Collections::IIterable;
+using ABI::Windows::Foundation::Collections::IIterator;
+using ABI::Windows::Foundation::Collections::IKeyValuePair;
+using ABI::Windows::Foundation::Collections::IMap;
+using ABI::Windows::Foundation::Collections::IPropertySet;
 using Microsoft::WRL::Wrappers::HStringReference;
 
 namespace winui = ABI::Windows::UI;
@@ -785,16 +792,81 @@ ToastEventHandler::ToastEventHandler(Notification* notification)
 
 ToastEventHandler::~ToastEventHandler() = default;
 
+namespace {
+
+// Extracts string user-input values from an IToastActivatedEventArgs2.
+// Windows only fires the WinRT Activated event (not the COM activator) for
+// `activationType="foreground"` actions while the app is already running, so
+// reply text and selection values must be pulled from UserInput here rather
+// than from the COM callback's NOTIFICATION_USER_INPUT_DATA.
+std::vector<ActivationUserInput> ExtractUserInputs(IInspectable* args) {
+  std::vector<ActivationUserInput> inputs;
+  if (!args)
+    return inputs;
+
+  ComPtr<winui::Notifications::IToastActivatedEventArgs2> args2;
+  if (FAILED(args->QueryInterface(IID_PPV_ARGS(&args2))) || !args2)
+    return inputs;
+
+  ComPtr<IPropertySet> user_input;
+  if (FAILED(args2->get_UserInput(&user_input)) || !user_input)
+    return inputs;
+
+  ComPtr<IMap<HSTRING, IInspectable*>> map;
+  if (FAILED(user_input.As(&map)) || !map)
+    return inputs;
+
+  ComPtr<IIterable<IKeyValuePair<HSTRING, IInspectable*>*>> iterable;
+  if (FAILED(map.As(&iterable)) || !iterable)
+    return inputs;
+
+  ComPtr<IIterator<IKeyValuePair<HSTRING, IInspectable*>*>> iter;
+  if (FAILED(iterable->First(&iter)) || !iter)
+    return inputs;
+
+  boolean has_current = false;
+  if (FAILED(iter->get_HasCurrent(&has_current)))
+    return inputs;
+
+  while (has_current) {
+    ComPtr<IKeyValuePair<HSTRING, IInspectable*>> kvp;
+    if (FAILED(iter->get_Current(&kvp)) || !kvp)
+      break;
+    HSTRING key_hs = nullptr;
+    ComPtr<IInspectable> value;
+    if (SUCCEEDED(kvp->get_Key(&key_hs)) && SUCCEEDED(kvp->get_Value(&value)) &&
+        key_hs && value) {
+      ComPtr<IPropertyValue> prop;
+      HSTRING value_hs = nullptr;
+      if (SUCCEEDED(value.As(&prop)) && prop &&
+          SUCCEEDED(prop->GetString(&value_hs)) && value_hs) {
+        UINT32 key_len = 0;
+        UINT32 val_len = 0;
+        const wchar_t* key_raw = WindowsGetStringRawBuffer(key_hs, &key_len);
+        const wchar_t* val_raw = WindowsGetStringRawBuffer(value_hs, &val_len);
+        ActivationUserInput ui;
+        if (key_raw && key_len)
+          ui.key.assign(key_raw, key_len);
+        if (val_raw && val_len)
+          ui.value.assign(val_raw, val_len);
+        inputs.push_back(std::move(ui));
+      }
+    }
+    if (FAILED(iter->MoveNext(&has_current)))
+      break;
+  }
+  return inputs;
+}
+
+}  // namespace
+
 IFACEMETHODIMP ToastEventHandler::Invoke(
     winui::Notifications::IToastNotification* sender,
     IInspectable* args) {
   std::wstring arguments_w;
-  std::wstring tag_w;
-  std::wstring group_w;
 
   if (args) {
-    Microsoft::WRL::ComPtr<winui::Notifications::IToastActivatedEventArgs>
-        activated_args;
+    ComPtr<winui::Notifications::IToastActivatedEventArgs> activated_args;
     if (SUCCEEDED(args->QueryInterface(IID_PPV_ARGS(&activated_args)))) {
       HSTRING args_hs = nullptr;
       if (SUCCEEDED(activated_args->get_Arguments(&args_hs)) && args_hs) {
@@ -806,36 +878,24 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     }
   }
 
-  if (sender) {
-    Microsoft::WRL::ComPtr<winui::Notifications::IToastNotification2> toast2;
-    if (SUCCEEDED(sender->QueryInterface(IID_PPV_ARGS(&toast2)))) {
-      HSTRING tag_hs = nullptr;
-      if (SUCCEEDED(toast2->get_Tag(&tag_hs)) && tag_hs) {
-        UINT32 len = 0;
-        const wchar_t* raw = WindowsGetStringRawBuffer(tag_hs, &len);
-        if (raw && len)
-          tag_w.assign(raw, len);
-      }
-      HSTRING group_hs = nullptr;
-      if (SUCCEEDED(toast2->get_Group(&group_hs)) && group_hs) {
-        UINT32 len = 0;
-        const wchar_t* raw = WindowsGetStringRawBuffer(group_hs, &len);
-        if (raw && len)
-          group_w.assign(raw, len);
-      }
-    }
-  }
-
-  std::string notif_id;
-  if (notification_) {
-    notif_id = notification_->notification_id();
-  }
-
-  bool structured = arguments_w.find(L"&tag=") != std::wstring::npos ||
-                    arguments_w.find(L"type=action") != std::wstring::npos ||
-                    arguments_w.find(L"type=reply") != std::wstring::npos;
-  if (structured)
+  // For structured action/reply args, dispatch through the same handler the
+  // COM activator uses. Previously this path early-returned, assuming the COM
+  // INotificationActivationCallback would fire — but for non-MSIX apps with
+  // activationType="foreground" (and for MSIX apps while already running)
+  // Windows only raises the in-process WinRT Activated event, so those
+  // action/reply events were being silently dropped. See electron/electron
+  // issue #51147.
+  const bool structured =
+      arguments_w.find(L"type=action") != std::wstring::npos ||
+      arguments_w.find(L"type=reply") != std::wstring::npos;
+  if (structured) {
+    std::vector<ActivationUserInput> inputs = ExtractUserInputs(args);
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
+        base::BindOnce(&HandleToastActivation, arguments_w, std::move(inputs)));
+    DebugLog("Notification activated (structured)");
     return S_OK;
+  }
 
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
