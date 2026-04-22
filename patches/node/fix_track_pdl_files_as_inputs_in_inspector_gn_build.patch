@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 22 Apr 2026 15:03:38 +0900
+Subject: fix: track PDL files as inputs in inspector GN build
+
+The node_protocol_generated_sources action was missing
+gypi_values.node_pdl_files from its inputs, causing Ninja to skip
+regeneration when PDL domain files changed.
+
+Should be upstreamed.
+
+diff --git a/src/inspector/unofficial.gni b/src/inspector/unofficial.gni
+index 4810d93eb971b253f7dadff7011a632f6dbe6a2b..48cf5102630737ffeba98719a8b508b52fe5e27a 100644
+--- a/src/inspector/unofficial.gni
++++ b/src/inspector/unofficial.gni
+@@ -29,7 +29,7 @@ template("inspector_gn_build") {
+     deps = [ ":node_protocol_json" ]
+ 
+     outputs = gypi_values.node_inspector_generated_sources
+-    inputs = gypi_values.node_protocol_files + [
++    inputs = gypi_values.node_protocol_files + gypi_values.node_pdl_files + [
+       "node_protocol_config.json",
+       "$node_gen_dir/src/node_protocol.json",
+     ]
