@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Fu, Junwei <junwei.fu@intel.com>
-Date: Thu, 20 Mar 2026 03:25:47 -0700
-Subject: [webnn] Validate output channels are a multiple of groups in
- Conv2d.
+From: "Fu, Junwei" <junwei.fu@intel.com>
+Date: Fri, 20 Mar 2026 03:25:47 -0700
+Subject: [webnn] Validate output channels are a multiple of groups in Conv2d.
 
 Add a check in `ValidateConv2d` to ensure `output_channels % attributes.groups == 0`. This is a requirement for grouped convolutions. Add a unit test to cover this invalid case.
 
@@ -15,10 +14,10 @@ Reviewed-by: Reilly Grant <reillyg@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1602846}
 
 diff --git a/services/webnn/public/cpp/graph_validation_utils.cc b/services/webnn/public/cpp/graph_validation_utils.cc
-index df746354236b2856e499cc8d925363744da044cd..0b685a93dc7a2959b63dc585b59afca761034ed3 100644
+index 88666458d4c9c53ad93030d8cc4e3e4198429cf0..54b8df4d6752077c1c750507769724d184c5dd00 100644
 --- a/services/webnn/public/cpp/graph_validation_utils.cc
 +++ b/services/webnn/public/cpp/graph_validation_utils.cc
-@@ -733,6 +733,10 @@ base::expected<OperandDescriptor, std::string> ValidateConv2dAndInferOutput(
+@@ -738,6 +738,10 @@ base::expected<OperandDescriptor, std::string> ValidateConv2dAndInferOutput(
          "The groups must evenly divide the input channels to filter input "
          "channels."));
    }
@@ -30,10 +29,10 @@ index df746354236b2856e499cc8d925363744da044cd..0b685a93dc7a2959b63dc585b59afca7
    // Validate and calculate output sizes.
    ASSIGN_OR_RETURN(
 diff --git a/services/webnn/webnn_graph_impl_unittest.cc b/services/webnn/webnn_graph_impl_unittest.cc
-index faa0a3671864e9f8ed8c7a8354c7650abc93baa9..3f8e930def83c5fa8e8c13a1e729f9ddffc89e54 100644
+index 1a3bee6799f6d7e440119b7d6e68d4ca5b8006d8..049b58ab36beb3e8f15c31a2964d3b16475d3277 100644
 --- a/services/webnn/webnn_graph_impl_unittest.cc
 +++ b/services/webnn/webnn_graph_impl_unittest.cc
-@@ -1285,6 +1285,20 @@ TEST_F(WebNNGraphImplTest, Conv2dTest) {
+@@ -1275,6 +1275,20 @@ TEST_F(WebNNGraphImplTest, Conv2dTest) {
          .expected = false}
          .Test(*this);
    }
@@ -54,4 +53,3 @@ index faa0a3671864e9f8ed8c7a8354c7650abc93baa9..3f8e930def83c5fa8e8c13a1e729f9dd
    {
      // Test the invalid graph when the number of filter input channels
      // doesn't match the result of input channels divided by groups
-

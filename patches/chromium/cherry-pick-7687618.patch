@@ -19,12 +19,10 @@ diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tfli
 index a65f758d782536017c8a11f5397412e4c1d9a58b..32e7a227f38b4919582f65db7166a5ac29273710 100644
 --- a/services/webnn/tflite/graph_builder_tflite.cc
 +++ b/services/webnn/tflite/graph_builder_tflite.cc
-@@ -6496,7 +6496,69 @@
-   if (pool2d.dilations->height != 1 || pool2d.dilations->width != 1) {
+@@ -6497,6 +6497,68 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
      return base::unexpected("Pool2d in tflite doesn't support dilations.");
    }
--
-+
+ 
 +  // Check the indirection buffer size to ensure it does not exceed the maximum
 +  // value of a size_t integer.
 +  const mojom::Operand& output_operand = GetOperand(pool2d.output_operand_id);
@@ -90,7 +88,7 @@ index a65f758d782536017c8a11f5397412e4c1d9a58b..32e7a227f38b4919582f65db7166a5ac
    ::tflite::BuiltinOperator operator_code;
    std::optional<TensorInfo> quantized_output;
    const mojom::Operand& input_operand = GetOperand(pool2d.input_operand_id);
-@@ -6522,9 +6584,6 @@
+@@ -6522,9 +6584,6 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
    CHECK_EQ(input_shape.size(), 4u);
    const webnn::Size2d<uint32_t> input_size2d = {.height = input_shape[1],
                                                  .width = input_shape[2]};

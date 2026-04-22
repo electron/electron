@@ -1,8 +1,17 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: David Baron <dbaron@chromium.org>
-Date: Mon, 24 Mar 2026 11:30:00 -0700
+Date: Tue, 24 Mar 2026 11:30:00 -0700
 Subject: Check parent nodes when handling vector node insertions.
 
+In the optimized vector node insertion case, check the parent node just
+as in the regular case.
+
+Fixed: 496281816
+Change-Id: I0fc6956d1c09fcb7ea54d94819fdf1cb06fbd9e5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7705373
+Commit-Queue: David Baron <dbaron@chromium.org>
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1605818}
 
 diff --git a/third_party/blink/renderer/core/dom/container_node.cc b/third_party/blink/renderer/core/dom/container_node.cc
 index a70ff057abc293b440f08461f49a2a2970bf2490..9758fafd2c8cdef708a5ac5dd434fb187a0abc27 100644
@@ -53,10 +62,10 @@ index 18e47b76cec5c5ae769343a30d19a3dd0be798d6..a51ec694714ecb918d939d19b5ed9723
    inline bool IsHostIncludingInclusiveAncestorOfThis(const Node&,
                                                       ExceptionState&) const;
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 2e464ef7bbfd7e0d84df348d012e8020d4758726..1cf1f8f0844940a941bea5fe6473970f1a81021b 100644
+index b59eceacbd4143ef183bb67c39f9ccccc7582adb..4a797c316c7ba17bc495edcb9e4be49c27e0ea93 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -3998,6 +3998,11 @@
+@@ -4002,6 +4002,11 @@
        name: "ReadableStreamBYOBReaderReadMinOption",
        status: "stable",
      },
@@ -107,4 +116,3 @@ index 0000000000000000000000000000000000000000..f1e8ace831407eccae03f62ff5e77ee7
 +++ b/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html.headers
 @@ -0,0 +1 @@
 +Permissions-Policy: unload=*
-

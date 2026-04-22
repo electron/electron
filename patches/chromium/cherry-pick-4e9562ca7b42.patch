@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dale Curtis <dalecurtis@chromium.org>
-Date: Thu, 20 Mar 2026 15:00:00 -0700
+Date: Fri, 20 Mar 2026 15:00:00 -0700
 Subject: Upgrade DCHECK_EQ to CHECK_EQ in audio_processor.cc.
 
 Bug: 493234757
@@ -118,4 +118,3 @@ index 5c2bbdc0ee0f40f67d219769078242fe0cba2fbf..e924f589212767c613a33dd01b2a562a
      }
      // Pass along k to the serial loop.
      k = truncated_steps;
-

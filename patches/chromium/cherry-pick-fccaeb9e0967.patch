@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Miguel Casas <mcasas@chromium.org>
-Date: Wed, 19 Mar 2026 10:30:00 -0700
+Date: Thu, 19 Mar 2026 10:30:00 -0700
 Subject: Ensure AudioRendererMixer holds lock during sink switch
 
 This guards `switch_output_device_in_progress_` with a lock that
@@ -19,10 +19,10 @@ Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1600910}
 
 diff --git a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.cc b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.cc
-index a3160d119f3e1218f1b5cac26c4cebeeb096017f..ce6b35edb32b619f88e5d4d003ce136da0458373 100644
+index a07c2ef376f7dd98eec2dfdc14df5b69fc1fc2df..1462ba60b0e3a1eae7cab4d95ae14c80ca161847 100644
 --- a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.cc
 +++ b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.cc
-@@ -96,6 +96,17 @@ void AudioRendererMixerInput::Start() {
+@@ -95,6 +95,17 @@ void AudioRendererMixerInput::Start() {
  }
  
  void AudioRendererMixerInput::Stop() {
@@ -40,7 +40,7 @@ index a3160d119f3e1218f1b5cac26c4cebeeb096017f..ce6b35edb32b619f88e5d4d003ce136d
    // Stop() may be called at any time, if Pause() hasn't been called we need to
    // remove our mixer input before shutdown.
    Pause();
-@@ -154,10 +165,13 @@ void AudioRendererMixerInput::GetOutputDeviceInfoAsync(
+@@ -153,10 +164,13 @@ void AudioRendererMixerInput::GetOutputDeviceInfoAsync(
      return;
    }
  
@@ -58,7 +58,7 @@ index a3160d119f3e1218f1b5cac26c4cebeeb096017f..ce6b35edb32b619f88e5d4d003ce136d
    }
  
    godia_in_progress_ = true;
-@@ -192,7 +206,10 @@ void AudioRendererMixerInput::SwitchOutputDevice(
+@@ -191,7 +205,10 @@ void AudioRendererMixerInput::SwitchOutputDevice(
      media::OutputDeviceStatusCB callback) {
    // If a GODIA() call is in progress, defer until it's complete.
    if (godia_in_progress_) {
@@ -70,7 +70,7 @@ index a3160d119f3e1218f1b5cac26c4cebeeb096017f..ce6b35edb32b619f88e5d4d003ce136d
  
      // Abort any previous device switch which may be pending.
      if (pending_switch_cb_) {
-@@ -214,7 +231,10 @@ void AudioRendererMixerInput::SwitchOutputDevice(
+@@ -213,7 +230,10 @@ void AudioRendererMixerInput::SwitchOutputDevice(
      return;
    }
  
@@ -82,7 +82,7 @@ index a3160d119f3e1218f1b5cac26c4cebeeb096017f..ce6b35edb32b619f88e5d4d003ce136d
  
    // Request a new sink using the new device id. This process may fail, so to
    // avoid interrupting working audio, don't set any class variables until we
-@@ -307,45 +327,48 @@ void AudioRendererMixerInput::OnDeviceSwitchReady(
+@@ -306,45 +326,48 @@ void AudioRendererMixerInput::OnDeviceSwitchReady(
      media::OutputDeviceStatusCB switch_cb,
      scoped_refptr<media::AudioRendererSink> sink,
      media::OutputDeviceInfo device_info) {
@@ -196,10 +196,10 @@ index e13df618d5cc86221a12d060d892474e2cbc8c49..f511187bfd7f164c0c5d7c10a894a3e8
    // Set by GetOutputDeviceInfoAsync() if a SwitchOutputDevice() call is in
    // progress. GetOutputDeviceInfoAsync() will be invoked again with this value
 diff --git a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input_test.cc b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input_test.cc
-index 5c8c9be0fdabf91383d28459ddb57fa563ba8791..6231309b6022bdbfab89c3ed28cb24c7a55c13e8 100644
+index 6daf55721322986e53a85f720fd4ed282b6890b7..01ea2ad19408cdabd8aeedf24bcb56316e67d609 100644
 --- a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input_test.cc
 +++ b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input_test.cc
-@@ -215,6 +215,21 @@ TEST_F(AudioRendererMixerInputTest, SwitchOutputDevice) {
+@@ -214,6 +214,21 @@ TEST_F(AudioRendererMixerInputTest, SwitchOutputDevice) {
    mixer_input_->Stop();
  }
  
@@ -221,4 +221,3 @@ index 5c8c9be0fdabf91383d28459ddb57fa563ba8791..6231309b6022bdbfab89c3ed28cb24c7
  // Test SwitchOutputDevice() to the same device as the current (default) device
  TEST_F(AudioRendererMixerInputTest, SwitchOutputDeviceToSameDevice) {
    mixer_input_->Initialize(audio_parameters_, fake_callback_.get());
-

@@ -21,10 +21,10 @@ diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tfli
 index 889d9510e14a0497bfc1cddb026fb562f311dff8..a65f758d782536017c8a11f5397412e4c1d9a58b 100644
 --- a/services/webnn/tflite/graph_builder_tflite.cc
 +++ b/services/webnn/tflite/graph_builder_tflite.cc
-@@ -1938,6 +1938,19 @@
+@@ -1938,6 +1938,19 @@ GraphBuilderTflite::CanFuseQuantizeAndGetOutput(const mojom::Gemm& gemm) {
      return std::nullopt;
    }
-
+ 
 +  // The FULLY_CONNECTED's underlying kernels expect the per-channel
 +  // quantization axis to be the output channel dimension (axis 0). This means
 +  // the first dimension of the scale can not be equal to 1.
