@@ -1202,7 +1202,7 @@ describe('webContents module', () => {
   describe('openDevTools() API', () => {
     afterEach(closeAllWindows);
 
-    async function getViewportSize(w: BrowserWindow) {
+    async function getViewportSize (w: BrowserWindow) {
       return await w.webContents.executeJavaScript('({ width: window.innerWidth, height: window.innerHeight })');
     }
 
