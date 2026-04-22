@@ -39,17 +39,13 @@ const collectHeaderSources = (dir: string, extensions: readonly string[]): strin
 // fallout). install.py is the source of truth for which headers are copied,
 // so it is included explicitly; the rest are enumerated by recursive scan to
 // cover headers that install.py may pick up dynamically.
-const nodeHeaderSources = Array.from(new Set([
-  '../third_party/electron_node/tools/install.py',
-  ...collectHeaderSources(
-    path.resolve(__dirname, '../../third_party/electron_node/src'),
-    ['.h']
-  ),
-  ...collectHeaderSources(
-    path.resolve(__dirname, '../../v8/include'),
-    ['.h', '.inc']
-  )
-])).sort();
+const nodeHeaderSources = Array.from(
+  new Set([
+    '../third_party/electron_node/tools/install.py',
+    ...collectHeaderSources(path.resolve(__dirname, '../../third_party/electron_node/src'), ['.h']),
+    ...collectHeaderSources(path.resolve(__dirname, '../../v8/include'), ['.h', '.inc'])
+  ])
+).sort();
 
 const main = async () => {
   const webpackTargets = [
