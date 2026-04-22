@@ -6,11 +6,11 @@
     "install-electron": "install.js"
   },
   "dependencies": {
-    "@electron/get": "^4.0.3",
+    "@electron/get": "^5.0.0",
     "@types/node": "^24.9.0",
     "extract-zip": "^2.0.1"
   },
   "engines": {
-    "node": ">= 12.20.55"
+    "node": ">= 22.12.0"
   }
 }
