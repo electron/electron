@@ -462,6 +462,7 @@ class NativeWindow : public views::WidgetDelegate {
   const views::Widget* GetWidget() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
+  void FlushPendingRootLayout(views::View* view);
 
   static inline constexpr base::cstring_view kNativeWindowKey =
       "__ELECTRON_NATIVE_WINDOW__";
