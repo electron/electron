@@ -117,6 +117,35 @@ describe("session 'select-webauthn-account' event", () => {
     `);
   }
 
+  // Regression test: MakeCredentialRequestHandler::SpecializeRequestForAuthenticator
+  // dereferences observer() for ResidentKeyRequirement::kPreferred, which crashed
+  // when the request delegate did not register itself as the handler's observer.
+  it('does not crash on navigator.credentials.create() with residentKey "preferred"', async () => {
+    const result = await w.webContents.executeJavaScript(`
+      navigator.credentials.create({
+        publicKey: {
+          rp: { id: 'localhost', name: 'Electron Spec' },
+          user: {
+            id: new TextEncoder().encode('user-1'),
+            name: 'alice@example.com',
+            displayName: 'Alice'
+          },
+          challenge: new Uint8Array(32),
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: {
+            residentKey: 'preferred',
+            userVerification: 'preferred'
+          }
+        }
+      }).then(
+        c => ({ ok: true, id: c.id }),
+        e => ({ ok: false, name: e.name, message: e.message })
+      )
+    `);
+    expect(result.ok).to.be.true();
+    expect(result.id).to.be.a('string').and.not.be.empty();
+  });
+
   it('fires with discoverable credentials and resolves get() with the chosen one', async () => {
     await addCredential({ id: 'cred-alice', userHandle: 'uh-alice', name: 'alice@example.com', displayName: 'Alice' });
     await addCredential({ id: 'cred-bob', userHandle: 'uh-bob', name: 'bob@example.com', displayName: 'Bob' });

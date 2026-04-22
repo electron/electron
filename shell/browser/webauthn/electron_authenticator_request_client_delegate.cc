@@ -51,6 +51,16 @@ void ElectronAuthenticatorRequestClientDelegate::SetRelyingPartyId(
   relying_party_id_ = rp_id;
 }
 
+void ElectronAuthenticatorRequestClientDelegate::StartObserving(
+    device::FidoRequestHandlerBase* request_handler) {
+  request_handler_observation_.Observe(request_handler);
+}
+
+void ElectronAuthenticatorRequestClientDelegate::StopObserving(
+    device::FidoRequestHandlerBase* request_handler) {
+  request_handler_observation_.Reset();
+}
+
 void ElectronAuthenticatorRequestClientDelegate::RegisterActionCallbacks(
     base::OnceClosure cancel_callback,
     base::OnceClosure immediate_not_found_callback,
