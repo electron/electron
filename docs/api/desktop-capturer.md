@@ -90,7 +90,7 @@ changes:
     description: "This method now returns a Promise instead of using a callback function."
     breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
 deprecated:
-  - pr-url: https://github.com/electron/electron/pull/XXXXX
+  - pr-url: https://github.com/electron/electron/pull/51235
 ```
 -->
 
