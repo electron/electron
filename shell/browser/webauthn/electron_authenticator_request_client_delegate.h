@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "base/scoped_observation.h"
 #include "content/public/browser/authenticator_request_client_delegate.h"
 #include "content/public/browser/global_routing_id.h"
 
@@ -36,6 +37,8 @@ class ElectronAuthenticatorRequestClientDelegate
 
   // content::AuthenticatorRequestClientDelegate:
   void SetRelyingPartyId(const std::string& rp_id) override;
+  void StartObserving(device::FidoRequestHandlerBase* request_handler) override;
+  void StopObserving(device::FidoRequestHandlerBase* request_handler) override;
   void RegisterActionCallbacks(
       base::OnceClosure cancel_callback,
       base::OnceClosure immediate_not_found_callback,
@@ -60,6 +63,10 @@ class ElectronAuthenticatorRequestClientDelegate
   const content::GlobalRenderFrameHostId render_frame_host_id_;
   std::string relying_party_id_;
   base::OnceClosure cancel_callback_;
+
+  base::ScopedObservation<device::FidoRequestHandlerBase,
+                          device::FidoRequestHandlerBase::Observer>
+      request_handler_observation_{this};
 
   std::vector<device::AuthenticatorGetAssertionResponse> pending_responses_;
   base::OnceCallback<void(device::AuthenticatorGetAssertionResponse)>
