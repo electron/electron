@@ -6,10 +6,10 @@ Subject: Remove deprecated `GetIsolate`
 https://chromium-review.googlesource.com/c/v8/v8/+/6905244
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index ec1496467f5071a810a3d7a76d80f3d12a8582dc..6873a9f203ccace7d5c501b62bed56732332d060 100644
+index 2e05ed507f4bc2eaa8c71d5dcdc2628d639a550a..45e1347077e97c46c4b6ccd15725d05688ac4faf 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -795,7 +795,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
+@@ -791,7 +791,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context,
                                          IsolateData* isolate_data) {
@@ -18,7 +18,7 @@ index ec1496467f5071a810a3d7a76d80f3d12a8582dc..6873a9f203ccace7d5c501b62bed5673
    EscapableHandleScope handle_scope(isolate);
  
    Local<Object> global = context->Global();
-@@ -841,7 +841,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
+@@ -837,7 +837,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
  // This runs at runtime, regardless of whether the context
  // is created from a snapshot.
  Maybe<void> InitializeContextRuntime(Local<Context> context) {
@@ -27,7 +27,7 @@ index ec1496467f5071a810a3d7a76d80f3d12a8582dc..6873a9f203ccace7d5c501b62bed5673
    HandleScope handle_scope(isolate);
  
    // When `IsCodeGenerationFromStringsAllowed` is true, V8 takes the fast path
-@@ -920,7 +920,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
+@@ -916,7 +916,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
  }
  
  Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
@@ -36,7 +36,7 @@ index ec1496467f5071a810a3d7a76d80f3d12a8582dc..6873a9f203ccace7d5c501b62bed5673
    HandleScope handle_scope(isolate);
  
    // Delete `Intl.v8BreakIterator`
-@@ -945,7 +945,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
+@@ -941,7 +941,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
  }
  
  Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
@@ -45,7 +45,7 @@ index ec1496467f5071a810a3d7a76d80f3d12a8582dc..6873a9f203ccace7d5c501b62bed5673
    HandleScope handle_scope(isolate);
  
    // Initialize the default values.
-@@ -963,7 +963,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
+@@ -959,7 +959,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
  MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
                                              IsolateData* isolate_data) {
    CHECK(isolate_data);
@@ -54,7 +54,7 @@ index ec1496467f5071a810a3d7a76d80f3d12a8582dc..6873a9f203ccace7d5c501b62bed5673
    EscapableHandleScope scope(isolate);
    Context::Scope context_scope(context);
  
-@@ -987,7 +987,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+@@ -983,7 +983,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
  MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
                                                 IsolateData* isolate_data) {
    CHECK(isolate_data);
@@ -63,7 +63,7 @@ index ec1496467f5071a810a3d7a76d80f3d12a8582dc..6873a9f203ccace7d5c501b62bed5673
    EscapableHandleScope scope(isolate);
    Context::Scope context_scope(context);
  
-@@ -1013,7 +1013,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+@@ -1009,7 +1009,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
  Maybe<void> InitializePrimordials(Local<Context> context,
                                    IsolateData* isolate_data) {
    // Run per-context JS files.
@@ -133,10 +133,10 @@ index 6fe4f0492dc1f3eaf576c8ff7866080a54cb81c1..41e8e052ff81df78ece87163b0499966
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/env.cc b/src/env.cc
-index dd8be35de7c447c9a77f8b9849a6a3de19bc55af..79a309661aff7ebb18f96e64d0d2b860ab80dc57 100644
+index 82aee7e38bbd859e1a76eedcc3a51278a1b3a793..a09603573c02466c0d25431fe6168ca33ee4692e 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -1763,10 +1763,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
+@@ -1764,10 +1764,10 @@ void AsyncHooks::Deserialize(Local<Context> context) {
          context->GetDataFromSnapshotOnce<Array>(
              info_->js_execution_async_resources).ToLocalChecked();
    } else {
@@ -149,7 +149,7 @@ index dd8be35de7c447c9a77f8b9849a6a3de19bc55af..79a309661aff7ebb18f96e64d0d2b860
  
    // The native_execution_async_resources_ field requires v8::Local<> instances
    // for async calls whose resources were on the stack as JS objects when they
-@@ -1806,7 +1806,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
+@@ -1807,7 +1807,7 @@ AsyncHooks::SerializeInfo AsyncHooks::Serialize(Local<Context> context,
    info.async_id_fields = async_id_fields_.Serialize(context, creator);
    if (!js_execution_async_resources_.IsEmpty()) {
      info.js_execution_async_resources = creator->AddData(
@@ -388,7 +388,7 @@ index 40407527800075b6afec5b6c7d98de2c6229e85a..6371aad07beb8514ca2a3acfd30d7c68
    BlobBindingData* binding = realm->AddBindingData<BlobBindingData>(holder);
    CHECK_NOT_NULL(binding);
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 60a4af347249f1211236bbd7f998a36ceac06038..023604e7096c0e8d20a0e955b7a004d2b66d7c27 100644
+index 7922f2f936f64cbb7bd08f0d367f66f0b9eb083b..04d76fdd3d170a7c501bd773b698d380b8bb2426 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -274,7 +274,7 @@ MaybeLocal<Data> BuiltinLoader::LookupAndCompile(
@@ -409,7 +409,7 @@ index 60a4af347249f1211236bbd7f998a36ceac06038..023604e7096c0e8d20a0e955b7a004d2
    LocalVector<String> parameters(isolate);
  
    Local<Data> data;
-@@ -459,7 +459,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+@@ -483,7 +483,7 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
  MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
                                                  const char* id,
                                                  Realm* realm) {
@@ -418,7 +418,7 @@ index 60a4af347249f1211236bbd7f998a36ceac06038..023604e7096c0e8d20a0e955b7a004d2
    const BuiltinSource* builtin_source = LoadBuiltinSource(isolate, id);
    if (builtin_source == nullptr) {
      THROW_ERR_MODULE_NOT_FOUND(isolate, "Cannot find module %s", id);
-@@ -531,7 +531,7 @@ MaybeLocal<Value> BuiltinLoader::CompileAndCallWith(Local<Context> context,
+@@ -555,7 +555,7 @@ MaybeLocal<Value> BuiltinLoader::CompileAndCallWith(Local<Context> context,
    if (!maybe_fn.ToLocal(&fn)) {
      return MaybeLocal<Value>();
    }
@@ -427,7 +427,7 @@ index 60a4af347249f1211236bbd7f998a36ceac06038..023604e7096c0e8d20a0e955b7a004d2
    return fn->Call(context, undefined, argc, argv);
  }
  
-@@ -555,14 +555,14 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
+@@ -579,14 +579,14 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
        to_eager_compile_.emplace(id);
      }
  
@@ -458,7 +458,7 @@ index fea0426496978c0003fe1481afcf93fc9c23edca..c9588880d05435ab9f4e23fcff74c933
  
    CHECK(
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 0f5da3e48a2049a3e61fe81da94426a3b5928c7d..1561e5096f5d8274001429000aa26731bca1b34e 100644
+index d3568da72a0f99419b4029b93d9eb1e9328d6bd5..cd8b64d58413914e72c32df6a2f192143e85ac46 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -108,6 +108,8 @@ using v8::Value;
@@ -479,7 +479,7 @@ index 0f5da3e48a2049a3e61fe81da94426a3b5928c7d..1561e5096f5d8274001429000aa26731
  
    PropertyAttribute attributes = PropertyAttribute::None;
    bool is_declared =
-@@ -1640,7 +1642,7 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
+@@ -1641,7 +1643,7 @@ static MaybeLocal<Function> CompileFunctionForCJSLoader(
      bool* cache_rejected,
      bool is_cjs_scope,
      ScriptCompiler::CachedData* cached_data) {
@@ -533,10 +533,10 @@ index c6404e00d04e61b675a8c4a02139b36da25bd2a8..ea90e6501bb58260f06d6720cc2fc498
    READONLY_PROPERTY(target, "exitCodes", exit_codes);
  
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 4c0a128628e0184af53451d37149b33342f6e647..c775015350c8269fa3fcb99b8db70762c22b9fcf 100644
+index bf202f5e2bf5eaf2dd9192dfd701e621126c492c..56b6cd5c39d5e72efd24b7aba1f28dab91a6144e 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
-@@ -3898,7 +3898,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -3891,7 +3891,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);

@@ -9,10 +9,10 @@ modules to sandboxed renderers.
 TODO(codebytere): remove and replace with a public facing API.
 
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index 740706e917b7d28c520abdbd743605bf73274f30..9ab30b3c9bc663d2947fcbfaac6f06d2c8f8a5b1 100644
+index b76ecc8cab47dfb96adce17294eb0191a60a2efd..0ddc080f6f1e1b3d0aaa0e55c9aa5ddb7409b11b 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
-@@ -656,6 +656,10 @@ void GetInternalBinding(const FunctionCallbackInfo<Value>& args) {
+@@ -657,6 +657,10 @@ void GetInternalBinding(const FunctionCallbackInfo<Value>& args) {
    args.GetReturnValue().Set(exports);
  }
  
@@ -24,10 +24,10 @@ index 740706e917b7d28c520abdbd743605bf73274f30..9ab30b3c9bc663d2947fcbfaac6f06d2
    Environment* env = Environment::GetCurrent(args);
  
 diff --git a/src/node_binding.h b/src/node_binding.h
-index a55a9c6a5787983c0477cb268ef1355162e72911..3455eb3d223a49cd73d80c72c209c26d49b769dc 100644
+index bb6547e5dac4086e29fd588d46e1b69d4e5dbc15..58f68485c298dce116a6a8ee6960c85edcb65e93 100644
 --- a/src/node_binding.h
 +++ b/src/node_binding.h
-@@ -154,6 +154,8 @@ void GetInternalBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
+@@ -155,6 +155,8 @@ void GetInternalBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
  void GetLinkedBinding(const v8::FunctionCallbackInfo<v8::Value>& args);
  void DLOpen(const v8::FunctionCallbackInfo<v8::Value>& args);
  
