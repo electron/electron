@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Electron Scripts <scripts@electron>
+Date: Wed, 22 Apr 2026 15:42:27 +0200
+Subject: src: include <cstdlib> for abort() in builtin_info.cc
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+builtin_info.cc calls abort() but only includes builtin_info.h,
+which transitively pulls in <cinttypes>/<string>/<unordered_map>
+/<vector> — none of which guarantee <cstdlib> is visible.
+upstream Node builds tolerate this due to implicit inclusion, but
+Electron's stricter Chromium-style build fails with "use of
+undeclared identifier 'abort'". Add the explicit include.
+
+This patch can be removed when upstream Node adds the include.
+
+diff --git a/src/builtin_info.cc b/src/builtin_info.cc
+index d5309265ac373310c20ba4f2438a778c9753254a..d4767b2c49538751ac0a877969764733401e498d 100644
+--- a/src/builtin_info.cc
++++ b/src/builtin_info.cc
+@@ -1,5 +1,7 @@
+ #include "builtin_info.h"
+ 
++#include <cstdlib>
++
+ namespace node {
+ namespace builtins {
+ 
