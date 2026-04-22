@@ -197,10 +197,10 @@ index 0000000000000000000000000000000000000000..b0f15909bebda29fc2ec689a6d3b15d7
 +
 +}  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 4521cc9e247c44248627c12b9eda0961f837d744..6ea61eb47fcde420261a9dd7e7e3feefa31f87d2 100644
+index be51e4f3e5de4ed82ba2752293ea58a9a672128c..8e2354d7918c3d86dde086c6647cb0c2656ab3c3 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -2680,6 +2680,7 @@ test("content_unittests") {
+@@ -2681,6 +2681,7 @@ test("content_unittests") {
      "../browser/fenced_frame/redacted_fenced_frame_config_mojom_traits_unittest.cc",
      "../browser/file_system/browser_file_system_helper_unittest.cc",
      "../browser/file_system/file_system_operation_runner_unittest.cc",
