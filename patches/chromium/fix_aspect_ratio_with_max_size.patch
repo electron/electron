@@ -10,11 +10,14 @@ set. It also fixes DCHECK which was triggered when user tried to
 enlarge window above dimensions set during creation of the
 BrowserWindow.
 
+Additionally, deflate the window by frame insets before applying
+the new aspect ratio so the dimensions will stay consistent.
+
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 074223b543e70abd7fc3cb304424e166127b440c..19f6ade2c4b3b9c66c949c944c41c6a238448016 100644
+index 074223b543e70abd7fc3cb304424e166127b440c..6b5617c666a40b5549f6c121e6fb64354e2023ab 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3869,17 +3869,30 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+@@ -3869,17 +3869,62 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
    delegate_->GetMinMaxSize(&min_window_size, &max_window_size);
    min_window_size = delegate_->DIPToScreenSize(min_window_size);
    max_window_size = delegate_->DIPToScreenSize(max_window_size);
@@ -33,6 +36,32 @@ index 074223b543e70abd7fc3cb304424e166127b440c..19f6ade2c4b3b9c66c949c944c41c6a2
 +    if (max_window_size.height())
 +      max_window_size.Enlarge(0, rect.bottom - rect.top);
 +  }
++
++  // When the HWND has asymmetric frame insets, applying the ratio
++  // would produce a visible window with the wrong dimensions. Deflate
++  // by those insets before scaling, then re-inflate.
++  RECT raw_window_rect = {0};
++  RECT extended_frame_bounds = {0};
++  gfx::Insets insets;
++  if (::GetWindowRect(hwnd(), &raw_window_rect) &&
++      SUCCEEDED(::DwmGetWindowAttribute(
++          hwnd(), DWMWA_EXTENDED_FRAME_BOUNDS, &extended_frame_bounds,
++          sizeof(extended_frame_bounds)))) {
++    insets = gfx::Insets::TLBR(
++        extended_frame_bounds.top - raw_window_rect.top,
++        extended_frame_bounds.left - raw_window_rect.left,
++        raw_window_rect.bottom - extended_frame_bounds.bottom,
++        raw_window_rect.right - extended_frame_bounds.right);
++  }
++  if (!insets.IsEmpty()) {
++    window_rect->Inset(insets);
++    min_window_size.Enlarge(-insets.width(),
++                            -insets.height());
++    if (max_window_size.width())
++      max_window_size.Enlarge(-insets.width(), 0);
++    if (max_window_size.height())
++      max_window_size.Enlarge(0, -insets.height());
++  }
  
    std::optional<gfx::Size> max_size_param;
    if (!max_window_size.IsEmpty()) {
@@ -46,6 +75,12 @@ index 074223b543e70abd7fc3cb304424e166127b440c..19f6ade2c4b3b9c66c949c944c41c6a2
        GetWindowResizeEdge(param), aspect_ratio_.value(), min_window_size,
 -      max_size_param, excluded_margin, *window_rect);
 +      max_size_param, window_rect);
++
++  if (!insets.IsEmpty()) {
++    window_rect->Outset(gfx::Outsets::TLBR(
++        insets.top(), insets.left(),
++        insets.bottom(), insets.right()));
++  }
  }
  
  POINT HWNDMessageHandler::GetCursorPos() const {
