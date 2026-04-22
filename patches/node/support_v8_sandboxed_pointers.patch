@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 5f51ad205189bd75d0d9638b1104c12b537b4e9b..ab2e72006b68feb6239214362aa57d35725ff35d 100644
+index befaa423abbe86f523a7b8902d74599e56c5b078..290b3446c2bd84a9f4a002dcfdd58e5eac75fcfe 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -111,6 +111,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -76,7 +76,7 @@ index 46a7d1396dc1a175ae99f4e403721f1730fdd320..bbb0abb3b9563074d350578e0f5a8fa2
  #else
    auto backing = ArrayBuffer::NewBackingStore(
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..27bd93769233dc65a064710db4095d9cdc3a8b1a 100644
+index a2fa1132c47d8cc4b875396c6cbaa9db6fe20262..efce181ae28383745fca2ff086cf2dac3107487a 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -346,24 +346,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
@@ -126,7 +126,7 @@ index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..27bd93769233dc65a064710db4095d9c
  #else
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
-@@ -662,23 +668,16 @@ namespace {
+@@ -664,23 +670,16 @@ namespace {
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
@@ -156,12 +156,12 @@ index 12b0d804c6f1d4998b85160b0aac8eb7a3b5576b..27bd93769233dc65a064710db4095d9c
      return THROW_ERR_OPERATION_FAILED(env, "Allocation failed");
    }
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
-index b30297eac08ad9587642b723f91d7e3b954294d4..4c5427596d1c90d3a413cdd9ff4f1151e657073d 100644
+index cb1ad6bcfa7ea421642d097d6a9a8a5e04d5cf7c..6b7e4211a8969351168fc982fe3466a2096bed3a 100644
 --- a/src/crypto/crypto_x509.cc
 +++ b/src/crypto/crypto_x509.cc
-@@ -135,19 +135,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+@@ -141,19 +141,17 @@ MaybeLocal<Value> ToBuffer(Environment* env, BIOPointer* bio) {
+   if (!mem) [[unlikely]]
      return {};
-   BUF_MEM* mem = *bio;
  #ifdef V8_ENABLE_SANDBOX
 -  // If the v8 sandbox is enabled, then all array buffers must be allocated
 -  // via the isolate. External buffers are not allowed. So, instead of wrapping
@@ -235,10 +235,10 @@ index 754ddf7b331465c56081db05d6fd2a45fe50596a..db1ed241f730791ba3e3f93349cb5ff3
    std::vector<SnapshotIndex> primitive_values;
    std::vector<PropInfo> template_values;
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index e1bee00825d140232456d6dc2337420fde6bda17..04edc4ca3c0e7c2284d2822fe9f5de66ff64fda2 100644
+index 362ac268483ea37c1d6fd65fc0cd9fcec7c8448d..93e0c8445056f45c3228bc9c64db3b91d0c84096 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -1443,7 +1443,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
+@@ -1477,7 +1477,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
    CHECK(value >= 0 && value < maxSize);
    size_t size = static_cast<size_t>(value);
  #ifdef V8_ENABLE_SANDBOX
@@ -247,7 +247,7 @@ index e1bee00825d140232456d6dc2337420fde6bda17..04edc4ca3c0e7c2284d2822fe9f5de66
  #endif
    return size;
  }
-@@ -1466,6 +1466,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1500,6 +1500,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        env->isolate_data()->is_building_snapshot()) {
      buf = ArrayBuffer::New(isolate, size);
    } else {
@@ -274,7 +274,7 @@ index e1bee00825d140232456d6dc2337420fde6bda17..04edc4ca3c0e7c2284d2822fe9f5de66
      std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
          isolate,
          size,
-@@ -1476,6 +1496,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1510,6 +1530,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
        return;
      }
@@ -480,17 +480,3 @@ index ef659f1c39f7ee958879bf395377bc99911fc346..225b1465b7c97d972a38968faf6d6850
    auto ab = ArrayBuffer::New(isolate, std::move(bs));
    v8::Local<Uint8Array> u8 = v8::Uint8Array::New(ab, 0, 1);
  
-diff --git a/test/parallel/test-buffer-concat.js b/test/parallel/test-buffer-concat.js
-index 9f0eadd2f10163c3c30657c84eb0ba55db17364d..7c1a6f71ca24dd2e54f9f5987aae2014b44bfba6 100644
---- a/test/parallel/test-buffer-concat.js
-+++ b/test/parallel/test-buffer-concat.js
-@@ -84,8 +84,7 @@ assert.throws(() => {
-   Buffer.concat([Buffer.from('hello')], -2);
- }, {
-   code: 'ERR_OUT_OF_RANGE',
--  message: 'The value of "length" is out of range. It must be >= 0 && <= 9007199254740991. ' +
--           'Received -2'
-+  message: /The value of "length" is out of range\. It must be >= 0 && <= (?:34359738367|9007199254740991)\. Received -2/
- });
- 
- // eslint-disable-next-line node-core/crypto-check
