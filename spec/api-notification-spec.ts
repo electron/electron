@@ -362,4 +362,74 @@ describe('Notification module', () => {
   });
 
   // TODO(sethlu): Find way to test init with notification icon?
+
+  describe('static methods', () => {
+    ifit(process.platform === 'darwin')('getHistory returns a promise that resolves to an array', async () => {
+      const result = Notification.getHistory();
+      expect(result).to.be.a('promise');
+      const history = await result;
+      expect(history).to.be.an('array');
+    });
+
+    ifit(process.platform === 'darwin')(
+      'getHistory returns Notification instances with correct properties',
+      async () => {
+        const n = new Notification({
+          id: 'history-test-id',
+          title: 'history test',
+          subtitle: 'history subtitle',
+          body: 'history body',
+          groupId: 'history-group',
+          silent: true
+        });
+
+        const shown = once(n, 'show');
+        n.show();
+        await shown;
+
+        const history = await Notification.getHistory();
+        // getHistory requires code-signed builds to return results;
+        // skip the content assertions if Notification Center is empty.
+        if (history.length > 0) {
+          const found = history.find((item: any) => item.id === 'history-test-id');
+          if (!found) {
+            expect.fail('Expected to find notification with id "history-test-id" in history');
+          }
+          expect(found).to.be.an.instanceOf(Notification);
+          expect(found.title).to.equal('history test');
+          expect(found.subtitle).to.equal('history subtitle');
+          expect(found.body).to.equal('history body');
+          expect(found.groupId).to.equal('history-group');
+        }
+
+        n.close();
+      }
+    );
+
+    ifit(process.platform === 'darwin')('getHistory returned notifications can be shown and closed', async () => {
+      const n = new Notification({
+        id: 'history-show-close',
+        title: 'show close test',
+        body: 'body',
+        silent: true
+      });
+
+      const shown = once(n, 'show');
+      n.show();
+      await shown;
+
+      const history = await Notification.getHistory();
+      if (history.length > 0) {
+        const found = history.find((item: any) => item.id === 'history-show-close');
+        if (!found) {
+          expect.fail('Expected to find notification with id "history-show-close" in history');
+        }
+        // Calling show() and close() on a restored notification should not throw
+        expect(() => {
+          found.show();
+          found.close();
+        }).to.not.throw();
+      }
+    });
+  });
 });

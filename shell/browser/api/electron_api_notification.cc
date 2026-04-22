@@ -5,6 +5,7 @@
 #include "shell/browser/api/electron_api_notification.h"
 
 #include "base/functional/bind.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/uuid.h"
 #include "build/build_config.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -13,10 +14,12 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/gin_converters/image_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "url/gurl.h"
 
@@ -97,9 +100,26 @@ Notification::Notification(gin::Arguments* args) {
     id_ = base::Uuid::GenerateRandomV4().AsLowercaseString();
 }
 
+Notification::Notification(const NotificationInfo& info)
+    : id_(info.id),
+      group_id_(info.group_id),
+      title_(base::UTF8ToUTF16(info.title)),
+      subtitle_(base::UTF8ToUTF16(info.subtitle)),
+      body_(base::UTF8ToUTF16(info.body)),
+      is_restored_(true),
+      presenter_(nullptr) {}
+
 Notification::~Notification() {
-  if (notification_)
+  if (notification_) {
     notification_->set_delegate(nullptr);
+    // For restored notifications, destroy the platform notification to remove
+    // it from the presenter's set. The platform-level is_restored_ flag ensures
+    // this won't remove the notification from Notification Center.
+    // For normal notifications, Close() is called before destruction which
+    // already cleans up, so notification_ will be null here.
+    if (is_restored_)
+      notification_->Destroy();
+  }
 }
 
 // static
@@ -266,6 +286,11 @@ void Notification::Close() {
 
 // Showing notifications
 void Notification::Show() {
+  // Restored notifications are read-only snapshots from Notification Center.
+  // Re-showing them would remove the original and create a duplicate.
+  if (is_restored_)
+    return;
+
   Close();
   if (presenter_) {
     notification_ = presenter_->CreateNotification(this, id_);
@@ -370,6 +395,71 @@ void Notification::HandleActivation(v8::Isolate* isolate,
 }
 #endif
 
+// static
+v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  auto* presenter =
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+          ->GetNotificationPresenter();
+  if (!presenter) {
+    promise.Resolve(v8::Array::New(isolate));
+    return handle;
+  }
+
+  presenter->GetDeliveredNotifications(base::BindOnce(
+      [](gin_helper::Promise<v8::Local<v8::Value>> promise,
+         std::vector<electron::NotificationInfo> notifications) {
+        v8::Isolate* isolate = promise.isolate();
+        v8::HandleScope handle_scope(isolate);
+
+        // The browser client may have been torn down by the time this
+        // callback fires — null-check to avoid a use-after-free.
+        auto* browser_client = ElectronBrowserClient::Get();
+        if (!browser_client) {
+          promise.Resolve(v8::Array::New(isolate).As<v8::Value>());
+          return;
+        }
+
+        auto* presenter = static_cast<ElectronBrowserClient*>(browser_client)
+                              ->GetNotificationPresenter();
+        if (!presenter) {
+          promise.Resolve(v8::Array::New(isolate).As<v8::Value>());
+          return;
+        }
+
+        v8::Local<v8::Array> result =
+            v8::Array::New(isolate, notifications.size());
+        for (size_t i = 0; i < notifications.size(); i++) {
+          const auto& info = notifications[i];
+
+          // Create a restored Notification object for each delivered
+          // notification. The API object is owned by V8 GC (via
+          // CreateHandle), while CreateNotification creates a separate
+          // platform notification owned by the presenter. They are connected
+          // by a WeakPtr (API -> platform) and a raw delegate pointer
+          // (platform -> API, cleared in ~Notification).
+          auto* notif = new Notification(info);
+          notif->notification_ =
+              presenter->CreateNotification(notif, notif->id_);
+          if (notif->notification_)
+            notif->notification_->Restore();
+
+          auto handle = gin_helper::CreateHandle(isolate, notif);
+          result
+              ->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
+                    handle.ToV8())
+              .Check();
+        }
+
+        promise.Resolve(result.As<v8::Value>());
+      },
+      std::move(promise)));
+
+  return handle;
+}
+
 void Notification::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
@@ -406,7 +496,6 @@ const char* Notification::GetTypeName() {
 void Notification::WillBeDestroyed() {
   ClearWeak();
 }
-
 }  // namespace electron::api
 
 namespace {
@@ -424,6 +513,7 @@ void Initialize(v8::Local<v8::Object> exports,
 #if BUILDFLAG(IS_WIN)
   dict.SetMethod("handleActivation", &Notification::HandleActivation);
 #endif
+  dict.SetMethod("getHistory", &Notification::GetHistory);
 }
 
 }  // namespace
