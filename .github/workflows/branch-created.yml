@@ -157,7 +157,7 @@ jobs:
             }))
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/copy-project@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
+        uses: dsanders11/project-actions/copy-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         id: create-release-board
         with:
           drafts: true
@@ -170,6 +170,60 @@ jobs:
           template-view: ${{ steps.generate-project-metadata.outputs.template-view }}
           title: ${{ steps.generate-project-metadata.outputs.major }}-x-y
           token: ${{ steps.generate-token.outputs.token }}
+      - name: Randomly Assign Draft Issues to Release WG Members
+        if: ${{ steps.check-major-version.outputs.MAJOR }}
+        uses: dsanders11/project-actions/github-script@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        env:
+          PROJECT_ID: ${{ steps.create-release-board.outputs.id }}
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          script: |
+            const { data: members } = await github.rest.teams.listMembersInOrg({
+              org: 'electron',
+              team_slug: 'wg-releases',
+            });
+
+            const excludedLogins = ['nikwen'];
+            const memberLogins = new Set(members.map(m => m.login));
+            for (const login of excludedLogins) {
+              if (!memberLogins.has(login)) {
+                core.warning(`Excluded member "${login}" is not in @electron/wg-releases`);
+              }
+            }
+
+            const eligible = members.filter(m => !excludedLogins.includes(m.login));
+
+            if (eligible.length === 0) {
+              core.warning('No eligible members found in @electron/wg-releases team');
+              return;
+            }
+
+            const projectId = process.env.PROJECT_ID;
+            const draftIssues = await actions.getDraftIssues(projectId);
+
+            if (draftIssues.length === 0) {
+              core.info('No draft issues found in the project');
+              return;
+            }
+
+            // Fisher-Yates shuffle for uniform random assignment
+            const shuffled = [...eligible];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+
+            // Assign draft issues round-robin across team members
+            for (let i = 0; i < draftIssues.length; i++) {
+              const member = shuffled[i % shuffled.length];
+              const draftIssue = draftIssues[i];
+              core.info(`Assigning "${draftIssue.content.title}" to ${member.login}`);
+              await actions.editItem(projectId, draftIssue.content.id, {
+                assignees: [member.login],
+              });
+            }
+
+            core.info(`Assigned ${draftIssues.length} draft issues to ${eligible.length} team members`);
       - name: Dump Release Project Board Contents
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         run: gh project item-list ${{ steps.create-release-board.outputs.number }} --owner electron --format json | jq
@@ -177,7 +231,7 @@ jobs:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
       - name: Find Previous Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: dsanders11/project-actions/find-project@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
+        uses: dsanders11/project-actions/find-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         id: find-prev-release-board
         with:
           fail-if-project-not-found: false
@@ -185,7 +239,7 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
       - name: Close Previous Release Project Board
         if: ${{ steps.find-prev-release-board.outputs.number }}
-        uses: dsanders11/project-actions/close-project@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
+        uses: dsanders11/project-actions/close-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         with:
           project-number: ${{ steps.find-prev-release-board.outputs.number }}
           token: ${{ steps.generate-token.outputs.token }}

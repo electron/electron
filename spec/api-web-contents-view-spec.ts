@@ -251,10 +251,17 @@ describe('WebContentsView', () => {
       // executeJavaScript calls are sequential so if this one's finished then
       // the previous one must also have been finished :)
       await v.webContents.executeJavaScript('undefined');
-      const w = new BaseWindow();
+      const w = new BaseWindow({ width: 400, height: 300 });
       w.setContentView(v);
       await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+
+      const viewportSize = await v.webContents.executeJavaScript(
+        '({ width: window.innerWidth, height: window.innerHeight })'
+      );
+      const contentBounds = w.getContentBounds();
+      expect(viewportSize.width).to.equal(contentBounds.width);
+      expect(viewportSize.height).to.equal(contentBounds.height);
     });
 
     it('is initially visible if load happens after attach', async () => {

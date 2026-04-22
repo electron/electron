@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/weak_ptr.h"
+#include "base/timer/timer.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
@@ -59,7 +61,10 @@ class DesktopCapturer final
  private:
   class ListObserver;
 
+  void FinalizeList(std::unique_ptr<ListObserver>& observer,
+                    std::unique_ptr<DesktopMediaList>& list);
   void OnListReady(DesktopMediaList* list);
+  void OnReadyTimeout();
   void CollectSourcesFrom(DesktopMediaList* list);
   void HandleFailure();
   void HandleSuccess();
@@ -72,6 +77,7 @@ class DesktopCapturer final
   int pending_lists_ = 0;
   bool finished_ = false;
   bool fetch_window_icons_ = false;
+  base::OneShotTimer deadline_;
 #if BUILDFLAG(IS_WIN)
   bool using_directx_capturer_ = false;
 #endif  // BUILDFLAG(IS_WIN)

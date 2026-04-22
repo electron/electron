@@ -240,6 +240,13 @@ void NativeWindow::SetShape(const std::vector<gfx::Rect>& rects) {
   widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
 }
 
+void NativeWindow::FlushPendingRootLayout(views::View* view) {
+  view->InvalidateLayout();
+
+  if (views::Widget* widget = view->GetWidget())
+    widget->LayoutRootViewIfNecessary();
+}
+
 bool NativeWindow::IsClosed() const {
   return is_closed_;
 }
@@ -596,8 +603,9 @@ void NativeWindow::NotifyWindowLeaveHtmlFullScreen() {
   observers_.Notify(&NativeWindowObserver::OnWindowLeaveHtmlFullScreen);
 }
 
-void NativeWindow::NotifyWindowAlwaysOnTopChanged() {
-  observers_.Notify(&NativeWindowObserver::OnWindowAlwaysOnTopChanged);
+void NativeWindow::NotifyWindowAlwaysOnTopChanged(const bool is_always_on_top) {
+  observers_.Notify(&NativeWindowObserver::OnWindowAlwaysOnTopChanged,
+                    is_always_on_top);
 }
 
 void NativeWindow::NotifyWindowExecuteAppCommand(

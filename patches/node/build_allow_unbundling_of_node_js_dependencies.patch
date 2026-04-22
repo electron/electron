@@ -14,7 +14,7 @@ We don't need to do this for zlib, as the existing gn workflow uses the same
 Upstreamed at https://github.com/nodejs/node/pull/55903
 
 diff --git a/unofficial.gni b/unofficial.gni
-index a773152813376bef1fa227c331241a1d944c9317..43f09d1e68c88d3ba3b862a1a74769f73c370894 100644
+index eeffbafa4023ed68f56410c858e459f569ed6344..d7c717d5c2799692c7ea4537d7faea234faefaa2 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -203,7 +203,17 @@ template("node_gn_build") {

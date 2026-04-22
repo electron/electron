@@ -495,12 +495,12 @@ describe('webRequest module', () => {
     });
 
     it('can change the request headers on a custom protocol redirect', async () => {
-      protocol.registerStringProtocol('no-cors', (req, callback) => {
-        if (req.url === 'no-cors://fake-host/redirect') {
+      protocol.registerStringProtocol('cors-blob', (req, callback) => {
+        if (req.url === 'cors-blob://fake-host/redirect') {
           callback({
             statusCode: 302,
             headers: {
-              Location: 'no-cors://fake-host'
+              Location: 'cors-blob://fake-host'
             }
           });
         } else {
@@ -523,10 +523,10 @@ describe('webRequest module', () => {
           requestHeaders.Accept = '*/*;test/header';
           callback({ requestHeaders });
         });
-        const { data } = await ajax('no-cors://fake-host/redirect');
+        const { data } = await ajax('cors-blob://fake-host/redirect');
         expect(data).to.equal('header-received');
       } finally {
-        protocol.unregisterProtocol('no-cors');
+        protocol.unregisterProtocol('cors-blob');
       }
     });
 
