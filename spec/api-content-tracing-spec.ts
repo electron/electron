@@ -414,6 +414,50 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
       expect(thirdResult.status).to.equal('rejected');
       expect(thirdResult.reason.message).to.equal('Heap profiling is already enabled');
     });
+
+    ifit(!process.env.IS_ASAN)('stops and allows enabling again', async function () {
+      const rc = await startRemoteControlApp();
+
+      const [firstDisableResult, secondEnableResult] = await rc.remotely(async () => {
+        const { contentTracing } = require('electron');
+
+        await contentTracing.enableHeapProfiling();
+        const [firstDisableResult] = await Promise.allSettled([
+          contentTracing.disableHeapProfiling()
+        ]);
+        const [secondEnableResult] = await Promise.allSettled([
+          contentTracing.enableHeapProfiling()
+        ]);
+
+        global.setTimeout(() => require('electron').app.quit());
+        return [firstDisableResult, secondEnableResult];
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+
+      expect(firstDisableResult.status).to.equal('fulfilled');
+      expect(secondEnableResult.status).to.equal('fulfilled');
+    });
+
+    ifit(!process.env.IS_ASAN)('rejects disableHeapProfiling when heap profiling is not enabled', async function () {
+      const rc = await startRemoteControlApp();
+
+      const [disableResult] = await rc.remotely(async () => {
+        const { contentTracing } = require('electron');
+        const [disableResult] = await Promise.allSettled([
+          contentTracing.disableHeapProfiling()
+        ]);
+        global.setTimeout(() => require('electron').app.quit());
+        return [disableResult];
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+
+      expect(disableResult.status).to.equal('rejected');
+      expect(disableResult.reason.message).to.equal('Heap profiling is not enabled');
+    });
   });
 
   describe('captured events', () => {

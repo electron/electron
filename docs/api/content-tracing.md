@@ -144,6 +144,8 @@ Only takes effect if the `disabled-by-default-memory-infra` category is included
 
 Needs to be called before `contentTracing.startRecording()`.
 
+Heap profiling remains enabled until `contentTracing.disableHeapProfiling()` is called.
+
 Usage:
 
 ```js
@@ -164,8 +166,18 @@ async function recordTrace () {
   await new Promise(resolve => setTimeout(resolve, 5000))
 
   const filePath = await contentTracing.stopRecording()
+  await contentTracing.disableHeapProfiling()
 }
 ```
+
+### `contentTracing.disableHeapProfiling()` _Experimental_
+
+Returns `Promise<void>` - Resolves once heap profiling has been disabled.
+
+Disable heap profiling started by `contentTracing.enableHeapProfiling()` and stop
+intercepting allocations in profiled processes.
+
+If heap profiling was not enabled, the returned promise is rejected.
 
 To view the recorded heap dumps:
 
