@@ -203,7 +203,8 @@ app.whenReady().then(() => {
 
 ### After (recommended)
 
-For most apps, using the system picker is the simplest approach:
+On macOS 15 and later, the simplest migration is to let the OS present its own
+picker. When the system picker is available, the handler is not invoked:
 
 ```js
 const { app, BrowserWindow, session } = require('electron')
@@ -211,8 +212,8 @@ const { app, BrowserWindow, session } = require('electron')
 app.whenReady().then(() => {
   const mainWindow = new BrowserWindow()
 
-  // The OS presents its own picker; the handler is not invoked.
   session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    // Fallback for platforms / OS versions where the system picker is unavailable.
     callback({})
   }, { useSystemPicker: true })
 
@@ -220,12 +221,35 @@ app.whenReady().then(() => {
 })
 ```
 
-If you need a custom picker UI, handle the request directly:
+If the renderer only needs to capture a specific `WebFrameMain` (for example,
+the requesting tab itself), no source enumeration is needed — pass the frame
+straight through:
 
 ```js
 session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
   // request.preferredDisplaySurface is 'monitor', 'window', 'browser', or 'none'
-  // Show your custom picker UI, then call callback with the selected source.
-  // For tab capture, pass a WebFrameMain:
   callback({ video: request.frame })
 })
+```
+
+For a fully custom picker UI on platforms where the system picker is not
+available, enumerate screens and windows inside the handler and respond with
+the user's selection. There is currently no web-standard replacement for
+source enumeration, so `desktopCapturer.getSources` remains functional during
+the deprecation period and is the recommended bridge:
+
+```js
+const { desktopCapturer, session } = require('electron')
+
+session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
+  // Use request.preferredDisplaySurface to narrow the source list when the page
+  // expresses a preference ('monitor', 'window', 'browser', or 'none').
+  const types = request.preferredDisplaySurface === 'window' ? ['window'] : ['screen', 'window']
+  const sources = await desktopCapturer.getSources({ types })
+
+  // Render your own picker UI (e.g. by forwarding `sources` to a renderer) and
+  // call back with the chosen source once the user picks one.
+  const chosen = sources[0]
+  callback({ video: chosen })
+})
+```
