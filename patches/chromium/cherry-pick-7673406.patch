@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Wei Wang <wei4.wang@intel.com>
+Date: Wed, 18 Mar 2026 20:00:51 -0700
+Subject: [WebNN] Reject fusing per-channel quantized gemm if the quantized
+ dimension of filter is not 0
+
+The FULLY_CONNECTED's underlying kernels expect the per-channel
+quantization axis to be the output channel(axis 0). So reject
+fusing per-channel quantized gemm and fall back to the unfused
+operators path if the quantized dimension of filter is not 0.
+
+Bug: 493319454
+Change-Id: Ib7e1236a535dc6a34d3ff9b9f0124a101bd89dbf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7673406
+Reviewed-by: Phillis Tang <phillis@chromium.org>
+Commit-Queue: Wang, Wei4 <wei4.wang@intel.com>
+Reviewed-by: Hu, Ningxin <ningxin.hu@intel.com>
+Cr-Commit-Position: refs/heads/main@{#1601718}
+
+diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tflite/graph_builder_tflite.cc
+index 56411065d59c299840d557104719fd70ff456bc2..a65f758d782536017c8a11f5397412e4c1d9a58b 100644
+--- a/services/webnn/tflite/graph_builder_tflite.cc
++++ b/services/webnn/tflite/graph_builder_tflite.cc
+@@ -1958,6 +1958,19 @@
+     return std::nullopt;
+   }
+ 
++  // The FULLY_CONNECTED's underlying kernels expect the per-channel
++  // quantization axis to be the output channel dimension (axis 0). This means
++  // the first dimension of the scale can not be equal to 1.
++  // https://source.chromium.org/chromium/chromium/src/+/main:third_party/litert/src/tflite/kernels/internal/reference/integer_ops/fully_connected.h;l=68;drc=9213607704a73d1e877921d0454abb11f761bdcc
++  if (per_channel_quantization) {
++    const auto& scale_shape =
++        GetOperand(b_dequantize.scale_operand_id).descriptor.shape();
++
++    if (scale_shape[0] == 1) {
++      return std::nullopt;
++    }
++  }
++
+   // The a_scale * b_scale should be about the same as c_scale for per-tensor
+   // quantization.
+   // https://source.chromium.org/chromium/chromium/src/+/main:third_party/tflite/src/tensorflow/lite/kernels/kernel_util.cc;l=303;drc=492dc9719f6e1845f4f5c0553cd5c7651115f671
