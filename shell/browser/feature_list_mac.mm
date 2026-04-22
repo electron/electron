@@ -11,6 +11,14 @@
 namespace electron {
 
 std::string EnablePlatformSpecificFeatures() {
+  // UseSCContentSharingPicker (media/base/media_switches.cc) gates the
+  // upstream NativeScreenCapturePickerMac path. Enabling it on macOS 15+
+  // lets session.setDisplayMediaRequestHandler({ useSystemPicker: true })
+  // drive the system picker via content::desktop_capture public API.
+  std::string sck_picker;
+  if (@available(macOS 15.0, *)) {
+    sck_picker = ",UseSCContentSharingPicker";
+  }
   if (@available(macOS 14.4, *)) {
     // These flags aren't exported so reference them by name directly, they are
     // used to ensure that screen and window capture exclusive use
@@ -22,10 +30,12 @@ std::string EnablePlatformSpecificFeatures() {
     // kThumbnailCapturerMac,
     // chrome/browser/media/webrtc/thumbnail_capturer_mac.mm
 #if DCHECK_IS_ON()
-    return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma";
+    return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma" +
+           sck_picker;
 #else
     return "ScreenCaptureKitPickerScreen,ScreenCaptureKitStreamPickerSonoma,"
-           "ThumbnailCapturerMac:capture_mode/sc_screenshot_manager";
+           "ThumbnailCapturerMac:capture_mode/sc_screenshot_manager" +
+           sck_picker;
 #endif
   }
   return "";

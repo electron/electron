@@ -19,6 +19,7 @@
 #include "base/strings/escape.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
+#include "base/task/bind_post_task.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -33,6 +34,7 @@
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
+#include "content/public/browser/desktop_capture.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/render_process_host.h"
@@ -44,6 +46,7 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
+#include "shell/browser/api/electron_api_desktop_capturer.h"
 #include "shell/browser/cookie_change_notifier.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_main_parts.h"
@@ -701,9 +704,52 @@ void ElectronBrowserContext::SetSSLConfigClient(
 }
 
 void ElectronBrowserContext::SetDisplayMediaRequestHandler(
-    DisplayMediaRequestHandler handler) {
+    DisplayMediaRequestHandler handler,
+    bool use_system_picker) {
   display_media_request_handler_ = handler;
+  use_system_picker_ = use_system_picker;
 }
+
+namespace {
+
+content::DesktopMediaID::Type PickerTypeForRequest(
+    const content::MediaStreamRequest& request) {
+  // Upstream's NativeScreenCapturePickerMac requires exactly TYPE_SCREEN XOR
+  // TYPE_WINDOW. Use the request's `preferred_display_surface` when it maps
+  // cleanly; default to TYPE_SCREEN otherwise.
+  switch (request.preferred_display_surface) {
+    case blink::mojom::PreferredDisplaySurface::WINDOW:
+      return content::DesktopMediaID::TYPE_WINDOW;
+    case blink::mojom::PreferredDisplaySurface::MONITOR:
+    case blink::mojom::PreferredDisplaySurface::NO_PREFERENCE:
+    case blink::mojom::PreferredDisplaySurface::BROWSER:
+      return content::DesktopMediaID::TYPE_SCREEN;
+  }
+}
+
+void FinishSystemPickerRequest(const content::MediaStreamRequest& request,
+                               content::DesktopMediaID::Type type,
+                               content::MediaResponseCallback callback,
+                               webrtc::DesktopCapturer::Source source) {
+  blink::mojom::StreamDevicesSet stream_devices_set;
+  stream_devices_set.stream_devices.emplace_back(
+      blink::mojom::StreamDevices::New());
+  content::DesktopMediaID media_id(type, source.id);
+  blink::MediaStreamDevice video_device(request.video_type, media_id.ToString(),
+                                        "Screen");
+  video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
+      nullptr, url::Origin::Create(request.security_origin), media_id);
+  stream_devices_set.stream_devices[0]->video_device = video_device;
+  std::move(callback).Run(stream_devices_set,
+                          blink::mojom::MediaStreamRequestResult::OK, nullptr);
+}
+
+void FailSystemPickerRequest(content::MediaResponseCallback callback,
+                             blink::mojom::MediaStreamRequestResult result) {
+  std::move(callback).Run(blink::mojom::StreamDevicesSet(), result, nullptr);
+}
+
+}  // namespace
 
 void ElectronBrowserContext::DisplayMediaDeviceChosen(
     const content::MediaStreamRequest& request,
@@ -840,6 +886,61 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
 bool ElectronBrowserContext::ChooseDisplayMediaDevice(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback) {
+  if (use_system_picker_ &&
+      api::DesktopCapturer::IsDisplayMediaSystemPickerAvailable()) {
+    // Route useSystemPicker: true through upstream's
+    // NativeScreenCapturePickerMac, which owns the system picker lifecycle and
+    // issues source ids. The JS handler is bypassed (documented behavior).
+    const content::DesktopMediaID::Type type = PickerTypeForRequest(request);
+    // `callback` is consumed by exactly one of picker/cancel/error. Wrap it in
+    // a RefCountedData so we can share across the three BindOnce paths.
+    auto shared_callback = base::MakeRefCounted<
+        base::RefCountedData<content::MediaResponseCallback>>(
+        std::move(callback));
+
+    auto created_cb =
+        base::BindPostTask(base::SequencedTaskRunner::GetCurrentDefault(),
+                           base::BindOnce([](content::DesktopMediaID::Id) {}));
+    auto picker_cb = base::BindPostTask(
+        base::SequencedTaskRunner::GetCurrentDefault(),
+        base::BindOnce(
+            [](content::MediaStreamRequest request,
+               content::DesktopMediaID::Type type,
+               scoped_refptr<
+                   base::RefCountedData<content::MediaResponseCallback>> cb,
+               webrtc::DesktopCapturer::Source source) {
+              FinishSystemPickerRequest(std::move(request), type,
+                                        std::move(cb->data), source);
+            },
+            request, type, shared_callback));
+    auto cancel_cb = base::BindPostTask(
+        base::SequencedTaskRunner::GetCurrentDefault(),
+        base::BindOnce(
+            [](scoped_refptr<
+                base::RefCountedData<content::MediaResponseCallback>> cb) {
+              FailSystemPickerRequest(
+                  std::move(cb->data),
+                  blink::mojom::MediaStreamRequestResult::PERMISSION_DENIED);
+            },
+            shared_callback));
+    auto error_cb = base::BindPostTask(
+        base::SequencedTaskRunner::GetCurrentDefault(),
+        base::BindOnce(
+            [](scoped_refptr<
+                base::RefCountedData<content::MediaResponseCallback>> cb) {
+              FailSystemPickerRequest(std::move(cb->data),
+                                      blink::mojom::MediaStreamRequestResult::
+                                          FAILED_DUE_TO_SHUTDOWN);
+            },
+            shared_callback));
+
+    content::GetIOThreadTaskRunner({})->PostTask(
+        FROM_HERE,
+        base::BindOnce(&content::desktop_capture::OpenNativeScreenCapturePicker,
+                       type, std::move(created_cb), std::move(picker_cb),
+                       std::move(cancel_cb), std::move(error_cb)));
+    return true;
+  }
   if (!display_media_request_handler_)
     return false;
   DisplayMediaResponseCallbackJs callbackJs =

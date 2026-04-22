@@ -206,7 +206,8 @@ class Session final : public gin::Wrappable<Session>,
 
  private:
   void SetDisplayMediaRequestHandler(v8::Isolate* isolate,
-                                     v8::Local<v8::Value> val);
+                                     v8::Local<v8::Value> val,
+                                     gin::Arguments* args);
 
   cppgc::Member<api::Cookies> cookies_;
   cppgc::Member<api::Extensions> extensions_;
