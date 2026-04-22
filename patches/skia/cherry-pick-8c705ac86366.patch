@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Nusko <nuskos@google.com>
+Date: Mon, 07 Apr 2026 14:00:00 -0700
+Subject: Use SkSafeMath to prevent overflow in pixel offset
+ calculations.
+
+The trim methods in SkReadPixelsRec and SkWritePixelsRec now use
+SkSafeMath to calculate the offset for fPixels. This addresses potential
+integer overflows when computing the y and x offsets and their sum.
+Additionally, a check for fInfo.minRowBytes() == 0 is added, as
+minRowBytes() returns 0 on overflow. If any overflow occurs during
+offset calculation, trim will now return false.
+
+See linked bug for potential security issue that motivated this.
+
+And see (sorry internal only) go/code-terracotta-review-explainer for
+evaluting this phase (1) patch.
+
+Bug:b/495534710
+Change-Id: I0b2a684b5ad1105c7d25418556e40b4d9f511daf
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1194336
+Auto-Submit: Stephen Nusko <nuskos@google.com>
+Commit-Queue: Stephen Nusko <nuskos@google.com>
+Reviewed-by: Kaylee Lubick <kjlubick@google.com>
+Reviewed-by: Florin Malita <fmalita@google.com>
+
+diff --git a/src/core/SkReadPixelsRec.cpp b/src/core/SkReadPixelsRec.cpp
+index 505bfb51b3..f7e9661629 100644
+--- a/src/core/SkReadPixelsRec.cpp
++++ b/src/core/SkReadPixelsRec.cpp
+@@ -7,9 +7,12 @@
+ #include "src/core/SkReadPixelsRec.h"
+ 
+ #include "include/core/SkRect.h"
++#include "src/base/SkSafeMath.h"
+ 
+ bool SkReadPixelsRec::trim(int srcWidth, int srcHeight) {
+-    if (nullptr == fPixels || fRowBytes < fInfo.minRowBytes()) {
++    // fInfo.minRowBytes() returns 0 if the size doesn't fit in `size_t`.
++    const size_t minRowBytes = fInfo.minRowBytes();
++    if (nullptr == fPixels || fRowBytes < minRowBytes || minRowBytes == 0) {
+         return false;
+     }
+     if (0 >= fInfo.width() || 0 >= fInfo.height()) {
+@@ -30,9 +33,17 @@ bool SkReadPixelsRec::trim(int srcWidth, int srcHeight) {
+     if (y > 0) {
+         y = 0;
+     }
+-    // here x,y are either 0 or negative
++    // here x,y are either 0 or negative (safe to cast to size_t)
+     // we negate and add them so UBSAN (pointer-overflow) doesn't get confused.
+-    fPixels = ((char*)fPixels + -y*fRowBytes + -x*fInfo.bytesPerPixel());
++    SkSafeMath safeMath;
++    const size_t y_offset = safeMath.mul(-y, fRowBytes);
++    const size_t x_offset = safeMath.mul(-x, fInfo.bytesPerPixel());
++    const size_t total = safeMath.add(y_offset, x_offset);
++    if (!safeMath.ok()) {
++        return false;
++    }
++
++    fPixels = ((char*)fPixels + total);
+     // the intersect may have shrunk info's logical size
+     fInfo = fInfo.makeDimensions(srcR.size());
+     fX = srcR.x();
+diff --git a/src/core/SkWritePixelsRec.cpp b/src/core/SkWritePixelsRec.cpp
+index 20b2003f59..d1bad0f51e 100644
+--- a/src/core/SkWritePixelsRec.cpp
++++ b/src/core/SkWritePixelsRec.cpp
+@@ -8,9 +8,12 @@
+ #include "src/core/SkWritePixelsRec.h"
+ 
+ #include "include/core/SkRect.h"
++#include "src/base/SkSafeMath.h"
+ 
+ bool SkWritePixelsRec::trim(int dstWidth, int dstHeight) {
+-    if (nullptr == fPixels || fRowBytes < fInfo.minRowBytes()) {
++    // fInfo.minRowBytes() returns 0 if the size doesn't fit in `size_t`.
++    const size_t minRowBytes = fInfo.minRowBytes();
++    if (nullptr == fPixels || fRowBytes < minRowBytes || minRowBytes == 0) {
+         return false;
+     }
+     if (0 >= fInfo.width() || 0 >= fInfo.height()) {
+@@ -31,9 +34,17 @@ bool SkWritePixelsRec::trim(int dstWidth, int dstHeight) {
+     if (y > 0) {
+         y = 0;
+     }
+-    // here x,y are either 0 or negative
++    // here x,y are either 0 or negative (safe to cast to size_t)
+     // we negate and add them so UBSAN (pointer-overflow) doesn't get confused.
+-    fPixels = ((const char*)fPixels + -y*fRowBytes + -x*fInfo.bytesPerPixel());
++    SkSafeMath safeMath;
++    const size_t y_offset = safeMath.mul(-y, fRowBytes);
++    const size_t x_offset = safeMath.mul(-x, fInfo.bytesPerPixel());
++    const size_t total = safeMath.add(y_offset, x_offset);
++    if (!safeMath.ok()) {
++        return false;
++    }
++
++    fPixels = ((const char*)fPixels + total);
+     // the intersect may have shrunk info's logical size
+     fInfo = fInfo.makeDimensions(dstR.size());
+     fX = dstR.x();
+
