@@ -240,6 +240,13 @@ void NativeWindow::SetShape(const std::vector<gfx::Rect>& rects) {
   widget()->SetShape(std::make_unique<std::vector<gfx::Rect>>(rects));
 }
 
+void NativeWindow::FlushPendingRootLayout(views::View* view) {
+  view->InvalidateLayout();
+
+  if (views::Widget* widget = view->GetWidget())
+    widget->LayoutRootViewIfNecessary();
+}
+
 bool NativeWindow::IsClosed() const {
   return is_closed_;
 }
