@@ -1,44 +1,96 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Samuel Attard <sattard@salesforce.com>
-Date: Thu, 26 May 2022 15:38:32 -0700
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 7 Apr 2026 02:34:49 +0900
 Subject: feat: filter out non-shareable windows in the current application in
  ScreenCaptureKitDevice
 
-This patch ensures that windows protected via win.setContentProtection(true) do not appear in full display captures via desktopCapturer.  This patch could be upstreamed but as the check is limited to in-process windows it doesn't make a lot of sense for Chromium itself.  This patch currently has a limitation that it only function for windows created / protected BEFORE the stream is started.  There is theoretical future work we can do via polling / observers to automatically update the SCContentFilter when new windows are made but for now this will solve 99+% of the problem and folks can re-order their logic a bit to get it working for their use cases.
+Ensures that windows with sharingType == NSWindowSharingNone (set via
+Electron's win.setContentProtection(true)) are excluded from full-display
+ScreenCaptureKit captures. The filtering is extracted into a
+GetNonShareableWindows() helper and applied in both OnShareableContentCreated
+(initial stream setup) and OnShareableContentForFilterUpdate (PiP state
+change handler), so content-protected windows stay excluded even when the
+SCContentFilter is rebuilt during capture.
+
+Limitation: only filters windows protected before the query runs. Dynamically
+protecting a window during an active capture will not take effect until the
+next filter update or stream restart.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index f7523cf4dcc40b13499d1e425ce7b67f2d907cc9..64ffc2642c003c8fb7f133ee43ba3e20d48ea543 100644
+index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..e101c1c3a09074ecefb6ad59327f7c518f4780e4 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -322,6 +322,31 @@ void OnShareableContentCreated(SCShareableContent* content) {
+@@ -154,6 +154,32 @@ bool IsPresenterOverlayLargeActive(CFDictionaryRef attachment) {
+   }
+   return @[];
+ }
++
++// Returns SCWindows from |content| that correspond to in-process NSWindows
++// whose sharingType is NSWindowSharingNone (content-protected via Electron's
++// win.setContentProtection(true)). Only captures windows protected before this
++// call; dynamically protected windows require a filter update.
++API_AVAILABLE(macos(12.3))
++NSArray<SCWindow*>* GetNonShareableWindows(SCShareableContent* content) {
++  NSArray<NSWindow*>* non_sharing_nswindows = [[[NSApplication sharedApplication]
++      windows]
++      filteredArrayUsingPredicate:
++          [NSPredicate predicateWithBlock:^BOOL(NSWindow* win,
++                                               NSDictionary* bindings) {
++            return [win sharingType] == NSWindowSharingNone;
++          }]];
++  return [[content windows]
++      filteredArrayUsingPredicate:
++          [NSPredicate predicateWithBlock:^BOOL(SCWindow* win,
++                                               NSDictionary* bindings) {
++            for (NSWindow* excluded : non_sharing_nswindows) {
++              if ((CGWindowID)[excluded windowNumber] == [win windowID]) {
++                return true;
++              }
++            }
++            return false;
++          }]];
++}
+ }  // namespace
+ 
+ API_AVAILABLE(macos(12.3))
+@@ -322,30 +348,8 @@ void OnShareableContentCreated(SCShareableContent* content) {
                source_.id == webrtc::kFullDesktopScreenId) {
              NSArray<SCWindow*>* excluded_windows = GetWindowsToExclude(
                  content, pip_screen_capture_coordinator_proxy_.get(), source_);
-+            NSArray<NSWindow*>* non_sharing_nswindows = [[[NSApplication
-+                sharedApplication] windows]
-+                filteredArrayUsingPredicate:[NSPredicate
-+                                                predicateWithBlock:^BOOL(
-+                                                    NSWindow* win,
-+                                                    NSDictionary* bindings) {
-+                                                  return [win sharingType] ==
-+                                                         NSWindowSharingNone;
-+                                                }]];
-+            NSArray<SCWindow*>* non_sharing_scwindows = [[content windows]
-+                filteredArrayUsingPredicate:
-+                    [NSPredicate predicateWithBlock:^BOOL(
-+                                     SCWindow* win, NSDictionary* bindings) {
-+                      for (NSWindow* excluded : non_sharing_nswindows) {
-+                        if ((CGWindowID)[excluded windowNumber] ==
-+                            [win windowID]) {
-+                          return true;
-+                        }
-+                      }
-+                      return false;
-+                    }]];
-+            // Combine excluded windows from PiP and non-shareable windows.
-+            excluded_windows = [excluded_windows
-+                arrayByAddingObjectsFromArray:non_sharing_scwindows];
-+
+-            NSArray<NSWindow*>* non_sharing_nswindows = [[[NSApplication
+-                sharedApplication] windows]
+-                filteredArrayUsingPredicate:[NSPredicate
+-                                                predicateWithBlock:^BOOL(
+-                                                    NSWindow* win,
+-                                                    NSDictionary* bindings) {
+-                                                  return [win sharingType] ==
+-                                                         NSWindowSharingNone;
+-                                                }]];
+-            NSArray<SCWindow*>* non_sharing_scwindows = [[content windows]
+-                filteredArrayUsingPredicate:
+-                    [NSPredicate predicateWithBlock:^BOOL(
+-                                     SCWindow* win, NSDictionary* bindings) {
+-                      for (NSWindow* excluded : non_sharing_nswindows) {
+-                        if ((CGWindowID)[excluded windowNumber] ==
+-                            [win windowID]) {
+-                          return true;
+-                        }
+-                      }
+-                      return false;
+-                    }]];
+-            // Combine excluded windows from PiP and non-shareable windows.
+             excluded_windows = [excluded_windows
+-                arrayByAddingObjectsFromArray:non_sharing_scwindows];
++                arrayByAddingObjectsFromArray:GetNonShareableWindows(content)];
+ 
              filter = [[SCContentFilter alloc] initWithDisplay:display
                                               excludingWindows:excluded_windows];
-             stream_config_content_size_ =
+@@ -614,6 +618,8 @@ void OnShareableContentForFilterUpdate(SCShareableContent* content) {
+ 
+     NSArray<SCWindow*>* excluded_windows = GetWindowsToExclude(
+         content, pip_screen_capture_coordinator_proxy_.get(), source_);
++    excluded_windows = [excluded_windows
++        arrayByAddingObjectsFromArray:GetNonShareableWindows(content)];
+     SCContentFilter* filter =
+         [[SCContentFilter alloc] initWithDisplay:display
+                                 excludingWindows:excluded_windows];
