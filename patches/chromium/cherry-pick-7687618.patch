@@ -16,10 +16,10 @@ Commit-Queue: Wang, Wei4 <wei4.wang@intel.com>
 Cr-Commit-Position: refs/heads/main@{#1602966}
 
 diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tflite/graph_builder_tflite.cc
-index 56411065d59c299840d557104719fd70ff456bc2..32e7a227f38b4919582f65db7166a5ac29273710 100644
+index 28aea1bf23601330e4dd60d4d124905800a0846c..d9cdbf3c71fad5c5da6e688c57d7ef4ef46da668 100644
 --- a/services/webnn/tflite/graph_builder_tflite.cc
 +++ b/services/webnn/tflite/graph_builder_tflite.cc
-@@ -6535,6 +6535,68 @@
+@@ -6548,6 +6548,68 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
      return base::unexpected("Pool2d in tflite doesn't support dilations.");
    }
  
@@ -88,7 +88,7 @@ index 56411065d59c299840d557104719fd70ff456bc2..32e7a227f38b4919582f65db7166a5ac
    ::tflite::BuiltinOperator operator_code;
    std::optional<TensorInfo> quantized_output;
    const mojom::Operand& input_operand = GetOperand(pool2d.input_operand_id);
-@@ -6560,9 +6622,6 @@
+@@ -6573,9 +6635,6 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
    CHECK_EQ(input_shape.size(), 4u);
    const webnn::Size2d<uint32_t> input_size2d = {.height = input_shape[1],
                                                  .width = input_shape[2]};

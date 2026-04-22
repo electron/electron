@@ -18,10 +18,10 @@ Reviewed-by: Hu, Ningxin <ningxin.hu@intel.com>
 Cr-Commit-Position: refs/heads/main@{#1601718}
 
 diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tflite/graph_builder_tflite.cc
-index 56411065d59c299840d557104719fd70ff456bc2..a65f758d782536017c8a11f5397412e4c1d9a58b 100644
+index 56411065d59c299840d557104719fd70ff456bc2..28aea1bf23601330e4dd60d4d124905800a0846c 100644
 --- a/services/webnn/tflite/graph_builder_tflite.cc
 +++ b/services/webnn/tflite/graph_builder_tflite.cc
-@@ -1958,6 +1958,19 @@
+@@ -1958,6 +1958,19 @@ GraphBuilderTflite::CanFuseQuantizeAndGetOutput(const mojom::Gemm& gemm) {
      return std::nullopt;
    }
  

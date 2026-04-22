@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
-From: Fu, Junwei <junwei.fu@intel.com>
-Date: Tue, 18 Mar 2026 03:25:47 -0700
-Subject: WebNN: Use output size for TransposeConv SAME padding in
- TFLite
+From: "Fu, Junwei" <junwei.fu@intel.com>
+Date: Wed, 18 Mar 2026 03:25:47 -0700
+Subject: WebNN: Use output size for TransposeConv SAME padding in TFLite
 
 This CL aligns the TFLite backend's padding calculation for
 convTranspose2d with the TFLite kernel implementation.
@@ -16,7 +15,7 @@ Reviewed-by: Reilly Grant <reillyg@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1601883}
 
 diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tflite/graph_builder_tflite.cc
-index 56411065d59c299840d557104719fd70ff456bc2..72610d822fe2a67beecbd5000cff3a4740922288 100644
+index d9cdbf3c71fad5c5da6e688c57d7ef4ef46da668..b2fcd0a39695ce98f7d70368ebb32ab7669bcf45 100644
 --- a/services/webnn/tflite/graph_builder_tflite.cc
 +++ b/services/webnn/tflite/graph_builder_tflite.cc
 @@ -206,40 +206,50 @@ struct PaddingSizes {
@@ -261,7 +260,7 @@ index 56411065d59c299840d557104719fd70ff456bc2..72610d822fe2a67beecbd5000cff3a47
  // Sort the indexes of the elements in the axes array based on their values and
  // return the sorted index array for adding a transpose operation if needed. For
  // example input shape is [2, 1, 4, 3], the shape of the scale and bias is [3,
-@@ -3870,10 +3998,47 @@ auto GraphBuilderTflite::SerializeConv2d(const mojom::Conv2d& conv2d)
+@@ -3883,10 +4011,47 @@ auto GraphBuilderTflite::SerializeConv2d(const mojom::Conv2d& conv2d)
    const auto& filter_shape = filter_operand.descriptor.shape();
    const webnn::Size2d<uint32_t> filter_size2d = {.height = filter_shape[1],
                                                   .width = filter_shape[2]};
@@ -310,19 +309,10 @@ index 56411065d59c299840d557104719fd70ff456bc2..72610d822fe2a67beecbd5000cff3a47
                             conv2d.kind == mojom::Conv2d::Kind::kTransposed));
  
    std::optional<FusedActivationOutputInfo> fused_activation =
-@@ -6558,16 +6723,19 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
- 
-   const auto& input_shape = input_operand.descriptor.shape();
+@@ -6635,11 +6800,10 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
    CHECK_EQ(input_shape.size(), 4u);
-+  const mojom::Operand& output_operand = GetOperand(pool2d.output_operand_id);
-+  const auto& output_shape = output_operand.descriptor.shape();
    const webnn::Size2d<uint32_t> input_size2d = {.height = input_shape[1],
                                                  .width = input_shape[2]};
-+  const webnn::Size2d<uint32_t> output_size2d = {.height = output_shape[1],
-+                                                 .width = output_shape[2]};
-   webnn::Size2d<uint32_t> filter_size2d = {
-       .height = pool2d.window_dimensions->height,
-       .width = pool2d.window_dimensions->width};
 -  ASSIGN_OR_RETURN(
 -      TfLitePadding padding_mode,
 -      GetTfLitePaddingMode(*pool2d.padding, input_size2d, filter_size2d,
@@ -404,4 +394,3 @@ index 035d7f3a1387c642e65205daef788ccc2db0b12f..7d6b36e0e78a0b41a0c4b1b280286e95
  [FAIL] [required] convTranspose2d float16 4D input and filter tensors options.dilations
    promise_test: Unhandled rejection with value: object "NotSupportedError: Failed to execute 'build' on 'MLGraphBuilder': convTranspose2d doesn't support dilations and groups."
  Harness: the test ran to completion.
-

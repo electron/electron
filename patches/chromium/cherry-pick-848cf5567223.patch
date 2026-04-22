@@ -1,6 +1,6 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: David Baron <dbaron@chromium.org>
-Date: Mon, 24 Mar 2026 11:30:00 -0700
+Date: Tue, 24 Mar 2026 11:30:00 -0700
 Subject: Check parent nodes when handling vector node insertions.
 
 In the optimized vector node insertion case, check the parent node just
@@ -62,10 +62,10 @@ index 4667ca8c8e09480b2ee5bd3210ac5db16c92eee6..8c7264198d3cbda22677d254323b29b0
    inline bool IsHostIncludingInclusiveAncestorOfThis(const Node&,
                                                       ExceptionState&) const;
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index f87e3e39cf90abafc05cb6b279716b937c0d904f..2eb5cc1183652fa6b307b074694a99d2430943da 100644
+index 47af3989c1681de3004ec85d4ac5dd9718b0a825..5858f58a3ac36cb4f491c33d167845155bb582b1 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -4135,6 +4135,11 @@
+@@ -4139,6 +4139,11 @@
        name: "ReadableStreamBYOBReaderReadMinOption",
        status: "stable",
      },
@@ -116,4 +116,3 @@ index 0000000000000000000000000000000000000000..f1e8ace831407eccae03f62ff5e77ee7
 +++ b/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html.headers
 @@ -0,0 +1 @@
 +Permissions-Policy: unload=*
-
