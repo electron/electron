@@ -629,6 +629,51 @@ Emitted after `USBDevice.forget()` has been called.  This event can be used
 to help maintain persistent storage of permissions when
 `setDevicePermissionHandler` is used.
 
+#### Event: 'select-webauthn-account'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `accounts` [WebAuthnAccount[]](structures/webauthn-account.md)
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+* `callback` Function
+  * `credentialId` string | null (optional)
+
+Emitted when a call to `navigator.credentials.get()` resolves multiple
+discoverable WebAuthn credentials and the user must choose one. `callback`
+should be called with the `credentialId` of the selected account; passing no
+arguments to `callback` will cancel the request. If no listener is registered
+for this event, the request is cancelled and the page receives a
+`NotAllowedError`.
+
+On macOS, the Touch ID platform authenticator surfaces accounts via this event
+once it has been configured with
+[`app.configureWebAuthn`](app.md#appconfigurewebauthnoptions-macos). The event
+may also fire on other platforms when a roaming FIDO2 authenticator returns
+multiple discoverable credentials.
+
+```js
+const { app, BrowserWindow } = require('electron')
+
+let win = null
+
+app.whenReady().then(() => {
+  app.configureWebAuthn({
+    touchID: { keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn' }
+  })
+
+  win = new BrowserWindow()
+
+  win.webContents.session.on('select-webauthn-account', (event, details, callback) => {
+    const selected = details.accounts.find((a) => a.name === 'alice@example.com')
+    callback(selected?.credentialId)
+  })
+})
+```
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
