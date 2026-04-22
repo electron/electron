@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Baron <dbaron@chromium.org>
+Date: Mon, 24 Mar 2026 11:30:00 -0700
+Subject: Check parent nodes when handling vector node insertions.
+
+
+diff --git a/third_party/blink/renderer/core/dom/container_node.cc b/third_party/blink/renderer/core/dom/container_node.cc
+index a70ff057abc293b440f08461f49a2a2970bf2490..9758fafd2c8cdef708a5ac5dd434fb187a0abc27 100644
+--- a/third_party/blink/renderer/core/dom/container_node.cc
++++ b/third_party/blink/renderer/core/dom/container_node.cc
+@@ -308,6 +308,21 @@ bool ContainerNode::EnsurePreInsertionValidity(
+         return false;
+       }
+     }
++
++    // Node::ConvertNodeUnionsIntoNodes behaves differently depending on
++    // whether there is one node or more than one, since it simulates
++    // insertion into a DocumentFragment for the latter case.  If it handled
++    // more than one node, then it already removed the children from their old
++    // parent.  Check here that those removals didn't do anything bad.  (We
++    // could potentially make this faster by using a DOMMutationDetector in
++    // ConvertNodeUnionsIntoNodes and storing whether we need to do this.)
++    if (new_children->size() != 1u &&
++        RuntimeEnabledFeatures::
++            RecheckParentDuringNodeVectorInsertionEnabled() &&
++        !RecheckNodeInsertionStructuralPrereq(*new_children, next,
++                                              exception_state)) {
++      return false;
++    }
+   } else if (auto* child_fragment = DynamicTo<DocumentFragment>(new_child)) {
+     for (Node* node = child_fragment->firstChild(); node;
+          node = node->nextSibling()) {
+@@ -330,7 +345,7 @@ bool ContainerNode::EnsurePreInsertionValidity(
+ bool ContainerNode::RecheckNodeInsertionStructuralPrereq(
+     const NodeVector& new_children,
+     const Node* next,
+-    ExceptionState& exception_state) {
++    ExceptionState& exception_state) const {
+   for (const auto& child : new_children) {
+     if (child->parentNode()) {
+       // A new child was added to another parent before adding to this
+diff --git a/third_party/blink/renderer/core/dom/container_node.h b/third_party/blink/renderer/core/dom/container_node.h
+index 18e47b76cec5c5ae769343a30d19a3dd0be798d6..a51ec694714ecb918d939d19b5ed972353fcab95 100644
+--- a/third_party/blink/renderer/core/dom/container_node.h
++++ b/third_party/blink/renderer/core/dom/container_node.h
+@@ -578,7 +578,7 @@ class CORE_EXPORT ContainerNode : public Node {
+ 
+   bool RecheckNodeInsertionStructuralPrereq(const NodeVector&,
+                                             const Node* next,
+-                                            ExceptionState&);
++                                            ExceptionState&) const;
+   inline bool CheckParserAcceptChild(const Node& new_child) const;
+   inline bool IsHostIncludingInclusiveAncestorOfThis(const Node&,
+                                                      ExceptionState&) const;
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 2e464ef7bbfd7e0d84df348d012e8020d4758726..1cf1f8f0844940a941bea5fe6473970f1a81021b 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -3998,6 +3998,11 @@
+       name: "ReadableStreamBYOBReaderReadMinOption",
+       status: "stable",
+     },
++    {
++      // Shipping in M148, so should be removed around M150.
++      name: "RecheckParentDuringNodeVectorInsertion",
++      status: "stable",
++    },
+     {
+       name: "RecordSameDocumentPresentationTimeOnce",
+       status: "stable",
+diff --git a/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html b/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e754cd6e6a6484f8f85fbdcf3fae2d8accc492cb
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html
+@@ -0,0 +1,26 @@
++<!DOCTYPE HTML>
++<div id="target"></div>
++<div id="evilParent"></div>
++<div id="node1">node1</div>
++<script>
++  window.node1 = document.getElementById("node1");
++  function runTest() {
++    document.getElementById("target").append(node1, document.getElementById("node2"));
++  }
++</script>
++<div id="node2">
++  <iframe allow="unload" srcdoc="
++      <!DOCTYPE HTML>
++      <script>
++        window.addEventListener('load', function() {
++          window.parent.runTest();
++        });
++        window.addEventListener('unload', function() {
++          let p = window.parent;
++          let doc = p.document;
++          doc.getElementById('evilParent').appendChild(p.node1);
++        });
++      </script>
++    ">
++  </iframe>
++</div>
+diff --git a/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html.headers b/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html.headers
+new file mode 100644
+index 0000000000000000000000000000000000000000..f1e8ace831407eccae03f62ff5e77ee7d1586005
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload.https.html.headers
+@@ -0,0 +1 @@
++Permissions-Policy: unload=*
+

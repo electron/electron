@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fu, Junwei <junwei.fu@intel.com>
+Date: Thu, 20 Mar 2026 03:25:47 -0700
+Subject: [webnn] Validate output channels are a multiple of groups in
+ Conv2d.
+
+Add a check in `ValidateConv2d` to ensure `output_channels % attributes.groups == 0`. This is a requirement for grouped convolutions. Add a unit test to cover this invalid case.
+
+Bug: 493708165
+Change-Id: Id83552a5fb2b95f84981f28ca7162331e17559cd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7687895
+Commit-Queue: Lynne Jiang <lyjiang@google.com>
+Reviewed-by: Phillis Tang <phillis@chromium.org>
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1602846}
+
+diff --git a/services/webnn/public/cpp/graph_validation_utils.cc b/services/webnn/public/cpp/graph_validation_utils.cc
+index df746354236b2856e499cc8d925363744da044cd..0b685a93dc7a2959b63dc585b59afca761034ed3 100644
+--- a/services/webnn/public/cpp/graph_validation_utils.cc
++++ b/services/webnn/public/cpp/graph_validation_utils.cc
+@@ -733,6 +733,10 @@ base::expected<OperandDescriptor, std::string> ValidateConv2dAndInferOutput(
+         "The groups must evenly divide the input channels to filter input "
+         "channels."));
+   }
++  if (output_channels % attributes.groups != 0) {
++    return base::unexpected(ErrorWithLabel(
++        label, "The groups must evenly divide the output channels."));
++  }
+ 
+   // Validate and calculate output sizes.
+   ASSIGN_OR_RETURN(
+diff --git a/services/webnn/webnn_graph_impl_unittest.cc b/services/webnn/webnn_graph_impl_unittest.cc
+index faa0a3671864e9f8ed8c7a8354c7650abc93baa9..3f8e930def83c5fa8e8c13a1e729f9ddffc89e54 100644
+--- a/services/webnn/webnn_graph_impl_unittest.cc
++++ b/services/webnn/webnn_graph_impl_unittest.cc
+@@ -1285,6 +1285,20 @@ TEST_F(WebNNGraphImplTest, Conv2dTest) {
+         .expected = false}
+         .Test(*this);
+   }
++  {
++    // Test invalid conv2d: output_channels is not a multiple of groups.
++    // output_channels (7) % groups (2) != 0.
++    Conv2dTester{.type = mojom::Conv2d::Kind::kDirect,
++                 .input = {.type = OperandDataType::kFloat32,
++                           .dimensions = {1, 4, 5, 5}},
++                 .filter = {.type = OperandDataType::kFloat32,
++                            .dimensions = {7, 2, 3, 3}},
++                 .attributes = {.groups = 2},
++                 .output = {.type = OperandDataType::kFloat32,
++                            .dimensions = {1, 7, 3, 3}},
++                 .expected = false}
++        .Test(*this);
++  }
+   {
+     // Test the invalid graph when the number of filter input channels
+     // doesn't match the result of input channels divided by groups
+
