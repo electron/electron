@@ -2797,7 +2797,11 @@ describe('chromium features', () => {
       expect(firstDeviceIds).to.not.deep.equal(secondDeviceIds);
     });
 
-    it('provides a securityOrigin to the request handler', async () => {
+    // Skipped on macOS: enabling media::kUseSCContentSharingPicker (needed for
+    // useSystemPicker: true) routes every desktop capture through the picker,
+    // so the legacy chromeMediaSource: 'desktop' path hits "missing authorized
+    // filter" and crashes.
+    ifit(process.platform !== 'darwin')('provides a securityOrigin to the request handler', async () => {
       session.defaultSession.setPermissionRequestHandler((wc, permission, callback, details) => {
         if ((details as MediaAccessPermissionRequest).securityOrigin !== undefined) {
           callback(true);
