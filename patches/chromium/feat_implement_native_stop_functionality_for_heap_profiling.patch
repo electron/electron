@@ -1,0 +1,355 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kunal Dubey <xakep8@protonmail.com>
+Date: Wed, 22 Apr 2026 10:04:35 +0530
+Subject: feat: implement native Stop() functionality for heap profiling
+ supervisor
+
+
+diff --git a/components/heap_profiling/multi_process/supervisor.cc b/components/heap_profiling/multi_process/supervisor.cc
+index ac4901d795bb414c0a703d1c6980f68fc7337add..8f2cd03133c6886c715ed0e02a73007ee1052576 100644
+--- a/components/heap_profiling/multi_process/supervisor.cc
++++ b/components/heap_profiling/multi_process/supervisor.cc
+@@ -72,6 +72,13 @@ void Supervisor::Start(Mode mode,
+                        base::OnceClosure closure) {
+   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+   DCHECK(!started_);
++
++  if (has_core_initialized_) {
++    FinishInitializationOnUIhread(mode, std::move(closure),
++                                  controller_weak_ptr_);
++    return;
++  }
++
+   base::trace_event::MemoryDumpManager::GetInstance()
+       ->GetDumpThreadTaskRunner()
+       ->PostTask(FROM_HERE,
+@@ -80,6 +87,24 @@ void Supervisor::Start(Mode mode,
+                                 sampling_rate, std::move(closure)));
+ }
+ 
++void Supervisor::Stop(base::OnceCallback<void(bool)> callback) {
++  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
++
++  if (!started_) {
++    std::move(callback).Run(false);
++    return;
++  }
++
++  // Stop observing/connecting new processes immediately while shutdown is in
++  // flight.
++  client_connection_manager_.reset();
++
++  content::GetIOThreadTaskRunner({})->PostTask(
++      FROM_HERE,
++      base::BindOnce(&Supervisor::StopOnIOThread, base::Unretained(this),
++                     std::move(callback)));
++}
++
+ void Supervisor::StartProfilingOnMemoryInfraThread(Mode mode,
+                                                    mojom::StackMode stack_mode,
+                                                    uint32_t sampling_rate,
+@@ -215,6 +240,10 @@ void Supervisor::FinishInitializationOnUIhread(
+   DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::UI));
+   DCHECK(!started_);
+   started_ = true;
++  if (!has_core_initialized_) {
++    has_core_initialized_ = true;
++    controller_weak_ptr_ = controller_weak_ptr;
++  }
+ 
+   if (constructor_) {
+     client_connection_manager_ = (*constructor_)(controller_weak_ptr, mode);
+@@ -241,4 +270,34 @@ void Supervisor::GetProfiledPidsOnIOThread(GetProfiledPidsCallback callback) {
+   controller_->GetProfiledPids(std::move(post_result_to_ui_thread));
+ }
+ 
++void Supervisor::StopOnIOThread(base::OnceCallback<void(bool)> callback) {
++  DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
++
++  if (!controller_) {
++    content::GetUIThreadTaskRunner({})->PostTask(
++        FROM_HERE, base::BindOnce(std::move(callback), false));
++    return;
++  }
++
++  controller_->StopProfilingAllClients(base::BindOnce(
++      [](Supervisor* supervisor, base::OnceCallback<void(bool)> callback,
++         bool success) {
++        DCHECK(content::BrowserThread::CurrentlyOn(content::BrowserThread::IO));
++        content::GetUIThreadTaskRunner({})->PostTask(
++            FROM_HERE,
++            base::BindOnce(
++                [](Supervisor* supervisor,
++                   base::OnceCallback<void(bool)> callback,
++                   bool success) {
++                  DCHECK(content::BrowserThread::CurrentlyOn(
++                      content::BrowserThread::UI));
++                  if (success)
++                    supervisor->started_ = false;
++                  std::move(callback).Run(success);
++                },
++                supervisor, std::move(callback), success));
++      },
++      base::Unretained(this), std::move(callback)));
++}
++
+ }  // namespace heap_profiling
+diff --git a/components/heap_profiling/multi_process/supervisor.h b/components/heap_profiling/multi_process/supervisor.h
+index e1456731b320f12165aee3a3a02210120d9fed97..d5792927b9d4ce868ad023762f66623914b0f644 100644
+--- a/components/heap_profiling/multi_process/supervisor.h
++++ b/components/heap_profiling/multi_process/supervisor.h
+@@ -71,6 +71,10 @@ class Supervisor {
+              uint32_t sampling_rate,
+              base::OnceClosure callback);
+ 
++    // Stops profiling in all connected clients and tears down the supervisor
++    // process-wide state. |callback| is invoked on the UI thread.
++    void Stop(base::OnceCallback<void(bool)> callback);
++
+   Mode GetMode();
+ 
+   // Starts profiling the process with the given `pid`. Invokes
+@@ -125,6 +129,8 @@ class Supervisor {
+ 
+   void GetProfiledPidsOnIOThread(GetProfiledPidsCallback callback);
+ 
++    void StopOnIOThread(base::OnceCallback<void(bool)> callback);
++
+   void StartProfilingOnMemoryInfraThread(Mode mode,
+                                          mojom::StackMode stack_mode,
+                                          uint32_t sampling_rate,
+@@ -135,10 +141,12 @@ class Supervisor {
+ 
+   // Bound to the UI thread.
+   std::unique_ptr<ClientConnectionManager> client_connection_manager_;
++  base::WeakPtr<Controller> controller_weak_ptr_;
+ 
+   ClientConnectionManagerConstructor constructor_ = nullptr;
+ 
+   bool started_ = false;
++  bool has_core_initialized_ = false;
+ };
+ 
+ }  // namespace heap_profiling
+diff --git a/components/services/heap_profiling/connection_manager.cc b/components/services/heap_profiling/connection_manager.cc
+index a50f5aa3f28247ea09118f63c1da81785c5b8b62..0642caf19b5780c62de59a5522d48d2c5d224ba8 100644
+--- a/components/services/heap_profiling/connection_manager.cc
++++ b/components/services/heap_profiling/connection_manager.cc
+@@ -127,6 +127,47 @@ void ConnectionManager::OnNewConnection(
+   connections_[pid] = std::move(connection);
+ }
+ 
++void ConnectionManager::StopProfilingAllClients(
++    base::OnceCallback<void(bool)> callback) {
++  std::vector<base::OnceClosure> stop_calls;
++  {
++    base::AutoLock lock(connections_lock_);
++
++    if (stop_profiling_callback_) {
++      std::move(callback).Run(false);
++      return;
++    }
++
++    if (connections_.empty()) {
++      std::move(callback).Run(true);
++      return;
++    }
++
++    stop_profiling_callback_ = std::move(callback);
++    stop_profiling_waiting_responses_ = connections_.size();
++    stop_profiling_success_ = true;
++
++    stop_calls.reserve(connections_.size());
++    for (const auto& it : connections_) {
++      base::ProcessId pid = it.first;
++      auto* client = &it.second->client;
++      stop_calls.push_back(base::BindOnce(
++          [](mojo::Remote<mojom::ProfilingClient>* client,
++             base::WeakPtr<ConnectionManager> manager, base::ProcessId pid) {
++            if (!manager)
++              return;
++            (*client)->StopProfiling(
++                base::BindOnce(&ConnectionManager::OnProfilingStopped, manager,
++                               pid));
++          },
++          base::Unretained(client), weak_factory_.GetWeakPtr(), pid));
++    }
++  }
++
++  for (auto& stop_call : stop_calls)
++    std::move(stop_call).Run();
++}
++
+ std::vector<base::ProcessId> ConnectionManager::GetConnectionPids() {
+   base::AutoLock lock(connections_lock_);
+   std::vector<base::ProcessId> results;
+@@ -172,6 +213,25 @@ void ConnectionManager::OnProfilingStarted(base::ProcessId pid) {
+   }
+ }
+ 
++void ConnectionManager::OnProfilingStopped(base::ProcessId pid) {
++  base::AutoLock lock(connections_lock_);
++
++  if (!stop_profiling_callback_)
++    return;
++
++  auto found = connections_.find(pid);
++  if (found != connections_.end()) {
++    found->second->started_profiling = false;
++  } else {
++    stop_profiling_success_ = false;
++  }
++
++  if (--stop_profiling_waiting_responses_ == 0) {
++    auto callback = std::move(stop_profiling_callback_);
++    std::move(callback).Run(stop_profiling_success_);
++  }
++}
++
+ void ConnectionManager::ReportMetrics() {
+   base::AutoLock lock(connections_lock_);
+   for (auto& pair : connections_) {
+diff --git a/components/services/heap_profiling/connection_manager.h b/components/services/heap_profiling/connection_manager.h
+index 6a855afdb2d251696b1da9a5e6e608cde9e000f6..c5c8c60a3e27676e134b1859414c256177ebd7da 100644
+--- a/components/services/heap_profiling/connection_manager.h
++++ b/components/services/heap_profiling/connection_manager.h
+@@ -68,6 +68,8 @@ class ConnectionManager {
+                        mojom::ProfilingService::AddProfilingClientCallback
+                            started_profiling_closure);
+ 
++  void StopProfilingAllClients(base::OnceCallback<void(bool)> callback);
++
+   // Returns pids of clients that have started profiling.
+   std::vector<base::ProcessId> GetConnectionPids();
+ 
+@@ -101,6 +103,9 @@ class ConnectionManager {
+   // know when initialization is complete.
+   void OnProfilingStarted(base::ProcessId pid);
+ 
++  // Indicates that a client has stopped profiling.
++  void OnProfilingStopped(base::ProcessId pid);
++
+   // Reports the ProcessTypes of the processes being profiled.
+   void ReportMetrics();
+ 
+@@ -114,6 +119,11 @@ class ConnectionManager {
+   // Every 24-hours, reports the types of profiled processes.
+   base::RepeatingTimer metrics_timer_;
+ 
++  // Used while StopProfilingAllClients() is waiting for async responses.
++  base::OnceCallback<void(bool)> stop_profiling_callback_;
++  size_t stop_profiling_waiting_responses_ = 0;
++  bool stop_profiling_success_ = true;
++
+   // Must be the last.
+   base::WeakPtrFactory<ConnectionManager> weak_factory_{this};
+ };
+diff --git a/components/services/heap_profiling/heap_profiling_service.cc b/components/services/heap_profiling/heap_profiling_service.cc
+index 02d0d0710fe12dbe485ac4a09ca82a30a8de779a..c2c414fc169f1024e87c32a97cbfff4d8a97b169 100644
+--- a/components/services/heap_profiling/heap_profiling_service.cc
++++ b/components/services/heap_profiling/heap_profiling_service.cc
+@@ -61,6 +61,10 @@ class ProfilingServiceImpl
+     std::move(callback).Run(connection_manager_.GetConnectionPids());
+   }
+ 
++    void StopProfilingAllClients(StopProfilingAllClientsCallback callback) override {
++        connection_manager_.StopProfilingAllClients(std::move(callback));
++    }
++
+   // memory_instrumentation::mojom::HeapProfiler implementation:
+   void DumpProcessesForTracing(
+       bool strip_path_from_mapped_files,
+diff --git a/components/services/heap_profiling/public/cpp/controller.cc b/components/services/heap_profiling/public/cpp/controller.cc
+index 2ece8dd247561786d77b46e4d87069bcda5c0d37..3cbf0546eb6453168005b85bc326ab1435c21ff6 100644
+--- a/components/services/heap_profiling/public/cpp/controller.cc
++++ b/components/services/heap_profiling/public/cpp/controller.cc
+@@ -43,6 +43,12 @@ void Controller::GetProfiledPids(GetProfiledPidsCallback callback) {
+   heap_profiling_service_->GetProfiledPids(std::move(callback));
+ }
+ 
++void Controller::StopProfilingAllClients(
++    base::OnceCallback<void(bool)> callback) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  heap_profiling_service_->StopProfilingAllClients(std::move(callback));
++}
++
+ base::WeakPtr<Controller> Controller::GetWeakPtr() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   return weak_factory_.GetWeakPtr();
+diff --git a/components/services/heap_profiling/public/cpp/controller.h b/components/services/heap_profiling/public/cpp/controller.h
+index b1da6c014875b4f500bfa10a6fb1dd3ba3bb08ea..f21526b73c19ae8630a7956921ac94a0ece17a4e 100644
+--- a/components/services/heap_profiling/public/cpp/controller.h
++++ b/components/services/heap_profiling/public/cpp/controller.h
+@@ -61,6 +61,8 @@ class Controller {
+       base::OnceCallback<void(const std::vector<base::ProcessId>&)>;
+   void GetProfiledPids(GetProfiledPidsCallback callback);
+ 
++  void StopProfilingAllClients(base::OnceCallback<void(bool)> callback);
++
+   // Careful! WeakPtrs are also sequence-affine.
+   // This method must be called from the same sequence the instance is bound to.
+   base::WeakPtr<Controller> GetWeakPtr();
+diff --git a/components/services/heap_profiling/public/cpp/profiling_client.cc b/components/services/heap_profiling/public/cpp/profiling_client.cc
+index b45b446977a19ff4cf2c06f4fe8ef139fda37ed6..a1e34928e5b0bd5c1656556a7546fc951e3fbcb0 100644
+--- a/components/services/heap_profiling/public/cpp/profiling_client.cc
++++ b/components/services/heap_profiling/public/cpp/profiling_client.cc
+@@ -81,6 +81,17 @@ void ProfilingClient::StartProfiling(mojom::ProfilingParamsPtr params,
+   StartProfilingInternal(std::move(params), std::move(callback));
+ }
+ 
++void ProfilingClient::StopProfiling(StopProfilingCallback callback) {
++  if (!started_profiling_) {
++    std::move(callback).Run();
++    return;
++  }
++
++  base::SamplingHeapProfiler::Get()->Stop();
++  started_profiling_ = false;
++  std::move(callback).Run();
++}
++
+ namespace {
+ 
+ bool g_initialized_ = false;
+diff --git a/components/services/heap_profiling/public/cpp/profiling_client.h b/components/services/heap_profiling/public/cpp/profiling_client.h
+index 9e2ff9530de3a0999abf4abbf04ef35c51a86629..3851e743b6a95535a075c7c35a5452e1a19b6e28 100644
+--- a/components/services/heap_profiling/public/cpp/profiling_client.h
++++ b/components/services/heap_profiling/public/cpp/profiling_client.h
+@@ -22,6 +22,7 @@ class ProfilingClient : public mojom::ProfilingClient {
+   // mojom::ProfilingClient overrides:
+   void StartProfiling(mojom::ProfilingParamsPtr params,
+                       StartProfilingCallback callback) override;
++  void StopProfiling(StopProfilingCallback callback) override;
+   void RetrieveHeapProfile(RetrieveHeapProfileCallback callback) override;
+ 
+   void BindToInterface(mojo::PendingReceiver<mojom::ProfilingClient> receiver);
+diff --git a/components/services/heap_profiling/public/mojom/heap_profiling_client.mojom b/components/services/heap_profiling/public/mojom/heap_profiling_client.mojom
+index c89296cda33c0783e02a23cc8273b2bc4496d36d..7297a689ccc6ee2ed7a8609cf54c8114d639a3a9 100644
+--- a/components/services/heap_profiling/public/mojom/heap_profiling_client.mojom
++++ b/components/services/heap_profiling/public/mojom/heap_profiling_client.mojom
+@@ -74,9 +74,12 @@ interface ProfilingClient {
+   // Collected allocations are either streamed to the profiling process via
+   // |params.sender_pipe|, or accumulated in the profiled process depending on
+   // the |params.use_in_process_storage|.
+-  // There is currently no mechanism to stop recording allocations.
++  // A matching StopProfiling() call disables profiling.
+   StartProfiling(ProfilingParams params) => ();
+ 
++  // Stop recording allocations.
++  StopProfiling() => ();
++
+   // Captures and returns a snapshot of the heap profile of the current process.
+   RetrieveHeapProfile() => (HeapProfile profile);
+ };
+diff --git a/components/services/heap_profiling/public/mojom/heap_profiling_service.mojom b/components/services/heap_profiling/public/mojom/heap_profiling_service.mojom
+index eff0e658c827bdf0ec643fdae106b92a6d204fb1..bc03ad919f92b403b1f56f41131835b66f4d9dd9 100644
+--- a/components/services/heap_profiling/public/mojom/heap_profiling_service.mojom
++++ b/components/services/heap_profiling/public/mojom/heap_profiling_service.mojom
+@@ -32,4 +32,7 @@ interface ProfilingService {
+ 
+   // Returns the pids of all profiled processes.
+   GetProfiledPids() => (array<mojo_base.mojom.ProcessId> pids);
++
++  // Stops profiling all connected clients.
++  StopProfilingAllClients() => (bool success);
+ };

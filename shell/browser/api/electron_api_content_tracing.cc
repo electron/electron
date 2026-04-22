@@ -171,6 +171,7 @@ GetHeapProfilingOptions(gin::Arguments* const args) {
 }
 
 bool g_heap_profiling_started = false;
+bool g_heap_profiling_stopping = false;
 
 #endif  // !defined(ADDRESS_SANITIZER)
 
@@ -186,6 +187,12 @@ v8::Local<v8::Promise> EnableHeapProfiling(gin::Arguments* const args) {
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto* supervisor = heap_profiling::Supervisor::GetInstance();
+
+  if (g_heap_profiling_stopping) {
+    promise.RejectWithErrorMessage(
+        "Heap profiling is currently being disabled");
+    return handle;
+  }
 
   if (supervisor->HasStarted() || g_heap_profiling_started) {
     promise.RejectWithErrorMessage("Heap profiling is already enabled");
@@ -211,6 +218,50 @@ v8::Local<v8::Promise> EnableHeapProfiling(gin::Arguments* const args) {
 
   return handle;
 #endif  // defined(ADDRESS_SANITIZER)
+}
+
+v8::Local<v8::Promise> DisableHeapProfiling(gin::Arguments* const args) {
+#if defined(ADDRESS_SANITIZER)
+  return gin_helper::Promise<void>::ResolvedPromise(args->isolate());
+#else
+  gin_helper::Promise<void> promise(args->isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  auto* supervisor = heap_profiling::Supervisor::GetInstance();
+
+  if (g_heap_profiling_stopping) {
+    promise.RejectWithErrorMessage(
+        "Heap profiling is currently being disabled");
+    return handle;
+  }
+
+  if (!supervisor->HasStarted() && !g_heap_profiling_started) {
+    promise.RejectWithErrorMessage("Heap profiling is not enabled");
+    return handle;
+  }
+
+  if (!supervisor->HasStarted() && g_heap_profiling_started) {
+    promise.RejectWithErrorMessage("Heap profiling is currently being enabled");
+    return handle;
+  }
+
+  g_heap_profiling_stopping = true;
+  supervisor->Stop(base::BindOnce(
+      [](gin_helper::Promise<void> promise, bool success) {
+        g_heap_profiling_stopping = false;
+        if (!success) {
+          gin_helper::Promise<void>::RejectPromise(
+              std::move(promise), "Failed to disable heap profiling");
+          return;
+        }
+
+        g_heap_profiling_started = false;
+        gin_helper::Promise<void>::ResolvePromise(std::move(promise));
+      },
+      std::move(promise)));
+
+  return handle;
+#endif
 }
 
 v8::Local<v8::Promise> StartTracing(
@@ -267,6 +318,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("stopRecording", &StopRecording);
   dict.SetMethod("getTraceBufferUsage", &GetTraceBufferUsage);
   dict.SetMethod("enableHeapProfiling", &EnableHeapProfiling);
+  dict.SetMethod("disableHeapProfiling", &DisableHeapProfiling);
 }
 
 }  // namespace
