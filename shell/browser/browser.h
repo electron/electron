@@ -368,7 +368,10 @@ class Browser : private WindowListObserver {
   void OnWindowAllClosed() override;
 
   // Observers of the browser.
-  base::ObserverList<BrowserObserver> observers_;
+  base::ObserverList<BrowserObserver,
+                     false,
+                     base::ObserverListReentrancyPolicy::kAllowReentrancy>
+      observers_;
 
   // Tracks tasks requesting file icons.
   base::CancelableTaskTracker cancelable_task_tracker_;

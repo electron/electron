@@ -542,7 +542,10 @@ class NativeWindow : public views::WidgetDelegate {
   std::list<DraggableRegionProvider*> draggable_region_providers_;
 
   // Observers of this window.
-  base::ObserverList<NativeWindowObserver> observers_;
+  base::ObserverList<NativeWindowObserver,
+                     false,
+                     base::ObserverListReentrancyPolicy::kAllowReentrancy>
+      observers_;
 
   absl::flat_hash_set<BackgroundThrottlingSource*>
       background_throttling_sources_;
