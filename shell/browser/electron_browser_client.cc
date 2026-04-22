@@ -61,7 +61,6 @@
 #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
-#include "pdf/pdf_features.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
@@ -227,6 +226,7 @@
 #include "components/pdf/browser/pdf_navigation_throttle.h"
 #include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
 #include "components/pdf/common/constants.h"  // nogncheck
+#include "pdf/pdf_features.h"
 #include "shell/browser/electron_pdf_document_helper_client.h"
 #include "ui/webui/resources/cr_components/help_bubble/help_bubble.mojom.h"  // nogncheck
 #endif
