@@ -38,8 +38,8 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     builtin_loader->Set(base::WrapUnique(new node::builtins::BuiltinLoader));
   }
   v8::MaybeLocal<v8::Function> compiled =
-      builtin_loader->Get()->LookupAndCompileFunction(
-          context, id, parameters, node::Realm::GetCurrent(context));
+      builtin_loader->Get()->LookupAndCompile(context, id, parameters,
+                                              node::Realm::GetCurrent(context));
 
   if (compiled.IsEmpty()) {
     // TODO(samuelmaddock): how can we get the compilation error message?
