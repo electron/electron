@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Stephen Nusko <nuskos@google.com>
-Date: Mon, 07 Apr 2026 14:00:00 -0700
-Subject: Use SkSafeMath to prevent overflow in pixel offset
- calculations.
+Date: Tue, 7 Apr 2026 14:00:00 -0700
+Subject: Use SkSafeMath to prevent overflow in pixel offset calculations.
 
 The trim methods in SkReadPixelsRec and SkWritePixelsRec now use
 SkSafeMath to calculate the offset for fPixels. This addresses potential
@@ -25,7 +24,7 @@ Reviewed-by: Kaylee Lubick <kjlubick@google.com>
 Reviewed-by: Florin Malita <fmalita@google.com>
 
 diff --git a/src/core/SkReadPixelsRec.cpp b/src/core/SkReadPixelsRec.cpp
-index 505bfb51b3..f7e9661629 100644
+index 505bfb51b34a6946b878f4c2d0c1ee0bb86b2cdb..f7e9661629e28a80c6d6d32100c80913806f6917 100644
 --- a/src/core/SkReadPixelsRec.cpp
 +++ b/src/core/SkReadPixelsRec.cpp
 @@ -7,9 +7,12 @@
@@ -63,7 +62,7 @@ index 505bfb51b3..f7e9661629 100644
      fInfo = fInfo.makeDimensions(srcR.size());
      fX = srcR.x();
 diff --git a/src/core/SkWritePixelsRec.cpp b/src/core/SkWritePixelsRec.cpp
-index 20b2003f59..d1bad0f51e 100644
+index 20b2003f59d265a84b6a24413374789663b5481e..d1bad0f51e6ad208edb39f0c0c473e0fa177d119 100644
 --- a/src/core/SkWritePixelsRec.cpp
 +++ b/src/core/SkWritePixelsRec.cpp
 @@ -8,9 +8,12 @@
@@ -100,4 +99,3 @@ index 20b2003f59..d1bad0f51e 100644
      // the intersect may have shrunk info's logical size
      fInfo = fInfo.makeDimensions(dstR.size());
      fX = dstR.x();
-
