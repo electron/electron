@@ -121,10 +121,11 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
       // monitors with different DPIs before changing this code.
       *insets = gfx::Insets::TLBR(thickness, thickness, thickness, thickness);
       return true;
-    } else if (native_window_view_->has_thick_frame() &&
-               native_window_view_->IsResizable()) {
+    } else if (native_window_view_->has_thick_frame()) {
       // Grow the insets to support resize targets past the frame edge like in
-      // windows with standard frames.
+      // windows with standard frames. Non-resizable windows still get input
+      // insets for stable bounds and so they can be dragged from outer edges,
+      // also like in windows with standard frames.
       *insets = gfx::Insets::TLBR(0, thickness, thickness, thickness);
       return true;
     }
