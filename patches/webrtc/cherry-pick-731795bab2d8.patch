@@ -2,6 +2,9 @@ From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tommi <tommi@webrtc.org>
 Date: Mon, 23 Mar 2026 17:29:21 +0100
 Subject: Refactor AddCertificateReports to prevent crash
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 When processing certificate stats with duplicate fingerprints,
 ReplaceOrAddNew would delete the existing stats report that was
@@ -37,13 +40,13 @@ index f43f33e48e5af014584727d4a7ac273a88949f0c..de6a2a7da36669d343ccfc3e6c940756
 @@ -21,6 +21,7 @@
  #include <utility>
  #include <vector>
-
+ 
 +#include "absl/container/flat_hash_set.h"
  #include "absl/strings/str_cat.h"
  #include "absl/strings/string_view.h"
  #include "api/audio/audio_processing_statistics.h"
 @@ -750,8 +751,13 @@ StatsReport* LegacyStatsCollector::AddCertificateReports(
-
+ 
    StatsReport* first_report = nullptr;
    StatsReport* prev_report = nullptr;
 +  absl::flat_hash_set<std::string> visited_fingerprints;
@@ -55,15 +58,15 @@ index f43f33e48e5af014584727d4a7ac273a88949f0c..de6a2a7da36669d343ccfc3e6c940756
 +
      StatsReport::Id id(StatsReport::NewTypedId(
          StatsReport::kStatsReportTypeCertificate, stats->fingerprint));
-
+ 
 diff --git a/pc/legacy_stats_collector.h b/pc/legacy_stats_collector.h
 index 791fb2c416be59763169fde7d65fcf423d13fc1e..ac29da054e9f846ad95588eefb38d828bdec4fb8 100644
 --- a/pc/legacy_stats_collector.h
 +++ b/pc/legacy_stats_collector.h
 @@ -110,6 +110,11 @@ class LegacyStatsCollector : public LegacyStatsCollectorInterface {
-
+ 
    bool UseStandardBytesStats() const { return use_standard_bytes_stats_; }
-
+ 
 +  StatsReport* AddCertificateReportsForTest(
 +      std::unique_ptr<SSLCertificateStats> cert_stats) {
 +    return AddCertificateReports(std::move(cert_stats));
@@ -71,7 +74,7 @@ index 791fb2c416be59763169fde7d65fcf423d13fc1e..ac29da054e9f846ad95588eefb38d828
 +
   private:
    friend class LegacyStatsCollectorTest;
-
+ 
 diff --git a/pc/legacy_stats_collector_unittest.cc b/pc/legacy_stats_collector_unittest.cc
 index 0f62cb07e5474f467d131ba0b7761364091de4e2..fe964a3f30d8c68ce3f17f23aa294dccb06df187 100644
 --- a/pc/legacy_stats_collector_unittest.cc
@@ -87,7 +90,7 @@ index 0f62cb07e5474f467d131ba0b7761364091de4e2..fe964a3f30d8c68ce3f17f23aa294dcc
 @@ -1447,6 +1448,21 @@ TEST_F(LegacyStatsCollectorTest, ChainedCertificateReportsCreated) {
                           remote_ders);
  }
-
+ 
 +TEST_F(LegacyStatsCollectorTest,
 +       AddCertificateReports_DuplicateFingerprintDoesNotCrash) {
 +  auto pc = CreatePeerConnection();
