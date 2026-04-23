@@ -16,91 +16,13 @@ Commit-Queue: Wang, Wei4 <wei4.wang@intel.com>
 Cr-Commit-Position: refs/heads/main@{#1602966}
 
 diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tflite/graph_builder_tflite.cc
-index 5d7ec3e1aabf3014266c7a0b15198c49b2e93dc7..80566a570812f20ed12afd41e11b44fbd3291811 100644
+index 578627bf9b42885d170ec0b83b581e2b09984823..cb5312511ef372a98a2bd8d34ed8e39e8308cee6 100644
 --- a/services/webnn/tflite/graph_builder_tflite.cc
 +++ b/services/webnn/tflite/graph_builder_tflite.cc
-@@ -6765,6 +6765,68 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
-     return base::unexpected("Pool2d in tflite doesn't support dilations.");
-   }
- 
-+  // Check the indirection buffer size to ensure it does not exceed the maximum
-+  // value of a size_t integer.
-+  const mojom::Operand& output_operand = GetOperand(pool2d.output_operand_id);
-+  const auto& output_shape = output_operand.descriptor.shape();
-+  const webnn::Size2d<uint32_t> output_size2d = {.height = output_shape[1],
-+                                                 .width = output_shape[2]};
-+  const webnn::Size2d<uint32_t> filter_size2d = {
-+      .height = pool2d.window_dimensions->height,
-+      .width = pool2d.window_dimensions->width};
-+  base::CheckedNumeric<int32_t> checked_output_height = 0;
-+
-+  if (pool2d.kind == mojom::Pool2d::Kind::kMaxPool2d) {
-+    // https://source.chromium.org/chromium/chromium/src/+/main:third_party/xnnpack/src/src/operators/max-pooling-nhwc.c;l=488;drc=b269899e63e0110d1ccf964a741be2833a9ecd9b
-+    checked_output_height = output_size2d.height;
-+  } else {
-+    // https://source.chromium.org/chromium/chromium/src/+/main:third_party/xnnpack/src/src/operators/average-pooling-nhwc.c;l=442;drc=b269899e63e0110d1ccf964a741be2833a9ecd9b
-+    auto checked_top_height =
-+        base::CheckedNumeric<int32_t>(pool2d.padding->beginning->height);
-+    auto checked_stride_height =
-+        base::CheckedNumeric<int32_t>(pool2d.strides->height);
-+    checked_top_height += checked_stride_height;
-+    checked_top_height -= 1;
-+    checked_top_height /= checked_stride_height;
-+
-+    auto checked_bottom_height =
-+        base::CheckedNumeric<int32_t>(pool2d.padding->ending->height);
-+    checked_bottom_height += checked_stride_height;
-+    checked_bottom_height -= 1;
-+    checked_bottom_height /= checked_stride_height;
-+
-+    checked_output_height = checked_top_height;
-+    checked_output_height += checked_bottom_height;
-+    checked_output_height += 1;
-+  }
-+
-+  auto checked_filter_height =
-+      base::CheckedNumeric<int32_t>(filter_size2d.height);
-+  auto checked_filter_width =
-+      base::CheckedNumeric<int32_t>(filter_size2d.width);
-+  auto checked_pooling_size = checked_filter_height;
-+  checked_pooling_size *= checked_filter_width;
-+
-+  auto checked_output_width =
-+      base::CheckedNumeric<int32_t>(output_size2d.width);
-+  checked_output_width -= 1;
-+  checked_output_width *= base::CheckedNumeric<int32_t>(
-+      std::min(pool2d.strides->width, filter_size2d.width));
-+  checked_output_width *= checked_filter_height;
-+  auto checked_step_height = checked_pooling_size + checked_output_width;
-+
-+  auto checked_indirection_buffer_size = checked_pooling_size;
-+  checked_indirection_buffer_size -= 1;
-+  checked_output_height *= checked_step_height;
-+  checked_indirection_buffer_size += checked_output_height;
-+  checked_indirection_buffer_size *=
-+      base::CheckedNumeric<int32_t>(sizeof(void*));
-+  if (!checked_indirection_buffer_size.IsValid()) {
-+    return base::unexpected(
-+        "Pool2d doesn't support configurations requiring an internal "
-+        "computation buffer that exceeds the maximum size.");
-+  }
-+
-   ::tflite::BuiltinOperator operator_code;
-   std::optional<TensorInfo> quantized_output;
-   const mojom::Operand& input_operand = GetOperand(pool2d.input_operand_id);
-@@ -6792,8 +6854,6 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
- 
-   const auto& input_shape = input_operand.descriptor.shape();
+@@ -6886,6 +6886,21 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
    CHECK_EQ(input_shape.size(), 4u);
--  const mojom::Operand& output_operand = GetOperand(pool2d.output_operand_id);
--  const auto& output_shape = output_operand.descriptor.shape();
    const webnn::Size2d<uint32_t> input_size2d = {.height = input_shape[1],
                                                  .width = input_shape[2]};
-   const webnn::Size2d<uint32_t> output_size2d = {.height = output_shape[1],
-@@ -6801,6 +6861,21 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
-   webnn::Size2d<uint32_t> filter_size2d = {
-       .height = pool2d.window_dimensions->height,
-       .width = pool2d.window_dimensions->width};
 +
 +  // TODO(crbug.com/493988762): Explicitly restrict to int32_t in the WebNN spec
 +  // or opSupportLimits for synchronous frontend validation.
@@ -119,4 +41,3 @@ index 5d7ec3e1aabf3014266c7a0b15198c49b2e93dc7..80566a570812f20ed12afd41e11b44fb
    ASSIGN_OR_RETURN(TfLitePadding padding_mode,
                     GetPool2dTfLitePaddingMode(
                         *pool2d.padding, input_size2d, filter_size2d,
-

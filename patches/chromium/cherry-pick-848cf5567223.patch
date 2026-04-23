@@ -1,14 +1,23 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: David Baron <dbaron@chromium.org>
-Date: Mon, 24 Mar 2026 11:30:00 -0700
+Date: Tue, 24 Mar 2026 11:30:00 -0700
 Subject: Check parent nodes when handling vector node insertions.
 
+In the optimized vector node insertion case, check the parent node just
+as in the regular case.
+
+Fixed: 496281816
+Change-Id: I0fc6956d1c09fcb7ea54d94819fdf1cb06fbd9e5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7705373
+Commit-Queue: David Baron <dbaron@chromium.org>
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1605818}
 
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 80b0abeb7f3c18019aca2f431240a84c6dd749d7..893dec719a744396b17cbed9b9ebbefa540f5ae9 100644
+index 0ebf7f1be37e0b0fccb594e83ecaacc3d4c6f510..797d37188e45cfc04ae78739159f7abe54ec5ab2 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-@@ -4375,6 +4375,11 @@
+@@ -4379,6 +4379,11 @@
        name: "RecheckParentDuringNodeVectorInsertion",
        status: "stable",
      },
@@ -20,4 +29,3 @@ index 80b0abeb7f3c18019aca2f431240a84c6dd749d7..893dec719a744396b17cbed9b9ebbefa
      {
        name: "RecordSameDocumentPresentationTimeOnce",
        status: "stable",
-

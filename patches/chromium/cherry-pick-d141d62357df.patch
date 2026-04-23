@@ -24,8 +24,9 @@ Reviewed-by: Hu, Ningxin <ningxin.hu@intel.com>
 Commit-Queue: Fu, Junwei <junwei.fu@intel.com>
 Reviewed-by: Reilly Grant <reillyg@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1601883}
+
 diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tflite/graph_builder_tflite.cc
-index d524a8d1947f68d5135716566e2e0ef313aa3f4f..4af70a3b21d445b10e0156e0455c6dc092d4fb4d 100644
+index 2754e597c7f6dd580369d348197d1ffa98722d6b..578627bf9b42885d170ec0b83b581e2b09984823 100644
 --- a/services/webnn/tflite/graph_builder_tflite.cc
 +++ b/services/webnn/tflite/graph_builder_tflite.cc
 @@ -216,40 +216,50 @@ struct PaddingSizes {
@@ -194,10 +195,10 @@ index d524a8d1947f68d5135716566e2e0ef313aa3f4f..4af70a3b21d445b10e0156e0455c6dc0
    } else if (actual_output_height ==
                   base::ClampCeil<uint32_t>(calculated_output_sizes.height) &&
               actual_output_width ==
-@@ -4091,10 +4119,12 @@ auto GraphBuilderTflite::SerializeConv2d(const mojom::Conv2d& conv2d)
-     }
-   }
- 
+@@ -4050,10 +4078,12 @@ auto GraphBuilderTflite::SerializeConv2d(const mojom::Conv2d& conv2d)
+   const auto& filter_shape = filter_operand.descriptor.shape();
+   const webnn::Size2d<uint32_t> filter_size2d = {.height = filter_shape[1],
+                                                  .width = filter_shape[2]};
 +  const webnn::Size2d<uint32_t> output_size2d = {.height = output_shape[1],
 +                                                 .width = output_shape[2]};
    ASSIGN_OR_RETURN(

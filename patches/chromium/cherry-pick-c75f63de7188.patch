@@ -12,8 +12,9 @@ Commit-Queue: Lynne Jiang <lyjiang@google.com>
 Reviewed-by: Phillis Tang <phillis@chromium.org>
 Reviewed-by: Reilly Grant <reillyg@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1602846}
+
 diff --git a/services/webnn/public/cpp/graph_validation_utils.cc b/services/webnn/public/cpp/graph_validation_utils.cc
-index df746354236b2856e499cc8d925363744da044cd..0b685a93dc7a2959b63dc585b59afca761034ed3 100644
+index 66464aee5d3f9699ccc060fcde5e263d1d07c8f6..e884cef6feb70fbe75e1a5c8fb4fa2712ed6b532 100644
 --- a/services/webnn/public/cpp/graph_validation_utils.cc
 +++ b/services/webnn/public/cpp/graph_validation_utils.cc
 @@ -733,6 +733,10 @@ base::expected<OperandDescriptor, std::string> ValidateConv2dAndInferOutput(
@@ -28,10 +29,10 @@ index df746354236b2856e499cc8d925363744da044cd..0b685a93dc7a2959b63dc585b59afca7
    // Validate and calculate output sizes.
    ASSIGN_OR_RETURN(
 diff --git a/services/webnn/webnn_graph_impl_unittest.cc b/services/webnn/webnn_graph_impl_unittest.cc
-index faa0a3671864e9f8ed8c7a8354c7650abc93baa9..3f8e930def83c5fa8e8c13a1e729f9ddffc89e54 100644
+index cab8eff2e739a5e3bc78a256c1b9599ca8d223f2..ece0d3950884fb024923b6598f5870baf1e5111a 100644
 --- a/services/webnn/webnn_graph_impl_unittest.cc
 +++ b/services/webnn/webnn_graph_impl_unittest.cc
-@@ -1285,6 +1285,20 @@ TEST_F(WebNNGraphImplTest, Conv2dTest) {
+@@ -1282,6 +1282,20 @@ TEST_F(WebNNGraphImplTest, Conv2dTest) {
          .expected = false}
          .Test(*this);
    }
