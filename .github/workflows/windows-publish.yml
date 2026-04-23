@@ -82,7 +82,7 @@ jobs:
     needs: [checkout-windows, build-siso-windows]
     with:
       environment: production-release
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-windows-amd64-32core
       target-platform: win
       target-arch: x64
       is-release: true
@@ -101,7 +101,7 @@ jobs:
     needs: [checkout-windows, build-siso-windows]
     with:
       environment: production-release
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-windows-amd64-32core
       target-platform: win
       target-arch: arm64
       is-release: true
@@ -120,7 +120,7 @@ jobs:
     needs: [checkout-windows, build-siso-windows]
     with:
       environment: production-release
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: electron-arc-centralus-windows-amd64-32core
       target-platform: win
       target-arch: x86
       is-release: true
