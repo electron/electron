@@ -1,0 +1,380 @@
+name: "Fork Build – Linux x64"
+
+# ────────────────────────────────────────────────────────────────────────────
+# FORK-ONLY: Builds Electron on Linux x64 using GitHub-hosted runners.
+# Does NOT use upstream's ARC runners (electron-arc-centralus-*).
+# Artifacts are stored in GitHub Actions (90-day retention).
+# ────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      gn-build-type:
+        description: "GN build type (testing or release)"
+        default: "testing"
+        required: false
+        type: choice
+        options:
+          - testing
+          - release
+      upload-release:
+        description: "Upload artifacts to GitHub Releases"
+        default: false
+        required: false
+        type: boolean
+  workflow_call:
+    inputs:
+      gn-build-type:
+        description: "GN build type"
+        default: "testing"
+        required: false
+        type: string
+      upload-release:
+        default: false
+        required: false
+        type: boolean
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write   # needed for release uploads
+  actions: read
+
+concurrency:
+  group: fork-build-linux-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+  TARGET_OS: linux
+  TARGET_ARCH: x64
+  GN_BUILD_TYPE: ${{ inputs.gn-build-type || 'testing' }}
+
+jobs:
+  # ── Guard ─────────────────────────────────────────────────────────────────
+  repo-guard:
+    name: "🔒 Fork Repo Guard"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure this is the fork
+        run: |
+          if [[ "${{ github.repository }}" == "electron/electron" ]]; then
+            echo "::error::Build workflow must NOT run on upstream electron/electron."
+            exit 1
+          fi
+          echo "✅ Fork confirmed: ${{ github.repository }}"
+
+  # ── Setup: detect changed paths ───────────────────────────────────────────
+  setup:
+    name: "⚙️ Setup"
+    needs: repo-guard
+    runs-on: ubuntu-latest
+    outputs:
+      src-changed: ${{ steps.filter.outputs.src }}
+      docs-only: ${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            docs:
+              - 'docs/**'
+              - '*.md'
+              - '.claude/**'
+            src:
+              - '!{docs,.claude}/**'
+
+  # ── JS dependency install (cached) ───────────────────────────────────────
+  install-deps:
+    name: "📦 Install JS Dependencies"
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read .nvmrc
+        id: nvmrc
+        run: echo "NODE_VERSION=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.nvmrc.outputs.NODE_VERSION }}
+          cache: "yarn"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        id: nm-cache
+        with:
+          path: node_modules
+          key: nm-linux-${{ hashFiles('yarn.lock') }}
+          restore-keys: nm-linux-
+
+      - name: Install dependencies
+        if: steps.nm-cache.outputs.cache-hit != 'true'
+        run: yarn install --immutable
+
+      - name: Upload node_modules artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: node_modules-linux
+          path: node_modules
+          retention-days: 1
+
+  # ── Install depot_tools ───────────────────────────────────────────────────
+  install-depot-tools:
+    name: "🛠️ Install depot_tools"
+    needs: setup
+    if: ${{ needs.setup.outputs.src-changed == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      depot-tools-path: ${{ steps.depot.outputs.path }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache depot_tools
+        uses: actions/cache@v4
+        id: depot-cache
+        with:
+          path: ${{ github.workspace }}/depot_tools
+          key: depot-tools-${{ runner.os }}-${{ hashFiles('DEPS') }}
+          restore-keys: depot-tools-${{ runner.os }}-
+
+      - name: Clone depot_tools
+        if: steps.depot-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git \
+            ${{ github.workspace }}/depot_tools
+
+      - name: Set output path
+        id: depot
+        run: echo "path=${{ github.workspace }}/depot_tools" >> "$GITHUB_OUTPUT"
+
+  # ── gclient sync (cached by DEPS hash) ───────────────────────────────────
+  gclient-sync:
+    name: "🔄 gclient sync"
+    needs: [setup, install-depot-tools]
+    if: ${{ needs.setup.outputs.src-changed == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src/electron
+          fetch-depth: 0
+
+      - name: Restore depot_tools
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/depot_tools
+          key: depot-tools-${{ runner.os }}-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: depot-tools-${{ runner.os }}-
+
+      - name: Add depot_tools to PATH
+        run: echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
+
+      - name: Cache gclient src tree
+        uses: actions/cache@v4
+        id: src-cache
+        with:
+          path: |
+            src/
+            !src/electron
+          key: gclient-linux-x64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: gclient-linux-x64-
+
+      - name: Create .gclient config
+        run: |
+          cat > .gclient <<'GCLIENT'
+          solutions = [
+            {
+              "name": "src/electron",
+              "url": ".",
+              "deps_file": "DEPS",
+              "managed": False,
+              "custom_vars": {
+                "process_deps": True,
+              },
+            },
+          ]
+          GCLIENT
+
+      - name: Run gclient sync
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        run: |
+          gclient sync \
+            --nohooks \
+            --no-history \
+            --delete_unversioned_trees \
+            -j$(nproc)
+
+      - name: Run gclient hooks
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        run: gclient runhooks
+
+  # ── Build Electron ────────────────────────────────────────────────────────
+  build:
+    name: "🔨 Build Electron (Linux x64)"
+    needs: [install-deps, gclient-sync]
+    if: ${{ needs.setup.outputs.src-changed == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src/electron
+          fetch-depth: 0
+
+      - name: Restore depot_tools
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/depot_tools
+          key: depot-tools-${{ runner.os }}-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: depot-tools-${{ runner.os }}-
+
+      - name: Add depot_tools to PATH
+        run: echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
+
+      - name: Restore gclient src cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            src/
+            !src/electron
+          key: gclient-linux-x64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: gclient-linux-x64-
+
+      - name: Restore node_modules
+        uses: actions/download-artifact@v4
+        with:
+          name: node_modules-linux
+          path: src/electron/node_modules
+
+      - name: Read .nvmrc
+        id: nvmrc
+        run: echo "NODE_VERSION=$(cat src/electron/.nvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.nvmrc.outputs.NODE_VERSION }}
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install system build deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            clang \
+            libgtk-3-dev \
+            libgconf-2-4 \
+            libnotify-dev \
+            libnss3-dev \
+            libcups2-dev \
+            libxss1 \
+            libasound2-dev \
+            libxtst-dev \
+            libxkbfile-dev \
+            libsecret-1-dev \
+            libgbm-dev \
+            libpulse-dev \
+            binutils \
+            ninja-build \
+            python3 \
+            python3-pip
+
+      - name: Cache GN build output
+        uses: actions/cache@v4
+        with:
+          path: src/out
+          key: gn-out-linux-x64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          restore-keys: |
+            gn-out-linux-x64-${{ env.GN_BUILD_TYPE }}-
+            gn-out-linux-x64-
+
+      - name: Configure GN
+        working-directory: src
+        run: |
+          gn gen "out/${{ env.GN_BUILD_TYPE }}" \
+            --args="import(\"//electron/build/args/${{ env.GN_BUILD_TYPE }}.gn\") target_os=\"linux\" target_cpu=\"x64\""
+
+      - name: Build electron target
+        working-directory: src
+        run: |
+          ninja -C "out/${{ env.GN_BUILD_TYPE }}" electron -j$(nproc)
+
+      - name: Build electron:dist/zip
+        working-directory: src
+        run: |
+          ninja -C "out/${{ env.GN_BUILD_TYPE }}" electron:electron_dist_zip -j$(nproc)
+
+      - name: Upload Linux dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-linux-x64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          path: |
+            src/out/${{ env.GN_BUILD_TYPE }}/dist.zip
+            src/out/${{ env.GN_BUILD_TYPE }}/electron.zip
+          retention-days: 90
+          if-no-files-found: warn
+
+  # ── Upload to GitHub Releases (only when requested) ───────────────────────
+  release:
+    name: "🚀 Create GitHub Release"
+    needs: build
+    if: ${{ inputs.upload-release == true }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: electron-linux-x64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          path: artifacts/
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "fork-build-${{ github.sha }}"
+          name: "Fork Build – Linux x64 (${{ github.sha }})"
+          body: |
+            🤖 Automated build from fork CI.
+
+            **Branch:** `${{ github.ref_name }}`
+            **Commit:** `${{ github.sha }}`
+            **GN type:** `${{ env.GN_BUILD_TYPE }}`
+
+            > ⚠️ These are development artifacts for validation only.
+            > Do NOT submit upstream PRs before CI passes.
+          draft: false
+          prerelease: true
+          files: artifacts/**
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Build summary gate ────────────────────────────────────────────────────
+  fork-build-complete:
+    name: "✅ Fork Build Complete (Linux)"
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check build result
+        run: |
+          if [[ "${{ needs.build.result }}" == "failure" ]]; then
+            echo "::error::Electron Linux build failed. Do NOT open upstream PR."
+            exit 1
+          fi
+          echo "✅ Build passed. Safe to proceed to upstream PR validation."

@@ -1,0 +1,364 @@
+name: "Fork Build – Windows (x64 + arm64)"
+
+# FORK-ONLY: Builds Electron on Windows x64 and arm64.
+# Uses windows-latest (x64) and windows-11-arm (arm64) GitHub-hosted runners.
+
+on:
+  workflow_dispatch:
+    inputs:
+      gn-build-type:
+        description: "GN build type"
+        default: "testing"
+        required: false
+        type: choice
+        options: [testing, release]
+      target-arch:
+        description: "Target architecture"
+        default: "x64"
+        required: false
+        type: choice
+        options: [x64, arm64, all]
+      upload-release:
+        default: false
+        required: false
+        type: boolean
+  workflow_call:
+    inputs:
+      gn-build-type:
+        default: "testing"
+        required: false
+        type: string
+      target-arch:
+        default: "x64"
+        required: false
+        type: string
+      upload-release:
+        default: false
+        required: false
+        type: boolean
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: fork-build-windows-${{ inputs.target-arch }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GN_BUILD_TYPE: ${{ inputs.gn-build-type || 'testing' }}
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+
+jobs:
+  repo-guard:
+    name: "🔒 Fork Repo Guard"
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [[ "${{ github.repository }}" == "electron/electron" ]]; then
+            echo "::error::Windows build must NOT run on upstream electron/electron."
+            exit 1
+          fi
+          echo "✅ Fork: ${{ github.repository }}"
+
+  build-windows-x64:
+    name: "🔨 Build – Windows x64"
+    needs: repo-guard
+    if: inputs.target-arch == 'x64' || inputs.target-arch == 'all'
+    runs-on: windows-latest
+    timeout-minutes: 360
+    env:
+      TARGET_ARCH: x64
+      TARGET_PLATFORM: win
+    steps:
+      - name: Free disk space (Windows)
+        shell: powershell
+        run: |
+          Write-Host "Disk before:" 
+          Get-PSDrive C | Select-Object Used,Free
+          # Remove Android SDK
+          if (Test-Path "C:\Android") { Remove-Item -Recurse -Force "C:\Android" }
+          # Remove large preinstalled tools
+          if (Test-Path "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\LLVM") {
+            Write-Host "Keeping LLVM for build..."
+          }
+          if (Test-Path "C:\hostedtoolcache\windows\go") { Remove-Item -Recurse -Force "C:\hostedtoolcache\windows\go" }
+          Write-Host "Disk after:"
+          Get-PSDrive C | Select-Object Used,Free
+
+      - name: Checkout Electron
+        uses: actions/checkout@v4
+        with:
+          path: src/electron
+          fetch-depth: 0
+
+      - name: Read .nvmrc
+        id: nvmrc
+        shell: bash
+        run: echo "NODE_VERSION=$(cat src/electron/.nvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.nvmrc.outputs.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: src/electron/yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache depot_tools
+        uses: actions/cache@v4
+        id: depot-cache
+        with:
+          path: ${{ github.workspace }}\depot_tools
+          key: depot-tools-win-x64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: depot-tools-win-x64-
+
+      - name: Install depot_tools
+        if: steps.depot-cache.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          git clone --depth=1 `
+            https://chromium.googlesource.com/chromium/tools/depot_tools.git `
+            ${{ github.workspace }}\depot_tools
+
+      - name: Add depot_tools to PATH
+        shell: bash
+        run: |
+          echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
+          echo "DEPOT_TOOLS_WIN_TOOLCHAIN=0" >> $GITHUB_ENV
+
+      - name: Install JS dependencies
+        working-directory: src/electron
+        run: yarn install --immutable
+
+      - name: Cache gclient src tree (Windows x64)
+        uses: actions/cache@v4
+        id: src-cache
+        with:
+          path: |
+            src/
+            !src/electron
+          key: gclient-win-x64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: gclient-win-x64-
+
+      - name: Create .gclient
+        shell: bash
+        run: |
+          cat > .gclient <<'EOF'
+          solutions = [{
+            "name": "src/electron",
+            "url": ".",
+            "deps_file": "DEPS",
+            "managed": False,
+            "custom_vars": {
+              "process_deps": True,
+              "checkout_win": True,
+            },
+          }]
+          EOF
+
+      - name: gclient sync
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          gclient sync --nohooks --no-history --delete_unversioned_trees -j4
+
+      - name: gclient runhooks
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: gclient runhooks
+
+      - name: Cache GN build output (Windows x64)
+        uses: actions/cache@v4
+        with:
+          path: src/out
+          key: gn-out-win-x64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          restore-keys: |
+            gn-out-win-x64-${{ env.GN_BUILD_TYPE }}-
+            gn-out-win-x64-
+
+      - name: Configure GN (Windows x64)
+        shell: bash
+        working-directory: src
+        run: |
+          gn gen "out/${{ env.GN_BUILD_TYPE }}" \
+            --args="import(\"//electron/build/args/${{ env.GN_BUILD_TYPE }}.gn\") \
+                    target_os=\"win\" \
+                    target_cpu=\"x64\""
+
+      - name: Build Electron (Windows x64)
+        shell: bash
+        working-directory: src
+        run: |
+          ninja -C "out/${{ env.GN_BUILD_TYPE }}" electron -j4
+
+      - name: Create distribution zip (Windows x64)
+        shell: bash
+        working-directory: src
+        run: |
+          ninja -C "out/${{ env.GN_BUILD_TYPE }}" electron:electron_dist_zip -j4
+
+      - name: Upload Windows x64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-windows-x64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          path: |
+            src/out/${{ env.GN_BUILD_TYPE }}/dist.zip
+            src/out/${{ env.GN_BUILD_TYPE }}/electron.zip
+          retention-days: 90
+          if-no-files-found: warn
+
+  build-windows-arm64:
+    name: "🔨 Build – Windows arm64"
+    needs: repo-guard
+    if: inputs.target-arch == 'arm64' || inputs.target-arch == 'all'
+    runs-on: windows-11-arm
+    timeout-minutes: 360
+    env:
+      TARGET_ARCH: arm64
+      TARGET_PLATFORM: win
+    steps:
+      - name: Free disk space (Windows arm64)
+        shell: powershell
+        run: |
+          Get-PSDrive C | Select-Object Used,Free
+          if (Test-Path "C:\Android") { Remove-Item -Recurse -Force "C:\Android" }
+          if (Test-Path "C:\hostedtoolcache\windows\go") { Remove-Item -Recurse -Force "C:\hostedtoolcache\windows\go" }
+
+      - name: Checkout Electron
+        uses: actions/checkout@v4
+        with:
+          path: src/electron
+          fetch-depth: 0
+
+      - name: Read .nvmrc
+        id: nvmrc
+        shell: bash
+        run: echo "NODE_VERSION=$(cat src/electron/.nvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.nvmrc.outputs.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: src/electron/yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache depot_tools
+        uses: actions/cache@v4
+        id: depot-cache
+        with:
+          path: ${{ github.workspace }}\depot_tools
+          key: depot-tools-win-arm64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: depot-tools-win-arm64-
+
+      - name: Install depot_tools
+        if: steps.depot-cache.outputs.cache-hit != 'true'
+        shell: powershell
+        run: |
+          git clone --depth=1 `
+            https://chromium.googlesource.com/chromium/tools/depot_tools.git `
+            ${{ github.workspace }}\depot_tools
+
+      - name: Add depot_tools to PATH
+        shell: bash
+        run: |
+          echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
+          echo "DEPOT_TOOLS_WIN_TOOLCHAIN=0" >> $GITHUB_ENV
+
+      - name: Install JS dependencies
+        working-directory: src/electron
+        run: yarn install --immutable
+
+      - name: Cache gclient src tree (Windows arm64)
+        uses: actions/cache@v4
+        id: src-cache
+        with:
+          path: |
+            src/
+            !src/electron
+          key: gclient-win-arm64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: gclient-win-arm64-
+
+      - name: Create .gclient
+        shell: bash
+        run: |
+          cat > .gclient <<'EOF'
+          solutions = [{
+            "name": "src/electron",
+            "url": ".",
+            "deps_file": "DEPS",
+            "managed": False,
+            "custom_vars": {
+              "process_deps": True,
+              "checkout_win": True,
+            },
+          }]
+          EOF
+
+      - name: gclient sync
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: gclient sync --nohooks --no-history --delete_unversioned_trees -j4
+
+      - name: gclient runhooks
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: gclient runhooks
+
+      - name: Cache GN build output (Windows arm64)
+        uses: actions/cache@v4
+        with:
+          path: src/out
+          key: gn-out-win-arm64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          restore-keys: |
+            gn-out-win-arm64-${{ env.GN_BUILD_TYPE }}-
+            gn-out-win-arm64-
+
+      - name: Configure GN (Windows arm64)
+        shell: bash
+        working-directory: src
+        run: |
+          gn gen "out/${{ env.GN_BUILD_TYPE }}" \
+            --args="import(\"//electron/build/args/${{ env.GN_BUILD_TYPE }}.gn\") \
+                    target_os=\"win\" \
+                    target_cpu=\"arm64\""
+
+      - name: Build Electron (Windows arm64)
+        shell: bash
+        working-directory: src
+        run: ninja -C "out/${{ env.GN_BUILD_TYPE }}" electron -j4
+
+      - name: Create distribution zip (Windows arm64)
+        shell: bash
+        working-directory: src
+        run: ninja -C "out/${{ env.GN_BUILD_TYPE }}" electron:electron_dist_zip -j4
+
+      - name: Upload Windows arm64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-windows-arm64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          path: |
+            src/out/${{ env.GN_BUILD_TYPE }}/dist.zip
+            src/out/${{ env.GN_BUILD_TYPE }}/electron.zip
+          retention-days: 90
+          if-no-files-found: warn
+
+  fork-build-windows-complete:
+    name: "✅ Fork Build Complete (Windows)"
+    needs: [build-windows-x64, build-windows-arm64]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - run: |
+          X64="${{ needs.build-windows-x64.result }}"
+          A64="${{ needs.build-windows-arm64.result }}"
+          [[ "$X64" == "failure" ]] && echo "::error::Windows x64 build failed." && exit 1
+          [[ "$A64" == "failure" ]] && echo "::error::Windows arm64 build failed." && exit 1
+          echo "✅ Windows builds complete."

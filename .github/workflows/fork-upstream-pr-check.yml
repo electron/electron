@@ -1,0 +1,219 @@
+name: "Fork – Upstream PR Readiness Check"
+
+# ────────────────────────────────────────────────────────────────────────────
+# FORK-ONLY: Validates that a feature branch is safe to submit upstream.
+# Run this MANUALLY before opening a PR on electron/electron.
+# It performs a clean-room audit of what would be included in the upstream PR.
+# ────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature-branch:
+        description: "Feature branch to audit (e.g. feature/my-fix)"
+        required: true
+        type: string
+      upstream-base:
+        description: "Upstream target branch (default: main)"
+        default: "main"
+        required: false
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  repo-guard:
+    name: "🔒 Fork Repo Guard"
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [[ "${{ github.repository }}" == "electron/electron" ]]; then
+            echo "::error::This workflow must NOT run on upstream."
+            exit 1
+          fi
+          echo "✅ Fork: ${{ github.repository }}"
+
+  audit-diff:
+    name: "🔎 Audit Diff vs Upstream"
+    needs: repo-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.feature-branch }}
+          fetch-depth: 0
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/electron/electron.git || true
+          git fetch upstream ${{ inputs.upstream-base }} --no-tags
+
+      - name: Compute diff stats
+        id: diff
+        run: |
+          BASE="upstream/${{ inputs.upstream-base }}"
+          MERGE_BASE=$(git merge-base HEAD "$BASE")
+          echo "merge-base=$MERGE_BASE" >> "$GITHUB_OUTPUT"
+          echo ""
+          echo "═══════════════════════════════════════════"
+          echo "  Diff: ${{ inputs.feature-branch }} vs upstream/${{ inputs.upstream-base }}"
+          echo "═══════════════════════════════════════════"
+          git diff --stat "$MERGE_BASE"..HEAD
+          echo ""
+          CHANGED_FILES=$(git diff --name-only "$MERGE_BASE"..HEAD)
+          echo "changed-files<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$CHANGED_FILES" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: 🚫 Check for fork-only files that must NOT go upstream
+        run: |
+          BASE="upstream/${{ inputs.upstream-base }}"
+          MERGE_BASE=$(git merge-base HEAD "$BASE")
+          CHANGED=$(git diff --name-only "$MERGE_BASE"..HEAD)
+
+          FORBIDDEN_PATTERNS=(
+            ".github/workflows/fork-"
+            ".github/workflows/fork_"
+            ".env"
+            ".env.local"
+            "FORK_"
+            "fork-notes"
+          )
+
+          FAIL=0
+          for pattern in "${FORBIDDEN_PATTERNS[@]}"; do
+            MATCHES=$(echo "$CHANGED" | grep -i "$pattern" || true)
+            if [[ -n "$MATCHES" ]]; then
+              echo "::error::Fork-only file detected in upstream diff: $MATCHES"
+              FAIL=1
+            fi
+          done
+
+          if [[ $FAIL -eq 1 ]]; then
+            echo ""
+            echo "🚫 UPSTREAM PR BLOCKED: Contains fork-only files."
+            echo "   Remove or exclude the above files before creating upstream PR."
+            exit 1
+          fi
+
+          echo "✅ No fork-only files in upstream diff."
+
+      - name: 🚫 Check for CI workflow changes in diff
+        run: |
+          BASE="upstream/${{ inputs.upstream-base }}"
+          MERGE_BASE=$(git merge-base HEAD "$BASE")
+          WORKFLOW_CHANGES=$(git diff --name-only "$MERGE_BASE"..HEAD -- .github/workflows/ || true)
+          if [[ -n "$WORKFLOW_CHANGES" ]]; then
+            echo "::error::The diff includes GitHub Actions workflow files."
+            echo "   Upstream PRs must NOT include CI/CD workflow changes from the fork."
+            echo "   Affected files:"
+            echo "$WORKFLOW_CHANGES"
+            exit 1
+          fi
+          echo "✅ No workflow files in upstream diff."
+
+      - name: 🔍 Check for upstream-unfriendly patterns in code
+        run: |
+          BASE="upstream/${{ inputs.upstream-base }}"
+          MERGE_BASE=$(git merge-base HEAD "$BASE")
+
+          # Patterns that shouldn't be in upstream code
+          BAD_PATTERNS=(
+            "om-ghante"
+            "FORK_ONLY"
+            "TODO:FORK"
+            "HACK:FORK"
+            "omghante"
+          )
+
+          FAIL=0
+          for pattern in "${BAD_PATTERNS[@]}"; do
+            FOUND=$(git diff "$MERGE_BASE"..HEAD | grep "^+" | grep -i "$pattern" || true)
+            if [[ -n "$FOUND" ]]; then
+              echo "::error::Upstream-unfriendly pattern '$pattern' found in diff:"
+              echo "$FOUND"
+              FAIL=1
+            fi
+          done
+
+          if [[ $FAIL -eq 1 ]]; then
+            echo "🚫 Clean up fork-specific references before submitting upstream."
+            exit 1
+          fi
+          echo "✅ No fork-specific references in code diff."
+
+      - name: 📋 Commit summary for upstream PR
+        run: |
+          BASE="upstream/${{ inputs.upstream-base }}"
+          MERGE_BASE=$(git merge-base HEAD "$BASE")
+          echo ""
+          echo "═══════════════════════════════════════════"
+          echo "  Commits to be included in upstream PR"
+          echo "═══════════════════════════════════════════"
+          git log --oneline "$MERGE_BASE"..HEAD
+          echo ""
+          COMMIT_COUNT=$(git log --oneline "$MERGE_BASE"..HEAD | wc -l)
+          echo "  Total commits: $COMMIT_COUNT"
+          echo ""
+
+      - name: ✅ Upstream readiness summary
+        run: |
+          echo ""
+          echo "╔════════════════════════════════════════════╗"
+          echo "║   UPSTREAM PR READINESS: ✅ APPROVED       ║"
+          echo "╠════════════════════════════════════════════╣"
+          echo "║  Branch: ${{ inputs.feature-branch }}"
+          echo "║  Target: upstream/${{ inputs.upstream-base }}"
+          echo "╠════════════════════════════════════════════╣"
+          echo "║  NEXT STEPS:                               ║"
+          echo "║  1. Ensure fork CI build has passed        ║"
+          echo "║  2. Open PR: om-ghante/electron → main     ║"
+          echo "║     (on github.com/electron/electron)      ║"
+          echo "║  3. Do NOT include fork-only workflows     ║"
+          echo "╚════════════════════════════════════════════╝"
+
+  check-fork-ci-status:
+    name: "📊 Check Fork CI Build Status"
+    needs: repo-guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify fork CI has run and passed on this branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ inputs.feature-branch }}"
+          REPO="${{ github.repository }}"
+
+          echo "Checking latest workflow runs for branch: $BRANCH"
+          # Use gh CLI to check the most recent fork-ci run on this branch
+          RUNS=$(gh run list \
+            --repo "$REPO" \
+            --branch "$BRANCH" \
+            --workflow "fork-ci.yml" \
+            --status completed \
+            --limit 1 \
+            --json conclusion,headBranch,updatedAt \
+            2>/dev/null || echo "[]")
+
+          echo "Recent runs: $RUNS"
+
+          CONCLUSION=$(echo "$RUNS" | python3 -c "import sys,json; runs=json.load(sys.stdin); print(runs[0]['conclusion'] if runs else 'none')" 2>/dev/null || echo "none")
+
+          if [[ "$CONCLUSION" == "success" ]]; then
+            echo "✅ Fork CI (lint) passed on this branch."
+          elif [[ "$CONCLUSION" == "none" ]]; then
+            echo "::warning::No completed fork-ci run found for branch $BRANCH."
+            echo "   Run the fork-ci workflow before creating an upstream PR."
+          else
+            echo "::error::Latest fork-ci run concluded with: $CONCLUSION"
+            echo "   Fix CI failures before creating upstream PR."
+            exit 1
+          fi

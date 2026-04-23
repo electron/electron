@@ -1,0 +1,107 @@
+name: "Fork – Upstream Sync"
+
+# ────────────────────────────────────────────────────────────────────────────
+# FORK-ONLY: Periodically syncs fork's `main` branch from upstream.
+# This is READ-ONLY from upstream — it never pushes to electron/electron.
+# Runs on a schedule or can be manually triggered.
+# ────────────────────────────────────────────────────────────────────────────
+
+on:
+  schedule:
+    # Every day at 02:00 UTC
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: "Dry run (fetch only, do not push)"
+        default: false
+        required: false
+        type: boolean
+      upstream-branch:
+        description: "Upstream branch to sync from"
+        default: "main"
+        required: false
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+
+jobs:
+  repo-guard:
+    name: "🔒 Fork Repo Guard"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce fork-only
+        run: |
+          if [[ "${{ github.repository }}" == "electron/electron" ]]; then
+            echo "::error::Sync workflow must NOT run on upstream."
+            exit 1
+          fi
+          echo "✅ Fork: ${{ github.repository }}"
+
+  sync-main:
+    name: "🔄 Sync fork/main ← upstream/main"
+    needs: repo-guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout fork main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/electron/electron.git || true
+          git remote set-url upstream https://github.com/electron/electron.git
+
+      - name: Fetch upstream
+        run: |
+          UPSTREAM_BRANCH="${{ inputs.upstream-branch || 'main' }}"
+          git fetch upstream "$UPSTREAM_BRANCH" --no-tags
+
+      - name: Check for divergence
+        id: diverge
+        run: |
+          UPSTREAM_BRANCH="${{ inputs.upstream-branch || 'main' }}"
+          BEHIND=$(git rev-list HEAD..upstream/"$UPSTREAM_BRANCH" --count)
+          AHEAD=$(git rev-list upstream/"$UPSTREAM_BRANCH"..HEAD --count)
+          echo "behind=$BEHIND" >> "$GITHUB_OUTPUT"
+          echo "ahead=$AHEAD" >> "$GITHUB_OUTPUT"
+          echo "📊 Fork main is $BEHIND commits behind, $AHEAD commits ahead of upstream."
+
+      - name: Merge upstream into fork main (fast-forward only)
+        if: steps.diverge.outputs.behind != '0' && inputs.dry-run != 'true'
+        run: |
+          UPSTREAM_BRANCH="${{ inputs.upstream-branch || 'main' }}"
+          git merge --ff-only upstream/"$UPSTREAM_BRANCH" || {
+            echo "::warning::Fast-forward merge failed (fork main has diverged). Manual sync needed."
+            exit 0
+          }
+
+      - name: Push updated main to fork
+        if: steps.diverge.outputs.behind != '0' && inputs.dry-run != 'true'
+        run: |
+          git push origin main
+          echo "✅ Fork main synced with upstream/${{ inputs.upstream-branch || 'main' }}"
+
+      - name: Dry-run output
+        if: inputs.dry-run == 'true'
+        run: |
+          echo "🔍 DRY RUN — would have merged ${{ steps.diverge.outputs.behind }} commits."
+          echo "No changes pushed."
+
+      - name: Already up to date
+        if: steps.diverge.outputs.behind == '0'
+        run: echo "✅ Fork main is already up to date with upstream."

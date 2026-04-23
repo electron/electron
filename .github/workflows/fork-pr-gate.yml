@@ -1,0 +1,261 @@
+name: "Fork PR Validation Gate"
+
+# ────────────────────────────────────────────────────────────────────────────
+# FORK-ONLY: Runs on every PR inside the fork.
+# This is the REQUIRED status check before any upstream PR is allowed.
+# Calls lint + build workflows as reusable sub-workflows.
+# ────────────────────────────────────────────────────────────────────────────
+
+on:
+  pull_request:
+    branches:
+      - main
+      - "feature/**"
+      - "ci/**"
+      - "build/**"
+    types: [opened, synchronize, reopened, ready_for_review]
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: fork-pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  # ── Hard fork guard ───────────────────────────────────────────────────────
+  repo-guard:
+    name: "🔒 Fork Repo Guard"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce fork-only execution
+        run: |
+          if [[ "${{ github.repository }}" == "electron/electron" ]]; then
+            echo "::error::PR gate must NOT run on upstream electron/electron."
+            exit 1
+          fi
+          echo "✅ Fork confirmed: ${{ github.repository }}"
+
+  # ── Skip draft PRs ────────────────────────────────────────────────────────
+  draft-check:
+    name: "📋 Draft PR Check"
+    needs: repo-guard
+    runs-on: ubuntu-latest
+    outputs:
+      is-draft: ${{ steps.check.outputs.draft }}
+    steps:
+      - id: check
+        run: |
+          echo "draft=${{ github.event.pull_request.draft }}" >> "$GITHUB_OUTPUT"
+          if [[ "${{ github.event.pull_request.draft }}" == "true" ]]; then
+            echo "ℹ️ PR is a draft — skipping heavy build steps."
+          fi
+
+  # ── Path-based change detection ───────────────────────────────────────────
+  changes:
+    name: "🔎 Detect Changed Paths"
+    needs: repo-guard
+    runs-on: ubuntu-latest
+    outputs:
+      src: ${{ steps.filter.outputs.src }}
+      docs: ${{ steps.filter.outputs.docs }}
+      workflows: ${{ steps.filter.outputs.workflows }}
+      patches: ${{ steps.filter.outputs.patches }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            src:
+              - 'shell/**'
+              - 'lib/**'
+              - 'chromium_src/**'
+              - 'build/**'
+              - 'BUILD.gn'
+              - 'filenames*.gni'
+              - 'DEPS'
+            docs:
+              - 'docs/**'
+              - '*.md'
+            workflows:
+              - '.github/workflows/**'
+            patches:
+              - 'patches/**'
+
+  # ── Upstream workflow leakage check ──────────────────────────────────────
+  workflow-safety-check:
+    name: "🛡️ Workflow Safety Check"
+    needs: [repo-guard, changes]
+    if: ${{ needs.changes.outputs.workflows == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for upstream-only runner references
+        run: |
+          FORBIDDEN_RUNNERS="electron-arc-centralus\|electron-arc-eastus\|ubuntu-slim"
+          FOUND=$(grep -r "$FORBIDDEN_RUNNERS" .github/workflows/fork-*.yml 2>/dev/null || true)
+          if [[ -n "$FOUND" ]]; then
+            echo "::error::Fork workflows must NOT use upstream ARC runners."
+            echo "$FOUND"
+            exit 1
+          fi
+          echo "✅ No forbidden runner references in fork workflows."
+
+      - name: Ensure fork workflows have repo guards
+        run: |
+          for f in .github/workflows/fork-*.yml; do
+            if ! grep -q "github.repository" "$f"; then
+              echo "::error::$f is missing a github.repository guard!"
+              exit 1
+            fi
+          done
+          echo "✅ All fork workflows have repo guards."
+
+      - name: Verify no upstream-specific secrets used in fork workflows
+        run: |
+          FORBIDDEN="CHROMIUM_GIT_COOKIE\|PATCH_UP_APP_CREDS\|DD_API_KEY\|ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN"
+          FOUND=$(grep -r "$FORBIDDEN" .github/workflows/fork-*.yml 2>/dev/null || true)
+          if [[ -n "$FOUND" ]]; then
+            echo "::error::Fork workflows must not reference upstream-only secrets."
+            echo "$FOUND"
+            exit 1
+          fi
+          echo "✅ No upstream-only secrets referenced."
+
+  # ── Lint (always run, even on docs-only PRs) ──────────────────────────────
+  lint:
+    name: "🔍 Lint & TypeCheck"
+    needs: [repo-guard, draft-check]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Read .nvmrc
+        id: nvmrc
+        run: echo "NODE_VERSION=$(cat .nvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.nvmrc.outputs.NODE_VERSION }}
+          cache: "yarn"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: nm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Run lint
+        run: yarn lint
+
+      - name: TypeScript – scripts
+        run: yarn tsc -p tsconfig.script.json --noEmit
+
+      - name: TypeScript – electron
+        run: yarn tsc -p tsconfig.electron.json --noEmit
+
+  # ── Source build trigger (non-draft, src-changed) ─────────────────────────
+  # Triggers Linux-only by default on PRs to keep CI fast.
+  # Use fork-build-all.yml manually for a full multiplatform run.
+  trigger-build:
+    name: "🔨 Trigger Linux x64 Build (PR fast-path)"
+    needs: [lint, changes, draft-check]
+    if: |
+      needs.changes.outputs.src == 'true' &&
+      needs.draft-check.outputs.is-draft == 'false'
+    uses: ./.github/workflows/fork-build-all.yml
+    with:
+      gn-build-type: "testing"
+      skip-macos: true
+      skip-windows: true
+      linux-archs: "x64"
+      upload-release: false
+    permissions:
+      contents: write
+      actions: read
+
+  # ── PR description / commit message checks ────────────────────────────────
+  pr-meta-check:
+    name: "📝 PR Metadata Check"
+    needs: repo-guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check PR title follows conventional commits
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # Conventional commit prefixes
+          PREFIXES="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?: .+"
+          if [[ ! "$PR_TITLE" =~ $PREFIXES ]]; then
+            echo "::warning::PR title does not follow conventional commits format."
+            echo "  Expected: <type>(<scope>): <description>"
+            echo "  Got: $PR_TITLE"
+          else
+            echo "✅ PR title follows conventional commits."
+          fi
+
+      - name: Warn if PR targets upstream main without CI passing
+        run: |
+          BASE="${{ github.event.pull_request.base.repo.full_name }}"
+          if [[ "$BASE" == "electron/electron" ]]; then
+            echo "::error::This PR is targeting upstream electron/electron directly!"
+            echo "::error::PRs to upstream must only be created AFTER fork CI passes."
+            exit 1
+          fi
+          echo "✅ PR targets fork repository — OK."
+
+  # ── Final gate (all required checks) ─────────────────────────────────────
+  pr-gate:
+    name: "🚦 PR Gate – Ready for Review"
+    needs: [lint, workflow-safety-check, pr-meta-check]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Evaluate gate
+        run: |
+          LINT="${{ needs.lint.result }}"
+          SAFETY="${{ needs.workflow-safety-check.result }}"
+          META="${{ needs.pr-meta-check.result }}"
+
+          FAIL=0
+          [[ "$LINT" == "failure" || "$LINT" == "cancelled" ]] && \
+            echo "::error::Lint check failed." && FAIL=1
+          [[ "$SAFETY" == "failure" || "$SAFETY" == "cancelled" ]] && \
+            echo "::error::Workflow safety check failed." && FAIL=1
+          [[ "$META" == "failure" || "$META" == "cancelled" ]] && \
+            echo "::error::PR metadata check failed." && FAIL=1
+
+          if [[ $FAIL -eq 1 ]]; then
+            echo ""
+            echo "🚫 PR is NOT valid for upstream submission."
+            exit 1
+          fi
+
+          echo "✅ All gate checks passed. PR is valid."
+          echo "👉 Only open upstream PR AFTER fork build also succeeds."

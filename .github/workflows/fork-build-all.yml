@@ -1,0 +1,531 @@
+name: "Fork Build – All Platforms"
+
+# ────────────────────────────────────────────────────────────────────────────
+# FORK-ONLY: Master orchestrator that runs Linux, macOS, and Windows builds
+# in parallel. This is the single workflow to trigger for a full multiplatform
+# CI build. All platforms run simultaneously for maximum speed.
+#
+# Runners used (all GitHub-hosted — no upstream ARC runners):
+#   Linux x64    → ubuntu-latest
+#   Linux arm64  → ubuntu-22.04-arm
+#   macOS x64    → macos-13
+#   macOS arm64  → macos-14
+#   Windows x64  → windows-latest
+#   Windows arm64→ windows-11-arm
+# ────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      gn-build-type:
+        description: "GN build type"
+        default: "testing"
+        required: false
+        type: choice
+        options: [testing, release]
+      skip-linux:
+        description: "Skip Linux builds"
+        default: false
+        required: false
+        type: boolean
+      skip-macos:
+        description: "Skip macOS builds"
+        default: false
+        required: false
+        type: boolean
+      skip-windows:
+        description: "Skip Windows builds"
+        default: false
+        required: false
+        type: boolean
+      linux-archs:
+        description: "Linux archs (x64, arm64, all)"
+        default: "x64"
+        required: false
+        type: choice
+        options: [x64, arm64, all]
+      macos-archs:
+        description: "macOS archs (x64, arm64, all)"
+        default: "arm64"
+        required: false
+        type: choice
+        options: [x64, arm64, all]
+      windows-archs:
+        description: "Windows archs (x64, arm64, all)"
+        default: "x64"
+        required: false
+        type: choice
+        options: [x64, arm64, all]
+      upload-release:
+        description: "Upload all artifacts to GitHub Releases"
+        default: false
+        required: false
+        type: boolean
+      release-tag:
+        description: "Release tag (required if upload-release=true, must start with fork-v)"
+        default: ""
+        required: false
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: fork-build-all-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GN_BUILD_TYPE: ${{ inputs.gn-build-type || 'testing' }}
+
+jobs:
+  # ── Hard fork guard ───────────────────────────────────────────────────────
+  repo-guard:
+    name: "🔒 Fork Repo Guard"
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [[ "${{ github.repository }}" == "electron/electron" ]]; then
+            echo "::error::This workflow must NOT run on upstream electron/electron."
+            exit 1
+          fi
+          echo "✅ Fork: ${{ github.repository }}"
+
+  # ── Validate release tag if uploading ─────────────────────────────────────
+  validate-inputs:
+    name: "✅ Validate Inputs"
+    needs: repo-guard
+    runs-on: ubuntu-latest
+    outputs:
+      release-tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - id: tag
+        run: |
+          TAG="${{ inputs.release-tag }}"
+          UPLOAD="${{ inputs.upload-release }}"
+          if [[ "$UPLOAD" == "true" && -z "$TAG" ]]; then
+            echo "::error::release-tag is required when upload-release=true"
+            exit 1
+          fi
+          if [[ -n "$TAG" && ! "$TAG" =~ ^fork-v ]]; then
+            echo "::error::Release tag must start with 'fork-v' (got: $TAG)"
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "✅ Inputs valid. Tag: ${TAG:-none}"
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # LINUX BUILDS  (parallel: x64 native + arm64 native)
+  # ══════════════════════════════════════════════════════════════════════════
+
+  build-linux-x64:
+    name: "🐧 Linux x64"
+    needs: validate-inputs
+    if: ${{ !inputs.skip-linux && (inputs.linux-archs == 'x64' || inputs.linux-archs == 'all') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/local/share/dotnet \
+            /usr/share/swift /opt/hostedtoolcache/CodeQL || true
+          sudo apt-get clean
+          df -h
+
+      - uses: actions/checkout@v4
+        with:
+          path: src/electron
+          fetch-depth: 0
+
+      - name: Read .nvmrc
+        id: nvmrc
+        run: echo "NODE_VERSION=$(cat src/electron/.nvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.nvmrc.outputs.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: src/electron/yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install system build deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential clang ninja-build python3 python3-pip \
+            libgtk-3-dev libgconf-2-4 libnotify-dev libnss3-dev \
+            libcups2-dev libxss1 libasound2-dev libxtst-dev \
+            libxkbfile-dev libsecret-1-dev libgbm-dev libpulse-dev binutils
+
+      - name: Cache depot_tools
+        uses: actions/cache@v4
+        id: depot-cache
+        with:
+          path: ${{ github.workspace }}/depot_tools
+          key: depot-tools-linux-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: depot-tools-linux-
+
+      - name: Install depot_tools
+        if: steps.depot-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth=1 \
+            https://chromium.googlesource.com/chromium/tools/depot_tools.git \
+            ${{ github.workspace }}/depot_tools
+
+      - name: Add depot_tools to PATH
+        run: echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
+
+      - name: Install JS dependencies
+        working-directory: src/electron
+        run: yarn install --immutable
+
+      - name: Cache gclient src (Linux x64)
+        uses: actions/cache@v4
+        id: src-cache
+        with:
+          path: |
+            src/
+            !src/electron
+          key: gclient-linux-x64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: gclient-linux-x64-
+
+      - name: Create .gclient
+        run: |
+          cat > .gclient <<'EOF'
+          solutions = [{"name":"src/electron","url":".","deps_file":"DEPS","managed":False,"custom_vars":{"process_deps":True}}]
+          EOF
+
+      - name: gclient sync
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        run: gclient sync --nohooks --no-history --delete_unversioned_trees -j$(nproc)
+
+      - name: gclient runhooks
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        run: gclient runhooks
+
+      - name: Cache GN out (Linux x64)
+        uses: actions/cache@v4
+        with:
+          path: src/out
+          key: gn-out-linux-x64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          restore-keys: |
+            gn-out-linux-x64-${{ env.GN_BUILD_TYPE }}-
+            gn-out-linux-x64-
+
+      - name: GN gen + build
+        working-directory: src
+        run: |
+          gn gen "out/$GN_BUILD_TYPE" \
+            --args="import(\"//electron/build/args/$GN_BUILD_TYPE.gn\") target_os=\"linux\" target_cpu=\"x64\""
+          ninja -C "out/$GN_BUILD_TYPE" electron electron:electron_dist_zip -j$(nproc)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: electron-linux-x64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          path: src/out/${{ env.GN_BUILD_TYPE }}/dist.zip
+          retention-days: 90
+          if-no-files-found: warn
+
+  build-linux-arm64:
+    name: "🐧 Linux arm64"
+    needs: validate-inputs
+    if: ${{ !inputs.skip-linux && (inputs.linux-archs == 'arm64' || inputs.linux-archs == 'all') }}
+    runs-on: ubuntu-22.04-arm   # GitHub-hosted native ARM64 runner
+    timeout-minutes: 360
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/local/share/dotnet || true
+          sudo apt-get clean
+          df -h
+
+      - uses: actions/checkout@v4
+        with:
+          path: src/electron
+          fetch-depth: 0
+
+      - name: Read .nvmrc
+        id: nvmrc
+        run: echo "NODE_VERSION=$(cat src/electron/.nvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.nvmrc.outputs.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: src/electron/yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install system build deps
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential clang ninja-build python3 python3-pip \
+            libgtk-3-dev libnss3-dev libcups2-dev libxss1 \
+            libasound2-dev libxtst-dev libxkbfile-dev libsecret-1-dev \
+            libgbm-dev libpulse-dev binutils
+
+      - name: Cache depot_tools
+        uses: actions/cache@v4
+        id: depot-cache
+        with:
+          path: ${{ github.workspace }}/depot_tools
+          key: depot-tools-linux-arm64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: depot-tools-linux-arm64-
+
+      - name: Install depot_tools
+        if: steps.depot-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth=1 \
+            https://chromium.googlesource.com/chromium/tools/depot_tools.git \
+            ${{ github.workspace }}/depot_tools
+
+      - name: Add depot_tools to PATH
+        run: echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
+
+      - name: Install JS dependencies
+        working-directory: src/electron
+        run: yarn install --immutable
+
+      - name: Cache gclient src (Linux arm64)
+        uses: actions/cache@v4
+        id: src-cache
+        with:
+          path: |
+            src/
+            !src/electron
+          key: gclient-linux-arm64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: gclient-linux-arm64-
+
+      - name: Create .gclient
+        run: |
+          cat > .gclient <<'EOF'
+          solutions = [{"name":"src/electron","url":".","deps_file":"DEPS","managed":False,"custom_vars":{"process_deps":True,"checkout_arm64":True}}]
+          EOF
+
+      - name: gclient sync
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        run: gclient sync --nohooks --no-history --delete_unversioned_trees -j$(nproc)
+
+      - name: gclient runhooks
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        run: gclient runhooks
+
+      - name: Cache GN out (Linux arm64)
+        uses: actions/cache@v4
+        with:
+          path: src/out
+          key: gn-out-linux-arm64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          restore-keys: |
+            gn-out-linux-arm64-${{ env.GN_BUILD_TYPE }}-
+            gn-out-linux-arm64-
+
+      - name: GN gen + build
+        working-directory: src
+        run: |
+          gn gen "out/$GN_BUILD_TYPE" \
+            --args="import(\"//electron/build/args/$GN_BUILD_TYPE.gn\") target_os=\"linux\" target_cpu=\"arm64\" fatal_linker_warnings=false enable_linux_installer=false"
+          ninja -C "out/$GN_BUILD_TYPE" electron electron:electron_dist_zip -j$(nproc)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: electron-linux-arm64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          path: src/out/${{ env.GN_BUILD_TYPE }}/dist.zip
+          retention-days: 90
+          if-no-files-found: warn
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # MACOS BUILDS  (parallel: x64 Intel + arm64 Apple Silicon)
+  # ══════════════════════════════════════════════════════════════════════════
+
+  build-macos-x64:
+    name: "🍎 macOS x64 (Intel)"
+    needs: validate-inputs
+    if: ${{ !inputs.skip-macos && (inputs.macos-archs == 'x64' || inputs.macos-archs == 'all') }}
+    uses: ./.github/workflows/fork-build-macos.yml
+    with:
+      gn-build-type: ${{ inputs.gn-build-type || 'testing' }}
+      target-arch: x64
+      upload-release: false
+    permissions:
+      contents: write
+      actions: read
+
+  build-macos-arm64:
+    name: "🍎 macOS arm64 (Apple Silicon)"
+    needs: validate-inputs
+    if: ${{ !inputs.skip-macos && (inputs.macos-archs == 'arm64' || inputs.macos-archs == 'all') }}
+    uses: ./.github/workflows/fork-build-macos.yml
+    with:
+      gn-build-type: ${{ inputs.gn-build-type || 'testing' }}
+      target-arch: arm64
+      upload-release: false
+    permissions:
+      contents: write
+      actions: read
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # WINDOWS BUILDS  (parallel: x64 + arm64)
+  # ══════════════════════════════════════════════════════════════════════════
+
+  build-windows-x64:
+    name: "🪟 Windows x64"
+    needs: validate-inputs
+    if: ${{ !inputs.skip-windows && (inputs.windows-archs == 'x64' || inputs.windows-archs == 'all') }}
+    uses: ./.github/workflows/fork-build-windows.yml
+    with:
+      gn-build-type: ${{ inputs.gn-build-type || 'testing' }}
+      target-arch: x64
+      upload-release: false
+    permissions:
+      contents: write
+      actions: read
+
+  build-windows-arm64:
+    name: "🪟 Windows arm64"
+    needs: validate-inputs
+    if: ${{ !inputs.skip-windows && (inputs.windows-archs == 'arm64' || inputs.windows-archs == 'all') }}
+    uses: ./.github/workflows/fork-build-windows.yml
+    with:
+      gn-build-type: ${{ inputs.gn-build-type || 'testing' }}
+      target-arch: arm64
+      upload-release: false
+    permissions:
+      contents: write
+      actions: read
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # RELEASE PUBLISH  (after all builds)
+  # ══════════════════════════════════════════════════════════════════════════
+
+  publish-release:
+    name: "🚀 Publish Multiplatform Release"
+    needs:
+      - validate-inputs
+      - build-linux-x64
+      - build-linux-arm64
+      - build-macos-x64
+      - build-macos-arm64
+      - build-windows-x64
+      - build-windows-arm64
+    if: |
+      always() &&
+      inputs.upload-release == true &&
+      needs.validate-inputs.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "electron-*-${{ github.sha }}"
+          path: release-artifacts/
+          merge-multiple: false
+
+      - name: List artifacts
+        run: find release-artifacts/ -type f | sort
+
+      - name: Rename artifacts with platform labels
+        run: |
+          cd release-artifacts
+          for dir in */; do
+            platform=$(echo "$dir" | sed 's|electron-\(.*\)-${{ env.GN_BUILD_TYPE }}-.*|\1|')
+            for f in "$dir"*; do
+              [ -f "$f" ] || continue
+              ext="${f##*.}"
+              cp "$f" "../electron-${platform}.${ext}" 2>/dev/null || \
+              cp "$f" "../${platform}-$(basename $f)"
+            done
+          done
+          ls -la ../*.zip 2>/dev/null || true
+
+      - name: Generate release notes
+        run: |
+          cat > release-notes.md <<EOF
+          ## Fork Multiplatform Release: ${{ needs.validate-inputs.outputs.release-tag }}
+
+          > ⚠️ **Fork-only build** — NOT an official Electron release.
+
+          | Platform | Arch | Build Result |
+          |----------|------|--------------|
+          | 🐧 Linux | x64  | ${{ needs.build-linux-x64.result }} |
+          | 🐧 Linux | arm64 | ${{ needs.build-linux-arm64.result }} |
+          | 🍎 macOS | x64  | ${{ needs.build-macos-x64.result }} |
+          | 🍎 macOS | arm64 | ${{ needs.build-macos-arm64.result }} |
+          | 🪟 Windows | x64 | ${{ needs.build-windows-x64.result }} |
+          | 🪟 Windows | arm64 | ${{ needs.build-windows-arm64.result }} |
+
+          **Branch:** \`${{ github.ref_name }}\`  
+          **Commit:** \`${{ github.sha }}\`  
+          **GN type:** \`${{ env.GN_BUILD_TYPE }}\`  
+          **Built:** $(date -u '+%Y-%m-%d %H:%M UTC')
+          EOF
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate-inputs.outputs.release-tag }}
+          name: "🔧 ${{ needs.validate-inputs.outputs.release-tag }} – Multiplatform"
+          body_path: release-notes.md
+          draft: false
+          prerelease: true
+          files: |
+            release-artifacts/**/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ══════════════════════════════════════════════════════════════════════════
+  # MASTER GATE
+  # ══════════════════════════════════════════════════════════════════════════
+
+  all-builds-complete:
+    name: "🏁 All Platforms Complete"
+    needs:
+      - build-linux-x64
+      - build-linux-arm64
+      - build-macos-x64
+      - build-macos-arm64
+      - build-windows-x64
+      - build-windows-arm64
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Evaluate all results
+        run: |
+          declare -A results
+          results["linux-x64"]="${{ needs.build-linux-x64.result }}"
+          results["linux-arm64"]="${{ needs.build-linux-arm64.result }}"
+          results["macos-x64"]="${{ needs.build-macos-x64.result }}"
+          results["macos-arm64"]="${{ needs.build-macos-arm64.result }}"
+          results["windows-x64"]="${{ needs.build-windows-x64.result }}"
+          results["windows-arm64"]="${{ needs.build-windows-arm64.result }}"
+
+          FAIL=0
+          echo ""
+          echo "╔═══════════════════════════════════════════╗"
+          echo "║       MULTIPLATFORM BUILD SUMMARY         ║"
+          echo "╠═══════════════════════════════════════════╣"
+          for platform in "${!results[@]}"; do
+            result="${results[$platform]}"
+            icon="✅"
+            [[ "$result" == "failure" ]] && icon="❌" && FAIL=1
+            [[ "$result" == "cancelled" ]] && icon="⏭️"
+            [[ "$result" == "skipped" ]] && icon="⏭️"
+            printf "║  %-12s → %-8s  %s\n" "$platform" "$result" "$icon"
+          done
+          echo "╚═══════════════════════════════════════════╝"
+          echo ""
+
+          if [[ $FAIL -eq 1 ]]; then
+            echo "::error::One or more platform builds failed. Do NOT open upstream PR."
+            exit 1
+          fi
+          echo "🎉 All platform builds succeeded. Safe for upstream PR validation."

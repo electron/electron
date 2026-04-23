@@ -1,0 +1,196 @@
+name: "Fork – Release Build & Publish"
+
+# ────────────────────────────────────────────────────────────────────────────
+# FORK-ONLY: Triggered manually to produce a release-grade build and
+# publish it as a GitHub Release on the fork. Never touches upstream.
+# ────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: "Release tag (e.g. fork-v35.0.0-alpha.1)"
+        required: true
+        type: string
+      gn-build-type:
+        description: "GN build type"
+        default: "release"
+        required: false
+        type: choice
+        options:
+          - release
+          - testing
+      skip-linux:
+        description: "Skip Linux builds"
+        default: false
+        required: false
+        type: boolean
+      skip-macos:
+        description: "Skip macOS builds"
+        default: false
+        required: false
+        type: boolean
+      skip-windows:
+        description: "Skip Windows builds"
+        default: false
+        required: false
+        type: boolean
+      linux-archs:
+        description: "Linux archs (x64, arm64, all)"
+        default: "x64"
+        required: false
+        type: choice
+        options: [x64, arm64, all]
+      macos-archs:
+        description: "macOS archs (x64, arm64, all)"
+        default: "arm64"
+        required: false
+        type: choice
+        options: [x64, arm64, all]
+      windows-archs:
+        description: "Windows archs (x64, arm64, all)"
+        default: "x64"
+        required: false
+        type: choice
+        options: [x64, arm64, all]
+      prerelease:
+        description: "Mark as pre-release"
+        default: true
+        required: false
+        type: boolean
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+
+env:
+  GN_BUILD_TYPE: ${{ inputs.gn-build-type || 'release' }}
+
+jobs:
+  # ── Guard ─────────────────────────────────────────────────────────────────
+  repo-guard:
+    name: "🔒 Fork Repo Guard"
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [[ "${{ github.repository }}" == "electron/electron" ]]; then
+            echo "::error::Release workflow must NOT run on upstream."
+            exit 1
+          fi
+          echo "✅ Fork: ${{ github.repository }}"
+
+  # ── Validate tag format ───────────────────────────────────────────────────
+  validate-tag:
+    name: "🏷️ Validate Release Tag"
+    needs: repo-guard
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - id: tag
+        run: |
+          TAG="${{ inputs.release-tag }}"
+          # Must start with "fork-" to prevent confusion with upstream tags
+          if [[ ! "$TAG" =~ ^fork-v[0-9]+ ]]; then
+            echo "::error::Release tags for the fork must start with 'fork-v' (e.g. fork-v35.0.0-alpha.1)"
+            echo "::error::Got: $TAG"
+            exit 1
+          fi
+          echo "✅ Tag format valid: $TAG"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  # ── Multiplatform build via orchestrator ─────────────────────────────────
+  build-all:
+    name: "🔨 Build All Platforms"
+    needs: [validate-tag]
+    uses: ./.github/workflows/fork-build-all.yml
+    with:
+      gn-build-type: ${{ inputs.gn-build-type || 'release' }}
+      skip-linux: ${{ inputs.skip-linux || false }}
+      skip-macos: ${{ inputs.skip-macos || false }}
+      skip-windows: ${{ inputs.skip-windows || false }}
+      linux-archs: ${{ inputs.linux-archs || 'x64' }}
+      macos-archs: ${{ inputs.macos-archs || 'arm64' }}
+      windows-archs: ${{ inputs.windows-archs || 'x64' }}
+      upload-release: false
+    permissions:
+      contents: write
+      actions: read
+
+  # ── Assemble & publish GitHub Release ─────────────────────────────────────
+  publish-release:
+    name: "🚀 Publish GitHub Release"
+    needs: [validate-tag, build-all]
+    if: always() && needs.validate-tag.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all platform artifacts
+        if: needs.build-all.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "electron-*-${{ github.sha }}"
+          path: release-artifacts/
+          merge-multiple: false
+
+      - name: List collected artifacts
+        run: |
+          echo "Artifacts collected for release:"
+          find release-artifacts/ -type f | sort || echo "(none)"
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          TAG="${{ needs.validate-tag.outputs.tag }}"
+          BRANCH="${{ github.ref_name }}"
+          SHA="${{ github.sha }}"
+          cat > release-notes.md <<EOF
+          ## Fork Release: $TAG
+
+          > ⚠️ **Fork-only build** — This release is from the development fork and is NOT an official Electron release.
+
+          | Property | Value |
+          |----------|-------|
+          | Branch   | \`$BRANCH\` |
+          | Commit   | \`$SHA\` |
+          | GN Type  | \`${{ env.GN_BUILD_TYPE }}\` |
+          | Built    | $(date -u '+%Y-%m-%d %H:%M UTC') |
+
+          ### Platforms
+          $(echo "${{ inputs.platforms }}" | tr ',' '\n' | sed 's/^/- /')
+
+          ### Installation (Linux x64)
+          \`\`\`bash
+          # Extract the AppImage or dist zip
+          unzip electron-linux-x64-*.zip -d ./electron-dist
+          ./electron-dist/electron --version
+          \`\`\`
+
+          ### ⚠️ Disclaimer
+          These artifacts are for CI validation and development testing only.
+          Do not distribute or use in production.
+          EOF
+          echo "notes-file=release-notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate-tag.outputs.tag }}
+          name: "🔧 ${{ needs.validate-tag.outputs.tag }}"
+          body_path: release-notes.md
+          draft: false
+          prerelease: ${{ inputs.prerelease }}
+          files: |
+            release-artifacts/**
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release summary
+        run: |
+          echo "🎉 Release published: ${{ needs.validate-tag.outputs.tag }}"
+          echo "🔗 https://github.com/${{ github.repository }}/releases/tag/${{ needs.validate-tag.outputs.tag }}"

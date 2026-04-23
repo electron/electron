@@ -1,0 +1,293 @@
+name: "Fork Build – macOS (x64 + arm64)"
+
+# ────────────────────────────────────────────────────────────────────────────
+# FORK-ONLY: Builds Electron on macOS x64 (Intel) and macOS arm64 (Apple Silicon)
+# Uses GitHub-hosted macos-13 (x64) and macos-14 (arm64/M1) runners.
+# ────────────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_dispatch:
+    inputs:
+      gn-build-type:
+        description: "GN build type"
+        default: "testing"
+        required: false
+        type: choice
+        options: [testing, release]
+      target-arch:
+        description: "Target architecture"
+        default: "arm64"
+        required: false
+        type: choice
+        options: [x64, arm64, all]
+      upload-release:
+        description: "Upload to GitHub Releases"
+        default: false
+        required: false
+        type: boolean
+  workflow_call:
+    inputs:
+      gn-build-type:
+        default: "testing"
+        required: false
+        type: string
+      target-arch:
+        default: "arm64"
+        required: false
+        type: string
+      upload-release:
+        default: false
+        required: false
+        type: boolean
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: fork-build-macos-${{ inputs.target-arch }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GN_BUILD_TYPE: ${{ inputs.gn-build-type || 'testing' }}
+
+jobs:
+  repo-guard:
+    name: "🔒 Fork Repo Guard"
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [[ "${{ github.repository }}" == "electron/electron" ]]; then
+            echo "::error::macOS build must NOT run on upstream electron/electron."
+            exit 1
+          fi
+          echo "✅ Fork: ${{ github.repository }}"
+
+  build-macos-x64:
+    name: "🔨 Build – macOS x64 (Intel)"
+    needs: repo-guard
+    if: inputs.target-arch == 'x64' || inputs.target-arch == 'all'
+    runs-on: macos-13
+    timeout-minutes: 360
+    env:
+      TARGET_ARCH: x64
+    steps:
+      - name: Free up disk space
+        run: |
+          echo "=== Disk before ===" && df -h
+          sudo rm -rf /Library/Developer/CoreSimulator/Volumes/* || true
+          sudo rm -rf ~/Library/Developer/Xcode/DerivedData/* || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /usr/local/share/dotnet || true
+          brew cleanup --prune=all || true
+          echo "=== Disk after ===" && df -h
+
+      - uses: actions/checkout@v4
+        with:
+          path: src/electron
+          fetch-depth: 0
+
+      - name: Read .nvmrc
+        id: nvmrc
+        run: echo "NODE_VERSION=$(cat src/electron/.nvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.nvmrc.outputs.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: src/electron/yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache depot_tools
+        uses: actions/cache@v4
+        id: depot-cache
+        with:
+          path: ${{ github.workspace }}/depot_tools
+          key: depot-tools-macos-x64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: depot-tools-macos-x64-
+
+      - name: Install depot_tools
+        if: steps.depot-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth=1 \
+            https://chromium.googlesource.com/chromium/tools/depot_tools.git \
+            ${{ github.workspace }}/depot_tools
+
+      - name: Add depot_tools to PATH
+        run: echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
+
+      - name: Install JS dependencies
+        working-directory: src/electron
+        run: yarn install --immutable
+
+      - name: Cache gclient src (macOS x64)
+        uses: actions/cache@v4
+        id: src-cache
+        with:
+          path: |
+            src/
+            !src/electron
+          key: gclient-macos-x64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: gclient-macos-x64-
+
+      - name: Create .gclient
+        run: |
+          cat > .gclient <<'EOF'
+          solutions = [{"name":"src/electron","url":".","deps_file":"DEPS","managed":False,"custom_vars":{"process_deps":True,"checkout_mac":True,"host_os":"mac"}}]
+          EOF
+
+      - name: gclient sync
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        run: gclient sync --nohooks --no-history --delete_unversioned_trees -j$(sysctl -n hw.logicalcpu)
+
+      - name: gclient runhooks
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        run: gclient runhooks
+
+      - name: Cache GN out (macOS x64)
+        uses: actions/cache@v4
+        with:
+          path: src/out
+          key: gn-out-macos-x64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          restore-keys: |
+            gn-out-macos-x64-${{ env.GN_BUILD_TYPE }}-
+            gn-out-macos-x64-
+
+      - name: GN gen + build (macOS x64)
+        working-directory: src
+        run: |
+          gn gen "out/$GN_BUILD_TYPE" \
+            --args="import(\"//electron/build/args/$GN_BUILD_TYPE.gn\") target_os=\"mac\" target_cpu=\"x64\""
+          ninja -C "out/$GN_BUILD_TYPE" electron electron:electron_dist_zip -j$(sysctl -n hw.logicalcpu)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: electron-macos-x64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          path: src/out/${{ env.GN_BUILD_TYPE }}/dist.zip
+          retention-days: 90
+          if-no-files-found: warn
+
+  build-macos-arm64:
+    name: "🔨 Build – macOS arm64 (Apple Silicon)"
+    needs: repo-guard
+    if: inputs.target-arch == 'arm64' || inputs.target-arch == 'all'
+    runs-on: macos-14
+    timeout-minutes: 360
+    env:
+      TARGET_ARCH: arm64
+    steps:
+      - name: Free up disk space
+        run: |
+          echo "=== Disk before ===" && df -h
+          sudo rm -rf /Library/Developer/CoreSimulator/Volumes/* || true
+          sudo rm -rf ~/Library/Developer/Xcode/DerivedData/* || true
+          sudo rm -rf /usr/local/lib/android || true
+          sudo rm -rf /usr/local/share/dotnet || true
+          brew cleanup --prune=all || true
+          echo "=== Disk after ===" && df -h
+
+      - uses: actions/checkout@v4
+        with:
+          path: src/electron
+          fetch-depth: 0
+
+      - name: Read .nvmrc
+        id: nvmrc
+        run: echo "NODE_VERSION=$(cat src/electron/.nvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ steps.nvmrc.outputs.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: src/electron/yarn.lock
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Cache depot_tools
+        uses: actions/cache@v4
+        id: depot-cache
+        with:
+          path: ${{ github.workspace }}/depot_tools
+          key: depot-tools-macos-arm64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: depot-tools-macos-arm64-
+
+      - name: Install depot_tools
+        if: steps.depot-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth=1 \
+            https://chromium.googlesource.com/chromium/tools/depot_tools.git \
+            ${{ github.workspace }}/depot_tools
+
+      - name: Add depot_tools to PATH
+        run: echo "${{ github.workspace }}/depot_tools" >> $GITHUB_PATH
+
+      - name: Install JS dependencies
+        working-directory: src/electron
+        run: yarn install --immutable
+
+      - name: Cache gclient src (macOS arm64)
+        uses: actions/cache@v4
+        id: src-cache
+        with:
+          path: |
+            src/
+            !src/electron
+          key: gclient-macos-arm64-${{ hashFiles('src/electron/DEPS') }}
+          restore-keys: gclient-macos-arm64-
+
+      - name: Create .gclient
+        run: |
+          cat > .gclient <<'EOF'
+          solutions = [{"name":"src/electron","url":".","deps_file":"DEPS","managed":False,"custom_vars":{"process_deps":True,"checkout_mac":True,"host_os":"mac"}}]
+          EOF
+
+      - name: gclient sync
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        run: gclient sync --nohooks --no-history --delete_unversioned_trees -j$(sysctl -n hw.logicalcpu)
+
+      - name: gclient runhooks
+        if: steps.src-cache.outputs.cache-hit != 'true'
+        run: gclient runhooks
+
+      - name: Cache GN out (macOS arm64)
+        uses: actions/cache@v4
+        with:
+          path: src/out
+          key: gn-out-macos-arm64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          restore-keys: |
+            gn-out-macos-arm64-${{ env.GN_BUILD_TYPE }}-
+            gn-out-macos-arm64-
+
+      - name: GN gen + build (macOS arm64)
+        working-directory: src
+        run: |
+          gn gen "out/$GN_BUILD_TYPE" \
+            --args="import(\"//electron/build/args/$GN_BUILD_TYPE.gn\") target_os=\"mac\" target_cpu=\"arm64\""
+          ninja -C "out/$GN_BUILD_TYPE" electron electron:electron_dist_zip -j$(sysctl -n hw.logicalcpu)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: electron-macos-arm64-${{ env.GN_BUILD_TYPE }}-${{ github.sha }}
+          path: src/out/${{ env.GN_BUILD_TYPE }}/dist.zip
+          retention-days: 90
+          if-no-files-found: warn
+
+  fork-build-macos-complete:
+    name: "✅ Fork Build Complete (macOS)"
+    needs: [build-macos-x64, build-macos-arm64]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - run: |
+          [[ "${{ needs.build-macos-x64.result }}" == "failure" ]] && \
+            echo "::error::macOS x64 build failed." && exit 1
+          [[ "${{ needs.build-macos-arm64.result }}" == "failure" ]] && \
+            echo "::error::macOS arm64 build failed." && exit 1
+          echo "✅ macOS builds complete."
