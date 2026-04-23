@@ -101,6 +101,11 @@ runs:
         git pack-refs
         cd ..
 
+        # Pre-create the ThinLTO cache directory so lld-link does not need to
+        # call CreateDirectoryW through the bindflt filter driver, which can
+        # return ERROR_INVALID_PARAMETER under concurrent I/O on ARC runners.
+        New-Item -ItemType Directory -Force -Path out\Default\thinlto-cache | Out-Null
+
         $env:NINJA_SUMMARIZE_BUILD = 1
         if ("${{ inputs.is-release }}" -eq "true") {          
           e build --target electron:release_build
