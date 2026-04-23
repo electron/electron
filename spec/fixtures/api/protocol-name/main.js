@@ -15,7 +15,8 @@ app.whenReady().then(async () => {
       );
     } catch (error) {
       process.stderr.write(`${error.message}\n`);
-      process.exitCode = 1;
+      app.exit(1);
+      return;
     }
     app.quit();
     return;

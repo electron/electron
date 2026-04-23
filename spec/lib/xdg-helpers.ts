@@ -6,6 +6,7 @@ import * as path from 'node:path';
 const fixturesPath = path.resolve(__dirname, '..', 'fixtures');
 const xdgMockFixturePath = path.join(fixturesPath, 'api', 'xdg-mock');
 const protocolLookupFixturePath = path.join(fixturesPath, 'api', 'protocol-name');
+const kDefaultXdgDataDirs = '/usr/local/share:/usr/share';
 
 type ProtocolNameLookupResult = {
   name: string;
@@ -15,6 +16,11 @@ export type ProtocolInfoLookupResult = ProtocolNameLookupResult & {
   path: string;
   hasIcon: boolean;
 };
+
+export function getXdgDataDirsWithFallback(xdgDataHome: string, xdgDataDirs = process.env.XDG_DATA_DIRS) {
+  // Match Chromium's XDG fallback when XDG_DATA_DIRS is unset.
+  return [xdgDataHome, xdgDataDirs || kDefaultXdgDataDirs].join(':');
+}
 
 export function makeXdgMockDirectories(prefix: string) {
   const xdgDir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -72,7 +78,7 @@ function spawnProtocolLookupWithXdgMock(
       ...process.env,
       ...extraEnv,
       XDG_DATA_HOME: xdgDataHome,
-      XDG_DATA_DIRS: [xdgDataHome, process.env.XDG_DATA_DIRS].filter(Boolean).join(':'),
+      XDG_DATA_DIRS: getXdgDataDirsWithFallback(xdgDataHome),
       XDG_CONFIG_HOME: xdgConfigHome
     };
     if (lookupMode === 'info') {
