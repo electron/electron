@@ -17,12 +17,15 @@
 #include "content/browser/network_service_instance_impl.h"  // nogncheck
 #include "content/public/browser/child_process_host.h"
 #include "content/public/browser/service_process_host.h"
+#include "content/public/browser/storage_partition.h"
 #include "content/public/common/result_codes.h"
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "services/network/public/cpp/originating_process_id.h"
+#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/system_network_context_manager.h"
@@ -74,8 +77,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
     base::FilePath current_working_directory,
     bool use_plugin_helper,
     bool create_network_observer,
-    bool disclaim_responsibility)
-    : create_network_observer_(create_network_observer) {
+    bool disclaim_responsibility,
+    Session* session)
+    : create_network_observer_(create_network_observer), session_(session) {
 #if BUILDFLAG(IS_WIN)
   base::win::ScopedHandle stdout_write(nullptr);
   base::win::ScopedHandle stderr_write(nullptr);
@@ -428,6 +432,7 @@ UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
   node::mojom::URLLoaderFactoryParamsPtr params =
       node::mojom::URLLoaderFactoryParams::New();
   mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
+  network::mojom::NetworkContext* network_context;
   network::mojom::URLLoaderFactoryParamsPtr loader_params =
       network::mojom::URLLoaderFactoryParams::New();
   loader_params->process_id = network::OriginatingProcessId::browser();
@@ -439,11 +444,27 @@ UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
         url_loader_network_observer_->Bind();
   }
 
-  network::mojom::NetworkContext* network_context =
-      g_browser_process->system_network_context_manager()->GetContext();
-  network_context->CreateURLLoaderFactory(
-      url_loader_factory.InitWithNewPipeAndPassReceiver(),
-      std::move(loader_params));
+  if (session_) {
+    auto* browser_context = session_->browser_context();
+    network_context =
+        browser_context->GetDefaultStoragePartition()->GetNetworkContext();
+    // Build a factory through CreateURLLoaderFactoryBuilder so requests go
+    // through ProxyingURLLoaderFactory (enabling webRequest interception).
+    auto [factory_builder, header_client] =
+        browser_context->CreateURLLoaderFactoryBuilder();
+    loader_params->header_client = std::move(header_client);
+    url_loader_factory =
+        std::move(factory_builder)
+            .Finish<mojo::PendingRemote<network::mojom::URLLoaderFactory>>(
+                network_context, std::move(loader_params));
+  } else {
+    network_context =
+        g_browser_process->system_network_context_manager()->GetContext();
+    network_context->CreateURLLoaderFactory(
+        url_loader_factory.InitWithNewPipeAndPassReceiver(),
+        std::move(loader_params));
+  }
+
   params->url_loader_factory = std::move(url_loader_factory);
   mojo::PendingRemote<network::mojom::HostResolver> host_resolver;
   network_context->CreateHostResolver(
@@ -480,6 +501,7 @@ gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
   bool use_plugin_helper = false;
   bool create_network_observer = false;
   bool disclaim_responsibility = false;
+  api::Session* session = nullptr;
   std::map<IOHandle, IOType> stdio;
   base::FilePath current_working_directory;
   base::EnvironmentMap env_map;
@@ -525,13 +547,19 @@ gin_helper::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
     opts.Get("allowLoadingUnsignedLibraries", &use_plugin_helper);
     opts.Get("disclaim", &disclaim_responsibility);
 #endif
+
+    std::string partition;
+    if (opts.Get("session", &session) && session) {
+    } else if (opts.Get("partition", &partition)) {
+      session = Session::FromPartition(args->isolate(), partition);
+    }
   }
   auto handle = gin_helper::CreateHandle(
       args->isolate(),
       new UtilityProcessWrapper(
           std::move(params), display_name, std::move(stdio), env_map,
           current_working_directory, use_plugin_helper, create_network_observer,
-          disclaim_responsibility));
+          disclaim_responsibility, session));
   handle->Pin(args->isolate());
   return handle;
 }
