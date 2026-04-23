@@ -37,6 +37,7 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
       bool new_window) override;
   std::string GetDiscoveryPageHTML() override;
   bool HasBundledFrontendResources() override;
+  bool ShouldUseBundledFrontendResources() override;
   content::BrowserContext* GetDefaultBrowserContext() override;
 };
 
