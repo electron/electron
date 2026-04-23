@@ -104,7 +104,17 @@ runs:
         # Pre-create the ThinLTO cache directory so lld-link does not need to
         # call CreateDirectoryW through the bindflt filter driver, which can
         # return ERROR_INVALID_PARAMETER under concurrent I/O on ARC runners.
-        New-Item -ItemType Directory -Force -Path out\Default\thinlto-cache | Out-Null
+        # Discover the path from GN instead of hardcoding it so we stay in
+        # sync with `cache_dir` in build/config/compiler/BUILD.gn; skip the
+        # pre-create when ThinLTO is disabled (non-official builds).
+        $env:ELECTRON_DEPOT_TOOLS_DISABLE_LOG = "1"
+        $ltoFlag = e d gn desc out/Default //electron:electron_app ldflags 2>$null |
+          Select-String -Pattern '^/lldltocache:(.+)$' |
+          Select-Object -First 1
+        if ($ltoFlag) {
+          $cachePath = Join-Path 'out\Default' $ltoFlag.Matches[0].Groups[1].Value
+          New-Item -ItemType Directory -Force -Path $cachePath | Out-Null
+        }
 
         $env:NINJA_SUMMARIZE_BUILD = 1
         if ("${{ inputs.is-release }}" -eq "true") {          
