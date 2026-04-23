@@ -439,8 +439,7 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
   if (request.request_initiator &&
       network::cors::ShouldCheckCors(request.url, request.request_initiator,
                                      request.mode) &&
-      !base::Contains(url::GetCorsEnabledSchemes(),
-                             request.url.scheme())) {
+      !base::Contains(url::GetCorsEnabledSchemes(), request.url.scheme())) {
     mojo::Remote<network::mojom::URLLoaderClient> client_remote(
         std::move(client));
     client_remote->OnComplete(
