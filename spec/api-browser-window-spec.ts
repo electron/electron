@@ -5692,6 +5692,20 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getSize(), [400, 300]);
       });
 
+      it('does not change window size when disabled and enabled for frameless window', () => {
+        const w = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 300,
+          frame: false
+        });
+
+        w.setResizable(false);
+        expectBoundsEqual(w.getSize(), [400, 300]);
+        w.setResizable(true);
+        expectBoundsEqual(w.getSize(), [400, 300]);
+      });
+
       ifit(process.platform === 'win32')('do not change window with frame bounds when maximized', () => {
         const w = new BrowserWindow({
           show: true,
