@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Wilson <mjwilson@chromium.org>
+Date: Tue, 10 Mar 2026 10:08:27 -0700
+Subject: Replace UNSAFE_BUFFERS in AudioParamHandler with safe operations
+
+This should cause no functional change.
+
+Also do a small optimization in HandleNaNValues for inputs that are
+larger than 4 by skipping the first if check, since we expect longer
+inputs in general.
+
+Bug: 401184803
+Bug: 490642831
+Change-Id: I1044267b7e6370af4793fe973fe36224630ced95
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7649387
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Commit-Queue: Michael Wilson <mjwilson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1597152}
+
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_param_handler.cc b/third_party/blink/renderer/modules/webaudio/audio_param_handler.cc
+index b3b95dd1cc67c9448f050029c02329a0b2e5deee..88a8f39cd61c9b1fc349747c48210859abb4bac2 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_param_handler.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_param_handler.cc
+@@ -51,40 +51,35 @@ constexpr float kSetTargetThreshold = 4.539992976248485e-05f;
+ void HandleNaNValues(base::span<float> values, float default_value) {
+   unsigned k = 0;
+ #if defined(ARCH_CPU_X86_FAMILY)
+-  if (values.size() >= 4) {
+-    __m128 defaults = _mm_set1_ps(default_value);
+-    for (k = 0; k < values.size(); k += 4) {
+-      // SAFETY: The for loop condition has been checked k < values.size().
+-      __m128 v = _mm_loadu_ps(UNSAFE_BUFFERS(values.data() + k));
+-      // cmpuord returns all 1's if v is NaN for each elmeent of v.
+-      __m128 isnan = _mm_cmpunord_ps(v, v);
+-      // Replace NaN parts with default.
+-      __m128 result = _mm_and_ps(isnan, defaults);
+-      // Merge in the parts that aren't NaN
+-      result = _mm_or_ps(_mm_andnot_ps(isnan, v), result);
+-      // SAFETY: The for loop condition has been checked k < values.size().
+-      _mm_storeu_ps(UNSAFE_BUFFERS(values.data() + k), result);
+-    }
++  // Truncate to the next-lowest multiple of 4.
++  const size_t truncated_size = values.size() & ~3;
++  __m128 defaults = _mm_set1_ps(default_value);
++  for (k = 0; k < truncated_size; k += 4) {
++    __m128 v = _mm_loadu_ps(values.subspan(k, 4u).data());
++    // cmpuord returns all 1's if v is NaN for each elmeent of v.
++    __m128 isnan = _mm_cmpunord_ps(v, v);
++    // Replace NaN parts with default.
++    __m128 result = _mm_and_ps(isnan, defaults);
++    // Merge in the parts that aren't NaN
++    result = _mm_or_ps(_mm_andnot_ps(isnan, v), result);
++    _mm_storeu_ps(values.subspan(k, 4u).data(), result);
+   }
+ #elif defined(CPU_ARM_NEON)
+-  if (values.size() >= 4) {
+-    uint32x4_t defaults =
+-        reinterpret_cast<uint32x4_t>(vdupq_n_f32(default_value));
+-    for (k = 0; k < values.size(); k += 4) {
+-      // SAFETY: The for loop condition has been checked k < values.size().
+-      float32x4_t v = vld1q_f32(UNSAFE_BUFFERS(values.data() + k));
+-      // Returns true (all ones) if v is not NaN
+-      uint32x4_t is_not_nan = vceqq_f32(v, v);
+-      // Get the parts that are not NaN
+-      uint32x4_t result =
+-          vandq_u32(is_not_nan, reinterpret_cast<uint32x4_t>(v));
+-      // Replace the parts that are NaN with the default and merge with previous
+-      // result.  (Note: vbic_u32(x, y) = x and not y)
+-      result = vorrq_u32(result, vbicq_u32(defaults, is_not_nan));
+-      // SAFETY: The for loop condition has been checked k < values.size().
+-      vst1q_f32(UNSAFE_BUFFERS(values.data() + k),
+-                reinterpret_cast<float32x4_t>(result));
+-    }
++  // Truncate to the next-lowest multiple of 4.
++  const size_t truncated_size = values.size() & ~3;
++  uint32x4_t defaults =
++      reinterpret_cast<uint32x4_t>(vdupq_n_f32(default_value));
++  for (k = 0; k < truncated_size; k += 4) {
++    float32x4_t v = vld1q_f32(values.subspan(k, 4u).data());
++    // Returns true (all ones) if v is not NaN
++    uint32x4_t is_not_nan = vceqq_f32(v, v);
++    // Get the parts that are not NaN
++    uint32x4_t result = vandq_u32(is_not_nan, reinterpret_cast<uint32x4_t>(v));
++    // Replace the parts that are NaN with the default and merge with previous
++    // result.  (Note: vbic_u32(x, y) = x and not y)
++    result = vorrq_u32(result, vbicq_u32(defaults, is_not_nan));
++    vst1q_f32(values.subspan(k, 4u).data(),
++              reinterpret_cast<float32x4_t>(result));
+   }
+ #endif
+ 
+@@ -1831,10 +1826,7 @@ std::tuple<size_t, float, unsigned> AudioParamHandler::ProcessLinearRamp(
+ 
+     // Process 4 loop steps.
+     for (; write_index < fill_to_frame_trunc; write_index += 4) {
+-      // SAFETY: DCHECK previously checked that `fill_to_frame_trunc <
+-      // values.size()`. In the for loop, `write_index < fill_to_frame_trunc` so
+-      // this is safe.
+-      _mm_storeu_ps(UNSAFE_BUFFERS(values.data() + write_index), v_value);
++      _mm_storeu_ps(values.subspan(write_index, 4u).data(), v_value);
+       v_value = _mm_add_ps(v_value, v_inc);
+     }
+   }
+@@ -2020,10 +2012,7 @@ std::tuple<size_t, float, unsigned> AudioParamHandler::ProcessSetTarget(
+         v_value = _mm_set_ps1(value);
+ 
+         v_result = _mm_add_ps(v_value, _mm_mul_ps(v_delta, v_c));
+-        // SAFETY: DCHECK previously checked that `fill_to_frame_trunc <
+-        // values.size()`. In the for loop, `write_index < fill_to_frame_trunc`
+-        // so this is safe.
+-        _mm_storeu_ps(UNSAFE_BUFFERS(values.data() + write_index), v_result);
++        _mm_storeu_ps(values.subspan(write_index, 4u).data(), v_result);
+ 
+         // Update value for next iteration.
+         value += delta * c3;
+@@ -2184,10 +2173,7 @@ std::tuple<size_t, float, unsigned> AudioParamHandler::ProcessSetValueCurve(
+       __m128 v_value =
+           _mm_add_ps(v_c0, _mm_mul_ps(_mm_sub_ps(v_c1, v_c0), v_delta));
+ 
+-      // SAFETY: DCHECK previously checked that `fill_to_frame_trunc <
+-      // values.size()`. In the for loop, `write_index < fill_to_frame_trunc` so
+-      // this is safe.
+-      _mm_storeu_ps(UNSAFE_BUFFERS(values.data() + write_index), v_value);
++      _mm_storeu_ps(values.subspan(write_index, 4u).data(), v_value);
+     }
+     // Pass along k to the serial loop.
+     k = truncated_steps;

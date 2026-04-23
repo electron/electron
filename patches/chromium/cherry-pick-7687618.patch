@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Wei Wang <wei4.wang@intel.com>
+Date: Fri, 20 Mar 2026 19:57:55 -0700
+Subject: [WebNN] Prevent Pool2d indirection buffer overflow in TFLite
+
+Add a check to ensure the size of the internal indirection buffer used
+by TFLite's Pool2d implementation does not exceed the maximum value
+of a size_t integer.
+
+Bug: 494158331
+Change-Id: I984556f0f608badf8f73fcbb096da5f41170a958
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7687618
+Reviewed-by: Hu, Ningxin <ningxin.hu@intel.com>
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Wang, Wei4 <wei4.wang@intel.com>
+Cr-Commit-Position: refs/heads/main@{#1602966}
+
+diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tflite/graph_builder_tflite.cc
+index 28aea1bf23601330e4dd60d4d124905800a0846c..d9cdbf3c71fad5c5da6e688c57d7ef4ef46da668 100644
+--- a/services/webnn/tflite/graph_builder_tflite.cc
++++ b/services/webnn/tflite/graph_builder_tflite.cc
+@@ -6548,6 +6548,68 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
+     return base::unexpected("Pool2d in tflite doesn't support dilations.");
+   }
+ 
++  // Check the indirection buffer size to ensure it does not exceed the maximum
++  // value of a size_t integer.
++  const mojom::Operand& output_operand = GetOperand(pool2d.output_operand_id);
++  const auto& output_shape = output_operand.descriptor.shape();
++  const webnn::Size2d<uint32_t> output_size2d = {.height = output_shape[1],
++                                                 .width = output_shape[2]};
++  const webnn::Size2d<uint32_t> filter_size2d = {
++      .height = pool2d.window_dimensions->height,
++      .width = pool2d.window_dimensions->width};
++  base::CheckedNumeric<int32_t> checked_output_height = 0;
++
++  if (pool2d.kind == mojom::Pool2d::Kind::kMaxPool2d) {
++    // https://source.chromium.org/chromium/chromium/src/+/main:third_party/xnnpack/src/src/operators/max-pooling-nhwc.c;l=488;drc=b269899e63e0110d1ccf964a741be2833a9ecd9b
++    checked_output_height = output_size2d.height;
++  } else {
++    // https://source.chromium.org/chromium/chromium/src/+/main:third_party/xnnpack/src/src/operators/average-pooling-nhwc.c;l=442;drc=b269899e63e0110d1ccf964a741be2833a9ecd9b
++    auto checked_top_height =
++        base::CheckedNumeric<int32_t>(pool2d.padding->beginning->height);
++    auto checked_stride_height =
++        base::CheckedNumeric<int32_t>(pool2d.strides->height);
++    checked_top_height += checked_stride_height;
++    checked_top_height -= 1;
++    checked_top_height /= checked_stride_height;
++
++    auto checked_bottom_height =
++        base::CheckedNumeric<int32_t>(pool2d.padding->ending->height);
++    checked_bottom_height += checked_stride_height;
++    checked_bottom_height -= 1;
++    checked_bottom_height /= checked_stride_height;
++
++    checked_output_height = checked_top_height;
++    checked_output_height += checked_bottom_height;
++    checked_output_height += 1;
++  }
++
++  auto checked_filter_height =
++      base::CheckedNumeric<int32_t>(filter_size2d.height);
++  auto checked_filter_width =
++      base::CheckedNumeric<int32_t>(filter_size2d.width);
++  auto checked_pooling_size = checked_filter_height;
++  checked_pooling_size *= checked_filter_width;
++
++  auto checked_output_width =
++      base::CheckedNumeric<int32_t>(output_size2d.width);
++  checked_output_width -= 1;
++  checked_output_width *= base::CheckedNumeric<int32_t>(
++      std::min(pool2d.strides->width, filter_size2d.width));
++  checked_output_width *= checked_filter_height;
++  auto checked_step_height = checked_pooling_size + checked_output_width;
++
++  auto checked_indirection_buffer_size = checked_pooling_size;
++  checked_indirection_buffer_size -= 1;
++  checked_output_height *= checked_step_height;
++  checked_indirection_buffer_size += checked_output_height;
++  checked_indirection_buffer_size *=
++      base::CheckedNumeric<int32_t>(sizeof(void*));
++  if (!checked_indirection_buffer_size.IsValid()) {
++    return base::unexpected(
++        "Pool2d doesn't support configurations requiring an internal "
++        "computation buffer that exceeds the maximum size.");
++  }
++
+   ::tflite::BuiltinOperator operator_code;
+   std::optional<TensorInfo> quantized_output;
+   const mojom::Operand& input_operand = GetOperand(pool2d.input_operand_id);
+@@ -6573,9 +6635,6 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
+   CHECK_EQ(input_shape.size(), 4u);
+   const webnn::Size2d<uint32_t> input_size2d = {.height = input_shape[1],
+                                                 .width = input_shape[2]};
+-  webnn::Size2d<uint32_t> filter_size2d = {
+-      .height = pool2d.window_dimensions->height,
+-      .width = pool2d.window_dimensions->width};
+   ASSIGN_OR_RETURN(
+       TfLitePadding padding_mode,
+       GetTfLitePaddingMode(*pool2d.padding, input_size2d, filter_size2d,
