@@ -14,6 +14,53 @@ Commit-Queue: Fu, Junwei <junwei.fu@intel.com>
 Reviewed-by: Reilly Grant <reillyg@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1601883}
 
+diff --git a/services/webnn/public/cpp/graph_validation_utils.cc b/services/webnn/public/cpp/graph_validation_utils.cc
+index 54b8df4d6752077c1c750507769724d184c5dd00..9f96304e1f280e56edc33d76f6729ea0e3b72f20 100644
+--- a/services/webnn/public/cpp/graph_validation_utils.cc
++++ b/services/webnn/public/cpp/graph_validation_utils.cc
+@@ -58,6 +58,8 @@ static constexpr char kVarianceParam[] = "variance";
+ static constexpr char kWeightParam[] = "weight";
+ static constexpr char kZeroPointParam[] = "zeroPoint";
+ 
++}  // namespace
++
+ // Validate and calculate the output spatial dimensions of conv2d given
+ // input sizes, filter sizes, padding, strides and dilations.
+ // Return the calculated output sizes in double precision floating point number
+@@ -102,6 +104,8 @@ ValidateAndCalculateConv2dOutputSizes(const uint32_t input_height,
+                         .width = float_output_width.value()};
+ }
+ 
++namespace {
++
+ // Validate and calculate the output spatial dimensions of convTranspose2d given
+ // input sizes, filter sizes, padding, strides, dilations and output padding.
+ base::expected<Size2d<uint32_t>, std::string>
+diff --git a/services/webnn/public/cpp/graph_validation_utils.h b/services/webnn/public/cpp/graph_validation_utils.h
+index bfc247629d9071138e0e7f2a46316a588e9b5872..8331b0c6b6fc92c48a5e0bb7be18a2e043fb1d7d 100644
+--- a/services/webnn/public/cpp/graph_validation_utils.h
++++ b/services/webnn/public/cpp/graph_validation_utils.h
+@@ -450,6 +450,20 @@ base::expected<OperandDescriptor, std::string> COMPONENT_EXPORT(
+                                  const uint32_t axis,
+                                  std::string_view label);
+ 
++// Validate and calculate the output spatial dimensions of conv2d given
++// input sizes, filter sizes, padding, strides and dilations.
++// Return the calculated output sizes in double precision floating point number
++// if no errors.
++base::expected<Size2d<double>, std::string> COMPONENT_EXPORT(WEBNN_PUBLIC_CPP)
++    ValidateAndCalculateConv2dOutputSizes(uint32_t input_height,
++                                          uint32_t input_width,
++                                          uint32_t filter_height,
++                                          uint32_t filter_width,
++                                          const Padding2d& padding,
++                                          const Size2d<uint32_t>& strides,
++                                          const Size2d<uint32_t>& dilations,
++                                          std::string_view label);
++
+ // Validate and infer output information of 2-D convolution operator defined in
+ // WebIDL here https://www.w3.org/TR/webnn/#api-mlgraphbuilder-conv2d
+ base::expected<OperandDescriptor, std::string> COMPONENT_EXPORT(
 diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tflite/graph_builder_tflite.cc
 index d9cdbf3c71fad5c5da6e688c57d7ef4ef46da668..b2fcd0a39695ce98f7d70368ebb32ab7669bcf45 100644
 --- a/services/webnn/tflite/graph_builder_tflite.cc
