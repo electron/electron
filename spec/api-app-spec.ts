@@ -18,6 +18,7 @@ import { collectStreamBody, getResponse } from './lib/net-helpers';
 import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import {
+  getXdgDataDirsWithFallback,
   makeXdgMockDirectories,
   spawnProtocolInfoWithXdgMock,
   spawnProtocolNameWithXdgMock,
@@ -1700,7 +1701,7 @@ describe('app module', () => {
 
       process.env.PATH = [xdgBinDir, oldEnv.PATH].filter(Boolean).join(':');
       process.env.XDG_DATA_HOME = xdgDataHome;
-      process.env.XDG_DATA_DIRS = [xdgDataHome, oldEnv.XDG_DATA_DIRS].filter(Boolean).join(':');
+      process.env.XDG_DATA_DIRS = getXdgDataDirsWithFallback(xdgDataHome, oldEnv.XDG_DATA_DIRS);
       process.env.XDG_CONFIG_HOME = xdgConfigHome;
       app.setDesktopName(desktopFileId);
     });
