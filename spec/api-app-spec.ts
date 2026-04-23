@@ -1599,18 +1599,108 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
+  describe('getApplicationInfoForProtocol()', () => {
     it('returns promise rejection for a bogus protocol', async function () {
       await expect(app.getApplicationInfoForProtocol('bogus-protocol://')).to.eventually.be.rejectedWith(
         'Unable to retrieve installation path to app'
       );
     });
 
-    it('returns resolved promise with appPath, displayName and icon', async function () {
-      const appInfo = await app.getApplicationInfoForProtocol('https://');
-      expect(appInfo.path).not.to.be.undefined();
-      expect(appInfo.name).not.to.be.undefined();
-      expect(appInfo.icon).not.to.be.undefined();
+    ifdescribe(process.platform !== 'linux')('on macOS and Windows', () => {
+      it('returns resolved promise with appPath, displayName and icon', async function () {
+        const appInfo = await app.getApplicationInfoForProtocol('https://');
+        expect(appInfo.path).not.to.be.undefined();
+        expect(appInfo.name).not.to.be.undefined();
+        expect(appInfo.icon).not.to.be.undefined();
+      });
+    });
+
+    ifdescribe(process.platform === 'linux')('on Linux with mocked XDG dirs', () => {
+      const fixtureApp = path.join(fixturesPath, 'api', 'protocol-name');
+      const fixtureIcon = path.join(fixturesPath, 'assets', '1x1.png');
+      const desktopFileId = 'mock-browser.desktop';
+      const mockDisplayName = 'Mock Browser';
+      const mockScheme = 'mockproto';
+      const mockMimeType = `x-scheme-handler/${mockScheme}`;
+
+      function spawnWithXdgMock(
+        url: string,
+        xdgDataHome: string,
+        xdgConfigHome: string
+      ): Promise<{ name: string; path: string; hasIcon: boolean }> {
+        return new Promise((resolve, reject) => {
+          const child = cp.spawn(process.execPath, [fixtureApp, url], {
+            env: {
+              ...process.env,
+              ELECTRON_PROTOCOL_LOOKUP_MODE: 'info',
+              XDG_DATA_HOME: xdgDataHome,
+              XDG_DATA_DIRS: xdgDataHome,
+              XDG_CONFIG_HOME: xdgConfigHome
+            },
+            stdio: ['ignore', 'pipe', 'pipe']
+          });
+          let stdout = '';
+          let stderr = '';
+          child.stdout.on('data', (d: Buffer) => {
+            stdout += d;
+          });
+          child.stderr.on('data', (d: Buffer) => {
+            stderr += d;
+          });
+          child.on('close', (code) => {
+            if (code !== 0) {
+              reject(new Error(`Fixture exited with code ${code}: ${stderr}`));
+              return;
+            }
+
+            try {
+              resolve(JSON.parse(stdout));
+            } catch {
+              reject(new Error(`Failed to parse output: ${stdout}\nstderr: ${stderr}`));
+            }
+          });
+          child.on('error', reject);
+        });
+      }
+
+      let xdgDir: string;
+      let xdgDataHome: string;
+      let xdgConfigHome: string;
+      before(() => {
+        ({ xdgDir, xdgDataHome, xdgConfigHome } = makeXdgMockDirectories('electron-xdg-app-info-'));
+
+        const appsDir = path.join(xdgDataHome, 'applications');
+        fs.mkdirSync(appsDir, { recursive: true });
+        fs.mkdirSync(xdgConfigHome, { recursive: true });
+
+        fs.writeFileSync(
+          path.join(appsDir, desktopFileId),
+          [
+            '[Desktop Entry]',
+            `Name=${mockDisplayName}`,
+            'Exec=/usr/bin/true %u',
+            `Icon=${fixtureIcon}`,
+            'Type=Application',
+            `MimeType=${mockMimeType};`
+          ].join('\n')
+        );
+
+        fs.writeFileSync(
+          path.join(xdgConfigHome, 'mimeapps.list'),
+          ['[Default Applications]', `${mockMimeType}=${desktopFileId}`].join('\n')
+        );
+      });
+
+      after(() => {
+        fs.rmSync(xdgDir, { recursive: true, force: true });
+      });
+
+      it('returns appPath, displayName and icon for a registered protocol', async () => {
+        const appInfo = await spawnWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome);
+        expect(appInfo.name).to.equal(mockDisplayName);
+        expect(appInfo.path).to.equal('/usr/bin/true');
+        expect(appInfo.hasIcon).to.equal(true);
+      });
     });
   });
 
