@@ -9,16 +9,32 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as net from 'node:net';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
+const xdgMockFixturePath = path.join(fixturesPath, 'api', 'xdg-mock');
+
+function makeXdgMockDirectories (prefix: string) {
+  const xdgDir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  fs.cpSync(xdgMockFixturePath, xdgDir, { recursive: true });
+
+  const xdgDataHome = path.join(xdgDir, 'data');
+  const xdgConfigHome = path.join(xdgDir, 'config');
+  const xdgBinDir = path.join(xdgDir, 'bin');
+
+  fs.chmodSync(path.join(xdgBinDir, 'xdg-mime'), 0o755);
+  fs.chmodSync(path.join(xdgBinDir, 'xdg-settings'), 0o755);
+
+  return { xdgDir, xdgDataHome, xdgConfigHome, xdgBinDir };
+}
 
 const isMacOSx64 = process.platform === 'darwin' && process.arch === 'x64';
 
@@ -1432,6 +1448,94 @@ describe('app module', () => {
     it('sets the default client such that getApplicationNameForProtocol returns Electron', () => {
       app.setAsDefaultProtocolClient(protocol);
       expect(app.getApplicationNameForProtocol(`${protocol}://`)).to.equal('Electron');
+    });
+  });
+
+  ifdescribe(process.platform === 'linux')('default protocol client APIs with mocked XDG settings', () => {
+    const protocol = 'electron-test-linux';
+    const desktopFileId = 'electron-test.desktop';
+    const protocolMimeType = `x-scheme-handler/${protocol}`;
+
+    let xdgDir: string;
+    let xdgDataHome: string;
+    let xdgConfigHome: string;
+    let xdgBinDir: string;
+    let oldEnv: Record<string, string | undefined>;
+
+    const getRegisteredHandler = () => {
+      for (const list of [
+        path.join(xdgConfigHome, 'mimeapps.list'),
+        path.join(xdgDataHome, 'applications', 'mimeapps.list'),
+        path.join(xdgDataHome, 'applications', 'defaults.list')
+      ]) {
+        if (!fs.existsSync(list)) continue;
+
+        const match = fs
+          .readFileSync(list, 'utf8')
+          .split('\n')
+          .find((line) => line.startsWith(`${protocolMimeType}=`));
+
+        if (match) return match.split('=', 2)[1].split(';', 1)[0];
+      }
+
+      return '';
+    };
+
+    beforeEach(() => {
+      ({ xdgDir, xdgDataHome, xdgConfigHome, xdgBinDir } = makeXdgMockDirectories('electron-xdg-default-client-'));
+
+      oldEnv = {
+        PATH: process.env.PATH,
+        CHROME_DESKTOP: process.env.CHROME_DESKTOP,
+        XDG_DATA_HOME: process.env.XDG_DATA_HOME,
+        XDG_DATA_DIRS: process.env.XDG_DATA_DIRS,
+        XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME
+      };
+
+      defer(() => {
+        for (const [key, value] of Object.entries(oldEnv)) {
+          if (value === undefined) {
+            delete process.env[key];
+          } else {
+            process.env[key] = value;
+          }
+        }
+
+        fs.rmSync(xdgDir, { recursive: true, force: true });
+      });
+
+      process.env.PATH = [xdgBinDir, oldEnv.PATH].filter(Boolean).join(':');
+      process.env.XDG_DATA_HOME = xdgDataHome;
+      process.env.XDG_DATA_DIRS = [xdgDataHome, oldEnv.XDG_DATA_DIRS].filter(Boolean).join(':');
+      process.env.XDG_CONFIG_HOME = xdgConfigHome;
+      app.setDesktopName(desktopFileId);
+    });
+
+    it('writes the default handler to the XDG association files', async () => {
+      expect(getRegisteredHandler()).to.equal('');
+
+      expect(app.setAsDefaultProtocolClient(protocol)).to.equal(true);
+
+      await waitUntil(() => getRegisteredHandler() === desktopFileId);
+      expect(getRegisteredHandler()).to.equal(desktopFileId);
+    });
+
+    it('detects whether the app is the default protocol client', async () => {
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
+
+      fs.writeFileSync(
+        path.join(xdgConfigHome, 'mimeapps.list'),
+        ['[Default Applications]', `${protocolMimeType}=other.desktop`].join('\n')
+      );
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
+
+      fs.writeFileSync(
+        path.join(xdgConfigHome, 'mimeapps.list'),
+        ['[Default Applications]', `${protocolMimeType}=${desktopFileId}`].join('\n')
+      );
+
+      await waitUntil(() => app.isDefaultProtocolClient(protocol));
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(true);
     });
   });
 
