@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Mock Browser
+Exec=/usr/bin/true %u
+Type=Application
+MimeType=x-scheme-handler/mockproto;
