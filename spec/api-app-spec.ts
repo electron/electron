@@ -1530,21 +1530,17 @@ describe('app module', () => {
     ifdescribe(process.platform === 'linux')('on Linux with mocked XDG dirs', () => {
       const fixtureApp = path.join(fixturesPath, 'api', 'protocol-name');
       const desktopFileId = 'mock-browser.desktop';
+      const mockDisplayName = 'Mock Browser';
       const mockScheme = 'mockproto';
+      const mockMimeType = `x-scheme-handler/${mockScheme}`;
 
-      function spawnWithXdgMock(
-        url: string,
-        xdgDataHome: string,
-        xdgConfigHome: string,
-        xdgBinDir: string
-      ): Promise<string> {
+      function spawnWithXdgMock(url: string, xdgDataHome: string, xdgConfigHome: string): Promise<string> {
         return new Promise((resolve, reject) => {
           const child = cp.spawn(process.execPath, [fixtureApp, url], {
             env: {
               ...process.env,
-              PATH: [xdgBinDir, process.env.PATH].filter(Boolean).join(':'),
               XDG_DATA_HOME: xdgDataHome,
-              XDG_DATA_DIRS: [xdgDataHome, process.env.XDG_DATA_DIRS].filter(Boolean).join(':'),
+              XDG_DATA_DIRS: xdgDataHome,
               XDG_CONFIG_HOME: xdgConfigHome
             },
             stdio: ['ignore', 'pipe', 'pipe']
@@ -1565,7 +1561,7 @@ describe('app module', () => {
 
             try {
               const parsed = JSON.parse(stdout);
-              resolve(parsed.name.trimEnd());
+              resolve(parsed.name);
             } catch {
               reject(new Error(`Failed to parse output: ${stdout}\nstderr: ${stderr}`));
             }
@@ -1577,22 +1573,42 @@ describe('app module', () => {
       let xdgDir: string;
       let xdgDataHome: string;
       let xdgConfigHome: string;
-      let xdgBinDir: string;
       before(() => {
-        ({ xdgDir, xdgDataHome, xdgConfigHome, xdgBinDir } = makeXdgMockDirectories('electron-xdg-'));
+        xdgDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-xdg-'));
+        xdgDataHome = path.join(xdgDir, 'data');
+        xdgConfigHome = path.join(xdgDir, 'config');
+        const appsDir = path.join(xdgDataHome, 'applications');
+        fs.mkdirSync(appsDir, { recursive: true });
+        fs.mkdirSync(xdgConfigHome, { recursive: true });
+
+        fs.writeFileSync(
+          path.join(appsDir, desktopFileId),
+          [
+            '[Desktop Entry]',
+            `Name=${mockDisplayName}`,
+            'Exec=/usr/bin/true %u',
+            'Type=Application',
+            `MimeType=${mockMimeType};`
+          ].join('\n')
+        );
+
+        fs.writeFileSync(
+          path.join(xdgConfigHome, 'mimeapps.list'),
+          ['[Default Applications]', `${mockMimeType}=${desktopFileId}`].join('\n')
+        );
       });
 
       after(() => {
         fs.rmSync(xdgDir, { recursive: true, force: true });
       });
 
-      it('returns the desktop file ID for a registered protocol', async () => {
-        const name = await spawnWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome, xdgBinDir);
-        expect(name).to.equal(desktopFileId);
+      it('returns the display name for a registered protocol', async () => {
+        const name = await spawnWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome);
+        expect(name).to.equal(mockDisplayName);
       });
 
       it('returns an empty string for an unregistered protocol', async () => {
-        const name = await spawnWithXdgMock('unregistered-proto://', xdgDataHome, xdgConfigHome, xdgBinDir);
+        const name = await spawnWithXdgMock('unregistered-proto://', xdgDataHome, xdgConfigHome);
         expect(name).to.equal('');
       });
     });
