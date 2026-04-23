@@ -6,8 +6,8 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb'
-        required: true
+        default: ''
+        required: false
       skip-macos:
         type: boolean
         description: 'Skip macOS builds'
@@ -47,14 +47,15 @@ permissions: {}
 
 jobs:
   setup:
-    runs-on: ubuntu-latest
+    if: github.repository == 'electron/electron'
+    runs-on: ubuntu-slim
     permissions:
       contents: read
       pull-requests: read
     outputs:
         docs: ${{ steps.filter.outputs.docs }}
         src: ${{ steps.filter.outputs.src }}
-        build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
+        build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
     steps:
     - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
@@ -72,14 +73,14 @@ jobs:
             - CODE_OF_CONDUCT.md
           src:
             - '!docs/**'
-    - name: Set Outputs for Build Image SHA & Docs Only
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+      with:
+        override: ${{ inputs.build-image-sha }}
+    - name: Set Docs Only
       id: set-output
       run: |
-        if [ -z "${{ inputs.build-image-sha }}" ]; then
-          echo "build-image-sha=a82b87d7a4f5ff0cab61405f8151ac4cf4942aeb" >> "$GITHUB_OUTPUT"
-        else
-          echo "build-image-sha=${{ inputs.build-image-sha }}" >> "$GITHUB_OUTPUT"
-        fi
         echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
