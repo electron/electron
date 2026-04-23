@@ -37,8 +37,8 @@
 #include "ui/base/glib/scoped_gobject.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
-#include "ui/gtk/gtk_compat.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_compat.h"  // nogncheck
+#include "ui/gtk/gtk_util.h"    // nogncheck
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/unity_service.h"
