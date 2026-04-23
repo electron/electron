@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/sequenced_task_runner.h"
@@ -438,8 +439,8 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
   if (request.request_initiator &&
       network::cors::ShouldCheckCors(request.url, request.request_initiator,
                                      request.mode) &&
-      !std::ranges::contains(url::GetCorsEnabledSchemes(),
-                             request.url.GetScheme())) {
+      !base::Contains(url::GetCorsEnabledSchemes(),
+                             request.url.scheme())) {
     mojo::Remote<network::mojom::URLLoaderClient> client_remote(
         std::move(client));
     client_remote->OnComplete(
