@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Wei Wang <wei4.wang@intel.com>
+Date: Fri, 20 Mar 2026 19:57:55 -0700
+Subject: [WebNN] Prevent Pool2d indirection buffer overflow in TFLite
+
+Add a check to ensure the size of the internal indirection buffer used
+by TFLite's Pool2d implementation does not exceed the maximum value
+of a size_t integer.
+
+Bug: 494158331
+Change-Id: I984556f0f608badf8f73fcbb096da5f41170a958
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7687618
+Reviewed-by: Hu, Ningxin <ningxin.hu@intel.com>
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Wang, Wei4 <wei4.wang@intel.com>
+Cr-Commit-Position: refs/heads/main@{#1602966}
+
+diff --git a/services/webnn/tflite/graph_builder_tflite.cc b/services/webnn/tflite/graph_builder_tflite.cc
+index 578627bf9b42885d170ec0b83b581e2b09984823..cb5312511ef372a98a2bd8d34ed8e39e8308cee6 100644
+--- a/services/webnn/tflite/graph_builder_tflite.cc
++++ b/services/webnn/tflite/graph_builder_tflite.cc
+@@ -6886,6 +6886,21 @@ auto GraphBuilderTflite::SerializePool2d(const mojom::Pool2d& pool2d)
+   CHECK_EQ(input_shape.size(), 4u);
+   const webnn::Size2d<uint32_t> input_size2d = {.height = input_shape[1],
+                                                 .width = input_shape[2]};
++
++  // TODO(crbug.com/493988762): Explicitly restrict to int32_t in the WebNN spec
++  // or opSupportLimits for synchronous frontend validation.
++  if (!base::IsValueInRangeForNumericType<int32_t>(pool2d.strides->height) ||
++      !base::IsValueInRangeForNumericType<int32_t>(pool2d.strides->width)) {
++    return base::unexpected(
++        "Stride width and height must fit within the int32 range");
++  }
++
++  if (!base::IsValueInRangeForNumericType<int32_t>(filter_size2d.height) ||
++      !base::IsValueInRangeForNumericType<int32_t>(filter_size2d.width)) {
++    return base::unexpected(
++        "Filter width and height must fit within the int32 range");
++  }
++
+   ASSIGN_OR_RETURN(TfLitePadding padding_mode,
+                    GetPool2dTfLitePaddingMode(
+                        *pool2d.padding, input_size2d, filter_size2d,
