@@ -745,7 +745,7 @@ index ea68aa0d16c46ad53b63e10027e81503610051d9..ac1ffa290b59d964931a312a911efbec
  
    // An interface which can be implemented and used with
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 5c92eec064e36fa4be5a57a769a4091a18e3396d..b705450708560c0ae8b386d7efdb5c526964c629 100644
+index 8b470b9554d23a951c98c8cba644ae1ae4246004..a30fe3e814bb688be015956a195e0e8efe5662ca 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -616,11 +616,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {

@@ -16,6 +16,7 @@
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/base/models/image_model.h"
+#include "ui/base/ui_base_types.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/font_list.h"
 #include "ui/gfx/geometry/insets.h"
@@ -63,7 +64,8 @@ ClientFrameViewLinux::ClientFrameViewLinux(NativeWindowViews* window,
     : FramelessView{window, frame},
       theme_{ui::NativeTheme::GetInstanceForNativeUi()},
       nav_button_provider_(
-          ui::LinuxUiTheme::GetForProfile(nullptr)->CreateNavButtonProvider()),
+          ui::LinuxUiTheme::GetForProfile(nullptr)->CreateNavButtonProvider(
+              ui::FrameType::kDefault)),
       nav_buttons_{
           NavButton{ui::NavButtonProvider::FrameButtonDisplayType::kClose,
                     views::FrameButton::kClose, &views::Widget::Close,

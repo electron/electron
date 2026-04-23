@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3f9d9afc88b7622c28ba2167c305e2a54affb8d3..2c281a88630706c28ccf71e74851fcbae91ccdcb 100644
+index 1cb64b8a359f2761e75e7b43391734bde0d40054..2191e75e833c10937ba464a55d5449ad4730606e 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -176,6 +176,8 @@ viz_component("service") {
@@ -117,10 +117,10 @@ index 7fbb05e606fc26364c674c6330b8a5eb9c016fb3..a190a42c2127011ab54aae937a3cab36
    virtual gpu::SharedImageManager* GetSharedImageManager() = 0;
    virtual gpu::SyncPointManager* GetSyncPointManager() = 0;
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd1279ef8fa6 100644
+index 0a1c0ebd232fc7a3906cf4a98d568a36ec14a67e..f2e299992a1de56719d9843483de291b85e1dc87 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-@@ -23,6 +23,7 @@
+@@ -24,6 +24,7 @@
  #include "components/viz/service/display/display_compositor_memory_and_task_controller.h"
  #include "components/viz/service/display_embedder/skia_output_surface_dependency_impl.h"
  #include "components/viz/service/display_embedder/skia_output_surface_impl.h"
@@ -128,7 +128,7 @@ index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd12
  #include "components/viz/service/display_embedder/software_output_surface.h"
  #include "components/viz/service/gl/gpu_service_impl.h"
  #include "gpu/command_buffer/client/shared_memory_limits.h"
-@@ -30,6 +31,7 @@
+@@ -31,6 +32,7 @@
  #include "gpu/command_buffer/service/scheduler_sequence.h"
  #include "gpu/config/gpu_finch_features.h"
  #include "gpu/ipc/common/surface_handle.h"
@@ -136,7 +136,7 @@ index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd12
  #include "ui/base/ui_base_switches.h"
  
  #if BUILDFLAG(IS_WIN)
-@@ -93,7 +95,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -94,7 +96,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
@@ -146,7 +146,7 @@ index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd12
  #if BUILDFLAG(IS_CHROMEOS)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -101,7 +104,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -102,7 +105,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      return std::make_unique<SoftwareOutputSurface>(
@@ -155,7 +155,7 @@ index 07502f4ff2afd53a43d8f0ab68d4c4c39f6c0737..20d51f86d5084edf0b05ce0ab11fcd12
    } else {
      DCHECK(gpu_dependency);
  
-@@ -140,10 +143,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -141,10 +144,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -238,16 +238,17 @@ index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..601e646c293ac18e692663642f540577168924d6
+index 0000000000000000000000000000000000000000..c5f45c564f015d209aee39b4b8f0fd95ce187907
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,161 @@
+@@ -0,0 +1,162 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
 +
 +#include "components/viz/service/display_embedder/software_output_device_proxy.h"
 +
++#include "base/logging.h"
 +#include "base/memory/unsafe_shared_memory_region.h"
 +#include "base/threading/thread_checker.h"
 +#include "base/trace_event/trace_event.h"
@@ -563,10 +564,10 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 59a7d48453bc4d317c5760f57ad3bf84d5a81106..6b03be074cfd1ef113394debbfeeb6463b96dc2e 100644
+index 3b6170d5db3268c9fea8c47e93cea30304904cd8..f01d8239f6b7a6c49607b8c13c91f3f4dca2910a 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -406,8 +406,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -405,8 +405,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -619,7 +620,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 97f26777528c3b21255b74ccf411ff2d3b243215..d45839ebc7b07ade2ca382e15b1d48dcf7d29106 100644
+index fbe5a8e6458970652723f91a426541220b394a18..c2e748b92103c582802af9b973ebe0c3770ba44d 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -89,6 +89,7 @@ class DisplayPrivate;
@@ -656,7 +657,7 @@ index 97f26777528c3b21255b74ccf411ff2d3b243215..d45839ebc7b07ade2ca382e15b1d48dc
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -632,6 +645,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -631,6 +644,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
        simple_begin_frame_observers_;
    std::unique_ptr<ui::HostBeginFrameObserver> host_begin_frame_observer_;
  

@@ -51,7 +51,7 @@ index e11ccd361a0837eef71869b65f510830171c3a29..f076d0f783e2c0f6b5444002f756001a
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index f36983753ab7bdf2ecd332408f1f3d9c01f87a62..5a88dfda5eb2c4bf5b547a76eef81b530f3ea96e 100644
+index c3e2c8d2064ff4a93f8cc8c1de0f5996973f540d..579d74ba3491a95db714598749030983ca3c38bb 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -55,6 +55,7 @@
@@ -79,7 +79,7 @@ index f36983753ab7bdf2ecd332408f1f3d9c01f87a62..5a88dfda5eb2c4bf5b547a76eef81b53
  #include "chrome/browser/ui/process_singleton_dialog_linux.h"
  #endif
  
-@@ -353,6 +355,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+@@ -355,6 +357,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
@@ -88,7 +88,7 @@ index f36983753ab7bdf2ecd332408f1f3d9c01f87a62..5a88dfda5eb2c4bf5b547a76eef81b53
    // Ensure there is an instance of ResourceBundle that is initialized for
    // localized string resource accesses.
    ui::ScopedStartupResourceBundle ensure_startup_resource_bundle;
-@@ -375,6 +379,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+@@ -377,6 +381,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  #else
    NOTREACHED();
  #endif
@@ -96,7 +96,7 @@ index f36983753ab7bdf2ecd332408f1f3d9c01f87a62..5a88dfda5eb2c4bf5b547a76eef81b53
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -387,6 +392,21 @@ bool IsChromeProcess(pid_t pid) {
+@@ -389,6 +394,21 @@ bool IsChromeProcess(pid_t pid) {
                base::FilePath(chrome::kBrowserProcessExecutableName));
  }
  
@@ -118,7 +118,7 @@ index f36983753ab7bdf2ecd332408f1f3d9c01f87a62..5a88dfda5eb2c4bf5b547a76eef81b53
  // A helper class to hold onto a socket.
  class ScopedSocket {
   public:
-@@ -773,6 +793,10 @@ ProcessSingleton::~ProcessSingleton() {
+@@ -775,6 +795,10 @@ ProcessSingleton::~ProcessSingleton() {
    if (watcher_) {
      watcher_->OnEminentProcessSingletonDestruction();
    }
@@ -129,7 +129,7 @@ index f36983753ab7bdf2ecd332408f1f3d9c01f87a62..5a88dfda5eb2c4bf5b547a76eef81b53
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -1045,11 +1069,32 @@ bool ProcessSingleton::Create() {
+@@ -1047,11 +1071,32 @@ bool ProcessSingleton::Create() {
    // Create the socket file somewhere in /tmp which is usually mounted as a
    // normal filesystem. Some network filesystems (notably AFS) are screwy and
    // do not support Unix domain sockets.

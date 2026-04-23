@@ -7,7 +7,7 @@ Electron does not support Profiles, so we need to patch it out of any
 code that we use.
 
 diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-index 9ee981bbb9b7bd10a33e619b5ac7ff35373bbc53..f31e633db609fb211f3db25e563f357166ca510e 100644
+index 4386b371b128803efe96058360b18b8d0288200b..cada87f1676dd7d7671df486dc609b875f0e53b4 100644
 --- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 +++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 @@ -46,6 +46,7 @@ namespace {
@@ -43,10 +43,10 @@ index 9ee981bbb9b7bd10a33e619b5ac7ff35373bbc53..f31e633db609fb211f3db25e563f3571
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 41ebdb0c0af1ab94d3376a51e66c44cd26b6ed3f..274d3432576c36262885ec8fdf6c8f75c919dbe9 100644
+index 1e64b0b97f01a8ef720e6dae1124eae74b63eb34..73a343fd794d2bfa784c372098624f2b0d3eca8d 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -257,10 +257,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -258,10 +258,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -60,15 +60,15 @@ index 41ebdb0c0af1ab94d3376a51e66c44cd26b6ed3f..274d3432576c36262885ec8fdf6c8f75
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -453,6 +456,7 @@ void DispatchShouldUpdateViewportEvent(content::RenderFrameHost* embedder_host,
- }
- 
- bool ShouldShowGlicSummarizeButton(content::BrowserContext* context) {
-+#if 0
-   Profile* profile = Profile::FromBrowserContext(context);
-   if (!glic::GlicEnabling::IsEnabledForProfile(profile)) {
+@@ -460,6 +463,7 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      return false;
-@@ -469,7 +473,7 @@ bool ShouldShowGlicSummarizeButton(content::BrowserContext* context) {
+   }
+ 
++#if 0
+   Profile* profile =
+       Profile::FromBrowserContext(web_contents->GetBrowserContext());
+   if (!glic::GlicEnabling::IsEnabledForProfile(profile)) {
+@@ -482,7 +486,7 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
    if (glic::GlicEnabling::IsTrustFirstOnboardingEnabledForProfile(profile)) {
      return true;
    }

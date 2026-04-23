@@ -51,7 +51,7 @@ PluginUtils::GetMimeTypeToExtensionIdMap(
 
     if (const MimeTypesHandler* handler =
             MimeTypesHandler::GetHandler(extension)) {
-      for (const std::string& mime_type : handler->mime_type_set()) {
+      for (const std::string& mime_type : handler->GetSupportedMimeTypes()) {
         const auto [_, inserted] =
             mime_type_to_extension_id_map.insert_or_assign(mime_type, id);
         DCHECK(inserted);

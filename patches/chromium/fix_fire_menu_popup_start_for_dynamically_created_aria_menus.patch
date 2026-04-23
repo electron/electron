@@ -34,7 +34,7 @@ into Chromium.
 Bug: 40794596
 
 diff --git a/ui/accessibility/ax_event_generator.cc b/ui/accessibility/ax_event_generator.cc
-index 8fe1cacc274c543e6a5f13bb9b3712639f8bbda5..c87c47f34a5f47e9cb7cec04d703335a57f250cd 100644
+index ce044723936adebaee970da8c457b3e4a0f58b15..f4194de88891a3374abe4c5a6c67b01217b26ecf 100644
 --- a/ui/accessibility/ax_event_generator.cc
 +++ b/ui/accessibility/ax_event_generator.cc
 @@ -4,6 +4,7 @@

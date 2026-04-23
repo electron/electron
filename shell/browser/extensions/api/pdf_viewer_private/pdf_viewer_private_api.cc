@@ -12,8 +12,8 @@
 #include "base/numerics/safe_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "chrome/browser/pdf/mime_handler_stream_manager.h"
 #include "chrome/browser/pdf/pdf_pref_names.h"  // nogncheck
-#include "chrome/browser/pdf/pdf_viewer_stream_manager.h"
 #include "chrome/common/extensions/api/pdf_viewer_private.h"
 #include "chrome/common/pref_names.h"
 #include "components/pdf/common/constants.h"
@@ -72,13 +72,13 @@ base::WeakPtr<StreamContainer> GetStreamContainer(
     return nullptr;
   }
 
-  auto* pdf_viewer_stream_manager =
-      pdf::PdfViewerStreamManager::FromRenderFrameHost(embedder_host);
-  if (!pdf_viewer_stream_manager) {
+  auto* mime_handler_stream_manager =
+      pdf::MimeHandlerStreamManager::FromRenderFrameHost(embedder_host);
+  if (!mime_handler_stream_manager) {
     return nullptr;
   }
 
-  return pdf_viewer_stream_manager->GetStreamContainer(embedder_host);
+  return mime_handler_stream_manager->GetStreamContainer(embedder_host);
 }
 
 #if BUILDFLAG(ENABLE_PDF_SAVE_TO_DRIVE)

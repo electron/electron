@@ -8,10 +8,10 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 4dad6bbade99a00b5ae0f45d4de34d866918545c..6c7ec195fa64e3a1a718811192c9f6fdbf9463c6 100644
+index e4c41fea3a129bcd33a096cf187a94e848a7845b..26e6b534768615579dbaa7958527f01c8ed528ca 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
-@@ -26,6 +26,7 @@
+@@ -25,6 +25,7 @@
  #include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
  #include "ui/base/mojom/window_show_state.mojom-forward.h"
  #include "ui/base/ui_base_types.h"
@@ -30,10 +30,10 @@ index 4dad6bbade99a00b5ae0f45d4de34d866918545c..6c7ec195fa64e3a1a718811192c9f6fd
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 8df679251dc314a94079fcc9d4edd7fab12873d4..06599737a290ba4c52a7d36725aef565d49800bd 100644
+index a367b262935a06fcb9911944c061d1fa7fbb980d..78d0adb9d6db7efa188fd9ecfe3d5a51af451e8f 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2066,6 +2066,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
+@@ -2067,6 +2067,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_) {
      view_->UpdateCursor(cursor);
    }
@@ -44,10 +44,10 @@ index 8df679251dc314a94079fcc9d4edd7fab12873d4..06599737a290ba4c52a7d36725aef565
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 4e91b3aeb5630476c660e8814e2fd9d92c5a9ca1..d43e75c20aca09080f4223d339c88381f030c504 100644
+index f4c7cd7d7e84c81af0f112afe3cebd24ef0ddf31..9b9a48d951bdd58abd7f6d10e621ef4ba7c2dfff 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -6342,6 +6342,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -6312,6 +6312,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index 4e91b3aeb5630476c660e8814e2fd9d92c5a9ca1..d43e75c20aca09080f4223d339c88381
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 882e90f435780d0e298e3a778d4f029115de8980..48cbaff6b6adf2b0ead49e2a85302165291f4182 100644
+index eda33c85831029c6744f9fe2bc8d077d4f241de3..3f454f1d647da4b33cc66f84547021d699776b00 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1205,6 +1205,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1202,6 +1202,7 @@ class CONTENT_EXPORT WebContentsImpl
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -72,7 +72,7 @@ index 882e90f435780d0e298e3a778d4f029115de8980..48cbaff6b6adf2b0ead49e2a85302165
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index f1ec6796b2e987ab1e6c0e62e9edc075ceff1214..722e19b8fec5977bfc9a197c1ea3f8d6ba5615ae 100644
+index 3f7f7a8659715c5db22b6d4507e2a492ecfdf1b7..882eb3babb1970071c362cc036adf444ba445ef0 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -33,6 +33,7 @@
