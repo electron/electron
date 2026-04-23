@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommi <tommi@webrtc.org>
+Date: Mon, 23 Mar 2026 17:29:21 +0100
+Subject: Refactor AddCertificateReports to prevent crash
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When processing certificate stats with duplicate fingerprints,
+ReplaceOrAddNew would delete the existing stats report that was
+previously added and pointed to by first_report or prev_report.
+
+By adding tracking for duplicate fingerprints we can find the existing
+report and avoid replacing it.
+
+Bug: chromium:486495143
+Change-Id: Iabc41ae064476c1e5853cdff1dbbcab449f8df27
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/459320
+Reviewed-by: Evan Shrubsole <eshr@webrtc.org>
+Reviewed-by: Henrik Boström <hbos@webrtc.org>
+Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#47242}
+
+diff --git a/pc/BUILD.gn b/pc/BUILD.gn
+index 61f874c816701f46834d12c88341276c127cd31a..52ace9dbaa19155683703ba42e701db16082e9c7 100644
+--- a/pc/BUILD.gn
++++ b/pc/BUILD.gn
+@@ -1380,6 +1380,7 @@ rtc_library("legacy_stats_collector") {
+     "../rtc_base:threading",
+     "../rtc_base:timeutils",
+     "../system_wrappers",
++    "//third_party/abseil-cpp/absl/container:flat_hash_set",
+     "//third_party/abseil-cpp/absl/strings",
+     "//third_party/abseil-cpp/absl/strings:string_view",
+   ]
+diff --git a/pc/legacy_stats_collector.cc b/pc/legacy_stats_collector.cc
+index f43f33e48e5af014584727d4a7ac273a88949f0c..de6a2a7da36669d343ccfc3e6c94075695adac5d 100644
+--- a/pc/legacy_stats_collector.cc
++++ b/pc/legacy_stats_collector.cc
+@@ -21,6 +21,7 @@
+ #include <utility>
+ #include <vector>
+ 
++#include "absl/container/flat_hash_set.h"
+ #include "absl/strings/str_cat.h"
+ #include "absl/strings/string_view.h"
+ #include "api/audio/audio_processing_statistics.h"
+@@ -750,8 +751,13 @@ StatsReport* LegacyStatsCollector::AddCertificateReports(
+ 
+   StatsReport* first_report = nullptr;
+   StatsReport* prev_report = nullptr;
++  absl::flat_hash_set<std::string> visited_fingerprints;
+   for (SSLCertificateStats* stats = cert_stats.get(); stats;
+        stats = stats->issuer.get()) {
++    if (!visited_fingerprints.insert(stats->fingerprint).second) {
++      break;
++    }
++
+     StatsReport::Id id(StatsReport::NewTypedId(
+         StatsReport::kStatsReportTypeCertificate, stats->fingerprint));
+ 
+diff --git a/pc/legacy_stats_collector.h b/pc/legacy_stats_collector.h
+index 791fb2c416be59763169fde7d65fcf423d13fc1e..ac29da054e9f846ad95588eefb38d828bdec4fb8 100644
+--- a/pc/legacy_stats_collector.h
++++ b/pc/legacy_stats_collector.h
+@@ -110,6 +110,11 @@ class LegacyStatsCollector : public LegacyStatsCollectorInterface {
+ 
+   bool UseStandardBytesStats() const { return use_standard_bytes_stats_; }
+ 
++  StatsReport* AddCertificateReportsForTest(
++      std::unique_ptr<SSLCertificateStats> cert_stats) {
++    return AddCertificateReports(std::move(cert_stats));
++  }
++
+  private:
+   friend class LegacyStatsCollectorTest;
+ 
+diff --git a/pc/legacy_stats_collector_unittest.cc b/pc/legacy_stats_collector_unittest.cc
+index 0f62cb07e5474f467d131ba0b7761364091de4e2..fe964a3f30d8c68ce3f17f23aa294dccb06df187 100644
+--- a/pc/legacy_stats_collector_unittest.cc
++++ b/pc/legacy_stats_collector_unittest.cc
+@@ -55,6 +55,7 @@
+ #include "rtc_base/null_socket_server.h"
+ #include "rtc_base/rtc_certificate.h"
+ #include "rtc_base/socket_address.h"
++#include "rtc_base/ssl_certificate.h"
+ #include "rtc_base/ssl_identity.h"
+ #include "rtc_base/ssl_stream_adapter.h"
+ #include "rtc_base/thread.h"
+@@ -1447,6 +1448,21 @@ TEST_F(LegacyStatsCollectorTest, ChainedCertificateReportsCreated) {
+                          remote_ders);
+ }
+ 
++TEST_F(LegacyStatsCollectorTest,
++       AddCertificateReports_DuplicateFingerprintDoesNotCrash) {
++  auto pc = CreatePeerConnection();
++  auto stats = CreateStatsCollector(pc.get());
++
++  // Create duplicate fingerprints chain
++  auto issuer_stats = std::make_unique<SSLCertificateStats>(
++      "same_fingerprint", "sha-1", "cert_issuer", nullptr);
++  auto cert_stats = std::make_unique<SSLCertificateStats>(
++      "same_fingerprint", "sha-1", "cert_leaf", std::move(issuer_stats));
++
++  // This should not crash (Use-After-Free)
++  stats->AddCertificateReportsForTest(std::move(cert_stats));
++}
++
+ // This test verifies that all certificates without chains are correctly
+ // reported.
+ TEST_F(LegacyStatsCollectorTest, ChainlessCertificateReportsCreated) {
