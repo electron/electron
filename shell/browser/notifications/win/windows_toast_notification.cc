@@ -832,14 +832,15 @@ std::vector<ActivationUserInput> ExtractUserInputs(IInspectable* args) {
     ComPtr<IKeyValuePair<HSTRING, IInspectable*>> kvp;
     if (FAILED(iter->get_Current(&kvp)) || !kvp)
       break;
-    HSTRING key_hs = nullptr;
+    ScopedHString key_hs;
     ComPtr<IInspectable> value;
-    if (SUCCEEDED(kvp->get_Key(&key_hs)) && SUCCEEDED(kvp->get_Value(&value)) &&
-        key_hs && value) {
+    if (SUCCEEDED(kvp->get_Key(key_hs.Receive())) &&
+        SUCCEEDED(kvp->get_Value(&value)) && key_hs.success() && value) {
       ComPtr<IPropertyValue> prop;
-      HSTRING value_hs = nullptr;
+      ScopedHString value_hs;
       if (SUCCEEDED(value.As(&prop)) && prop &&
-          SUCCEEDED(prop->GetString(&value_hs)) && value_hs) {
+          SUCCEEDED(prop->GetString(value_hs.Receive())) &&
+          value_hs.success()) {
         UINT32 key_len = 0;
         UINT32 val_len = 0;
         const wchar_t* key_raw = WindowsGetStringRawBuffer(key_hs, &key_len);
@@ -868,8 +869,9 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
   if (args) {
     ComPtr<winui::Notifications::IToastActivatedEventArgs> activated_args;
     if (SUCCEEDED(args->QueryInterface(IID_PPV_ARGS(&activated_args)))) {
-      HSTRING args_hs = nullptr;
-      if (SUCCEEDED(activated_args->get_Arguments(&args_hs)) && args_hs) {
+      ScopedHString args_hs;
+      if (SUCCEEDED(activated_args->get_Arguments(args_hs.Receive())) &&
+          args_hs.success()) {
         UINT32 len = 0;
         const wchar_t* raw = WindowsGetStringRawBuffer(args_hs, &len);
         if (raw && len)
