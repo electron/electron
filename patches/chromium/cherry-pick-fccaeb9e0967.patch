@@ -1,0 +1,223 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Miguel Casas <mcasas@chromium.org>
+Date: Thu, 19 Mar 2026 10:30:00 -0700
+Subject: Ensure AudioRendererMixer holds lock during sink switch
+
+This guards `switch_output_device_in_progress_` with a lock that
+can be held during the final phase of a setSinkId() operation
+within the AudioRendererMixerInput. It ensures that if Stop()
+is called, we don't incorrectly reconnect the new sink, and if
+a device changes is in flight, that we stall the Stop() call.
+
+R=tguilbert
+
+Fixed: 492218537
+Change-Id: I9ec6efb9678762a22b1b1c8a2f8918771c264678
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7673253
+Reviewed-by: Thomas Guilbert <tguilbert@chromium.org>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1600910}
+
+diff --git a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.cc b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.cc
+index a07c2ef376f7dd98eec2dfdc14df5b69fc1fc2df..1462ba60b0e3a1eae7cab4d95ae14c80ca161847 100644
+--- a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.cc
++++ b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.cc
+@@ -95,6 +95,17 @@ void AudioRendererMixerInput::Start() {
+ }
+ 
+ void AudioRendererMixerInput::Stop() {
++  {
++    // Prevents race conditions when Stop() is called during a device change.
++    base::AutoLock auto_lock(device_change_lock_);
++    if (switch_output_device_in_progress_) {
++      switch_output_device_in_progress_ = false;
++    }
++  }
++  StopInternal();
++}
++
++void AudioRendererMixerInput::StopInternal() {
+   // Stop() may be called at any time, if Pause() hasn't been called we need to
+   // remove our mixer input before shutdown.
+   Pause();
+@@ -153,10 +164,13 @@ void AudioRendererMixerInput::GetOutputDeviceInfoAsync(
+     return;
+   }
+ 
+-  if (switch_output_device_in_progress_) {
+-    DCHECK(!godia_in_progress_);
+-    pending_device_info_cb_ = std::move(info_cb);
+-    return;
++  {
++    base::AutoLock auto_lock(device_change_lock_);
++    if (switch_output_device_in_progress_) {
++      DCHECK(!godia_in_progress_);
++      pending_device_info_cb_ = std::move(info_cb);
++      return;
++    }
+   }
+ 
+   godia_in_progress_ = true;
+@@ -191,7 +205,10 @@ void AudioRendererMixerInput::SwitchOutputDevice(
+     media::OutputDeviceStatusCB callback) {
+   // If a GODIA() call is in progress, defer until it's complete.
+   if (godia_in_progress_) {
+-    DCHECK(!switch_output_device_in_progress_);
++    {
++      base::AutoLock auto_lock(device_change_lock_);
++      DCHECK(!switch_output_device_in_progress_);
++    }
+ 
+     // Abort any previous device switch which may be pending.
+     if (pending_switch_cb_) {
+@@ -213,7 +230,10 @@ void AudioRendererMixerInput::SwitchOutputDevice(
+     return;
+   }
+ 
+-  switch_output_device_in_progress_ = true;
++  {
++    base::AutoLock auto_lock(device_change_lock_);
++    switch_output_device_in_progress_ = true;
++  }
+ 
+   // Request a new sink using the new device id. This process may fail, so to
+   // avoid interrupting working audio, don't set any class variables until we
+@@ -306,45 +326,48 @@ void AudioRendererMixerInput::OnDeviceSwitchReady(
+     media::OutputDeviceStatusCB switch_cb,
+     scoped_refptr<media::AudioRendererSink> sink,
+     media::OutputDeviceInfo device_info) {
+-  DCHECK(switch_output_device_in_progress_);
+-  switch_output_device_in_progress_ = false;
+-
+-  if (device_info.device_status() != media::OUTPUT_DEVICE_STATUS_OK) {
+-    sink->Stop();
+-    std::move(switch_cb).Run(device_info.device_status());
+-
+-    // Start any pending device info request.
+-    if (pending_device_info_cb_) {
+-      GetOutputDeviceInfoAsync(std::move(pending_device_info_cb_));
+-    }
++  auto return_status = device_info.device_status();
+ 
+-    return;
+-  }
+-
+-  const bool has_mixer = !!mixer_;
+-  const bool is_playing = playing_;
+-
+-  // This may occur if Start() hasn't yet been called.
+-  if (sink_) {
+-    sink_->Stop();
+-  }
++  {
++    base::AutoLock auto_lock(device_change_lock_);
++
++    if (device_info.device_status() != media::OUTPUT_DEVICE_STATUS_OK) {
++      // Case: Device change failed.
++      sink->Stop();
++    } else if (!switch_output_device_in_progress_) {
++      // Case: Stop() called during device change.
++      sink->Stop();
++      return_status = media::OUTPUT_DEVICE_STATUS_ERROR_INTERNAL;
++    } else {
++      // Case: Device change succeeded, connect to new sink.
++      const bool has_mixer = !!mixer_;
++      const bool is_playing = playing_;
++
++      // This may occur if Start() hasn't yet been called.
++      if (sink_) {
++        sink_->Stop();
++      }
+ 
+-  sink_ = std::move(sink);
+-  device_info_ = device_info;
+-  device_id_ = device_info.device_id();
++      sink_ = std::move(sink);
++      device_info_ = device_info;
++      device_id_ = device_info.device_id();
+ 
+-  auto callback = callback_;
+-  Stop();
+-  callback_ = callback;
++      auto callback = callback_;
++      StopInternal();
++      callback_ = callback;
+ 
+-  if (has_mixer) {
+-    Start();
+-    if (is_playing) {
+-      Play();
++      if (has_mixer) {
++        Start();
++        if (is_playing) {
++          Play();
++        }
++      }
+     }
++
++    switch_output_device_in_progress_ = false;
+   }
+ 
+-  std::move(switch_cb).Run(device_info.device_status());
++  std::move(switch_cb).Run(return_status);
+ 
+   // Start any pending device info request.
+   if (pending_device_info_cb_) {
+diff --git a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.h b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.h
+index e13df618d5cc86221a12d060d892474e2cbc8c49..f511187bfd7f164c0c5d7c10a894a3e81c0a7fbc 100644
+--- a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.h
++++ b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input.h
+@@ -80,6 +80,7 @@ class BLINK_MODULES_EXPORT AudioRendererMixerInput
+   void OnRenderError();
+ 
+  private:
++  void StopInternal();
+   ~AudioRendererMixerInput() override;
+ 
+   friend class AudioRendererMixerInputTest;
+@@ -118,6 +119,9 @@ class BLINK_MODULES_EXPORT AudioRendererMixerInput
+                            scoped_refptr<media::AudioRendererSink> sink,
+                            media::OutputDeviceInfo device_info);
+ 
++  // Prevents race conditions when Stop() is called during a device change.
++  base::Lock device_change_lock_;
++
+   // AudioParameters received during Initialize().
+   media::AudioParameters params_;
+ 
+@@ -143,7 +147,8 @@ class BLINK_MODULES_EXPORT AudioRendererMixerInput
+   // exclusive when executing; these flags indicate whether one or the other is
+   // in progress. Each method will use the other method's to defer its action.
+   bool godia_in_progress_ = false;
+-  bool switch_output_device_in_progress_ = false;
++  bool switch_output_device_in_progress_ GUARDED_BY(device_change_lock_) =
++      false;
+ 
+   // Set by GetOutputDeviceInfoAsync() if a SwitchOutputDevice() call is in
+   // progress. GetOutputDeviceInfoAsync() will be invoked again with this value
+diff --git a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input_test.cc b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input_test.cc
+index 6daf55721322986e53a85f720fd4ed282b6890b7..01ea2ad19408cdabd8aeedf24bcb56316e67d609 100644
+--- a/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input_test.cc
++++ b/third_party/blink/renderer/modules/media/audio/audio_renderer_mixer_input_test.cc
+@@ -214,6 +214,21 @@ TEST_F(AudioRendererMixerInputTest, SwitchOutputDevice) {
+   mixer_input_->Stop();
+ }
+ 
++TEST_F(AudioRendererMixerInputTest, StopDuringSwitchOutputDevice) {
++  mixer_input_->Initialize(audio_parameters_, fake_callback_.get());
++  mixer_input_->Start();
++  const std::string kDeviceId("mock-device-id");
++  EXPECT_CALL(*this,
++              SwitchCallbackCalled(media::OUTPUT_DEVICE_STATUS_ERROR_INTERNAL));
++  base::RunLoop run_loop;
++  mixer_input_->SwitchOutputDevice(
++      kDeviceId,
++      blink::BindOnce(&AudioRendererMixerInputTest::SwitchCallback,
++                      Unretained(this), blink::Unretained(&run_loop)));
++  mixer_input_->Stop();
++  run_loop.Run();
++}
++
+ // Test SwitchOutputDevice() to the same device as the current (default) device
+ TEST_F(AudioRendererMixerInputTest, SwitchOutputDeviceToSameDevice) {
+   mixer_input_->Initialize(audio_parameters_, fake_callback_.get());
