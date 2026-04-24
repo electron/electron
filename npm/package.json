@@ -8,6 +8,8 @@
     "postinstall": "node install.js"
   },
   "files": [
+    "LICENSE",
+    "README.md",
     "abi_version",
     "checksums.json",
     "cli.js",
