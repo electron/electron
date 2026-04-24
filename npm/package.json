@@ -5,6 +5,16 @@
     "electron": "cli.js",
     "install-electron": "install.js"
   },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "abi_version",
+    "checksums.json",
+    "cli.js",
+    "electron.d.ts",
+    "index.js",
+    "install.js"
+  ],
   "dependencies": {
     "@electron/get": "^5.0.0",
     "@types/node": "^24.9.0",
