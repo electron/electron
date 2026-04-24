@@ -105,33 +105,16 @@ runs:
         # call CreateDirectoryW through the bindflt filter driver, which can
         # return ERROR_INVALID_PARAMETER under concurrent I/O on ARC runners.
         #
-        # Run `gn gen` explicitly first so `gn desc` can report the effective
-        # `/lldltocache:` path, then pre-create whatever directory Chromium's
-        # build/config/compiler/BUILD.gn currently configures rather than
-        # hardcoding it. `e build` below re-uses this generated build dir,
-        # so the gn gen cost is paid once.
-        #
-        # Each `e` invocation is shelled through cmd.exe so its informational
-        # stderr (e.g. "INFO Auto-updates disabled") does not surface as a
-        # PowerShell NativeCommandError under GitHub Actions' default
-        # $ErrorActionPreference = 'Stop'.
-        $env:ELECTRON_DEPOT_TOOLS_DISABLE_LOG = "1"
-        cmd /c 'e d gn gen out/Default 2>&1'
-        if ($LASTEXITCODE -ne 0) {
-          Write-Host "gn gen failed with exit code $LASTEXITCODE"
-          exit $LASTEXITCODE
-        }
-        $ltoOutput = cmd /c 'e d gn desc out/Default //electron:electron_app ldflags 2>nul'
-        if ($LASTEXITCODE -eq 0) {
-          $ltoFlag = $ltoOutput |
-            Select-String -Pattern '^/lldltocache:(.+)$' |
-            Select-Object -First 1
-          if ($ltoFlag) {
-            $cachePath = Join-Path 'out\Default' $ltoFlag.Matches[0].Groups[1].Value
-            New-Item -ItemType Directory -Force -Path $cachePath | Out-Null
-          }
-        }
-        $LASTEXITCODE = 0
+        # The path mirrors `cache_dir` in Chromium's
+        # build/config/compiler/BUILD.gn (the `/lldltocache:` ldflag passed
+        # to lld-link). Dynamic discovery via `gn desc` isn't viable here:
+        # `e init` doesn't populate `out/Default`, and `gn gen` can't run
+        # before `e build` because gn.exe isn't installed on the runner
+        # until a later hook. If upstream ever relocates `cache_dir`, this
+        # pre-create silently stops covering the race and the
+        # `LLVM ERROR: can't create cache directory` symptom returns — at
+        # which point update the path here.
+        New-Item -ItemType Directory -Force -Path out\Default\thinlto-cache | Out-Null
 
         $env:NINJA_SUMMARIZE_BUILD = 1
         if ("${{ inputs.is-release }}" -eq "true") {          
