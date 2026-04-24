@@ -19,11 +19,16 @@ import sys
 
 
 def _is_file_path(token):
-    """Check if a token looks like a file path (not a linker flag)."""
+    """Check if a token looks like a relative file path (not a flag or bare lib name)."""
     # Strip surrounding quotes
     t = token.strip('"')
     # Linker flags start with / or -
     if t.startswith('/') or t.startswith('-'):
+        return False
+    # Must contain a directory separator to be a relative path.
+    # Bare names like "advapi32.lib" are system libraries resolved via
+    # -libpath: or /winsysroot and must not be turned into absolute paths.
+    if '/' not in t and '\\' not in t:
         return False
     # File extensions we care about
     return t.endswith(('.obj', '.res', '.lib', '.a', '.o'))
