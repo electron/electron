@@ -7,10 +7,10 @@ Pending upstream patch, this gives us fuller access to the window.open params
 so that we will be able to decide whether to cancel it or not.
 
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 8f8852b2af1acfa4ec985fd1c8b50563b991b12a..c2f2903545b191c5ab13462bf330efce37d7d08c 100644
+index 9603137595182b9f442bd54cd6711fffc1fe7af8..21fc8cd1551ffd9eafd6f7252c19bd730de39e8e 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2310,7 +2310,8 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2328,7 +2328,8 @@ bool Browser::IsWebContentsCreationOverridden(
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
      const std::string& frame_name,
@@ -20,7 +20,7 @@ index 8f8852b2af1acfa4ec985fd1c8b50563b991b12a..c2f2903545b191c5ab13462bf330efce
    if (HasActorTaskPreventingNewWebContents(profile(), opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -2323,7 +2324,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2341,7 +2342,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -44,7 +44,7 @@ index acdb28d61badaf549c47e107f4795e1e2adc37c9..b6aca0bf802f2146d09d2a872ff9e091
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d43e75c20aca09080f4223d339c88381f030c504..8cd59445bae73ff0193e4512d7c36740cbad847f 100644
+index 9adbc6e3df13d0db54a27101b32f3e88d7bc7f13..889e96915b9be573876a3faac94f32dd3105cd71 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5436,8 +5436,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
