@@ -7,6 +7,14 @@
   "scripts": {
     "postinstall": "node install.js"
   },
+  "files": [
+    "abi_version",
+    "checksums.json",
+    "cli.js",
+    "electron.d.ts",
+    "index.js",
+    "install.js"
+  ],
   "dependencies": {
     "@electron/get": "^2.0.0",
     "@types/node": "^24.9.0",
