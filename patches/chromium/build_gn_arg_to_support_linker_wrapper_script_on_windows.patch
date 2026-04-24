@@ -11,7 +11,7 @@ wrapper to convert rsp file arguments to absolute paths.
 Should be removed when associated container bug is addressed.
 
 diff --git a/build/toolchain/win/toolchain.gni b/build/toolchain/win/toolchain.gni
-index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..64b30b3a8c9feb685154c4668bcc302e820f2da3 100644
+index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..8fbdb201f08e9ce77579b087ae82ec7b7046c1e3 100644
 --- a/build/toolchain/win/toolchain.gni
 +++ b/build/toolchain/win/toolchain.gni
 @@ -14,6 +14,12 @@ import("//build/toolchain/win/win_toolchain_data.gni")
@@ -43,3 +43,21 @@ index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..64b30b3a8c9feb685154c4668bcc302e
        sys_lib_flags = "${invoker.sys_lib_flags}"
  
        # TODO(thakis): Remove once crbug.com/1300005 is fixed
+@@ -526,7 +539,16 @@ template("msvc_toolchain") {
+ 
+     tool("alink") {
+       rspfile = "{{output}}.rsp"
+-      command = "$linker_wrapper$lib \"/OUT:{{output}}\" /nologo {{arflags}} \"@$rspfile\""
++
++      # Don't use the abs_link_wrapper for alink. Thin archives store paths
++      # to .obj members; absolute paths break downstream consumers (e.g.
++      # rustc) that prepend the archive directory to member paths.
++      if (win_abs_link_wrapper != "") {
++        command = "$lib \"/OUT:{{output}}\" /nologo {{arflags}} \"@$rspfile\""
++      } else {
++        command =
++            "$linker_wrapper$lib \"/OUT:{{output}}\" /nologo {{arflags}} \"@$rspfile\""
++      }
+       description = "LIB {{output}}"
+       outputs = [
+         # Ignore {{output_extension}} and always use .lib, there's no reason to
