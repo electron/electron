@@ -7,6 +7,16 @@
   "scripts": {
     "postinstall": "node install.js"
   },
+  "files": [
+    "LICENSE",
+    "README.md",
+    "abi_version",
+    "checksums.json",
+    "cli.js",
+    "electron.d.ts",
+    "index.js",
+    "install.js"
+  ],
   "dependencies": {
     "@electron/get": "^2.0.0",
     "@types/node": "^22.7.7",
