@@ -1,4 +1,4 @@
-From a8afee1089ec2ae9ab5837b438d07338aefb3bc4 Mon Sep 17 00:00:00 2001
+From 1786f2266cba6a66343e5af2b724214930c8292f Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sam@electronjs.org>
 Date: Wed, 22 Apr 2026 16:27:51 -0700
 Subject: [PATCH] siso: retry transient ERROR_INVALID_PARAMETER when opening
@@ -27,7 +27,7 @@ Other platforms keep the direct os.Open path.
  create mode 100644 siso/toolsupport/ninjautil/openfile_windows.go
 
 diff --git a/siso/toolsupport/ninjautil/file_parser.go b/siso/toolsupport/ninjautil/file_parser.go
-index 6311666..324528d 100644
+index 75b1d6e..4a3e639 100644
 --- a/siso/toolsupport/ninjautil/file_parser.go
 +++ b/siso/toolsupport/ninjautil/file_parser.go
 @@ -7,7 +7,6 @@ package ninjautil
@@ -35,10 +35,10 @@ index 6311666..324528d 100644
  	"context"
  	"fmt"
 -	"os"
+ 	"path/filepath"
  	"runtime/trace"
  	"sync"
- 	"time"
-@@ -91,7 +90,7 @@ func (p *fileParser) parseFile(ctx context.Context, fname string) error {
+@@ -108,7 +107,7 @@ func (p *fileParser) parseFile(ctx context.Context, fname string) error {
  // readFile reads a file of fname in parallel.
  func (p *fileParser) readFile(ctx context.Context, fname string) ([]byte, error) {
  	defer trace.StartRegion(ctx, "ninja.read").End()
@@ -128,5 +128,5 @@ index 0000000..f9d8e9d
 +	}
 +}
 -- 
-2.53.0
+2.52.0
 
