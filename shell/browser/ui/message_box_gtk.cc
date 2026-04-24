@@ -121,6 +121,14 @@ class GtkMessageBox : private NativeWindowObserver {
       gtk::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow(),
                                   platform_);
       gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
+    } else {
+      // When there is no parent window, the dialog is a top-level window.
+      // Set the type hint to DIALOG so the window manager treats it as a
+      // dialog (rather than a normal window subject to focus-stealing
+      // prevention), and set urgency to ensure it receives focus promptly.
+      gtk_window_set_type_hint(GTK_WINDOW(dialog_),
+                               GDK_WINDOW_TYPE_HINT_DIALOG);
+      gtk_window_set_urgency_hint(GTK_WINDOW(dialog_), TRUE);
     }
   }
 
