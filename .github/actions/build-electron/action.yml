@@ -40,9 +40,14 @@ runs:
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Set GN_EXTRA_ARGS for Windows
       shell: bash
-      if: ${{inputs.target-arch != 'x64' && inputs.target-platform == 'win' }}
+      if: ${{ inputs.target-platform == 'win' }}
       run: |
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\""
+        # Cap lld-link threads to work around BindFlt concurrency bug in
+        # Windows containers (https://github.com/microsoft/Windows-Containers/issues/635).
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS win_linker_threads=16"
+        if [ "${{ inputs.target-arch }}" != "x64" ]; then
+          GN_APPENDED_ARGS="$GN_APPENDED_ARGS target_cpu=\"${{ inputs.target-arch }}\""
+        fi
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Add Clang problem matcher
       shell: bash

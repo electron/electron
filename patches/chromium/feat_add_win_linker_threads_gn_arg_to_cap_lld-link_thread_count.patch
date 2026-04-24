@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 24 Apr 2026 11:37:59 +0900
+Subject: feat: add win_linker_threads GN arg to cap lld-link thread count
+
+Windows containers using BindFlt have a known bug with high-volume
+concurrent file reads on relative paths. This seems to affect
+the lld-link phase when jumped from 16->32 core ARC runners..
+
+Should be removed when associated container bug is addressed.
+
+diff --git a/build/config/win/BUILD.gn b/build/config/win/BUILD.gn
+index 6f728e380cc7e18230b88a3717679e3cbe2e4a54..9344528f530d485194225c3ce33886a5079ff902 100644
+--- a/build/config/win/BUILD.gn
++++ b/build/config/win/BUILD.gn
+@@ -20,6 +20,11 @@ declare_args() {
+   # Turn this on to have the linker output extra timing information.
+   win_linker_timing = false
+ 
++  # Limit the number of threads used by the linker. 0 means use the default
++  # (all available hardware threads).
++  # Set to a positive integer to cap lld-link's internal thread count.
++  win_linker_threads = 0
++
+   # possible values for target_winuwp_version:
+   #   "10" - Windows UWP 10
+   #   "8.1" - Windows RT 8.1
+@@ -335,6 +340,10 @@ config("common_linker_setup") {
+       "/verbose:incr",
+     ]
+   }
++
++  if (win_linker_threads > 0) {
++    ldflags += [ "/threads:$win_linker_threads" ]
++  }
+ }
+ 
+ config("default_cfg_compiler") {
