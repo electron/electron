@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 24 Apr 2026 20:50:22 +0900
+Subject: build: gn arg to support linker wrapper script on windows
+
+Windows containers using BindFlt have a known bug with high-volume
+concurrent file reads on relative paths. This seems to affect
+the lld-link phase when jumped from 16->32 core ARC runners. Use the
+wrapper to convert rsp file arguments to absolute paths.
+
+Should be removed when associated container bug is addressed.
+
+diff --git a/build/toolchain/win/toolchain.gni b/build/toolchain/win/toolchain.gni
+index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..64b30b3a8c9feb685154c4668bcc302e820f2da3 100644
+--- a/build/toolchain/win/toolchain.gni
++++ b/build/toolchain/win/toolchain.gni
+@@ -14,6 +14,12 @@ import("//build/toolchain/win/win_toolchain_data.gni")
+ 
+ assert(is_win, "Should only be running on Windows")
+ 
++declare_args() {
++  # Path to a Python script that wraps linker invocations to resolve relative
++  # file paths in response files to absolute paths.
++  win_abs_link_wrapper = ""
++}
++
+ # This tool will is used as a wrapper for various commands below.
+ _tool_wrapper_path =
+     rebase_path("//build/toolchain/win/tool_wrapper.py", root_build_dir)
+@@ -141,7 +147,14 @@ template("msvc_toolchain") {
+     }
+ 
+     if (host_os != "win" || (use_lld && defined(invoker.sys_lib_flags))) {
+-      linker_wrapper = ""
++      if (win_abs_link_wrapper != "") {
++        _abs_link_wrapper_path =
++            rebase_path(win_abs_link_wrapper, root_build_dir)
++        linker_wrapper =
++            "\"$python_path\" $_abs_link_wrapper_path "
++      } else {
++        linker_wrapper = ""
++      }
+       sys_lib_flags = "${invoker.sys_lib_flags}"
+ 
+       # TODO(thakis): Remove once crbug.com/1300005 is fixed
