@@ -214,6 +214,11 @@ class App final : public gin::Wrappable<App>,
   bool Relaunch(gin::Arguments* args);
   void DisableHardwareAcceleration(gin_helper::ErrorThrower thrower);
   bool IsHardwareAccelerationEnabled();
+#if BUILDFLAG(IS_LINUX)
+  void SetAutoStartupNotification(gin_helper::ErrorThrower thrower,
+                                  bool enabled);
+  void NotifyStartupComplete();
+#endif
   void DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower);
   bool IsAccessibilitySupportEnabled();
   v8::Local<v8::Value> GetAccessibilitySupportFeatures();
@@ -292,6 +297,9 @@ class App final : public gin::Wrappable<App>,
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
   bool watch_singleton_socket_on_ready_ = false;
+#if BUILDFLAG(IS_LINUX)
+  bool auto_startup_notification_ = true;
+#endif
 
   std::unique_ptr<content::ScopedAccessibilityMode> scoped_accessibility_mode_;
 };

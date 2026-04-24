@@ -105,6 +105,8 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
+#include <gdk/gdk.h>
+#include <gtk/gtk.h>
 #include "base/nix/scoped_xdg_activation_token_injector.h"
 #include "base/nix/xdg_util.h"
 #endif
@@ -557,6 +559,14 @@ App::App() {
       ->set_delegate(this);
   Browser::Get()->AddObserver(this);
 
+#if BUILDFLAG(IS_LINUX)
+  // Disable GTK's built-in auto startup notification so Electron controls
+  // when the desktop environment is notified that the app has finished
+  // starting. Without this, GTK independently calls
+  // gdk_notify_startup_complete() on the first window.show().
+  gtk_window_set_auto_startup_notification(FALSE);
+#endif
+
   auto unsafe_pid = content::ChildProcessId::FromUnsafeValue(
       content::ChildProcessHost::kInvalidUniqueID);
   auto process_metric = std::make_unique<electron::ProcessMetric>(
@@ -621,6 +631,13 @@ void App::OnFinishLaunching(base::DictValue launch_info) {
   // Set the application name for audio streams shown in external
   // applications. Only affects pulseaudio currently.
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
+
+  // If auto startup notification is enabled (default), notify the desktop
+  // environment that the application has finished launching. This clears
+  // the busy cursor shown by the window manager during startup.
+  if (auto_startup_notification_) {
+    gdk_notify_startup_complete();
+  }
 #endif
   Emit("ready", base::Value(std::move(launch_info)));
 }
@@ -1177,6 +1194,23 @@ void App::DisableDomainBlockingFor3DAPIs(gin_helper::ErrorThrower thrower) {
     disable_domain_blocking_for_3DAPIs_ = true;
   }
 }
+
+#if BUILDFLAG(IS_LINUX)
+void App::SetAutoStartupNotification(gin_helper::ErrorThrower thrower,
+                                     bool enabled) {
+  if (Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "app.setAutoStartupNotification() can only be called "
+        "before app is ready");
+    return;
+  }
+  auto_startup_notification_ = enabled;
+}
+
+void App::NotifyStartupComplete() {
+  gdk_notify_startup_complete();
+}
+#endif
 
 bool App::IsAccessibilitySupportEnabled() {
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
@@ -1919,6 +1953,10 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #if BUILDFLAG(IS_LINUX)
       .SetMethod("isUnityRunning",
                  base::BindRepeating(&Browser::IsUnityRunning, browser))
+      .SetMethod("setAutoStartupNotification",
+                 &App::SetAutoStartupNotification)
+      .SetMethod("notifyStartupComplete",
+                 &App::NotifyStartupComplete)
 #endif
       .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)
