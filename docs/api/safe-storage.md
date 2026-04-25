@@ -63,8 +63,13 @@ Returns `Promise<boolean>` - Resolves with whether encryption is available for
 asynchronous safeStorage operations.
 
 The asynchronous encryptor is initialized lazily the first time this method,
-`encryptStringAsync`, or `decryptStringAsync` is called after the app is ready.
-The returned promise resolves once initialization completes.
+`getEncryptor`, `encryptStringAsync`, or `decryptStringAsync` is called after the
+app is ready. The returned promise resolves once initialization completes.
+
+### `safeStorage.getEncryptor()`
+
+Returns `Promise<SafeStorageEncryptor>` - Resolves with a reusable encryptor object for
+asynchronous safeStorage operations.
 
 ### `safeStorage.encryptString(plainText)`
 
@@ -91,11 +96,7 @@ Returns `Promise<Buffer>` -  An array of bytes representing the encrypted string
 
 * `encrypted` Buffer
 
-Returns `Promise<Object>` - Resolve with an object containing the following:
-
-* `shouldReEncrypt` boolean - whether data that has just been returned from the decrypt operation should be
-  re-encrypted, as the key has been rotated or a new  key is available that provides a different security level. If `true`, you should call `decryptStringAsync` again to receive the new decrypted string.
-* `result` string - the decrypted string.
+Returns `Promise<DecryptStringAsyncReturnValue>` - Resolves with the decrypted string.
 
 ### `safeStorage.setUsePlainTextEncryption(usePlainText)`
 
