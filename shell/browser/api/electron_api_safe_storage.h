@@ -34,6 +34,36 @@ class Handle;
 
 namespace electron::api {
 
+class SafeStorageEncryptor final
+    : public gin_helper::DeprecatedWrappable<SafeStorageEncryptor> {
+ public:
+  static gin_helper::Handle<SafeStorageEncryptor> Create(
+      v8::Isolate* isolate,
+      const os_crypt_async::Encryptor* encryptor);
+
+  // gin_helper::Wrappable
+  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override;
+  const char* GetTypeName() override;
+
+  // disable copy
+  SafeStorageEncryptor(const SafeStorageEncryptor&) = delete;
+  SafeStorageEncryptor& operator=(const SafeStorageEncryptor&) = delete;
+
+ protected:
+  explicit SafeStorageEncryptor(const os_crypt_async::Encryptor* encryptor);
+  ~SafeStorageEncryptor() override;
+
+ private:
+  v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
+                                     const std::string& plaintext);
+  v8::Local<v8::Value> DecryptString(v8::Isolate* isolate,
+                                     v8::Local<v8::Value> buffer);
+
+  raw_ptr<const os_crypt_async::Encryptor> encryptor_;
+};
+
 class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
  public:
   static gin_helper::Handle<SafeStorage> Create(v8::Isolate* isolate);
@@ -77,6 +107,7 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
   v8::Local<v8::Promise> decryptStringAsync(v8::Isolate* isolate,
                                             v8::Local<v8::Value> buffer);
 
+  v8::Local<v8::Promise> GetEncryptor(v8::Isolate* isolate);
 #if BUILDFLAG(IS_LINUX)
   std::string GetSelectedLinuxBackend();
 #endif
@@ -115,6 +146,8 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
   std::vector<PendingDecrypt> pending_decrypts_;
 
   std::vector<gin_helper::Promise<bool>> pending_availability_checks_;
+  std::vector<gin_helper::Promise<gin_helper::Handle<SafeStorageEncryptor>>>
+      pending_encryptor_requests_;
 };
 
 }  // namespace electron::api
