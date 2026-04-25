@@ -69,9 +69,14 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
+#include "ui/linux/display_server_utils.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
 #endif
+
+#if BUILDFLAG(IS_OZONE)
+#include "ui/ozone/public/ozone_platform.h"
+#endif  // BUILDFLAG(IS_OZONE)
 
 #if !IS_MAS_BUILD()
 #include "components/crash/core/app/crash_switches.h"  // nogncheck
@@ -313,6 +318,15 @@ void ElectronMainDelegate::PreSandboxStartup() {
     // Enable AVFoundation.
     command_line->AppendSwitch("enable-avfoundation");
 #endif
+
+#if BUILDFLAG(IS_OZONE)
+    // Initialize Ozone platform and add required feature flags as per
+    // platform's properties.
+#if BUILDFLAG(IS_LINUX)
+    ui::SetOzonePlatformForLinuxIfNeeded(*command_line);
+#endif
+    ui::OzonePlatform::PreSandboxStartup();
+#endif  // BUILDFLAG(IS_OZONE)
   }
 }
 

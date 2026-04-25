@@ -1,0 +1,15 @@
+#!/bin/sh
+if [ "$1" != "query" ] || [ "$2" != "default" ]; then
+  exit 1
+fi
+mime="$3"
+for list in "$XDG_CONFIG_HOME/mimeapps.list" "$XDG_DATA_HOME/applications/mimeapps.list" "$XDG_DATA_HOME/applications/defaults.list"; do
+  if [ -f "$list" ]; then
+    result=$(grep "^$mime=" "$list" | head -n 1 | cut -d= -f2 | cut -d";" -f1)
+    if [ -n "$result" ]; then
+      printf "%s\n" "$result"
+      exit 0
+    fi
+  fi
+done
+exit 0

@@ -40,9 +40,15 @@ runs:
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Set GN_EXTRA_ARGS for Windows
       shell: bash
-      if: ${{inputs.target-arch != 'x64' && inputs.target-platform == 'win' }}
+      if: ${{ inputs.target-platform == 'win' }}
       run: |
-        GN_APPENDED_ARGS="$GN_EXTRA_ARGS target_cpu=\"${{ inputs.target-arch }}\""
+        # Resolve .obj paths to absolute in linker response files to work
+        # around BindFlt concurrency bug in Windows containers.
+        # https://github.com/microsoft/Windows-Containers/issues/635
+        GN_APPENDED_ARGS="$GN_EXTRA_ARGS win_abs_link_wrapper=\"//electron/build/win/abs_link_wrapper.py\""
+        if [ "${{ inputs.target-arch }}" != "x64" ]; then
+          GN_APPENDED_ARGS="$GN_APPENDED_ARGS target_cpu=\"${{ inputs.target-arch }}\""
+        fi
         echo "GN_EXTRA_ARGS=$GN_APPENDED_ARGS" >> $GITHUB_ENV
     - name: Add Clang problem matcher
       shell: bash
@@ -100,6 +106,21 @@ runs:
         cd src\electron
         git pack-refs
         cd ..
+
+        # Pre-create the ThinLTO cache directory so lld-link does not need to
+        # call CreateDirectoryW through the bindflt filter driver, which can
+        # return ERROR_INVALID_PARAMETER under concurrent I/O on ARC runners.
+        #
+        # The path mirrors `cache_dir` in Chromium's
+        # build/config/compiler/BUILD.gn (the `/lldltocache:` ldflag passed
+        # to lld-link). Dynamic discovery via `gn desc` isn't viable here:
+        # `e init` doesn't populate `out/Default`, and `gn gen` can't run
+        # before `e build` because gn.exe isn't installed on the runner
+        # until a later hook. If upstream ever relocates `cache_dir`, this
+        # pre-create silently stops covering the race and the
+        # `LLVM ERROR: can't create cache directory` symptom returns — at
+        # which point update the path here.
+        New-Item -ItemType Directory -Force -Path out\Default\thinlto-cache | Out-Null
 
         $env:NINJA_SUMMARIZE_BUILD = 1
         if ("${{ inputs.is-release }}" -eq "true") {          

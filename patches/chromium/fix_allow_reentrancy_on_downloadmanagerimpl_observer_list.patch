@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@makenotion.com>
+Date: Tue, 21 Apr 2026 12:35:28 -0700
+Subject: fix: allow reentrancy on DownloadManagerImpl observer list
+
+Session::CreateInterruptedDownload triggers reentrant iteration of
+DownloadManagerImpl::observers_ (via GetNextId -> DownloadIdCallback
+-> CreateDownloadItem -> OnDownloadCreated) which hits the
+kDisallowReentrancy CHECK after upstream changed the ObserverList
+default policy.
+
+Opt the observers_ list into kAllowReentrancy via ReentrantObserverList,
+matching the pattern upstream adopted for SequenceManager::task_observers.
+
+diff --git a/content/browser/download/download_manager_impl.h b/content/browser/download/download_manager_impl.h
+index 26a8e44bd41b3d4eb90e8d641e17b4d5e3eb6d70..ae3d1179a8fa81ea86fb758121e776ecf972a9a1 100644
+--- a/content/browser/download/download_manager_impl.h
++++ b/content/browser/download/download_manager_impl.h
+@@ -357,7 +357,7 @@ class CONTENT_EXPORT DownloadManagerImpl
+   bool in_progress_cache_initialized_;
+ 
+   // Observers that want to be notified of changes to the set of downloads.
+-  base::ObserverList<Observer>::Unchecked observers_;
++  base::ReentrantObserverList<Observer>::Unchecked observers_;
+ 
+   // Stores information about in-progress download items.
+   std::unique_ptr<download::DownloadItem::Observer>

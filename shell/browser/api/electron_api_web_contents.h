@@ -822,7 +822,10 @@ class WebContents final : public ExclusiveAccessContext,
   bool enable_devtools_ = true;
 
   // Observers of this WebContents.
-  base::ObserverList<ExtendedWebContentsObserver> observers_;
+  base::ObserverList<ExtendedWebContentsObserver,
+                     false,
+                     base::ObserverListReentrancyPolicy::kAllowReentrancy>
+      observers_;
 
   v8::Global<v8::Value> pending_child_web_preferences_;
 

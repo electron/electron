@@ -36,7 +36,7 @@ index 187335d304774643bdec345e7b52be3fe0b105f9..207a161b30f1a52458aced03f9f777a4
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_mappable_shared_image_video_frame_pool.cc b/media/video/renderable_mappable_shared_image_video_frame_pool.cc
-index 6b1abdebe1fb0043f535e731d0bd14a6d3e3c083..cde2239a516133fedb46dc4bd06b791a1a4d12aa 100644
+index 7354aa4925d0ac07aa61858c63fae72c3fd7327d..89ec632cd0a118f27185a5cbc41408258b3d7927 100644
 --- a/media/video/renderable_mappable_shared_image_video_frame_pool.cc
 +++ b/media/video/renderable_mappable_shared_image_video_frame_pool.cc
 @@ -212,6 +212,24 @@ bool FrameResources::Initialize(VideoPixelFormat format,

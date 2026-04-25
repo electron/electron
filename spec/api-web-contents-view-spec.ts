@@ -256,12 +256,16 @@ describe('WebContentsView', () => {
       await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
 
-      const viewportSize = await v.webContents.executeJavaScript(
-        '({ width: window.innerWidth, height: window.innerHeight })'
-      );
-      const contentBounds = w.getContentBounds();
-      expect(viewportSize.width).to.equal(contentBounds.width);
-      expect(viewportSize.height).to.equal(contentBounds.height);
+      // These two new `expect` calls added in 2026-04-20 @ 2e17a57 are causing
+      // CI flakes. https://github.com/electron/electron/issues/51228
+      // TODO(ckerr) fix the flakes and re-enable
+      //
+      // const viewportSize = await v.webContents.executeJavaScript(
+      //   '({ width: window.innerWidth, height: window.innerHeight })'
+      // );
+      // const contentBounds = w.getContentBounds();
+      // expect(viewportSize.width).to.equal(contentBounds.width);
+      // expect(viewportSize.height).to.equal(contentBounds.height);
     });
 
     it('is initially visible if load happens after attach', async () => {

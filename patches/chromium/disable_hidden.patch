@@ -6,10 +6,10 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index fe46ebe4e5bcda2eff543aa5b5a2310628a3ea5a..8df679251dc314a94079fcc9d4edd7fab12873d4 100644
+index a97558e7e0e4dcedc96a2acc226daeca364962dc..a367b262935a06fcb9911944c061d1fa7fbb980d 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -818,6 +818,10 @@ void RenderWidgetHostImpl::WasHidden() {
+@@ -819,6 +819,10 @@ void RenderWidgetHostImpl::WasHidden() {
      return;
    }
  
@@ -34,7 +34,7 @@ index 37b2ca1000ead76ec7e403bf1e2dc647bcee74ce..1312c87909729ac59ea661321c10862f
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 550a2090d11ea151d8003610cb39a8035c5d299c..53ec5cd693539d74424c683f78e953e85c13c098 100644
+index b6f9361437688eb355aecf3fe9ab13eb434b940a..74f987e8aa28a78dc5f67999e940b1ee5ce49da7 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -712,7 +712,7 @@ void RenderWidgetHostViewAura::HideImpl() {

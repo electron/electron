@@ -10,11 +10,11 @@ Subject: chore: "grandfather in" Electron Views and Delegates
 6448510: Lock further access to View::set_owned_by_client(). | https://chromium-review.googlesource.com/c/chromium/src/+/6448510
 
 diff --git a/ui/views/view.h b/ui/views/view.h
-index ea27a73076554aa286c67a506fe5e0f60986d733..ec39e28eaa08e22ad87adce8f4def74d34505a7d 100644
+index bb8a2fd34d73891252505d4fd195240ddbafe122..6847aa64bb72b5af7cea39e567bd8ffd8b545f2d 100644
 --- a/ui/views/view.h
 +++ b/ui/views/view.h
-@@ -77,6 +77,19 @@ class ArcNotificationContentView;
- class WideFrameView;
+@@ -75,6 +75,19 @@ namespace ash {
+ class ArcNotificationContentView;
  }  // namespace ash
  
 +namespace electron {
@@ -33,7 +33,7 @@ index ea27a73076554aa286c67a506fe5e0f60986d733..ec39e28eaa08e22ad87adce8f4def74d
  namespace exo {
  class ShellSurfaceBase;
  }
-@@ -308,6 +321,14 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
+@@ -306,6 +319,14 @@ class VIEWS_EXPORT View : public ui::LayerDelegate,
   public:
    class OwnedByClientPassKey {
     private:
