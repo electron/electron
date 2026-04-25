@@ -11,7 +11,7 @@ wrapper to convert rsp file arguments to absolute paths.
 Should be removed when associated container bug is addressed.
 
 diff --git a/build/toolchain/win/toolchain.gni b/build/toolchain/win/toolchain.gni
-index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..8fbdb201f08e9ce77579b087ae82ec7b7046c1e3 100644
+index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..b814d6cb7c71a86784993e5fc530f3af32346792 100644
 --- a/build/toolchain/win/toolchain.gni
 +++ b/build/toolchain/win/toolchain.gni
 @@ -14,6 +14,12 @@ import("//build/toolchain/win/win_toolchain_data.gni")
@@ -43,7 +43,34 @@ index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..8fbdb201f08e9ce77579b087ae82ec7b
        sys_lib_flags = "${invoker.sys_lib_flags}"
  
        # TODO(thakis): Remove once crbug.com/1300005 is fixed
-@@ -526,7 +539,16 @@ template("msvc_toolchain") {
+@@ -356,6 +369,26 @@ template("msvc_toolchain") {
+ 
+       rustc_windows_args = " -Clinker=$link$rust_linkflags $rustc_common_args"
+ 
++      # When win_abs_link_wrapper is set, generate a .cmd wrapper that rustc
++      # will invoke as the "linker". The wrapper resolves relative file paths
++      # to absolute before calling the real lld-link
++      if (win_abs_link_wrapper != "") {
++        _abs_link_wrapper_py =
++            rebase_path(win_abs_link_wrapper, root_build_dir)
++        _rust_link_wrapper_cmd =
++            "$root_build_dir/abs_link_wrapper_" + target_name + ".cmd"
++        write_file(_rust_link_wrapper_cmd,
++                   [
++                     "@echo off",
++                     "\"$python_path\" \"$_abs_link_wrapper_py\" \"$link\" %*",
++                     "exit /b %ERRORLEVEL%",
++                   ])
++        _rust_link_wrapper_rel =
++            rebase_path(_rust_link_wrapper_cmd)
++        rustc_windows_args =
++            " -Clinker=$_rust_link_wrapper_rel$rust_linkflags $rustc_common_args"
++      }
++
+       tool("rust_staticlib") {
+         libname = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+         rspfile = rustc_rsp_path
+@@ -526,7 +559,16 @@ template("msvc_toolchain") {
  
      tool("alink") {
        rspfile = "{{output}}.rsp"

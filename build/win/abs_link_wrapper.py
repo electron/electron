@@ -4,13 +4,13 @@
 # Use of this source code is governed by the MIT license that can be
 # found in the LICENSE file.
 
-"""Wrapper for lld-link that resolves .obj paths in .rsp files to absolute.
+"""Wrapper for lld-link that resolves relative paths to absolute.
 
-Usage: abs_link_wrapper.py <lld-link args...>
+Usage: abs_link_wrapper.py <lld-link> <args...>
 
-The script finds the @rspfile argument, rewrites relative .obj/.res/.lib
-paths inside it to absolute paths, then invokes lld-link with the
-rewritten rsp file.
+The first argument is the real linker executable. The script resolves
+relative .obj/.rlib/.res/.lib paths in both @rspfile contents and direct
+command-line arguments to absolute paths, then invokes the real linker.
 """
 
 import os
@@ -31,7 +31,7 @@ def _is_file_path(token):
     if '/' not in t and '\\' not in t:
         return False
     # File extensions we care about
-    return t.endswith(('.obj', '.res', '.lib', '.a', '.o'))
+    return t.endswith(('.obj', '.res', '.lib', '.a', '.o', '.rlib'))
 
 
 def _resolve_rsp(rsp_path):
@@ -62,6 +62,14 @@ def _resolve_rsp(rsp_path):
     return abs_rsp
 
 
+def _resolve_arg(arg):
+    """Resolve a single command-line argument if it's a relative file path."""
+    stripped = arg.strip('"')
+    if _is_file_path(arg) and not os.path.isabs(stripped):
+        return os.path.abspath(stripped)
+    return arg
+
+
 def main():
     args = []
     for arg in sys.argv[1:]:
@@ -70,7 +78,7 @@ def main():
             resolved = _resolve_rsp(rsp_path)
             args.append('@' + resolved)
         else:
-            args.append(arg)
+            args.append(_resolve_arg(arg))
 
     return subprocess.call(args)
 
