@@ -11,7 +11,7 @@ wrapper to convert rsp file arguments to absolute paths.
 Should be removed when associated container bug is addressed.
 
 diff --git a/build/toolchain/win/toolchain.gni b/build/toolchain/win/toolchain.gni
-index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..6a1be11308e435ecc39d937f4e59598c9eab60c5 100644
+index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..b814d6cb7c71a86784993e5fc530f3af32346792 100644
 --- a/build/toolchain/win/toolchain.gni
 +++ b/build/toolchain/win/toolchain.gni
 @@ -14,6 +14,12 @@ import("//build/toolchain/win/win_toolchain_data.gni")
@@ -62,7 +62,7 @@ index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..6a1be11308e435ecc39d937f4e59598c
 +                     "exit /b %ERRORLEVEL%",
 +                   ])
 +        _rust_link_wrapper_rel =
-+            rebase_path(_rust_link_wrapper_cmd, root_build_dir)
++            rebase_path(_rust_link_wrapper_cmd)
 +        rustc_windows_args =
 +            " -Clinker=$_rust_link_wrapper_rel$rust_linkflags $rustc_common_args"
 +      }
