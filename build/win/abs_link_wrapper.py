@@ -66,7 +66,7 @@ def _resolve_arg(arg):
     """Resolve a single command-line argument if it's a relative file path."""
     stripped = arg.strip('"')
     if _is_file_path(arg) and not os.path.isabs(stripped):
-        return '"' + os.path.abspath(stripped) + '"'
+        return os.path.abspath(stripped)
     return arg
 
 
