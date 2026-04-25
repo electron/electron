@@ -29,6 +29,85 @@ const char* kEncryptionVersionPrefixV11 = "v11";
 
 namespace electron::api {
 
+gin::DeprecatedWrapperInfo SafeStorageEncryptor::kWrapperInfo = {
+  gin::kEmbedderNativeGin};
+
+gin_helper::Handle<SafeStorageEncryptor> SafeStorageEncryptor::Create(
+    v8::Isolate* isolate,
+    const os_crypt_async::Encryptor* encryptor) {
+  return gin_helper::CreateHandle(isolate,
+                                  new SafeStorageEncryptor(encryptor));
+}
+
+SafeStorageEncryptor::SafeStorageEncryptor(
+  const os_crypt_async::Encryptor* encryptor)
+  : encryptor_(encryptor) {}
+
+SafeStorageEncryptor::~SafeStorageEncryptor() = default;
+
+gin::ObjectTemplateBuilder SafeStorageEncryptor::GetObjectTemplateBuilder(
+    v8::Isolate* isolate) {
+  return gin_helper::DeprecatedWrappable<SafeStorageEncryptor>::GetObjectTemplateBuilder(
+             isolate)
+      .SetMethod("encryptString", &SafeStorageEncryptor::EncryptString)
+      .SetMethod("decryptString", &SafeStorageEncryptor::DecryptString);
+}
+
+const char* SafeStorageEncryptor::GetTypeName() {
+  return "SafeStorageEncryptor";
+}
+
+v8::Local<v8::Value> SafeStorageEncryptor::EncryptString(
+    v8::Isolate* isolate,
+    const std::string& plaintext) {
+  std::string ciphertext;
+  bool encrypted = encryptor_->EncryptString(plaintext, &ciphertext);
+  if (!encrypted) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Error while encrypting the text provided to encryptString.");
+    return {};
+  }
+  return electron::Buffer::Copy(isolate, ciphertext).ToLocalChecked();
+}
+
+v8::Local<v8::Value> SafeStorageEncryptor::DecryptString(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> buffer) {
+  if (!node::Buffer::HasInstance(buffer)) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Expected the first argument of decryptString() to be a buffer");
+    return {};
+  }
+
+  const char* data = node::Buffer::Data(buffer);
+  auto size = node::Buffer::Length(buffer);
+  std::string ciphertext(data, size);
+
+  if (ciphertext.empty()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Error while decrypting the ciphertext provided to decryptString. "
+        "Ciphertext does not appear to be encrypted.");
+    return {};
+  }
+
+  std::string plaintext;
+  os_crypt_async::Encryptor::DecryptFlags flags;
+  bool decrypted = encryptor_->DecryptString(ciphertext, &plaintext, &flags);
+  if (decrypted) {
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+    dict.Set("shouldReEncrypt", flags.should_reencrypt);
+    dict.Set("result", plaintext);
+    return dict.GetHandle();
+  } else if (flags.temporarily_unavailable) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "decryptString is temporarily unavailable. Please try again.");
+  } else {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Error while decrypting the ciphertext provided to decryptString.");
+  }
+  return {};
+}
+
 gin::DeprecatedWrapperInfo SafeStorage::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
@@ -70,6 +149,7 @@ gin::ObjectTemplateBuilder SafeStorage::GetObjectTemplateBuilder(
       .SetMethod("decryptString", &SafeStorage::DecryptString)
       .SetMethod("encryptStringAsync", &SafeStorage::encryptStringAsync)
       .SetMethod("decryptStringAsync", &SafeStorage::decryptStringAsync)
+      .SetMethod("getEncryptor", &SafeStorage::GetEncryptor)
 #if BUILDFLAG(IS_LINUX)
       .SetMethod("getSelectedStorageBackend",
                  &SafeStorage::GetSelectedLinuxBackend)
@@ -94,6 +174,11 @@ void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
   // This callback may fire from a posted task without an active V8 scope.
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
+
+  for (auto& pending : pending_encryptor_requests_) {
+    pending.Resolve(SafeStorageEncryptor::Create(isolate, &encryptor_.value()));
+  }
+  pending_encryptor_requests_.clear();
 
   for (auto& pending : pending_availability_checks_) {
     pending.Resolve(true);
@@ -275,6 +360,28 @@ std::string SafeStorage::DecryptString(v8::Isolate* isolate,
     return "";
   }
   return plaintext;
+}
+
+v8::Local<v8::Promise> SafeStorage::GetEncryptor(v8::Isolate* isolate) {
+  gin_helper::Promise<gin_helper::Handle<SafeStorageEncryptor>> promise(
+      isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "safeStorage cannot be used before app is ready");
+    return handle;
+  }
+
+  EnsureAsyncEncryptorRequested();
+
+  if (is_available_) {
+    promise.Resolve(SafeStorageEncryptor::Create(isolate, &encryptor_.value()));
+    return handle;
+  }
+
+  pending_encryptor_requests_.push_back(std::move(promise));
+  return handle;
 }
 
 v8::Local<v8::Promise> SafeStorage::encryptStringAsync(

@@ -86,6 +86,22 @@ describe('safeStorage module', () => {
     });
   });
 
+  describe('SafeStorage.getEncryptor()', () => {
+    it('returns a reusable encryptor with sync encrypt and decrypt methods', async () => {
+      const encryptor = await safeStorage.getEncryptor();
+
+      const plaintext = 'encryptor roundtrip';
+      const encrypted = encryptor.encryptString(plaintext);
+
+      expect(Buffer.isBuffer(encrypted)).to.equal(true);
+
+      const decryptResult = encryptor.decryptString(encrypted);
+      expect(decryptResult).to.have.property('result', plaintext);
+      expect(decryptResult).to.have.property('shouldReEncrypt');
+      expect(decryptResult.shouldReEncrypt).to.be.a('boolean');
+    });
+  });
+
   describe('SafeStorage.encryptStringAsync()', () => {
     it('should return a promise', () => {
       const result = safeStorage.encryptStringAsync('plaintext');
