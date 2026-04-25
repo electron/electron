@@ -1670,8 +1670,9 @@ action("node_version_header") {
 action("generate_node_headers") {
   deps = [ ":generate_config_gypi" ]
   script = "script/node/generate_node_headers.py"
-  args = [ rebase_path("$root_gen_dir") ]
+  inputs = auto_filenames.node_header_sources
   outputs = [ "$root_gen_dir/node_headers.json" ]
+  args = [ rebase_path("$root_gen_dir") ]
 }
 
 action("tar_node_headers") {
