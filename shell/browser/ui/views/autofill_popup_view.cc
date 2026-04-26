@@ -69,9 +69,16 @@ AutofillPopupView::~AutofillPopupView() {
 void AutofillPopupView::Show() {
   if (!popup_)
     return;
-  bool visible = parent_widget_->IsVisible();
-  visible = visible || view_proxy_;
-  if (!visible || parent_widget_->IsClosed())
+
+  DCHECK(parent_widget_);
+
+  // The parent Widget can outlive its NativeWidget during teardown.
+  // Don't initialize the popup after the native parent view is gone.
+  if (parent_widget_->IsClosed() || !parent_widget_->GetNativeView())
+    return;
+
+  const bool visible = view_proxy_ || parent_widget_->IsVisible();
+  if (!visible)
     return;
 
   const bool initialize_widget = !GetWidget();
@@ -234,10 +241,14 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
   if (!popup_)
     return;
 
+  views::Widget* const widget = GetWidget();
+  if (!widget)
+    return;
+
   // Clamp popup_bounds_ to ensure it's never zero-width.
   popup_->popup_bounds_.Union(
       gfx::Rect(popup_->popup_bounds_.origin(), gfx::Size(1, 1)));
-  GetWidget()->SetBounds(popup_->popup_bounds_);
+  widget->SetBounds(popup_->popup_bounds_);
   if (view_proxy_.get()) {
     view_proxy_->SetBounds(popup_->popup_bounds_in_view());
   }

@@ -172,20 +172,30 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
                                bool offscreen,
                                views::View* parent,
                                const gfx::RectF& r) {
+  DCHECK(parent);
+
   Hide();
+
+  // A Widget can outlive its NativeWidget during teardown.
+  // Do not create a child popup once the parent native view is gone.
+  views::Widget* parent_widget = parent->GetWidget();
+  if (!parent_widget || parent_widget->IsClosed() ||
+      !parent_widget->GetNativeView()) {
+    return;
+  }
 
   frame_host_ = frame_host;
   element_bounds_ = gfx::ToEnclosedRect(r);
 
-  gfx::Vector2d height_offset(0, element_bounds_.height());
-  gfx::Point menu_position(element_bounds_.origin() + height_offset);
+  gfx::Vector2d height_offset{0, element_bounds_.height()};
+  gfx::Point menu_position{element_bounds_.origin() + height_offset};
   views::View::ConvertPointToScreen(parent, &menu_position);
-  popup_bounds_ = gfx::Rect(menu_position, element_bounds_.size());
+  popup_bounds_ = gfx::Rect{menu_position, element_bounds_.size()};
 
   parent_ = parent;
   parent_->AddObserver(this);
 
-  view_ = new AutofillPopupView(this, parent->GetWidget());
+  view_ = new AutofillPopupView{this, parent_widget};
 
   if (offscreen) {
     auto* rwhv = embedder_frame_host ? embedder_frame_host->GetView()
@@ -212,13 +222,19 @@ void AutofillPopup::Hide() {
 
 void AutofillPopup::SetItems(const std::vector<std::u16string>& values,
                              const std::vector<std::u16string>& labels) {
-  DCHECK(view_);
   values_ = values;
   labels_ = labels;
+
+  if (!view_)
+    return;
+
   UpdatePopupBounds();
   view_->OnSuggestionsChanged();
-  if (view_)  // could be hidden after the change
-    view_->DoUpdateBoundsAndRedrawPopup();
+
+  if (!view_)
+    return;
+
+  view_->DoUpdateBoundsAndRedrawPopup();
 }
 
 void AutofillPopup::AcceptSuggestion(int index) {
