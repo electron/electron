@@ -15,7 +15,6 @@
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/chrome_switches.h"
-#include "components/os_crypt/sync/os_crypt.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
@@ -39,10 +38,6 @@
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
-
-#if BUILDFLAG(IS_LINUX)
-#include "components/os_crypt/sync/key_storage_config_linux.h"
-#endif
 
 namespace {
 
@@ -275,18 +270,6 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
       base::FeatureList::IsEnabled(net::features::kHappyEyeballsV3),
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled,
       {} /*fallback_doh_nameservers*/);
-
-  // The OSCrypt keys are process bound, so if network service is out of
-  // process, send it the required key.
-  if (content::IsOutOfProcessNetworkService() &&
-      electron::fuses::IsCookieEncryptionEnabled()) {
-    // On Windows, OSCrypt Async manages the encryption key via the DPAPI key
-    // provider, and there is no need to send the key separately to OSCrypt
-    // sync.
-#if !BUILDFLAG(IS_WIN)
-    network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
-#endif
-  }
 }
 
 network::mojom::NetworkContextParamsPtr
