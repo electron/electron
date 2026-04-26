@@ -43,7 +43,7 @@ index dd48ee2a99aeeddad66c95e7c61b17580bb523e5..1d7fa6c4a7956b9a356e4203e8c61eb7
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 92bf7255a9363ec9697810666affbed86b3a1456..ea45014072470f4d9adffdce42fb1ebf53a5e00b 100644
+index 92bf7255a9363ec9697810666affbed86b3a1456..5488277908e9feb822691132866a2c9672e158ad 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -258,10 +258,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
@@ -60,7 +60,7 @@ index 92bf7255a9363ec9697810666affbed86b3a1456..ea45014072470f4d9adffdce42fb1ebf
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -461,6 +464,7 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -461,11 +464,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      return false;
    }
  
@@ -68,6 +68,12 @@ index 92bf7255a9363ec9697810666affbed86b3a1456..ea45014072470f4d9adffdce42fb1ebf
    Profile* profile =
        Profile::FromBrowserContext(web_contents->GetBrowserContext());
    if (!glic::GlicEnabling::IsEnabledForProfile(profile)) {
+     return false;
+   }
++#endif
+ 
+   auto* tab_interface = tabs::TabInterface::MaybeGetFromContents(web_contents);
+   if (tab_interface && !tab_interface->IsInNormalWindow()) {
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
 index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd60960228 100644
 --- a/chrome/browser/profiles/profile_selections.cc

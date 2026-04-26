@@ -6483,3 +6483,27 @@ index 0000000000000000000000000000000000000000..0c57faafad86957ff1fb85c4861e9922
 +  encryption_key_.clear();
 +  mock_encryption_key_.clear();
 +}
+diff --git a/crypto/subtle_passkey.h b/crypto/subtle_passkey.h
+index 50d882eb628271b3d9d29b67e9c94a156bc235cc..9221a48cc88c8ba009847119a8b00bd150cd9219 100644
+--- a/crypto/subtle_passkey.h
++++ b/crypto/subtle_passkey.h
+@@ -12,6 +12,8 @@ class CryptohomeTokenEncryptor;
+ class Key;
+ }
+ 
++class OSCryptImpl;
++
+ namespace syncer {
+ class Nigori;
+ }
+@@ -83,6 +85,10 @@ class CRYPTO_EXPORT SubtlePassKey final {
+   friend class os_crypt_async::FreedesktopSecretKeyProvider;
+   friend class os_crypt_async::KeychainKeyProvider;
+ 
++  // OSCryptImpl (os_crypt/sync) uses custom PBKDF2 parameters. Electron still
++  // depends on the sync backend until migration to async is complete.
++  friend class ::OSCryptImpl;
++
+   // This class uses custom scrypt parameters and has to keep doing so for
+   // compatibility with a server-side implementation.
+   friend SubtlePassKey password_manager::MakeCryptoPassKey();
