@@ -107,20 +107,35 @@ runs:
         git pack-refs
         cd ..
 
-        # Pre-create the ThinLTO cache directory so lld-link does not need to
-        # call CreateDirectoryW through the bindflt filter driver, which can
-        # return ERROR_INVALID_PARAMETER under concurrent I/O on ARC runners.
+        # Route the ThinLTO cache out of the bindflt filter driver mount.
+        # The runner workspace under C:\actions-runner\_work\ is exposed via
+        # bindflt, which intermittently returns ERROR_INVALID_PARAMETER on
+        # CreateFileW/CreateDirectoryW under the concurrent I/O lld-link
+        # generates (ThinLTO writes thousands of cache files in parallel).
+        # Pre-creating the cache directory dodged CreateDirectoryW; opening
+        # individual cache files inside it still raced. Replace the directory
+        # with a junction to a path outside the bindflt mount so lld's cache
+        # I/O bypasses the filter driver entirely.
         #
-        # The path mirrors `cache_dir` in Chromium's
+        # $env:TEMP on ARC runners lives under
+        # C:\Users\ContainerAdministrator\AppData\Local\Temp and is not
+        # bindflt-mounted. The link path mirrors `cache_dir` in Chromium's
         # build/config/compiler/BUILD.gn (the `/lldltocache:` ldflag passed
-        # to lld-link). Dynamic discovery via `gn desc` isn't viable here:
-        # `e init` doesn't populate `out/Default`, and `gn gen` can't run
-        # before `e build` because gn.exe isn't installed on the runner
-        # until a later hook. If upstream ever relocates `cache_dir`, this
-        # pre-create silently stops covering the race and the
-        # `LLVM ERROR: can't create cache directory` symptom returns — at
-        # which point update the path here.
-        New-Item -ItemType Directory -Force -Path out\Default\thinlto-cache | Out-Null
+        # to lld-link); if upstream ever relocates `cache_dir`, update the
+        # link path here.
+        $thinltoCacheLink = "out\Default\thinlto-cache"
+        $thinltoCacheTarget = Join-Path $env:TEMP "electron-thinlto-cache"
+        New-Item -ItemType Directory -Force -Path (Split-Path $thinltoCacheLink) | Out-Null
+        New-Item -ItemType Directory -Force -Path $thinltoCacheTarget | Out-Null
+        if (Test-Path $thinltoCacheLink) {
+          $existing = Get-Item $thinltoCacheLink -Force
+          if ($existing.Attributes -band [System.IO.FileAttributes]::ReparsePoint) {
+            cmd /c rmdir $thinltoCacheLink | Out-Null
+          } else {
+            Remove-Item -Recurse -Force $thinltoCacheLink
+          }
+        }
+        cmd /c mklink /J $thinltoCacheLink $thinltoCacheTarget | Out-Null
 
         $env:NINJA_SUMMARIZE_BUILD = 1
         if ("${{ inputs.is-release }}" -eq "true") {          
