@@ -6,10 +6,10 @@ Subject: build: allow electron to use exec_script
 This is similar to the //build usecase so we're OK adding ourselves here
 
 diff --git a/.gn b/.gn
-index 0013a7fd5a260ea4f04f6421031a571c7bbf90b9..216974ae53ec574514abbfb0a1d7276a396380e5 100644
+index 56bd5cad399cd5cfa38a20c72c357935c195d9cc..37cd230ba11d93685f30d7291bf3f34fd571355e 100644
 --- a/.gn
 +++ b/.gn
-@@ -169,4 +169,28 @@ exec_script_allowlist =
+@@ -169,6 +169,30 @@ exec_script_allowlist =
        "//tools/gritsettings/BUILD.gn",
  
        "//third_party/blink/renderer/build/scripts/scripts.gni",
@@ -38,3 +38,5 @@ index 0013a7fd5a260ea4f04f6421031a571c7bbf90b9..216974ae53ec574514abbfb0a1d7276a
 +      "//third_party/electron_node/deps/zstd/unofficial.gni",
 +      "//third_party/electron_node/src/inspector/unofficial.gni",
      ]
+ 
+ expand_directory_allowlist = build_dotfile_settings.expand_directory_allowlist

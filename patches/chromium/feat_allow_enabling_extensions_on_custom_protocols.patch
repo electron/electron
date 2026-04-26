@@ -117,7 +117,7 @@ index f680ef4d31d580a285abe51387e3df043d4458f1..afde40d56d7874aa04ea2b1d881e5cab
  
  // static
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 1ee0feaad9be437914b101195e862965fcaccff4..7412af58409285fbe9b426c5b2bb8510d362091c 100644
+index f1f8ffe14fdac1156dce2502bff69e1d03eac2fc..d1bc847be05c1fb88c04dc936a5dbfc145a801ce 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -135,6 +135,9 @@ struct SchemeRegistry {
@@ -147,7 +147,7 @@ index 1ee0feaad9be437914b101195e862965fcaccff4..7412af58409285fbe9b426c5b2bb8510
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index 6906dd1c903209f3bb6d9ca346e845f1dfeef050..f1928796d5c8a01a51ac9237394bdf6236920998 100644
+index 2647d26b25b26f570b40666ad2da3553b97d6088..88ed86392eb4e10a5b99267027371f3a46fc1ae1 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -124,6 +124,11 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetEmptyDocumentSchemes();
