@@ -4,12 +4,12 @@
 
 #include "shell/browser/electron_pdf_document_helper_client.h"
 
-#include "chrome/browser/pdf/mime_handler_stream_manager.h"
 #include "chrome/common/content_restriction.h"
 #include "components/pdf/browser/pdf_frame_util.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
+#include "extensions/browser/mime_handler/mime_handler_stream_manager.h"
 #include "pdf/content_restriction.h"
 #include "pdf/pdf_features.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -51,7 +51,7 @@ void ElectronPDFDocumentHelperClient::SetPluginCanSave(
     bool can_save) {
   if (chrome_pdf::features::IsOopifPdfEnabled()) {
     auto* mime_handler_stream_manager =
-        pdf::MimeHandlerStreamManager::FromWebContents(
+        extensions::mime_handler::MimeHandlerStreamManager::FromWebContents(
             content::WebContents::FromRenderFrameHost(render_frame_host));
     if (!mime_handler_stream_manager) {
       return;
