@@ -15,7 +15,6 @@
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/chrome_switches.h"
-#include "components/os_crypt/sync/os_crypt.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
@@ -29,6 +28,7 @@
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/cross_thread_pending_shared_url_loader_factory.h"
+#include "services/network/public/cpp/cookie_encryption_provider_impl.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
@@ -39,10 +39,6 @@
 #include "shell/common/application_info.h"
 #include "shell/common/options_switches.h"
 #include "url/gurl.h"
-
-#if BUILDFLAG(IS_LINUX)
-#include "components/os_crypt/sync/key_storage_config_linux.h"
-#endif
 
 namespace {
 
@@ -276,17 +272,6 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled,
       {} /*fallback_doh_nameservers*/);
 
-  // The OSCrypt keys are process bound, so if network service is out of
-  // process, send it the required key.
-  if (content::IsOutOfProcessNetworkService() &&
-      electron::fuses::IsCookieEncryptionEnabled()) {
-    // On Windows, OSCrypt Async manages the encryption key via the DPAPI key
-    // provider, and there is no need to send the key separately to OSCrypt
-    // sync.
-#if !BUILDFLAG(IS_WIN)
-    network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
-#endif
-  }
 }
 
 network::mojom::NetworkContextParamsPtr
@@ -299,6 +284,18 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
       electron::ElectronBrowserClient::Get()->GetUserAgent();
 
   network_context_params->http_cache_enabled = false;
+
+  network_context_params->enable_encrypted_cookies =
+      electron::fuses::IsCookieEncryptionEnabled();
+  if (network_context_params->enable_encrypted_cookies) {
+    if (!cookie_encryption_provider_) {
+      cookie_encryption_provider_ =
+          std::make_unique<CookieEncryptionProviderImpl>(
+              g_browser_process->os_crypt_async());
+    }
+    network_context_params->cookie_encryption_provider =
+        cookie_encryption_provider_->BindNewRemote();
+  }
 
   auto ssl_config = network::mojom::SSLConfig::New();
   ssl_config->version_min = network::mojom::SSLVersion::kTLS12;

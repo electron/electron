@@ -361,6 +361,8 @@ filenames = {
     "shell/browser/browser_observer.h",
     "shell/browser/browser_process_impl.cc",
     "shell/browser/browser_process_impl.h",
+    "shell/browser/os_crypt_async_encryptor_provider.cc",
+    "shell/browser/os_crypt_async_encryptor_provider.h",
     "shell/browser/child_web_contents_tracker.cc",
     "shell/browser/child_web_contents_tracker.h",
     "shell/browser/cookie_change_notifier.cc",

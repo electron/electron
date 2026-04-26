@@ -1,6 +1,7 @@
 import("//build/config/locales.gni")
 import("//build/config/ui.gni")
 import("//build/config/win/manifest.gni")
+# Required for safeStorage sync API compatibility only.
 import("//components/os_crypt/sync/features.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
 import("//content/public/app/mac_helpers.gni")
@@ -511,6 +512,8 @@ source_set("electron_lib") {
     "//components/omnibox/browser:buildflags",
     "//components/os_crypt/async/browser",
     "//components/os_crypt/async/browser:key_provider_interface",
+    # Intentionally retained for safeStorage sync APIs in
+    # shell/browser/api/electron_api_safe_storage.cc.
     "//components/os_crypt/sync",
     "//components/pref_registry",
     "//components/prefs",
