@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Electron Scripts <scripts@electron>
+Date: Sat, 25 Apr 2026 21:10:03 -0500
+Subject: chore: exclude upstream scripting API when building Electron
+
+Electron provides its own implementation of the Scripting API at
+shell/browser/extensions/api/scripting/ that includes Electron-specific
+modifications. CL 7784831 moved the upstream implementation from
+//chrome to //extensions, which caused it to be transitively linked
+into Electron, resulting in duplicate symbols.
+
+Exclude the upstream sources when is_electron_build is set.
+
+diff --git a/extensions/browser/api/scripting/BUILD.gn b/extensions/browser/api/scripting/BUILD.gn
+index 14d18bfbc36673f3eb9ffe0777d34ddd2163af0d..cff84c1a9e713e2845b2331913dde9be730305b1 100644
+--- a/extensions/browser/api/scripting/BUILD.gn
++++ b/extensions/browser/api/scripting/BUILD.gn
+@@ -12,6 +12,16 @@ source_set("scripting") {
+     "scripting_api.cc",
+     "scripting_api.h",
+   ]
++
++  # Electron provides its own scripting API implementation in
++  # shell/browser/extensions/api/scripting/.
++  if (is_electron_build) {
++    sources -= [
++      "scripting_api.cc",
++      "scripting_api.h",
++    ]
++  }
++
+   public_deps = [
+     "//extensions/browser:browser_sources",
+     "//extensions/common/api",
