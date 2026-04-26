@@ -7,7 +7,7 @@ Electron does not support Profiles, so we need to patch it out of any
 code that we use.
 
 diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-index 4386b371b128803efe96058360b18b8d0288200b..cada87f1676dd7d7671df486dc609b875f0e53b4 100644
+index dd48ee2a99aeeddad66c95e7c61b17580bb523e5..1d7fa6c4a7956b9a356e4203e8c61eb78a0037f4 100644
 --- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 +++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 @@ -46,6 +46,7 @@ namespace {
@@ -43,7 +43,7 @@ index 4386b371b128803efe96058360b18b8d0288200b..cada87f1676dd7d7671df486dc609b87
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 1e64b0b97f01a8ef720e6dae1124eae74b63eb34..73a343fd794d2bfa784c372098624f2b0d3eca8d 100644
+index 92bf7255a9363ec9697810666affbed86b3a1456..ea45014072470f4d9adffdce42fb1ebf53a5e00b 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -258,10 +258,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
@@ -60,7 +60,7 @@ index 1e64b0b97f01a8ef720e6dae1124eae74b63eb34..73a343fd794d2bfa784c372098624f2b
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -460,6 +463,7 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -461,6 +464,7 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      return false;
    }
  
@@ -68,15 +68,6 @@ index 1e64b0b97f01a8ef720e6dae1124eae74b63eb34..73a343fd794d2bfa784c372098624f2b
    Profile* profile =
        Profile::FromBrowserContext(web_contents->GetBrowserContext());
    if (!glic::GlicEnabling::IsEnabledForProfile(profile)) {
-@@ -482,7 +486,7 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
-   if (glic::GlicEnabling::IsTrustFirstOnboardingEnabledForProfile(profile)) {
-     return true;
-   }
--
-+#endif
-   return false;
- }
- 
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
 index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd60960228 100644
 --- a/chrome/browser/profiles/profile_selections.cc
