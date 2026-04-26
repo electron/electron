@@ -87,8 +87,9 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
   // eagerly evaluate all electron module getters, so requesting in the
   // constructor would touch the OS keychain even when safeStorage is unused.
   void EnsureAsyncEncryptorRequested();
+  bool EnsureSyncOsCryptInitializedForSyncApi();
 
-  void OnOsCryptReady(os_crypt_async::Encryptor encryptor);
+  void OnOsCryptReady(const os_crypt_async::Encryptor* encryptor);
 
   bool IsEncryptionAvailable();
 
@@ -115,9 +116,13 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
   bool use_password_v10_ = false;
 
   bool encryptor_requested_ = false;
-  bool is_available_ = false;
-
-  std::optional<os_crypt_async::Encryptor> encryptor_;
+  raw_ptr<const os_crypt_async::Encryptor> encryptor_ = nullptr;
+#if BUILDFLAG(IS_LINUX)
+  bool sync_os_crypt_configured_ = false;
+#endif
+#if BUILDFLAG(IS_WIN)
+  bool sync_os_crypt_initialized_ = false;
+#endif
 
   // Pending encrypt operations waiting for encryptor to be ready.
   struct PendingEncrypt {

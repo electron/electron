@@ -22,10 +22,6 @@
 #include "shell/browser/net/system_network_context_manager.h"
 #include "ui/base/unowned_user_data/unowned_user_data_host.h"
 
-#if BUILDFLAG(IS_LINUX)
-#include "components/os_crypt/sync/key_storage_util_linux.h"
-#endif
-
 class PrefService;
 
 namespace printing {
@@ -38,6 +34,7 @@ class MetricsServiceClient;
 
 namespace electron {
 class ResolveProxyHelper;
+class OSCryptAsyncEncryptorProvider;
 }
 
 // Empty definition for std::unique_ptr, rather than a forward declaration
@@ -66,7 +63,7 @@ class BrowserProcessImpl : public BrowserProcess {
   electron::ResolveProxyHelper* GetResolveProxyHelper();
 
 #if BUILDFLAG(IS_LINUX)
-  void SetLinuxStorageBackend(os_crypt::SelectedLinuxBackend selected_backend);
+  void SetLinuxStorageBackend(std::string selected_backend);
   [[nodiscard]] const std::string& linux_storage_backend() const {
     return selected_linux_storage_backend_;
   }
@@ -131,6 +128,9 @@ class BrowserProcessImpl : public BrowserProcess {
   void set_usb_system_tray_icon_for_test(
       std::unique_ptr<UsbSystemTrayIcon> icon) override;
   os_crypt_async::OSCryptAsync* os_crypt_async() override;
+  electron::OSCryptAsyncEncryptorProvider* os_crypt_async_encryptor_provider() {
+    return os_crypt_async_encryptor_provider_.get();
+  }
   void set_additional_os_crypt_async_provider_for_test(
       size_t precedence,
       std::unique_ptr<os_crypt_async::KeyProvider> provider) override;
@@ -178,6 +178,8 @@ class BrowserProcessImpl : public BrowserProcess {
   std::unique_ptr<metrics::MetricsServiceClient> metrics_service_client_;
 
   std::unique_ptr<os_crypt_async::OSCryptAsync> os_crypt_async_;
+  std::unique_ptr<electron::OSCryptAsyncEncryptorProvider>
+      os_crypt_async_encryptor_provider_;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
