@@ -545,9 +545,10 @@ describe('webContents module', () => {
       w.loadURL('data:text/html,<h1>HELLO</h1>');
     });
 
-    it('fails if loadurl is called after the navigation is ready to commit', () => {
+    it('fails if loadurl is called after the navigation is ready to commit', (done) => {
       w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
         expect(validatedURL).to.contain('blank.html');
+        done();
       });
 
       // @ts-expect-error internal-only event.
