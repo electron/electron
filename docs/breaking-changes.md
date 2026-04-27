@@ -107,6 +107,19 @@ When calling `Session.clearStorageData(options)`, the `options.quotas` object is
 [removed](https://chromium-review.googlesource.com/c/chromium/src/+/7596126)
 from upstream Chromium.
 
+### Deprecated: Passing only an array `hslShift` to `nativeImage.createFromNamedImage()`
+
+Passing only an array `hslShift` to `nativeImage.createFromNamedImage()` is deprecated. You should now pass an options object with an `hslShift` property instead:
+
+```js
+// Deprecated
+nativeImage.createFromNamedImage(imageName, [0, 1, -1])
+// Replace with
+nativeImage.createFromNamedImage(imageName, {
+  hslShift: [0, 1, -1]
+})
+```
+
 ## Planned Breaking API Changes (41.0)
 
 ### Behavior Changed: PDFs no longer create a separate WebContents
