@@ -2754,6 +2754,32 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'win32')('BrowserWindow system-context-menu', () => {
+    it('dispatches the keyboard event to the renderer if prevented', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      w.once('system-context-menu', (evt) => {
+        evt.preventDefault();
+      });
+
+      await w.loadFile(path.join(fixtures, 'pages', 'keydown-alt-space.html'));
+
+      const altSpace = once(ipcMain, 'alt-space-renderer');
+
+      // Simulate Alt+Space to create system-context-menu event.
+      w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Space', modifiers: ['alt'] });
+      w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Space', modifiers: ['alt'] });
+
+      await altSpace;
+    });
+  });
+
   ifdescribe(process.platform === 'win32')('BrowserWindow.{get|set}AccentColor', () => {
     afterEach(closeAllWindows);
 

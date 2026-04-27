@@ -49,6 +49,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
                         WPARAM w_param,
                         LPARAM l_param,
                         LRESULT* result) override;
+  void HandleKeyEvent(ui::KeyEvent* event) override;
   void HandleVisibilityChanged(bool visible) override;
   void SetAllowScreenshots(bool allow) override;
   void Restore() override;

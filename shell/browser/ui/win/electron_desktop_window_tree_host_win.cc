@@ -200,6 +200,24 @@ bool ElectronDesktopWindowTreeHostWin::HandleIMEMessage(UINT message,
                                                            l_param, result);
 }
 
+void ElectronDesktopWindowTreeHostWin::HandleKeyEvent(ui::KeyEvent* event) {
+  // views::DesktopWindowTreeHostWin::HandleKeyEvent() discards ALT+SPACE
+  // keydown events so WM_SYSCHAR can show the system menu. In Electron,
+  // we want ALT+SPACE to be dispatched to the renderer so it fires keydown
+  // events, particularly when the 'system-context-menu' event is
+  // default-prevented. The subsequent WM_SYSCHAR is still handled by
+  // HandleIMEMessage() to emit 'system-context-menu'.
+  if ((event->type() == ui::EventType::kKeyPressed) &&
+      (event->key_code() == ui::VKEY_SPACE) &&
+      (event->flags() & ui::EF_ALT_DOWN) &&
+      !(event->flags() & ui::EF_CONTROL_DOWN)) {
+    SendEventToSink(event);
+    return;
+  }
+
+  views::DesktopWindowTreeHostWin::HandleKeyEvent(event);
+}
+
 void ElectronDesktopWindowTreeHostWin::HandleVisibilityChanged(bool visible) {
   if (native_window_view_->widget())
     native_window_view_->widget()->OnNativeWidgetVisibilityChanged(visible);
