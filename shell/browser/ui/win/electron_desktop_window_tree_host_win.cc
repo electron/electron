@@ -102,6 +102,9 @@ bool ElectronDesktopWindowTreeHostWin::WidgetSizeIsClientSize() const {
 bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
     gfx::Insets* insets,
     int frame_thickness) const {
+  if (native_window_view_->IsFullscreen())
+    return false;
+
   if (!native_window_view_->has_frame()) {
     const int thickness = ::GetSystemMetrics(SM_CXSIZEFRAME) +
                           ::GetSystemMetrics(SM_CXPADDEDBORDER);
