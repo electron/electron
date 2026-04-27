@@ -67,6 +67,25 @@ struct Converter<electron::NotificationAction> {
 
 }  // namespace gin
 
+#if BUILDFLAG(IS_WIN)
+namespace {
+
+// Windows appends id/groupId into the toast launch string as key=value pairs;
+// reject delimiter and control bytes so values cannot spoof extra pairs.
+bool NotificationIdOrGroupContainsInvalidWindowsToastChars(
+    const std::string& s) {
+  for (unsigned char c : s) {
+    if (c == '&' || c == '=')
+      return true;
+    if (c < 0x20 || c == 0x7f)
+      return true;
+  }
+  return false;
+}
+
+}  // namespace
+#endif
+
 namespace electron::api {
 
 gin::DeprecatedWrapperInfo Notification::kWrapperInfo = {
@@ -146,6 +165,17 @@ gin_helper::Handle<Notification> Notification::New(
 #if BUILDFLAG(IS_WIN)
   constexpr size_t kMaxTagLength = 64;
   auto* notif = handle.get();
+  if (NotificationIdOrGroupContainsInvalidWindowsToastChars(notif->id_)) {
+    thrower.ThrowError(
+        "Notification id cannot contain '&', '=', or control characters");
+    return {};
+  }
+  if (NotificationIdOrGroupContainsInvalidWindowsToastChars(notif->group_id_)) {
+    thrower.ThrowError(
+        "Notification groupId cannot contain '&', '=', or control "
+        "characters");
+    return {};
+  }
   if (!notif->id_.empty() &&
       base::UTF8ToWide(notif->id_).length() > kMaxTagLength) {
     thrower.ThrowError(

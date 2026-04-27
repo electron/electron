@@ -160,6 +160,70 @@ describe('Notification module', () => {
     }).to.throw(/groupTitle requires groupId to be set/);
   });
 
+  ifit(process.platform === 'win32')(
+    'throws when id contains &, =, or control characters (Windows toast launch)',
+    () => {
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          id: 'foo&group=evil',
+          title: 'title',
+          body: 'body'
+        });
+      }).to.throw(/id cannot contain/);
+
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          id: 'a=b',
+          title: 'title',
+          body: 'body'
+        });
+      }).to.throw(/id cannot contain/);
+
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          id: 'line\nbreak',
+          title: 'title',
+          body: 'body'
+        });
+      }).to.throw(/id cannot contain/);
+
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          id: 'x\u007fy',
+          title: 'title',
+          body: 'body'
+        });
+      }).to.throw(/id cannot contain/);
+    }
+  );
+
+  ifit(process.platform === 'win32')(
+    'throws when groupId contains &, =, or control characters (Windows toast launch)',
+    () => {
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          title: 'title',
+          body: 'body',
+          groupId: 'g&h=i'
+        });
+      }).to.throw(/groupId cannot contain/);
+
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          title: 'title',
+          body: 'body',
+          groupId: 'group\nid'
+        });
+      }).to.throw(/groupId cannot contain/);
+    }
+  );
+
   ifit(process.platform === 'win32')('accepts id and groupId at 64 characters', () => {
     const n = new Notification({
       id: 'a'.repeat(64),
