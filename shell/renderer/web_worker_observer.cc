@@ -252,6 +252,13 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
               .ToLocal(&emit_v) &&
           emit_v->IsFunction()) {
         v8::Local<v8::Value> args[] = {gin::StringToV8(isolate, "exit")};
+        // Worker/worklet contexts use kScoped microtask policy (set by
+        // Blink). V8 DCHECKs that a MicrotasksScope exists around every
+        // Call() under that policy. We use kDoNotRunMicrotasks because
+        // the context is mid-teardown.
+        v8::MicrotasksScope microtasks_scope{
+            isolate, ctx->GetMicrotaskQueue(),
+            v8::MicrotasksScope::kDoNotRunMicrotasks};
         v8::TryCatch try_catch(isolate);
         emit_v.As<v8::Function>()
             ->Call(ctx, env->process_object(), 1, args)
