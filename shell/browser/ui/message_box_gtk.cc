@@ -19,6 +19,7 @@
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/gtk_util.h"
+#include "shell/browser/window_list.h"
 #include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gtk/gtk_ui.h"    // nogncheck
@@ -121,6 +122,22 @@ class GtkMessageBox : private NativeWindowObserver {
       gtk::SetGtkTransientForAura(dialog_, parent_->GetNativeWindow(),
                                   platform_);
       gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
+    } else if (WindowList::IsEmpty()) {
+      // When there are no BrowserWindows (i.e., showMessageBox is called
+      // during startup before any window is created), the desktop
+      // environment's startup notification may still be pending. On GNOME,
+      // this causes the WM to keep the app in "starting" state for ~30s,
+      // blocking event delivery and delaying promise resolution.
+      //
+      // Calling gdk_notify_startup_complete() tells the WM that the
+      // application has finished starting, which clears the startup
+      // notification timeout and allows events to be processed immediately.
+      gdk_notify_startup_complete();
+
+      // Mark this as a dialog so the WM treats it appropriately.
+      gtk_window_set_type_hint(GTK_WINDOW(dialog_),
+                               GDK_WINDOW_TYPE_HINT_DIALOG);
+      gtk_window_set_modal(GTK_WINDOW(dialog_), TRUE);
     }
   }
 
@@ -181,6 +198,19 @@ class GtkMessageBox : private NativeWindowObserver {
 
   void RunAsynchronous(MessageBoxCallback callback) {
     callback_ = std::move(callback);
+
+    if (!parent_ && WindowList::IsEmpty()) {
+      // When there are no BrowserWindows yet (startup phase), Chromium's
+      // message loop is not actively pumping GLib events, which delays
+      // GTK's "response" signal delivery by up to ~30 seconds. Using
+      // gtk_dialog_run() creates a nested GLib main loop that properly
+      // dispatches all GTK events, ensuring the dialog responds immediately
+      // when the user clicks a button.
+      Show();
+      int response = gtk_dialog_run(GTK_DIALOG(dialog_));
+      OnResponseDialog(dialog_, response < 0 ? cancel_id_ : response);
+      return;
+    }
 
     signals_.emplace_back(dialog_, "delete-event",
                           base::BindRepeating(gtk_widget_hide_on_delete));
