@@ -3352,11 +3352,11 @@ void WebContents::Print(gin::Arguments* const args) {
     // Keep backward compatibility with internal key names as a fallback.
     settings.Set(printing::kSettingDpiHorizontal,
                  dpi.ValueOrDefault(
-                     printing::kDpiHorizontal,
+                     kDpiHorizontal,
                      dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72)));
     settings.Set(printing::kSettingDpiVertical,
                  dpi.ValueOrDefault(
-                     printing::kDpiVertical,
+                     kDpiVertical,
                      dpi.ValueOrDefault(printing::kSettingDpiVertical, 72)));
   }
 
