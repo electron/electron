@@ -512,9 +512,11 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   }
 
   ui::ImageModel icon = model->GetIconAt(index);
-  if (icon.IsImage()) {
+  std::u16string role = model->GetRoleAt(index);
+
+  if(!icon.IsEmpty()) {
     item.image = icon.GetImage().ToNSImage();
-  } else {
+  } else if (role.empty()) {
     item.image = nil;
   }
 }
