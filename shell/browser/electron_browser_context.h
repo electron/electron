@@ -98,6 +98,10 @@ class ElectronBrowserContext : public content::BrowserContext {
   scoped_refptr<network::SharedURLLoaderFactory> InterceptURLLoaderFactory(
       scoped_refptr<network::SharedURLLoaderFactory> factory);
 
+  std::pair<network::URLLoaderFactoryBuilder,
+            mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>>
+  CreateURLLoaderFactoryBuilder();
+
   std::string GetMediaDeviceIDSalt();
 
   // content::BrowserContext:
@@ -186,10 +190,6 @@ class ElectronBrowserContext : public content::BrowserContext {
       const content::MediaStreamRequest& request,
       content::MediaResponseCallback callback,
       gin::Arguments* args);
-
-  std::pair<network::URLLoaderFactoryBuilder,
-            mojo::PendingRemote<network::mojom::TrustedURLLoaderHeaderClient>>
-  CreateURLLoaderFactoryBuilder();
 
   // Initialize pref registry.
   void InitPrefs();

@@ -11,6 +11,7 @@
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_app.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -100,6 +101,17 @@ void LoginHandler::EmitEvent(
         api_web_contents->Emit("login", std::move(details), auth_info,
                                base::BindOnce(&LoginHandler::CallbackFromJS,
                                               weak_factory_.GetWeakPtr()));
+  } else if (auto* utility_process =
+                 api::UtilityProcessWrapper::FromProcessId(process_id);
+             utility_process && utility_process->has_session()) {
+    // Route auth to the utility process wrapper when the request originated
+    // from a utility process with a session and
+    // respondToAuthRequestsFromMainProcess. Without a session, auth falls
+    // through to app.on('login') for backward compatibility.
+    default_prevented =
+        utility_process->Emit("login", std::move(details), auth_info,
+                              base::BindOnce(&LoginHandler::CallbackFromJS,
+                                             weak_factory_.GetWeakPtr()));
   } else {
     default_prevented =
         api::App::Get()->Emit("login", nullptr, std::move(details), auth_info,
