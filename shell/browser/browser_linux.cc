@@ -43,6 +43,8 @@ bool SetDefaultWebClient(const std::string& protocol) {
   GError* error = nullptr;
   const bool success = g_app_info_set_as_default_for_type(
       G_APP_INFO(app_info), content_type.c_str(), &error);
+  if (error != nullptr)
+    LOG(ERROR) << error->message;
   g_clear_error(&error);
   g_object_unref(app_info);
   return success;
