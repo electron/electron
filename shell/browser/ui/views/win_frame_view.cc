@@ -273,11 +273,11 @@ gfx::Size WinFrameView::GetMinimumSize() const {
 gfx::Size WinFrameView::GetMaximumSize() const {
   if (!window_)
     return gfx::Size();
-  // See comment in GetMinimumSize().
-  gfx::Size size = window_->GetContentMaximumSize();
-  // Electron public APIs returns (0, 0) when maximum size is not set, but it
-  // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
-  return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
+  // Returning an empty size when maximum size is not set,
+  // HWNDMessageHandler::OnGetMinMaxInfo treats it as "no max" and
+  // lets DefWindowProc apply the system default tracking size,
+  // which limits the window to the desktop area.
+  return window_->GetContentMaximumSize();
 }
 
 gfx::Insets WinFrameView::RestoredFrameBorderInsets() const {
