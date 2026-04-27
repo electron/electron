@@ -1,9 +1,20 @@
 module electron.mojom;
 
 import "mojo/public/mojom/base/string16.mojom";
+import "services/network/public/mojom/referrer_policy.mojom";
 import "ui/gfx/geometry/mojom/geometry.mojom";
 import "third_party/blink/public/mojom/messaging/cloneable_message.mojom";
 import "third_party/blink/public/mojom/messaging/transferable_message.mojom";
+import "url/mojom/url.mojom";
+
+struct ImageSaveInfo {
+  bool use_save_image_at;
+  url.mojom.Url src_url;
+  url.mojom.Url frame_url;
+  mojo_base.mojom.String16 suggested_filename;
+  network.mojom.ReferrerPolicy referrer_policy;
+  bool is_image_media_plugin_document;
+};
 
 interface ElectronRenderer {
   Message(
@@ -12,6 +23,8 @@ interface ElectronRenderer {
       blink.mojom.CloneableMessage arguments);
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
+
+  GetImageSaveInfoAt(int32 x, int32 y) => (ImageSaveInfo? info);
 
   TakeHeapSnapshot(handle file) => (bool success);
 };

@@ -45,6 +45,9 @@ class ServiceWorkerData : public mojom::ElectronRenderer {
                blink::CloneableMessage arguments) override;
   void ReceivePostMessage(const std::string& channel,
                           blink::TransferableMessage message) override;
+  void GetImageSaveInfoAt(int32_t x,
+                          int32_t y,
+                          GetImageSaveInfoAtCallback callback) override;
   void TakeHeapSnapshot(mojo::ScopedHandle file,
                         TakeHeapSnapshotCallback callback) override;
 

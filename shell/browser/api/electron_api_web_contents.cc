@@ -152,6 +152,7 @@
 #include "storage/browser/file_system/isolated_context.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
+#include "third_party/blink/public/common/loader/network_utils.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/peerconnection/webrtc_ip_handling_policy.h"
@@ -164,6 +165,7 @@
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/gfx/geometry/point_conversions.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "ui/base/cocoa/defaults_utils.h"
@@ -433,6 +435,88 @@ namespace {
 
 // Global toggle for disabling draggable regions checks.
 bool g_disable_draggable_regions = false;
+
+content::Referrer CreateSaveImageReferrer(
+    const GURL& url,
+    const GURL& frame_url,
+    network::mojom::ReferrerPolicy referrer_policy) {
+  return content::Referrer::SanitizeForRequest(
+      url, content::Referrer(frame_url.GetAsReferrer(), referrer_policy));
+}
+
+void SaveImageAtWithFallback(base::WeakPtr<WebContents> api_web_contents,
+                             content::GlobalRenderFrameHostId frame_host_id,
+                             int x,
+                             int y,
+                             // Kept alive by base::Owned until this callback fires.
+                             mojo::Remote<mojom::ElectronRenderer>*,
+                             mojom::ImageSaveInfoPtr info) {
+  if (!api_web_contents)
+    return;
+
+  auto* frame_host = content::RenderFrameHost::FromID(frame_host_id);
+  if (!frame_host)
+    return;
+
+  if (!info || info->use_save_image_at || !info->src_url.is_valid()) {
+    frame_host->SaveImageAt(x, y);
+    return;
+  }
+
+  net::HttpRequestHeaders headers;
+  headers.SetHeaderIfMissing(net::HttpRequestHeaders::kAccept,
+                             blink::network_utils::ImageAcceptHeader());
+
+  api_web_contents->GetWebContents()->SaveFrameWithHeaders(
+      info->src_url,
+      CreateSaveImageReferrer(info->src_url, info->frame_url,
+                              info->referrer_policy),
+      headers.ToString(), info->suggested_filename, frame_host,
+      /*is_subresource=*/!info->is_image_media_plugin_document);
+}
+
+void RequestImageSaveInfoAt(
+    base::WeakPtr<WebContents> api_web_contents,
+    base::WeakPtr<content::RenderWidgetHostViewBase> target_view,
+    std::optional<gfx::PointF> transformed_point) {
+  if (!api_web_contents || !target_view || !transformed_point.has_value())
+    return;
+
+  auto* target_rwh =
+      content::RenderWidgetHostImpl::From(target_view->GetRenderWidgetHost());
+  if (!target_rwh)
+    return;
+
+  content::RenderFrameHost* frame_host = nullptr;
+  api_web_contents->GetWebContents()->ForEachRenderFrameHostWithAction(
+      [&](content::RenderFrameHost* candidate) {
+        if (!candidate->IsRenderFrameLive())
+          return content::WebContents::FrameIterationAction::kContinue;
+        if (candidate->GetView() != target_view.get())
+          return content::WebContents::FrameIterationAction::kContinue;
+        if (candidate->GetRenderWidgetHost() != target_rwh)
+          return content::WebContents::FrameIterationAction::kContinue;
+
+        frame_host = candidate;
+        return content::WebContents::FrameIterationAction::kStop;
+      });
+  if (!frame_host)
+    return;
+
+  auto electron_renderer =
+      std::make_unique<mojo::Remote<mojom::ElectronRenderer>>();
+  frame_host->GetRemoteInterfaces()->GetInterface(
+      electron_renderer->BindNewPipeAndPassReceiver());
+
+  const gfx::Point frame_point = gfx::ToRoundedPoint(*transformed_point);
+  auto* raw_ptr = electron_renderer.get();
+  (*raw_ptr)->GetImageSaveInfoAt(
+      frame_point.x(), frame_point.y(),
+      base::BindOnce(&SaveImageAtWithFallback, api_web_contents,
+                     frame_host->GetGlobalId(), frame_point.x(),
+                     frame_point.y(),
+                     base::Owned(std::move(electron_renderer))));
+}
 
 #if BUILDFLAG(ENABLE_PRINTING)
 // Constants we use for printing.
@@ -3598,6 +3682,18 @@ void WebContents::CopyImageAt(int x, int y) {
     host->CopyImageAt(x, y);
 }
 
+void WebContents::SaveImageAt(int x, int y) {
+  auto* root_view = static_cast<content::RenderWidgetHostViewBase*>(
+      web_contents()->GetRenderWidgetHostView());
+  if (!root_view)
+    return;
+
+  static_cast<content::WebContentsImpl*>(web_contents())
+      ->GetRenderWidgetHostAtPointAsynchronously(
+          root_view, gfx::PointF(x, y),
+          base::BindOnce(&RequestImageSaveInfoAt, weak_factory_.GetWeakPtr()));
+}
+
 void WebContents::Focus() {
   // Focusing on WebContents does not automatically focus the window on macOS
   // and Linux, do it manually to match the behavior on Windows.
@@ -4739,6 +4835,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("showDefinitionForSelection",
                  &WebContents::ShowDefinitionForSelection)
       .SetMethod("copyImageAt", &WebContents::CopyImageAt)
+      .SetMethod("saveImageAt", &WebContents::SaveImageAt)
       .SetMethod("capturePage", &WebContents::CapturePage)
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)

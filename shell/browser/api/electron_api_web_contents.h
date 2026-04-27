@@ -293,6 +293,7 @@ class WebContents final : public ExclusiveAccessContext,
   void StopFindInPage(content::StopFindAction action);
   void ShowDefinitionForSelection();
   void CopyImageAt(int x, int y);
+  void SaveImageAt(int x, int y);
 
   // Focus.
   void Focus();

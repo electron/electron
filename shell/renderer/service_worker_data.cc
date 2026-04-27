@@ -66,6 +66,14 @@ void ServiceWorkerData::ReceivePostMessage(const std::string& channel,
   NOTIMPLEMENTED();
 }
 
+void ServiceWorkerData::GetImageSaveInfoAt(
+    int32_t x,
+    int32_t y,
+    GetImageSaveInfoAtCallback callback) {
+  NOTIMPLEMENTED();
+  std::move(callback).Run(nullptr);
+}
+
 void ServiceWorkerData::TakeHeapSnapshot(mojo::ScopedHandle file,
                                          TakeHeapSnapshotCallback callback) {
   NOTIMPLEMENTED();
