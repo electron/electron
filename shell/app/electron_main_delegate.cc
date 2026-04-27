@@ -25,7 +25,10 @@
 #include "base/strings/string_util_internal.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
+#include "chrome/common/profiler/process_type.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
+#include "components/memory_system/initializer.h"
+#include "components/memory_system/parameters.h"
 #include "content/public/app/initialize_mojo_core.h"
 #include "content/public/common/content_switches.h"
 #include "crypto/hash.h"
@@ -341,6 +344,31 @@ std::optional<int> ElectronMainDelegate::PreBrowserMain() {
   base::nix::ExtractXdgActivationTokenFromEnv(*env);
 #endif
   return std::nullopt;
+}
+
+std::optional<int> ElectronMainDelegate::PostEarlyInitialization(
+    InvokedIn invoked_in) {
+  // Start memory observation as early as possible so it can start recording
+  // memory allocations.
+  InitializeMemorySystem();
+
+  return std::nullopt;
+}
+
+void ElectronMainDelegate::InitializeMemorySystem() {
+  const base::CommandLine* const command_line =
+      base::CommandLine::ForCurrentProcess();
+  const std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+
+  // PoissonAllocationSampler is necessary for heap profiling.
+  memory_system::Initializer()
+      .SetDispatcherParameters(memory_system::DispatcherParameters::
+                                   PoissonAllocationSamplerInclusion::kEnforce,
+                               memory_system::DispatcherParameters::
+                                   AllocationTraceRecorderInclusion::kIgnore,
+                               process_type)
+      .Initialize(memory_system_);
 }
 
 std::string_view ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
