@@ -508,6 +508,8 @@ win.loadURL('https://github.com')
 A `WebContents` object this window owns. All web page related events and
 operations will be done via it.
 
+Returns `null` if the window has been destroyed.
+
 See the [`webContents` documentation](web-contents.md) for its methods and
 events.
 
