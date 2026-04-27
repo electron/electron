@@ -4051,6 +4051,24 @@ void WebContents::SetImageAnimationPolicy(const std::string& new_policy) {
   web_contents()->OnWebPreferencesChanged();
 }
 
+void WebContents::SetVisualZoomLevelLimits(float min_level, float max_level) {
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (web_preferences) {
+    web_preferences->SetVisualZoomLevelLimits(min_level, max_level);
+  }
+
+  // Touchpad pinch-to-zoom for child frames (webview guests) is handled by the
+  // root compositor, so propagate the limits to the embedder as well.
+  if (embedder_) {
+    auto* embedder_prefs =
+        WebContentsPreferences::From(embedder_->web_contents());
+    if (embedder_prefs) {
+      embedder_prefs->SetVisualZoomLevelLimits(min_level, max_level);
+      embedder_->web_contents()->OnWebPreferencesChanged();
+    }
+  }
+}
+
 void WebContents::SetBackgroundColor(std::optional<SkColor> maybe_color) {
   SkColor color = maybe_color.value_or((is_guest() && guest_transparent_) ||
                                                type_ == Type::kBrowserView
@@ -4755,6 +4773,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)
+      .SetMethod("_setVisualZoomLevelLimits",
+                 &WebContents::SetVisualZoomLevelLimits)
       .SetMethod("_getProcessMemoryInfo", &WebContents::GetProcessMemoryInfo)
       .SetProperty("id", &WebContents::ID)
       .SetProperty("session", &WebContents::Session)
