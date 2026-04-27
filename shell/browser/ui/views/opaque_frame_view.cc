@@ -17,6 +17,7 @@
 #include "ui/compositor/layer.h"
 #include "ui/gfx/font_list.h"
 #include "ui/gfx/geometry/insets_f.h"
+#include "ui/linux/linux_ui.h"
 #include "ui/gfx/geometry/skia_conversions.h"
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/background.h"
@@ -25,6 +26,7 @@
 #include "ui/views/window/frame_caption_button.h"
 #include "ui/views/window/frame_view_utils_linux.h"
 #include "ui/views/window/vector_icons/vector_icons.h"
+#include "ui/views/window/window_button_order_provider.h"
 
 namespace electron {
 
@@ -73,7 +75,13 @@ OpaqueFrameView::OpaqueFrameView(NativeWindowViews* window,
   if (!window->IsWindowControlsOverlayEnabled())
     return;
 
-  caption_button_placeholder_container_ =
+  if (auto* linux_ui = ui::LinuxUi::instance())
+    linux_ui->AddWindowButtonOrderObserver(this);
+  UpdateButtonsOrder();
+
+  leading_button_placeholder_container_ =
+      AddChildView(std::make_unique<CaptionButtonPlaceholderContainer>());
+  trailing_button_placeholder_container_ =
       AddChildView(std::make_unique<CaptionButtonPlaceholderContainer>());
 
   minimize_button_ = CreateButton(
@@ -98,7 +106,12 @@ OpaqueFrameView::OpaqueFrameView(NativeWindowViews* window,
                           base::Unretained(frame),
                           views::Widget::ClosedReason::kCloseButtonClicked));
 }
-OpaqueFrameView::~OpaqueFrameView() = default;
+
+OpaqueFrameView::~OpaqueFrameView() {
+  if (auto* linux_ui = ui::LinuxUi::instance()) {
+    linux_ui->RemoveWindowButtonOrderObserver(this);
+  }
+}
 
 int OpaqueFrameView::ResizingBorderHitTest(const gfx::Point& point) {
   return ResizingBorderHitTestImpl(
@@ -108,6 +121,7 @@ int OpaqueFrameView::ResizingBorderHitTest(const gfx::Point& point) {
 void OpaqueFrameView::InvalidateCaptionButtons() {
   UpdateCaptionButtonPlaceholderContainerBackground();
   UpdateFrameCaptionButtons();
+  UpdateButtonsOrder();
   LayoutWindowControlsOverlay();
   InvalidateLayout();
 }
@@ -144,7 +158,11 @@ int OpaqueFrameView::NonClientHitTest(const gfx::Point& point) {
     if (HitTestCaptionButton(minimize_button_, point))
       return HTMINBUTTON;
 
-    if (caption_button_placeholder_container_->GetMirroredBounds().Contains(
+    if (leading_button_placeholder_container_->GetMirroredBounds().Contains(
+            point)) {
+      return HTCAPTION;
+    }
+    if (trailing_button_placeholder_container_->GetMirroredBounds().Contains(
             point)) {
       return HTCAPTION;
     }
@@ -179,22 +197,22 @@ void OpaqueFrameView::Layout(PassKey) {
   // Reset all our data so that everything is invisible.
   TopAreaPadding top_area_padding = GetTopAreaPadding();
   gfx::Rect client_bounds = GetBoundsForClientView();
-  available_space_leading_x_ = client_bounds.x() + top_area_padding.leading;
-  available_space_trailing_x_ =
-      client_bounds.right() - top_area_padding.trailing;
-  minimum_size_for_buttons_ =
-      (available_space_leading_x_ - client_bounds.x()) +
-      (client_bounds.right() - available_space_trailing_x_);
+  cumulative_leading_x_ = client_bounds.x() + top_area_padding.leading;
+  available_space_trailing_x_ = client_bounds.right() - top_area_padding.trailing;
+  minimum_size_for_leading_buttons_= top_area_padding.leading;
+  minimum_size_for_trailing_buttons_ = top_area_padding.trailing;
   placed_leading_button_ = false;
   placed_trailing_button_ = false;
 
   LayoutWindowControls();
 
   int height = NonClientTopHeight(false);
-  int container_x =
+  int trailing_x =
       placed_trailing_button_ ? available_space_trailing_x_ : client_bounds.x();
-  caption_button_placeholder_container_->SetBounds(
-      container_x, client_bounds.y(), minimum_size_for_buttons_, height);
+  leading_button_placeholder_container_->SetBounds(
+      client_bounds.x(), client_bounds.y(), minimum_size_for_leading_buttons_, height);
+  trailing_button_placeholder_container_->SetBounds(
+      trailing_x, client_bounds.y(), minimum_size_for_trailing_buttons_, height);
   LayoutWindowControlsOverlay();
 }
 
@@ -245,6 +263,14 @@ void OpaqueFrameView::PaintAsActiveChanged() {
   SchedulePaint();
 }
 
+void OpaqueFrameView::OnWindowButtonOrderingChange() {
+  UpdateButtonsOrder();
+  if (window()->IsWindowControlsOverlayEnabled()) {
+    InvalidateLayout();
+    SchedulePaint();
+  }
+}
+
 void OpaqueFrameView::UpdateFrameCaptionButtons() {
   const bool active = ShouldPaintAsActive();
   const SkColor symbol_color = window()->overlay_symbol_color();
@@ -265,12 +291,23 @@ void OpaqueFrameView::UpdateFrameCaptionButtons() {
 }
 
 void OpaqueFrameView::UpdateCaptionButtonPlaceholderContainerBackground() {
-  if (caption_button_placeholder_container_) {
-    const SkColor obc = window()->overlay_button_color();
-    const SkColor bg_color = obc == SkColor() ? GetFrameColor() : obc;
-    caption_button_placeholder_container_->SetBackground(
+  const SkColor obc = window()->overlay_button_color();
+  const SkColor bg_color = obc == SkColor() ? GetFrameColor() : obc;
+
+  if (leading_button_placeholder_container_) {
+    leading_button_placeholder_container_->SetBackground(
         views::CreateSolidBackground(bg_color));
   }
+  if (trailing_button_placeholder_container_) {
+    trailing_button_placeholder_container_->SetBackground(
+        views::CreateSolidBackground(bg_color));
+  }
+}
+
+void OpaqueFrameView::UpdateButtonsOrder() {
+  auto* provider = views::WindowButtonOrderProvider::GetInstance();
+  leading_buttons_ = provider->leading_buttons();
+  trailing_buttons_ = provider->trailing_buttons();
 }
 
 void OpaqueFrameView::LayoutWindowControls() {
@@ -300,17 +337,21 @@ void OpaqueFrameView::LayoutWindowControls() {
 void OpaqueFrameView::LayoutWindowControlsOverlay() {
   int overlay_height = window()->titlebar_overlay_height();
   if (overlay_height == 0) {
-    // Accounting for the 1 pixel margin at the top of the button container
-    overlay_height =
-        window()->IsMaximized()
-            ? caption_button_placeholder_container_->size().height()
-            : caption_button_placeholder_container_->size().height() + 1;
+    overlay_height = NonClientTopHeight(false);
+    if (window()->IsMaximized()) {
+      // Accounting for the 1 pixel margin at the top of the button container
+      overlay_height++;
+    }
   }
-  int overlay_width = caption_button_placeholder_container_->size().width();
   gfx::Rect client_bounds = GetBoundsForClientView();
-  int bounding_rect_width = client_bounds.width() - overlay_width;
-  auto bounding_rect =
-      GetMirroredRect(gfx::Rect(0, 0, bounding_rect_width, overlay_height));
+  int titlebar_width = client_bounds.width() -
+      trailing_button_placeholder_container_->bounds().width() -
+      leading_button_placeholder_container_->bounds().width();
+  auto bounding_rect = gfx::Rect(
+      leading_button_placeholder_container_->bounds().width(),
+      0,
+      titlebar_width,
+      overlay_height);
 
   window()->SetWindowControlsOverlayRect(bounding_rect);
   window()->NotifyLayoutWindowControlsOverlay();
@@ -521,14 +562,14 @@ void OpaqueFrameView::SetBoundsForButton(views::FrameButton button_id,
       int button_start_spacing =
           GetWindowCaptionSpacing(button_id, true, !placed_leading_button_);
 
-      available_space_leading_x_ += button_start_spacing;
-      minimum_size_for_buttons_ += button_start_spacing;
+      cumulative_leading_x_ += button_start_spacing;
+      minimum_size_for_leading_buttons_ += button_start_spacing;
 
       bool top_spacing_clickable = is_frame_condensed;
       bool start_spacing_clickable =
           is_frame_condensed && !placed_leading_button_;
       button->SetBounds(
-          available_space_leading_x_ - (start_spacing_clickable
+          cumulative_leading_x_ - (start_spacing_clickable
                                             ? button_start_spacing + extra_width
                                             : 0),
           top_spacing_clickable ? 0 : caption_y,
@@ -539,8 +580,8 @@ void OpaqueFrameView::SetBoundsForButton(views::FrameButton button_id,
 
       int button_end_spacing =
           GetWindowCaptionSpacing(button_id, false, !placed_leading_button_);
-      available_space_leading_x_ += button_size.width() + button_end_spacing;
-      minimum_size_for_buttons_ += button_size.width() + button_end_spacing;
+      cumulative_leading_x_ += button_size.width() + button_end_spacing;
+      minimum_size_for_leading_buttons_ += button_size.width() + button_end_spacing;
       placed_leading_button_ = true;
       break;
     }
@@ -550,7 +591,7 @@ void OpaqueFrameView::SetBoundsForButton(views::FrameButton button_id,
           GetWindowCaptionSpacing(button_id, true, !placed_trailing_button_);
 
       available_space_trailing_x_ -= button_start_spacing;
-      minimum_size_for_buttons_ += button_start_spacing;
+      minimum_size_for_trailing_buttons_ += button_start_spacing;
 
       bool top_spacing_clickable = is_frame_condensed;
       bool start_spacing_clickable =
@@ -566,7 +607,7 @@ void OpaqueFrameView::SetBoundsForButton(views::FrameButton button_id,
       int button_end_spacing =
           GetWindowCaptionSpacing(button_id, false, !placed_trailing_button_);
       available_space_trailing_x_ -= button_size.width() + button_end_spacing;
-      minimum_size_for_buttons_ += button_size.width() + button_end_spacing;
+      minimum_size_for_trailing_buttons_ += button_size.width() + button_end_spacing;
       placed_trailing_button_ = true;
       break;
     }
