@@ -156,6 +156,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void Center();
   void SetPosition(int x, int y, gin::Arguments* args);
   std::array<int, 2U> GetPosition() const;
+  gfx::Point GetCursorPoint() const;
   void SetTitle(const std::string& title);
   std::string GetTitle() const;
   void SetAccessibleTitle(const std::string& title);

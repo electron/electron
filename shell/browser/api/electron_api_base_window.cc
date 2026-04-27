@@ -33,6 +33,8 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "ui/display/screen.h"
+#include "ui/views/view.h"
 
 #if defined(TOOLKIT_VIEWS)
 #include "shell/browser/native_window_views.h"
@@ -596,6 +598,22 @@ void BaseWindow::SetPosition(const int x,
 std::array<int, 2U> BaseWindow::GetPosition() const {
   return ToArray(window_->GetPosition());
 }
+
+gfx::Point BaseWindow::GetCursorPoint() const {
+  auto* screen = display::Screen::Get();
+  if (!screen)
+    return gfx::Point{};
+
+  gfx::Point cursor_point = screen->GetCursorScreenPoint();
+
+  // Convert from screen coordinates to window-root-view coordinates.
+  // This correctly handles DPI, frame offsets, and Wayland's synthetic coords.
+  views::View* root_view = window_->widget()->GetRootView();
+  views::View::ConvertPointFromScreen(root_view, &cursor_point);
+
+  return cursor_point;
+}
+
 void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin::Arguments* const args) {
   if (!window_->MoveAbove(sourceId))
@@ -1219,6 +1237,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("center", &BaseWindow::Center)
       .SetMethod("setPosition", &BaseWindow::SetPosition)
       .SetMethod("getPosition", &BaseWindow::GetPosition)
+      .SetMethod("getCursorPoint", &BaseWindow::GetCursorPoint)
       .SetMethod("setTitle", &BaseWindow::SetTitle)
       .SetMethod("getTitle", &BaseWindow::GetTitle)
       .SetProperty("accessibleTitle", &BaseWindow::GetAccessibleTitle,
