@@ -16,7 +16,6 @@
 #include "ui/gfx/image/image_skia.h"
 #include "ui/linux/device_scale_factor_observer.h"
 #include "ui/linux/linux_ui.h"
-#include "ui/native_theme/native_theme_observer.h"
 #include "ui/platform_window/platform_window.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 
@@ -78,12 +77,13 @@ class ElectronDesktopWindowTreeHostLinux
 
   bool IsShowingFrame(ui::PlatformWindowState window_state) const;
 
+  // Returns restored frame border insets regardless of current widget state.
+  gfx::Insets GetRestoredFrameBorderInsets() const;
+
   gfx::ImageSkia saved_window_icon_;
 
   raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
 
-  base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
-      theme_observation_{this};
   base::ScopedObservation<ui::LinuxUi, ui::DeviceScaleFactorObserver>
       scale_observation_{this};
   ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;
