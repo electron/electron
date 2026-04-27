@@ -115,11 +115,50 @@ app.whenReady().then(async () => {
 })
 ```
 
+#### `Notification.remove(id)` _macOS_
+
+* `id` (string | string[]) - The notification identifier(s) to remove. These correspond to the `id` values set in the [`Notification` constructor](#new-notificationoptions).
+
+Removes one or more delivered notifications from Notification Center by their identifier(s).
+
+```js
+const { Notification } = require('electron')
+
+// Remove a single notification
+Notification.remove('my-notification-id')
+
+// Remove multiple notifications
+Notification.remove(['msg-1', 'msg-2', 'msg-3'])
+```
+
+#### `Notification.removeAll()` _macOS_
+
+Removes all of the app's delivered notifications from Notification Center.
+
+```js
+const { Notification } = require('electron')
+
+Notification.removeAll()
+```
+
+#### `Notification.removeGroup(groupId)` _macOS_
+
+* `groupId` string - The group identifier of the notifications to remove. This corresponds to the `groupId` value set in the [`Notification` constructor](#new-notificationoptions).
+
+Removes all delivered notifications with the given `groupId` from Notification Center.
+
+```js
+const { Notification } = require('electron')
+
+// Remove all notifications in the 'chat-thread-1' group
+Notification.removeGroup('chat-thread-1')
+```
+
 ### `new Notification([options])`
 
 * `options` Object (optional)
-  * `id` string (optional) _macOS_ _Windows_ - A unique identifier for the notification. On macOS, maps to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. On Windows, maps to the toast notification's [`Tag`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.tag) property. Defaults to a random UUID if not provided or if an empty string is passed. This can be used to remove or update previously delivered notifications.
-  * `groupId` string (optional) _macOS_ _Windows_ - A string identifier used to visually group notifications together in Notification Center / Action Center. On macOS, maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property. On Windows, maps to the toast notification's [`Group`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.group) property.
+  * `id` string (optional) _macOS_ _Windows_ - A unique identifier for the notification. On macOS, maps to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. On Windows, maps to the toast notification's [`Tag`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.tag) property. Defaults to a random UUID if not provided or if an empty string is passed. Use this identifier with [`Notification.remove()`](#notificationremoveid-macos) to remove specific delivered notifications, or with [`Notification.getHistory()`](#notificationgethistory-macos) to identify them.
+  * `groupId` string (optional) _macOS_ _Windows_ - A string identifier used to visually group notifications together in Notification Center / Action Center. On macOS, maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property. On Windows, maps to the toast notification's [`Group`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.group) property. Use this identifier with [`Notification.removeGroup()`](#notificationremovegroupgroupid-macos) to remove all notifications in a group.
   * `groupTitle` string (optional) _Windows_ - A title for the notification group header. When both `groupId` and `groupTitle` are specified, Windows will display a header above the notification that groups related notifications together. Maps to the toast notification's [`header`](https://learn.microsoft.com/en-us/windows/apps/design/shell/tiles-and-notifications/toast-headers) element.
   * `title` string (optional) - A title for the notification, which will be displayed at the top of the notification window when it is shown.
   * `subtitle` string (optional) _macOS_ - A subtitle for the notification, which will be displayed below the title.
