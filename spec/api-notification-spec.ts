@@ -493,7 +493,7 @@ describe('Notification module', () => {
       Notification.remove('remove-test-id');
 
       // Give the notification center a moment to process the removal
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const history = await Notification.getHistory();
       const found = history.find((item: any) => item.id === 'remove-test-id');
@@ -524,7 +524,7 @@ describe('Notification module', () => {
 
       Notification.remove(['remove-array-1', 'remove-array-2']);
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const history = await Notification.getHistory();
       const found1 = history.find((item: any) => item.id === 'remove-array-1');
@@ -547,7 +547,7 @@ describe('Notification module', () => {
 
       Notification.removeAll();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const history = await Notification.getHistory();
       const found = history.find((item: any) => item.id === 'remove-all-test');
@@ -586,7 +586,7 @@ describe('Notification module', () => {
       Notification.removeGroup('group-b');
 
       // Give the notification center a moment to fetch and remove
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       const history = await Notification.getHistory();
       // In code-signed builds, group-a notification should remain
