@@ -1,58 +1,12 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: deepak1556 <hop2deep@gmail.com>
 Date: Thu, 18 Oct 2018 17:07:01 -0700
-Subject: desktop_media_list.patch
+Subject: native_desktop_media_list: behavior tweaks for Electron
 
-* Use our grit resources instead of the chrome ones.
-* Disabled WindowCaptureMacV2 feature for https://github.com/electron/electron/pull/30507
-* Ensure "OnRefreshComplete()" even if there are no items in the list
+* Guard ScopedCGWindowID::Get() lookup on macOS pending electron/electron#30682
+* Release OS screen capture mechanisms after thumbnail capture
+* Ensure "OnRefreshComplete()" fires even if the source list is empty
 
-diff --git a/chrome/browser/media/webrtc/desktop_media_list.h b/chrome/browser/media/webrtc/desktop_media_list.h
-index 9a4e06d24b829ba51bf5c925e7a7290da6fad4f0..09895ccfa99999e6e0ea24a3190d3f429ee40344 100644
---- a/chrome/browser/media/webrtc/desktop_media_list.h
-+++ b/chrome/browser/media/webrtc/desktop_media_list.h
-@@ -108,7 +108,8 @@ class DesktopMediaList {
-   // once per DesktopMediaList instance.  It should not be called after
-   // StartUpdating(), and StartUpdating() should not be called until |callback|
-   // has been called.
--  virtual void Update(UpdateCallback callback) = 0;
-+  virtual void Update(UpdateCallback callback,
-+                      bool refresh_thumbnails = false) = 0;
- 
-   virtual int GetSourceCount() const = 0;
-   virtual const Source& GetSource(int index) const = 0;
-diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.cc b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-index 1f25e8321301b0a5cd8703b8a4e9ec840fc0331b..f95b2230135dbcd6b19a31215d4f10be3481148c 100644
---- a/chrome/browser/media/webrtc/desktop_media_list_base.cc
-+++ b/chrome/browser/media/webrtc/desktop_media_list_base.cc
-@@ -70,12 +70,12 @@ void DesktopMediaListBase::StartUpdating(DesktopMediaListObserver* observer) {
-   Refresh(true);
- }
- 
--void DesktopMediaListBase::Update(UpdateCallback callback) {
-+void DesktopMediaListBase::Update(UpdateCallback callback, bool refresh_thumbnails) {
-   DCHECK_CURRENTLY_ON(BrowserThread::UI);
-   DCHECK(sources_.empty());
-   DCHECK(!refresh_callback_);
-   refresh_callback_ = std::move(callback);
--  Refresh(false);
-+  Refresh(refresh_thumbnails);
- }
- 
- int DesktopMediaListBase::GetSourceCount() const {
-diff --git a/chrome/browser/media/webrtc/desktop_media_list_base.h b/chrome/browser/media/webrtc/desktop_media_list_base.h
-index de56c9b94f92e9abf69b1d4894e5d386cad6d3cd..f8955ef7cc43b1854b29841ed65260a1966a4b19 100644
---- a/chrome/browser/media/webrtc/desktop_media_list_base.h
-+++ b/chrome/browser/media/webrtc/desktop_media_list_base.h
-@@ -39,7 +39,7 @@ class DesktopMediaListBase : public DesktopMediaList {
-   void SetThumbnailSize(const gfx::Size& thumbnail_size) override;
-   void SetViewDialogWindowId(content::DesktopMediaID dialog_id) override;
-   void StartUpdating(DesktopMediaListObserver* observer) override;
--  void Update(UpdateCallback callback) override;
-+  void Update(UpdateCallback callback, bool refresh_thumbnails) override;
-   int GetSourceCount() const override;
-   const Source& GetSource(int index) const override;
-   DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
 index 2b745dbb254c714756a953ac0a32c1430af2c91d..9a8ebb4edfb92d9fe28ae4b87463a68547ea1ab3 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
@@ -69,11 +23,11 @@ index 2b745dbb254c714756a953ac0a32c1430af2c91d..9a8ebb4edfb92d9fe28ae4b87463a685
    }
 +#endif
  #endif
- 
+
    return window_id;
 @@ -321,7 +325,7 @@ class NativeDesktopMediaList::Worker
    base::WeakPtr<NativeDesktopMediaList> media_list_;
- 
+
    DesktopMediaID::Type source_type_;
 -  const std::unique_ptr<ThumbnailCapturer> capturer_;
 +  std::unique_ptr<ThumbnailCapturer> capturer_;
@@ -91,7 +45,7 @@ index 2b745dbb254c714756a953ac0a32c1430af2c91d..9a8ebb4edfb92d9fe28ae4b87463a685
 +    capturer_.reset();
 +  }
  }
- 
+
  void NativeDesktopMediaList::Worker::OnCaptureResult(
 @@ -1015,6 +1025,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
@@ -104,4 +58,4 @@ index 2b745dbb254c714756a953ac0a32c1430af2c91d..9a8ebb4edfb92d9fe28ae4b87463a685
 +    UpdateNativeThumbnailsFinished();
    }
  }
- 
+

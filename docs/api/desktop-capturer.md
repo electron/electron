@@ -1,30 +1,31 @@
 # desktopCapturer
 
 > Access information about media sources that can be used to capture audio and
-> video from the desktop using the [`navigator.mediaDevices.getUserMedia`][] API.
+> video from the desktop using the [`navigator.mediaDevices.getDisplayMedia`][] API.
 
 Process: [Main](../glossary.md#main-process)
+
+> [!WARNING]
+> The `desktopCapturer` module is deprecated. Use
+> [`session.setDisplayMediaRequestHandler`](session.md#sessetdisplaymediarequesthandleropts)
+> instead, which aligns with the web-standard
+> [`navigator.mediaDevices.getDisplayMedia`](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia)
+> API. See the [migration guide](#migrating-from-getsources-to-setdisplaymediarequesthandler) below.
 
 The following example shows how to capture video from a desktop window whose
 title is `Electron`:
 
 ```js
 // main.js
-const { app, BrowserWindow, desktopCapturer, session } = require('electron')
+const { app, BrowserWindow, session } = require('electron')
 
 app.whenReady().then(() => {
   const mainWindow = new BrowserWindow()
 
   session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-      // Grant access to the first screen found.
-      callback({ video: sources[0], audio: 'loopback' })
-    })
-    // If true, use the system picker if available.
-    // Note: this is currently experimental. If the system picker
-    // is available, it will be used and the media request handler
-    // will not be invoked.
-  }, { useSystemPicker: true })
+    // Allow the requesting tab to capture itself.
+    callback({ video: request.frame })
+  })
 
   mainWindow.loadFile('index.html')
 })
@@ -78,7 +79,7 @@ See [`navigator.mediaDevices.getDisplayMedia`](https://developer.mozilla.org/en-
 
 The `desktopCapturer` module has the following methods:
 
-### `desktopCapturer.getSources(options)`
+### `desktopCapturer.getSources(options)` _Deprecated_
 
 <!--
 ```YAML history
@@ -88,6 +89,8 @@ changes:
   - pr-url: https://github.com/electron/electron/pull/16427
     description: "This method now returns a Promise instead of using a callback function."
     breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
+deprecated:
+  - pr-url: https://github.com/electron/electron/pull/51235
 ```
 -->
 
@@ -104,11 +107,14 @@ changes:
 
 Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`DesktopCapturerSource`](structures/desktop-capturer-source.md) objects, each `DesktopCapturerSource` represents a screen or an individual window that can be captured.
 
+**Deprecated:** Use [`session.setDisplayMediaRequestHandler`](session.md#sessetdisplaymediarequesthandlerhandler-opts) instead.
+
 > [!NOTE]
 <!-- markdownlint-disable-next-line MD032 -->
 > * Capturing audio requires `NSAudioCaptureUsageDescription` Info.plist key on macOS 14.2 Sonoma and higher - [read more](#macos-versions-142-or-higher).
 > * Capturing the screen contents requires user consent on macOS 10.15 Catalina or higher, which can detected by [`systemPreferences.getMediaAccessStatus`][].
 
+[`navigator.mediaDevices.getDisplayMedia`]: https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia
 [`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
 
@@ -158,3 +164,92 @@ It is possible to circumvent this limitation by capturing system audio with anot
 [BlackHole](https://existential.audio/blackhole/) or [Soundflower](https://rogueamoeba.com/freebies/soundflower/)
 and passing it through a virtual audio input device. This virtual device can then be queried
 with `navigator.mediaDevices.getUserMedia`.
+
+## Migrating from `getSources` to `setDisplayMediaRequestHandler`
+
+`desktopCapturer.getSources` is deprecated. Applications should migrate to
+[`session.setDisplayMediaRequestHandler`](session.md#sessetdisplaymediarequesthandlerhandler-opts),
+which aligns with the web-standard [`navigator.mediaDevices.getDisplayMedia`][] API.
+
+### Why migrate?
+
+- **Web standards alignment** — `getDisplayMedia()` is the web-standard API for screen
+  capture. Using `setDisplayMediaRequestHandler` lets you integrate with it directly.
+- **Platform integration** — On macOS 15+, setting `useSystemPicker: true` invokes the
+  native OS screen picker (SCContentSharingPicker), providing a familiar UX and
+  correct permissions handling. On other platforms and earlier macOS versions the
+  option is a no-op and the handler runs as normal.
+- **Simpler architecture** — The handler receives the request when the renderer calls
+  `getDisplayMedia()` and you respond with the chosen source. No need to pre-enumerate
+  sources.
+
+### Before (deprecated)
+
+```js
+const { app, BrowserWindow, desktopCapturer, session } = require('electron')
+
+app.whenReady().then(() => {
+  const mainWindow = new BrowserWindow()
+
+  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+      callback({ video: sources[0] })
+    })
+  })
+
+  mainWindow.loadFile('index.html')
+})
+```
+
+### After (recommended)
+
+On macOS 15 and later, the simplest migration is to let the OS present its own
+picker. When the system picker is available, the handler is not invoked:
+
+```js
+const { app, BrowserWindow, session } = require('electron')
+
+app.whenReady().then(() => {
+  const mainWindow = new BrowserWindow()
+
+  session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    // Fallback for platforms / OS versions where the system picker is unavailable.
+    callback({})
+  }, { useSystemPicker: true })
+
+  mainWindow.loadFile('index.html')
+})
+```
+
+If the renderer only needs to capture a specific `WebFrameMain` (for example,
+the requesting tab itself), no source enumeration is needed — pass the frame
+straight through:
+
+```js
+session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+  // request.preferredDisplaySurface is 'monitor', 'window', 'browser', or 'none'
+  callback({ video: request.frame })
+})
+```
+
+For a fully custom picker UI on platforms where the system picker is not
+available, enumerate screens and windows inside the handler and respond with
+the user's selection. There is currently no web-standard replacement for
+source enumeration, so `desktopCapturer.getSources` remains functional during
+the deprecation period and is the recommended bridge:
+
+```js
+const { desktopCapturer, session } = require('electron')
+
+session.defaultSession.setDisplayMediaRequestHandler(async (request, callback) => {
+  // Use request.preferredDisplaySurface to narrow the source list when the page
+  // expresses a preference ('monitor', 'window', 'browser', or 'none').
+  const types = request.preferredDisplaySurface === 'window' ? ['window'] : ['screen', 'window']
+  const sources = await desktopCapturer.getSources({ types })
+
+  // Render your own picker UI (e.g. by forwarding `sources` to a renderer) and
+  // call back with the chosen source once the user picks one.
+  const chosen = sources[0]
+  callback({ video: chosen })
+})
+```

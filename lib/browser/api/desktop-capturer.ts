@@ -1,3 +1,5 @@
+import * as deprecate from '@electron/internal/common/deprecate';
+
 import { BrowserWindow } from 'electron/main';
 
 const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable } = process._linkedBinding(
@@ -19,7 +21,10 @@ function isValid(options: Electron.SourcesOptions) {
 
 export { isDisplayMediaSystemPickerAvailable };
 
+const getSourcesDeprecated = deprecate.warnOnce('desktopCapturer.getSources', 'session.setDisplayMediaRequestHandler');
+
 export async function getSources(args: Electron.SourcesOptions) {
+  getSourcesDeprecated();
   if (!isValid(args)) throw new Error('Invalid options');
 
   const resizableValues = new Map();
