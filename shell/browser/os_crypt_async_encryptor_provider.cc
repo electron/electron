@@ -22,6 +22,7 @@ void OSCryptAsyncEncryptorProvider::GetEncryptor(
     EncryptorCallback callback,
     os_crypt_async::Encryptor::Option option) {
   if (encryptor_) {
+    CHECK_EQ(requested_option_, option);
     std::move(callback).Run(&encryptor_.value());
     return;
   }
@@ -33,7 +34,7 @@ void OSCryptAsyncEncryptorProvider::GetEncryptor(
 void OSCryptAsyncEncryptorProvider::EnsureEncryptorRequested(
     os_crypt_async::Encryptor::Option option) {
   if (encryptor_requested_) {
-    DCHECK_EQ(requested_option_, option);
+    CHECK_EQ(requested_option_, option);
     return;
   }
 
