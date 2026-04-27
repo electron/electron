@@ -176,3 +176,4 @@ cherry-pick-c75f63de7188.patch
 cherry-pick-7687618.patch
 patch_osr_control_screen_info.patch
 cherry-pick-cve-2026-6920.patch
+fix_make_macos_text_replacement_work_on_contenteditable.patch
