@@ -124,14 +124,18 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   size_constraints.set_minimum_size(gfx::Size(min_width, min_height));
 
   gfx::Size max_size = size_constraints.GetMaximumSize();
-  int max_width = max_size.width() > 0 ? max_size.width() : INT_MAX;
-  int max_height = max_size.height() > 0 ? max_size.height() : INT_MAX;
+  int max_width = max_size.width() > 0 ? max_size.width() : kMaxWindowDimension;
+  int max_height =
+      max_size.height() > 0 ? max_size.height() : kMaxWindowDimension;
   bool have_max_width = options.Get(options::kMaxWidth, &max_width);
   if (have_max_width && max_width <= 0)
-    max_width = INT_MAX;
+    max_width = kMaxWindowDimension;
   bool have_max_height = options.Get(options::kMaxHeight, &max_height);
   if (have_max_height && max_height <= 0)
-    max_height = INT_MAX;
+    max_height = kMaxWindowDimension;
+
+  max_width = std::min(max_width, kMaxWindowDimension);
+  max_height = std::min(max_height, kMaxWindowDimension);
 
   // By default the window has a default maximum size that prevents it
   // from being resized larger than the screen, so we should only set this
