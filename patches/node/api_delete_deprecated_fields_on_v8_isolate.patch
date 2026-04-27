@@ -6,7 +6,7 @@ Subject: Delete deprecated fields on v8::Isolate
 https://chromium-review.googlesource.com/c/v8/v8/+/7081397
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 2111ee63a6ace438c1a143c90a807ed9fc2bcc9d..ce6426a1bf2dadb1a642874a05718724ef0f3d7c 100644
+index 45e1347077e97c46c4b6ccd15725d05688ac4faf..d64cdce7ab8dbbc1517d30bb1a30a9f5d18e6df1 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -218,8 +218,6 @@ void SetIsolateCreateParamsForNode(Isolate::CreateParams* params) {
