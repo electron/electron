@@ -73,6 +73,8 @@ class ElectronDesktopWindowTreeHostLinux
       const views::Widget::InitParams& params,
       ui::PlatformWindowInitProperties* properties) override;
 
+  void SetIgnoreMouseEvents(bool ignore);
+
  private:
   void UpdateWindowState(ui::PlatformWindowState new_state);
 
@@ -87,6 +89,7 @@ class ElectronDesktopWindowTreeHostLinux
   base::ScopedObservation<ui::LinuxUi, ui::DeviceScaleFactorObserver>
       scale_observation_{this};
   ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;
+  bool ignore_mouse_events_ = false;
 };
 
 }  // namespace electron
