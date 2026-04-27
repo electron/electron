@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: JunHo Seo <junho0924.seo@lge.com>
+Date: Wed, 25 Feb 2026 19:59:16 -0800
+Subject: Fix DCHECK failure when starting heap profiler for renderer.
+
+Backports https://crrev.com/c/7603976.
+
+Heap profiling for the renderer is currently started in
+OnRenderProcessHostCreated(). However, at that point, base::Process::Pid
+may not yet be valid, which can trigger a DCHECK(IsValid()) failure.
+In addition, even if the DCHECK does not fire, the PID might still be
+zero, causing renderer profiling data to be aggregated incorrectly.
+
+To address this issue, this CL moves the heap profiler startup to
+OnRenderProcessLaunched().
+
+Bug: N/A
+Change-Id: If1ba076dcf59d84b875a0b09544df9fde0dee83a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7603976
+Commit-Queue: JunHo Seo <junho0924.seo@lge.com>
+Reviewed-by: Joe Mason <joenotcharles@google.com>
+Reviewed-by: Rohit Rao <rohitrao@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1590612}
+
+diff --git a/components/heap_profiling/multi_process/client_connection_manager.cc b/components/heap_profiling/multi_process/client_connection_manager.cc
+index 6a4c109d8f31a4658e60f49d15c4a62c9d272775..93c3b4da047e05ca622a4d759effeb0709c619a9 100644
+--- a/components/heap_profiling/multi_process/client_connection_manager.cc
++++ b/components/heap_profiling/multi_process/client_connection_manager.cc
+@@ -260,7 +260,7 @@ void ClientConnectionManager::StartProfilingNonRendererChild(
+                      std::move(started_profiling_closure)));
+ }
+ 
+-void ClientConnectionManager::OnRenderProcessHostCreated(
++void ClientConnectionManager::OnRenderProcessLaunched(
+     content::RenderProcessHost* host) {
+   if (ShouldProfileNewRenderer(host)) {
+     StartProfilingRenderer(host, base::DoNothing());
+diff --git a/components/heap_profiling/multi_process/client_connection_manager.h b/components/heap_profiling/multi_process/client_connection_manager.h
+index 80f34e3dbbcbd09645bb1c2b35b91cdaa74226ba..d298bbdc75ba5a3c857e4c04a6b65920f9161cea 100644
+--- a/components/heap_profiling/multi_process/client_connection_manager.h
++++ b/components/heap_profiling/multi_process/client_connection_manager.h
+@@ -100,7 +100,7 @@ class ClientConnectionManager
+           started_profiling_closure);
+ 
+   // content::RenderProcessHostCreationObserver
+-  void OnRenderProcessHostCreated(content::RenderProcessHost* host) override;
++  void OnRenderProcessLaunched(content::RenderProcessHost* host) override;
+ 
+   // RenderProcessHostObserver:
+   // RenderProcessHostDestroyed() corresponds to death of an underlying
