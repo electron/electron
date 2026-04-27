@@ -33,7 +33,7 @@ import * as nodeUrl from 'node:url';
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { randomString } from './lib/net-helpers';
 import { HexColors, hasCapturableScreen, ScreenCapture } from './lib/screen-helpers';
-import { ifit, ifdescribe, defer, listen, waitUntil, isWayland } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, listen, waitUntil, isWayland, isX11 } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -1821,52 +1821,6 @@ describe('BrowserWindow module', () => {
         expectBoundsEqual(w.getMinimumSize(), [100, 100]);
         expectBoundsEqual(w.getMaximumSize(), [900, 600]);
       });
-
-      it('creates window at min size when a smaller size is requested', () => {
-        const w1 = new BrowserWindow({
-          show: false,
-          width: 200,
-          height: 200,
-          minWidth: 300,
-          minHeight: 300
-        });
-        const size = w1.getSize();
-        expect(size[0]).to.equal(300);
-        expect(size[1]).to.equal(300);
-      });
-
-      it('creates window at max size when a larger size is requested', () => {
-        const w1 = new BrowserWindow({
-          show: false,
-          width: 300,
-          height: 300,
-          maxWidth: 200,
-          maxHeight: 200
-        });
-        const size = w1.getSize();
-        expect(size[0]).to.equal(200);
-        expect(size[1]).to.equal(200);
-      });
-
-      it('enforces minimum size', async () => {
-        w.setMinimumSize(300, 300);
-        const resize = once(w, 'resize');
-        w.setSize(100, 100);
-        await resize;
-        const size = w.getSize();
-        expect(size[0]).to.be.at.least(300);
-        expect(size[1]).to.be.at.least(300);
-      });
-
-      it('enforces maximum size', async () => {
-        w.setMaximumSize(200, 200);
-        const resize = once(w, 'resize');
-        w.setSize(500, 500);
-        await resize;
-        const size = w.getSize();
-        expect(size[0]).to.be.at.most(200);
-        expect(size[1]).to.be.at.most(200);
-      });
     });
 
     describe('BrowserWindow.setAspectRatio(ratio)', () => {
@@ -3462,6 +3416,323 @@ describe('BrowserWindow module', () => {
       expect(await getViewportSize(w)).to.deep.equal(w.getContentSize());
     });
   });
+
+  for (const frame of [false, true]) {
+    describe(`size constraints (frame: ${frame})`, () => {
+      afterEach(closeAllWindows);
+
+      // Wayland might ignore operations on hidden windows.
+      const show = !!isWayland;
+
+      it('creates window at maxWidth/maxHeight when a larger size is requested', () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 300,
+          height: 300,
+          maxWidth: 200,
+          maxHeight: 200
+        });
+        expectBoundsEqual(w.getSize(), [200, 200]);
+      });
+
+      it('creates window at minWidth/minHeight when a smaller size is requested', () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 200,
+          height: 200,
+          minWidth: 300,
+          minHeight: 300
+        });
+        expectBoundsEqual(w.getSize(), [300, 300]);
+      });
+
+      it('enforces maxWidth/maxHeight specified at creation', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400,
+          maxWidth: 500,
+          maxHeight: 500
+        });
+        const resized = once(w, 'resize');
+        w.setSize(600, 600);
+        await resized;
+        expectBoundsEqual(w.getSize(), [500, 500]);
+      });
+
+      it('enforces minWidth/minHeight specified at creation', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400,
+          minWidth: 300,
+          minHeight: 300
+        });
+        const resized = once(w, 'resize');
+        w.setSize(100, 100);
+        await resized;
+        expectBoundsEqual(w.getSize(), [300, 300]);
+      });
+
+      it('enforces maxWidth/maxHeight after setMaximumSize', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400
+        });
+        w.setMaximumSize(350, 350);
+        const resized = once(w, 'resize');
+        w.setSize(500, 500);
+        await resized;
+        expectBoundsEqual(w.getSize(), [350, 350]);
+      });
+
+      it('enforces minWidth/minHeight after setMinimumSize', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400
+        });
+        w.setMinimumSize(350, 350);
+        const resized = once(w, 'resize');
+        w.setSize(200, 200);
+        await resized;
+        const size = w.getSize();
+        expect(size[0]).to.be.at.least(350);
+        expect(size[1]).to.be.at.least(350);
+      });
+
+      it('removing maximum size (0, 0) allows resizing larger', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400,
+          maxWidth: 400,
+          maxHeight: 400
+        });
+        w.setMaximumSize(0, 0);
+        const resized = once(w, 'resize');
+        w.setSize(600, 600);
+        await resized;
+        expectBoundsEqual(w.getSize(), [600, 600]);
+      });
+
+      it('min and max constraints work together', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400,
+          minWidth: 200,
+          minHeight: 200,
+          maxWidth: 600,
+          maxHeight: 600
+        });
+        const resize1 = once(w, 'resize');
+        w.setSize(100, 100);
+        await resize1;
+        const sizeMin = w.getSize();
+        expect(sizeMin[0]).to.be.at.least(200);
+        expect(sizeMin[1]).to.be.at.least(200);
+
+        const resize2 = once(w, 'resize');
+        w.setSize(800, 800);
+        await resize2;
+        const sizeMax = w.getSize();
+        expect(sizeMax[0]).to.be.at.most(600);
+        expect(sizeMax[1]).to.be.at.most(600);
+
+        const resize3 = once(w, 'resize');
+        w.setSize(400, 400);
+        await resize3;
+        expectBoundsEqual(w.getSize(), [400, 400]);
+      });
+
+      it('setContentSize respects maxWidth/maxHeight', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400
+        });
+        w.setMaximumSize(350, 350);
+        w.setContentSize(800, 800);
+        await new Promise(setImmediate);
+        const size = w.getSize();
+        expect(size[0]).to.be.at.most(350);
+        expect(size[1]).to.be.at.most(350);
+      });
+
+      it('setContentSize respects minWidth/minHeight', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400
+        });
+        w.setMinimumSize(350, 350);
+        w.setContentSize(100, 100);
+        await new Promise(setImmediate);
+        const size = w.getSize();
+        expect(size[0]).to.be.at.least(350);
+        expect(size[1]).to.be.at.least(350);
+      });
+
+      it('useContentSize with maxWidth/maxHeight constrains content size', () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400,
+          maxWidth: 500,
+          maxHeight: 500,
+          useContentSize: true
+        });
+        const contentSize = w.getContentSize();
+        expect(contentSize[0]).to.be.at.most(500);
+        expect(contentSize[1]).to.be.at.most(500);
+      });
+
+      it('useContentSize with minWidth/minHeight constrains content size', () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 100,
+          height: 100,
+          minWidth: 300,
+          minHeight: 300,
+          useContentSize: true
+        });
+        const contentSize = w.getContentSize();
+        expect(contentSize[0]).to.be.at.least(300);
+        expect(contentSize[1]).to.be.at.least(300);
+      });
+
+      it('constraints can be updated multiple times', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400
+        });
+
+        w.setMaximumSize(300, 300);
+        const resize1 = once(w, 'resize');
+        w.setSize(500, 500);
+        await resize1;
+        expectBoundsEqual(w.getSize(), [300, 300]);
+
+        w.setMaximumSize(500, 500);
+        w.setMinimumSize(400, 400);
+        const resize2 = once(w, 'resize');
+        w.setSize(450, 450);
+        await resize2;
+        expectBoundsEqual(w.getSize(), [450, 450]);
+
+        const resize3 = once(w, 'resize');
+        w.setSize(100, 100);
+        await resize3;
+        expectBoundsEqual(w.getSize(), [400, 400]);
+      });
+
+      ifit(!isX11)('maxWidth/maxHeight is enforced after maximize and unmaximize', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400,
+          maxWidth: 500,
+          maxHeight: 500
+        });
+
+        // Wait for compositor configure events
+        if (isWayland) {
+          await setTimeout(500);
+        }
+
+        const maximized = once(w, 'maximize');
+        w.maximize();
+        await maximized;
+
+        const unmaximized = once(w, 'unmaximize');
+        w.unmaximize();
+        await unmaximized;
+        await new Promise(setImmediate);
+
+        const resized = once(w, 'resize');
+        w.setSize(600, 600);
+        await resized;
+        expectBoundsEqual(w.getSize(), [500, 500]);
+      });
+
+      ifit(!isX11)('minWidth/minHeight is enforced after minimize and restore', async () => {
+        const w = new BrowserWindow({
+          show: true,
+          frame,
+          width: 400,
+          height: 400,
+          minWidth: 300,
+          minHeight: 300
+        });
+
+        // Wait for compositor configure events
+        if (isWayland) {
+          await setTimeout(500);
+        }
+
+        const minimized = once(w, 'minimize');
+        w.minimize();
+        await minimized;
+
+        const restored = once(w, 'restore');
+        w.restore();
+        await restored;
+        await new Promise(setImmediate);
+
+        const resized = once(w, 'resize');
+        w.setSize(100, 100);
+        await resized;
+        expectBoundsEqual(w.getSize(), [300, 300]);
+      });
+
+      it('maxWidth/maxHeight is enforced after fullscreen round-trip', async () => {
+        const w = new BrowserWindow({
+          show,
+          frame,
+          width: 400,
+          height: 400,
+          maxWidth: 500,
+          maxHeight: 500
+        });
+
+        // Wait for compositor configure events
+        if (isWayland) {
+          await setTimeout(500);
+        }
+
+        const enteredFullScreen = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enteredFullScreen;
+
+        const leftFullScreen = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leftFullScreen;
+        await new Promise(setImmediate);
+
+        const resized = once(w, 'resize');
+        w.setSize(600, 600);
+        await resized;
+        expectBoundsEqual(w.getSize(), [500, 500]);
+      });
+    });
+  }
 
   // On Wayland, hidden windows may not have mapped surfaces or finalized geometry
   // until shown. Tests that depend on real geometry or frame events may need

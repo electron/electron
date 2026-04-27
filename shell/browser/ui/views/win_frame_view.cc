@@ -281,7 +281,7 @@ gfx::Size WinFrameView::GetMaximumSize() const {
 }
 
 gfx::Insets WinFrameView::RestoredFrameBorderInsets() const {
-  if (window_->has_frame() || !window_->has_thick_frame())
+  if (!window_->has_thick_frame())
     return {};
 
   const int thickness =

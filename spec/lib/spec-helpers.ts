@@ -27,9 +27,12 @@ export const ifdescribe = (condition: boolean) => (condition ? describe : addOnl
 
 export const isWayland =
   process.platform === 'linux' &&
+  !process.argv.includes('--ozone-platform=x11') &&
   (process.env.XDG_SESSION_TYPE === 'wayland' ||
     !!process.env.WAYLAND_DISPLAY ||
     process.argv.includes('--ozone-platform=wayland'));
+
+export const isX11 = process.platform === 'linux' && !isWayland;
 
 type CleanupFunction = (() => void) | (() => Promise<void>);
 const cleanupFunctions: CleanupFunction[] = [];

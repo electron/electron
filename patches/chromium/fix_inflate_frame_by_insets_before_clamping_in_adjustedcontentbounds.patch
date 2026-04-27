@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitchell Cohen <mitch.cohen@me.com>
+Date: Sun, 19 Apr 2026 12:31:49 -0400
+Subject: fix: inflate frame by insets before clamping in AdjustedContentBounds
+
+Accounts for the native frame border when adjusting bounds by size
+constraints when WidgetSizeIsClientSize() is true. This prevents max
+constraints from keeping the window too small if it has resize insets.
+Matches the logic from OnGetMinMaxInfo which was also added to
+SizeWindowToAspectRatio in a previous patch (fix_aspect_ratio_with_max_size).
+Both patches should be combined and upstreamed since the bugs affect Chromium.
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index 3a5833fcc018f32e86c0a95a42937fb9ac6c5a40..6d8f34f6a35ada185e9d6058ef3ab42129bbb749 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -1529,6 +1529,27 @@ gfx::Rect DesktopWindowTreeHostWin::AdjustedContentBounds(
+   gfx::Size maximum_size;
+   GetMinMaxSize(&minimum_size, &maximum_size);
+ 
++  // Add the native frame border size to the minimum and maximum size if the
++  // view reports its size as the client size (like in OnGetMinMaxInfo).
++  if (WidgetSizeIsClientSize()) {
++    RECT client_rect, window_rect;
++    ::GetClientRect(GetHWND(), &client_rect);
++    ::GetWindowRect(GetHWND(), &window_rect);
++    CR_DEFLATE_RECT(&window_rect, &client_rect);
++    const gfx::Size window_rect_dip =
++        display::win::GetScreenWin()->ScreenToDIPSize(
++            GetHWND(), gfx::Size(window_rect.right - window_rect.left,
++                                 window_rect.bottom - window_rect.top));
++    minimum_size.Enlarge(window_rect_dip.width(), window_rect_dip.height());
++    // Either axis may be zero, so enlarge them independently.
++    if (maximum_size.width()) {
++      maximum_size.Enlarge(window_rect_dip.width(), 0);
++    }
++    if (maximum_size.height()) {
++      maximum_size.Enlarge(0, window_rect_dip.height());
++    }
++  }
++
+   gfx::Size bounds_size = bounds.size();
+ 
+   if (!maximum_size.IsEmpty()) {
