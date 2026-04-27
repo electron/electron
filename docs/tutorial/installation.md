@@ -24,6 +24,27 @@ npx electron .
 The above command will run the current working directory with Electron. Note that
 any dependencies in your app will not be installed.
 
+## Installing prereleases
+
+Electron [distributes experimental releases of future major versions](./electron-timelines.md)
+via npm as well.
+
+Nightly builds contain the latest changes from the `main` branch:
+
+```sh
+npm install electron-nightly --save-dev
+```
+
+Alpha and beta builds contain changes slated for the next major version:
+
+```sh
+npm install electron@alpha --save-dev
+npm install electron@beta --save-dev
+```
+
+> [!TIP]
+> For more information on available Electron releases, see the [Release Status dashboard](https://releases.electronjs.org).
+
 ## Customization
 
 If you want to change the architecture that is downloaded (e.g., `x64` on an
