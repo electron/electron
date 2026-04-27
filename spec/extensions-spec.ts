@@ -722,6 +722,74 @@ describe('chrome extensions', () => {
             w.loadURL(url);
           });
 
+          const getWorldDiscoveryState = async () => {
+            const worldDiscoveryState = once(ipcMain, 'world-discovery-state');
+            w.webContents.send('get-world-discovery-state');
+            const [, state] = await worldDiscoveryState;
+            return state as {
+              startupWorlds: number[];
+              createdWorlds: number[];
+              isolatedWorlds: number[];
+            };
+          };
+
+          const expectExtensionWorldDiscovered = ({
+            startupWorlds,
+            createdWorlds,
+            isolatedWorlds
+          }: {
+            startupWorlds: number[];
+            createdWorlds: number[];
+            isolatedWorlds: number[];
+          }) => {
+            expect(isolatedWorlds.some(worldId => worldId >= (1 << 20))).to.equal(true);
+            expect([...startupWorlds, ...createdWorlds].some(worldId => worldId >= (1 << 20))).to.equal(true);
+          };
+
+          const createWorldDiscoveryWindow = async () => {
+            await closeWindow(w);
+            w = new BrowserWindow({
+              show: false,
+              width: 400,
+              height: 400,
+              webPreferences: {
+                contextIsolation: contextIsolationEnabled,
+                sandbox: sandboxEnabled,
+                preload: path.join(fixtures, 'extensions', 'content-script-world-discovery', 'preload.js')
+              }
+            });
+          };
+
+          it('discovers extension isolated worlds before document_start scripts run', async () => {
+            await createWorldDiscoveryWindow();
+            await addExtension('content-script-world-discovery');
+            await w.loadURL(url);
+
+            const discoveryResult = await w.webContents.executeJavaScript(
+              'document.documentElement.dataset.worldDiscovered'
+            );
+            expect(discoveryResult).to.equal('yes');
+
+            expectExtensionWorldDiscovered(await getWorldDiscoveryState());
+          });
+
+          it('discovers extension isolated worlds after reload', async () => {
+            await createWorldDiscoveryWindow();
+            await addExtension('content-script-world-discovery');
+            await w.loadURL(url);
+
+            const finish = once(w.webContents, 'did-finish-load');
+            w.webContents.reload();
+            await finish;
+
+            const reloadedDiscoveryResult = await w.webContents.executeJavaScript(
+              'document.documentElement.dataset.worldDiscovered'
+            );
+            expect(reloadedDiscoveryResult).to.equal('yes');
+
+            expectExtensionWorldDiscovered(await getWorldDiscoveryState());
+          });
+
           it('should run content script at document_idle', async () => {
             await addExtension('content-script-document-idle');
             w.loadURL(url);
