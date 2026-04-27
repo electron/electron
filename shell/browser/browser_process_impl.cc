@@ -178,6 +178,8 @@ void BrowserProcessImpl::PostEarlyInitialization() {
 }
 
 void BrowserProcessImpl::PreCreateThreads() {
+  CreateOSCryptAsync();
+
   // chrome-extension:// URLs are safe to request anywhere, but may only
   // commit (including in iframes) in extension processes.
   content::ChildProcessSecurityPolicy::GetInstance()
@@ -195,7 +197,6 @@ void BrowserProcessImpl::PreCreateThreads() {
 
 void BrowserProcessImpl::PreMainMessageLoopRun() {
   CreateNetworkQualityObserver();
-  CreateOSCryptAsync();
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
@@ -451,6 +452,9 @@ void BrowserProcessImpl::CreateNetworkQualityObserver() {
 }
 
 void BrowserProcessImpl::CreateOSCryptAsync() {
+  if (os_crypt_async_)
+    return;
+
   std::vector<std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>
       providers;
 

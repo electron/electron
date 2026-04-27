@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 #define ELECTRON_SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 
+#include <memory>
+
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/base/features.h"
@@ -105,7 +107,7 @@ class SystemNetworkContextManager {
   scoped_refptr<URLLoaderFactoryForSystem> shared_url_loader_factory_;
   mojo::Remote<network::mojom::URLLoaderFactory> url_loader_factory_;
 
-    std::unique_ptr<CookieEncryptionProviderImpl> cookie_encryption_provider_;
+  std::unique_ptr<CookieEncryptionProviderImpl> cookie_encryption_provider_;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_

@@ -49,9 +49,11 @@ The `safeStorage` module emits the following events:
 
 The `safeStorage` module has the following methods:
 
-### `safeStorage.isEncryptionAvailable()`
+### `safeStorage.isEncryptionAvailable()` _Deprecated_
 
 Returns `boolean` - Whether encryption is available.
+
+**Deprecated:** Use [`safeStorage.isAsyncEncryptionAvailable()`](#safestorageisasyncencryptionavailable).
 
 On Linux, returns true if the app has emitted the `ready` event and the secret key is available.
 On MacOS, returns true if Keychain is available.
@@ -63,28 +65,27 @@ Returns `Promise<boolean>` - Resolves with whether encryption is available for
 asynchronous safeStorage operations.
 
 The asynchronous encryptor is initialized lazily the first time this method,
-`getEncryptor`, `encryptStringAsync`, or `decryptStringAsync` is called after the
-app is ready. The returned promise resolves once initialization completes.
+`encryptStringAsync`, or `decryptStringAsync` is called after the app is ready.
+The returned promise resolves once initialization completes.
 
-### `safeStorage.getEncryptor()`
-
-Returns `Promise<SafeStorageEncryptor>` - Resolves with a reusable encryptor object for
-asynchronous safeStorage operations.
-
-### `safeStorage.encryptString(plainText)`
+### `safeStorage.encryptString(plainText)` _Deprecated_
 
 * `plainText` string
 
 Returns `Buffer` -  An array of bytes representing the encrypted string.
 
+**Deprecated:** Use [`safeStorage.encryptStringAsync(plainText)`](#safestorageencryptstringasyncplaintext).
+
 This function will throw an error if encryption fails.
 
-### `safeStorage.decryptString(encrypted)`
+### `safeStorage.decryptString(encrypted)` _Deprecated_
 
 * `encrypted` Buffer
 
 Returns `string` - the decrypted string. Decrypts the encrypted buffer
 obtained  with `safeStorage.encryptString` back into a string.
+
+**Deprecated:** Use [`safeStorage.decryptStringAsync(encrypted)`](#safestoragedecryptstringasyncencrypted).
 
 ### `safeStorage.encryptStringAsync(plainText)`
 

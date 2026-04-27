@@ -10,6 +10,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 import { ifdescribe } from './lib/spec-helpers';
+import { expectDeprecationMessages } from './lib/warning-helpers';
 
 chai.use(chaiAsPromised);
 
@@ -25,6 +26,39 @@ describe('safeStorage module', () => {
     if (fs.existsSync(pathToEncryptedString)) {
       await fs.promises.rm(pathToEncryptedString, { force: true, recursive: true });
     }
+  });
+
+  describe('sync API deprecation warnings', () => {
+    it('emits a deprecation warning for isEncryptionAvailable()', async () => {
+      await expectDeprecationMessages(
+        () => {
+          safeStorage.isEncryptionAvailable();
+          safeStorage.isEncryptionAvailable();
+        },
+        'safeStorage.isEncryptionAvailable() is deprecated, use safeStorage.isAsyncEncryptionAvailable() instead.'
+      );
+    });
+
+    it('emits a deprecation warning for encryptString()', async () => {
+      await expectDeprecationMessages(
+        () => {
+          safeStorage.encryptString('plaintext');
+          safeStorage.encryptString('plaintext');
+        },
+        'safeStorage.encryptString() is deprecated, use safeStorage.encryptStringAsync() instead.'
+      );
+    });
+
+    it('emits a deprecation warning for decryptString()', async () => {
+      const encrypted = await safeStorage.encryptStringAsync('plaintext');
+      await expectDeprecationMessages(
+        () => {
+          safeStorage.decryptString(encrypted);
+          safeStorage.decryptString(encrypted);
+        },
+        'safeStorage.decryptString() is deprecated, use safeStorage.decryptStringAsync() instead.'
+      );
+    });
   });
 
   describe('SafeStorage.isEncryptionAvailable()', () => {
@@ -83,22 +117,6 @@ describe('safeStorage module', () => {
   describe('SafeStorage.isAsyncEncryptionAvailable()', () => {
     it('should resolve true when async encryption is available', async () => {
       expect(await safeStorage.isAsyncEncryptionAvailable()).to.equal(true);
-    });
-  });
-
-  describe('SafeStorage.getEncryptor()', () => {
-    it('returns a reusable encryptor with sync encrypt and decrypt methods', async () => {
-      const encryptor = await safeStorage.getEncryptor();
-
-      const plaintext = 'encryptor roundtrip';
-      const encrypted = encryptor.encryptString(plaintext);
-
-      expect(Buffer.isBuffer(encrypted)).to.equal(true);
-
-      const decryptResult = encryptor.decryptString(encrypted);
-      expect(decryptResult).to.have.property('result', plaintext);
-      expect(decryptResult).to.have.property('shouldReEncrypt');
-      expect(decryptResult.shouldReEncrypt).to.be.a('boolean');
     });
   });
 
