@@ -251,15 +251,17 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   taskbar_created_message_ = RegisterWindowMessage(TEXT("TaskbarCreated"));
 #endif
 
+#if BUILDFLAG(IS_WIN)
   if (enable_larger_than_screen()) {
     // We need to set a default maximum window size here otherwise Windows
-    // will not allow us to resize the window larger than scree.
+    // will not allow us to resize the window larger than screen.
     // Without an explicit max, Windows clamps interactive resize to the
     // working area. Set a non-empty max so the user can drag beyond the
     // screen; kMaxWindowDimension keeps a sane upper bound.
     SetContentSizeConstraints(extensions::SizeConstraints(
         gfx::Size(), gfx::Size(kMaxWindowDimension, kMaxWindowDimension)));
   }
+#endif
 
   const int width = options.ValueOrDefault(options::kWidth, 800);
   const int height = options.ValueOrDefault(options::kHeight, 600);
