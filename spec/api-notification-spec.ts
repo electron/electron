@@ -504,6 +504,42 @@ describe('Notification module', () => {
       }
     );
 
+    ifit(process.platform === 'win32')(
+      'getHistory joins three toast Generic <text> lines into title and newline-separated body',
+      async () => {
+        const toastXml = `<toast>
+  <visual>
+    <binding template="ToastGeneric">
+      <text>Hist multi title</text>
+      <text>hist multi line two</text>
+      <text>hist multi line three</text>
+    </binding>
+  </visual>
+</toast>`;
+
+        const n = new Notification({
+          id: 'history-multi-text-nodes',
+          toastXml,
+          silent: true
+        });
+
+        const shown = once(n, 'show');
+        n.show();
+        await shown;
+
+        n.close();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const history = await Notification.getHistory();
+        const found = history.find((item: any) => item.id === 'history-multi-text-nodes');
+        if (found) {
+          expect(found).to.be.an.instanceOf(Notification);
+          expect(found.title).to.equal('Hist multi title');
+          expect(found.body).to.equal('hist multi line two\nhist multi line three');
+        }
+      }
+    );
+
     ifit(process.platform === 'darwin' || process.platform === 'win32')(
       'getHistory returned notifications can be shown and closed',
       async () => {

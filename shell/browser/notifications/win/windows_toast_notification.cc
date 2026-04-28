@@ -351,7 +351,9 @@ WindowsToastNotification::GetNotificationHistory() {
         UINT32 text_count = 0;
         text_nodes->get_Length(&text_count);
 
-        for (UINT32 j = 0; j < text_count && j < 2; j++) {
+        // ToastText04, ToastGeneric, etc. may have 3+ <text> nodes; keep the
+        // first as title and join the rest with newlines for body.
+        for (UINT32 j = 0; j < text_count; j++) {
           ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode> text_node;
           if (FAILED(text_nodes->Item(j, &text_node)))
             continue;
@@ -370,10 +372,13 @@ WindowsToastNotification::GetNotificationHistory() {
               text = base::WideToUTF8(std::wstring_view(raw, len));
             WindowsDeleteString(inner_text_hs);
 
-            if (j == 0)
+            if (j == 0) {
               info.title = std::move(text);
-            else if (j == 1)
-              info.body = std::move(text);
+            } else {
+              if (!info.body.empty())
+                info.body.push_back('\n');
+              info.body.append(text);
+            }
           }
         }
       }
