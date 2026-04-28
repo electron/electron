@@ -26,7 +26,7 @@ First, we will import the required modules from `electron`. These modules help
 control our application lifecycle and create a native browser window.
 
 ```js
-const { app, BrowserWindow, shell } = require('electron')
+const { app, BrowserWindow, shell, dialog } = require('electron')
 
 const path = require('node:path')
 ```
@@ -60,39 +60,46 @@ const createWindow = () => {
 
   mainWindow.loadFile('index.html')
 }
+
+const findDeepLink = (argv) => {
+  return argv.find((arg) => arg.startsWith('electron-fiddle://'))
+}
 ```
 
 In this next step, we will create our `BrowserWindow` and tell our application how to handle an event in which an external protocol is clicked.
 
-This code will be different in Windows and Linux compared to macOS. This is due to both platforms emitting the `second-instance` event rather than the `open-url` event and Windows requiring additional code in order to open the contents of the protocol link within the same Electron instance. Read more about this [here](../api/app.md#apprequestsingleinstancelockadditionaldata).
+This code will be different in Windows and Linux compared to macOS. On Windows and Linux, a deep link launched while your app is already running is delivered in the `second-instance` event, while a deep link that launches your app from a cold start is available in `process.argv`. Read more about this [here](../api/app.md#apprequestsingleinstancelockadditionaldata).
 
 #### Windows and Linux code:
 
-```js @ts-type={mainWindow:Electron.BrowserWindow} @ts-type={createWindow:()=>void}
+```js @ts-type={mainWindow:Electron.BrowserWindow} @ts-type={createWindow:()=>void} @ts-type={findDeepLink:(argv:string[])=>string|undefined}
+let deeplinkingUrl
+
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
   app.quit()
 } else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
+  app.on('second-instance', (event, commandLine) => {
     // Someone tried to run a second instance, we should focus our window.
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
     }
-    // the commandLine is array of strings in which last element is deep link url
-    dialog.showErrorBox('Welcome Back', `You arrived from: ${commandLine.pop()}`)
+
+    deeplinkingUrl = findDeepLink(commandLine)
+    if (deeplinkingUrl) {
+      dialog.showErrorBox('Welcome Back', `You arrived from: ${deeplinkingUrl}`)
+    }
   })
 
   // Create mainWindow, load the rest of the app, etc...
   app.whenReady().then(() => {
     createWindow()
-    // Check for deep link on cold start
-    if (process.argv.length >= 2) {
-      const lastArg = process.argv[process.argv.length - 1]
-      if (lastArg.startsWith('electron-fiddle://')) {
-        dialog.showErrorBox('Welcome Back', `You arrived from: ${lastArg}`)
-      }
+
+    deeplinkingUrl = findDeepLink(process.argv)
+    if (deeplinkingUrl) {
+      dialog.showErrorBox('Welcome Back', `You arrived from: ${deeplinkingUrl}`)
     }
   })
 }
@@ -101,16 +108,17 @@ if (!gotTheLock) {
 #### macOS code:
 
 ```js @ts-type={createWindow:()=>void}
+// Register `open-url` listener early so it is available for app launch.
+app.on('open-url', (event, url) => {
+  event.preventDefault()
+  dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
+})
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow()
-})
-
-// Handle the protocol. In this case, we choose to show an Error Box.
-app.on('open-url', (event, url) => {
-  dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
 })
 ```
 
