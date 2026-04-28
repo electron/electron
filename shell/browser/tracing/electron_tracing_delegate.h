@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_TRACING_ELECTRON_TRACING_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_TRACING_ELECTRON_TRACING_DELEGATE_H_
 
+#include "components/version_info/channel.h"
 #include "content/public/browser/tracing_delegate.h"
 #include "services/tracing/public/cpp/perfetto/metadata_data_source.h"
 
@@ -23,6 +24,8 @@ class ElectronTracingDelegate : public content::TracingDelegate {
   std::string RecordSerializedSystemProfileMetrics() const override;
   tracing::MetadataDataSource::BundleRecorder
   CreateSystemProfileMetadataRecorder() const override;
+  tracing::MetadataDataSource::ChromeMetadataRecorder
+  CreateChromeMetadataPacketRecorder() const override;
 };
 
 }  // namespace electron

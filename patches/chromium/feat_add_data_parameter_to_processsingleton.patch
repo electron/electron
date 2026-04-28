@@ -65,7 +65,7 @@ index f076d0f783e2c0f6b5444002f756001adf2729bd..a03d99f929e2d354cdba969567d78156
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 579d74ba3491a95db714598749030983ca3c38bb..1a43b43393b1bcfd3659b25c93337445c3ff29a6 100644
+index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c643a39611e 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -621,6 +621,7 @@ class ProcessSingleton::LinuxWatcher
@@ -197,7 +197,7 @@ index 579d74ba3491a95db714598749030983ca3c38bb..1a43b43393b1bcfd3659b25c93337445
    if (!WriteToSocket(socket.fd(), to_send)) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index ae659d84a5ae2f2e87ce288477506575f8d86839..274887d62ff8d008bb86815a11205fcaa5f2c2ff 100644
+index f4d38a27eb3123ac4bca19de15e8b6184e5faf92..0d4cafb6d0d746d4bb7bf013c9602bd69f48b812 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -9,6 +9,7 @@
@@ -267,7 +267,7 @@ index ae659d84a5ae2f2e87ce288477506575f8d86839..274887d62ff8d008bb86815a11205fca
    return true;
  }
  
-@@ -265,9 +288,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -260,9 +283,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -279,7 +279,7 @@ index ae659d84a5ae2f2e87ce288477506575f8d86839..274887d62ff8d008bb86815a11205fca
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -294,7 +319,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -289,7 +314,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  

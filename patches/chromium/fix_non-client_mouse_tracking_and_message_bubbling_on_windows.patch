@@ -13,7 +13,7 @@ messages in the legacy window handle layer.
 These conditions are regularly hit with WCO-enabled windows on Windows.
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index 0ae2e3d4eead8831e8c78ca2cb4d84dbe374f586..af690519ba1e0bffe271e8ff6418907a267ffbba 100644
+index d2c43cece0e1620462ed12fd194d0a51969451ea..241121fa9b64a4102fd6ce8a29e0a64308701dc9 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
 @@ -387,12 +387,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnKeyboardRange(UINT message,
@@ -40,9 +40,9 @@ index 0ae2e3d4eead8831e8c78ca2cb4d84dbe374f586..af690519ba1e0bffe271e8ff6418907a
 +    // handle so mouse tracking on non-client areas doesn't break.
 +    HWND target = message == WM_NCMOUSEMOVE ? hwnd() : GetParent();
 +    ret = ::DefWindowProc(target, message, w_param, l_param);
-     SetMsgHandled(TRUE);
-   }
-   return ret;
+     // DefWindowProc() may result in |this| being deleted (e.g. if a nested
+     // modal loop is entered and the tab is closed). See crbug.com/503793153.
+     if (ref) {
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
 index 661a8123862860c88ce1eb78eae6691f38c2bdd9..705cda18d0b669249ff4ace161b53a105db2c806 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.h

@@ -11,7 +11,7 @@ wrapper to convert rsp file arguments to absolute paths.
 Should be removed when associated container bug is addressed.
 
 diff --git a/build/toolchain/win/toolchain.gni b/build/toolchain/win/toolchain.gni
-index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..b814d6cb7c71a86784993e5fc530f3af32346792 100644
+index 99f4809b941406416f887e3d6f9b3729c96e969d..2bb7a2f466b8cb4d0ba6021bcfe1d9c6f53d868c 100644
 --- a/build/toolchain/win/toolchain.gni
 +++ b/build/toolchain/win/toolchain.gni
 @@ -14,6 +14,12 @@ import("//build/toolchain/win/win_toolchain_data.gni")
@@ -70,7 +70,7 @@ index a62df6bfc70ddfb4aa3ad6975e4fb50b42c3bc79..b814d6cb7c71a86784993e5fc530f3af
        tool("rust_staticlib") {
          libname = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
          rspfile = rustc_rsp_path
-@@ -526,7 +559,16 @@ template("msvc_toolchain") {
+@@ -569,7 +602,16 @@ template("msvc_toolchain") {
  
      tool("alink") {
        rspfile = "{{output}}.rsp"

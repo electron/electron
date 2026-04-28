@@ -378,13 +378,13 @@ index b10c5376caa9a832826868c72dbc44ee54705283..e9b27b53d9b34fbb0a3410eb2fcc1530
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
    // Assigns integer identifier to the |window| and returns its DesktopMediaID.
 diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
-index f422e0ec81ee354512a10dafdd1bd8659a7e3d67..8095a5cb0060ed20a4b82e98b4921a8919077d7e 100644
+index 188b5bb9185021425e0a106d2c6b344cc401fb9b..f106166ed3d8b018a599a0f3baf8446e0f401540 100644
 --- a/media/capture/video_capture_types.h
 +++ b/media/capture/video_capture_types.h
-@@ -365,6 +365,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
-   // of the capture is dynamically changed, as for example when using
-   // share-this-tab-instead.
-   uint32_t capture_version_source = 0;
+@@ -375,6 +375,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+ 
+   // The request type of the capture source.
+   CaptureSourceRequestType request_type = CaptureSourceRequestType::kUnknown;
 +
 +  std::optional<bool> use_native_picker;
  };
