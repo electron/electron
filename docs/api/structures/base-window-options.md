@@ -62,11 +62,10 @@
   unless the `Alt` key is pressed. Default is `false`.
 * `enableLargerThanScreen` boolean (optional) _macOS_ _Windows_ - Enable the
   window to be resized larger than the screen. When `false` (the default),
-  the OS prevents the window from being resized beyond the available screen
-  / desktop area. When `true`, the window may be resized up to a sane upper
-  bound (currently 16384 px per dimension) regardless of screen size. Has
-  no effect on Linux, where the window manager decides the ceiling. Default
-  is `false`.
+  the platform's default maximum resize limit applies. When `true`, Electron
+  raises that limit to a bounded maximum (currently 16384 px per dimension),
+  unless `maxWidth` or `maxHeight` specify a smaller limit. Has no effect on
+  Linux, where the window manager decides the ceiling. Default is `false`.
 * `backgroundColor` string (optional) - The window's background color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha in #AARRGGBB format is supported if `transparent` is set to `true`. Default is `#FFF` (white). See [win.setBackgroundColor](../browser-window.md#winsetbackgroundcolorbackgroundcolor) for more information.
 * `hasShadow` boolean (optional) - Whether window should have a shadow. Default is `true`.
 * `opacity` number (optional) _macOS_ _Windows_ - Set the initial opacity of
