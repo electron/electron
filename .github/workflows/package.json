@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@actions/cache": "^4.0.3",
+    "@actions/cache": "^6.0.0",
     "@electron/fiddle-core": "^2.0.1",
     "mdast-util-from-markdown": "^2.0.0",
     "semver": "^7.7.2",
