@@ -326,6 +326,10 @@ Enable support for resolving source maps over the network when using the Node.js
 When enabled, DevTools can retrieve remote source maps for main and utility
 process scripts via the Node.js inspector.
 
+**Note:** When enabled, the Node.js inspector will make network requests to
+URLs specified in source maps. Be mindful of this in environments where the
+process has access to internal networks.
+
 ### `--no-deprecation`
 
 Silence deprecation warnings.
