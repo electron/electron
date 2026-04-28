@@ -655,17 +655,13 @@ describe('MenuItems', () => {
     });
 
     it('should set badge on items added to a menu', () => {
-      const menu = Menu.buildFromTemplate([
-        { label: 'test', badge: { type: 'alerts', count: 3 } }
-      ]);
+      const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'alerts', count: 3 } }]);
 
       expect(menu.items[0].badge).to.deep.equal({ type: 'alerts', count: 3 });
     });
 
     it('should update badge after item is added to a menu', () => {
-      const menu = Menu.buildFromTemplate([
-        { label: 'test', badge: { type: 'alerts', count: 1 } }
-      ]);
+      const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'alerts', count: 1 } }]);
 
       menu.items[0].badge = { type: 'updates', count: 5 };
       expect(menu.items[0].badge).to.deep.equal({ type: 'updates', count: 5 });
