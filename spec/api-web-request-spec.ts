@@ -558,12 +558,16 @@ describe('webRequest module', () => {
         requestHeaders['X-Good'] = 'good-value';
         callback({ requestHeaders });
       });
-      ses.webRequest.onSendHeaders((details) => {
-        expect(details.requestHeaders['Invalid Header']).to.be.undefined();
-        expect(details.requestHeaders['Valid-Header']).to.be.undefined();
-        expect(details.requestHeaders['X-Good']).to.equal('good-value');
+      const sentHeaders = new Promise<Electron.OnSendHeadersListenerDetails>((resolve) => {
+        ses.webRequest.onSendHeaders(resolve);
       });
+
       const { data } = await ajax(defaultURL);
+      const details = await sentHeaders;
+
+      expect(details.requestHeaders['Invalid Header']).to.be.undefined();
+      expect(details.requestHeaders['Valid-Header']).to.be.undefined();
+      expect(details.requestHeaders['X-Good']).to.equal('good-value');
       expect(data).to.equal('/');
     });
 
