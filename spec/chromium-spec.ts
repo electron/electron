@@ -1118,6 +1118,17 @@ describe('chromium features', () => {
     });
   });
 
+  describe('<geolocation> element', () => {
+    afterEach(closeAllWindows);
+
+    it('does not crash the renderer', (done) => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.once('did-finish-load', () => done());
+      w.webContents.once('render-process-gone', () => done(new Error('renderer crashed / was killed')));
+      w.loadURL('data:text/html,<geolocation></geolocation>');
+    });
+  });
+
   describe('File System API,', () => {
     let w: BrowserWindow | null = null;
 
