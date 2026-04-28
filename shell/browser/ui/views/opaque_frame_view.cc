@@ -247,11 +247,11 @@ void OpaqueFrameView::PaintAsActiveChanged() {
 
 void OpaqueFrameView::UpdateFrameCaptionButtons() {
   const bool active = ShouldPaintAsActive();
-  const SkColor symbol_color = window()->overlay_symbol_color();
-  const SkColor background_color = window()->overlay_button_color();
-  SkColor frame_color =
-      background_color == SkColor() ? GetFrameColor() : background_color;
-
+  const SkColor symbol_color = window()->overlay_symbol_color()
+      .value_or(SkColor());
+  // Frame color is used for blending, force it to be opaque
+  const SkColor frame_color = SkColorSetA(window()->overlay_button_color()
+      .value_or(GetFrameColor()), SK_AlphaOPAQUE);
   for (views::Button* button :
        {minimize_button_, maximize_button_, restore_button_, close_button_}) {
     DCHECK_EQ(std::string(views::FrameCaptionButton::kViewClassName),
@@ -266,8 +266,8 @@ void OpaqueFrameView::UpdateFrameCaptionButtons() {
 
 void OpaqueFrameView::UpdateCaptionButtonPlaceholderContainerBackground() {
   if (caption_button_placeholder_container_) {
-    const SkColor obc = window()->overlay_button_color();
-    const SkColor bg_color = obc == SkColor() ? GetFrameColor() : obc;
+    const SkColor bg_color = window()->overlay_button_color()
+        .value_or(GetFrameColor());
     caption_button_placeholder_container_->SetBackground(
         views::CreateSolidBackground(bg_color));
   }
