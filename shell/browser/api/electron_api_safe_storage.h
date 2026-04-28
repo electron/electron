@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "build/build_config.h"
 #include "components/os_crypt/async/common/encryptor.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -33,7 +34,6 @@ class Handle;
 }  // namespace gin_helper
 
 namespace electron::api {
-
 class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
  public:
   static gin_helper::Handle<SafeStorage> Create(v8::Isolate* isolate);
@@ -57,9 +57,11 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
   // eagerly evaluate all electron module getters, so requesting in the
   // constructor would touch the OS keychain even when safeStorage is unused.
   void EnsureAsyncEncryptorRequested();
+  bool EnsureSyncOsCryptInitializedForSyncApi();
 
-  void OnOsCryptReady(os_crypt_async::Encryptor encryptor);
+  void OnOsCryptReady(const os_crypt_async::Encryptor* encryptor);
 
+  bool IsEncryptionAvailableImpl();
   bool IsEncryptionAvailable();
 
   v8::Local<v8::Promise> IsAsyncEncryptionAvailable(v8::Isolate* isolate);
@@ -76,7 +78,6 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
 
   v8::Local<v8::Promise> decryptStringAsync(v8::Isolate* isolate,
                                             v8::Local<v8::Value> buffer);
-
 #if BUILDFLAG(IS_LINUX)
   std::string GetSelectedLinuxBackend();
 #endif
@@ -84,9 +85,13 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
   bool use_password_v10_ = false;
 
   bool encryptor_requested_ = false;
-  bool is_available_ = false;
-
-  std::optional<os_crypt_async::Encryptor> encryptor_;
+  raw_ptr<const os_crypt_async::Encryptor> encryptor_ = nullptr;
+#if BUILDFLAG(IS_LINUX)
+  bool sync_os_crypt_configured_ = false;
+#endif
+#if BUILDFLAG(IS_WIN)
+  bool sync_os_crypt_initialized_ = false;
+#endif
 
   // Pending encrypt operations waiting for encryptor to be ready.
   struct PendingEncrypt {

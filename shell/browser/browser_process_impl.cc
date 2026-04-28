@@ -20,7 +20,6 @@
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/async/browser/key_provider.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
-#include "components/os_crypt/sync/os_crypt.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_registry.h"
@@ -43,6 +42,7 @@
 #include "services/network/public/cpp/network_switches.h"
 #include "shell/browser/metrics/electron_metrics_service_client.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/browser/os_crypt_async_encryptor_provider.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/thread_restrictions.h"
 
@@ -146,7 +146,10 @@ void BrowserProcessImpl::PostEarlyInitialization() {
       pref_registry.get());
 
 #if BUILDFLAG(IS_WIN)
-  OSCrypt::RegisterLocalPrefs(pref_registry.get());
+  // Keep registration of legacy Windows OSCrypt prefs without depending on
+  // the sync API entrypoint.
+  pref_registry->RegisterStringPref("os_crypt.encrypted_key", "");
+  pref_registry->RegisterBooleanPref("os_crypt.audit_enabled", false);
 #endif
 
 #if BUILDFLAG(IS_LINUX)
@@ -175,6 +178,8 @@ void BrowserProcessImpl::PostEarlyInitialization() {
 }
 
 void BrowserProcessImpl::PreCreateThreads() {
+  CreateOSCryptAsync();
+
   // chrome-extension:// URLs are safe to request anywhere, but may only
   // commit (including in iframes) in extension processes.
   content::ChildProcessSecurityPolicy::GetInstance()
@@ -192,7 +197,6 @@ void BrowserProcessImpl::PreCreateThreads() {
 
 void BrowserProcessImpl::PreMainMessageLoopRun() {
   CreateNetworkQualityObserver();
-  CreateOSCryptAsync();
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
@@ -405,27 +409,8 @@ electron::ResolveProxyHelper* BrowserProcessImpl::GetResolveProxyHelper() {
 }
 
 #if BUILDFLAG(IS_LINUX)
-void BrowserProcessImpl::SetLinuxStorageBackend(
-    os_crypt::SelectedLinuxBackend selected_backend) {
-  switch (selected_backend) {
-    case os_crypt::SelectedLinuxBackend::BASIC_TEXT:
-      selected_linux_storage_backend_ = "basic_text";
-      break;
-    case os_crypt::SelectedLinuxBackend::GNOME_LIBSECRET:
-      selected_linux_storage_backend_ = "gnome_libsecret";
-      break;
-    case os_crypt::SelectedLinuxBackend::KWALLET:
-      selected_linux_storage_backend_ = "kwallet";
-      break;
-    case os_crypt::SelectedLinuxBackend::KWALLET5:
-      selected_linux_storage_backend_ = "kwallet5";
-      break;
-    case os_crypt::SelectedLinuxBackend::KWALLET6:
-      selected_linux_storage_backend_ = "kwallet6";
-      break;
-    case os_crypt::SelectedLinuxBackend::DEFER:
-      NOTREACHED();
-  }
+void BrowserProcessImpl::SetLinuxStorageBackend(std::string selected_backend) {
+  selected_linux_storage_backend_ = std::move(selected_backend);
 }
 #endif  // BUILDFLAG(IS_LINUX)
 
@@ -467,13 +452,15 @@ void BrowserProcessImpl::CreateNetworkQualityObserver() {
 }
 
 void BrowserProcessImpl::CreateOSCryptAsync() {
+  if (os_crypt_async_)
+    return;
+
   std::vector<std::pair<size_t, std::unique_ptr<os_crypt_async::KeyProvider>>>
       providers;
 
 #if BUILDFLAG(IS_WIN)
-  // The DPAPI key provider requires OSCrypt::Init to have already been called
-  // to initialize the key storage. This happens in
-  // BrowserMainPartsWin::PreCreateMainMessageLoop.
+  // The DPAPI key provider uses the legacy OSCrypt key format for
+  // compatibility and can bootstrap a key when needed.
   providers.emplace_back(
       /*precedence=*/10u,
       std::make_unique<os_crypt_async::DPAPIKeyProvider>(local_state()));
@@ -526,6 +513,9 @@ void BrowserProcessImpl::CreateOSCryptAsync() {
 
   os_crypt_async_ =
       std::make_unique<os_crypt_async::OSCryptAsync>(std::move(providers));
+  os_crypt_async_encryptor_provider_ =
+      std::make_unique<electron::OSCryptAsyncEncryptorProvider>(
+          os_crypt_async_.get());
 }
 
 void BrowserProcessImpl::CreateMetricsServiceClient() {

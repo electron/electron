@@ -6,14 +6,24 @@
 
 #include "shell/browser/api/electron_api_safe_storage.h"
 
+#include "base/command_line.h"
+#include "base/environment.h"
+#include "base/path_service.h"
 #include "base/functional/bind.h"
+#include "base/nix/xdg_util.h"
 #include "base/run_loop.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
+#include "components/os_crypt/sync/key_storage_config_linux.h"
+#include "components/os_crypt/sync/key_storage_util_linux.h"
 #include "components/os_crypt/sync/os_crypt.h"
+#include "components/password_manager/core/browser/password_manager_switches.h"  // nogncheck
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/os_crypt_async_encryptor_provider.h"
+#include "shell/common/application_info.h"
+#include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/handle.h"
@@ -24,6 +34,42 @@ namespace {
 
 const char* kEncryptionVersionPrefixV10 = "v10";
 const char* kEncryptionVersionPrefixV11 = "v11";
+
+void EmitIsEncryptionAvailableDeprecation(v8::Isolate* isolate) {
+  static bool deprecated_warning_issued = false;
+  if (!deprecated_warning_issued) {
+    deprecated_warning_issued = true;
+    electron::util::EmitDeprecationWarning(
+        isolate,
+        "safeStorage.isEncryptionAvailable() is deprecated, use "
+        "safeStorage.isAsyncEncryptionAvailable() instead.",
+        "ELECTRON_DEPRECATED_SAFE_STORAGE_SYNC_API");
+  }
+}
+
+void EmitEncryptStringDeprecation(v8::Isolate* isolate) {
+  static bool deprecated_warning_issued = false;
+  if (!deprecated_warning_issued) {
+    deprecated_warning_issued = true;
+    electron::util::EmitDeprecationWarning(
+        isolate,
+        "safeStorage.encryptString() is deprecated, use "
+        "safeStorage.encryptStringAsync() instead.",
+        "ELECTRON_DEPRECATED_SAFE_STORAGE_SYNC_API");
+  }
+}
+
+void EmitDecryptStringDeprecation(v8::Isolate* isolate) {
+  static bool deprecated_warning_issued = false;
+  if (!deprecated_warning_issued) {
+    deprecated_warning_issued = true;
+    electron::util::EmitDeprecationWarning(
+        isolate,
+        "safeStorage.decryptString() is deprecated, use "
+        "safeStorage.decryptStringAsync() instead.",
+        "ELECTRON_DEPRECATED_SAFE_STORAGE_SYNC_API");
+  }
+}
 
 }  // namespace
 
@@ -82,14 +128,79 @@ void SafeStorage::EnsureAsyncEncryptorRequested() {
   if (encryptor_requested_)
     return;
   encryptor_requested_ = true;
-  g_browser_process->os_crypt_async()->GetInstance(
+  static_cast<BrowserProcessImpl*>(g_browser_process)
+      ->os_crypt_async_encryptor_provider()
+      ->GetEncryptor(
       base::BindOnce(&SafeStorage::OnOsCryptReady, base::Unretained(this)),
       os_crypt_async::Encryptor::Option::kEncryptSyncCompat);
 }
 
-void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
-  encryptor_ = std::move(encryptor);
-  is_available_ = true;
+bool SafeStorage::EnsureSyncOsCryptInitializedForSyncApi() {
+#if BUILDFLAG(IS_LINUX)
+  if (!sync_os_crypt_configured_) {
+    const base::CommandLine& command_line =
+        *base::CommandLine::ForCurrentProcess();
+    std::unique_ptr<os_crypt::Config> config =
+        std::make_unique<os_crypt::Config>();
+    config->store =
+        command_line.GetSwitchValueASCII(password_manager::kPasswordStore);
+    config->product_name = electron::GetApplicationName();
+    config->application_name = electron::GetApplicationName();
+    config->should_use_preference = command_line.HasSwitch(
+        password_manager::kEnableEncryptionSelection);
+    base::PathService::Get(electron::DIR_SESSION_DATA, &config->user_data_path);
+
+    const bool use_backend = !config->should_use_preference ||
+                             os_crypt::GetBackendUse(config->user_data_path);
+    std::unique_ptr<base::Environment> env(base::Environment::Create());
+    const base::nix::DesktopEnvironment desktop_env =
+        base::nix::GetDesktopEnvironment(env.get());
+    const os_crypt::SelectedLinuxBackend selected_backend =
+        os_crypt::SelectBackend(config->store, use_backend, desktop_env);
+    auto* browser_process = static_cast<BrowserProcessImpl*>(g_browser_process);
+    switch (selected_backend) {
+      case os_crypt::SelectedLinuxBackend::BASIC_TEXT:
+        browser_process->SetLinuxStorageBackend("basic_text");
+        break;
+      case os_crypt::SelectedLinuxBackend::GNOME_LIBSECRET:
+        browser_process->SetLinuxStorageBackend("gnome_libsecret");
+        break;
+      case os_crypt::SelectedLinuxBackend::KWALLET:
+        browser_process->SetLinuxStorageBackend("kwallet");
+        break;
+      case os_crypt::SelectedLinuxBackend::KWALLET5:
+        browser_process->SetLinuxStorageBackend("kwallet5");
+        break;
+      case os_crypt::SelectedLinuxBackend::KWALLET6:
+        browser_process->SetLinuxStorageBackend("kwallet6");
+        break;
+      case os_crypt::SelectedLinuxBackend::DEFER:
+        browser_process->SetLinuxStorageBackend("unknown");
+        break;
+    }
+
+    OSCrypt::SetConfig(std::move(config));
+    sync_os_crypt_configured_ = true;
+  }
+#endif
+
+#if BUILDFLAG(IS_WIN)
+  if (sync_os_crypt_initialized_)
+    return true;
+
+  auto* local_state = g_browser_process->local_state();
+  if (!local_state)
+    return false;
+
+  sync_os_crypt_initialized_ = OSCrypt::Init(local_state);
+  return sync_os_crypt_initialized_;
+#else
+  return true;
+#endif
+}
+
+void SafeStorage::OnOsCryptReady(const os_crypt_async::Encryptor* encryptor) {
+  encryptor_ = encryptor;
 
   // This callback may fire from a posted task without an active V8 scope.
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
@@ -144,8 +255,10 @@ const char* SafeStorage::GetTypeName() {
   return "SafeStorage";
 }
 
-bool SafeStorage::IsEncryptionAvailable() {
+bool SafeStorage::IsEncryptionAvailableImpl() {
   if (!electron::Browser::Get()->is_ready())
+    return false;
+  if (!EnsureSyncOsCryptInitializedForSyncApi())
     return false;
 #if BUILDFLAG(IS_LINUX)
   return OSCrypt::IsEncryptionAvailable() ||
@@ -155,6 +268,11 @@ bool SafeStorage::IsEncryptionAvailable() {
 #else
   return OSCrypt::IsEncryptionAvailable();
 #endif
+}
+
+bool SafeStorage::IsEncryptionAvailable() {
+  EmitIsEncryptionAvailableDeprecation(JavascriptEnvironment::GetIsolate());
+  return IsEncryptionAvailableImpl();
 }
 
 v8::Local<v8::Promise> SafeStorage::IsAsyncEncryptionAvailable(
@@ -168,6 +286,7 @@ v8::Local<v8::Promise> SafeStorage::IsAsyncEncryptionAvailable(
   }
 
 #if BUILDFLAG(IS_LINUX)
+  EnsureSyncOsCryptInitializedForSyncApi();
   if (use_password_v10_ && static_cast<BrowserProcessImpl*>(g_browser_process)
                                    ->linux_storage_backend() == "basic_text") {
     promise.Resolve(true);
@@ -177,7 +296,7 @@ v8::Local<v8::Promise> SafeStorage::IsAsyncEncryptionAvailable(
 
   EnsureAsyncEncryptorRequested();
 
-  if (is_available_) {
+  if (encryptor_) {
     promise.Resolve(true);
     return handle;
   }
@@ -194,6 +313,7 @@ void SafeStorage::SetUsePasswordV10(bool use) {
 std::string SafeStorage::GetSelectedLinuxBackend() {
   if (!electron::Browser::Get()->is_ready())
     return "unknown";
+  EnsureSyncOsCryptInitializedForSyncApi();
   return static_cast<BrowserProcessImpl*>(g_browser_process)
       ->linux_storage_backend();
 }
@@ -201,7 +321,8 @@ std::string SafeStorage::GetSelectedLinuxBackend() {
 
 v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
                                                 const std::string& plaintext) {
-  if (!IsEncryptionAvailable()) {
+  EmitEncryptStringDeprecation(isolate);
+  if (!IsEncryptionAvailableImpl()) {
     if (!electron::Browser::Get()->is_ready()) {
       gin_helper::ErrorThrower(isolate).ThrowError(
           "safeStorage cannot be used before app is ready");
@@ -229,7 +350,8 @@ v8::Local<v8::Value> SafeStorage::EncryptString(v8::Isolate* isolate,
 
 std::string SafeStorage::DecryptString(v8::Isolate* isolate,
                                        v8::Local<v8::Value> buffer) {
-  if (!IsEncryptionAvailable()) {
+  EmitDecryptStringDeprecation(isolate);
+  if (!IsEncryptionAvailableImpl()) {
     if (!electron::Browser::Get()->is_ready()) {
       gin_helper::ErrorThrower(isolate).ThrowError(
           "safeStorage cannot be used before app is ready");
@@ -291,7 +413,7 @@ v8::Local<v8::Promise> SafeStorage::encryptStringAsync(
 
   EnsureAsyncEncryptorRequested();
 
-  if (is_available_) {
+  if (encryptor_) {
     std::string ciphertext;
     bool encrypted = encryptor_->EncryptString(plaintext, &ciphertext);
     if (encrypted) {
@@ -341,7 +463,7 @@ v8::Local<v8::Promise> SafeStorage::decryptStringAsync(
 
   EnsureAsyncEncryptorRequested();
 
-  if (is_available_) {
+  if (encryptor_) {
     std::string plaintext;
     os_crypt_async::Encryptor::DecryptFlags flags;
     bool decrypted = encryptor_->DecryptString(ciphertext, &plaintext, &flags);
