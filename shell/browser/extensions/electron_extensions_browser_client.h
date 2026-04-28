@@ -139,6 +139,12 @@ class ElectronExtensionsBrowserClient
       content::WebContents* web_contents) override;
   extensions::ExtensionWebContentsObserver* GetExtensionWebContentsObserver(
       content::WebContents* web_contents) override;
+  bool IsValidTabId(content::BrowserContext* browser_context,
+                    int tab_id,
+                    bool include_incognito,
+                    content::WebContents** web_contents) const override;
+  extensions::ScriptExecutor* GetScriptExecutorForTab(
+      content::WebContents& web_contents) override;
   extensions::KioskDelegate* GetKioskDelegate() override;
   std::string GetApplicationLocale() override;
   void RegisterBrowserInterfaceBindersForFrame(

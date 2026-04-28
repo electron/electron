@@ -65,15 +65,6 @@
       "chrome://print/*"
     ]
   }],
-  "scripting": {
-    "dependencies": ["permission:scripting"],
-    "contexts": ["privileged_extension"]
-  },
-  "scripting.globalParams": {
-    "channel": "trunk",
-    "dependencies": ["permission:scripting"],
-    "contexts": ["content_script"]
-  },
   "tabs": {
     "channel": "stable",
     "extension_types": ["extension"],
