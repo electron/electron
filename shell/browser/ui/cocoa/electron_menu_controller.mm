@@ -328,10 +328,11 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   NSString* accessibility_label =
       base::SysUTF16ToNSString(accessibility_label16);
 
-  NSMenuItem* item = [[NSMenuItem alloc] initWithTitle:label
-                                                action:@selector(itemSelected:)
-                                         keyEquivalent:@""];
   if (!accessibility_label16.empty()) {
+    NSMenuItem* item =
+        [[NSMenuItem alloc] initWithTitle:label
+                                   action:@selector(itemSelected:)
+                            keyEquivalent:@""];
     item.accessibilityLabel = accessibility_label;
   }
 
@@ -507,10 +508,10 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   std::u16string label16 = model->GetLabelAt(index);
   std::u16string accessibility_label16 = model->GetAccessibilityLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
-  NSString* accessibility_label =
-      base::SysUTF16ToNSString(accessibility_label16);
   item.title = label;
   if (!accessibility_label16.empty()) {
+    NSString* accessibility_label =
+        base::SysUTF16ToNSString(accessibility_label16);
     item.accessibilityLabel = accessibility_label;
   }
 
