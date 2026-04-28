@@ -524,6 +524,52 @@ describe('contextBridge', () => {
         expect(result).to.deep.equal([123, 456, 789, false]);
       });
 
+      it('should not mutate the prototype when an object with an own __proto__ key is sent over the bridge', async () => {
+        await makeBindingWindow(() => {
+          contextBridge.exposeInMainWorld('example', {
+            receive: (obj: any) => {
+              return [
+                Object.getPrototypeOf(obj) === Object.prototype,
+                obj.polluted,
+                Object.prototype.hasOwnProperty.call(obj, '__proto__'),
+                obj.data
+              ];
+            }
+          });
+        });
+        const result = await callWithBindings((root: any) => {
+          const payload = Object.defineProperty({ data: 1 }, '__proto__', {
+            value: { polluted: true },
+            enumerable: true,
+            writable: true,
+            configurable: true
+          });
+          return root.example.receive(payload);
+        });
+        expect(result).to.deep.equal([true, undefined, true, 1]);
+      });
+
+      it('should not mutate the prototype when an object with an own __proto__ key is exposed', async () => {
+        await makeBindingWindow(() => {
+          const payload = Object.defineProperty({ data: 1 }, '__proto__', {
+            value: { polluted: true },
+            enumerable: true,
+            writable: true,
+            configurable: true
+          });
+          contextBridge.exposeInMainWorld('example', payload);
+        });
+        const result = await callWithBindings((root: any) => {
+          return [
+            Object.getPrototypeOf(root.example) === Object.prototype,
+            root.example.polluted,
+            Object.prototype.hasOwnProperty.call(root.example, '__proto__'),
+            root.example.data
+          ];
+        });
+        expect(result).to.deep.equal([true, undefined, true, 1]);
+      });
+
       it('it should proxy null', async () => {
         await makeBindingWindow(() => {
           contextBridge.exposeInMainWorld('example', null);

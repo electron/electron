@@ -127,6 +127,8 @@ std::string TransferVideoPixelFormatToString(media::VideoPixelFormat format) {
       return "rgbaf16";
     case media::PIXEL_FORMAT_NV12:
       return "nv12";
+    case media::PIXEL_FORMAT_NV16:
+      return "nv16";
     case media::PIXEL_FORMAT_P010LE:
       return "p010le";
     default:
@@ -235,7 +237,7 @@ v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
   scoped_refptr<media::VideoFrame> raw_frame =
       media::VideoFrame::WrapSharedImage(
           ist->pixel_format, si, ist->frame_creation_sync_token, std::move(cb),
-          ist->coded_size, ist->visible_rect, ist->coded_size,
+          ist->visible_rect, ist->coded_size,
           base::Microseconds(ist->timestamp));
 
   raw_frame->set_color_space(si->color_space());
@@ -577,6 +579,8 @@ struct Converter<ImportSharedTextureInfo> {
         out->pixel_format = media::PIXEL_FORMAT_RGBAF16;
       else if (pixel_format_str == "nv12")
         out->pixel_format = media::PIXEL_FORMAT_NV12;
+      else if (pixel_format_str == "nv16")
+        out->pixel_format = media::PIXEL_FORMAT_NV16;
       else if (pixel_format_str == "p010le")
         out->pixel_format = media::PIXEL_FORMAT_P010LE;
       else

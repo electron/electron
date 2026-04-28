@@ -464,6 +464,8 @@ constexpr char kFooterTemplate[] = "footerTemplate";
 constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
 constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
 constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
+constexpr char kDpiHorizontal[] = "horizontal";
+constexpr char kDpiVertical[] = "vertical";
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 constexpr std::string_view CursorTypeToString(
@@ -1180,7 +1182,9 @@ void WebContents::DeleteThisIfAlive() {
 void WebContents::Destroy() {
   // The content::WebContents should be destroyed asynchronously when possible
   // as user may choose to destroy WebContents during an event of it.
-  if (Browser::Get()->is_shutting_down() || is_guest()) {
+  if (Browser::Get()->is_shutting_down()) {
+    DeleteThisIfAlive();
+  } else if (is_guest() && is_safe_to_delete_ && !is_emitting_event_) {
     DeleteThisIfAlive();
   } else {
     content::GetUIThreadTaskRunner({})->PostTask(
@@ -1440,17 +1444,21 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
+  base::AutoReset<bool> resetter(&is_emitting_event_, true);
   if (!Emit("content-bounds-updated", rect))
     observers_.Notify(&ExtendedWebContentsObserver::OnSetContentBounds, rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
-  Emit("close");
+  {
+    base::AutoReset<bool> resetter(&is_emitting_event_, true);
+    Emit("close");
 
-  auto* autofill_driver_factory =
-      AutofillDriverFactory::FromWebContents(web_contents());
-  if (autofill_driver_factory) {
-    autofill_driver_factory->CloseAllPopups();
+    auto* autofill_driver_factory =
+        AutofillDriverFactory::FromWebContents(web_contents());
+    if (autofill_driver_factory) {
+      autofill_driver_factory->CloseAllPopups();
+    }
   }
 
   Destroy();
@@ -1963,6 +1971,7 @@ void WebContents::FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
+  base::AutoReset<bool> resetter(&is_emitting_event_, true);
   const auto id = render_view_host->GetProcess()->GetID().GetUnsafeValue();
   // This event is necessary for tracking any states with respect to
   // intermediate render view hosts aka speculative render view hosts. Currently
@@ -2202,6 +2211,9 @@ void WebContents::DidFinishNavigation(
 
   if (!navigation_handle->HasCommitted())
     return;
+
+  base::AutoReset<bool> resetter(&is_emitting_event_, true);
+
   bool is_main_frame = navigation_handle->IsInMainFrame();
   content::RenderFrameHost* frame_host =
       navigation_handle->GetRenderFrameHost();
@@ -2211,9 +2223,6 @@ void WebContents::DidFinishNavigation(
     frame_routing_id = frame_host->GetRoutingID();
   }
   if (!navigation_handle->IsErrorPage()) {
-    // FIXME: All the Emit() calls below could potentially result in |this|
-    // being destroyed (by JS listening for the event and calling
-    // webContents.destroy()).
     auto url = navigation_handle->GetURL();
     bool is_same_document = navigation_handle->IsSameDocument();
     if (is_same_document) {
@@ -2316,9 +2325,16 @@ void WebContents::DevToolsOpened() {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   DCHECK(inspectable_web_contents_);
-  DCHECK(inspectable_web_contents_->GetDevToolsWebContents());
-  auto handle = FromOrCreate(
-      isolate, inspectable_web_contents_->GetDevToolsWebContents());
+
+  // GetDevToolsWebContents() can be null here when DevTools were closed
+  // re-entrantly during InspectableWebContents::LoadCompleted() — e.g. when
+  // a JS handler for `devtools-focused` (fired from the activate path inside
+  // SetIsDocked) calls closeDevTools() before LoadCompleted finishes.
+  content::WebContents* const dtwc = GetDevToolsWebContents();
+  if (!dtwc)
+    return;
+
+  auto handle = FromOrCreate(isolate, dtwc);
   devtools_web_contents_.Reset(isolate, handle.ToV8());
 
   // Set inspected tabID.
@@ -2326,12 +2342,11 @@ void WebContents::DevToolsOpened() {
       "DevToolsAPI", "setInspectedTabId", base::Value(ID()));
 
   // Inherit owner window in devtools when it doesn't have one.
-  auto* devtools = inspectable_web_contents_->GetDevToolsWebContents();
-  bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
-  if (owner_window() && !has_window) {
-    CHECK(!owner_window_.WasInvalidated());
+  bool has_window = dtwc->GetUserData(NativeWindowRelay::UserDataKey());
+  if (owner_window_ && !has_window) {
+    DCHECK(!owner_window_.WasInvalidated());
     DCHECK_EQ(handle->owner_window(), nullptr);
-    handle->SetOwnerWindow(devtools, owner_window());
+    handle->SetOwnerWindow(dtwc, owner_window());
   }
 
   Emit("devtools-opened");
@@ -2460,6 +2475,33 @@ base::ProcessId WebContents::GetOSProcessID() const {
   const auto& process =
       web_contents()->GetPrimaryMainFrame()->GetProcess()->GetProcess();
   return process.IsValid() ? process.Pid() : base::kNullProcessId;
+}
+
+v8::Local<v8::Value> WebContents::Clone(v8::Isolate* isolate) {
+  auto new_contents = web_contents()->Clone();
+  DCHECK(new_contents);
+
+  // Copy WebContentsPreferences from the original WebContents to the cloned one
+  v8::Local<v8::Value> current_prefs = GetLastWebPreferences(isolate);
+  gin_helper::Dictionary pref_dict;
+  gin::ConvertFromV8(isolate, gin::ConvertToV8(isolate, current_prefs),
+                     &pref_dict);
+  new WebContentsPreferences(new_contents.get(), pref_dict);
+
+  // Use CreateAndTake to properly take ownership of the cloned WebContents
+  // and create a new wrapper with the appropriate type
+  auto wrapper = CreateAndTake(isolate, std::move(new_contents), type_);
+
+  // We call HandleNewRenderFrame here as at this point the empty "about:blank"
+  // render frame has already been created. This ensures that preferences like
+  // background color, scheduler throttling, and Mojo connection are properly
+  // set up for the cloned WebContents.
+  auto* frame = wrapper->MainFrame();
+  if (frame) {
+    wrapper->HandleNewRenderFrame(frame);
+  }
+
+  return gin::ConvertToV8(isolate, wrapper);
 }
 
 GURL WebContents::GetURL() const {
@@ -3017,7 +3059,7 @@ void WebContents::InspectElement(int x, int y) {
   if (!enable_devtools_ || !inspectable_web_contents_)
     return;
 
-  if (!inspectable_web_contents_->GetDevToolsWebContents())
+  if (!GetDevToolsWebContents())
     OpenDevTools(nullptr);
   inspectable_web_contents_->InspectElement(x, y);
 }
@@ -3356,10 +3398,16 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Set custom dots per inch (dpi)
   if (gin_helper::Dictionary dpi; options.Get(kDpi, &dpi)) {
+    // `webContents.print()` exposes `dpi: { horizontal, vertical }` in JS.
+    // Keep backward compatibility with internal key names as a fallback.
     settings.Set(printing::kSettingDpiHorizontal,
-                 dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72));
+                 dpi.ValueOrDefault(
+                     kDpiHorizontal,
+                     dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72)));
     settings.Set(printing::kSettingDpiVertical,
-                 dpi.ValueOrDefault(printing::kSettingDpiVertical, 72));
+                 dpi.ValueOrDefault(
+                     kDpiVertical,
+                     dpi.ValueOrDefault(printing::kSettingDpiVertical, 72)));
   }
 
   print_task_runner_->PostTaskAndReplyWithResult(
@@ -4595,6 +4643,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
+      .SetMethod("clone", &WebContents::Clone)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("reload", &WebContents::Reload)
       .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)

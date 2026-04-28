@@ -495,12 +495,12 @@ describe('webRequest module', () => {
     });
 
     it('can change the request headers on a custom protocol redirect', async () => {
-      protocol.registerStringProtocol('no-cors', (req, callback) => {
-        if (req.url === 'no-cors://fake-host/redirect') {
+      protocol.registerStringProtocol('cors-blob', (req, callback) => {
+        if (req.url === 'cors-blob://fake-host/redirect') {
           callback({
             statusCode: 302,
             headers: {
-              Location: 'no-cors://fake-host'
+              Location: 'cors-blob://fake-host'
             }
           });
         } else {
@@ -523,10 +523,10 @@ describe('webRequest module', () => {
           requestHeaders.Accept = '*/*;test/header';
           callback({ requestHeaders });
         });
-        const { data } = await ajax('no-cors://fake-host/redirect');
+        const { data } = await ajax('cors-blob://fake-host/redirect');
         expect(data).to.equal('header-received');
       } finally {
-        protocol.unregisterProtocol('no-cors');
+        protocol.unregisterProtocol('cors-blob');
       }
     });
 
@@ -548,6 +548,27 @@ describe('webRequest module', () => {
       });
       await ajax('cors://host');
       expect(called).to.be.true();
+    });
+
+    it('does not crash on invalid header name or value', async () => {
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        const requestHeaders = details.requestHeaders;
+        requestHeaders['Invalid Header'] = 'valid-value';
+        requestHeaders['Valid-Header'] = 'invalid\r\nvalue';
+        requestHeaders['X-Good'] = 'good-value';
+        callback({ requestHeaders });
+      });
+      const sentHeaders = new Promise<Electron.OnSendHeadersListenerDetails>((resolve) => {
+        ses.webRequest.onSendHeaders(resolve);
+      });
+
+      const { data } = await ajax(defaultURL);
+      const details = await sentHeaders;
+
+      expect(details.requestHeaders['Invalid Header']).to.be.undefined();
+      expect(details.requestHeaders['Valid-Header']).to.be.undefined();
+      expect(details.requestHeaders['X-Good']).to.equal('good-value');
+      expect(data).to.equal('/');
     });
 
     it('resets the whole headers', async () => {

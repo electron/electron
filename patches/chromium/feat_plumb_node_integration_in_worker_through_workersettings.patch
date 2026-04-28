@@ -34,6 +34,48 @@ index 7ea6daec53a497bf867d799e041bf6ae7191ef7b..15940624940d5c629c40319f45c59282
      agent_group_scheduler_compositor_task_runner =
          execution_context->GetScheduler()
              ->ToFrameScheduler()
+diff --git a/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc b/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
+index 936f5ebe28caa993ed5de0f7de3613fa338e263f..961ac8091aa82128e1cfb8800a7efcb80d100a05 100644
+--- a/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
++++ b/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
+@@ -13,10 +13,12 @@
+ #include "third_party/blink/public/platform/task_type.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/execution_context/security_context.h"
++#include "third_party/blink/renderer/core/exported/web_view_impl.h"
+ #include "third_party/blink/renderer/core/frame/csp/content_security_policy.h"
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+ #include "third_party/blink/renderer/core/frame/local_frame_client.h"
++#include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"
+ #include "third_party/blink/renderer/core/inspector/thread_debugger_common_impl.h"
+ #include "third_party/blink/renderer/core/loader/worker_fetch_context.h"
+ #include "third_party/blink/renderer/core/origin_trials/origin_trial_context.h"
+@@ -135,6 +137,14 @@ void ThreadedWorkletMessagingProxy::Initialize(
+   DCHECK(csp);
+ 
+   LocalFrameClient* frame_client = window->GetFrame()->Client();
++  auto worklet_settings =
++      std::make_unique<WorkerSettings>(window->GetFrame()->GetSettings());
++  if (auto* web_local_frame = WebLocalFrameImpl::FromFrame(window->GetFrame())) {
++    if (auto* web_view = web_local_frame->ViewImpl()) {
++      worklet_settings->SetNodeIntegrationInWorker(
++          web_view->GetWebPreferences().node_integration_in_worker);
++    }
++  }
+   auto global_scope_creation_params =
+       std::make_unique<GlobalScopeCreationParams>(
+           window->Url(), mojom::blink::ScriptType::kModule, global_scope_name,
+@@ -147,8 +157,7 @@ void ThreadedWorkletMessagingProxy::Initialize(
+           window->GetHttpsState(), worker_clients,
+           frame_client->CreateWorkerContentSettingsClient(),
+           OriginTrialContext::GetInheritedTrialFeatures(window).get(),
+-          base::UnguessableToken::Create(),
+-          std::make_unique<WorkerSettings>(window->GetFrame()->GetSettings()),
++          base::UnguessableToken::Create(), std::move(worklet_settings),
+           mojom::blink::V8CacheOptions::kDefault, module_responses_map,
+           mojo::NullRemote() /* browser_interface_broker */,
+           window->GetFrame()->Loader().CreateWorkerCodeCacheHost(),
 diff --git a/third_party/blink/renderer/core/workers/worker_settings.cc b/third_party/blink/renderer/core/workers/worker_settings.cc
 index 45680c5f6ea0c7e89ccf43eb88f8a11e3318c02e..3fa3af62f4e7ba8186441c5e3184b1c04fe32d12 100644
 --- a/third_party/blink/renderer/core/workers/worker_settings.cc
@@ -71,3 +113,56 @@ index 45c60dd2c44b05fdd279f759069383479823c7f2..33a2a0337efb9a46293e11d0d09b3fc1
  
    GenericFontFamilySettings generic_font_family_settings_;
  };
+diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.cc b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
+index b5300dea97f20d72a807543a6da0baf61d21955f..a7030c1ba6851b26c765c7b05cd26e1453866719 100644
+--- a/third_party/blink/renderer/core/workers/worklet_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
+@@ -32,6 +32,7 @@
+ #include "third_party/blink/renderer/core/script/modulator.h"
+ #include "third_party/blink/renderer/core/workers/global_scope_creation_params.h"
+ #include "third_party/blink/renderer/core/workers/worker_reporting_proxy.h"
++#include "third_party/blink/renderer/core/workers/worker_settings.h"
+ #include "third_party/blink/renderer/core/workers/worker_thread.h"
+ #include "third_party/blink/renderer/core/workers/worklet_module_responses_map.h"
+ #include "third_party/blink/renderer/core/workers/worklet_module_tree_client.h"
+@@ -110,6 +111,10 @@ WorkletGlobalScope::WorkletGlobalScope(
+       parent_cross_origin_isolated_capability_(
+           creation_params->cross_origin_isolated_capability),
+       parent_is_isolated_context_(creation_params->parent_is_isolated_context),
++      node_integration_in_worker_(
++          creation_params->worker_settings
++              ? creation_params->worker_settings->NodeIntegrationInWorker()
++              : false),
+       browser_interface_broker_proxy_(this) {
+   DCHECK((thread_type_ == ThreadType::kMainThread && frame_) ||
+          (thread_type_ == ThreadType::kOffMainThread && worker_thread_));
+diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.h b/third_party/blink/renderer/core/workers/worklet_global_scope.h
+index c7dd62900f0de48ab992a7c99058f5b6d98212cf..47ceea11ec9db6b67cef6945d165f46c868f4ca5 100644
+--- a/third_party/blink/renderer/core/workers/worklet_global_scope.h
++++ b/third_party/blink/renderer/core/workers/worklet_global_scope.h
+@@ -140,6 +140,13 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+   // Returns the WorkletToken that uniquely identifies this worklet.
+   virtual WorkletToken GetWorkletToken() const = 0;
+ 
++  // Electron: returns whether the creator frame had the
++  // `nodeIntegrationInWorker` web preference enabled. Copied from
++  // GlobalScopeCreationParams::worker_settings at construction time so the
++  // value is readable on the worker thread without crossing back to the
++  // main thread.
++  bool NodeIntegrationInWorker() const { return node_integration_in_worker_; }
++
+   // Returns the ExecutionContextToken that uniquely identifies the parent
+   // context that created this worklet. Note that this will always be a
+   // LocalFrameToken.
+@@ -207,6 +214,11 @@ class CORE_EXPORT WorkletGlobalScope : public WorkerOrWorkletGlobalScope {
+   // TODO(crbug.com/1206150): We need a spec for this capability.
+   const bool parent_is_isolated_context_;
+ 
++  // Electron: snapshot of the creator frame's nodeIntegrationInWorker
++  // WebPreference, copied out of GlobalScopeCreationParams::worker_settings
++  // at construction time.
++  const bool node_integration_in_worker_;
++
+   // This is the interface that handles generated code cache
+   // requests both to fetch code cache when loading resources
+   // and to store generated code cache to disk.

@@ -214,14 +214,6 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
 #if BUILDFLAG(IS_POSIX)
   HandleSIGCHLD();
 #endif
-#if BUILDFLAG(IS_OZONE)
-  // Initialize Ozone platform and add required feature flags as per platform's
-  // properties.
-#if BUILDFLAG(IS_LINUX)
-  ui::SetOzonePlatformForLinuxIfNeeded(*base::CommandLine::ForCurrentProcess());
-#endif
-  ui::OzonePlatform::PreEarlyInitialization();
-#endif  // BUILDFLAG(IS_OZONE)
 #if BUILDFLAG(IS_MAC)
   screen_ = std::make_unique<display::ScopedNativeScreen>();
 #endif
@@ -603,7 +595,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
       auto& process = it.GetData().GetProcess();
       if (!process.IsValid())
         continue;
-      auto utility_process_wrapper =
+      auto* utility_process_wrapper =
           api::UtilityProcessWrapper::FromProcessId(process.Pid());
       if (utility_process_wrapper)
         utility_process_wrapper->Shutdown(0 /* exit_code */);

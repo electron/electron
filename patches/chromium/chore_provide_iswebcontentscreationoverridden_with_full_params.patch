@@ -35,7 +35,7 @@ index 231e3595f218aeebe28d0b13ce6182e7a4d6f4e1..609bd205d1cd0404cab3471765bef8b0
        content::RenderFrameHost* requesting_frame,
        const blink::mojom::FullscreenOptions& options) final;
 diff --git a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-index 33edb0a90d886dd44956046e03fcc182a0f6bc8e..5b5edd3da3d9f7a248ea3affd195c36bfd64a38e 100644
+index d82b9c7eaaa1a40ec6de538453fb13a5a8591753..5f366fa9dff2e9c104939ea4c6ddecd16f64ec13 100644
 --- a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 +++ b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 @@ -80,8 +80,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 8f8852b2af1acfa4ec985fd1c8b50563b991b12a..c2f2903545b191c5ab13462bf330efce37d7d08c 100644
+index 6277b04593768d5de235b2176933cbea11613ec6..2e6715a239dd042786d8040299e48b856df80608 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2310,7 +2310,8 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2328,7 +2328,8 @@ bool Browser::IsWebContentsCreationOverridden(
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
      const std::string& frame_name,
@@ -93,7 +93,7 @@ index 8f8852b2af1acfa4ec985fd1c8b50563b991b12a..c2f2903545b191c5ab13462bf330efce
    if (HasActorTaskPreventingNewWebContents(profile(), opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -2323,7 +2324,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2341,7 +2342,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,10 +103,10 @@ index 8f8852b2af1acfa4ec985fd1c8b50563b991b12a..c2f2903545b191c5ab13462bf330efce
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index acdb28d61badaf549c47e107f4795e1e2adc37c9..b6aca0bf802f2146d09d2a872ff9e091e659f95f 100644
+index 78075410c13cda894ea5fa62c3a881637780dfad..90e586308e12a31eb94081788ecfc1e92ba3163f 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -915,8 +915,7 @@ class Browser : public TabStripModelObserver,
+@@ -903,8 +903,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -145,10 +145,10 @@ index 3fc06be01f20e8cd314d95d73a3f58c2f0742fe9..c07910ae59a185442f37ea6e7b96fdf3
    // The profile used for the presentation.
    raw_ptr<Profile, DanglingUntriaged> otr_profile_;
 diff --git a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-index 783d05c39ecbe5e556af2e5fd8b4f30fb5aa1196..e1895bcf9d3c6818aa64b1479774a143dae74d53 100644
+index bb71e8cb4d09cd53c0377ed34f8a94f979ee5804..9650bd7c7f587d0f57b3c4fc1f131f7d43c98e10 100644
 --- a/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
 +++ b/chrome/browser/ui/views/hats/hats_next_web_dialog.cc
-@@ -104,8 +104,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
+@@ -117,8 +117,7 @@ class HatsNextWebDialog::HatsWebView : public views::WebView {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -223,10 +223,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d43e75c20aca09080f4223d339c88381f030c504..8cd59445bae73ff0193e4512d7c36740cbad847f 100644
+index 361b34906ea017c1209899b9f0fec5e43f747f7e..adee34e64400f08dece1bef4f36ab9b93332696d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5436,8 +5436,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5442,8 +5442,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
@@ -237,10 +237,10 @@ index d43e75c20aca09080f4223d339c88381f030c504..8cd59445bae73ff0193e4512d7c36740
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 51be0b86d083318f01a9ebe76fb7d1fb60cd72fd..02ec57eeb67dd5e5e0ff250853599c88c2a75ed0 100644
+index f40037ac4e232810d3bc814f6b744e31e7c3fc1a..95007b7a5f40da2e23053f52da79295a829d3bde 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -160,8 +160,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -161,8 +161,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
      SiteInstance* source_site_instance,
      mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -251,7 +251,7 @@ index 51be0b86d083318f01a9ebe76fb7d1fb60cd72fd..02ec57eeb67dd5e5e0ff250853599c88
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 29c380d7845aab1a7b3417e0d3940ea00460260b..234d6d89d1c8c7f333b96f35dacb73daeecf7b17 100644
+index b4602cf88acc2989b7e44543cd0e6296828f02ed..ceb6c66f6461b42556aaba167269811a9a363b40 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -380,8 +380,7 @@ class CONTENT_EXPORT WebContentsDelegate {

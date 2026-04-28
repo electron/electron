@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 7a775f9faac4296806ec1ab421da6dc7e9463a7a..251fdb8fb65e1b68056cb9c97a88a2da5450e380 100644
+index c106803f4f15ec6a1237e38a0825428dafd692da..1ffbd7ede814bdcc002d7552239008d9fca2463a 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -4,6 +4,7 @@
@@ -414,7 +414,7 @@ index 21c48c9036df0ef79ce8bcd1de009dc35cb1f7e8..5729782fe857acf747ae711501a6034c
      std::vector<std::string> extension_schemes;
      // Registers a URL scheme with a predefined default custom handler.
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 0ec8bea97ce124721909768290f7a79876f10c75..1ee0feaad9be437914b101195e862965fcaccff4 100644
+index cedfbaf417db8d244c80f051e03d5bed1030a944..f1f8ffe14fdac1156dce2502bff69e1d03eac2fc 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -132,6 +132,9 @@ struct SchemeRegistry {
@@ -444,7 +444,7 @@ index 0ec8bea97ce124721909768290f7a79876f10c75..1ee0feaad9be437914b101195e862965
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index 4af5e6e9e4ec0642d8788c4323aaf07bc27acfb3..6906dd1c903209f3bb6d9ca346e845f1dfeef050 100644
+index e4070343fbbafed6c7ca187459f08e9e0d8f5c00..2647d26b25b26f570b40666ad2da3553b97d6088 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -115,6 +115,15 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetCSPBypassingSchemes();

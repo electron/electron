@@ -6,16 +6,10 @@ const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
+const { chunkFilenames, findMatchingFiles, getDepotToolsEnv } = require('./lib/utils');
 
 const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
-const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, 'third_party', 'depot_tools');
-
-// Augment the PATH for this script so that we can find executables
-// in the depot_tools folder even if folks do not have an instance of
-// DEPOT_TOOLS in their path already
-process.env.PATH = `${process.env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
 
 const IGNORELIST = new Set(
   [
@@ -97,7 +91,7 @@ function runOxlint(filenames, { fix } = {}) {
 function cpplint(args) {
   args.unshift(`--root=${SOURCE_ROOT}`);
   const cmd = IS_WINDOWS ? 'cpplint.bat' : 'cpplint.py';
-  const result = childProcess.spawnSync(cmd, args, { encoding: 'utf8', shell: true });
+  const result = childProcess.spawnSync(cmd, args, { encoding: 'utf8', shell: true, env: getDepotToolsEnv() });
   // cpplint.py writes EVERYTHING to stderr, including status messages
   if (result.stderr) {
     for (const line of result.stderr.split(/[\r\n]+/)) {
@@ -123,6 +117,7 @@ const LINTERS = [
     test: (filename) => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
     run: (opts, filenames) => {
       const env = {
+        ...getDepotToolsEnv(),
         CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
       };
       const clangFormatFlags = opts.fix ? ['--fix'] : [];
@@ -138,6 +133,7 @@ const LINTERS = [
     test: (filename) => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
     run: (opts, filenames) => {
       const env = {
+        ...getDepotToolsEnv(),
         CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
       };
       const clangFormatFlags = opts.fix ? ['--fix'] : [];
@@ -153,10 +149,8 @@ const LINTERS = [
     roots: ['script'],
     test: (filename) => filename.endsWith('.py'),
     run: (opts, filenames) => {
-      const rcfile = path.join(DEPOT_TOOLS, 'pylintrc-2.17');
-      const args = ['--rcfile=' + rcfile, ...filenames];
-      const env = { PYTHONPATH: path.join(ELECTRON_ROOT, 'script'), ...process.env };
-      spawnAndCheckExitCode(IS_WINDOWS ? 'pylint-2.17.bat' : 'pylint-2.17', args, { env });
+      const env = { ...getDepotToolsEnv(), PYTHONPATH: path.join(ELECTRON_ROOT, 'script') };
+      spawnAndCheckExitCode(IS_WINDOWS ? 'pylint-2.17.bat' : 'pylint-2.17', filenames, { env });
     }
   },
   {
@@ -180,9 +174,9 @@ const LINTERS = [
       const allOk = filenames
         .map((filename) => {
           const env = {
+            ...getDepotToolsEnv(),
             CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools'),
-            DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
-            ...process.env
+            DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
           };
           const args = ['format', filename];
           if (!opts.fix) args.push('--dry-run');

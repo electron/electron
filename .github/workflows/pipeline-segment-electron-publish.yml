@@ -79,7 +79,6 @@ env:
   ELECTRON_ARTIFACTS_BLOB_STORAGE: ${{ secrets.ELECTRON_ARTIFACTS_BLOB_STORAGE }}
   ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
   SUDOWOODO_EXCHANGE_URL: ${{ secrets.SUDOWOODO_EXCHANGE_URL }}
-  SUDOWOODO_EXCHANGE_TOKEN: ${{ secrets.SUDOWOODO_EXCHANGE_TOKEN }}
   GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' &&
     '--custom-var=checkout_mac=True --custom-var=host_os=mac' ||
     inputs.target-platform == 'win' && '--custom-var=checkout_win=True' ||
@@ -132,7 +131,7 @@ jobs:
         run: df -h
       - name: Setup Node.js/npm
         if: ${{ inputs.target-platform == 'macos' }}
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: 22.21.x
           cache: yarn
@@ -208,6 +207,22 @@ jobs:
       - name: Free up space (macOS)
         if: ${{ inputs.target-platform == 'macos' }}
         uses: ./src/electron/.github/actions/free-space-macos
+      - name: Download custom siso binary (Windows)
+        if: ${{ inputs.target-platform == 'win' }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: siso-windows-amd64
+          path: ${{ runner.temp }}/siso
+      - name: Set SISO_PATH (Windows)
+        if: ${{ inputs.target-platform == 'win' }}
+        run: |
+          SISO_BIN="${RUNNER_TEMP}/siso/siso.exe"
+          if [ ! -f "$SISO_BIN" ]; then
+            echo "error: expected siso binary at $SISO_BIN" >&2
+            exit 1
+          fi
+          echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"
+          echo "Using custom siso binary at $SISO_BIN"
       - name: Build Electron
         if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' ||
           inputs.target-variant == 'darwin') }}

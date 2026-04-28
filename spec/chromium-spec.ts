@@ -1118,6 +1118,17 @@ describe('chromium features', () => {
     });
   });
 
+  describe('<geolocation> element', () => {
+    afterEach(closeAllWindows);
+
+    it('does not crash the renderer', (done) => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.once('did-finish-load', () => done());
+      w.webContents.once('render-process-gone', () => done(new Error('renderer crashed / was killed')));
+      w.loadURL('data:text/html,<geolocation></geolocation>');
+    });
+  });
+
   describe('File System API,', () => {
     let w: BrowserWindow | null = null;
 
@@ -1796,6 +1807,29 @@ describe('chromium features', () => {
       w.loadURL(`file://${fixturesPath}/pages/worker-fetch.html`);
       const [, data] = await once(ipcMain, 'worker-fetch-result');
       expect(data).to.equal('function function function function function');
+    });
+
+    it('AudioWorklet keeps node integration across pooled worker threads', async () => {
+      // Regression test for https://github.com/electron/electron/issues/41263.
+      // Blink pools the AudioWorklet backing thread (Chromium CL:5270028) so
+      // the Nth+ AudioWorklet on a page reuses the same thread; the page
+      // creates several AudioWorklet contexts in sequence and asserts node
+      // integration is wired up in every one of them. Must match the value
+      // hardcoded in spec/fixtures/pages/audio-worklet.html.
+      const NUM_AUDIO_WORKLET_CONTEXTS = 6;
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          nodeIntegrationInWorker: true,
+          contextIsolation: false
+        }
+      });
+
+      w.loadURL(`file://${fixturesPath}/pages/audio-worklet.html`);
+      const [, results] = await once(ipcMain, 'audio-worklet-result');
+      expect(results).to.be.an('array').with.lengthOf(NUM_AUDIO_WORKLET_CONTEXTS);
+      for (const r of results) expect(r).to.equal('ok');
     });
 
     describe('SharedWorker', () => {

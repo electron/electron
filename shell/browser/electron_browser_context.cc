@@ -34,6 +34,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/host_zoom_map.h"
+#include "content/public/browser/page.h"
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
@@ -129,7 +130,8 @@ media::mojom::CaptureHandlePtr CreateCaptureHandle(
     return nullptr;
   }
 
-  const auto& captured_config = captured->GetCaptureHandleConfig();
+  const auto& captured_config =
+      captured->GetPrimaryPage().GetCaptureHandleConfig();
   if (!captured_config.all_origins_permitted &&
       std::ranges::none_of(
           captured_config.permitted_origins,

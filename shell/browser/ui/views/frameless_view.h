@@ -26,14 +26,12 @@ class FramelessView : public views::FrameView {
   METADATA_HEADER(FramelessView, views::FrameView)
 
  public:
-  FramelessView();
+  FramelessView(NativeWindowViews* window, views::Widget* frame);
   ~FramelessView() override;
 
   // disable copy
   FramelessView(const FramelessView&) = delete;
   FramelessView& operator=(const FramelessView&) = delete;
-
-  virtual void Init(NativeWindowViews* window, views::Widget* frame);
 
   // Returns whether the |point| is on frameless window's resizing border.
   virtual int ResizingBorderHitTest(const gfx::Point& point);
@@ -80,8 +78,8 @@ class FramelessView : public views::FrameView {
   gfx::Size GetMaximumSize() const override;
 
   // Not owned.
-  raw_ptr<NativeWindowViews> window_ = nullptr;
-  raw_ptr<views::Widget> frame_ = nullptr;
+  const raw_ptr<NativeWindowViews> window_;
+  const raw_ptr<views::Widget> frame_;
 };
 
 }  // namespace electron

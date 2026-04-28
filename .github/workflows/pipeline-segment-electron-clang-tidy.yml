@@ -135,14 +135,33 @@ jobs:
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Run Clang-Tidy
       run: |
-        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH}
+        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
 
-        export GN_EXTRA_ARGS="target_cpu=\"${TARGET_ARCH}\""
+        # For macOS use_remoteexec=false will cause GN errors, so even though we're doing no remote build, set it
+        export GN_EXTRA_ARGS="use_remoteexec=true target_cpu=\"${TARGET_ARCH}\""
         if [ "${{ inputs.target-platform }}" = "win" ]; then
           export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
         fi
 
         e build --only-gen
+
+        # Copy macOS framework headers so clang-tidy can find them via -F.
+        # This must happen after e build --only-gen since e init -f may
+        # recreate the output directory.
+        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+          OUT=src/out/${ELECTRON_OUT_DIR}
+          SQRL=src/third_party/squirrel.mac
+
+          mkdir -p ${OUT}/{ReactiveObjC,Squirrel,Mantle}.framework/Headers
+
+          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/*.h ${OUT}/ReactiveObjC.framework/Headers/
+          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/extobjc/*.h ${OUT}/ReactiveObjC.framework/Headers/
+
+          cp ${SQRL}/Squirrel/*.h ${OUT}/Squirrel.framework/Headers/
+
+          cp ${SQRL}/vendor/Mantle/Mantle/include/*.h ${OUT}/Mantle.framework/Headers/
+          cp ${SQRL}/vendor/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
+        fi
 
         cd src/electron
         node script/yarn.js lint:clang-tidy --jobs 8 --out-dir ../out/${ELECTRON_OUT_DIR}

@@ -5,7 +5,6 @@
 #include "shell/browser/ui/views/opaque_frame_view.h"
 
 #include "base/containers/adapters.h"
-#include "chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h"  // nogncheck
 #include "chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h"  // nogncheck
 #include "chrome/grit/generated_resources.h"
 #include "components/strings/grit/components_strings.h"
@@ -24,6 +23,7 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/frame_background.h"
 #include "ui/views/window/frame_caption_button.h"
+#include "ui/views/window/frame_view_utils_linux.h"
 #include "ui/views/window/vector_icons/vector_icons.h"
 
 namespace electron {
@@ -57,12 +57,10 @@ const int kCaptionButtonBottomPadding = 3;
 // The content edge images have a shadow built into them.
 const int OpaqueFrameView::kContentEdgeShadowThickness = 2;
 
-OpaqueFrameView::OpaqueFrameView()
-    : frame_background_(std::make_unique<views::FrameBackground>()) {}
-OpaqueFrameView::~OpaqueFrameView() = default;
-
-void OpaqueFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
-  FramelessView::Init(window, frame);
+OpaqueFrameView::OpaqueFrameView(NativeWindowViews* window,
+                                 views::Widget* frame)
+    : FramelessView{window, frame},
+      frame_background_{std::make_unique<views::FrameBackground>()} {
   linux_frame_layout_ = LinuxFrameLayout::Create(
       window, window->HasShadow(), LinuxFrameLayout::CSDStyle::kCustom);
 
@@ -100,6 +98,7 @@ void OpaqueFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
                           base::Unretained(frame),
                           views::Widget::ClosedReason::kCloseButtonClicked));
 }
+OpaqueFrameView::~OpaqueFrameView() = default;
 
 int OpaqueFrameView::ResizingBorderHitTest(const gfx::Point& point) {
   return ResizingBorderHitTestImpl(
@@ -231,9 +230,9 @@ void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
   const bool draw_shadow = showing_shadow && !linux_frame_layout_->tiled();
   auto shadow_values =
       draw_shadow ? GetFrameShadowValuesLinux(active) : gfx::ShadowValues();
-  ::PaintRestoredFrameBorderLinux(*canvas, *this, frame_background_.get(), clip,
-                                  showing_shadow, active, border, shadow_values,
-                                  linux_frame_layout_->tiled());
+  views::PaintRestoredFrameBorderLinux(
+      *canvas, *this, frame_background_.get(), clip, showing_shadow, active,
+      border, shadow_values, linux_frame_layout_->tiled());
 }
 
 void OpaqueFrameView::PaintAsActiveChanged() {

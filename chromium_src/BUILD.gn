@@ -21,6 +21,8 @@ static_library("chrome") {
     "//chrome/browser/browser_features.h",
     "//chrome/browser/browser_process.cc",
     "//chrome/browser/browser_process.h",
+    "//chrome/browser/device_notifications/device_connection_tracker.h",
+    "//chrome/browser/device_notifications/device_system_tray_icon.h",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.cc",
     "//chrome/browser/devtools/devtools_contents_resizing_strategy.h",
     "//chrome/browser/devtools/devtools_dispatch_http_request_params.cc",
@@ -38,6 +40,7 @@ static_library("chrome") {
     "//chrome/browser/devtools/visual_logging.h",
     "//chrome/browser/file_system_access/file_system_access_features.cc",
     "//chrome/browser/file_system_access/file_system_access_features.h",
+    "//chrome/browser/hid/hid_system_tray_icon.h",
     "//chrome/browser/icon_loader.cc",
     "//chrome/browser/icon_loader.h",
     "//chrome/browser/icon_manager.cc",
@@ -156,6 +159,7 @@ static_library("chrome") {
     "//chrome/browser/ui/webui/accessibility/accessibility_ui.h",
     "//chrome/browser/usb/usb_blocklist.cc",
     "//chrome/browser/usb/usb_blocklist.h",
+    "//chrome/browser/usb/usb_system_tray_icon.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
     "//ui/base/accelerators/global_accelerator_listener/global_accelerator_listener.cc",
@@ -246,10 +250,6 @@ static_library("chrome") {
     sources += [
       "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
       "//chrome/browser/ui/views/dark_mode_manager_linux.h",
-    ]
-    sources += [
-      "//chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.cc",
-      "//chrome/browser/ui/views/frame/browser_frame_view_paint_utils_linux.h",
     ]
     public_deps += [ "//components/dbus" ]
   }
@@ -389,16 +389,17 @@ static_library("chrome") {
         "//chrome/browser/pdf/chrome_pdf_stream_delegate.h",
         "//chrome/browser/pdf/pdf_extension_util.cc",
         "//chrome/browser/pdf/pdf_extension_util.h",
+        "//chrome/browser/pdf/pdf_handler_stream_delegate.cc",
+        "//chrome/browser/pdf/pdf_handler_stream_delegate.h",
         "//chrome/browser/pdf/pdf_help_bubble_handler_factory.cc",
         "//chrome/browser/pdf/pdf_help_bubble_handler_factory.h",
-        "//chrome/browser/pdf/pdf_viewer_stream_manager.cc",
-        "//chrome/browser/pdf/pdf_viewer_stream_manager.h",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.cc",
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
       ]
       deps += [
         "//components/pdf/browser",
         "//components/pdf/renderer",
+        "//components/zoom",
         "//ui/base/interaction",
         "//ui/webui/resources/cr_components/help_bubble:mojo_bindings",
       ]

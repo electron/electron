@@ -332,7 +332,7 @@ class NativeWindow : public views::WidgetDelegate {
   virtual void NotifyWindowLeaveFullScreen();
   void NotifyWindowEnterHtmlFullScreen();
   void NotifyWindowLeaveHtmlFullScreen();
-  void NotifyWindowAlwaysOnTopChanged();
+  void NotifyWindowAlwaysOnTopChanged(bool is_always_on_top);
   void NotifyWindowExecuteAppCommand(std::string_view command_name);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
                                      base::DictValue details);
@@ -462,6 +462,7 @@ class NativeWindow : public views::WidgetDelegate {
   const views::Widget* GetWidget() const override;
 
   void set_content_view(views::View* view) { content_view_ = view; }
+  void FlushPendingRootLayout(views::View* view);
 
   static inline constexpr base::cstring_view kNativeWindowKey =
       "__ELECTRON_NATIVE_WINDOW__";
@@ -542,7 +543,10 @@ class NativeWindow : public views::WidgetDelegate {
   std::list<DraggableRegionProvider*> draggable_region_providers_;
 
   // Observers of this window.
-  base::ObserverList<NativeWindowObserver> observers_;
+  base::ObserverList<NativeWindowObserver,
+                     false,
+                     base::ObserverListReentrancyPolicy::kAllowReentrancy>
+      observers_;
 
   absl::flat_hash_set<BackgroundThrottlingSource*>
       background_throttling_sources_;

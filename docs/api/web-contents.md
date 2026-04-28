@@ -226,7 +226,16 @@ Returns:
     Only defined when the window is being created by a form that set
     `target=_blank`.
   * `disposition` string - Can be `default`, `foreground-tab`,
-    `background-tab`, `new-window` or `other`.
+    `background-tab`, `new-window` or `other`. Corresponds to the manner
+    an associated link was clicked. See Chromium's
+    [WindowOpenDisposition](https://source.chromium.org/chromium/chromium/src/+/main:ui/base/window_open_disposition.h).
+    * `default` - Indicates Chromium deems in-window navigation valid
+      for a window open call.
+    * `foreground-tab` - Corresponds to a left click or shift + middle click.
+    * `background-tab` - Corresponds to a middle click or ctrl/cmd + click.
+    * `new-window` - Corresponds to a shift + left click.
+    * `other` - A catch-all for the remaining Chromium dispositions not
+      handled by Electron.
 
 Emitted _after_ successful creation of a window via `window.open` in the renderer.
 Not emitted if the creation of the window is canceled from
@@ -1449,8 +1458,17 @@ Ignore application menu shortcuts while this web contents is focused.
     * `url` string - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` string - Name of the window provided in `window.open()`
     * `features` string - Comma separated list of window features provided to `window.open()`.
-    * `disposition` string - Can be `default`, `foreground-tab`, `background-tab`,
-      `new-window` or `other`.
+    * `disposition` string - Can be `default`, `foreground-tab`,
+      `background-tab`, `new-window` or `other`. Corresponds to the manner
+      an associated link was clicked. See Chromium's
+      [WindowOpenDisposition](https://source.chromium.org/chromium/chromium/src/+/main:ui/base/window_open_disposition.h).
+      * `default` - Indicates Chromium deems in-window navigation valid
+        for a window open call.
+      * `foreground-tab` - Corresponds to a left click or shift + middle click.
+      * `background-tab` - Corresponds to a middle click or ctrl/cmd + click.
+      * `new-window` - Corresponds to a shift + left click.
+      * `other` - A catch-all for the remaining Chromium dispositions not
+        handled by Electron.
     * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
       passed to the new window. May or may not result in the `Referer` header being
       sent, depending on the referrer policy.
@@ -2274,6 +2292,20 @@ process.
 Returns `Integer` - The Chromium internal `pid` of the associated renderer. Can
 be compared to the `frameProcessId` passed by frame specific navigation events
 (e.g. `did-frame-navigate`)
+
+#### `contents.clone()`
+
+Returns `WebContents` - A cloned WebContents instance. This method creates a copy
+of the WebContents with the following attributes:
+
+* **WebPreferences** - All preferences from the original WebContents are copied
+* **SiteInstance** - Uses the same SiteInstance as the original. This means the cloned WebContents will reuse the same render process as the original when loading same-origin pages, and only spawn a new render process for cross-origin navigations. This process allocation behavior is consistent with window.open and tab duplication in Chromium. For more details, see [Chromium's Site Isolation](https://www.chromium.org/developers/design-documents/site-isolation/) design document.
+* **Opener relationship** - Inherits the opener (window.opener) relationship
+* **Navigation state** - Copies the navigation history and controller state
+
+The cloned WebContents is an independent instance with its own lifecycle that can be destroyed separately and will not contain any open web pages.
+
+This API is useful for use cases where you want to create a new WebContents that shares the same render process with the original for same-origin content, while maintaining full lifecycle independence. Additionally, reusing the existing render process can help optimize memory usage and page load speed to a certain extent, as it eliminates the overhead of spawning and initializing a new render process from scratch.
 
 #### `contents.takeHeapSnapshot(filePath)`
 

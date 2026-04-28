@@ -13,10 +13,10 @@ messages in the legacy window handle layer.
 These conditions are regularly hit with WCO-enabled windows on Windows.
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index c7794d6a969b407281db12acc027a933a4a82921..382d01ab2f0ad774f7c0d1dc214dd45b6998549a 100644
+index d2c43cece0e1620462ed12fd194d0a51969451ea..241121fa9b64a4102fd6ce8a29e0a64308701dc9 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-@@ -377,12 +377,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnKeyboardRange(UINT message,
+@@ -387,12 +387,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnKeyboardRange(UINT message,
  LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
                                                   WPARAM w_param,
                                                   LPARAM l_param) {
@@ -31,7 +31,7 @@ index c7794d6a969b407281db12acc027a933a4a82921..382d01ab2f0ad774f7c0d1dc214dd45b
        tme.hwndTrack = hwnd();
        tme.dwHoverTime = 0;
        TrackMouseEvent(&tme);
-@@ -421,7 +421,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+@@ -431,7 +431,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
    // the picture.
    if (!msg_handled &&
        (message >= WM_NCMOUSEMOVE && message <= WM_NCXBUTTONDBLCLK)) {
@@ -40,9 +40,9 @@ index c7794d6a969b407281db12acc027a933a4a82921..382d01ab2f0ad774f7c0d1dc214dd45b
 +    // handle so mouse tracking on non-client areas doesn't break.
 +    HWND target = message == WM_NCMOUSEMOVE ? hwnd() : GetParent();
 +    ret = ::DefWindowProc(target, message, w_param, l_param);
-     SetMsgHandled(TRUE);
-   }
-   return ret;
+     // DefWindowProc() may result in |this| being deleted (e.g. if a nested
+     // modal loop is entered and the tab is closed). See crbug.com/503793153.
+     if (ref) {
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
 index 661a8123862860c88ce1eb78eae6691f38c2bdd9..705cda18d0b669249ff4ace161b53a105db2c806 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.h
