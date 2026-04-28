@@ -122,6 +122,19 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   void SetToastXml(const std::u16string& new_toast_xml);
 
  private:
+  // Identity / grouping (native mirror on `electron::Notification` after
+  // `show()` is `notification_id_` / `notification_group_`):
+  //
+  // - id_: JavaScript `id` — toast tag / stable key (history, activations).
+  // - group_id_: JavaScript `groupId` from the constructor; for instances
+  //   restored via `getHistory()` it is the developer-visible value (e.g. on
+  //   Windows the WinRT default group may be filtered out so this stays empty
+  //   when the app never set a group).
+  // - raw_group_id_: Only used for `getHistory()` restores. Exact group string
+  //   returned by the platform before that filtering. Passed into
+  //   `CreateNotification(..., notification_group)` so the native object still
+  //   matches the delivered toast even when `group_id_` is cleared for JS.
+  // - group_title_: JavaScript `groupTitle` (toast header text).
   std::string id_;
   std::string group_id_;
   std::string raw_group_id_;
