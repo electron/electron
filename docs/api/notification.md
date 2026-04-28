@@ -98,10 +98,15 @@ The returned notifications have their `id`, `groupId`, `title`, and `body` prope
 > notifications.
 
 > [!NOTE]
-> On Windows, restored notifications receive interaction events directly — there
-> is no need to call `show()`. On macOS, calling `show()` on a restored
-> notification is required to re-register it for events; this will remove the
-> original from Notification Center and post a new one with the same properties.
+> For objects returned by `getHistory()`, `show()` is a no-op on every platform:
+> the main-process `Notification::Show()` implementation in
+> `shell/browser/api/electron_api_notification.cc` returns immediately when the
+> instance was restored (`is_restored_`), so native `show()` is never invoked.
+> That keeps the delivered notification in place while the object stays
+> connected for interaction events (Windows routes activations via the toast
+> `launch` payload; macOS uses `Restore()` plus the notification center
+> delegate). Calling `show()` on a non-restored notification still posts or
+> replaces a notification as usual.
 
 > [!NOTE]
 > Unlike notifications created with `new Notification()`, notifications returned
@@ -343,10 +348,10 @@ call this method before the OS will display it.
 If the notification has been shown before, this method will dismiss the previously
 shown notification and create a new one with identical properties.
 
-On macOS, calling `show()` on a notification returned by `Notification.getHistory()` will
-remove the original notification from Notification Center and post a new one with the same
-properties. On Windows, calling `show()` on a restored notification is a no-op — interaction
-events are routed to the restored object automatically without needing to re-show it.
+For a notification returned by `Notification.getHistory()`, this method does nothing:
+the instance is marked restored and `show()` returns before touching the platform
+notification, so the entry stays in Notification Center / Action Center and
+interaction events keep routing to the same object.
 
 ```js
 const { Notification, app } = require('electron')
