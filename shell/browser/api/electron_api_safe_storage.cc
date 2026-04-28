@@ -7,28 +7,32 @@
 #include "shell/browser/api/electron_api_safe_storage.h"
 
 #include "base/command_line.h"
-#include "base/environment.h"
 #include "base/functional/bind.h"
-#include "base/nix/xdg_util.h"
-#include "base/path_service.h"
 #include "base/run_loop.h"
+#include "build/build_config.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
-#include "components/os_crypt/sync/key_storage_config_linux.h"
-#include "components/os_crypt/sync/key_storage_util_linux.h"
 #include "components/os_crypt/sync/os_crypt.h"
-#include "components/password_manager/core/browser/password_manager_switches.h"  // nogncheck
 #include "gin/object_template_builder.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/os_crypt_async_encryptor_provider.h"
-#include "shell/common/application_info.h"
-#include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+
+#if BUILDFLAG(IS_LINUX)
+#include "base/environment.h"
+#include "base/nix/xdg_util.h"
+#include "base/path_service.h"
+#include "components/os_crypt/sync/key_storage_config_linux.h"
+#include "components/os_crypt/sync/key_storage_util_linux.h"
+#include "components/password_manager/core/browser/password_manager_switches.h"  // nogncheck
+#include "shell/common/application_info.h"
+#include "shell/common/electron_paths.h"
+#endif
 
 namespace {
 
