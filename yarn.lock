@@ -590,7 +590,7 @@ __metadata:
     "@types/semver": "npm:^7.5.8"
     "@types/stream-json": "npm:^1.7.8"
     "@types/temp": "npm:^0.9.4"
-    "@xmldom/xmldom": "npm:^0.8.12"
+    "@xmldom/xmldom": "npm:^0.8.13"
     buffer: "npm:^6.0.3"
     chalk: "npm:^4.1.0"
     check-for-leaks: "npm:^1.2.1"
@@ -2644,10 +2644,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@xmldom/xmldom@npm:^0.8.12":
-  version: 0.8.12
-  resolution: "@xmldom/xmldom@npm:0.8.12"
-  checksum: 10c0/b733c84292d1bee32ef21a05aba8f9063456b51a54068d0b4a1abf5545156ee0b9894b7ae23775b5881b11c35a8a03871d1b514fb7e1b11654cdbee57e1c2707
+"@xmldom/xmldom@npm:^0.8.13":
+  version: 0.8.13
+  resolution: "@xmldom/xmldom@npm:0.8.13"
+  checksum: 10c0/06405ee6fffba631abf715a305ace338420ebcea8baf1317f19f2752f5c505952b7df45159908e7be8451a42faa54326b780616ab4d08242b20477b2973da24b
   languageName: node
   linkType: hard
 
