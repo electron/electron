@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Noah Gregory <noahmgregory@gmail.com>
+Date: Thu, 23 Apr 2026 11:11:44 -0400
+Subject: fix: make macOS text replacement work on `contenteditable`
+
+Text-editor libraries like `lexical` don't use `input` elements,
+but instead use `contenteditable` elements. macOS text replacement
+is currently bugged on these elements. This patch fixes that.
+
+1. Backspace now rejects the replacement instead of accepting it.
+2. Space now adds a space after accepting the replacement.
+
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+index 580a2b96bae1c2701b9ff146004ad250176bc330..3c438bbf135c5a0758ff3113920cff29b0539da2 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+@@ -513,6 +513,13 @@ - (void)didAcceptReplacementString:(NSString*)acceptedString
+   if (acceptedString == nil)
+     return;
+ 
++  if (changeNumber != _availableTextChangeCounter) {
++    if (!_textSelectionRange.is_empty() ||
++        _textSelectionRange.start() <= NSMaxRange(correction.range)) {
++      return;
++    }
++  }
++
+   NSRange availableTextRange =
+       NSMakeRange(_availableTextOffset, _availableText.length());
+ 

@@ -189,3 +189,4 @@ cherry-pick-c75f63de7188.patch
 cherry-pick-d141d62357df.patch
 cherry-pick-848cf5567223.patch
 cherry-pick-cve-2026-6920.patch
+fix_make_macos_text_replacement_work_on_contenteditable.patch
