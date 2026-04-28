@@ -35,7 +35,7 @@ class MetricsServiceClient;
 namespace electron {
 class ResolveProxyHelper;
 class OSCryptAsyncEncryptorProvider;
-}
+}  // namespace electron
 
 // Empty definition for std::unique_ptr, rather than a forward declaration
 class BackgroundModeManager {};

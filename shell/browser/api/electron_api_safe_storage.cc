@@ -8,9 +8,9 @@
 
 #include "base/command_line.h"
 #include "base/environment.h"
-#include "base/path_service.h"
 #include "base/functional/bind.h"
 #include "base/nix/xdg_util.h"
+#include "base/path_service.h"
 #include "base/run_loop.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
 #include "components/os_crypt/sync/key_storage_config_linux.h"
@@ -131,8 +131,8 @@ void SafeStorage::EnsureAsyncEncryptorRequested() {
   static_cast<BrowserProcessImpl*>(g_browser_process)
       ->os_crypt_async_encryptor_provider()
       ->GetEncryptor(
-      base::BindOnce(&SafeStorage::OnOsCryptReady, base::Unretained(this)),
-      os_crypt_async::Encryptor::Option::kEncryptSyncCompat);
+          base::BindOnce(&SafeStorage::OnOsCryptReady, base::Unretained(this)),
+          os_crypt_async::Encryptor::Option::kEncryptSyncCompat);
 }
 
 bool SafeStorage::EnsureSyncOsCryptInitializedForSyncApi() {
@@ -146,8 +146,8 @@ bool SafeStorage::EnsureSyncOsCryptInitializedForSyncApi() {
         command_line.GetSwitchValueASCII(password_manager::kPasswordStore);
     config->product_name = electron::GetApplicationName();
     config->application_name = electron::GetApplicationName();
-    config->should_use_preference = command_line.HasSwitch(
-        password_manager::kEnableEncryptionSelection);
+    config->should_use_preference =
+        command_line.HasSwitch(password_manager::kEnableEncryptionSelection);
     base::PathService::Get(electron::DIR_SESSION_DATA, &config->user_data_path);
 
     const bool use_backend = !config->should_use_preference ||
