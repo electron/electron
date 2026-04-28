@@ -1,6 +1,12 @@
 chromedriver.exe
 icudtl.dat
 ffmpeg.dll
+d3dcompiler_47.dll
+libEGL.dll
+libGLESv2.dll
+vk_swiftshader.dll
+vk_swiftshader_icd.json
+vulkan-1.dll
 gen/electron/buildflags/buildflags.h
 LICENSE
 LICENSES.chromium.html

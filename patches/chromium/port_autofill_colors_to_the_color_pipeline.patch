@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 10067d16998f5772dd0431d47909cfb656de360d..2fb1c5344086227d47467f87d980b2c8f5112cad 100644
+index 4f29229d0aff379b117ec43c0b263d78ec06882c..4be6531e6f2b4b6228cee47472397151d9307e20 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -441,6 +441,10 @@
+@@ -443,6 +443,10 @@
    E_CPONLY(kColorRadioButtonForegroundUnchecked) \
    E_CPONLY(kColorRadioButtonForegroundDisabled) \
    E_CPONLY(kColorRadioButtonForegroundChecked) \
@@ -22,7 +22,7 @@ index 10067d16998f5772dd0431d47909cfb656de360d..2fb1c5344086227d47467f87d980b2c8
    E_CPONLY(kColorSegmentedButtonBorder) \
    E_CPONLY(kColorSegmentedButtonFocus) \
    E_CPONLY(kColorSegmentedButtonForegroundChecked) \
-@@ -549,6 +553,7 @@
+@@ -551,6 +555,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,10 +31,10 @@ index 10067d16998f5772dd0431d47909cfb656de360d..2fb1c5344086227d47467f87d980b2c8
    /* ui::NativeThemeBase::ControlColorId. */ \
    E_CPONLY(kColorWebNativeControlAccent) \
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index c0696d530d282dcc2d8d95c518faa6326a354e8e..5a967fd5697a92d2acea2ea81b6c1115d41c2a48 100644
+index 00a8789f591a9ccb9c98033121ed580777281a15..a8578979c8438961f6354d4ba823bcb520086afa 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -182,6 +182,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
+@@ -186,6 +186,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
    mixer[kColorProgressBarPaused] = {kColorDisabledForeground};
    mixer[kColorRadioButtonForegroundChecked] = {kColorButtonForeground};
    mixer[kColorRadioButtonForegroundUnchecked] = {kColorSecondaryForeground};
@@ -52,7 +52,7 @@ index c0696d530d282dcc2d8d95c518faa6326a354e8e..5a967fd5697a92d2acea2ea81b6c1115
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -278,6 +289,7 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
+@@ -282,6 +293,7 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};

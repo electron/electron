@@ -21,7 +21,7 @@ jobs:
           AUTHOR_ASSOCIATION=$(gh api /repos/electron/electron/issues/comments/${{ github.event.comment.id }} --jq '.author_association')
           echo "author_association=$AUTHOR_ASSOCIATION" >> "$GITHUB_OUTPUT"
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
         if: ${{ !contains(fromJSON('["MEMBER", "OWNER", "COLLABORATOR"]'), steps.get-author-association.outputs.author_association) }}
         id: generate-token
         with:
@@ -45,7 +45,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: *get-author-association
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
         if: ${{ contains(fromJSON('["MEMBER", "OWNER"]'), steps.get-author-association.outputs.author_association) }}
         id: generate-token
         with:

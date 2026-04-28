@@ -6,8 +6,8 @@ on:
       build-image-sha:
         type: string
         description: 'SHA for electron/build image'
-        default: 'eac3529546ea8f3aa356d31e345715eef342233b'
-        required: true
+        default: ''
+        required: false
       skip-macos:
         type: boolean
         description: 'Skip macOS builds'
@@ -48,14 +48,14 @@ permissions: {}
 jobs:
   setup:
     if: github.repository == 'electron/electron'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: read
       pull-requests: read
     outputs:
         docs: ${{ steps.filter.outputs.docs }}
         src: ${{ steps.filter.outputs.src }}
-        build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
+        build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -67,20 +67,21 @@ jobs:
         filters: |
           docs:
             - 'docs/**'
+            - '.claude/**'
             - README.md
             - SECURITY.md
             - CONTRIBUTING.md
             - CODE_OF_CONDUCT.md
           src:
-            - '!docs/**'
-    - name: Set Outputs for Build Image SHA & Docs Only
+            - '!{docs,.claude}/**'
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+      with:
+        override: ${{ inputs.build-image-sha }}
+    - name: Set Docs Only
       id: set-output
       run: |
-        if [ -z "${{ inputs.build-image-sha }}" ]; then
-          echo "build-image-sha=eac3529546ea8f3aa356d31e345715eef342233b" >> "$GITHUB_OUTPUT"
-        else
-          echo "build-image-sha=${{ inputs.build-image-sha }}" >> "$GITHUB_OUTPUT"
-        fi
         echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
@@ -274,10 +275,11 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
     needs: checkout-macos
     with:
       build-runs-on: macos-15-xlarge
+      clang-tidy-runs-on: macos-15-large
       test-runs-on: macos-15
       target-platform: macos
       target-arch: arm64
@@ -392,12 +394,14 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: ./.github/workflows/pipeline-electron-build-and-test.yml
+    uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
     needs: [checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
+      clang-tidy-runs-on: electron-arc-centralus-linux-amd64-8core
       test-runs-on: windows-latest
+      clang-tidy-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
       target-platform: win
       target-arch: x64
       is-release: false

@@ -63,7 +63,6 @@
 #include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
-#include "pdf/pdf_features.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
@@ -230,6 +229,7 @@
 #include "components/pdf/browser/pdf_navigation_throttle.h"
 #include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
 #include "components/pdf/common/constants.h"  // nogncheck
+#include "pdf/pdf_features.h"
 #include "shell/browser/electron_pdf_document_helper_client.h"
 #include "ui/webui/resources/cr_components/help_bubble/help_bubble.mojom.h"  // nogncheck
 #endif
@@ -1126,6 +1126,8 @@ ElectronBrowserClient::CreateNonNetworkNavigationURLLoaderFactory(
 void ElectronBrowserClient::
     RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
         content::BrowserContext* browser_context,
+        const std::optional<url::Origin>& request_initiator,
+        network::mojom::RequestDestination request_destination,
         NonNetworkURLLoaderFactoryMap* factories) {
   auto* protocol_registry =
       ProtocolRegistry::FromBrowserContext(browser_context);
@@ -1137,7 +1139,7 @@ void ElectronBrowserClient::
   factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionWorkerMainResourceURLLoaderFactory(
-          browser_context));
+          browser_context, request_initiator));
 #endif
 }
 
@@ -1294,13 +1296,14 @@ void ElectronBrowserClient::
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
 
-bool ElectronBrowserClient::ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
-    std::string_view scheme,
+bool ElectronBrowserClient::ShouldTreatAsFirstPartyWhenTopLevel(
+    const url::Origin& top_frame_origin,
     bool is_embedded_origin_secure) {
-  if (is_embedded_origin_secure && scheme == content::kChromeUIScheme)
+  if (is_embedded_origin_secure &&
+      top_frame_origin.scheme() == content::kChromeUIScheme)
     return true;
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  return scheme == extensions::kExtensionScheme;
+  return top_frame_origin.scheme() == extensions::kExtensionScheme;
 #else
   return false;
 #endif

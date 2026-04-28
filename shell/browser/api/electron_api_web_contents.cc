@@ -464,6 +464,8 @@ constexpr char kFooterTemplate[] = "footerTemplate";
 constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
 constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
 constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
+constexpr char kDpiHorizontal[] = "horizontal";
+constexpr char kDpiVertical[] = "vertical";
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 constexpr std::string_view CursorTypeToString(
@@ -2475,6 +2477,33 @@ base::ProcessId WebContents::GetOSProcessID() const {
   return process.IsValid() ? process.Pid() : base::kNullProcessId;
 }
 
+v8::Local<v8::Value> WebContents::Clone(v8::Isolate* isolate) {
+  auto new_contents = web_contents()->Clone();
+  DCHECK(new_contents);
+
+  // Copy WebContentsPreferences from the original WebContents to the cloned one
+  v8::Local<v8::Value> current_prefs = GetLastWebPreferences(isolate);
+  gin_helper::Dictionary pref_dict;
+  gin::ConvertFromV8(isolate, gin::ConvertToV8(isolate, current_prefs),
+                     &pref_dict);
+  new WebContentsPreferences(new_contents.get(), pref_dict);
+
+  // Use CreateAndTake to properly take ownership of the cloned WebContents
+  // and create a new wrapper with the appropriate type
+  auto wrapper = CreateAndTake(isolate, std::move(new_contents), type_);
+
+  // We call HandleNewRenderFrame here as at this point the empty "about:blank"
+  // render frame has already been created. This ensures that preferences like
+  // background color, scheduler throttling, and Mojo connection are properly
+  // set up for the cloned WebContents.
+  auto* frame = wrapper->MainFrame();
+  if (frame) {
+    wrapper->HandleNewRenderFrame(frame);
+  }
+
+  return gin::ConvertToV8(isolate, wrapper);
+}
+
 GURL WebContents::GetURL() const {
   return web_contents()->GetLastCommittedURL();
 }
@@ -3369,10 +3398,16 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Set custom dots per inch (dpi)
   if (gin_helper::Dictionary dpi; options.Get(kDpi, &dpi)) {
+    // `webContents.print()` exposes `dpi: { horizontal, vertical }` in JS.
+    // Keep backward compatibility with internal key names as a fallback.
     settings.Set(printing::kSettingDpiHorizontal,
-                 dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72));
+                 dpi.ValueOrDefault(
+                     kDpiHorizontal,
+                     dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72)));
     settings.Set(printing::kSettingDpiVertical,
-                 dpi.ValueOrDefault(printing::kSettingDpiVertical, 72));
+                 dpi.ValueOrDefault(
+                     kDpiVertical,
+                     dpi.ValueOrDefault(printing::kSettingDpiVertical, 72)));
   }
 
   print_task_runner_->PostTaskAndReplyWithResult(
@@ -4608,6 +4643,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
+      .SetMethod("clone", &WebContents::Clone)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("reload", &WebContents::Reload)
       .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)

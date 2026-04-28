@@ -15,6 +15,8 @@
 #include "base/notimplemented.h"
 #include "base/path_service.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/hid/hid_system_tray_icon.h"
+#include "chrome/browser/usb/usb_system_tray_icon.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/async/browser/key_provider.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
@@ -368,9 +370,15 @@ HidSystemTrayIcon* BrowserProcessImpl::hid_system_tray_icon() {
   return nullptr;
 }
 
+void BrowserProcessImpl::set_hid_system_tray_icon_for_test(
+    std::unique_ptr<HidSystemTrayIcon> icon) {}
+
 UsbSystemTrayIcon* BrowserProcessImpl::usb_system_tray_icon() {
   return nullptr;
 }
+
+void BrowserProcessImpl::set_usb_system_tray_icon_for_test(
+    std::unique_ptr<UsbSystemTrayIcon> icon) {}
 
 os_crypt_async::OSCryptAsync* BrowserProcessImpl::os_crypt_async() {
   return os_crypt_async_.get();

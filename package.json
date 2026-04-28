@@ -78,7 +78,7 @@
     "gn-typescript-definitions": "npm run create-typescript-definitions && node script/cp.mjs electron.d.ts",
     "pre-flight": "pre-flight",
     "gn-check": "node ./script/gn-check.js",
-    "gn-format": "python3 script/run-gn-format.py",
+    "gn-format": "node ./script/lint.js --gn --fix",
     "precommit": "lint-staged",
     "preinstall": "node -e 'process.exit(0)'",
     "pretest": "npm run create-typescript-definitions",
@@ -117,7 +117,7 @@
     ],
     "*.{gn,gni}": [
       "npm run gn-check",
-      "npm run gn-format"
+      "node ./script/lint.js --gn --fix --only --"
     ],
     "*.py": [
       "node script/lint.js --py --fix --only --"

@@ -18,6 +18,8 @@ jobs:
       pull-requests: read
     outputs:
       has-patches: ${{ steps.filter.outputs.patches }}
+      has-siso-patches: ${{ steps.filter.outputs.siso-patches }}
+      build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
@@ -33,6 +35,12 @@ jobs:
           patches:
             - DEPS
             - 'patches/**'
+          siso-patches:
+            - DEPS
+            - '.github/siso-patches/**'
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
 
   apply-patches:
     needs: setup
@@ -41,7 +49,7 @@ jobs:
     permissions:
       contents: read
     container:
-      image: ghcr.io/electron/build:eac3529546ea8f3aa356d31e345715eef342233b
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
@@ -79,3 +87,10 @@ jobs:
         path: patches/update-patches.patch
         if-no-files-found: ignore
         archive: false
+
+  build-siso:
+    needs: setup
+    if: ${{ needs.setup.outputs.has-siso-patches == 'true' }}
+    uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
+    permissions:
+      contents: read

@@ -225,6 +225,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::FrameTreeNodeId frame_tree_node_id) override;
   void RegisterNonNetworkWorkerMainResourceURLLoaderFactories(
       content::BrowserContext* browser_context,
+      const std::optional<url::Origin>& request_initiator,
+      network::mojom::RequestDestination request_destination,
       NonNetworkURLLoaderFactoryMap* factories) override;
   void RegisterNonNetworkSubresourceURLLoaderFactories(
       int render_process_id,
@@ -268,8 +270,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool force_no_https_upgrade,
       scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner)
       override;
-  bool ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
-      std::string_view scheme,
+  bool ShouldTreatAsFirstPartyWhenTopLevel(
+      const url::Origin& top_frame_origin,
       bool is_embedded_origin_secure) override;
   void OverrideURLLoaderFactoryParams(
       content::BrowserContext* browser_context,

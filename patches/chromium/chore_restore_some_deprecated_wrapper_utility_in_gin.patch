@@ -9,10 +9,10 @@ Patch can be removed once cppgc migration is complete
 https://github.com/electron/electron/issues/47922
 
 diff --git a/gin/function_template.h b/gin/function_template.h
-index c80020b2bda2af39b38295dad3c6208cb8294b88..873015289db9709c00c32080e5387d9cdfea1f69 100644
+index 8b649c04abccf1e6ade18e315095a3960d407e7b..70c882dfa6f0493164f8706090fb215139b7f258 100644
 --- a/gin/function_template.h
 +++ b/gin/function_template.h
-@@ -79,6 +79,7 @@ class GIN_EXPORT CallbackHolderBase {
+@@ -90,6 +90,7 @@ class GIN_EXPORT CallbackHolderBase {
                      CallbackHolderBase* holder);
      ~DisposeObserver() override;
      void OnBeforeDispose(v8::Isolate* isolate) override;

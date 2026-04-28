@@ -650,7 +650,7 @@ Clears the session’s HTTP cache.
     `scheme://host:port`.
   * `storages` string[] (optional) - The types of storages to clear, can be
     `cookies`, `filesystem`, `indexdb`, `localstorage`,
-    `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
+    `shadercache`, `serviceworkers`, `cachestorage`. If not
     specified, clear all storage types.
 
 Returns `Promise<void>` - resolves when the storage data has been cleared.

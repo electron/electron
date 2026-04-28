@@ -8,7 +8,7 @@ require a largeish patch to get working, so just redirect it to our
 implementation instead.
 
 diff --git a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
-index 50e5ac31c57cab1476df494da879615b305a93f3..4e600c23a554dfa63acbe6805ee8374156191377 100644
+index 4b5e891fc35806a4b42f5737a4b9669f5469cc06..74acb8a8d14930b2fe8781670ceefafba9ae06cd 100644
 --- a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 +++ b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 @@ -12,8 +12,8 @@
@@ -29,5 +29,5 @@ index 50e5ac31c57cab1476df494da879615b305a93f3..4e600c23a554dfa63acbe6805ee83741
 -          &extensions::mime_handlers::SendExecuteMimeTypeHandlerEvent,
 +          &extensions::StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent,
            extension_id, stream_id, embedded, frame_tree_node_id_,
-           std::move(transferrable_loader), response_url, internal_id));
- 
+           std::move(transferrable_loader), response_url, internal_id,
+           response_head->mime_type));

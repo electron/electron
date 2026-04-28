@@ -103,7 +103,6 @@
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
-#include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "shell/browser/api/electron_api_extensions.h"
@@ -553,6 +552,7 @@ gin::WrapperInfo Session::kWrapperInfo =
 Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : isolate_(isolate),
       network_emulation_token_(base::UnguessableToken::Create()),
+      network_emulation_client_id_(base::UnguessableToken::Create()),
       browser_context_{browser_context} {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   data->AddDisposeObserver(this);
@@ -827,6 +827,7 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetNetworkConditions(network_emulation_token_,
+                                        network_emulation_client_id_,
                                         std::move(matched_conditions));
 }
 
@@ -835,6 +836,7 @@ void Session::DisableNetworkEmulation() {
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   std::vector<network::mojom::MatchedNetworkConditionsPtr> network_conditions;
   network_context->SetNetworkConditions(network_emulation_token_,
+                                        network_emulation_client_id_,
                                         std::move(network_conditions));
 }
 
@@ -1336,12 +1338,11 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo() {
   return handle;
 }
 
-v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
-  if (cookies_.IsEmptyThreadSafe()) {
-    auto handle = Cookies::Create(isolate, browser_context());
-    cookies_.Reset(isolate, handle.ToV8());
+api::Cookies* Session::Cookies(v8::Isolate* isolate) {
+  if (!cookies_) {
+    cookies_ = Cookies::Create(isolate, browser_context());
   }
-  return cookies_.Get(isolate);
+  return cookies_;
 }
 
 api::Extensions* Session::Extensions(v8::Isolate* isolate) {

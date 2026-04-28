@@ -8,7 +8,7 @@ an ExternalPointerTypeTag parameter. Use kExternalPointerTypeTagDefault
 for all existing call sites.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index d6af2460c3745901415d4e785cf210da8a730a8d..4b5b892b81727c8f93e3041d33902c31d3776a52 100644
+index ff7a5917b554fc0c67edf4e36f567e7223e70577..23aaa364e955753a92c3cb575646955c40cdfd55 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -2336,7 +2336,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
@@ -100,7 +100,7 @@ index d067b47e7e30a95740fe0275c70445707dec426b..391c57eed9058602bd8311d885cf5fc6
    env->compile_cache_handler()->MaybeSave(cache_entry, utf8.ToStringView());
  }
 diff --git a/src/node_util.cc b/src/node_util.cc
-index e9f4c1cdb60c03dce210f49e18dda57a4934a8b5..263edfd92e38c66f7912c602b306d420b503a839 100644
+index 065ed602b314f367c2e7dec94019521fd5d23bf4..8be8a8b5726a265a838841a21bb023fa41ceeb13 100644
 --- a/src/node_util.cc
 +++ b/src/node_util.cc
 @@ -93,7 +93,7 @@ static void GetExternalValue(

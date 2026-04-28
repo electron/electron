@@ -18,7 +18,7 @@ jobs:
     permissions: {}
     steps:
       - name: Trigger Slack workflow
-        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        uses: slackapi/slack-github-action@03ea5433c137af7c0495bc0cad1af10403fc800c # v3.0.2
         with:
           webhook: ${{ secrets.BACKPORT_REQUESTED_SLACK_WEBHOOK_URL }} 
           webhook-type: webhook-trigger
@@ -36,13 +36,13 @@ jobs:
     permissions: {}
     steps:
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
         id: generate-token
         with:
           creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
           org: electron
       - name: Set status
-        uses: dsanders11/project-actions/edit-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
+        uses: dsanders11/project-actions/edit-item@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 94
@@ -55,7 +55,7 @@ jobs:
     permissions: {}
     steps:
     - name: Generate GitHub App token
-      uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+      uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
       id: generate-token
       with:
         creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}

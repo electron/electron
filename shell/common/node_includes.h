@@ -16,6 +16,9 @@
 
 #include "electron/push_and_undef_node_defines.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wexit-time-destructors"
+
 #include "env-inl.h"
 #include "env.h"
 #include "node.h"
@@ -29,6 +32,8 @@
 #include "node_platform.h"
 #include "node_report.h"
 #include "tracing/agent.h"
+
+#pragma clang diagnostic pop
 
 #include "electron/pop_node_defines.h"
 

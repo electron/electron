@@ -125,6 +125,12 @@ ElectronExtensionsBrowserClient::GetContextRedirectedToOriginal(
   return GetOriginalContext(context);
 }
 
+content::BrowserContext* ElectronExtensionsBrowserClient::
+    GetContextRedirectedToOriginalWithoutAshInternals(
+        content::BrowserContext* context) {
+  return GetOriginalContext(context);
+}
+
 content::BrowserContext* ElectronExtensionsBrowserClient::GetContextOwnInstance(
     content::BrowserContext* context) {
   return context;
@@ -250,11 +256,6 @@ bool ElectronExtensionsBrowserClient::AllowCrossRendererResourceLoad(
 
   // Couldn't determine if resource is allowed. Block the load.
   return false;
-}
-
-PrefService* ElectronExtensionsBrowserClient::GetPrefServiceForContext(
-    BrowserContext* context) {
-  return static_cast<ElectronBrowserContext*>(context)->prefs();
 }
 
 void ElectronExtensionsBrowserClient::GetEarlyExtensionPrefsObservers(

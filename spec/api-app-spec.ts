@@ -9,13 +9,14 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as net from 'node:net';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
+import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -1510,6 +1511,92 @@ describe('app module', () => {
     it('returns an empty string for a bogus protocol', () => {
       expect(app.getApplicationNameForProtocol('bogus-protocol://')).to.equal('');
     });
+
+    ifdescribe(process.platform === 'linux')('on Linux with mocked XDG dirs', () => {
+      const fixtureApp = path.join(fixturesPath, 'api', 'protocol-name');
+      const desktopFileId = 'mock-browser.desktop';
+      const mockDisplayName = 'Mock Browser';
+      const mockScheme = 'mockproto';
+      const mockMimeType = `x-scheme-handler/${mockScheme}`;
+
+      function spawnWithXdgMock(url: string, xdgDataHome: string, xdgConfigHome: string): Promise<string> {
+        return new Promise((resolve, reject) => {
+          const child = cp.spawn(process.execPath, [fixtureApp, url], {
+            env: {
+              ...process.env,
+              XDG_DATA_HOME: xdgDataHome,
+              XDG_DATA_DIRS: xdgDataHome,
+              XDG_CONFIG_HOME: xdgConfigHome
+            },
+            stdio: ['ignore', 'pipe', 'pipe']
+          });
+          let stdout = '';
+          let stderr = '';
+          child.stdout.on('data', (d: Buffer) => {
+            stdout += d;
+          });
+          child.stderr.on('data', (d: Buffer) => {
+            stderr += d;
+          });
+          child.on('close', (code) => {
+            if (code !== 0) {
+              reject(new Error(`Fixture exited with code ${code}: ${stderr}`));
+              return;
+            }
+
+            try {
+              const parsed = JSON.parse(stdout);
+              resolve(parsed.name);
+            } catch {
+              reject(new Error(`Failed to parse output: ${stdout}\nstderr: ${stderr}`));
+            }
+          });
+          child.on('error', reject);
+        });
+      }
+
+      let xdgDir: string;
+      let xdgDataHome: string;
+      let xdgConfigHome: string;
+      before(() => {
+        xdgDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-xdg-'));
+        xdgDataHome = path.join(xdgDir, 'data');
+        xdgConfigHome = path.join(xdgDir, 'config');
+        const appsDir = path.join(xdgDataHome, 'applications');
+        fs.mkdirSync(appsDir, { recursive: true });
+        fs.mkdirSync(xdgConfigHome, { recursive: true });
+
+        fs.writeFileSync(
+          path.join(appsDir, desktopFileId),
+          [
+            '[Desktop Entry]',
+            `Name=${mockDisplayName}`,
+            'Exec=/usr/bin/true %u',
+            'Type=Application',
+            `MimeType=${mockMimeType};`
+          ].join('\n')
+        );
+
+        fs.writeFileSync(
+          path.join(xdgConfigHome, 'mimeapps.list'),
+          ['[Default Applications]', `${mockMimeType}=${desktopFileId}`].join('\n')
+        );
+      });
+
+      after(() => {
+        fs.rmSync(xdgDir, { recursive: true, force: true });
+      });
+
+      it('returns the display name for a registered protocol', async () => {
+        const name = await spawnWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome);
+        expect(name).to.equal(mockDisplayName);
+      });
+
+      it('returns an empty string for an unregistered protocol', async () => {
+        const name = await spawnWithXdgMock('unregistered-proto://', xdgDataHome, xdgConfigHome);
+        expect(name).to.equal('');
+      });
+    });
   });
 
   ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
@@ -1530,6 +1617,73 @@ describe('app module', () => {
   describe('isDefaultProtocolClient()', () => {
     it('returns false for a bogus protocol', () => {
       expect(app.isDefaultProtocolClient('bogus-protocol://')).to.equal(false);
+    });
+  });
+
+  ifdescribe(process.platform === 'linux')('default protocol client APIs', () => {
+    const protocol = 'electron-test-linux';
+    const desktopFileId = 'electron-test.desktop';
+    const protocolMimeType = `x-scheme-handler/${protocol}`;
+
+    // GIO caches XDG directory paths at process startup, so we must
+    // operate on the directories it is actually monitoring rather than
+    // creating isolated temp dirs.
+    const gioDataHome = process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share');
+    const gioConfigHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+    const desktopFileDst = path.join(gioDataHome, 'applications', desktopFileId);
+    const mimeappsListPath = path.join(gioConfigHome, 'mimeapps.list');
+
+    beforeEach(() => {
+      const oldDesktopName = process.env.CHROME_DESKTOP;
+
+      // Install the test .desktop file where GIO can discover it.
+      fs.mkdirSync(path.dirname(desktopFileDst), { recursive: true });
+      fs.copyFileSync(
+        path.join(fixturesPath, 'api', 'xdg-mock', 'data', 'applications', desktopFileId),
+        desktopFileDst
+      );
+
+      app.setDesktopName(desktopFileId);
+
+      defer(() => {
+        // Restore CHROME_DESKTOP.
+        if (oldDesktopName !== undefined) {
+          process.env.CHROME_DESKTOP = oldDesktopName;
+        } else {
+          delete process.env.CHROME_DESKTOP;
+        }
+
+        // Remove the test .desktop file.
+        try {
+          fs.unlinkSync(desktopFileDst);
+        } catch {}
+
+        // Remove any association for the test protocol from mimeapps.list.
+        if (fs.existsSync(mimeappsListPath)) {
+          const content = fs.readFileSync(mimeappsListPath, 'utf8');
+          const cleaned = content
+            .split('\n')
+            .filter((line) => !line.includes(protocolMimeType))
+            .join('\n');
+          if (cleaned !== content) {
+            fs.writeFileSync(mimeappsListPath, cleaned);
+          }
+        }
+      });
+    });
+
+    it('sets and queries the default protocol client', async () => {
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
+
+      // GIO needs to discover the newly installed .desktop file via inotify.
+      await waitUntil(() => app.setAsDefaultProtocolClient(protocol));
+
+      await waitUntil(() => app.isDefaultProtocolClient(protocol));
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(true);
+
+      // Changing identity should make the check return false.
+      app.setDesktopName('other-app.desktop');
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
     });
   });
 

@@ -105,21 +105,25 @@ electron_mac_bundle_id = branding.mac_bundle_id
 if (override_electron_version != "") {
   electron_version = override_electron_version
 } else {
-  # When building from source code tarball there is no git tag available and
+  # When building from a source code tarball there is no git tag available and
   # builders must explicitly pass override_electron_version in gn args.
+  #
+  # Resolve the real locations of packed-refs and HEAD via git so that this
+  # also works when electron/ is a `git worktree` (where .git is a file, not a
+  # directory, and GN's read_file cannot follow the gitdir indirection).
+  electron_git_ref_paths =
+      exec_script("script/get-git-ref-paths.py", [], "list lines")
+
   # This read_file call will assert if there is no git information, without it
   # gn will generate a malformed build configuration and ninja will get into
   # infinite loop.
-  read_file(".git/packed-refs", "string")
+  read_file(electron_git_ref_paths[0], "string")
 
   # Set electron version from git tag.
   electron_version = exec_script("script/get-git-version.py",
                                  [],
                                  "trim string",
-                                 [
-                                   ".git/packed-refs",
-                                   ".git/HEAD",
-                                 ])
+                                 electron_git_ref_paths)
 }
 
 if (is_mas_build) {
@@ -495,8 +499,10 @@ source_set("electron_lib") {
     "//components/certificate_transparency",
     "//components/compose:buildflags",
     "//components/embedder_support:user_agent",
+    "//components/heap_profiling/multi_process",
     "//components/input",
     "//components/language/core/browser",
+    "//components/memory_system",
     "//components/net_log",
     "//components/network_hints/browser",
     "//components/network_hints/common:mojo_bindings",
@@ -795,7 +801,7 @@ source_set("electron_lib") {
       "//components/zoom",
       "//extensions/browser",
       "//extensions/browser/api:api_provider",
-      "//extensions/browser/mime_handler:stream_info",
+      "//extensions/browser/mime_handler",
       "//extensions/browser/updater",
       "//extensions/common",
       "//extensions/common:core_api_provider",
@@ -1664,8 +1670,9 @@ action("node_version_header") {
 action("generate_node_headers") {
   deps = [ ":generate_config_gypi" ]
   script = "script/node/generate_node_headers.py"
-  args = [ rebase_path("$root_gen_dir") ]
+  inputs = auto_filenames.node_header_sources
   outputs = [ "$root_gen_dir/node_headers.json" ]
+  args = [ rebase_path("$root_gen_dir") ]
 }
 
 action("tar_node_headers") {

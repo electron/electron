@@ -558,9 +558,10 @@ describe('webContents module', () => {
       w.loadURL('data:text/html,<h1>HELLO</h1>');
     });
 
-    it('fails if loadurl is called after the navigation is ready to commit', () => {
+    it('fails if loadurl is called after the navigation is ready to commit', (done) => {
       w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
         expect(validatedURL).to.contain('blank.html');
+        done();
       });
 
       // @ts-expect-error internal-only event.
@@ -1222,6 +1223,11 @@ describe('webContents module', () => {
 
   describe('openDevTools() API', () => {
     afterEach(closeAllWindows);
+
+    async function getViewportSize(w: BrowserWindow) {
+      return await w.webContents.executeJavaScript('({ width: window.innerWidth, height: window.innerHeight })');
+    }
+
     it('can show window with activation', async () => {
       const w = new BrowserWindow({ show: false });
       const focused = once(w, 'focus');
@@ -1241,6 +1247,48 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'detach', activate: false });
       await devtoolsOpened;
       expect(w.webContents.isDevToolsOpened()).to.be.true();
+    });
+
+    it('updates and restores the inspected page viewport for right-docked DevTools', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+
+      // wait for it to be shown, visible
+      const shown = once(w, 'show');
+      w.show();
+      await shown;
+      await waitUntil(async () => (await w.webContents.executeJavaScript('document.visibilityState')) === 'visible');
+
+      const initial = await getViewportSize(w);
+
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'right', activate: false });
+      await devtoolsOpened;
+
+      await expect(
+        waitUntil(async () => {
+          const viewport = await getViewportSize(w);
+          return viewport.width < initial.width;
+        })
+      ).to.eventually.be.fulfilled();
+
+      const dockedRight = await getViewportSize(w);
+      expect(dockedRight.width).to.be.lessThan(initial.width);
+      expect(dockedRight.height).to.be.closeTo(initial.height, 50);
+
+      const devtoolsClosed = once(w.webContents, 'devtools-closed');
+      w.webContents.closeDevTools();
+      await devtoolsClosed;
+
+      await expect(
+        waitUntil(async () => {
+          const restoredViewport = await getViewportSize(w);
+          return restoredViewport.width === initial.width && restoredViewport.height === initial.height;
+        })
+      ).to.eventually.be.fulfilled();
+
+      const restoredViewport = await getViewportSize(w);
+      expect(restoredViewport).to.deep.equal(initial);
     });
 
     it('can show a DevTools window with custom title', async () => {
@@ -1815,6 +1863,155 @@ describe('webContents module', () => {
 
       await w.loadURL('about:blank');
       expect(w.webContents.getOSProcessId()).to.be.above(0);
+    });
+  });
+
+  describe('clone()', () => {
+    afterEach(closeAllWindows);
+    afterEach(() => {
+      webContents.getAllWebContents().forEach((wc) => {
+        wc.destroy();
+      });
+    });
+
+    it('web-contents-created event will be emitted for cloned WebContents', async () => {
+      const w = new BrowserWindow({
+        show: false
+      });
+
+      const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+      const clonedContents = w.webContents.clone();
+      const [, createdContents] = await webContentsCreated;
+
+      expect(clonedContents).to.equal(createdContents);
+      expect(createdContents).to.not.equal(w.webContents);
+    });
+
+    it('clones a WebContents instance', async () => {
+      const w = new BrowserWindow({
+        show: false
+      });
+      const clonedContents = w.webContents.clone();
+      expect(clonedContents).to.not.be.undefined();
+      expect(clonedContents).to.not.equal(w.webContents);
+      await clonedContents.loadURL('about:blank');
+      expect(clonedContents.getOSProcessId()).to.be.a('number').and.be.above(0);
+    });
+
+    it('cloned and original WebContents have different process IDs when loading same URL', async () => {
+      const w = new BrowserWindow({
+        show: false
+      });
+      const clonedContents = w.webContents.clone();
+      expect(clonedContents).to.not.be.undefined();
+
+      // Load the same URL in both original and cloned WebContents
+      await w.webContents.loadURL('https://docs.qq.com');
+      await clonedContents.loadURL('https://docs.qq.com');
+
+      // They should have different process IDs since they are separate processes
+      const originalPID = w.webContents.getOSProcessId();
+      const clonedPID = clonedContents.getOSProcessId();
+
+      expect(originalPID).to.be.above(0);
+      expect(clonedPID).to.be.above(0);
+      expect(originalPID).to.equal(clonedPID);
+
+      // Create a new BrowserWindow with same URL
+      const w2 = new BrowserWindow({
+        show: false
+      });
+      await w2.webContents.loadURL('https://docs.qq.com');
+      const newWindowPID = w2.webContents.getOSProcessId();
+
+      // New window should also have a different process ID
+      expect(newWindowPID).to.be.above(0);
+      expect(newWindowPID).to.not.equal(originalPID);
+    });
+
+    it('node integration and ipc message work in both original and cloned WebContents', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: false,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      // Load a simple page
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      // Keep track of messages received
+      let message = '';
+      const onOriginalMessage = (_event: any, msg: string) => {
+        message = msg;
+      };
+      const onClonedMessage = (_event: any, msg: string) => {
+        message = msg;
+      };
+
+      ipcMain.once('test-node-integration-original', onOriginalMessage);
+
+      // Test original WebContents can use require('electron') and send ipc
+      await w.webContents.executeJavaScript(`
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('test-node-integration-original', 'message from original');
+      `);
+
+      // Wait for message to be processed
+      await setTimeout(100);
+      expect(message).to.equal('message from original');
+      const clonedContents = w.webContents.clone();
+      expect(clonedContents).to.not.be.undefined();
+
+      await clonedContents.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+
+      ipcMain.once('test-node-integration-cloned', onClonedMessage);
+
+      // Test cloned WebContents can use require('electron') and send ipc
+      await clonedContents.executeJavaScript(`
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.send('test-node-integration-cloned', 'message from cloned');
+      `);
+
+      // Wait for message to be processed
+      await setTimeout(100);
+      expect(message).to.equal('message from cloned');
+    });
+
+    it('cloned WebContents has independent lifecycle from original', async () => {
+      const w = new BrowserWindow({
+        show: false
+      });
+
+      // Load URL to ensure WebContents is initialized
+      await w.loadURL('about:blank');
+
+      // Clone the WebContents
+      const clonedContents = w.webContents.clone();
+      expect(clonedContents).to.not.be.undefined();
+
+      await clonedContents.loadURL('about:blank');
+
+      // Both should not be destroyed initially
+      expect(w.webContents.isDestroyed()).to.be.false();
+      expect(clonedContents.isDestroyed()).to.be.false();
+
+      const origWebContents = w.webContents;
+
+      // Destroy the original WebContents
+      w.webContents.destroy();
+
+      await setTimeout();
+
+      // Original should be destroyed, but cloned should still be alive
+      expect(origWebContents.isDestroyed()).to.be.true();
+      expect(clonedContents.isDestroyed()).to.be.false();
+
+      // Cloned WebContents should still be usable
+      const url = clonedContents.getURL();
+      expect(url).to.equal('about:blank');
     });
   });
 
@@ -3138,6 +3335,16 @@ describe('webContents module', () => {
 
       // Check that correct # of pages are rendered.
       expect(pdfInfo.numPages).to.equal(3);
+    });
+
+    it('recovers after a prior call fails with an invalid page range', async () => {
+      await w.loadURL('data:text/html,<h1>Hello, World!</h1>');
+
+      await expect(w.webContents.printToPDF({ pageRanges: '999' })).to.eventually.be.rejected();
+
+      const data = await w.webContents.printToPDF({});
+      const pdfInfo = await readPDF(data);
+      expect(pdfInfo.numPages).to.equal(1);
     });
 
     it('does not tag PDFs by default', async () => {

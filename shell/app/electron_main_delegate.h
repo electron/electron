@@ -9,6 +9,7 @@
 #include <string>
 #include <string_view>
 
+#include "components/memory_system/memory_system.h"
 #include "content/public/app/content_main_delegate.h"
 
 namespace content {
@@ -47,6 +48,7 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   void PreSandboxStartup() override;
   void SandboxInitialized(const std::string& process_type) override;
   std::optional<int> PreBrowserMain() override;
+  std::optional<int> PostEarlyInitialization(InvokedIn invoked_in) override;
   content::ContentClient* CreateContentClient() override;
   content::ContentBrowserClient* CreateContentBrowserClient() override;
   content::ContentGpuClient* CreateContentGpuClient() override;
@@ -63,6 +65,8 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   void ZygoteForked() override;
 #endif
 
+  void InitializeMemorySystem();
+
  private:
   std::unique_ptr<content::ContentBrowserClient> browser_client_;
   std::unique_ptr<content::ContentClient> content_client_;
@@ -70,6 +74,8 @@ class ElectronMainDelegate : public content::ContentMainDelegate {
   std::unique_ptr<content::ContentRendererClient> renderer_client_;
   std::unique_ptr<content::ContentUtilityClient> utility_client_;
   std::unique_ptr<tracing::TracingSamplerProfiler> tracing_sampler_profiler_;
+
+  memory_system::MemorySystem memory_system_;
 };
 
 }  // namespace electron
