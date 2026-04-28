@@ -1,4 +1,5 @@
 const { app, contentTracing } = require('electron');
+
 const assert = require('node:assert/strict');
 
 (async () => {
