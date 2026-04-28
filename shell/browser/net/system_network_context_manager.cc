@@ -271,7 +271,6 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
       base::FeatureList::IsEnabled(net::features::kHappyEyeballsV3),
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled,
       {} /*fallback_doh_nameservers*/);
-
 }
 
 network::mojom::NetworkContextParamsPtr

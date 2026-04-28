@@ -94,7 +94,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   int max_cache_size() const { return max_cache_size_; }
   ResolveProxyHelper* GetResolveProxyHelper();
   content::PreconnectManager* GetPreconnectManager();
-  scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
+  scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory() override;
   scoped_refptr<network::SharedURLLoaderFactory> InterceptURLLoaderFactory(
       scoped_refptr<network::SharedURLLoaderFactory> factory);
 

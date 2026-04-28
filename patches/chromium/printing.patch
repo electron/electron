@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index f91857eb0b6ad385721b8224100de26dfdd7dd8d..45e8766fcb8d46d8edc3bf8d21d3f826a8ae24be 100644
+index bb7a4f4ff71cdbd98461feeac00cea5949d260c8..fff4e09b5891adacd6d61bdd31c1badf576cc6f5 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -97,6 +97,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -20,7 +20,7 @@ index f91857eb0b6ad385721b8224100de26dfdd7dd8d..45e8766fcb8d46d8edc3bf8d21d3f826
  
 +#if 0
  PrefService* GetPrefsForWebContents(content::WebContents* web_contents) {
-   // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
+   // TODO(thestig): Figure out why crbug.com/40692772 occurred, which is likely
    // because `web_contents` was null. As a result, this section has many more
 @@ -111,6 +112,7 @@ content::WebContents* GetWebContents(content::GlobalRenderFrameHostId rfh_id) {
    auto* rfh = content::RenderFrameHost::FromID(rfh_id);
@@ -620,7 +620,7 @@ index 2a477e820d9f0126a05f86cd44f02c2189275bad..a2e9442ff9f5acf8e301f457b1806251
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/printer_query_oop.cc b/chrome/browser/printing/printer_query_oop.cc
-index dc2a15ab4d784b0b6c85b84a30c3c08a17ed8e3d..5ca7920c8525c3c72fd96b14709fb35a9cc28daf 100644
+index 1e160aab45a5beccd1c25e8dcb23e1cd021b5231..5111a41714401c5e7231e531005b7e4032c26708 100644
 --- a/chrome/browser/printing/printer_query_oop.cc
 +++ b/chrome/browser/printing/printer_query_oop.cc
 @@ -126,7 +126,7 @@ void PrinterQueryOop::OnDidAskUserForSettings(

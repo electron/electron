@@ -34,7 +34,7 @@ into Chromium.
 Bug: 40794596
 
 diff --git a/ui/accessibility/ax_event_generator.cc b/ui/accessibility/ax_event_generator.cc
-index ce044723936adebaee970da8c457b3e4a0f58b15..f4194de88891a3374abe4c5a6c67b01217b26ecf 100644
+index 2eca9ac348e24b7cdd605f67d78a607d91ee47f6..95cf5f62d885a237a5aa687519ec2aafa79a2460 100644
 --- a/ui/accessibility/ax_event_generator.cc
 +++ b/ui/accessibility/ax_event_generator.cc
 @@ -4,6 +4,7 @@
@@ -58,7 +58,7 @@ index ce044723936adebaee970da8c457b3e4a0f58b15..f4194de88891a3374abe4c5a6c67b012
  namespace {
  
  bool HasEvent(const std::set<AXEventGenerator::EventParams>& node_events,
-@@ -1011,12 +1018,31 @@ void AXEventGenerator::OnAtomicUpdateFinished(
+@@ -1023,12 +1030,31 @@ void AXEventGenerator::OnAtomicUpdateFinished(
                               /*new_value*/ true);
      }
  

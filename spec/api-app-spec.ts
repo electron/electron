@@ -20,21 +20,6 @@ import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spe
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
-const xdgMockFixturePath = path.join(fixturesPath, 'api', 'xdg-mock');
-
-function makeXdgMockDirectories(prefix: string) {
-  const xdgDir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
-  fs.cpSync(xdgMockFixturePath, xdgDir, { recursive: true });
-
-  const xdgDataHome = path.join(xdgDir, 'data');
-  const xdgConfigHome = path.join(xdgDir, 'config');
-  const xdgBinDir = path.join(xdgDir, 'bin');
-
-  fs.chmodSync(path.join(xdgBinDir, 'xdg-mime'), 0o755);
-  fs.chmodSync(path.join(xdgBinDir, 'xdg-settings'), 0o755);
-
-  return { xdgDir, xdgDataHome, xdgConfigHome, xdgBinDir };
-}
 
 const isMacOSx64 = process.platform === 'darwin' && process.arch === 'x64';
 
@@ -1635,92 +1620,70 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'linux')('default protocol client APIs with mocked XDG settings', () => {
+  ifdescribe(process.platform === 'linux')('default protocol client APIs', () => {
     const protocol = 'electron-test-linux';
     const desktopFileId = 'electron-test.desktop';
     const protocolMimeType = `x-scheme-handler/${protocol}`;
 
-    let xdgDir: string;
-    let xdgDataHome: string;
-    let xdgConfigHome: string;
-    let xdgBinDir: string;
-    let oldEnv: Record<string, string | undefined>;
-
-    const getRegisteredHandler = () => {
-      for (const list of [
-        path.join(xdgConfigHome, 'mimeapps.list'),
-        path.join(xdgDataHome, 'applications', 'mimeapps.list'),
-        path.join(xdgDataHome, 'applications', 'defaults.list')
-      ]) {
-        if (!fs.existsSync(list)) continue;
-
-        const match = fs
-          .readFileSync(list, 'utf8')
-          .split('\n')
-          .find((line) => line.startsWith(`${protocolMimeType}=`));
-
-        // foo=bar.desktop; --> bar.desktop
-        if (match) return match.split('=', 2)[1].split(';', 1)[0];
-      }
-
-      return '';
-    };
+    // GIO caches XDG directory paths at process startup, so we must
+    // operate on the directories it is actually monitoring rather than
+    // creating isolated temp dirs.
+    const gioDataHome = process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share');
+    const gioConfigHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+    const desktopFileDst = path.join(gioDataHome, 'applications', desktopFileId);
+    const mimeappsListPath = path.join(gioConfigHome, 'mimeapps.list');
 
     beforeEach(() => {
-      ({ xdgDir, xdgDataHome, xdgConfigHome, xdgBinDir } = makeXdgMockDirectories('electron-xdg-default-client-'));
+      const oldDesktopName = process.env.CHROME_DESKTOP;
 
-      oldEnv = {
-        PATH: process.env.PATH,
-        CHROME_DESKTOP: process.env.CHROME_DESKTOP,
-        XDG_DATA_HOME: process.env.XDG_DATA_HOME,
-        XDG_DATA_DIRS: process.env.XDG_DATA_DIRS,
-        XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME
-      };
+      // Install the test .desktop file where GIO can discover it.
+      fs.mkdirSync(path.dirname(desktopFileDst), { recursive: true });
+      fs.copyFileSync(
+        path.join(fixturesPath, 'api', 'xdg-mock', 'data', 'applications', desktopFileId),
+        desktopFileDst
+      );
+
+      app.setDesktopName(desktopFileId);
 
       defer(() => {
-        for (const [key, value] of Object.entries(oldEnv)) {
-          if (value === undefined) {
-            delete process.env[key];
-          } else {
-            process.env[key] = value;
-          }
+        // Restore CHROME_DESKTOP.
+        if (oldDesktopName !== undefined) {
+          process.env.CHROME_DESKTOP = oldDesktopName;
+        } else {
+          delete process.env.CHROME_DESKTOP;
         }
 
-        fs.rmSync(xdgDir, { recursive: true, force: true });
+        // Remove the test .desktop file.
+        try {
+          fs.unlinkSync(desktopFileDst);
+        } catch {}
+
+        // Remove any association for the test protocol from mimeapps.list.
+        if (fs.existsSync(mimeappsListPath)) {
+          const content = fs.readFileSync(mimeappsListPath, 'utf8');
+          const cleaned = content
+            .split('\n')
+            .filter((line) => !line.includes(protocolMimeType))
+            .join('\n');
+          if (cleaned !== content) {
+            fs.writeFileSync(mimeappsListPath, cleaned);
+          }
+        }
       });
-
-      process.env.PATH = [xdgBinDir, oldEnv.PATH].filter(Boolean).join(':');
-      process.env.XDG_DATA_HOME = xdgDataHome;
-      process.env.XDG_DATA_DIRS = [xdgDataHome, oldEnv.XDG_DATA_DIRS].filter(Boolean).join(':');
-      process.env.XDG_CONFIG_HOME = xdgConfigHome;
-      app.setDesktopName(desktopFileId);
     });
 
-    it('writes the default handler to the XDG association files', async () => {
-      expect(getRegisteredHandler()).to.equal('');
-
-      expect(app.setAsDefaultProtocolClient(protocol)).to.equal(true);
-
-      await waitUntil(() => getRegisteredHandler() === desktopFileId);
-      expect(getRegisteredHandler()).to.equal(desktopFileId);
-    });
-
-    it('detects whether the app is the default protocol client', async () => {
+    it('sets and queries the default protocol client', async () => {
       expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
 
-      fs.writeFileSync(
-        path.join(xdgConfigHome, 'mimeapps.list'),
-        ['[Default Applications]', `${protocolMimeType}=other.desktop`].join('\n')
-      );
-      expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
-
-      fs.writeFileSync(
-        path.join(xdgConfigHome, 'mimeapps.list'),
-        ['[Default Applications]', `${protocolMimeType}=${desktopFileId}`].join('\n')
-      );
+      // GIO needs to discover the newly installed .desktop file via inotify.
+      await waitUntil(() => app.setAsDefaultProtocolClient(protocol));
 
       await waitUntil(() => app.isDefaultProtocolClient(protocol));
       expect(app.isDefaultProtocolClient(protocol)).to.equal(true);
+
+      // Changing identity should make the check return false.
+      app.setDesktopName('other-app.desktop');
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
     });
   });
 
