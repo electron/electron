@@ -411,6 +411,23 @@ describe('webRequest module', () => {
       expect(called).to.be.true();
     });
 
+    it('does not crash on invalid header name or value', async () => {
+      ses.webRequest.onBeforeSendHeaders((details, callback) => {
+        const requestHeaders = details.requestHeaders;
+        requestHeaders['Invalid Header'] = 'valid-value';
+        requestHeaders['Valid-Header'] = 'invalid\r\nvalue';
+        requestHeaders['X-Good'] = 'good-value';
+        callback({ requestHeaders });
+      });
+      ses.webRequest.onSendHeaders((details) => {
+        expect(details.requestHeaders['Invalid Header']).to.be.undefined();
+        expect(details.requestHeaders['Valid-Header']).to.be.undefined();
+        expect(details.requestHeaders['X-Good']).to.equal('good-value');
+      });
+      const { data } = await ajax(defaultURL);
+      expect(data).to.equal('/');
+    });
+
     it('resets the whole headers', async () => {
       const requestHeaders = {
         Test: 'header'
