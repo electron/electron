@@ -265,9 +265,25 @@ void BrowserWindow::BlurWebView() {
 }
 
 v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
-  if (web_contents_.IsEmpty())
+  if (web_contents_.IsEmpty() || !api_web_contents_)
     return v8::Null(isolate);
   return v8::Local<v8::Value>::New(isolate, web_contents_);
+}
+
+// static
+void BrowserWindow::GetWebContentsCallback(
+    const v8::FunctionCallbackInfo<v8::Value>& info) {
+  v8::Isolate* isolate = info.GetIsolate();
+  if (gin_helper::Destroyable::IsDestroyed(info.This())) {
+    info.GetReturnValue().Set(v8::Null(isolate));
+    return;
+  }
+  BrowserWindow* self = nullptr;
+  if (!gin::ConvertFromV8(isolate, info.This(), &self) || !self) {
+    info.GetReturnValue().Set(v8::Null(isolate));
+    return;
+  }
+  info.GetReturnValue().Set(self->GetWebContents(isolate));
 }
 
 void BrowserWindow::OnWindowShow() {
@@ -326,8 +342,14 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(gin::StringToV8(isolate, "BrowserWindow"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
-      .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
-      .SetProperty("webContents", &BrowserWindow::GetWebContents);
+      .SetMethod("blurWebView", &BrowserWindow::BlurWebView);
+
+  // Bind webContents as a raw V8 accessor so that accessing it on a destroyed
+  // BrowserWindow returns null instead of throwing "Object has been destroyed".
+  prototype->PrototypeTemplate()->SetAccessorProperty(
+      gin::StringToSymbol(isolate, "webContents"),
+      v8::FunctionTemplate::New(isolate,
+                                &BrowserWindow::GetWebContentsCallback));
 }
 
 // static
