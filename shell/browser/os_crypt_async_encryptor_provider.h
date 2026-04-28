@@ -23,7 +23,7 @@ namespace electron {
 class OSCryptAsyncEncryptorProvider {
  public:
   using EncryptorCallback =
-            base::OnceCallback<void(const os_crypt_async::Encryptor*)>;
+      base::OnceCallback<void(const os_crypt_async::Encryptor*)>;
 
   explicit OSCryptAsyncEncryptorProvider(
       os_crypt_async::OSCryptAsync* os_crypt_async);
@@ -33,10 +33,9 @@ class OSCryptAsyncEncryptorProvider {
   OSCryptAsyncEncryptorProvider& operator=(
       const OSCryptAsyncEncryptorProvider&) = delete;
 
-  void GetEncryptor(
-      EncryptorCallback callback,
-      os_crypt_async::Encryptor::Option option =
-          os_crypt_async::Encryptor::Option::kEncryptSyncCompat);
+  void GetEncryptor(EncryptorCallback callback,
+                    os_crypt_async::Encryptor::Option option =
+                        os_crypt_async::Encryptor::Option::kEncryptSyncCompat);
 
  private:
   void EnsureEncryptorRequested(os_crypt_async::Encryptor::Option option);

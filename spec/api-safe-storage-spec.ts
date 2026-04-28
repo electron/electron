@@ -30,34 +30,25 @@ describe('safeStorage module', () => {
 
   describe('sync API deprecation warnings', () => {
     it('emits a deprecation warning for isEncryptionAvailable()', async () => {
-      await expectDeprecationMessages(
-        () => {
-          safeStorage.isEncryptionAvailable();
-          safeStorage.isEncryptionAvailable();
-        },
-        'safeStorage.isEncryptionAvailable() is deprecated, use safeStorage.isAsyncEncryptionAvailable() instead.'
-      );
+      await expectDeprecationMessages(() => {
+        safeStorage.isEncryptionAvailable();
+        safeStorage.isEncryptionAvailable();
+      }, 'safeStorage.isEncryptionAvailable() is deprecated, use safeStorage.isAsyncEncryptionAvailable() instead.');
     });
 
     it('emits a deprecation warning for encryptString()', async () => {
-      await expectDeprecationMessages(
-        () => {
-          safeStorage.encryptString('plaintext');
-          safeStorage.encryptString('plaintext');
-        },
-        'safeStorage.encryptString() is deprecated, use safeStorage.encryptStringAsync() instead.'
-      );
+      await expectDeprecationMessages(() => {
+        safeStorage.encryptString('plaintext');
+        safeStorage.encryptString('plaintext');
+      }, 'safeStorage.encryptString() is deprecated, use safeStorage.encryptStringAsync() instead.');
     });
 
     it('emits a deprecation warning for decryptString()', async () => {
       const encrypted = await safeStorage.encryptStringAsync('plaintext');
-      await expectDeprecationMessages(
-        () => {
-          safeStorage.decryptString(encrypted);
-          safeStorage.decryptString(encrypted);
-        },
-        'safeStorage.decryptString() is deprecated, use safeStorage.decryptStringAsync() instead.'
-      );
+      await expectDeprecationMessages(() => {
+        safeStorage.decryptString(encrypted);
+        safeStorage.decryptString(encrypted);
+      }, 'safeStorage.decryptString() is deprecated, use safeStorage.decryptStringAsync() instead.');
     });
   });
 
