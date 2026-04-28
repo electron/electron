@@ -11,10 +11,12 @@
 #include <vector>
 
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/hash/sha1.h"
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/time/time.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
 #include "shell/browser/notifications/win/windows_toast_notification.h"
@@ -86,6 +88,29 @@ std::wstring NotificationPresenterWin::SaveIconToFilesystem(
     return L"";
 
   return path.value();
+}
+
+void NotificationPresenterWin::GetDeliveredNotifications(
+    GetDeliveredNotificationsCallback callback) {
+  scoped_refptr<base::SequencedTaskRunner> reply_runner =
+      base::SequencedTaskRunner::GetCurrentDefault();
+
+  WindowsToastNotification::GetToastTaskRunner()->PostTask(
+      FROM_HERE, base::BindOnce(
+                     [](scoped_refptr<base::SequencedTaskRunner> reply_runner,
+                        GetDeliveredNotificationsCallback callback) {
+                       std::vector<NotificationInfo> history =
+                           WindowsToastNotification::GetNotificationHistory();
+                       reply_runner->PostTask(
+                           FROM_HERE,
+                           base::BindOnce(
+                               [](GetDeliveredNotificationsCallback cb,
+                                  std::vector<NotificationInfo> history) {
+                                 std::move(cb).Run(std::move(history));
+                               },
+                               std::move(callback), std::move(history)));
+                     },
+                     reply_runner, std::move(callback)));
 }
 
 Notification* NotificationPresenterWin::CreateNotificationObject(

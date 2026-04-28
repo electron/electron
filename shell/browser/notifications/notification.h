@@ -111,11 +111,15 @@ class Notification {
 
   void set_delegate(NotificationDelegate* delegate) { delegate_ = delegate; }
   void set_notification_id(const std::string& id) { notification_id_ = id; }
+  void set_notification_group(const std::string& group) {
+    notification_group_ = group;
+  }
   void set_is_dismissed(bool dismissed) { is_dismissed_ = dismissed; }
 
   NotificationDelegate* delegate() const { return delegate_; }
   NotificationPresenter* presenter() const { return presenter_; }
   const std::string& notification_id() const { return notification_id_; }
+  const std::string& notification_group() const { return notification_group_; }
   bool is_dismissed() const { return is_dismissed_; }
 
   // disable copy
@@ -130,6 +134,7 @@ class Notification {
   raw_ptr<NotificationDelegate> delegate_;
   raw_ptr<NotificationPresenter> presenter_;
   std::string notification_id_;
+  std::string notification_group_;
   bool is_dismissed_ = false;
 
   base::WeakPtrFactory<Notification> weak_factory_{this};

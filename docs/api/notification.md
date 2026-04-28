@@ -76,25 +76,42 @@ app.whenReady().then(() => {
 })
 ```
 
-#### `Notification.getHistory()` _macOS_
+#### `Notification.getHistory()` _macOS_ _Windows_
 
-Returns `Promise<Notification[]>` - Resolves with an array of `Notification` objects representing all delivered notifications still present in Notification Center.
+Returns `Promise<Notification[]>` - Resolves with an array of `Notification` objects representing all delivered notifications still present in Notification Center (macOS) or Action Center (Windows).
 
-Each returned `Notification` is a live object connected to the corresponding delivered notification. Interaction events (`click`, `reply`, `action`, `close`) will fire on these objects when the user interacts with the notification in Notification Center. This is useful after an app restart to re-attach event handlers to notifications from a previous session.
+Each returned `Notification` is a live object connected to the corresponding delivered notification. Interaction events (`click`, `reply`, `action`, `close`) will fire on these objects when the user interacts with the notification. This is useful after an app restart to re-attach event handlers to notifications from a previous session.
 
-The returned notifications have their `id`, `groupId`, `title`, `subtitle`, and `body` properties populated from information available in the Notification Center. Other properties (e.g., `actions`, `silent`, `icon`) are not available from delivered notifications and will have default values.
+The returned notifications have their `id`, `groupId`, `title`, and `body` properties populated from the platform. On macOS, `subtitle` is also populated. Other properties (e.g., `actions`, `silent`, `icon`) are not available from delivered notifications and will have default values.
 
 > [!NOTE]
-> Like all macOS notification APIs, this method requires the application to be
-> code-signed. In unsigned development builds, notifications are not delivered
-> to Notification Center and this method will resolve with an empty array.
+> On macOS, this method requires the application to be code-signed. In unsigned
+> development builds, notifications are not delivered to Notification Center and
+> this method will resolve with an empty array.
+
+> [!NOTE]
+> On Windows, notifications that have been dismissed by the user or have expired
+> are no longer present in Action Center and will not appear in the results.
+> Electron automatically injects the notification's `id` and `groupId` into the
+> toast's `launch` attribute so that click events are routed to the correct
+> restored object. This works for both built-in and custom `toastXml`
+> notifications.
+
+> [!NOTE]
+> For objects returned by `getHistory()`, `show()` is a no-op on every platform:
+> the main-process `Notification::Show()` implementation in
+> `shell/browser/api/electron_api_notification.cc` returns immediately when the
+> instance was restored (`is_restored_`), so native `show()` is never invoked.
+> That keeps the delivered notification in place while the object stays
+> connected for interaction events (Windows routes activations via the toast
+> `launch` payload; macOS uses `Restore()` plus the notification center
+> delegate). Calling `show()` on a non-restored notification still posts or
+> replaces a notification as usual.
 
 > [!NOTE]
 > Unlike notifications created with `new Notification()`, notifications returned
-> by `getHistory()` will remain visible in Notification Center when the object
-> is garbage collected. Calling `show()` on a restored notification will remove
-> the original from Notification Center and post a new one with the same
-> properties.
+> by `getHistory()` will remain visible in Notification Center / Action Center
+> when the object is garbage collected.
 
 ```js
 const { Notification, app } = require('electron')
@@ -331,9 +348,10 @@ call this method before the OS will display it.
 If the notification has been shown before, this method will dismiss the previously
 shown notification and create a new one with identical properties.
 
-On macOS, calling `show()` on a notification returned by `Notification.getHistory()` will
-remove the original notification from Notification Center and post a new one with the same
-properties.
+For a notification returned by `Notification.getHistory()`, this method does nothing:
+the instance is marked restored and `show()` returns before touching the platform
+notification, so the entry stays in Notification Center / Action Center and
+interaction events keep routing to the same object.
 
 ```js
 const { Notification, app } = require('electron')

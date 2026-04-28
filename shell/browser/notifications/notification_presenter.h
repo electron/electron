@@ -29,7 +29,8 @@ class NotificationPresenter {
 
   base::WeakPtr<Notification> CreateNotification(
       NotificationDelegate* delegate,
-      const std::string& notification_id);
+      const std::string& notification_id,
+      const std::string& notification_group = "");
   void CloseNotificationWithId(const std::string& notification_id);
 
   virtual void GetDeliveredNotifications(
