@@ -48,9 +48,15 @@ class WindowsToastNotification : public Notification {
   static bool Initialize();
 
   // Queries Windows Action Center for all delivered notifications belonging
-  // to this app and returns them as NotificationInfo structs.  Designed to
-  // be called from a background thread (performs synchronous COM calls).
+  // to this app and returns them as NotificationInfo structs. Must run on
+  // GetToastTaskRunner() (see
+  // NotificationPresenterWin::GetDeliveredNotifications); performs synchronous
+  // WinRT/COM calls.
   static std::vector<NotificationInfo> GetNotificationHistory();
+
+  // Sequenced runner for blocking WinRT toast work (Show, history). Used by
+  // NotificationPresenterWin::GetDeliveredNotifications among others.
+  static scoped_refptr<base::SequencedTaskRunner> GetToastTaskRunner();
 
   WindowsToastNotification(NotificationDelegate* delegate,
                            NotificationPresenter* presenter);
@@ -125,9 +131,6 @@ class WindowsToastNotification : public Notification {
   // The app model ID captured at Initialize() time, so history queries
   // use the same identity the notifier was created with.
   static std::wstring& init_app_id();
-
-  // Returns the task runner for toast operations, creating it if necessary.
-  static scoped_refptr<base::SequencedTaskRunner> GetToastTaskRunner();
 
   EventRegistrationToken activated_token_;
   EventRegistrationToken dismissed_token_;
