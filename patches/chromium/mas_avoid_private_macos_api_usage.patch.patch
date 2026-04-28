@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b6eda46513f34c3000c53eff9cee40f587483054..36590c346e64a55ee07e25e8cc1939eb12ca3c82 100644
+index 16fd234a12b251e943e1193998ac599cfa027860..57d283b024fa1d1f225ca76c7c7bff604be493bf 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1124,6 +1124,7 @@ component("base") {
@@ -869,10 +869,10 @@ index d58c5eff9f8fbca96d0912ab9a19d06974fd8016..94ee727830545ff1576685722c0fd0dd
  
  void NativeWidgetNSWindowBridge::SetColorMode(
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 86c7e67902a7e9c0f90c4d10ebabfef2f53c1ec4..c1be2f1a8dc4d834ffa2e5944f7dd2753740a4c6 100644
+index 1001fc872ae76c80c285a00f96a43c12910937cc..44072bd19a908aa0604e440e89c303cd8044f342 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -393,6 +393,7 @@ viz_component("service") {
+@@ -395,6 +395,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mojo_mac.h",
        ]
      }
@@ -880,7 +880,7 @@ index 86c7e67902a7e9c0f90c4d10ebabfef2f53c1ec4..c1be2f1a8dc4d834ffa2e5944f7dd275
    }
  
    if (is_ios) {
-@@ -738,6 +739,7 @@ viz_source_set("unit_tests") {
+@@ -740,6 +741,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -2495,7 +2495,7 @@ index 2914e7149f24fa903ca9861934a93e77f397e979..a258b94a8122c74b6f98f4b88b710371
  }
  
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
-index dfcff42888a014a1e1325fe164243051b616604a..603a18f125d1b2bf23a017c1ed97716e90842854 100644
+index e741b52a4db7ff481fe0f9c6d915465ccad8733d..2dd0d120848e8f2236f20bdaee20dd4b244891ff 100644
 --- a/ui/views/controls/webview/BUILD.gn
 +++ b/ui/views/controls/webview/BUILD.gn
 @@ -48,6 +48,12 @@ component("webview") {

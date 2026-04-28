@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 069196b656b5273317934280b77a2a9160d0136a..429e862e6ee46b8a4fbcc6ba6c9ac1b2147a1596 100644
+index 434db30ba5d8853147f36513049feb8b7f2e2fe1..2deaf6a1a187023febfff7398e20dea15bd18be9 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -84,11 +84,13 @@
@@ -16,7 +16,7 @@ index 069196b656b5273317934280b77a2a9160d0136a..429e862e6ee46b8a4fbcc6ba6c9ac1b2
  #include "chrome/browser/ui/tabs/public/tab_features.h"
  #include "chrome/browser/ui/views/file_system_access/file_system_access_page_action_controller.h"
 +#if 0
- #include "chrome/browser/web_applications/proto/web_app_install_state.pb.h"
+ #include "chrome/browser/web_applications/proto/web_app_install_state.pb.h"  // nogncheck
  #include "chrome/browser/web_applications/web_app_install_manager.h"
  #include "chrome/browser/web_applications/web_app_install_manager_observer.h"
  #include "chrome/browser/web_applications/web_app_provider.h"
