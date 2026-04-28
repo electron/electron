@@ -23,6 +23,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/synchronization/lock.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -181,6 +182,20 @@ constexpr char kXmlVersionHeader[] = "<?xml version=\"1.0\"?>\n";
 
 }  // namespace
 
+namespace {
+
+base::Lock& InitAppIdLock() {
+  static base::NoDestructor<base::Lock> lock;
+  return *lock;
+}
+
+std::wstring& InitAppIdMutable() {
+  static base::NoDestructor<std::wstring> storage;
+  return *storage;
+}
+
+}  // namespace
+
 // static
 ComPtr<winui::Notifications::IToastNotificationManagerStatics>*
     WindowsToastNotification::toast_manager_ = nullptr;
@@ -190,9 +205,21 @@ ComPtr<winui::Notifications::IToastNotifier>*
     WindowsToastNotification::toast_notifier_ = nullptr;
 
 // static
-std::wstring& WindowsToastNotification::init_app_id() {
-  static base::NoDestructor<std::wstring> instance;
-  return *instance;
+std::wstring WindowsToastNotification::GetInitAppIdCopy() {
+  base::AutoLock lock(InitAppIdLock());
+  return InitAppIdMutable();
+}
+
+// static
+void WindowsToastNotification::SetInitAppId(PCWSTR value) {
+  base::AutoLock lock(InitAppIdLock());
+  InitAppIdMutable() = value ? std::wstring(value) : std::wstring();
+}
+
+// static
+void WindowsToastNotification::ClearInitAppId() {
+  base::AutoLock lock(InitAppIdLock());
+  InitAppIdMutable().clear();
 }
 
 // static
@@ -234,7 +261,7 @@ bool WindowsToastNotification::Initialize() {
   if (IsRunningInDesktopBridge()) {
     // Ironically, the Desktop Bridge / UWP environment
     // requires us to not give Windows an appUserModelId.
-    init_app_id().clear();
+    ClearInitAppId();
     return SUCCEEDED(
         (*toast_manager_)
             ->CreateToastNotifier(toast_notifier_->GetAddressOf()));
@@ -243,7 +270,7 @@ bool WindowsToastNotification::Initialize() {
     if (!GetAppUserModelID(&app_id))
       return false;
 
-    init_app_id() = GetRawAppUserModelID();
+    SetInitAppId(GetRawAppUserModelID());
     return SUCCEEDED((*toast_manager_)
                          ->CreateToastNotifierWithId(
                              app_id, toast_notifier_->GetAddressOf()));
@@ -322,14 +349,15 @@ WindowsToastNotification::GetNotificationHistory() {
       history_items;
   HRESULT hr;
 
-  if (init_app_id().empty()) {
+  const std::wstring init_app_id = GetInitAppIdCopy();
+  if (init_app_id.empty()) {
     DebugLog(
         "GetNotificationHistory: querying without app_id (Desktop Bridge)");
     hr = notification_history2->GetHistory(&history_items);
   } else {
     DebugLog(base::StrCat({"GetNotificationHistory: querying with app_id: ",
-                           base::WideToUTF8(init_app_id())}));
-    ScopedHString app_id(init_app_id());
+                           base::WideToUTF8(init_app_id)}));
+    ScopedHString app_id(init_app_id);
     hr = notification_history2->GetHistoryWithId(app_id, &history_items);
   }
 

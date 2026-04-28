@@ -128,9 +128,13 @@ class WindowsToastNotification : public Notification {
       toast_manager_;
   static ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>*
       toast_notifier_;
-  // The app model ID captured at Initialize() time, so history queries
-  // use the same identity the notifier was created with.
-  static std::wstring& init_app_id();
+  // AppUserModelID captured at Initialize() for history queries. Accessed from
+  // the UI thread (Initialize) and the toast SequencedTaskRunner
+  // (GetNotificationHistory); guarded by a lock — use GetInitAppIdCopy /
+  // SetInitAppId / ClearInitAppId only.
+  static std::wstring GetInitAppIdCopy();
+  static void SetInitAppId(PCWSTR value);
+  static void ClearInitAppId();
 
   EventRegistrationToken activated_token_;
   EventRegistrationToken dismissed_token_;
