@@ -250,6 +250,39 @@ bool WindowsToastNotification::Initialize() {
   }
 }
 
+namespace {
+
+// Converts a WinRT HSTRING to UTF-8 and always frees the HSTRING when non-null.
+std::string Utf8FromReleasedHString(HSTRING hs) {
+  if (!hs)
+    return {};
+  UINT32 len = 0;
+  const wchar_t* raw = WindowsGetStringRawBuffer(hs, &len);
+  std::string utf8;
+  if (raw && len)
+    utf8 = base::WideToUTF8(std::wstring_view(raw, len));
+  WindowsDeleteString(hs);
+  return utf8;
+}
+
+void FillToastTagAndGroupFromToast(
+    winui::Notifications::IToastNotification* toast,
+    NotificationInfo* info) {
+  ComPtr<winui::Notifications::IToastNotification2> toast2;
+  if (FAILED(toast->QueryInterface(IID_PPV_ARGS(&toast2))))
+    return;
+
+  HSTRING tag_hs = nullptr;
+  if (SUCCEEDED(toast2->get_Tag(&tag_hs)) && tag_hs)
+    info->id = Utf8FromReleasedHString(tag_hs);
+
+  HSTRING group_hs = nullptr;
+  if (SUCCEEDED(toast2->get_Group(&group_hs)) && group_hs)
+    info->group_id = Utf8FromReleasedHString(group_hs);
+}
+
+}  // namespace
+
 // static
 std::vector<NotificationInfo>
 WindowsToastNotification::GetNotificationHistory() {
@@ -321,26 +354,7 @@ WindowsToastNotification::GetNotificationHistory() {
 
     NotificationInfo info;
 
-    ComPtr<winui::Notifications::IToastNotification2> toast2;
-    if (SUCCEEDED(toast->QueryInterface(IID_PPV_ARGS(&toast2)))) {
-      HSTRING tag_hs = nullptr;
-      if (SUCCEEDED(toast2->get_Tag(&tag_hs)) && tag_hs) {
-        UINT32 len = 0;
-        const wchar_t* raw = WindowsGetStringRawBuffer(tag_hs, &len);
-        if (raw && len)
-          info.id = base::WideToUTF8(std::wstring_view(raw, len));
-        WindowsDeleteString(tag_hs);
-      }
-
-      HSTRING group_hs = nullptr;
-      if (SUCCEEDED(toast2->get_Group(&group_hs)) && group_hs) {
-        UINT32 len = 0;
-        const wchar_t* raw = WindowsGetStringRawBuffer(group_hs, &len);
-        if (raw && len)
-          info.group_id = base::WideToUTF8(std::wstring_view(raw, len));
-        WindowsDeleteString(group_hs);
-      }
-    }
+    FillToastTagAndGroupFromToast(toast.Get(), &info);
 
     ComPtr<IXmlDocument> xml_doc;
     if (SUCCEEDED(toast->get_Content(&xml_doc))) {
@@ -365,13 +379,7 @@ WindowsToastNotification::GetNotificationHistory() {
           HSTRING inner_text_hs = nullptr;
           if (SUCCEEDED(serializer->get_InnerText(&inner_text_hs)) &&
               inner_text_hs) {
-            UINT32 len = 0;
-            const wchar_t* raw = WindowsGetStringRawBuffer(inner_text_hs, &len);
-            std::string text;
-            if (raw && len)
-              text = base::WideToUTF8(std::wstring_view(raw, len));
-            WindowsDeleteString(inner_text_hs);
-
+            std::string text = Utf8FromReleasedHString(inner_text_hs);
             if (j == 0) {
               info.title = std::move(text);
             } else {
