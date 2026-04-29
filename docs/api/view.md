@@ -119,7 +119,7 @@ Examples of valid `color` values:
 
 #### `view.setBackgroundBlur(blurRadius)`
 
-* `blurRadius` Integer - The radius of the background blur effect (in pixels). 
+* `blurRadius` Integer - The radius of the background blur effect (in pixels).
 
 > [!NOTE]
 > You must set a background color with an alpha channel (e.g. `#80ffffff`) in order for the blur effect to be visible.
