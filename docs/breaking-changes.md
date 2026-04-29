@@ -27,8 +27,7 @@ injection target, frame IDs, or match patterns.
 
 ### Deprecated: synchronous `safeStorage` APIs
 
-The synchronous `safeStorage` APIs have been deprecated. These APIs will
-continue to function, but will emit a deprecation warning.
+The synchronous `safeStorage` APIs have been deprecated. They will emit a deprecation warning in Electron 43 and will be removed in Electron 44.0.0.
 
 Use the asynchronous `safeStorage` APIs instead:
 
