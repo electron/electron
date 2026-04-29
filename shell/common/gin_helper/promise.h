@@ -14,6 +14,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/scoped_refptr.h"
 #include "base/task/task_runner.h"
+#include "gin/per_isolate_data.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-microtask-queue.h"
@@ -71,9 +72,27 @@ class PromiseBase {
   static scoped_refptr<base::TaskRunner> GetTaskRunner();
 
  private:
+  class DisposeObserver : gin::PerIsolateData::DisposeObserver {
+   public:
+    DisposeObserver(gin::PerIsolateData* per_isolate_data, PromiseBase* holder);
+    ~DisposeObserver() override;
+
+    // gin::PerIsolateData::DisposeObserver
+    void OnBeforeDispose(v8::Isolate* isolate) override;
+    void OnDisposed() override;
+
+   private:
+    // Unlike in Chromium, it's possible for PerIsolateData to be null
+    // for a given isolate - e.g. in a Node.js Worker. Thus this
+    // needs to be a raw_ptr instead of a raw_ref.
+    raw_ptr<gin::PerIsolateData> per_isolate_data_;
+    const raw_ptr<PromiseBase> holder_;
+  };
+
   raw_ptr<v8::Isolate> isolate_;
   v8::Global<v8::Context> context_;
   v8::Global<v8::Promise::Resolver> resolver_;
+  std::unique_ptr<DisposeObserver> dispose_observer_;
 };
 
 // Template implementation that returns values.
