@@ -15,10 +15,13 @@
 #include "base/memory/scoped_refptr.h"
 #include "base/task/task_runner.h"
 #include "shell/common/gin_converters/std_converter.h"
+#include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-microtask-queue.h"
 
 namespace gin_helper {
+
+class PromiseHandle;
 
 // A wrapper around the v8::Promise.
 //
@@ -41,6 +44,9 @@ class PromiseBase {
   // Support moving.
   PromiseBase(PromiseBase&&);
   PromiseBase& operator=(PromiseBase&&);
+
+  // Returns true if the underlying V8 handles are still valid.
+  bool IsAlive() const;
 
   // Helper for rejecting promise with error message.
   static void RejectPromise(PromiseBase&& promise, std::string_view errmsg);
@@ -72,8 +78,7 @@ class PromiseBase {
 
  private:
   raw_ptr<v8::Isolate> isolate_;
-  v8::Global<v8::Context> context_;
-  v8::Global<v8::Promise::Resolver> resolver_;
+  cppgc::Persistent<PromiseHandle> handle_;
 };
 
 // Template implementation that returns values.
@@ -109,6 +114,8 @@ class Promise : public PromiseBase {
   }
 
   v8::Maybe<bool> Resolve(const RT& value) {
+    if (!IsAlive())
+      return v8::Nothing<bool>();
     SettleScope settle_scope{*this};
     return GetInner()->Resolve(settle_scope.context_,
                                gin::ConvertToV8(isolate(), value));
@@ -124,6 +131,8 @@ class Promise : public PromiseBase {
         std::is_same<RT, std::tuple_element_t<0, std::tuple<ResolveType...>>>(),
         "A promises's 'Then' callback must handle the same type as the "
         "promises resolve type");
+    if (!IsAlive())
+      return v8::MaybeLocal<v8::Promise>();
     SettleScope settle_scope{*this};
     v8::Local<v8::Value> value = gin::ConvertToV8(isolate(), std::move(cb));
     v8::Local<v8::Function> handler = value.As<v8::Function>();
