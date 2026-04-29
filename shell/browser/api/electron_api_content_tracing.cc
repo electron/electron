@@ -253,11 +253,6 @@ v8::Local<v8::Promise> DisableHeapProfiling(gin::Arguments* const args) {
     return handle;
   }
 
-  if (!supervisor->HasStarted() && g_heap_profiling_started) {
-    promise.RejectWithErrorMessage("Heap profiling is currently being enabled");
-    return handle;
-  }
-
   g_heap_profiling_stopping = true;
   supervisor->Stop(base::BindOnce(
       [](gin_helper::Promise<void> promise, bool success) {
