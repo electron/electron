@@ -142,7 +142,7 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
 
     gin_helper::Handle<NativeImage> sized = handle->Resize(
         args,
-        base::Value::Dict().Set("width", new_width).Set("height", new_height));
+        base::DictValue().Set("width", new_width).Set("height", new_height));
 
     sized->SetTemplateImage(true);
 
