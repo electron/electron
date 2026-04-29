@@ -180,6 +180,44 @@ describe('debugger module', () => {
       await loadingFinished;
     });
 
+    it('can continue a Fetch-paused document navigation without webRequest listeners', async () => {
+      server = http.createServer((_req, res) => {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.end('<!DOCTYPE html><html><body><h1>Hello World</h1></body></html>');
+      });
+
+      const { port } = await listen(server);
+      const url = `http://localhost:${port}`;
+      const continueRequests: Array<Promise<any>> = [];
+
+      const onMessage = (_event: Electron.Event, method: string, params: any) => {
+        if (method === 'Fetch.requestPaused') {
+          continueRequests.push(
+            w.webContents.debugger.sendCommand('Fetch.continueRequest', {
+              requestId: params.requestId
+            })
+          );
+        }
+      };
+
+      w.webContents.debugger.attach();
+      w.webContents.debugger.on('message', onMessage);
+
+      try {
+        await w.webContents.debugger.sendCommand('Fetch.enable', {
+          patterns: [{ resourceType: 'Document' }]
+        });
+
+        await expect(w.loadURL(url)).to.eventually.be.fulfilled();
+        await Promise.all(continueRequests);
+      } finally {
+        w.webContents.debugger.off('message', onMessage);
+        if (w.webContents.debugger.isAttached()) {
+          w.webContents.debugger.detach();
+        }
+      }
+    });
+
     it('can get and set cookies using the Storage API', async () => {
       await w.webContents.loadURL('about:blank');
       w.webContents.debugger.attach('1.1');
