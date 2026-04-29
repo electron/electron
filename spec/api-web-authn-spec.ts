@@ -111,7 +111,14 @@ describe("session 'select-webauthn-account' event", () => {
           userVerification: 'required'
         }
       }).then(
-        c => ({ ok: true, id: c.id }),
+        c => {
+          const uh = c.response.userHandle;
+          const userHandle = uh
+            ? btoa(String.fromCharCode(...new Uint8Array(uh)))
+                .replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '')
+            : null;
+          return { ok: true, id: c.id, userHandle };
+        },
         e => ({ ok: false, name: e.name, message: e.message })
       )
     `);
@@ -146,9 +153,23 @@ describe("session 'select-webauthn-account' event", () => {
     expect(result.id).to.be.a('string').and.not.be.empty();
   });
 
+  // Pick byte sequences that exercise the URL-safe base64 alphabet — '?' and
+  // '>' both produce '+' / '/' / padding in standard base64, so a regression
+  // back to base::Base64Encode would surface here as a mismatch between the
+  // event's credentialId/userHandle and the values the renderer sees.
+  const BOB_ID = 'cred-bob??';
+  const BOB_USER_HANDLE = 'uh-bob>>';
+
+  const toBase64Url = (s: string) =>
+    Buffer.from(s)
+      .toString('base64')
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
   it('fires with discoverable credentials and resolves get() with the chosen one', async () => {
     await addCredential({ id: 'cred-alice', userHandle: 'uh-alice', name: 'alice@example.com', displayName: 'Alice' });
-    await addCredential({ id: 'cred-bob', userHandle: 'uh-bob', name: 'bob@example.com', displayName: 'Bob' });
+    await addCredential({ id: BOB_ID, userHandle: BOB_USER_HANDLE, name: 'bob@example.com', displayName: 'Bob' });
 
     let received: any;
     (w.webContents.session as NodeJS.EventEmitter).on('select-webauthn-account', (event, details, callback) => {
@@ -166,16 +187,34 @@ describe("session 'select-webauthn-account' event", () => {
     expect(names).to.deep.equal(['alice@example.com', 'bob@example.com']);
     const bob = received.accounts.find((a: any) => a.name === 'bob@example.com');
     expect(bob.displayName).to.equal('Bob');
-    expect(bob.userHandle).to.equal(Buffer.from('uh-bob').toString('base64'));
     expect(bob.credentialId).to.be.a('string').and.not.be.empty();
 
+    // Both credentialId and userHandle must be URL-safe base64 (no '+', '/'
+    // or padding) so the values are byte-for-byte comparable to what the
+    // WebAuthn JS API exposes on PublicKeyCredential.
+    expect(bob.credentialId).to.equal(toBase64Url(BOB_ID));
+    expect(bob.userHandle).to.equal(toBase64Url(BOB_USER_HANDLE));
+    expect(bob.credentialId).to.not.match(/[+/=]/);
+    expect(bob.userHandle).to.not.match(/[+/=]/);
+
+    // The strong invariant: the credentialId surfaced via the main-process
+    // event is the same string the renderer sees as PublicKeyCredential.id.
     expect(result.ok).to.be.true();
-    const expectedBobId = Buffer.from('cred-bob')
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-    expect(result.id).to.equal(expectedBobId);
+    expect(result.id).to.equal(bob.credentialId);
+    expect(result.userHandle).to.equal(bob.userHandle);
+  });
+
+  it('cancels the request when the callback is invoked with an unknown credentialId', async () => {
+    await addCredential({ id: 'cred-alice', userHandle: 'uh-alice', name: 'alice@example.com', displayName: 'Alice' });
+    await addCredential({ id: 'cred-bob', userHandle: 'uh-bob', name: 'bob@example.com', displayName: 'Bob' });
+
+    (w.webContents.session as NodeJS.EventEmitter).on('select-webauthn-account', (event, details, callback) => {
+      callback('not-a-real-credential-id');
+    });
+
+    const result = await getAssertion();
+    expect(result.ok).to.be.false();
+    expect(result.name).to.equal('NotAllowedError');
   });
 
   it('cancels the request when the callback is invoked with no credential', async () => {
