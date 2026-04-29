@@ -3,12 +3,35 @@ import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
+import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { defer } from './lib/spec-helpers';
+import { defer, listen } from './lib/spec-helpers';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
+
+  const createServer = async () => {
+    const server = http.createServer((req, res) => {
+      if (req.url === '/one') {
+        res.end('<h1>one</h1>');
+        return;
+      }
+
+      if (req.url === '/two') {
+        res.end('<h1>two</h1>');
+        return;
+      }
+
+      res.end('<h1>after</h1>');
+    });
+    const serverUrl = (await listen(server)).url;
+    return {
+      server,
+      url: serverUrl,
+      crossOriginUrl: serverUrl.replace('127.0.0.1', 'localhost')
+    };
+  };
 
   it('can use executeJavaScript', async () => {
     const w = new BrowserWindow({
@@ -72,6 +95,81 @@ describe('webFrame module', () => {
     const [words, callbackDefined] = await spellCheckerFeedback;
     expect(words.sort()).to.deep.equal(['spleling', 'test', "you're", 'you', 're'].sort());
     expect(callbackDefined).to.be.true();
+  });
+
+  it('recreates isolated world discovery after same-renderer navigation', async () => {
+    const { server, url } = await createServer();
+    defer(() => server.close());
+
+    const win = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        contextIsolation: false,
+        nodeIntegration: true,
+        preload: path.join(fixtures, 'pages', 'isolated-world-navigation-preload.js')
+      }
+    });
+    defer(() => win.close());
+
+    await win.loadURL(`${url}/one`);
+    const pidBeforeNavigation = win.webContents.getOSProcessId();
+    const worldsBeforeNavigation = await win.webContents.executeJavaScript(`
+      const { webFrame } = require('electron');
+      webFrame.executeJavaScriptInIsolatedWorld(1234, [{ code: 'window.__marker = "page-one"' }])
+        .then(() => webFrame.getIsolatedWorlds());
+    `);
+    expect(worldsBeforeNavigation).to.include(1234);
+
+    await win.loadURL(`${url}/two`);
+    expect(win.webContents.getOSProcessId()).to.equal(pidBeforeNavigation);
+
+    const navigationState = once(ipcMain, 'isolated-world-navigation-state');
+    win.webContents.send('get-isolated-world-navigation-state');
+    const [, state] = await navigationState as [unknown, {
+      startupWorlds: number[];
+      createdWorlds: number[];
+      isolatedWorlds: number[];
+    }];
+
+    expect(state.startupWorlds).to.deep.equal([]);
+    expect(state.createdWorlds).to.include(1234);
+    expect(state.isolatedWorlds).to.include(1234);
+
+    const valueAfterNavigation = await win.webContents.executeJavaScript(`
+      require('electron').webFrame.executeJavaScriptInIsolatedWorld(1234, [{ code: 'window.__marker' }]);
+    `);
+    expect(valueAfterNavigation).to.equal(undefined);
+  });
+
+  it('clears isolated world discovery after renderer-swap navigation', async () => {
+    const { server, url, crossOriginUrl } = await createServer();
+    defer(() => server.close());
+
+    const win = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        contextIsolation: false,
+        nodeIntegration: true
+      }
+    });
+    defer(() => win.close());
+
+    await win.loadURL(`${url}/one`);
+    const frameTokenBeforeNavigation = win.webContents.mainFrame.frameToken;
+    const worldsBeforeNavigation = await win.webContents.executeJavaScript(`
+      const { webFrame } = require('electron');
+      webFrame.executeJavaScriptInIsolatedWorld(1234, [{ code: 'void 0' }])
+        .then(() => webFrame.getIsolatedWorlds());
+    `);
+    expect(worldsBeforeNavigation).to.include(1234);
+
+    await win.loadURL(`${crossOriginUrl}/two`);
+    expect(win.webContents.mainFrame.frameToken).to.not.equal(frameTokenBeforeNavigation);
+
+    const worldsAfterNavigation = await win.webContents.executeJavaScript(`
+      require('electron').webFrame.getIsolatedWorlds();
+    `);
+    expect(worldsAfterNavigation).to.deep.equal([]);
   });
 
   describe('api', () => {
@@ -267,6 +365,48 @@ describe('webFrame module', () => {
         expect(await w.executeJavaScript("webFrame.executeJavaScriptInIsolatedWorld(999, [{code: '1 + 1'}])")).to.equal(
           2
         );
+      });
+    });
+
+    describe('isolated world discovery', () => {
+      it('getIsolatedWorlds() tracks worlds per frame', async () => {
+        const { mainWorlds, childWorlds } = await w.executeJavaScript(`
+          childFrame.executeJavaScriptInIsolatedWorld(1104, [{ code: 'void 0' }]).then(() => ({
+            mainWorlds: webFrame.getIsolatedWorlds(),
+            childWorlds: childFrame.getIsolatedWorlds()
+          }))
+        `);
+
+        expect(mainWorlds).to.not.include(1104);
+        expect(childWorlds).to.include(1104);
+      });
+
+      it('emits isolated-world-created when a world is created', async () => {
+        const createdWorld = await w.executeJavaScript(`new Promise(resolve => {
+          webFrame.once('isolated-world-created', (worldId) => resolve(worldId));
+          webFrame.executeJavaScriptInIsolatedWorld(1105, [{ code: 'void 0' }]);
+        })`);
+
+        expect(createdWorld).to.equal(1105);
+      });
+
+      it('emits isolated-world-created on child frames', async () => {
+        const createdWorld = await w.executeJavaScript(`new Promise(resolve => {
+          childFrame.once('isolated-world-created', (worldId) => resolve(worldId));
+          childFrame.executeJavaScriptInIsolatedWorld(1106, [{ code: 'void 0' }]);
+        })`);
+
+        expect(createdWorld).to.equal(1106);
+      });
+
+      it('does not include main world (0) and Electron isolated world (999)', async () => {
+        const worlds = await w.executeJavaScript(`
+          webFrame.executeJavaScriptInIsolatedWorld(999, [{ code: 'void 0' }]).then(() =>
+            webFrame.getIsolatedWorlds()
+          )
+        `);
+        expect(worlds).to.not.include(0);
+        expect(worlds).to.not.include(999);
       });
     });
   });
