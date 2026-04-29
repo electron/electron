@@ -26,7 +26,7 @@
     "@types/sinon": "^9.0.4",
     "@types/uuid": "^3.4.6",
     "@types/w3c-web-serial": "^1.0.7",
-    "@types/ws": "^7.2.0",
+    "@types/ws": "^8.18.1",
     "abstract-socket": "github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19",
     "basic-auth": "^2.0.1",
     "busboy": "^1.6.0",
@@ -48,7 +48,7 @@
     "sinon": "^9.0.1",
     "uuid": "^14.0.0",
     "winreg": "1.2.4",
-    "ws": "^7.5.10",
+    "ws": "^8.20.0",
     "yargs": "^16.0.3"
   }
 }
