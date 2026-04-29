@@ -31,11 +31,16 @@ namespace {
 // WebAuthn's PublicKeyCredential.id is canonically URL-safe base64 with no
 // padding, so encode credential IDs and user handles the same way to keep the
 // event payload string-comparable to values returned by navigator.credentials.
+std::string Base64UrlEncodeNoPad(base::span<const uint8_t> input) {
+  std::string out;
+  base::Base64UrlEncode(input, base::Base64UrlEncodePolicy::OMIT_PADDING, &out);
+  return out;
+}
+
 std::string CredentialIdFor(
     const device::AuthenticatorGetAssertionResponse& response) {
   if (response.credential) {
-    return base::Base64UrlEncode(response.credential->id,
-                                 base::Base64UrlEncodePolicy::OMIT_PADDING);
+    return Base64UrlEncodeNoPad(response.credential->id);
   }
   return {};
 }
@@ -113,9 +118,7 @@ void ElectronAuthenticatorRequestClientDelegate::SelectAccount(
     gin::DataObjectBuilder account(isolate);
     account.Set("credentialId", CredentialIdFor(response));
     if (response.user_entity) {
-      account.Set("userHandle", base::Base64UrlEncode(
-                                    response.user_entity->id,
-                                    base::Base64UrlEncodePolicy::OMIT_PADDING));
+      account.Set("userHandle", Base64UrlEncodeNoPad(response.user_entity->id));
       if (response.user_entity->name) {
         account.Set("name", *response.user_entity->name);
       }
