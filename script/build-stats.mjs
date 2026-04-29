@@ -26,11 +26,15 @@ function getCommonTags() {
 }
 
 async function uploadSeriesToDatadog(series) {
+  const apiKey = process.env.DD_API_KEY;
+  if (!apiKey) {
+    throw new Error('DD_API_KEY is not set');
+  }
   await fetch('https://api.datadoghq.com/api/v2/series', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'DD-API-KEY': process.env.DD_API_KEY
+      'DD-API-KEY': apiKey
     },
     body: JSON.stringify({ series })
   });
