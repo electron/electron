@@ -34,15 +34,37 @@ PromiseBase::PromiseBase(v8::Isolate* isolate,
                          v8::Local<v8::Promise::Resolver> handle)
     : isolate_(isolate),
       context_(isolate, isolate->GetCurrentContext()),
-      resolver_(isolate, handle) {}
+      resolver_(isolate, handle) {
+  if (isolate_) {
+    dispose_observer_ = std::make_unique<DisposeObserver>(
+        gin::PerIsolateData::From(isolate_), this);
+  }
+}
 
 PromiseBase::PromiseBase() : isolate_(nullptr) {}
 
-PromiseBase::PromiseBase(PromiseBase&&) = default;
+PromiseBase::PromiseBase(PromiseBase&& other) {
+  isolate_ = std::move(other.isolate_);
+  context_ = std::move(other.context_);
+  resolver_ = std::move(other.resolver_);
+  if (isolate_) {
+    dispose_observer_ = std::make_unique<DisposeObserver>(
+        gin::PerIsolateData::From(isolate_), this);
+  }
+}
 
 PromiseBase::~PromiseBase() = default;
 
-PromiseBase& PromiseBase::operator=(PromiseBase&&) = default;
+PromiseBase& PromiseBase::operator=(PromiseBase&& other) {
+  isolate_ = std::move(other.isolate_);
+  context_ = std::move(other.context_);
+  resolver_ = std::move(other.resolver_);
+  if (isolate_) {
+    dispose_observer_ = std::make_unique<DisposeObserver>(
+        gin::PerIsolateData::From(isolate_), this);
+  }
+  return *this;
+}
 
 // static
 scoped_refptr<base::TaskRunner> PromiseBase::GetTaskRunner() {
@@ -123,5 +145,29 @@ v8::Maybe<bool> Promise<void>::Resolve() {
   SettleScope settle_scope{*this};
   return GetInner()->Resolve(settle_scope.context_, v8::Undefined(isolate()));
 }
+
+PromiseBase::DisposeObserver::DisposeObserver(
+    gin::PerIsolateData* per_isolate_data,
+    PromiseBase* holder)
+    : per_isolate_data_(per_isolate_data), holder_(holder) {
+  if (per_isolate_data_) {
+    per_isolate_data_->AddDisposeObserver(this);
+  }
+}
+
+PromiseBase::DisposeObserver::~DisposeObserver() {
+  if (per_isolate_data_) {
+    per_isolate_data_->RemoveDisposeObserver(this);
+  }
+}
+
+void PromiseBase::DisposeObserver::OnBeforeDispose(v8::Isolate* isolate) {
+  holder_->context_.Reset();
+  holder_->resolver_.Reset();
+  per_isolate_data_->RemoveDisposeObserver(this);
+  per_isolate_data_ = nullptr;
+}
+
+void PromiseBase::DisposeObserver::OnDisposed() {}
 
 }  // namespace gin_helper
