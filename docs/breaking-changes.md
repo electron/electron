@@ -14,6 +14,28 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (43.0)
 
+### Behavior Changed: `NativeImage.toBitmap()` now normalizes color space
+
+`NativeImage.toBitmap()` (and its deprecated alias `NativeImage.getBitmap()`) now normalizes pixel data to sRGB by default. Previously, raw pixel data was returned without color space conversion, which meant pixel values from images with different embedded color profiles (e.g., Display P3 on macOS) could differ for the same visual color.
+
+To preserve the previous behavior, pass the image's original color space in the `colorSpace`
+option. You can also pass `colorSpace` to convert to any other specific color space:
+
+```js
+const image = nativeImage.createFromPath('photo.png')
+// New default: normalized to sRGB
+const srgbBitmap = image.toBitmap()
+// Convert to Display P3
+const p3Bitmap = image.toBitmap({
+  colorSpace: {
+    primaries: 'p3',
+    transfer: 'srgb',
+    matrix: 'rgb',
+    range: 'full'
+  }
+})
+```
+
 ### Behavior Changed: Dialog methods default to Downloads directory
 
 The `defaultPath` option for the following methods now defaults to the user's Downloads folder (or their home directory if Downloads doesn't exist) when not explicitly provided:
