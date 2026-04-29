@@ -12,7 +12,7 @@ Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#105381}
 
 diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
-index ffbf409ac9ae9675372068a57277c830488a3734..6b754b4d8592f0214f731dc9b298b3aab59527f2 100644
+index 1c9ad68b298906cac8534a5373737643801eb567..d0796cd1a1bfd74b0ff506f8b1ff840bb6fc964b 100644
 --- a/src/maglev/maglev-graph-builder.cc
 +++ b/src/maglev/maglev-graph-builder.cc
 @@ -1539,19 +1539,19 @@ DeoptFrame* MaglevGraphBuilder::GetCallerDeoptFrame() {
