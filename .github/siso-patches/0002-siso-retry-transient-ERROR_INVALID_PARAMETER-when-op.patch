@@ -1,0 +1,132 @@
+From a8afee1089ec2ae9ab5837b438d07338aefb3bc4 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sam@electronjs.org>
+Date: Wed, 22 Apr 2026 16:27:51 -0700
+Subject: [PATCH] siso: retry transient ERROR_INVALID_PARAMETER when opening
+ ninja files on Windows
+
+ManifestParser.Load fans out across all subninja files (~90k in a
+Chromium build) at NumCPU parallelism. On Windows builders where out/
+is served through a filesystem filter driver (e.g. bindflt/wcifs for
+container bind mounts), CreateFileW can intermittently return
+ERROR_INVALID_PARAMETER under this concurrent open burst. The previous
+patch removes the redundant per-chunk re-open, but the single remaining
+open per file can still hit the race; without a retry a single transient
+failure aborts the entire manifest load.
+
+Wrap the remaining os.Open call in readFile in a small Windows-only
+retry for ERROR_INVALID_PARAMETER (5 attempts, 5-80ms backoff). Each
+retry is logged via clog.Warningf and also written to stderr so it is
+visible in CI step output where glog warnings are file-only by default.
+Other platforms keep the direct os.Open path.
+---
+ siso/toolsupport/ninjautil/file_parser.go     |  3 +-
+ siso/toolsupport/ninjautil/openfile_other.go  | 18 +++++++
+ .../toolsupport/ninjautil/openfile_windows.go | 50 +++++++++++++++++++
+ 3 files changed, 69 insertions(+), 2 deletions(-)
+ create mode 100644 siso/toolsupport/ninjautil/openfile_other.go
+ create mode 100644 siso/toolsupport/ninjautil/openfile_windows.go
+
+diff --git a/siso/toolsupport/ninjautil/file_parser.go b/siso/toolsupport/ninjautil/file_parser.go
+index 6311666..324528d 100644
+--- a/siso/toolsupport/ninjautil/file_parser.go
++++ b/siso/toolsupport/ninjautil/file_parser.go
+@@ -7,7 +7,6 @@ package ninjautil
+ import (
+ 	"context"
+ 	"fmt"
+-	"os"
+ 	"runtime/trace"
+ 	"sync"
+ 	"time"
+@@ -91,7 +90,7 @@ func (p *fileParser) parseFile(ctx context.Context, fname string) error {
+ // readFile reads a file of fname in parallel.
+ func (p *fileParser) readFile(ctx context.Context, fname string) ([]byte, error) {
+ 	defer trace.StartRegion(ctx, "ninja.read").End()
+-	f, err := os.Open(fname)
++	f, err := openFile(ctx, fname)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/siso/toolsupport/ninjautil/openfile_other.go b/siso/toolsupport/ninjautil/openfile_other.go
+new file mode 100644
+index 0000000..9fca690
+--- /dev/null
++++ b/siso/toolsupport/ninjautil/openfile_other.go
+@@ -0,0 +1,18 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++//go:build !windows
++
++package ninjautil
++
++import (
++	"context"
++	"os"
++)
++
++// openFile opens fname for reading.
++// See openfile_windows.go for the Windows variant with transient-error retry.
++func openFile(ctx context.Context, fname string) (*os.File, error) {
++	return os.Open(fname)
++}
+diff --git a/siso/toolsupport/ninjautil/openfile_windows.go b/siso/toolsupport/ninjautil/openfile_windows.go
+new file mode 100644
+index 0000000..f9d8e9d
+--- /dev/null
++++ b/siso/toolsupport/ninjautil/openfile_windows.go
+@@ -0,0 +1,50 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++//go:build windows
++
++package ninjautil
++
++import (
++	"context"
++	"errors"
++	"fmt"
++	"os"
++	"time"
++
++	"golang.org/x/sys/windows"
++
++	"go.chromium.org/build/siso/o11y/clog"
++)
++
++// openFile opens fname for reading, retrying transient
++// ERROR_INVALID_PARAMETER failures.
++//
++// On Windows, CreateFileW can intermittently return
++// ERROR_INVALID_PARAMETER when the target lives behind a filesystem
++// filter driver (e.g. bindflt/wcifs for container bind mounts) under
++// highly concurrent opens. loadFile fans out across ~90k subninja
++// files at NumCPU parallelism, so a single transient failure would
++// otherwise abort the whole manifest load.
++func openFile(ctx context.Context, fname string) (*os.File, error) {
++	const maxAttempts = 5
++	delay := 5 * time.Millisecond
++	for i := 0; ; i++ {
++		f, err := os.Open(fname)
++		if err == nil {
++			return f, nil
++		}
++		if i+1 >= maxAttempts || !errors.Is(err, windows.ERROR_INVALID_PARAMETER) {
++			return nil, err
++		}
++		clog.Warningf(ctx, "open %s: %v; retrying (%d/%d) after %s", fname, err, i+1, maxAttempts, delay)
++		fmt.Fprintf(os.Stderr, "siso: open %s: %v; retrying (%d/%d) after %s\n", fname, err, i+1, maxAttempts, delay)
++		select {
++		case <-time.After(delay):
++		case <-ctx.Done():
++			return nil, context.Cause(ctx)
++		}
++		delay *= 2
++	}
++}
+-- 
+2.53.0
+
