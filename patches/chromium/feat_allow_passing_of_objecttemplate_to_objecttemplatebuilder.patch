@@ -10,7 +10,7 @@ Electron needs this constructor, namely for gin_helper::Constructible
 objects.
 
 diff --git a/gin/object_template_builder.cc b/gin/object_template_builder.cc
-index 0e4f17437ea2c687cb188e59b3b044557d6ad5fe..4c0c31a07b83506bb5f07a228ca79fb0c866d3fd 100644
+index d8b358befc28736cb4faa0d0bbbfb76036e42ed4..49ecd470ce29078418ccb490caa8cfde17a6944e 100644
 --- a/gin/object_template_builder.cc
 +++ b/gin/object_template_builder.cc
 @@ -145,6 +145,13 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
@@ -28,7 +28,7 @@ index 0e4f17437ea2c687cb188e59b3b044557d6ad5fe..4c0c31a07b83506bb5f07a228ca79fb0
      const ObjectTemplateBuilder& other) = default;
  
 diff --git a/gin/object_template_builder.h b/gin/object_template_builder.h
-index cf4f1ae6598fdede655d33baccda254965566ea5..a4c16dc0ec3ff16413fc2a04225a2401989a084b 100644
+index c633282925cb0652f5b205d6b600c3af078c4bfe..3dfe60f83bf18f2fe0ad625a4e82a8621f100efe 100644
 --- a/gin/object_template_builder.h
 +++ b/gin/object_template_builder.h
 @@ -48,6 +48,9 @@ class GIN_EXPORT ObjectTemplateBuilder {
