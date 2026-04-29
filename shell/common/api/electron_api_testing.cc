@@ -200,11 +200,6 @@ void HoldPromiseForTesting(gin::Arguments* args) {
   GetHeldPromise().emplace(args->isolate());
 }
 
-bool IsHeldPromiseAliveForTesting() {
-  auto& promise = GetHeldPromise();
-  return promise.has_value() && promise->IsAlive();
-}
-
 void ClearHeldPromiseForTesting() {
   GetHeldPromise().reset();
 }
@@ -235,7 +230,6 @@ void Initialize(v8::Local<v8::Object> exports,
                  &InvokeHeldOnceCallbackForTesting);
   dict.SetMethod("clearHeldCallbacksForTesting", &ClearHeldCallbacksForTesting);
   dict.SetMethod("holdPromiseForTesting", &HoldPromiseForTesting);
-  dict.SetMethod("isHeldPromiseAliveForTesting", &IsHeldPromiseAliveForTesting);
   dict.SetMethod("clearHeldPromiseForTesting", &ClearHeldPromiseForTesting);
 }
 
