@@ -14,6 +14,17 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (43.0)
 
+### Behavior Changed: `chrome.scripting` CSS injection matches more fallback frames
+
+Extensions using `chrome.scripting.insertCSS()` or `chrome.scripting.removeCSS()`
+now follow Chrome's behavior when Electron cannot match a frame's URL directly,
+such as with `about:blank` or `data:` frames. If the extension has access to the
+page that created the frame, CSS may now be inserted into or removed from those
+fallback frames as well.
+
+Apps or extensions that relied on Electron skipping those frames should narrow their
+injection target, frame IDs, or match patterns.
+
 ### Behavior Changed: Dialog methods default to Downloads directory
 
 The `defaultPath` option for the following methods now defaults to the user's Downloads folder (or their home directory if Downloads doesn't exist) when not explicitly provided:

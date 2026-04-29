@@ -35,6 +35,7 @@
 #include "extensions/common/manifest_handlers/devtools_page_handler.h"
 #include "extensions/common/manifest_url_handlers.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
@@ -42,6 +43,7 @@
 #include "shell/browser/extensions/electron_component_extension_resource_manager.h"
 #include "shell/browser/extensions/electron_extension_host_delegate.h"
 #include "shell/browser/extensions/electron_extension_system_factory.h"
+#include "shell/browser/extensions/electron_extension_tab_util.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_extensions_api_client.h"
 #include "shell/browser/extensions/electron_extensions_browser_api_provider.h"
@@ -379,6 +381,28 @@ ElectronExtensionsBrowserClient::GetExtensionWebContentsObserver(
     content::WebContents* web_contents) {
   return extensions::ElectronExtensionWebContentsObserver::FromWebContents(
       web_contents);
+}
+
+bool ElectronExtensionsBrowserClient::IsValidTabId(
+    content::BrowserContext* browser_context,
+    const int tab_id,
+    const bool include_incognito,
+    content::WebContents** web_contents) const {
+  auto* contents = extensions::GetElectronTabById(tab_id, browser_context);
+  if (!contents)
+    return false;
+
+  if (web_contents)
+    *web_contents = contents->web_contents();
+
+  return true;
+}
+
+extensions::ScriptExecutor*
+ElectronExtensionsBrowserClient::GetScriptExecutorForTab(
+    content::WebContents& web_contents) {
+  auto* contents = electron::api::WebContents::From(&web_contents);
+  return contents ? contents->script_executor() : nullptr;
 }
 
 extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {
