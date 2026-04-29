@@ -32,6 +32,8 @@ For more information on how to configure the FlexLayout manager, see the documen
    in conjunction with `collapseMargins` so child margins can overlap with the host's insets
 * `ignoreDefaultMainAxisMargins` boolean - Whether host |interior_margin| overrides default child margins at the
   leading and trailing edge of the host view
-* `flexAllocationOrder` string - one of:
+* `flexAllocationOrder` string - Order in which the host's child views receive their flex allocation. Setting to
+  reverse is useful when, for example, you want views to drop out left-to-right when there's insufficient space to
+  display them all instead of right-to-left. One of the following:
   * `normal`
   * `reverse`
