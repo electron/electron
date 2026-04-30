@@ -336,7 +336,7 @@ describe('nativeImage module', () => {
     });
 
     ifit(process.platform === 'darwin')('returns a valid named symbol with options on darwin', function () {
-      const image = nativeImage.createFromNamedImage('atom', undefined, {
+      const image = nativeImage.createFromNamedImage('atom', {
         weight: 'ultralight',
         scale: 'small',
         pointSize: 24
