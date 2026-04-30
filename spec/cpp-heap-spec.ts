@@ -421,22 +421,40 @@ describe('cpp heap', () => {
       expect(code).to.equal(0);
     });
 
-    it('reports IsAlive correctly while the isolate is running', async () => {
-      const { remotely } = await startRemoteControlApp();
-      const result = await remotely(async () => {
-        const testingBinding = (process as any)._linkedBinding('electron_common_testing');
+    it('PromiseHandle should not leak', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string) => {
+          const testingBinding = (process as any)._linkedBinding('electron_common_testing');
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+          const { recordState } = require(heap);
 
-        testingBinding.holdPromiseForTesting();
-        const aliveAfterCreate = testingBinding.isHeldPromiseAliveForTesting();
+          const countPromiseHandles = () =>
+            recordState().snapshot.filter((node: any) => node.name === 'Electron / PromiseHandle').length;
 
-        testingBinding.clearHeldPromiseForTesting();
-        const aliveAfterClear = testingBinding.isHeldPromiseAliveForTesting();
+          const gc = async () => {
+            for (let i = 0; i < 10; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+            }
+          };
 
-        return { aliveAfterCreate, aliveAfterClear };
-      });
+          testingBinding.holdPromiseForTesting();
+          const beforeGC = countPromiseHandles();
+          await gc();
+          const afterGC = countPromiseHandles();
 
-      expect(result.aliveAfterCreate).to.equal(true, 'promise should be alive after creation');
-      expect(result.aliveAfterClear).to.equal(false, 'promise should not be alive after clearing');
+          testingBinding.clearHeldPromiseForTesting();
+          await gc();
+          const afterClear = countPromiseHandles();
+
+          return { beforeGC, afterGC, afterClear };
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+      );
+
+      expect(result.afterGC).to.be.at.least(result.beforeGC, 'held PromiseHandle must survive GC');
+      expect(result.afterClear).to.be.lessThan(result.afterGC, 'clearing should release the PromiseHandle');
     });
   });
 });

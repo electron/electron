@@ -10,13 +10,15 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/process_util.h"
 #include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/name-provider.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-cppgc.h"
 #include "v8/include/v8-traced-handle.h"
 
 namespace gin_helper {
 
-class PromiseHandle final : public cppgc::GarbageCollected<PromiseHandle> {
+class PromiseHandle final : public cppgc::GarbageCollected<PromiseHandle>,
+                            public cppgc::NameProvider {
  public:
   PromiseHandle(v8::Isolate* isolate,
                 v8::Local<v8::Context> context,
@@ -26,6 +28,10 @@ class PromiseHandle final : public cppgc::GarbageCollected<PromiseHandle> {
   void Trace(cppgc::Visitor* visitor) const {
     visitor->Trace(context_);
     visitor->Trace(resolver_);
+  }
+
+  const char* GetHumanReadableName() const final {
+    return "Electron / PromiseHandle";
   }
 
   [[nodiscard]] bool IsAlive() const { return !resolver_.IsEmpty(); }
