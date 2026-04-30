@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index f4d9fb488bdb5d790e4ce33c994f2f643abe826d..d6c72269b1c95bdae0c522bcd8c47a1bed23d4d7 100644
+index ee3e6b431434cca3917887019ab39751af14555d..e1ab1700ce6fa2a134e632bcb26ed3e54ef2e9f2 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1124,6 +1124,7 @@ component("base") {
@@ -940,7 +940,7 @@ index 010c713090e5038dc90db131c8f621422d30c03b..20c35e887a0496ee609c077e3b0494bd
  
    void ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& key_event,
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 78adca0e838ad63eb35da1f738d77c2022afb820..3aef2372b19489d1fd21d2bdd2a99f3a36d0af55 100644
+index 989b11c5b67343fbb03bb849e1b3febd6167a00e..5310b9905ad76154ff7c5f5fca48d63fe0d1136c 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -33,6 +33,7 @@
@@ -1020,10 +1020,10 @@ index 2575ac6b4211b43447a39f9ce89077182ef0cf54..1bce550e07780196b7606545cac1e9ae
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index f13ad593da8e004ca16a99667d6fbee02b0d0525..9020ae5c379bc463501fa368b3b27904ed5e95ca 100644
+index 4ef475fb46fb12bc9f4dd8b17ab44568084932e4..a8c01d4ac0e60fc7427191d51ab51c42d9e5f1c2 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -53,6 +53,7 @@
+@@ -54,6 +54,7 @@
  #include "content/public/browser/render_widget_host.h"
  #include "content/public/browser/web_contents.h"
  #include "content/public/common/page_visibility_state.h"
@@ -1031,7 +1031,7 @@ index f13ad593da8e004ca16a99667d6fbee02b0d0525..9020ae5c379bc463501fa368b3b27904
  #include "media/base/media_switches.h"
  #include "skia/ext/platform_canvas.h"
  #include "skia/ext/skia_utils_mac.h"
-@@ -290,8 +291,10 @@
+@@ -291,8 +292,10 @@
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -1042,7 +1042,7 @@ index f13ad593da8e004ca16a99667d6fbee02b0d0525..9020ae5c379bc463501fa368b3b27904
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1719,10 +1722,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1720,10 +1723,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1055,7 +1055,7 @@ index f13ad593da8e004ca16a99667d6fbee02b0d0525..9020ae5c379bc463501fa368b3b27904
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1774,9 +1779,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1775,9 +1780,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1067,7 +1067,7 @@ index f13ad593da8e004ca16a99667d6fbee02b0d0525..9020ae5c379bc463501fa368b3b27904
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2306,20 +2313,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2312,20 +2319,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1107,10 +1107,10 @@ index 6294792999d1653b73c695ebfddda0f8a45d82c9..da6be02dcff5d956e69fa356ec6dea65
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index f41d1a0ca0f0bfa2c817ec2571c996622ce68240..63ca31dc0d9e0daf971c7dbd85ac1c1982eeec91 100644
+index a99405158fbecc5e08b334c4e40f40f51e92b2d9..f35b1a1a6c9c3a28573fee901652a55b82756cfd 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -324,6 +324,7 @@ target(link_target_type, "renderer") {
+@@ -322,6 +322,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -1308,18 +1308,18 @@ index 03a74b7d29f12be3a5d208b43beaa13f47a8e4a6..d36254ca28c1a3a4ef2b15cfbb327212
      if (is_ios) {
        sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index c2fd68d54df18eb544f9167870054aabbcc91623..915536753b3f3f61f370eee233c579cd14e4c19c 100644
+index 8b680a115718c94c9b8d7027594ac953daf201d7..20a973c240973f2fb2e782209e75da8799d90851 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-@@ -8,6 +8,7 @@
- #include <vector>
+@@ -9,6 +9,7 @@
  
  #include "base/memory/weak_ptr.h"
+ #include "base/power_monitor/power_observer.h"
 +#include "electron/mas.h"
  #include "gpu/ipc/service/command_buffer_stub.h"
  #include "gpu/ipc/service/image_transport_surface.h"
  #include "ui/gfx/ca_layer_result.h"
-@@ -27,7 +28,9 @@
+@@ -28,7 +29,9 @@
  #include <BrowserEngineKit/BrowserEngineKit.h>
  #endif
  

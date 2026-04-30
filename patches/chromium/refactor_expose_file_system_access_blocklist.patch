@@ -8,7 +8,7 @@ it in Electron and prevent drift from Chrome's blocklist. We should look for a w
 to upstream this change to Chrome.
 
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
-index 434db30ba5d8853147f36513049feb8b7f2e2fe1..2deaf6a1a187023febfff7398e20dea15bd18be9 100644
+index 05a3746627fe63e8adc1605848039ef9742fd244..1a3db07bad2282222ff49fb4a16edb7df2a3a95c 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
 @@ -84,11 +84,13 @@
@@ -139,7 +139,7 @@ index 434db30ba5d8853147f36513049feb8b7f2e2fe1..2deaf6a1a187023febfff7398e20dea1
 -      // installed (sandboxed) application. It would be nice to limit a site to
 -      // access only _its_ corresponding natively installed application, but
 -      // unfortunately there's no straightforward way to do that. See
--      // https://crbug.com/40095723#c22.
+-      // https://crbug.com/40095723#comment23.
 -      BlockPath::CreateRelative(base::DIR_HOME,
 -                                FILE_PATH_LITERAL("Library/Containers"),
 -                                BlockType::kDontBlockChildren),
@@ -270,7 +270,7 @@ index 434db30ba5d8853147f36513049feb8b7f2e2fe1..2deaf6a1a187023febfff7398e20dea1
    auto* provider = web_app::WebAppProvider::GetForWebApps(
        Profile::FromBrowserContext(profile_));
    if (provider) {
-@@ -2909,7 +2697,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
+@@ -2910,7 +2698,7 @@ void ChromeFileSystemAccessPermissionContext::OnShutdown() {
    one_time_permissions_tracker_.Reset();
  }
  
@@ -279,7 +279,7 @@ index 434db30ba5d8853147f36513049feb8b7f2e2fe1..2deaf6a1a187023febfff7398e20dea1
  void ChromeFileSystemAccessPermissionContext::OnWebAppInstalled(
      const webapps::AppId& app_id) {
    if (!base::FeatureList::IsEnabled(
-@@ -3267,11 +3055,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3268,11 +3056,7 @@ bool ChromeFileSystemAccessPermissionContext::
          HandleType handle_type,
          UserAction user_action,
          GrantType grant_type) {
@@ -292,7 +292,7 @@ index 434db30ba5d8853147f36513049feb8b7f2e2fe1..2deaf6a1a187023febfff7398e20dea1
    if (!base::FeatureList::IsEnabled(
            features::kFileSystemAccessPersistentPermissions)) {
      return false;
-@@ -3322,6 +3106,7 @@ bool ChromeFileSystemAccessPermissionContext::
+@@ -3323,6 +3107,7 @@ bool ChromeFileSystemAccessPermissionContext::
  
    return false;
  #endif  // BUILDFLAG(IS_ANDROID)
@@ -301,7 +301,7 @@ index 434db30ba5d8853147f36513049feb8b7f2e2fe1..2deaf6a1a187023febfff7398e20dea1
  
  std::vector<FileRequestData> ChromeFileSystemAccessPermissionContext::
 diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
-index 4111e2c0098402e8befe192d35458b5124639713..dc5988381cead59b704e7ca2b7629a18738d7437 100644
+index 4111e2c0098402e8befe192d35458b5124639713..956e285889efc1ac0547efaff03d5572a898511c 100644
 --- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 +++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
 @@ -10,10 +10,13 @@
@@ -444,7 +444,7 @@ index 4111e2c0098402e8befe192d35458b5124639713..dc5988381cead59b704e7ca2b7629a18
 +        // installed (sandboxed) application. It would be nice to limit a site to
 +        // access only _its_ corresponding natively installed application, but
 +        // unfortunately there's no straightforward way to do that. See
-+        // https://crbug.com/40095723#c22.
++        // https://crbug.com/40095723#comment23.
 +        BlockPath::CreateRelative(base::DIR_HOME,
 +                                  FILE_PATH_LITERAL("Library/Containers"),
 +                                  BlockType::kDontBlockChildren),

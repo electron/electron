@@ -80,20 +80,20 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 7bf6332972907dd2013c5d8ded7855aec92d2acc..c36b7c88ca328a9ccb0094d743d8694e90598c55 100644
+index 0af9cabf98970600a992fadab6404f162f0aa6a3..296327e4d4829070124e2b7b2d5942d01fcb8ca4 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2328,7 +2328,8 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2295,8 +2295,7 @@ bool Browser::IsWebContentsCreationOverridden(
+     content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
-     const std::string& frame_name,
+-    const std::string& frame_name,
 -    const GURL& target_url) {
-+    const GURL& target_url,
 +    const content::mojom::CreateNewWindowParams& params) {
-   if (HasActorTaskPreventingNewWebContents(profile(), opener)) {
+   if (actor::HasActorTaskPreventingNewWebContents(opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -2341,7 +2342,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2309,7 +2308,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,10 +103,10 @@ index 7bf6332972907dd2013c5d8ded7855aec92d2acc..c36b7c88ca328a9ccb0094d743d8694e
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 78075410c13cda894ea5fa62c3a881637780dfad..90e586308e12a31eb94081788ecfc1e92ba3163f 100644
+index 05bc3f5e3cfb31d8092e35f2031a014d676c3bc9..791300d27a69a97ab4d063572c024390da41b9f5 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -903,8 +903,7 @@ class Browser : public TabStripModelObserver,
+@@ -902,8 +902,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
