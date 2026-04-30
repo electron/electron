@@ -686,6 +686,67 @@ describe('command line switches', () => {
         }
       });
     });
+
+    it('should use bundled devtools frontend URL in /json response', async () => {
+      // Regression test for https://github.com/electron/electron/issues/51035
+      // Verifies that devtoolsFrontendUrl points to the local bundled path
+      // (/devtools/inspector.html) rather than the remote CDN URL
+      // (https://chrome-devtools-frontend.appspot.com), which would 404 for
+      // Electron's custom Chromium builds.
+      const electronPath = process.execPath;
+      let stderr = '';
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=0']);
+
+      const port = await new Promise<string>((resolve, reject) => {
+        appProcess!.stderr.on('data', (data: Buffer) => {
+          stderr += data.toString();
+          const m = /DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)\//.exec(stderr);
+          if (m) {
+            appProcess!.stderr.removeAllListeners('data');
+            resolve(m[1]);
+          }
+        });
+        appProcess!.on('exit', () =>
+          reject(new Error(`Process exited before DevTools port was found. stderr: ${stderr}`))
+        );
+      });
+
+      const jsonTargets = await new Promise<any[]>((resolve, reject) => {
+        http
+          .get(`http://127.0.0.1:${port}/json`, (res) => {
+            let body = '';
+            res.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            res.on('end', () => {
+              try {
+                resolve(JSON.parse(body));
+              } catch {
+                reject(new Error(`Failed to parse /json response: ${body}`));
+              }
+            });
+            res.on('error', reject);
+          })
+          .on('error', reject);
+      });
+
+      expect(jsonTargets).to.be.an('array');
+      expect(jsonTargets.length).to.be.greaterThan(0);
+
+      // Every target's devtoolsFrontendUrl must use the bundled path,
+      // not the remote CDN (chrome-devtools-frontend.appspot.com).
+      for (const target of jsonTargets) {
+        expect(target).to.have.property('devtoolsFrontendUrl');
+        expect(target.devtoolsFrontendUrl).to.match(
+          /^\/devtools\//,
+          `devtoolsFrontendUrl should start with /devtools/ (bundled), got: ${target.devtoolsFrontendUrl}`
+        );
+        expect(target.devtoolsFrontendUrl).to.not.include(
+          'chrome-devtools-frontend.appspot.com',
+          'devtoolsFrontendUrl should not point to the remote CDN'
+        );
+      }
+    });
   });
 
   describe('--trace-startup switch', () => {
