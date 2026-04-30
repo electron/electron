@@ -84,9 +84,12 @@ struct LoginItemSettings {
   std::wstring name;
 
   // used in browser::getLoginItemSettings
-  bool executable_will_launch_at_login = false;
   std::vector<LaunchItem> launch_items;
 #endif
+
+  // used in browser::getLoginItemSettings; only meaningful on Windows but
+  // always emitted so consumers don't observe `undefined`.
+  bool executable_will_launch_at_login = false;
 
   LoginItemSettings();
   ~LoginItemSettings();
