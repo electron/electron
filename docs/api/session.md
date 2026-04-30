@@ -645,9 +645,13 @@ Returns:
 Emitted when a call to `navigator.credentials.get()` resolves multiple
 discoverable WebAuthn credentials and the user must choose one. `callback`
 should be called with the `credentialId` of the selected account; passing no
-arguments to `callback` will cancel the request. If no listener is registered
-for this event, the request is cancelled and the page receives a
-`NotAllowedError`.
+arguments to `callback`, or a `credentialId` that does not match one of the
+provided accounts, will cancel the request. (In the latter case, a `TypeError`
+is also raised in the renderer that emitted the event so the bug is visible to
+the developer.) If no listener is registered for this event, the request is
+cancelled and the page receives a `NotAllowedError`. The credential request
+remains pending until the listener invokes the callback, so always invoke it
+exactly once — typically from a `try { … } finally { callback(…) }` block.
 
 On macOS, the Touch ID platform authenticator surfaces accounts via this event
 once it has been configured with

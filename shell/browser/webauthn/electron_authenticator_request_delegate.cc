@@ -9,6 +9,7 @@
 #include "base/containers/span.h"
 #include "base/no_destructor.h"
 #include "components/prefs/pref_service.h"
+#include "content/public/browser/browser_thread.h"
 #include "device/fido/mac/credential_metadata.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/common/electron_constants.h"
@@ -35,12 +36,17 @@ ElectronWebAuthenticationDelegate::touch_id_keychain_access_group() {
 // static
 void ElectronWebAuthenticationDelegate::SetTouchIdKeychainAccessGroup(
     std::string access_group) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   touch_id_keychain_access_group() = std::move(access_group);
 }
 
 std::optional<content::WebAuthenticationDelegate::TouchIdAuthenticatorConfig>
 ElectronWebAuthenticationDelegate::GetTouchIdAuthenticatorConfig(
     content::BrowserContext* browser_context) {
+  // The metadata-secret pref is read-then-written; serialize on the UI thread
+  // to avoid two callers each generating a fresh secret and clobbering each
+  // other's credentials.
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   const std::string& access_group = touch_id_keychain_access_group();
   if (access_group.empty()) {
     return std::nullopt;
