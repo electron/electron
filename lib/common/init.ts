@@ -72,6 +72,16 @@ if (process.platform === 'win32') {
       return stdin;
     }
   });
+
+  if (process.type === 'renderer') {
+    for (const output of [process.stdout, process.stderr]) {
+      Object.defineProperty(output, 'isTTY', {
+        configurable: true,
+        enumerable: true,
+        value: undefined
+      });
+    }
+  }
 }
 
 const Module = require('module') as NodeJS.ModuleInternal;
