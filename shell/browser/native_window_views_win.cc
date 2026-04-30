@@ -6,6 +6,7 @@
 #include <shellapi.h>
 #include <wrl/client.h>
 
+#include "base/logging.h"
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
 #include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
@@ -684,7 +685,13 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
       if (UnhookWindowsHookEx(mouse_hook_)) {
         mouse_hook_ = nullptr;
       } else {
-        PLOG(WARNING) << "Failed to unhook low-level mouse hook";
+        const DWORD error = ::GetLastError();
+        if (error == ERROR_INVALID_HOOK_HANDLE) {
+          mouse_hook_ = nullptr;
+        } else {
+          LOG(WARNING) << "Failed to unhook low-level mouse hook: "
+                       << logging::SystemErrorCodeToString(error);
+        }
       }
     }
   }
