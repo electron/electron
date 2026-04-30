@@ -502,6 +502,11 @@ void ElectronBrowserContext::InitPrefs() {
   // Unique uuid for global shortcuts.
   registry->RegisterStringPref(electron::kElectronGlobalShortcutsUuid,
                                std::string());
+
+#if BUILDFLAG(IS_MAC)
+  registry->RegisterStringPref(electron::kWebAuthnTouchIdMetadataSecretPrefName,
+                               std::string());
+#endif
 }
 
 void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {
