@@ -112,10 +112,9 @@ describe("session 'select-webauthn-account' event", () => {
         }
       }).then(
         c => {
-          const uh = c.response.userHandle;
-          const userHandle = uh
-            ? btoa(String.fromCharCode(...new Uint8Array(uh)))
-                .replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '')
+          const userHandle = c.response.userHandle
+            ? new Uint8Array(c.response.userHandle)
+                .toBase64({ alphabet: 'base64url', omitPadding: true })
             : null;
           return { ok: true, id: c.id, userHandle };
         },
@@ -160,12 +159,7 @@ describe("session 'select-webauthn-account' event", () => {
   const BOB_ID = 'cred-bob??';
   const BOB_USER_HANDLE = 'uh-bob>>';
 
-  const toBase64Url = (s: string) =>
-    Buffer.from(s)
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
+  const toBase64Url = (s: string) => Buffer.from(s).toString('base64url');
 
   it('fires with discoverable credentials and resolves get() with the chosen one', async () => {
     await addCredential({ id: 'cred-alice', userHandle: 'uh-alice', name: 'alice@example.com', displayName: 'Alice' });
