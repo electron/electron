@@ -63,7 +63,7 @@ class DesktopCapturer final
 
   void FinalizeList(std::unique_ptr<ListObserver>& observer,
                     std::unique_ptr<DesktopMediaList>& list);
-  void OnListReady(DesktopMediaList* list);
+  void OnListReady(DesktopMediaList::Type type);
   void OnReadyTimeout();
   void CollectSourcesFrom(DesktopMediaList* list);
   void HandleFailure();
