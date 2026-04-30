@@ -1327,6 +1327,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__ranges/single_view.h",
   "//third_party/libc++/src/include/__ranges/size.h",
   "//third_party/libc++/src/include/__ranges/split_view.h",
+  "//third_party/libc++/src/include/__ranges/stride_view.h",
   "//third_party/libc++/src/include/__ranges/subrange.h",
   "//third_party/libc++/src/include/__ranges/take_view.h",
   "//third_party/libc++/src/include/__ranges/take_while_view.h",
