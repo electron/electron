@@ -78,7 +78,7 @@ describe("session 'select-webauthn-account' event", () => {
     await closeAllWindows();
   });
 
-  async function addCredential(opts: { id: string; userHandle: string; name: string; displayName: string }) {
+  async function addCredential (opts: { id: string; userHandle: string; name: string; displayName: string }) {
     const privateKey = await w.webContents.executeJavaScript(`
       (async () => {
         const k = await crypto.subtle.generateKey(
@@ -102,7 +102,7 @@ describe("session 'select-webauthn-account' event", () => {
     });
   }
 
-  function getAssertion() {
+  function getAssertion () {
     return w.webContents.executeJavaScript(`
       navigator.credentials.get({
         publicKey: {
