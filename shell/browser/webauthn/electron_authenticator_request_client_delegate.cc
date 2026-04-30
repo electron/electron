@@ -7,7 +7,7 @@
 #include <string>
 #include <utility>
 
-#include "base/base64.h"
+#include "base/base64url.h"
 #include "base/containers/span.h"
 #include "base/functional/bind.h"
 #include "content/public/browser/render_frame_host.h"
@@ -28,10 +28,14 @@ namespace electron {
 
 namespace {
 
+// WebAuthn's PublicKeyCredential.id is canonically URL-safe base64 with no
+// padding, so encode credential IDs and user handles the same way to keep the
+// event payload string-comparable to values returned by navigator.credentials.
 std::string CredentialIdFor(
     const device::AuthenticatorGetAssertionResponse& response) {
   if (response.credential) {
-    return base::Base64Encode(response.credential->id);
+    return base::Base64UrlEncode(response.credential->id,
+                                 base::Base64UrlEncodePolicy::OMIT_PADDING);
   }
   return {};
 }
@@ -109,7 +113,9 @@ void ElectronAuthenticatorRequestClientDelegate::SelectAccount(
     gin::DataObjectBuilder account(isolate);
     account.Set("credentialId", CredentialIdFor(response));
     if (response.user_entity) {
-      account.Set("userHandle", base::Base64Encode(response.user_entity->id));
+      account.Set("userHandle", base::Base64UrlEncode(
+                                    response.user_entity->id,
+                                    base::Base64UrlEncodePolicy::OMIT_PADDING));
       if (response.user_entity->name) {
         account.Set("name", *response.user_entity->name);
       }
@@ -186,6 +192,10 @@ void ElectronAuthenticatorRequestClientDelegate::OnAccountSelected(
     }
   }
 
+  // Unknown credentialId: cancel the pending request rather than leaving it
+  // hanging while the listener retries. The TypeError still surfaces so the
+  // app developer sees that the value was wrong.
+  CancelPendingAccountSelection();
   args->ThrowTypeError(
       "Invalid credentialId passed to select-webauthn-account callback");
 }
