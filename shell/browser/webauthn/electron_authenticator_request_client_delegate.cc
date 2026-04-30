@@ -196,11 +196,9 @@ void ElectronAuthenticatorRequestClientDelegate::OnAccountSelected(
   }
 
   // Unknown credentialId: cancel the pending request rather than leaving it
-  // hanging while the listener retries. The TypeError still surfaces so the
-  // app developer sees that the value was wrong.
+  // hanging. Matches the no-args branch above so the listener has a single,
+  // consistent failure mode whether it cancels deliberately or by mistake.
   CancelPendingAccountSelection();
-  args->ThrowTypeError(
-      "Invalid credentialId passed to select-webauthn-account callback");
 }
 
 }  // namespace electron
