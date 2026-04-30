@@ -1352,7 +1352,6 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__support/ibm/gettod_zos.h",
   "//third_party/libc++/src/include/__support/ibm/locale_mgmt_zos.h",
   "//third_party/libc++/src/include/__support/ibm/nanosleep.h",
-  "//third_party/libc++/src/include/__support/xlocale/__nop_locale_mgmt.h",
   "//third_party/libc++/src/include/__support/xlocale/__posix_l_fallback.h",
   "//third_party/libc++/src/include/__support/xlocale/__strtonum_fallback.h",
   "//third_party/libc++/src/include/__system_error/errc.h",
