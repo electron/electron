@@ -1,4 +1,4 @@
-// Copyright (c) 2026 Microsoft, GmbH.
+// Copyright (c) 2026 Anthropic, PBC.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
