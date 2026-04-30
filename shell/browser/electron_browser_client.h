@@ -125,6 +125,11 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::UsbDelegate* GetUsbDelegate() override;
 
   content::WebAuthenticationDelegate* GetWebAuthenticationDelegate() override;
+#if !BUILDFLAG(IS_ANDROID)
+  std::unique_ptr<content::AuthenticatorRequestClientDelegate>
+  GetWebAuthenticationRequestDelegate(
+      content::RenderFrameHost* render_frame_host) override;
+#endif
 
 #if BUILDFLAG(IS_MAC)
   device::GeolocationSystemPermissionManager*

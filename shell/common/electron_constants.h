@@ -30,6 +30,11 @@ inline constexpr base::cstring_view kRunAsNode = "ELECTRON_RUN_AS_NODE";
 inline constexpr char kElectronGlobalShortcutsUuid[] =
     "electron.global_shortcuts.uuid";
 
+// Per-profile secret used to encrypt Touch ID WebAuthn credential metadata
+// stored in the macOS keychain.
+inline constexpr char kWebAuthnTouchIdMetadataSecretPrefName[] =
+    "electron.webauthn.touchid.metadata_secret";
+
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 inline constexpr std::string_view kPDFExtensionPluginName =
     "Chromium PDF Viewer";

@@ -1225,6 +1225,51 @@ This API must be called after the `ready` event is emitted.
 [doh-providers]: https://source.chromium.org/chromium/chromium/src/+/main:net/dns/public/doh_provider_entry.cc;l=31?q=%22DohProviderEntry::GetList()%22&ss=chromium%2Fchromium%2Fsrc
 [RFC8484 § 3]: https://datatracker.ietf.org/doc/html/rfc8484#section-3
 
+### `app.configureWebAuthn(options)` _macOS_
+
+* `options` Object
+  * `touchID` Object (optional) - Enables the Touch ID / Secure Enclave platform
+    authenticator for [Web Authentication](https://www.w3.org/TR/webauthn-2/)
+    requests.
+    * `keychainAccessGroup` string - The keychain access group that WebAuthn
+      credentials will be stored under. This value **must** also be present in
+      your app's `keychain-access-groups` code-signing entitlement, and is
+      typically of the form `<TEAM_ID>.<BUNDLE_ID>.webauthn`.
+
+Configures platform authenticators for the Web Authentication API
+(`navigator.credentials.create()` / `navigator.credentials.get()`). Until this
+is called, `PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()`
+resolves to `false` and platform-authenticator requests are not serviced.
+
+When `touchID` is provided, WebAuthn credentials are stored in the macOS
+keychain and bound to this device's Secure Enclave. Electron automatically
+generates and persists a per-[`session`](session.md) metadata secret so that
+credentials created in one partition are not visible to another.
+
+```js
+const { app } = require('electron')
+
+app.configureWebAuthn({
+  touchID: {
+    keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn'
+  }
+})
+```
+
+With the matching entitlement in your app's `entitlements.plist`:
+
+```xml
+<key>keychain-access-groups</key>
+<array>
+  <string>A1B2C3D4E5.com.example.app.webauthn</string>
+</array>
+```
+
+> [!NOTE]
+> Touch ID WebAuthn credentials are device-bound and are not synced via iCloud
+> Keychain. They are only available on Macs with a Secure Enclave (Apple
+> silicon, or Intel Macs with a T2 chip).
+
 ### `app.disableHardwareAcceleration()`
 
 Disables hardware acceleration for current app.
