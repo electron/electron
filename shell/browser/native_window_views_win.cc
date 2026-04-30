@@ -677,8 +677,15 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
 
     if (forwarding_windows_->empty()) {
-      UnhookWindowsHookEx(mouse_hook_);
-      mouse_hook_ = nullptr;
+      // If UnhookWindowsHookEx fails, the hook is still installed in the
+      // system. Leave |mouse_hook_| pointing at the existing hook so that a
+      // subsequent SetForwardMouseMessages(true) reuses it instead of
+      // installing a duplicate hook.
+      if (UnhookWindowsHookEx(mouse_hook_)) {
+        mouse_hook_ = nullptr;
+      } else {
+        PLOG(WARNING) << "Failed to unhook low-level mouse hook";
+      }
     }
   }
 }
