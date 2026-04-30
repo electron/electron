@@ -119,6 +119,12 @@ v8::Maybe<bool> PromiseBase::RejectWithErrorMessage(std::string_view errmsg) {
       v8::Exception::Error(gin::StringToV8(isolate(), errmsg)));
 }
 
+v8::Maybe<bool> PromiseBase::Resolve() {
+  if (!IsAlive())
+    return v8::Nothing<bool>();
+  return ResolveWith(v8::Undefined(isolate()));
+}
+
 v8::Local<v8::Context> PromiseBase::GetContext() const {
   return IsAlive() ? handle_->GetContext(isolate_) : v8::Local<v8::Context>();
 }
@@ -131,6 +137,11 @@ v8::Local<v8::Promise> PromiseBase::GetHandle() const {
 v8::Local<v8::Promise::Resolver> PromiseBase::GetInner() const {
   return IsAlive() ? handle_->GetResolver(isolate_)
                    : v8::Local<v8::Promise::Resolver>();
+}
+
+v8::Maybe<bool> PromiseBase::ResolveWith(v8::Local<v8::Value> value) {
+  SettleScope settle_scope{*this};
+  return GetInner()->Resolve(settle_scope.context_, value);
 }
 
 // static
@@ -168,13 +179,6 @@ v8::Local<v8::Promise> Promise<void>::ResolvedPromise(v8::Isolate* isolate) {
   Promise<void> resolved(isolate);
   resolved.Resolve();
   return resolved.GetHandle();
-}
-
-v8::Maybe<bool> Promise<void>::Resolve() {
-  if (!IsAlive())
-    return v8::Nothing<bool>();
-  SettleScope settle_scope{*this};
-  return GetInner()->Resolve(settle_scope.context_, v8::Undefined(isolate()));
 }
 
 }  // namespace gin_helper
