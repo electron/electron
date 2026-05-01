@@ -3,6 +3,7 @@
   "es-module/test-esm-wasm",
   "es-module/test-vm-compile-function-lineoffset",
   "parallel/test-bootstrap-modules",
+  "parallel/test-buffer-pool-untransferable",
   "parallel/test-child-process-fork-exec-path",
   "parallel/test-code-cache",
   "parallel/test-cluster-primary-error",
