@@ -599,10 +599,24 @@ describe('node feature', () => {
       }).to.not.throw();
     });
 
-    // TODO: figure out why process.stdout.isTTY is true on Darwin but not Linux/Win.
-    ifdescribe(process.platform !== 'darwin')('isTTY', () => {
-      itremote('should be undefined in the renderer process', function () {
-        expect(process.stdout.isTTY).to.be.undefined();
+    // On Linux, renderer stdout inherits the fd type provided by the parent
+    // process through Chromium's launch path. In this test harness fd 1 is a
+    // pipe, but that is not a stable Electron behavior to assert here; only
+    // assert that Node's stdout stream matches libuv's classification of fd 1.
+    describe('isTTY', () => {
+      itremote("should match Node's TTY classification in the renderer", function () {
+        const { isatty } = require('node:tty');
+
+        expect(process.stdout.isTTY === true).to.equal(isatty(1));
+      });
+
+      ifdescribe(process.platform !== 'linux')('TTY platforms', () => {
+        itremote('should expose renderer stdout as a TTY', function () {
+          const { isatty } = require('node:tty');
+
+          expect(isatty(1)).to.be.true();
+          expect(process.stdout.isTTY).to.be.true();
+        });
       });
     });
   });
