@@ -62,28 +62,29 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(ok).to.be.true(message);
   });
 
-  it('includes preferredDisplaySurface in the request object', async () => {
-    const ses = session.fromPartition('' + Math.random());
-    let mediaRequest: any = null;
-    ses.setDisplayMediaRequestHandler((request, callback) => {
-      mediaRequest = request;
-      callback({ video: request.frame });
+  for (const surface of ['monitor', 'window', 'browser'] as const) {
+    it(`includes preferredDisplaySurface='${surface}' in the request object`, async () => {
+      const ses = session.fromPartition('' + Math.random());
+      let mediaRequest: any = null;
+      ses.setDisplayMediaRequestHandler((request, callback) => {
+        mediaRequest = request;
+        callback({ video: request.frame });
+      });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      const { ok, message } = await w.webContents.executeJavaScript(
+        `
+        navigator.mediaDevices.getDisplayMedia({
+          video: { displaySurface: '${surface}' },
+          audio: false,
+        }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+      `,
+        true
+      );
+      expect(ok).to.be.true(message);
+      expect(mediaRequest.preferredDisplaySurface).to.equal(surface);
     });
-    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-    await w.loadURL(serverUrl);
-    const { ok, message } = await w.webContents.executeJavaScript(
-      `
-      navigator.mediaDevices.getDisplayMedia({
-        video: { displaySurface: 'monitor' },
-        audio: false,
-      }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `,
-      true
-    );
-    expect(ok).to.be.true(message);
-    expect(mediaRequest.preferredDisplaySurface).to.be.a('string');
-    expect(mediaRequest.preferredDisplaySurface).to.equal('monitor');
-  });
+  }
 
   it('defaults preferredDisplaySurface to none when not specified', async () => {
     const ses = session.fromPartition('' + Math.random());
