@@ -4,6 +4,11 @@
 
 #include "shell/browser/browser.h"
 
+#include <fcntl.h>
+#include <stdlib.h>
+
+#include <string_view>
+
 #if BUILDFLAG(IS_LINUX)
 #include <gio/gdesktopappinfo.h>
 #include <gio/gio.h>
@@ -11,6 +16,7 @@
 #endif
 
 #include "base/environment.h"
+#include "base/files/file_path.h"
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
 #include "electron/electron_version.h"
@@ -18,7 +24,18 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
+#include "shell/common/thread_restrictions.h"
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/base/glib/glib_cast.h"
+#include "ui/base/glib/scoped_gobject.h"
+#include "ui/gfx/image/image.h"
+#include "ui/gfx/image/image_skia.h"
+#include "ui/gtk/gtk_compat.h"  // nogncheck
+#include "ui/gtk/gtk_util.h"    // nogncheck
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/unity_service.h"
@@ -48,6 +65,101 @@ bool SetDefaultWebClient(const std::string& protocol) {
   g_clear_error(&error);
   g_object_unref(app_info);
   return success;
+}
+
+[[nodiscard]] ScopedGObject<GAppInfo> GetAppInfoForProtocol(const GURL& url) {
+  const auto scheme = std::string{url.scheme()};  // gio can't use string_views
+  return TakeGObject(g_app_info_get_default_for_uri_scheme(scheme.c_str()));
+}
+
+[[nodiscard]] std::optional<base::FilePath> ResolveExecutablePath(
+    const char* const executable) {
+  if (executable == nullptr || *executable == '\0')
+    return {};
+
+  if (auto path = base::FilePath::FromUTF8Unsafe(executable); path.IsAbsolute())
+    return path;
+
+  gchar* const found = g_find_program_in_path(executable);
+  if (!found)
+    return {};
+
+  const auto path = base::FilePath::FromUTF8Unsafe(found);
+  g_free(found);
+  return path;
+}
+
+[[nodiscard]] gfx::Image GetApplicationIcon(GAppInfo* const app_info) {
+  constexpr int kIconSize = 32;
+
+  GIcon* const icon = g_app_info_get_icon(app_info);
+  if (!icon)
+    return {};
+
+  // Note: this gtk3/gtk4 + icon theme lookup + snapshot control flow
+  // is copied from GtkUi::GetIconForContentType(). We couldn't use it
+  // here because it gets its GIcon from a different place than us.
+  SkBitmap bitmap;
+  if (gtk::GtkCheckVersion(4)) {
+    const auto icon_paintable = gtk::Gtk4IconThemeLookupByGicon(
+        gtk::GetDefaultIconTheme(), icon, kIconSize, 1, GTK_TEXT_DIR_NONE,
+        static_cast<GtkIconLookupFlags>(0));
+    if (!icon_paintable)
+      return {};
+
+    auto* const paintable =
+        GlibCast<GdkPaintable>(icon_paintable.get(), gdk_paintable_get_type());
+    auto* const snapshot = gtk_snapshot_new();
+    gdk_paintable_snapshot(paintable, snapshot, kIconSize, kIconSize);
+    auto* const node = gtk_snapshot_free_to_node(snapshot);
+    GdkTexture* const texture = gtk::GetTextureFromRenderNode(node);
+    if (!texture) {
+      gsk_render_node_unref(node);
+      return {};
+    }
+
+    bitmap.allocN32Pixels(gdk_texture_get_width(texture),
+                          gdk_texture_get_height(texture));
+    gdk_texture_download(texture, static_cast<guchar*>(bitmap.getAddr(0, 0)),
+                         bitmap.rowBytes());
+    gsk_render_node_unref(node);
+  } else {
+    const auto icon_info = gtk::Gtk3IconThemeLookupByGiconForScale(
+        gtk::GetDefaultIconTheme(), icon, kIconSize, 1,
+        static_cast<GtkIconLookupFlags>(GTK_ICON_LOOKUP_FORCE_SIZE));
+    if (!icon_info)
+      return {};
+
+    auto* const surface =
+        gtk_icon_info_load_surface(icon_info.get(), nullptr, nullptr);
+    if (!surface)
+      return {};
+
+    DCHECK_EQ(cairo_surface_get_type(surface), CAIRO_SURFACE_TYPE_IMAGE);
+    DCHECK_EQ(cairo_image_surface_get_format(surface), CAIRO_FORMAT_ARGB32);
+
+    const SkImageInfo image_info =
+        SkImageInfo::Make(cairo_image_surface_get_width(surface),
+                          cairo_image_surface_get_height(surface),
+                          kBGRA_8888_SkColorType, kUnpremul_SkAlphaType);
+    if (!bitmap.installPixels(
+            image_info, cairo_image_surface_get_data(surface),
+            image_info.minRowBytes(),
+            [](void*, void* surface_ptr) {
+              cairo_surface_destroy(
+                  reinterpret_cast<cairo_surface_t*>(surface_ptr));
+            },
+            surface)) {
+      return {};
+    }
+  }
+
+  gfx::ImageSkia image_skia = gfx::ImageSkia::CreateFrom1xBitmap(bitmap);
+  if (image_skia.isNull())
+    return {};
+
+  image_skia.MakeThreadSafe();
+  return gfx::Image(image_skia);
 }
 
 }  // namespace
@@ -95,15 +207,53 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
-  const auto scheme = std::string{url.scheme()};  // gio can't use string_view
-  auto* app_info = g_app_info_get_default_for_uri_scheme(scheme.c_str());
+  auto app_info = GetAppInfoForProtocol(url);
   if (!app_info)
     return {};
 
   const char* const name = g_app_info_get_display_name(app_info);
-  const std::u16string u16name = base::UTF8ToUTF16(name);
-  g_object_unref(app_info);
-  return u16name;
+  return base::UTF8ToUTF16(name);
+}
+
+v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
+    v8::Isolate* const isolate,
+    const GURL& url) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+  const v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  auto app_info = GetAppInfoForProtocol(url);
+  if (!app_info) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return handle;
+  }
+
+  const char* const executable = g_app_info_get_executable(app_info);
+  const auto app_path = ResolveExecutablePath(executable);
+  if (!app_path) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return handle;
+  }
+
+  const char* const app_display_name = g_app_info_get_display_name(app_info);
+  if (!app_display_name || app_display_name[0] == '\0') {
+    promise.RejectWithErrorMessage("Unable to retrieve display name of app");
+    return handle;
+  }
+
+  const gfx::Image app_icon = GetApplicationIcon(app_info);
+  if (app_icon.IsEmpty()) {
+    promise.RejectWithErrorMessage("Failed to get file icon.");
+    return handle;
+  }
+
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+  dict.Set("name", base::UTF8ToUTF16(app_display_name));
+  dict.Set("path", app_path->value());
+  dict.Set("icon", app_icon);
+  promise.Resolve(dict);
+  return handle;
 }
 
 bool Browser::SetBadgeCount(std::optional<int> count) {
