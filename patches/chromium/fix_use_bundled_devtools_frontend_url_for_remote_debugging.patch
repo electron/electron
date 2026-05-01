@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Om Ghante <omghante@users.noreply.github.com>
+Date: Tue, 21 Apr 2026 23:30:00 +0530
+Subject: fix: add ShouldUseBundledFrontendResources delegate for remote
+ debugging
+
+Adds a new `ShouldUseBundledFrontendResources()` virtual method to
+`DevToolsManagerDelegate` that embedders can override to control whether
+the bundled DevTools frontend URL is used in the `/json` response,
+regardless of `CHROMIUM_GIT_REVISION`.
+
+This is needed because embedders like Electron ship bundled frontend
+resources, but the remote frontend on the CDN may not be available for
+their custom Chromium revisions or may expire before their extended
+release cycles end.
+
+Without this, `GetFrontendURLInternal()` generates a
+`devtoolsFrontendUrl` pointing to
+`chrome-devtools-frontend.appspot.com`, which returns 404 for
+embedder-specific Chromium builds, causing Chrome's `chrome://inspect`
+page to show an empty DevTools window.
+
+The default implementation returns `false` to preserve existing
+behavior for Chrome and other embedders.
+
+Fixes: https://github.com/electron/electron/issues/51035
+
+diff --git a/content/browser/devtools/devtools_http_handler.cc b/content/browser/devtools/devtools_http_handler.cc
+index 79bf965d5dd4a9466a518f29f55d4769d9cbb060..869db7f6d090627ed8f0c301c8a11f33b2a9c944 100644
+--- a/content/browser/devtools/devtools_http_handler.cc
++++ b/content/browser/devtools/devtools_http_handler.cc
+@@ -538,7 +538,8 @@ std::string DevToolsHttpHandler::GetFrontendURLInternal(
+     const std::string& host) {
+   std::string frontend_url;
+   const std::string git_revision = CHROMIUM_GIT_REVISION;
+-  if (git_revision == kMissingGitRevision &&
++  if ((git_revision == kMissingGitRevision ||
++       delegate_->ShouldUseBundledFrontendResources()) &&
+       delegate_->HasBundledFrontendResources()) {
+     frontend_url = "/devtools/inspector.html";
+   } else {
+diff --git a/content/public/browser/devtools_manager_delegate.cc b/content/public/browser/devtools_manager_delegate.cc
+index 02e70247e20fda68510d0e1eb4e7114a1b29d153..8c191135fb73e4141041b93ac1bd8348fbdbbe2b 100644
+--- a/content/public/browser/devtools_manager_delegate.cc
++++ b/content/public/browser/devtools_manager_delegate.cc
+@@ -106,6 +106,10 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
+   return false;
+ }
+ 
++bool DevToolsManagerDelegate::ShouldUseBundledFrontendResources() {
++  return false;
++}
++
+ bool DevToolsManagerDelegate::IsBrowserTargetDiscoverable() {
+   return false;
+ }
+diff --git a/content/public/browser/devtools_manager_delegate.h b/content/public/browser/devtools_manager_delegate.h
+index e6e5ba7be2551ff1482dd18cf7f7492aa0f5b609..778426dc9ced79d663c0f75d1436a9aa6d118318 100644
+--- a/content/public/browser/devtools_manager_delegate.h
++++ b/content/public/browser/devtools_manager_delegate.h
+@@ -148,6 +148,13 @@ class CONTENT_EXPORT DevToolsManagerDelegate {
+   // Returns whether frontend resources are bundled within the binary.
+   virtual bool HasBundledFrontendResources();
+ 
++  // Returns whether the bundled frontend resources should be preferred over
++  // the remote frontend served from the CDN. Embedders that ship bundled
++  // frontend resources and whose Chromium revisions may not be available on
++  // the CDN (or may expire before their release cycle ends) should override
++  // this to return true.
++  virtual bool ShouldUseBundledFrontendResources();
++
+   // Makes browser target easily discoverable for remote debugging.
+   // This should only return true when remote debugging endpoint is not
+   // accessible by the web (for example in Chrome for Android where it is
