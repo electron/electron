@@ -240,7 +240,10 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
   ListObserver(DesktopCapturer* capturer,
                DesktopMediaList* list,
                bool need_thumbnails)
-      : capturer_{capturer}, list_{list}, need_thumbnails_{need_thumbnails} {}
+      : capturer_{capturer},
+        list_{list},
+        list_type_{list->GetMediaListType()},
+        need_thumbnails_{need_thumbnails} {}
   ~ListObserver() override = default;
 
   [[nodiscard]] bool IsReady() const {
@@ -267,7 +270,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
     base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
         FROM_HERE,
         base::BindOnce(&DesktopCapturer::OnListReady,
-                       capturer_->weak_ptr_factory_.GetWeakPtr(), list_.get()));
+                       capturer_->weak_ptr_factory_.GetWeakPtr(), list_type_));
   }
 
   // DesktopMediaListObserver:
@@ -294,6 +297,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
 
   raw_ptr<DesktopCapturer> capturer_;
   raw_ptr<DesktopMediaList> list_;
+  DesktopMediaList::Type list_type_;
   bool need_thumbnails_ = false;
   bool has_sources_ = false;
   bool notified_ = false;
@@ -410,16 +414,21 @@ void DesktopCapturer::StartHandling(bool capture_window,
                                  weak_ptr_factory_.GetWeakPtr()));
 }
 
-void DesktopCapturer::OnListReady(DesktopMediaList* list) {
+void DesktopCapturer::OnListReady(const DesktopMediaList::Type type) {
   if (finished_)
     return;
 
-  if (list == window_capturer_.get()) {
-    FinalizeList(window_observer_, window_capturer_);
-  } else if (list == screen_capturer_.get()) {
-    FinalizeList(screen_observer_, screen_capturer_);
-  } else {
-    NOTREACHED();
+  switch (type) {
+    case DesktopMediaList::Type::kWindow:
+      if (window_capturer_)
+        FinalizeList(window_observer_, window_capturer_);
+      break;
+    case DesktopMediaList::Type::kScreen:
+      if (screen_capturer_)
+        FinalizeList(screen_observer_, screen_capturer_);
+      break;
+    default:
+      NOTREACHED();
   }
 }
 
