@@ -72,8 +72,17 @@ if (process.platform === 'win32') {
   }
 }
 
-// Map process.exit to app.exit, which quits gracefully.
-process.exit = app.exit as () => never;
+// Map process.exit to app.exit, which quits gracefully. When called without
+// an explicit code, fall back to process.exitCode like Node.js does.
+process.exit = ((code: number | string | undefined | null) => {
+  // Refs https://github.com/nodejs/node/blob/fc192ee030ee076b948ce7d9d72cba6c101989b8/lib/internal/process/per_thread.js#L229-L252
+  if (code !== undefined) {
+    // Node.js handles any string to number conversion here for us
+    process.exitCode = code;
+  }
+
+  app.exit(process.exitCode || 0);
+}) as typeof process.exit;
 
 // Load the RPC server.
 require('@electron/internal/browser/rpc-server');
