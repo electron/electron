@@ -4728,3 +4728,76 @@ describe('iframe sandbox external protocols', () => {
     expect(openExternalRequests).to.deep.equal(['magnet:sandbox-test']);
   });
 });
+
+describe('iframe sandbox popups', () => {
+  let server: http.Server;
+  let serverUrl: string;
+  let w: BrowserWindow;
+
+  const childHtml = `
+    <script>
+      addEventListener('DOMContentLoaded', () => {
+        const a = document.createElement('a');
+        a.href = 'https://example.com/sandbox-bypassed';
+        document.body.appendChild(a);
+        a.dispatchEvent(new MouseEvent('click', {
+          ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
+        }));
+      });
+    </script>`;
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/child') {
+        res.end(childHtml);
+      } else {
+        const sandbox = new URL(req.url!, serverUrl).searchParams.get('sandbox') ?? '';
+        res.end(`<iframe sandbox="${sandbox}" src="/child"></iframe>`);
+      }
+    });
+    serverUrl = (await listen(server)).url;
+  });
+
+  after(() => {
+    server.close();
+  });
+
+  beforeEach(() => {
+    w = new BrowserWindow({ show: false });
+  });
+
+  afterEach(() => closeAllWindows());
+
+  it('does not invoke setWindowOpenHandler from a sandboxed iframe without allow-popups', async () => {
+    let handlerCalls = 0;
+    w.webContents.setWindowOpenHandler(() => {
+      handlerCalls++;
+      return { action: 'deny' };
+    });
+    await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts')}`);
+    await setTimeout(200);
+    expect(handlerCalls).to.equal(0);
+  });
+
+  it('does not create a BrowserWindow from a sandboxed iframe without allow-popups (no handler installed)', async () => {
+    let created = false;
+    w.webContents.on('did-create-window', () => {
+      created = true;
+    });
+    await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts')}`);
+    await setTimeout(200);
+    expect(created).to.be.false();
+  });
+
+  it('invokes setWindowOpenHandler when allow-popups is set', async () => {
+    let handlerCalls = 0;
+    w.webContents.setWindowOpenHandler(() => {
+      handlerCalls++;
+      return { action: 'deny' };
+    });
+    await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts allow-popups')}`);
+    await setTimeout(200);
+    expect(handlerCalls).to.equal(1);
+  });
+});
