@@ -114,6 +114,10 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
         [NSImage imageWithSystemSymbolName:base::SysUTF8ToNSString(name)
                   accessibilityDescription:nil];
 
+    if (!image || !image.valid) {
+      return CreateEmpty(args->isolate());
+    }
+
     NSImageSymbolConfiguration* symbol_config = [NSImageSymbolConfiguration
         configurationWithPointSize:13.0
                             weight:NSFontWeightSemibold
@@ -122,6 +126,10 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
     image = [image imageWithSymbolConfiguration:symbol_config];
 
     NSData* png_data = bufferFromNSImage(image);
+
+    if (!png_data) {
+      return CreateEmpty(args->isolate());
+    }
 
     gin_helper::Handle<NativeImage> handle =
         CreateFromPNG(args->isolate(), electron::util::as_byte_span(png_data));
