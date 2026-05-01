@@ -1,4 +1,12 @@
-import { BaseWindow, BrowserWindow, WebContentsView, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron/main';
+import {
+  BaseWindow,
+  BrowserWindow,
+  WebContentsView,
+  app,
+  Menu,
+  MenuItem,
+  MenuItemConstructorOptions
+} from 'electron/main';
 
 import { expect } from 'chai';
 

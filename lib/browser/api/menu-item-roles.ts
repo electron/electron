@@ -213,8 +213,8 @@ export const roleList: Record<RoleId, Role> = {
     label: 'Toggle Developer Tools',
     accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
     nonNativeMacOSRole: true,
-    webContentsMethod: wc => {
-      const target = isDevTools(wc) ? getParentWebContents(wc) : wc ; 
+    webContentsMethod: (wc) => {
+      const target = isDevTools(wc) ? getParentWebContents(wc) : wc;
       target?.toggleDevTools();
     }
   },
@@ -358,19 +358,17 @@ export const roleList: Record<RoleId, Role> = {
 };
 
 const isDevTools = (wc: WebContents): boolean => {
-  return wc.getType() === 'remote' 
-          || wc.getURL().startsWith('devtools://')
-          || wc.hostWebContents != null; 
-}
+  return wc.getType() === 'remote' || wc.getURL().startsWith('devtools://') || wc.hostWebContents != null;
+};
 
 const getParentWebContents = (devToolsWebContents: WebContents): WebContents | undefined => {
-  for( const wc of webContents.getAllWebContents()) {
-    if(wc.devToolsWebContents === devToolsWebContents) {
+  for (const wc of webContents.getAllWebContents()) {
+    if (wc.devToolsWebContents === devToolsWebContents) {
       return wc;
     }
   }
-  return undefined; 
-}
+  return undefined;
+};
 
 const hasRole = (role: keyof typeof roleList) => {
   return Object.hasOwn(roleList, role);
