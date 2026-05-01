@@ -1140,9 +1140,7 @@ Sets progress value in progress bar. Valid range is \[0, 1.0].
 Remove progress bar when progress < 0;
 Change to indeterminate mode when progress > 1.
 
-On Linux platform, only supports Unity desktop environment, you need to specify
-the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `{app.name}.desktop`.
+On Linux, only supports the Unity desktop environment.
 
 On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a
