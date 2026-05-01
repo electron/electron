@@ -1,12 +1,12 @@
 /* global chrome */
 
-function evalInMainWorld (fn) {
+function evalInMainWorld(fn) {
   const script = document.createElement('script');
   script.textContent = `((${fn})())`;
   document.documentElement.appendChild(script);
 }
 
-async function exec (name) {
+async function exec(name) {
   let result;
   switch (name) {
     case 'getMessage':
@@ -16,7 +16,7 @@ async function exec (name) {
       };
       break;
     case 'getAcceptLanguages':
-      result = await new Promise(resolve => chrome.i18n.getAcceptLanguages(resolve));
+      result = await new Promise((resolve) => chrome.i18n.getAcceptLanguages(resolve));
       break;
   }
 
@@ -24,10 +24,10 @@ async function exec (name) {
   evalInMainWorld(funcStr);
 }
 
-window.addEventListener('message', event => {
+window.addEventListener('message', (event) => {
   exec(event.data.name);
 });
 
 evalInMainWorld(() => {
-  window.exec = name => window.postMessage({ name });
+  window.exec = (name) => window.postMessage({ name });
 });

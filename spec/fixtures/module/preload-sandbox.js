@@ -5,7 +5,7 @@
   window.setImmediate = setImmediate;
   window.require = require;
 
-  function invoke (code) {
+  function invoke(code) {
     try {
       return code();
     } catch {
@@ -28,16 +28,16 @@
         creationTime: invoke(() => process.getCreationTime()),
         heapStatistics: invoke(() => process.getHeapStatistics()),
         blinkMemoryInfo: invoke(() => process.getBlinkMemoryInfo()),
-        processMemoryInfo: invoke(() => process.getProcessMemoryInfo() ? {} : null),
+        processMemoryInfo: invoke(() => (process.getProcessMemoryInfo() ? {} : null)),
         systemMemoryInfo: invoke(() => process.getSystemMemoryInfo()),
         systemVersion: invoke(() => process.getSystemVersion()),
         cpuUsage: invoke(() => process.getCPUUsage()),
         uptime: invoke(() => process.uptime()),
-        // eslint-disable-next-line import/enforce-node-protocol-usage
+        // eslint-disable-next-line unicorn/prefer-node-protocol
         nodeEvents: invoke(() => require('events') === require('node:events')),
-        // eslint-disable-next-line import/enforce-node-protocol-usage
+        // eslint-disable-next-line unicorn/prefer-node-protocol
         nodeTimers: invoke(() => require('timers') === require('node:timers')),
-        // eslint-disable-next-line import/enforce-node-protocol-usage
+        // eslint-disable-next-line unicorn/prefer-node-protocol
         nodeUrl: invoke(() => require('url') === require('node:url')),
         env: process.env,
         execPath: process.execPath,

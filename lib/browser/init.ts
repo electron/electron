@@ -29,12 +29,11 @@ process.on('uncaughtException', function (error) {
   // We can't import { dialog } at the top of this file as this file is
   // responsible for setting up the require hook for the "electron" module
   // so we import it inside the handler down here
-  import('electron')
-    .then(({ dialog }) => {
-      const stack = error.stack ? error.stack : `${error.name}: ${error.message}`;
-      const message = 'Uncaught Exception:\n' + stack;
-      dialog.showErrorBox('A JavaScript error occurred in the main process', message);
-    });
+  import('electron').then(({ dialog }) => {
+    const stack = error.stack ? error.stack : `${error.name}: ${error.message}`;
+    const message = 'Uncaught Exception:\n' + stack;
+    dialog.showErrorBox('A JavaScript error occurred in the main process', message);
+  });
 });
 
 // Emit 'exit' event on quit.
@@ -64,7 +63,10 @@ if (process.platform === 'win32') {
   if (fs.existsSync(updateDotExe)) {
     const packageDir = path.dirname(path.resolve(updateDotExe));
     const packageName = path.basename(packageDir).replaceAll(/\s/g, '');
-    const exeName = path.basename(process.execPath).replace(/\.exe$/i, '').replaceAll(/\s/g, '');
+    const exeName = path
+      .basename(process.execPath)
+      .replace(/\.exe$/i, '')
+      .replaceAll(/\s/g, '');
 
     app.setAppUserModelId(`com.squirrel.${packageName}.${exeName}`);
   }
@@ -181,7 +183,9 @@ delete process.appCodeLoaded;
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
   if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
-    const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
+    const { runEntryPointWithESMLoader } = __non_webpack_require__(
+      'internal/modules/run_main'
+    ) as typeof import('@node/lib/internal/modules/run_main');
     const main = (require('url') as typeof url).pathToFileURL(path.join(packagePath, mainStartupScript));
     runEntryPointWithESMLoader(async (cascadedLoader: any) => {
       try {
@@ -199,6 +203,6 @@ if (packagePath) {
   }
 } else {
   console.error('Failed to locate a valid package to load (app, app.asar or default_app.asar)');
-  console.error('This normally means you\'ve damaged the Electron package somehow');
+  console.error("This normally means you've damaged the Electron package somehow");
   appCodeLoaded!();
 }

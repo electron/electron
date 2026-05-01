@@ -6,25 +6,13 @@ const assert = require('node:assert/strict');
   // Before app is ready, all contentTracing methods should reject
   // instead of crashing.
   if (!app.isReady()) {
-    await assert.rejects(
-      () => contentTracing.startRecording({ included_categories: ['*'] }),
-      /before app is ready/
-    );
+    await assert.rejects(() => contentTracing.startRecording({ included_categories: ['*'] }), /before app is ready/);
 
-    await assert.rejects(
-      () => contentTracing.stopRecording(),
-      /before app is ready/
-    );
+    await assert.rejects(() => contentTracing.stopRecording(), /before app is ready/);
 
-    await assert.rejects(
-      () => contentTracing.getCategories(),
-      /before app is ready/
-    );
+    await assert.rejects(() => contentTracing.getCategories(), /before app is ready/);
 
-    await assert.rejects(
-      () => contentTracing.getTraceBufferUsage(),
-      /before app is ready/
-    );
+    await assert.rejects(() => contentTracing.getTraceBufferUsage(), /before app is ready/);
   }
 
   await app.whenReady();

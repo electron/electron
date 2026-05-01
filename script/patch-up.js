@@ -10,10 +10,10 @@ const { PATCH_UP_APP_CREDS } = process.env;
 const REPO_OWNER = 'electron';
 const REPO_NAME = 'electron';
 
-async function getAllPatchFiles (dir) {
+async function getAllPatchFiles(dir) {
   const files = [];
 
-  async function walkDir (currentDir) {
+  async function walkDir(currentDir) {
     const entries = await fs.promises.readdir(currentDir, { withFileTypes: true });
 
     for (const entry of entries) {
@@ -21,7 +21,10 @@ async function getAllPatchFiles (dir) {
 
       if (entry.isDirectory()) {
         await walkDir(fullPath);
-      } else if (entry.isFile() && (entry.name.endsWith('.patch') || entry.name === 'README.md' || entry.name === 'config.json')) {
+      } else if (
+        entry.isFile() &&
+        (entry.name.endsWith('.patch') || entry.name === 'README.md' || entry.name === 'config.json')
+      ) {
         const relativePath = path.relative(process.cwd(), fullPath);
         const content = await fs.promises.readFile(fullPath, 'utf8');
         files.push({
@@ -36,15 +39,15 @@ async function getAllPatchFiles (dir) {
   return files;
 }
 
-function getCurrentCommitSha () {
+function getCurrentCommitSha() {
   return process.env.GITHUB_SHA;
 }
 
-function getCurrentBranch () {
+function getCurrentBranch() {
   return process.env.GITHUB_HEAD_REF;
 }
 
-async function main () {
+async function main() {
   if (!PATCH_UP_APP_CREDS) {
     throw new Error('PATCH_UP_APP_CREDS environment variable not set');
   }
@@ -56,10 +59,13 @@ async function main () {
   }
 
   const octokit = new Octokit({
-    ...await getAuthOptionsForRepo({
-      name: REPO_OWNER,
-      owner: REPO_NAME
-    }, appCredentialsFromString(PATCH_UP_APP_CREDS))
+    ...(await getAuthOptionsForRepo(
+      {
+        name: REPO_OWNER,
+        owner: REPO_NAME
+      },
+      appCredentialsFromString(PATCH_UP_APP_CREDS)
+    ))
   });
 
   const patchesDir = path.join(process.cwd(), 'patches');
@@ -85,7 +91,7 @@ async function main () {
   console.log(`Found ${patchFiles.length} patch files`);
 
   // Create a new tree with the patch files
-  const tree = patchFiles.map(file => ({
+  const tree = patchFiles.map((file) => ({
     path: file.path,
     mode: '100644',
     type: 'blob',

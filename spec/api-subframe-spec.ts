@@ -116,8 +116,10 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
         const details = await detailsPromise;
-        const senders = details.map(event => event[0].sender);
-        const isolatedGlobals = await Promise.all(senders.map(sender => sender.executeJavaScript('window.isolatedGlobal')));
+        const senders = details.map((event) => event[0].sender);
+        const isolatedGlobals = await Promise.all(
+          senders.map((sender) => sender.executeJavaScript('window.isolatedGlobal'))
+        );
         for (const result of isolatedGlobals) {
           if (webPreferences.contextIsolation === undefined || webPreferences.contextIsolation) {
             expect(result).to.be.undefined();
@@ -129,14 +131,13 @@ describe('renderer nodeIntegrationInSubFrames', () => {
     });
   };
 
-  const generateConfigs = (webPreferences: any, ...permutations: {name: string, webPreferences: any}[]) => {
+  const generateConfigs = (webPreferences: any, ...permutations: { name: string; webPreferences: any }[]) => {
     const configs = [{ webPreferences, names: [] as string[] }];
     for (const permutation of permutations) {
       const length = configs.length;
       for (let j = 0; j < length; j++) {
         const newConfig = Object.assign({}, configs[j]);
-        newConfig.webPreferences = Object.assign({},
-          newConfig.webPreferences, permutation.webPreferences);
+        newConfig.webPreferences = Object.assign({}, newConfig.webPreferences, permutation.webPreferences);
         newConfig.names = newConfig.names.slice(0);
         newConfig.names.push(permutation.name);
         configs.push(newConfig);
@@ -151,7 +152,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       }
       delete config.names;
 
-      return config as {title: string, webPreferences: any};
+      return config as { title: string; webPreferences: any };
     });
   };
 
@@ -283,11 +284,11 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
         await w.loadURL(serverUrl);
 
         const pidMain = w.webContents.getOSProcessId();
-        const pidFrame = w.webContents.mainFrame.frames.find(f => f.name === 'frame')!.osProcessId;
+        const pidFrame = w.webContents.mainFrame.frames.find((f) => f.name === 'frame')!.osProcessId;
 
         const metrics = app.getAppMetrics();
         const isProcessSandboxed = function (pid: number) {
-          const entry = metrics.find(metric => metric.pid === pid);
+          const entry = metrics.find((metric) => metric.pid === pid);
           return entry && entry.sandboxed;
         };
 

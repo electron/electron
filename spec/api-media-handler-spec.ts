@@ -47,12 +47,15 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok, message } = await w.webContents.executeJavaScript(`
+    const { ok, message } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: false,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(mediaRequest.videoRequested).to.be.true();
     expect(mediaRequest.audioRequested).to.be.false();
@@ -70,12 +73,15 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok, message } = await w.webContents.executeJavaScript(`
+    const { ok, message } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.false();
     expect(message).to.equal('Could not start video source');
@@ -95,7 +101,8 @@ describe('setDisplayMediaRequestHandler', () => {
     w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
 
-    const { ok, handleID, captureHandle, message } = await w.webContents.executeJavaScript(`
+    const { ok, handleID, captureHandle, message } = await w.webContents.executeJavaScript(
+      `
       const handleID = crypto.randomUUID();
       navigator.mediaDevices.setCaptureHandleConfig({
         handle: handleID,
@@ -111,7 +118,9 @@ describe('setDisplayMediaRequestHandler', () => {
         const captureHandle = videoTrack.getCaptureHandle();
         return { ok: true, handleID, captureHandle, message: null }
       }, e => ({ ok: false, message: e.message }))
-    `, true);
+    `,
+      true
+    );
 
     expect(requestHandlerCalled).to.be.true();
     expect(mediaRequest.videoRequested).to.be.true();
@@ -138,11 +147,14 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok } = await w.webContents.executeJavaScript(`
+    const { ok } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         video: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.false();
     expect(callbackError?.message).to.equal('Video was requested, but no video stream was provided');
@@ -164,12 +176,15 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok } = await w.webContents.executeJavaScript(`
+    const { ok } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.false();
     expect(callbackError?.message).to.equal('Video was requested, but no video stream was provided');
@@ -187,12 +202,15 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok } = await w.webContents.executeJavaScript(`
+    const { ok } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true();
   });
@@ -211,12 +229,15 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok } = await w.webContents.executeJavaScript(`
+    const { ok } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.false();
     expect(callbackError.message).to.equal('Video was requested, but no video stream was provided');
@@ -233,12 +254,15 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok, message } = await w.webContents.executeJavaScript(`
+    const { ok, message } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.false();
     expect(message).to.equal('Could not start video source');
@@ -269,13 +293,16 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok, message } = await w.webContents.executeJavaScript(`
+    const { ok, message } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         preferCurrentTab: true,
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);
   });
@@ -289,7 +316,8 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok, message } = await w.webContents.executeJavaScript(`
+    const { ok, message } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         preferCurrentTab: true,
         video: true,
@@ -298,7 +326,9 @@ describe('setDisplayMediaRequestHandler', () => {
         const [videoTrack] = stream.getVideoTracks();
         return { ok: videoTrack instanceof BrowserCaptureMediaStreamTrack, message: null };
       }, e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);
   });
@@ -313,13 +343,16 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok, message } = await w.webContents.executeJavaScript(`
+    const { ok, message } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         preferCurrentTab: true,
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);
   });
@@ -333,11 +366,14 @@ describe('setDisplayMediaRequestHandler', () => {
     });
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok, message } = await w.webContents.executeJavaScript(`
+    const { ok, message } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         video: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);
   });
@@ -458,11 +494,14 @@ describe('setDisplayMediaRequestHandler', () => {
     ses.setDisplayMediaRequestHandler(null);
     const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
     await w.loadURL(serverUrl);
-    const { ok, message } = await w.webContents.executeJavaScript(`
+    const { ok, message } = await w.webContents.executeJavaScript(
+      `
       navigator.mediaDevices.getDisplayMedia({
         video: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `, true);
+    `,
+      true
+    );
     expect(ok).to.be.false();
     expect(message).to.equal('Not supported');
   });

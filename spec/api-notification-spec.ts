@@ -32,7 +32,9 @@ describe('Notification module', () => {
       body: 'body'
     });
 
-    expect(() => { (n as any).id = 'new-id'; }).to.throw();
+    expect(() => {
+      (n as any).id = 'new-id';
+    }).to.throw();
   });
 
   ifit(process.platform === 'darwin' || process.platform === 'win32')('defaults id to a UUID when not provided', () => {
@@ -45,15 +47,18 @@ describe('Notification module', () => {
     expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
-  ifit(process.platform === 'darwin' || process.platform === 'win32')('defaults id to a UUID when empty string is provided', () => {
-    const n = new Notification({
-      id: '',
-      title: 'title',
-      body: 'body'
-    });
+  ifit(process.platform === 'darwin' || process.platform === 'win32')(
+    'defaults id to a UUID when empty string is provided',
+    () => {
+      const n = new Notification({
+        id: '',
+        title: 'title',
+        body: 'body'
+      });
 
-    expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
-  });
+      expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    }
+  );
 
   ifit(process.platform === 'darwin' || process.platform === 'win32')('inits and gets groupId property', () => {
     const n = new Notification({
@@ -72,17 +77,22 @@ describe('Notification module', () => {
       groupId: 'E017VKL2N8H|C07RBMNS9EK'
     });
 
-    expect(() => { (n as any).groupId = 'new-group'; }).to.throw();
+    expect(() => {
+      (n as any).groupId = 'new-group';
+    }).to.throw();
   });
 
-  ifit(process.platform === 'darwin' || process.platform === 'win32')('defaults groupId to empty string when not provided', () => {
-    const n = new Notification({
-      title: 'title',
-      body: 'body'
-    });
+  ifit(process.platform === 'darwin' || process.platform === 'win32')(
+    'defaults groupId to empty string when not provided',
+    () => {
+      const n = new Notification({
+        title: 'title',
+        body: 'body'
+      });
 
-    expect(n.groupId).to.equal('');
-  });
+      expect(n.groupId).to.equal('');
+    }
+  );
 
   ifit(process.platform === 'win32')('inits and gets groupTitle property', () => {
     const n = new Notification({
@@ -103,7 +113,9 @@ describe('Notification module', () => {
       groupTitle: 'My Group Title'
     });
 
-    expect(() => { (n as any).groupTitle = 'new-title'; }).to.throw();
+    expect(() => {
+      (n as any).groupTitle = 'new-title';
+    }).to.throw();
   });
 
   ifit(process.platform === 'win32')('defaults groupTitle to empty string when not provided', () => {
@@ -220,7 +232,8 @@ describe('Notification module', () => {
         {
           type: 'button',
           text: '1'
-        }, {
+        },
+        {
           type: 'button',
           text: '2'
         }
@@ -237,7 +250,8 @@ describe('Notification module', () => {
       {
         type: 'button',
         text: '3'
-      }, {
+      },
+      {
         type: 'button',
         text: '4'
       }

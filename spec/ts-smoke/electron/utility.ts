@@ -56,7 +56,9 @@ request.abort();
 // https://github.com/electron/electron/blob/main/docs/api/system-preferences.md
 
 if (process.platform === 'win32') {
-  systemPreferences.on('color-changed', () => { console.log('color changed'); });
+  systemPreferences.on('color-changed', () => {
+    console.log('color changed');
+  });
 }
 
 if (process.platform === 'darwin') {

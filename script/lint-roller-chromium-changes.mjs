@@ -11,10 +11,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ELECTRON_DIR = resolve(__dirname, '..');
 
 const DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
-const CL_REGEX = /https:\/\/chromium-review\.googlesource\.com\/c\/(chromium\/src|devtools\/devtools-frontend|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
+const CL_REGEX =
+  /https:\/\/chromium-review\.googlesource\.com\/c\/(chromium\/src|devtools\/devtools-frontend|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
 
-function getCurrentBranch () {
+function getCurrentBranch() {
   // In CI, use `GITHUB_HEAD_REF` since we checkout the PR branch in detached HEAD state
   if (process.env.GITHUB_HEAD_REF) {
     return process.env.GITHUB_HEAD_REF;
@@ -31,7 +32,7 @@ function getCurrentBranch () {
   }
 }
 
-function getCommitsSinceMergeBase (mergeBase) {
+function getCommitsSinceMergeBase(mergeBase) {
   try {
     const output = execSync(`git log --format=%H%n%B%n---COMMIT_END--- ${mergeBase}..HEAD`, {
       cwd: ELECTRON_DIR,
@@ -60,7 +61,7 @@ function getCommitsSinceMergeBase (mergeBase) {
   }
 }
 
-async function fetchChromiumDashCommit (commitSha, repo) {
+async function fetchChromiumDashCommit(commitSha, repo) {
   const url = `https://chromiumdash.appspot.com/fetch_commit?commit=${commitSha}&repo=${repo}`;
   const response = await fetch(url);
 
@@ -75,7 +76,7 @@ async function fetchChromiumDashCommit (commitSha, repo) {
   }
 }
 
-async function getGerritPatchDetails (clUrl) {
+async function getGerritPatchDetails(clUrl) {
   const parsedUrl = new URL(clUrl);
   const match = /^\/c\/(.+?)\/\+\/(\d+)/.exec(parsedUrl.pathname);
   if (!match) {
@@ -108,7 +109,7 @@ async function getGerritPatchDetails (clUrl) {
   }
 }
 
-async function main () {
+async function main() {
   const currentBranch = getCurrentBranch();
 
   // Check if we're on a roller/chromium/* branch
@@ -245,9 +246,7 @@ async function main () {
       // For non-Chromium CLs, we need to find the corresponding Chromium commit
       let chromiumVersion = clEarliestVersion;
       if (repo !== 'chromium' && dashDetails.relations) {
-        const chromiumRelation = dashDetails.relations.find(
-          (rel) => rel.from_commit === gerritDetails.commitSha
-        );
+        const chromiumRelation = dashDetails.relations.find((rel) => rel.from_commit === gerritDetails.commitSha);
         if (chromiumRelation) {
           const chromiumDash = await fetchChromiumDashCommit(chromiumRelation.to_commit, 'chromium');
           if (chromiumDash?.earliest) {
@@ -258,8 +257,7 @@ async function main () {
 
       // CL should have landed after the base version and at or before the new version
       const isInRange =
-        compareVersions(chromiumVersion, baseVersion) > 0 &&
-        compareVersions(chromiumVersion, newVersion) <= 0;
+        compareVersions(chromiumVersion, baseVersion) > 0 && compareVersions(chromiumVersion, newVersion) <= 0;
 
       if (!isInRange) {
         const error = `CL earliest version ${chromiumVersion} is outside roller range (${baseVersion} -> ${newVersion})`;
