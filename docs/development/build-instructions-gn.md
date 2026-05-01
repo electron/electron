@@ -173,27 +173,6 @@ $ gclient sync -f
 
 ### Building
 
-**Set the environment variable for chromium build tools**
-
-On Linux & MacOS
-
-```sh
-$ cd src
-$ export CHROMIUM_BUILDTOOLS_PATH=`pwd`/buildtools
-```
-
-On Windows:
-
-```sh
-# cmd
-$ cd src
-$ set CHROMIUM_BUILDTOOLS_PATH=%cd%\buildtools
-
-# PowerShell
-$ cd src
-$ $env:CHROMIUM_BUILDTOOLS_PATH = "$(Get-Location)\buildtools"
-```
-
 **To generate Testing build config of Electron:**
 
 On Linux & MacOS

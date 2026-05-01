@@ -194,10 +194,6 @@ function getDepotToolsEnv() {
     throw new Error("Couldn't find depot_tools, ensure it's on your PATH");
   }
 
-  if (!('CHROMIUM_BUILDTOOLS_PATH' in depotToolsEnv)) {
-    throw new Error('CHROMIUM_BUILDTOOLS_PATH environment variable must be set');
-  }
-
   return depotToolsEnv;
 }
 

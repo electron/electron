@@ -233,9 +233,4 @@ def get_depot_tools_env():
   if depot_tools_env is None:
     raise RuntimeError("Couldn't find depot_tools, ensure it's on your PATH")
 
-  if 'CHROMIUM_BUILDTOOLS_PATH' not in depot_tools_env:
-    raise RuntimeError(
-      'CHROMIUM_BUILDTOOLS_PATH environment variable must be set'
-    )
-
   return depot_tools_env

@@ -156,6 +156,15 @@ hooks = [
     ],
   },
   {
+    'name': 'buildtools_symlink',
+    'condition': 'checkout_chromium and process_deps',
+    'pattern': 'src/electron',
+    'action': [
+      'python3',
+      'src/electron/script/create-buildtools-symlink.py',
+    ],
+  },
+  {
     'name': 'sysroot_arm',
     'pattern': '.',
     'condition': 'install_sysroot and checkout_linux and checkout_arm',
