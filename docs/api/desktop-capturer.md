@@ -7,13 +7,13 @@ Process: [Main](../glossary.md#main-process)
 
 > [!WARNING]
 > The `desktopCapturer` module is deprecated. Use
-> [`session.setDisplayMediaRequestHandler`](session.md#sessetdisplaymediarequesthandleropts)
+> [`session.setDisplayMediaRequestHandler`](session.md#sessetdisplaymediarequesthandlerhandler-opts)
 > instead, which aligns with the web-standard
 > [`navigator.mediaDevices.getDisplayMedia`](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia)
 > API. See the [migration guide](#migrating-from-getsources-to-setdisplaymediarequesthandler) below.
 
-The following example shows how to capture video from a desktop window whose
-title is `Electron`:
+The following example shows how to respond to a `getDisplayMedia` request by
+letting the requesting tab capture itself:
 
 ```js
 // main.js
@@ -23,7 +23,7 @@ app.whenReady().then(() => {
   const mainWindow = new BrowserWindow()
 
   session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-    // Grant access to the first screen found.
+    // Allow the requesting tab to capture itself.
     callback({ video: request.frame })
   })
 
@@ -90,7 +90,7 @@ changes:
     description: "This method now returns a Promise instead of using a callback function."
     breaking-changes-header: api-changed-callback-based-versions-of-promisified-apis
 deprecated:
-  - pr-url: https://github.com/electron/electron/pull/XXXXX
+  - pr-url: https://github.com/electron/electron/pull/51235
 ```
 -->
 
@@ -114,8 +114,20 @@ Returns `Promise<DesktopCapturerSource[]>` - Resolves with an array of [`Desktop
 > * Capturing audio requires `NSAudioCaptureUsageDescription` Info.plist key on macOS 14.2 Sonoma and higher - [read more](#macos-versions-142-or-higher).
 > * Capturing the screen contents requires user consent on macOS 10.15 Catalina or higher, which can detected by [`systemPreferences.getMediaAccessStatus`][].
 
+### `desktopCapturer.isDisplayMediaSystemPickerAvailable()` _macOS_ _Experimental_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/43581
+```
+-->
+
+Returns `boolean` - Whether the native macOS [`SCContentSharingPicker`](https://developer.apple.com/documentation/screencapturekit/sccontentsharingpicker) is available. Returns `true` on macOS 15 and later, `false` on earlier macOS versions and all non-macOS platforms.
+
+Use this to decide whether to pass `useSystemPicker: true` to [`session.setDisplayMediaRequestHandler`](session.md#sessetdisplaymediarequesthandlerhandler-opts) — see the [migration guide](#migrating-from-getsources-to-setdisplaymediarequesthandler) below for an example.
+
 [`navigator.mediaDevices.getDisplayMedia`]: https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia
-[`navigator.mediaDevices.getUserMedia`]: https://developer.mozilla.org/en/docs/Web/API/MediaDevices/getUserMedia
 [`systemPreferences.getMediaAccessStatus`]: system-preferences.md#systempreferencesgetmediaaccessstatusmediatype-windows-macos
 
 ## Caveats
@@ -173,12 +185,12 @@ which aligns with the web-standard [`navigator.mediaDevices.getDisplayMedia`][] 
 
 ### Why migrate?
 
-- **Web standards alignment** — `getDisplayMedia()` is the web-standard API for screen
+* **Web standards alignment** — `getDisplayMedia()` is the web-standard API for screen
   capture. Using `setDisplayMediaRequestHandler` lets you integrate with it directly.
-- **Platform integration** — On macOS 15+, setting `useSystemPicker: true` invokes the
+* **Platform integration** — On macOS 15+, setting `useSystemPicker: true` invokes the
   native OS screen picker (SCContentSharingPicker), providing a familiar UX and
   correct permissions handling.
-- **Simpler architecture** — The handler receives the request when the renderer calls
+* **Simpler architecture** — The handler receives the request when the renderer calls
   `getDisplayMedia()` and you respond with the chosen source. No need to pre-enumerate
   sources.
 
@@ -202,29 +214,28 @@ app.whenReady().then(() => {
 
 ### After (recommended)
 
-For most apps, using the system picker is the simplest approach:
+On macOS 15+, the native OS picker (SCContentSharingPicker) is available. On
+other platforms you must provide your own picker UI. A cross-platform handler
+typically branches on `desktopCapturer.isDisplayMediaSystemPickerAvailable()`:
 
 ```js
-const { app, BrowserWindow, session } = require('electron')
+const { app, BrowserWindow, desktopCapturer, session } = require('electron')
 
 app.whenReady().then(() => {
   const mainWindow = new BrowserWindow()
 
-  // The OS presents its own picker; the handler is not invoked.
   session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
+    // On macOS 15+, useSystemPicker: true causes the OS to present its own
+    // picker and the handler is not invoked. This branch runs everywhere else
+    // (Windows, Linux, and macOS < 15) — show your own picker UI here and
+    // call callback with the selected source, e.g. via desktopCapturer.getSources().
     callback({})
-  }, { useSystemPicker: true })
+  }, { useSystemPicker: desktopCapturer.isDisplayMediaSystemPickerAvailable() })
 
   mainWindow.loadFile('index.html')
 })
 ```
 
-If you need a custom picker UI, handle the request directly:
-
-```js
-session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-  // request.preferredDisplaySurface is 'monitor', 'window', 'browser', or 'none'
-  // Show your custom picker UI, then call callback with the selected source.
-  // For tab capture, pass a WebFrameMain:
-  callback({ video: request.frame })
-})
+`request.preferredDisplaySurface` (`'monitor'`, `'window'`, `'browser'`, or
+`'none'`) indicates what kind of surface the caller asked for, and can be used
+to drive the filtering in your custom picker UI.

@@ -1063,14 +1063,14 @@ This option is experimental, and currently available for MacOS 15+ only. If the 
 is set to `true`, the handler will not be invoked.
 
 ```js
-const { session } = require('electron')
+const { desktopCapturer, session } = require('electron')
 
 session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-  // Allow the tab to capture itself.
+  // Runs on Windows, Linux, and macOS < 15. On macOS 15+ (where
+  // useSystemPicker is effective) the OS presents its own picker and this
+  // handler is not invoked.
   callback({ video: request.frame })
-  // On macOS 15+, use the native system picker if available.
-  // When the system picker is used, the handler will not be invoked.
-}, { useSystemPicker: true })
+}, { useSystemPicker: desktopCapturer.isDisplayMediaSystemPickerAvailable() })
 ```
 
 Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
