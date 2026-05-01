@@ -49,31 +49,61 @@ bool IsBrowserProcess() {
 gpu::ContextSupport* GetContextSupport() {
   if (IsBrowserProcess()) {
     auto* factory = content::ImageTransportFactory::GetInstance();
-    return factory->GetContextFactory()
-        ->SharedMainThreadRasterContextProvider()
-        ->ContextSupport();
+    if (!factory)
+      return nullptr;
+
+    auto* context_factory = factory->GetContextFactory();
+    if (!context_factory)
+      return nullptr;
+
+    scoped_refptr<viz::RasterContextProvider> provider =
+        context_factory->SharedMainThreadRasterContextProvider();
+    if (!provider)
+      return nullptr;
+
+    return provider->ContextSupport();
   } else {
-    return blink::SharedGpuContext::ContextProviderWrapper()
-        ->ContextProvider()
-        .ContextSupport();
+    base::WeakPtr<blink::WebGraphicsContext3DProviderWrapper> wrapper =
+        blink::SharedGpuContext::ContextProviderWrapper();
+    if (!wrapper)
+      return nullptr;
+
+    auto& context_provider = wrapper->ContextProvider();
+    if (context_provider.IsContextLost())
+      return nullptr;
+
+    return context_provider.ContextSupport();
   }
 }
 
 gpu::SharedImageInterface* GetSharedImageInterface() {
   if (IsBrowserProcess()) {
     auto* factory = content::ImageTransportFactory::GetInstance();
-    return factory->GetContextFactory()
-        ->SharedMainThreadRasterContextProvider()
-        ->SharedImageInterface();
+    if (!factory)
+      return nullptr;
+
+    auto* context_factory = factory->GetContextFactory();
+    if (!context_factory)
+      return nullptr;
+
+    scoped_refptr<viz::RasterContextProvider> provider =
+        context_factory->SharedMainThreadRasterContextProvider();
+    if (!provider)
+      return nullptr;
+
+    return provider->SharedImageInterface();
   } else {
-    return blink::SharedGpuContext::SharedImageInterfaceProvider()
-        ->SharedImageInterface();
+    auto* provider = blink::SharedGpuContext::SharedImageInterfaceProvider();
+    if (!provider)
+      return nullptr;
+
+    return provider->SharedImageInterface();
   }
 }
 
-std::string GetBase64StringFromSyncToken(gpu::SyncToken& sync_token) {
+std::string GetBase64StringFromSyncToken(gpu::SharedImageInterface* sii,
+                                         gpu::SyncToken& sync_token) {
   if (!sync_token.verified_flush()) {
-    auto* sii = GetSharedImageInterface();
     sii->VerifySyncToken(sync_token);
   }
 
@@ -158,14 +188,18 @@ struct ImportedSharedTexture
   void SetupReleaseSyncTokenCallback();
 
   // Transfer to other Chromium processes.
-  v8::Local<v8::Value> StartTransferSharedTexture(v8::Isolate* isolate);
+  v8::Local<v8::Value> StartTransferSharedTexture(
+      gpu::SharedImageInterface* sii,
+      v8::Isolate* isolate);
 
   // Get the creation sync token for the shared image. This is called
   // after |finishTransferSharedTexture| and users need to pass the
   // sync token back to the source object, and call |setReleaseSyncToken|
   // to prevent the resource being released before actual acquisition
   // happens for the target object.
-  v8::Local<v8::Value> GetFrameCreationSyncToken(v8::Isolate* isolate);
+  v8::Local<v8::Value> GetFrameCreationSyncToken(
+      gpu::SharedImageInterface* sii,
+      v8::Isolate* isolate);
 
   // Set a release sync token for this shared texture. This is set
   // when |finishTransferSharedTexture| is called and prevent the source
@@ -176,7 +210,8 @@ struct ImportedSharedTexture
   // object is safe to do the further release. If set, users can call
   // `release()` on the source object without worrying the target object
   // didn't finish acquiring the resource at gpu process.
-  void SetReleaseSyncToken(v8::Isolate* isolate, v8::Local<v8::Value> options);
+  void SetReleaseSyncToken(v8::Isolate* isolate,
+                           v8::Local<v8::Value> options);
 
   // The cleanup happens at destructor.
  private:
@@ -249,6 +284,7 @@ v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
 }
 
 v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
+    gpu::SharedImageInterface* sii,
     v8::Isolate* isolate) {
   auto exported = client_shared_image->Export();
 
@@ -267,7 +303,8 @@ v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
   gin_helper::Dictionary root(isolate, v8::Object::New(isolate));
   root.SetReadOnly("transfer", encoded);
 
-  auto sync_token = GetBase64StringFromSyncToken(frame_creation_sync_token);
+  auto sync_token =
+      GetBase64StringFromSyncToken(sii, frame_creation_sync_token);
   root.SetReadOnly("syncToken", sync_token);
 
   root.SetReadOnly("pixelFormat",
@@ -280,17 +317,20 @@ v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
 }
 
 v8::Local<v8::Value> ImportedSharedTexture::GetFrameCreationSyncToken(
+    gpu::SharedImageInterface* sii,
     v8::Isolate* isolate) {
   gin::Dictionary root(isolate, v8::Object::New(isolate));
 
-  auto sync_token = GetBase64StringFromSyncToken(frame_creation_sync_token);
+  auto sync_token =
+      GetBase64StringFromSyncToken(sii, frame_creation_sync_token);
   root.Set("syncToken", sync_token);
 
   return gin::ConvertToV8(isolate, root);
 }
 
-void ImportedSharedTexture::SetReleaseSyncToken(v8::Isolate* isolate,
-                                                v8::Local<v8::Value> options) {
+void ImportedSharedTexture::SetReleaseSyncToken(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> options) {
   std::string sync_token_data;
   gin::Dictionary dict(isolate, options.As<v8::Object>());
   dict.Get("syncToken", &sync_token_data);
@@ -312,7 +352,7 @@ void ImportedSharedTexture::UpdateReleaseSyncToken(
   base::AutoLock locker(release_sync_token_lock_);
 
   auto* sii = GetSharedImageInterface();
-  if (release_sync_token.HasData()) {
+  if (sii && release_sync_token.HasData()) {
     // If we already have a release sync token, we need to wait for it
     // to be signaled before we can set the new one.
     sii->WaitSyncToken(release_sync_token);
@@ -326,6 +366,9 @@ void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
   base::AutoLock locker(release_sync_token_lock_);
 
   auto* sii = GetSharedImageInterface();
+  if (!sii)
+    return;
+
   if (!release_sync_token.HasData()) {
     release_sync_token = sii->GenUnverifiedSyncToken();
   }
@@ -333,8 +376,11 @@ void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
   client_shared_image->UpdateDestructionSyncToken(release_sync_token);
 
   if (release_callback) {
-    GetContextSupport()->SignalSyncToken(release_sync_token,
-                                         std::move(release_callback));
+    auto* context_support = GetContextSupport();
+    if (context_support) {
+      context_support->SignalSyncToken(release_sync_token,
+                                       std::move(release_callback));
+    }
   }
 }
 
@@ -394,7 +440,14 @@ void ImportedTextureStartTransferSharedTexture(
     return;
   }
 
-  auto ret = wrapper->ist->StartTransferSharedTexture(isolate);
+  auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to start shared texture transfer: GPU is not available");
+    return;
+  }
+
+  auto ret = wrapper->ist->StartTransferSharedTexture(sii, isolate);
   info.GetReturnValue().Set(ret);
 }
 
@@ -429,7 +482,14 @@ void ImportedTextureGetFrameCreationSyncToken(
     return;
   }
 
-  auto ret = wrapper->ist->GetFrameCreationSyncToken(isolate);
+  auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to get frame creation sync token: GPU is not available");
+    return;
+  }
+
+  auto ret = wrapper->ist->GetFrameCreationSyncToken(sii, isolate);
   info.GetReturnValue().Set(ret);
 }
 
@@ -449,6 +509,13 @@ void ImportedTextureSetReleaseSyncToken(
   if (info.Length() < 1 || !info[0]->IsObject()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "Expected an options object with a syncToken property.");
+    return;
+  }
+
+  auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to set release sync token: GPU is not available");
     return;
   }
 
@@ -728,6 +795,12 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   }
 
   auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to import shared texture: GPU is not available");
+    return v8::Null(isolate);
+  }
+
   gpu::SharedImageUsageSet shared_image_usage =
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_APPLE)
       gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_GLES2_WRITE |
@@ -795,6 +868,12 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
                                                                     &message);
 
   auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to finish shared texture transfer: GPU is not available");
+    return v8::Null(isolate);
+  }
+
   auto si = sii->ImportSharedImage(std::move(exported));
 
   auto source_st = GetSyncTokenFromBase64String(sync_token_data);
