@@ -1,0 +1,47 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 120,
+  "tabWidth": 2,
+  "singleQuote": true,
+  "trailingComma": "none",
+  "sortImports": {
+    "newlinesBetween": true,
+    "groups": [
+      "electron-internal",
+      "electron-scoped",
+      "electron",
+      "external",
+      "builtin",
+      ["sibling", "parent"],
+      "index",
+      "type",
+      "unknown"
+    ],
+    "customGroups": [
+      {
+        "groupName": "electron-internal",
+        "elementNamePattern": ["@electron/internal", "@electron/internal/**"]
+      },
+      {
+        "groupName": "electron-scoped",
+        "elementNamePattern": ["@electron/**"]
+      },
+      {
+        "groupName": "electron",
+        "elementNamePattern": ["electron", "electron/**"]
+      }
+    ]
+  },
+  "ignorePatterns": [
+    "node_modules",
+    "out",
+    "ts-gen",
+    "spec/node_modules",
+    "spec/fixtures/native-addon",
+    ".github/workflows/node_modules",
+    "docs/fiddles",
+    "shell/browser/resources/win/resource.h",
+    "shell/common/node_includes.h",
+    "spec/fixtures/pages/jquery-3.6.0.min.js"
+  ]
+}
