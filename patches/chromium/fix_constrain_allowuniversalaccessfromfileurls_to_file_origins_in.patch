@@ -1,0 +1,142 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <cwatford@makenotion.com>
+Date: Sun, 12 Apr 2026 21:24:57 -0700
+Subject: fix: constrain AllowUniversalAccessFromFileURLs to file: origins in
+ agent assignment
+
+HasPotentialUniversalAccessPrivilege() was treating the
+AllowUniversalAccessFromFileURLs setting as unconditional, returning
+true for all origins regardless of scheme. This caused non-file origins
+(http://, https://, and custom schemes) to lose their browser-provided
+AgentClusterKey when the setting was enabled, overriding it with a
+universal file agent key and routing them to universal_access_agent_
+which carries no key.
+
+Electron enables AllowUniversalAccessFromFileURLs in all renderers via
+the grant_file_protocol_extra_privileges fuse (on by default). After
+https://crrev.com/c/7079680 moved cross-origin isolation status to the
+renderer's per-context agent cluster key, this caused
+self.crossOriginIsolated to return false even with COOP + COEP headers
+correctly set on non-file origins.
+
+The fix splits the single has_potential_universal_access_privilege
+boolean in WindowAgentFactory::GetAgentForAgentClusterKey() into two
+separate parameters:
+
+  - web_security_disabled: applies to all origins when web security is
+    off (--disable-web-security, --run-web-tests).
+  - allow_universal_access_from_file_urls: only takes effect for file:
+    scheme origins (those with IsUniversalFileAgent() agent cluster
+    keys), preserving their existing routing to universal_access_agent_.
+
+This aligns the agent assignment logic with the origin privilege
+granting code in the same file (DocumentLoader::CalculateOrigin), which
+already correctly gates AllowUniversalAccessFromFileURLs behind
+origin->IsLocal().
+
+This patch should be upstreamed, with updates to surrounding doc
+comments + tests.
+
+Upstream CL: https://chromium-review.googlesource.com/c/chromium/src/+/7795303
+Chromium bug: https://crbug.com/505299810
+
+diff --git a/third_party/blink/renderer/core/execution_context/window_agent_factory.cc b/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
+index 86ce2d493dc833dd1601787fc042b8a4a612fc2e..b9bd1f459f240401d7a6b0bce03cf82b6b54e9fc 100644
+--- a/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
++++ b/third_party/blink/renderer/core/execution_context/window_agent_factory.cc
+@@ -20,19 +20,27 @@ WindowAgentFactory::WindowAgentFactory(
+     AgentGroupScheduler& agent_group_scheduler)
+     : agent_group_scheduler_(agent_group_scheduler) {}
+ 
++WindowAgent* WindowAgentFactory::GetOrCreateUniversalAccessAgent() {
++  if (!universal_access_agent_) {
++    universal_access_agent_ =
++        MakeGarbageCollected<WindowAgent>(*agent_group_scheduler_);
++  }
++  return universal_access_agent_.Get();
++}
++
+ WindowAgent* WindowAgentFactory::GetAgentForAgentClusterKey(
+-    bool has_potential_universal_access_privilege,
++    bool is_web_security_disabled,
++    bool allow_universal_access_from_file_urls,
+     const AgentClusterKey& agent_cluster_key) {
+-  if (has_potential_universal_access_privilege) {
+-    if (!universal_access_agent_) {
+-      universal_access_agent_ =
+-          MakeGarbageCollected<WindowAgent>(*agent_group_scheduler_);
+-    }
+-    return universal_access_agent_.Get();
++  if (is_web_security_disabled) {
++    return GetOrCreateUniversalAccessAgent();
+   }
+ 
+   // For `file:` scheme origins.
+   if (agent_cluster_key.IsUniversalFileAgent()) {
++    if (allow_universal_access_from_file_urls) {
++      return GetOrCreateUniversalAccessAgent();
++    }
+     if (!file_url_agent_) {
+       file_url_agent_ = MakeGarbageCollected<WindowAgent>(
+           *agent_group_scheduler_, agent_cluster_key);
+diff --git a/third_party/blink/renderer/core/execution_context/window_agent_factory.h b/third_party/blink/renderer/core/execution_context/window_agent_factory.h
+index b5464975a3c365a29e342b0dd57a8a73a311924a..72ebd275330e61a8abebfe6d2c06f42544a83bec 100644
+--- a/third_party/blink/renderer/core/execution_context/window_agent_factory.h
++++ b/third_party/blink/renderer/core/execution_context/window_agent_factory.h
+@@ -40,12 +40,15 @@ class WindowAgentFactory final : public GarbageCollected<WindowAgentFactory> {
+   //   * --run-web-tests is set,
+   //   * or, the Blink instance is running for Android WebView.
+   WindowAgent* GetAgentForAgentClusterKey(
+-      bool has_potential_universal_access_privilege,
++      bool is_web_security_disabled,
++      bool allow_universal_access_from_file_urls,
+       const AgentClusterKey& agent_cluster_key);
+ 
+   void Trace(Visitor*) const;
+ 
+  private:
++  WindowAgent* GetOrCreateUniversalAccessAgent();
++
+   // Use a shared instance of Agent for all frames if a frame may have the
+   // universal access privilege.
+   WeakMember<WindowAgent> universal_access_agent_;
+diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
+index ab65d53255cfea81a1a27849cd41f2d37e2d514d..fc9bb660862b4f3034a7713b29e2c38a3d18b3f3 100644
+--- a/third_party/blink/renderer/core/loader/document_loader.cc
++++ b/third_party/blink/renderer/core/loader/document_loader.cc
+@@ -2603,22 +2603,16 @@ bool ShouldReuseDOMWindow(LocalDOMWindow* window,
+   return *window_coi_key == *navigation_coi_key;
+ }
+ 
+-namespace {
+-
+-bool HasPotentialUniversalAccessPrivilege(LocalFrame* frame) {
+-  return !frame->GetSettings()->GetWebSecurityEnabled() ||
+-         frame->GetSettings()->GetAllowUniversalAccessFromFileURLs();
+-}
+-
+-}  // namespace
+-
+ WindowAgent* GetWindowAgentForAgentClusterKey(
+     LocalFrame* frame,
+     const AgentClusterKey& agent_cluster_key) {
+   // TODO(keishi): Also check if AllowUniversalAccessFromFileURLs might
+   // dynamically change.
++  Settings* settings = frame->GetSettings();
+   return frame->window_agent_factory().GetAgentForAgentClusterKey(
+-      HasPotentialUniversalAccessPrivilege(frame), agent_cluster_key);
++      /*is_web_security_disabled=*/!settings->GetWebSecurityEnabled(),
++      /*allow_universal_access_from_file_urls=*/
++      settings->GetAllowUniversalAccessFromFileURLs(), agent_cluster_key);
+ }
+ 
+ // Inheriting cases use their agent's AgentClusterKey value, which is set
+@@ -2719,7 +2713,7 @@ void DocumentLoader::InitializeWindow(Document* owner_document) {
+     // WindowAgentFactory::GetAgentForOrigin(), as the two conditions below hand
+     // out universal WindowAgent objects, and thus override the AgentClusterKey
+     // provided by the browser process.
+-  } else if (HasPotentialUniversalAccessPrivilege(frame_.Get()) ||
++  } else if (!frame_->GetSettings()->GetWebSecurityEnabled() ||
+              security_origin->IsLocal()) {
+     // In this case we either have AllowUniversalAccessFromFileURLs enabled, or
+     // WebSecurity is disabled, or it's a local scheme such as file://; any of
