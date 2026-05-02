@@ -3,8 +3,7 @@ const { app, utilityProcess } = require('electron');
 const path = require('node:path');
 
 app.whenReady().then(() => {
-  if (process.env.NODE_OPTIONS &&
-      process.env.NODE_OPTIONS.trim() === '--allow-addons --allow-addons') {
+  if (process.env.NODE_OPTIONS && process.env.NODE_OPTIONS.trim() === '--allow-addons --allow-addons') {
     const child = utilityProcess.fork(path.join(__dirname, 'options.js'), [], {
       stdio: 'inherit',
       env: {
@@ -13,7 +12,7 @@ app.whenReady().then(() => {
       }
     });
 
-    child.once('exit', (code) => code ? app.exit(1) : app.quit());
+    child.once('exit', (code) => (code ? app.exit(1) : app.quit()));
   } else {
     app.exit(1);
   }

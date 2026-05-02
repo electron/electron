@@ -14,17 +14,12 @@ Object.defineProperty(WebFramePrototype, 'routingId', {
   configurable: true,
   get: function (this: Electron.WebFrame) {
     routingIdDeprecated();
-    return ipcRendererUtils.invokeSync<number>(
-      IPC_MESSAGES.BROWSER_GET_FRAME_ROUTING_ID_SYNC,
-      this.frameToken
-    );
+    return ipcRendererUtils.invokeSync<number>(IPC_MESSAGES.BROWSER_GET_FRAME_ROUTING_ID_SYNC, this.frameToken);
   }
 });
 
 const findFrameByRoutingIdDeprecated = deprecate.warnOnce('webFrame.findFrameByRoutingId', 'webFrame.findFrameByToken');
-WebFramePrototype.findFrameByRoutingId = function (
-  routingId: number
-): Electron.WebFrame | null {
+WebFramePrototype.findFrameByRoutingId = function (routingId: number): Electron.WebFrame | null {
   findFrameByRoutingIdDeprecated();
   const frameToken = ipcRendererUtils.invokeSync<string | undefined>(
     IPC_MESSAGES.BROWSER_GET_FRAME_TOKEN_SYNC,

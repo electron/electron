@@ -13,7 +13,9 @@ require('@electron/internal/common/init');
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
 
 // Export node bindings to global.
-const { makeRequireFunction } = __non_webpack_require__('internal/modules/helpers') as typeof import('@node/lib/internal/modules/helpers');
+const { makeRequireFunction } = __non_webpack_require__(
+  'internal/modules/helpers'
+) as typeof import('@node/lib/internal/modules/helpers');
 global.module = new Module('electron/js2c/worker_init');
 global.require = makeRequireFunction(global.module) as NodeRequire;
 
@@ -29,7 +31,10 @@ if ((globalThis as any).blinkfetch) {
 // Set the __filename to the path of html file if it is file: protocol.
 // NB. 'self' isn't defined in an AudioWorklet.
 if (typeof self !== 'undefined' && self.location.protocol === 'file:') {
-  const pathname = process.platform === 'win32' && self?.location.pathname[0] === '/' ? self?.location.pathname.substr(1) : self?.location.pathname;
+  const pathname =
+    process.platform === 'win32' && self?.location.pathname[0] === '/'
+      ? self?.location.pathname.substr(1)
+      : self?.location.pathname;
   global.__filename = path.normalize(decodeURIComponent(pathname));
   global.__dirname = path.dirname(global.__filename);
 

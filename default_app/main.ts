@@ -15,7 +15,7 @@ type DefaultAppOptions = {
   interactive: boolean;
   abi: boolean;
   modules: string[];
-}
+};
 
 // Parse command line options.
 const argv = process.argv.slice(1);
@@ -74,7 +74,7 @@ if (option.modules.length > 0) {
   (Module as any)._preloadModules(option.modules);
 }
 
-async function loadApplicationPackage (packagePath: string) {
+async function loadApplicationPackage(packagePath: string) {
   // Add a flag indicating app is started from default app.
   Object.defineProperty(process, 'defaultApp', {
     configurable: false,
@@ -92,9 +92,11 @@ async function loadApplicationPackage (packagePath: string) {
       const emitWarning = process.emitWarning;
       try {
         process.emitWarning = () => {};
-        packageJson = (await import(url.pathToFileURL(packageJsonPath).toString(), {
-          with: { type: 'json' }
-        })).default;
+        packageJson = (
+          await import(url.pathToFileURL(packageJsonPath).toString(), {
+            with: { type: 'json' }
+          })
+        ).default;
       } catch (e) {
         showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${(e as Error).message}`);
         return;
@@ -143,23 +145,23 @@ async function loadApplicationPackage (packagePath: string) {
   }
 }
 
-function showErrorMessage (message: string) {
+function showErrorMessage(message: string) {
   app.focus();
   dialog.showErrorBox('Error launching app', message);
   process.exit(1);
 }
 
-async function loadApplicationByURL (appUrl: string) {
+async function loadApplicationByURL(appUrl: string) {
   const { loadURL } = await import('./default_app.js');
   loadURL(appUrl);
 }
 
-async function loadApplicationByFile (appPath: string) {
+async function loadApplicationByFile(appPath: string) {
   const { loadFile } = await import('./default_app.js');
   loadFile(appPath);
 }
 
-async function startRepl () {
+async function startRepl() {
   if (process.platform === 'win32') {
     console.error('Electron REPL not currently supported on Windows');
     process.exit(1);
@@ -187,7 +189,7 @@ async function startRepl () {
     process.exit(0);
   });
 
-  function defineBuiltin (context: any, name: string, getter: Function) {
+  function defineBuiltin(context: any, name: string, getter: Function) {
     const setReal = (val: any) => {
       // Deleting the property before re-assigning it disables the
       // getter/setter mechanism.
@@ -225,11 +227,42 @@ async function startRepl () {
   // we only trigger custom tab-completion when no common words are
   // potentially matches.
   const commonWords = [
-    'async', 'await', 'break', 'case', 'catch', 'const', 'continue',
-    'debugger', 'default', 'delete', 'do', 'else', 'export', 'false',
-    'finally', 'for', 'function', 'if', 'import', 'in', 'instanceof', 'let',
-    'new', 'null', 'return', 'switch', 'this', 'throw', 'true', 'try',
-    'typeof', 'var', 'void', 'while', 'with', 'yield'
+    'async',
+    'await',
+    'break',
+    'case',
+    'catch',
+    'const',
+    'continue',
+    'debugger',
+    'default',
+    'delete',
+    'do',
+    'else',
+    'export',
+    'false',
+    'finally',
+    'for',
+    'function',
+    'if',
+    'import',
+    'in',
+    'instanceof',
+    'let',
+    'new',
+    'null',
+    'return',
+    'switch',
+    'this',
+    'throw',
+    'true',
+    'try',
+    'typeof',
+    'var',
+    'void',
+    'while',
+    'with',
+    'yield'
   ];
 
   const electronBuiltins = [...Object.keys(electron), 'original-fs', 'electron'];

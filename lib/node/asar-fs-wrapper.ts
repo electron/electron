@@ -12,9 +12,7 @@ const Module = require('module') as NodeJS.ModuleInternal;
 
 const Promise: PromiseConstructor = global.Promise;
 
-const envNoAsar = process.env.ELECTRON_NO_ASAR &&
-    process.type !== 'browser' &&
-    process.type !== 'renderer';
+const envNoAsar = process.env.ELECTRON_NO_ASAR && process.type !== 'browser' && process.type !== 'renderer';
 const isAsarDisabled = () => process.noAsar || envNoAsar;
 
 const internalBinding = process.internalBinding!;
@@ -48,20 +46,15 @@ process._getOrCreateArchive = getOrCreateArchive;
 
 const asarRe = /\.asar/i;
 
-const {
-  getValidatedPath,
-  getOptions,
-  getDirent
-} = __non_webpack_require__('internal/fs/utils') as typeof import('@node/lib/internal/fs/utils');
+const { getValidatedPath, getOptions, getDirent } = __non_webpack_require__(
+  'internal/fs/utils'
+) as typeof import('@node/lib/internal/fs/utils');
 
-const {
-  assignFunctionName
-} = __non_webpack_require__('internal/util') as typeof import('@node/lib/internal/util');
+const { assignFunctionName } = __non_webpack_require__('internal/util') as typeof import('@node/lib/internal/util');
 
-const {
-  validateBoolean,
-  validateFunction
-} = __non_webpack_require__('internal/validators') as typeof import('@node/lib/internal/validators');
+const { validateBoolean, validateFunction } = __non_webpack_require__(
+  'internal/validators'
+) as typeof import('@node/lib/internal/validators');
 
 // In the renderer node internals use the node global URL but we do not set that to be
 // the global URL instance.  We need to do instanceof checks against the internal URL impl
@@ -94,7 +87,7 @@ const gid = process.getgid?.() ?? 0;
 
 const fakeTime = new Date();
 
-function getDirents (p: string, { 0: names, 1: types }: any[][]): Dirent[] {
+function getDirents(p: string, { 0: names, 1: types }: any[][]): Dirent[] {
   for (let i = 0; i < names.length; i++) {
     let type = types[i];
     const info = splitPath(path.join(p, names[i]));
@@ -114,7 +107,7 @@ function getDirents (p: string, { 0: names, 1: types }: any[][]): Dirent[] {
 enum AsarFileType {
   kFile = (constants as any).UV_DIRENT_FILE,
   kDirectory = (constants as any).UV_DIRENT_DIR,
-  kLink = (constants as any).UV_DIRENT_LINK,
+  kLink = (constants as any).UV_DIRENT_LINK
 }
 
 const fileTypeToMode = new Map<AsarFileType, number>([
@@ -126,7 +119,8 @@ const fileTypeToMode = new Map<AsarFileType, number>([
 const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat) {
   const { Stats } = require('fs');
 
-  const mode = constants.S_IROTH | constants.S_IRGRP | constants.S_IRUSR | constants.S_IWUSR | fileTypeToMode.get(stats.type)!;
+  const mode =
+    constants.S_IROTH | constants.S_IRGRP | constants.S_IRUSR | constants.S_IWUSR | fileTypeToMode.get(stats.type)!;
 
   return new Stats(
     1, // dev
@@ -153,9 +147,9 @@ const enum AsarError {
   INVALID_ARCHIVE = 'INVALID_ARCHIVE'
 }
 
-type AsarErrorObject = Error & { code?: string, errno?: number };
+type AsarErrorObject = Error & { code?: string; errno?: number };
 
-const createError = (errorType: AsarError, { asarPath, filePath }: { asarPath?: string, filePath?: string } = {}) => {
+const createError = (errorType: AsarError, { asarPath, filePath }: { asarPath?: string; filePath?: string } = {}) => {
   let error: AsarErrorObject;
   switch (errorType) {
     case AsarError.NOT_FOUND:
@@ -182,7 +176,12 @@ const createError = (errorType: AsarError, { asarPath, filePath }: { asarPath?: 
   return error;
 };
 
-const overrideAPISync = function (module: Record<string, any>, name: string, pathArgumentIndex?: number | null, fromAsync: boolean = false) {
+const overrideAPISync = function (
+  module: Record<string, any>,
+  name: string,
+  pathArgumentIndex?: number | null,
+  fromAsync: boolean = false
+) {
   if (pathArgumentIndex == null) pathArgumentIndex = 0;
   const old = module[name];
   const func = function (this: any, ...args: any[]) {
@@ -251,7 +250,7 @@ const overrideAPI = function (module: Record<string, any>, name: string, pathArg
 };
 
 let crypto: typeof Crypto;
-function validateBufferIntegrity (buffer: Buffer, integrity: NodeJS.AsarFileInfo['integrity']) {
+function validateBufferIntegrity(buffer: Buffer, integrity: NodeJS.AsarFileInfo['integrity']) {
   if (!integrity) return;
 
   // Delay load crypto to improve app boot performance
@@ -317,7 +316,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     if (!archive) {
       if (shouldThrowStatError(options)) {
         throw createError(AsarError.INVALID_ARCHIVE, { asarPath });
-      };
+      }
       return null;
     }
 
@@ -325,7 +324,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     if (!stats) {
       if (shouldThrowStatError(options)) {
         throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
-      };
+      }
       return null;
     }
 
@@ -453,7 +452,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   fs.promises.realpath = util.promisify(fs.realpath.native);
 
   const { exists: nativeExists } = fs;
-  fs.exists = function exists (pathArgument: string, callback: any) {
+  fs.exists = function exists(pathArgument: string, callback: any) {
     let pathInfo: ReturnType<typeof splitPath>;
     try {
       pathInfo = splitPath(pathArgument);
@@ -471,11 +470,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return;
     }
 
-    const pathExists = (archive.stat(filePath) !== false);
+    const pathExists = archive.stat(filePath) !== false;
     nextTick(callback, [pathExists]);
   };
 
-  fs.exists[util.promisify.custom] = function exists (pathArgument: string) {
+  fs.exists[util.promisify.custom] = function exists(pathArgument: string) {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) return nativeExists[util.promisify.custom](pathArgument);
     const { asarPath, filePath } = pathInfo;
@@ -596,7 +595,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
   };
 
-  function fsReadFileAsar (pathArgument: string, options: any, callback: any) {
+  function fsReadFileAsar(pathArgument: string, options: any, callback: any) {
     const pathInfo = splitPath(pathArgument);
     if (pathInfo.isAsar) {
       const { asarPath, filePath } = pathInfo;
@@ -674,7 +673,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return p(pathArgument, options);
   };
 
-  function readFileFromArchiveSync (
+  function readFileFromArchiveSync(
     pathInfo: { asarPath: string; filePath: string },
     options: any
   ): ReturnType<typeof readFileSync> {
@@ -686,7 +685,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const info = archive.getFileInfo(filePath);
     if (!info) throw createError(AsarError.NOT_FOUND, { asarPath, filePath });
 
-    if (info.size === 0) return (options) ? '' : Buffer.alloc(0);
+    if (info.size === 0) return options ? '' : Buffer.alloc(0);
     if (info.unpacked) {
       const realPath = archive.copyFileOut(filePath);
       return fs.readFileSync(realPath, options);
@@ -710,7 +709,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     logASARAccess(asarPath, filePath, info.offset);
     fs.readSync(fd, buffer, 0, info.size, info.offset);
     validateBufferIntegrity(buffer, info.integrity);
-    return (encoding) ? buffer.toString(encoding) : buffer;
+    return encoding ? buffer.toString(encoding) : buffer;
   }
 
   const { readFileSync } = fs;
@@ -721,12 +720,16 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return readFileFromArchiveSync(pathInfo, options);
   };
 
-  type ReaddirOptions = { encoding: BufferEncoding | null; withFileTypes?: false, recursive?: false } | undefined | null;
+  type ReaddirOptions =
+    | { encoding: BufferEncoding | null; withFileTypes?: false; recursive?: false }
+    | undefined
+    | null;
   type ReaddirCallback = (err: NodeJS.ErrnoException | null, files?: string[]) => void;
 
-  const processReaddirResult = (args: any) => (args.context.withFileTypes ? handleDirents(args) : handleFilePaths(args));
+  const processReaddirResult = (args: any) =>
+    args.context.withFileTypes ? handleDirents(args) : handleFilePaths(args);
 
-  function handleDirents ({ result, currentPath, context }: { result: any[], currentPath: string, context: any }) {
+  function handleDirents({ result, currentPath, context }: { result: any[]; currentPath: string; context: any }) {
     const length = result[0].length;
     for (let i = 0; i < length; i++) {
       const resultPath = path.join(currentPath, result[0][i]);
@@ -751,7 +754,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
   }
 
-  function handleFilePaths ({ result, currentPath, context }: { result: string[], currentPath: string, context: any }) {
+  function handleFilePaths({ result, currentPath, context }: { result: string[]; currentPath: string; context: any }) {
     for (let i = 0; i < result.length; i++) {
       const resultPath = path.join(currentPath, result[i]);
       const relativeResultPath = path.relative(context.basePath, resultPath);
@@ -764,7 +767,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     }
   }
 
-  function readdirRecursive (basePath: string, options: ReaddirOptions, callback: ReaddirCallback) {
+  function readdirRecursive(basePath: string, options: ReaddirOptions, callback: ReaddirCallback) {
     const context = {
       withFileTypes: Boolean(options!.withFileTypes),
       encoding: options!.encoding,
@@ -775,7 +778,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
     let i = 0;
 
-    function read (pathArg: string) {
+    function read(pathArg: string) {
       const req = new binding.FSReqCallback();
       req.oncomplete = (err: any, result: string) => {
         if (err) {
@@ -824,7 +827,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         // native call to readdir withFileTypes i.e. an array of arrays.
         if (context.withFileTypes) {
           readdirResult = [
-            [...readdirResult], readdirResult.map((p: string) => {
+            [...readdirResult],
+            readdirResult.map((p: string) => {
               return internalBinding('fs').internalModuleStat(path.join(pathArg, p));
             })
           ];
@@ -842,12 +846,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
           callback(null, context.readdirResults);
         }
       } else {
-        binding.readdir(
-          pathArg,
-          context.encoding,
-          context.withFileTypes,
-          req
-        );
+        binding.readdir(pathArg, context.encoding, context.withFileTypes, req);
       }
     }
 
@@ -1023,11 +1022,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const stats = archive.stat(filePath);
     if (!stats) return -34;
 
-    return (stats.type === AsarFileType.kDirectory) ? 1 : 0;
+    return stats.type === AsarFileType.kDirectory ? 1 : 0;
   };
 
   const { kUsePromises } = binding;
-  async function readdirRecursivePromises (originalPath: string, options: ReaddirOptions) {
+  async function readdirRecursivePromises(originalPath: string, options: ReaddirOptions) {
     const result: any[] = [];
 
     const pathInfo = splitPath(originalPath);
@@ -1046,7 +1045,8 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       initialItem = files;
       if (withFileTypes) {
         initialItem = [
-          [...initialItem], initialItem.map((p: string) => {
+          [...initialItem],
+          initialItem.map((p: string) => {
             return internalBinding('fs').internalModuleStat(path.join(originalPath, p));
           })
         ];
@@ -1079,17 +1079,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
               if (!files) continue;
 
               readdirResult = [
-                [...files], files.map((p: string) => {
+                [...files],
+                files.map((p: string) => {
                   return internalBinding('fs').internalModuleStat(path.join(direntPath, p));
                 })
               ];
             } else {
-              readdirResult = await binding.readdir(
-                direntPath,
-                options!.encoding,
-                true,
-                kUsePromises
-              );
+              readdirResult = await binding.readdir(direntPath, options!.encoding, true, kUsePromises);
             }
             queue.push([direntPath, readdirResult]);
           }
@@ -1114,12 +1110,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
               if (!files) return result;
               item = files;
             } else {
-              item = await binding.readdir(
-                path.toNamespacedPath(direntPath),
-                options!.encoding,
-                false,
-                kUsePromises
-              );
+              item = await binding.readdir(path.toNamespacedPath(direntPath), options!.encoding, false, kUsePromises);
             }
             queue.push([direntPath, item]);
           }
@@ -1130,7 +1121,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     return result;
   }
 
-  function readdirSyncRecursive (basePath: string, options: ReaddirOptions) {
+  function readdirSyncRecursive(basePath: string, options: ReaddirOptions) {
     const context = {
       withFileTypes: Boolean(options!.withFileTypes),
       encoding: options!.encoding,
@@ -1139,7 +1130,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       pathsQueue: [basePath]
     };
 
-    function read (pathArg: string) {
+    function read(pathArg: string) {
       let readdirResult;
 
       const pathInfo = splitPath(pathArg);
@@ -1154,17 +1145,14 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         // native call to readdir withFileTypes i.e. an array of arrays.
         if (context.withFileTypes) {
           readdirResult = [
-            [...readdirResult], readdirResult.map((p: string) => {
+            [...readdirResult],
+            readdirResult.map((p: string) => {
               return internalBinding('fs').internalModuleStat(path.join(pathArg, p));
             })
           ];
         }
       } else {
-        readdirResult = binding.readdir(
-          path.toNamespacedPath(pathArg),
-          context.encoding,
-          context.withFileTypes
-        );
+        readdirResult = binding.readdir(path.toNamespacedPath(pathArg), context.encoding, context.withFileTypes);
       }
 
       if (readdirResult === undefined) {
@@ -1215,7 +1203,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     };
   }
 
-  function invokeWithNoAsar (func: Function) {
+  function invokeWithNoAsar(func: Function) {
     return function (this: any) {
       const processNoAsarOriginalValue = process.noAsar;
       process.noAsar = true;
@@ -1247,7 +1235,10 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     // command as a single path to an archive.
     const { exec, execSync } = childProcess;
     childProcess.exec = invokeWithNoAsar(exec);
-    childProcess.exec[util.promisify.custom] = assignFunctionName('exec', invokeWithNoAsar(exec[util.promisify.custom]));
+    childProcess.exec[util.promisify.custom] = assignFunctionName(
+      'exec',
+      invokeWithNoAsar(exec[util.promisify.custom])
+    );
     childProcess.execSync = invokeWithNoAsar(execSync);
 
     overrideAPI(childProcess, 'execFile');

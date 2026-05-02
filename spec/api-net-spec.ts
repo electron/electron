@@ -9,13 +9,23 @@ import * as http2 from 'node:http2';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { collectStreamBody, collectStreamBodyBuffer, getResponse, kOneKiloByte, kOneMegaByte, randomBuffer, randomString, respondNTimes, respondOnce } from './lib/net-helpers';
+import {
+  collectStreamBody,
+  collectStreamBodyBuffer,
+  getResponse,
+  kOneKiloByte,
+  kOneMegaByte,
+  randomBuffer,
+  randomString,
+  respondNTimes,
+  respondOnce
+} from './lib/net-helpers';
 import { listen, defer } from './lib/spec-helpers';
 
 const utilityFixturePath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process', 'api-net-spec.js');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
-async function itUtility (name: string, fn?: Function, args?: {[key:string]: any}) {
+async function itUtility(name: string, fn?: Function, args?: { [key: string]: any }) {
   it(`${name} in utility process`, async () => {
     const child = utilityProcess.fork(utilityFixturePath, [], {
       execArgv: ['--expose-gc']
@@ -34,7 +44,7 @@ async function itUtility (name: string, fn?: Function, args?: {[key:string]: any
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function itIgnoringArgs (name: string, fn?: Mocha.Func|Mocha.AsyncFunc, args?: {[key:string]: any}) {
+async function itIgnoringArgs(name: string, fn?: Mocha.Func | Mocha.AsyncFunc, args?: { [key: string]: any }) {
   it(name, fn);
 }
 
@@ -45,7 +55,9 @@ describe('net module', () => {
   afterEach(async function () {
     if (respondNTimes.routeFailure && this.test) {
       if (!this.test.isFailed()) {
-        throw new Error('Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error');
+        throw new Error(
+          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+        );
       }
     }
   });
@@ -53,22 +65,27 @@ describe('net module', () => {
   let http2URL: string;
 
   const certPath = path.join(fixturesPath, 'certificates');
-  const h2server = http2.createSecureServer({
-    key: fs.readFileSync(path.join(certPath, 'server.key')),
-    cert: fs.readFileSync(path.join(certPath, 'server.pem'))
-  }, async (req, res) => {
-    if (req.method === 'POST') {
-      const chunks = [];
-      for await (const chunk of req) chunks.push(chunk);
-      res.end(Buffer.concat(chunks).toString('utf8'));
-    } else if (req.method === 'GET' && req.headers[':path'] === '/get') {
-      res.end(JSON.stringify({
-        headers: req.headers
-      }));
-    } else {
-      res.end('<html></html>');
+  const h2server = http2.createSecureServer(
+    {
+      key: fs.readFileSync(path.join(certPath, 'server.key')),
+      cert: fs.readFileSync(path.join(certPath, 'server.pem'))
+    },
+    async (req, res) => {
+      if (req.method === 'POST') {
+        const chunks = [];
+        for await (const chunk of req) chunks.push(chunk);
+        res.end(Buffer.concat(chunks).toString('utf8'));
+      } else if (req.method === 'GET' && req.headers[':path'] === '/get') {
+        res.end(
+          JSON.stringify({
+            headers: req.headers
+          })
+        );
+      } else {
+        res.end('<html></html>');
+      }
     }
-  });
+  );
 
   before(async () => {
     http2URL = (await listen(h2server)).url + '/';
@@ -139,18 +156,21 @@ describe('net module', () => {
         const bodyData = 'Hello World!';
         let postedBodyData: string = '';
         let methodAfterRedirect: string | undefined;
-        const serverUrl = await respondNTimes.toRoutes({
-          '/redirect': (req, res) => {
-            res.statusCode = 307;
-            res.setHeader('location', serverUrl);
-            return res.end();
+        const serverUrl = await respondNTimes.toRoutes(
+          {
+            '/redirect': (req, res) => {
+              res.statusCode = 307;
+              res.setHeader('location', serverUrl);
+              return res.end();
+            },
+            '/': async (req, res) => {
+              methodAfterRedirect = req.method;
+              postedBodyData = await collectStreamBody(req);
+              res.end();
+            }
           },
-          '/': async (req, res) => {
-            methodAfterRedirect = req.method;
-            postedBodyData = await collectStreamBody(req);
-            res.end();
-          }
-        }, 2);
+          2
+        );
         const urlRequest = net.request({
           method: 'POST',
           url: serverUrl + '/redirect'
@@ -167,18 +187,21 @@ describe('net module', () => {
         const bodyData = 'Hello World!';
         let postedBodyData: string = '';
         let methodAfterRedirect: string | undefined;
-        const serverUrl = await respondNTimes.toRoutes({
-          '/redirect': (req, res) => {
-            res.statusCode = 302;
-            res.setHeader('location', serverUrl);
-            return res.end();
+        const serverUrl = await respondNTimes.toRoutes(
+          {
+            '/redirect': (req, res) => {
+              res.statusCode = 302;
+              res.setHeader('location', serverUrl);
+              return res.end();
+            },
+            '/': async (req, res) => {
+              methodAfterRedirect = req.method;
+              postedBodyData = await collectStreamBody(req);
+              res.end();
+            }
           },
-          '/': async (req, res) => {
-            methodAfterRedirect = req.method;
-            postedBodyData = await collectStreamBody(req);
-            res.end();
-          }
-        }, 2);
+          2
+        );
         const urlRequest = net.request({
           method: 'POST',
           url: serverUrl + '/redirect'
@@ -232,67 +255,83 @@ describe('net module', () => {
         expect(chunkIndex).to.be.equal(chunkCount);
       });
 
-      for (const extraOptions of [{}, { credentials: 'include' }, { useSessionCookies: false, credentials: 'include' }] as ClientRequestConstructorOptions[]) {
+      for (const extraOptions of [
+        {},
+        { credentials: 'include' },
+        { useSessionCookies: false, credentials: 'include' }
+      ] as ClientRequestConstructorOptions[]) {
         describe(`authentication when ${JSON.stringify(extraOptions)}`, () => {
-          test('should emit the login event when 401', async () => {
-            const [user, pass] = ['user', 'pass'];
-            const serverUrl = await respondOnce.toSingleURL((request, response) => {
-              if (!request.headers.authorization) {
-                return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
-              }
-              response.writeHead(200).end('ok');
-            });
-            let loginAuthInfo: Electron.AuthInfo;
-            const request = net.request({ method: 'GET', url: serverUrl, ...extraOptions });
-            request.on('login', (authInfo, cb) => {
-              loginAuthInfo = authInfo;
-              cb(user, pass);
-            });
-            const response = await getResponse(request);
-            expect(response.statusCode).to.equal(200);
-            expect(loginAuthInfo!.realm).to.equal('Foo');
-            expect(loginAuthInfo!.scheme).to.equal('basic');
-          }, { extraOptions });
-
-          test('should receive 401 response when cancelling authentication', async () => {
-            const serverUrl = await respondOnce.toSingleURL((request, response) => {
-              if (!request.headers.authorization) {
-                response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' });
-                response.end('unauthenticated');
-              } else {
+          test(
+            'should emit the login event when 401',
+            async () => {
+              const [user, pass] = ['user', 'pass'];
+              const serverUrl = await respondOnce.toSingleURL((request, response) => {
+                if (!request.headers.authorization) {
+                  return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+                }
                 response.writeHead(200).end('ok');
-              }
-            });
-            const request = net.request({ method: 'GET', url: serverUrl, ...extraOptions });
-            request.on('login', (authInfo, cb) => {
-              cb();
-            });
-            const response = await getResponse(request);
-            const body = await collectStreamBody(response);
-            expect(response.statusCode).to.equal(401);
-            expect(body).to.equal('unauthenticated');
-          }, { extraOptions });
+              });
+              let loginAuthInfo: Electron.AuthInfo;
+              const request = net.request({ method: 'GET', url: serverUrl, ...extraOptions });
+              request.on('login', (authInfo, cb) => {
+                loginAuthInfo = authInfo;
+                cb(user, pass);
+              });
+              const response = await getResponse(request);
+              expect(response.statusCode).to.equal(200);
+              expect(loginAuthInfo!.realm).to.equal('Foo');
+              expect(loginAuthInfo!.scheme).to.equal('basic');
+            },
+            { extraOptions }
+          );
 
-          test('should upload body when 401', async () => {
-            const [user, pass] = ['user', 'pass'];
-            const serverUrl = await respondOnce.toSingleURL((request, response) => {
-              if (!request.headers.authorization) {
-                return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
-              }
-              response.writeHead(200);
-              request.on('data', (chunk) => response.write(chunk));
-              request.on('end', () => response.end());
-            });
-            const requestData = randomString(kOneKiloByte);
-            const request = net.request({ method: 'GET', url: serverUrl, ...extraOptions });
-            request.on('login', (authInfo, cb) => {
-              cb(user, pass);
-            });
-            request.write(requestData);
-            const response = await getResponse(request);
-            const responseData = await collectStreamBody(response);
-            expect(responseData).to.equal(requestData);
-          }, { extraOptions });
+          test(
+            'should receive 401 response when cancelling authentication',
+            async () => {
+              const serverUrl = await respondOnce.toSingleURL((request, response) => {
+                if (!request.headers.authorization) {
+                  response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' });
+                  response.end('unauthenticated');
+                } else {
+                  response.writeHead(200).end('ok');
+                }
+              });
+              const request = net.request({ method: 'GET', url: serverUrl, ...extraOptions });
+              request.on('login', (authInfo, cb) => {
+                cb();
+              });
+              const response = await getResponse(request);
+              const body = await collectStreamBody(response);
+              expect(response.statusCode).to.equal(401);
+              expect(body).to.equal('unauthenticated');
+            },
+            { extraOptions }
+          );
+
+          test(
+            'should upload body when 401',
+            async () => {
+              const [user, pass] = ['user', 'pass'];
+              const serverUrl = await respondOnce.toSingleURL((request, response) => {
+                if (!request.headers.authorization) {
+                  return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+                }
+                response.writeHead(200);
+                request.on('data', (chunk) => response.write(chunk));
+                request.on('end', () => response.end());
+              });
+              const requestData = randomString(kOneKiloByte);
+              const request = net.request({ method: 'GET', url: serverUrl, ...extraOptions });
+              request.on('login', (authInfo, cb) => {
+                cb(user, pass);
+              });
+              request.write(requestData);
+              const response = await getResponse(request);
+              const responseData = await collectStreamBody(response);
+              expect(responseData).to.equal(requestData);
+            },
+            { extraOptions }
+          );
         });
       }
 
@@ -604,20 +643,24 @@ describe('net module', () => {
       });
 
       for (const mode of ['navigate', 'cors', 'no-cors', 'same-origin']) {
-        test(`should set sec-fetch-mode to ${mode} if requested`, async () => {
-          const serverUrl = await respondOnce.toSingleURL((request, response) => {
-            expect(request.headers['sec-fetch-mode']).to.equal(mode);
-            response.statusCode = 200;
-            response.statusMessage = 'OK';
-            response.end();
-          });
-          const urlRequest = net.request({
-            url: serverUrl,
-            origin: serverUrl
-          });
-          urlRequest.setHeader('sec-fetch-mode', mode);
-          await collectStreamBody(await getResponse(urlRequest));
-        }, { mode });
+        test(
+          `should set sec-fetch-mode to ${mode} if requested`,
+          async () => {
+            const serverUrl = await respondOnce.toSingleURL((request, response) => {
+              expect(request.headers['sec-fetch-mode']).to.equal(mode);
+              response.statusCode = 200;
+              response.statusMessage = 'OK';
+              response.end();
+            });
+            const urlRequest = net.request({
+              url: serverUrl,
+              origin: serverUrl
+            });
+            urlRequest.setHeader('sec-fetch-mode', mode);
+            await collectStreamBody(await getResponse(urlRequest));
+          },
+          { mode }
+        );
       }
 
       test('should set sec-fetch-dest to empty by default', async () => {
@@ -634,25 +677,45 @@ describe('net module', () => {
       });
 
       for (const dest of [
-        'empty', 'audio', 'audioworklet', 'document', 'embed', 'font',
-        'frame', 'iframe', 'image', 'manifest', 'object', 'paintworklet',
-        'report', 'script', 'serviceworker', 'style', 'track', 'video',
-        'worker', 'xslt'
+        'empty',
+        'audio',
+        'audioworklet',
+        'document',
+        'embed',
+        'font',
+        'frame',
+        'iframe',
+        'image',
+        'manifest',
+        'object',
+        'paintworklet',
+        'report',
+        'script',
+        'serviceworker',
+        'style',
+        'track',
+        'video',
+        'worker',
+        'xslt'
       ]) {
-        test(`should set sec-fetch-dest to ${dest} if requested`, async () => {
-          const serverUrl = await respondOnce.toSingleURL((request, response) => {
-            expect(request.headers['sec-fetch-dest']).to.equal(dest);
-            response.statusCode = 200;
-            response.statusMessage = 'OK';
-            response.end();
-          });
-          const urlRequest = net.request({
-            url: serverUrl,
-            origin: serverUrl
-          });
-          urlRequest.setHeader('sec-fetch-dest', dest);
-          await collectStreamBody(await getResponse(urlRequest));
-        }, { dest });
+        test(
+          `should set sec-fetch-dest to ${dest} if requested`,
+          async () => {
+            const serverUrl = await respondOnce.toSingleURL((request, response) => {
+              expect(request.headers['sec-fetch-dest']).to.equal(dest);
+              response.statusCode = 200;
+              response.statusMessage = 'OK';
+              response.end();
+            });
+            const urlRequest = net.request({
+              url: serverUrl,
+              origin: serverUrl
+            });
+            urlRequest.setHeader('sec-fetch-dest', dest);
+            await collectStreamBody(await getResponse(urlRequest));
+          },
+          { dest }
+        );
       }
 
       test('should be able to abort an HTTP request before first write', async () => {
@@ -815,16 +878,16 @@ describe('net module', () => {
         });
 
         const urlRequest = net.request(serverUrl);
-        const bodyCheckPromise = getResponse(urlRequest).then(r => {
-          expect(r.statusCode).to.equal(404);
-          return r;
-        }).then(collectStreamBody).then(receivedBodyData => {
-          expect(receivedBodyData.toString()).to.equal(bodyData);
-        });
-        const eventHandlers = Promise.all([
-          bodyCheckPromise,
-          once(urlRequest, 'close')
-        ]);
+        const bodyCheckPromise = getResponse(urlRequest)
+          .then((r) => {
+            expect(r.statusCode).to.equal(404);
+            return r;
+          })
+          .then(collectStreamBody)
+          .then((receivedBodyData) => {
+            expect(receivedBodyData.toString()).to.equal(bodyData);
+          });
+        const eventHandlers = Promise.all([bodyCheckPromise, once(urlRequest, 'close')]);
 
         urlRequest.end();
 
@@ -905,7 +968,9 @@ describe('net module', () => {
           url: serverUrl
         });
         urlRequest.end();
-        urlRequest.on('redirect', () => { urlRequest.abort(); });
+        urlRequest.on('redirect', () => {
+          urlRequest.abort();
+        });
         urlRequest.on('error', () => {});
         urlRequest.on('response', () => {
           expect.fail('Unexpected response');
@@ -964,10 +1029,7 @@ describe('net module', () => {
         });
         const response = await getResponse(urlRequest);
         expect(response.statusCode).to.equal(200);
-        expect(redirects).to.deep.equal([
-          `${serverUrl}/302`,
-          `${serverUrl}/200`
-        ]);
+        expect(redirects).to.deep.equal([`${serverUrl}/302`, `${serverUrl}/200`]);
       });
 
       test('should be able to create a request with options', async () => {
@@ -1015,7 +1077,7 @@ describe('net module', () => {
           })
         ]);
         const nodeRequest = http.request(nodeServerUrl);
-        const nodeResponse = await getResponse(nodeRequest as any) as any as http.ServerResponse;
+        const nodeResponse = (await getResponse(nodeRequest as any)) as any as http.ServerResponse;
         const netRequest = net.request(netServerUrl);
         const responsePromise = once(netRequest, 'response');
         // TODO(@MarshallOfSound) - FIXME with #22730
@@ -1056,7 +1118,11 @@ describe('net module', () => {
         const urlRequest = net.request(serverUrl);
         urlRequest.end(randomBuffer(kOneMegaByte));
         const [error] = await once(urlRequest, 'error');
-        expect(error.message).to.be.oneOf(['net::ERR_FAILED', 'net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED']);
+        expect(error.message).to.be.oneOf([
+          'net::ERR_FAILED',
+          'net::ERR_CONNECTION_RESET',
+          'net::ERR_CONNECTION_ABORTED'
+        ]);
       });
 
       test('should not emit any event after close', async () => {
@@ -1299,7 +1365,7 @@ describe('net module', () => {
       });
 
       test('should return correct raw headers', async () => {
-        const customHeaders: [string, string|string[]][] = [
+        const customHeaders: [string, string | string[]][] = [
           ['HEADER-KEY-ONE', 'header-value-one'],
           ['set-cookie', 'chocolate-chip'],
           ['header-key-two', 'header-value-two'],
@@ -1573,7 +1639,7 @@ describe('net module', () => {
 
         test('can upload a string body', async () => {
           const serverUrl = await respondOnce.toSingleURL((request, response) => {
-            request.on('data', chunk => response.write(chunk));
+            request.on('data', (chunk) => response.write(chunk));
             request.on('end', () => response.end());
           });
           const resp = await net.fetch(serverUrl, {
@@ -1585,7 +1651,7 @@ describe('net module', () => {
 
         test('can read response as an array buffer', async () => {
           const serverUrl = await respondOnce.toSingleURL((request, response) => {
-            request.on('data', chunk => response.write(chunk));
+            request.on('data', (chunk) => response.write(chunk));
             request.on('end', () => response.end());
           });
           const resp = await net.fetch(serverUrl, {
@@ -1682,10 +1748,11 @@ describe('net module', () => {
       });
 
       test('fails to resolve AAAA record for ipv4.localhost2', async () => {
-        await expect(net.resolveHost('ipv4.localhost2', {
-          queryType: 'AAAA'
-        }))
-          .to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+        await expect(
+          net.resolveHost('ipv4.localhost2', {
+            queryType: 'AAAA'
+          })
+        ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
       });
 
       test('resolves ipv6.localhost2', async () => {
@@ -1697,15 +1764,17 @@ describe('net module', () => {
       });
 
       test('fails to resolve A record for ipv6.localhost2', async () => {
-        await expect(net.resolveHost('notfound.localhost2', {
-          queryType: 'A'
-        }))
-          .to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+        await expect(
+          net.resolveHost('notfound.localhost2', {
+            queryType: 'A'
+          })
+        ).to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
       });
 
       test('fails to resolve notfound.localhost2', async () => {
-        await expect(net.resolveHost('notfound.localhost2'))
-          .to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+        await expect(net.resolveHost('notfound.localhost2')).to.eventually.be.rejectedWith(
+          /net::ERR_NAME_NOT_RESOLVED/
+        );
       });
     });
   }
@@ -1721,31 +1790,35 @@ describe('net module', () => {
         highest: 'u=0'
       })) {
         for (const priorityIncremental of [true, false]) {
-          test(`should set priority to ${priorityName}/${priorityIncremental} if requested`, async () => {
-            // Priority header is available on HTTP/2, which is only
-            // supported over TLS, so...
-            session.defaultSession.setCertificateVerifyProc((req, cb) => cb(0));
-            defer(() => {
-              session.defaultSession.setCertificateVerifyProc(null);
-            });
+          test(
+            `should set priority to ${priorityName}/${priorityIncremental} if requested`,
+            async () => {
+              // Priority header is available on HTTP/2, which is only
+              // supported over TLS, so...
+              session.defaultSession.setCertificateVerifyProc((req, cb) => cb(0));
+              defer(() => {
+                session.defaultSession.setCertificateVerifyProc(null);
+              });
 
-            const urlRequest = net.request({
-              url: `${http2URL}get`,
-              priority: priorityName as any,
-              priorityIncremental
-            });
-            const response = await getResponse(urlRequest);
-            const data = JSON.parse(await collectStreamBody(response));
-            let expectedPriority = urgency;
-            if (priorityIncremental) {
-              expectedPriority = expectedPriority ? expectedPriority + ', i' : 'i';
-            }
-            if (expectedPriority === '') {
-              expect(data.headers.priority).to.be.undefined();
-            } else {
-              expect(data.headers.priority).to.be.a('string').and.equal(expectedPriority);
-            }
-          }, { priorityName, urgency, priorityIncremental });
+              const urlRequest = net.request({
+                url: `${http2URL}get`,
+                priority: priorityName as any,
+                priorityIncremental
+              });
+              const response = await getResponse(urlRequest);
+              const data = JSON.parse(await collectStreamBody(response));
+              let expectedPriority = urgency;
+              if (priorityIncremental) {
+                expectedPriority = expectedPriority ? expectedPriority + ', i' : 'i';
+              }
+              if (expectedPriority === '') {
+                expect(data.headers.priority).to.be.undefined();
+              } else {
+                expect(data.headers.priority).to.be.a('string').and.equal(expectedPriority);
+              }
+            },
+            { priorityName, urgency, priorityIncremental }
+          );
         }
       }
     });

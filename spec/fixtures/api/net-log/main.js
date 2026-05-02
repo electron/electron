@@ -4,7 +4,7 @@ if (process.env.TEST_DUMP_FILE) {
   app.commandLine.appendSwitch('log-net-log', process.env.TEST_DUMP_FILE);
 }
 
-function request () {
+function request() {
   return new Promise((resolve) => {
     const req = net.request(process.env.TEST_REQUEST_URL);
     req.on('response', () => {

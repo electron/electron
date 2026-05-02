@@ -24,7 +24,7 @@ const args = minimist(process.argv, {
   boolean: ['skipYarnInstall'],
   string: ['runners', 'target', 'electronVersion'],
   number: ['enableRerun'],
-  unknown: arg => unknownFlags.push(arg)
+  unknown: (arg) => unknownFlags.push(arg)
 });
 
 const unknownArgs = [];
@@ -41,9 +41,7 @@ const { YARN_SCRIPT_PATH } = require('./yarn');
 
 const BASE = path.resolve(__dirname, '../..');
 
-const runners = new Map([
-  ['main', { description: 'Main process specs', run: runMainProcessElectronTests }]
-]);
+const runners = new Map([['main', { description: 'Main process specs', run: runMainProcessElectronTests }]]);
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash');
 
@@ -58,8 +56,8 @@ if (args.electronVersion) {
 
 let runnersToRun = null;
 if (args.runners !== undefined) {
-  runnersToRun = args.runners.split(',').filter(value => value);
-  if (!runnersToRun.every(r => [...runners.keys()].includes(r))) {
+  runnersToRun = args.runners.split(',').filter((value) => value);
+  if (!runnersToRun.every((r) => [...runners.keys()].includes(r))) {
     console.log(`${fail} ${runnersToRun} must be a subset of [${[...runners.keys()].join(' | ')}]`);
     process.exit(1);
   }
@@ -68,7 +66,7 @@ if (args.runners !== undefined) {
   console.log(`Triggering runners: ${[...runners.keys()].join(', ')}`);
 }
 
-async function main () {
+async function main() {
   if (args.electronVersion) {
     const versions = await ElectronVersions.create();
     if (args.electronVersion === 'latest') {
@@ -93,8 +91,7 @@ async function main () {
 
   const [lastSpecHash, lastSpecInstallHash] = loadLastSpecHash();
   const [currentSpecHash, currentSpecInstallHash] = await getSpecHash();
-  const somethingChanged = (currentSpecHash !== lastSpecHash) ||
-      (lastSpecInstallHash !== currentSpecInstallHash);
+  const somethingChanged = currentSpecHash !== lastSpecHash || lastSpecInstallHash !== currentSpecInstallHash;
 
   if (somethingChanged && !args.skipYarnInstall) {
     await installSpecModules(path.resolve(__dirname, '..', 'spec'));
@@ -109,7 +106,7 @@ async function main () {
   await runElectronTests();
 }
 
-function generateTypeDefinitions () {
+function generateTypeDefinitions() {
   const { status } = childProcess.spawnSync('npm', ['run', 'create-typescript-definitions'], {
     cwd: path.resolve(__dirname, '..'),
     stdio: 'inherit',
@@ -120,17 +117,15 @@ function generateTypeDefinitions () {
   }
 }
 
-function loadLastSpecHash () {
-  return fs.existsSync(specHashPath)
-    ? fs.readFileSync(specHashPath, 'utf8').split('\n')
-    : [null, null];
+function loadLastSpecHash() {
+  return fs.existsSync(specHashPath) ? fs.readFileSync(specHashPath, 'utf8').split('\n') : [null, null];
 }
 
-function saveSpecHash ([newSpecHash, newSpecInstallHash]) {
+function saveSpecHash([newSpecHash, newSpecInstallHash]) {
   fs.writeFileSync(specHashPath, `${newSpecHash}\n${newSpecInstallHash}`);
 }
 
-async function runElectronTests () {
+async function runElectronTests() {
   const errors = [];
 
   const testResultsDir = process.env.ELECTRON_TEST_RESULTS_DIR;
@@ -160,7 +155,7 @@ async function runElectronTests () {
   }
 }
 
-async function asyncSpawn (exe, runnerArgs) {
+async function asyncSpawn(exe, runnerArgs) {
   return new Promise((resolve, reject) => {
     let forceExitResult = 0;
     const child = childProcess.spawn(exe, runnerArgs, {
@@ -172,7 +167,7 @@ async function asyncSpawn (exe, runnerArgs) {
     child.stdout.pipe(process.stdout);
     child.stderr.pipe(process.stderr);
     if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
-      child.stdout.on('data', data => {
+      child.stdout.on('data', (data) => {
         const failureRE = RegExp(`${FAILURE_STATUS_KEY}: (\\d.*)`);
         const failures = data.toString().match(failureRE);
         if (failures) {
@@ -180,7 +175,7 @@ async function asyncSpawn (exe, runnerArgs) {
         }
       });
     }
-    child.on('error', error => reject(error));
+    child.on('error', (error) => reject(error));
     child.on('close', (status, signal) => {
       let returnStatus = 0;
       if (process.env.ELECTRON_FORCE_TEST_SUITE_EXIT) {
@@ -193,7 +188,7 @@ async function asyncSpawn (exe, runnerArgs) {
   });
 }
 
-function parseJUnitXML (specDir) {
+function parseJUnitXML(specDir) {
   if (!fs.existsSync(process.env.MOCHA_FILE)) {
     console.error('JUnit XML file not found:', process.env.MOCHA_FILE);
     return [];
@@ -243,7 +238,7 @@ function parseJUnitXML (specDir) {
   return failedTests;
 }
 
-async function rerunFailedTest (specDir, testName, testInfo) {
+async function rerunFailedTest(specDir, testName, testInfo) {
   console.log('\n========================================');
   console.log(`Rerunning failed test: ${testInfo.name} (${testInfo.file})`);
   console.log('========================================');
@@ -270,7 +265,7 @@ async function rerunFailedTest (specDir, testName, testInfo) {
   }
 }
 
-async function rerunFailedTests (specDir, testName) {
+async function rerunFailedTests(specDir, testName) {
   console.log('\n📋 Parsing JUnit XML for failed tests...');
   const failedTests = parseJUnitXML(specDir);
 
@@ -304,7 +299,7 @@ async function rerunFailedTests (specDir, testName) {
     let runCount = 0;
     let success = false;
     let retryTest = false;
-    while (!success && (runCount < args.enableRerun)) {
+    while (!success && runCount < args.enableRerun) {
       success = await rerunFailedTest(specDir, testName, testInfo);
       if (success) {
         results.passed++;
@@ -320,12 +315,12 @@ async function rerunFailedTests (specDir, testName) {
       // Add a small delay between tests
       if (retryTest || index < failedTests.length - 1) {
         console.log('\nWaiting 2 seconds before next test...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
       runCount++;
     }
     index++;
-  };
+  }
 
   // Step 4: Summary
   console.log('\n📈 Summary:');
@@ -346,7 +341,7 @@ async function rerunFailedTests (specDir, testName) {
   }
 }
 
-async function runTestUsingElectron (specDir, testName, shouldRerun, additionalArgs = []) {
+async function runTestUsingElectron(specDir, testName, shouldRerun, additionalArgs = []) {
   let exe;
   if (args.electronVersion) {
     const installer = new Installer();
@@ -356,7 +351,9 @@ async function runTestUsingElectron (specDir, testName, shouldRerun, additionalA
   }
   let argsToPass = unknownArgs.slice(2);
   if (additionalArgs.includes('--files')) {
-    argsToPass = argsToPass.filter(arg => (arg.toString().indexOf('--files') === -1 && arg.toString().indexOf('spec/') === -1));
+    argsToPass = argsToPass.filter(
+      (arg) => arg.toString().indexOf('--files') === -1 && arg.toString().indexOf('spec/') === -1
+    );
   }
   const runnerArgs = [`electron/${specDir}`, ...argsToPass, ...additionalArgs];
   if (process.platform === 'linux') {
@@ -382,7 +379,7 @@ async function runTestUsingElectron (specDir, testName, shouldRerun, additionalA
   return true;
 }
 
-async function runMainProcessElectronTests () {
+async function runMainProcessElectronTests() {
   let shouldRerun = false;
   if (args.enableRerun && args.enableRerun > 0) {
     shouldRerun = true;
@@ -390,7 +387,7 @@ async function runMainProcessElectronTests () {
   await runTestUsingElectron('spec', 'main', shouldRerun);
 }
 
-async function installSpecModules (dir) {
+async function installSpecModules(dir) {
   const env = {
     npm_config_msvs_version: '2022',
     ...process.env,
@@ -445,7 +442,7 @@ async function installSpecModules (dir) {
   }
 }
 
-function getSpecHash () {
+function getSpecHash() {
   return Promise.all([
     (async () => {
       const hasher = crypto.createHash('SHA256');
