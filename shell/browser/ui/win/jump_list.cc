@@ -2,9 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-// FIXME(samuelmaddock): refactor this class to use modern
-// Microsoft::WRL::ComPtr must come before other includes. fixes bad #defines
-// from <shlwapi.h>.
+#include <wrl/client.h>
+
 #include "base/win/shlwapi.h"  // NOLINT(build/include_order)
 
 #include "shell/browser/ui/win/jump_list.h"
@@ -25,8 +24,8 @@ using electron::JumpListResult;
 bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
   DCHECK(collection);
 
-  CComPtr<IShellLink> link;
-  if (FAILED(link.CoCreateInstance(CLSID_ShellLink)) ||
+  Microsoft::WRL::ComPtr<IShellLink> link;
+  if (FAILED(::CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&link))) ||
       FAILED(link->SetPath(item.path.value().c_str())) ||
       FAILED(link->SetArguments(item.arguments.c_str())) ||
       FAILED(link->SetWorkingDirectory(item.working_dir.value().c_str())) ||
@@ -45,23 +44,26 @@ bool AppendTask(const JumpListItem& item, IObjectCollection* collection) {
                                    item.icon_index)))
     return false;
 
-  CComQIPtr<IPropertyStore> property_store(link);
-  if (!base::win::SetStringValueForPropertyStore(property_store, PKEY_Title,
+  Microsoft::WRL::ComPtr<IPropertyStore> property_store;
+  if (FAILED(link.As(&property_store)) ||
+      !base::win::SetStringValueForPropertyStore(property_store.Get(), PKEY_Title,
                                                  item.title))
     return false;
 
-  return SUCCEEDED(collection->AddObject(link));
+  return SUCCEEDED(collection->AddObject(link.Get()));
 }
 
 bool AppendSeparator(IObjectCollection* collection) {
   DCHECK(collection);
 
-  CComPtr<IShellLink> shell_link;
-  if (SUCCEEDED(shell_link.CoCreateInstance(CLSID_ShellLink))) {
-    CComQIPtr<IPropertyStore> property_store(shell_link);
-    if (base::win::SetBooleanValueForPropertyStore(
-            property_store, PKEY_AppUserModel_IsDestListSeparator, true))
-      return SUCCEEDED(collection->AddObject(shell_link));
+  Microsoft::WRL::ComPtr<IShellLink> shell_link;
+  if (SUCCEEDED(::CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&shell_link)))) {
+    Microsoft::WRL::ComPtr<IPropertyStore> property_store;
+    if (SUCCEEDED(shell_link.As(&property_store)) &&
+        base::win::SetBooleanValueForPropertyStore(
+            property_store.Get(), PKEY_AppUserModel_IsDestListSeparator, true)) {
+      return SUCCEEDED(collection->AddObject(shell_link.Get()));
+    }
   }
   return false;
 }
@@ -69,10 +71,10 @@ bool AppendSeparator(IObjectCollection* collection) {
 bool AppendFile(const JumpListItem& item, IObjectCollection* collection) {
   DCHECK(collection);
 
-  CComPtr<IShellItem> file;
+  Microsoft::WRL::ComPtr<IShellItem> file;
   if (SUCCEEDED(SHCreateItemFromParsingName(item.path.value().c_str(), nullptr,
                                             IID_PPV_ARGS(&file))))
-    return SUCCEEDED(collection->AddObject(file));
+    return SUCCEEDED(collection->AddObject(file.Get()));
 
   return false;
 }
@@ -102,17 +104,19 @@ bool ConvertShellLinkToJumpListItem(IShellLink* shell_link,
 
   item->path = base::FilePath(path);
 
-  CComQIPtr<IPropertyStore> property_store = shell_link;
+  Microsoft::WRL::ComPtr<IPropertyStore> property_store;
   base::win::ScopedPropVariant prop;
-  if (SUCCEEDED(
-          property_store->GetValue(PKEY_Link_Arguments, prop.Receive())) &&
-      (prop.get().vt == VT_LPWSTR)) {
-    item->arguments = prop.get().pwszVal;
-  }
+  if (SUCCEEDED(shell_link->QueryInterface(IID_PPV_ARGS(&property_store)))) {
+    if (SUCCEEDED(
+            property_store->GetValue(PKEY_Link_Arguments, prop.Receive())) &&
+        (prop.get().vt == VT_LPWSTR)) {
+      item->arguments = prop.get().pwszVal;
+    }
 
-  if (SUCCEEDED(property_store->GetValue(PKEY_Title, prop.Receive())) &&
-      (prop.get().vt == VT_LPWSTR)) {
-    item->title = prop.get().pwszVal;
+    if (SUCCEEDED(property_store->GetValue(PKEY_Title, prop.Receive())) &&
+        (prop.get().vt == VT_LPWSTR)) {
+      item->title = prop.get().pwszVal;
+    }
   }
 
   if (SUCCEEDED(shell_link->GetWorkingDirectory(path, std::size(path))))
@@ -171,7 +175,7 @@ JumpListCategory::JumpListCategory(const JumpListCategory&) = default;
 JumpListCategory::~JumpListCategory() = default;
 
 JumpList::JumpList(const std::wstring& app_id) : app_id_(app_id) {
-  destinations_.CoCreateInstance(CLSID_DestinationList);
+  ::CoCreateInstance(CLSID_DestinationList, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&destinations_));
 }
 
 JumpList::~JumpList() = default;
@@ -185,7 +189,7 @@ bool JumpList::Begin(int* min_items, std::vector<JumpListItem>* removed_items) {
     return false;
 
   UINT min_slots;
-  CComPtr<IObjectArray> removed;
+  Microsoft::WRL::ComPtr<IObjectArray> removed;
   if (FAILED(destinations_->BeginList(&min_slots, IID_PPV_ARGS(&removed))))
     return false;
 
@@ -234,8 +238,8 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
   if (category.items.empty())
     return JumpListResult::kSuccess;
 
-  CComPtr<IObjectCollection> collection;
-  if (FAILED(collection.CoCreateInstance(CLSID_EnumerableObjectCollection))) {
+  Microsoft::WRL::ComPtr<IObjectCollection> collection;
+  if (FAILED(::CoCreateInstance(CLSID_EnumerableObjectCollection, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&collection)))) {
     return JumpListResult::kGenericError;
   }
 
@@ -285,16 +289,17 @@ JumpListResult JumpList::AppendCategory(const JumpListCategory& category) {
     result = JumpListResult::kGenericError;
   }
 
-  CComQIPtr<IObjectArray> items(collection);
+  Microsoft::WRL::ComPtr<IObjectArray> items;
+  collection.As(&items);
 
   if (category.type == JumpListCategory::Type::kTasks) {
-    if (FAILED(destinations_->AddUserTasks(items))) {
+    if (FAILED(destinations_->AddUserTasks(items.Get()))) {
       LOG(ERROR) << "Failed to append items to the standard Tasks category.";
       if (result == JumpListResult::kSuccess)
         result = JumpListResult::kGenericError;
     }
   } else {
-    HRESULT hr = destinations_->AppendCategory(category.name.c_str(), items);
+    HRESULT hr = destinations_->AppendCategory(category.name.c_str(), items.Get());
     if (FAILED(hr)) {
       if (hr == static_cast<HRESULT>(0x80040F03)) {
         LOG(ERROR) << "Failed to append custom category " << "'"
