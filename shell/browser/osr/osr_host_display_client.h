@@ -67,7 +67,7 @@ class OffScreenHostDisplayClient : public viz::HostDisplayClient {
   // viz::HostDisplayClient
 #if BUILDFLAG(IS_MAC)
   void OnDisplayReceivedCALayerParams(
-      const gfx::CALayerParams& ca_layer_params) override;
+      gfx::CALayerParams ca_layer_params) override;
 #endif
 
   void CreateLayeredWindowUpdater(

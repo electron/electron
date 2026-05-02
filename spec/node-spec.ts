@@ -7,6 +7,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { EventEmitter } from 'node:stream';
+import * as tty from 'node:tty';
 import * as util from 'node:util';
 
 import {
@@ -599,10 +600,34 @@ describe('node feature', () => {
       }).to.not.throw();
     });
 
-    // TODO: figure out why process.stdout.isTTY is true on Darwin but not Linux/Win.
-    ifdescribe(process.platform !== 'darwin')('isTTY', () => {
-      itremote('should be undefined in the renderer process', function () {
-        expect(process.stdout.isTTY).to.be.undefined();
+    describe('isTTY', () => {
+      itremote("should match Node's TTY classification in the renderer", function () {
+        const { isatty } = require('node:tty');
+
+        expect(process.stdout.isTTY === true).to.equal(isatty(1));
+      });
+
+      ifdescribe(process.platform !== 'win32')('POSIX platforms', () => {
+        const parentStdoutIsTTY = tty.isatty(1);
+
+        itremote(
+          'should inherit stdout TTY classification from the browser process',
+          function (parentStdoutIsTTY: boolean) {
+            const { isatty } = require('node:tty');
+
+            expect(isatty(1)).to.equal(parentStdoutIsTTY);
+          },
+          [parentStdoutIsTTY]
+        );
+      });
+
+      ifdescribe(process.platform === 'win32')('Windows', () => {
+        itremote('should expose renderer stdout as a TTY', function () {
+          const { isatty } = require('node:tty');
+
+          expect(isatty(1)).to.be.true();
+          expect(process.stdout.isTTY).to.be.true();
+        });
       });
     });
   });

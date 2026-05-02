@@ -35,7 +35,7 @@ index 7ea6daec53a497bf867d799e041bf6ae7191ef7b..15940624940d5c629c40319f45c59282
          execution_context->GetScheduler()
              ->ToFrameScheduler()
 diff --git a/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc b/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
-index 936f5ebe28caa993ed5de0f7de3613fa338e263f..961ac8091aa82128e1cfb8800a7efcb80d100a05 100644
+index 3cf2c103c9460d6a5ef64b946a57f96432501670..937c824c5eb4253733c6cd78c38209e2019a79a9 100644
 --- a/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
 +++ b/third_party/blink/renderer/core/workers/threaded_worklet_messaging_proxy.cc
 @@ -13,10 +13,12 @@

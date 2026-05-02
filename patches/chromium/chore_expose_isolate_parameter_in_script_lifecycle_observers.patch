@@ -34,10 +34,10 @@ index 1b8541bfa56a7e53c8396c29ea45a0b5af89ef81..28ffec368e5d6bc1744605e9dda7fc68
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 93ee72d4eccd314388d0283249bc3c784559d9b4..859cea7d1d539822f21bc7ac7f391dd60c3ee249 100644
+index 2507db2a4b8fd5763f81e7c6ca7dbbb2af919aa8..0ebb92e4676ef2bf95fec531920b23077e4782c2 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4741,10 +4741,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4742,10 +4742,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -181,7 +181,7 @@ index 222278059beb1681c1d8e2a93e33279d4194227b..f68b1f841e20a78e3a109b61b11fd144
  
    // Geometry notifications ----------------------------------------------
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 0787bc8a602c60e5b42933813baa6b9d923c9823..c4adcc6083e09e56416587fbcde10c9026e54066 100644
+index 1316e7116c691030b3c764546c2f71fe61dde592..b633db5ff53aca3d94a6a3f77348f8e6236d1f4d 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 @@ -108,11 +108,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,

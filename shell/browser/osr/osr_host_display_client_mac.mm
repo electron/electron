@@ -11,8 +11,8 @@
 namespace electron {
 
 void OffScreenHostDisplayClient::OnDisplayReceivedCALayerParams(
-    const gfx::CALayerParams& ca_layer_params) {
-  if (!ca_layer_params.is_empty) {
+    const gfx::CALayerParams ca_layer_params) {
+  if (!ca_layer_params.IsEmpty()) {
     base::apple::ScopedCFTypeRef<IOSurfaceRef> io_surface(
         IOSurfaceLookupFromMachPort(
             ca_layer_params.io_surface_mach_port.get()));

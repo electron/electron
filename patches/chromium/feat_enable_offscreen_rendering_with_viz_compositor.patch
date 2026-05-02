@@ -8,7 +8,7 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index 65df78d7f2a311633e8512f46efa005c41930873..1978ac9a080c63f8e9aa323c7215051890c55f00 100644
+index 65e6d28734051dc6ba0201b7b09a91ac733e3ff9..f8d66e68f7fdb4944a667ec10ba227fa62af7728 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
 @@ -50,9 +50,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
@@ -39,7 +39,7 @@ index 65df78d7f2a311633e8512f46efa005c41930873..1978ac9a080c63f8e9aa323c72150518
      gpu::SurfaceHandle child_window) {
    NOTREACHED();
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
-index 03410160827d5fde6478bb1b16f82b1367413183..2a1368e85b789b51f41625d1db877185ad7d7a6c 100644
+index 8d74efb0bbc6a226db2617f42ed9e483dc3d9bef..b4ddfd69985840d586df27b911e902880a164f2a 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
 @@ -39,6 +39,9 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
@@ -204,7 +204,7 @@ index f49bbc5d568f0cb323a22997a949e2cae8f35d59..c0154ee828e67b197eb2ddb1abf04c0a
    const raw_ptr<GpuServiceImpl> gpu_service_impl_;
  
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
-index 982cacc1a7fb0ffe26433da6431e2f7a805c742b..5ea2fef095ffc2362181a8f1579a48cc2f7e004d 100644
+index 48333324f9beec05573d6f63869872c336b808e3..b233fcb586957fcbe5b7b9a767d86e5cda02bc93 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
 +++ b/components/viz/service/display_embedder/software_output_device_mac.cc
 @@ -109,6 +109,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
@@ -216,14 +216,14 @@ index 982cacc1a7fb0ffe26433da6431e2f7a805c742b..5ea2fef095ffc2362181a8f1579a48cc
    // Record the previous paint buffer.
    Buffer* previous_paint_buffer =
        buffer_queue_.empty() ? nullptr : buffer_queue_.back().get();
-@@ -199,6 +201,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
-     ca_layer_params.is_empty = false;
+@@ -198,6 +200,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
+     gfx::CALayerParams ca_layer_params;
      ca_layer_params.scale_factor = scale_factor_;
      ca_layer_params.pixel_size = pixel_size_;
 +    ca_layer_params.damage = last_damage;
      ca_layer_params.io_surface_mach_port.reset(
          IOSurfaceCreateMachPort(current_paint_buffer_->io_surface.get()));
-     client_->SoftwareDeviceUpdatedCALayerParams(ca_layer_params);
+     client_->SoftwareDeviceUpdatedCALayerParams(std::move(ca_layer_params));
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.h b/components/viz/service/display_embedder/software_output_device_mac.h
 index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d1cd3a7ca 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.h
@@ -522,7 +522,7 @@ index 4f9e8946fa02d859e92a6896beba82721914f868..78486eaa993ee7ffd5188b31503de7dd
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 0be3821000011d6a3441cb6df95b959ff6805f01..c44e21a2f917dcdbd4a4f699fbb1477d847a25d1 100644
+index 5df4863505d134260bcbf09955d5cb10eb9f74e1..96d1fc6e6f5413ac62fb9f0d9c723f7779617c6d 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -667,7 +667,7 @@ index fbe5a8e6458970652723f91a426541220b394a18..c2e748b92103c582802af9b973ebe0c3
    raw_ptr<Layer> root_layer_ = nullptr;
  
 diff --git a/ui/gfx/ca_layer_params.h b/ui/gfx/ca_layer_params.h
-index 5b5bb16199d46f16be587856650b07121a786776..241efc4bddaf2ddfb4d4092766a9d3c9732ef36e 100644
+index b4172df479401a0073dcb70aa9aeaba67b01b6cf..e3f99fc7f440b8a8f7913fa3a95fbaee34ca08dc 100644
 --- a/ui/gfx/ca_layer_params.h
 +++ b/ui/gfx/ca_layer_params.h
 @@ -7,6 +7,7 @@
@@ -678,7 +678,7 @@ index 5b5bb16199d46f16be587856650b07121a786776..241efc4bddaf2ddfb4d4092766a9d3c9
  #include "ui/gfx/geometry/size.h"
  
  #if BUILDFLAG(IS_APPLE)
-@@ -51,6 +52,8 @@ struct COMPONENT_EXPORT(GFX) CALayerParams {
+@@ -53,6 +54,8 @@ struct COMPONENT_EXPORT(GFX) CALayerParams {
    gfx::ScopedRefCountedIOSurfaceMachPort io_surface_mach_port;
  #endif
  
@@ -688,21 +688,21 @@ index 5b5bb16199d46f16be587856650b07121a786776..241efc4bddaf2ddfb4d4092766a9d3c9
    gfx::Size pixel_size;
    float scale_factor = 1.f;
 diff --git a/ui/gfx/mojom/ca_layer_params.mojom b/ui/gfx/mojom/ca_layer_params.mojom
-index c380e4882d699232869c88bc65dc4d396bb95780..7d3c81b200cc9b390084a35ab5d0fc1904137144 100644
+index 53f4f4c8074a7f946fd2c3e50a7ac94407663940..082a094dd2dd95626e2866e4d80c9f09ab6ba7f7 100644
 --- a/ui/gfx/mojom/ca_layer_params.mojom
 +++ b/ui/gfx/mojom/ca_layer_params.mojom
-@@ -18,5 +18,6 @@ struct CALayerParams {
-   bool is_empty;
-   CALayerContent content;
+@@ -30,5 +30,6 @@ struct CALayerParams {
+ 
+   // The geometry of the frame.
    gfx.mojom.Size pixel_size;
 +  gfx.mojom.Rect damage;
    float scale_factor;
  };
 diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
-index e1c6ed1b3a456b164945ee7eef34f9d4f0b80e07..87bff4350cdfcca97de6f66946b9cb6155e36634 100644
+index 1c6052e7653e0875b2954b325f9856d1871c73e3..558a0f930acc4c791cbcdf6416617dc2c44ca4f6 100644
 --- a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 +++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
-@@ -52,6 +52,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(
+@@ -67,6 +67,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(
    if (!data.ReadPixelSize(&out->pixel_size))
      return false;
  
@@ -713,10 +713,10 @@ index e1c6ed1b3a456b164945ee7eef34f9d4f0b80e07..87bff4350cdfcca97de6f66946b9cb61
    return true;
  }
 diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.h b/ui/gfx/mojom/ca_layer_params_mojom_traits.h
-index b6d3f2fea1d663ee1eba82a8008afc830897534c..e06f7d3184d66d9585af39c896036c1792693ac5 100644
+index d52b720f891cecb86c4818c94e661a43fc4c88fa..cdfe28e2120b085b43c99bb3a9ea740596b775a8 100644
 --- a/ui/gfx/mojom/ca_layer_params_mojom_traits.h
 +++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.h
-@@ -20,6 +20,10 @@ struct StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams> {
+@@ -16,6 +16,10 @@ struct StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams> {
      return ca_layer_params.pixel_size;
    }
  
@@ -724,6 +724,6 @@ index b6d3f2fea1d663ee1eba82a8008afc830897534c..e06f7d3184d66d9585af39c896036c17
 +    return ca_layer_params.damage;
 +  }
 +
-   static float scale_factor(const gfx::CALayerParams& ca_layer_params) {
+   static float scale_factor(gfx::CALayerParams& ca_layer_params) {
      return ca_layer_params.scale_factor;
    }
