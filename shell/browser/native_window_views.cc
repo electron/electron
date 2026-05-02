@@ -1341,14 +1341,15 @@ bool NativeWindowViews::HasShadow() const {
 }
 
 void NativeWindowViews::SetOpacity(const double opacity) {
+  const double bounded_opacity =
+      std::isnan(opacity) ? 1.0 : std::clamp(opacity, 0.0, 1.0);
+  opacity_ = bounded_opacity;
 #if BUILDFLAG(IS_WIN)
-  const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
   HWND hwnd = GetAcceleratedWidget();
   SetLayered();
-  ::SetLayeredWindowAttributes(hwnd, 0, boundedOpacity * 255, LWA_ALPHA);
-  opacity_ = boundedOpacity;
-#else
-  opacity_ = 1.0;  // setOpacity unsupported on Linux
+  ::SetLayeredWindowAttributes(hwnd, 0, bounded_opacity * 255, LWA_ALPHA);
+#elif BUILDFLAG(IS_LINUX)
+  widget()->SetOpacity(static_cast<float>(bounded_opacity));
 #endif
 }
 
