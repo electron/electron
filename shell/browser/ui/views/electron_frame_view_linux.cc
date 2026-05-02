@@ -6,6 +6,7 @@
 #include "shell/browser/ui/views/electron_frame_view_linux.h"
 
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/views/caption_button_placeholder_container.h"
 #include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
 #include "ui/base/hit_test.h"
@@ -113,6 +114,9 @@ int ElectronFrameViewLinux::NonClientHitTest(const gfx::Point& point) {
 
 void ElectronFrameViewLinux::Layout(PassKey) {
   LayoutSuperclass<FrameViewLinux>(this);
+
+  if (auto* iwcv = window_->primary_web_contents_view())
+    iwcv->SetCornerRadii(GetCornerRadii());
 
   if (!window_->IsWindowControlsOverlayEnabled())
     return;

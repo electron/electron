@@ -101,10 +101,11 @@
 * `accentColor` boolean | string (optional) _Windows_ - The accent color for the window. By default, follows user preference in System Settings. Set to `false` to explicitly disable, or set the color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha values will be ignored.
 * `trafficLightPosition` [Point](point.md) (optional) _macOS_ -
   Set a custom position for the traffic light buttons in frameless windows.
-* `roundedCorners` boolean (optional) _macOS_ _Windows_ - Whether frameless window
+* `roundedCorners` boolean (optional) _macOS_ _Windows_ _Linux_ - Whether frameless window
   should have rounded corners. Default is `true`. On Windows versions older than
   Windows 11 Build 22000 this property has no effect, and frameless windows will
-  not have rounded corners.
+  not have rounded corners. On Linux, rounded corners are only drawn when the
+  desktop environment supports client-side decorations.
 * `thickFrame` boolean (optional) _Windows_ - Use `WS_THICKFRAME` style for
   frameless windows on Windows, which adds the standard window frame. Setting it
   to `false` will remove window shadow and window animations, and disable window

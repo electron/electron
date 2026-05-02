@@ -60,8 +60,11 @@ gfx::ShadowValues ElectronFrameViewLayoutLinux::GetShadowValues(
 }
 
 gfx::RoundedCornersF ElectronFrameViewLayoutLinux::GetCornerRadii() const {
-  // TODO: implement client-area clipping for rounded corners.
-  return gfx::RoundedCornersF();
+  if (!window_->has_rounded_corners())
+    return gfx::RoundedCornersF();
+  // Chrome rounds only the top corners, so mirror its default value to all 4.
+  return gfx::RoundedCornersF(
+      FrameViewLayoutLinux::GetCornerRadii().upper_left());
 }
 
 bool ElectronFrameViewLayoutLinux::ShouldShowTitlebarAndBorder() const {
