@@ -63,6 +63,12 @@ class NativeWindowObserver : public base::CheckedObserver {
   // Called when window gains focus.
   virtual void OnWindowFocus() {}
 
+  // Called before a native modal dialog attached to the window is shown.
+  virtual void OnNativeDialogWillOpen() {}
+
+  // Called when a native modal dialog attached to the window has closed.
+  virtual void OnNativeDialogClosed() {}
+
   // Called when window gained or lost key window status.
   virtual void OnWindowIsKeyChanged(bool is_key) {}
 

@@ -286,17 +286,29 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
 }  // namespace
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
+  base::WeakPtr<NativeWindow> parent_window =
+      settings.parent_window ? settings.parent_window->GetWeakPtr()
+                             : base::WeakPtr<NativeWindow>();
+  if (parent_window)
+    parent_window->NotifyNativeDialogWillOpen();
   gfx::AcceleratedWidget parent_widget =
       settings.parent_window
           ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
                 ->GetAcceleratedWidget()
           : nullptr;
   DialogResult result = ShowTaskDialogUTF8(settings, parent_widget, nullptr);
+  if (parent_window)
+    parent_window->NotifyNativeDialogClosed();
   return result.button_id;
 }
 
 void ShowMessageBox(const MessageBoxSettings& settings,
                     MessageBoxCallback callback) {
+  base::WeakPtr<NativeWindow> parent_window =
+      settings.parent_window ? settings.parent_window->GetWeakPtr()
+                             : base::WeakPtr<NativeWindow>();
+  if (parent_window)
+    parent_window->NotifyNativeDialogWillOpen();
   // The dialog is created in a new thread so we don't know its HWND yet, put
   // kHwndReserve in the dialogs map for now.
   HWND* hwnd = nullptr;
@@ -313,18 +325,20 @@ void ShowMessageBox(const MessageBoxSettings& settings,
           ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
                 ->GetAcceleratedWidget()
           : nullptr;
-  dialog_thread::Run(base::BindOnce(&ShowTaskDialogUTF8, settings,
-                                    parent_widget, base::Unretained(hwnd)),
-                     base::BindOnce(
-                         [](MessageBoxCallback callback, std::optional<int> id,
-                            DialogResult result) {
-                           if (id)
-                             GetDialogsMap().erase(*id);
-                           std::move(callback).Run(
-                               result.button_id,
-                               result.verification_flag_checked);
-                         },
-                         std::move(callback), settings.id));
+  dialog_thread::Run(
+      base::BindOnce(&ShowTaskDialogUTF8, settings, parent_widget,
+                     base::Unretained(hwnd)),
+      base::BindOnce(
+          [](MessageBoxCallback callback, std::optional<int> id,
+             base::WeakPtr<NativeWindow> parent_window, DialogResult result) {
+            if (id)
+              GetDialogsMap().erase(*id);
+            if (parent_window)
+              parent_window->NotifyNativeDialogClosed();
+            std::move(callback).Run(result.button_id,
+                                    result.verification_flag_checked);
+          },
+          std::move(callback), settings.id, std::move(parent_window)));
 }
 
 void CloseMessageBox(int id) {
