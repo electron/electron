@@ -3,13 +3,14 @@
 // to verify that nodeIntegrationInWorker keeps working when Blink reuses a
 // pooled worker thread for multiple AudioWorklet contexts.
 class NodeIntegrationProbeProcessor extends AudioWorkletProcessor {
-  constructor () {
+  constructor() {
     super();
     this.port.onmessage = () => {
       let info;
       try {
         // require should be a function and `node:timers` should resolve.
-        const ok = typeof require === 'function' &&
+        const ok =
+          typeof require === 'function' &&
           typeof require('node:timers').setImmediate === 'function' &&
           typeof process === 'object';
         info = ok ? 'ok' : 'missing';
@@ -20,7 +21,7 @@ class NodeIntegrationProbeProcessor extends AudioWorkletProcessor {
     };
   }
 
-  process () {
+  process() {
     return true;
   }
 }

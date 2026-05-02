@@ -16,29 +16,28 @@ describe('nativeImage module', () => {
     height: 190
   };
   const image1x1 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADElEQVR4nGJiAAIAAAAA//81yQwvAAAABklEQVQDAAAPAAMkN33pAAAAAElFTkSuQmCC',
+    dataUrl:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADElEQVR4nGJiAAIAAAAA//81yQwvAAAABklEQVQDAAAPAAMkN33pAAAAAElFTkSuQmCC',
     path: path.join(fixturesPath, 'assets', '1x1.png'),
     height: 1,
     width: 1
   };
   const image2x2 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAE0lEQVR4nGL5//8/AwMDEwMYAAAAAP//aYxtrAAAAAZJREFUAwAkMAMEkRkhTQAAAABJRU5ErkJggg==',
+    dataUrl:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAE0lEQVR4nGL5//8/AwMDEwMYAAAAAP//aYxtrAAAAAZJREFUAwAkMAMEkRkhTQAAAABJRU5ErkJggg==',
     path: path.join(fixturesPath, 'assets', '2x2.jpg'),
     height: 2,
     width: 2
   };
   const image3x3 = {
-    dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAABCWlDQ1BfAAB4nJWQsUrDUBSGv6oggqCDg4PDHVyVakEcnKoQXGOE6pbEGIUkDUlKVxdxFsRZxGfQBxFdXPoIDuLsfxswXTr0XM49H+f+nPtzoDVCsdCGNKsK1+ma3tm5WRzR0hmHH5Y500Oq389a+77F7LF0EZWh6rfSK/S5Rh6J1+Kae5aDmhPLwyqvxDeWC889FD+IV+MJDiY4zAurfxEfpMkgbHyzHGWnJ6r7yg1KXBy6GN0+KQMq8ZBr1SvRLttKg0eh90z6SyKsZVOP7D9p1A/M3ze94BHe7mD9q+ltPsPKLbx+NL1mh7lf+P/bmet0png2Y88OfZ2YRE4Mx3IVyqX12maHvT9v1kU+i+h9qQAAAA9JREFUeJxiYkACTDg5AAAAAP//rSd/1QAAAAZJREFUAwAAwwAHu+/W1AAAAABJRU5ErkJggg==',
+    dataUrl:
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAMAAAADCAYAAABWKLW/AAABCWlDQ1BfAAB4nJWQsUrDUBSGv6oggqCDg4PDHVyVakEcnKoQXGOE6pbEGIUkDUlKVxdxFsRZxGfQBxFdXPoIDuLsfxswXTr0XM49H+f+nPtzoDVCsdCGNKsK1+ma3tm5WRzR0hmHH5Y500Oq389a+77F7LF0EZWh6rfSK/S5Rh6J1+Kae5aDmhPLwyqvxDeWC889FD+IV+MJDiY4zAurfxEfpMkgbHyzHGWnJ6r7yg1KXBy6GN0+KQMq8ZBr1SvRLttKg0eh90z6SyKsZVOP7D9p1A/M3ze94BHe7mD9q+ltPsPKLbx+NL1mh7lf+P/bmet0png2Y88OfZ2YRE4Mx3IVyqX12maHvT9v1kU+i+h9qQAAAA9JREFUeJxiYkACTDg5AAAAAP//rSd/1QAAAAZJREFUAwAAwwAHu+/W1AAAAABJRU5ErkJggg==',
     path: path.join(fixturesPath, 'assets', '3x3.png'),
     height: 3,
     width: 3
   };
 
-  const dataUrlImages = [
-    image1x1,
-    image2x2,
-    image3x3
-  ];
+  const dataUrlImages = [image1x1, image2x2, image3x3];
 
   ifdescribe(process.platform === 'darwin')('isMacTemplateImage state', () => {
     describe('with properties', () => {
@@ -86,13 +85,10 @@ describe('nativeImage module', () => {
       expect(empty.toDataURL()).to.equal('data:image/png;base64,');
       expect(empty.toDataURL({ scaleFactor: 2.0 })).to.equal('data:image/png;base64,');
       expect(empty.getSize()).to.deep.equal({ width: 0, height: 0 });
-      await expectDeprecationMessages(
-        () => {
-          expect(empty.getBitmap()).to.be.empty();
-          expect(empty.getBitmap({ scaleFactor: 2.0 })).to.be.empty();
-        },
-        'getBitmap() is deprecated, use toBitmap() instead.'
-      );
+      await expectDeprecationMessages(() => {
+        expect(empty.getBitmap()).to.be.empty();
+        expect(empty.getBitmap({ scaleFactor: 2.0 })).to.be.empty();
+      }, 'getBitmap() is deprecated, use toBitmap() instead.');
       expect(empty.toBitmap()).to.be.empty();
       expect(empty.toBitmap({ scaleFactor: 2.0 })).to.be.empty();
       expect(empty.toJPEG(100)).to.be.empty();
@@ -122,10 +118,14 @@ describe('nativeImage module', () => {
 
     it('throws on invalid arguments', () => {
       expect(() => nativeImage.createFromBitmap(null as any, {} as any)).to.throw('buffer must be a node Buffer');
-      expect(() => nativeImage.createFromBitmap([12, 14, 124, 12] as any, {} as any)).to.throw('buffer must be a node Buffer');
+      expect(() => nativeImage.createFromBitmap([12, 14, 124, 12] as any, {} as any)).to.throw(
+        'buffer must be a node Buffer'
+      );
       expect(() => nativeImage.createFromBitmap(Buffer.from([]), {} as any)).to.throw('width is required');
       expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1 } as any)).to.throw('height is required');
-      expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1, height: 1 })).to.throw('invalid buffer size');
+      expect(() => nativeImage.createFromBitmap(Buffer.from([]), { width: 1, height: 1 })).to.throw(
+        'invalid buffer size'
+      );
     });
   });
 
@@ -149,27 +149,22 @@ describe('nativeImage module', () => {
       const imageC = nativeImage.createFromBuffer(imageA.toJPEG(100));
       expect(imageC.getSize()).to.deep.equal({ width: 538, height: 190 });
 
-      const imageD = nativeImage.createFromBuffer(imageA.toBitmap(),
-        { width: 538, height: 190 });
+      const imageD = nativeImage.createFromBuffer(imageA.toBitmap(), { width: 538, height: 190 });
       expect(imageD.getSize()).to.deep.equal({ width: 538, height: 190 });
 
-      const imageE = nativeImage.createFromBuffer(imageA.toBitmap(),
-        { width: 100, height: 200 });
+      const imageE = nativeImage.createFromBuffer(imageA.toBitmap(), { width: 100, height: 200 });
       expect(imageE.getSize()).to.deep.equal({ width: 100, height: 200 });
 
       const imageF = nativeImage.createFromBuffer(imageA.toBitmap());
       expect(imageF.isEmpty()).to.be.true();
 
-      const imageG = nativeImage.createFromBuffer(imageA.toPNG(),
-        { width: 100, height: 200 });
+      const imageG = nativeImage.createFromBuffer(imageA.toPNG(), { width: 100, height: 200 });
       expect(imageG.getSize()).to.deep.equal({ width: 538, height: 190 });
 
-      const imageH = nativeImage.createFromBuffer(imageA.toJPEG(100),
-        { width: 100, height: 200 });
+      const imageH = nativeImage.createFromBuffer(imageA.toJPEG(100), { width: 100, height: 200 });
       expect(imageH.getSize()).to.deep.equal({ width: 538, height: 190 });
 
-      const imageI = nativeImage.createFromBuffer(imageA.toBitmap(),
-        { width: 538, height: 190, scaleFactor: 2.0 });
+      const imageI = nativeImage.createFromBuffer(imageA.toBitmap(), { width: 538, height: 190, scaleFactor: 2.0 });
       expect(imageI.getSize()).to.deep.equal({ width: 269, height: 95 });
     });
 
@@ -186,14 +181,12 @@ describe('nativeImage module', () => {
 
     it('returns an image created from the given string', () => {
       for (const imageData of dataUrlImages) {
-        const imageFromPath = nativeImage.createFromBuffer(
-          nativeImage.createFromPath(imageData.path).toPNG());
+        const imageFromPath = nativeImage.createFromBuffer(nativeImage.createFromPath(imageData.path).toPNG());
         const imageFromDataUrl = nativeImage.createFromDataURL(imageData.dataUrl!);
 
         expect(imageFromDataUrl.isEmpty()).to.be.false();
         expect(imageFromDataUrl.getSize()).to.deep.equal(imageFromPath.getSize());
-        expect(imageFromDataUrl.toBitmap()).to.satisfy(
-          (bitmap: any) => imageFromPath.toBitmap().equals(bitmap));
+        expect(imageFromDataUrl.toBitmap()).to.satisfy((bitmap: any) => imageFromPath.toBitmap().equals(bitmap));
         expect(imageFromDataUrl.toDataURL()).to.equal(imageFromPath.toDataURL());
       }
     });
@@ -202,8 +195,7 @@ describe('nativeImage module', () => {
   describe('toDataURL()', () => {
     it('returns a PNG data URL', () => {
       for (const imageData of dataUrlImages) {
-        const imageFromPath = nativeImage.createFromBuffer(
-          nativeImage.createFromPath(imageData.path!).toPNG());
+        const imageFromPath = nativeImage.createFromBuffer(nativeImage.createFromPath(imageData.path!).toPNG());
 
         const scaleFactors = [1.0, 2.0];
         for (const scaleFactor of scaleFactors) {
@@ -221,12 +213,10 @@ describe('nativeImage module', () => {
         height: image.getSize().height,
         scaleFactor: 2.0
       });
-      expect(imageOne.getSize()).to.deep.equal(
-        { width: imageData.width / 2, height: imageData.height / 2 });
+      expect(imageOne.getSize()).to.deep.equal({ width: imageData.width / 2, height: imageData.height / 2 });
 
       const imageTwo = nativeImage.createFromDataURL(imageOne.toDataURL());
-      expect(imageTwo.getSize()).to.deep.equal(
-        { width: imageData.width, height: imageData.height });
+      expect(imageTwo.getSize()).to.deep.equal({ width: imageData.width, height: imageData.height });
 
       expect(imageOne.toBitmap().equals(imageTwo.toBitmap())).to.be.true();
     });
@@ -236,12 +226,10 @@ describe('nativeImage module', () => {
       const image = nativeImage.createFromPath(imageData.path);
       const expectedSize = { width: imageData.width, height: imageData.height };
 
-      const imageFromDataUrlOne = nativeImage.createFromDataURL(
-        image.toDataURL({ scaleFactor: 1.0 }));
+      const imageFromDataUrlOne = nativeImage.createFromDataURL(image.toDataURL({ scaleFactor: 1.0 }));
       expect(imageFromDataUrlOne.getSize()).to.deep.equal(expectedSize);
 
-      const imageFromDataUrlTwo = nativeImage.createFromDataURL(
-        image.toDataURL({ scaleFactor: 2.0 }));
+      const imageFromDataUrlTwo = nativeImage.createFromDataURL(image.toDataURL({ scaleFactor: 2.0 }));
       expect(imageFromDataUrlTwo.getSize()).to.deep.equal(expectedSize);
     });
   });
@@ -256,12 +244,10 @@ describe('nativeImage module', () => {
         height: imageA.getSize().height,
         scaleFactor: 2.0
       });
-      expect(imageB.getSize()).to.deep.equal(
-        { width: imageData.width / 2, height: imageData.height / 2 });
+      expect(imageB.getSize()).to.deep.equal({ width: imageData.width / 2, height: imageData.height / 2 });
 
       const imageC = nativeImage.createFromBuffer(imageB.toPNG());
-      expect(imageC.getSize()).to.deep.equal(
-        { width: imageData.width, height: imageData.height });
+      expect(imageC.getSize()).to.deep.equal({ width: imageData.width, height: imageData.height });
 
       expect(imageB.toBitmap().equals(imageC.toBitmap())).to.be.true();
     });
@@ -270,15 +256,11 @@ describe('nativeImage module', () => {
       const imageData = imageLogo;
       const image = nativeImage.createFromPath(imageData.path);
 
-      const imageFromBufferOne = nativeImage.createFromBuffer(
-        image.toPNG({ scaleFactor: 1.0 }));
-      expect(imageFromBufferOne.getSize()).to.deep.equal(
-        { width: imageData.width, height: imageData.height });
+      const imageFromBufferOne = nativeImage.createFromBuffer(image.toPNG({ scaleFactor: 1.0 }));
+      expect(imageFromBufferOne.getSize()).to.deep.equal({ width: imageData.width, height: imageData.height });
 
-      const imageFromBufferTwo = nativeImage.createFromBuffer(
-        image.toPNG({ scaleFactor: 2.0 }), { scaleFactor: 2.0 });
-      expect(imageFromBufferTwo.getSize()).to.deep.equal(
-        { width: imageData.width / 2, height: imageData.height / 2 });
+      const imageFromBufferTwo = nativeImage.createFromBuffer(image.toPNG({ scaleFactor: 2.0 }), { scaleFactor: 2.0 });
+      expect(imageFromBufferTwo.getSize()).to.deep.equal({ width: imageData.width / 2, height: imageData.height / 2 });
     });
   });
 
@@ -320,7 +302,7 @@ describe('nativeImage module', () => {
       expect(nsimage).to.have.lengthOf(8);
 
       // If all bytes are null, that's Bad
-      const allBytesAreNotNull = nsimage.reduce((acc, x) => acc || (x !== 0), false);
+      const allBytesAreNotNull = nsimage.reduce((acc, x) => acc || x !== 0, false);
       expect(allBytesAreNotNull);
     });
 
@@ -368,10 +350,22 @@ describe('nativeImage module', () => {
         [{ width: 600 }, { width: 600, height: 212 }],
         [{ height: 95 }, { width: 269, height: 95 }],
         [{ height: 200 }, { width: 566, height: 200 }],
-        [{ width: 80, height: 65 }, { width: 80, height: 65 }],
-        [{ width: 600, height: 200 }, { width: 600, height: 200 }],
-        [{ width: 0, height: 0 }, { width: 0, height: 0 }],
-        [{ width: -1, height: -1 }, { width: 0, height: 0 }]
+        [
+          { width: 80, height: 65 },
+          { width: 80, height: 65 }
+        ],
+        [
+          { width: 600, height: 200 },
+          { width: 600, height: 200 }
+        ],
+        [
+          { width: 0, height: 0 },
+          { width: 0, height: 0 }
+        ],
+        [
+          { width: -1, height: -1 },
+          { width: 0, height: 0 }
+        ]
       ])) {
         const actualSize = image.resize(resizeTo).getSize();
         expect(actualSize).to.deep.equal(expectedSize);
@@ -445,18 +439,16 @@ describe('nativeImage module', () => {
     it('throws when invalid size is passed', async () => {
       const badSize = { width: -1, height: -1 };
 
-      await expect(
-        nativeImage.createThumbnailFromPath('path', badSize)
-      ).to.eventually.be.rejectedWith('size must not be empty');
+      await expect(nativeImage.createThumbnailFromPath('path', badSize)).to.eventually.be.rejectedWith(
+        'size must not be empty'
+      );
     });
 
     it('throws when a bad path is passed', async () => {
       const badPath = process.platform === 'win32' ? '\\hey\\hi\\hello' : '/hey/hi/hello';
       const goodSize = { width: 100, height: 100 };
 
-      await expect(
-        nativeImage.createThumbnailFromPath(badPath, goodSize)
-      ).to.eventually.be.rejected();
+      await expect(nativeImage.createThumbnailFromPath(badPath, goodSize)).to.eventually.be.rejected();
     });
 
     it('returns native image given valid params', async () => {
@@ -490,12 +482,16 @@ describe('nativeImage module', () => {
       expect(result.getSize()).to.deep.equal(maxSize);
     });
 
-    itremote('works in the renderer', async (path: string) => {
-      const { nativeImage } = require('electron');
-      const goodSize = { width: 100, height: 100 };
-      const result = await nativeImage.createThumbnailFromPath(path, goodSize);
-      expect(result.isEmpty()).to.equal(false);
-    }, [path.join(fixturesPath, 'assets', 'logo.png')]);
+    itremote(
+      'works in the renderer',
+      async (path: string) => {
+        const { nativeImage } = require('electron');
+        const goodSize = { width: 100, height: 100 };
+        const result = await nativeImage.createThumbnailFromPath(path, goodSize);
+        expect(result.isEmpty()).to.equal(false);
+      },
+      [path.join(fixturesPath, 'assets', 'logo.png')]
+    );
   });
 
   describe('addRepresentation()', () => {

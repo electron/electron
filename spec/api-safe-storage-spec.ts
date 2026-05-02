@@ -196,12 +196,12 @@ describe('safeStorage module', () => {
     it('multiple concurrent async operations work correctly', async () => {
       const plaintexts = ['text1', 'text2', 'text3', 'text4', 'text5'];
 
-      const encryptPromises = plaintexts.map(pt => safeStorage.encryptStringAsync(pt));
+      const encryptPromises = plaintexts.map((pt) => safeStorage.encryptStringAsync(pt));
       const encryptedBuffers = await Promise.all(encryptPromises);
 
-      const decryptPromises = encryptedBuffers.map(buf => safeStorage.decryptStringAsync(buf));
+      const decryptPromises = encryptedBuffers.map((buf) => safeStorage.decryptStringAsync(buf));
       const decryptResults = await Promise.all(decryptPromises);
-      const decryptedTexts = decryptResults.map(result => result.result);
+      const decryptedTexts = decryptResults.map((result) => result.result);
 
       expect(decryptedTexts).to.deep.equal(plaintexts);
     });
@@ -214,8 +214,12 @@ describe('safeStorage module', () => {
       const encryptAppPath = path.join(fixturesPath, 'api', 'safe-storage', 'encrypt-app');
       const encryptAppProcess = cp.spawn(process.execPath, [encryptAppPath]);
       let stdout: string = '';
-      encryptAppProcess.stderr.on('data', data => { stdout += data; });
-      encryptAppProcess.stderr.on('data', data => { stdout += data; });
+      encryptAppProcess.stderr.on('data', (data) => {
+        stdout += data;
+      });
+      encryptAppProcess.stderr.on('data', (data) => {
+        stdout += data;
+      });
 
       try {
         await once(encryptAppProcess, 'exit');
@@ -224,8 +228,12 @@ describe('safeStorage module', () => {
         const relaunchedAppProcess = cp.spawn(process.execPath, [appPath]);
 
         let output = '';
-        relaunchedAppProcess.stdout.on('data', data => { output += data; });
-        relaunchedAppProcess.stderr.on('data', data => { output += data; });
+        relaunchedAppProcess.stdout.on('data', (data) => {
+          output += data;
+        });
+        relaunchedAppProcess.stderr.on('data', (data) => {
+          output += data;
+        });
 
         const [code] = await once(relaunchedAppProcess, 'exit');
 

@@ -1,8 +1,11 @@
 import { BrowserWindow } from 'electron/main';
 
-const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
+const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable } = process._linkedBinding(
+  'electron_browser_desktop_capturer'
+);
 
-const deepEqual = (a: ElectronInternal.GetSourcesOptions, b: ElectronInternal.GetSourcesOptions) => JSON.stringify(a) === JSON.stringify(b);
+const deepEqual = (a: ElectronInternal.GetSourcesOptions, b: ElectronInternal.GetSourcesOptions) =>
+  JSON.stringify(a) === JSON.stringify(b);
 
 let currentlyRunning: {
   options: ElectronInternal.GetSourcesOptions;
@@ -10,13 +13,13 @@ let currentlyRunning: {
 }[] = [];
 
 // |options.types| can't be empty and must be an array
-function isValid (options: Electron.SourcesOptions) {
+function isValid(options: Electron.SourcesOptions) {
   return Array.isArray(options?.types);
 }
 
 export { isDisplayMediaSystemPickerAvailable };
 
-export async function getSources (args: Electron.SourcesOptions) {
+export async function getSources(args: Electron.SourcesOptions) {
   if (!isValid(args)) throw new Error('Invalid options');
 
   const resizableValues = new Map();
@@ -64,15 +67,16 @@ export async function getSources (args: Electron.SourcesOptions) {
             if (resizableValues.has(win.id)) {
               win.resizable = resizableValues.get(win.id);
             }
-          };
+          }
         }
       }
       // Remove from currentlyRunning once we resolve or reject
-      currentlyRunning = currentlyRunning.filter(running => running.options !== options);
+      currentlyRunning = currentlyRunning.filter((running) => running.options !== options);
     };
 
     capturer._onerror = (error: string) => {
       stopRunning();
+      // eslint-disable-next-line prefer-promise-reject-errors
       reject(error);
     };
 

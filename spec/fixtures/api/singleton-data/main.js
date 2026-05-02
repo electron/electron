@@ -22,9 +22,7 @@ if (app.commandLine.hasSwitch('data-content')) {
   }
 }
 
-const gotTheLock = sendAdditionalData
-  ? app.requestSingleInstanceLock(obj)
-  : app.requestSingleInstanceLock();
+const gotTheLock = sendAdditionalData ? app.requestSingleInstanceLock(obj) : app.requestSingleInstanceLock();
 
 app.on('second-instance', (event, args, workingDirectory, data) => {
   setImmediate(() => {

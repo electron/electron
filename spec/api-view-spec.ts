@@ -108,7 +108,9 @@ describe('View', () => {
     it('emits bounds-changed when bounds mutate', () => {
       const v = new View();
       let called = 0;
-      v.once('bounds-changed', () => { called++; });
+      v.once('bounds-changed', () => {
+        called++;
+      });
       v.setBounds({ x: 5, y: 6, width: 7, height: 8 });
       expect(called).to.equal(1);
     });
@@ -136,11 +138,14 @@ describe('View', () => {
 
     it('can set bounds with animation', (done) => {
       const v = new View();
-      v.setBounds({ x: 0, y: 0, width: 100, height: 100 }, {
-        animate: {
-          duration: 300
+      v.setBounds(
+        { x: 0, y: 0, width: 100, height: 100 },
+        {
+          animate: {
+            duration: 300
+          }
         }
-      });
+      );
       setTimeout(() => {
         expect(v.getBounds()).to.deep.equal({ x: 0, y: 0, width: 100, height: 100 });
         done();

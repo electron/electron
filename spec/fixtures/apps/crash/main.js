@@ -125,7 +125,11 @@ app.whenReady().then(() => {
     const child = childProcess.fork(crashPath, ['--enable-logging'], { silent: true });
     child.send('message');
     child.on('message', (forkedArgs) => {
-      if (JSON.stringify(forkedArgs) !== JSON.stringify(child.spawnargs)) { exitcode = 1; } else { exitcode = 0; }
+      if (JSON.stringify(forkedArgs) !== JSON.stringify(child.spawnargs)) {
+        exitcode = 1;
+      } else {
+        exitcode = 0;
+      }
       process.exit(exitcode);
     });
   } else {
