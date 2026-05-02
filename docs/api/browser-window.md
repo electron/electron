@@ -1382,17 +1382,16 @@ Sets whether the window should have a shadow.
 
 Returns `boolean` - Whether the window has a shadow.
 
-#### `win.setOpacity(opacity)` _Windows_ _macOS_
+#### `win.setOpacity(opacity)`
 
 * `opacity` number - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
-Sets the opacity of the window. On Linux, does nothing. Out of bound number
-values are clamped to the \[0, 1] range.
+Sets the opacity of the window. Out of bound number values are clamped to the
+\[0, 1] range.
 
 #### `win.getOpacity()`
 
-Returns `number` - between 0.0 (fully transparent) and 1.0 (fully opaque). On
-Linux, always returns 1.
+Returns `number` - between 0.0 (fully transparent) and 1.0 (fully opaque).
 
 #### `win.setShape(rects)` _Windows_ _Linux_ _Experimental_
 

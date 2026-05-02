@@ -212,12 +212,20 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
   UpdateFrameHints();
 }
 
+void ElectronDesktopWindowTreeHostLinux::SetOpacity(float opacity) {
+  views::DesktopWindowTreeHostLinux::SetOpacity(opacity);
+  UpdateFrameHints();
+}
+
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
+  const bool is_non_opaque = native_window_view_->IsTranslucent() ||
+                             native_window_view_->GetOpacity() < 1.0;
+
   auto* fvl = native_window_view_->GetFrameViewLinux();
   if (!fvl || !fvl->ShouldDrawRestoredFrameShadow()) {
     platform_window()->SetInputRegion(std::nullopt);
     if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {
-      if (native_window_view_->IsTranslucent()) {
+      if (is_non_opaque) {
         platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
       } else {
         gfx::Size size = GetWidget()->GetWindowBoundsInScreen().size();
@@ -231,9 +239,7 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
   }
 
   views::DesktopWindowTreeHostLinux::UpdateFrameHints();
-  // Clear the opaque region for translucent windows.
-  if (native_window_view_->IsTranslucent() &&
-      views::Widget::IsWindowCompositingSupported()) {
+  if (is_non_opaque && views::Widget::IsWindowCompositingSupported()) {
     platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
   }
   SizeConstraintsChanged();
