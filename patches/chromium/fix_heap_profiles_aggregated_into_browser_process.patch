@@ -1,0 +1,56 @@
+From 20c4f8045ec1dda374cb1d5a57be3c4ba4fe3211 Mon Sep 17 00:00:00 2001
+From: Kevin Wang <wangpengqiang@bytedance.com>
+Date: Mon, 4 Aug 2025 06:06:04 -0700
+Subject: [PATCH] Fix all heap profiles aggregated into browser process for the
+ memory-infra
+
+Firstly, Obtain heap profile using memory-infra, and find the heap
+profiles of all processes were merged into browser process.
+It is difficult to analyze the heap profile of the specified process.
+Secondly, Using TRACE_EVENT_API_ADD_TRACE_EVENT_WITH_PROCESS_ID
+to add trace event into json file,
+It contains the TRACE_EVENT_FLAG_HAS_PROCESS_ID flag,
+therefore the pid of heap profile should be written instead of browser pid.
+
+Author: Kevin Wang <wangpengqiang@bytedance.com>
+
+Bug: 434977624
+Change-Id: Idf419dde743e64dced49c789c89df53e3183d07d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/6801089
+Reviewed-by: Mikhail Khokhlov <khokhlov@google.com>
+Reviewed-by: Peng Zhou <zhoupeng.1996@bytedance.com>
+Commit-Queue: Peng Zhou <zhoupeng.1996@bytedance.com>
+Cr-Commit-Position: refs/heads/main@{#1496278}
+---
+ base/trace_event/trace_log.cc | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/base/trace_event/trace_log.cc b/base/trace_event/trace_log.cc
+index 632fd48eb0d89..910972916d7af 100644
+--- a/base/trace_event/trace_log.cc
++++ b/base/trace_event/trace_log.cc
+@@ -173,6 +173,11 @@ void OnAddLegacyTraceEvent(TraceEvent* trace_event) {
+       default:
+         break;
+     }
++    if (trace_event->flags() & TRACE_EVENT_FLAG_HAS_PROCESS_ID) {
++      legacy_event->set_pid_override(
++          trace_event->thread_id().truncate_to_int32_for_display_only());
++      legacy_event->set_tid_override(static_cast<int32_t>(-1));
++    }
+   };
+ 
+   auto flags = trace_event->flags();
+@@ -198,7 +203,8 @@ void OnAddLegacyTraceEvent(TraceEvent* trace_event) {
+     }
+   }
+   if (trace_event->thread_id() != kInvalidThreadId &&
+-      trace_event->thread_id() != base::PlatformThread::CurrentId()) {
++      trace_event->thread_id() != base::PlatformThread::CurrentId() &&
++      !(trace_event->flags() & TRACE_EVENT_FLAG_HAS_PROCESS_ID)) {
+     PERFETTO_INTERNAL_LEGACY_EVENT_ON_TRACK(
+         phase, category, trace_event->name(),
+         perfetto::ThreadTrack::ForThread(trace_event->thread_id().raw()),
+-- 
+2.51.0
+
