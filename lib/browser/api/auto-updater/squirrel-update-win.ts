@@ -34,8 +34,12 @@ const spawnUpdate = async function (args: string[], options: { detached: boolean
     let stdout = '';
     let stderr = '';
 
-    spawnedProcess.stdout.on('data', (data) => { stdout += data; });
-    spawnedProcess.stderr.on('data', (data) => { stderr += data; });
+    spawnedProcess.stdout.on('data', (data) => {
+      stdout += data;
+    });
+    spawnedProcess.stderr.on('data', (data) => {
+      stderr += data;
+    });
 
     spawnedProcess.on('error', (error) => {
       spawnedProcess = undefined;
@@ -59,12 +63,12 @@ const spawnUpdate = async function (args: string[], options: { detached: boolean
 };
 
 // Start an instance of the installed app.
-export function processStart () {
+export function processStart() {
   spawnUpdate(['--processStartAndWait', exeName], { detached: true });
 }
 
 // Download the releases specified by the URL and write new results to stdout.
-export async function checkForUpdate (updateURL: string): Promise<any> {
+export async function checkForUpdate(updateURL: string): Promise<any> {
   const stdout = await spawnUpdate(['--checkForUpdate', updateURL], { detached: false });
   try {
     // Last line of output is the JSON details about the releases
@@ -76,12 +80,12 @@ export async function checkForUpdate (updateURL: string): Promise<any> {
 }
 
 // Update the application to the latest remote version specified by URL.
-export async function update (updateURL: string): Promise<void> {
+export async function update(updateURL: string): Promise<void> {
   await spawnUpdate(['--update', updateURL], { detached: false });
 }
 
 // Is the Update.exe installed with the current application?
-export function supported () {
+export function supported() {
   try {
     fs.accessSync(updateExe, fs.constants.R_OK);
     return true;

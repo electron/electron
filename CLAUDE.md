@@ -1,5 +1,14 @@
 # Electron Development Guide
 
+## Running node_modules binaries
+
+**Never use `npx`.** It is considered dangerous because it can silently fetch and execute arbitrary packages from the registry. Always run binaries through one of these safer mechanisms instead:
+
+1. **Preferred** — spawn the executable directly from `node_modules/.bin/<tool>` (or the platform equivalent on Windows). This is what `script/lint.js` does for `oxlint`.
+2. **Acceptable** — invoke via `yarn <tool>` or `yarn run <tool>`, which resolves to the locally installed version without the registry fallback that `npx` performs.
+
+This rule applies to shell commands you run yourself and to any scripts you author or modify in this repo.
+
 ## Project Overview
 
 Electron is a framework for building cross-platform desktop applications using web technologies. It embeds Chromium for rendering and Node.js for backend functionality.
@@ -182,12 +191,13 @@ PR bodies must always include a `Notes:` section as the **last line** of the bod
 ## Code Style
 
 **C++:** Follows Chromium style, enforced by clang-format
-**TypeScript/JavaScript:** ESLint configuration in `.eslintrc.json`
+**TypeScript/JavaScript:** [oxlint](https://oxc.rs/docs/guide/usage/linter) configuration in `.oxlintrc.json`
 
 **Linting:**
 
 ```bash
 npm run lint              # Run all linters
+npm run lint:js           # Run oxlint over all JS/TS/MJS sources
 npm run lint:clang-format # C++ formatting
 ```
 

@@ -30,24 +30,34 @@ export const windowSetup = (isWebView: boolean, isHiddenPage: boolean) => {
     let cachedVisibilityState = isHiddenPage ? 'hidden' : 'visible';
 
     // Subscribe to visibilityState changes.
-    ipcRendererInternal.on(IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE, function (_event, visibilityState: DocumentVisibilityState) {
-      if (cachedVisibilityState !== visibilityState) {
-        cachedVisibilityState = visibilityState;
-        document.dispatchEvent(new Event('visibilitychange'));
+    ipcRendererInternal.on(
+      IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE,
+      function (_event, visibilityState: DocumentVisibilityState) {
+        if (cachedVisibilityState !== visibilityState) {
+          cachedVisibilityState = visibilityState;
+          document.dispatchEvent(new Event('visibilitychange'));
+        }
       }
-    });
+    );
 
     // Make document.hidden and document.visibilityState return the correct value.
     const getDocumentHidden = () => cachedVisibilityState !== 'visible';
     Object.defineProperty(document, 'hidden', {
       get: getDocumentHidden
     });
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['document', 'hidden'], getDocumentHidden);
+    if (contextIsolationEnabled) {
+      internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['document', 'hidden'], getDocumentHidden);
+    }
 
     const getDocumentVisibilityState = () => cachedVisibilityState;
     Object.defineProperty(document, 'visibilityState', {
       get: getDocumentVisibilityState
     });
-    if (contextIsolationEnabled) internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(['document', 'visibilityState'], getDocumentVisibilityState);
+    if (contextIsolationEnabled) {
+      internalContextBridge.overrideGlobalPropertyFromIsolatedWorld(
+        ['document', 'visibilityState'],
+        getDocumentVisibilityState
+      );
+    }
   }
 };

@@ -9,12 +9,10 @@ export enum HexColors {
   PURPLE = '#6a0dad',
   RED = '#ff0000',
   BLUE = '#0000ff',
-  WHITE = '#ffffff',
+  WHITE = '#ffffff'
 }
 
-function hexToRgba (
-  hexColor: string
-): [number, number, number, number] | undefined {
+function hexToRgba(hexColor: string): [number, number, number, number] | undefined {
   const match = hexColor.match(/^#([0-9a-fA-F]{6,8})$/);
   if (!match) return;
 
@@ -27,7 +25,7 @@ function hexToRgba (
   ];
 }
 
-function formatHexByte (val: number): string {
+function formatHexByte(val: number): string {
   const str = val.toString(16);
   return str.length === 2 ? str : `0${str}`;
 }
@@ -35,10 +33,7 @@ function formatHexByte (val: number): string {
 /**
  * Get the hex color at the given pixel coordinate in an image.
  */
-function getPixelColor (
-  image: Electron.NativeImage,
-  point: Electron.Point
-): string {
+function getPixelColor(image: Electron.NativeImage, point: Electron.Point): string {
   // image.crop crashes if point is fractional, so round to prevent that crash
   const pixel = image.crop({
     x: Math.round(point.x),
@@ -53,14 +48,12 @@ function getPixelColor (
 }
 
 /** Calculate euclidean distance between colors. */
-function colorDistance (hexColorA: string, hexColorB: string): number {
+function colorDistance(hexColorA: string, hexColorB: string): number {
   const colorA = hexToRgba(hexColorA);
   const colorB = hexToRgba(hexColorB);
   if (!colorA || !colorB) return -1;
   return Math.sqrt(
-    Math.pow(colorB[0] - colorA[0], 2) +
-      Math.pow(colorB[1] - colorA[1], 2) +
-      Math.pow(colorB[2] - colorA[2], 2)
+    Math.pow(colorB[0] - colorA[0], 2) + Math.pow(colorB[1] - colorA[1], 2) + Math.pow(colorB[2] - colorA[2], 2)
   );
 }
 
@@ -68,16 +61,12 @@ function colorDistance (hexColorA: string, hexColorB: string): number {
  * Determine if colors are similar based on distance. This can be useful when
  * comparing colors which may differ based on lossy compression.
  */
-function areColorsSimilar (
-  hexColorA: string,
-  hexColorB: string,
-  distanceThreshold = 90
-): boolean {
+function areColorsSimilar(hexColorA: string, hexColorB: string, distanceThreshold = 90): boolean {
   const distance = colorDistance(hexColorA, hexColorB);
   return distance <= distanceThreshold;
 }
 
-function displayCenter (display: Electron.Display): Electron.Point {
+function displayCenter(display: Electron.Display): Electron.Point {
   return {
     x: display.size.width / 2,
     y: display.size.height / 2
@@ -85,7 +74,7 @@ function displayCenter (display: Electron.Display): Electron.Point {
 }
 
 /** Resolve when approx. one frame has passed (30FPS) */
-export async function nextFrameTime (): Promise<void> {
+export async function nextFrameTime(): Promise<void> {
   return await new Promise((resolve) => {
     setTimeout(resolve, 1000 / 30);
   });
@@ -103,42 +92,37 @@ export class ScreenCapture {
   /** Timeout to wait for expected color to match. */
   static TIMEOUT = 3000;
 
-  constructor (display?: Electron.Display) {
+  constructor(display?: Electron.Display) {
     this.display = display || screen.getPrimaryDisplay();
   }
 
-  public async expectColorAtCenterMatches (hexColor: string) {
+  public async expectColorAtCenterMatches(hexColor: string) {
     return this._expectImpl(displayCenter(this.display), hexColor, true);
   }
 
-  public async expectColorAtCenterDoesNotMatch (hexColor: string) {
+  public async expectColorAtCenterDoesNotMatch(hexColor: string) {
     return this._expectImpl(displayCenter(this.display), hexColor, false);
   }
 
-  public async expectColorAtPointOnDisplayMatches (
+  public async expectColorAtPointOnDisplayMatches(
     hexColor: string,
     findPoint: (displaySize: Electron.Size) => Electron.Point
   ) {
     return this._expectImpl(findPoint(this.display.size), hexColor, true);
   }
 
-  public async takeScreenshot (filePrefix: string) {
+  public async takeScreenshot(filePrefix: string) {
     const frame = await this.captureFrame();
-    return await createArtifactWithRandomId(
-      (id) => `${filePrefix}-${id}.png`,
-      frame.toPNG()
-    );
+    return await createArtifactWithRandomId((id) => `${filePrefix}-${id}.png`, frame.toPNG());
   }
 
-  private async captureFrame (): Promise<NativeImage> {
+  private async captureFrame(): Promise<NativeImage> {
     const sources = await desktopCapturer.getSources({
       types: ['screen'],
       thumbnailSize: this.display.size
     });
 
-    const captureSource = sources.find(
-      (source) => source.display_id === this.display.id.toString()
-    );
+    const captureSource = sources.find((source) => source.display_id === this.display.id.toString());
     if (captureSource === undefined) {
       const displayIds = sources.map((source) => source.display_id).join(', ');
       throw new Error(
@@ -153,11 +137,7 @@ export class ScreenCapture {
     return captureSource.thumbnail;
   }
 
-  private async _expectImpl (
-    point: Electron.Point,
-    expectedColor: string,
-    matchIsExpected: boolean
-  ) {
+  private async _expectImpl(point: Electron.Point, expectedColor: string, matchIsExpected: boolean) {
     let frame: Electron.NativeImage;
     let actualColor: string;
     let gotExpectedResult: boolean = false;
@@ -184,10 +164,7 @@ export class ScreenCapture {
       }
 
       // Save the image as an artifact for better debugging
-      const artifactName = await createArtifactWithRandomId(
-        (id) => `color-mismatch-${id}.png`,
-        frame.toPNG()
-      );
+      const artifactName = await createArtifactWithRandomId((id) => `color-mismatch-${id}.png`, frame.toPNG());
 
       throw new AssertionError(
         `Expected color at (${point.x}, ${point.y}) to ${

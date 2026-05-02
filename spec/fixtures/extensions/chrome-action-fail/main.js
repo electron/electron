@@ -5,18 +5,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 const testMap = {
-  isEnabled () {
-    chrome.runtime.sendMessage({ method: 'isEnabled' }, response => {
+  isEnabled() {
+    chrome.runtime.sendMessage({ method: 'isEnabled' }, (response) => {
       console.log(JSON.stringify(response));
     });
   },
-  setIcon () {
-    chrome.runtime.sendMessage({ method: 'setIcon' }, response => {
+  setIcon() {
+    chrome.runtime.sendMessage({ method: 'setIcon' }, (response) => {
       console.log(JSON.stringify(response));
     });
   },
-  getBadgeText () {
-    chrome.runtime.sendMessage({ method: 'getBadgeText' }, response => {
+  getBadgeText() {
+    chrome.runtime.sendMessage({ method: 'getBadgeText' }, (response) => {
       console.log(JSON.stringify(response));
     });
   }

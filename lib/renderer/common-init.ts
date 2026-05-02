@@ -43,6 +43,7 @@ webFrameInit();
 
 // Warn about security issues
 if (process.isMainFrame) {
-  const { securityWarnings } = require('@electron/internal/renderer/security-warnings') as typeof securityWarningsModule;
+  const { securityWarnings } =
+    require('@electron/internal/renderer/security-warnings') as typeof securityWarningsModule;
   securityWarnings(nodeIntegration);
 }

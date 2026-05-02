@@ -108,7 +108,9 @@ describe('View', () => {
     it('emits bounds-changed when bounds mutate', () => {
       const v = new View();
       let called = 0;
-      v.once('bounds-changed', () => { called++; });
+      v.once('bounds-changed', () => {
+        called++;
+      });
       v.setBounds({ x: 5, y: 6, width: 7, height: 8 });
       expect(called).to.equal(1);
     });

@@ -15,8 +15,12 @@ describe('safeStorage module', () => {
     const appProcess = cp.spawn(process.execPath, [appPath]);
 
     let output = '';
-    appProcess.stdout.on('data', data => { output += data; });
-    appProcess.stderr.on('data', data => { output += data; });
+    appProcess.stdout.on('data', (data) => {
+      output += data;
+    });
+    appProcess.stderr.on('data', (data) => {
+      output += data;
+    });
 
     const code = (await once(appProcess, 'exit'))[0] ?? 1;
 
@@ -101,8 +105,12 @@ describe('safeStorage module', () => {
       const encryptAppPath = path.join(fixturesPath, 'api', 'safe-storage', 'encrypt-app');
       const encryptAppProcess = cp.spawn(process.execPath, [encryptAppPath]);
       let stdout: string = '';
-      encryptAppProcess.stderr.on('data', data => { stdout += data; });
-      encryptAppProcess.stderr.on('data', data => { stdout += data; });
+      encryptAppProcess.stderr.on('data', (data) => {
+        stdout += data;
+      });
+      encryptAppProcess.stderr.on('data', (data) => {
+        stdout += data;
+      });
 
       try {
         await once(encryptAppProcess, 'exit');
@@ -111,8 +119,12 @@ describe('safeStorage module', () => {
         const relaunchedAppProcess = cp.spawn(process.execPath, [appPath]);
 
         let output = '';
-        relaunchedAppProcess.stdout.on('data', data => { output += data; });
-        relaunchedAppProcess.stderr.on('data', data => { output += data; });
+        relaunchedAppProcess.stdout.on('data', (data) => {
+          output += data;
+        });
+        relaunchedAppProcess.stderr.on('data', (data) => {
+          output += data;
+        });
 
         const [code] = await once(relaunchedAppProcess, 'exit');
 

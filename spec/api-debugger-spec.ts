@@ -53,7 +53,7 @@ describe('debugger module', () => {
       expect(w.webContents.debugger.isAttached()).to.be.false();
     });
 
-    it('doesn\'t disconnect an active devtools session', async () => {
+    it("doesn't disconnect an active devtools session", async () => {
       w.webContents.loadURL('about:blank');
       const detach = once(w.webContents.debugger, 'detach');
       w.webContents.debugger.attach();
@@ -108,15 +108,19 @@ describe('debugger module', () => {
     });
 
     it('fires message event', async () => {
-      const url = process.platform !== 'win32'
-        ? `file://${path.join(fixtures, 'pages', 'a.html')}`
-        : `file:///${path.join(fixtures, 'pages', 'a.html').replaceAll('\\', '/')}`;
+      const url =
+        process.platform !== 'win32'
+          ? `file://${path.join(fixtures, 'pages', 'a.html')}`
+          : `file:///${path.join(fixtures, 'pages', 'a.html').replaceAll('\\', '/')}`;
       w.webContents.loadURL(url);
       w.webContents.debugger.attach();
-      const message = emittedUntil(w.webContents.debugger, 'message',
-        (event: Electron.Event, method: string) => method === 'Console.messageAdded');
+      const message = emittedUntil(
+        w.webContents.debugger,
+        'message',
+        (event: Electron.Event, method: string) => method === 'Console.messageAdded'
+      );
       w.webContents.debugger.sendCommand('Console.enable');
-      const [,, params] = await message;
+      const [, , params] = await message;
       w.webContents.debugger.detach();
       expect(params.message.level).to.equal('log');
       expect(params.message.url).to.equal(url);
@@ -147,10 +151,18 @@ describe('debugger module', () => {
       // an error when calling `Network.getResponseBody`.
       w.webContents.debugger.attach();
       w.webContents.debugger.sendCommand('Network.enable');
-      const [,, { requestId }] = await emittedUntil(w.webContents.debugger, 'message', (_event: any, method: string, params: any) =>
-        method === 'Network.responseReceived' && params.response.url.startsWith('http://127.0.0.1'));
-      await emittedUntil(w.webContents.debugger, 'message', (_event: any, method: string, params: any) =>
-        method === 'Network.loadingFinished' && params.requestId === requestId);
+      const [, , { requestId }] = await emittedUntil(
+        w.webContents.debugger,
+        'message',
+        (_event: any, method: string, params: any) =>
+          method === 'Network.responseReceived' && params.response.url.startsWith('http://127.0.0.1')
+      );
+      await emittedUntil(
+        w.webContents.debugger,
+        'message',
+        (_event: any, method: string, params: any) =>
+          method === 'Network.loadingFinished' && params.requestId === requestId
+      );
       const { body } = await w.webContents.debugger.sendCommand('Network.getResponseBody', { requestId });
       expect(body).to.equal('\u0024');
     });
@@ -158,7 +170,7 @@ describe('debugger module', () => {
     it('does not crash for invalid unicode characters in message', async () => {
       w.webContents.debugger.attach();
 
-      const loadingFinished = new Promise<void>(resolve => {
+      const loadingFinished = new Promise<void>((resolve) => {
         w.webContents.debugger.on('message', (event, method) => {
           // loadingFinished indicates that page has been loaded and it did not
           // crash because of invalid UTF-8 data
@@ -267,17 +279,19 @@ describe('debugger module', () => {
       w.webContents.debugger.attach();
       let debuggerSessionId: string;
 
-      w.webContents.debugger.on('message', (event, ...args) => {
+      w.webContents.debugger.on('message', (_event, ...args) => {
         const [method, params, sessionId] = args;
         if (method === 'Target.targetCreated') {
-          w.webContents.debugger.sendCommand('Target.attachToTarget', { targetId: params.targetInfo.targetId, flatten: true }).then(result => {
-            debuggerSessionId = result.sessionId;
-            w.webContents.debugger.sendCommand('Debugger.enable', {}, result.sessionId);
+          w.webContents.debugger
+            .sendCommand('Target.attachToTarget', { targetId: params.targetInfo.targetId, flatten: true })
+            .then((result) => {
+              debuggerSessionId = result.sessionId;
+              w.webContents.debugger.sendCommand('Debugger.enable', {}, result.sessionId);
 
-            // Ensure debugger finds a script to pause to possibly reduce flaky
-            // tests.
-            w.webContents.mainFrame.executeJavaScript('void 0;');
-          });
+              // Ensure debugger finds a script to pause to possibly reduce flaky
+              // tests.
+              w.webContents.mainFrame.executeJavaScript('void 0;');
+            });
         }
         if (method === 'Debugger.scriptParsed') {
           if (sessionId === debuggerSessionId) {

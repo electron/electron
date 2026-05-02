@@ -15,9 +15,7 @@ const env = {
 // when reading NODE_OPTIONS.
 env.node_options = env.NODE_OPTIONS;
 try {
-  execFileSync(process.argv[2],
-    ['--require', path.join(fixtures, 'module', 'noop.js')],
-    { env, stdio: 'inherit' });
+  execFileSync(process.argv[2], ['--require', path.join(fixtures, 'module', 'noop.js')], { env, stdio: 'inherit' });
   process.exit(0);
 } catch {
   console.log('NODE_OPTIONS passed to child');

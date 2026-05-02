@@ -16,7 +16,9 @@ const { expect } = require('chai');
       expect(safeStorage.decryptString(ciphertext)).to.equal(plaintext);
     } else {
       expect(() => safeStorage.encryptString('plaintext')).to.throw(/safeStorage cannot be used before app is ready/);
-      expect(() => safeStorage.decryptString(Buffer.from(''))).to.throw(/safeStorage cannot be used before app is ready/);
+      expect(() => safeStorage.decryptString(Buffer.from(''))).to.throw(
+        /safeStorage cannot be used before app is ready/
+      );
     }
   }
   await app.whenReady();

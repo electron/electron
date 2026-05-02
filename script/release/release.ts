@@ -11,11 +11,11 @@ import { execSync, ExecSyncOptions } from 'node:child_process';
 import { statSync, createReadStream, writeFileSync, close } from 'node:fs';
 import { join } from 'node:path';
 
+import { getElectronVersion } from '../lib/get-version';
+import { ELECTRON_DIR } from '../lib/utils';
 import { getUrlHash } from './get-url-hash';
 import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
-import { getElectronVersion } from '../lib/get-version';
-import { ELECTRON_DIR } from '../lib/utils';
 
 const temp = trackTemp();
 
@@ -24,7 +24,7 @@ const fail = chalk.red('✗');
 
 const pkgVersion = `v${getElectronVersion()}`;
 
-function getRepo (): ElectronReleaseRepo {
+function getRepo(): ElectronReleaseRepo {
   return pkgVersion.indexOf('nightly') > 0 ? NIGHTLY_REPO : ELECTRON_REPO;
 }
 
@@ -35,10 +35,7 @@ const octokit = new Octokit({
   authStrategy: createGitHubTokenStrategy(targetRepo)
 });
 
-async function getDraftRelease (
-  version?: string,
-  skipValidation: boolean = false
-) {
+async function getDraftRelease(version?: string, skipValidation: boolean = false) {
   const releaseInfo = await octokit.repos.listReleases({
     owner: ELECTRON_ORG,
     repo: targetRepo
@@ -56,12 +53,7 @@ async function getDraftRelease (
     if (versionToCheck.includes('beta')) {
       check(draft.prerelease, 'draft is a prerelease');
     }
-    check(
-      !!draft.body &&
-        draft.body.length > 50 &&
-        !draft.body.includes('(placeholder)'),
-      'draft has release notes'
-    );
+    check(!!draft.body && draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes');
     check(failureCount === 0, 'Draft release looks good to go.', true);
   }
   return draft;
@@ -79,14 +71,8 @@ type MinimalRelease = {
   }[];
 };
 
-async function validateReleaseAssets (
-  release: MinimalRelease,
-  validatingRelease: boolean = false
-) {
-  const requiredAssets = assetsForVersion(
-    release.tag_name,
-    validatingRelease
-  ).sort();
+async function validateReleaseAssets(release: MinimalRelease, validatingRelease: boolean = false) {
+  const requiredAssets = assetsForVersion(release.tag_name, validatingRelease).sort();
   const extantAssets = release.assets.map((asset) => asset.name).sort();
   const downloadUrls = release.assets
     .map((asset) => ({ url: asset.browser_download_url, file: asset.name }))
@@ -96,11 +82,7 @@ async function validateReleaseAssets (
   for (const asset of requiredAssets) {
     check(extantAssets.includes(asset), asset);
   }
-  check(
-    failureCount === 0,
-    'All required GitHub assets exist for release',
-    true
-  );
+  check(failureCount === 0, 'All required GitHub assets exist for release', true);
 
   if (!validatingRelease || !release.draft) {
     if (release.draft) {
@@ -115,7 +97,7 @@ async function validateReleaseAssets (
   }
 }
 
-function check (condition: boolean, statement: string, exitIfFail = false) {
+function check(condition: boolean, statement: string, exitIfFail = false) {
   if (condition) {
     console.log(`${pass} ${statement}`);
   } else {
@@ -125,7 +107,7 @@ function check (condition: boolean, statement: string, exitIfFail = false) {
   }
 }
 
-function assetsForVersion (version: string, validatingRelease: boolean) {
+function assetsForVersion(version: string, validatingRelease: boolean) {
   const patterns = [
     `chromedriver-${version}-darwin-x64.zip`,
     `chromedriver-${version}-darwin-arm64.zip`,
@@ -225,7 +207,7 @@ const cloudStoreFilePaths = (version: string) => [
   'SHASUMS256.txt'
 ];
 
-function azRemoteFilesForVersion (version: string) {
+function azRemoteFilesForVersion(version: string) {
   const azCDN = 'https://artifacts.electronjs.org/headers/';
   const versionPrefix = `${azCDN}dist/${version}/`;
   return cloudStoreFilePaths(version).map((filePath) => ({
@@ -234,7 +216,7 @@ function azRemoteFilesForVersion (version: string) {
   }));
 }
 
-function runScript (scriptName: string, scriptArgs: string[], cwd?: string) {
+function runScript(scriptName: string, scriptArgs: string[], cwd?: string) {
   const scriptCommand = `${scriptName} ${scriptArgs.join(' ')}`;
   const scriptOptions: ExecSyncOptions = {
     encoding: 'utf-8'
@@ -248,50 +230,31 @@ function runScript (scriptName: string, scriptArgs: string[], cwd?: string) {
   }
 }
 
-function uploadNodeShasums () {
+function uploadNodeShasums() {
   console.log('Uploading Node SHASUMS file to artifacts.electronjs.org.');
-  const scriptPath = join(
-    ELECTRON_DIR,
-    'script',
-    'release',
-    'uploaders',
-    'upload-node-checksums.py'
-  );
+  const scriptPath = join(ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-node-checksums.py');
   runScript(scriptPath, ['-v', pkgVersion]);
-  console.log(
-    `${pass} Done uploading Node SHASUMS file to artifacts.electronjs.org.`
-  );
+  console.log(`${pass} Done uploading Node SHASUMS file to artifacts.electronjs.org.`);
 }
 
-function uploadIndexJson () {
+function uploadIndexJson() {
   console.log('Uploading index.json to artifacts.electronjs.org.');
-  const scriptPath = join(
-    ELECTRON_DIR,
-    'script',
-    'release',
-    'uploaders',
-    'upload-index-json.py'
-  );
+  const scriptPath = join(ELECTRON_DIR, 'script', 'release', 'uploaders', 'upload-index-json.py');
   runScript(scriptPath, [pkgVersion]);
   console.log(`${pass} Done uploading index.json to artifacts.electronjs.org.`);
 }
 
-async function mergeShasums (pkgVersion: string) {
+async function mergeShasums(pkgVersion: string) {
   // Download individual checksum files for Electron zip files from artifact storage,
   // concatenate them, and upload to GitHub.
 
   const connectionString = process.env.ELECTRON_ARTIFACTS_BLOB_STORAGE;
   if (!connectionString) {
-    throw new Error(
-      'Please set the $ELECTRON_ARTIFACTS_BLOB_STORAGE environment variable'
-    );
+    throw new Error('Please set the $ELECTRON_ARTIFACTS_BLOB_STORAGE environment variable');
   }
 
-  const blobServiceClient =
-    BlobServiceClient.fromConnectionString(connectionString);
-  const containerClient = blobServiceClient.getContainerClient(
-    'checksums-scratchpad'
-  );
+  const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+  const containerClient = blobServiceClient.getContainerClient('checksums-scratchpad');
   const blobsIter = containerClient.listBlobsFlat({
     prefix: `${pkgVersion}/`
   });
@@ -306,15 +269,11 @@ async function mergeShasums (pkgVersion: string) {
   return shasums.join('\n');
 }
 
-async function createReleaseShasums (release: MinimalRelease) {
+async function createReleaseShasums(release: MinimalRelease) {
   const fileName = 'SHASUMS256.txt';
-  const existingAssets = release.assets.filter(
-    (asset) => asset.name === fileName
-  );
+  const existingAssets = release.assets.filter((asset) => asset.name === fileName);
   if (existingAssets.length > 0) {
-    console.log(
-      `${fileName} already exists on GitHub; deleting before creating new file.`
-    );
+    console.log(`${fileName} already exists on GitHub; deleting before creating new file.`);
     await octokit.repos
       .deleteReleaseAsset({
         owner: ELECTRON_ORG,
@@ -338,11 +297,7 @@ async function createReleaseShasums (release: MinimalRelease) {
   console.log(`${pass} Successfully uploaded ${fileName} to GitHub.`);
 }
 
-async function uploadShasumFile (
-  filePath: string,
-  fileName: string,
-  releaseId: number
-) {
+async function uploadShasumFile(filePath: string, fileName: string, releaseId: number) {
   const uploadUrl = `https://uploads.github.com/repos/electron/${targetRepo}/releases/${releaseId}/assets{?name,label}`;
   return octokit.repos
     .uploadReleaseAsset({
@@ -360,7 +315,7 @@ async function uploadShasumFile (
     });
 }
 
-function saveShaSumFile (checksums: string, fileName: string) {
+function saveShaSumFile(checksums: string, fileName: string) {
   return new Promise<string>((resolve) => {
     temp.open(fileName, (err, info) => {
       if (err) {
@@ -380,7 +335,7 @@ function saveShaSumFile (checksums: string, fileName: string) {
   });
 }
 
-async function publishRelease (release: MinimalRelease) {
+async function publishRelease(release: MinimalRelease) {
   let makeLatest = false;
   if (!release.prerelease) {
     const currentLatest = await octokit.repos.getLatestRelease({
@@ -406,13 +361,13 @@ async function publishRelease (release: MinimalRelease) {
     });
 }
 
-export async function validateRelease () {
+export async function validateRelease() {
   console.log(`Validating release ${pkgVersion}`);
   const release = await getDraftRelease(pkgVersion);
   await validateReleaseAssets(release, true);
 }
 
-export async function makeRelease () {
+export async function makeRelease() {
   let draftRelease = await getDraftRelease();
   uploadNodeShasums();
   await createReleaseShasums(draftRelease);
@@ -428,15 +383,14 @@ export async function makeRelease () {
   uploadIndexJson();
   await publishRelease(draftRelease);
   console.log(
-    `${pass} SUCCESS!!! Release has been published. Please run ` +
-      '"npm run publish-to-npm" to publish release to npm.'
+    `${pass} SUCCESS!!! Release has been published. Please run ` + '"npm run publish-to-npm" to publish release to npm.'
   );
 }
 
 const SHASUM_256_FILENAME = 'SHASUMS256.txt';
 const SHASUM_1_FILENAME = 'SHASUMS.txt';
 
-async function verifyDraftGitHubReleaseAssets (release: MinimalRelease) {
+async function verifyDraftGitHubReleaseAssets(release: MinimalRelease) {
   console.log('Fetching authenticated GitHub artifact URLs to verify shasums');
 
   const remoteFilesToHash = await Promise.all(
@@ -451,9 +405,7 @@ async function verifyDraftGitHubReleaseAssets (release: MinimalRelease) {
       });
 
       const { url, headers } = requestOptions;
-      headers.authorization = `token ${
-        ((await octokit.auth()) as { token: string }).token
-      }`;
+      headers.authorization = `token ${((await octokit.auth()) as { token: string }).token}`;
 
       const response = await got(url, {
         followRedirect: false,
@@ -464,9 +416,7 @@ async function verifyDraftGitHubReleaseAssets (release: MinimalRelease) {
 
       if (response.statusCode !== 302 && response.statusCode !== 301) {
         console.error('Failed to HEAD github asset: ' + url);
-        throw new Error(
-          "Unexpected status HEAD'ing github asset: " + response.statusCode
-        );
+        throw new Error("Unexpected status HEAD'ing github asset: " + response.statusCode);
       }
 
       return { url: response.headers.location!, file: asset.name };
@@ -479,10 +429,7 @@ async function verifyDraftGitHubReleaseAssets (release: MinimalRelease) {
   await verifyShasumsForRemoteFiles(remoteFilesToHash);
 }
 
-async function getShaSumMappingFromUrl (
-  shaSumFileUrl: string,
-  fileNamePrefix: string
-) {
+async function getShaSumMappingFromUrl(shaSumFileUrl: string, fileNamePrefix: string) {
   const response = await got(shaSumFileUrl, {
     throwHttpErrors: false
   });
@@ -490,9 +437,7 @@ async function getShaSumMappingFromUrl (
   if (response.statusCode !== 200) {
     console.error('Failed to fetch SHASUM mapping: ' + shaSumFileUrl);
     console.error('Bad SHASUM mapping response: ' + response.body.trim());
-    throw new Error(
-      'Unexpected status fetching SHASUM mapping: ' + response.statusCode
-    );
+    throw new Error('Unexpected status fetching SHASUM mapping: ' + response.statusCode);
   }
 
   const raw = response.body;
@@ -500,11 +445,14 @@ async function getShaSumMappingFromUrl (
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
-    .reduce((map, line) => {
-      const [sha, file] = line.replace('  ', ' ').split(' ');
-      map[file.slice(fileNamePrefix.length)] = sha;
-      return map;
-    }, Object.create(null) as Record<string, string>);
+    .reduce(
+      (map, line) => {
+        const [sha, file] = line.replace('  ', ' ').split(' ');
+        map[file.slice(fileNamePrefix.length)] = sha;
+        return map;
+      },
+      Object.create(null) as Record<string, string>
+    );
 }
 
 type HashedFile = HashableFile & {
@@ -516,7 +464,7 @@ type HashableFile = {
   url: string;
 };
 
-async function validateFileHashesAgainstShaSumMapping (
+async function validateFileHashesAgainstShaSumMapping(
   remoteFilesWithHashes: HashedFile[],
   mapping: Record<string, string>
 ) {
@@ -531,22 +479,13 @@ async function validateFileHashesAgainstShaSumMapping (
   }
 }
 
-async function verifyShasumsForRemoteFiles (
-  remoteFilesToHash: HashableFile[],
-  filesAreNodeJSArtifacts = false
-) {
-  console.log(
-    `Generating SHAs for ${remoteFilesToHash.length} files to verify shasums`
-  );
+async function verifyShasumsForRemoteFiles(remoteFilesToHash: HashableFile[], filesAreNodeJSArtifacts = false) {
+  console.log(`Generating SHAs for ${remoteFilesToHash.length} files to verify shasums`);
 
   // Only used for node.js artifact uploads
-  const shaSum1File = remoteFilesToHash.find(
-    ({ file }) => file === SHASUM_1_FILENAME
-  )!;
+  const shaSum1File = remoteFilesToHash.find(({ file }) => file === SHASUM_1_FILENAME)!;
   // Used for both node.js artifact uploads and normal electron artifacts
-  const shaSum256File = remoteFilesToHash.find(
-    ({ file }) => file === SHASUM_256_FILENAME
-  )!;
+  const shaSum256File = remoteFilesToHash.find(({ file }) => file === SHASUM_256_FILENAME)!;
   remoteFilesToHash = remoteFilesToHash.filter(
     ({ file }) => file !== SHASUM_1_FILENAME && file !== SHASUM_256_FILENAME
   );
@@ -562,10 +501,7 @@ async function verifyShasumsForRemoteFiles (
 
   await validateFileHashesAgainstShaSumMapping(
     remoteFilesWithHashes,
-    await getShaSumMappingFromUrl(
-      shaSum256File.url,
-      filesAreNodeJSArtifacts ? '' : '*'
-    )
+    await getShaSumMappingFromUrl(shaSum256File.url, filesAreNodeJSArtifacts ? '' : '*')
   );
 
   if (filesAreNodeJSArtifacts) {
@@ -580,10 +516,7 @@ async function verifyShasumsForRemoteFiles (
 
     await validateFileHashesAgainstShaSumMapping(
       remoteFilesWithSha1Hashes,
-      await getShaSumMappingFromUrl(
-        shaSum1File.url,
-        filesAreNodeJSArtifacts ? '' : '*'
-      )
+      await getShaSumMappingFromUrl(shaSum1File.url, filesAreNodeJSArtifacts ? '' : '*')
     );
   }
 }
