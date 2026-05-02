@@ -397,6 +397,13 @@ Shows a message box.
 
 The `window` argument allows the dialog to attach itself to a parent window, making it modal.
 
+> [!NOTE]
+> On Linux, when no parent `window` is provided, `dialog.showMessageBox()` will
+> block the main process until the dialog is dismissed (behaving like
+> `dialog.showMessageBoxSync()`). This is because parentless dialogs use a
+> synchronous GLib event loop to avoid a 30-second delay caused by the desktop
+> environment's startup notification timeout.
+
 ### `dialog.showErrorBox(title, content)`
 
 * `title` string - The title to display in the error box.

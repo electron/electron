@@ -18,6 +18,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/window_list.h"
 #include "shell/browser/ui/gtk_util.h"
 #include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gfx/image/image_skia.h"
@@ -181,6 +182,27 @@ class GtkMessageBox : private NativeWindowObserver {
 
   void RunAsynchronous(MessageBoxCallback callback) {
     callback_ = std::move(callback);
+
+    // When there is no parent window and no BrowserWindow exists,
+    // Chromium's MessagePumpGlib may not be actively iterating the GLib
+    // main context, causing GTK's "response" signal to sit undelivered
+    // for up to ~30 seconds. Use gtk_dialog_run() which spins its own
+    // nested GLib main loop to ensure events are dispatched immediately.
+    // See: https://github.com/electron/electron/issues/51049
+    if (!parent_ && WindowList::IsEmpty()) {
+      Show();
+      int response = gtk_dialog_run(GTK_DIALOG(dialog_));
+      if (id_)
+        GetDialogsMap().erase(*id_);
+      gtk_widget_hide(dialog_);
+
+      if (response < 0)
+        std::move(callback_).Run(cancel_id_, checkbox_checked_);
+      else
+        std::move(callback_).Run(response, checkbox_checked_);
+      delete this;
+      return;
+    }
 
     signals_.emplace_back(dialog_, "delete-event",
                           base::BindRepeating(gtk_widget_hide_on_delete));
