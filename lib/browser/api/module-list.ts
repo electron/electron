@@ -14,6 +14,7 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'dialog', loader: () => require('./dialog') },
   { name: 'globalShortcut', loader: () => require('./global-shortcut') },
   { name: 'ipcMain', loader: () => require('./ipc-main') },
+  { name: 'ipcStreamMain', loader: () => require('./ipc-stream-main') },
   { name: 'ImageView', loader: () => require('./views/image-view') },
   { name: 'inAppPurchase', loader: () => require('./in-app-purchase') },
   { name: 'Menu', loader: () => require('./menu') },
