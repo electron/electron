@@ -11,6 +11,8 @@ declare namespace Electron {
     highWaterMark?: number;
     objectMode?: boolean;
     encoding?: string;
+    timeout?: number;
+    signal?: AbortSignal;
   }
 
   export interface IpcStreamPort extends NodeJS.EventEmitter {
@@ -54,23 +56,33 @@ declare namespace Electron {
   }
 
   export interface IpcStreamClient {
+    cancelConnection(id: string): void;
+    cancelAllConnections(): void;
+    readonly pendingConnectionCount: number;
+  }
+
+  export interface IpcStreamMainClient extends IpcStreamClient {
+    connect(webContents: WebContents, channel: string, options?: IpcStreamOptions): Promise<IpcStreamPort>;
+  }
+
+  export interface IpcStreamRendererClient extends IpcStreamClient {
     connect(channel: string, options?: IpcStreamOptions): Promise<IpcStreamPort>;
   }
 
   export interface IpcStreamMain {
     createServer(): IpcStreamServer;
-    createClient(): IpcStreamClient;
+    createClient(): IpcStreamMainClient;
     IpcStreamPort: new (port: any, id: string, options?: IpcStreamOptions) => IpcStreamPort;
     IpcStreamServer: new () => IpcStreamServer;
-    IpcStreamClient: new () => IpcStreamClient;
+    IpcStreamClient: new () => IpcStreamMainClient;
   }
 
   export interface IpcStreamRenderer {
     createServer(): IpcStreamServer;
-    createClient(): IpcStreamClient;
+    createClient(): IpcStreamRendererClient;
     IpcStreamPort: new (port: any, id: string, options?: IpcStreamOptions) => IpcStreamPort;
     IpcStreamServer: new () => IpcStreamServer;
-    IpcStreamClient: new () => IpcStreamClient;
+    IpcStreamClient: new () => IpcStreamRendererClient;
   }
 }
 

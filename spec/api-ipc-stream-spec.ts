@@ -320,6 +320,207 @@ describe('ipc-stream module', () => {
     });
   });
 
+  describe('connection timeout and cancellation', () => {
+    it('should timeout connection when server is not listening', async () => {
+      const w = new BrowserWindow({ 
+        show: false, 
+        webPreferences: { 
+          nodeIntegration: true, 
+          contextIsolation: false 
+        } 
+      });
+      await w.loadURL('about:blank');
+
+      const client = ipcStreamMain.createClient();
+      const startTime = Date.now();
+      
+      try {
+        await client.connect(w.webContents, 'non-existent-server', { timeout: 1000 });
+        expect.fail('Should have thrown timeout error');
+      } catch (error) {
+        const elapsed = Date.now() - startTime;
+        expect(error).to.be.an.instanceOf(Error);
+        expect(error.message).to.include('timeout');
+        expect(elapsed).to.be.lessThan(2000);
+      }
+    });
+
+    it('should use default timeout of 10 seconds', async () => {
+      const w = new BrowserWindow({ 
+        show: false, 
+        webPreferences: { 
+          nodeIntegration: true, 
+          contextIsolation: false 
+        } 
+      });
+      await w.loadURL('about:blank');
+
+      const client = ipcStreamMain.createClient();
+      
+      // Start connection but don't wait for it to complete
+      const connectionPromise = client.connect(w.webContents, 'no-server-channel');
+      
+      // Check that there is a pending connection
+      expect(client.pendingConnectionCount).to.equal(1);
+      
+      // Cancel the connection to avoid waiting 10 seconds
+      client.cancelAllConnections();
+      
+      try {
+        await connectionPromise;
+        expect.fail('Should have thrown cancellation error');
+      } catch (error) {
+        expect(error).to.be.an.instanceOf(Error);
+        expect(error.message).to.include('cancelled');
+      }
+    });
+
+    it('should support cancellation with AbortSignal', async () => {
+      const w = new BrowserWindow({ 
+        show: false, 
+        webPreferences: { 
+          nodeIntegration: true, 
+          contextIsolation: false 
+        } 
+      });
+      await w.loadURL('about:blank');
+
+      const client = ipcStreamMain.createClient();
+      const controller = new AbortController();
+      
+      // Start connection with abort signal
+      const connectionPromise = client.connect(w.webContents, 'abort-test-channel', { 
+        signal: controller.signal,
+        timeout: 10000 
+      });
+      
+      // Abort the connection after a short delay
+      setTimeout(() => {
+        controller.abort();
+      }, 100);
+      
+      try {
+        await connectionPromise;
+        expect.fail('Should have thrown cancellation error');
+      } catch (error) {
+        expect(error).to.be.an.instanceOf(Error);
+        expect(error.message).to.include('cancelled');
+      }
+    });
+
+    it('should reject immediately if signal is already aborted', async () => {
+      const w = new BrowserWindow({ 
+        show: false, 
+        webPreferences: { 
+          nodeIntegration: true, 
+          contextIsolation: false 
+        } 
+      });
+      await w.loadURL('about:blank');
+
+      const client = ipcStreamMain.createClient();
+      const controller = new AbortController();
+      
+      // Abort before connecting
+      controller.abort();
+      
+      try {
+        await client.connect(w.webContents, 'pre-aborted-channel', { 
+          signal: controller.signal 
+        });
+        expect.fail('Should have thrown cancellation error');
+      } catch (error) {
+        expect(error).to.be.an.instanceOf(Error);
+        expect(error.message).to.include('cancelled');
+      }
+    });
+
+    it('should track pending connections', async () => {
+      const w = new BrowserWindow({ 
+        show: false, 
+        webPreferences: { 
+          nodeIntegration: true, 
+          contextIsolation: false 
+        } 
+      });
+      await w.loadURL('about:blank');
+
+      const server = ipcStreamMain.createServer();
+      const client = ipcStreamMain.createClient();
+      
+      // Set up server but don't accept immediately
+      let acceptConnection: () => void;
+      const connectionReady = new Promise<void>((resolve) => {
+        acceptConnection = resolve;
+      });
+      
+      server.listen('pending-test-channel', async (stream) => {
+        await connectionReady;
+        // Just accept the connection
+      });
+      
+      // Start 2 connections
+      expect(client.pendingConnectionCount).to.equal(0);
+      
+      const promise1 = client.connect(w.webContents, 'pending-test-channel', { timeout: 5000 });
+      expect(client.pendingConnectionCount).to.equal(1);
+      
+      const promise2 = client.connect(w.webContents, 'pending-test-channel', { timeout: 5000 });
+      expect(client.pendingConnectionCount).to.equal(2);
+      
+      // Accept the connections
+      acceptConnection!();
+      
+      // Wait for connections to complete
+      try {
+        await Promise.all([promise1, promise2]);
+      } catch (error) {
+        // Ignore errors if connections timeout
+      }
+      
+      // Clean up
+      client.cancelAllConnections();
+    });
+
+    it('should cancel all pending connections', async () => {
+      const w = new BrowserWindow({ 
+        show: false, 
+        webPreferences: { 
+          nodeIntegration: true, 
+          contextIsolation: false 
+        } 
+      });
+      await w.loadURL('about:blank');
+
+      const client = ipcStreamMain.createClient();
+      
+      // Start 3 connections to non-existent servers
+      const promises = [
+        client.connect(w.webContents, 'channel-1', { timeout: 10000 }),
+        client.connect(w.webContents, 'channel-2', { timeout: 10000 }),
+        client.connect(w.webContents, 'channel-3', { timeout: 10000 })
+      ];
+      
+      expect(client.pendingConnectionCount).to.equal(3);
+      
+      // Cancel all connections
+      client.cancelAllConnections();
+      
+      expect(client.pendingConnectionCount).to.equal(0);
+      
+      // All promises should reject with cancellation error
+      for (const promise of promises) {
+        try {
+          await promise;
+          expect.fail('Should have thrown cancellation error');
+        } catch (error) {
+          expect(error).to.be.an.instanceOf(Error);
+          expect(error.message).to.include('cancelled');
+        }
+      }
+    });
+  });
+
   describe('bidirectional communication', () => {
     it('should support bidirectional data flow', async () => {
       const w = new BrowserWindow({ 

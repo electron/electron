@@ -12,6 +12,8 @@ export interface IpcStreamOptions {
   highWaterMark?: number;
   objectMode?: boolean;
   encoding?: string;
+  timeout?: number;
+  signal?: AbortSignal;
 }
 
 class IpcStreamPort extends EventEmitter {
@@ -224,9 +226,18 @@ class IpcStreamServer extends EventEmitter {
   }
 }
 
+interface PendingConnection {
+  resolve: (stream: IpcStreamPort) => void;
+  reject: (error: Error) => void;
+  options: IpcStreamOptions;
+  timeoutTimer?: number;
+  abortListener?: () => void;
+}
+
 class IpcStreamClient {
-  private _pendingConnections: Map<string, { resolve: (stream: IpcStreamPort) => void; reject: (error: Error) => void; options: IpcStreamOptions }> = new Map();
+  private _pendingConnections: Map<string, PendingConnection> = new Map();
   private _isSetup: boolean = false;
+  private _defaultTimeout: number = 10000;
 
   constructor() {
     this._setupListeners();
@@ -250,33 +261,105 @@ class IpcStreamClient {
     return `stream-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
+  private _clearConnection(id: string): void {
+    const pending = this._pendingConnections.get(id);
+    if (!pending) return;
+
+    if (pending.timeoutTimer) {
+      clearTimeout(pending.timeoutTimer);
+    }
+
+    if (pending.abortListener && pending.options.signal) {
+      pending.options.signal.removeEventListener('abort', pending.abortListener);
+    }
+
+    this._pendingConnections.delete(id);
+  }
+
   private _handleAccept(event: any, id: string): void {
     const pending = this._pendingConnections.get(id);
     if (!pending) return;
+
+    this._clearConnection(id);
 
     const port = event.ports[0] as MessagePort;
     const stream = new IpcStreamPort(port, id, pending.options);
 
     pending.resolve(stream);
-    this._pendingConnections.delete(id);
   }
 
   private _handleReject(id: string, error: string): void {
     const pending = this._pendingConnections.get(id);
     if (!pending) return;
 
+    this._clearConnection(id);
     pending.reject(new Error(error));
-    this._pendingConnections.delete(id);
+  }
+
+  private _handleTimeout(id: string): void {
+    const pending = this._pendingConnections.get(id);
+    if (!pending) return;
+
+    this._clearConnection(id);
+    pending.reject(new Error(`Connection timeout after ${pending.options.timeout || this._defaultTimeout}ms`));
+  }
+
+  private _handleCancel(id: string): void {
+    const pending = this._pendingConnections.get(id);
+    if (!pending) return;
+
+    this._clearConnection(id);
+    pending.reject(new Error('Connection cancelled'));
   }
 
   connect(channel: string, options: IpcStreamOptions = {}): Promise<IpcStreamPort> {
     return new Promise((resolve, reject) => {
       const id = this._generateId();
+      const timeout = options.timeout ?? this._defaultTimeout;
 
-      this._pendingConnections.set(id, { resolve, reject, options });
+      const pending: PendingConnection = {
+        resolve,
+        reject,
+        options
+      };
 
+      if (timeout > 0) {
+        pending.timeoutTimer = window.setTimeout(() => {
+          this._handleTimeout(id);
+        }, timeout);
+      }
+
+      if (options.signal) {
+        if (options.signal.aborted) {
+          reject(new Error('Connection cancelled'));
+          return;
+        }
+
+        pending.abortListener = () => {
+          this._handleCancel(id);
+        };
+
+        options.signal.addEventListener('abort', pending.abortListener, { once: true } as any);
+      }
+
+      this._pendingConnections.set(id, pending);
       ipcRenderer.postMessage('electron-ipc-stream-connect', { channel, id });
     });
+  }
+
+  cancelConnection(id: string): void {
+    this._handleCancel(id);
+  }
+
+  cancelAllConnections(): void {
+    const ids = Array.from(this._pendingConnections.keys());
+    for (const id of ids) {
+      this._handleCancel(id);
+    }
+  }
+
+  get pendingConnectionCount(): number {
+    return this._pendingConnections.size;
   }
 }
 
