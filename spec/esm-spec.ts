@@ -10,20 +10,58 @@ import { pathToFileURL } from 'node:url';
 import { stripVTControlCharacters } from 'node:util';
 
 const runFixture = async (appPath: string, args: string[] = []) => {
-  const result = cp.spawn(process.execPath, [appPath, ...args], {
-    stdio: 'pipe'
+  const traceDir = path.resolve(__dirname, 'artifacts', 'esm-traces');
+  fs.mkdirSync(traceDir, { recursive: true });
+  const tracePath = path.join(
+    traceDir,
+    `trace-${path.basename(appPath, path.extname(appPath))}-${Date.now()}-${process.pid}.json`
+  );
+  const result = cp.spawn(process.execPath, [
+    '--js-flags=--trace-gc --expose-gc',
+    '--vmodule=child_thread_impl=2,browser_child_process_host_impl=1,render_process_host_impl=1,navigation_request=1,network_service_instance_impl=2,file_url_loader_factory=1',
+    '--trace-startup=toplevel,v8,v8.execute,disabled-by-default-v8.gc,navigation,loading,mojom,ipc,scheduler',
+    '--trace-startup-duration=45',
+    '--trace-startup-record-mode=record-until-full',
+    `--trace-startup-file=${tracePath}`,
+    appPath,
+    ...args
+  ], {
+    stdio: 'pipe',
+    env: {
+      ...process.env,
+      ELECTRON_ENABLE_LOGGING: '1',
+      ELECTRON_ENABLE_STACK_DUMPING: '1'
+    }
   });
 
   const stdout: Buffer[] = [];
   const stderr: Buffer[] = [];
-  result.stdout.on('data', (chunk) => stdout.push(chunk));
-  result.stderr.on('data', (chunk) => stderr.push(chunk));
+  result.stdout.on('data', (chunk) => { stdout.push(chunk); process.stdout.write(chunk); });
+  result.stderr.on('data', (chunk) => { stderr.push(chunk); process.stderr.write(chunk); });
+
+  const diagTimer = setTimeout(() => {
+    if (result.exitCode !== null) return;
+    process.stderr.write(`[runFixture] child pid=${result.pid} still alive at 25s; dumping ps tree and SIGINFO\n`);
+    try {
+      const ps = cp.spawnSync('ps', ['-o', 'pid,ppid,state,command', '-g', String(result.pid)]);
+      process.stderr.write(ps.stdout?.toString() ?? '');
+      process.stderr.write(ps.stderr?.toString() ?? '');
+    } catch { /* ignore */ }
+    try { result.kill('SIGINFO' as any); } catch { /* ignore */ }
+  }, 25_000);
 
   const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve) => {
     result.on('close', (code, signal) => {
+      clearTimeout(diagTimer);
       resolve([code, signal]);
     });
   });
+
+  if (fs.existsSync(tracePath)) {
+    process.stderr.write(`[runFixture] startup trace written: ${tracePath}\n`);
+  } else {
+    process.stderr.write(`[runFixture] no startup trace at ${tracePath} (child likely died before flush)\n`);
+  }
 
   return {
     code,
