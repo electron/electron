@@ -21,8 +21,9 @@ async function createWindow () {
   process.exit(importMetaPreload === expected ? 0 : 1);
 }
 
-app.whenReady().then(() => {
-  createWindow();
-});
+app
+  .whenReady()
+  .then(() => createWindow())
+  .catch(() => process.exit(1));
 
 app.on('window-all-closed', app.quit);
