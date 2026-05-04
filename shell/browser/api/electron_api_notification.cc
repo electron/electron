@@ -460,6 +460,60 @@ v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
   return handle;
 }
 
+// static
+void Notification::Remove(gin::Arguments* args) {
+  auto* presenter =
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+          ->GetNotificationPresenter();
+  if (!presenter)
+    return;
+
+  // Accept either a single string or an array of strings.
+  // Peek at the value type first to avoid gin::Arguments cursor issues.
+  v8::Local<v8::Value> val;
+  if (!args->GetNext(&val)) {
+    args->ThrowTypeError("Expected a string or array of strings");
+    return;
+  }
+
+  if (val->IsString()) {
+    std::string id;
+    gin::ConvertFromV8(args->isolate(), val, &id);
+    presenter->RemoveDeliveredNotifications({id});
+  } else if (val->IsArray()) {
+    std::vector<std::string> ids;
+    if (!gin::ConvertFromV8(args->isolate(), val, &ids)) {
+      args->ThrowTypeError("Expected a string or array of strings");
+      return;
+    }
+    presenter->RemoveDeliveredNotifications(ids);
+  } else {
+    args->ThrowTypeError("Expected a string or array of strings");
+  }
+}
+
+// static
+void Notification::RemoveAll() {
+  auto* presenter =
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+          ->GetNotificationPresenter();
+  if (!presenter)
+    return;
+
+  presenter->RemoveAllDeliveredNotifications();
+}
+
+// static
+void Notification::RemoveGroup(const std::string& group_id) {
+  auto* presenter =
+      static_cast<ElectronBrowserClient*>(ElectronBrowserClient::Get())
+          ->GetNotificationPresenter();
+  if (!presenter)
+    return;
+
+  presenter->RemoveDeliveredNotificationsByGroupId(group_id);
+}
+
 void Notification::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
   gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
@@ -514,6 +568,9 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("handleActivation", &Notification::HandleActivation);
 #endif
   dict.SetMethod("getHistory", &Notification::GetHistory);
+  dict.SetMethod("remove", &Notification::Remove);
+  dict.SetMethod("removeAll", &Notification::RemoveAll);
+  dict.SetMethod("removeGroup", &Notification::RemoveGroup);
 }
 
 }  // namespace
