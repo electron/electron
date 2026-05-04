@@ -705,6 +705,18 @@ Overrides the current application's name.
 > [!NOTE]
 > This function overrides the name used internally by Electron; it does not affect the name that the OS uses.
 
+### `app.setDesktopName(name)` _Linux_
+
+* `name` string - The `.desktop` filename (e.g. `'my-app.desktop'`).
+
+Sets the [`.desktop` filename](https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html) on Linux.
+This should match the name of the installed `.desktop` file for the packaged app. If it does not match, the app may not
+show the correct icon or be able to support desktop integration features such as keyboard shortcuts.
+
+The value is used to determine the default `WM_CLASS` on X11 as well as the XDG application ID on Wayland.
+
+Can also be set using `desktopName` in `package.json`. If no `.desktop` name is provided, Electron will choose a default value which may be inaccurate.
+
 ### `app.getLocale()`
 
 Returns `string` - The current application locale, fetched using Chromium's `l10n_util` library.

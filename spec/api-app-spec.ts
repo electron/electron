@@ -123,6 +123,22 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux')('app.setDesktopName(name)', () => {
+    it('sets the desktop name to the CHROME_DESKTOP environment variable', () => {
+      const original = process.env.CHROME_DESKTOP;
+      defer(() => {
+        if (original === undefined) {
+          delete process.env.CHROME_DESKTOP;
+        } else {
+          process.env.CHROME_DESKTOP = original;
+        }
+      });
+
+      app.setDesktopName('electron-test-set-desktop-name.desktop');
+      expect(process.env.CHROME_DESKTOP).to.equal('electron-test-set-desktop-name.desktop');
+    });
+  });
+
   describe('app.getLocale()', () => {
     it('should not be empty', () => {
       expect(app.getLocale()).to.not.equal('');
