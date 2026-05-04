@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 44072bd19a908aa0604e440e89c303cd8044f342..820c23869139d4293c26b6a854b7c08576c07a3c 100644
+index 17f1b358c829b951e356b93346fd1e977fdfc24f..3d8980cd55b6456f84c499b08d8dddf408f7cb7f 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -178,6 +178,8 @@ viz_component("service") {
@@ -620,7 +620,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 763bf11910748102bee357666527323b06d95cc6..c94c3b6751b3b38114de2ed3b055ffb95a2d23b3 100644
+index 7186d6736c53e39cf9212a6d12cfcae17abbe721..2646696e2379666e48614be770630e3668356158 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -89,6 +89,7 @@ class DisplayPrivate;
