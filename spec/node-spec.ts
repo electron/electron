@@ -18,7 +18,14 @@ import {
   spawn
 } from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
-import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
+import {
+  getRemoteContext,
+  ifdescribe,
+  ifit,
+  itremote,
+  startRemoteControlApp,
+  useRemoteContext
+} from './lib/spec-helpers';
 
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -587,8 +594,114 @@ describe('node feature', () => {
     });
   });
 
+  describe('process.exit', () => {
+    it('exits with exit code zero when called without an argument', async () => {
+      const rc = await startRemoteControlApp();
+      rc.remotely(() => {
+        setImmediate(() => process.exit());
+      }).catch(() => {});
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('uses process.exitCode when called without an argument', async () => {
+      const rc = await startRemoteControlApp();
+      rc.remotely(() => {
+        process.exitCode = 42;
+        setImmediate(() => process.exit());
+      }).catch(() => {});
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(42);
+    });
+
+    it('overrides process.exitCode when called with an argument', async () => {
+      const rc = await startRemoteControlApp();
+      rc.remotely(() => {
+        process.exitCode = 42;
+        setImmediate(() => process.exit(11));
+      }).catch(() => {});
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(11);
+    });
+
+    it('can be called with a null argument', async () => {
+      const rc = await startRemoteControlApp();
+      rc.remotely(() => {
+        setImmediate(() => process.exit(null));
+      }).catch(() => {});
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('can be called with a number argument', async () => {
+      const rc = await startRemoteControlApp();
+      rc.remotely(() => {
+        setImmediate(() => process.exit(7));
+      }).catch(() => {});
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(7);
+    });
+
+    it('throws with an invalid number argument', async () => {
+      const rc = await startRemoteControlApp();
+      let stdout = '';
+      rc.process.stdout!.on('data', (d) => {
+        stdout += d.toString();
+      });
+      rc.remotely(() => {
+        setImmediate(() => {
+          try {
+            process.exit(4.2);
+          } catch (err) {
+            console.log(err);
+            process.exit(99);
+          }
+        });
+      }).catch(() => {});
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(99);
+      expect(stdout).to.match(
+        /RangeError \[ERR_OUT_OF_RANGE\]: The value of "code" is out of range. It must be an integer./
+      );
+    });
+
+    it('can be called with a string argument', async () => {
+      const rc = await startRemoteControlApp();
+      rc.remotely(() => {
+        setImmediate(() => process.exit('12'));
+      }).catch(() => {});
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(12);
+    });
+
+    it('throws with an invalid string argument', async () => {
+      const rc = await startRemoteControlApp();
+      let stdout = '';
+      rc.process.stdout!.on('data', (d) => {
+        stdout += d.toString();
+      });
+      rc.remotely(() => {
+        setImmediate(() => {
+          try {
+            process.exit('invalid');
+          } catch (err) {
+            console.log(err);
+            process.exit(99);
+          }
+        });
+      }).catch(() => {});
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(99);
+      expect(stdout).to.match(/TypeError \[ERR_INVALID_ARG_TYPE\]/);
+    });
+  });
+
   describe('process.stdout', () => {
     useRemoteContext();
+
+    it('is a real Node stream', () => {
+      expect((process.stdout as any)._type).to.not.be.undefined();
+    });
 
     itremote('does not throw an exception when accessed', () => {
       expect(() => process.stdout).to.not.throw();
@@ -945,12 +1058,6 @@ describe('node feature', () => {
 
       child.stderr.on('data', listener);
       child.stdout.on('data', listener);
-    });
-  });
-
-  describe('process.stdout', () => {
-    it('is a real Node stream', () => {
-      expect((process.stdout as any)._type).to.not.be.undefined();
     });
   });
 
