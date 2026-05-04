@@ -23,10 +23,10 @@ additional headless changes from breaking macOS window behavior.
 https://chromium-review.googlesource.com/c/chromium/src/+/7487666
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index e7959d485b894e7407187fb660c9186cc0c044a7..a9d90fc20549c9cb35a1a67a21ef97d7b96c9e47 100644
+index dea308562c23388eb6b5749d2eb3e30eb4088048..19c57be9ab6c445e6c198b8d789d6fd879afaa0a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -241,6 +241,7 @@ @implementation NativeWidgetMacNSWindow {
+@@ -242,6 +242,7 @@ @implementation NativeWidgetMacNSWindow {
    BOOL _isEnforcingNeverMadeVisible;
    BOOL _activationIndependence;
    BOOL _isTooltip;
@@ -34,7 +34,7 @@ index e7959d485b894e7407187fb660c9186cc0c044a7..a9d90fc20549c9cb35a1a67a21ef97d7
    BOOL _isShufflingForOrdering;
    BOOL _miniaturizationInProgress;
    std::unique_ptr<NativeWidgetMacNSWindowHeadlessInfo> _headless_info;
-@@ -248,6 +249,7 @@ @implementation NativeWidgetMacNSWindow {
+@@ -249,6 +250,7 @@ @implementation NativeWidgetMacNSWindow {
  @synthesize bridgedNativeWidgetId = _bridgedNativeWidgetId;
  @synthesize bridge = _bridge;
  @synthesize isTooltip = _isTooltip;
@@ -42,7 +42,7 @@ index e7959d485b894e7407187fb660c9186cc0c044a7..a9d90fc20549c9cb35a1a67a21ef97d7
  @synthesize isShufflingForOrdering = _isShufflingForOrdering;
  @synthesize preventKeyWindow = _preventKeyWindow;
  @synthesize childWindowAddedHandler = _childWindowAddedHandler;
-@@ -269,23 +271,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
+@@ -270,23 +272,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
    return self;
  }
  
@@ -67,7 +67,7 @@ index e7959d485b894e7407187fb660c9186cc0c044a7..a9d90fc20549c9cb35a1a67a21ef97d7
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index a66edd744837816a6a68ce5cdd961068ad530337..814cdf94b39a0b799e3042fbb7d96d8fb7d89308 100644
+index 0c9e5982875230b9aa5a3b809dfc852fc30c14cf..b600b46afbbe7aafcad631bfc5f8d1846bf32280 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -559,7 +559,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {

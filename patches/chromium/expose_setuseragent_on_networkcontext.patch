@@ -33,7 +33,7 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index a4baa7c363c02898f97c975767de98e5910142c5..d2bcaa4bba1ebefa98b034c7e7cfbb1c56c59a84 100644
+index 1e55e75a5b356ddeb6040786254add032ca9f920..7c6fffbad9c9f74851e4f80263d95a5720ccdbd8 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -1997,6 +1997,13 @@ void NetworkContext::SetNetworkConditions(
@@ -63,7 +63,7 @@ index 8fefa1f73342de4e3fba5189ba37fa8657218a4d..415c298bc79848a7aa34eb9887461b9c
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 6c586cc768ca8ee67617e432edfbc02a2fae97e2..23396a38d9d2a5bdd9d2eaccb4c7c3e015e452aa 100644
+index 3cbf9f35744f420160947411bb0f71846d7ebb9a..2a8626b14bd210b4d2121e26c6c8532bdfb8a5d8 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -1303,6 +1303,9 @@ interface NetworkContext {
