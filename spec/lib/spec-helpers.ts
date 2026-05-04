@@ -11,6 +11,7 @@ import * as net from 'node:net';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
+import { stripVTControlCharacters } from 'node:util';
 import * as v8 from 'node:v8';
 
 const addOnly = <T>(fn: Function): T => {
@@ -107,6 +108,77 @@ export async function startRemoteControlApp(extraArgs: string[] = [], options?: 
     appProcess.kill('SIGINT');
   });
   return new RemoteControlApp(appProcess, port);
+}
+
+export interface SpawnAndWaitResult {
+  code: number | null;
+  signal: NodeJS.Signals | null;
+  stdout: string;
+  stderr: string;
+}
+
+export interface SpawnAndWaitOptions extends childProcess.SpawnOptionsWithoutStdio {
+  timeout: number;
+  killTimeout?: number;
+  stripOutput?: boolean;
+}
+
+function formatSpawnOutput(stdout: Buffer[], stderr: Buffer[], stripOutput = false) {
+  const normalize = (chunks: Buffer[]) => {
+    const output = Buffer.concat(chunks).toString().trim();
+    return stripOutput ? stripVTControlCharacters(output) : output;
+  };
+
+  return {
+    stdout: normalize(stdout),
+    stderr: normalize(stderr)
+  };
+}
+
+export async function spawnAndWait(
+  command: string,
+  args: string[],
+  options: SpawnAndWaitOptions
+): Promise<SpawnAndWaitResult> {
+  const { timeout, killTimeout = 5000, stripOutput, ...spawnOptions } = options;
+  const child = childProcess.spawn(command, args, spawnOptions);
+  const stdout: Buffer[] = [];
+  const stderr: Buffer[] = [];
+  child.stdout.on('data', (chunk) => stdout.push(chunk));
+  child.stderr.on('data', (chunk) => stderr.push(chunk));
+
+  let timedOut = false;
+  let killTimeoutId: NodeJS.Timeout | undefined;
+  const timeoutId = globalThis.setTimeout(() => {
+    timedOut = true;
+    child.kill();
+    killTimeoutId = globalThis.setTimeout(() => {
+      child.kill('SIGKILL');
+    }, killTimeout);
+  }, timeout);
+
+  const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve, reject) => {
+    child.on('error', reject);
+    child.on('close', (code, signal) => {
+      resolve([code, signal]);
+    });
+  }).finally(() => {
+    globalThis.clearTimeout(timeoutId);
+    if (killTimeoutId) globalThis.clearTimeout(killTimeoutId);
+  });
+
+  const output = formatSpawnOutput(stdout, stderr, stripOutput);
+  if (timedOut) {
+    throw new Error(
+      `Timed out after ${timeout}ms waiting for ${command} ${args.join(' ')} to exit. Process closed with code ${code} and signal ${signal}.\n\nstdout:\n${output.stdout}\n\nstderr:\n${output.stderr}`
+    );
+  }
+
+  return {
+    code,
+    signal,
+    ...output
+  };
 }
 
 export function waitUntil(callback: () => boolean | Promise<boolean>, opts: { rate?: number; timeout?: number } = {}) {
