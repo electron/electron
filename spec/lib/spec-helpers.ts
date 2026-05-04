@@ -104,8 +104,27 @@ export async function startRemoteControlApp(extraArgs: string[] = [], options?: 
       }
     });
   });
-  defer(() => {
-    appProcess.kill('SIGINT');
+
+  defer(async () => {
+    if (appProcess.exitCode !== null || appProcess.signalCode !== null) return;
+    const exited = new Promise<void>((resolve) => {
+      appProcess.once('exit', () => resolve());
+    });
+    try {
+      appProcess.kill('SIGTERM');
+    } catch {
+    }
+    const ac = new AbortController();
+    const exitedThenAbort = exited.then(() => ac.abort());
+    try {
+      await setTimeout(2000, undefined, { signal: ac.signal });
+      try {
+        appProcess.kill('SIGKILL');
+      } catch {
+      }
+    } catch {
+    }
+    await exitedThenAbort;
   });
   return new RemoteControlApp(appProcess, port);
 }
