@@ -14,6 +14,7 @@
 
 namespace gin_helper {
 class Dictionary;
+class ErrorThrower;
 }
 
 namespace electron::api {
@@ -39,7 +40,8 @@ class WebContentsView : public View,
   // Public APIs.
   gin_helper::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
-  void SetBorderRadius(int radius);
+  void SetBorderRadius(gin_helper::ErrorThrower thrower,
+                       v8::Local<v8::Value> value);
 
   int NonClientHitTest(const gfx::Point& point) override;
 
