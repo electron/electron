@@ -139,7 +139,8 @@ jobs:
 
   checkout-linux:
     needs: setup
-    if: ${{ !inputs.skip-linux}}
+    # DO-NOT-MERGE: disabled while debugging #51462 (macOS-x64 only)
+    if: ${{ false && !inputs.skip-linux}}
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -170,7 +171,8 @@ jobs:
 
   checkout-windows:
     needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    # DO-NOT-MERGE: disabled while debugging #51462 (macOS-x64 only)
+    if: ${{ false && needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -276,6 +278,8 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test.yml
+    # DO-NOT-MERGE: disabled while debugging #51462 (macOS-x64 only)
+    if: ${{ false }}
     needs: checkout-macos
     with:
       build-runs-on: macos-15-xlarge

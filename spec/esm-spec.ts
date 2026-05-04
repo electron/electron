@@ -2,23 +2,131 @@ import { BrowserWindow } from 'electron';
 
 import { expect } from 'chai';
 
+import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
-
-import { spawnAndWait } from './lib/spec-helpers';
+import { stripVTControlCharacters } from 'node:util';
 
 const fixtureTimeout = 20000;
-const fixtureKillTimeout = 5000;
+
+// ---------------------------------------------------------------------------
+// DO-NOT-MERGE: instrumentation for #51462. The import-meta fixture child
+// reaches applicationWillFinishLaunching but never gets
+// applicationDidFinishLaunching on macOS-x64 shard 2. This wrapper captures
+// LaunchServices state, process list, sample, spindump and AppleEvent debug
+// output from the child the moment it is observed hung, then kills it.
+// All output goes to spec/artifacts/esm-diag/ which is uploaded as
+// test_artifacts_<platform>_<shard>.
+// ---------------------------------------------------------------------------
+const diagDir = path.resolve(__dirname, 'artifacts', 'esm-diag');
+fs.mkdirSync(diagDir, { recursive: true });
+
+const runDiag = (label: string, cmd: string, args: string[]) => {
+  try {
+    const out = cp.spawnSync(cmd, args, { encoding: 'utf8', timeout: 90_000 });
+    const file = path.join(diagDir, `${label}.txt`);
+    fs.writeFileSync(
+      file,
+      `# ${cmd} ${args.join(' ')}\n# exit=${out.status} signal=${out.signal}\n` +
+      `--- stdout ---\n${out.stdout ?? ''}\n--- stderr ---\n${out.stderr ?? ''}\n`
+    );
+    process.stderr.write(`[esm-diag] wrote ${file}\n`);
+  } catch (e) {
+    process.stderr.write(`[esm-diag] ${label} failed: ${e}\n`);
+  }
+};
+
+const captureHangDiagnostics = (pid: number, tag: string) => {
+  process.stderr.write(`[esm-diag] capturing diagnostics for hung child pid=${pid} tag=${tag}\n`);
+  // LaunchServices state — registered apps, ASN/PSN, state flags. Key
+  // diagnostic: do stale Electron registrations exist from earlier specs?
+  runDiag(`${tag}-lsappinfo-list`, 'lsappinfo', ['list']);
+  runDiag(`${tag}-lsappinfo-visible`, 'lsappinfo', ['visibleProcessList']);
+  // Per-process LS info for the hung child specifically.
+  runDiag(`${tag}-lsappinfo-pid`, 'lsappinfo', ['info', `pid=${pid}`]);
+  // launchservicesd / appleeventsd health.
+  runDiag(`${tag}-launchctl-lsd`, 'launchctl', ['print', 'system/com.apple.coreservices.launchservicesd']);
+  runDiag(`${tag}-launchctl-aed`, 'launchctl', ['print', 'gui/' + String(process.getuid?.() ?? 501) + '/com.apple.coreservices.appleevents']);
+  // All running processes — look for leaked Electron children from earlier specs.
+  runDiag(`${tag}-ps`, 'ps', ['-Af']);
+  runDiag(`${tag}-ps-electron`, 'sh', ['-c', 'ps -Af | grep -i electron | grep -v grep']);
+  // Thread stacks of the hung child (cheap, no sudo needed).
+  runDiag(`${tag}-sample`, 'sample', [String(pid), '3', '-file', path.join(diagDir, `${tag}-sample.txt`)]);
+  // Full spindump (kernel stacks, mach msg waits) — GHA macOS has passwordless sudo.
+  runDiag(`${tag}-spindump-run`, 'sudo', [
+    'spindump', String(pid), '5', '10',
+    '-file', path.join(diagDir, `${tag}-spindump.txt`),
+    '-noProcessingWhileSampling'
+  ]);
+  // Recent launchservicesd / appleeventsd unified-log lines.
+  runDiag(`${tag}-log-ls`, 'log', [
+    'show', '--last', '5m', '--style', 'compact',
+    '--predicate',
+    'process == "launchservicesd" OR process == "appleeventsd" OR subsystem == "com.apple.launchservices" OR subsystem == "com.apple.appleevents"'
+  ]);
+};
 
 const runFixture = async (appPath: string, args: string[] = []) => {
-  return await spawnAndWait(process.execPath, [appPath, ...args], {
-    timeout: fixtureTimeout,
-    killTimeout: fixtureKillTimeout,
-    stripOutput: true
+  const tag = `${path.basename(appPath)}-${Date.now()}`;
+  // AEDebugSends/Receives make CoreFoundation log every Apple Event the child
+  // sends or receives (incl. the kAEOpenApplication launch event) to stderr.
+  const child = cp.spawn(process.execPath, [appPath, ...args], {
+    stdio: 'pipe',
+    env: {
+      ...process.env,
+      AEDebugSends: '1',
+      AEDebugReceives: '1',
+      AEDebugVerbose: '1'
+    }
   });
+
+  const stdout: Buffer[] = [];
+  const stderr: Buffer[] = [];
+  child.stdout.on('data', (c) => stdout.push(c));
+  child.stderr.on('data', (c) => { stderr.push(c); process.stderr.write(c); });
+
+  let timedOut = false;
+  const diagTimer = setTimeout(() => {
+    if (child.exitCode !== null || child.signalCode !== null) return;
+    timedOut = true;
+    if (process.platform === 'darwin') {
+      captureHangDiagnostics(child.pid!, tag);
+    }
+    process.stderr.write(`[esm-diag] killing hung child pid=${child.pid}\n`);
+    try { child.kill('SIGKILL'); } catch { /* ignore */ }
+  }, fixtureTimeout);
+
+  const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve, reject) => {
+    child.on('error', reject);
+    child.on('close', (code, signal) => resolve([code, signal]));
+  }).finally(() => clearTimeout(diagTimer));
+
+  // Persist child stderr (contains AEDebug output) for every fixture so we can
+  // diff a passing fixture's AE log against the hung one.
+  fs.writeFileSync(
+    path.join(diagDir, `${tag}-child-stderr.txt`),
+    Buffer.concat(stderr).toString()
+  );
+
+  const out = stripVTControlCharacters(Buffer.concat(stdout).toString().trim());
+  const err = stripVTControlCharacters(Buffer.concat(stderr).toString().trim());
+  if (timedOut) {
+    throw new Error(
+      `Timed out after ${fixtureTimeout}ms waiting for ${appPath} (pid=${child.pid}). ` +
+      `Diagnostics in ${diagDir}.\n\nstdout:\n${out}\n\nstderr:\n${err}`
+    );
+  }
+  return { code, signal, stdout: out, stderr: err };
 };
+
+// Baseline LaunchServices/process state captured BEFORE any esm fixture runs,
+// so we can diff against the hang-time capture.
+if (process.platform === 'darwin') {
+  runDiag('baseline-lsappinfo-list', 'lsappinfo', ['list']);
+  runDiag('baseline-ps-electron', 'sh', ['-c', 'ps -Af | grep -i electron | grep -v grep']);
+}
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'esm');
 
