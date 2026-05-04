@@ -18,8 +18,8 @@ const runFixture = async (appPath: string, args: string[] = []) => {
   );
   const result = cp.spawn(process.execPath, [
     '--js-flags=--trace-gc --expose-gc',
-    '--vmodule=child_thread_impl=2,browser_child_process_host_impl=1,render_process_host_impl=1,navigation_request=1,network_service_instance_impl=2,file_url_loader_factory=1',
-    '--trace-startup=toplevel,v8,v8.execute,disabled-by-default-v8.gc,navigation,loading,mojom,ipc,scheduler',
+    '--vmodule=child_thread_impl=2,browser_child_process_host_impl=1,render_process_host_impl=1,navigation_request=1,network_service_instance_impl=2,file_url_loader_factory=1,browser=1,browser_mac=1,electron_browser_main_parts=1',
+    '--trace-startup=toplevel,scheduler,sequence_manager,wakeup.flow,task,disabled-by-default-cpu_profiler,v8,v8.execute,disabled-by-default-v8.runtime,disabled-by-default-v8.gc,disabled-by-default-cppgc,mojom,ipc,navigation,loading',
     '--trace-startup-duration=45',
     '--trace-startup-record-mode=record-until-full',
     `--trace-startup-file=${tracePath}`,
