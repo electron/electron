@@ -1,4 +1,5 @@
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
+import { defaultDesktopName } from '@electron/internal/browser/desktop-name';
 
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
@@ -136,10 +137,7 @@ if (packageJson.productName != null) {
   app.name = `${packageJson.name}`.trim();
 }
 
-// Set application's desktop name (Linux). These usually match the executable name,
-// so use it as the default to ensure the app gets the correct icon in the taskbar and application switcher.
-const desktopName = packageJson.desktopName || `${path.basename(process.execPath)}.desktop`;
-app.setDesktopName(desktopName);
+app.setDesktopName(packageJson.desktopName || defaultDesktopName(app.name));
 
 // Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price
