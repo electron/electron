@@ -10,16 +10,17 @@
 #include <string>
 #include <utility>
 
-#include "ash/style/rounded_rect_cutout_path_builder.h"
 #include "gin/data_object_builder.h"
 #include "gin/wrappable.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "third_party/skia/include/core/SkRRect.h"
 #include "ui/compositor/layer.h"
 #include "ui/views/animation/animation_builder.h"
 #include "ui/views/background.h"
@@ -485,36 +486,71 @@ void View::SetBackgroundColor(std::optional<WrappedSkColor> color) {
                              : nullptr);
 }
 
-void View::SetBorderRadius(int radius) {
-  border_radius_ = radius;
+void View::SetBorderRadius(gin_helper::ErrorThrower thrower,
+                           v8::Local<v8::Value> value) {
+  v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
+  if (value->IsNumber()) {
+    int radius = 0;
+    if (!gin::ConvertFromV8(isolate, value, &radius))
+      return;
+    border_radii_ = gfx::RoundedCornersF(static_cast<float>(radius));
+  } else if (value->IsObject()) {
+    gin_helper::Dictionary dict;
+    if (!gin::ConvertFromV8(isolate, value, &dict))
+      return;
+    int top_left = 0;
+    int top_right = 0;
+    int bottom_right = 0;
+    int bottom_left = 0;
+    dict.Get("topLeft", &top_left);
+    dict.Get("topRight", &top_right);
+    dict.Get("bottomRight", &bottom_right);
+    dict.Get("bottomLeft", &bottom_left);
+    border_radii_ = gfx::RoundedCornersF(
+        static_cast<float>(top_left), static_cast<float>(top_right),
+        static_cast<float>(bottom_right), static_cast<float>(bottom_left));
+  } else {
+    thrower.ThrowTypeError(
+        "setBorderRadius requires a number or an object with topLeft, "
+        "topRight, bottomRight, and/or bottomLeft properties");
+    return;
+  }
   ApplyBorderRadius();
 }
 
 void View::ApplyBorderRadius() {
-  if (!border_radius_.has_value() || !view_)
+  if (!border_radii_.has_value() || !view_)
     return;
 
-  auto size = view_->bounds().size();
+  const auto size = view_->bounds().size();
+  // Each corner is independently clamped to half of the smaller dimension so
+  // the rounded rect remains representable. Clamping is computed locally and
+  // doesn't mutate the stored radii — a future resize back up restores them.
+  const float max_r =
+      std::max(0.f, std::min(size.width(), size.height()) / 2.f);
+  const auto clamp = [max_r](float r) {
+    return std::max(0.f, std::min(r, max_r));
+  };
+  const gfx::RoundedCornersF r(clamp(border_radii_->upper_left()),
+                               clamp(border_radii_->upper_right()),
+                               clamp(border_radii_->lower_right()),
+                               clamp(border_radii_->lower_left()));
 
-  // Restrict border radius to the constraints set in the path builder class.
-  // If the constraints are exceeded, the builder will crash.
-  int radius;
-  {
-    float r = border_radius_.value() * 1.f;
-    r = std::min(r, size.width() / 2.f);
-    r = std::min(r, size.height() / 2.f);
-    r = std::max(r, 0.f);
-    radius = std::floor(r);
-  }
-
-  // RoundedRectCutoutPathBuilder has a minimum size of 32 x 32.
-  if (radius > 0 && size.width() >= 32 && size.height() >= 32) {
-    auto builder = ash::RoundedRectCutoutPathBuilder(gfx::SizeF(size));
-    builder.CornerRadius(radius);
-    view_->SetClipPath(builder.Build());
-  } else {
+  if (r.IsEmpty() || size.IsEmpty()) {
     view_->SetClipPath(SkPath());
+    return;
   }
+
+  const SkRect rect =
+      SkRect::MakeWH(static_cast<SkScalar>(size.width()),
+                     static_cast<SkScalar>(size.height()));
+  const SkVector radii[4] = {{r.upper_left(), r.upper_left()},
+                             {r.upper_right(), r.upper_right()},
+                             {r.lower_right(), r.lower_right()},
+                             {r.lower_left(), r.lower_left()}};
+  SkRRect rrect;
+  rrect.setRectRadii(rect, radii);
+  view_->SetClipPath(SkPath::RRect(rrect));
 }
 
 void View::SetBackgroundBlur(int blur_radius) {
