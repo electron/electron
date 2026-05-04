@@ -1031,6 +1031,7 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
     * `videoRequested` Boolean - true if the web content requested a video stream.
     * `audioRequested` Boolean - true if the web content requested an audio stream.
     * `userGesture` Boolean - Whether a user gesture was active when this request was triggered.
+    * `preferredDisplaySurface` string - The preferred display surface type requested by the web content. Can be 'monitor', 'window', 'browser', or 'none'. This corresponds to the [`displaySurface`](https://developer.mozilla.org/en-US/docs/Web/API/MediaTrackConstraints/displaySurface) constraint in `getDisplayMedia()`.
   * `callback` Function
     * `streams` Object
       * `video` Object | [WebFrameMain](web-frame-main.md) (optional)
@@ -1057,23 +1058,19 @@ via the `navigator.mediaDevices.getDisplayMedia` API. Use the
 [desktopCapturer](desktop-capturer.md) API to choose which stream(s) to grant
 access to.
 
-`useSystemPicker` allows an application to use the system picker instead of providing a specific video source from `getSources`.
+`useSystemPicker` allows an application to use the native OS picker instead of providing a specific video source from the handler callback.
 This option is experimental, and currently available for MacOS 15+ only. If the system picker is available and `useSystemPicker`
 is set to `true`, the handler will not be invoked.
 
 ```js
-const { session, desktopCapturer } = require('electron')
+const { desktopCapturer, session } = require('electron')
 
 session.defaultSession.setDisplayMediaRequestHandler((request, callback) => {
-  desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-    // Grant access to the first screen found.
-    callback({ video: sources[0] })
-  })
-  // Use the system picker if available.
-  // Note: this is currently experimental. If the system picker
-  // is available, it will be used and the media request handler
-  // will not be invoked.
-}, { useSystemPicker: true })
+  // Runs on Windows, Linux, and macOS < 15. On macOS 15+ (where
+  // useSystemPicker is effective) the OS presents its own picker and this
+  // handler is not invoked.
+  callback({ video: request.frame })
+}, { useSystemPicker: desktopCapturer.isDisplayMediaSystemPickerAvailable() })
 ```
 
 Passing a [WebFrameMain](web-frame-main.md) object as a video or audio stream
