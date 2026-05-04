@@ -48,8 +48,7 @@ v8::Local<v8::Value> Converter<content::MediaStreamRequest>::ToV8(
       .Set("audioRequested",
            request.audio_type != blink::mojom::MediaStreamType::NO_SERVICE)
       .Set("preferredDisplaySurface",
-           PreferredDisplaySurfaceToString(
-               request.preferred_display_surface))
+           PreferredDisplaySurfaceToString(request.preferred_display_surface))
       .Build();
 }
 
