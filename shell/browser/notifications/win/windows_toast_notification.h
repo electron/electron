@@ -13,6 +13,7 @@
 #include <windows.ui.notifications.h>
 #include <wrl/implements.h>
 #include <string>
+#include <vector>
 
 #include "base/memory/scoped_refptr.h"
 #include "base/task/single_thread_task_runner.h"
@@ -45,6 +46,17 @@ class WindowsToastNotification : public Notification {
  public:
   // Should only be called by NotificationPresenterWin.
   static bool Initialize();
+
+  // Queries Windows Action Center for all delivered notifications belonging
+  // to this app and returns them as NotificationInfo structs. Must run on
+  // GetToastTaskRunner() (see
+  // NotificationPresenterWin::GetDeliveredNotifications); performs synchronous
+  // WinRT/COM calls.
+  static std::vector<NotificationInfo> GetNotificationHistory();
+
+  // Sequenced runner for blocking WinRT toast work (Show, history). Used by
+  // NotificationPresenterWin::GetDeliveredNotifications among others.
+  static scoped_refptr<base::SequencedTaskRunner> GetToastTaskRunner();
 
   WindowsToastNotification(NotificationDelegate* delegate,
                            NotificationPresenter* presenter);
@@ -116,9 +128,13 @@ class WindowsToastNotification : public Notification {
       toast_manager_;
   static ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>*
       toast_notifier_;
-
-  // Returns the task runner for toast operations, creating it if necessary.
-  static scoped_refptr<base::SequencedTaskRunner> GetToastTaskRunner();
+  // AppUserModelID captured at Initialize() for history queries. Accessed from
+  // the UI thread (Initialize) and the toast SequencedTaskRunner
+  // (GetNotificationHistory); guarded by a lock — use GetInitAppIdCopy /
+  // SetInitAppId / ClearInitAppId only.
+  static std::wstring GetInitAppIdCopy();
+  static void SetInitAppId(PCWSTR value);
+  static void ClearInitAppId();
 
   EventRegistrationToken activated_token_;
   EventRegistrationToken dismissed_token_;
