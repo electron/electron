@@ -95,7 +95,7 @@ function extractFile(zipPath) {
   });
 }
 
-function getPlatformPath () {
+function getPlatformPath() {
   const platform = process.env.ELECTRON_INSTALL_PLATFORM || process.env.npm_config_platform || os.platform();
 
   switch (platform) {
