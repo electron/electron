@@ -1049,15 +1049,18 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  // DevTools frontend messages use base::Unretained delegate callbacks.
+  // Clear the delegate before other teardown work can trigger callbacks
+  // into this partially destroyed WebContents.
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+
   if (web_contents()) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         web_contents()->GetBrowserContext()->GetPermissionControllerDelegate());
     if (permission_manager)
       permission_manager->CancelPendingRequests(web_contents());
   }
-
-  if (inspectable_web_contents_)
-    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
 
   if (owner_window_) {
     owner_window_->RemoveBackgroundThrottlingSource(this);
