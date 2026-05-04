@@ -9,7 +9,13 @@ import * as path from 'node:path';
 import { EventEmitter } from 'node:stream';
 import * as util from 'node:util';
 
-import { copyMacOSFixtureApp, getCodesignIdentity, shouldRunCodesignTests, signApp, spawn } from './lib/codesign-helpers';
+import {
+  copyMacOSFixtureApp,
+  getCodesignIdentity,
+  shouldRunCodesignTests,
+  signApp,
+  spawn
+} from './lib/codesign-helpers';
 import { withTempDirectory } from './lib/fs-helpers';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 
@@ -40,72 +46,116 @@ describe('node feature', () => {
     useRemoteContext();
 
     describe('child_process.fork', () => {
-      itremote('works in current process', async (fixtures: string) => {
-        const child = require('node:child_process').fork(require('node:path').join(fixtures, 'module', 'ping.js'));
-        const message = new Promise<any>(resolve => child.once('message', resolve));
-        child.send('message');
-        const msg = await message;
-        expect(msg).to.equal('message');
-      }, [fixtures]);
+      itremote(
+        'works in current process',
+        async (fixtures: string) => {
+          const child = require('node:child_process').fork(require('node:path').join(fixtures, 'module', 'ping.js'));
+          const message = new Promise<any>((resolve) => child.once('message', resolve));
+          child.send('message');
+          const msg = await message;
+          expect(msg).to.equal('message');
+        },
+        [fixtures]
+      );
 
-      itremote('preserves args', async (fixtures: string) => {
-        const args = ['--expose_gc', '-test', '1'];
-        const child = require('node:child_process').fork(require('node:path').join(fixtures, 'module', 'process_args.js'), args);
-        const message = new Promise<any>(resolve => child.once('message', resolve));
-        child.send('message');
-        const msg = await message;
-        expect(args).to.deep.equal(msg.slice(2));
-      }, [fixtures]);
+      itremote(
+        'preserves args',
+        async (fixtures: string) => {
+          const args = ['--expose_gc', '-test', '1'];
+          const child = require('node:child_process').fork(
+            require('node:path').join(fixtures, 'module', 'process_args.js'),
+            args
+          );
+          const message = new Promise<any>((resolve) => child.once('message', resolve));
+          child.send('message');
+          const msg = await message;
+          expect(args).to.deep.equal(msg.slice(2));
+        },
+        [fixtures]
+      );
 
-      itremote('works in forked process', async (fixtures: string) => {
-        const child = require('node:child_process').fork(require('node:path').join(fixtures, 'module', 'fork_ping.js'));
-        const message = new Promise<any>(resolve => child.once('message', resolve));
-        child.send('message');
-        const msg = await message;
-        expect(msg).to.equal('message');
-      }, [fixtures]);
+      itremote(
+        'works in forked process',
+        async (fixtures: string) => {
+          const child = require('node:child_process').fork(
+            require('node:path').join(fixtures, 'module', 'fork_ping.js')
+          );
+          const message = new Promise<any>((resolve) => child.once('message', resolve));
+          child.send('message');
+          const msg = await message;
+          expect(msg).to.equal('message');
+        },
+        [fixtures]
+      );
 
-      itremote('works in forked process when options.env is specified', async (fixtures: string) => {
-        const child = require('node:child_process').fork(require('node:path').join(fixtures, 'module', 'fork_ping.js'), [], {
-          path: process.env.PATH
-        });
-        const message = new Promise<any>(resolve => child.once('message', resolve));
-        child.send('message');
-        const msg = await message;
-        expect(msg).to.equal('message');
-      }, [fixtures]);
+      itremote(
+        'works in forked process when options.env is specified',
+        async (fixtures: string) => {
+          const child = require('node:child_process').fork(
+            require('node:path').join(fixtures, 'module', 'fork_ping.js'),
+            [],
+            {
+              path: process.env.PATH
+            }
+          );
+          const message = new Promise<any>((resolve) => child.once('message', resolve));
+          child.send('message');
+          const msg = await message;
+          expect(msg).to.equal('message');
+        },
+        [fixtures]
+      );
 
-      itremote('has String::localeCompare working in script', async (fixtures: string) => {
-        const child = require('node:child_process').fork(require('node:path').join(fixtures, 'module', 'locale-compare.js'));
-        const message = new Promise<any>(resolve => child.once('message', resolve));
-        child.send('message');
-        const msg = await message;
-        expect(msg).to.deep.equal([0, -1, 1]);
-      }, [fixtures]);
+      itremote(
+        'has String::localeCompare working in script',
+        async (fixtures: string) => {
+          const child = require('node:child_process').fork(
+            require('node:path').join(fixtures, 'module', 'locale-compare.js')
+          );
+          const message = new Promise<any>((resolve) => child.once('message', resolve));
+          child.send('message');
+          const msg = await message;
+          expect(msg).to.deep.equal([0, -1, 1]);
+        },
+        [fixtures]
+      );
 
-      itremote('has setImmediate working in script', async (fixtures: string) => {
-        const child = require('node:child_process').fork(require('node:path').join(fixtures, 'module', 'set-immediate.js'));
-        const message = new Promise<any>(resolve => child.once('message', resolve));
-        child.send('message');
-        const msg = await message;
-        expect(msg).to.equal('ok');
-      }, [fixtures]);
+      itremote(
+        'has setImmediate working in script',
+        async (fixtures: string) => {
+          const child = require('node:child_process').fork(
+            require('node:path').join(fixtures, 'module', 'set-immediate.js')
+          );
+          const message = new Promise<any>((resolve) => child.once('message', resolve));
+          child.send('message');
+          const msg = await message;
+          expect(msg).to.equal('ok');
+        },
+        [fixtures]
+      );
 
-      itremote('pipes stdio', async (fixtures: string) => {
-        const child = require('node:child_process').fork(require('node:path').join(fixtures, 'module', 'process-stdout.js'), { silent: true });
-        let data = '';
-        child.stdout.on('data', (chunk: any) => {
-          data += String(chunk);
-        });
-        const code = await new Promise<any>(resolve => child.once('close', resolve));
-        expect(code).to.equal(0);
-        expect(data).to.equal('pipes stdio');
-      }, [fixtures]);
+      itremote(
+        'pipes stdio',
+        async (fixtures: string) => {
+          const child = require('node:child_process').fork(
+            require('node:path').join(fixtures, 'module', 'process-stdout.js'),
+            { silent: true }
+          );
+          let data = '';
+          child.stdout.on('data', (chunk: any) => {
+            data += String(chunk);
+          });
+          const code = await new Promise<any>((resolve) => child.once('close', resolve));
+          expect(code).to.equal(0);
+          expect(data).to.equal('pipes stdio');
+        },
+        [fixtures]
+      );
 
       itremote('works when sending a message to a process forked with the --eval argument', async () => {
         const source = "process.on('message', (message) => { process.send(message) })";
         const forked = require('node:child_process').fork('--eval', [source]);
-        const message = new Promise(resolve => forked.once('message', resolve));
+        const message = new Promise((resolve) => forked.once('message', resolve));
         forked.send('hello');
         const msg = await message;
         expect(msg).to.equal('hello');
@@ -123,28 +173,36 @@ describe('node feature', () => {
     });
 
     describe('child_process.spawn', () => {
-      itremote('supports spawning Electron as a node process via the ELECTRON_RUN_AS_NODE env var', async (fixtures: string) => {
-        const child = require('node:child_process').spawn(process.execPath, [require('node:path').join(fixtures, 'module', 'run-as-node.js')], {
-          env: {
-            ELECTRON_RUN_AS_NODE: true
-          }
-        });
+      itremote(
+        'supports spawning Electron as a node process via the ELECTRON_RUN_AS_NODE env var',
+        async (fixtures: string) => {
+          const child = require('node:child_process').spawn(
+            process.execPath,
+            [require('node:path').join(fixtures, 'module', 'run-as-node.js')],
+            {
+              env: {
+                ELECTRON_RUN_AS_NODE: true
+              }
+            }
+          );
 
-        let output = '';
-        child.stdout.on('data', (data: any) => {
-          output += data;
-        });
-        try {
-          await new Promise(resolve => child.stdout.once('close', resolve));
-          expect(JSON.parse(output)).to.deep.equal({
-            stdoutType: 'pipe',
-            processType: 'undefined',
-            window: 'undefined'
+          let output = '';
+          child.stdout.on('data', (data: any) => {
+            output += data;
           });
-        } finally {
-          child.kill();
-        }
-      }, [fixtures]);
+          try {
+            await new Promise((resolve) => child.stdout.once('close', resolve));
+            expect(JSON.parse(output)).to.deep.equal({
+              stdoutType: 'pipe',
+              processType: 'undefined',
+              window: 'undefined'
+            });
+          } finally {
+            child.kill();
+          }
+        },
+        [fixtures]
+      );
     });
 
     describe('child_process.exec', () => {
@@ -156,7 +214,7 @@ describe('node feature', () => {
         // is not 0', then it's likely that our patch to prevent the flag from
         // being set has become ineffective.
         const w = await getRemoteContext();
-        const stdout = await w.webContents.executeJavaScript('require(\'child_process\').execSync(\'sudo --help\')');
+        const stdout = await w.webContents.executeJavaScript("require('child_process').execSync('sudo --help')");
         expect(stdout).to.not.be.empty();
       });
     });
@@ -172,35 +230,39 @@ describe('node feature', () => {
   });
 
   describe('fetch', () => {
-    itremote('works correctly when nodeIntegration is enabled in the renderer', async (fixtures: string) => {
-      const file = require('node:path').join(fixtures, 'hello.txt');
-      expect(() => {
-        fetch('file://' + file);
-      }).to.not.throw();
+    itremote(
+      'works correctly when nodeIntegration is enabled in the renderer',
+      async (fixtures: string) => {
+        const file = require('node:path').join(fixtures, 'hello.txt');
+        expect(() => {
+          fetch('file://' + file);
+        }).to.not.throw();
 
-      expect(() => {
-        const formData = new FormData();
-        formData.append('username', 'Groucho');
-      }).not.to.throw();
+        expect(() => {
+          const formData = new FormData();
+          formData.append('username', 'Groucho');
+        }).not.to.throw();
 
-      expect(() => {
-        const request = new Request('https://example.com', {
-          method: 'POST',
-          body: JSON.stringify({ foo: 'bar' })
-        });
-        expect(request.method).to.equal('POST');
-      }).not.to.throw();
+        expect(() => {
+          const request = new Request('https://example.com', {
+            method: 'POST',
+            body: JSON.stringify({ foo: 'bar' })
+          });
+          expect(request.method).to.equal('POST');
+        }).not.to.throw();
 
-      expect(() => {
-        const response = new Response('Hello, world!');
-        expect(response.status).to.equal(200);
-      }).not.to.throw();
+        expect(() => {
+          const response = new Response('Hello, world!');
+          expect(response.status).to.equal(200);
+        }).not.to.throw();
 
-      expect(() => {
-        const headers = new Headers();
-        headers.append('Content-Type', 'text/xml');
-      }).not.to.throw();
-    }, [fixtures]);
+        expect(() => {
+          const headers = new Headers();
+          headers.append('Content-Type', 'text/xml');
+        }).not.to.throw();
+      },
+      [fixtures]
+    );
   });
 
   it('does not hang when using the fs module in the renderer process', async () => {
@@ -259,9 +321,11 @@ describe('node feature', () => {
         fs.readFile(__filename, () => {
           throw new Error('hello');
         });
-        const result = await new Promise(resolve => suspendListeners(process, 'uncaughtException', (error) => {
-          resolve(error.message);
-        }));
+        const result = await new Promise((resolve) =>
+          suspendListeners(process, 'uncaughtException', (error) => {
+            resolve(error.message);
+          })
+        );
         expect(result).to.equal('hello');
       });
     });
@@ -271,9 +335,11 @@ describe('node feature', () => {
         fs.readFile(__filename, () => {
           Promise.reject(new Error('hello'));
         });
-        const result = await new Promise(resolve => suspendListeners(process, 'unhandledRejection', (error) => {
-          resolve(error.message);
-        }));
+        const result = await new Promise((resolve) =>
+          suspendListeners(process, 'unhandledRejection', (error) => {
+            resolve(error.message);
+          })
+        );
         expect(result).to.equal('hello');
       });
 
@@ -302,7 +368,9 @@ describe('node feature', () => {
         const appProcess = childProcess.spawn(process.execPath, [appPath]);
 
         let output = '';
-        const out = (data: string) => { output += data; };
+        const out = (data: string) => {
+          output += data;
+        };
         appProcess.stdout!.on('data', out);
         appProcess.stderr!.on('data', out);
 
@@ -319,54 +387,68 @@ describe('node feature', () => {
     useRemoteContext();
 
     describe('setTimeout in fs callback', () => {
-      itremote('does not crash', async (filename: string) => {
-        await new Promise(resolve => require('node:fs').readFile(filename, () => {
-          setTimeout(resolve, 0);
-        }));
-      }, [__filename]);
+      itremote(
+        'does not crash',
+        async (filename: string) => {
+          await new Promise((resolve) =>
+            require('node:fs').readFile(filename, () => {
+              setTimeout(resolve, 0);
+            })
+          );
+        },
+        [__filename]
+      );
     });
 
     describe('error thrown in renderer process node context', () => {
-      itremote('gets emitted as a process uncaughtException event', async (filename: string) => {
-        const error = new Error('boo!');
-        require('node:fs').readFile(filename, () => {
-          throw error;
-        });
-        await new Promise<void>((resolve, reject) => {
-          process.once('uncaughtException', (thrown) => {
-            try {
-              expect(thrown).to.equal(error);
-              resolve();
-            } catch (e) {
-              reject(e);
-            }
+      itremote(
+        'gets emitted as a process uncaughtException event',
+        async (filename: string) => {
+          const error = new Error('boo!');
+          require('node:fs').readFile(filename, () => {
+            throw error;
           });
-        });
-      }, [__filename]);
+          await new Promise<void>((resolve, reject) => {
+            process.once('uncaughtException', (thrown) => {
+              try {
+                expect(thrown).to.equal(error);
+                resolve();
+              } catch (e) {
+                reject(e);
+              }
+            });
+          });
+        },
+        [__filename]
+      );
     });
 
     describe('URL handling in the renderer process', () => {
-      itremote('can successfully handle WHATWG URLs constructed by Blink', (fixtures: string) => {
-        const url = new URL('file://' + require('node:path').resolve(fixtures, 'pages', 'base-page.html'));
-        expect(() => {
-          require('node:fs').createReadStream(url);
-        }).to.not.throw();
-      }, [fixtures]);
+      itremote(
+        'can successfully handle WHATWG URLs constructed by Blink',
+        (fixtures: string) => {
+          const url = new URL('file://' + require('node:path').resolve(fixtures, 'pages', 'base-page.html'));
+          expect(() => {
+            require('node:fs').createReadStream(url);
+          }).to.not.throw();
+        },
+        [fixtures]
+      );
     });
 
     describe('setTimeout called under blink env in renderer process', () => {
       itremote('can be scheduled in time', async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       });
 
       itremote('works from the timers module', async () => {
-        await new Promise(resolve => require('node:timers').setTimeout(resolve, 10));
+        await new Promise((resolve) => require('node:timers').setTimeout(resolve, 10));
       });
     });
 
     describe('setInterval called under blink env in renderer process', () => {
       itremote('can be scheduled in time', async () => {
-        await new Promise<void>(resolve => {
+        await new Promise<void>((resolve) => {
           const id = setInterval(() => {
             clearInterval(id);
             resolve();
@@ -376,7 +458,7 @@ describe('node feature', () => {
 
       itremote('can be scheduled in time from timers module', async () => {
         const { setInterval, clearInterval } = require('node:timers');
-        await new Promise<void>(resolve => {
+        await new Promise<void>((resolve) => {
           const id = setInterval(() => {
             clearInterval(id);
             resolve();
@@ -390,38 +472,49 @@ describe('node feature', () => {
     useRemoteContext();
 
     describe('process.nextTick', () => {
-      itremote('emits the callback', () => new Promise(resolve => process.nextTick(resolve)));
+      itremote('emits the callback', () => new Promise((resolve) => process.nextTick(resolve)));
 
-      itremote('works in nested calls', () =>
-        new Promise(resolve => {
-          process.nextTick(() => {
-            process.nextTick(() => process.nextTick(resolve));
-          });
-        }));
+      itremote(
+        'works in nested calls',
+        () =>
+          new Promise((resolve) => {
+            process.nextTick(() => {
+              process.nextTick(() => process.nextTick(resolve));
+            });
+          })
+      );
     });
 
     describe('setImmediate', () => {
-      itremote('emits the callback', () => new Promise(resolve => setImmediate(resolve)));
+      itremote('emits the callback', () => new Promise((resolve) => setImmediate(resolve)));
 
-      itremote('works in nested calls', () => new Promise(resolve => {
-        setImmediate(() => {
-          setImmediate(() => setImmediate(resolve));
-        });
-      }));
+      itremote(
+        'works in nested calls',
+        () =>
+          new Promise((resolve) => {
+            setImmediate(() => {
+              setImmediate(() => setImmediate(resolve));
+            });
+          })
+      );
     });
   });
 
   ifdescribe(process.platform === 'darwin')('net.connect', () => {
-    itremote('emit error when connect to a socket path without listeners', async (fixtures: string) => {
-      const socketPath = require('node:path').join(require('node:os').tmpdir(), 'electron-test.sock');
-      const script = require('node:path').join(fixtures, 'module', 'create_socket.js');
-      const child = require('node:child_process').fork(script, [socketPath]);
-      const code = await new Promise(resolve => child.once('exit', resolve));
-      expect(code).to.equal(0);
-      const client = require('node:net').connect(socketPath);
-      const error = await new Promise<any>(resolve => client.once('error', resolve));
-      expect(error.code).to.equal('ECONNREFUSED');
-    }, [fixtures]);
+    itremote(
+      'emit error when connect to a socket path without listeners',
+      async (fixtures: string) => {
+        const socketPath = require('node:path').join(require('node:os').tmpdir(), 'electron-test.sock');
+        const script = require('node:path').join(fixtures, 'module', 'create_socket.js');
+        const child = require('node:child_process').fork(script, [socketPath]);
+        const code = await new Promise((resolve) => child.once('exit', resolve));
+        expect(code).to.equal(0);
+        const client = require('node:net').connect(socketPath);
+        const error = await new Promise<any>((resolve) => client.once('error', resolve));
+        expect(error.code).to.equal('ECONNREFUSED');
+      },
+      [fixtures]
+    );
   });
 
   describe('Buffer', () => {
@@ -452,7 +545,8 @@ describe('node feature', () => {
 
     itremote('does not crash for crypto operations', () => {
       const crypto = require('node:crypto');
-      const data = 'lG9E+/g4JmRmedDAnihtBD4Dfaha/GFOjd+xUOQI05UtfVX3DjUXvrS98p7kZQwY3LNhdiFo7MY5rGft8yBuDhKuNNag9vRx/44IuClDhdQ=';
+      const data =
+        'lG9E+/g4JmRmedDAnihtBD4Dfaha/GFOjd+xUOQI05UtfVX3DjUXvrS98p7kZQwY3LNhdiFo7MY5rGft8yBuDhKuNNag9vRx/44IuClDhdQ=';
       const key = 'q90K9yBqhWZnAMCMTOJfPQ==';
       const cipherText = '{"error_code":114,"error_message":"Tham số không hợp lệ","data":null}';
       for (let i = 0; i < 10000; ++i) {
@@ -745,7 +839,8 @@ describe('node feature', () => {
     });
 
     const script = path.join(fixtures, 'api', 'fork-with-node-options.js');
-    const nodeOptionsWarning = 'Node.js environment variables are disabled because this process is invoked by other apps';
+    const nodeOptionsWarning =
+      'Node.js environment variables are disabled because this process is invoked by other apps';
 
     it('is disabled when invoked by other apps in ELECTRON_RUN_AS_NODE mode', async () => {
       await withTempDirectory(async (dir) => {
@@ -765,7 +860,7 @@ describe('node feature', () => {
         const appPath = await copyMacOSFixtureApp(dir);
         await signApp(appPath, identity);
         // Find system node and copy it to app bundle.
-        const nodePath = process.env.PATH?.split(path.delimiter).find(dir => fs.existsSync(path.join(dir, 'node')));
+        const nodePath = process.env.PATH?.split(path.delimiter).find((dir) => fs.existsSync(path.join(dir, 'node')));
         if (!nodePath) {
           this.skip();
           return;
@@ -885,13 +980,19 @@ describe('node feature', () => {
     });
 
     it('Supports starting the v8 inspector with --inspect and a provided port', async () => {
-      child = childProcess.spawn(process.execPath, ['--inspect=17364', path.join(fixtures, 'module', 'run-as-node.js')], {
-        env: { ELECTRON_RUN_AS_NODE: 'true' }
-      });
+      child = childProcess.spawn(
+        process.execPath,
+        ['--inspect=17364', path.join(fixtures, 'module', 'run-as-node.js')],
+        {
+          env: { ELECTRON_RUN_AS_NODE: 'true' }
+        }
+      );
       exitPromise = once(child, 'exit');
 
       let output = '';
-      const listener = (data: Buffer) => { output += data; };
+      const listener = (data: Buffer) => {
+        output += data;
+      };
       const cleanup = () => {
         child.stderr.removeListener('data', listener);
         child.stdout.removeListener('data', listener);
@@ -913,7 +1014,9 @@ describe('node feature', () => {
       exitPromise = once(child, 'exit');
 
       let output = '';
-      const listener = (data: Buffer) => { output += data; };
+      const listener = (data: Buffer) => {
+        output += data;
+      };
       child.stderr.on('data', listener);
       child.stdout.on('data', listener);
       await once(child, 'exit');
@@ -936,7 +1039,7 @@ describe('node feature', () => {
 
       let output = '';
       const success = false;
-      function listener (data: Buffer) {
+      function listener(data: Buffer) {
         output += data;
         console.log(data.toString()); // NOTE: temporary debug logging to try to catch flake.
         const match = /^Debugger listening on (ws:\/\/.+:\d+\/.+)\n/m.exec(output.trim());
@@ -947,13 +1050,15 @@ describe('node feature', () => {
           child.stdout.on('data', (m) => console.log(m.toString()));
           const w = (webContents as typeof ElectronInternal.WebContents).create();
           w.loadURL('about:blank')
-            .then(() => w.executeJavaScript(`new Promise(resolve => {
+            .then(() =>
+              w.executeJavaScript(`new Promise(resolve => {
               const connection = new WebSocket(${JSON.stringify(match[1])})
               connection.onopen = () => {
                 connection.onclose = () => resolve()
                 connection.close()
               }
-            })`))
+            })`)
+            )
             .then(() => {
               w.destroy();
               child.send('plz-quit');
@@ -970,10 +1075,14 @@ describe('node feature', () => {
     });
 
     it('Supports js binding', async () => {
-      child = childProcess.spawn(process.execPath, ['--inspect', path.join(fixtures, 'module', 'inspector-binding.js')], {
-        env: { ELECTRON_RUN_AS_NODE: 'true' },
-        stdio: ['ipc']
-      }) as childProcess.ChildProcessWithoutNullStreams;
+      child = childProcess.spawn(
+        process.execPath,
+        ['--inspect', path.join(fixtures, 'module', 'inspector-binding.js')],
+        {
+          env: { ELECTRON_RUN_AS_NODE: 'true' },
+          stdio: ['ipc']
+        }
+      ) as childProcess.ChildProcessWithoutNullStreams;
       exitPromise = once(child, 'exit');
 
       const [{ cmd, debuggerEnabled, success }] = await once(child, 'message');
@@ -995,7 +1104,11 @@ describe('node feature', () => {
   });
 
   it('Can find a module using a package.json main field', () => {
-    const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')], { stdio: 'inherit' });
+    const result = childProcess.spawnSync(
+      process.execPath,
+      [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')],
+      { stdio: 'inherit' }
+    );
     expect(result.status).to.equal(0);
   });
 
@@ -1011,7 +1124,7 @@ describe('node feature', () => {
   });
 
   it('performs microtask checkpoint correctly', (done) => {
-    let timer : NodeJS.Timeout;
+    let timer: NodeJS.Timeout;
     const listener = () => {
       done(new Error('catch block is delayed to next tick'));
     };
@@ -1039,15 +1152,22 @@ describe('node feature', () => {
     });
 
     it('will not transform TypeScript types without --experimental-transform-types', async () => {
-      const child = childProcess.spawn(process.execPath, [path.join(fixtures, 'type-stripping', 'transform-types-node.ts')], {
-        env: { ELECTRON_RUN_AS_NODE: 'true' }
-      });
+      const child = childProcess.spawn(
+        process.execPath,
+        [path.join(fixtures, 'type-stripping', 'transform-types-node.ts')],
+        {
+          env: { ELECTRON_RUN_AS_NODE: 'true' }
+        }
+      );
       const [code] = await once(child, 'exit');
       expect(code).to.not.equal(0);
     });
 
     it('transforms TypeScript types with --experimental-transform-types', async () => {
-      const child = childProcess.spawn(process.execPath, ['--experimental-transform-types', path.join(fixtures, 'type-stripping', 'transform-types.ts')]);
+      const child = childProcess.spawn(process.execPath, [
+        '--experimental-transform-types',
+        path.join(fixtures, 'type-stripping', 'transform-types.ts')
+      ]);
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
     });

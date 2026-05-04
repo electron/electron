@@ -244,6 +244,8 @@ class App final : public gin::Wrappable<App>,
 #if BUILDFLAG(IS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
                            const std::string& policy);
+  void ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
+                         gin::Arguments* args);
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);

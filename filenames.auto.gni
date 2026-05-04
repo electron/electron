@@ -171,6 +171,7 @@ auto_filenames = {
     "docs/api/structures/web-preferences.md",
     "docs/api/structures/web-request-filter.md",
     "docs/api/structures/web-source.md",
+    "docs/api/structures/webauthn-account.md",
     "docs/api/structures/window-open-handler-response.md",
     "docs/api/structures/window-session-end-event.md",
   ]
@@ -180,6 +181,7 @@ auto_filenames = {
     "lib/common/define-properties.ts",
     "lib/common/deprecate.ts",
     "lib/common/ipc-messages.ts",
+    "lib/common/timers-shim.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-globals-provider.ts",
     "lib/renderer/api/context-bridge.ts",

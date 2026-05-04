@@ -10,11 +10,13 @@ const installCertScriptPath = path.resolve(fixturesPath, 'install_test_cert.ps1'
 
 // Install the signing certificate for MSIX test packages to the Trusted People store
 // This is required to install self-signed MSIX packages
-export async function installMsixCertificate (): Promise<void> {
+export async function installMsixCertificate(): Promise<void> {
   const result = cp.spawnSync('powershell', [
     '-NoProfile',
-    '-ExecutionPolicy', 'Bypass',
-    '-File', installCertScriptPath
+    '-ExecutionPolicy',
+    'Bypass',
+    '-File',
+    installCertScriptPath
   ]);
 
   if (result.status !== 0) {
@@ -23,21 +25,20 @@ export async function installMsixCertificate (): Promise<void> {
 }
 
 // Check if we should run MSIX tests
-export const shouldRunMsixTests =
-  process.platform === 'win32';
+export const shouldRunMsixTests = process.platform === 'win32';
 
 // Get the Electron executable path
-export function getElectronExecutable (): string {
+export function getElectronExecutable(): string {
   return process.execPath;
 }
 
 // Get path to main.js fixture
-export function getMainJsFixturePath (): string {
+export function getMainJsFixturePath(): string {
   return path.resolve(fixturesPath, 'main.js');
 }
 
 // Register executable with identity
-export async function registerExecutableWithIdentity (executablePath: string): Promise<void> {
+export async function registerExecutableWithIdentity(executablePath: string): Promise<void> {
   if (!fs.existsSync(manifestFixturePath)) {
     throw new Error(`Manifest fixture not found: ${manifestFixturePath}`);
   }
@@ -71,11 +72,17 @@ export async function registerExecutableWithIdentity (executablePath: string): P
 
 // Unregister the Electron Dev MSIX package
 // This removes the sparse package registration created by registerExecutableWithIdentity
-export async function unregisterExecutableWithIdentity (): Promise<void> {
-  const result = cp.spawnSync('powershell', ['-NoProfile', '-Command', ' Get-AppxPackage Electron.Dev.MSIX | Remove-AppxPackage']);
+export async function unregisterExecutableWithIdentity(): Promise<void> {
+  const result = cp.spawnSync('powershell', [
+    '-NoProfile',
+    '-Command',
+    ' Get-AppxPackage Electron.Dev.MSIX | Remove-AppxPackage'
+  ]);
   // Don't throw if package doesn't exist
   if (result.status !== 0) {
-    throw new Error(`Failed to unregister executable with identity: ${result.stderr.toString() || result.stdout.toString()}`);
+    throw new Error(
+      `Failed to unregister executable with identity: ${result.stderr.toString() || result.stdout.toString()}`
+    );
   }
 
   const electronExec = getElectronExecutable();
@@ -91,13 +98,13 @@ export async function unregisterExecutableWithIdentity (): Promise<void> {
 }
 
 // Get path to MSIX fixture package
-export function getMsixFixturePath (version: 'v1' | 'v2'): string {
+export function getMsixFixturePath(version: 'v1' | 'v2'): string {
   const filename = `HelloMSIX_${version}.msix`;
   return path.resolve(fixturesPath, filename);
 }
 
 // Install MSIX package
-export async function installMsixPackage (msixPath: string): Promise<void> {
+export async function installMsixPackage(msixPath: string): Promise<void> {
   // Use Add-AppxPackage PowerShell cmdlet
   const result = cp.spawnSync('powershell', [
     '-Command',
@@ -109,7 +116,7 @@ export async function installMsixPackage (msixPath: string): Promise<void> {
 }
 
 // Uninstall MSIX package by  name
-export async function uninstallMsixPackage (name: string): Promise<void> {
+export async function uninstallMsixPackage(name: string): Promise<void> {
   const result = cp.spawnSync('powershell', ['-NoProfile', '-Command', `Get-AppxPackage ${name} | Remove-AppxPackage`]);
   // Don't throw if package doesn't exist
   if (result.status !== 0) {
@@ -118,7 +125,7 @@ export async function uninstallMsixPackage (name: string): Promise<void> {
 }
 
 // Get version of installed MSIX package by name
-export async function getMsixPackageVersion (name: string): Promise<string | null> {
+export async function getMsixPackageVersion(name: string): Promise<string | null> {
   const psCommand = `(Get-AppxPackage -Name '${name}').Version`;
   const result = cp.spawnSync('powershell', ['-NoProfile', '-Command', psCommand]);
   if (result.status !== 0) {
@@ -128,7 +135,7 @@ export async function getMsixPackageVersion (name: string): Promise<string | nul
   return version || null;
 }
 
-export function spawn (cmd: string, args: string[], opts: any = {}): Promise<{ code: number, out: string }> {
+export function spawn(cmd: string, args: string[], opts: any = {}): Promise<{ code: number; out: string }> {
   let out = '';
   const child = cp.spawn(cmd, args, opts);
   child.stdout.on('data', (chunk: Buffer) => {
@@ -137,7 +144,7 @@ export function spawn (cmd: string, args: string[], opts: any = {}): Promise<{ c
   child.stderr.on('data', (chunk: Buffer) => {
     out += chunk.toString();
   });
-  return new Promise<{ code: number, out: string }>((resolve) => {
+  return new Promise<{ code: number; out: string }>((resolve) => {
     child.on('exit', (code, signal) => {
       expect(signal).to.equal(null);
       resolve({

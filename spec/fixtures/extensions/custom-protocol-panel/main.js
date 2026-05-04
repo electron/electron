@@ -19,9 +19,13 @@ protocol.registerSchemesAsPrivileged([
 app.whenReady().then(async () => {
   const ses = session.defaultSession;
 
-  ses.protocol.handle(scheme, () => new Response(html, {
-    headers: { 'Content-Type': 'text/html' }
-  }));
+  ses.protocol.handle(
+    scheme,
+    () =>
+      new Response(html, {
+        headers: { 'Content-Type': 'text/html' }
+      })
+  );
 
   await ses.extensions.loadExtension(path.join(__dirname, 'extension'));
 

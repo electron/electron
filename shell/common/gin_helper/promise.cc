@@ -9,9 +9,45 @@
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/process_util.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/name-provider.h"
 #include "v8/include/v8-context.h"
+#include "v8/include/v8-cppgc.h"
+#include "v8/include/v8-traced-handle.h"
 
 namespace gin_helper {
+
+class PromiseHandle final : public cppgc::GarbageCollected<PromiseHandle>,
+                            public cppgc::NameProvider {
+ public:
+  PromiseHandle(v8::Isolate* isolate,
+                v8::Local<v8::Context> context,
+                v8::Local<v8::Promise::Resolver> resolver)
+      : context_(isolate, context), resolver_(isolate, resolver) {}
+
+  void Trace(cppgc::Visitor* visitor) const {
+    visitor->Trace(context_);
+    visitor->Trace(resolver_);
+  }
+
+  const char* GetHumanReadableName() const final {
+    return "Electron / PromiseHandle";
+  }
+
+  [[nodiscard]] bool IsAlive() const { return !resolver_.IsEmpty(); }
+
+  v8::Local<v8::Context> GetContext(v8::Isolate* isolate) const {
+    return context_.Get(isolate);
+  }
+
+  v8::Local<v8::Promise::Resolver> GetResolver(v8::Isolate* isolate) const {
+    return resolver_.Get(isolate);
+  }
+
+ private:
+  v8::TracedReference<v8::Context> context_;
+  v8::TracedReference<v8::Promise::Resolver> resolver_;
+};
 
 PromiseBase::SettleScope::SettleScope(const PromiseBase& base)
     : isolate_{base.isolate()},
@@ -33,8 +69,11 @@ PromiseBase::PromiseBase(v8::Isolate* isolate)
 PromiseBase::PromiseBase(v8::Isolate* isolate,
                          v8::Local<v8::Promise::Resolver> handle)
     : isolate_(isolate),
-      context_(isolate, isolate->GetCurrentContext()),
-      resolver_(isolate, handle) {}
+      handle_(cppgc::MakeGarbageCollected<PromiseHandle>(
+          isolate->GetCppHeap()->GetAllocationHandle(),
+          isolate,
+          isolate->GetCurrentContext(),
+          handle)) {}
 
 PromiseBase::PromiseBase() : isolate_(nullptr) {}
 
@@ -43,6 +82,10 @@ PromiseBase::PromiseBase(PromiseBase&&) = default;
 PromiseBase::~PromiseBase() = default;
 
 PromiseBase& PromiseBase::operator=(PromiseBase&&) = default;
+
+bool PromiseBase::IsAlive() const {
+  return handle_ && handle_->IsAlive();
+}
 
 // static
 scoped_refptr<base::TaskRunner> PromiseBase::GetTaskRunner() {
@@ -54,32 +97,51 @@ scoped_refptr<base::TaskRunner> PromiseBase::GetTaskRunner() {
 }
 
 v8::Maybe<bool> PromiseBase::Reject(v8::Local<v8::Value> except) {
+  if (!IsAlive())
+    return v8::Nothing<bool>();
   SettleScope settle_scope{*this};
   return GetInner()->Reject(settle_scope.context_, except);
 }
 
 v8::Maybe<bool> PromiseBase::Reject() {
+  if (!IsAlive())
+    return v8::Nothing<bool>();
   SettleScope settle_scope{*this};
   return GetInner()->Reject(settle_scope.context_, v8::Undefined(isolate()));
 }
 
 v8::Maybe<bool> PromiseBase::RejectWithErrorMessage(std::string_view errmsg) {
+  if (!IsAlive())
+    return v8::Nothing<bool>();
   SettleScope settle_scope{*this};
   return GetInner()->Reject(
       settle_scope.context_,
       v8::Exception::Error(gin::StringToV8(isolate(), errmsg)));
 }
 
+v8::Maybe<bool> PromiseBase::Resolve() {
+  if (!IsAlive())
+    return v8::Nothing<bool>();
+  return ResolveWith(v8::Undefined(isolate()));
+}
+
 v8::Local<v8::Context> PromiseBase::GetContext() const {
-  return v8::Local<v8::Context>::New(isolate_, context_);
+  return IsAlive() ? handle_->GetContext(isolate_) : v8::Local<v8::Context>();
 }
 
 v8::Local<v8::Promise> PromiseBase::GetHandle() const {
-  return GetInner()->GetPromise();
+  auto inner = GetInner();
+  return inner.IsEmpty() ? v8::Local<v8::Promise>() : inner->GetPromise();
 }
 
 v8::Local<v8::Promise::Resolver> PromiseBase::GetInner() const {
-  return resolver_.Get(isolate());
+  return IsAlive() ? handle_->GetResolver(isolate_)
+                   : v8::Local<v8::Promise::Resolver>();
+}
+
+v8::Maybe<bool> PromiseBase::ResolveWith(v8::Local<v8::Value> value) {
+  SettleScope settle_scope{*this};
+  return GetInner()->Resolve(settle_scope.context_, value);
 }
 
 // static
@@ -117,11 +179,6 @@ v8::Local<v8::Promise> Promise<void>::ResolvedPromise(v8::Isolate* isolate) {
   Promise<void> resolved(isolate);
   resolved.Resolve();
   return resolved.GetHandle();
-}
-
-v8::Maybe<bool> Promise<void>::Resolve() {
-  SettleScope settle_scope{*this};
-  return GetInner()->Resolve(settle_scope.context_, v8::Undefined(isolate()));
 }
 
 }  // namespace gin_helper

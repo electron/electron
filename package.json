@@ -21,20 +21,10 @@
     "@types/semver": "^7.5.8",
     "@types/stream-json": "^1.7.8",
     "@types/temp": "^0.9.4",
-    "@typescript-eslint/eslint-plugin": "^8.32.1",
-    "@typescript-eslint/parser": "^8.7.0",
     "@xmldom/xmldom": "^0.8.11",
     "buffer": "^6.0.3",
     "chalk": "^4.1.0",
     "check-for-leaks": "^1.2.1",
-    "eslint": "^8.57.1",
-    "eslint-config-standard": "^17.1.0",
-    "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-markdown": "^5.1.0",
-    "eslint-plugin-mocha": "^10.5.0",
-    "eslint-plugin-n": "^16.6.2",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^6.6.0",
     "events": "^3.2.0",
     "folder-hash": "^4.1.1",
     "got": "^11.8.5",
@@ -44,6 +34,8 @@
     "minimist": "^1.2.8",
     "node-gyp": "^11.4.2",
     "null-loader": "^4.0.1",
+    "oxfmt": "^0.42.0",
+    "oxlint": "^1.57.0",
     "pre-flight": "^2.0.0",
     "process": "^0.11.10",
     "semver": "^7.6.3",
@@ -63,8 +55,10 @@
   "scripts": {
     "asar": "asar",
     "generate-version-json": "node script/generate-version-json.js",
-    "lint": "node ./script/lint.js && npm run lint:docs && npm run lint:chromium-roller",
+    "lint": "node ./script/lint.js && npm run lint:fmt && npm run lint:docs && npm run lint:chromium-roller",
     "lint:js": "node ./script/lint.js --js",
+    "lint:fmt": "oxfmt --check \"{lib,spec,script,build,default_app,npm}/**/*.{js,ts,mjs,cjs}\"",
+    "format": "oxfmt --write \"{lib,spec,script,build,default_app,npm}/**/*.{js,ts,mjs,cjs}\"",
     "lint:clang-format": "python3 script/run-clang-format.py -r -c shell/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
     "lint:clang-tidy": "ts-node ./script/run-clang-tidy.ts",
     "lint:cpp": "node ./script/lint.js --cc",
@@ -105,8 +99,12 @@
     "*": [
       "npm run lint:chromium-roller"
     ],
+    "*.{js,ts,mjs,cjs}": [
+      "oxfmt --write"
+    ],
     "*.{js,ts}": [
-      "node script/lint.js --js --fix --only --"
+      "node script/lint.js --js --fix --only --",
+      "oxfmt --write"
     ],
     "*.{js,ts,d.ts}": [
       "ts-node script/gen-filenames.ts"
