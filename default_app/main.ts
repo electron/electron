@@ -74,6 +74,19 @@ if (option.modules.length > 0) {
   (Module as any)._preloadModules(option.modules);
 }
 
+// See lib/browser/desktop-name.ts
+function defaultDesktopName(name: string | undefined): string {
+  const slug =
+    name &&
+    name
+      .normalize('NFKD')
+      .replace(/\p{M}/gu, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  return slug ? `${slug}.desktop` : `${path.basename(process.execPath)}.desktop`;
+}
+
 async function loadApplicationPackage(packagePath: string) {
   // Add a flag indicating app is started from default app.
   Object.defineProperty(process, 'defaultApp', {
@@ -113,10 +126,7 @@ async function loadApplicationPackage(packagePath: string) {
         app.name = packageJson.name;
       }
 
-      // Set application's desktop name (Linux). These usually match the executable name,
-      // so use it as the default to ensure the app gets the correct icon in the taskbar and application switcher.
-      const desktopName = packageJson.desktopName || `${path.basename(process.execPath)}.desktop`;
-      app.setDesktopName(desktopName);
+      app.setDesktopName(packageJson.desktopName || defaultDesktopName(app.name));
 
       // Set v8 flags, deliberately lazy load so that apps that do not use this
       // feature do not pay the price
