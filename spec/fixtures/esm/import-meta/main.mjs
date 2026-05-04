@@ -5,6 +5,19 @@ import { fileURLToPath } from 'node:url';
 
 const log = (msg) => process.stderr.write(`[import-meta:${process.pid}] ${msg}\n`);
 
+process.on('uncaughtException', (err, origin) => {
+  log(`uncaughtException origin=${origin} name=${err && err.name} message=${err && err.message}`);
+  if (err && err.stack) log(`uncaughtException.stack=${err.stack}`);
+});
+process.on('unhandledRejection', (reason, _) => {
+  const r = reason && (reason.stack || reason.message || String(reason));
+  log(`unhandledRejection reason=${r}`);
+});
+process.on('warning', (warning) => {
+  log(`warning name=${warning.name} message=${warning.message}`);
+  if (warning.stack) log(`warning.stack=${warning.stack}`);
+});
+
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const gc = async (ms = 50) => {
