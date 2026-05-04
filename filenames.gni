@@ -478,6 +478,8 @@ filenames = {
     "shell/browser/notifications/notification_presenter.h",
     "shell/browser/notifications/platform_notification_service.cc",
     "shell/browser/notifications/platform_notification_service.h",
+    "shell/browser/os_crypt_async_encryptor_provider.cc",
+    "shell/browser/os_crypt_async_encryptor_provider.h",
     "shell/browser/osr/osr_host_display_client.cc",
     "shell/browser/osr/osr_host_display_client.h",
     "shell/browser/osr/osr_paint_event.cc",

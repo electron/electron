@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 #define ELECTRON_SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_
 
+#include <memory>
+
 #include "chrome/browser/net/proxy_config_monitor.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/base/features.h"
@@ -13,6 +15,8 @@
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "services/network/public/mojom/network_service.mojom-forward.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
+
+class CookieEncryptionProviderImpl;
 
 namespace electron {
 network::mojom::HttpAuthDynamicParamsPtr CreateHttpAuthDynamicParams();
@@ -102,6 +106,8 @@ class SystemNetworkContextManager {
   // consumers don't all need to create their own factory.
   scoped_refptr<URLLoaderFactoryForSystem> shared_url_loader_factory_;
   mojo::Remote<network::mojom::URLLoaderFactory> url_loader_factory_;
+
+  std::unique_ptr<CookieEncryptionProviderImpl> cookie_encryption_provider_;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_NET_SYSTEM_NETWORK_CONTEXT_MANAGER_H_

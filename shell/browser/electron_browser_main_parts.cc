@@ -22,10 +22,6 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_switches.h"
-#include "components/os_crypt/sync/key_storage_config_linux.h"
-#include "components/os_crypt/sync/key_storage_util_linux.h"
-#include "components/os_crypt/sync/os_crypt.h"
-#include "components/password_manager/core/browser/password_manager_switches.h"  // nogncheck
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_child_process_host_delegate.h"
 #include "content/public/browser/browser_child_process_host_iterator.h"
@@ -520,34 +516,6 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
 
   if (!bluez::BluezDBusManager::IsInitialized())
     bluez::DBusBluezManagerWrapperLinux::Initialize();
-
-  // Set up crypt config. This needs to be done before anything starts the
-  // network service, as the raw encryption key needs to be shared with the
-  // network service for encrypted cookie storage.
-  const base::CommandLine& command_line =
-      *base::CommandLine::ForCurrentProcess();
-  std::unique_ptr<os_crypt::Config> config =
-      std::make_unique<os_crypt::Config>();
-  // Forward to os_crypt the flag to use a specific password store.
-  config->store =
-      command_line.GetSwitchValueASCII(password_manager::kPasswordStore);
-  config->product_name = app_name;
-  config->application_name = app_name;
-  // c.f.
-  // https://source.chromium.org/chromium/chromium/src/+/main:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
-  config->should_use_preference =
-      command_line.HasSwitch(password_manager::kEnableEncryptionSelection);
-  base::PathService::Get(DIR_SESSION_DATA, &config->user_data_path);
-
-  bool use_backend = !config->should_use_preference ||
-                     os_crypt::GetBackendUse(config->user_data_path);
-  std::unique_ptr<base::Environment> env(base::Environment::Create());
-  base::nix::DesktopEnvironment desktop_env =
-      base::nix::GetDesktopEnvironment(env.get());
-  os_crypt::SelectedLinuxBackend selected_backend =
-      os_crypt::SelectBackend(config->store, use_backend, desktop_env);
-  fake_browser_process_->SetLinuxStorageBackend(selected_backend);
-  OSCrypt::SetConfig(std::move(config));
 #endif
 #if BUILDFLAG(IS_MAC)
   KeychainPassword::GetServiceName() = app_name + " Safe Storage";
@@ -636,11 +604,6 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoopCommon() {
   media::SetLocalizedStringProvider(MediaStringProvider);
 
 #if BUILDFLAG(IS_WIN)
-  auto* local_state = g_browser_process->local_state();
-  DCHECK(local_state);
-
-  bool os_crypt_init = OSCrypt::Init(local_state);
-  DCHECK(os_crypt_init);
 #endif
 }
 

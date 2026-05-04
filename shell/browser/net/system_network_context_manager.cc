@@ -27,6 +27,7 @@
 #include "net/net_buildflags.h"
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
 #include "services/network/network_service.h"
+#include "services/network/public/cpp/cookie_encryption_provider_impl.h"
 #include "services/network/public/cpp/cross_thread_pending_shared_url_loader_factory.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/originating_process_id.h"
@@ -282,6 +283,18 @@ SystemNetworkContextManager::CreateNetworkContextParams() {
       electron::ElectronBrowserClient::Get()->GetUserAgent();
 
   network_context_params->http_cache_enabled = false;
+
+  network_context_params->enable_encrypted_cookies =
+      electron::fuses::IsCookieEncryptionEnabled();
+  if (network_context_params->enable_encrypted_cookies) {
+    if (!cookie_encryption_provider_) {
+      cookie_encryption_provider_ =
+          std::make_unique<CookieEncryptionProviderImpl>(
+              g_browser_process->os_crypt_async());
+    }
+    network_context_params->cookie_encryption_provider =
+        cookie_encryption_provider_->BindNewRemote();
+  }
 
   auto ssl_config = network::mojom::SSLConfig::New();
   ssl_config->version_min = network::mojom::SSLVersion::kTLS12;

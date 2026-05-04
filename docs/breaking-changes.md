@@ -25,6 +25,24 @@ fallback frames as well.
 Apps or extensions that relied on Electron skipping those frames should narrow their
 injection target, frame IDs, or match patterns.
 
+### Deprecated: synchronous `safeStorage` APIs
+
+The synchronous `safeStorage` APIs have been deprecated. They will emit a deprecation warning in Electron 43 and will be removed in Electron 44.0.0.
+
+Use the asynchronous `safeStorage` APIs instead:
+
+```js
+// Deprecated
+safeStorage.isEncryptionAvailable()
+safeStorage.encryptString(plaintext)
+safeStorage.decryptString(buffer)
+
+// Replace with
+await safeStorage.isAsyncEncryptionAvailable()
+await safeStorage.encryptStringAsync(plaintext)
+await safeStorage.decryptStringAsync(buffer)
+```
+
 ### Behavior Changed: Dialog methods default to Downloads directory
 
 The `defaultPath` option for the following methods now defaults to the user's Downloads folder (or their home directory if Downloads doesn't exist) when not explicitly provided:

@@ -49,9 +49,11 @@ The `safeStorage` module emits the following events:
 
 The `safeStorage` module has the following methods:
 
-### `safeStorage.isEncryptionAvailable()`
+### `safeStorage.isEncryptionAvailable()` _Deprecated_
 
 Returns `boolean` - Whether encryption is available.
+
+**Deprecated:** Use [`safeStorage.isAsyncEncryptionAvailable()`](#safestorageisasyncencryptionavailable).
 
 On Linux, returns true if the app has emitted the `ready` event and the secret key is available.
 On MacOS, returns true if Keychain is available.
@@ -66,20 +68,24 @@ The asynchronous encryptor is initialized lazily the first time this method,
 `encryptStringAsync`, or `decryptStringAsync` is called after the app is ready.
 The returned promise resolves once initialization completes.
 
-### `safeStorage.encryptString(plainText)`
+### `safeStorage.encryptString(plainText)` _Deprecated_
 
 * `plainText` string
 
 Returns `Buffer` -  An array of bytes representing the encrypted string.
 
+**Deprecated:** Use [`safeStorage.encryptStringAsync(plainText)`](#safestorageencryptstringasyncplaintext).
+
 This function will throw an error if encryption fails.
 
-### `safeStorage.decryptString(encrypted)`
+### `safeStorage.decryptString(encrypted)` _Deprecated_
 
 * `encrypted` Buffer
 
 Returns `string` - the decrypted string. Decrypts the encrypted buffer
 obtained  with `safeStorage.encryptString` back into a string.
+
+**Deprecated:** Use [`safeStorage.decryptStringAsync(encrypted)`](#safestoragedecryptstringasyncencrypted).
 
 ### `safeStorage.encryptStringAsync(plainText)`
 
@@ -91,11 +97,7 @@ Returns `Promise<Buffer>` -  An array of bytes representing the encrypted string
 
 * `encrypted` Buffer
 
-Returns `Promise<Object>` - Resolve with an object containing the following:
-
-* `shouldReEncrypt` boolean - whether data that has just been returned from the decrypt operation should be
-  re-encrypted, as the key has been rotated or a new  key is available that provides a different security level. If `true`, you should call `decryptStringAsync` again to receive the new decrypted string.
-* `result` string - the decrypted string.
+Returns `Promise<DecryptStringAsyncReturnValue>` - Resolves with the decrypted string.
 
 ### `safeStorage.setUsePlainTextEncryption(usePlainText)`
 
