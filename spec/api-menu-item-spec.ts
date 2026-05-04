@@ -1,6 +1,16 @@
-import { BrowserWindow, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron/main';
+import {
+  BaseWindow,
+  BrowserWindow,
+  WebContentsView,
+  app,
+  Menu,
+  MenuItem,
+  MenuItemConstructorOptions
+} from 'electron/main';
 
 import { expect } from 'chai';
+
+import { once } from 'node:events';
 
 import { roleList, execute } from '../lib/browser/api/menu-item-roles';
 import { ifit, ifdescribe } from './lib/spec-helpers';
@@ -503,6 +513,46 @@ describe('MenuItems', () => {
       });
       expect(item.label).to.equal('View');
       expect(item.submenu!.items[0].role).to.equal('close');
+    });
+  });
+
+  describe('MenuItem toggleDevTools role', () => {
+    afterEach(closeAllWindows);
+
+    it('toggles devtools on the focused webContents', async () => {
+      const w = new BaseWindow({ show: false });
+      const wcv = new WebContentsView();
+      w.setContentView(wcv);
+      await wcv.webContents.loadURL('about:blank');
+
+      const opened = once(wcv.webContents, 'devtools-opened');
+      expect(execute('toggledevtools', w, wcv.webContents)).to.be.true();
+      await opened;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.true();
+
+      const closed = once(wcv.webContents, 'devtools-closed');
+      execute('toggledevtools', w, wcv.webContents);
+      await closed;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.false();
+    });
+
+    it('toggles parent devtools when invoked with the devtools webContents', async () => {
+      const w = new BaseWindow({ show: true });
+      const wcv = new WebContentsView();
+      w.setContentView(wcv);
+      await wcv.webContents.loadURL('about:blank');
+
+      const opened = once(wcv.webContents, 'devtools-opened');
+      wcv.webContents.openDevTools({ mode: 'detach' });
+      await opened;
+
+      const devToolsWc = wcv.webContents.devToolsWebContents!;
+      expect(devToolsWc).to.not.be.null();
+
+      const closed = once(wcv.webContents, 'devtools-closed');
+      expect(execute('toggledevtools', w, devToolsWc)).to.be.true();
+      await closed;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.false();
     });
   });
 
