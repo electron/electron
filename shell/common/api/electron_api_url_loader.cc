@@ -484,6 +484,11 @@ void SimpleURLLoaderWrapper::Clone(
   url_loader_network_observer_receivers_.Add(this, std::move(observer));
 }
 
+void SimpleURLLoaderWrapper::OnPlatformLocalNetworkPermissionRequired(
+    OnPlatformLocalNetworkPermissionRequiredCallback callback) {
+  std::move(callback).Run(false);
+}
+
 void SimpleURLLoaderWrapper::Cancel() {
   loader_.reset();
   url_loader_factory_.reset();
