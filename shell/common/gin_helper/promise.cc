@@ -13,10 +13,20 @@
 #include "v8/include/cppgc/name-provider.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-cppgc.h"
-#include "v8/include/v8-traced-handle.h"
 
 namespace gin_helper {
 
+// PromiseHandle prevents premature garbage collection of V8 handles that
+// back a Promise.
+//
+// TracedReference handles inside cppgc objects can be cleared during minor
+// (Scavenge) GC when write-barrier bookkeeping is missed — for example when
+// the reference is stored during MakeGarbageCollected construction, which
+// uses kInitializingStore and skips the remembered-set write barrier.
+//
+// v8::Global is an unconditionally strong root that no GC of any kind can
+// collect.  That is the correct semantic for a Promise resolver, which must
+// stay alive until it is settled or explicitly discarded.
 class PromiseHandle final : public cppgc::GarbageCollected<PromiseHandle>,
                             public cppgc::NameProvider {
  public:
@@ -25,10 +35,9 @@ class PromiseHandle final : public cppgc::GarbageCollected<PromiseHandle>,
                 v8::Local<v8::Promise::Resolver> resolver)
       : context_(isolate, context), resolver_(isolate, resolver) {}
 
-  void Trace(cppgc::Visitor* visitor) const {
-    visitor->Trace(context_);
-    visitor->Trace(resolver_);
-  }
+  // v8::Global pointers are strong roots independent of cppgc tracing;
+  // they are released by ~Global when cppgc destructs this object.
+  void Trace(cppgc::Visitor* visitor) const {}
 
   const char* GetHumanReadableName() const final {
     return "Electron / PromiseHandle";
@@ -45,8 +54,8 @@ class PromiseHandle final : public cppgc::GarbageCollected<PromiseHandle>,
   }
 
  private:
-  v8::TracedReference<v8::Context> context_;
-  v8::TracedReference<v8::Promise::Resolver> resolver_;
+  v8::Global<v8::Context> context_;
+  v8::Global<v8::Promise::Resolver> resolver_;
 };
 
 PromiseBase::SettleScope::SettleScope(const PromiseBase& base)
