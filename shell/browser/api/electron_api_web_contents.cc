@@ -161,6 +161,7 @@
 #include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
+#include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/base/cursor/cursor.h"
@@ -1867,6 +1868,19 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
 
   return static_cast<JSDialogManagerHelper*>(
       source->GetUserData(kJavaScriptDialogManagerKey));
+}
+
+blink::mojom::DisplayMode WebContents::GetDisplayMode(
+    const content::WebContents* web_contents) {
+  if (owner_window_) {
+    if (owner_window_->IsFullscreen())
+      return blink::mojom::DisplayMode::kFullscreen;
+    if (owner_window_->IsWindowControlsOverlayEnabled())
+      return blink::mojom::DisplayMode::kWindowControlsOverlay;
+    if (!owner_window_->has_frame())
+      return blink::mojom::DisplayMode::kStandalone;
+  }
+  return blink::mojom::DisplayMode::kBrowser;
 }
 
 void WebContents::OnAudioStateChanged(bool audible) {

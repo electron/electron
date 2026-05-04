@@ -597,6 +597,8 @@ class WebContents final : public ExclusiveAccessContext,
       content::MediaResponseCallback callback) override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
+  blink::mojom::DisplayMode GetDisplayMode(
+      const content::WebContents* web_contents) override;
   void OnAudioStateChanged(bool audible) override;
   void UpdatePreferredSize(content::WebContents* web_contents,
                            const gfx::Size& pref_size) override;

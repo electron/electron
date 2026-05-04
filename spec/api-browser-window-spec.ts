@@ -3738,6 +3738,84 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('display-mode matchMedia', () => {
+    afterEach(async () => {
+      await closeAllWindows();
+      ipcMain.removeAllListeners('geometrychange');
+    });
+
+    it('matches window-controls-overlay when titleBarOverlay is active', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        titleBarStyle: 'hidden',
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        },
+        titleBarOverlay: { height: 40 }
+      });
+
+      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      if (process.platform === 'darwin') {
+        await w.loadFile(overlayHTML);
+      } else {
+        const overlayReady = once(ipcMain, 'geometrychange');
+        await w.loadFile(overlayHTML);
+        await showWindowForWayland(w);
+        await overlayReady;
+      }
+
+      const matches = await w.webContents.executeJavaScript(
+        "matchMedia('(display-mode: window-controls-overlay)').matches"
+      );
+      expect(matches).to.be.true('matchMedia window-controls-overlay should match when WCO is active');
+    });
+
+    it('matches standalone for a frameless window without titleBarOverlay', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400,
+        frame: false
+      });
+      await w.loadURL('about:blank');
+
+      const matches = await w.webContents.executeJavaScript("matchMedia('(display-mode: standalone)').matches");
+      expect(matches).to.be.true('matchMedia standalone should match for frameless window');
+    });
+
+    it('matches browser for a default framed window', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400
+      });
+      await w.loadURL('about:blank');
+
+      const matches = await w.webContents.executeJavaScript("matchMedia('(display-mode: browser)').matches");
+      expect(matches).to.be.true('matchMedia browser should match for default framed window');
+    });
+
+    ifit(process.platform !== 'darwin')('matches fullscreen when the window is fullscreen', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400
+      });
+      await w.loadURL('about:blank');
+
+      const enterFullScreen = once(w, 'enter-full-screen');
+      w.show();
+      w.setFullScreen(true);
+      await enterFullScreen;
+
+      const matches = await w.webContents.executeJavaScript("matchMedia('(display-mode: fullscreen)').matches");
+      expect(matches).to.be.true('matchMedia fullscreen should match for fullscreen window');
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('"enableLargerThanScreen" option', () => {
     afterEach(closeAllWindows);
     it('can move the window out of screen', () => {
