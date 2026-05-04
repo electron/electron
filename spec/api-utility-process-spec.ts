@@ -996,6 +996,16 @@ describe('utilityProcess module', () => {
   });
 
   describe('session', () => {
+    const killChild = async (child: Electron.UtilityProcess) => {
+      if (child.pid == null) return;
+      const exited = once(child, 'exit');
+      try {
+        child.kill();
+      } catch {
+      }
+      await exited;
+    };
+
     it('can use a session object for network requests', async () => {
       const customSession = session.fromPartition(`utility-session-test-${Math.random()}`);
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
@@ -1004,15 +1014,16 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
         session: customSession
       });
-      await once(child, 'spawn');
-      await once(child, 'message');
-      child.postMessage({ type: 'fetch', url: serverUrl });
-      const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true();
-      expect(data.body).to.equal('session-response');
-      const exit = once(child, 'exit');
-      child.kill();
-      await exit;
+      try {
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch', url: serverUrl });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.body).to.equal('session-response');
+      } finally {
+        await killChild(child);
+      }
     });
 
     it('can use a partition string for network requests', async () => {
@@ -1022,15 +1033,16 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
         partition: `utility-partition-test-${Math.random()}`
       });
-      await once(child, 'spawn');
-      await once(child, 'message');
-      child.postMessage({ type: 'fetch', url: serverUrl });
-      const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true();
-      expect(data.body).to.equal('partition-response');
-      const exit = once(child, 'exit');
-      child.kill();
-      await exit;
+      try {
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch', url: serverUrl });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.body).to.equal('partition-response');
+      } finally {
+        await killChild(child);
+      }
     });
 
     it('uses HTTP cache when session is provided', async () => {
@@ -1050,10 +1062,10 @@ describe('utilityProcess module', () => {
       customSession.webRequest.onResponseStarted((details) => {
         cacheFlags.push(details.fromCache);
       });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        session: customSession
+      });
       try {
-        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
-          session: customSession
-        });
         await once(child, 'spawn');
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/cached` });
@@ -1064,10 +1076,8 @@ describe('utilityProcess module', () => {
         expect(requestCount).to.equal(1);
         // Verify cache flags: first request from network, second from cache
         expect(cacheFlags).to.deep.equal([false, true]);
-        const exit = once(child, 'exit');
-        child.kill();
-        await exit;
       } finally {
+        await killChild(child);
         customSession.webRequest.onResponseStarted(null);
         await customSession.clearCache();
         server.close();
@@ -1085,8 +1095,8 @@ describe('utilityProcess module', () => {
         response.end(`response-${requestCount}`);
       });
       const { url } = await listen(server);
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'));
       try {
-        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'));
         await once(child, 'spawn');
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/no-cache` });
@@ -1095,10 +1105,8 @@ describe('utilityProcess module', () => {
         expect(data.first.body).to.equal('response-1');
         expect(data.second.body).to.equal('response-2');
         expect(requestCount).to.equal(2);
-        const exit = once(child, 'exit');
-        child.kill();
-        await exit;
       } finally {
+        await killChild(child);
         server.close();
       }
     });
@@ -1119,10 +1127,10 @@ describe('utilityProcess module', () => {
       customSession.webRequest.onResponseStarted((details) => {
         cacheFlags.push(details.fromCache);
       });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        session: customSession
+      });
       try {
-        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
-          session: customSession
-        });
         await once(child, 'spawn');
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/nostore`, cacheMode: 'no-store' });
@@ -1133,10 +1141,8 @@ describe('utilityProcess module', () => {
         expect(requestCount).to.equal(2);
         // Neither response should be from cache
         expect(cacheFlags).to.deep.equal([false, false]);
-        const exit = once(child, 'exit');
-        child.kill();
-        await exit;
       } finally {
+        await killChild(child);
         customSession.webRequest.onResponseStarted(null);
         await customSession.clearCache();
         server.close();
@@ -1160,10 +1166,10 @@ describe('utilityProcess module', () => {
       customSession.webRequest.onResponseStarted((details) => {
         cacheFlags.push(details.fromCache);
       });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        session: customSession
+      });
       try {
-        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
-          session: customSession
-        });
         await once(child, 'spawn');
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/nocache`, cacheMode: 'no-cache' });
@@ -1173,10 +1179,8 @@ describe('utilityProcess module', () => {
         expect(requestCount).to.equal(2);
         // First from network, second revalidated (not from cache)
         expect(cacheFlags).to.deep.equal([false, false]);
-        const exit = once(child, 'exit');
-        child.kill();
-        await exit;
       } finally {
+        await killChild(child);
         customSession.webRequest.onResponseStarted(null);
         await customSession.clearCache();
         server.close();
@@ -1199,10 +1203,10 @@ describe('utilityProcess module', () => {
       customSession.webRequest.onResponseStarted((details) => {
         cacheFlags.push(details.fromCache);
       });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        session: customSession
+      });
       try {
-        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
-          session: customSession
-        });
         await once(child, 'spawn');
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/forcecache`, cacheMode: 'force-cache' });
@@ -1213,10 +1217,8 @@ describe('utilityProcess module', () => {
         expect(requestCount).to.equal(1);
         // First from network, second from cache
         expect(cacheFlags).to.deep.equal([false, true]);
-        const exit = once(child, 'exit');
-        child.kill();
-        await exit;
       } finally {
+        await killChild(child);
         customSession.webRequest.onResponseStarted(null);
         await customSession.clearCache();
         server.close();
@@ -1239,10 +1241,10 @@ describe('utilityProcess module', () => {
       customSession.webRequest.onResponseStarted((details) => {
         cacheFlags.push(details.fromCache);
       });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        session: customSession
+      });
       try {
-        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
-          session: customSession
-        });
         await once(child, 'spawn');
         await once(child, 'message');
         child.postMessage({ type: 'fetch-cached', url: `${url}/reload`, cacheMode: 'reload' });
@@ -1253,10 +1255,8 @@ describe('utilityProcess module', () => {
         expect(requestCount).to.equal(2);
         // Neither response should be from cache
         expect(cacheFlags).to.deep.equal([false, false]);
-        const exit = once(child, 'exit');
-        child.kill();
-        await exit;
       } finally {
+        await killChild(child);
         customSession.webRequest.onResponseStarted(null);
         await customSession.clearCache();
         server.close();
@@ -1276,9 +1276,11 @@ describe('utilityProcess module', () => {
         response.end(cookie);
       });
       const { url } = await listen(server);
+      let child1: Electron.UtilityProcess | undefined;
+      let child2: Electron.UtilityProcess | undefined;
       try {
         await sess1.cookies.set({ url, name: 'testcookie', value: 'sess1value' });
-        const child1 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        child1 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
           session: sess1
         });
         await once(child1, 'spawn');
@@ -1287,11 +1289,7 @@ describe('utilityProcess module', () => {
         const [data1] = await once(child1, 'message');
         expect(data1.ok).to.be.true();
         expect(data1.body).to.include('testcookie=sess1value');
-        const exit1 = once(child1, 'exit');
-        child1.kill();
-        await exit1;
-
-        const child2 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        child2 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
           session: sess2
         });
         await once(child2, 'spawn');
@@ -1300,10 +1298,9 @@ describe('utilityProcess module', () => {
         const [data2] = await once(child2, 'message');
         expect(data2.ok).to.be.true();
         expect(data2.body).to.equal('none');
-        const exit2 = once(child2, 'exit');
-        child2.kill();
-        await exit2;
       } finally {
+        if (child1) await killChild(child1);
+        if (child2) await killChild(child2);
         await sess1.clearStorageData();
         await sess2.clearStorageData();
         server.close();
@@ -1318,9 +1315,11 @@ describe('utilityProcess module', () => {
         response.end(cookie);
       });
       const { url } = await listen(server);
+      let child1: Electron.UtilityProcess | undefined;
+      let child2: Electron.UtilityProcess | undefined;
       try {
         await sharedSession.cookies.set({ url, name: 'shared', value: 'cookie123' });
-        const child1 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        child1 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
           session: sharedSession
         });
         await once(child1, 'spawn');
@@ -1329,11 +1328,7 @@ describe('utilityProcess module', () => {
         const [data1] = await once(child1, 'message');
         expect(data1.ok).to.be.true();
         expect(data1.body).to.include('shared=cookie123');
-        const exit1 = once(child1, 'exit');
-        child1.kill();
-        await exit1;
-
-        const child2 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        child2 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
           session: sharedSession
         });
         await once(child2, 'spawn');
@@ -1342,10 +1337,9 @@ describe('utilityProcess module', () => {
         const [data2] = await once(child2, 'message');
         expect(data2.ok).to.be.true();
         expect(data2.body).to.include('shared=cookie123');
-        const exit2 = once(child2, 'exit');
-        child2.kill();
-        await exit2;
       } finally {
+        if (child1) await killChild(child1);
+        if (child2) await killChild(child2);
         await sharedSession.clearStorageData();
         server.close();
       }
@@ -1360,15 +1354,16 @@ describe('utilityProcess module', () => {
         session: customSession,
         partition: 'this-should-be-ignored'
       } as any);
-      await once(child, 'spawn');
-      await once(child, 'message');
-      child.postMessage({ type: 'fetch', url: serverUrl });
-      const [data] = await once(child, 'message');
-      expect(data.ok).to.be.true();
-      expect(data.body).to.equal('precedence-ok');
-      const exit = once(child, 'exit');
-      child.kill();
-      await exit;
+      try {
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch', url: serverUrl });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.body).to.equal('precedence-ok');
+      } finally {
+        await killChild(child);
+      }
     });
 
     it('session webRequest handlers intercept utility process requests', async () => {
@@ -1378,24 +1373,22 @@ describe('utilityProcess module', () => {
         response.end(`header: ${request.headers['x-custom-header'] || 'missing'}`);
       });
       const { url } = await listen(server);
+      customSession.webRequest.onBeforeSendHeaders((details, callback) => {
+        details.requestHeaders['X-Custom-Header'] = 'intercepted';
+        callback({ requestHeaders: details.requestHeaders });
+      });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        session: customSession
+      });
       try {
-        customSession.webRequest.onBeforeSendHeaders((details, callback) => {
-          details.requestHeaders['X-Custom-Header'] = 'intercepted';
-          callback({ requestHeaders: details.requestHeaders });
-        });
-        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
-          session: customSession
-        });
         await once(child, 'spawn');
         await once(child, 'message');
         child.postMessage({ type: 'fetch', url: `${url}/webrequest` });
         const [data] = await once(child, 'message');
         expect(data.ok).to.be.true();
         expect(data.body).to.equal('header: intercepted');
-        const exit = once(child, 'exit');
-        child.kill();
-        await exit;
       } finally {
+        await killChild(child);
         customSession.webRequest.onBeforeSendHeaders(null);
         server.close();
       }
@@ -1412,19 +1405,20 @@ describe('utilityProcess module', () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
         session: customSession
       });
-      await once(child, 'spawn');
-      await once(child, 'message'); // ready
-      child.postMessage({ type: 'net-request-login', url: serverUrl });
-      const [loginMsg] = await once(child, 'message');
-      expect(loginMsg.event).to.equal('login');
-      expect(loginMsg.authInfo.realm).to.equal('Foo');
-      expect(loginMsg.authInfo.scheme).to.equal('basic');
-      const [responseMsg] = await once(child, 'message');
-      expect(responseMsg.event).to.equal('response');
-      expect(responseMsg.statusCode).to.equal(200);
-      const exit = once(child, 'exit');
-      child.kill();
-      await exit;
+      try {
+        await once(child, 'spawn');
+        await once(child, 'message'); // ready
+        child.postMessage({ type: 'net-request-login', url: serverUrl });
+        const [loginMsg] = await once(child, 'message');
+        expect(loginMsg.event).to.equal('login');
+        expect(loginMsg.authInfo.realm).to.equal('Foo');
+        expect(loginMsg.authInfo.scheme).to.equal('basic');
+        const [responseMsg] = await once(child, 'message');
+        expect(responseMsg.event).to.equal('response');
+        expect(responseMsg.statusCode).to.equal(200);
+      } finally {
+        await killChild(child);
+      }
     });
 
     it('fires app login event when respondToAuthRequestsFromMainProcess is true without session', async () => {
@@ -1508,6 +1502,7 @@ describe('utilityProcess module', () => {
       const { port: proxyPort } = await listen(proxyServer);
 
       const customSession = session.fromPartition(`utility-resolver-test-${Math.random()}`);
+      let child: Electron.UtilityProcess | undefined;
       try {
         await customSession.setProxy({
           proxyRules: `http=127.0.0.1:${proxyPort}`,
@@ -1516,7 +1511,7 @@ describe('utilityProcess module', () => {
 
         await session.defaultSession.setProxy({});
 
-        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
           session: customSession
         });
         await once(child, 'spawn');
@@ -1525,10 +1520,8 @@ describe('utilityProcess module', () => {
         const [data] = await once(child, 'message');
         expect(data.ok).to.be.true();
         expect(data.body).to.equal('proxied:non-existent-host.test:12345');
-        const exit = once(child, 'exit');
-        child.kill();
-        await exit;
       } finally {
+        if (child) await killChild(child);
         await session.defaultSession.setProxy({});
         proxyServer.close();
       }
