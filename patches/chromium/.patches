@@ -174,3 +174,4 @@ cherry-pick-cve-2026-6920.patch
 fix_make_macos_text_replacement_work_on_contenteditable.patch
 fix-dcheck-failure-when-starting-heap-profiler-for-renderer.patch
 fix_use_bundled_devtools_frontend_url_for_remote_debugging.patch
+fix_constrain_allowuniversalaccessfromfileurls_to_file_origins_in.patch

@@ -263,6 +263,35 @@ describe('focus handling', () => {
   });
 });
 
+describe('cross origin isolation', () => {
+  afterEach(closeAllWindows);
+
+  let server: http.Server;
+  let serverUrl: string;
+
+  before(async () => {
+    server = http.createServer((_req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+      res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+      res.end('<!doctype html>');
+    });
+    serverUrl = (await listen(server)).url;
+  });
+
+  after(() => {
+    server.close();
+  });
+
+  it('is enabled by COOP and COEP headers', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+
+    const crossOriginIsolated = await w.webContents.executeJavaScript('globalThis.crossOriginIsolated');
+    expect(crossOriginIsolated).to.equal(true);
+  });
+});
+
 describe('web security', () => {
   afterEach(closeAllWindows);
   let server: http.Server;
