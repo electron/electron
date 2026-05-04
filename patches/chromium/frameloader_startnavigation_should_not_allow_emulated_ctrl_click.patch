@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nate Chapin <japhet@chromium.org>
+Date: Fri, 20 Feb 2026 11:02:15 -0800
+Subject: FrameLoader::StartNavigation should not allow emulated Ctrl+click
+ from sandboxed iframes
+
+Fixed: 483771899
+Change-Id: I1e134f0c9dcfbb4760d339d909a7d7339a5e3077
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7572487
+Commit-Queue: Nate Chapin <japhet@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1587969}
+
+diff --git a/third_party/blink/renderer/core/loader/frame_loader.cc b/third_party/blink/renderer/core/loader/frame_loader.cc
+index ec423778bfba46d7a14d6f21eebc3de8cacfcaf7..53f9b2a711ffe8969e82184017bee84a74bf6ae8 100644
+--- a/third_party/blink/renderer/core/loader/frame_loader.cc
++++ b/third_party/blink/renderer/core/loader/frame_loader.cc
+@@ -860,6 +860,17 @@ void FrameLoader::StartNavigation(FrameLoadRequest& request,
+     return;
+   }
+ 
++  // A sandboxed iframe without `allow-popups` should not be able to
++  // open a new browsing context by emulating a user gesture in JS.
++  // (e.g. Ctrl+click).
++  if (request.GetNavigationPolicy() != kNavigationPolicyCurrentTab &&
++      request.GetTriggeringEventInfo() ==
++          mojom::blink::TriggeringEventInfo::kFromUntrustedEvent &&
++      frame_->GetSecurityContext()->IsSandboxed(
++          network::mojom::blink::WebSandboxFlags::kPopups)) {
++    return;
++  }
++
+   if (request.GetNavigationPolicy() == kNavigationPolicyCurrentTab &&
+       (!origin_window || origin_window->GetSecurityOrigin()->CanAccess(
+                              frame_->DomWindow()->GetSecurityOrigin()))) {
