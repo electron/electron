@@ -14,14 +14,10 @@ async function createWindow() {
   await mainWindow.loadFile('index.html');
 }
 
-app.whenReady().then(() => {
-  createWindow();
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
+app
+  .whenReady()
+  .then(createWindow)
+  .catch(() => process.exit(1));
 
 let count = 0;
 ipcMain.handle('reload-successful', () => {
@@ -33,6 +29,4 @@ ipcMain.handle('reload-successful', () => {
   }
 });
 
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit();
-});
+app.on('window-all-closed', app.quit);

@@ -21,4 +21,7 @@ async function getPDFDoc() {
   }
 }
 
-app.whenReady().then(() => getPDFDoc());
+app
+  .whenReady()
+  .then(getPDFDoc)
+  .catch(() => process.exit(1));
