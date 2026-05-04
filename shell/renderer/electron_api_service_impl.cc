@@ -24,11 +24,105 @@
 #include "third_party/blink/public/mojom/frame/user_activation_notification_type.mojom-shared.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
 #include "third_party/blink/public/web/blink.h"
+#include "third_party/blink/public/web/web_frame_widget.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
+#include "third_party/blink/renderer/core/dom/document.h"
+#include "third_party/blink/renderer/core/dom/node.h"
+#include "third_party/blink/renderer/core/frame/local_frame.h"
+#include "third_party/blink/renderer/core/frame/visual_viewport.h"
+#include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"
+#include "third_party/blink/renderer/core/html/canvas/html_canvas_element.h"
+#include "third_party/blink/renderer/core/input/event_handler.h"
+#include "third_party/blink/renderer/core/layout/hit_test_location.h"
+#include "third_party/blink/renderer/core/layout/hit_test_result.h"
+#include "third_party/blink/renderer/core/page/page.h"
+#include "ui/gfx/geometry/point_conversions.h"
+#include "ui/gfx/geometry/point_f.h"
+#include "url/gurl.h"
+#include "url/url_constants.h"
 #include "v8/include/v8-context.h"
 
 namespace electron {
+
+namespace {
+
+bool IsSaveableImageNode(blink::Node* node) {
+  return node && (blink::IsA<blink::HTMLCanvasElement>(node) ||
+                  !blink::HitTestResult::AbsoluteImageURL(node).IsEmpty());
+}
+
+blink::Node* GetSaveableImageNode(const blink::HitTestResult& result) {
+  if (blink::Node* node = result.InnerNodeOrImageMapImage();
+      IsSaveableImageNode(node)) {
+    return node;
+  }
+
+  for (const auto& raw_node : result.ListBasedTestResult()) {
+    blink::Node* node = raw_node.Get();
+    if (IsSaveableImageNode(node))
+      return node;
+  }
+
+  return nullptr;
+}
+
+mojom::ImageSaveInfoPtr GetImageSaveInfo(content::RenderFrame* render_frame,
+                                         int x,
+                                         int y) {
+  auto* web_frame = render_frame->GetWebFrame();
+  if (!web_frame)
+    return nullptr;
+
+  blink::WebFrameWidget* widget = web_frame->FrameWidget();
+  if (!widget)
+    return nullptr;
+
+  auto* frame = static_cast<blink::WebLocalFrameImpl*>(web_frame)->GetFrame();
+  if (!frame)
+    return nullptr;
+
+  const gfx::Point viewport_point =
+      gfx::ToRoundedPoint(widget->DIPsToBlinkSpace(gfx::PointF(x, y)));
+  const gfx::Point root_frame_point(
+      frame->GetPage()->GetVisualViewport().ViewportToRootFrame(
+          viewport_point));
+  blink::HitTestLocation location(
+      frame->View()->ConvertFromRootFrame(root_frame_point));
+  const auto hit_test_type = blink::HitTestRequest::kReadOnly |
+                             blink::HitTestRequest::kActive |
+                             blink::HitTestRequest::kPenetratingList |
+                             blink::HitTestRequest::kListBased;
+  blink::HitTestResult result =
+      frame->GetEventHandler().HitTestResultAtLocation(location, hit_test_type);
+  result.SetToShadowHostIfInUAShadowRoot();
+
+  blink::Node* image_node = GetSaveableImageNode(result);
+  if (!image_node)
+    return nullptr;
+
+  auto info = mojom::ImageSaveInfo::New();
+
+  if (blink::IsA<blink::HTMLCanvasElement>(image_node)) {
+    info->use_save_image_at = true;
+  } else if (!blink::HitTestResult::AbsoluteImageURL(image_node).IsEmpty()) {
+    info->src_url = GURL(blink::HitTestResult::AbsoluteImageURL(image_node));
+    info->use_save_image_at = info->src_url.SchemeIs(url::kDataScheme);
+  } else {
+    return nullptr;
+  }
+
+  blink::Document& document = image_node->GetDocument();
+  info->frame_url = GURL(document.Url());
+  info->referrer_policy = document.GetReferrerPolicy();
+  info->is_image_media_plugin_document =
+      document.IsImageDocument() || document.IsMediaDocument() ||
+      document.IsPluginDocument() || info->frame_url == info->src_url;
+
+  return info;
+}
+
+}  // namespace
 
 ElectronApiServiceImpl::~ElectronApiServiceImpl() = default;
 
@@ -127,6 +221,13 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 
   ipc_native::EmitIPCEvent(isolate, context, false, channel, ports,
                            gin::ConvertToV8(isolate, args));
+}
+
+void ElectronApiServiceImpl::GetImageSaveInfoAt(
+    int32_t x,
+    int32_t y,
+    GetImageSaveInfoAtCallback callback) {
+  std::move(callback).Run(GetImageSaveInfo(render_frame(), x, y));
 }
 
 void ElectronApiServiceImpl::TakeHeapSnapshot(
