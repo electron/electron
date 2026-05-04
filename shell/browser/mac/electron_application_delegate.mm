@@ -12,6 +12,7 @@
 #include "base/mac/mac_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/trace_event/trace_event.h"
 #include "shell/browser/api/electron_api_push_notifications.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/mac/dict_util.h"
@@ -56,6 +57,13 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 }
 
 - (void)applicationWillFinishLaunching:(NSNotification*)notify {
+  TRACE_EVENT("electron",
+              "ElectronApplicationDelegate::applicationWillFinishLaunching",
+              [&](perfetto::EventContext ctx) {
+                ctx.AddDebugAnnotation(
+                    "notification.name",
+                    base::SysNSStringToUTF8([notify name]));
+              });
   [[[NSWorkspace sharedWorkspace] notificationCenter]
       addObserver:self
          selector:@selector(willPowerOff:)
@@ -71,6 +79,16 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 
 - (void)applicationDidFinishLaunching:(NSNotification*)notify {
+  TRACE_EVENT(
+      "electron",
+      "ElectronApplicationDelegate::applicationDidFinishLaunching",
+      [&](perfetto::EventContext ctx) {
+        ctx.AddDebugAnnotation(
+            "notification.name", base::SysNSStringToUTF8([notify name]));
+        ctx.AddDebugAnnotation(
+            "notification.has_user_info",
+            static_cast<bool>([notify userInfo]));
+      });
   NSObject* user_notification =
       [notify userInfo][NSApplicationLaunchUserNotificationKey];
   NSDictionary* notification_info = nil;

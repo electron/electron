@@ -13,7 +13,9 @@
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "base/task/single_thread_task_runner.h"
+#include "base/threading/platform_thread.h"
 #include "base/threading/thread_restrictions.h"
+#include "base/trace_event/trace_event.h"
 #include "chrome/common/chrome_paths.h"
 #include "gin/arguments.h"
 #include "shell/browser/browser_observer.h"
@@ -24,6 +26,8 @@
 #include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/thread_restrictions.h"
+#include "v8/include/v8-isolate.h"
+#include "v8/include/v8-statistics.h"
 
 namespace electron {
 
@@ -203,10 +207,39 @@ void Browser::Activate(bool has_visible_windows) {
 }
 
 void Browser::WillFinishLaunching() {
+  TRACE_EVENT("electron", "Browser::WillFinishLaunching",
+              [&](perfetto::EventContext ctx) {
+                ctx.AddDebugAnnotation("thread_id",
+                                       base::PlatformThread::CurrentId().raw());
+                ctx.AddDebugAnnotation("is_ready", is_ready_);
+                ctx.AddDebugAnnotation("has_ready_promise",
+                                       static_cast<bool>(ready_promise_));
+              });
   observers_.Notify(&BrowserObserver::OnWillFinishLaunching);
 }
 
 void Browser::DidFinishLaunching(base::DictValue launch_info) {
+  TRACE_EVENT(
+      "electron", "Browser::DidFinishLaunching",
+      [&](perfetto::EventContext ctx) {
+        ctx.AddDebugAnnotation("thread_id",
+                               base::PlatformThread::CurrentId().raw());
+        ctx.AddDebugAnnotation("is_ready_before", is_ready_);
+        ctx.AddDebugAnnotation("has_ready_promise",
+                               static_cast<bool>(ready_promise_));
+        if (auto* isolate = v8::Isolate::TryGetCurrent()) {
+          v8::HeapStatistics hs;
+          isolate->GetHeapStatistics(&hs);
+          ctx.AddDebugAnnotation("isolate",
+                                 reinterpret_cast<uintptr_t>(isolate));
+          ctx.AddDebugAnnotation("v8.used_heap_size", hs.used_heap_size());
+          ctx.AddDebugAnnotation("v8.number_of_native_contexts",
+                                 hs.number_of_native_contexts());
+          ctx.AddDebugAnnotation("isolate.in_context", isolate->InContext());
+          ctx.AddDebugAnnotation("isolate.has_pending_exception",
+                                 isolate->HasPendingException());
+        }
+      });
   // Make sure the userData directory is created.
   ScopedAllowBlockingForElectron allow_blocking;
   base::FilePath user_data;
@@ -218,17 +251,37 @@ void Browser::DidFinishLaunching(base::DictValue launch_info) {
   }
 
   is_ready_ = true;
-  if (ready_promise_)
+  if (ready_promise_) {
+    TRACE_EVENT(
+        "electron", "Browser::DidFinishLaunching::ResolveReadyPromise",
+        perfetto::Flow::FromPointer(ready_promise_.get(), "PromiseBase"),
+        "ready_promise", reinterpret_cast<uintptr_t>(ready_promise_.get()));
     ready_promise_->Resolve();
+  }
 
   for (BrowserObserver& observer : observers_)
     observer.OnFinishLaunching(launch_info.Clone());
 }
 
 v8::Local<v8::Value> Browser::WhenReady(v8::Isolate* isolate) {
+  TRACE_EVENT(
+      "electron", "Browser::WhenReady", [&](perfetto::EventContext ctx) {
+        ctx.AddDebugAnnotation("thread_id",
+                               base::PlatformThread::CurrentId().raw());
+        ctx.AddDebugAnnotation("is_ready", is_ready_);
+        ctx.AddDebugAnnotation("had_existing_promise",
+                               static_cast<bool>(ready_promise_));
+        ctx.AddDebugAnnotation("isolate", reinterpret_cast<uintptr_t>(isolate));
+        ctx.AddDebugAnnotation("isolate.in_context", isolate->InContext());
+        ctx.AddDebugAnnotation("isolate.has_pending_exception",
+                               isolate->HasPendingException());
+      });
   if (!ready_promise_) {
     ready_promise_ = std::make_unique<gin_helper::Promise<void>>(isolate);
     if (is_ready()) {
+      TRACE_EVENT(
+          "electron", "Browser::WhenReady::ImmediateResolve",
+          perfetto::Flow::FromPointer(ready_promise_.get(), "PromiseBase"));
       ready_promise_->Resolve();
     }
   }

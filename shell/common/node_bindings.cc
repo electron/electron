@@ -15,6 +15,7 @@
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
+#include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -22,6 +23,7 @@
 #include "base/strings/string_split.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/single_thread_task_runner.h"
+#include "base/threading/platform_thread.h"
 #include "base/trace_event/trace_event.h"
 #include "chrome/common/chrome_version.h"
 #include "content/public/common/content_paths.h"
@@ -418,6 +420,48 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
     // hook stack does not become corrupted.
     env->async_hooks()->clear_async_id_stack();
   }
+}
+
+void TracingMessageListener(v8::Local<v8::Message> message,
+                            v8::Local<v8::Value> data) {
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope handle_scope(isolate);
+  std::string text;
+  if (!message.IsEmpty()) {
+    v8::String::Utf8Value utf8(isolate, message->Get());
+    if (*utf8)
+      text.assign(*utf8, utf8.length());
+  }
+  std::string resource;
+  int line_number = -1;
+  int column = -1;
+  if (!message.IsEmpty()) {
+    v8::Local<v8::Value> resource_name = message->GetScriptResourceName();
+    if (!resource_name.IsEmpty()) {
+      v8::String::Utf8Value res_utf8(isolate, resource_name);
+      if (*res_utf8)
+        resource.assign(*res_utf8, res_utf8.length());
+    }
+    line_number =
+        message->GetLineNumber(isolate->GetCurrentContext()).FromMaybe(-1);
+    column =
+        message->GetStartColumn(isolate->GetCurrentContext()).FromMaybe(-1);
+  }
+  TRACE_EVENT_INSTANT(
+      "electron", "V8UncaughtMessage", [&](perfetto::EventContext ctx) {
+        ctx.AddDebugAnnotation("message", text);
+        ctx.AddDebugAnnotation("resource", resource);
+        ctx.AddDebugAnnotation("line", line_number);
+        ctx.AddDebugAnnotation("column", column);
+        ctx.AddDebugAnnotation("error_level",
+                               static_cast<int>(message->ErrorLevel()));
+        ctx.AddDebugAnnotation("isolate", reinterpret_cast<uintptr_t>(isolate));
+        ctx.AddDebugAnnotation("native_stack",
+                               base::debug::StackTrace().ToString());
+      });
+  LOG(ERROR) << "[electron] V8UncaughtMessage at " << resource << ":"
+             << line_number << ":" << column
+             << " level=" << message->ErrorLevel() << " msg=" << text;
 }
 
 // Only allow a specific subset of options in non-ELECTRON_RUN_AS_NODE mode.
@@ -918,6 +962,10 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   isolate->SetHostInitializeImportMetaObjectCallback(
       HostInitializeImportMetaObject);
 
+  isolate->AddMessageListenerWithErrorLevel(
+      TracingMessageListener,
+      v8::Isolate::kMessageError | v8::Isolate::kMessageWarning);
+
   gin_helper::Dictionary process(isolate, env->process_object());
   process.SetReadOnly("type", process_type);
 
@@ -1078,6 +1126,15 @@ void NodeBindings::UvRunOnce() {
 }
 
 void NodeBindings::WakeupMainThread() {
+  TRACE_EVENT("electron", "NodeBindings::WakeupMainThread",
+              [&](perfetto::EventContext ctx) {
+                ctx.AddDebugAnnotation("thread_id",
+                                       base::PlatformThread::CurrentId().raw());
+                ctx.AddDebugAnnotation("has_uv_env",
+                                       static_cast<bool>(uv_env()));
+                ctx.AddDebugAnnotation("has_task_runner",
+                                       static_cast<bool>(task_runner_));
+              });
   DCHECK(task_runner_);
   task_runner_->PostTask(FROM_HERE, base::BindOnce(&NodeBindings::UvRunOnce,
                                                    weak_factory_.GetWeakPtr()));
