@@ -197,7 +197,8 @@ Creates a new `NativeImage` instance from `dataUrl`, a base 64 encoded [Data URL
 ### `nativeImage.createFromNamedImage(imageName[, options])` _macOS_
 
 * `imageName` string
-* `options` Object | number[] (optional)
+* `options` Object | number[] (optional) - If `options` is a number array  (_Deprecated_), it is interpreted as `hslShift`. If it is an object, the
+following properties can be specified:
   * `hslShift` number[] (optional)
   * `pointSize` Number (optional) - Defaults to `30.0`.
   * `weight` 'ultralight' | 'thin' | 'light' | 'regular' | 'medium' | 'semibold' | 'bold' | 'heavy' | 'black' (optional) - Defaults to `regular`.
