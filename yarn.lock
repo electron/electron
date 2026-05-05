@@ -1259,13 +1259,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nornagon/put@npm:0.0.8":
-  version: 0.0.8
-  resolution: "@nornagon/put@npm:0.0.8"
-  checksum: 10c0/855f9cee72d76570c76cdded2c3727ae7c3caa08208066ba77561675a43173bc62c8ee6dce6f4b64d65c5b465d20b4f9d986975ef3f2a6413e6f6c97bb5e1627
-  languageName: node
-  linkType: hard
-
 "@npmcli/agent@npm:^3.0.0":
   version: 3.0.0
   resolution: "@npmcli/agent@npm:3.0.0"
@@ -4209,16 +4202,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dbus-native@github:nornagon/dbus-native#master":
+"dbus-native@npm:^0.4.0":
   version: 0.4.0
-  resolution: "dbus-native@https://github.com/nornagon/dbus-native.git#commit=b90ed62d0b5cb93909173c3e0551d9bff0602a90"
+  resolution: "dbus-native@npm:0.4.0"
   dependencies:
-    "@nornagon/put": "npm:0.0.8"
     abstract-socket: "npm:^2.0.0"
     event-stream: "npm:^4.0.0"
     hexy: "npm:^0.2.10"
     long: "npm:^4.0.0"
     optimist: "npm:^0.6.1"
+    put: "npm:0.0.6"
     safe-buffer: "npm:^5.1.1"
     xml2js: "npm:^0.4.17"
   dependenciesMeta:
@@ -4226,7 +4219,7 @@ __metadata:
       optional: true
   bin:
     dbus2js: ./bin/dbus2js.js
-  checksum: 10c0/4467ae4f9f1e9d5f7fc4d12f227a7cf5e45f77c89743646ccef7a1f89e5f37fbe671b47488cf78d6557fd6d4f2c3719f5c5a1de70078843e6b0f317d12aa55b1
+  checksum: 10c0/f913bb8dc2162e0c6ee684dd7e63375005de2d238569f499b9478174ce31bcd089ea6bbddd629599a330218927e4bfe4fecaeb951db23aba4befd018f5f7ecfe
   languageName: node
   linkType: hard
 
@@ -4631,7 +4624,7 @@ __metadata:
     chai: "npm:^4.2.0"
     chai-as-promised: "npm:^7.1.1"
     coffeescript: "npm:^2.4.1"
-    dbus-native: "github:nornagon/dbus-native#master"
+    dbus-native: "npm:^0.4.0"
     dirty-chai: "npm:^2.0.1"
     express: "npm:^4.20.0"
     graceful-fs: "npm:^4.1.15"
@@ -9919,6 +9912,13 @@ __metadata:
   version: 2.1.1
   resolution: "punycode@npm:2.1.1"
   checksum: 10c0/83815ca9b9177f055771f31980cbec7ffaef10257d50a95ab99b4a30f0404846e85fa6887ee1bbc0aaddb7bad6d96e2fa150a016051ff0f6b92be4ad613ddca8
+  languageName: node
+  linkType: hard
+
+"put@npm:@nornagon/put@0.0.8":
+  version: 0.0.8
+  resolution: "@nornagon/put@npm:0.0.8"
+  checksum: 10c0/855f9cee72d76570c76cdded2c3727ae7c3caa08208066ba77561675a43173bc62c8ee6dce6f4b64d65c5b465d20b4f9d986975ef3f2a6413e6f6c97bb5e1627
   languageName: node
   linkType: hard
 
