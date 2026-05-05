@@ -38,33 +38,83 @@ const runDiag = (label: string, cmd: string, args: string[]) => {
   }
 };
 
+const captureSavedState = (tag: string) => {
+  const home = os.homedir();
+  // Persistent UI saved-state for the bundle — if this exists with restorecount
+  // or windows.plist the open-application handler may run state restoration.
+  runDiag(`${tag}-savedstate-ls`, 'sh', ['-c',
+    `ls -laR "${home}/Library/Saved Application State/com.github.Electron.savedState" 2>&1 || echo "<no savedState dir>"`]);
+  runDiag(`${tag}-savedstate-restorecount`, 'sh', ['-c',
+    `plutil -p "${home}/Library/Saved Application State/com.github.Electron.savedState/restorecount.plist" 2>&1 || echo "<no restorecount>"`]);
+  runDiag(`${tag}-savedstate-windows`, 'sh', ['-c',
+    `plutil -p "${home}/Library/Saved Application State/com.github.Electron.savedState/windows.plist" 2>&1 || echo "<no windows.plist>"`]);
+  // Any container saved state too (sandboxed path).
+  runDiag(`${tag}-savedstate-container-ls`, 'sh', ['-c',
+    `ls -laR "${home}/Library/Containers/com.github.Electron" 2>&1 || echo "<no container>"`]);
+  // NSUserDefaults for the bundle.
+  runDiag(`${tag}-defaults`, 'defaults', ['read', 'com.github.Electron']);
+};
+
 const captureHangDiagnostics = (pid: number, tag: string) => {
   process.stderr.write(`[esm-diag] capturing diagnostics for hung child pid=${pid} tag=${tag}\n`);
-  // LaunchServices state — registered apps, ASN/PSN, state flags. Key
-  // diagnostic: do stale Electron registrations exist from earlier specs?
+  // Saved-state / persistent UI — leading theory after first spindump.
+  captureSavedState(tag);
+  // Screenshot the whole screen — if AppKit is showing a modal alert ("Reopen
+  // windows?" / crash dialog) we'll see it. Also screenshot just the child's
+  // windows if any exist.
+  runDiag(`${tag}-screencapture`, 'screencapture', ['-x', '-t', 'png', path.join(diagDir, `${tag}-screen.png`)]);
+  // Enumerate on-screen windows owned by the hung pid (via CoreGraphics).
+  runDiag(`${tag}-cgwindows`, '/usr/bin/python3', ['-c',
+    'import Quartz,json,sys;pid=int(sys.argv[1]);' +
+    'ws=Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionAll,Quartz.kCGNullWindowID) or [];' +
+    'print(json.dumps([dict(w) for w in ws if w.get("kCGWindowOwnerPID")==pid],default=str,indent=2))',
+    String(pid)]);
+  // All on-screen windows (any owner) so we can spot a system alert.
+  runDiag(`${tag}-cgwindows-all`, '/usr/bin/python3', ['-c',
+    'import Quartz,json;' +
+    'ws=Quartz.CGWindowListCopyWindowInfo(Quartz.kCGWindowListOptionOnScreenOnly,Quartz.kCGNullWindowID) or [];' +
+    'print(json.dumps([{k:str(v) for k,v in dict(w).items()} for w in ws],indent=2))']);
+  // LaunchServices state.
   runDiag(`${tag}-lsappinfo-list`, 'lsappinfo', ['list']);
   runDiag(`${tag}-lsappinfo-visible`, 'lsappinfo', ['visibleProcessList']);
-  // Per-process LS info for the hung child specifically.
-  runDiag(`${tag}-lsappinfo-pid`, 'lsappinfo', ['info', `pid=${pid}`]);
-  // launchservicesd / appleeventsd health.
-  runDiag(`${tag}-launchctl-lsd`, 'launchctl', ['print', 'system/com.apple.coreservices.launchservicesd']);
-  runDiag(`${tag}-launchctl-aed`, 'launchctl', ['print', 'gui/' + String(process.getuid?.() ?? 501) + '/com.apple.coreservices.appleevents']);
-  // All running processes — look for leaked Electron children from earlier specs.
+  runDiag(`${tag}-lsappinfo-pid`, 'lsappinfo', ['info', '-all', `pid=${pid}`]);
+  // All running processes.
   runDiag(`${tag}-ps`, 'ps', ['-Af']);
   runDiag(`${tag}-ps-electron`, 'sh', ['-c', 'ps -Af | grep -i electron | grep -v grep']);
-  // Thread stacks of the hung child (cheap, no sudo needed).
+  // Thread stacks of the hung child.
   runDiag(`${tag}-sample`, 'sample', [String(pid), '3', '-file', path.join(diagDir, `${tag}-sample.txt`)]);
-  // Full spindump (kernel stacks, mach msg waits) — GHA macOS has passwordless sudo.
+  // Full spindump.
   runDiag(`${tag}-spindump-run`, 'sudo', [
     'spindump', String(pid), '5', '10',
     '-file', path.join(diagDir, `${tag}-spindump.txt`),
     '-noProcessingWhileSampling'
   ]);
-  // Recent launchservicesd / appleeventsd unified-log lines.
+  // Symbolicate the unsymbolicated AppKit frames from THIS spindump (parse the
+  // file we just wrote for the AppKit load address and the ??? frame addrs).
+  try {
+    const sd = fs.readFileSync(path.join(diagDir, `${tag}-spindump.txt`), 'utf8');
+    const loadM = sd.match(/0x([0-9a-f]+)\s+-\s+0x[0-9a-f]+\s+com\.apple\.AppKit/);
+    const addrs = [...new Set(
+      [...sd.matchAll(/\?\?\? \(AppKit \+ \d+\) \[(0x[0-9a-f]+)\]/g)].map(m => m[1])
+    )];
+    if (loadM && addrs.length) {
+      runDiag(`${tag}-atos-appkit`, 'atos', [
+        '-o', '/System/Library/Frameworks/AppKit.framework/AppKit',
+        '-arch', 'x86_64', '-l', `0x${loadM[1]}`, ...addrs
+      ]);
+      fs.writeFileSync(path.join(diagDir, `${tag}-atos-addrs.txt`),
+        `load=0x${loadM[1]}\n${addrs.join('\n')}\n`);
+    }
+  } catch (e) {
+    process.stderr.write(`[esm-diag] atos parse failed: ${e}\n`);
+  }
+  // Unified log for talagent / persistent UI / appleevents around the hang.
   runDiag(`${tag}-log-ls`, 'log', [
     'show', '--last', '5m', '--style', 'compact',
     '--predicate',
-    'process == "launchservicesd" OR process == "appleeventsd" OR subsystem == "com.apple.launchservices" OR subsystem == "com.apple.appleevents"'
+    'process == "launchservicesd" OR process == "appleeventsd" OR process == "talagentd" OR ' +
+    'subsystem == "com.apple.launchservices" OR subsystem == "com.apple.appleevents" OR ' +
+    'subsystem == "com.apple.PersistentUI" OR category == "PersistentUI"'
   ]);
 };
 
@@ -121,11 +171,12 @@ const runFixture = async (appPath: string, args: string[] = []) => {
   return { code, signal, stdout: out, stderr: err };
 };
 
-// Baseline LaunchServices/process state captured BEFORE any esm fixture runs,
-// so we can diff against the hang-time capture.
+// Baseline LaunchServices/process/saved-state captured BEFORE any esm fixture
+// runs, so we can diff against the hang-time capture.
 if (process.platform === 'darwin') {
   runDiag('baseline-lsappinfo-list', 'lsappinfo', ['list']);
   runDiag('baseline-ps-electron', 'sh', ['-c', 'ps -Af | grep -i electron | grep -v grep']);
+  captureSavedState('baseline');
 }
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'esm');
@@ -321,9 +372,47 @@ describe('esm', () => {
           expect(preloadError!.toString()).to.include('Unknown file extension');
         });
 
-        it('should use import.meta callback handling from Node.js for Node.js modules', async () => {
-          const result = await runFixture(path.resolve(fixturePath, 'import-meta'));
-          expect(result.code).to.equal(0);
+        it('should use import.meta callback handling from Node.js for Node.js modules', async function () {
+          // DO-NOT-MERGE: #51462 A/B inlined here so split-tests.js shard
+          // assignment is not perturbed. Disable mocha retries — we do our own.
+          this.retries(0);
+          const fp = path.resolve(fixturePath, 'import-meta');
+          const ss = path.join(os.homedir(), 'Library', 'Saved Application State', 'com.github.Electron.savedState');
+
+          const attempt = async (label: string, args: string[], pre?: () => void) => {
+            process.stderr.write(`\n[esm-diag] ===== attempt: ${label} =====\n`);
+            pre?.();
+            try {
+              const r = await runFixture(fp, args);
+              process.stderr.write(`[esm-diag] attempt ${label}: PASSED code=${r.code}\n`);
+              return { ok: r.code === 0, code: r.code };
+            } catch (e) {
+              const firstLine = String((e as Error).message).slice(0, 200);
+              process.stderr.write(`[esm-diag] attempt ${label}: HUNG (${firstLine})\n`);
+              return { ok: false, code: null };
+            }
+          };
+
+          // A: stock — expected to hang on shard 2.
+          const a = await attempt('A-stock', []);
+          // B: with -ApplePersistenceIgnoreState YES.
+          const b = await attempt('B-ApplePersistenceIgnoreState', [
+            '-ApplePersistenceIgnoreState', 'YES', '-NSQuitAlwaysKeepsWindows', 'NO'
+          ]);
+          // C: after rm -rf savedState.
+          const c = await attempt('C-after-rm-savedState', [], () => {
+            runDiag('preclean-savedstate-ls', 'sh', ['-c', `ls -laR "${ss}" 2>&1 || echo "<none>"`]);
+            try { fs.rmSync(ss, { recursive: true, force: true }); } catch { /* ignore */ }
+          });
+
+          fs.writeFileSync(path.join(diagDir, 'ab-summary.txt'),
+            `A-stock: ${a.ok ? 'PASS' : 'HANG'}\n` +
+            `B-ApplePersistenceIgnoreState: ${b.ok ? 'PASS' : 'HANG'}\n` +
+            `C-after-rm-savedState: ${c.ok ? 'PASS' : 'HANG'}\n`);
+          process.stderr.write(`[esm-diag] A/B summary: A=${a.ok} B=${b.ok} C=${c.ok}\n`);
+
+          // Original assertion so the test still reports correctly.
+          expect(a.code).to.equal(0);
         });
       });
 
