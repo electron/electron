@@ -33,6 +33,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "ui/display/screen.h"
 
 #if defined(TOOLKIT_VIEWS)
 #include "shell/browser/native_window_views.h"
@@ -596,6 +597,30 @@ void BaseWindow::SetPosition(const int x,
 std::array<int, 2U> BaseWindow::GetPosition() const {
   return ToArray(window_->GetPosition());
 }
+
+std::optional<gfx::Point> BaseWindow::GetCursorPoint() const {
+  auto* screen = display::Screen::Get();
+  if (!screen)
+    return std::nullopt;
+
+  gfx::Point cursor_point = screen->GetCursorScreenPoint();
+  gfx::Rect window_bounds = window_->GetBounds();
+  cursor_point.Offset(-window_bounds.x(), -window_bounds.y());
+
+  // Return null if the cursor is outside the logical window bounds.
+  // Negative values mean the cursor is in the top/left inset area
+  // (e.g. CSD shadow regions on Linux/Windows). Values exceeding
+  // width/height mean the cursor is past the bottom/right inset
+  // or outside the window surface (e.g. on Wayland).
+  if (cursor_point.x() < 0 || cursor_point.y() < 0 ||
+      cursor_point.x() > window_bounds.width() ||
+      cursor_point.y() > window_bounds.height()) {
+    return std::nullopt;
+  }
+
+  return cursor_point;
+}
+
 void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin::Arguments* const args) {
   if (!window_->MoveAbove(sourceId))
@@ -1219,6 +1244,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("center", &BaseWindow::Center)
       .SetMethod("setPosition", &BaseWindow::SetPosition)
       .SetMethod("getPosition", &BaseWindow::GetPosition)
+      .SetMethod("getCursorPoint", &BaseWindow::GetCursorPoint)
       .SetMethod("setTitle", &BaseWindow::SetTitle)
       .SetMethod("getTitle", &BaseWindow::GetTitle)
       .SetProperty("accessibleTitle", &BaseWindow::GetAccessibleTitle,
