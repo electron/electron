@@ -937,7 +937,7 @@ bool ElectronBrowserContext::ChooseDisplayMediaDevice(
                 base::RefCountedData<content::MediaResponseCallback>> cb) {
               FailSystemPickerRequest(std::move(cb->data),
                                       blink::mojom::MediaStreamRequestResult::
-                                          FAILED_DUE_TO_SHUTDOWN);
+                                          FAILED_DUE_TO_SHUTDOWN_OTHER);
             },
             shared_callback));
 
