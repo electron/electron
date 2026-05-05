@@ -21,7 +21,6 @@
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/electron_browser_main_parts.h"
-#include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
@@ -1088,7 +1087,7 @@ void NativeWindow::RestoreBounds(const display::Display& display,
   }
 #endif  // BUILDFLAG(IS_MAC)
 
-  SetBounds(saved_bounds);
+  SetBounds(saved_bounds, false);
 }
 
 // static
