@@ -64,13 +64,13 @@
 #include "shell/browser/linux/unity_service.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
-#include "shell/browser/ui/views/linux_frame_layout.h"
+#include "shell/browser/ui/views/electron_frame_view_linux.h"
 #include "shell/browser/ui/views/native_frame_view.h"
 #include "shell/browser/ui/views/native_frame_view_linux.h"
-#include "shell/browser/ui/views/opaque_frame_view.h"
 #include "shell/common/platform_util.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/linux_ui_factory.h"
+#include "ui/linux/window_frame_provider.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/frame_view_linux.h"
 #include "ui/views/window/native_frame_view.h"
@@ -281,6 +281,11 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   // If a client frame, we need to draw our own shadows.
   if (transparent() || has_client_frame())
     params.opacity = InitParams::WindowOpacity::kTranslucent;
+#if BUILDFLAG(IS_LINUX)
+  // Resize handles and shadows on frameless windows need translucent insets.
+  if (!has_frame())
+    params.opacity = InitParams::WindowOpacity::kTranslucent;
+#endif
 
   // The given window is most likely not rectangular since it is translucent and
   // has no standard frame, don't show a shadow for it.
@@ -517,6 +522,11 @@ void NativeWindowViews::SetTitleBarOverlay(
     auto* fv = widget()->non_client_view()->frame_view();
     if (auto* frameless = views::AsViewClass<FramelessView>(fv)) {
       frameless->InvalidateCaptionButtons();
+#if BUILDFLAG(IS_LINUX)
+    } else if (auto* fvl = views::AsViewClass<views::FrameViewLinux>(fv)) {
+      fvl->InvalidateLayout();
+      fvl->SchedulePaint();
+#endif
     }
   }
 }
@@ -1291,10 +1301,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
 #if BUILDFLAG(IS_LINUX)
   // Widget background needs to stay transparent for CSD shadow regions.
   auto* fvl = GetFrameViewLinux();
-  LinuxFrameLayout* frame_layout = GetLinuxFrameLayout();
-  const bool uses_csd =
-      (fvl && fvl->ShouldDrawRestoredFrameShadow()) ||
-      (frame_layout && frame_layout->SupportsClientFrameShadow());
+  const bool uses_csd = fvl && fvl->ShouldDrawRestoredFrameShadow();
   if (transparent() || uses_csd)
     compositor_color = SK_ColorTRANSPARENT;
 #endif
@@ -1302,10 +1309,31 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
+#if BUILDFLAG(IS_LINUX)
+  auto* efvl = views::AsViewClass<ElectronFrameViewLinux>(
+      widget()->non_client_view()->frame_view());
+  gfx::Rect visible_bounds;
+  if (efvl) {
+    // Shrink by the old frame border insets to isolate the visible area.
+    visible_bounds = widget()->GetWindowBoundsInScreen();
+    visible_bounds.Inset(GetRestoredFrameBorderInsets());
+  }
+#endif
+
   has_shadow_ = has_shadow;
   wm::SetShadowElevation(GetNativeWindow(),
                          has_shadow ? wm::kShadowElevationInactiveWindow
                                     : wm::kShadowElevationNone);
+
+#if BUILDFLAG(IS_LINUX)
+  if (efvl) {
+    efvl->SetWantsFrame(!IsTranslucent() &&
+                        (has_shadow || IsWindowControlsOverlayEnabled()));
+    // Grow by the new frame border insets to preserve the visible area.
+    visible_bounds.Inset(-GetRestoredFrameBorderInsets());
+    widget()->SetBounds(visible_bounds);
+  }
+#endif
 }
 
 bool NativeWindowViews::HasShadow() const {
@@ -1313,14 +1341,15 @@ bool NativeWindowViews::HasShadow() const {
 }
 
 void NativeWindowViews::SetOpacity(const double opacity) {
+  const double bounded_opacity =
+      std::isnan(opacity) ? 1.0 : std::clamp(opacity, 0.0, 1.0);
+  opacity_ = bounded_opacity;
 #if BUILDFLAG(IS_WIN)
-  const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
   HWND hwnd = GetAcceleratedWidget();
   SetLayered();
-  ::SetLayeredWindowAttributes(hwnd, 0, boundedOpacity * 255, LWA_ALPHA);
-  opacity_ = boundedOpacity;
-#else
-  opacity_ = 1.0;  // setOpacity unsupported on Linux
+  ::SetLayeredWindowAttributes(hwnd, 0, bounded_opacity * 255, LWA_ALPHA);
+#elif BUILDFLAG(IS_LINUX)
+  widget()->SetOpacity(static_cast<float>(bounded_opacity));
 #endif
 }
 
@@ -1936,7 +1965,7 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
   return std::make_unique<WinFrameView>(this, widget);
 #else
   if (!has_frame())
-    return std::make_unique<OpaqueFrameView>(this, widget);
+    return std::make_unique<ElectronFrameViewLinux>(this, widget);
 
   if (has_client_frame()) {
     auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
@@ -1959,14 +1988,6 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 }
 
 #if BUILDFLAG(IS_LINUX)
-LinuxFrameLayout* NativeWindowViews::GetLinuxFrameLayout() {
-  auto* ncv = widget()->non_client_view();
-  if (!ncv)
-    return nullptr;
-  auto* view = views::AsViewClass<FramelessView>(ncv->frame_view());
-  return view ? view->GetLinuxFrameLayout() : nullptr;
-}
-
 views::FrameViewLinux* NativeWindowViews::GetFrameViewLinux() const {
   auto* ncv = widget()->non_client_view();
   if (!ncv)
