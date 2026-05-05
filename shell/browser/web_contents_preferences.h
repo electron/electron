@@ -92,9 +92,6 @@ class WebContentsPreferences
   void Clear();
   void SaveLastPreferences();
 
-  // TODO(clavin): refactor to use the WebContents provided by the
-  // WebContentsUserData base class instead of storing a duplicate ref
-  raw_ptr<content::WebContents> web_contents_;
 
   bool plugins_;
   bool experimental_features_;

@@ -67,9 +67,7 @@ class WebContentsPermissionHelper
                        blink::PermissionType permission,
                        base::DictValue details) const;
 
-  // TODO(clavin): refactor to use the WebContents provided by the
-  // WebContentsUserData base class instead of storing a duplicate ref
-  raw_ptr<content::WebContents> web_contents_;
+
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 };

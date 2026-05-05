@@ -206,8 +206,7 @@ void OnPermissionResponse(base::OnceCallback<void(bool)> callback,
 
 WebContentsPermissionHelper::WebContentsPermissionHelper(
     content::WebContents* web_contents)
-    : content::WebContentsUserData<WebContentsPermissionHelper>(*web_contents),
-      web_contents_(web_contents) {}
+    : content::WebContentsUserData<WebContentsPermissionHelper>(*web_contents) {}
 
 WebContentsPermissionHelper::~WebContentsPermissionHelper() = default;
 
@@ -218,7 +217,7 @@ void WebContentsPermissionHelper::RequestPermission(
     bool user_gesture,
     base::DictValue details) {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
-      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+      GetWebContents().GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = requesting_frame->GetLastCommittedOrigin().GetURL();
   permission_manager->RequestPermissionWithDetails(
       content::PermissionDescriptorUtil::
@@ -232,7 +231,7 @@ bool WebContentsPermissionHelper::CheckPermission(
     blink::PermissionType permission,
     base::DictValue details) const {
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
-      web_contents_->GetBrowserContext()->GetPermissionControllerDelegate());
+      GetWebContents().GetBrowserContext()->GetPermissionControllerDelegate());
   auto origin = requesting_frame->GetLastCommittedOrigin().GetURL();
   return permission_manager->CheckPermissionWithDetails(
       permission, requesting_frame, origin, std::move(details));
@@ -285,9 +284,9 @@ void WebContentsPermissionHelper::RequestPointerLockPermission(
     bool last_unlocked_by_target,
     base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
         callback) {
-  RequestPermission(web_contents_->GetPrimaryMainFrame(),
+  RequestPermission(GetWebContents().GetPrimaryMainFrame(),
                     blink::PermissionType::POINTER_LOCK,
-                    base::BindOnce(std::move(callback), web_contents_,
+                    base::BindOnce(std::move(callback), &GetWebContents(),
                                    user_gesture, last_unlocked_by_target),
                     user_gesture);
 }
@@ -296,9 +295,9 @@ void WebContentsPermissionHelper::RequestKeyboardLockPermission(
     bool esc_key_locked,
     base::OnceCallback<void(content::WebContents*, bool, bool)> callback) {
   RequestPermission(
-      web_contents_->GetPrimaryMainFrame(),
+      GetWebContents().GetPrimaryMainFrame(),
       blink::PermissionType::KEYBOARD_LOCK,
-      base::BindOnce(std::move(callback), web_contents_, esc_key_locked));
+      base::BindOnce(std::move(callback), &GetWebContents(), esc_key_locked));
 }
 
 void WebContentsPermissionHelper::RequestOpenExternalPermission(
