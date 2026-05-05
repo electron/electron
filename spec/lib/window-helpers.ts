@@ -61,6 +61,7 @@ export async function cleanupWebContents() {
   let webContentsDestroyed = 0;
   const existingWCS = webContents.getAllWebContents();
   for (const contents of existingWCS) {
+    if (contents.isDestroyed()) continue;
     const isDestroyed = once(contents, 'destroyed');
     contents.destroy();
     await isDestroyed;
