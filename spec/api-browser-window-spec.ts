@@ -4330,7 +4330,7 @@ describe('BrowserWindow module', () => {
           // w.title should update after 'page-title-updated'.
           // It happens right *after* the event fires though,
           // so we have to waitUntil it changes
-          waitUntil(() => w.title === newTitle);
+          await waitUntil(() => w.title === newTitle);
         });
 
         it('works for stop events', async () => {
