@@ -55,6 +55,14 @@ using NativeWindowHandle = gfx::NativeView;
 using NativeWindowHandle = gfx::AcceleratedWidget;
 #endif
 
+// Upper bound for window dimensions. Chosen to:
+//   - Match the guaranteed minimum max-texture-size for D3D12 / OpenGL 4.x
+//     and Chromium's compositor; anything larger gets tiled or downscaled,
+//     so a bigger window buys nothing visually.
+//   - Cover an 8K single display with headroom; arithmetic on this value
+//     (frame insets, menu-bar height) cannot overflow int.
+constexpr int kMaxWindowDimension = 16384;
+
 class NativeWindow : public views::WidgetDelegate {
  public:
   ~NativeWindow() override;
