@@ -4360,7 +4360,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dbus-native@npm:0.4.0":
+"dbus-native@npm:^0.4.0":
   version: 0.4.0
   resolution: "dbus-native@npm:0.4.0"
   dependencies:
@@ -4378,27 +4378,6 @@ __metadata:
   bin:
     dbus2js: ./bin/dbus2js.js
   checksum: 10c0/f913bb8dc2162e0c6ee684dd7e63375005de2d238569f499b9478174ce31bcd089ea6bbddd629599a330218927e4bfe4fecaeb951db23aba4befd018f5f7ecfe
-  languageName: node
-  linkType: hard
-
-"dbus-native@patch:dbus-native@npm%3A0.4.0#~/.yarn/patches/dbus-native-npm-0.4.0-fd59c31eb6.patch":
-  version: 0.4.0
-  resolution: "dbus-native@patch:dbus-native@npm%3A0.4.0#~/.yarn/patches/dbus-native-npm-0.4.0-fd59c31eb6.patch::version=0.4.0&hash=d53594"
-  dependencies:
-    abstract-socket: "npm:^2.0.0"
-    event-stream: "npm:^4.0.0"
-    hexy: "npm:^0.2.10"
-    long: "npm:^4.0.0"
-    optimist: "npm:^0.6.1"
-    put: "npm:0.0.6"
-    safe-buffer: "npm:^5.1.1"
-    xml2js: "npm:^0.4.17"
-  dependenciesMeta:
-    abstract-socket:
-      optional: true
-  bin:
-    dbus2js: ./bin/dbus2js.js
-  checksum: 10c0/16ed77e808044737c8ab56f1a06b8e845b7ab107838254d2990583c2a0b1f5e242c0e446fae860610072df5d25a9e2f88c58213f3212855969201109ef206983
   languageName: node
   linkType: hard
 
@@ -4803,7 +4782,7 @@ __metadata:
     chai: "npm:^4.2.0"
     chai-as-promised: "npm:^7.1.1"
     coffeescript: "npm:^2.4.1"
-    dbus-native: "patch:dbus-native@npm%3A0.4.0#~/.yarn/patches/dbus-native-npm-0.4.0-fd59c31eb6.patch"
+    dbus-native: "npm:^0.4.0"
     dirty-chai: "npm:^2.0.1"
     express: "npm:^4.20.0"
     graceful-fs: "npm:^4.1.15"
