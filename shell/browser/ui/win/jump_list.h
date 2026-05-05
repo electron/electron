@@ -5,8 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_WIN_JUMP_LIST_H_
 #define ELECTRON_SHELL_BROWSER_UI_WIN_JUMP_LIST_H_
 
-#include <atlbase.h>
 #include <shobjidl.h>
+#include <wrl/client.h>
 #include <vector>
 
 #include "base/files/file_path.h"
@@ -115,7 +115,7 @@ class JumpList {
 
  private:
   std::wstring app_id_;
-  CComPtr<ICustomDestinationList> destinations_;
+  Microsoft::WRL::ComPtr<ICustomDestinationList> destinations_;
 };
 
 }  // namespace electron
