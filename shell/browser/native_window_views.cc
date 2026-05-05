@@ -293,14 +293,17 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
 
   params.native_widget = new ElectronDesktopNativeWidgetAura{this, widget()};
 #elif BUILDFLAG(IS_LINUX)
-  std::string name = Browser::Get()->GetName();
+  // Set the WM_CLASS and XDG App ID to the same value
+  // for best compatibility with both X11 and Wayland.
+  const auto app_id = platform_util::GetXdgAppId();
+  const std::string name = app_id.value_or(Browser::Get()->GetName());
   // Set WM_WINDOW_ROLE.
   params.wm_role_name = "browser-window";
   // Set WM_CLASS.
   params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
   // Set Wayland application ID.
-  if (auto const app_id = platform_util::GetXdgAppId()) {
+  if (app_id) {
     params.wayland_app_id = *app_id;
   }
 
