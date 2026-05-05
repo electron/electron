@@ -665,6 +665,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@electron-ci/virtual-display@npm:*, @electron-ci/virtual-display@workspace:spec/fixtures/native-addon/virtual-display":
+  version: 0.0.0-use.local
+  resolution: "@electron-ci/virtual-display@workspace:spec/fixtures/native-addon/virtual-display"
+  dependencies:
+    node-addon-api: "npm:^8.3.0"
+  languageName: unknown
+  linkType: soft
+
 "@electron/asar@npm:^3.2.13":
   version: 3.2.13
   resolution: "@electron/asar@npm:3.2.13"
@@ -4440,6 +4448,7 @@ __metadata:
     "@electron-ci/is-valid-window": "npm:*"
     "@electron-ci/osr-gpu": "npm:*"
     "@electron-ci/uv-dlopen": "npm:*"
+    "@electron-ci/virtual-display": "npm:*"
     "@electron/fuses": "npm:^1.8.0"
     "@electron/packager": "npm:^18.3.2"
     "@types/basic-auth": "npm:^1.1.8"

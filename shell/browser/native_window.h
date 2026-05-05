@@ -344,6 +344,7 @@ class NativeWindow : public views::WidgetDelegate {
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
   void NotifyLayoutWindowControlsOverlay();
+  void NotifyWindowStateRestored();
 
 #if BUILDFLAG(IS_WIN)
   void NotifyWindowMessage(UINT message, WPARAM w_param, LPARAM l_param);

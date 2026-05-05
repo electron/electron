@@ -4,17 +4,12 @@
   "description": "Virtual display for multi-monitor testing",
   "main": "./lib/virtual-display.js",
   "scripts": {
+    "install": "node-gyp configure && node-gyp build",
     "clean": "rm -rf build",
-    "build-electron": "electron-rebuild",
-    "build": "node-gyp configure && node-gyp build"
+    "build-electron": "electron-rebuild"
   },
   "license": "MIT",
   "dependencies": {
-    "bindings": "^1.5.0",
     "node-addon-api": "^8.3.0"
-  },
-  "devDependencies": {
-    "@types/jest": "^30.0.0",
-    "node-gyp": "^11.1.0"
   }
 }

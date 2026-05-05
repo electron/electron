@@ -697,6 +697,10 @@ void NativeWindow::NotifyLayoutWindowControlsOverlay() {
                       *bounds);
 }
 
+void NativeWindow::NotifyWindowStateRestored() {
+  observers_.Notify(&NativeWindowObserver::OnWindowStateRestored);
+}
+
 #if BUILDFLAG(IS_WIN)
 void NativeWindow::NotifyWindowMessage(UINT message,
                                        WPARAM w_param,
@@ -858,7 +862,7 @@ void NativeWindow::SaveWindowState() {
     return;
   }
 
-  const display::Screen* screen = display::Screen::GetScreen();
+  const display::Screen* screen = display::Screen::Get();
   DCHECK(screen);
   // GetDisplayMatching returns a fake display with 1920x1080 resolution at
   // (0,0) when no physical displays are attached.
@@ -877,7 +881,7 @@ void NativeWindow::SaveWindowState() {
   }
 
   ScopedDictPrefUpdate update(prefs_, electron::kWindowStates);
-  const base::Value::Dict* existing_prefs = update->FindDict(window_name_);
+  const base::DictValue* existing_prefs = update->FindDict(window_name_);
 
   // When the window is in a special display mode (fullscreen, kiosk, or
   // maximized), save the previously stored window bounds instead of
@@ -895,7 +899,7 @@ void NativeWindow::SaveWindowState() {
     }
   }
 
-  base::Value::Dict window_preferences;
+  base::DictValue window_preferences;
   window_preferences.Set(electron::kLeft, bounds.x());
   window_preferences.Set(electron::kTop, bounds.y());
   window_preferences.Set(electron::kRight, bounds.right());
@@ -928,7 +932,7 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
     return;
 
   const base::Value& value = prefs_->GetValue(electron::kWindowStates);
-  const base::Value::Dict* window_preferences =
+  const base::DictValue* window_preferences =
       value.is_dict() ? value.GetDict().FindDict(window_name_) : nullptr;
 
   if (!window_preferences)
@@ -961,7 +965,7 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
       gfx::Rect(*saved_left, *saved_top, *saved_right - *saved_left,
                 *saved_bottom - *saved_top);
 
-  display::Screen* screen = display::Screen::GetScreen();
+  display::Screen* screen = display::Screen::Get();
   DCHECK(screen);
 
   // Set the primary display as the target display for restoration.
@@ -1007,7 +1011,7 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
 
   if (restore_display_mode_) {
     restore_display_mode_callback_ = base::BindOnce(
-        [](NativeWindow* window, base::Value::Dict prefs) {
+        [](NativeWindow* window, base::DictValue prefs) {
           if (auto kiosk = prefs.FindBool(electron::kKiosk); kiosk && *kiosk) {
             window->SetKiosk(true);
           } else if (auto fs = prefs.FindBool(electron::kFullscreen);
@@ -1022,6 +1026,8 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
   }
 
   is_being_restored_ = false;
+
+  NotifyWindowStateRestored();
 }
 
 void NativeWindow::FlushPendingDisplayMode() {

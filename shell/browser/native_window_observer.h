@@ -110,6 +110,8 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnExecuteAppCommand(std::string_view command_name) {}
 
   virtual void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) {}
+
+  virtual void OnWindowStateRestored() {}
 };
 
 }  // namespace electron
