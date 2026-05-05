@@ -942,14 +942,20 @@ extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
     return *content_size_constraints_;
   if (!size_constraints_)
     return extensions::SizeConstraints();
+  // Electron's size constraints are for the window's logical size, so
+  // inflate by frame insets to get the full HWND size expected by
+  // WindowSizeToContentSizeBuggy.
+  const gfx::Size frame_inset_size = GetRestoredFrameBorderInsets().size();
   extensions::SizeConstraints constraints;
   if (size_constraints_->HasMaximumSize()) {
     constraints.set_maximum_size(WindowSizeToContentSizeBuggy(
-        GetAcceleratedWidget(), size_constraints_->GetMaximumSize()));
+        GetAcceleratedWidget(),
+        size_constraints_->GetMaximumSize() + frame_inset_size));
   }
   if (size_constraints_->HasMinimumSize()) {
     constraints.set_minimum_size(WindowSizeToContentSizeBuggy(
-        GetAcceleratedWidget(), size_constraints_->GetMinimumSize()));
+        GetAcceleratedWidget(),
+        size_constraints_->GetMinimumSize() + frame_inset_size));
   }
   return constraints;
 }
