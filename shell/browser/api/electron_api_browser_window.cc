@@ -49,6 +49,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // when initially hidden
   bool paint_when_initially_hidden = true;
   options.Get(options::kPaintWhenInitiallyHidden, &paint_when_initially_hidden);
+  paint_when_initially_hidden_ = paint_when_initially_hidden;
   if (!paint_when_initially_hidden) {
     bool show = true;
     options.Get(options::kShow, &show);
@@ -282,6 +283,17 @@ void BrowserWindow::OnWindowHide() {
   web_contents()->WasOccluded();
   web_contents_shown_ = false;
   BaseWindow::OnWindowHide();
+}
+
+void BrowserWindow::RenderViewReady() {
+  // When paintWhenInitiallyHidden is true and the native window has not been
+  // shown yet, tell the WebContents it is visible so the renderer's compositor
+  // starts producing frames.  Without this the renderer's LayerTreeHost stays
+  // hidden and no CompositorFrames (and therefore no presentation callbacks)
+  // are ever produced, which means PerformanceObserver paint-timing entries
+  // (first-paint / first-contentful-paint) never fire.
+  if (paint_when_initially_hidden_ && !window()->IsVisible())
+    web_contents()->WasShown();
 }
 
 void BrowserWindow::Show() {
