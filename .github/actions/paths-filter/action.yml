@@ -1,0 +1,71 @@
+name: 'Paths Filter'
+description: 'Check which file path groups are modified in a PR, similar to dorny/paths-filter'
+inputs:
+  filters:
+    description: |
+      YAML filter configuration. Each top-level key becomes an output.
+      Values are arrays of glob patterns: * matches within a single path
+      segment, ** matches across path separators.
+      Prefix with ! to negate. Brace expansion {a,b} is supported.
+    required: true
+outputs:
+  results:
+    description: 'JSON object mapping each filter name to "true" or "false"'
+    value: ${{ steps.check.outputs.results }}
+runs:
+  using: 'composite'
+  steps:
+    - id: check
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        FILTERS: ${{ inputs.filters }}
+      run: |
+        set -eo pipefail
+
+        # Fetch changed files from the PR
+        CHANGED_FILES=$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" --paginate --jq '.[].filename')
+
+        # Convert a glob pattern to an ERE regex
+        # * matches any chars except /, ** matches everything including /
+        glob_to_regex() {
+          echo "$1" | sed -E \
+            -e 's/\?/[^\/]/g' \
+            -e 's/\./\\./g' \
+            -e 's/\*\*\//DOUBLESTAR_SLASH/g' \
+            -e 's/\*\*/DOUBLESTAR/g' \
+            -e 's/\*/[^\/]*/g' \
+            -e 's|DOUBLESTAR_SLASH|(.+/)?|g' \
+            -e 's/DOUBLESTAR/.+/g' \
+            -e 's/\{/(/g' \
+            -e 's/\}/)/g' \
+            -e 's/,/|/g'
+        }
+
+        # Parse filters YAML to JSON
+        FILTERS_JSON=$(echo "$FILTERS" | yq -o=json '.')
+        results="{}"
+
+        for filter in $(echo "$FILTERS_JSON" | jq -r 'keys[]'); do
+          matched=false
+
+          while IFS= read -r pattern; do
+            negated=false
+            if [[ "$pattern" == !* ]]; then
+              negated=true
+              pattern="${pattern:1}"
+            fi
+
+            regex="^$(glob_to_regex "$pattern")$"
+
+            if [[ "$negated" == true ]]; then
+              echo "$CHANGED_FILES" | grep -qvE "$regex" && matched=true
+            else
+              echo "$CHANGED_FILES" | grep -qE "$regex" && matched=true
+            fi
+          done < <(echo "$FILTERS_JSON" | jq -r ".[\"$filter\"][]")
+
+          results=$(echo "$results" | jq -c --arg k "$filter" --arg v "$matched" '. + {($k): $v}')
+        done
+
+        echo "results=${results}" >> "$GITHUB_OUTPUT"
