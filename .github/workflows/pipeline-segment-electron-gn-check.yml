@@ -144,7 +144,7 @@ jobs:
             export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
           fi
 
-          e build --only-gen
+          e build --gen=only
 
           e d gn check out/Default //electron:electron_lib
           e d gn check out/Default //electron:electron_app
