@@ -41,7 +41,6 @@ namespace electron {
 #if BUILDFLAG(IS_LINUX)
 class NativeFrameViewLinux;
 class GlobalMenuBarX11;
-class LinuxFrameLayout;
 #endif
 
 #if BUILDFLAG(SUPPORTS_OZONE_X11)
@@ -207,9 +206,10 @@ class NativeWindowViews : public NativeWindow,
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
 
 #if BUILDFLAG(IS_LINUX)
-  LinuxFrameLayout* GetLinuxFrameLayout();
   views::FrameViewLinux* GetFrameViewLinux() const;
 #endif
+
+  [[nodiscard]] bool has_rounded_corners() const { return rounded_corner_; }
 
  private:
   void set_overlay_button_color(SkColor color) {
@@ -240,6 +240,7 @@ class NativeWindowViews : public NativeWindow,
   std::unique_ptr<views::FrameView> CreateFrameView(
       views::Widget* widget) override;
   void OnWidgetMove() override;
+
 #if BUILDFLAG(IS_WIN)
   bool ExecuteWindowsCommand(int command_id) override;
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
@@ -298,6 +299,15 @@ class NativeWindowViews : public NativeWindow,
   SkColor overlay_button_color_ = SkColor();
   SkColor overlay_symbol_color_ = SkColor();
 
+#if BUILDFLAG(IS_LINUX)
+  // The last background color set via SetBackgroundColor().
+  // Tracked because the root view is transparent for CSD windows.
+  SkColor background_color_ = SK_ColorTRANSPARENT;
+#endif
+
+  // This value is determined when the window is created.
+  bool rounded_corner_ = true;
+
 #if BUILDFLAG(IS_WIN)
 
   ui::mojom::WindowShowState last_window_state_;
@@ -327,9 +337,6 @@ class NativeWindowViews : public NativeWindow,
   bool forwarding_mouse_messages_ = false;
   HWND legacy_window_ = nullptr;
   bool layered_ = false;
-
-  // This value is determined when the window is created.
-  bool rounded_corner_ = true;
 
   // Set to true if the window is always on top and behind the task bar.
   bool behind_task_bar_ = false;

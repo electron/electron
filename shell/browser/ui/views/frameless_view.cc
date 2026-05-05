@@ -119,12 +119,6 @@ gfx::Size FramelessView::GetMaximumSize() const {
   return window_->GetMaximumSize();
 }
 
-#if BUILDFLAG(IS_LINUX)
-LinuxFrameLayout* FramelessView::GetLinuxFrameLayout() const {
-  return nullptr;
-}
-#endif
-
 BEGIN_METADATA(FramelessView)
 END_METADATA
 
