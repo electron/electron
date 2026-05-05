@@ -19,10 +19,10 @@ https://chromium-review.googlesource.com/c/chromium/src/+/6936895
 as we depend on the removed functionality in this patch.
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index f651286bc85f3640ec072b05eb2f0d118e02417a..94ee607bc9de2bf388a736c438613b51de1a5ac2 100644
+index 8eecccc5573856b4fc14cdf60c70f4276125ba71..7e40653ee0303cbe228f3ea26258c88e93dc8685 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -522,7 +522,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -525,7 +525,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    is_translucent_window_ = params->is_translucent;
    pending_restoration_data_ = params->state_restoration_data;
  
