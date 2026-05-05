@@ -218,8 +218,12 @@ class Session final : public gin::Wrappable<Session>,
 
   raw_ptr<v8::Isolate> isolate_;
 
-  // The client id to enable the network throttler.
+  // The profile id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
+
+  // The client id for the network throttler, identifying this Session as
+  // the throttling client.
+  base::UnguessableToken network_emulation_client_id_;
 
   raw_ptr<ElectronBrowserContext> browser_context_;
 

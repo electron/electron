@@ -506,6 +506,10 @@ viz::SurfaceId OffScreenRenderWidgetHostView::GetCurrentSurfaceId() const {
                                 : viz::SurfaceId();
 }
 
+bool OffScreenRenderWidgetHostView::HasSavedCompositorFrame() const {
+  return delegated_frame_host() && delegated_frame_host()->HasSavedFrame();
+}
+
 std::unique_ptr<content::SyntheticGestureTarget>
 OffScreenRenderWidgetHostView::CreateSyntheticGestureTarget() {
   NOTIMPLEMENTED();

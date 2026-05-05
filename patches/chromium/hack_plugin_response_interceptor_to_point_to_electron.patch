@@ -8,7 +8,7 @@ require a largeish patch to get working, so just redirect it to our
 implementation instead.
 
 diff --git a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
-index 50e5ac31c57cab1476df494da879615b305a93f3..4e600c23a554dfa63acbe6805ee8374156191377 100644
+index 01f003d33f46ccc7ccd663d76695a8de96344188..db3553499a97f94d4170a15f41edad1fa6212b10 100644
 --- a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 +++ b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 @@ -12,8 +12,8 @@
@@ -22,12 +22,12 @@ index 50e5ac31c57cab1476df494da879615b305a93f3..4e600c23a554dfa63acbe6805ee83741
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "content/public/browser/download_utils.h"
-@@ -224,7 +224,7 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
+@@ -264,7 +264,7 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
    content::GetUIThreadTaskRunner({})->PostTask(
        FROM_HERE,
        base::BindOnce(
 -          &extensions::mime_handlers::SendExecuteMimeTypeHandlerEvent,
 +          &extensions::StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent,
            extension_id, stream_id, embedded, frame_tree_node_id_,
-           std::move(transferrable_loader), response_url, internal_id));
- 
+           std::move(transferrable_loader), response_url, internal_id,
+           original_mime_type));

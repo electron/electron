@@ -15,7 +15,7 @@ jobs:
       contents: read
     steps:
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
@@ -36,7 +36,7 @@ jobs:
       contents: read
     steps:
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
@@ -53,7 +53,7 @@ jobs:
     name: blocked/need-repro label added
     if: github.event.label.name == 'blocked/need-repro'
     permissions:
-      issues: write  # for actions-cool/issues-helper to update issues
+      issues: write  # for gh issue comment to update issues
     runs-on: ubuntu-latest
     steps:
       - name: Check if comment needed
@@ -70,23 +70,25 @@ jobs:
           fi
       - name: Generate GitHub App token
         if: ${{ steps.check-for-comment.outputs.SHOULD_COMMENT }}
-        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
       - name: Create comment
         if: ${{ steps.check-for-comment.outputs.SHOULD_COMMENT }}
-        uses: actions-cool/issues-helper@200c78641dbf33838311e5a1e0c31bbdb92d7cf0 # v3.8.0
-        with:
-          actions: 'create-comment'
-          token: ${{ steps.generate-token.outputs.token }}
-          body: |
-            <!-- blocked/need-repro -->
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          GH_REPO: electron/electron
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body-file - <<'EOF'
+          <!-- blocked/need-repro -->
 
-            Hello @${{ github.event.issue.user.login }}. Thanks for reporting this and helping to make Electron better!
+          Hello @${{ github.event.issue.user.login }}. Thanks for reporting this and helping to make Electron better!
 
-            Would it be possible for you to make a standalone testcase with only the code necessary to reproduce the issue? For example, [Electron Fiddle](https://www.electronjs.org/fiddle) is a great tool for making small test cases and makes it easy to publish your test case to a [gist](https://gist.github.com) that Electron maintainers can use.
+          Would it be possible for you to make a standalone testcase with only the code necessary to reproduce the issue? For example, [Electron Fiddle](https://www.electronjs.org/fiddle) is a great tool for making small test cases and makes it easy to publish your test case to a [gist](https://gist.github.com) that Electron maintainers can use.
 
-            Stand-alone test cases make fixing issues go more smoothly: it ensure everyone's looking at the same issue, it removes all unnecessary variables from the equation, and it can also provide the basis for automated regression tests.
+          Stand-alone test cases make fixing issues go more smoothly: it ensure everyone's looking at the same issue, it removes all unnecessary variables from the equation, and it can also provide the basis for automated regression tests.
 
-            Now adding the https://github.com/electron/electron/labels/blocked%2Fneed-repro label for this reason. After you make a test case, please link to it in a followup comment. This issue will be closed in 10 days if the above is not addressed.
+          Now adding the https://github.com/electron/electron/labels/blocked%2Fneed-repro label for this reason. After you make a test case, please link to it in a followup comment. This issue will be closed in 10 days if the above is not addressed.
+          EOF

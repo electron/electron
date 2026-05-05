@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 2f6fbe5270245ddb1ef82f097ac1258781acb66e..727b73a37a3258aa44643d66dceba79017d9dbc8 100644
+index 7ed353d3dfe079f90c0c36e5d37219b24a0239e2..24f75cbada86669028e5e40fe7b62c01e8316121 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -554,7 +554,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -567,7 +567,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -130,7 +130,7 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index 8fded9303e74737d82ca6d54e00807ebabf6c1ac..c0b66eb9a62f8f75e3c4de43f467ddd09d8dc2d6 100644
+index 05d2b0b9610e0fce63baa4165cfa860aa55f7962..c7a89fe2e4ec62607cd38a1cd9a4e10918c4e183 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 @@ -123,7 +123,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
@@ -142,7 +142,7 @@ index 8fded9303e74737d82ca6d54e00807ebabf6c1ac..c0b66eb9a62f8f75e3c4de43f467ddd0
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -312,7 +312,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -338,7 +338,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&
@@ -152,10 +152,10 @@ index 8fded9303e74737d82ca6d54e00807ebabf6c1ac..c0b66eb9a62f8f75e3c4de43f467ddd0
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 27cdc852f5974951f0a10157a0473e67791f6688..e9b7dcb070567580e8c6ad11b2bb943083e804f6 100644
+index e0c9a67158cca84aa3951211ec24fe39ae5f64d1..ccf02e0299d6b08661efefa631612d7a85d47dfd 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -151,6 +151,8 @@ String PermissionNameToString(PermissionName name) {
+@@ -164,6 +164,8 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

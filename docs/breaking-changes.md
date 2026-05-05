@@ -14,6 +14,17 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (43.0)
 
+### Behavior Changed: `chrome.scripting` CSS injection matches more fallback frames
+
+Extensions using `chrome.scripting.insertCSS()` or `chrome.scripting.removeCSS()`
+now follow Chrome's behavior when Electron cannot match a frame's URL directly,
+such as with `about:blank` or `data:` frames. If the extension has access to the
+page that created the frame, CSS may now be inserted into or removed from those
+fallback frames as well.
+
+Apps or extensions that relied on Electron skipping those frames should narrow their
+injection target, frame IDs, or match patterns.
+
 ### Behavior Changed: Dialog methods default to Downloads directory
 
 The `defaultPath` option for the following methods now defaults to the user's Downloads folder (or their home directory if Downloads doesn't exist) when not explicitly provided:
@@ -123,6 +134,12 @@ When a cookie is deleted, the change cause remains `explicit`.
 When the cookie being set is identical to an existing one (same name, domain, path, and value, with no actual changes), the change cause is `inserted-no-change-overwrite`.
 When the value of the cookie being set remains unchanged but some of its attributes are updated, such as the expiration attribute, the change cause will be `inserted-no-value-change-overwrite`.
 
+### Deprecated: `showHiddenFiles` in Dialogs on Linux
+
+This property will still be honored on macOS and Windows, but support on Linux
+will be removed in Electron 42. GTK intends for this to be a user choice rather
+than an app choice and has removed the API to do this programmatically.
+
 ## Planned Breaking API Changes (40.0)
 
 ### Deprecated: `clipboard` API access from renderer processes
@@ -135,12 +152,6 @@ your preload script and expose it using the [contextBridge](https://www.electron
 
 Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger file sizes. `dsym.zip` files are now
 `dsym.tar.xz` files. End users using debug symbols may need to update their zip utilities.
-
-### Deprecated: `showHiddenFiles` in Dialogs on Linux
-
-This property will still be honored on macOS and Windows, but support on Linux
-will be removed in Electron 42. GTK intends for this to be a user choice rather
-than an app choice and has removed the API to do this programmatically.
 
 ## Planned Breaking API Changes (39.0)
 

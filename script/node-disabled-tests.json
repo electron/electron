@@ -11,6 +11,7 @@
   "parallel/test-crypto-dh-stateless",
   "parallel/test-crypto-fips",
   "parallel/test-crypto-keygen",
+  "parallel/test-crypto-pqc-key-objects-ml-kem",
   "parallel/test-crypto-secure-heap",
   "parallel/test-domain-error-types",
   "parallel/test-fs-utimes-y2K38",

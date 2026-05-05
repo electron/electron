@@ -88,6 +88,8 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/network/public/cpp/web_sandbox_flags.h"
+#include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
@@ -156,6 +158,7 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/peerconnection/webrtc_ip_handling_policy.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
@@ -464,6 +467,8 @@ constexpr char kFooterTemplate[] = "footerTemplate";
 constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
 constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
 constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
+constexpr char kDpiHorizontal[] = "horizontal";
+constexpr char kDpiVertical[] = "vertical";
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 constexpr std::string_view CursorTypeToString(
@@ -1120,15 +1125,18 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  // DevTools frontend messages use base::Unretained delegate callbacks.
+  // Clear the delegate before other teardown work can trigger callbacks
+  // into this partially destroyed WebContents.
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+
   if (web_contents()) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         web_contents()->GetBrowserContext()->GetPermissionControllerDelegate());
     if (permission_manager)
       permission_manager->CancelPendingRequests(web_contents());
   }
-
-  if (inspectable_web_contents_)
-    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
 
   if (owner_window_) {
     owner_window_->RemoveBackgroundThrottlingSource(this);
@@ -1395,6 +1403,26 @@ content::WebContents* WebContents::OpenURLFromTab(
         navigation_handle_callback) {
   auto weak_this = GetWeakPtr();
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
+    content::FrameTreeNode* initiator =
+        params.frame_tree_node_id ? content::FrameTreeNode::GloballyFindByID(
+                                        params.frame_tree_node_id)
+                                  : nullptr;
+    if (initiator && !initiator->IsMainFrame()) {
+      using SandboxFlags = network::mojom::WebSandboxFlags;
+      const SandboxFlags flags = initiator->active_sandbox_flags();
+      auto allow = [flags](SandboxFlags flag) {
+        return (flags & flag) == SandboxFlags::kNone;
+      };
+      if (!allow(SandboxFlags::kPopups)) {
+        if (auto* rfh = initiator->current_frame_host()) {
+          rfh->AddMessageToConsole(
+              blink::mojom::ConsoleMessageLevel::kError,
+              "Blocked opening a new window because the iframe is sandboxed "
+              "and the 'allow-popups' keyword is not set.");
+        }
+        return nullptr;
+      }
+    }
     Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
          params.post_data);
     return nullptr;
@@ -3396,10 +3424,16 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Set custom dots per inch (dpi)
   if (gin_helper::Dictionary dpi; options.Get(kDpi, &dpi)) {
+    // `webContents.print()` exposes `dpi: { horizontal, vertical }` in JS.
+    // Keep backward compatibility with internal key names as a fallback.
     settings.Set(printing::kSettingDpiHorizontal,
-                 dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72));
+                 dpi.ValueOrDefault(
+                     kDpiHorizontal,
+                     dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72)));
     settings.Set(printing::kSettingDpiVertical,
-                 dpi.ValueOrDefault(printing::kSettingDpiVertical, 72));
+                 dpi.ValueOrDefault(
+                     kDpiVertical,
+                     dpi.ValueOrDefault(printing::kSettingDpiVertical, 72)));
   }
 
   print_task_runner_->PostTaskAndReplyWithResult(

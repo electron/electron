@@ -101,6 +101,7 @@
 #include "content/browser/mac_helpers.h"
 #include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
+#include "shell/browser/webauthn/electron_authenticator_request_delegate.h"
 #include "shell/common/process_util.h"
 #endif
 
@@ -1664,6 +1665,29 @@ bool App::IsInApplicationsFolder() {
   return ElectronBundleMover::IsCurrentAppInApplicationsFolder();
 }
 
+void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
+                            gin::Arguments* args) {
+  gin_helper::Dictionary options;
+  if (!args->GetNext(&options)) {
+    thrower.ThrowTypeError("configureWebAuthn requires an options object");
+    return;
+  }
+
+  gin_helper::Dictionary touch_id;
+  if (options.Get("touchID", &touch_id)) {
+    std::string keychain_access_group;
+    if (!touch_id.Get("keychainAccessGroup", &keychain_access_group) ||
+        keychain_access_group.empty()) {
+      thrower.ThrowTypeError(
+          "configureWebAuthn: 'touchID.keychainAccessGroup' must be a "
+          "non-empty string");
+      return;
+    }
+    ElectronWebAuthenticationDelegate::SetTouchIdKeychainAccessGroup(
+        std::move(keychain_access_group));
+  }
+}
+
 int DockBounce(gin::Arguments* args) {
   int request_id = -1;
   std::string type = "informational";
@@ -1857,11 +1881,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod(
           "removeAsDefaultProtocolClient",
           base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
-#if !BUILDFLAG(IS_LINUX)
       .SetMethod(
           "getApplicationInfoForProtocol",
           base::BindRepeating(&Browser::GetApplicationInfoForProtocol, browser))
-#endif
       .SetMethod(
           "getApplicationNameForProtocol",
           base::BindRepeating(&Browser::GetApplicationNameForProtocol, browser))
@@ -1893,6 +1915,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       .SetMethod("setActivationPolicy", &App::SetActivationPolicy)
+      .SetMethod("configureWebAuthn", &App::ConfigureWebAuthn)
 #endif
       .SetMethod("setAboutPanelOptions",
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))

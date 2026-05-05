@@ -237,7 +237,7 @@ v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
   scoped_refptr<media::VideoFrame> raw_frame =
       media::VideoFrame::WrapSharedImage(
           ist->pixel_format, si, ist->frame_creation_sync_token, std::move(cb),
-          ist->coded_size, ist->visible_rect, ist->coded_size,
+          ist->visible_rect, ist->coded_size,
           base::Microseconds(ist->timestamp));
 
   raw_frame->set_color_space(si->color_space());

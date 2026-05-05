@@ -1,18 +1,19 @@
 import { systemPreferences } from 'electron';
-import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron/main';
+import { BrowserWindow, MessageChannelMain, utilityProcess, app, session } from 'electron/main';
 
 import { expect } from 'chai';
 
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs/promises';
+import * as http from 'node:http';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 import { respondOnce, randomString, kOneKiloByte } from './lib/net-helpers';
-import { ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { ifit, listen, startRemoteControlApp } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
@@ -991,6 +992,598 @@ describe('utilityProcess module', () => {
       const exit = once(child, 'exit');
       expect(child.kill()).to.be.true();
       await exit;
+    });
+  });
+
+  describe('session', () => {
+    it('can use a session object for network requests', async () => {
+      const customSession = session.fromPartition(`utility-session-test-${Math.random()}`);
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.end('session-response');
+      });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        session: customSession
+      });
+      await once(child, 'spawn');
+      await once(child, 'message');
+      child.postMessage({ type: 'fetch', url: serverUrl });
+      const [data] = await once(child, 'message');
+      expect(data.ok).to.be.true();
+      expect(data.body).to.equal('session-response');
+      const exit = once(child, 'exit');
+      child.kill();
+      await exit;
+    });
+
+    it('can use a partition string for network requests', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.end('partition-response');
+      });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        partition: `utility-partition-test-${Math.random()}`
+      });
+      await once(child, 'spawn');
+      await once(child, 'message');
+      child.postMessage({ type: 'fetch', url: serverUrl });
+      const [data] = await once(child, 'message');
+      expect(data.ok).to.be.true();
+      expect(data.body).to.equal('partition-response');
+      const exit = once(child, 'exit');
+      child.kill();
+      await exit;
+    });
+
+    it('uses HTTP cache when session is provided', async () => {
+      let requestCount = 0;
+      const server = http.createServer((request, response) => {
+        requestCount++;
+        response.writeHead(200, {
+          'Cache-Control': 'max-age=3600',
+          'Content-Type': 'text/plain',
+          'X-Request-Count': String(requestCount)
+        });
+        response.end(`response-${requestCount}`);
+      });
+      const { url } = await listen(server);
+      const customSession = session.fromPartition(`utility-cache-test-${Math.random()}`);
+      const cacheFlags: boolean[] = [];
+      customSession.webRequest.onResponseStarted((details) => {
+        cacheFlags.push(details.fromCache);
+      });
+      try {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: customSession
+        });
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch-cached', url: `${url}/cached` });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.first.body).to.equal('response-1');
+        expect(data.second.body).to.equal('response-1');
+        expect(requestCount).to.equal(1);
+        // Verify cache flags: first request from network, second from cache
+        expect(cacheFlags).to.deep.equal([false, true]);
+        const exit = once(child, 'exit');
+        child.kill();
+        await exit;
+      } finally {
+        customSession.webRequest.onResponseStarted(null);
+        await customSession.clearCache();
+        server.close();
+      }
+    });
+
+    it('does not use HTTP cache when using the system network context (no session)', async () => {
+      let requestCount = 0;
+      const server = http.createServer((request, response) => {
+        requestCount++;
+        response.writeHead(200, {
+          'Cache-Control': 'max-age=3600',
+          'Content-Type': 'text/plain'
+        });
+        response.end(`response-${requestCount}`);
+      });
+      const { url } = await listen(server);
+      try {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'));
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch-cached', url: `${url}/no-cache` });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.first.body).to.equal('response-1');
+        expect(data.second.body).to.equal('response-2');
+        expect(requestCount).to.equal(2);
+        const exit = once(child, 'exit');
+        child.kill();
+        await exit;
+      } finally {
+        server.close();
+      }
+    });
+
+    it('respects cache: "no-store" fetch option to bypass cache', async () => {
+      let requestCount = 0;
+      const server = http.createServer((request, response) => {
+        requestCount++;
+        response.writeHead(200, {
+          'Cache-Control': 'max-age=3600',
+          'Content-Type': 'text/plain'
+        });
+        response.end(`response-${requestCount}`);
+      });
+      const { url } = await listen(server);
+      const customSession = session.fromPartition(`utility-cache-nostore-${Math.random()}`);
+      const cacheFlags: boolean[] = [];
+      customSession.webRequest.onResponseStarted((details) => {
+        cacheFlags.push(details.fromCache);
+      });
+      try {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: customSession
+        });
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch-cached', url: `${url}/nostore`, cacheMode: 'no-store' });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.first.body).to.equal('response-1');
+        expect(data.second.body).to.equal('response-2');
+        expect(requestCount).to.equal(2);
+        // Neither response should be from cache
+        expect(cacheFlags).to.deep.equal([false, false]);
+        const exit = once(child, 'exit');
+        child.kill();
+        await exit;
+      } finally {
+        customSession.webRequest.onResponseStarted(null);
+        await customSession.clearCache();
+        server.close();
+      }
+    });
+
+    it('respects cache: "no-cache" fetch option to revalidate', async () => {
+      let requestCount = 0;
+      const server = http.createServer((request, response) => {
+        requestCount++;
+        response.writeHead(200, {
+          'Cache-Control': 'max-age=3600',
+          'Content-Type': 'text/plain',
+          ETag: '"test-etag"'
+        });
+        response.end(`response-${requestCount}`);
+      });
+      const { url } = await listen(server);
+      const customSession = session.fromPartition(`utility-cache-nocache-${Math.random()}`);
+      const cacheFlags: boolean[] = [];
+      customSession.webRequest.onResponseStarted((details) => {
+        cacheFlags.push(details.fromCache);
+      });
+      try {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: customSession
+        });
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch-cached', url: `${url}/nocache`, cacheMode: 'no-cache' });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.first.body).to.equal('response-1');
+        expect(requestCount).to.equal(2);
+        // First from network, second revalidated (not from cache)
+        expect(cacheFlags).to.deep.equal([false, false]);
+        const exit = once(child, 'exit');
+        child.kill();
+        await exit;
+      } finally {
+        customSession.webRequest.onResponseStarted(null);
+        await customSession.clearCache();
+        server.close();
+      }
+    });
+
+    it('respects cache: "force-cache" fetch option to use stale cache', async () => {
+      let requestCount = 0;
+      const server = http.createServer((request, response) => {
+        requestCount++;
+        response.writeHead(200, {
+          'Cache-Control': 'max-age=3600',
+          'Content-Type': 'text/plain'
+        });
+        response.end(`response-${requestCount}`);
+      });
+      const { url } = await listen(server);
+      const customSession = session.fromPartition(`utility-cache-forcecache-${Math.random()}`);
+      const cacheFlags: boolean[] = [];
+      customSession.webRequest.onResponseStarted((details) => {
+        cacheFlags.push(details.fromCache);
+      });
+      try {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: customSession
+        });
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch-cached', url: `${url}/forcecache`, cacheMode: 'force-cache' });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.first.body).to.equal('response-1');
+        expect(data.second.body).to.equal('response-1');
+        expect(requestCount).to.equal(1);
+        // First from network, second from cache
+        expect(cacheFlags).to.deep.equal([false, true]);
+        const exit = once(child, 'exit');
+        child.kill();
+        await exit;
+      } finally {
+        customSession.webRequest.onResponseStarted(null);
+        await customSession.clearCache();
+        server.close();
+      }
+    });
+
+    it('respects cache: "reload" fetch option to bypass cache entirely', async () => {
+      let requestCount = 0;
+      const server = http.createServer((request, response) => {
+        requestCount++;
+        response.writeHead(200, {
+          'Cache-Control': 'max-age=3600',
+          'Content-Type': 'text/plain'
+        });
+        response.end(`response-${requestCount}`);
+      });
+      const { url } = await listen(server);
+      const customSession = session.fromPartition(`utility-cache-reload-${Math.random()}`);
+      const cacheFlags: boolean[] = [];
+      customSession.webRequest.onResponseStarted((details) => {
+        cacheFlags.push(details.fromCache);
+      });
+      try {
+        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: customSession
+        });
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch-cached', url: `${url}/reload`, cacheMode: 'reload' });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.first.body).to.equal('response-1');
+        expect(data.second.body).to.equal('response-2');
+        expect(requestCount).to.equal(2);
+        // Neither response should be from cache
+        expect(cacheFlags).to.deep.equal([false, false]);
+        const exit = once(child, 'exit');
+        child.kill();
+        await exit;
+      } finally {
+        customSession.webRequest.onResponseStarted(null);
+        await customSession.clearCache();
+        server.close();
+      }
+    });
+
+    it('isolates cookies between different sessions', async () => {
+      const sess1 = session.fromPartition(`utility-cookie-test-1-${Math.random()}`);
+      const sess2 = session.fromPartition(`utility-cookie-test-2-${Math.random()}`);
+
+      const server = http.createServer((request, response) => {
+        const cookie = request.headers.cookie || 'none';
+        response.writeHead(200, {
+          'Content-Type': 'text/plain',
+          'Set-Cookie': 'testcookie=value; Path=/'
+        });
+        response.end(cookie);
+      });
+      const { url } = await listen(server);
+      try {
+        await sess1.cookies.set({ url, name: 'testcookie', value: 'sess1value' });
+        const child1 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: sess1
+        });
+        await once(child1, 'spawn');
+        await once(child1, 'message');
+        child1.postMessage({ type: 'fetch', url: `${url}/cookies`, options: { credentials: 'include' } });
+        const [data1] = await once(child1, 'message');
+        expect(data1.ok).to.be.true();
+        expect(data1.body).to.include('testcookie=sess1value');
+        const exit1 = once(child1, 'exit');
+        child1.kill();
+        await exit1;
+
+        const child2 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: sess2
+        });
+        await once(child2, 'spawn');
+        await once(child2, 'message');
+        child2.postMessage({ type: 'fetch', url: `${url}/cookies`, options: { credentials: 'include' } });
+        const [data2] = await once(child2, 'message');
+        expect(data2.ok).to.be.true();
+        expect(data2.body).to.equal('none');
+        const exit2 = once(child2, 'exit');
+        child2.kill();
+        await exit2;
+      } finally {
+        await sess1.clearStorageData();
+        await sess2.clearStorageData();
+        server.close();
+      }
+    });
+
+    it('shares cookies when utility processes use the same session', async () => {
+      const sharedSession = session.fromPartition(`utility-shared-session-${Math.random()}`);
+      const server = http.createServer((request, response) => {
+        const cookie = request.headers.cookie || 'none';
+        response.writeHead(200, { 'Content-Type': 'text/plain' });
+        response.end(cookie);
+      });
+      const { url } = await listen(server);
+      try {
+        await sharedSession.cookies.set({ url, name: 'shared', value: 'cookie123' });
+        const child1 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: sharedSession
+        });
+        await once(child1, 'spawn');
+        await once(child1, 'message');
+        child1.postMessage({ type: 'fetch', url: `${url}/shared`, options: { credentials: 'include' } });
+        const [data1] = await once(child1, 'message');
+        expect(data1.ok).to.be.true();
+        expect(data1.body).to.include('shared=cookie123');
+        const exit1 = once(child1, 'exit');
+        child1.kill();
+        await exit1;
+
+        const child2 = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: sharedSession
+        });
+        await once(child2, 'spawn');
+        await once(child2, 'message');
+        child2.postMessage({ type: 'fetch', url: `${url}/shared`, options: { credentials: 'include' } });
+        const [data2] = await once(child2, 'message');
+        expect(data2.ok).to.be.true();
+        expect(data2.body).to.include('shared=cookie123');
+        const exit2 = once(child2, 'exit');
+        child2.kill();
+        await exit2;
+      } finally {
+        await sharedSession.clearStorageData();
+        server.close();
+      }
+    });
+
+    it('session option takes precedence over partition', async () => {
+      const customSession = session.fromPartition(`utility-precedence-session-${Math.random()}`);
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.end('precedence-ok');
+      });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        session: customSession,
+        partition: 'this-should-be-ignored'
+      } as any);
+      await once(child, 'spawn');
+      await once(child, 'message');
+      child.postMessage({ type: 'fetch', url: serverUrl });
+      const [data] = await once(child, 'message');
+      expect(data.ok).to.be.true();
+      expect(data.body).to.equal('precedence-ok');
+      const exit = once(child, 'exit');
+      child.kill();
+      await exit;
+    });
+
+    it('session webRequest handlers intercept utility process requests', async () => {
+      const customSession = session.fromPartition(`utility-webrequest-test-${Math.random()}`);
+      const server = http.createServer((request, response) => {
+        response.writeHead(200, { 'Content-Type': 'text/plain' });
+        response.end(`header: ${request.headers['x-custom-header'] || 'missing'}`);
+      });
+      const { url } = await listen(server);
+      try {
+        customSession.webRequest.onBeforeSendHeaders((details, callback) => {
+          details.requestHeaders['X-Custom-Header'] = 'intercepted';
+          callback({ requestHeaders: details.requestHeaders });
+        });
+        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: customSession
+        });
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch', url: `${url}/webrequest` });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.body).to.equal('header: intercepted');
+        const exit = once(child, 'exit');
+        child.kill();
+        await exit;
+      } finally {
+        customSession.webRequest.onBeforeSendHeaders(null);
+        server.close();
+      }
+    });
+
+    it('fires ClientRequest login event when respondToAuthRequestsFromMainProcess is false', async () => {
+      const customSession = session.fromPartition(`utility-login-client-${Math.random()}`);
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+        }
+        response.writeHead(200).end('authenticated');
+      });
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+        session: customSession
+      });
+      await once(child, 'spawn');
+      await once(child, 'message'); // ready
+      child.postMessage({ type: 'net-request-login', url: serverUrl });
+      const [loginMsg] = await once(child, 'message');
+      expect(loginMsg.event).to.equal('login');
+      expect(loginMsg.authInfo.realm).to.equal('Foo');
+      expect(loginMsg.authInfo.scheme).to.equal('basic');
+      const [responseMsg] = await once(child, 'message');
+      expect(responseMsg.event).to.equal('response');
+      expect(responseMsg.statusCode).to.equal(200);
+      const exit = once(child, 'exit');
+      child.kill();
+      await exit;
+    });
+
+    it('fires app login event when respondToAuthRequestsFromMainProcess is true without session', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+        }
+        response.writeHead(200).end('authenticated');
+      });
+      const [loginAuthInfo, statusCode] = await remotely(
+        async (serverUrl: string, fixture: string) => {
+          const { app, utilityProcess } = require('electron');
+          const { once } = require('node:events');
+          const child = utilityProcess.fork(fixture, [], {
+            stdio: 'ignore',
+            respondToAuthRequestsFromMainProcess: true
+          });
+          await once(child, 'spawn');
+          await once(child, 'message');
+          child.postMessage({ type: 'fetch-auth', url: serverUrl });
+          const [ev, , , authInfo, cb] = await once(app, 'login');
+          ev.preventDefault();
+          cb('user', 'pass');
+          const [result] = await once(child, 'message');
+          return [authInfo, result.status];
+        },
+        serverUrl,
+        path.join(fixturesPath, 'net-session.js')
+      );
+      expect(statusCode).to.equal(200);
+      expect(loginAuthInfo!.realm).to.equal('Foo');
+      expect(loginAuthInfo!.scheme).to.equal('basic');
+    });
+
+    it('fires utility process login event when respondToAuthRequestsFromMainProcess is true with session', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        if (!request.headers.authorization) {
+          return response.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' }).end();
+        }
+        response.writeHead(200).end('authenticated');
+      });
+      const [loginAuthInfo, statusCode, appLoginFired] = await remotely(
+        async (serverUrl: string, fixture: string) => {
+          const { app, session, utilityProcess } = require('electron');
+          const { once } = require('node:events');
+          const customSession = session.fromPartition(`utility-login-session-${Math.random()}`);
+          let appLoginFired = false;
+          app.on('login', () => {
+            appLoginFired = true;
+          });
+          const child = utilityProcess.fork(fixture, [], {
+            stdio: 'ignore',
+            respondToAuthRequestsFromMainProcess: true,
+            session: customSession
+          });
+          await once(child, 'spawn');
+          await once(child, 'message');
+          child.postMessage({ type: 'fetch-auth', url: serverUrl });
+          const [ev, , authInfo, cb] = await once(child, 'login');
+          ev.preventDefault();
+          cb('user', 'pass');
+          const [result] = await once(child, 'message');
+          return [authInfo, result.status, appLoginFired];
+        },
+        serverUrl,
+        path.join(fixturesPath, 'net-session.js')
+      );
+      expect(statusCode).to.equal(200);
+      expect(loginAuthInfo!.realm).to.equal('Foo');
+      expect(loginAuthInfo!.scheme).to.equal('basic');
+      expect(appLoginFired).to.be.false();
+    });
+
+    it('resolves hosts using the session network context, not the default', async () => {
+      const proxyServer = http.createServer((request, response) => {
+        response.writeHead(200, { 'Content-Type': 'text/plain' });
+        response.end(`proxied:${request.headers.host}`);
+      });
+      const { port: proxyPort } = await listen(proxyServer);
+
+      const customSession = session.fromPartition(`utility-resolver-test-${Math.random()}`);
+      try {
+        await customSession.setProxy({
+          proxyRules: `http=127.0.0.1:${proxyPort}`,
+          proxyBypassRules: '<-loopback>'
+        });
+
+        await session.defaultSession.setProxy({});
+
+        const child = utilityProcess.fork(path.join(fixturesPath, 'net-session.js'), [], {
+          session: customSession
+        });
+        await once(child, 'spawn');
+        await once(child, 'message');
+        child.postMessage({ type: 'fetch', url: 'http://non-existent-host.test:12345/path' });
+        const [data] = await once(child, 'message');
+        expect(data.ok).to.be.true();
+        expect(data.body).to.equal('proxied:non-existent-host.test:12345');
+        const exit = once(child, 'exit');
+        child.kill();
+        await exit;
+      } finally {
+        await session.defaultSession.setProxy({});
+        proxyServer.close();
+      }
+    });
+
+    it('does not use system network proxy set via app.setProxy when session is provided', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const systemProxyServer = http.createServer((request, response) => {
+        response.writeHead(200, { 'Content-Type': 'text/plain' });
+        response.end('system-proxy');
+      });
+      const { port: systemProxyPort } = await listen(systemProxyServer);
+
+      const targetServer = http.createServer((request, response) => {
+        response.writeHead(200, { 'Content-Type': 'text/plain' });
+        response.end('direct-response');
+      });
+      const { url: targetUrl } = await listen(targetServer);
+
+      try {
+        const body = await remotely(
+          async (targetUrl: string, systemProxyPort: number, fixture: string) => {
+            const { app, session, utilityProcess } = require('electron');
+            const { once } = require('node:events');
+
+            await app.setProxy({
+              proxyRules: `http=127.0.0.1:${systemProxyPort}`,
+              proxyBypassRules: '<-loopback>'
+            });
+
+            const customSession = session.fromPartition(`utility-app-proxy-test-${Math.random()}`);
+            await customSession.setProxy({});
+
+            const child = utilityProcess.fork(fixture, [], {
+              stdio: 'ignore',
+              session: customSession
+            });
+            await once(child, 'spawn');
+            await once(child, 'message');
+            child.postMessage({ type: 'fetch', url: targetUrl });
+            const [data] = await once(child, 'message');
+            const exit = once(child, 'exit');
+            child.kill();
+            await exit;
+            return data.body;
+          },
+          targetUrl,
+          systemProxyPort,
+          path.join(fixturesPath, 'net-session.js')
+        );
+        expect(body).to.equal('direct-response');
+      } finally {
+        targetServer.close();
+        systemProxyServer.close();
+      }
     });
   });
 });

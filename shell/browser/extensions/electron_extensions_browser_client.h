@@ -17,8 +17,6 @@
 #include "services/network/public/mojom/fetch_api.mojom.h"
 #include "url/origin.h"
 
-class PrefService;
-
 namespace extensions {
 class ExtensionsAPIClient;
 class KioskDelegate;
@@ -67,6 +65,8 @@ class ElectronExtensionsBrowserClient
       content::BrowserContext* context) override;
   content::BrowserContext* GetContextRedirectedToOriginal(
       content::BrowserContext* context) override;
+  content::BrowserContext* GetContextRedirectedToOriginalWithoutAshInternals(
+      content::BrowserContext* context) override;
   content::BrowserContext* GetContextOwnInstance(
       content::BrowserContext* context) override;
   content::BrowserContext* GetContextForOriginalOnly(
@@ -101,8 +101,6 @@ class ElectronExtensionsBrowserClient
       const extensions::ExtensionSet& extensions,
       const extensions::ProcessMap& process_map,
       const GURL& upstream_url) override;
-  PrefService* GetPrefServiceForContext(
-      content::BrowserContext* context) override;
   void GetEarlyExtensionPrefsObservers(
       content::BrowserContext* context,
       std::vector<extensions::EarlyExtensionPrefsObserver*>* observers)
@@ -141,6 +139,12 @@ class ElectronExtensionsBrowserClient
       content::WebContents* web_contents) override;
   extensions::ExtensionWebContentsObserver* GetExtensionWebContentsObserver(
       content::WebContents* web_contents) override;
+  bool IsValidTabId(content::BrowserContext* browser_context,
+                    int tab_id,
+                    bool include_incognito,
+                    content::WebContents** web_contents) const override;
+  extensions::ScriptExecutor* GetScriptExecutorForTab(
+      content::WebContents& web_contents) override;
   extensions::KioskDelegate* GetKioskDelegate() override;
   std::string GetApplicationLocale() override;
   void RegisterBrowserInterfaceBindersForFrame(

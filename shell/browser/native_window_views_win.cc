@@ -6,6 +6,7 @@
 #include <shellapi.h>
 #include <wrl/client.h>
 
+#include "base/logging.h"
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
 #include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
@@ -677,8 +678,21 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
 
     if (forwarding_windows_->empty()) {
-      UnhookWindowsHookEx(mouse_hook_);
-      mouse_hook_ = nullptr;
+      // If UnhookWindowsHookEx fails, the hook is still installed in the
+      // system. Leave |mouse_hook_| pointing at the existing hook so that a
+      // subsequent SetForwardMouseMessages(true) reuses it instead of
+      // installing a duplicate hook.
+      if (UnhookWindowsHookEx(mouse_hook_)) {
+        mouse_hook_ = nullptr;
+      } else {
+        const DWORD error = ::GetLastError();
+        if (error == ERROR_INVALID_HOOK_HANDLE) {
+          mouse_hook_ = nullptr;
+        } else {
+          LOG(WARNING) << "Failed to unhook low-level mouse hook: "
+                       << logging::SystemErrorCodeToString(error);
+        }
+      }
     }
   }
 }

@@ -193,10 +193,10 @@ index 4c0b23afb38066f4d29ead2d5705ae2b58ddca34..b79eb508bdfc1ae08dce254cfa57ab6c
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 1b6c5d15eaf06224d40bee70b2da2a6b9c623f9a..23731f8c98c50c3140867debba688c5720684444 100644
+index dc561adf556b3f9548dd49aa4b2fc13207e388b4..ad6f5d92fe0f72d2ba6c173282b218c2bc6b9a55 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -242,13 +242,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
+@@ -248,13 +248,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
  }
  #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
  
@@ -213,7 +213,7 @@ index 1b6c5d15eaf06224d40bee70b2da2a6b9c623f9a..23731f8c98c50c3140867debba688c57
  
  #if BUILDFLAG(USE_ZYGOTE)
  UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
-@@ -258,6 +258,45 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
+@@ -264,6 +264,45 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -259,7 +259,7 @@ index 1b6c5d15eaf06224d40bee70b2da2a6b9c623f9a..23731f8c98c50c3140867debba688c57
  UtilityProcessHost::Options&
  UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
      mojo::GenericPendingReceiver receiver) {
-@@ -535,9 +574,30 @@ bool UtilityProcessHost::StartProcess() {
+@@ -552,9 +591,30 @@ bool UtilityProcessHost::StartProcess() {
    }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
@@ -377,7 +377,7 @@ index dfdcb66d65f07f4543703396eb529a6ec02b3f4a..96c0cadf5caf5bf27f2a767c43f0f1da
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index 47a64f9c60ef359fc0015dff566c8041e34b5405..cd17ff94f279cf32c0bf0aef6c2b53bae37f80fb 100644
+index fd94515548e50a67cfa9956cf3fbab8c7af9fe31..5d7d752e38fbca84a45183121fcec0e60211b4c9 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
 @@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -404,7 +404,7 @@ index 47a64f9c60ef359fc0015dff566c8041e34b5405..cd17ff94f279cf32c0bf0aef6c2b53ba
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -111,11 +113,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -112,11 +114,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -435,7 +435,7 @@ index 47a64f9c60ef359fc0015dff566c8041e34b5405..cd17ff94f279cf32c0bf0aef6c2b53ba
  
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
-@@ -189,6 +208,15 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
+@@ -190,6 +209,15 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
  
    return std::nullopt;
  }
@@ -745,7 +745,7 @@ index ea68aa0d16c46ad53b63e10027e81503610051d9..ac1ffa290b59d964931a312a911efbec
  
    // An interface which can be implemented and used with
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 5c92eec064e36fa4be5a57a769a4091a18e3396d..b705450708560c0ae8b386d7efdb5c526964c629 100644
+index 1d798fecab6c7df12cddfb0a63e8985a3fafcb4d..5d0f821b7c86f7f2f3ca1212f3dc356168e647a5 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -616,11 +616,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {

@@ -18,6 +18,7 @@
 #include "components/services/heap_profiling/public/cpp/settings.h"
 #endif  // !defined(ADDRESS_SANITIZER)
 #include "content/public/browser/tracing_controller.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -107,6 +108,12 @@ v8::Local<v8::Promise> StopRecording(gin::Arguments* const args) {
   gin_helper::Promise<base::FilePath> promise{args->isolate()};
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
+
   base::FilePath path;
   if (args->GetNext(&path) && !path.empty()) {
     StopTracing(std::move(promise), std::make_optional(path));
@@ -124,6 +131,12 @@ v8::Local<v8::Promise> StopRecording(gin::Arguments* const args) {
 v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
   gin_helper::Promise<const std::set<std::string>&> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
 
   // Note: This method always succeeds.
   TracingController::GetInstance()->GetCategories(base::BindOnce(
@@ -219,6 +232,12 @@ v8::Local<v8::Promise> StartTracing(
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
+
   if (!TracingController::GetInstance()->StartTracing(
           trace_config,
           base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
@@ -249,6 +268,12 @@ void OnTraceBufferUsageAvailable(
 v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
 
   // Note: This method always succeeds.
   TracingController::GetInstance()->GetTraceBufferUsage(

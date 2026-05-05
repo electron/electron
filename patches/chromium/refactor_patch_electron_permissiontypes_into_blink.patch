@@ -6,10 +6,10 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 727b73a37a3258aa44643d66dceba79017d9dbc8..b3d872be603b68bb7aa2af267f05212ae7efd46c 100644
+index 24f75cbada86669028e5e40fe7b62c01e8316121..f07c7991934c8697ad73b2d7c3b86d110e0cab99 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -554,9 +554,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -567,9 +567,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;
@@ -204,10 +204,10 @@ index 507eaa61fb8e83727807e6917ba0c9a3e23f9d31..f2603172991ba2c29092c95e3c92905e
    bool sysex;
  };
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index e9b7dcb070567580e8c6ad11b2bb943083e804f6..898efc336171ba6e33788dc754afaa47e3928f9e 100644
+index ccf02e0299d6b08661efefa631612d7a85d47dfd..39584f82794c951729d447b2e1a33d1f0c56fea9 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -151,8 +151,22 @@ String PermissionNameToString(PermissionName name) {
+@@ -164,8 +164,22 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

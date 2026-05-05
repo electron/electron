@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "base/logging.h"
 #include "chrome/browser/browser_process.h"
 #include "gin/converter.h"
 #include "printing/buildflags/buildflags.h"

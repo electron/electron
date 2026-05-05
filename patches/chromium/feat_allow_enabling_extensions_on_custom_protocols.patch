@@ -30,10 +30,10 @@ index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..a0e361cf2d2960de4f429a9d37459e26
    URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
    if (result != URLPattern::ParseResult::kSuccess) {
 diff --git a/extensions/browser/api/web_request/extension_web_request_event_router.h b/extensions/browser/api/web_request/extension_web_request_event_router.h
-index 57ed3cf54b2921df09ad84906b3da7527c6080bb..ffe3a0894c612adaa429a783827c85038d959a95 100644
+index 32116daf768b52021b795afd6b0d5b96b5d0cf46..90ab5d50e7efbd3212e074514c41caf419e47f5e 100644
 --- a/extensions/browser/api/web_request/extension_web_request_event_router.h
 +++ b/extensions/browser/api/web_request/extension_web_request_event_router.h
-@@ -53,7 +53,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
+@@ -55,7 +55,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
      URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_EXTENSION | URLPattern::SCHEME_WS |
@@ -44,10 +44,10 @@ index 57ed3cf54b2921df09ad84906b3da7527c6080bb..ffe3a0894c612adaa429a783827c8503
  class WebRequestEventRouter : public KeyedService {
   public:
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
-index 542bc99fbaace39351a6f991a7702d0c77c891eb..9fef3d7fe3108cca843100967489f1cc1b6b4589 100644
+index 8a8ab0a0e2c6e4f599651a3691d2d4749914d0f0..9ac2eda61dbab1aa489d7b5d3882f81be87e5563 100644
 --- a/extensions/common/extension.cc
 +++ b/extensions/common/extension.cc
-@@ -223,7 +223,8 @@ const int Extension::kValidHostPermissionSchemes =
+@@ -225,7 +225,8 @@ const int Extension::kValidHostPermissionSchemes =
      URLPattern::SCHEME_CHROMEUI | URLPattern::SCHEME_HTTP |
      URLPattern::SCHEME_HTTPS | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_WS | URLPattern::SCHEME_WSS |
@@ -117,7 +117,7 @@ index f680ef4d31d580a285abe51387e3df043d4458f1..afde40d56d7874aa04ea2b1d881e5cab
  
  // static
 diff --git a/url/url_util.cc b/url/url_util.cc
-index 1ee0feaad9be437914b101195e862965fcaccff4..7412af58409285fbe9b426c5b2bb8510d362091c 100644
+index f1f8ffe14fdac1156dce2502bff69e1d03eac2fc..d1bc847be05c1fb88c04dc936a5dbfc145a801ce 100644
 --- a/url/url_util.cc
 +++ b/url/url_util.cc
 @@ -135,6 +135,9 @@ struct SchemeRegistry {
@@ -147,7 +147,7 @@ index 1ee0feaad9be437914b101195e862965fcaccff4..7412af58409285fbe9b426c5b2bb8510
                                  std::string_view handler) {
    DoAddSchemeWithHandler(
 diff --git a/url/url_util.h b/url/url_util.h
-index 6906dd1c903209f3bb6d9ca346e845f1dfeef050..f1928796d5c8a01a51ac9237394bdf6236920998 100644
+index 2647d26b25b26f570b40666ad2da3553b97d6088..88ed86392eb4e10a5b99267027371f3a46fc1ae1 100644
 --- a/url/url_util.h
 +++ b/url/url_util.h
 @@ -124,6 +124,11 @@ COMPONENT_EXPORT(URL) const std::vector<std::string>& GetEmptyDocumentSchemes();

@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 27 Apr 2026 21:17:16 -0500
+Subject: fix: add missing cstdlib include to builtin_info
+
+Node's builtin_info.cc uses abort() but doesn't include <cstdlib>.
+It used to pick up the declaration by a transitive include, but
+that broke in this libc++ roll.
+
+This patch can be removed after it's been upstreamed to Node.js.
+
+diff --git a/src/builtin_info.cc b/src/builtin_info.cc
+index d5309265ac373310c20ba4f2438a778c9753254a..2c8b2b62704aadac6d8f3afbb56a9d4d5461ad58 100644
+--- a/src/builtin_info.cc
++++ b/src/builtin_info.cc
+@@ -1,5 +1,7 @@
+ #include "builtin_info.h"
+ 
++#include <cstdlib>
++
+ namespace node {
+ namespace builtins {
+ 
+@@ -41,7 +43,7 @@ std::string GetBuiltinSourceTypeName(BuiltinSourceType type) {
+     case BuiltinSourceType::kSourceTextModule:
+       return "kSourceTextModule";
+   }
+-  abort();
++  std::abort();
+ }
+ 
+ }  // namespace builtins

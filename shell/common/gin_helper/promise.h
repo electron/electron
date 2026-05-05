@@ -15,10 +15,13 @@
 #include "base/memory/scoped_refptr.h"
 #include "base/task/task_runner.h"
 #include "shell/common/gin_converters/std_converter.h"
+#include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-microtask-queue.h"
 
 namespace gin_helper {
+
+class PromiseHandle;
 
 // A wrapper around the v8::Promise.
 //
@@ -48,6 +51,26 @@ class PromiseBase {
   v8::Maybe<bool> Reject();
   v8::Maybe<bool> Reject(v8::Local<v8::Value> except);
   v8::Maybe<bool> RejectWithErrorMessage(std::string_view message);
+  v8::Maybe<bool> Resolve();
+
+  template <typename T>
+  v8::Maybe<bool> Resolve(const T& value) {
+    if (!IsAlive())
+      return v8::Nothing<bool>();
+    SettleScope settle_scope{*this};
+    return GetInner()->Resolve(settle_scope.context_,
+                               gin::ConvertToV8(isolate(), value));
+  }
+
+  template <typename... ResolveType>
+  v8::MaybeLocal<v8::Promise> Then(
+      base::OnceCallback<void(ResolveType...)> cb) {
+    if (!IsAlive())
+      return v8::MaybeLocal<v8::Promise>();
+    SettleScope settle_scope{*this};
+    v8::Local<v8::Value> value = gin::ConvertToV8(isolate(), std::move(cb));
+    return GetHandle()->Then(settle_scope.context_, value.As<v8::Function>());
+  }
 
   v8::Local<v8::Context> GetContext() const;
   v8::Local<v8::Promise> GetHandle() const;
@@ -55,6 +78,14 @@ class PromiseBase {
   v8::Isolate* isolate() const { return isolate_; }
 
  protected:
+  static scoped_refptr<base::TaskRunner> GetTaskRunner();
+
+ private:
+  // Returns true if the underlying V8 handles are still valid.
+  bool IsAlive() const;
+  v8::Local<v8::Promise::Resolver> GetInner() const;
+  v8::Maybe<bool> ResolveWith(v8::Local<v8::Value> value);
+
   struct SettleScope {
     explicit SettleScope(const PromiseBase& base);
     ~SettleScope();
@@ -66,14 +97,8 @@ class PromiseBase {
     v8::Context::Scope context_scope_;
   };
 
-  v8::Local<v8::Promise::Resolver> GetInner() const;
-
-  static scoped_refptr<base::TaskRunner> GetTaskRunner();
-
- private:
   raw_ptr<v8::Isolate> isolate_;
-  v8::Global<v8::Context> context_;
-  v8::Global<v8::Promise::Resolver> resolver_;
+  cppgc::Persistent<PromiseHandle> handle_;
 };
 
 // Template implementation that returns values.
@@ -81,6 +106,8 @@ template <typename RT>
 class Promise : public PromiseBase {
  public:
   using PromiseBase::PromiseBase;
+
+  explicit Promise(PromiseBase&& other) : PromiseBase(std::move(other)) {}
 
   // Helper for resolving the promise with |result|.
   static void ResolvePromise(Promise<RT> promise, RT result) {
@@ -102,16 +129,9 @@ class Promise : public PromiseBase {
     return resolved.GetHandle();
   }
 
-  // Convert to another type.
   template <typename NT>
   Promise<NT> As() {
-    return Promise<NT>{isolate(), GetInner()};
-  }
-
-  v8::Maybe<bool> Resolve(const RT& value) {
-    SettleScope settle_scope{*this};
-    return GetInner()->Resolve(settle_scope.context_,
-                               gin::ConvertToV8(isolate(), value));
+    return Promise<NT>{std::move(*this)};
   }
 
   template <typename... ResolveType>
@@ -124,10 +144,7 @@ class Promise : public PromiseBase {
         std::is_same<RT, std::tuple_element_t<0, std::tuple<ResolveType...>>>(),
         "A promises's 'Then' callback must handle the same type as the "
         "promises resolve type");
-    SettleScope settle_scope{*this};
-    v8::Local<v8::Value> value = gin::ConvertToV8(isolate(), std::move(cb));
-    v8::Local<v8::Function> handler = value.As<v8::Function>();
-    return GetHandle()->Then(settle_scope.context_, handler);
+    return PromiseBase::Then(std::move(cb));
   }
 };
 
@@ -142,8 +159,6 @@ class Promise<void> : public PromiseBase {
 
   // Returns an already-resolved promise.
   static v8::Local<v8::Promise> ResolvedPromise(v8::Isolate* isolate);
-
-  v8::Maybe<bool> Resolve();
 };
 
 }  // namespace gin_helper

@@ -263,6 +263,35 @@ describe('focus handling', () => {
   });
 });
 
+describe('cross origin isolation', () => {
+  afterEach(closeAllWindows);
+
+  let server: http.Server;
+  let serverUrl: string;
+
+  before(async () => {
+    server = http.createServer((_req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+      res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+      res.end('<!doctype html>');
+    });
+    serverUrl = (await listen(server)).url;
+  });
+
+  after(() => {
+    server.close();
+  });
+
+  it('is enabled by COOP and COEP headers', async () => {
+    const w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+
+    const crossOriginIsolated = await w.webContents.executeJavaScript('globalThis.crossOriginIsolated');
+    expect(crossOriginIsolated).to.equal(true);
+  });
+});
+
 describe('web security', () => {
   afterEach(closeAllWindows);
   let server: http.Server;
@@ -656,6 +685,67 @@ describe('command line switches', () => {
           });
         }
       });
+    });
+
+    it('should use bundled devtools frontend URL in /json response', async () => {
+      // Regression test for https://github.com/electron/electron/issues/51035
+      // Verifies that devtoolsFrontendUrl points to the local bundled path
+      // (/devtools/inspector.html) rather than the remote CDN URL
+      // (https://chrome-devtools-frontend.appspot.com), which would 404 for
+      // Electron's custom Chromium builds.
+      const electronPath = process.execPath;
+      let stderr = '';
+      appProcess = ChildProcess.spawn(electronPath, ['--remote-debugging-port=0']);
+
+      const port = await new Promise<string>((resolve, reject) => {
+        appProcess!.stderr.on('data', (data: Buffer) => {
+          stderr += data.toString();
+          const m = /DevTools listening on ws:\/\/127\.0\.0\.1:(\d+)\//.exec(stderr);
+          if (m) {
+            appProcess!.stderr.removeAllListeners('data');
+            resolve(m[1]);
+          }
+        });
+        appProcess!.on('exit', () =>
+          reject(new Error(`Process exited before DevTools port was found. stderr: ${stderr}`))
+        );
+      });
+
+      const jsonTargets = await new Promise<any[]>((resolve, reject) => {
+        http
+          .get(`http://127.0.0.1:${port}/json`, (res) => {
+            let body = '';
+            res.on('data', (chunk: Buffer) => {
+              body += chunk.toString();
+            });
+            res.on('end', () => {
+              try {
+                resolve(JSON.parse(body));
+              } catch {
+                reject(new Error(`Failed to parse /json response: ${body}`));
+              }
+            });
+            res.on('error', reject);
+          })
+          .on('error', reject);
+      });
+
+      expect(jsonTargets).to.be.an('array');
+      expect(jsonTargets.length).to.be.greaterThan(0);
+
+      // Every target's devtoolsFrontendUrl must use the bundled path,
+      // not the remote CDN (chrome-devtools-frontend.appspot.com).
+      for (const target of jsonTargets) {
+        expect(target).to.have.property('devtoolsFrontendUrl');
+        expect(target.devtoolsFrontendUrl).to.match(
+          /^\/devtools\//,
+          `devtoolsFrontendUrl should start with /devtools/ (bundled), got: ${target.devtoolsFrontendUrl}`
+        );
+        expect(target.devtoolsFrontendUrl).to.not.include(
+          'chrome-devtools-frontend.appspot.com',
+          'devtoolsFrontendUrl should not point to the remote CDN'
+        );
+      }
     });
   });
 
@@ -1115,6 +1205,17 @@ describe('chromium features', () => {
       it('denies geolocation when permission request handler would allow', testSwitchBehavior('allow'));
       it('denies geolocation when permission request handler would deny', testSwitchBehavior('deny'));
       it('denies geolocation with no permission request handler', testSwitchBehavior('none'));
+    });
+  });
+
+  describe('<geolocation> element', () => {
+    afterEach(closeAllWindows);
+
+    it('does not crash the renderer', (done) => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.once('did-finish-load', () => done());
+      w.webContents.once('render-process-gone', () => done(new Error('renderer crashed / was killed')));
+      w.loadURL('data:text/html,<geolocation></geolocation>');
     });
   });
 
@@ -4958,5 +5059,78 @@ describe('iframe sandbox external protocols', () => {
     await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts allow-popups')}`);
     await requested;
     expect(openExternalRequests).to.deep.equal(['magnet:sandbox-test']);
+  });
+});
+
+describe('iframe sandbox popups', () => {
+  let server: http.Server;
+  let serverUrl: string;
+  let w: BrowserWindow;
+
+  const childHtml = `
+    <script>
+      addEventListener('DOMContentLoaded', () => {
+        const a = document.createElement('a');
+        a.href = 'https://example.com/sandbox-bypassed';
+        document.body.appendChild(a);
+        a.dispatchEvent(new MouseEvent('click', {
+          ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
+        }));
+      });
+    </script>`;
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      if (req.url === '/child') {
+        res.end(childHtml);
+      } else {
+        const sandbox = new URL(req.url!, serverUrl).searchParams.get('sandbox') ?? '';
+        res.end(`<iframe sandbox="${sandbox}" src="/child"></iframe>`);
+      }
+    });
+    serverUrl = (await listen(server)).url;
+  });
+
+  after(() => {
+    server.close();
+  });
+
+  beforeEach(() => {
+    w = new BrowserWindow({ show: false });
+  });
+
+  afterEach(() => closeAllWindows());
+
+  it('does not invoke setWindowOpenHandler from a sandboxed iframe without allow-popups', async () => {
+    let handlerCalls = 0;
+    w.webContents.setWindowOpenHandler(() => {
+      handlerCalls++;
+      return { action: 'deny' };
+    });
+    await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts')}`);
+    await setTimeout(200);
+    expect(handlerCalls).to.equal(0);
+  });
+
+  it('does not create a BrowserWindow from a sandboxed iframe without allow-popups (no handler installed)', async () => {
+    let created = false;
+    w.webContents.on('did-create-window', () => {
+      created = true;
+    });
+    await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts')}`);
+    await setTimeout(200);
+    expect(created).to.be.false();
+  });
+
+  it('invokes setWindowOpenHandler when allow-popups is set', async () => {
+    let handlerCalls = 0;
+    w.webContents.setWindowOpenHandler(() => {
+      handlerCalls++;
+      return { action: 'deny' };
+    });
+    await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts allow-popups')}`);
+    await setTimeout(200);
+    expect(handlerCalls).to.equal(1);
   });
 });

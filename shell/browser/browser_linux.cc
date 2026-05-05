@@ -7,21 +7,35 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
+#include <string_view>
+
 #if BUILDFLAG(IS_LINUX)
+#include <gio/gdesktopappinfo.h>
+#include <gio/gio.h>
 #include <gtk/gtk.h>
 #endif
 
-#include "base/command_line.h"
 #include "base/environment.h"
-#include "base/process/launch.h"
-#include "base/strings/strcat.h"
+#include "base/files/file_path.h"
+#include "base/logging.h"
+#include "base/strings/utf_string_conversions.h"
 #include "electron/electron_version.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/application_info.h"
+#include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/thread_restrictions.h"
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/base/glib/glib_cast.h"
+#include "ui/base/glib/scoped_gobject.h"
+#include "ui/gfx/image/image.h"
+#include "ui/gfx/image/image_skia.h"
+#include "ui/gtk/gtk_compat.h"  // nogncheck
+#include "ui/gtk/gtk_util.h"    // nogncheck
 
 #if BUILDFLAG(IS_LINUX)
 #include "shell/browser/linux/unity_service.h"
@@ -31,64 +45,121 @@ namespace electron {
 
 namespace {
 
-const char kXdgSettings[] = "xdg-settings";
-const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
-
-// The use of the ForTesting flavors is a hack workaround to avoid having to
-// patch these as friends into the associated guard classes.
-class [[maybe_unused, nodiscard]] LaunchXdgUtilityScopedAllowBaseSyncPrimitives
-    : public base::ScopedAllowBaseSyncPrimitivesForTesting {};
-
-bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
-  *exit_code = EXIT_FAILURE;
-  int devnull = open("/dev/null", O_RDONLY);
-  if (devnull < 0)
+bool SetDefaultWebClient(const std::string& protocol) {
+  const auto env = base::Environment::Create();
+  const std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP");
+  if (!desktop_name)
     return false;
 
-  base::LaunchOptions options;
-  options.fds_to_remap.emplace_back(devnull, STDIN_FILENO);
-
-  base::Process process = base::LaunchProcess(argv, options);
-  close(devnull);
-
-  if (!process.IsValid())
+  GDesktopAppInfo* const app_info =
+      g_desktop_app_info_new(desktop_name->c_str());
+  if (!app_info)
     return false;
-  LaunchXdgUtilityScopedAllowBaseSyncPrimitives allow_base_sync_primitives;
-  return process.WaitForExit(exit_code);
+
+  const std::string content_type = "x-scheme-handler/" + protocol;
+  GError* error = nullptr;
+  const bool success = g_app_info_set_as_default_for_type(
+      G_APP_INFO(app_info), content_type.c_str(), &error);
+  if (error != nullptr)
+    LOG(ERROR) << error->message;
+  g_clear_error(&error);
+  g_object_unref(app_info);
+  return success;
 }
 
-std::optional<std::string> GetXdgAppOutput(
-    const std::vector<std::string>& argv) {
-  std::string reply;
-  int success_code;
-  ScopedAllowBlockingForElectron allow_blocking;
-  bool ran_ok = base::GetAppOutputWithExitCode(base::CommandLine(argv), &reply,
-                                               &success_code);
+[[nodiscard]] ScopedGObject<GAppInfo> GetAppInfoForProtocol(const GURL& url) {
+  const auto scheme = std::string{url.scheme()};  // gio can't use string_views
+  return TakeGObject(g_app_info_get_default_for_uri_scheme(scheme.c_str()));
+}
 
-  if (!ran_ok || success_code != EXIT_SUCCESS)
+[[nodiscard]] std::optional<base::FilePath> ResolveExecutablePath(
+    const char* const executable) {
+  if (executable == nullptr || *executable == '\0')
     return {};
 
-  return reply;
+  if (auto path = base::FilePath::FromUTF8Unsafe(executable); path.IsAbsolute())
+    return path;
+
+  gchar* const found = g_find_program_in_path(executable);
+  if (!found)
+    return {};
+
+  const auto path = base::FilePath::FromUTF8Unsafe(found);
+  g_free(found);
+  return path;
 }
 
-bool SetDefaultWebClient(const std::string& protocol) {
-  auto env = base::Environment::Create();
+[[nodiscard]] gfx::Image GetApplicationIcon(GAppInfo* const app_info) {
+  constexpr int kIconSize = 32;
 
-  std::vector<std::string> argv = {kXdgSettings, "set"};
-  if (!protocol.empty()) {
-    argv.emplace_back(kXdgSettingsDefaultSchemeHandler);
-    argv.emplace_back(protocol);
-  }
+  GIcon* const icon = g_app_info_get_icon(app_info);
+  if (!icon)
+    return {};
 
-  if (std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP")) {
-    argv.emplace_back(desktop_name.value());
+  // Note: this gtk3/gtk4 + icon theme lookup + snapshot control flow
+  // is copied from GtkUi::GetIconForContentType(). We couldn't use it
+  // here because it gets its GIcon from a different place than us.
+  SkBitmap bitmap;
+  if (gtk::GtkCheckVersion(4)) {
+    const auto icon_paintable = gtk::Gtk4IconThemeLookupByGicon(
+        gtk::GetDefaultIconTheme(), icon, kIconSize, 1, GTK_TEXT_DIR_NONE,
+        static_cast<GtkIconLookupFlags>(0));
+    if (!icon_paintable)
+      return {};
+
+    auto* const paintable =
+        GlibCast<GdkPaintable>(icon_paintable.get(), gdk_paintable_get_type());
+    auto* const snapshot = gtk_snapshot_new();
+    gdk_paintable_snapshot(paintable, snapshot, kIconSize, kIconSize);
+    auto* const node = gtk_snapshot_free_to_node(snapshot);
+    GdkTexture* const texture = gtk::GetTextureFromRenderNode(node);
+    if (!texture) {
+      gsk_render_node_unref(node);
+      return {};
+    }
+
+    bitmap.allocN32Pixels(gdk_texture_get_width(texture),
+                          gdk_texture_get_height(texture));
+    gdk_texture_download(texture, static_cast<guchar*>(bitmap.getAddr(0, 0)),
+                         bitmap.rowBytes());
+    gsk_render_node_unref(node);
   } else {
-    return false;
+    const auto icon_info = gtk::Gtk3IconThemeLookupByGiconForScale(
+        gtk::GetDefaultIconTheme(), icon, kIconSize, 1,
+        static_cast<GtkIconLookupFlags>(GTK_ICON_LOOKUP_FORCE_SIZE));
+    if (!icon_info)
+      return {};
+
+    auto* const surface =
+        gtk_icon_info_load_surface(icon_info.get(), nullptr, nullptr);
+    if (!surface)
+      return {};
+
+    DCHECK_EQ(cairo_surface_get_type(surface), CAIRO_SURFACE_TYPE_IMAGE);
+    DCHECK_EQ(cairo_image_surface_get_format(surface), CAIRO_FORMAT_ARGB32);
+
+    const SkImageInfo image_info =
+        SkImageInfo::Make(cairo_image_surface_get_width(surface),
+                          cairo_image_surface_get_height(surface),
+                          kBGRA_8888_SkColorType, kUnpremul_SkAlphaType);
+    if (!bitmap.installPixels(
+            image_info, cairo_image_surface_get_data(surface),
+            image_info.minRowBytes(),
+            [](void*, void* surface_ptr) {
+              cairo_surface_destroy(
+                  reinterpret_cast<cairo_surface_t*>(surface_ptr));
+            },
+            surface)) {
+      return {};
+    }
   }
 
-  int exit_code;
-  bool ran_ok = LaunchXdgUtility(argv, &exit_code);
-  return ran_ok && exit_code == EXIT_SUCCESS;
+  gfx::ImageSkia image_skia = gfx::ImageSkia::CreateFrom1xBitmap(bitmap);
+  if (image_skia.isNull())
+    return {};
+
+  image_skia.MakeThreadSafe();
+  return gfx::Image(image_skia);
 }
 
 }  // namespace
@@ -114,18 +185,19 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (!IsValidProtocolScheme(protocol))
     return false;
 
-  auto env = base::Environment::Create();
-
-  std::vector<std::string> argv = {kXdgSettings, "check",
-                                   kXdgSettingsDefaultSchemeHandler, protocol};
-  if (std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP")) {
-    argv.emplace_back(desktop_name.value());
-  } else {
+  const auto env = base::Environment::Create();
+  const std::optional<std::string> desktop_name = env->GetVar("CHROME_DESKTOP");
+  if (!desktop_name)
     return false;
-  }
-  // Allow any reply that starts with "yes".
-  const std::optional<std::string> output = GetXdgAppOutput(argv);
-  return output && output->starts_with("yes");
+
+  GAppInfo* app_info = g_app_info_get_default_for_uri_scheme(protocol.c_str());
+  if (!app_info)
+    return false;
+
+  const char* const app_id = g_app_info_get_id(app_info);
+  const bool is_default = app_id && app_id == desktop_name.value();
+  g_object_unref(app_info);
+  return is_default;
 }
 
 // Todo implement
@@ -135,11 +207,53 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 }
 
 std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
-  const std::vector<std::string> argv = {
-      "xdg-mime", "query", "default",
-      base::StrCat({"x-scheme-handler/", url.scheme()})};
+  auto app_info = GetAppInfoForProtocol(url);
+  if (!app_info)
+    return {};
 
-  return base::ASCIIToUTF16(GetXdgAppOutput(argv).value_or(std::string()));
+  const char* const name = g_app_info_get_display_name(app_info);
+  return base::UTF8ToUTF16(name);
+}
+
+v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
+    v8::Isolate* const isolate,
+    const GURL& url) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
+  const v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  auto app_info = GetAppInfoForProtocol(url);
+  if (!app_info) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return handle;
+  }
+
+  const char* const executable = g_app_info_get_executable(app_info);
+  const auto app_path = ResolveExecutablePath(executable);
+  if (!app_path) {
+    promise.RejectWithErrorMessage(
+        "Unable to retrieve installation path to app");
+    return handle;
+  }
+
+  const char* const app_display_name = g_app_info_get_display_name(app_info);
+  if (!app_display_name || app_display_name[0] == '\0') {
+    promise.RejectWithErrorMessage("Unable to retrieve display name of app");
+    return handle;
+  }
+
+  const gfx::Image app_icon = GetApplicationIcon(app_info);
+  if (app_icon.IsEmpty()) {
+    promise.RejectWithErrorMessage("Failed to get file icon.");
+    return handle;
+  }
+
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+  dict.Set("name", base::UTF8ToUTF16(app_display_name));
+  dict.Set("path", app_path->value());
+  dict.Set("icon", app_icon);
+  promise.Resolve(dict);
+  return handle;
 }
 
 bool Browser::SetBadgeCount(std::optional<int> count) {
