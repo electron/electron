@@ -12,6 +12,15 @@ namespace electron {
 ElectronMenuModel::SharingItem::SharingItem() = default;
 ElectronMenuModel::SharingItem::SharingItem(SharingItem&&) = default;
 ElectronMenuModel::SharingItem::~SharingItem() = default;
+
+ElectronMenuModel::Badge::Badge() = default;
+ElectronMenuModel::Badge::Badge(Badge&&) = default;
+ElectronMenuModel::Badge::Badge(const Badge&) = default;
+ElectronMenuModel::Badge& ElectronMenuModel::Badge::operator=(const Badge&) =
+    default;
+ElectronMenuModel::Badge& ElectronMenuModel::Badge::operator=(Badge&&) =
+    default;
+ElectronMenuModel::Badge::~Badge() = default;
 #endif
 
 bool ElectronMenuModel::Delegate::GetAcceleratorForCommandId(
@@ -120,6 +129,21 @@ bool ElectronMenuModel::GetSharingItemAt(size_t index,
 
 void ElectronMenuModel::SetSharingItem(SharingItem item) {
   sharing_item_.emplace(std::move(item));
+}
+
+void ElectronMenuModel::SetBadge(size_t index, Badge badge) {
+  int command_id = GetCommandIdAt(index);
+  badges_[command_id] = std::move(badge);
+}
+
+bool ElectronMenuModel::GetBadgeAt(size_t index, Badge* badge) const {
+  int command_id = GetCommandIdAt(index);
+  const auto iter = badges_.find(command_id);
+  if (iter != badges_.end()) {
+    *badge = iter->second;
+    return true;
+  }
+  return false;
 }
 #endif
 

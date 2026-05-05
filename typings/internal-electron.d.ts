@@ -167,6 +167,7 @@ declare namespace Electron {
     commandsMap: Record<string, MenuItem>;
     groupsMap: Record<string, MenuItem[]>;
     getItemCount(): number;
+    getIndexOfCommandId(commandId: number): number;
     popupAt(window: BaseWindow, frame: WebFrameMain | undefined, x: number, y: number, positioning: number, sourceType: Required<Electron.PopupOptions>['sourceType'], callback: () => void): void;
     closePopupAt(id: number): void;
     setSublabel(index: number, label: string): void;
@@ -174,6 +175,7 @@ declare namespace Electron {
     setIcon(index: number, image: string | NativeImage): void;
     setRole(index: number, role: string): void;
     setCustomType(index: number, customType: string): void;
+    setBadge(index: number, badge: MenuItemBadge): void;
     insertItem(index: number, commandId: number, label: string): void;
     insertCheckItem(index: number, commandId: number, label: string): void;
     insertRadioItem(index: number, commandId: number, label: string, groupId: number): void;

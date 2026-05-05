@@ -180,6 +180,9 @@ Menu.prototype.insert = function (pos, item) {
   if (item.type === 'palette' || item.type === 'header') {
     this.setCustomType(pos, item.type);
   }
+  if (process.platform === 'darwin' && item.badge) {
+    this.setBadge(pos, item.badge);
+  }
 
   // Make menu accessible to items.
   item.overrideReadOnlyProperty('menu', this);
