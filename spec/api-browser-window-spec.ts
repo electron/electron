@@ -7541,7 +7541,8 @@ describe('BrowserWindow module', () => {
       // on supported platforms.
       // "@nut-tree\libnut-win32\build\Release\libnut.node is not a valid Win32 application."
       // @ts-ignore: nut-js is an optional dependency so it may not be installed
-      const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
+      const { mouse, straightTo, centerOf, Region, Button } =
+        require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
 
       const display = screen.getPrimaryDisplay();
 
@@ -7580,25 +7581,28 @@ describe('BrowserWindow module', () => {
       expect(startPos).to.not.deep.equal(endPos);
     });
 
-    ifit(hasCapturableScreen())('should allow the window to be dragged when no WCO and --webkit-app-region: drag enabled', async () => {
-      // FIXME: nut-js has been removed from npm; we need to find a replacement
-      // @ts-ignore: nut-js is an optional dependency so it may not be installed
-      const { mouse, straightTo, centerOf, Region, Button } = require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
+    ifit(hasCapturableScreen())(
+      'should allow the window to be dragged when no WCO and --webkit-app-region: drag enabled',
+      async () => {
+        // FIXME: nut-js has been removed from npm; we need to find a replacement
+        // @ts-ignore: nut-js is an optional dependency so it may not be installed
+        const { mouse, straightTo, centerOf, Region, Button } =
+          require('@nut-tree/nut-js') as typeof import('@nut-tree/nut-js');
 
-      const display = screen.getPrimaryDisplay();
-      const w = new BrowserWindow({
-        x: 0,
-        y: 0,
-        width: display.bounds.width / 2,
-        height: display.bounds.height / 2,
-        frame: false
-      });
+        const display = screen.getPrimaryDisplay();
+        const w = new BrowserWindow({
+          x: 0,
+          y: 0,
+          width: display.bounds.width / 2,
+          height: display.bounds.height / 2,
+          frame: false
+        });
 
-      const basePageHTML = path.join(__dirname, 'fixtures', 'pages', 'base-page.html');
-      w.loadFile(basePageHTML);
-      await once(w, 'ready-to-show');
+        const basePageHTML = path.join(__dirname, 'fixtures', 'pages', 'base-page.html');
+        w.loadFile(basePageHTML);
+        await once(w, 'ready-to-show');
 
-      await w.webContents.executeJavaScript(`
+        await w.webContents.executeJavaScript(`
         const style = document.createElement('style');
         style.innerHTML = \`
         #titlebar {
@@ -7622,35 +7626,43 @@ describe('BrowserWindow module', () => {
         document.body.append(style);
         document.body.append(titleBar);
       `);
-      // allow time for titlebar to finish loading
-      await setTimeout(2000);
+        // allow time for titlebar to finish loading
+        await setTimeout(2000);
 
-      const winBounds = w.getBounds();
-      const titleBarHeight = 30;
-      const titleBarRegion = new Region(winBounds.x, winBounds.y, winBounds.width, titleBarHeight);
-      const screenRegion = new Region(display.bounds.x, display.bounds.y, display.bounds.width, display.bounds.height);
+        const winBounds = w.getBounds();
+        const titleBarHeight = 30;
+        const titleBarRegion = new Region(winBounds.x, winBounds.y, winBounds.width, titleBarHeight);
+        const screenRegion = new Region(
+          display.bounds.x,
+          display.bounds.y,
+          display.bounds.width,
+          display.bounds.height
+        );
 
-      const startPos = w.getPosition();
-      await mouse.setPosition(await centerOf(titleBarRegion));
-      await mouse.pressButton(Button.LEFT);
-      await mouse.drag(straightTo(centerOf(screenRegion)));
+        const startPos = w.getPosition();
+        await mouse.setPosition(await centerOf(titleBarRegion));
+        await mouse.pressButton(Button.LEFT);
+        await mouse.drag(straightTo(centerOf(screenRegion)));
 
-      // Wait for move to complete
-      await Promise.race([
-        once(w, 'move'),
-        setTimeout(1000) // fallback for possible race condition
-      ]);
+        // Wait for move to complete
+        await Promise.race([
+          once(w, 'move'),
+          setTimeout(1000) // fallback for possible race condition
+        ]);
 
-      const endPos = w.getPosition();
+        const endPos = w.getPosition();
 
-      expect(startPos).to.not.deep.equal(endPos);
-    });
+        expect(startPos).to.not.deep.equal(endPos);
+      }
+    );
   });
 
   ifdescribe(hasCapturableScreen())('windowStatePersistence', () => {
     const getWindowStateFromDisk = (windowName: string, preferencesPath: string) => {
       if (!fs.existsSync(preferencesPath)) {
-        throw new Error(`Preferences file does not exist at path: ${preferencesPath}. Window state was not saved to disk.`);
+        throw new Error(
+          `Preferences file does not exist at path: ${preferencesPath}. Window state was not saved to disk.`
+        );
       }
       const prefsContent = fs.readFileSync(preferencesPath, 'utf8');
       const prefs = JSON.parse(prefsContent);
@@ -7690,7 +7702,11 @@ describe('BrowserWindow module', () => {
       }
     };
 
-    const createAndSaveWindowState = async (preferencesPath: string, windowName: string, options?: BrowserWindowConstructorOptions) => {
+    const createAndSaveWindowState = async (
+      preferencesPath: string,
+      windowName: string,
+      options?: BrowserWindowConstructorOptions
+    ) => {
       const w = new BrowserWindow({
         name: windowName,
         windowStatePersistence: {
@@ -7977,7 +7993,7 @@ describe('BrowserWindow module', () => {
           const savedState = getWindowStateFromDisk(windowName, preferencesPath);
           expect(savedState).to.not.be.null('window state with window name "test-batching-behavior" does not exist');
 
-          [afterFirstResize, afterSecondResize, afterThirdResize].forEach(time => {
+          [afterFirstResize, afterSecondResize, afterThirdResize].forEach((time) => {
             expect(time.getTime()).to.equal(initialModTime.getTime());
           });
 
@@ -8033,7 +8049,9 @@ describe('BrowserWindow module', () => {
         await waitForPrefsUpdate(initialModTime, preferencesPath);
 
         const stateBefore = getWindowStateFromDisk(windowName, preferencesPath);
-        expect(stateBefore).to.not.be.null('window state with window name "test-window-clear" should exist but does not');
+        expect(stateBefore).to.not.be.null(
+          'window state with window name "test-window-clear" should exist but does not'
+        );
 
         BrowserWindow.clearPersistedState(windowName);
 
@@ -8112,16 +8130,24 @@ describe('BrowserWindow module', () => {
 
         await waitForPrefsUpdate(initialModTime, preferencesPath);
 
-        expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.not.be.null('window state with window name "test-window-1" should exist but does not');
-        expect(getWindowStateFromDisk(windowName2, preferencesPath)).to.not.be.null('window state with window name "test-window-2" should exist but does not');
+        expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.not.be.null(
+          'window state with window name "test-window-1" should exist but does not'
+        );
+        expect(getWindowStateFromDisk(windowName2, preferencesPath)).to.not.be.null(
+          'window state with window name "test-window-2" should exist but does not'
+        );
 
         BrowserWindow.clearPersistedState(windowName1);
 
         await waitForPrefsUpdate(getPrefsModTime(preferencesPath), preferencesPath);
 
         // Verify if only window1 was cleared
-        expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.be.null('window state with window name "test-window-1" should be cleared');
-        expect(getWindowStateFromDisk(windowName2, preferencesPath)).to.not.be.null('window state with window name "test-window-2" should not be cleared');
+        expect(getWindowStateFromDisk(windowName1, preferencesPath)).to.be.null(
+          'window state with window name "test-window-1" should be cleared'
+        );
+        expect(getWindowStateFromDisk(windowName2, preferencesPath)).to.not.be.null(
+          'window state with window name "test-window-2" should not be cleared'
+        );
       });
     });
 
@@ -8437,69 +8463,75 @@ describe('BrowserWindow module', () => {
           w.destroy();
         });
 
-        ifit(process.platform === 'darwin')('should adjust bounds if window overflows work area such that the window is entirely visible', async () => {
-          const workArea = screen.getPrimaryDisplay().workArea;
-          const overflowBounds = {
-            width: 100,
-            height: 100,
-            x: workArea.x + workArea.width - 20,
-            y: workArea.y + workArea.height - 20
-          };
+        ifit(process.platform === 'darwin')(
+          'should adjust bounds if window overflows work area such that the window is entirely visible',
+          async () => {
+            const workArea = screen.getPrimaryDisplay().workArea;
+            const overflowBounds = {
+              width: 100,
+              height: 100,
+              x: workArea.x + workArea.width - 20,
+              y: workArea.y + workArea.height - 20
+            };
 
-          await createAndSaveWindowState(preferencesPath, windowName, overflowBounds);
+            await createAndSaveWindowState(preferencesPath, windowName, overflowBounds);
 
-          const w = new BrowserWindow({
-            name: windowName,
-            windowStatePersistence: true,
-            show: false
-          });
+            const w = new BrowserWindow({
+              name: windowName,
+              windowStatePersistence: true,
+              show: false
+            });
 
-          const bounds = w.getBounds();
+            const bounds = w.getBounds();
 
-          // On macOS, window should be adjusted to be entirely visible
-          expect(bounds.x + bounds.width).to.be.at.most(workArea.x + workArea.width);
-          expect(bounds.y + bounds.height).to.be.at.most(workArea.y + workArea.height);
-          expect(bounds.width).to.equal(100);
-          expect(bounds.height).to.equal(100);
+            // On macOS, window should be adjusted to be entirely visible
+            expect(bounds.x + bounds.width).to.be.at.most(workArea.x + workArea.width);
+            expect(bounds.y + bounds.height).to.be.at.most(workArea.y + workArea.height);
+            expect(bounds.width).to.equal(100);
+            expect(bounds.height).to.equal(100);
 
-          w.destroy();
-        });
+            w.destroy();
+          }
+        );
 
-        ifit(process.platform !== 'darwin')('should adjust bounds if window overflows work area such that the window has minimum visible height/width 100x100', async () => {
-          const workArea = screen.getPrimaryDisplay().workArea;
-          // Initialize with 50x50 of the window visible
-          const overflowBounds = {
-            width: 120,
-            height: 120,
-            x: workArea.x + workArea.width - 50,
-            y: workArea.y + workArea.height - 50
-          };
+        ifit(process.platform !== 'darwin')(
+          'should adjust bounds if window overflows work area such that the window has minimum visible height/width 100x100',
+          async () => {
+            const workArea = screen.getPrimaryDisplay().workArea;
+            // Initialize with 50x50 of the window visible
+            const overflowBounds = {
+              width: 120,
+              height: 120,
+              x: workArea.x + workArea.width - 50,
+              y: workArea.y + workArea.height - 50
+            };
 
-          await createAndSaveWindowState(preferencesPath, windowName, overflowBounds);
+            await createAndSaveWindowState(preferencesPath, windowName, overflowBounds);
 
-          const w = new BrowserWindow({
-            name: windowName,
-            windowStatePersistence: true,
-            show: false
-          });
+            const w = new BrowserWindow({
+              name: windowName,
+              windowStatePersistence: true,
+              show: false
+            });
 
-          const bounds = w.getBounds();
-          // Calculate the boundaries of the visible intersection rectangle
-          const leftMost = Math.max(bounds.x, workArea.x);
-          const rightMost = Math.min(bounds.x + bounds.width, workArea.x + workArea.width);
-          const topMost = Math.max(bounds.y, workArea.y);
-          const bottomMost = Math.min(bounds.y + bounds.height, workArea.y + workArea.height);
-          // On non-macOS platforms, at least 100x100 should be visible
-          const visibleWidth = rightMost - leftMost;
-          const visibleHeight = bottomMost - topMost;
+            const bounds = w.getBounds();
+            // Calculate the boundaries of the visible intersection rectangle
+            const leftMost = Math.max(bounds.x, workArea.x);
+            const rightMost = Math.min(bounds.x + bounds.width, workArea.x + workArea.width);
+            const topMost = Math.max(bounds.y, workArea.y);
+            const bottomMost = Math.min(bounds.y + bounds.height, workArea.y + workArea.height);
+            // On non-macOS platforms, at least 100x100 should be visible
+            const visibleWidth = rightMost - leftMost;
+            const visibleHeight = bottomMost - topMost;
 
-          expect(visibleWidth).to.be.at.least(100);
-          expect(visibleHeight).to.be.at.least(100);
-          expect(bounds.width).to.equal(120);
-          expect(bounds.height).to.equal(120);
+            expect(visibleWidth).to.be.at.least(100);
+            expect(visibleHeight).to.be.at.least(100);
+            expect(bounds.width).to.equal(120);
+            expect(bounds.height).to.equal(120);
 
-          w.destroy();
-        });
+            w.destroy();
+          }
+        );
 
         it('should respect show:false when restoring display modes', async () => {
           await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
@@ -8531,9 +8563,7 @@ describe('BrowserWindow module', () => {
       // FIXME(nilayarya): Figure out why these tests fail on macOS-x64
       // virtualDisplay.create() is creating double displays on macOS-x64
       const testMultiMonitor =
-      process.platform === 'darwin' &&
-      process.arch === 'arm64' &&
-      screen.getAllDisplays().length === 1;
+        process.platform === 'darwin' && process.arch === 'arm64' && screen.getAllDisplays().length === 1;
 
       ifdescribe(testMultiMonitor)('multi-monitor tests', () => {
         const virtualDisplay = require('@electron-ci/virtual-display');
@@ -8705,8 +8735,12 @@ describe('BrowserWindow module', () => {
           // Window should be restored on the middle display (nearest remaining display)
           expect(restoredBounds.x).to.be.at.least(middleDisplay.workArea.x);
           expect(restoredBounds.y).to.be.at.least(middleDisplay.workArea.y);
-          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(middleDisplay.workArea.x + middleDisplay.workArea.width);
-          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(middleDisplay.workArea.y + middleDisplay.workArea.height);
+          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(
+            middleDisplay.workArea.x + middleDisplay.workArea.width
+          );
+          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(
+            middleDisplay.workArea.y + middleDisplay.workArea.height
+          );
 
           // Window should maintain its original size
           expect(restoredBounds.width).to.equal(boundsOnRightmostDisplay.width);
@@ -8931,8 +8965,12 @@ describe('BrowserWindow module', () => {
           const maximizedBounds = w2.getBounds();
           expect(maximizedBounds.x).to.be.at.least(targetDisplay.bounds.x);
           expect(maximizedBounds.y).to.be.at.least(targetDisplay.bounds.y);
-          expect(maximizedBounds.x + maximizedBounds.width).to.be.at.most(targetDisplay.bounds.x + targetDisplay.bounds.width);
-          expect(maximizedBounds.y + maximizedBounds.height).to.be.at.most(targetDisplay.bounds.y + targetDisplay.bounds.height);
+          expect(maximizedBounds.x + maximizedBounds.width).to.be.at.most(
+            targetDisplay.bounds.x + targetDisplay.bounds.width
+          );
+          expect(maximizedBounds.y + maximizedBounds.height).to.be.at.most(
+            targetDisplay.bounds.y + targetDisplay.bounds.height
+          );
 
           w2.destroy();
           virtualDisplay.destroy(targetDisplayId);
@@ -8982,7 +9020,9 @@ describe('BrowserWindow module', () => {
           expect(kioskBounds.x).to.be.at.least(targetDisplay.bounds.x);
           expect(kioskBounds.y).to.be.at.least(targetDisplay.bounds.y);
           expect(kioskBounds.x + kioskBounds.width).to.be.at.most(targetDisplay.bounds.x + targetDisplay.bounds.width);
-          expect(kioskBounds.y + kioskBounds.height).to.be.at.most(targetDisplay.bounds.y + targetDisplay.bounds.height);
+          expect(kioskBounds.y + kioskBounds.height).to.be.at.most(
+            targetDisplay.bounds.y + targetDisplay.bounds.height
+          );
 
           w.destroy();
           virtualDisplay.destroy(targetDisplayId);
@@ -9087,7 +9127,10 @@ describe('BrowserWindow module', () => {
           while (screen.getAllDisplays().length > 2) await setTimeout(1000);
 
           // We expect the display to be shifted down as we set y: targetDisplay.bounds.height / 2 earlier
-          const smallerDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplay.bounds.height / 2 });
+          const smallerDisplay = screen.getDisplayNearestPoint({
+            x: targetDisplayX,
+            y: targetDisplay.bounds.height / 2
+          });
 
           // Restore window
           const w = new BrowserWindow({
@@ -9101,8 +9144,12 @@ describe('BrowserWindow module', () => {
           // Window should be repositioned to be entirely visible on smaller display
           expect(restoredBounds.x).to.be.at.least(smallerDisplay.workArea.x);
           expect(restoredBounds.y).to.be.at.least(smallerDisplay.workArea.y);
-          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(smallerDisplay.workArea.x + smallerDisplay.workArea.width);
-          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(smallerDisplay.workArea.y + smallerDisplay.workArea.height);
+          expect(restoredBounds.x + restoredBounds.width).to.be.at.most(
+            smallerDisplay.workArea.x + smallerDisplay.workArea.width
+          );
+          expect(restoredBounds.y + restoredBounds.height).to.be.at.most(
+            smallerDisplay.workArea.y + smallerDisplay.workArea.height
+          );
 
           w.destroy();
           virtualDisplay.destroy(lowerResDisplayId);
