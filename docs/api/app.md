@@ -1382,6 +1382,16 @@ Returns `Integer` - The current value displayed in the counter badge.
 
 Returns `boolean` - Whether the current desktop environment is Unity launcher.
 
+### `app.setActivationToken(token)` _Linux_
+
+* `token` string - The XDG activation token to use for the next window focus.
+
+Sets the XDG activation token that will be consumed by the next call to
+`BrowserWindow.focus()`. On Wayland, window activation requires a valid
+token from the compositor. This is useful when handling notification clicks
+via the D-Bus `org.freedesktop.Notifications` interface, which provides an
+`ActivationToken` signal containing the token needed to focus the window.
+
 ### `app.getLoginItemSettings([options])` _macOS_ _Windows_
 
 * `options` Object (optional)
