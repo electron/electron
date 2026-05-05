@@ -57,9 +57,6 @@ jobs:
         @Subdir src/buildtools/linux64
         gn/gn/linux-amd64 $gn_version
         CIPD
-
-        buildtools_path="$(pwd)/src/buildtools"
-        echo "CHROMIUM_BUILDTOOLS_PATH=$buildtools_path" >> $GITHUB_ENV
     - name: Download clang-format Binary
       shell: bash
       run: |
@@ -80,11 +77,10 @@ jobs:
     - name: Run Lint
       shell: bash
       run: |
-        # gn.py tries to find a gclient root folder starting from the current dir.
-        # When it fails and returns "None" path, the whole script fails. Let's "fix" it.
-        touch .gclient
-        # Another option would be to checkout "buildtools" inside the Electron checkout,
-        # but then we would lint its contents (at least gn format), and it doesn't pass it.
+        # Clean things up so `depot_tools/gclient_paths.py` finds src/buildtools properly
+        echo '' > .gclient
+        rm -f .gclient_entries
+        ln -s src/buildtools buildtools
 
         cd src/electron
         node script/yarn.js install --immutable

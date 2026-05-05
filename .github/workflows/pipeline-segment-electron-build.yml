@@ -189,8 +189,6 @@ jobs:
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
         echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
-    - name: Add CHROMIUM_BUILDTOOLS_PATH to env
-      run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
