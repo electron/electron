@@ -678,6 +678,28 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux')('startup notification', () => {
+    it('app.setAutoStartupNotification is a function', () => {
+      expect(app.setAutoStartupNotification).to.be.a('function');
+    });
+
+    it('app.notifyStartupComplete is a function', () => {
+      expect(app.notifyStartupComplete).to.be.a('function');
+    });
+
+    it('app.setAutoStartupNotification throws after app is ready', () => {
+      expect(() => {
+        app.setAutoStartupNotification(false);
+      }).to.throw(/before app is ready/);
+    });
+
+    it('app.notifyStartupComplete does not throw', () => {
+      expect(() => {
+        app.notifyStartupComplete();
+      }).to.not.throw();
+    });
+  });
+
   ifdescribe(
     process.platform !== 'linux' && !process.mas && (process.platform !== 'darwin' || process.arch === 'arm64')
   )('app.get/setLoginItemSettings API', function () {

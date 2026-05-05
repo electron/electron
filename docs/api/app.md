@@ -1382,6 +1382,69 @@ Returns `Integer` - The current value displayed in the counter badge.
 
 Returns `boolean` - Whether the current desktop environment is Unity launcher.
 
+### `app.setAutoStartupNotification(enabled)` _Linux_
+
+* `enabled` boolean
+
+Controls whether Electron automatically notifies the desktop environment
+that the application has finished starting when the `ready` event fires.
+
+On Linux, desktop environments show a "starting" indicator (e.g., a busy
+cursor) when an application launches. By default, Electron clears this
+indicator at `app.ready()`. Set to `false` if your app has a custom loading
+sequence (e.g., a splash screen or auto-updater) and you want to control
+when the notification is sent using `app.notifyStartupComplete()`.
+
+This method can only be called before the `ready` event.
+
+> [!NOTE]
+> On Wayland, `gdk_notify_startup_complete()` may be a no-op. This API
+> primarily affects X11 desktop environments.
+
+```js
+const { app } = require('electron')
+
+// Disable auto-notification for a splash screen workflow
+app.setAutoStartupNotification(false)
+
+app.whenReady().then(() => {
+  showSplashScreen()
+
+  downloadUpdates().then(() => {
+    showMainWindow()
+    // Notify the desktop environment now that the app is truly ready
+    app.notifyStartupComplete()
+  })
+})
+```
+
+### `app.notifyStartupComplete()` _Linux_
+
+Manually notifies the desktop environment that the application has
+finished starting. This clears the startup notification indicator
+(busy cursor) shown by the window manager.
+
+Use this when you have disabled automatic notification with
+`app.setAutoStartupNotification(false)` and want to signal startup
+completion at a specific point in your app's lifecycle.
+
+It is safe to call this method multiple times.
+
+```js
+const { app } = require('electron')
+
+app.setAutoStartupNotification(false)
+
+app.whenReady().then(async () => {
+  await initializeDatabase()
+  await loadUserPreferences()
+  createTrayIcon()
+
+  // Signal that the app has finished starting
+  app.notifyStartupComplete()
+})
+```
+
 ### `app.getLoginItemSettings([options])` _macOS_ _Windows_
 
 * `options` Object (optional)
