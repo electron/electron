@@ -8,6 +8,8 @@ const path = require('node:path');
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 
+const CHROMIUM_VERSION_DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const pass = chalk.green('✓');
 const fail = chalk.red('✗');
@@ -195,10 +197,15 @@ function getDepotToolsEnv() {
   return depotToolsEnv;
 }
 
+function getChromiumVersionFromDEPS (depsContent) {
+  return CHROMIUM_VERSION_DEPS_REGEX.exec(depsContent)?.[1] ?? null;
+}
+
 module.exports = {
   chunkFilenames,
   compareVersions,
   findMatchingFiles,
+  getChromiumVersionFromDEPS,
   getCurrentBranch,
   getDepotToolsEnv,
   getElectronExec,
