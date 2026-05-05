@@ -1,0 +1,180 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitchell Cohen <mitchell@agilebits.com>
+Date: Mon, 27 Apr 2026 18:39:37 -0400
+Subject: win: Adjust client size constraints for frame insets before clamping
+
+Size constraints are given in client area coordinates when
+WidgetSizeIsClientSize() is true. They need to be inflated by frame
+insets before clamping the size of the HWND, otherwise the window
+will be constrained to a smaller size than intended.
+
+The inset correction in this CL was already present in OnGetMinMaxInfo
+which allows windows to be created with accurate size constraints.
+I added it to AdjustedContentBounds and SizeWindowToAspectRatio so they
+handle constraints the same way when bounds change.
+
+The issue was discovered in Electron and is less obvious in Chrome
+because browser windows don't currently set max size constraints, but
+treating coordinates consistently benefits Chrome and all consumers.
+
+Bug: 506480944
+Change-Id: I237ee9f791fe01eeee295dec7bd2a88cae305652
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index 3a5833fcc018f32e86c0a95a42937fb9ac6c5a40..d7bc932bdc1165273fccade29300739dc15446ef 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -1529,6 +1529,17 @@ gfx::Rect DesktopWindowTreeHostWin::AdjustedContentBounds(
+   gfx::Size maximum_size;
+   GetMinMaxSize(&minimum_size, &maximum_size);
+ 
++  if (WidgetSizeIsClientSize()) {
++    // Constraints are sized to the client area, not the HWND (see
++    // OnGetMinMaxInfo), so inflate otherwise the max size will be too small.
++    display::win::ScreenWin* screen = display::win::GetScreenWin();
++    gfx::Size min_px = screen->DIPToScreenSize(GetHWND(), minimum_size);
++    gfx::Size max_px = screen->DIPToScreenSize(GetHWND(), maximum_size);
++    InflateClientSizeConstraintsInPixels(GetHWND(), min_px, max_px);
++    minimum_size = screen->ScreenToDIPSize(GetHWND(), min_px);
++    maximum_size = screen->ScreenToDIPSize(GetHWND(), max_px);
++  }
++
+   gfx::Size bounds_size = bounds.size();
+ 
+   if (!maximum_size.IsEmpty()) {
+diff --git a/ui/views/widget/widget_unittest.cc b/ui/views/widget/widget_unittest.cc
+index b9c60da8fff6b40e587fb20b55464d26ed217da6..4e0cf1e66c7505b6757f138fcb6e0df99c58780e 100644
+--- a/ui/views/widget/widget_unittest.cc
++++ b/ui/views/widget/widget_unittest.cc
+@@ -2615,6 +2615,30 @@ TEST_F(DesktopWidgetTest, MinimumSizeConstraints) {
+   EXPECT_EQ(minimum_size, widget->GetClientAreaBoundsInScreen().size());
+ }
+ 
++#if BUILDFLAG(IS_WIN)
++// On Windows, size constraints are client-sized but SetBounds()
++// operates on window size which includes insets. Ensure the window
++// is clamped correctly if it exceeds its constraints.
++// https://crbug.com/506480944
++TEST_F(DesktopWidgetTest, SetBoundsRespectsMaximumSize) {
++  TestDesktopWidgetDelegate delegate;
++  const gfx::Size maximum_size(400, 300);
++
++  // Start with a smaller preferred/min size to ensure that minimum
++  // size enforcement does not pass the test by itself.
++  auto contents = std::make_unique<StaticSizedView>(gfx::Size(200, 200));
++  contents->set_maximum_size(maximum_size);
++  delegate.set_contents_view(contents.release());
++  delegate.InitWidget(CreateParams(Widget::InitParams::CLIENT_OWNS_WIDGET,
++                                   Widget::InitParams::TYPE_WINDOW));
++  Widget* widget = delegate.GetWidget();
++  widget->Show();
++
++  widget->SetBounds(gfx::Rect(0, 0, 4000, 3000));
++  EXPECT_EQ(maximum_size, widget->GetClientAreaBoundsInScreen().size());
++}
++#endif  // BUILDFLAG(IS_WIN)
++
+ // When a non-desktop widget has a desktop child widget, due to the
+ // async nature of desktop widget shutdown, the parent can be destroyed before
+ // its child. Make sure that parent() returns nullptr at this time.
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 8f9533ed02a4ec4076f8a61b3340b55d97ab9cf6..71c511285115df9eec7d4a9c12827b6a322a373e 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -2115,19 +2115,8 @@ void HWNDMessageHandler::OnGetMinMaxInfo(MINMAXINFO* minmax_info) {
+   // Add the native frame border size to the minimum and maximum size if the
+   // view reports its size as the client size.
+   if (delegate_->WidgetSizeIsClientSize()) {
+-    RECT client_rect, window_rect;
+-    ::GetClientRect(hwnd(), &client_rect);
+-    ::GetWindowRect(hwnd(), &window_rect);
+-    CR_DEFLATE_RECT(&window_rect, &client_rect);
+-    min_window_size.Enlarge(window_rect.right - window_rect.left,
+-                            window_rect.bottom - window_rect.top);
+-    // Either axis may be zero, so enlarge them independently.
+-    if (max_window_size.width()) {
+-      max_window_size.Enlarge(window_rect.right - window_rect.left, 0);
+-    }
+-    if (max_window_size.height()) {
+-      max_window_size.Enlarge(0, window_rect.bottom - window_rect.top);
+-    }
++    InflateClientSizeConstraintsInPixels(hwnd(), min_window_size,
++                                         max_window_size);
+   }
+   minmax_info->ptMinTrackSize.x = min_window_size.width();
+   minmax_info->ptMinTrackSize.y = min_window_size.height();
+@@ -3933,6 +3922,11 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+   min_window_size = delegate_->DIPToScreenSize(min_window_size);
+   max_window_size = delegate_->DIPToScreenSize(max_window_size);
+ 
++  if (delegate_->WidgetSizeIsClientSize()) {
++    InflateClientSizeConstraintsInPixels(hwnd(), min_window_size,
++                                         max_window_size);
++  }
++
+   std::optional<gfx::Size> max_size_param;
+   if (!max_window_size.IsEmpty()) {
+     max_size_param = max_window_size;
+diff --git a/ui/views/win/hwnd_util.cc b/ui/views/win/hwnd_util.cc
+index 142f5637fc1979ee89a96d08336a0a34c52912aa..969fefa59648c1c45ebfec8fdc6598fdeae2a90a 100644
+--- a/ui/views/win/hwnd_util.cc
++++ b/ui/views/win/hwnd_util.cc
+@@ -18,6 +18,7 @@
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_tree_host.h"
+ #include "ui/base/class_property.h"
++#include "ui/gfx/win/msg_util.h"
+ #include "ui/views/widget/widget.h"
+ 
+ DEFINE_UI_CLASS_PROPERTY_TYPE(Microsoft::WRL::ComPtr<IAccessible>*)
+@@ -143,4 +144,25 @@ gfx::NativeViewAccessible HWNDNativeViewAccessibleForWidget(
+   return parent_accessible->Get();
+ }
+ 
++void InflateClientSizeConstraintsInPixels(HWND hwnd,
++                                          gfx::Size& min,
++                                          gfx::Size& max) {
++  RECT client_rect;
++  RECT window_rect;
++  ::GetClientRect(hwnd, &client_rect);
++  ::GetWindowRect(hwnd, &window_rect);
++  CR_DEFLATE_RECT(&window_rect, &client_rect);
++  const gfx::Size inset = gfx::Size(window_rect.right - window_rect.left,
++                                    window_rect.bottom - window_rect.top);
++
++  min.Enlarge(inset.width(), inset.height());
++  // zero means "no maximum" so enlarge width/height independently.
++  if (max.width()) {
++    max.Enlarge(inset.width(), 0);
++  }
++  if (max.height()) {
++    max.Enlarge(0, inset.height());
++  }
++}
++
+ }  // namespace views
+diff --git a/ui/views/win/hwnd_util.h b/ui/views/win/hwnd_util.h
+index 52c310855150c36759e1df87621e7a823e5ed57f..75dfca29d5507c89479518ef77441672dae7dcfe 100644
+--- a/ui/views/win/hwnd_util.h
++++ b/ui/views/win/hwnd_util.h
+@@ -7,6 +7,7 @@
+ 
+ #include "ui/gfx/geometry/point.h"
+ #include "ui/gfx/geometry/rect.h"
++#include "ui/gfx/geometry/size.h"
+ #include "ui/gfx/native_ui_types.h"
+ #include "ui/views/views_export.h"
+ 
+@@ -51,6 +52,12 @@ VIEWS_EXPORT gfx::NativeViewAccessible HWNDNativeViewAccessibleForView(
+ VIEWS_EXPORT gfx::NativeViewAccessible HWNDNativeViewAccessibleForWidget(
+     const Widget* widget);
+ 
++// Inflates client-area size constraints by the window's frame border/insets
++// so they can be applied to the HWND.
++VIEWS_EXPORT void InflateClientSizeConstraintsInPixels(HWND hwnd,
++                                                       gfx::Size& min,
++                                                       gfx::Size& max);
++
+ }  // namespace views
+ 
+ #endif  // UI_VIEWS_WIN_HWND_UTIL_H_
