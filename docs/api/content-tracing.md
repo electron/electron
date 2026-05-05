@@ -144,6 +144,8 @@ Only takes effect if the `disabled-by-default-memory-infra` category is included
 
 Needs to be called before `contentTracing.startRecording()`.
 
+Heap profiling remains enabled until `contentTracing.disableHeapProfiling()` is called.
+
 Usage:
 
 ```js
@@ -164,6 +166,7 @@ async function recordTrace () {
   await new Promise(resolve => setTimeout(resolve, 5000))
 
   const filePath = await contentTracing.stopRecording()
+  await contentTracing.disableHeapProfiling()
 }
 ```
 
@@ -184,5 +187,23 @@ To view the recorded heap dumps:
 6. Click on a `☰` triple bar icon (e.g., in the `malloc` column)
 
 <img src="../images/viewing-heap-dumps.png" alt="Screenshot showing how to view a heapdump in Chromium's tracing view" />
+
+### `contentTracing.disableHeapProfiling()` _Experimental_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50826
+```
+-->
+
+Returns `Promise<void>` - Resolves once heap profiling has been disabled.
+
+Disable heap profiling started by `contentTracing.enableHeapProfiling()` and stop
+intercepting allocations in profiled processes.
+
+If heap profiling was not enabled, the returned promise is rejected.
+
+In ASAN builds, this method is a no-op and resolves.
 
 [trace viewer]: https://chromium.googlesource.com/catapult/+/HEAD/tracing/README.md
