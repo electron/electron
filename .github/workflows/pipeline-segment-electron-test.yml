@@ -122,6 +122,15 @@ jobs:
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
+    - name: Turn off the reopen windows prompt on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      # Tests spawn Electron child apps and SIGINT them; after enough abnormal
+      # exits AppKit shows a modal "...unexpectedly quit while reopening
+      # windows. Do you want to try to reopen its windows again?" alert inside
+      # the open-application AppleEvent handler, which blocks before
+      # applicationDidFinishLaunching: and hangs app.whenReady() forever.
+      # See https://github.com/electron/electron/issues/51462.
+      run: defaults write com.github.Electron ApplePersistenceIgnoreState YES
     - name: Set xcode to 16.4
       if: ${{ inputs.target-platform == 'macos' }}
       run: sudo xcode-select --switch /Applications/Xcode_16.4.app
