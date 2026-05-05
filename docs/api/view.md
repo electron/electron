@@ -134,6 +134,10 @@ Returns `boolean` - Whether the view should be drawn. Note that this is
 different from whether the view is visible on screen—it may still be obscured
 or out of view.
 
+#### `view.setLayout(layoutConfig)`
+
+* `layoutConfig` JSViewLayoutConfig | FlexLayoutConfig - The layout configuration to use for child views
+
 ### Instance Properties
 
 Objects created with `new View` have the following properties:
