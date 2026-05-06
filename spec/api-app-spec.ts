@@ -2217,6 +2217,8 @@ describe('app module', () => {
   });
 
   describe('commandLine.hasSwitch', () => {
+    afterEach(() => app.commandLine.removeSwitch('foobar1'));
+
     it('returns true when present', () => {
       app.commandLine.appendSwitch('foobar1');
       expect(app.commandLine.hasSwitch('foobar1')).to.equal(true);
@@ -2240,6 +2242,11 @@ describe('app module', () => {
   });
 
   describe('commandLine.getSwitchValue', () => {
+    afterEach(() => {
+      app.commandLine.removeSwitch('foobar');
+      app.commandLine.removeSwitch('foobar1');
+    });
+
     it('returns the value when present', () => {
       app.commandLine.appendSwitch('foobar', 'æøåü');
       expect(app.commandLine.getSwitchValue('foobar')).to.equal('æøåü');
