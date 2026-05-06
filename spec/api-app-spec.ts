@@ -821,7 +821,8 @@ describe('app module', () => {
           openAsHidden: false,
           restoreState: false,
           wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false
+          wasOpenedAsHidden: false,
+          executableWillLaunchAtLogin: false
         });
       });
 
@@ -859,7 +860,8 @@ describe('app module', () => {
           openAsHidden: false,
           restoreState: false,
           wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false
+          wasOpenedAsHidden: false,
+          executableWillLaunchAtLogin: false
         });
       });
     });
