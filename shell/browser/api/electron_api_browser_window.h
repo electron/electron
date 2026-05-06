@@ -76,7 +76,7 @@ class BrowserWindow : public BaseWindow,
   v8::Local<v8::Value> GetWebContents(v8::Isolate* isolate);
 
   static void GetWebContentsCallback(
-  const v8::FunctionCallbackInfo<v8::Value>& info);
+      const v8::FunctionCallbackInfo<v8::Value>& info);
 
  private:
   // Helpers.
