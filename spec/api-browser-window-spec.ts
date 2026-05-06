@@ -5512,19 +5512,18 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
         w.webContents.executeJavaScript('window.open("")');
 
-        w.webContents.on('did-create-window', async (window) => {
-          const childWindow = new BrowserWindow({ parent: window });
+        const [window] = (await once(w.webContents, 'did-create-window')) as [BrowserWindow];
+        const childWindow = new BrowserWindow({ parent: window });
 
-          await setTimeout();
+        await setTimeout();
 
-          const closed = once(childWindow, 'closed');
-          window.close();
-          await closed;
+        const closed = once(childWindow, 'closed');
+        window.close();
+        await closed;
 
-          expect(() => {
-            BrowserWindow.getFocusedWindow();
-          }).to.not.throw();
-        });
+        expect(() => {
+          BrowserWindow.getFocusedWindow();
+        }).to.not.throw();
       });
 
       it('should not affect the show option', () => {
