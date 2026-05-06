@@ -4,12 +4,33 @@
 
 #include "shell/common/gin_converters/media_converter.h"
 
+#include <string_view>
+
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/render_frame_host.h"
 #include "gin/data_object_builder.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
+
+namespace {
+
+std::string_view PreferredDisplaySurfaceToString(
+    blink::mojom::PreferredDisplaySurface surface) {
+  switch (surface) {
+    case blink::mojom::PreferredDisplaySurface::MONITOR:
+      return "monitor";
+    case blink::mojom::PreferredDisplaySurface::WINDOW:
+      return "window";
+    case blink::mojom::PreferredDisplaySurface::BROWSER:
+      return "browser";
+    case blink::mojom::PreferredDisplaySurface::NO_PREFERENCE:
+    default:
+      return "none";
+  }
+}
+
+}  // namespace
 
 namespace gin {
 
@@ -26,6 +47,8 @@ v8::Local<v8::Value> Converter<content::MediaStreamRequest>::ToV8(
            request.video_type != blink::mojom::MediaStreamType::NO_SERVICE)
       .Set("audioRequested",
            request.audio_type != blink::mojom::MediaStreamType::NO_SERVICE)
+      .Set("preferredDisplaySurface",
+           PreferredDisplaySurfaceToString(request.preferred_display_surface))
       .Build();
 }
 
