@@ -94,6 +94,9 @@ describe('app module', () => {
   });
 
   describe('app name APIs', () => {
+    const originalName = app.name;
+    afterEach(() => (app.name = originalName));
+
     describe('with properties', () => {
       it('returns the name field of package.json', () => {
         expect(app.name).to.equal('Electron Test Main');
@@ -104,7 +107,6 @@ describe('app module', () => {
         app.name = 'electron-test-name';
 
         expect(app.name).to.equal('electron-test-name');
-        app.name = 'Electron Test Main';
       });
     });
 
@@ -118,7 +120,6 @@ describe('app module', () => {
         app.setName('electron-test-name');
 
         expect(app.getName()).to.equal('electron-test-name');
-        app.setName('Electron Test Main');
       });
     });
   });
