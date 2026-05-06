@@ -1,5 +1,6 @@
 const { app, protocol } = require('electron');
 
+const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const v8 = require('node:v8');
@@ -68,6 +69,107 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'bar', privileges: { standard: true } }
 ]);
 
+// Walk up the PPid chain in /proc to determine if `pid` is a descendant
+// of the current process.  Used on Linux to avoid killing the current Electron
+// instance's own helper processes (GPU, renderer, zygote, crashpad, etc.)
+// which share the same executable path but are spawned by us.
+function isDescendantOfCurrentProcess(pid) {
+  let current = pid;
+  while (current > 1) {
+    try {
+      const status = fs.readFileSync(`/proc/${current}/status`, 'utf8');
+      const match = status.match(/^PPid:\s+(\d+)/m);
+      if (!match) return false;
+      const ppid = parseInt(match[1], 10);
+      if (ppid === process.pid) return true;
+      if (ppid === current) return false; // guard against cycles
+      current = ppid;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+async function killOrphanedElectronProcesses(suiteName) {
+  let killed = 0;
+  try {
+    if (process.platform === 'win32') {
+      // Enumerate by executable path, filter current PID, force-kill each survivor
+      const escapedPath = process.execPath.replace(/\\/g, '\\\\');
+      const result = childProcess.spawnSync(
+        'wmic',
+        ['process', 'where', `ExecutablePath='${escapedPath}'`, 'get', 'ProcessId', '/format:value'],
+        { encoding: 'utf8' }
+      );
+      const pids = (result.stdout || '')
+        .split(/\r?\n/)
+        .map((line) => line.match(/^ProcessId=(\d+)/)?.[1])
+        .filter(Boolean)
+        .map(Number)
+        .filter((pid) => pid !== process.pid);
+      for (const pid of pids) {
+        try {
+          childProcess.spawnSync('taskkill', ['/F', '/PID', String(pid), '/T']);
+          killed++;
+        } catch {
+          // process may have already exited
+        }
+      }
+    } else {
+      let pids;
+      if (process.platform === 'linux') {
+        // On Linux, pgrep -f matches the full command line, which would also
+        // match wrapper scripts like `python3 dbus_mock.py /path/to/electron`.
+        // Killing those wrappers hangs the test run.  Instead, scan /proc
+        // directly and compare the /proc/<pid>/exe symlink (the real executable)
+        // against process.execPath so we only find actual Electron processes.
+        pids = [];
+        try {
+          for (const entry of fs.readdirSync('/proc')) {
+            const pid = parseInt(entry, 10);
+            if (isNaN(pid)) continue;
+            try {
+              if (fs.readlinkSync(`/proc/${pid}/exe`) === process.execPath) {
+                pids.push(pid);
+              }
+            } catch {
+              // no permission or process already exited
+            }
+          }
+        } catch {
+          // /proc unavailable — ignore
+        }
+      } else {
+        // macOS: pgrep -f is safe here (no wrapper scripts, and helpers use
+        // different .app bundles with different executable paths).
+        const result = childProcess.spawnSync('pgrep', ['-f', process.execPath], { encoding: 'utf8' });
+        pids = (result.stdout || '')
+          .split('\n')
+          .map((s) => parseInt(s, 10))
+          .filter((pid) => !isNaN(pid));
+      }
+
+      for (const pid of pids.filter((pid) => pid !== process.pid)) {
+        try {
+          // On Linux, skip any process that is a descendant of the current
+          // Electron instance (GPU, renderer, zygote, crashpad, etc.).
+          if (process.platform === 'linux' && isDescendantOfCurrentProcess(pid)) continue;
+          process.kill(pid, 'SIGKILL');
+          killed++;
+        } catch {
+          // process may have already exited
+        }
+      }
+    }
+  } catch {
+    // pgrep / wmic not available or returned an error — ignore
+  }
+  if (killed > 0) {
+    console.log(`Killed ${killed} orphaned Electron process${killed === 1 ? '' : 'es'} before suite: ${suiteName}`);
+  }
+}
+
 app
   .whenReady()
   .then(async () => {
@@ -127,6 +229,14 @@ app
     mocha.suite.on('suite', function attach(suite) {
       suite.afterEach('cleanup', runCleanupFunctions);
       suite.on('suite', attach);
+    });
+
+    // Kill any Electron processes left over from the previous spec file before
+    // starting the next one.  The listener is intentionally non-recursive so it
+    // only fires for top-level suites (one per file), not nested describes.
+    mocha.suite.on('suite', (suite) => {
+      console.log(`Adding kill orphaned process for test suite: ${suite.title}`);
+      suite.beforeAll('kill orphaned electron processes', () => killOrphanedElectronProcesses(suite.title));
     });
 
     if (!process.env.MOCHA_REPORTER) {
