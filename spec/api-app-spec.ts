@@ -1237,6 +1237,9 @@ describe('app module', () => {
   });
 
   describe('getPath(name)', () => {
+    const originalMusicPath = app.getPath('music');
+    afterEach(() => app.setPath('music', originalMusicPath));
+
     it('returns paths that exist', () => {
       const paths = [
         fs.existsSync(app.getPath('exe')),
@@ -1293,6 +1296,9 @@ describe('app module', () => {
   });
 
   describe('setPath(name, path)', () => {
+    const originalMusicPath = app.getPath('music');
+    afterEach(() => app.setPath('music', originalMusicPath));
+
     it('throws when a relative path is passed', () => {
       const badPath = 'hey/hi/hello';
 
