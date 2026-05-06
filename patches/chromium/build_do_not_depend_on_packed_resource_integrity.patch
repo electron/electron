@@ -28,7 +28,7 @@ index 3497a3bec7f0f899c65593fa5a69913d54257ea2..ff97e4f0ffd4e288d98bf67a85f51f0c
          ":chrome_dll",
          ":chrome_exe_version",
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index f7ec0a38d0bfd7885db976bca9c8219d026049ff..f4817d7e8e8eefffaee1e179382cccb55f1424ef 100644
+index c3024d01eb117390df4bbd96316053fe4c596dbe..1b293165f4a2804a1d40e5370f33160f4b4c34b0 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -7788,6 +7788,10 @@ test("unit_tests") {
