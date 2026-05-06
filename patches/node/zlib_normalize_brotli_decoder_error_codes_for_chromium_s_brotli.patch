@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Electron Scripts <scripts@electron>
+Date: Wed, 22 Apr 2026 14:11:03 +0200
+Subject: zlib: normalize brotli decoder error codes for Chromium's brotli
+
+Chromium's brotli fork returns just the NAME portion from
+BrotliDecoderErrorString() (e.g. "FORMAT_RESERVED") whereas Node.js'
+bundled brotli returns "_ERROR_FORMAT_..." style strings. The JS
+layer's handleKnownInternalErrors() (adapters.js) classifies brotli
+failures as TypeError by matching the "ERR__ERROR_" prefix, which
+only works against the bundled behavior. Normalize the emitted code
+so the Compression Streams spec-compliant TypeError is produced
+regardless of which brotli implementation Node is linked against.
+
+This patch can be removed when Chromium's brotli returns the full
+"_ERROR_..." prefix matching upstream brotli, or when Node removes
+the string-prefix-based classification in favor of a numeric or
+well-known error code.
+
+diff --git a/src/node_zlib.cc b/src/node_zlib.cc
+index 792d800847e10528fc383e0d797b098aaa96b8d4..ce2d41ef8114fc4f83b4c9b109cd93426a2a0e3d 100644
+--- a/src/node_zlib.cc
++++ b/src/node_zlib.cc
+@@ -1512,7 +1512,15 @@ void BrotliDecoderContext::DoThreadPoolWork() {
+   next_in_ += next_in - next_in_;
+   if (last_result_ == BROTLI_DECODER_RESULT_ERROR) {
+     error_ = BrotliDecoderGetErrorCode(state_.get());
+-    error_string_ = std::string("ERR_") + BrotliDecoderErrorString(error_);
++    const char* brotli_err = BrotliDecoderErrorString(error_);
++    // Node.js' bundled brotli's BrotliDecoderErrorString() returns codes
++    // like "_ERROR_FORMAT_...", but Chromium's brotli (used in Electron)
++    // returns only the trailing NAME (e.g. "FORMAT_..."). Normalize to the
++    // "ERR__ERROR_..." prefix the adapters layer relies on to classify
++    // brotli failures as TypeError.
++    error_string_ = (brotli_err[0] == '_' ? std::string("ERR_")
++                                          : std::string("ERR__ERROR_")) +
++                    brotli_err;
+   }
+ }
+ 
