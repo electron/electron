@@ -9,6 +9,11 @@
 
 namespace electron {
 
+namespace internal {
+// Exposed for unit testing.
+bool IsUrlArg(const base::CommandLine::StringViewType arg);
+}  // namespace internal
+
 bool CheckCommandLineArguments(const base::CommandLine::StringVector& argv);
 bool IsSandboxEnabled(base::CommandLine* command_line);
 
