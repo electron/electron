@@ -1231,8 +1231,10 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
       ->RegisterURLLoaderFactories(factories, allow_file_access);
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  auto factory = extensions::CreateExtensionURLLoaderFactory(render_process_id,
-                                                             render_frame_id);
+  // TODO(crbug.com/379869738) Remove FromUnsafeValue.
+  auto factory = extensions::CreateExtensionURLLoaderFactory(
+      content::ChildProcessId::FromUnsafeValue(render_process_id),
+      render_frame_id);
   if (factory)
     factories->emplace(extensions::kExtensionScheme, std::move(factory));
 
