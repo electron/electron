@@ -140,6 +140,9 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Install pinned Homebrew
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/install-homebrew
     - name: Turn off screenshot nag on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
