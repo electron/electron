@@ -44,7 +44,7 @@ index 32116daf768b52021b795afd6b0d5b96b5d0cf46..90ab5d50e7efbd3212e074514c41caf4
  class WebRequestEventRouter : public KeyedService {
   public:
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
-index 8a8ab0a0e2c6e4f599651a3691d2d4749914d0f0..9ac2eda61dbab1aa489d7b5d3882f81be87e5563 100644
+index b98a85280fb8abef06b2f7420115a48b37727377..0da1f574a01bf32702cc1d8068a440b117809d38 100644
 --- a/extensions/common/extension.cc
 +++ b/extensions/common/extension.cc
 @@ -225,7 +225,8 @@ const int Extension::kValidHostPermissionSchemes =
