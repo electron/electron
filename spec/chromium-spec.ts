@@ -78,6 +78,7 @@ describe('reporting api', () => {
     } finally {
       bw.destroy();
       server.close();
+      session.defaultSession.setCertificateVerifyProc(null);
     }
   });
 });
