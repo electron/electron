@@ -34,6 +34,7 @@
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "components/proxy_config/proxy_prefs.h"
 #include "content/browser/code_cache/generated_code_cache_context.h"  // nogncheck
+#include "content/browser/storage_partition_impl.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/browsing_data_filter_builder.h"
@@ -1439,17 +1440,14 @@ v8::Local<v8::Value> Session::GetPath(v8::Isolate* isolate) {
 
 void Session::SetCodeCachePath(gin::Arguments* args) {
   base::FilePath code_cache_path;
-  auto* storage_partition = browser_context_->GetDefaultStoragePartition();
-  auto* code_cache_context = storage_partition->GetGeneratedCodeCacheContext();
-  if (code_cache_context) {
-    if (!args->GetNext(&code_cache_path) || !code_cache_path.IsAbsolute()) {
-      args->ThrowTypeError(
-          "Absolute path must be provided to store code cache.");
-      return;
-    }
-    code_cache_context->Initialize(
-        code_cache_path, 0 /* allows disk_cache to choose the size */);
+  if (!args->GetNext(&code_cache_path) || !code_cache_path.IsAbsolute()) {
+    args->ThrowTypeError("Absolute path must be provided to store code cache.");
+    return;
   }
+  auto* storage_partition = browser_context_->GetDefaultStoragePartition();
+  static_cast<content::StoragePartitionImpl*>(storage_partition)
+      ->ReinitializeGeneratedCodeCacheContext(
+          code_cache_path, 0 /* allows disk_cache to choose the size */);
 }
 
 v8::Local<v8::Promise> Session::ClearCodeCaches(
