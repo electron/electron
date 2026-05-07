@@ -43,9 +43,8 @@ runs:
             --output "${pkg_path}" \
             "${download_url}"
 
-          expected_sha256='${{ inputs.sha256 }}'
           echo "Verifying Homebrew package SHA256 checksum..."
-          if ! printf '%s  %s\n' "${expected_sha256}" "${pkg_path}" | shasum -a 256 -c; then
+          if ! printf '%s  %s\n' "${{ inputs.sha256 }}" "${pkg_path}" | shasum -a 256 -c; then
             echo "Homebrew package SHA256 checksum failed, aborting." >&2
             exit 1
           fi
