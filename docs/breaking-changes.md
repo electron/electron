@@ -150,7 +150,7 @@ When the value of the cookie being set remains unchanged but some of its attribu
 ### Deprecated: `showHiddenFiles` in Dialogs on Linux
 
 This property will still be honored on macOS and Windows, but support on Linux
-will be removed in Electron 42. GTK intends for this to be a user choice rather
+will be removed in a future version of Electron. GTK intends for this to be a user choice rather
 than an app choice and has removed the API to do this programmatically.
 
 ## Planned Breaking API Changes (40.0)
