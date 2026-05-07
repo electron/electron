@@ -103,6 +103,9 @@ describe('app module', () => {
   });
 
   describe('app name APIs', () => {
+    const originalName = app.name;
+    afterEach(() => (app.name = originalName));
+
     describe('with properties', () => {
       it('returns the name field of package.json', () => {
         expect(app.name).to.equal('Electron Test Main');
@@ -113,7 +116,6 @@ describe('app module', () => {
         app.name = 'electron-test-name';
 
         expect(app.name).to.equal('electron-test-name');
-        app.name = 'Electron Test Main';
       });
     });
 
@@ -127,7 +129,6 @@ describe('app module', () => {
         app.setName('electron-test-name');
 
         expect(app.getName()).to.equal('electron-test-name');
-        app.setName('Electron Test Main');
       });
     });
   });
@@ -1237,6 +1238,9 @@ describe('app module', () => {
   });
 
   describe('getPath(name)', () => {
+    const originalMusicPath = app.getPath('music');
+    afterEach(() => app.setPath('music', originalMusicPath));
+
     it('returns paths that exist', () => {
       const paths = [
         fs.existsSync(app.getPath('exe')),
@@ -1293,6 +1297,9 @@ describe('app module', () => {
   });
 
   describe('setPath(name, path)', () => {
+    const originalMusicPath = app.getPath('music');
+    afterEach(() => app.setPath('music', originalMusicPath));
+
     it('throws when a relative path is passed', () => {
       const badPath = 'hey/hi/hello';
 
@@ -2211,6 +2218,8 @@ describe('app module', () => {
   });
 
   describe('commandLine.hasSwitch', () => {
+    afterEach(() => app.commandLine.removeSwitch('foobar1'));
+
     it('returns true when present', () => {
       app.commandLine.appendSwitch('foobar1');
       expect(app.commandLine.hasSwitch('foobar1')).to.equal(true);
@@ -2234,6 +2243,11 @@ describe('app module', () => {
   });
 
   describe('commandLine.getSwitchValue', () => {
+    afterEach(() => {
+      app.commandLine.removeSwitch('foobar');
+      app.commandLine.removeSwitch('foobar1');
+    });
+
     it('returns the value when present', () => {
       app.commandLine.appendSwitch('foobar', 'æøåü');
       expect(app.commandLine.getSwitchValue('foobar')).to.equal('æøåü');
