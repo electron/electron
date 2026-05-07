@@ -146,15 +146,17 @@ jobs:
             }
       - name: Create unsupported major comment
         if: ${{ steps.add-labels.outputs.unsupportedMajor }}
-        uses: actions-cool/issues-helper@200c78641dbf33838311e5a1e0c31bbdb92d7cf0 # v3.8.0
-        with:
-          actions: 'create-comment'
-          token: ${{ steps.generate-token.outputs.token }}
-          body: |
-            <!-- end-of-life -->
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          GH_REPO: electron/electron
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body-file - <<'EOF'
+          <!-- end-of-life -->
 
-            Hello @${{ github.event.issue.user.login }}. Thanks for reporting this and helping to make Electron better!
-            
-            The version of Electron reported in this issue has reached end-of-life and is [no longer supported](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline). If you're still experiencing this issue on a [supported version](https://www.electronjs.org/releases/stable) of Electron, please update this issue to reflect that version of Electron.
+          Hello @${{ github.event.issue.user.login }}. Thanks for reporting this and helping to make Electron better!
 
-            Now adding the https://github.com/electron/electron/labels/blocked%2Fneed-info%20%E2%9D%8C label for this reason. This issue will be closed in 10 days if the above is not addressed.
+          The version of Electron reported in this issue has reached end-of-life and is [no longer supported](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline). If you're still experiencing this issue on a [supported version](https://www.electronjs.org/releases/stable) of Electron, please update this issue to reflect that version of Electron.
+
+          Now adding the https://github.com/electron/electron/labels/blocked%2Fneed-info%20%E2%9D%8C label for this reason. This issue will be closed in 10 days if the above is not addressed.
+          EOF

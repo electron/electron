@@ -165,7 +165,7 @@ index 2448abf73b097f04583aefda1fb1a67b3de67e5b..55f935f38bf05586650e7a83a689347b
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 98918bf5ed23798669251bee846aea4255ee9b7c..f4d38a27eb3123ac4bca19de15e8b6184e5faf92 100644
+index 026f480ebe1d47af8b949d6a076a2d053022bda2..6687bcd53ab8dca1bc7b96446fdd673ed9d1a5da 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -29,7 +29,9 @@

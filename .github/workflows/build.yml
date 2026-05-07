@@ -68,6 +68,9 @@ jobs:
           docs:
             - 'docs/**'
             - '.claude/**'
+            - '.github/ISSUE_TEMPLATE/**'
+            - '.github/PULL_REQUEST_TEMPLATE.md'
+            - '.github/config.yml'
             - README.md
             - SECURITY.md
             - CONTRIBUTING.md

@@ -140,6 +140,10 @@ describe('release notes', () => {
     process.env.NOTES_CACHE_PATH = path.resolve(fixtureDir, 'cache');
   });
 
+  after(() => {
+    delete process.env.NOTES_CACHE_PATH;
+  });
+
   beforeEach(() => {
     const wrapper = (command: unknown, args: unknown, options?: unknown) => {
       if (command === 'git' && Array.isArray(args)) {

@@ -88,6 +88,8 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/network/public/cpp/web_sandbox_flags.h"
+#include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
@@ -156,6 +158,7 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/peerconnection/webrtc_ip_handling_policy.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
@@ -972,14 +975,51 @@ WebContents::WebContents(v8::Isolate* isolate,
                             options);
 }
 
+namespace {
+std::optional<WebContentsZoomController::ZoomMode> ParseZoomMode(
+    const std::string& mode) {
+  if (mode == "default")
+    return WebContentsZoomController::ZOOM_MODE_DEFAULT;
+  if (mode == "isolated")
+    return WebContentsZoomController::ZOOM_MODE_ISOLATED;
+  if (mode == "manual")
+    return WebContentsZoomController::ZOOM_MODE_MANUAL;
+  if (mode == "disabled")
+    return WebContentsZoomController::ZOOM_MODE_DISABLED;
+  return std::nullopt;
+}
+}  // namespace
+
 void WebContents::InitZoomController(content::WebContents* web_contents,
                                      const gin_helper::Dictionary& options) {
   WebContentsZoomController* const zoom_controller =
       WebContentsZoomController::GetOrCreateForWebContents(web_contents);
 
-  double zoom_factor;
+  double zoom_factor = 0;
   if (options.Get(options::kZoomFactor, &zoom_factor))
     zoom_controller->SetDefaultZoomFactor(zoom_factor);
+
+  std::string zoom_mode_str;
+  if (options.Get(options::kZoomMode, &zoom_mode_str)) {
+    // Set mode and persist flag directly on the controller rather than going
+    // through SetZoomMode(), which manipulates HostZoomMap temporary zoom
+    // levels and requires a fully initialized RenderFrameHost.
+    // The mode will take full effect once the first navigation commits.
+    auto mode = ParseZoomMode(zoom_mode_str);
+    if (mode) {
+      bool persist = *mode == WebContentsZoomController::ZOOM_MODE_ISOLATED ||
+                     *mode == WebContentsZoomController::ZOOM_MODE_MANUAL;
+      zoom_controller->SetPersistZoomMode(persist);
+      zoom_controller->set_zoom_mode(*mode);
+      // When persisting zoom mode AND a custom zoom factor is set, initialize
+      // the tracked zoom level from the factor. Otherwise the first navigation
+      // would apply zoom_level_=0 (default) instead of the factor, because
+      // SetZoomFactorOnNavigationIfNeeded is skipped in persist mode.
+      if (persist && zoom_factor > 0)
+        zoom_controller->set_zoom_level(
+            blink::ZoomFactorToZoomLevel(zoom_factor));
+    }
+  }
 
   // Nothing to do with ZoomController, but this function gets called in all
   // init cases!
@@ -1122,15 +1162,18 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  // DevTools frontend messages use base::Unretained delegate callbacks.
+  // Clear the delegate before other teardown work can trigger callbacks
+  // into this partially destroyed WebContents.
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+
   if (web_contents()) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         web_contents()->GetBrowserContext()->GetPermissionControllerDelegate());
     if (permission_manager)
       permission_manager->CancelPendingRequests(web_contents());
   }
-
-  if (inspectable_web_contents_)
-    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
 
   if (owner_window_) {
     owner_window_->RemoveBackgroundThrottlingSource(this);
@@ -1397,6 +1440,26 @@ content::WebContents* WebContents::OpenURLFromTab(
         navigation_handle_callback) {
   auto weak_this = GetWeakPtr();
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
+    content::FrameTreeNode* initiator =
+        params.frame_tree_node_id ? content::FrameTreeNode::GloballyFindByID(
+                                        params.frame_tree_node_id)
+                                  : nullptr;
+    if (initiator && !initiator->IsMainFrame()) {
+      using SandboxFlags = network::mojom::WebSandboxFlags;
+      const SandboxFlags flags = initiator->active_sandbox_flags();
+      auto allow = [flags](SandboxFlags flag) {
+        return (flags & flag) == SandboxFlags::kNone;
+      };
+      if (!allow(SandboxFlags::kPopups)) {
+        if (auto* rfh = initiator->current_frame_host()) {
+          rfh->AddMessageToConsole(
+              blink::mojom::ConsoleMessageLevel::kError,
+              "Blocked opening a new window because the iframe is sandboxed "
+              "and the 'allow-popups' keyword is not set.");
+        }
+        return nullptr;
+      }
+    }
     Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
          params.post_data);
     return nullptr;
@@ -2240,6 +2303,9 @@ void WebContents::DidFinishNavigation(
       Emit("did-frame-navigate", url, http_response_code, http_status_text,
            is_main_frame, frame_process_id, frame_routing_id);
       if (is_main_frame) {
+        // Ensure zoom is updated before JS handlers see the event.
+        if (auto* zc = GetZoomController())
+          zc->ProcessNavigationZoom(navigation_handle);
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
 
@@ -3946,6 +4012,37 @@ double WebContents::GetZoomFactor() const {
   return blink::ZoomLevelToZoomFactor(level);
 }
 
+void WebContents::SetZoomMode(gin_helper::ErrorThrower thrower,
+                              const std::string& mode) {
+  auto zoom_mode = ParseZoomMode(mode);
+  if (!zoom_mode) {
+    thrower.ThrowError(
+        "'zoomMode' must be 'default', 'isolated', 'manual', or 'disabled'");
+    return;
+  }
+
+  // When set via the Electron JS API, persist isolated/manual modes across
+  // navigations. The extensions API calls SetZoomMode on the controller
+  // directly and won't set this flag, preserving Chromium's default behavior.
+  GetZoomController()->SetPersistZoomMode(
+      *zoom_mode == WebContentsZoomController::ZOOM_MODE_ISOLATED ||
+      *zoom_mode == WebContentsZoomController::ZOOM_MODE_MANUAL);
+  GetZoomController()->SetZoomMode(*zoom_mode);
+}
+
+std::string WebContents::GetZoomMode() const {
+  switch (GetZoomController()->zoom_mode()) {
+    case WebContentsZoomController::ZOOM_MODE_ISOLATED:
+      return "isolated";
+    case WebContentsZoomController::ZOOM_MODE_MANUAL:
+      return "manual";
+    case WebContentsZoomController::ZOOM_MODE_DISABLED:
+      return "disabled";
+    default:
+      return "default";
+  }
+}
+
 void WebContents::SetTemporaryZoomLevel(double level) {
   GetZoomController()->SetTemporaryZoomLevel(level);
 }
@@ -4727,6 +4824,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
+      .SetMethod("setZoomMode", &WebContents::SetZoomMode)
+      .SetMethod("getZoomMode", &WebContents::GetZoomMode)
       .SetMethod("getType", &WebContents::type)
       .SetMethod("_getPreloadScript", &WebContents::GetPreloadScript)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
@@ -4873,6 +4972,21 @@ gin_helper::Handle<WebContents> WebContents::CreateFromWebPreferences(
           // has already navigated by the time we wrap the webContents.
           zoom_controller->SetZoomLevel(
               blink::ZoomFactorToZoomLevel(zoom_factor));
+        }
+      }
+
+      std::string zoom_mode_str;
+      if (web_preferences.Get(options::kZoomMode, &zoom_mode_str)) {
+        auto mode = ParseZoomMode(zoom_mode_str);
+        if (mode) {
+          auto* zoom_controller = WebContentsZoomController::FromWebContents(
+              web_contents->web_contents());
+          if (zoom_controller) {
+            zoom_controller->SetPersistZoomMode(
+                *mode == WebContentsZoomController::ZOOM_MODE_ISOLATED ||
+                *mode == WebContentsZoomController::ZOOM_MODE_MANUAL);
+            zoom_controller->SetZoomMode(*mode);
+          }
         }
       }
     }

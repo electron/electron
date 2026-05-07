@@ -4372,6 +4372,9 @@ describe('BrowserWindow module', () => {
           throw error;
         });
         process.env.sandboxmain = 'foo';
+        defer(() => {
+          delete process.env.sandboxmain;
+        });
         w.loadFile(path.join(fixtures, 'api', 'preload.html'));
         const [, test] = await once(ipcMain, 'answer');
         expect(test.hasCrash).to.be.true('has crash');
@@ -5131,12 +5134,12 @@ describe('BrowserWindow module', () => {
        * of the browser controlled paths, refs https://chromium-review.googlesource.com/c/chromium/src/+/3774416
        */
       const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-mhtml-save-'));
-      const savePageMHTMLPath = path.join(tmpDir, 'save_page.html');
+      const savePageMHTMLPath = path.join(tmpDir, 'save_page.mhtml');
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
       await w.webContents.savePage(savePageMHTMLPath, 'MHTML');
 
-      expect(fs.existsSync(savePageMHTMLPath)).to.be.true('html path');
+      expect(fs.existsSync(savePageMHTMLPath)).to.be.true('mhtml path');
       expect(fs.existsSync(savePageJsPath)).to.be.false('js path');
       expect(fs.existsSync(savePageCssPath)).to.be.false('css path');
       try {
@@ -5512,19 +5515,18 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
         w.webContents.executeJavaScript('window.open("")');
 
-        w.webContents.on('did-create-window', async (window) => {
-          const childWindow = new BrowserWindow({ parent: window });
+        const [window] = (await once(w.webContents, 'did-create-window')) as [BrowserWindow];
+        const childWindow = new BrowserWindow({ parent: window });
 
-          await setTimeout();
+        await setTimeout();
 
-          const closed = once(childWindow, 'closed');
-          window.close();
-          await closed;
+        const closed = once(childWindow, 'closed');
+        window.close();
+        await closed;
 
-          expect(() => {
-            BrowserWindow.getFocusedWindow();
-          }).to.not.throw();
-        });
+        expect(() => {
+          BrowserWindow.getFocusedWindow();
+        }).to.not.throw();
       });
 
       it('should not affect the show option', () => {

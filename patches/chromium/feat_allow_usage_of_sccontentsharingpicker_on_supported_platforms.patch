@@ -326,7 +326,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index 0f6531fd1c7784867b2b4e6d72d042bee4bff579..1c7b00d6b1929b807649d7a00f963195bf3f4ea1 100644
+index 2fa0432a9180603ff652b7a13106c4b2ed7b37e3..29dbd2157a16330e9aec2d66b2e3b507becb11f8 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 @@ -321,8 +321,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
@@ -354,8 +354,8 @@ index 0f6531fd1c7784867b2b4e6d72d042bee4bff579..1c7b00d6b1929b807649d7a00f963195
 +      media::VideoCaptureParams updated_params = params;
 +      updated_params.use_native_picker = stream_type != blink::mojom::MediaStreamType::GUM_DESKTOP_VIDEO_CAPTURE;
        // All cases other than tab capture or Aura desktop/window capture.
-       TRACE_EVENT_INSTANT0(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
-                            "UsingDesktopCapturer", TRACE_EVENT_SCOPE_THREAD);
+       TRACE_EVENT_INSTANT(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
+                           "UsingDesktopCapturer");
        start_capture_closure = base::BindOnce(
            &InProcessVideoCaptureDeviceLauncher::
                DoStartDesktopCaptureOnDeviceThread,

@@ -517,6 +517,21 @@ void View::ApplyBorderRadius() {
   }
 }
 
+void View::SetBackgroundBlur(int blur_radius) {
+  if (!view_)
+    return;
+
+  if (blur_radius < 0)
+    blur_radius = 0;
+
+  ui::Layer* layer = GetLayer();
+
+  if (!layer)
+    return;
+
+  layer->SetBackgroundBlur(blur_radius);
+}
+
 void View::SetVisible(bool visible) {
   if (!view_)
     return;
@@ -584,6 +599,7 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getBounds", &View::GetBounds)
       .SetMethod("setBackgroundColor", &View::SetBackgroundColor)
       .SetMethod("setBorderRadius", &View::SetBorderRadius)
+      .SetMethod("setBackgroundBlur", &View::SetBackgroundBlur)
       .SetMethod("setLayout", &View::SetLayout)
       .SetMethod("setVisible", &View::SetVisible)
       .SetMethod("getVisible", &View::GetVisible);

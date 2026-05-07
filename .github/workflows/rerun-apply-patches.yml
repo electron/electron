@@ -59,6 +59,15 @@ jobs:
               continue
             fi
 
+            # Skip runs older than 25 days (GitHub does not allow rerunning after ~1 month)
+            RUN_CREATED=$(gh run view "$RUN_ID" --json createdAt --jq '.createdAt')
+            RUN_AGE_DAYS=$(( ($(date +%s) - $(date -d "$RUN_CREATED" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$RUN_CREATED" +%s)) / 86400 ))
+
+            if [ "$RUN_AGE_DAYS" -gt 25 ]; then
+              echo "  Skipping run ${RUN_ID} for PR #${PR_NUMBER}: run is ${RUN_AGE_DAYS} days old (max 25)"
+              continue
+            fi
+
             # Check if the workflow is currently in progress
             RUN_STATUS=$(gh run view "$RUN_ID" --json status --jq '.status')
 

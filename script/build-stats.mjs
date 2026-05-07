@@ -90,6 +90,13 @@ async function uploadObjectChangeStats(stats) {
       tags
     },
     {
+      metric: 'electron.build.object-total-size',
+      points: [{ timestamp, value: stats['total-size'] }],
+      type: 3, // GAUGE
+      unit: 'byte',
+      tags
+    },
+    {
       metric: 'electron.build.new-object-count',
       points: [{ timestamp, value: stats['new-object-count'] }],
       type: 1, // COUNT
@@ -174,7 +181,10 @@ async function main() {
     const checksums = {};
     for (const file of objectFiles) {
       const content = await fs.readFile(resolve(outDir, file));
-      checksums[file] = createHash('sha256').update(content).digest('hex');
+      checksums[file] = {
+        size: content.byteLength,
+        checksum: createHash('sha256').update(content).digest('hex')
+      };
     }
 
     if (outputObjectChecksums) {
@@ -193,13 +203,20 @@ async function main() {
       let newObjectCount = 0;
       let changedSize = 0;
 
+      // Previously filenames mapped directly to checksum values, but now
+      // they map to objects containing both checksum and size. Handle both
+      // formats for backwards compatibility.
+      const getInputChecksum = (file) => {
+        const value = inputData.checksums[file];
+        return typeof value === 'string' ? value : value.checksum;
+      };
+
       // Count changed files (only those present in both input and current)
       for (const file of inputFiles) {
         if (!(file in checksums)) continue; // Skip deleted files
-        if (inputData.checksums[file] !== checksums[file]) {
+        if (getInputChecksum(file) !== checksums[file].checksum) {
           changedCount++;
-          const stat = await fs.stat(resolve(outDir, file));
-          changedSize += stat.size;
+          changedSize += checksums[file].size;
         }
       }
 
@@ -207,20 +224,22 @@ async function main() {
       for (const file of Object.keys(checksums)) {
         if (!(file in inputData.checksums)) {
           newObjectCount++;
-          const stat = await fs.stat(resolve(outDir, file));
-          changedSize += stat.size;
+          changedSize += checksums[file].size;
         }
       }
 
       const changeRate = inputFiles.length > 0 ? changedCount / inputFiles.length : 0;
+      const totalSize = Object.values(checksums).reduce((sum, { size }) => sum + size, 0);
       console.log(`${messagePrefix}Object change rate: ${(changeRate * 100).toFixed(2)}%`);
       if (newObjectCount > 0) {
         console.log(`${messagePrefix}New object count: ${newObjectCount}`);
       }
       console.log(`${messagePrefix}Cumulative changed object sizes: ${changedSize.toLocaleString()} bytes`);
+      console.log(`${messagePrefix}Total object sizes: ${totalSize.toLocaleString()} bytes`);
 
       objectChangeStats['change-rate'] = changeRate;
       objectChangeStats['change-size'] = changedSize;
+      objectChangeStats['total-size'] = totalSize;
       objectChangeStats['new-object-count'] = newObjectCount;
       objectChangeStats['previous-chromium-version'] = inputData.chromiumVersion;
       objectChangeStats['chromium-version'] = currentVersion;

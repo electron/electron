@@ -65,6 +65,7 @@ template("electron_extra_paks") {
       "$root_gen_dir/net/net_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/blink_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/inspector_overlay_resources.pak",
+      "$root_gen_dir/third_party/blink/public/strings/permission_element_generated_strings.pak",
       "$target_gen_dir/electron_resources.pak",
     ]
     deps = [
@@ -83,6 +84,7 @@ template("electron_extra_paks") {
       "//net:net_resources",
       "//third_party/blink/public:devtools_inspector_resources",
       "//third_party/blink/public:resources",
+      "//third_party/blink/public/strings:permission_element_generated_strings",
       "//ui/webui/resources",
     ]
     if (defined(invoker.deps)) {
@@ -187,6 +189,7 @@ template("electron_paks") {
       "${root_gen_dir}/extensions/strings/extensions_strings_",
       "${root_gen_dir}/services/strings/services_strings_",
       "${root_gen_dir}/third_party/blink/public/strings/blink_strings_",
+      "${root_gen_dir}/third_party/blink/public/strings/permission_element_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
       "${root_gen_dir}/ui/strings/auto_image_annotation_strings_",
       "${root_gen_dir}/ui/strings/ax_strings_",
@@ -204,6 +207,7 @@ template("electron_paks") {
       "//extensions/strings",
       "//services/strings",
       "//third_party/blink/public/strings",
+      "//third_party/blink/public/strings:permission_element_strings",
       "//ui/strings:app_locale_settings",
       "//ui/strings:auto_image_annotation_strings",
       "//ui/strings:ax_strings",

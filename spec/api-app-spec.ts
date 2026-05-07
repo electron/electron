@@ -18,6 +18,12 @@ import { promisify } from 'node:util';
 import { collectStreamBody, getResponse } from './lib/net-helpers';
 import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
+import {
+  makeXdgMockDirectories,
+  spawnProtocolInfoWithXdgMock,
+  spawnProtocolNameWithXdgMock,
+  writeProtocolAssociation
+} from './lib/xdg-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -88,6 +94,9 @@ describe('app module', () => {
   });
 
   describe('app name APIs', () => {
+    const originalName = app.name;
+    afterEach(() => (app.name = originalName));
+
     describe('with properties', () => {
       it('returns the name field of package.json', () => {
         expect(app.name).to.equal('Electron Test Main');
@@ -98,7 +107,6 @@ describe('app module', () => {
         app.name = 'electron-test-name';
 
         expect(app.name).to.equal('electron-test-name');
-        app.name = 'Electron Test Main';
       });
     });
 
@@ -112,7 +120,6 @@ describe('app module', () => {
         app.setName('electron-test-name');
 
         expect(app.getName()).to.equal('electron-test-name');
-        app.setName('Electron Test Main');
       });
     });
   });
@@ -834,7 +841,8 @@ describe('app module', () => {
           openAsHidden: false,
           restoreState: false,
           wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false
+          wasOpenedAsHidden: false,
+          executableWillLaunchAtLogin: false
         });
       });
 
@@ -872,7 +880,8 @@ describe('app module', () => {
           openAsHidden: false,
           restoreState: false,
           wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false
+          wasOpenedAsHidden: false,
+          executableWillLaunchAtLogin: false
         });
       });
     });
@@ -1223,6 +1232,9 @@ describe('app module', () => {
   });
 
   describe('getPath(name)', () => {
+    const originalMusicPath = app.getPath('music');
+    afterEach(() => app.setPath('music', originalMusicPath));
+
     it('returns paths that exist', () => {
       const paths = [
         fs.existsSync(app.getPath('exe')),
@@ -1279,6 +1291,9 @@ describe('app module', () => {
   });
 
   describe('setPath(name, path)', () => {
+    const originalMusicPath = app.getPath('music');
+    afterEach(() => app.setPath('music', originalMusicPath));
+
     it('throws when a relative path is passed', () => {
       const badPath = 'hey/hi/hello';
 
@@ -1513,73 +1528,23 @@ describe('app module', () => {
     });
 
     ifdescribe(process.platform === 'linux')('on Linux with mocked XDG dirs', () => {
-      const fixtureApp = path.join(fixturesPath, 'api', 'protocol-name');
       const desktopFileId = 'mock-browser.desktop';
       const mockDisplayName = 'Mock Browser';
       const mockScheme = 'mockproto';
       const mockMimeType = `x-scheme-handler/${mockScheme}`;
 
-      function spawnWithXdgMock(url: string, xdgDataHome: string, xdgConfigHome: string): Promise<string> {
-        return new Promise((resolve, reject) => {
-          const child = cp.spawn(process.execPath, [fixtureApp, url], {
-            env: {
-              ...process.env,
-              XDG_DATA_HOME: xdgDataHome,
-              XDG_DATA_DIRS: xdgDataHome,
-              XDG_CONFIG_HOME: xdgConfigHome
-            },
-            stdio: ['ignore', 'pipe', 'pipe']
-          });
-          let stdout = '';
-          let stderr = '';
-          child.stdout.on('data', (d: Buffer) => {
-            stdout += d;
-          });
-          child.stderr.on('data', (d: Buffer) => {
-            stderr += d;
-          });
-          child.on('close', (code) => {
-            if (code !== 0) {
-              reject(new Error(`Fixture exited with code ${code}: ${stderr}`));
-              return;
-            }
-
-            try {
-              const parsed = JSON.parse(stdout);
-              resolve(parsed.name);
-            } catch {
-              reject(new Error(`Failed to parse output: ${stdout}\nstderr: ${stderr}`));
-            }
-          });
-          child.on('error', reject);
-        });
-      }
-
       let xdgDir: string;
       let xdgDataHome: string;
       let xdgConfigHome: string;
       before(() => {
-        xdgDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-xdg-'));
-        xdgDataHome = path.join(xdgDir, 'data');
-        xdgConfigHome = path.join(xdgDir, 'config');
-        const appsDir = path.join(xdgDataHome, 'applications');
-        fs.mkdirSync(appsDir, { recursive: true });
-        fs.mkdirSync(xdgConfigHome, { recursive: true });
-
-        fs.writeFileSync(
-          path.join(appsDir, desktopFileId),
-          [
-            '[Desktop Entry]',
-            `Name=${mockDisplayName}`,
-            'Exec=/usr/bin/true %u',
-            'Type=Application',
-            `MimeType=${mockMimeType};`
-          ].join('\n')
-        );
-
-        fs.writeFileSync(
-          path.join(xdgConfigHome, 'mimeapps.list'),
-          ['[Default Applications]', `${mockMimeType}=${desktopFileId}`].join('\n')
+        ({ xdgDir, xdgDataHome, xdgConfigHome } = makeXdgMockDirectories('electron-xdg-name-'));
+        writeProtocolAssociation(
+          xdgDataHome,
+          xdgConfigHome,
+          desktopFileId,
+          mockDisplayName,
+          '/usr/bin/true %u',
+          mockMimeType
         );
       });
 
@@ -1588,18 +1553,52 @@ describe('app module', () => {
       });
 
       it('returns the display name for a registered protocol', async () => {
-        const name = await spawnWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome);
+        const name = await spawnProtocolNameWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome);
         expect(name).to.equal(mockDisplayName);
       });
 
       it('returns an empty string for an unregistered protocol', async () => {
-        const name = await spawnWithXdgMock('unregistered-proto://', xdgDataHome, xdgConfigHome);
+        const name = await spawnProtocolNameWithXdgMock('unregistered-proto://', xdgDataHome, xdgConfigHome);
         expect(name).to.equal('');
       });
     });
   });
 
-  ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
+  describe('getApplicationInfoForProtocol()', () => {
+    const fixtureIcon = path.join(fixturesPath, 'assets', '1x1.png');
+    const desktopFileId = 'mock-browser.desktop';
+    const mockDisplayName = 'Mock Browser';
+    const mockScheme = 'mockproto';
+    const mockMimeType = `x-scheme-handler/${mockScheme}`;
+
+    let xdgDir: string;
+    let xdgDataHome: string;
+    let xdgConfigHome: string;
+    let xdgBinDir: string;
+
+    before(() => {
+      if (process.platform !== 'linux') {
+        return;
+      }
+
+      ({ xdgDir, xdgDataHome, xdgConfigHome, xdgBinDir } = makeXdgMockDirectories('electron-xdg-app-info-'));
+      writeProtocolAssociation(
+        xdgDataHome,
+        xdgConfigHome,
+        desktopFileId,
+        mockDisplayName,
+        '/usr/bin/true %u',
+        mockMimeType,
+        fixtureIcon
+      );
+    });
+
+    after(() => {
+      if (process.platform === 'linux') {
+        fs.rmSync(xdgDir, { recursive: true, force: true });
+      }
+    });
+
     it('returns promise rejection for a bogus protocol', async function () {
       await expect(app.getApplicationInfoForProtocol('bogus-protocol://')).to.eventually.be.rejectedWith(
         'Unable to retrieve installation path to app'
@@ -1607,10 +1606,45 @@ describe('app module', () => {
     });
 
     it('returns resolved promise with appPath, displayName and icon', async function () {
+      if (process.platform === 'linux') {
+        const appInfo = await spawnProtocolInfoWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome);
+        expect(appInfo.name).to.equal(mockDisplayName);
+        expect(appInfo.path).to.equal('/usr/bin/true');
+        expect(appInfo.hasIcon).to.equal(true);
+        return;
+      }
+
       const appInfo = await app.getApplicationInfoForProtocol('https://');
       expect(appInfo.path).not.to.be.undefined();
       expect(appInfo.name).not.to.be.undefined();
       expect(appInfo.icon).not.to.be.undefined();
+    });
+
+    ifit(process.platform === 'linux')('resolves an executable name via PATH', async () => {
+      const pathLookupExecutable = 'mock-browser';
+      const pathLookupExecutablePath = path.join(xdgBinDir, pathLookupExecutable);
+      const pathLookupDisplayName = 'Mock Browser PATH';
+      const pathLookupScheme = 'mockproto-path';
+      const pathLookupMimeType = `x-scheme-handler/${pathLookupScheme}`;
+
+      fs.writeFileSync(pathLookupExecutablePath, '#!/bin/sh\nexit 0\n');
+      fs.chmodSync(pathLookupExecutablePath, 0o755);
+      writeProtocolAssociation(
+        xdgDataHome,
+        xdgConfigHome,
+        'mock-browser-path.desktop',
+        pathLookupDisplayName,
+        `${pathLookupExecutable} %u`,
+        pathLookupMimeType,
+        fixtureIcon
+      );
+
+      const appInfo = await spawnProtocolInfoWithXdgMock(`${pathLookupScheme}://`, xdgDataHome, xdgConfigHome, {
+        PATH: [xdgBinDir, process.env.PATH].filter(Boolean).join(':')
+      });
+      expect(appInfo.name).to.equal(pathLookupDisplayName);
+      expect(appInfo.path).to.equal(pathLookupExecutablePath);
+      expect(appInfo.hasIcon).to.equal(true);
     });
   });
 
@@ -2157,6 +2191,8 @@ describe('app module', () => {
   });
 
   describe('commandLine.hasSwitch', () => {
+    afterEach(() => app.commandLine.removeSwitch('foobar1'));
+
     it('returns true when present', () => {
       app.commandLine.appendSwitch('foobar1');
       expect(app.commandLine.hasSwitch('foobar1')).to.equal(true);
@@ -2180,6 +2216,11 @@ describe('app module', () => {
   });
 
   describe('commandLine.getSwitchValue', () => {
+    afterEach(() => {
+      app.commandLine.removeSwitch('foobar');
+      app.commandLine.removeSwitch('foobar1');
+    });
+
     it('returns the value when present', () => {
       app.commandLine.appendSwitch('foobar', 'æøåü');
       expect(app.commandLine.getSwitchValue('foobar')).to.equal('æøåü');

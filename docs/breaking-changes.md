@@ -36,6 +36,17 @@ const p3Bitmap = image.toBitmap({
 })
 ```
 
+### Behavior Changed: `chrome.scripting` CSS injection matches more fallback frames
+
+Extensions using `chrome.scripting.insertCSS()` or `chrome.scripting.removeCSS()`
+now follow Chrome's behavior when Electron cannot match a frame's URL directly,
+such as with `about:blank` or `data:` frames. If the extension has access to the
+page that created the frame, CSS may now be inserted into or removed from those
+fallback frames as well.
+
+Apps or extensions that relied on Electron skipping those frames should narrow their
+injection target, frame IDs, or match patterns.
+
 ### Behavior Changed: Dialog methods default to Downloads directory
 
 The `defaultPath` option for the following methods now defaults to the user's Downloads folder (or their home directory if Downloads doesn't exist) when not explicitly provided:
@@ -129,6 +140,19 @@ When calling `Session.clearStorageData(options)`, the `options.quotas` object is
 [removed](https://chromium-review.googlesource.com/c/chromium/src/+/7596126)
 from upstream Chromium.
 
+### Deprecated: Passing only an array `hslShift` to `nativeImage.createFromNamedImage()`
+
+Passing only an array `hslShift` to `nativeImage.createFromNamedImage()` is deprecated. You should now pass an options object with an `hslShift` property instead:
+
+```js
+// Deprecated
+nativeImage.createFromNamedImage(imageName, [0, 1, -1])
+// Replace with
+nativeImage.createFromNamedImage(imageName, {
+  hslShift: [0, 1, -1]
+})
+```
+
 ## Planned Breaking API Changes (41.0)
 
 ### Behavior Changed: PDFs no longer create a separate WebContents
@@ -145,6 +169,12 @@ When a cookie is deleted, the change cause remains `explicit`.
 When the cookie being set is identical to an existing one (same name, domain, path, and value, with no actual changes), the change cause is `inserted-no-change-overwrite`.
 When the value of the cookie being set remains unchanged but some of its attributes are updated, such as the expiration attribute, the change cause will be `inserted-no-value-change-overwrite`.
 
+### Deprecated: `showHiddenFiles` in Dialogs on Linux
+
+This property will still be honored on macOS and Windows, but support on Linux
+will be removed in a future version of Electron. GTK intends for this to be a user choice rather
+than an app choice and has removed the API to do this programmatically.
+
 ## Planned Breaking API Changes (40.0)
 
 ### Deprecated: `clipboard` API access from renderer processes
@@ -157,12 +187,6 @@ your preload script and expose it using the [contextBridge](https://www.electron
 
 Debug symbols for MacOS (dSYM) now use xz compression in order to handle larger file sizes. `dsym.zip` files are now
 `dsym.tar.xz` files. End users using debug symbols may need to update their zip utilities.
-
-### Deprecated: `showHiddenFiles` in Dialogs on Linux
-
-This property will still be honored on macOS and Windows, but support on Linux
-will be removed in Electron 42. GTK intends for this to be a user choice rather
-than an app choice and has removed the API to do this programmatically.
 
 ## Planned Breaking API Changes (39.0)
 

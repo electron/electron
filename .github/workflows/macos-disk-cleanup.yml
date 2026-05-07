@@ -29,6 +29,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           sparse-checkout: |
+            .github/actions/install-homebrew
             .github/actions/free-space-macos
           sparse-checkout-cone-mode: false
 
@@ -40,6 +41,9 @@ jobs:
           df -h /
           FREE_SPACE_BEFORE=$(df -k / | tail -1 | awk '{print $4}')
           echo "free_kb=$FREE_SPACE_BEFORE" >> $GITHUB_OUTPUT
+
+      - name: Install pinned Homebrew
+        uses: ./.github/actions/install-homebrew
 
       - name: Free Space on macOS
         uses: ./.github/actions/free-space-macos

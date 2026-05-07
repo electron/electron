@@ -138,6 +138,10 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
   return true;
 }
 
+bool DevToolsManagerDelegate::ShouldUseBundledFrontendResources() {
+  return true;
+}
+
 content::BrowserContext* DevToolsManagerDelegate::GetDefaultBrowserContext() {
   return ElectronBrowserContext::GetDefaultBrowserContext();
 }

@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 525e6f03bc7699d43dc0a2e63b4ce02fcb35e74b..c88b53e1e5c090f03d834f2dd21ad20fca6b3a5f 100644
+index 857f9f9f2184ba5de003c35d4a736cc7da8d4ecc..4022f69d525b4003890417c7c735d44da311f119 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -18,7 +18,7 @@ index 525e6f03bc7699d43dc0a2e63b4ce02fcb35e74b..c88b53e1e5c090f03d834f2dd21ad20f
  #include "base/numerics/safe_conversions.h"
 +#include "build/branding_buildflags.h"
  #include "chrome/browser/picture_in_picture/picture_in_picture_bounds_cache.h"
- #include "chrome/browser/ui/browser_navigator_params.h"
+ #include "chrome/browser/ui/navigator/browser_navigator_params.h"
  #include "content/public/browser/document_picture_in_picture_window_controller.h"
 @@ -32,8 +33,10 @@
  #include "base/task/sequenced_task_runner.h"
@@ -83,10 +83,10 @@ index 525e6f03bc7699d43dc0a2e63b4ce02fcb35e74b..c88b53e1e5c090f03d834f2dd21ad20f
  
  PictureInPictureOcclusionTracker*
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 562ff4ad0a37279baf6392e14a46d950cd3ff8ae..e7c60d83c59a499e36a69588a10ffebcdd17e7d6 100644
+index 15b35792469aca29900025733fbcc9d62d7d1d62..1fe989a3191e491de89d654023911bd72bf6ff3f 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -449,11 +449,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -450,11 +450,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
  
  #endif  // BUILDFLAG(IS_WIN)
  
