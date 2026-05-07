@@ -1643,6 +1643,7 @@ describe('session module', () => {
           callback({ url: `${url}:${port}` });
         };
         protocol.registerHttpProtocol(protocolName, handler);
+        defer(() => protocol.unregisterProtocol(protocolName));
         const w = new BrowserWindow({ show: false });
         const willDownload = once(w.webContents.session, 'will-download');
         w.webContents.downloadURL(`${protocolName}://item`);
