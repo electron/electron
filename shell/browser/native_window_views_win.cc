@@ -677,6 +677,24 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
 
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
 
+    // While forwarding was active, SubclassProc swallowed WM_MOUSELEAVE
+    // messages to prevent flickering.  If the cursor has since moved outside
+    // the window, Chromium's internal hover state is now stale (the renderer
+    // still thinks the cursor is inside, keeping :hover CSS active).  Post a
+    // synthetic WM_MOUSELEAVE to correct it.
+    // See https://github.com/electron/electron/issues/51521
+    POINT cursor_pos;
+    if (::GetCursorPos(&cursor_pos)) {
+      RECT client_rect;
+      if (::GetClientRect(legacy_window_, &client_rect)) {
+        POINT client_cursor = cursor_pos;
+        ::ScreenToClient(legacy_window_, &client_cursor);
+        if (!::PtInRect(&client_rect, client_cursor)) {
+          ::PostMessage(legacy_window_, WM_MOUSELEAVE, 0, 0);
+        }
+      }
+    }
+
     if (forwarding_windows_->empty()) {
       // If UnhookWindowsHookEx fails, the hook is still installed in the
       // system. Leave |mouse_hook_| pointing at the existing hook so that a

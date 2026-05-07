@@ -7476,6 +7476,39 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  // Regression test for https://github.com/electron/electron/issues/51521
+  ifdescribe(process.platform === 'win32')('setIgnoreMouseEvents with forward', () => {
+    afterEach(closeAllWindows);
+
+    it('should not throw when toggling ignore with forward option', () => {
+      const w = new BrowserWindow({ show: false });
+
+      // Enable ignore with forwarding — should not throw.
+      expect(() => {
+        w.setIgnoreMouseEvents(true, { forward: true });
+      }).to.not.throw();
+
+      // Disable ignore — this previously left hover state stuck.
+      expect(() => {
+        w.setIgnoreMouseEvents(false);
+      }).to.not.throw();
+
+      w.close();
+    });
+
+    it('should allow rapid toggling without crash', () => {
+      const w = new BrowserWindow({ show: false });
+
+      // Rapid toggle should not crash or throw.
+      for (let i = 0; i < 10; i++) {
+        w.setIgnoreMouseEvents(true, { forward: true });
+        w.setIgnoreMouseEvents(false);
+      }
+
+      w.close();
+    });
+  });
+
   describe('"backgroundColor" option', () => {
     afterEach(closeAllWindows);
 
