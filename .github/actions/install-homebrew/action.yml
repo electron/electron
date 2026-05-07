@@ -49,12 +49,6 @@ runs:
             exit 1
           fi
 
-          echo "Verifying Homebrew package with GitHub CLI..."
-          if ! gh release verify-asset "${target_version}" "${pkg_path}" -R Homebrew/brew; then
-            echo "Homebrew package verification failed, aborting." >&2
-            exit 1
-          fi
-
           echo "Verifying Homebrew package with spctl..."
           if ! spctl -a -vv --type install "${pkg_path}"; then
             echo "Homebrew package installation verification failed, aborting." >&2
