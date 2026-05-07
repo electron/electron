@@ -34,10 +34,33 @@ ElectronWebAuthenticationDelegate::touch_id_keychain_access_group() {
 }
 
 // static
+bool& ElectronWebAuthenticationDelegate::platform_passkeys_enabled() {
+  static bool value = false;
+  return value;
+}
+
+// static
 void ElectronWebAuthenticationDelegate::SetTouchIdKeychainAccessGroup(
     std::string access_group) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   touch_id_keychain_access_group() = std::move(access_group);
+}
+
+// static
+bool ElectronWebAuthenticationDelegate::IsTouchIdConfigured() {
+  return !touch_id_keychain_access_group().empty();
+}
+
+// static
+void ElectronWebAuthenticationDelegate::SetPlatformPasskeysEnabled(
+    bool enabled) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  platform_passkeys_enabled() = enabled;
+}
+
+// static
+bool ElectronWebAuthenticationDelegate::IsPlatformPasskeysEnabled() {
+  return platform_passkeys_enabled();
 }
 
 std::optional<content::WebAuthenticationDelegate::TouchIdAuthenticatorConfig>

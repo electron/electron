@@ -629,7 +629,61 @@ Emitted after `USBDevice.forget()` has been called.  This event can be used
 to help maintain persistent storage of permissions when
 `setDevicePermissionHandler` is used.
 
+#### Event: 'select-webauthn-authenticator' _macOS_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51563
+```
+-->
+
+Returns:
+
+* `event` Event\<\>
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `authenticators` string[] - The available authenticator names. Possible
+    values are `'touchID'` and `'platformPasskeys'`.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+* `callback` Function
+  * `authenticatorName` string | null (optional)
+
+Emitted when both `touchID` and `platformPasskeys` are configured via
+[`app.configureWebAuthn`](app.md#appconfigurewebauthnoptions-macos) and a
+WebAuthn request needs to choose which platform authenticator to use. `callback`
+should be called with one of the names from `event.authenticators`; passing no
+arguments or a name that does not match will cancel the request and the page
+will receive a `NotAllowedError`. If no listener is registered, `platformPasskeys`
+is used by default. If only one authenticator is available for the request, this
+event is not emitted and that authenticator is used automatically.
+
+```js
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  app.configureWebAuthn({
+    touchID: { keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn' },
+    platformPasskeys: true
+  })
+
+  const win = new BrowserWindow()
+
+  win.webContents.session.on('select-webauthn-authenticator', (event, callback) => {
+    // Use the first available authenticator for the request.
+    callback(event.authenticators[0])
+  })
+})
+```
+
 #### Event: 'select-webauthn-account'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51563
+```
+-->
 
 Returns:
 
