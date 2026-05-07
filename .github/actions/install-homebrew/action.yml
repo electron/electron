@@ -8,7 +8,7 @@ inputs:
   sha256:
     description: 'SHA256 checksum of the Homebrew package'
     required: false
-    default: 'sha256:sha256:ece2e1c1f8e34683bd29b324f70c405b48c210c47f2b71c06131fde5492f2462'
+    default: 'ece2e1c1f8e34683bd29b324f70c405b48c210c47f2b71c06131fde5492f2462'
 runs:
   using: 'composite'
   steps:
@@ -43,8 +43,9 @@ runs:
             --output "${pkg_path}" \
             "${download_url}"
 
+          expected_sha256='${{ inputs.sha256 }}'
           echo "Verifying Homebrew package SHA256 checksum..."
-          if ! echo "${{ inputs.sha256 }}" | shasum -a 256 -c; then
+          if ! printf '%s  %s\n' "${expected_sha256}" "${pkg_path}" | shasum -a 256 -c; then
             echo "Homebrew package SHA256 checksum failed, aborting." >&2
             exit 1
           fi
