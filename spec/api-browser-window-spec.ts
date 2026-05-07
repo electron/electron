@@ -2625,6 +2625,52 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  ifdescribe(process.platform !== 'darwin')('enableMenuBarAltFocus state', () => {
+    afterEach(closeAllWindows);
+
+    describe('for properties', () => {
+      it('defaults to true', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.enableMenuBarAltFocus).to.be.true('enableMenuBarAltFocus');
+      });
+
+      it('can be set with enableMenuBarAltFocus constructor option', () => {
+        const w = new BrowserWindow({ show: false, enableMenuBarAltFocus: false });
+        expect(w.enableMenuBarAltFocus).to.be.false('enableMenuBarAltFocus');
+      });
+
+      it('can be changed', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.enableMenuBarAltFocus).to.be.true('enableMenuBarAltFocus');
+        w.enableMenuBarAltFocus = false;
+        expect(w.enableMenuBarAltFocus).to.be.false('enableMenuBarAltFocus');
+        w.enableMenuBarAltFocus = true;
+        expect(w.enableMenuBarAltFocus).to.be.true('enableMenuBarAltFocus');
+      });
+    });
+
+    describe('for functions', () => {
+      it('defaults to true', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.isMenuBarAltFocusEnabled()).to.be.true('enableMenuBarAltFocus');
+      });
+
+      it('can be set with enableMenuBarAltFocus constructor option', () => {
+        const w = new BrowserWindow({ show: false, enableMenuBarAltFocus: false });
+        expect(w.isMenuBarAltFocusEnabled()).to.be.false('enableMenuBarAltFocus');
+      });
+
+      it('can be changed', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.isMenuBarAltFocusEnabled()).to.be.true('enableMenuBarAltFocus');
+        w.setEnableMenuBarAltFocus(false);
+        expect(w.isMenuBarAltFocusEnabled()).to.be.false('enableMenuBarAltFocus');
+        w.setEnableMenuBarAltFocus(true);
+        expect(w.isMenuBarAltFocusEnabled()).to.be.true('enableMenuBarAltFocus');
+      });
+    });
+  });
+
   describe('BrowserWindow.capturePage(rect)', () => {
     afterEach(closeAllWindows);
 

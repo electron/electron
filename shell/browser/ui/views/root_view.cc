@@ -79,6 +79,10 @@ void RootView::SetAutoHideMenuBar(bool auto_hide) {
   menu_bar_autohide_ = auto_hide;
 }
 
+void RootView::SetEnableMenuBarAltFocus(bool enable) {
+  enable_alt_focus_ = enable;
+}
+
 void RootView::SetMenuBarVisibility(bool visible) {
   if (!window_->content_view() || !menu_bar_ || menu_bar_visible_ == visible)
     return;
@@ -128,15 +132,19 @@ void RootView::HandleKeyEvent(const input::NativeWebKeyboardEvent& event) {
              IsAltKey(event) && menu_bar_alt_pressed_) {
     // When a single Alt is released right after a Alt is pressed:
     menu_bar_alt_pressed_ = false;
-    if (menu_bar_autohide_)
-      SetMenuBarVisibility(!menu_bar_visible_);
 
-    View* focused_view = GetFocusManager()->GetFocusedView();
-    last_focused_view_tracker_.SetView(focused_view);
-    if (menu_bar_visible_) {
-      menu_bar_->RequestFocus();
-      // Show accelerators when menu bar is focused
-      menu_bar_->SetAcceleratorVisibility(true);
+    // Only toggle menu bar focus if alt focus is enabled.
+    if (enable_alt_focus_) {
+      if (menu_bar_autohide_)
+        SetMenuBarVisibility(!menu_bar_visible_);
+
+      View* focused_view = GetFocusManager()->GetFocusedView();
+      last_focused_view_tracker_.SetView(focused_view);
+      if (menu_bar_visible_) {
+        menu_bar_->RequestFocus();
+        // Show accelerators when menu bar is focused
+        menu_bar_->SetAcceleratorVisibility(true);
+      }
     }
   } else {
     // When any other keys except single Alt have been pressed/released:

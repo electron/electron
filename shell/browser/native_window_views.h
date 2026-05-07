@@ -146,6 +146,8 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarAutoHide() const override;
   void SetMenuBarVisibility(bool visible) override;
   bool IsMenuBarVisible() const override;
+  void SetEnableMenuBarAltFocus(bool enable) override;
+  bool IsMenuBarAltFocusEnabled() const override;
   bool IsSnapped() const override;
   void SetBackgroundMaterial(const std::string& type) override;
 

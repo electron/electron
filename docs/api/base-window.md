@@ -420,6 +420,12 @@ A `boolean` property that determines whether the window menu bar should hide its
 If the menu bar is already visible, setting this property to `true` won't
 hide it immediately.
 
+#### `win.enableMenuBarAltFocus` _Linux_ _Windows_
+
+A `boolean` property that determines whether pressing the `Alt` key alone will toggle focus on the menu bar. Default is `true`.
+
+When set to `false`, pressing `Alt` will no longer steal focus from the web content to the menu bar. This is useful for applications like terminal emulators or code editors where `Alt` key presses should be handled by the web content.
+
 #### `win.simpleFullScreen`
 
 A `boolean` property that determines whether the window is in simple (pre-Lion) fullscreen mode.

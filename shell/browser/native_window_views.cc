@@ -213,6 +213,9 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   if (bool val; options.Get(options::kAutoHideMenuBar, &val))
     root_view_.SetAutoHideMenuBar(val);
 
+  if (bool val; options.Get(options::kEnableMenuBarAltFocus, &val))
+    root_view_.SetEnableMenuBarAltFocus(val);
+
 #if BUILDFLAG(IS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
   // resized, and it should be set before window is created.
@@ -1564,6 +1567,14 @@ void NativeWindowViews::SetMenuBarVisibility(bool visible) {
 
 bool NativeWindowViews::IsMenuBarVisible() const {
   return root_view_.is_menu_bar_visible();
+}
+
+void NativeWindowViews::SetEnableMenuBarAltFocus(bool enable) {
+  root_view_.SetEnableMenuBarAltFocus(enable);
+}
+
+bool NativeWindowViews::IsMenuBarAltFocusEnabled() const {
+  return root_view_.is_menu_bar_alt_focus_enabled();
 }
 
 bool NativeWindowViews::IsSnapped() const {

@@ -33,6 +33,15 @@ Object.defineProperty(BaseWindow.prototype, 'autoHideMenuBar', {
   }
 });
 
+Object.defineProperty(BaseWindow.prototype, 'enableMenuBarAltFocus', {
+  get: function () {
+    return this.isMenuBarAltFocusEnabled();
+  },
+  set: function (enable) {
+    this.setEnableMenuBarAltFocus(enable);
+  }
+});
+
 Object.defineProperty(BaseWindow.prototype, 'visibleOnAllWorkspaces', {
   get: function () {
     return this.isVisibleOnAllWorkspaces();

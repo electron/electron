@@ -228,6 +228,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsMenuBarAutoHide() const;
   void SetMenuBarVisibility(bool visible);
   bool IsMenuBarVisible() const;
+  void SetEnableMenuBarAltFocus(bool enable);
+  bool IsMenuBarAltFocusEnabled() const;
   void SetAspectRatio(double aspect_ratio, gin::Arguments* args);
   void PreviewFile(const std::string& path, gin::Arguments* args);
   void CloseFilePreview();

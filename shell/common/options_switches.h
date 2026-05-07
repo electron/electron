@@ -75,6 +75,9 @@ inline constexpr std::string_view kTabbingIdentifier = "tabbingIdentifier";
 // The menu bar is hidden unless "Alt" is pressed.
 inline constexpr std::string_view kAutoHideMenuBar = "autoHideMenuBar";
 
+// Whether pressing the Alt key toggles focus on the menu bar.
+inline constexpr std::string_view kEnableMenuBarAltFocus = "enableMenuBarAltFocus";
+
 // Enable window to be resized larger than screen.
 inline constexpr std::string_view kEnableLargerThanScreen =
     "enableLargerThanScreen";

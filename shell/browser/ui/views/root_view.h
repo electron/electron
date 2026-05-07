@@ -36,6 +36,8 @@ class RootView : public views::View {
   int GetMenuBarHeight() const;
   void SetAutoHideMenuBar(bool auto_hide);
   bool is_menu_bar_auto_hide() const { return menu_bar_autohide_; }
+  void SetEnableMenuBarAltFocus(bool enable);
+  bool is_menu_bar_alt_focus_enabled() const { return enable_alt_focus_; }
   void SetMenuBarVisibility(bool visible);
   bool is_menu_bar_visible() const { return menu_bar_visible_; }
   void HandleKeyEvent(const input::NativeWebKeyboardEvent& event);
@@ -61,6 +63,7 @@ class RootView : public views::View {
   bool menu_bar_autohide_ = false;
   bool menu_bar_visible_ = false;
   bool menu_bar_alt_pressed_ = false;
+  bool enable_alt_focus_ = true;
 
   // Main view area.
   const raw_ref<views::View> main_view_;

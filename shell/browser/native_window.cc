@@ -441,6 +441,10 @@ bool NativeWindow::IsMenuBarVisible() const {
   return true;
 }
 
+bool NativeWindow::IsMenuBarAltFocusEnabled() const {
+  return true;
+}
+
 void NativeWindow::SetAspectRatio(double aspect_ratio,
                                   const gfx::Size& extra_size) {
   aspect_ratio_ = aspect_ratio;

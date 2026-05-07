@@ -953,6 +953,14 @@ bool BaseWindow::IsMenuBarVisible() const {
   return window_->IsMenuBarVisible();
 }
 
+void BaseWindow::SetEnableMenuBarAltFocus(bool enable) {
+  window_->SetEnableMenuBarAltFocus(enable);
+}
+
+bool BaseWindow::IsMenuBarAltFocusEnabled() const {
+  return window_->IsMenuBarAltFocusEnabled();
+}
+
 void BaseWindow::SetAspectRatio(const double aspect_ratio,
                                 gin::Arguments* const args) {
   gfx::Size extra_size;
@@ -1299,6 +1307,10 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isMenuBarAutoHide", &BaseWindow::IsMenuBarAutoHide)
       .SetMethod("setMenuBarVisibility", &BaseWindow::SetMenuBarVisibility)
       .SetMethod("isMenuBarVisible", &BaseWindow::IsMenuBarVisible)
+      .SetMethod("setEnableMenuBarAltFocus",
+                 &BaseWindow::SetEnableMenuBarAltFocus)
+      .SetMethod("isMenuBarAltFocusEnabled",
+                 &BaseWindow::IsMenuBarAltFocusEnabled)
       .SetMethod("setAspectRatio", &BaseWindow::SetAspectRatio)
       .SetMethod("previewFile", &BaseWindow::PreviewFile)
       .SetMethod("closeFilePreview", &BaseWindow::CloseFilePreview)

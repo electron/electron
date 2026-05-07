@@ -131,6 +131,7 @@ const allowedWindowOptions = new Set<string>([
   'modal',
   'acceptFirstMouse',
   'autoHideMenuBar',
+  'enableMenuBarAltFocus',
   'enableLargerThanScreen',
   'paintWhenInitiallyHidden',
   'roundedCorners',

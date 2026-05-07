@@ -270,6 +270,8 @@ class NativeWindow : public views::WidgetDelegate {
   virtual bool IsMenuBarAutoHide() const;
   virtual void SetMenuBarVisibility(bool visible) {}
   virtual bool IsMenuBarVisible() const;
+  virtual void SetEnableMenuBarAltFocus(bool enable) {}
+  virtual bool IsMenuBarAltFocusEnabled() const;
 
   virtual bool IsSnapped() const;
 

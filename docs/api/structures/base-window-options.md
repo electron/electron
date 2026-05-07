@@ -60,6 +60,8 @@
   Default is `false`.
 * `autoHideMenuBar` boolean (optional) _Linux_ _Windows_ - Auto hide the menu bar
   unless the `Alt` key is pressed. Default is `false`.
+* `enableMenuBarAltFocus` boolean (optional) _Linux_ _Windows_ - Whether pressing
+  the `Alt` key alone toggles focus on the menu bar. Default is `true`.
 * `enableLargerThanScreen` boolean (optional) _macOS_ - Enable the window to
   be resized larger than screen. Only relevant for macOS, as other OSes
   allow larger-than-screen windows by default. Default is `false`.
