@@ -53,7 +53,7 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
   if (!extension)
     return;
 
-  const MimeTypesHandler* handler = MimeTypesHandler::GetHandler(extension);
+  const MimeTypesHandler* handler = MimeTypesHandler::Get(*extension);
   if (!handler->HasPlugin())
     return;
 
