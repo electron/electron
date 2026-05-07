@@ -7494,5 +7494,22 @@ describe('BrowserWindow module', () => {
       const screenCapture = new ScreenCapture(display);
       await screenCapture.expectColorAtCenterMatches(HexColors.BLUE);
     });
+
+    // Regression test for https://github.com/electron/electron/issues/51337
+    it('should not mutate a shared webPreferences object', () => {
+      const sharedWebPreferences: Record<string, unknown> = {};
+
+      const w = new BrowserWindow({
+        show: false,
+        backgroundColor: '#00f',
+        webPreferences: sharedWebPreferences
+      });
+
+      // The original webPreferences object should not have any new
+      // enumerable properties added by the BrowserWindow constructor.
+      expect(Object.keys(sharedWebPreferences)).to.have.lengthOf(0);
+
+      w.close();
+    });
   });
 });

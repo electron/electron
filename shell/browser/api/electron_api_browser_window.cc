@@ -30,8 +30,31 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     : BaseWindow(args->isolate(), options) {
   // Use options.webPreferences in WebContents.
   v8::Isolate* isolate = args->isolate();
+
+  // Clone the user's webPreferences to avoid mutating the original object.
+  // Without this, BrowserWindow-specific options like backgroundColor get
+  // written into the user's object via SetHidden(), causing them to leak
+  // into other constructors that reuse the same webPreferences reference.
+  // See https://github.com/electron/electron/issues/51337
+  gin_helper::Dictionary user_web_preferences;
+  options.Get(options::kWebPreferences, &user_web_preferences);
+
   auto web_preferences = gin_helper::Dictionary::CreateEmpty(isolate);
-  options.Get(options::kWebPreferences, &web_preferences);
+  if (!user_web_preferences.IsEmpty()) {
+    v8::Local<v8::Context> context = isolate->GetCurrentContext();
+    v8::Local<v8::Array> keys =
+        user_web_preferences.GetHandle()
+            ->GetOwnPropertyNames(context)
+            .ToLocalChecked();
+    for (uint32_t i = 0; i < keys->Length(); i++) {
+      v8::Local<v8::Value> key = keys->Get(context, i).ToLocalChecked();
+      v8::Local<v8::Value> value =
+          user_web_preferences.GetHandle()
+              ->Get(context, key)
+              .ToLocalChecked();
+      web_preferences.GetHandle()->Set(context, key, value).Check();
+    }
+  }
 
   // Copy the backgroundColor to webContents.
   std::string color;
