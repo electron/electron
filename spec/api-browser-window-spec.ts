@@ -4372,6 +4372,9 @@ describe('BrowserWindow module', () => {
           throw error;
         });
         process.env.sandboxmain = 'foo';
+        defer(() => {
+          delete process.env.sandboxmain;
+        });
         w.loadFile(path.join(fixtures, 'api', 'preload.html'));
         const [, test] = await once(ipcMain, 'answer');
         expect(test.hasCrash).to.be.true('has crash');
