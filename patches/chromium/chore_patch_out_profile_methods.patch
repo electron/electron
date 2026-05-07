@@ -114,10 +114,10 @@ index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd
  
  ProfileSelection ProfileSelections::GetProfileSelection(
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index cf9cf84da456314804083c902859a0965425479f..779bdd17641c1808ff2c707b3de5f6c9b331ca2d 100644
+index c510b707a08791998176a763a564206e827d89c5..684584da69fc99db8c72e0b3fd560529df2b0791 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -20,8 +20,10 @@
+@@ -21,8 +21,10 @@
  #include "base/synchronization/waitable_event.h"
  #include "base/values.h"
  #include "build/build_config.h"
@@ -128,7 +128,7 @@ index cf9cf84da456314804083c902859a0965425479f..779bdd17641c1808ff2c707b3de5f6c9
  #include "chrome/browser/spellchecker/spellcheck_factory.h"
  #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
  #include "components/language/core/browser/pref_names.h"
-@@ -67,7 +69,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
+@@ -68,7 +70,10 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
  // Only record spelling-configuration metrics for profiles in which the user
  // can configure spelling.
  bool RecordSpellingConfigurationMetrics(content::BrowserContext* context) {
