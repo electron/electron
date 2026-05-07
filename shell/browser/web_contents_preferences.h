@@ -9,7 +9,6 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "electron/buildflags/buildflags.h"
