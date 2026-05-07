@@ -192,6 +192,22 @@ class Dictionary : public gin::Dictionary {
 
   bool IsEmpty() const { return isolate() == nullptr || GetHandle().IsEmpty(); }
 
+  // Returns a shallow copy of this dictionary's own enumerable properties.
+  [[nodiscard]] Dictionary ShallowClone() const {
+    v8::Isolate* const iso = isolate();
+    v8::Local<v8::Context> context = iso->GetCurrentContext();
+    v8::Local<v8::Object> src = GetHandle();
+    v8::Local<v8::Object> dst = v8::Object::New(iso);
+    v8::Local<v8::Array> keys =
+        src->GetOwnPropertyNames(context).ToLocalChecked();
+    for (uint32_t i = 0; i < keys->Length(); i++) {
+      v8::Local<v8::Value> key = keys->Get(context, i).ToLocalChecked();
+      v8::Local<v8::Value> value = src->Get(context, key).ToLocalChecked();
+      dst->Set(context, key, value).Check();
+    }
+    return Dictionary{iso, dst};
+  }
+
   bool IsEmptyObject() const {
     if (IsEmpty())
       return true;

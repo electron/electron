@@ -207,6 +207,8 @@ gin_helper::WrappableBase* WebContentsView::New(gin::Arguments* const args) {
 
   if (web_preferences.IsEmpty())
     web_preferences = gin_helper::Dictionary::CreateEmpty(isolate);
+  // Clone to avoid mutating the caller's object.
+  web_preferences = web_preferences.ShallowClone();
   if (!web_preferences.Has(options::kShow))
     web_preferences.Set(options::kShow, false);
 

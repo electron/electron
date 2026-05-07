@@ -32,6 +32,8 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   v8::Isolate* isolate = args->isolate();
   auto web_preferences = gin_helper::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
+  // Clone to avoid mutating the caller's object.
+  web_preferences = web_preferences.ShallowClone();
 
   // Copy the backgroundColor to webContents.
   std::string color;
