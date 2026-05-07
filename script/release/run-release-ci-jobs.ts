@@ -12,11 +12,7 @@ const octokit = new Octokit({
 const GH_ACTIONS_PIPELINE_URL = 'https://github.com/electron/electron/actions';
 const GH_ACTIONS_WAIT_TIME = process.env.GH_ACTIONS_WAIT_TIME ? parseInt(process.env.GH_ACTIONS_WAIT_TIME, 10) : 30000;
 
-const ghActionsPublishWorkflows = [
-  'linux-publish',
-  'macos-publish',
-  'windows-publish'
-] as const;
+const ghActionsPublishWorkflows = ['linux-publish', 'macos-publish', 'windows-publish'] as const;
 
 let jobRequestedCount = 0;
 
@@ -24,10 +20,12 @@ type GitHubActionsCallOptions = {
   ghRelease?: boolean;
   newVersion: string;
   runningPublishWorkflows?: boolean;
-}
+};
 
-async function githubActionsCall (targetBranch: string, workflowName: string, options: GitHubActionsCallOptions) {
-  console.log(`Triggering GitHub Actions to run build job: ${workflowName} on branch: ${targetBranch} with release flag.`);
+async function githubActionsCall(targetBranch: string, workflowName: string, options: GitHubActionsCallOptions) {
+  console.log(
+    `Triggering GitHub Actions to run build job: ${workflowName} on branch: ${targetBranch} with release flag.`
+  );
   const buildRequest = {
     branch: targetBranch,
     parameters: {} as Record<string, string | boolean>
@@ -70,9 +68,13 @@ async function githubActionsCall (targetBranch: string, workflowName: string, op
     const runUrl = `${GH_ACTIONS_PIPELINE_URL}/runs/${runNumber}`;
 
     if (options.runningPublishWorkflows) {
-      console.log(`GitHub Actions release workflow request for ${workflowName} successful.  Check ${runUrl} for status.`);
+      console.log(
+        `GitHub Actions release workflow request for ${workflowName} successful.  Check ${runUrl} for status.`
+      );
     } else {
-      console.log(`GitHub Actions release build workflow running at ${GH_ACTIONS_PIPELINE_URL}/runs/${runNumber} for ${workflowName}.`);
+      console.log(
+        `GitHub Actions release build workflow running at ${GH_ACTIONS_PIPELINE_URL}/runs/${runNumber} for ${workflowName}.`
+      );
       console.log(`GitHub Actions release build request for ${workflowName} successful.  Check ${runUrl} for status.`);
     }
   } catch (err) {
@@ -80,7 +82,7 @@ async function githubActionsCall (targetBranch: string, workflowName: string, op
   }
 }
 
-async function getGitHubActionsRun (workflowName: string, headCommit: string) {
+async function getGitHubActionsRun(workflowName: string, headCommit: string) {
   let runNumber = 0;
   let actionRun;
   while (runNumber === 0) {
@@ -91,7 +93,9 @@ async function getGitHubActionsRun (workflowName: string, headCommit: string) {
     });
 
     if (!actionsRuns.data.workflow_runs.length) {
-      console.log(`No current workflow_runs found for ${workflowName}, response was: ${actionsRuns.data.workflow_runs}`);
+      console.log(
+        `No current workflow_runs found for ${workflowName}, response was: ${actionsRuns.data.workflow_runs}`
+      );
       runNumber = -1;
       break;
     }
@@ -128,23 +132,29 @@ async function getGitHubActionsRun (workflowName: string, headCommit: string) {
           break;
         }
       }
-      await new Promise(resolve => setTimeout(resolve, GH_ACTIONS_WAIT_TIME));
+      await new Promise((resolve) => setTimeout(resolve, GH_ACTIONS_WAIT_TIME));
     }
   }
   return runNumber;
 }
 
 type BuildGHActionsOptions = {
-  job?: typeof ghActionsPublishWorkflows[number];
+  job?: (typeof ghActionsPublishWorkflows)[number];
   arch?: string;
 } & GitHubActionsCallOptions;
 
-async function buildGHActions (targetBranch: string, options: BuildGHActionsOptions) {
+async function buildGHActions(targetBranch: string, options: BuildGHActionsOptions) {
   if (options.job) {
-    assert(ghActionsPublishWorkflows.includes(options.job), `Unknown GitHub Actions workflow name: ${options.job}. Valid values are: ${ghActionsPublishWorkflows}.`);
+    assert(
+      ghActionsPublishWorkflows.includes(options.job),
+      `Unknown GitHub Actions workflow name: ${options.job}. Valid values are: ${ghActionsPublishWorkflows}.`
+    );
     await githubActionsCall(targetBranch, options.job, options);
   } else {
-    assert(!options.arch, 'Cannot provide a single architecture while building all workflows, please specify a single workflow via --workflow');
+    assert(
+      !options.arch,
+      'Cannot provide a single architecture while building all workflows, please specify a single workflow via --workflow'
+    );
     options.runningPublishWorkflows = true;
     for (const job of ghActionsPublishWorkflows) {
       await githubActionsCall(targetBranch, job, options);
@@ -152,13 +162,15 @@ async function buildGHActions (targetBranch: string, options: BuildGHActionsOpti
   }
 }
 
-type RunReleaseOptions = ({
-  ci: 'GitHubActions'
-} & BuildGHActionsOptions) | ({
-  ci: undefined,
-} & BuildGHActionsOptions);
+type RunReleaseOptions =
+  | ({
+      ci: 'GitHubActions';
+    } & BuildGHActionsOptions)
+  | ({
+      ci: undefined;
+    } & BuildGHActionsOptions);
 
-export async function runReleaseCIJobs (targetBranch: string, options: RunReleaseOptions) {
+export async function runReleaseCIJobs(targetBranch: string, options: RunReleaseOptions) {
   if (options.ci) {
     switch (options.ci) {
       case 'GitHubActions': {
@@ -171,9 +183,7 @@ export async function runReleaseCIJobs (targetBranch: string, options: RunReleas
       }
     }
   } else {
-    await Promise.all([
-      buildGHActions(targetBranch, options)
-    ]);
+    await Promise.all([buildGHActions(targetBranch, options)]);
   }
   console.log(`${jobRequestedCount} jobs were requested.`);
 }

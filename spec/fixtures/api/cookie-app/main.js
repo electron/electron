@@ -6,17 +6,19 @@ app.whenReady().then(async function () {
   const name = 'test';
   const value = 'true';
 
-  const set = () => persistentSession.cookies.set({
-    url,
-    name,
-    value,
-    expirationDate: Math.floor((Date.now() + 60000) / 1000),
-    sameSite: 'strict'
-  });
+  const set = () =>
+    persistentSession.cookies.set({
+      url,
+      name,
+      value,
+      expirationDate: Math.floor((Date.now() + 60000) / 1000),
+      sameSite: 'strict'
+    });
 
-  const get = () => persistentSession.cookies.get({
-    url
-  });
+  const get = () =>
+    persistentSession.cookies.get({
+      url
+    });
 
   const maybeRemove = async (pred) => {
     if (pred()) {

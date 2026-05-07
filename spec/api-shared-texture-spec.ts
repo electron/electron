@@ -13,9 +13,7 @@ const fixtures = path.resolve(__dirname, 'fixtures');
 // Tests only run properly on macOS arm64 for now
 const skip = process.platform !== 'darwin' || process.arch !== 'arm64';
 ifdescribe(!skip)('sharedTexture module', () => {
-  const {
-    nativeImage
-  } = require('electron');
+  const { nativeImage } = require('electron');
 
   const debugSpec = false;
   const dirPath = path.join(fixtures, 'api', 'shared-texture');
@@ -24,12 +22,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
   const targetImage = nativeImage.createFromPath(imagePath);
 
   describe('import shared texture produced by osr', () => {
-    const {
-      app,
-      BrowserWindow,
-      sharedTexture,
-      ipcMain
-    } = require('electron');
+    const { app, BrowserWindow, sharedTexture, ipcMain } = require('electron');
 
     afterEach(async () => {
       ipcMain.removeAllListeners();
@@ -41,9 +34,9 @@ ifdescribe(!skip)('sharedTexture module', () => {
     it('successfully imported and rendered with subtle api', async function () {
       this.timeout(debugSpec ? 100000 : 10000);
       type CapturedTextureHolder = {
-        importedSubtle: Electron.SharedTextureImportedSubtle,
-        texture: Electron.OffscreenSharedTexture
-      }
+        importedSubtle: Electron.SharedTextureImportedSubtle;
+        texture: Electron.OffscreenSharedTexture;
+      };
 
       const capturedTextures = new Map<string, CapturedTextureHolder>();
       const preloadPath = path.join(dirPath, 'subtle', 'preload.js');
@@ -73,7 +66,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
 
           osr.webContents.setFrameRate(1);
           osr.webContents.on('paint', (event: any) => {
-          // Step 1: Input source of shared texture handle.
+            // Step 1: Input source of shared texture handle.
             const texture = event.texture;
 
             if (!texture) {
@@ -95,7 +88,7 @@ ifdescribe(!skip)('sharedTexture module', () => {
           });
 
           ipcMain.on('shared-texture-done', (event: any, id: string) => {
-          // Step 12: Release the shared texture resources at main process
+            // Step 12: Release the shared texture resources at main process
             const data = capturedTextures.get(id);
             if (data) {
               capturedTextures.delete(id);
@@ -103,13 +96,13 @@ ifdescribe(!skip)('sharedTexture module', () => {
 
               // Step 13: Release the imported shared texture
               importedSubtle.release(() => {
-              // Step 14: Release the shared texture once GPU is done
+                // Step 14: Release the shared texture once GPU is done
                 texture.release();
               });
 
               // Step 15: Slightly timeout and capture the node screenshot
               setTimeout(async () => {
-              // Step 16: Compare the captured image with the target image
+                // Step 16: Compare the captured image with the target image
                 const captured = await win.webContents.capturePage({
                   x: 16,
                   y: 16,
@@ -130,12 +123,12 @@ ifdescribe(!skip)('sharedTexture module', () => {
             }
           });
 
-          ipcMain.on('verify-captured-image-done', (event: any, result: { difference: number, total: number }) => {
-          // Step 22: Verify the result from renderer process
+          ipcMain.on('verify-captured-image-done', (event: any, result: { difference: number; total: number }) => {
+            // Step 22: Verify the result from renderer process
             try {
-            // macOS may have tiny color difference after the whole rendering process,
-            // and the color may change slightly when resizing at device pixel ratio != 1.
-            // Limit error should not be different more than 1% of the whole image.
+              // macOS may have tiny color difference after the whole rendering process,
+              // and the color may change slightly when resizing at device pixel ratio != 1.
+              // Limit error should not be different more than 1% of the whole image.
               const ratio = result.difference / result.total;
               expect(ratio).to.be.lessThan(0.01);
               resolve();
@@ -207,13 +200,13 @@ ifdescribe(!skip)('sharedTexture module', () => {
             const imported = sharedTexture.importSharedTexture({
               textureInfo: texture.textureInfo,
               allReferencesReleased: () => {
-              // Release the shared texture source once GPU is done.
-              // Will be called when all processes have finished using the shared texture.
+                // Release the shared texture source once GPU is done.
+                // Will be called when all processes have finished using the shared texture.
                 texture.release();
 
                 // Slightly timeout and capture the node screenshot
                 setTimeout(async () => {
-                // Compare the captured image with the target image
+                  // Compare the captured image with the target image
                   const captured = await win.webContents.capturePage({
                     x: 16,
                     y: 16,
@@ -244,12 +237,12 @@ ifdescribe(!skip)('sharedTexture module', () => {
             imported.release();
           });
 
-          ipcMain.on('verify-captured-image-done', (event: any, result: { difference: number, total: number }) => {
-          // Verify the result from renderer process
+          ipcMain.on('verify-captured-image-done', (event: any, result: { difference: number; total: number }) => {
+            // Verify the result from renderer process
             try {
-            // macOS may have tiny color difference after the whole rendering process,
-            // and the color may change slightly when resizing at device pixel ratio != 1.
-            // Limit error should not be different more than 1% of the whole image.
+              // macOS may have tiny color difference after the whole rendering process,
+              // and the color may change slightly when resizing at device pixel ratio != 1.
+              // Limit error should not be different more than 1% of the whole image.
               const ratio = result.difference / result.total;
               expect(ratio).to.be.lessThan(0.01);
               resolve();

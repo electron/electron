@@ -5,7 +5,7 @@
   window.setImmediate = setImmediate;
   window.require = require;
 
-  function invoke (code) {
+  function invoke(code) {
     try {
       return code();
     } catch {
@@ -28,17 +28,20 @@
         creationTime: invoke(() => process.getCreationTime()),
         heapStatistics: invoke(() => process.getHeapStatistics()),
         blinkMemoryInfo: invoke(() => process.getBlinkMemoryInfo()),
-        processMemoryInfo: invoke(() => process.getProcessMemoryInfo() ? {} : null),
+        processMemoryInfo: invoke(() => (process.getProcessMemoryInfo() ? {} : null)),
         systemMemoryInfo: invoke(() => process.getSystemMemoryInfo()),
         systemVersion: invoke(() => process.getSystemVersion()),
         cpuUsage: invoke(() => process.getCPUUsage()),
         uptime: invoke(() => process.uptime()),
         // eslint-disable-next-line import/enforce-node-protocol-usage
-        nodeEvents: invoke(() => require('events') === require('node:events')),
+        // oxlint-disable-next-line no-self-compare -- verifying require() cache identity
+        nodeEvents: invoke(() => require('node:events') === require('node:events')),
         // eslint-disable-next-line import/enforce-node-protocol-usage
-        nodeTimers: invoke(() => require('timers') === require('node:timers')),
+        // oxlint-disable-next-line no-self-compare -- verifying require() cache identity
+        nodeTimers: invoke(() => require('node:timers') === require('node:timers')),
         // eslint-disable-next-line import/enforce-node-protocol-usage
-        nodeUrl: invoke(() => require('url') === require('node:url')),
+        // oxlint-disable-next-line no-self-compare -- verifying require() cache identity
+        nodeUrl: invoke(() => require('node:url') === require('node:url')),
         env: process.env,
         execPath: process.execPath,
         pid: process.pid,

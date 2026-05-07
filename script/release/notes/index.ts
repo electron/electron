@@ -7,16 +7,20 @@ import { spawnSync } from 'node:child_process';
 import { basename } from 'node:path';
 import { parseArgs } from 'node:util';
 
-import { get, render } from './notes';
 import { ELECTRON_DIR } from '../../lib/utils';
 import { createGitHubTokenStrategy } from '../github-token';
 import { ELECTRON_ORG, ELECTRON_REPO } from '../types';
+import { get, render } from './notes';
 
 const octokit = new Octokit({
   authStrategy: createGitHubTokenStrategy(ELECTRON_REPO)
 });
 
-const semverify = (version: string) => version.replace(/^origin\//, '').replace(/[xy]/g, '0').replace(/-/g, '.');
+const semverify = (version: string) =>
+  version
+    .replace(/^origin\//, '')
+    .replace(/[xy]/g, '0')
+    .replace(/-/g, '.');
 
 const runGit = async (args: string[]) => {
   console.info(`Running: git ${args.join(' ')}`);
@@ -39,9 +43,10 @@ const tagIsStable = (tag: string) => tagIsSupported(tag) && !tagIsBeta(tag) && !
 const getTagsOf = async (point: string) => {
   try {
     const tags = await runGit(['tag', '--merged', point]);
-    return tags.split('\n')
-      .map(tag => tag.trim())
-      .filter(tag => valid(tag))
+    return tags
+      .split('\n')
+      .map((tag) => tag.trim())
+      .filter((tag) => valid(tag))
       .sort(compare);
   } catch (err) {
     console.error(`Failed to fetch tags for point ${point}`);
@@ -50,7 +55,9 @@ const getTagsOf = async (point: string) => {
 };
 
 const getTagsOnBranch = async (point: string) => {
-  const { data: { default_branch: defaultBranch } } = await octokit.repos.get({
+  const {
+    data: { default_branch: defaultBranch }
+  } = await octokit.repos.get({
     owner: ELECTRON_ORG,
     repo: ELECTRON_REPO
   });
@@ -60,16 +67,16 @@ const getTagsOnBranch = async (point: string) => {
   }
 
   const mainTagsSet = new Set(mainTags);
-  return (await getTagsOf(point)).filter(tag => !mainTagsSet.has(tag));
+  return (await getTagsOf(point)).filter((tag) => !mainTagsSet.has(tag));
 };
 
 const getBranchOf = async (point: string) => {
   try {
     const branches = (await runGit(['branch', '-a', '--contains', point]))
       .split('\n')
-      .map(branch => branch.trim())
-      .filter(branch => !!branch);
-    const current = branches.find(branch => branch.startsWith('* '));
+      .map((branch) => branch.trim())
+      .filter((branch) => !!branch);
+    const current = branches.find((branch) => branch.startsWith('* '));
     return current ? current.slice(2) : branches.shift();
   } catch (err) {
     console.error(`Failed to fetch branch for ${point}: `, err);
@@ -80,10 +87,11 @@ const getBranchOf = async (point: string) => {
 const getAllBranches = async () => {
   try {
     const branches = await runGit(['branch', '--remote']);
-    return branches.split('\n')
-      .map(branch => branch.trim())
-      .filter(branch => !!branch)
-      .filter(branch => branch !== 'origin/HEAD -> origin/main')
+    return branches
+      .split('\n')
+      .map((branch) => branch.trim())
+      .filter((branch) => !!branch)
+      .filter((branch) => branch !== 'origin/HEAD -> origin/main')
       .sort();
   } catch (err) {
     console.error('Failed to fetch all branches');
@@ -92,12 +100,13 @@ const getAllBranches = async () => {
 };
 
 const getStabilizationBranches = async () => {
-  return (await getAllBranches()).filter(branch => /^origin\/\d+-x-y$/.test(branch));
+  return (await getAllBranches()).filter((branch) => /^origin\/\d+-x-y$/.test(branch));
 };
 
 const getPreviousStabilizationBranch = async (current: string) => {
-  const stabilizationBranches = (await getStabilizationBranches())
-    .filter(branch => branch !== current && branch !== `origin/${current}`);
+  const stabilizationBranches = (await getStabilizationBranches()).filter(
+    (branch) => branch !== current && branch !== `origin/${current}`
+  );
 
   if (!valid(current)) {
     // since we don't seem to be on a stabilization branch right now,
@@ -121,15 +130,15 @@ const getPreviousStabilizationBranch = async (current: string) => {
 
 const getPreviousPoint = async (point: string) => {
   const currentBranch = await getBranchOf(point);
-  const currentTag = (await getTagsOf(point)).filter(tag => tagIsSupported(tag)).pop()!;
+  const currentTag = (await getTagsOf(point)).filter((tag) => tagIsSupported(tag)).pop()!;
   const currentIsStable = tagIsStable(currentTag);
 
   try {
     // First see if there's an earlier tag on the same branch
     // that can serve as a reference point.
-    let tags = (await getTagsOnBranch(`${point}^`)).filter(tag => tagIsSupported(tag));
+    let tags = (await getTagsOnBranch(`${point}^`)).filter((tag) => tagIsSupported(tag));
     if (currentIsStable) {
-      tags = tags.filter(tag => tagIsStable(tag));
+      tags = tags.filter((tag) => tagIsStable(tag));
     }
     if (tags.length) {
       return tags.pop();
@@ -144,7 +153,7 @@ const getPreviousPoint = async (point: string) => {
   let branch = currentBranch;
   while (branch) {
     const prevBranch = await getPreviousStabilizationBranch(branch);
-    const tags = (await getTagsOnBranch(prevBranch)).filter(tag => tagIsStable(tag));
+    const tags = (await getTagsOnBranch(prevBranch)).filter((tag) => tagIsStable(tag));
     if (tags.length) {
       return tags.pop();
     }
@@ -152,7 +161,7 @@ const getPreviousPoint = async (point: string) => {
   }
 };
 
-async function getReleaseNotes (range: string, newVersion?: string, unique?: boolean) {
+async function getReleaseNotes(range: string, newVersion?: string, unique?: boolean) {
   const rangeList = range.split('..') || ['HEAD'];
   const to = rangeList.pop()!;
   const from = rangeList.pop() || (await getPreviousPoint(to))!;
@@ -162,7 +171,7 @@ async function getReleaseNotes (range: string, newVersion?: string, unique?: boo
   }
 
   const notes = await get(from, to, newVersion);
-  const ret: { text: string; warning?: string; } = {
+  const ret: { text: string; warning?: string } = {
     text: render(notes, unique)
   };
 
@@ -173,8 +182,11 @@ async function getReleaseNotes (range: string, newVersion?: string, unique?: boo
   return ret;
 }
 
-async function main () {
-  const { values: { help, unique, version }, positionals } = parseArgs({
+async function main() {
+  const {
+    values: { help, unique, version },
+    positionals
+  } = parseArgs({
     options: {
       help: {
         type: 'boolean'

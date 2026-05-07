@@ -16,13 +16,13 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
     combinations.forEach((accelerator) => {
       expect(globalShortcut.isRegistered(accelerator)).to.be.false(`Initially registered for ${accelerator}`);
 
-      globalShortcut.register(accelerator, () => { });
+      globalShortcut.register(accelerator, () => {});
       expect(globalShortcut.isRegistered(accelerator)).to.be.true(`Registration failed for ${accelerator}`);
 
       globalShortcut.unregister(accelerator);
       expect(globalShortcut.isRegistered(accelerator)).to.be.false(`Unregistration failed for ${accelerator}`);
 
-      globalShortcut.register(accelerator, () => { });
+      globalShortcut.register(accelerator, () => {});
       expect(globalShortcut.isRegistered(accelerator)).to.be.true(`Re-registration failed for ${accelerator}`);
 
       globalShortcut.unregisterAll();
@@ -54,7 +54,8 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
       'VolumeMute',
       'MediaNextTrack',
       'MediaPreviousTrack',
-      'MediaStop', 'MediaPlayPause'
+      'MediaStop',
+      'MediaPlayPause'
     ];
 
     expect(() => {

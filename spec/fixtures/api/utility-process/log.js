@@ -1,4 +1,4 @@
-function write (writable, chunk) {
+function write(writable, chunk) {
   return new Promise((resolve) => writable.write(chunk, resolve));
 }
 

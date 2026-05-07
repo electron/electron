@@ -3,7 +3,7 @@ const path = require('path');
 
 const pathFile = path.join(__dirname, 'path.txt');
 
-function getElectronPath () {
+function getElectronPath() {
   let executablePath;
   if (fs.existsSync(pathFile)) {
     executablePath = fs.readFileSync(pathFile, 'utf-8');
@@ -14,7 +14,9 @@ function getElectronPath () {
   if (executablePath) {
     return path.join(__dirname, 'dist', executablePath);
   } else {
-    throw new Error('Electron failed to install correctly, please delete node_modules/electron and try installing again');
+    throw new Error(
+      'Electron failed to install correctly, please delete node_modules/electron and try installing again'
+    );
   }
 }
 

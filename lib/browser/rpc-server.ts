@@ -54,19 +54,19 @@ const getPreloadScriptsFromEvent = (event: ElectronInternal.IpcMainInternalEvent
   let preloadScripts = session.getPreloadScripts();
 
   if (event.type === 'frame') {
-    preloadScripts = preloadScripts.filter(script => script.type === 'frame');
+    preloadScripts = preloadScripts.filter((script) => script.type === 'frame');
 
     const webPrefPreload = event.sender._getPreloadScript();
     if (webPrefPreload) preloadScripts.push(webPrefPreload);
   } else if (event.type === 'service-worker') {
-    preloadScripts = preloadScripts.filter(script => script.type === 'service-worker');
+    preloadScripts = preloadScripts.filter((script) => script.type === 'service-worker');
   } else {
     throw new Error(`getPreloadScriptsFromEvent: event.type is invalid (${(event as any).type})`);
   }
 
   // TODO(samuelmaddock): Remove filter after Session.setPreloads is fully
   // deprecated. The new API will prevent relative paths from being registered.
-  return preloadScripts.filter(script => path.isAbsolute(script.filePath));
+  return preloadScripts.filter((script) => path.isAbsolute(script.filePath));
 };
 
 const readPreloadScript = async function (script: Electron.PreloadScript): Promise<ElectronInternal.PreloadScript> {
@@ -103,7 +103,7 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD, async function (event
 
 ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD, function (event) {
   const preloadScripts = getPreloadScriptsFromEvent(event);
-  return { preloadPaths: preloadScripts.map(script => script.filePath) };
+  return { preloadPaths: preloadScripts.map((script) => script.filePath) };
 });
 
 ipcMainInternal.on(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, function (event, preloadPath: string, error: Error) {
