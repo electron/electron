@@ -104,7 +104,7 @@ describe('BrowserWindow module', () => {
       }).not.to.throw();
     });
 
-    it('does not mutate a shared webPreferences object', () => {
+    it('does not leak BrowserWindow backgroundColor into shared webPreferences', () => {
       const sharedPrefs: Electron.WebPreferences = {};
       const w = new BrowserWindow({
         show: false,
@@ -112,6 +112,10 @@ describe('BrowserWindow module', () => {
         webPreferences: sharedPrefs
       });
       const view = new WebContentsView({ webPreferences: sharedPrefs });
+      const windowPrefs = w.webContents.getLastWebPreferences() as any;
+      const viewPrefs = view.webContents.getLastWebPreferences() as any;
+      expect(windowPrefs!.backgroundColor).to.equal('#00f');
+      expect(viewPrefs!.backgroundColor).to.be.undefined();
       expect(Object.keys(sharedPrefs)).to.have.lengthOf(0);
       view.webContents.close();
       w.destroy();
