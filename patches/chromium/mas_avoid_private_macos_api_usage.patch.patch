@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 463225c753fa1c44fa98a6121c1f8ddc1ec0166a..fb668e0dc1847593aff5e13ff5aca6ee079b5677 100644
+index 388344d7067b785881381cb476600f2e4eaadd31..5b710bb9a6fab18af6498d7f520d22e93c0da1fc 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1125,6 +1125,7 @@ component("base") {
+@@ -1124,6 +1124,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -1020,7 +1020,7 @@ index 2575ac6b4211b43447a39f9ce89077182ef0cf54..1bce550e07780196b7606545cac1e9ae
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 7e18a7b260ca08b00f00e2539f54b4ab48afec85..0a03ec6c16281fda2cf6102d0c3b9657eaabbb66 100644
+index 0b262121915212c8f07fc8c25e084cc5a60d7ad9..16b23a622f7d6892a6df4be0bfbabbeab59e97cc 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -55,6 +55,7 @@
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index a5f74eed83ca77e2f59cc2156420d1f189972d94..2309ca2f1a74ade63690e8aef98e446eb37fdeba 100644
+index 8de2168236fdd081dd1b8fefb11aeb7f35f2eab5..971bf3a478298e38932b7c0df7328e21aebf0096 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -1217,7 +1217,7 @@ index a5f74eed83ca77e2f59cc2156420d1f189972d94..2309ca2f1a74ade63690e8aef98e446e
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3460,6 +3464,7 @@ test("content_unittests") {
+@@ -3461,6 +3465,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1238,7 +1238,7 @@ index 7a9360beb22370b61d80f8a84f6b1f96d2d77c3b..708c61c16e7baa9fcc2124722714d7d9
  
    if (is_mac) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 3504d7197bd3225b6b83d7e057f389d8327b9ff7..92547d8bc700f3139f4bbc77d621152e0bc2a81c 100644
+index 448f1df3e1c1a2a1a9c1c37549910101c2c092bf..01027720a432e6f1bd9830b71ae7201f87cf946b 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -257,6 +257,7 @@ component("bluetooth") {

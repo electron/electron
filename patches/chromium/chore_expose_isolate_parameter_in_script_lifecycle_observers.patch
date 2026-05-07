@@ -214,7 +214,7 @@ index bc8850ea6d8b18d7cbf33bdfda66530cf6a5d1b2..13a406e3e7eaa557f833d621a225f034
    virtual bool AllowScriptExtensions() = 0;
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index b2df880309120ba650c18b5718fe22739aed3373..6a4fcdfba8a8a785aac2e8bb3b1a51a84d2f422a 100644
+index 1ff76a4610468c06af6c1ff79dfd7560b0e033e1..631efb0e9d49ae3cf3f17bf53c74e2306c3493b2 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -309,10 +309,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
