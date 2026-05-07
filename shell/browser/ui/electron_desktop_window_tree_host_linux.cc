@@ -97,6 +97,16 @@ gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
   if (!IsShowingFrame(window_state))
     return gfx::Insets();
 
+  // Frameless windows should not have any decoration insets.
+  // Without this check, the frame layout may return non-zero insets for a
+  // frameless window when a framed window was previously created in the same
+  // process, causing the Wayland compositor to render a visible border
+  // artifact around the frameless window's shadow area.
+  // See https://github.com/electron/electron/issues/51456
+  if (!native_window_view_->has_frame() &&
+      !native_window_view_->has_client_frame())
+    return gfx::Insets();
+
   return GetRestoredFrameBorderInsets();
 }
 
@@ -240,6 +250,13 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     auto insets = CalculateInsetsInDIP(window_state);
     if (insets.IsEmpty()) {
       window->SetInputRegion(std::nullopt);
+      // Clear decoration insets so the compositor does not draw a border
+      // for frameless windows.  This is needed because a previously
+      // created framed window may have set non-zero decoration insets on
+      // the compositor-level that persist across windows.
+      // See https://github.com/electron/electron/issues/51456
+      if (window->CanSetDecorationInsets())
+        window->SetDecorationInsets(nullptr);
     } else {
       gfx::Rect input_bounds(widget_size);
       input_bounds.Inset(insets - layout->GetInputInsets());

@@ -7476,6 +7476,33 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  // Regression test for https://github.com/electron/electron/issues/51456
+  ifdescribe(process.platform === 'linux')('frameless window after framed window', () => {
+    afterEach(closeAllWindows);
+
+    it('should create a frameless window without border artifacts after a framed window', () => {
+      // Create a normal framed window first.
+      const framed = new BrowserWindow({ show: false, frame: true });
+      const framedBounds = framed.getBounds();
+      expect(framedBounds.width).to.be.greaterThan(0);
+
+      // Now create a frameless window — this should not inherit any
+      // frame decoration insets from the previously created framed window.
+      const frameless = new BrowserWindow({ show: false, frame: false });
+      const framelessBounds = frameless.getBounds();
+      expect(framelessBounds.width).to.be.greaterThan(0);
+
+      // The frameless window's content size should match its full bounds
+      // (no decoration insets should be subtracted).
+      const contentSize = frameless.getContentSize();
+      expect(contentSize[0]).to.equal(framelessBounds.width);
+      expect(contentSize[1]).to.equal(framelessBounds.height);
+
+      framed.close();
+      frameless.close();
+    });
+  });
+
   describe('"backgroundColor" option', () => {
     afterEach(closeAllWindows);
 
