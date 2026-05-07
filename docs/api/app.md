@@ -1248,6 +1248,13 @@ This API must be called after the `ready` event is emitted.
 
 ### `app.configureWebAuthn(options)` _macOS_
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51563
+```
+-->
+
 * `options` Object
   * `touchID` Object (optional) - Enables the Touch ID / Secure Enclave platform
     authenticator for [Web Authentication](https://www.w3.org/TR/webauthn-2/)
@@ -1262,6 +1269,11 @@ This API must be called after the `ready` event is emitted.
       lowercase sentence fragment. An optional `$1` placeholder is replaced
       with the relying party ID (e.g. `example.com`) of the request being
       authenticated. Defaults to `verify your identity on $1`.
+  * `platformPasskeys` boolean (optional) - Enables passkeys via Apple's
+    `ASAuthorizationController`. Requires macOS 13.0 (Ventura) or later. When
+    enabled, passkey operations present the system credential provider sheet
+    (iCloud Keychain, 1Password, Bitwarden, etc.) and credentials sync across
+    the user's devices.
 
 Configures platform authenticators for the Web Authentication API
 (`navigator.credentials.create()` / `navigator.credentials.get()`). Until this
@@ -1273,6 +1285,12 @@ keychain and bound to this device's Secure Enclave. Electron automatically
 generates and persists a per-[`session`](session.md) metadata secret so that
 credentials created in one partition are not visible to another.
 
+When `platformPasskeys` is `true`, passkey operations use Apple's
+`ASAuthorizationController` which delegates to the system's configured
+Credential Provider Extensions. This enables the same passkey experience as
+Safari — credentials are available across all devices signed into the same
+account. Requires macOS 13.0+.
+
 ```js
 const { app } = require('electron')
 
@@ -1280,11 +1298,12 @@ app.configureWebAuthn({
   touchID: {
     keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn',
     promptReason: 'sign in to $1'
-  }
+  },
+  platformPasskeys: true
 })
 ```
 
-With the matching entitlement in your app's `entitlements.plist`:
+With the matching entitlements in your app's `entitlements.plist`:
 
 ```xml
 <key>keychain-access-groups</key>
@@ -1293,10 +1312,24 @@ With the matching entitlement in your app's `entitlements.plist`:
 </array>
 ```
 
+For platform passkeys, your app needs an Associated Domains entitlement:
+
+```xml
+<key>com.apple.developer.associated-domains</key>
+<array>
+  <string>webcredentials:example.com</string>
+</array>
+```
+
 > [!NOTE]
 > Touch ID WebAuthn credentials are device-bound and are not synced via iCloud
 > Keychain. They are only available on Macs with a Secure Enclave (Apple
 > silicon, or Intel Macs with a T2 chip).
+
+> [!NOTE]
+> On macOS versions below 13.0, the `platformPasskeys` option is accepted but
+> the passkey flow is unavailable and requests fall back to the Touch ID
+> authenticator (if configured).
 
 ### `app.disableHardwareAcceleration()`
 

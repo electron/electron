@@ -25,6 +25,13 @@ class ElectronWebAuthenticationDelegate
   // this value in the `keychain-access-groups` array. Called from
   // `app.configureWebAuthn()`.
   static void SetTouchIdKeychainAccessGroup(std::string access_group);
+
+  // Configures whether platform passkeys (via ASAuthorizationController) are
+  // enabled. Any Credential Provider Extension (iCloud Keychain, 1Password,
+  // etc.) can fulfill these requests. Called from `app.configureWebAuthn()`.
+  static bool IsTouchIdConfigured();
+  static void SetPlatformPasskeysEnabled(bool enabled);
+  static bool IsPlatformPasskeysEnabled();
 #endif
 
   // content::WebAuthenticationDelegate
@@ -38,6 +45,7 @@ class ElectronWebAuthenticationDelegate
  private:
 #if BUILDFLAG(IS_MAC)
   static std::string& touch_id_keychain_access_group();
+  static bool& platform_passkeys_enabled();
 #endif
 };
 
