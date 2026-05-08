@@ -186,8 +186,8 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
   const chains = getOrCreateProtocolHandlerChains(this);
   let chain = chains.get(scheme);
   if (!chain) {
-    const register = isBuiltInScheme(scheme) ? this.interceptProtocol : this.registerProtocol;
-    const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
+    const handleProtocol = isBuiltInScheme(scheme) ? this.interceptProtocol : this.registerProtocol;
+    const success = handleProtocol.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
       try {
         const body = convertToRequestBody(preq.uploadData);
         const headers = new Headers(preq.headers);
@@ -220,15 +220,15 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
         cb({ error: ERR_UNEXPECTED });
       }
     });
-    if (!success) throw new Error(`Failed to register protocol: ${scheme}`);
+    if (!success) throw new Error(`Failed to handle protocol: ${scheme}`);
     chain = getOrCreateProtocolHandlerChain(this, scheme);
   }
   chain.handlers.push(handler);
 };
 
 Protocol.prototype.unhandle = function (this: Electron.Protocol, scheme: string) {
-  const unregister = isBuiltInScheme(scheme) ? this.uninterceptProtocol : this.unregisterProtocol;
-  if (!unregister.call(this, scheme)) {
+  const unhandleProtocol = isBuiltInScheme(scheme) ? this.uninterceptProtocol : this.unregisterProtocol;
+  if (!unhandleProtocol.call(this, scheme)) {
     throw new Error(`Failed to unhandle protocol: ${scheme}`);
   }
   getOrCreateProtocolHandlerChains(this).delete(scheme);
