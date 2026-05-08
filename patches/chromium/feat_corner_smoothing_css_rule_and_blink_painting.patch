@@ -46,7 +46,7 @@ index 1c01e4d6699da8760e074a5825784e139ed58fd4..c678a3df0b9e5a8c9e0bd99c1aa540b2
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index b811957b3b882d0a5d5b6934a55f78ba1a544c22..58205f570c2ae6bd608600a2b60a4e624d134d8c 100644
+index 1666817d5c362b593765472e37dc549b108f41ab..65e5ebee790e2c4b47898629f9fb49748c014456 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
 @@ -9784,6 +9784,27 @@
@@ -91,10 +91,10 @@ index 44db0578d21cefe54d4050e00dfb4386305c427c..f2d58d302a48535d6ee78f6d9f2b4674
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index 085bf5ac543f82ee216facbd6bcb450ea950c62c..f87cc7ccc74c29a84de230293b7026aadc1b5f77 100644
+index cbb6c282cff921d39989662c46cda55b3933acbc..197bc8f1fda97113d231cc48bcb49a1411c66f0f 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12398,5 +12398,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12437,5 +12437,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -132,10 +132,10 @@ index 085bf5ac543f82ee216facbd6bcb450ea950c62c..f87cc7ccc74c29a84de230293b7026aa
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index f5dc372c3a1cae83870f92ae2ab0eca664df90fc..792900afff47fa226840f07834549b9447653950 100644
+index 7611aeba3b829f38c5a4c6b3e4fe1bfa6c079678..6d7e7cbc510d918f63c2756881a515a6fbbcb639 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-@@ -4201,6 +4201,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
+@@ -4216,6 +4216,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
    return PositionTryFallback(scoped_name, tactic_list);
  }
  
@@ -152,10 +152,10 @@ index f5dc372c3a1cae83870f92ae2ab0eca664df90fc..792900afff47fa226840f07834549b94
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index b21cc0c587a3b8beb437ed7a36f4c527e56d8845..d5339a043ae38c66f0ce52a0f7b4a818ed4d1c87 100644
+index 061a3675fbd7ebb0ba90a008019907634f2b2f7f..0167f2a2d271593d3445b94e8c07577eaa190f8b 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -461,6 +461,7 @@ class StyleBuilderConverter {
+@@ -465,6 +465,7 @@ class StyleBuilderConverter {
        StyleResolverState&,
        const CSSValue&,
        bool allow_any_keyword_in_position_area = false);
@@ -314,7 +314,7 @@ index 398fc8badaaf1dddc3183211c9302460393da85f..b35c8261b27a2d5c5f6bd84b606925c9
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 76f3bc9105339eb8f11b9659f246656f3232ca0d..465be0a7623537e248badbf1230eb89c5db6dea1 100644
+index c83eb8d1b4bf03f4dda2cf2c9688a45fae4b0da7..2c1b61d1ae28a9e83ac9fcfbe40705281dd579f3 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -215,6 +215,10 @@

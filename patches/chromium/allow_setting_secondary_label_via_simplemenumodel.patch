@@ -6,7 +6,7 @@ Subject: Allow setting secondary label via SimpleMenuModel
 Builds on https://chromium-review.googlesource.com/c/chromium/src/+/2208976
 
 diff --git a/ui/menus/simple_menu_model.cc b/ui/menus/simple_menu_model.cc
-index 12e6479770d24e4943dce7e797e0185b010ace8b..967d7c42a998a31a940ccc0ac0786300d70d8a34 100644
+index 77fdd391d41ba37668cb39b7e98606e0d64d3fcb..6471eceb9c41599a62989e8f3d8a202386381b35 100644
 --- a/ui/menus/simple_menu_model.cc
 +++ b/ui/menus/simple_menu_model.cc
 @@ -57,6 +57,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
@@ -21,7 +21,7 @@ index 12e6479770d24e4943dce7e797e0185b010ace8b..967d7c42a998a31a940ccc0ac0786300
  ImageModel SimpleMenuModel::Delegate::GetIconForCommandId(
      int command_id) const {
    return ImageModel();
-@@ -469,6 +474,8 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
+@@ -475,6 +480,8 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
  }
  
  std::u16string SimpleMenuModel::GetSecondaryLabelAt(size_t index) const {
@@ -31,7 +31,7 @@ index 12e6479770d24e4943dce7e797e0185b010ace8b..967d7c42a998a31a940ccc0ac0786300
  }
  
 diff --git a/ui/menus/simple_menu_model.h b/ui/menus/simple_menu_model.h
-index cd41d9ef6d306332dbe09f7821ea8e7bdd401ba4..77c616d267759f707e917e8efe61a239154f03f8 100644
+index 531f44d901c886f82977a4ef21085f3778635ca8..f6d75b0268d3307e0780df8b34625da813fc8da1 100644
 --- a/ui/menus/simple_menu_model.h
 +++ b/ui/menus/simple_menu_model.h
 @@ -99,6 +99,7 @@ class COMPONENT_EXPORT(UI_MENUS) SimpleMenuModel : public MenuModel {
