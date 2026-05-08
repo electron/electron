@@ -8,7 +8,7 @@ such as the background turning black when maximizing the window and
 dynamic background material settings not taking effect.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index e4da40256ce94d6a0896792a8ef2faa18e1fa5d2..3a5833fcc018f32e86c0a95a42937fb9ac6c5a40 100644
+index 95af2da65403d35d4b7a5eb0d032e01ab8d23f62..d7bc932bdc1165273fccade29300739dc15446ef 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -167,6 +167,10 @@ void DesktopWindowTreeHostWin::FinishTouchDrag(gfx::Point screen_point) {
@@ -36,7 +36,7 @@ index 27322ef34edf3fa8bfbd20b1baddcaf3b7555618..b8d1fa863fd05ebc3ab8ac5ef8c4d813
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index e66f269cb6aa77ae3fcff5bc106773122f5a6744..03ed37bf6ca88e1615d876453f0b12072467b446 100644
+index dbf10ed28dd1669c93ab78aa68f4cfa4369de73f..71c511285115df9eec7d4a9c12827b6a322a373e 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -994,13 +994,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
@@ -89,7 +89,7 @@ index e66f269cb6aa77ae3fcff5bc106773122f5a6744..03ed37bf6ca88e1615d876453f0b1207
      return;
    }
  
-@@ -2457,17 +2469,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+@@ -2446,17 +2458,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
      delegate_->SchedulePaint();
    }
  

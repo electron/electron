@@ -54,7 +54,7 @@ index ee7b2331cca787cf6c6d88f804bca4d1a57de462..825e0fcea881ff349eea00de040f2cde
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ba019bb29c9092b2438c5aa03efc67fa02d7ec75..14142367e2647af1e6062cadc4f0e13b13e9ccf6 100644
+index 09433a59fb629d36511cb9181803b1bd6ca5402f..d49c254a7fdac1829a906aafcae094c0e941c84e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4575,6 +4575,12 @@ void WebContentsImpl::RenderWidgetWasResized(
@@ -83,7 +83,7 @@ index 9298a3dc625f33a76d789ea310594efb5aa23dbf..f2fafcde65e63366b883422b44e4ce31
                             const gfx::PointF& client_pt);
    void PreHandleDragExit();
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index fd840b5de8945d91f218e66009f6c13f4e85e832..e6be991b8faa75f8276e38474cdbdb88462bdf46 100644
+index 5491e0198c1b18fb0405a5fcc6d21d8a08d2034b..f2baf5dfd16fd350a0057955b882ab3899d085fd 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -127,6 +127,12 @@ bool WebContentsDelegate::HandleContextMenu(RenderFrameHost& render_frame_host,
@@ -100,7 +100,7 @@ index fd840b5de8945d91f218e66009f6c13f4e85e832..e6be991b8faa75f8276e38474cdbdb88
      WebContents* source,
      const input::NativeWebKeyboardEvent& event) {
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index b9b59c92a0d69baed2241ca1686d490bba8e087b..cbdc25cc215d8d46d2d3e7122d44ab12107409e6 100644
+index 7abc7c9daeac6b764c7d2e90d39f2168f5750931..0e37b66ebfa2dd0fa2e0956f642d64b532dae58a 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -326,6 +326,13 @@ class CONTENT_EXPORT WebContentsDelegate {

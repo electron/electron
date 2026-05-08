@@ -10,10 +10,10 @@ usage of BrowserList and Browser as we subclass related methods and use our
 WindowList.
 
 diff --git a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e93369f4a 100644
+index 98d2d73a89e1d636ecfaf0c92768ecf41c6d1682..15ebd52f4c4a8584b31eac78d2f382f239b9a02b 100644
 --- a/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/ui/webui/accessibility/accessibility_ui.cc
-@@ -48,6 +48,7 @@
+@@ -49,6 +49,7 @@
  #include "content/public/browser/web_contents_observer.h"
  #include "content/public/browser/web_contents_user_data.h"
  #include "content/public/browser/web_ui_data_source.h"
@@ -21,7 +21,7 @@ index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e
  #include "ui/accessibility/accessibility_features.h"
  #include "ui/accessibility/ax_mode.h"
  #include "ui/accessibility/ax_updates_and_events.h"
-@@ -179,7 +180,7 @@ base::DictValue BuildTargetDescriptor(content::RenderViewHost* rvh) {
+@@ -184,7 +185,7 @@ base::DictValue BuildTargetDescriptor(content::RenderViewHost* rvh) {
                                 rvh->GetRoutingID(), accessibility_mode);
  }
  
@@ -30,7 +30,7 @@ index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e
  base::DictValue BuildTargetDescriptor(BrowserWindowInterface* browser) {
    base::DictValue target_data;
    target_data.Set(kSessionIdField, browser->GetSessionID().id());
-@@ -226,7 +227,7 @@ void HandleAccessibilityRequestCallback(
+@@ -261,7 +262,7 @@ void HandleAccessibilityRequestCallback(
    auto& browser_accessibility_state =
        *content::BrowserAccessibilityState::GetInstance();
    base::DictValue data;
@@ -39,7 +39,7 @@ index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e
    ui::AXMode mode = browser_accessibility_state.GetAccessibilityMode();
    bool native = mode.has_mode(ui::AXMode::kNativeAPIs);
    bool web = mode.has_mode(ui::AXMode::kWebContents);
-@@ -287,7 +288,7 @@ void HandleAccessibilityRequestCallback(
+@@ -322,7 +323,7 @@ void HandleAccessibilityRequestCallback(
    data.Set(kIsScreenReaderActive, is_screen_reader_active);
  
    std::string pref_api_type =
@@ -48,7 +48,7 @@ index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e
    bool pref_api_type_supported = false;
  
    std::vector<ui::AXApiType::Type> supported_api_types =
-@@ -355,13 +356,13 @@ void HandleAccessibilityRequestCallback(
+@@ -390,13 +391,13 @@ void HandleAccessibilityRequestCallback(
    data.Set(kPagesField, std::move(page_list));
  
    base::ListValue browser_list;
@@ -64,7 +64,7 @@ index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e
    data.Set(kBrowsersField, std::move(browser_list));
  
  #if BUILDFLAG(IS_WIN)
-@@ -870,7 +871,8 @@ void AccessibilityUIMessageHandler::HandleSetGlobalString(
+@@ -906,7 +907,8 @@ void AccessibilityUIMessageHandler::HandleSetGlobalString(
    const std::string value = CheckJSValue(data.FindString(kValueField));
  
    if (string_name == kApiTypeField) {
@@ -74,7 +74,7 @@ index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e
      pref->SetString(prefs::kShownAccessibilityApiType, value);
    }
  }
-@@ -924,7 +926,8 @@ void AccessibilityUIMessageHandler::HandleRequestWebContentsTree(
+@@ -960,7 +962,8 @@ void AccessibilityUIMessageHandler::HandleRequestWebContentsTree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -84,7 +84,7 @@ index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e
    ui::AXApiType::Type api_type =
        ui::AXApiType::From(pref->GetString(prefs::kShownAccessibilityApiType));
    std::string accessibility_contents =
-@@ -944,7 +947,7 @@ void AccessibilityUIMessageHandler::HandleRequestNativeUITree(
+@@ -980,7 +983,7 @@ void AccessibilityUIMessageHandler::HandleRequestNativeUITree(
  
    AllowJavascript();
  
@@ -93,7 +93,7 @@ index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e
    std::vector<AXPropertyFilter> property_filters;
    AddPropertyFilters(property_filters, allow, AXPropertyFilter::ALLOW);
    AddPropertyFilters(property_filters, allow_empty,
-@@ -971,7 +974,7 @@ void AccessibilityUIMessageHandler::HandleRequestNativeUITree(
+@@ -1007,7 +1010,7 @@ void AccessibilityUIMessageHandler::HandleRequestNativeUITree(
    if (found) {
      return;
    }
@@ -102,7 +102,7 @@ index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e
    // No browser with the specified |session_id| was found.
    base::DictValue result;
    result.Set(kSessionIdField, session_id);
-@@ -1014,11 +1017,13 @@ void AccessibilityUIMessageHandler::StopRecording(
+@@ -1050,11 +1053,13 @@ void AccessibilityUIMessageHandler::StopRecording(
  }
  
  ui::AXApiType::Type AccessibilityUIMessageHandler::GetRecordingApiType() {
@@ -119,7 +119,7 @@ index 1322a7c5f9b3baca837488de2e5323ee5c49800c..cb1895f2be25d210f7508433a352bc1e
    // Check to see if it is in the supported types list.
    if (std::find(supported_types.begin(), supported_types.end(), api_type) ==
        supported_types.end()) {
-@@ -1088,10 +1093,13 @@ void AccessibilityUIMessageHandler::HandleRequestAccessibilityEvents(
+@@ -1124,10 +1129,13 @@ void AccessibilityUIMessageHandler::HandleRequestAccessibilityEvents(
  // static
  void AccessibilityUIMessageHandler::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {
