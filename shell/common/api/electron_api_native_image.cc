@@ -36,6 +36,7 @@
 #include "shell/common/skia_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
+#include "third_party/skia/include/core/SkColorSpace.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
 #include "ui/base/layout.h"
@@ -43,6 +44,7 @@
 #include "ui/base/webui/web_ui_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
+#include "ui/gfx/color_space.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_skia_operations.h"
@@ -254,10 +256,17 @@ v8::Local<v8::Value> NativeImage::ToPNG(gin::Arguments* args) {
 v8::Local<v8::Value> NativeImage::ToBitmap(gin::Arguments* args) {
   v8::Isolate* const isolate = args->isolate();
 
-  const float scale = GetScaleFactorFromOptions(args);
-  const auto src = image_.AsImageSkia().GetRepresentation(scale).GetBitmap();
+  float scale = 1.0f;
+  gfx::ColorSpace color_space = gfx::ColorSpace::CreateSRGB();
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    options.Get("scaleFactor", &scale);
+    options.Get("colorSpace", &color_space);
+  }
 
-  const auto dst_info = SkImageInfo::MakeN32Premul(src.dimensions());
+  const auto src = image_.AsImageSkia().GetRepresentation(scale).GetBitmap();
+  const auto dst_info = SkImageInfo::MakeN32Premul(
+      src.dimensions(), color_space.ToSkColorSpace());
   const size_t dst_n_bytes = dst_info.computeMinByteSize();
   auto dst_buf = v8::ArrayBuffer::New(isolate, dst_n_bytes);
 
