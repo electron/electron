@@ -463,7 +463,9 @@ describe('nativeImage module', () => {
     it('toBitmap() accepts a colorSpace option', () => {
       const image = nativeImage.createFromPath(imageColorSpaceP3.path);
 
-      const srgbBuf = image.toBitmap({ colorSpace: { primaries: 'bt709', transfer: 'srgb', matrix: 'rgb', range: 'full' } });
+      const srgbBuf = image.toBitmap({
+        colorSpace: { primaries: 'bt709', transfer: 'srgb', matrix: 'rgb', range: 'full' }
+      });
       const p3Buf = image.toBitmap({ colorSpace: { primaries: 'p3', transfer: 'srgb', matrix: 'rgb', range: 'full' } });
 
       // Both should produce valid buffers of the same size (same pixel dimensions)
