@@ -1,220 +1,230 @@
----
-title: Deep Links
-description: Set your Electron app as the default handler for a specific protocol.
-slug: launch-app-from-url-in-another-app
-hide_title: true
----
+## Handling Deep Links on Cold Start
 
-# Deep Links
+When a user clicks a deep link and your application is **not yet running**, the behavior differs between platforms:
 
-## Overview
+### macOS
 
-<!-- ✍ Update this section if you want to provide more details -->
+On macOS, the `open-url` event is fired when the app starts. However, you must register the event listener **synchronously** at the very beginning of your main process, before any asynchronous operations:
 
-This guide will take you through the process of setting your Electron app as the default
-handler for a specific [protocol](../api/protocol.md).
+```javascript
+const { app, BrowserWindow } = require('electron');
 
-By the end of this tutorial, we will have set our app to intercept and handle
-any clicked URLs that start with a specific protocol. In this guide, the protocol
-we will use will be "`electron-fiddle://`".
+// Register listener SYNCHRONOUSLY - this must happen immediately
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  console.log('Deep link received:', url);
+  // Handle the deep link URL
+  createWindow(url);
+});
 
-## Examples
-
-### Main Process (main.js)
-
-First, we will import the required modules from `electron`. These modules help
-control our application lifecycle and create a native browser window.
-
-```js
-const { app, BrowserWindow, shell } = require('electron')
-
-const path = require('node:path')
+// Only after the listener is registered can you do async work
+app.whenReady().then(() => {
+  // ... rest of your code
+});
 ```
 
-Next, we will proceed to register our application to handle all "`electron-fiddle://`" protocols.
+**Important:** If you register the `open-url` listener inside an async function or after `app.whenReady()`, you may miss the event on cold start.
 
-```js
+### Windows and Linux
+
+On Windows and Linux, when your app is not running and a user clicks a deep link, the URL is passed as a command-line argument. You must read `process.argv` at the start of your application, **before** `app.whenReady()`:
+
+```javascript
+const { app, BrowserWindow, dialog } = require('electron');
+
+// Handle cold start BEFORE app.whenReady()
+let deepLinkUrl = null;
+
+function handleDeepLinkOnColdStart() {
+  // Look for your custom protocol in command-line arguments
+  const url = process.argv.find(arg => arg.startsWith('myapp://'));
+  if (url) {
+    deepLinkUrl = url;
+    console.log('Deep link received on cold start:', url);
+  }
+}
+
+handleDeepLinkOnColdStart();
+
+// Later, when creating your window, use the URL
+app.whenReady().then(() => {
+  createWindow();
+  if (deepLinkUrl) {
+    mainWindow.webContents.send('deep-link', deepLinkUrl);
+  }
+});
+```
+
+## Handling Deep Links When App is Already Running
+
+### macOS
+
+Use the `open-url` event (same as cold start):
+
+```javascript
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  console.log('Deep link received:', url);
+  // Handle the URL
+  if (mainWindow) {
+    mainWindow.webContents.send('deep-link', url);
+  }
+});
+```
+
+### Windows and Linux
+
+When the app is already running, the `second-instance` event is emitted:
+
+```javascript
+app.on('second-instance', (event, argv) => {
+  // argv contains command-line arguments from the new instance
+  const url = argv.find(arg => arg.startsWith('myapp://'));
+  if (url) {
+    console.log('Deep link received (app running):', url);
+    if (mainWindow) {
+      mainWindow.webContents.send('deep-link', url);
+    }
+  }
+});
+```
+
+## Setting Up Protocol Handler
+
+Use `app.setAsDefaultProtocolClient()` to register your custom protocol. The method has two different call signatures depending on your application state:
+
+### Development (with custom app launcher)
+
+When running in development mode, use the extended form:
+
+```javascript
 if (process.defaultApp) {
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('electron-fiddle', process.execPath, [path.resolve(process.argv[1])])
+    app.setAsDefaultProtocolClient('myapp', process.execPath, [
+      path.resolve(process.argv[1])
+    ]);
   }
 } else {
-  app.setAsDefaultProtocolClient('electron-fiddle')
+  app.setAsDefaultProtocolClient('myapp');
 }
 ```
 
-We will now define the function in charge of creating our browser window and load our application's `index.html` file.
+**Why?** The `process.defaultApp` check detects if you're running the unpacked Electron app in development. In this case, you need to explicitly tell the operating system:
+- Which executable to run (`process.execPath`)
+- What arguments to pass (`[path.resolve(process.argv[1])]`)
 
-```js
-let mainWindow
+This ensures the OS knows how to launch your app when a deep link is clicked. In production (packaged app), `process.defaultApp` is `false`, so the simpler form is used.
 
-const createWindow = () => {
-  // Create the browser window.
+### Production (packaged app)
+
+When your app is packaged, simply use:
+
+```javascript
+app.setAsDefaultProtocolClient('myapp');
+```
+
+The OS will automatically know how to launch your packaged application.
+
+## Complete Example
+
+Here's a fully functional example that works across all platforms:
+
+```javascript
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+
+let mainWindow;
+let deepLinkUrl = null;
+
+// Handle deep link URL on cold start (Windows & Linux)
+function handleDeepLinkOnColdStart() {
+  const url = process.argv.find(arg => arg.startsWith('myapp://'));
+  if (url) {
+    deepLinkUrl = url;
+  }
+}
+
+handleDeepLinkOnColdStart();
+
+// Register protocol handler
+if (process.defaultApp) {
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('myapp', process.execPath, [
+      path.resolve(process.argv[1])
+    ]);
+  }
+} else {
+  app.setAsDefaultProtocolClient('myapp');
+}
+
+// Handle deep links on macOS (SYNCHRONOUSLY)
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  deepLinkUrl = url;
+  if (mainWindow) {
+    mainWindow.webContents.send('deep-link', url);
+  }
+});
+
+// Handle deep links when app is already running (Windows & Linux)
+app.on('second-instance', (event, argv) => {
+  const url = argv.find(arg => arg.startsWith('myapp://'));
+  if (url) {
+    deepLinkUrl = url;
+    if (mainWindow) {
+      mainWindow.webContents.send('deep-link', url);
+    }
+  }
+});
+
+function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
-  })
+  });
 
-  mainWindow.loadFile('index.html')
-}
-```
+  mainWindow.loadFile('index.html');
 
-In this next step, we will create our `BrowserWindow` and tell our application how to handle an event in which an external protocol is clicked.
-
-This code will be different in Windows and Linux compared to macOS. This is due to both platforms emitting the `second-instance` event rather than the `open-url` event and Windows requiring additional code in order to open the contents of the protocol link within the same Electron instance. Read more about this [here](../api/app.md#apprequestsingleinstancelockadditionaldata).
-
-#### Windows and Linux code:
-
-```js @ts-type={mainWindow:Electron.BrowserWindow} @ts-type={createWindow:()=>void}
-const gotTheLock = app.requestSingleInstanceLock()
-
-if (!gotTheLock) {
-  app.quit()
-} else {
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // Someone tried to run a second instance, we should focus our window.
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore()
-      mainWindow.focus()
-    }
-    // the commandLine is array of strings in which last element is deep link url
-    dialog.showErrorBox('Welcome Back', `You arrived from: ${commandLine.pop()}`)
-  })
-
-  // Create mainWindow, load the rest of the app, etc...
-  app.whenReady().then(() => {
-    createWindow()
-    // Check for deep link on cold start
-    if (process.argv.length >= 2) {
-      const lastArg = process.argv[process.argv.length - 1]
-      if (lastArg.startsWith('electron-fiddle://')) {
-        dialog.showErrorBox('Welcome Back', `You arrived from: ${lastArg}`)
-      }
-    }
-  })
-}
-```
-
-#### macOS code:
-
-```js @ts-type={createWindow:()=>void}
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  createWindow()
-})
-
-// Handle the protocol. In this case, we choose to show an Error Box.
-app.on('open-url', (event, url) => {
-  dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
-})
-```
-
-Finally, we will add some additional code to handle when someone closes our application.
-
-```js
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit()
-})
-```
-
-## Important notes
-
-### Packaging
-
-On macOS and Linux, this feature will only work when your app is packaged. It will not work when
-you're launching it in development from the command-line. When you package your app you'll need to
-make sure the macOS `Info.plist` and the Linux `.desktop` files for the app are updated to include
-the new protocol handler. Some of the Electron tools for bundling and distributing apps handle
-this for you.
-
-#### [Electron Forge](https://electronforge.io)
-
-If you're using Electron Forge, adjust `packagerConfig` for macOS support, and the configuration for
-the appropriate Linux makers for Linux support, in your [Forge configuration](https://www.electronforge.io/configuration)
-_(please note the following example only shows the bare minimum needed to add the configuration changes)_:
-
-```json
-{
-  "config": {
-    "forge": {
-      "packagerConfig": {
-        "protocols": [
-          {
-            "name": "Electron Fiddle",
-            "schemes": ["electron-fiddle"]
-          }
-        ]
-      },
-      "makers": [
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {
-            "mimeType": ["x-scheme-handler/electron-fiddle"]
-          }
-        }
-      ]
-    }
+  // Send the deep link URL if one was received
+  if (deepLinkUrl) {
+    mainWindow.webContents.send('deep-link', deepLinkUrl);
+    deepLinkUrl = null;
   }
 }
+
+app.whenReady().then(() => {
+  createWindow();
+
+  app.on('activate', function () {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', function () {
+  if (process.platform !== 'darwin') app.quit();
+});
 ```
 
-#### [Electron Packager](https://github.com/electron/packager)
+In your renderer process (`index.html` or corresponding script):
 
-For macOS support:
+```javascript
+const { ipcRenderer } = require('electron');
 
-If you're using Electron Packager's API, adding support for protocol handlers is similar to how
-Electron Forge is handled, except
-`protocols` is part of the Packager options passed to the `packager` function.
-
-```js @ts-nocheck
-const packager = require('@electron/packager')
-
-packager({
-  // ...other options...
-  protocols: [
-    {
-      name: 'Electron Fiddle',
-      schemes: ['electron-fiddle']
-    }
-  ]
-
-}).then(paths => console.log(`SUCCESS: Created ${paths.join(', ')}`))
-  .catch(err => console.error(`ERROR: ${err.message}`))
+// Listen for deep link events
+ipcRenderer.on('deep-link', (event, url) => {
+  console.log('Received deep link:', url);
+  // Handle the URL in your app
+  // For example: navigate to a route, show a dialog, etc.
+});
 ```
 
-If you're using Electron Packager's CLI, use the `--protocol` and `--protocol-name` flags. For
-example:
+## Summary
 
-```shell
-npx electron-packager . --protocol=electron-fiddle --protocol-name="Electron Fiddle"
-```
-
-## Conclusion
-
-After you start your Electron app, you can enter in a URL in your browser that contains the custom
-protocol, for example `"electron-fiddle://open"` and observe that the application will respond and
-show an error dialog box.
-
-<!--
-    Because Electron examples usually require multiple files (HTML, CSS, JS
-    for the main and renderer process, etc.), we use this custom code block
-    for Fiddle (https://www.electronjs.org/fiddle).
-    Please modify any of the files in the referenced folder to fit your
-    example.
-    The content in this codeblock will not be rendered in the website so you
-    can leave it empty.
--->
-
-```fiddle docs/fiddles/system/protocol-handler/launch-app-from-URL-in-another-app
-
-```
-
-<!-- ✍ Explanation of the code below -->
+| Scenario | Platform | Event/Method | Notes |
+|----------|----------|--------------|-------|
+| Cold Start | macOS | `open-url` event | Register listener synchronously at app start |
+| Cold Start | Windows/Linux | `process.argv` | Read before `app.whenReady()` |
+| App Running | macOS | `open-url` event | Same as cold start |
+| App Running | Windows/Linux | `second-instance` event | Fired when new instance started |
+| Setup | All | `setAsDefaultProtocolClient()` | Use extended form in dev, simple form in production |
