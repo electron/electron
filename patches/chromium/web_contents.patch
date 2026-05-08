@@ -9,7 +9,7 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 78e8965bd00e568ddf48723dd400ccdcc1afd810..f83bf320b9a6df2ccade89beda3685e0c17bb91d 100644
+index b696e49dd76e1a2dccd0ebe166d8fd281af0cdc6..bbd08b31ae1622ec54c983f63d085f7a200086bc 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4294,6 +4294,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
@@ -35,7 +35,7 @@ index 78e8965bd00e568ddf48723dd400ccdcc1afd810..f83bf320b9a6df2ccade89beda3685e0
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index e69bf313bb60de731ed16c5f54fd777ae318b7f6..a5ccf1bb8892a3ae1203cc37b1d66216d6828184 100644
+index 1cc8f74a1386a3611e8fb1324518bd625b1bb837..f5bf093918acac12d3e6d2c1cb55caf761e684c8 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -133,12 +133,15 @@ class PrerenderHandle;
@@ -54,7 +54,7 @@ index e69bf313bb60de731ed16c5f54fd777ae318b7f6..a5ccf1bb8892a3ae1203cc37b1d66216
  class WebUI;
  struct DropData;
  struct GlobalRenderFrameHostId;
-@@ -297,6 +300,10 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
+@@ -298,6 +301,10 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
      network::mojom::WebSandboxFlags starting_sandbox_flags =
          network::mojom::WebSandboxFlags::kNone;
  

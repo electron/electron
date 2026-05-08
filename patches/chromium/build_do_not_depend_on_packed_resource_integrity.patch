@@ -28,10 +28,10 @@ index 3497a3bec7f0f899c65593fa5a69913d54257ea2..ff97e4f0ffd4e288d98bf67a85f51f0c
          ":chrome_dll",
          ":chrome_exe_version",
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 2711ecc3438608a1201a55c4c7b6c6d1f12a0ce6..03c9f8a11c4d9c682dfc440e30c6325a01b2d699 100644
+index 8c4782960b2e23db4dd12f0c3acd68d204d4f291..ac0f5c1ae256c18fc2433718191a03e1fef3f5d3 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -7792,6 +7792,10 @@ test("unit_tests") {
+@@ -7793,6 +7793,10 @@ test("unit_tests") {
        "//chrome/notification_helper",
      ]
  
@@ -42,7 +42,7 @@ index 2711ecc3438608a1201a55c4c7b6c6d1f12a0ce6..03c9f8a11c4d9c682dfc440e30c6325a
      deps += [
        "//chrome:other_version",
        "//chrome//services/util_win:unit_tests",
-@@ -8732,6 +8736,10 @@ test("unit_tests") {
+@@ -8721,6 +8725,10 @@ test("unit_tests") {
        "../browser/performance_manager/policies/background_tab_loading_policy_unittest.cc",
      ]
  
@@ -53,7 +53,7 @@ index 2711ecc3438608a1201a55c4c7b6c6d1f12a0ce6..03c9f8a11c4d9c682dfc440e30c6325a
      sources += [
        # The importer code is not used on Android.
        "../common/importer/firefox_importer_utils_unittest.cc",
-@@ -8775,7 +8783,7 @@ test("unit_tests") {
+@@ -8764,7 +8772,7 @@ test("unit_tests") {
      # TODO(crbug.com/417513088): Maybe merge with the non-android `deps` declaration above?
      deps += [
        "../browser/screen_ai:screen_ai_install_state",
