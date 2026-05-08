@@ -57,9 +57,6 @@ jobs:
         @Subdir src/buildtools/linux64
         gn/gn/linux-amd64 $gn_version
         CIPD
-
-        buildtools_path="$(pwd)/src/buildtools"
-        echo "CHROMIUM_BUILDTOOLS_PATH=$buildtools_path" >> $GITHUB_ENV
     - name: Download clang-format Binary
       shell: bash
       run: |
