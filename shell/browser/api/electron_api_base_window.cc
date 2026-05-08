@@ -231,6 +231,14 @@ void BaseWindow::OnWindowHide() {
   Emit("hide");
 }
 
+void BaseWindow::OnWindowTiledStateChanged(bool is_tiled) {
+  Emit("tiled-state-changed");
+}
+
+bool BaseWindow::IsTiled() const {
+  return window_->IsTiled();
+}
+
 void BaseWindow::OnWindowMaximize() {
   Emit("maximize");
 }
@@ -669,6 +677,10 @@ std::string BaseWindow::GetBackgroundColor() const {
 
 void BaseWindow::InvalidateShadow() {
   window_->InvalidateShadow();
+}
+
+void BaseWindow::SetDecorationInsets(const gfx::Insets& insets) {
+  window_->SetDecorationInsets(insets);
 }
 
 void BaseWindow::SetHasShadow(bool has_shadow) {
@@ -1180,6 +1192,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("maximize", &BaseWindow::Maximize)
       .SetMethod("unmaximize", &BaseWindow::Unmaximize)
       .SetMethod("isMaximized", &BaseWindow::IsMaximized)
+      .SetMethod("isTiled", &BaseWindow::IsTiled)
       .SetMethod("minimize", &BaseWindow::Minimize)
       .SetMethod("restore", &BaseWindow::Restore)
       .SetMethod("isMinimized", &BaseWindow::IsMinimized)
@@ -1232,6 +1245,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isTabletMode", &BaseWindow::IsTabletMode)
       .SetMethod("setBackgroundColor", &BaseWindow::SetBackgroundColor)
       .SetMethod("getBackgroundColor", &BaseWindow::GetBackgroundColor)
+      .SetMethod("setDecorationInsets", &BaseWindow::SetDecorationInsets)
       .SetMethod("setHasShadow", &BaseWindow::SetHasShadow)
       .SetMethod("hasShadow", &BaseWindow::HasShadow)
       .SetMethod("setOpacity", &BaseWindow::SetOpacity)

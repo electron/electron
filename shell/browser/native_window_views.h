@@ -92,6 +92,7 @@ class NativeWindowViews : public NativeWindow,
 #if BUILDFLAG(IS_WIN)
   extensions::SizeConstraints GetContentSizeConstraints() const override;
 #endif
+  void SetDecorationInsets(const gfx::Insets& insets) override;
   void SetResizable(bool resizable) override;
   bool MoveAbove(const std::string& sourceId) override;
   void MoveTop() override;
@@ -209,6 +210,9 @@ class NativeWindowViews : public NativeWindow,
 #if BUILDFLAG(IS_LINUX)
   LinuxFrameLayout* GetLinuxFrameLayout();
   views::FrameViewLinux* GetFrameViewLinux() const;
+  gfx::Insets GetCustomDecorationInsets() const { return decoration_insets_; }
+  bool IsTiled() const override;
+  void SetTiled(bool tiled);
 #endif
 
  private:
@@ -287,6 +291,11 @@ class NativeWindowViews : public NativeWindow,
 
 #if BUILDFLAG(IS_LINUX)
   std::unique_ptr<GlobalMenuBarX11> global_menu_bar_;
+  gfx::Insets decoration_insets_;
+  // Tracks tiled state independently of the frame layout/view (which may
+  // not exist for frameless windows). Used by CalculateInsetsInDIP and
+  // the JS isTiled() API.
+  bool is_tiled_ = false;
 #endif
 
 #if BUILDFLAG(SUPPORTS_OZONE_X11)

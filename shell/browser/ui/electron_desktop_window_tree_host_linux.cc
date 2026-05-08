@@ -57,6 +57,10 @@ void ElectronDesktopWindowTreeHostLinux::OnWidgetInitDone() {
   UpdateFrameHints();
 }
 
+void ElectronDesktopWindowTreeHostLinux::ApplyDecorationInsets() {
+  UpdateFrameHints();
+}
+
 bool ElectronDesktopWindowTreeHostLinux::IsShowingFrame(
     ui::PlatformWindowState window_state) const {
   return window_state != ui::PlatformWindowState::kFullScreen &&
@@ -96,6 +100,15 @@ gfx::Insets ElectronDesktopWindowTreeHostLinux::CalculateInsetsInDIP(
   // If we are not showing frame, the insets should be zero.
   if (!IsShowingFrame(window_state))
     return gfx::Insets();
+
+  // Tiled windows should not have shadow insets.
+  if (native_window_view_->IsTiled())
+    return gfx::Insets();
+
+  // Use custom decoration insets if set (for app-rendered CSD shadows).
+  auto custom = native_window_view_->GetCustomDecorationInsets();
+  if (!custom.IsEmpty())
+    return custom;
 
   return GetRestoredFrameBorderInsets();
 }
@@ -163,6 +176,7 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
     fvl->SetTiled(is_tiled);
   else if (auto* layout = native_window_view_->GetLinuxFrameLayout())
     layout->set_tiled(is_tiled);
+  native_window_view_->SetTiled(is_tiled);
   UpdateFrameHints();
   ScheduleRelayout();
   if (GetWidget()->non_client_view()) {
@@ -228,8 +242,19 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
   }
 
   auto* layout = native_window_view_->GetLinuxFrameLayout();
-  if (!layout)
+  if (!layout) {
+    // Frameless window with no layout. If custom decoration insets are set,
+    // ensure the input region covers the full surface (including the shadow
+    // area) so pointer events reach the client for resize hit-testing.
+    // Without this, Wayland won't deliver events in the shadow area.
+    auto custom_insets = native_window_view_->GetCustomDecorationInsets();
+    if (!custom_insets.IsEmpty()) {
+      platform_window()->SetInputRegion(std::nullopt);
+      if (native_window_view_->IsTranslucent())
+        platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
+    }
     return;
+  }
 
   ui::PlatformWindow* window = platform_window();
   auto window_state = window->GetPlatformWindowState();
@@ -238,7 +263,10 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
 
   if (SupportsClientFrameShadow()) {
     auto insets = CalculateInsetsInDIP(window_state);
-    if (insets.IsEmpty()) {
+    // When custom decoration insets are set, the entire surface must receive
+    // input so the shadow area is interactive for resize hit-testing.
+    if (insets.IsEmpty() ||
+        !native_window_view_->GetCustomDecorationInsets().IsEmpty()) {
       window->SetInputRegion(std::nullopt);
     } else {
       gfx::Rect input_bounds(widget_size);

@@ -69,6 +69,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowFocus() override;
   void OnWindowShow() override;
   void OnWindowHide() override;
+  void OnWindowTiledStateChanged(bool is_tiled) override;
+  bool IsTiled() const;
   void OnWindowMaximize() override;
   void OnWindowUnmaximize() override;
   void OnWindowMinimize() override;
@@ -172,6 +174,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void SetBackgroundColor(const std::string& color_name);
   std::string GetBackgroundColor() const;
   void InvalidateShadow();
+  void SetDecorationInsets(const gfx::Insets& insets);
   void SetHasShadow(bool has_shadow);
   bool HasShadow() const;
   void SetOpacity(const double opacity);

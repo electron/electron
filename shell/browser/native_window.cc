@@ -531,6 +531,14 @@ void NativeWindow::NotifyWindowUnmaximize() {
   observers_.Notify(&NativeWindowObserver::OnWindowUnmaximize);
 }
 
+void NativeWindow::NotifyWindowTiledStateChanged(bool is_tiled) {
+  observers_.Notify(&NativeWindowObserver::OnWindowTiledStateChanged, is_tiled);
+}
+
+bool NativeWindow::IsTiled() const {
+  return false;
+}
+
 void NativeWindow::NotifyWindowMinimize() {
   observers_.Notify(&NativeWindowObserver::OnWindowMinimize);
 }

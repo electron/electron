@@ -4,6 +4,7 @@
 
 #include "shell/browser/ui/views/frameless_view.h"
 
+#include "build/build_config.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "ui/aura/window.h"
@@ -30,6 +31,11 @@ gfx::Insets FramelessView::RestoredFrameBorderInsets() const {
 }
 
 int FramelessView::ResizingBorderHitTest(const gfx::Point& point) {
+#if BUILDFLAG(IS_LINUX)
+  auto decoration_insets = window_->GetCustomDecorationInsets();
+  if (!decoration_insets.IsEmpty())
+    return ResizingBorderHitTestImpl(point, decoration_insets);
+#endif
   return ResizingBorderHitTestImpl(point, gfx::Insets(kResizeInsideBoundsSize));
 }
 
@@ -76,12 +82,23 @@ int FramelessView::NonClientHitTest(const gfx::Point& point) {
   if (frame_->IsFullscreen())
     return HTCLIENT;
 
+  // Compute the resize hit once and reuse below.
+  int frame_component = ResizingBorderHitTest(point);
+
+#if BUILDFLAG(IS_LINUX)
+  // When custom decoration insets are set, the shadow area serves as the
+  // resize handle. Check resize FIRST so it takes priority over drag regions
+  // (which would otherwise return HTCAPTION for the headerbar area).
+  if (!window_->GetCustomDecorationInsets().IsEmpty() &&
+      frame_component != HTNOWHERE)
+    return frame_component;
+#endif
+
   int contents_hit_test = window_->NonClientHitTest(point);
   if (contents_hit_test != HTNOWHERE)
     return contents_hit_test;
 
   // Support resizing frameless window by dragging the border.
-  int frame_component = ResizingBorderHitTest(point);
   if (frame_component != HTNOWHERE)
     return frame_component;
 
