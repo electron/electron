@@ -9,6 +9,7 @@
 #include "base/functional/bind.h"
 #include "base/strings/string_util.h"
 #include "content/public/browser/browser_thread.h"
+#include "content/public/browser/global_routing_id.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
 #include "net/base/ip_endpoint.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
@@ -36,8 +37,7 @@ ProxyingWebSocket::ProxyingWebSocket(
       has_extra_headers_(has_extra_headers),
       info_(extensions::WebRequestInfoInitParams(
           ++(*request_id_generator),
-          process_id,
-          render_frame_id,
+          content::GlobalRenderFrameHostId(process_id, render_frame_id),
           nullptr,
           request,
           /*is_download=*/false,
