@@ -1,0 +1,81 @@
+name: 'Install Homebrew'
+description: 'Installs a pinned Homebrew release on macOS runners'
+inputs:
+  version:
+    description: 'Homebrew release tag to install'
+    required: false
+    default: '5.1.10'
+  sha256:
+    description: 'SHA256 checksum of the Homebrew package'
+    required: false
+    default: 'ece2e1c1f8e34683bd29b324f70c405b48c210c47f2b71c06131fde5492f2462'
+runs:
+  using: 'composite'
+  steps:
+    - name: Install pinned Homebrew
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        if [[ "$(uname -s)" != "Darwin" ]]; then
+          echo "This action only supports macOS runners." >&2
+          exit 1
+        fi
+
+        target_version='${{ inputs.version }}'
+        brew_bin=''
+
+        for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+          if [[ -x "${candidate}" ]]; then
+            current_version="$("${candidate}" --version | awk 'NR == 1 { print $2 }')"
+            if [[ "${current_version}" == "${target_version}" ]]; then
+              brew_bin="${candidate}"
+              break
+            fi
+          fi
+        done
+
+        if [[ -z "${brew_bin}" ]]; then
+          pkg_path="${RUNNER_TEMP}/Homebrew.pkg"
+          download_url="https://github.com/Homebrew/brew/releases/download/${target_version}/Homebrew.pkg"
+
+          curl --fail --location --silent --show-error \
+            --output "${pkg_path}" \
+            "${download_url}"
+
+          echo "Verifying Homebrew package SHA256 checksum..."
+          if ! printf '%s  %s\n' "${{ inputs.sha256 }}" "${pkg_path}" | shasum -a 256 -c; then
+            echo "Homebrew package SHA256 checksum failed, aborting." >&2
+            exit 1
+          fi
+
+          echo "Verifying Homebrew package with spctl..."
+          if ! spctl -a -vv --type install "${pkg_path}"; then
+            echo "Homebrew package installation verification failed, aborting." >&2
+            exit 1
+          fi
+
+          echo "Homebrew package verification passed, installing..."
+
+          sudo installer -pkg "${pkg_path}" -target /
+
+          for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+            if [[ -x "${candidate}" ]]; then
+              current_version="$("${candidate}" --version | awk 'NR == 1 { print $2 }')"
+              if [[ "${current_version}" == "${target_version}" ]]; then
+                brew_bin="${candidate}"
+                break
+              fi
+            fi
+          done
+        fi
+
+        if [[ -z "${brew_bin}" ]]; then
+          echo "Pinned Homebrew ${target_version} was not installed successfully." >&2
+          exit 1
+        fi
+
+        echo "$(dirname "${brew_bin}")" >> "${GITHUB_PATH}"
+        echo "HOMEBREW_NO_AUTO_UPDATE=1" >> "${GITHUB_ENV}"
+
+        "${brew_bin}" --version
