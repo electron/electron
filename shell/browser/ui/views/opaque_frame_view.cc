@@ -5,6 +5,7 @@
 #include "shell/browser/ui/views/opaque_frame_view.h"
 
 #include "base/containers/adapters.h"
+#include "build/build_config.h"
 #include "chrome/browser/ui/views/frame/opaque_browser_frame_view_layout.h"  // nogncheck
 #include "chrome/grit/generated_resources.h"
 #include "components/strings/grit/components_strings.h"
@@ -101,6 +102,13 @@ OpaqueFrameView::OpaqueFrameView(NativeWindowViews* window,
 OpaqueFrameView::~OpaqueFrameView() = default;
 
 int OpaqueFrameView::ResizingBorderHitTest(const gfx::Point& point) {
+#if BUILDFLAG(IS_LINUX)
+  // When the app provides custom decoration insets (e.g. for CSD shadow),
+  // use those as the resize border so the entire shadow area is grabbable.
+  auto custom_insets = window()->GetCustomDecorationInsets();
+  if (!custom_insets.IsEmpty())
+    return ResizingBorderHitTestImpl(point, custom_insets);
+#endif
   return ResizingBorderHitTestImpl(
       point, linux_frame_layout_->GetResizeBorderInsets());
 }

@@ -1372,6 +1372,25 @@ Invalidates the window shadow so that it is recomputed based on the current wind
 `BrowserWindows` that are transparent can sometimes leave behind visual artifacts on macOS.
 This method can be used to clear these artifacts when, for example, performing an animation.
 
+#### `win.setDecorationInsets(insets)` _Linux_
+
+* `insets` Object
+  * `top` Integer
+  * `left` Integer
+  * `bottom` Integer
+  * `right` Integer
+
+Sets the decoration insets for the window on Wayland. This tells the compositor
+the margins between the window surface edges and the actual content, so that
+areas used for client-side decorations (such as shadows) are excluded from
+window management operations like snapping, tiling, and maximizing.
+
+This is useful for applications that render their own window shadow using
+`transparent: true` and `frame: false` — without decoration insets, the
+compositor treats the shadow area as part of the window content.
+
+On X11 and non-Linux platforms, this method is a no-op.
+
 #### `win.setHasShadow(hasShadow)`
 
 * `hasShadow` boolean
