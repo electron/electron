@@ -973,8 +973,8 @@ void NativeWindowViews::SetTiled(bool tiled) {
 
 void NativeWindowViews::SetDecorationInsets(const gfx::Insets& insets) {
 #if BUILDFLAG(IS_LINUX)
-  DCHECK(insets.top() >= 0 && insets.left() >= 0 &&
-         insets.bottom() >= 0 && insets.right() >= 0);
+  DCHECK(insets.top() >= 0 && insets.left() >= 0 && insets.bottom() >= 0 &&
+         insets.right() >= 0);
   gfx::Insets old_insets = decoration_insets_;
   decoration_insets_ = insets;
 
