@@ -1,4 +1,4 @@
-import { ProtocolRequest, session } from 'electron/main';
+import { ProtocolRequest, session, net } from 'electron/main';
 
 import { createReadStream } from 'fs';
 import { Readable } from 'stream';
@@ -120,46 +120,110 @@ function validateResponse(res: Response) {
   return true;
 }
 
-Protocol.prototype.handle = function (
-  this: Electron.Protocol,
+type ProtocolHandler = (req: Request, next: () => Promise<Response>) => Response | Promise<Response>;
+type ProtocolHandlerTerminal = (req: Request) => Response | Promise<Response>;
+type ProtocolHandlerChain = {
+  handlers: ProtocolHandler[];
+  terminal: ProtocolHandlerTerminal;
+};
+
+const interceptedSchemeTerminal: ProtocolHandlerTerminal = (req) => {
+  return net.fetch(req, { bypassCustomProtocolHandlers: true }); // TODO: Use a better terminal.
+};
+
+const registeredSchemeTerminal: ProtocolHandlerTerminal = () => {
+  throw new Error('next() called inside the last handler for a registered protocol');
+};
+
+const chainsByProtocol = new WeakMap<Electron.Protocol, Map<string, ProtocolHandlerChain>>();
+
+function getOrCreateProtocolHandlerChains(protocol: Electron.Protocol): Map<string, ProtocolHandlerChain> {
+  const chains = chainsByProtocol.get(protocol);
+  if (!chains) {
+    chainsByProtocol.set(protocol, new Map<string, ProtocolHandlerChain>());
+    return chainsByProtocol.get(protocol)!;
+  }
+  return chains;
+}
+
+function getOrCreateProtocolHandlerChain(protocol: Electron.Protocol, scheme: string): ProtocolHandlerChain {
+  const chains = getOrCreateProtocolHandlerChains(protocol);
+  const chain = chains.get(scheme);
+  if (!chain) {
+    chains.set(scheme, {
+      handlers: [],
+      terminal: isBuiltInScheme(scheme) ? interceptedSchemeTerminal : registeredSchemeTerminal
+    });
+    return chains.get(scheme)!;
+  }
+  return chain;
+}
+
+async function dispatchProtocolHandlerChain(
+  protocol: Electron.Protocol,
   scheme: string,
-  handler: (req: Request) => Response | Promise<Response>
-) {
-  const register = isBuiltInScheme(scheme) ? this.interceptProtocol : this.registerProtocol;
-  const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
-    try {
-      const body = convertToRequestBody(preq.uploadData);
-      const headers = new Headers(preq.headers);
-      if (headers.get('origin') === 'null') {
-        headers.delete('origin');
+  req: Request
+): Promise<Response> {
+  const original = getOrCreateProtocolHandlerChain(protocol, scheme);
+  const chain: ProtocolHandlerChain = {
+    handlers: [...original.handlers],
+    terminal: original.terminal
+  };
+  async function run(index: number): Promise<Response> {
+    if (index > chain.handlers.length) throw new Error('Internal overflow in protocol handler chain');
+    if (index === chain.handlers.length) return chain.terminal(req);
+    let called = false;
+    return await chain.handlers[index](req, async () => {
+      if (called) throw new Error('next() called multiple times in protocol handler chain');
+      called = true;
+      return await run(index + 1);
+    });
+  }
+  return run(0);
+}
+
+Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, handler: ProtocolHandler) {
+  const chains = getOrCreateProtocolHandlerChains(this);
+  let chain = chains.get(scheme);
+  if (!chain) {
+    const register = isBuiltInScheme(scheme) ? this.interceptProtocol : this.registerProtocol;
+    const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
+      try {
+        const body = convertToRequestBody(preq.uploadData);
+        const headers = new Headers(preq.headers);
+        if (headers.get('origin') === 'null') {
+          headers.delete('origin');
+        }
+        const req = new Request(preq.url, {
+          headers,
+          method: preq.method,
+          referrer: preq.referrer,
+          body,
+          duplex: body instanceof ReadableStream ? 'half' : undefined
+        } as any);
+        const res = await dispatchProtocolHandlerChain(this, scheme, req);
+        if (!validateResponse(res)) {
+          return cb({ error: ERR_UNEXPECTED });
+        } else if (res.type === 'error') {
+          cb({ error: ERR_FAILED });
+        } else {
+          cb({
+            data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
+            headers: res.headers ? Object.fromEntries(res.headers) : {},
+            statusCode: res.status,
+            statusText: res.statusText,
+            mimeType: (res as any).__original_resp?._responseHead?.mimeType
+          });
+        }
+      } catch (e) {
+        console.error(e);
+        cb({ error: ERR_UNEXPECTED });
       }
-      const req = new Request(preq.url, {
-        headers,
-        method: preq.method,
-        referrer: preq.referrer,
-        body,
-        duplex: body instanceof ReadableStream ? 'half' : undefined
-      } as any);
-      const res = await handler(req);
-      if (!validateResponse(res)) {
-        return cb({ error: ERR_UNEXPECTED });
-      } else if (res.type === 'error') {
-        cb({ error: ERR_FAILED });
-      } else {
-        cb({
-          data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
-          headers: res.headers ? Object.fromEntries(res.headers) : {},
-          statusCode: res.status,
-          statusText: res.statusText,
-          mimeType: (res as any).__original_resp?._responseHead?.mimeType
-        });
-      }
-    } catch (e) {
-      console.error(e);
-      cb({ error: ERR_UNEXPECTED });
-    }
-  });
-  if (!success) throw new Error(`Failed to register protocol: ${scheme}`);
+    });
+    if (!success) throw new Error(`Failed to register protocol: ${scheme}`);
+    chain = getOrCreateProtocolHandlerChain(this, scheme);
+  }
+  chain.handlers.push(handler);
 };
 
 Protocol.prototype.unhandle = function (this: Electron.Protocol, scheme: string) {
@@ -167,6 +231,7 @@ Protocol.prototype.unhandle = function (this: Electron.Protocol, scheme: string)
   if (!unregister.call(this, scheme)) {
     throw new Error(`Failed to unhandle protocol: ${scheme}`);
   }
+  getOrCreateProtocolHandlerChains(this).delete(scheme);
 };
 
 Protocol.prototype.isProtocolHandled = function (this: Electron.Protocol, scheme: string) {
