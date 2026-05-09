@@ -548,3 +548,11 @@ deprecated:
 Returns `boolean` - Whether `scheme` is already intercepted.
 
 [file-system-api]: https://developer.mozilla.org/en-US/docs/Web/API/LocalFileSystem
+
+## Properties
+
+The `protocol` module has the following properties:
+
+### `protocol.session` _Readonly_
+
+A [`Session`](session.md) object for this protocol.

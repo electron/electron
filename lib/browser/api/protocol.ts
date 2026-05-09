@@ -242,6 +242,9 @@ Protocol.prototype.isProtocolHandled = function (this: Electron.Protocol, scheme
 const protocol = {
   registerSchemesAsPrivileged,
   getStandardSchemes,
+  get session() {
+    return session.defaultSession;
+  },
   registerStringProtocol: (...args) => session.defaultSession.protocol.registerStringProtocol(...args),
   registerBufferProtocol: (...args) => session.defaultSession.protocol.registerBufferProtocol(...args),
   registerStreamProtocol: (...args) => session.defaultSession.protocol.registerStreamProtocol(...args),

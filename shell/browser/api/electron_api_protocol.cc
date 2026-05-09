@@ -14,7 +14,9 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "gin/converter.h"
 #include "gin/object_template_builder.h"
+#include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -206,8 +208,10 @@ const char* const kBuiltinSchemes[] = {
 
 }  // namespace
 
-Protocol::Protocol(ProtocolRegistry* protocol_registry)
-    : protocol_registry_{protocol_registry} {}
+Protocol::Protocol(ElectronBrowserContext* browser_context,
+                   ProtocolRegistry* protocol_registry)
+    : browser_context_{browser_context},
+      protocol_registry_{protocol_registry} {}
 
 Protocol::~Protocol() = default;
 
@@ -264,6 +268,12 @@ bool Protocol::IsProtocolIntercepted(const std::string& scheme) {
   return protocol_registry_->FindIntercepted(scheme) != nullptr;
 }
 
+Session* Protocol::GetSession() {
+  if (auto* session = Session::FromBrowserContext(browser_context_))
+    return session->Get();
+  return nullptr;
+}
+
 v8::Local<v8::Promise> Protocol::IsProtocolHandled(v8::Isolate* const isolate,
                                                    const std::string& scheme) {
   util::EmitWarning(isolate,
@@ -300,9 +310,11 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args, Error error) {
 
 // static
 Protocol* Protocol::Create(v8::Isolate* isolate,
+                           ElectronBrowserContext* browser_context,
                            ProtocolRegistry* protocol_registry) {
   return cppgc::MakeGarbageCollected<Protocol>(
-      isolate->GetCppHeap()->GetAllocationHandle(), protocol_registry);
+      isolate->GetCppHeap()->GetAllocationHandle(), browser_context,
+      protocol_registry);
 }
 
 // static
@@ -344,6 +356,7 @@ void Protocol::FillObjectTemplate(v8::Isolate* isolate,
                  &Protocol::InterceptProtocolFor<ProtocolType::kFree>)
       .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol)
       .SetMethod("isProtocolIntercepted", &Protocol::IsProtocolIntercepted)
+      .SetProperty("session", &Protocol::GetSession)
       .Build();
 }
 
