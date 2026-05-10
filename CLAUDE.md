@@ -76,14 +76,6 @@ npm i -g @electron/build-tools
 | `e test` | Run the test suite |
 | `e debug` | Run Electron in debugger (lldb on macOS, gdb on Linux) |
 
-### Patch Management
-
-| Command | Purpose |
-|---------|---------|
-| `e patches <target>` | Export patches for a target (chromium, node, v8, etc.) |
-| `e patches all` | Export all patches from all targets |
-| `e patches --list-targets` | List available patch targets |
-
 ## Typical Development Workflow
 
 ```bash
@@ -102,55 +94,12 @@ e build
 e start
 e test
 
-# 6. If you modified patched files in Chromium:
-cd ..  # Go to Chromium repo
-git add <files>
-git commit -m "description of change"
-cd electron
-e patches chromium  # Export the patch
+# 6. If you modified patched files, activate the "Patches" skill
 ```
 
 ## Patches System
 
-Electron patches upstream dependencies (Chromium, Node.js, V8, etc.) to add features or modify behavior.
-
-**How patches work:**
-
-```text
-patches/{target}/*.patch  →  [e sync --3]  →  target repo commits
-                          ←  [e patches]   ←
-```
-
-**Patch configuration:** `patches/config.json` maps patch directories to target repos.
-
-**Key rules:**
-
-- Fix existing patches 99% of the time rather than creating new ones
-- Preserve original authorship in TODO comments
-- Never change TODO assignees (`TODO(name)` must retain original name)
-- Each patch file includes commit message explaining its purpose
-
-**Creating/modifying patches:**
-
-1. Make changes in the target repo (e.g., `../` for Chromium)
-2. Create a git commit
-3. Run `e patches <target>` to export
-
-**Fixing patch conflicts on an existing PR:**
-
-If asked to fix a patch conflict on a branch that already has an open PR, check the PR's failed **Apply Patches** CI run for an `update-patches` artifact before running `e sync` locally. CI has already performed the 3-way merge and exported the resolved patch diff — applying it is much faster than a full local sync.
-
-```bash
-# Find the failed Apply Patches run for the PR and download the artifact
-gh run list --repo electron/electron --branch <pr-branch> --workflow "Apply Patches" --limit 1
-gh run download <run-id> --repo electron/electron --name update-patches
-
-# Apply the CI-generated fix, then push
-git am update-patches.patch
-git push
-```
-
-If no artifact exists (e.g. the 3-way merge itself failed), fall back to `e sync --3` and resolve manually.
+When working with patches (creating, modifying, fixing conflicts), activate the "Patches" skill.
 
 ## Testing
 
@@ -231,9 +180,6 @@ git blame -L {start},{end} -- {file}
 
 # Look for Chromium CL reference in commit
 git log -1 {commit_sha}  # Find "Reviewed-on:" line
-
-# Find which patch affects a file
-grep -l "filename.cc" patches/chromium/*.patch
 ```
 
 ## CI/CD
@@ -245,17 +191,6 @@ GitHub Actions workflows in `.github/workflows/`:
 - `pipeline-segment-electron-test.yml` - Testing
 
 ## Common Issues
-
-**Patch conflict during sync:**
-
-- Use `e sync --3` for 3-way merge
-- Check if file was renamed/moved upstream
-- Verify patch is still needed
-
-**Build error in patched file:**
-
-- Find the patch: `grep -l "filename" patches/chromium/*.patch`
-- Match existing patch style (#if 0 guards, BUILDFLAG conditionals, etc.)
 
 **Remote build issues:**
 
