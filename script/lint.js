@@ -303,10 +303,11 @@ const LINTERS = [
     ignoreRoots: [
       '.claude',
       '.git',
+      '.github/skills',
       '.github/workflows/node_modules',
       'node_modules',
-      'spec/node_modules',
-      'spec/fixtures/native-addon'
+      'spec/fixtures/native-addon',
+      'spec/node_modules'
     ],
     test: (filename) => filename.endsWith('.md'),
     run: async (opts, filenames) => {
