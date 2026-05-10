@@ -1,19 +1,35 @@
-import { ProtocolRequest, session, net } from 'electron/main';
+import { ProtocolRequest, session } from 'electron/main';
 
 import { createReadStream } from 'fs';
+import { STATUS_CODES } from 'http';
 import { Readable } from 'stream';
 import { ReadableStream } from 'stream/web';
 
-import type { ReadableStreamDefaultReader } from 'stream/web';
+import type { ReadableStreamDefaultController, ReadableStreamDefaultReader } from 'stream/web';
 
 // Global protocol APIs.
 const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } =
   process._linkedBinding('electron_browser_protocol');
 
+const { createURLLoader } = process._linkedBinding('electron_common_net');
+
 const ERR_FAILED = -2;
 const ERR_UNEXPECTED = -9;
 
 const isBuiltInScheme = (scheme: string) => ['http', 'https', 'file'].includes(scheme);
+
+function setResponseMetadata(response: Response, url: string, redirected: boolean) {
+  Object.defineProperties(response, {
+    url: {
+      value: url,
+      configurable: true
+    },
+    redirected: {
+      value: redirected,
+      configurable: true
+    }
+  });
+}
 
 function makeStreamFromPipe(pipe: any): ReadableStream<Uint8Array> {
   const buf = new Uint8Array(1024 * 1024 /* 1 MB */);
@@ -101,6 +117,179 @@ function convertToRequestBody(uploadData: ProtocolRequest['uploadData']): Reques
   }) as RequestInit['body'];
 }
 
+// This isn't a true continuation, but it's a best-effort given upstream constraints.
+function continueInterceptedRequest(protocol: Electron.Protocol, req: Request): Promise<Response> {
+  const body = req.body;
+  const loader = createURLLoader({
+    bypassCustomProtocolHandlers: true,
+    method: req.method,
+    url: req.url,
+    session: protocol.session,
+    extraHeaders: Object.fromEntries(req.headers),
+    referrer: req.referrer === 'about:client' ? '' : req.referrer,
+    origin: req.headers.get('origin') ?? '',
+    body: body
+      ? (pipe) => {
+          (async () => {
+            const reader = (body as ReadableStream<Uint8Array>).getReader();
+            try {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (value) await pipe.write(value);
+              }
+            } catch {
+              // Closing the pipe lets the network stack surface the underlying failure.
+            } finally {
+              reader.releaseLock();
+              pipe.done();
+            }
+          })();
+        }
+      : undefined
+  });
+
+  return new Promise<Response>((resolve, reject) => {
+    let responseStarted = false;
+    let settled = false;
+    let streamFinished = false;
+    let controller: ReadableStreamDefaultController<Uint8Array> | null = null;
+
+    const bodyStream = new ReadableStream<Uint8Array>({
+      start(streamController) {
+        controller = streamController;
+      },
+      cancel() {
+        if (!streamFinished) {
+          streamFinished = true;
+          loader.cancel();
+        }
+      }
+    });
+
+    const closeBody = () => {
+      if (!streamFinished && controller) {
+        streamFinished = true;
+        controller.close();
+      }
+    };
+
+    const errorBody = (error: Error) => {
+      if (!streamFinished && controller) {
+        streamFinished = true;
+        controller.error(error);
+      }
+    };
+
+    const resolveResponse = (response: Response) => {
+      if (settled) return;
+      settled = true;
+      resolve(response);
+    };
+
+    const rejectResponse = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      reject(error);
+    };
+
+    loader.on('response-started', (event, finalUrl, responseHead) => {
+      if (settled) return;
+      responseStarted = true;
+
+      const headers = new Headers();
+      for (const [key, values] of Object.entries(responseHead.headers)) {
+        for (const value of values) {
+          headers.append(key, value);
+        }
+      }
+
+      const nullBodyStatus = [101, 204, 205, 304];
+      const body = nullBodyStatus.includes(responseHead.statusCode) || req.method === 'HEAD' ? null : bodyStream;
+
+      const response = new Response(body as any, {
+        headers,
+        status: responseHead.statusCode,
+        statusText: responseHead.statusMessage
+      });
+      setResponseMetadata(response, finalUrl, finalUrl !== req.url);
+
+      (response as any).__original_resp = {
+        _responseHead: responseHead,
+        url: finalUrl
+      };
+
+      resolveResponse(response);
+    });
+
+    loader.on('redirect', (event, redirectInfo, headersObject) => {
+      if (settled) return;
+
+      const headers = new Headers();
+      const headerEntries: Record<string, string[]> = {};
+
+      for (const [key, value] of Object.entries(headersObject)) {
+        const values = Array.isArray(value) ? value : [value];
+        headerEntries[key] = values;
+        for (const headerValue of values) {
+          headers.append(key, headerValue);
+        }
+      }
+
+      const response = new Response(null, {
+        headers,
+        status: redirectInfo.statusCode,
+        statusText: STATUS_CODES[redirectInfo.statusCode] ?? ''
+      });
+      setResponseMetadata(response, req.url, false);
+
+      (response as any).__original_resp = {
+        _responseHead: {
+          statusCode: redirectInfo.statusCode,
+          statusMessage: STATUS_CODES[redirectInfo.statusCode] ?? '',
+          headers: headerEntries,
+          mimeType: ''
+        },
+        url: req.url
+      };
+
+      resolveResponse(response);
+      loader.cancel();
+    });
+
+    loader.on('data', (event, data, resume) => {
+      try {
+        if (!streamFinished && controller) {
+          controller.enqueue(new Uint8Array(data));
+        }
+      } finally {
+        resume();
+      }
+    });
+
+    loader.on('complete', () => {
+      if (settled && !responseStarted) return;
+      if (!responseStarted) {
+        rejectResponse(new Error('Response completed before headers were received'));
+        return;
+      }
+
+      closeBody();
+    });
+
+    loader.on('error', (event, netErrorString) => {
+      const error = new Error(netErrorString);
+      if (settled && !responseStarted) return;
+      if (!responseStarted) {
+        rejectResponse(error);
+        return;
+      }
+
+      errorBody(error);
+    });
+  });
+}
+
 function validateResponse(res: Response) {
   if (!res || typeof res !== 'object') return false;
 
@@ -121,14 +310,14 @@ function validateResponse(res: Response) {
 }
 
 type ProtocolHandler = (req: Request, next: () => Promise<Response>) => Response | Promise<Response>;
-type ProtocolHandlerTerminal = (req: Request) => Response | Promise<Response>;
+type ProtocolHandlerTerminal = (protocol: Electron.Protocol, req: Request) => Response | Promise<Response>;
 type ProtocolHandlerChain = {
   handlers: ProtocolHandler[];
   terminal: ProtocolHandlerTerminal;
 };
 
-const interceptedSchemeTerminal: ProtocolHandlerTerminal = (req) => {
-  return net.fetch(req, { bypassCustomProtocolHandlers: true }); // TODO: Use a better terminal.
+const interceptedSchemeTerminal: ProtocolHandlerTerminal = (protocol, req) => {
+  return continueInterceptedRequest(protocol, req);
 };
 
 const registeredSchemeTerminal: ProtocolHandlerTerminal = () => {
@@ -171,7 +360,7 @@ async function dispatchProtocolHandlerChain(
   };
   async function run(index: number): Promise<Response> {
     if (index > chain.handlers.length) throw new Error('Internal overflow in protocol handler chain');
-    if (index === chain.handlers.length) return chain.terminal(req);
+    if (index === chain.handlers.length) return chain.terminal(protocol, req);
     let called = false;
     return await chain.handlers[index](req, async () => {
       if (called) throw new Error('next() called multiple times in protocol handler chain');
@@ -207,9 +396,10 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
         } else if (res.type === 'error') {
           cb({ error: ERR_FAILED });
         } else {
+          const originalHeaders = (res as any).__original_resp?._responseHead?.headers;
           cb({
             data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
-            headers: res.headers ? Object.fromEntries(res.headers) : {},
+            headers: originalHeaders ?? (res.headers ? Object.fromEntries(res.headers) : {}),
             statusCode: res.status,
             statusText: res.statusText,
             mimeType: (res as any).__original_resp?._responseHead?.mimeType
