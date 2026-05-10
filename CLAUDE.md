@@ -1,5 +1,14 @@
 # Electron Development Guide
 
+## Required Reading by Task
+
+| When you are… | You MUST first read… |
+|---|---|
+| Working with patches | `.claude/skills/patches/SKILL.md` |
+| Working with any PR | `.claude/skills/pr-labeling/SKILL.md` |
+| Upgrading Chromium | `.claude/skills/electron-chromium-upgrade/SKILL.md` |
+| Upgrading Node.js | `.claude/skills/electron-node-upgrade/SKILL.md` |
+
 ## Running node_modules binaries
 
 **Never use `npx`.** It is considered dangerous because it can silently fetch and execute arbitrary packages from the registry. Always run binaries through one of these safer mechanisms instead:
@@ -93,13 +102,11 @@ e build
 # 5. Test your changes (Leave the user to do this, don't run these commands unless asked)
 e start
 e test
-
-# 6. If you modified patched files, activate the "Patches" skill
 ```
 
 ## Patches System
 
-When working with patches (creating, modifying, fixing conflicts), activate the "Patches" skill.
+When working with patches (creating, modifying, fixing conflicts), you MUST read `.claude/skills/patches/SKILL.md`.
 
 ## Testing
 
@@ -137,7 +144,7 @@ When working on the `roller/node/main` branch to upgrade Node.js activate the "E
 
 PR bodies must always include a `Notes:` section as the **last line** of the body. This is a consumer-facing release note for Electron app developers — describe the user-visible fix or change, not internal implementation details. Use `Notes: none` if there is no user-facing change.
 
-When creating PRs, activate the "PR Labeling" skill.
+> **Required:** Read `.claude/skills/pr-labeling/SKILL.md` before doing any work on a PR.
 
 ## Code Style
 

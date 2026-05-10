@@ -1,5 +1,6 @@
 ---
-description: "Semver and backport target labeling rules for Electron PRs. Load when creating or labeling a pull request on electron/electron."
+name: pr-labeling
+description: "Semver and backport target labeling rules for Electron PRs. Load when doing any work on a pull request: creating, labeling, reviewing, updating, or merging."
 ---
 
 # PR Labeling (write-access only)

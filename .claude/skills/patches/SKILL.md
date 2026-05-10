@@ -1,5 +1,7 @@
 ---
+name: patches
 description: "Electron patch system for upstream dependencies (Chromium, Node.js, V8, etc.). Activate when creating, modifying, fixing, or debugging patches."
+applyTo: "patches/**"
 ---
 
 # Electron Patches
