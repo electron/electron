@@ -365,12 +365,9 @@ void ImportedSharedTexture::UpdateReleaseSyncToken(
 void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
   base::AutoLock locker(release_sync_token_lock_);
 
-  auto* sii = GetSharedImageInterface();
-  if (!sii)
-    return;
-
   if (!release_sync_token.HasData()) {
-    release_sync_token = sii->GenUnverifiedSyncToken();
+    if (auto* sii = GetSharedImageInterface())
+      release_sync_token = sii->GenUnverifiedSyncToken();
   }
 
   client_shared_image->UpdateDestructionSyncToken(release_sync_token);
