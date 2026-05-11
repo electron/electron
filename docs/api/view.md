@@ -129,7 +129,9 @@ or out of view.
 
 #### `view.setLayout(layoutConfig)`
 
-* `layoutConfig` JSViewLayoutConfig | FlexLayoutConfig - The layout configuration to use for child views
+Configures the layout for this view and any child views
+
+* `layoutConfig` CalculatedLayoutConfig | FlexLayoutConfig - The layout configuration to use for child views
 
 ### Instance Properties
 
