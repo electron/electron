@@ -370,7 +370,8 @@ void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
       release_sync_token = sii->GenUnverifiedSyncToken();
   }
 
-  client_shared_image->UpdateDestructionSyncToken(release_sync_token);
+  if (release_sync_token.HasData())
+    client_shared_image->UpdateDestructionSyncToken(release_sync_token);
 
   if (release_callback) {
     if (auto* context_support = GetContextSupport()) {
