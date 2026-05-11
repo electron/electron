@@ -373,8 +373,7 @@ void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
   client_shared_image->UpdateDestructionSyncToken(release_sync_token);
 
   if (release_callback) {
-    auto* context_support = GetContextSupport();
-    if (context_support) {
+    if (auto* context_support = GetContextSupport()) {
       context_support->SignalSyncToken(release_sync_token,
                                        std::move(release_callback));
     }
