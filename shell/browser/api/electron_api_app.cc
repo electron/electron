@@ -1747,15 +1747,6 @@ void ConfigureHostResolver(v8::Isolate* isolate,
     return;
   }
   net::SecureDnsMode secure_dns_mode = net::SecureDnsMode::kOff;
-  std::string default_doh_templates;
-  net::DnsOverHttpsConfig doh_config;
-  if (!default_doh_templates.empty() &&
-      secure_dns_mode != net::SecureDnsMode::kOff) {
-    auto maybe_doh_config =
-        net::DnsOverHttpsConfig::FromString(default_doh_templates);
-    if (maybe_doh_config.has_value())
-      doh_config = maybe_doh_config.value();
-  }
 
   bool enable_built_in_resolver =
       base::FeatureList::IsEnabled(net::features::kAsyncDns);
@@ -1782,6 +1773,7 @@ void ConfigureHostResolver(v8::Isolate* isolate,
     return;
   }
 
+  net::DnsOverHttpsConfig doh_config;
   std::vector<std::string> secure_dns_server_strings;
   if (opts.Has("secureDnsServers")) {
     if (!opts.Get("secureDnsServers", &secure_dns_server_strings)) {
