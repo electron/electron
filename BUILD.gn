@@ -529,6 +529,7 @@ source_set("electron_lib") {
     "//device/bluetooth",
     "//device/bluetooth/public/cpp",
     "//device/fido",
+    "//device/fido/strings",
     "//gin",
     "//gpu/ipc/client",
     "//media/capture/mojom:video_capture",

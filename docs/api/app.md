@@ -1243,6 +1243,12 @@ This API must be called after the `ready` event is emitted.
       credentials will be stored under. This value **must** also be present in
       your app's `keychain-access-groups` code-signing entitlement, and is
       typically of the form `<TEAM_ID>.<BUNDLE_ID>.webauthn`.
+    * `promptReason` string (optional) - Customizes the reason text shown in
+      the macOS Touch ID prompt. macOS renders the prompt as
+      `"<App Name>" is trying to <promptReason>`, so the value should be a
+      lowercase sentence fragment. An optional `$1` placeholder is replaced
+      with the relying party ID (e.g. `example.com`) of the request being
+      authenticated. Defaults to `verify your identity on $1`.
 
 Configures platform authenticators for the Web Authentication API
 (`navigator.credentials.create()` / `navigator.credentials.get()`). Until this
@@ -1259,7 +1265,8 @@ const { app } = require('electron')
 
 app.configureWebAuthn({
   touchID: {
-    keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn'
+    keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn',
+    promptReason: 'sign in to $1'
   }
 })
 ```
