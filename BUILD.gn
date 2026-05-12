@@ -631,6 +631,7 @@ source_set("electron_lib") {
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
       "//content/browser:mac_helpers",
+      "//device/fido/strings",
       "//ui/accelerated_widget_mac",
     ]
 
