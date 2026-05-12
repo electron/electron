@@ -285,6 +285,135 @@ Check out Playwright's documentation for the full [Electron][playwright-electron
 and [ElectronApplication][playwright-electronapplication] class APIs.
 :::
 
+### With Playwright and Serenity/JS
+
+[Serenity/JS](https://serenity-js.org) is an open-source acceptance testing framework that provides
+a portable abstraction layer over integration tools like Playwright, WebdriverIO, and Selenium.
+It uses the Screenplay Pattern to help teams write expressive, reusable test code and produce
+detailed, business-friendly reports.
+
+If your test suite needs to scale beyond simple interactions — for example, sharing
+test code between your Electron app and its web counterpart, or expressing tests in a way
+that non-technical stakeholders can follow — consider pairing Playwright with Serenity/JS.
+
+Serenity/JS wraps Playwright's Electron support and lets you use the same
+[Screenplay Pattern][serenity-screenplay] interactions
+([`Click`][serenity-click], [`Enter`][serenity-enter], [`Ensure`][serenity-ensure], etc.)
+you'd use for regular web testing. It is continuously tested against the latest Playwright,
+Playwright Test, and Electron releases, so you always have access to the newest features,
+bug fixes, and security patches. Your test automation code stays portable: tests written for an
+Electron app can run against a web deployment with no or minimal changes.
+
+#### Install dependencies
+
+[Serenity/JS integrates with Playwright Test][serenity-playwright-test], so you add it alongside your existing
+`@playwright/test` setup:
+
+```sh npm2yarn
+npm install --save-dev @serenity-js/core @serenity-js/playwright @serenity-js/playwright-test @serenity-js/assertions @serenity-js/rest @serenity-js/web
+```
+
+#### Write your tests
+
+Tests use the Serenity/JS test runner adapter, which provides [actors][serenity-screenplay-actor] with the [ability][serenity-screenplay-ability]
+to interact with your Electron app. The [`extraAbilities`][serenity-extra-abilities] fixture
+gives each actor a [`BrowseTheWebWithPlaywright`][serenity-browse] ability configured to
+launch a fresh Electron app instance per test — giving you complete isolation with no shared
+state, as long as your app doesn't persist data between launches (e.g. to a database or the filesystem):
+
+```js title='example.spec.ts' @ts-nocheck
+import { Ensure, equals } from '@serenity-js/assertions'
+import { BrowseTheWebWithPlaywright } from '@serenity-js/playwright'
+import { describe, it, test } from '@serenity-js/playwright-test'
+import { Click, Text, PageElement, By } from '@serenity-js/web'
+import path from 'path'
+
+describe('My Electron App', () => {
+  const electronAppPath = path.resolve(__dirname, '../../my-electron-app')
+
+  test.use({
+    extraAbilities: [
+      BrowseTheWebWithPlaywright.launchingElectronApp({
+        args: [path.join(electronAppPath, 'lib', 'main.js')],
+        cwd: electronAppPath,
+      })
+    ],
+  })
+
+  it('displays the welcome message', async ({ actor }) => {
+    await actor.attemptsTo(
+      Ensure.that(
+        Text.of(PageElement.located(By.css('h1'))),
+        equals('Welcome to My App'),
+      ),
+    )
+  })
+})
+```
+
+For heavier apps where per-test launch would be too slow, you can share a single instance
+across all tests in a Playwright worker using [`extraWorkerAbilities`][serenity-extra-worker-abilities] instead:
+
+```js title='example.spec.ts' @ts-nocheck
+import { Ensure, equals } from '@serenity-js/assertions'
+import { BrowseTheWebWithPlaywright } from '@serenity-js/playwright'
+import { describe, it, test } from '@serenity-js/playwright-test'
+import { Click, Text, PageElement, By } from '@serenity-js/web'
+import path from 'path'
+
+describe('My Electron App', () => {
+  const electronAppPath = path.resolve(__dirname, '../../my-electron-app')
+
+  test.use({
+    extraWorkerAbilities: [
+      async ({}, use) => {
+        await use((actorName: string) => [
+          BrowseTheWebWithPlaywright.launchingElectronApp({
+            args: [path.join(electronAppPath, 'lib', 'main.js')],
+            cwd: electronAppPath,
+          })
+        ])
+      }, { scope: 'worker' }
+    ],
+  })
+
+  it('records a click', async ({ actorCalled }) => {
+    await actorCalled('Tester').attemptsTo(
+      Click.on(PageElement.located(By.id('click-button'))),
+      Ensure.that(
+        Text.of(PageElement.located(By.id('click-count'))),
+        equals('1'),
+      ),
+    )
+  })
+})
+```
+
+Because Serenity/JS interactions are not tied to a specific integration layer,
+the same [`Click`][serenity-click], [`Enter`][serenity-enter], and [`Ensure`][serenity-ensure]
+calls work whether the app runs as an Electron desktop application or as a web app
+in a browser — making it straightforward to reuse test code across both execution environments.
+
+#### Run your tests and generate reports
+
+Run your tests with Playwright Test as usual:
+
+```sh
+$ npx playwright test
+```
+
+Serenity/JS automatically adds information about all the activities performed by the actors
+to your regular [Playwright HTML reports][serenity-pw-html], [Playwright UI Mode][serenity-pw-ui],
+and [Playwright Trace Viewer][serenity-pw-trace]. To produce rich, business-friendly
+Serenity BDD reports and [living documentation][serenity-reporting-handbook], add the
+[Serenity BDD reporter][serenity-bdd-reports] to your configuration.
+
+:::tip Further reading
+See the [Serenity/JS Electron testing guide][serenity-electron] for more examples,
+including sharing an app instance across tests and organising page elements
+with the Lean Page Objects Pattern.
+:::
+
 ## Using a custom test driver
 
 It's also possible to write your own custom driver using Node.js' built-in IPC-over-STDIO.
@@ -445,3 +574,19 @@ test.after.always('cleanup', async t => {
 [playwright-releases]: https://playwright.dev/docs/release-notes
 [playwright-test-config]: https://playwright.dev/docs/api/class-testconfig#test-config-test-match
 [Chrome DevTools Protocol]: https://chromedevtools.github.io/devtools-protocol/
+[serenity-screenplay]: https://serenity-js.org/handbook/design/screenplay-pattern/
+[serenity-screenplay-actor]: https://serenity-js.org/api/core/class/Actor/
+[serenity-screenplay-ability]: https://serenity-js.org/api/core/class/Ability/
+[serenity-playwright-test]: https://serenity-js.org/handbook/test-runners/playwright-test/
+[serenity-electron]: https://serenity-js.org/handbook/test-runners/playwright-test/electron-testing/
+[serenity-reporting-handbook]: https://serenity-js.org/handbook/reporting/
+[serenity-pw-html]: https://serenity-js.org/handbook/test-runners/playwright-test/reporting/#playwright-html-reports
+[serenity-pw-ui]: https://serenity-js.org/handbook/test-runners/playwright-test/reporting/#playwright-test-ui-mode
+[serenity-pw-trace]: https://serenity-js.org/handbook/test-runners/playwright-test/reporting/#using-playwright-test-trace-viewer
+[serenity-bdd-reports]: https://serenity-js.org/handbook/test-runners/playwright-test/reporting/#serenity-bdd-reports
+[serenity-browse]: https://serenity-js.org/api/playwright/class/BrowseTheWebWithPlaywright/
+[serenity-click]: https://serenity-js.org/api/web/class/Click/
+[serenity-enter]: https://serenity-js.org/api/web/class/Enter/
+[serenity-ensure]: https://serenity-js.org/api/assertions/class/Ensure/
+[serenity-extra-abilities]: https://serenity-js.org/api/playwright-test/interface/SerenityFixtures/#extraAbilities
+[serenity-extra-worker-abilities]: https://serenity-js.org/api/playwright-test/interface/SerenityWorkerFixtures/#extraWorkerAbilities
