@@ -10,8 +10,9 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -20,8 +21,8 @@
 #include "mojo/public/cpp/system/simple_watcher.h"
 #include "services/network/public/mojom/websocket.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gc_plugin.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 #include "url/gurl.h"
 #include "url/origin.h"
 #include "v8/include/v8-forward.h"
@@ -29,11 +30,6 @@
 namespace gin {
 class Arguments;
 }  // namespace gin
-
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
 
 namespace electron {
 class ElectronBrowserContext;
@@ -46,24 +42,33 @@ namespace electron::api {
 // WebSocketClient interfaces and translates them into JS events that the
 // `net.WebSocket` TypeScript class consumes.
 class WebSocketWrapper final
-    : public gin_helper::DeprecatedWrappable<WebSocketWrapper>,
+    : public gin::Wrappable<WebSocketWrapper>,
       public gin_helper::EventEmitterMixin<WebSocketWrapper>,
-      public gin_helper::CleanedUpAtExit,
       private network::mojom::WebSocketHandshakeClient,
-      private network::mojom::WebSocketClient,
-      private network::mojom::WebSocketAuthenticationHandler {
+      private network::mojom::WebSocketClient {
  public:
-  ~WebSocketWrapper() override;
-  static gin_helper::Handle<WebSocketWrapper> Create(gin::Arguments* args);
+  static WebSocketWrapper* Create(gin::Arguments* args);
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
+  static const char* GetClassName() { return "WebSocketWrapper"; }
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  void Trace(cppgc::Visitor* visitor) const override;
 
-  // gin_helper::CleanedUpAtExit
-  void WillBeDestroyed() override;
+  // Public for cppgc::MakeGarbageCollected.
+  WebSocketWrapper(ElectronBrowserContext* browser_context,
+                   const GURL& url,
+                   std::vector<std::string> protocols,
+                   std::vector<network::mojom::HttpHeaderPtr> headers,
+                   const url::Origin& origin,
+                   bool use_session_cookies);
+  ~WebSocketWrapper() override;
+
+  WebSocketWrapper(const WebSocketWrapper&) = delete;
+  WebSocketWrapper& operator=(const WebSocketWrapper&) = delete;
 
  private:
   enum class State {
@@ -85,13 +90,6 @@ class WebSocketWrapper final
     size_t offset = 0;
     bool announced = false;
   };
-
-  WebSocketWrapper(ElectronBrowserContext* browser_context,
-                   const GURL& url,
-                   std::vector<std::string> protocols,
-                   std::vector<network::mojom::HttpHeaderPtr> headers,
-                   const url::Origin& origin,
-                   bool use_session_cookies);
 
   // JS-callable methods.
   void Send(gin::Arguments* args);
@@ -120,16 +118,11 @@ class WebSocketWrapper final
                      const std::string& reason) override;
   void OnClosingHandshake() override;
 
-  // network::mojom::WebSocketAuthenticationHandler:
-  void OnAuthRequired(const net::AuthChallengeInfo& auth_info,
-                      const scoped_refptr<net::HttpResponseHeaders>& headers,
-                      const net::IPEndPoint& remote_endpoint,
-                      OnAuthRequiredCallback callback) override;
-
   // Connection lifecycle.
   void Start();
-  void Pin();
-  void Unpin();
+  // Vends a persistent handle to a gin::WeakCell so that callbacks bound to
+  // `this` are no-ops once the object has been collected.
+  cppgc::Persistent<gin::WeakCell<WebSocketWrapper>> WeakRef();
   void OnMojoDisconnect();
   void Fail(const std::string& message, int net_error);
   void EmitCloseAndTeardown(bool was_clean,
@@ -157,11 +150,15 @@ class WebSocketWrapper final
   bool use_session_cookies_ = false;
 
   // Mojo plumbing.
+  GC_PLUGIN_IGNORE(
+      "Context tracking of receiver is not needed in the browser process.")
   mojo::Receiver<network::mojom::WebSocketHandshakeClient> handshake_receiver_{
       this};
+  GC_PLUGIN_IGNORE(
+      "Context tracking of receiver is not needed in the browser process.")
   mojo::Receiver<network::mojom::WebSocketClient> client_receiver_{this};
-  mojo::Receiver<network::mojom::WebSocketAuthenticationHandler>
-      auth_handler_receiver_{this};
+  GC_PLUGIN_IGNORE(
+      "Context tracking of remote is not needed in the browser process.")
   mojo::Remote<network::mojom::WebSocket> websocket_;
   mojo::ScopedDataPipeConsumerHandle readable_;
   mojo::SimpleWatcher readable_watcher_;
@@ -183,8 +180,11 @@ class WebSocketWrapper final
   uint16_t close_code_ = 0;
   std::string close_reason_;
 
-  v8::Global<v8::Value> pinned_wrapper_;
-  base::WeakPtrFactory<WebSocketWrapper> weak_factory_{this};
+  // Roots this object in the cppgc heap while the connection is live so it is
+  // not collected if the JS wrapper goes out of scope mid-connection. Cleared
+  // in Teardown().
+  gin_helper::SelfKeepAlive<WebSocketWrapper> keep_alive_{this};
+  gin::WeakCellFactory<WebSocketWrapper> weak_factory_{this};
 };
 
 }  // namespace electron::api

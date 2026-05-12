@@ -10,13 +10,13 @@
 #include "base/compiler_specific.h"
 #include "base/containers/span.h"
 #include "base/functional/bind.h"
+#include "base/functional/callback_helpers.h"
 #include "base/task/sequenced_task_runner.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/object_template_builder.h"
-#include "net/base/auth.h"
+#include "gin/persistent.h"
 #include "net/base/isolation_info.h"
 #include "net/base/net_errors.h"
-#include "net/http/http_response_headers.h"
 #include "net/http/http_util.h"
 #include "net/storage_access_api/status.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
@@ -25,15 +25,16 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/process_util.h"
 #include "shell/common/v8_util.h"
 #include "url/url_constants.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 #include "v8/include/v8.h"
 
 namespace electron::api {
@@ -59,8 +60,8 @@ constexpr net::NetworkTrafficAnnotationTag kWebSocketTrafficAnnotation =
 
 }  // namespace
 
-gin::DeprecatedWrapperInfo WebSocketWrapper::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+const gin::WrapperInfo WebSocketWrapper::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronWebSocket);
 
 WebSocketWrapper::PendingMessage::PendingMessage(
     network::mojom::WebSocketMessageType type,
@@ -92,24 +93,23 @@ WebSocketWrapper::WebSocketWrapper(
 WebSocketWrapper::~WebSocketWrapper() = default;
 
 // static
-gin_helper::Handle<WebSocketWrapper> WebSocketWrapper::Create(
-    gin::Arguments* args) {
+WebSocketWrapper* WebSocketWrapper::Create(gin::Arguments* args) {
   if (!electron::IsBrowserProcess()) {
     args->ThrowTypeError("net.WebSocket is only available in the main process");
-    return {};
+    return nullptr;
   }
 
   gin_helper::Dictionary opts;
   if (!args->GetNext(&opts)) {
     args->ThrowTypeError("Expected an options object");
-    return {};
+    return nullptr;
   }
 
   GURL url;
   if (!opts.Get("url", &url) || !url.is_valid() ||
       (!url.SchemeIs("ws") && !url.SchemeIs("wss"))) {
     args->ThrowTypeError("Expected a valid 'ws:' or 'wss:' URL");
-    return {};
+    return nullptr;
   }
 
   std::vector<std::string> protocols;
@@ -122,7 +122,7 @@ gin_helper::Handle<WebSocketWrapper> WebSocketWrapper::Create(
       if (!net::HttpUtil::IsValidHeaderName(name) ||
           !net::HttpUtil::IsValidHeaderValue(value)) {
         args->ThrowTypeError("Invalid header name or value");
-        return {};
+        return nullptr;
       }
       headers.push_back(network::mojom::HttpHeader::New(name, value));
     }
@@ -156,28 +156,22 @@ gin_helper::Handle<WebSocketWrapper> WebSocketWrapper::Create(
   }
   if (!session) {
     args->ThrowTypeError("Failed to resolve session");
-    return {};
+    return nullptr;
   }
 
-  auto handle = gin_helper::CreateHandle(
-      args->isolate(),
-      new WebSocketWrapper(session->browser_context(), url,
-                           std::move(protocols), std::move(headers), origin,
-                           use_session_cookies));
-  handle->Pin();
-  handle->Start();
-  return handle;
+  v8::Isolate* isolate = args->isolate();
+  auto* wrapper = cppgc::MakeGarbageCollected<WebSocketWrapper>(
+      isolate->GetCppHeap()->GetAllocationHandle(), session->browser_context(),
+      url, std::move(protocols), std::move(headers), origin,
+      use_session_cookies);
+  wrapper->Start();
+  return wrapper;
 }
 
-void WebSocketWrapper::Pin() {
-  // Prevent ourselves from being GC'd while the connection is alive. Must be
-  // called after gin_helper::CreateHandle.
+cppgc::Persistent<gin::WeakCell<WebSocketWrapper>> WebSocketWrapper::WeakRef() {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  pinned_wrapper_.Reset(isolate, GetWrapper(isolate).ToLocalChecked());
-}
-
-void WebSocketWrapper::Unpin() {
-  pinned_wrapper_.Reset();
+  return gin::WrapPersistent(
+      weak_factory_.GetWeakCell(isolate->GetCppHeap()->GetAllocationHandle()));
 }
 
 void WebSocketWrapper::Start() {
@@ -185,13 +179,15 @@ void WebSocketWrapper::Start() {
   CHECK(browser_context_);
 
   auto handshake_remote = handshake_receiver_.BindNewPipeAndPassRemote();
-  handshake_receiver_.set_disconnect_handler(base::BindOnce(
-      &WebSocketWrapper::OnMojoDisconnect, weak_factory_.GetWeakPtr()));
-
-  auto auth_handler_remote = auth_handler_receiver_.BindNewPipeAndPassRemote();
+  handshake_receiver_.set_disconnect_handler(
+      base::BindOnce(&WebSocketWrapper::OnMojoDisconnect, WeakRef()));
 
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
+  // Note: no auth_handler is supplied. With a null auth handler the network
+  // service fails an HTTP/proxy auth challenge immediately (no credentials),
+  // which surfaces here as OnFailure(). Cached credentials in the network
+  // process (e.g. from a prior net.request login) are still used.
   network_context->CreateWebSocket(
       url_, requested_protocols_, net::StorageAccessApiStatus::kNone,
       net::IsolationInfo::CreateForInternalRequest(origin_),
@@ -202,7 +198,7 @@ void WebSocketWrapper::Start() {
       net::MutableNetworkTrafficAnnotationTag(kWebSocketTrafficAnnotation),
       std::move(handshake_remote),
       /*url_loader_network_observer=*/mojo::NullRemote(),
-      std::move(auth_handler_remote),
+      /*auth_handler=*/mojo::NullRemote(),
       /*header_client=*/mojo::NullRemote(),
       /*throttling_profile_id=*/std::nullopt,
       /*network_restrictions_id=*/std::nullopt);
@@ -218,26 +214,17 @@ void WebSocketWrapper::Fail(const std::string& message, int net_error) {
   if (state_ == State::kClosed)
     return;
   state_ = State::kClosed;
-  auto self = weak_factory_.GetWeakPtr();
   Emit("error", message, net::ErrorToString(net_error));
-  if (!self)
-    return;
   Emit("close", /*was_clean=*/false, /*code=*/static_cast<uint32_t>(1006),
        /*reason=*/std::string());
-  if (!self)
-    return;
   Teardown();
 }
 
 void WebSocketWrapper::EmitCloseAndTeardown(bool was_clean,
                                             uint32_t code,
                                             const std::string& reason) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  auto self = weak_factory_.GetWeakPtr();
   Emit("close", was_clean, code, reason);
-  if (self)
-    Teardown();
+  Teardown();
 }
 
 void WebSocketWrapper::Teardown() {
@@ -246,13 +233,13 @@ void WebSocketWrapper::Teardown() {
   writable_watcher_.Cancel();
   handshake_receiver_.reset();
   client_receiver_.reset();
-  auth_handler_receiver_.reset();
   websocket_.reset();
   readable_.reset();
   writable_.reset();
   pending_writes_.clear();
   pending_read_data_.clear();
-  Unpin();
+  // Allow this object to be collected once nothing in JS references it.
+  keep_alive_.Clear();
 }
 
 // ---------------------------------------------------------------------------
@@ -287,28 +274,26 @@ void WebSocketWrapper::OnConnectionEstablished(
   client_receiver_.Bind(std::move(client_receiver));
 
   readable_ = std::move(readable);
-  CHECK_EQ(
-      readable_watcher_.Watch(readable_.get(), MOJO_HANDLE_SIGNAL_READABLE,
-                              MOJO_TRIGGER_CONDITION_SIGNALS_SATISFIED,
-                              base::BindRepeating(&WebSocketWrapper::OnReadable,
-                                                  weak_factory_.GetWeakPtr())),
-      MOJO_RESULT_OK);
+  CHECK_EQ(readable_watcher_.Watch(
+               readable_.get(), MOJO_HANDLE_SIGNAL_READABLE,
+               MOJO_TRIGGER_CONDITION_SIGNALS_SATISFIED,
+               base::BindRepeating(&WebSocketWrapper::OnReadable, WeakRef())),
+           MOJO_RESULT_OK);
 
   writable_ = std::move(writable);
-  CHECK_EQ(
-      writable_watcher_.Watch(writable_.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
-                              MOJO_TRIGGER_CONDITION_SIGNALS_SATISFIED,
-                              base::BindRepeating(&WebSocketWrapper::OnWritable,
-                                                  weak_factory_.GetWeakPtr())),
-      MOJO_RESULT_OK);
+  CHECK_EQ(writable_watcher_.Watch(
+               writable_.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
+               MOJO_TRIGGER_CONDITION_SIGNALS_SATISFIED,
+               base::BindRepeating(&WebSocketWrapper::OnWritable, WeakRef())),
+           MOJO_RESULT_OK);
 
   // |handshake_receiver_| will disconnect soon. From now on we watch
   // |client_receiver_| and |websocket_| for network-service crashes.
   handshake_receiver_.set_disconnect_handler(base::DoNothing());
-  client_receiver_.set_disconnect_handler(base::BindOnce(
-      &WebSocketWrapper::OnMojoDisconnect, weak_factory_.GetWeakPtr()));
-  websocket_.set_disconnect_handler(base::BindOnce(
-      &WebSocketWrapper::OnMojoDisconnect, weak_factory_.GetWeakPtr()));
+  client_receiver_.set_disconnect_handler(
+      base::BindOnce(&WebSocketWrapper::OnMojoDisconnect, WeakRef()));
+  websocket_.set_disconnect_handler(
+      base::BindOnce(&WebSocketWrapper::OnMojoDisconnect, WeakRef()));
 
   websocket_->StartReceiving();
   state_ = State::kOpen;
@@ -412,10 +397,8 @@ void WebSocketWrapper::OnDropChannel(bool was_clean,
   client_receiver_.set_disconnect_handler(base::DoNothing());
   websocket_.set_disconnect_handler(base::DoNothing());
   state_ = State::kClosed;
-  auto self = weak_factory_.GetWeakPtr();
   Emit("close", was_clean, static_cast<uint32_t>(code), reason);
-  if (self)
-    Teardown();
+  Teardown();
 }
 
 void WebSocketWrapper::OnClosingHandshake() {
@@ -423,28 +406,6 @@ void WebSocketWrapper::OnClosingHandshake() {
   if (state_ == State::kOpen)
     state_ = State::kClosing;
   Emit("closing");
-}
-
-// ---------------------------------------------------------------------------
-// network::mojom::WebSocketAuthenticationHandler
-
-void WebSocketWrapper::OnAuthRequired(
-    const net::AuthChallengeInfo& auth_info,
-    const scoped_refptr<net::HttpResponseHeaders>& headers,
-    const net::IPEndPoint& remote_endpoint,
-    OnAuthRequiredCallback callback) {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  auto cb = base::BindOnce(
-      [](OnAuthRequiredCallback callback, gin::Arguments* args) {
-        std::u16string username, password;
-        if (!args->GetNext(&username) || !args->GetNext(&password)) {
-          std::move(callback).Run(std::nullopt);
-          return;
-        }
-        std::move(callback).Run(net::AuthCredentials(username, password));
-      },
-      std::move(callback));
-  Emit("login", auth_info, std::move(cb));
 }
 
 // ---------------------------------------------------------------------------
@@ -496,13 +457,11 @@ void WebSocketWrapper::Close(gin::Arguments* args) {
     // do not fire 'error'. The 'close' event must be fired in a queued task,
     // not synchronously from close(), so post it.
     handshake_receiver_.reset();
-    auth_handler_receiver_.reset();
     state_ = State::kClosed;
     base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-        FROM_HERE,
-        base::BindOnce(&WebSocketWrapper::EmitCloseAndTeardown,
-                       weak_factory_.GetWeakPtr(), /*was_clean=*/false,
-                       /*code=*/1006u, std::string()));
+        FROM_HERE, base::BindOnce(&WebSocketWrapper::EmitCloseAndTeardown,
+                                  WeakRef(), /*was_clean=*/false,
+                                  /*code=*/1006u, std::string()));
     return;
   }
 
@@ -576,12 +535,17 @@ gin::ObjectTemplateBuilder WebSocketWrapper::GetObjectTemplateBuilder(
       .SetMethod("getBufferedAmount", &WebSocketWrapper::GetBufferedAmount);
 }
 
-const char* WebSocketWrapper::GetTypeName() {
-  return "WebSocketWrapper";
+const gin::WrapperInfo* WebSocketWrapper::wrapper_info() const {
+  return &kWrapperInfo;
 }
 
-void WebSocketWrapper::WillBeDestroyed() {
-  ClearWeak();
+const char* WebSocketWrapper::GetHumanReadableName() const {
+  return "Electron / WebSocketWrapper";
+}
+
+void WebSocketWrapper::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<WebSocketWrapper>::Trace(visitor);
+  visitor->Trace(weak_factory_);
 }
 
 }  // namespace electron::api
