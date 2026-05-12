@@ -329,6 +329,8 @@ filenames = {
     "shell/browser/api/electron_api_web_frame_main.h",
     "shell/browser/api/electron_api_web_request.cc",
     "shell/browser/api/electron_api_web_request.h",
+    "shell/browser/api/electron_api_web_socket.cc",
+    "shell/browser/api/electron_api_web_socket.h",
     "shell/browser/api/electron_api_web_view_manager.cc",
     "shell/browser/api/frame_subscriber.cc",
     "shell/browser/api/frame_subscriber.h",
