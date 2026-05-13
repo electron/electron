@@ -131,7 +131,8 @@ struct Converter<std::set<T>> {
     auto context = isolate->GetCurrentContext();
     uint32_t i = 0;
     for (const T& item : val) {
-      result->CreateDataProperty(context, i++, Converter<T>::ToV8(isolate, item))
+      result
+          ->CreateDataProperty(context, i++, Converter<T>::ToV8(isolate, item))
           .Check();
     }
     return result;
