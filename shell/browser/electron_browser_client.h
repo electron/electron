@@ -192,6 +192,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
                        bool user_gesture,
                        bool opener_suppressed,
                        bool* no_javascript_access) override;
+  std::optional<mojo_base::BigBuffer> GetExtraCreateNewWindowReplyData(
+      content::RenderFrameHost* new_window_main_frame,
+      const GURL& target_url) override;
   std::unique_ptr<content::VideoOverlayWindow>
   CreateWindowForVideoPictureInPicture(
       content::VideoPictureInPictureWindowController* controller) override;

@@ -34,6 +34,8 @@ class ExtensionsClient;
 
 namespace electron {
 
+class ElectronRenderThreadObserver;
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsRendererClient;
 #endif
@@ -100,6 +102,7 @@ class RendererClientBase : public content::ContentRendererClient
   void RenderThreadStarted() override;
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   void RenderFrameCreated(content::RenderFrame*) override;
+  void SetPendingCreateNewWindowStartupData(mojo_base::BigBuffer data) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
@@ -154,6 +157,10 @@ class RendererClientBase : public content::ContentRendererClient
   std::unique_ptr<extensions::ExtensionsClient> extensions_client_;
   std::unique_ptr<ElectronExtensionsRendererClient> extensions_renderer_client_;
 #endif
+
+  // Receives the per-process service-worker startup data push from the
+  // browser, replacing the BROWSER_SANDBOX_LOAD sync IPC for SW preload realms.
+  std::unique_ptr<ElectronRenderThreadObserver> render_thread_observer_;
 
   std::string renderer_client_id_;
   // An increasing ID used for identifying an V8 context in this process.

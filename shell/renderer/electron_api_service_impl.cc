@@ -19,6 +19,8 @@
 #include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_util.h"
 #include "shell/renderer/electron_ipc_native.h"
+
+#include "base/no_destructor.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
@@ -30,6 +32,17 @@
 #include "v8/include/v8-context.h"
 
 namespace electron {
+
+namespace {
+
+mojom::RendererStartupDataPtr* GetPendingNewWindowStartupData() {
+  // Process-global, no locking: set, RenderFrame creation, and take are all
+  // one synchronous call stack inside window.open().
+  static base::NoDestructor<mojom::RendererStartupDataPtr> pending;
+  return pending.get();
+}
+
+}  // namespace
 
 ElectronApiServiceImpl::~ElectronApiServiceImpl() = default;
 
@@ -47,6 +60,18 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
       ->AddInterface<mojom::ElectronFrameStartup>(
           base::BindRepeating(&ElectronApiServiceImpl::BindFrameStartupReceiver,
                               base::Unretained(this)));
+
+  // window.open() popup's about:blank fires DidCreateScriptContext before
+  // any push can land; the browser attaches its startup data to the
+  // CreateNewWindowReply and SetPendingCreateNewWindowStartupData() stashes it
+  // for us on this same call stack. The first real navigation replaces it.
+  startup_data_ = std::exchange(*GetPendingNewWindowStartupData(), nullptr);
+}
+
+// static
+void ElectronApiServiceImpl::SetPendingNewWindowStartupData(
+    mojom::RendererStartupDataPtr data) {
+  *GetPendingNewWindowStartupData() = std::move(data);
 }
 
 void ElectronApiServiceImpl::BindFrameStartupReceiver(

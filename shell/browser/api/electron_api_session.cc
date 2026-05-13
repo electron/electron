@@ -44,6 +44,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/preconnect_request.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
@@ -79,6 +80,7 @@
 #include "shell/browser/net/cert_verifier_client.h"
 #include "shell/browser/net/resolve_host_function.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -1134,6 +1136,14 @@ std::string Session::RegisterPreloadScript(
   }
 
   preload_scripts.push_back(new_preload_script);
+
+  // Re-push the service-worker startup data to renderers that are already
+  // alive so a SW spawned in them after this point sees the new preload.
+  if (new_preload_script.script_type ==
+      PreloadScript::ScriptType::kServiceWorker) {
+    BroadcastWorkerStartupData();
+  }
+
   return new_preload_script.id;
 }
 
@@ -1152,13 +1162,26 @@ void Session::UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
 
   // If the script is found, erase it from the vector
   if (it != preload_scripts.end()) {
+    bool was_service_worker =
+        it->script_type == PreloadScript::ScriptType::kServiceWorker;
     preload_scripts.erase(it);
+    if (was_service_worker)
+      BroadcastWorkerStartupData();
     return;
   }
 
   // If the script is not found, throw an error
   thrower.ThrowError(absl::StrFormat(
       "Cannot unregister preload script with non-existing ID '%s'", script_id));
+}
+
+void Session::BroadcastWorkerStartupData() {
+  for (auto it = content::RenderProcessHost::AllHostsIterator(); !it.IsAtEnd();
+       it.Advance()) {
+    content::RenderProcessHost* host = it.GetCurrentValue();
+    if (host->GetBrowserContext() == browser_context())
+      renderer_startup_data::SendToProcess(host);
+  }
 }
 
 std::vector<PreloadScript> Session::GetPreloadScripts() const {

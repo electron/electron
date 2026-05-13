@@ -12,6 +12,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+#include "shell/renderer/electron_render_thread_observer.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/renderer/bindings/core/v8/script_controller.h"  // nogncheck
@@ -186,6 +187,18 @@ class PreloadRealmLifetimeController
     process.SetReadOnly("sandboxed", true);
     process.SetReadOnly("type", "service-worker");
     process.SetReadOnly("contextIsolated", true);
+
+    // The browser pushed the service-worker preload set + process info via the
+    // per-process ElectronWorkerStartup channel at RenderProcessReady() —
+    // before any StartWorker IPC could have spawned this thread. Hand it to
+    // the bundle so it never round-trips a sync IPC to the browser UI thread.
+    auto worker_data = ElectronRenderThreadObserver::GetWorkerStartupData();
+    v8::Local<v8::Value> startup_data;
+    if (!preload_utils::BuildStartupData(isolate, worker_data)
+             .ToLocal(&startup_data)) {
+      startup_data = v8::Null(isolate);
+    }
+    b.Set("startupData", startup_data);
 
     v8::LocalVector<v8::String> preload_realm_bundle_params(
         isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "binding")});

@@ -67,6 +67,13 @@ class ElectronApiServiceImpl
     return std::move(startup_data_);
   }
 
+  // Stashes the startup data the browser attached to a CreateNewWindowReply
+  // for an about-to-be-created window.open() child window. Picked up by the
+  // next ElectronApiServiceImpl's constructor — the new RenderFrame is created
+  // synchronously on the same call stack as RenderFrameImpl::CreateNewWindow().
+  static void SetPendingNewWindowStartupData(
+      mojom::RendererStartupDataPtr data);
+
   base::WeakPtr<ElectronApiServiceImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();
   }

@@ -10,10 +10,7 @@
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/process/process_metrics.h"
-#include "chrome/common/chrome_version.h"
 #include "content/public/renderer/render_frame.h"
-#include "electron/buildflags/buildflags.h"
-#include "electron/electron_version.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -30,7 +27,6 @@
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/electron_node/src/node_binding.h"
-#include "third_party/electron_node/src/node_metadata.h"
 
 namespace electron {
 
@@ -72,87 +68,6 @@ ElectronSandboxedRendererClient::ElectronSandboxedRendererClient() {
 
 ElectronSandboxedRendererClient::~ElectronSandboxedRendererClient() = default;
 
-namespace {
-
-// Builds the { node, v8, uv, electron, chrome, ... } versions object the same
-// way the browser process does in OnNodePreload (node_bindings.cc), but
-// without needing a node::Environment — the values are static per-process
-// metadata baked into the binary.
-v8::Local<v8::Value> BuildVersions(v8::Isolate* isolate) {
-  auto versions = gin_helper::Dictionary::CreateEmpty(isolate);
-  for (const auto& [key, value] : node::per_process::metadata.versions.pairs())
-    versions.SetReadOnly(key, value);
-  versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
-  versions.SetReadOnly("chrome", CHROME_VERSION_STRING);
-#if BUILDFLAG(HAS_VENDOR_VERSION)
-  versions.SetReadOnly(BUILDFLAG(VENDOR_VERSION_NAME),
-                       BUILDFLAG(VENDOR_VERSION_VALUE));
-#endif
-  return versions.GetHandle();
-}
-
-// Converts the preload data the browser pushed via ElectronFrameStartup into
-// the same shape lib/sandboxed_renderer/init.ts expects from the legacy
-// BROWSER_SANDBOX_LOAD reply — { preloadScripts, process }. Returns an empty
-// MaybeLocal if no startup data has been pushed yet (e.g. the initial empty
-// document of a fresh RenderFrame, where the renderer falls back to sync IPC).
-v8::MaybeLocal<v8::Value> BuildStartupData(
-    v8::Isolate* isolate,
-    const mojom::RendererStartupDataPtr& data) {
-  if (!data)
-    return {};
-
-  auto out = gin_helper::Dictionary::CreateEmpty(isolate);
-
-  // preloadScripts: [{ id, type, filePath, contents, error }]
-  v8::LocalVector<v8::Value> scripts(isolate);
-  scripts.reserve(data->preload_scripts.size());
-  for (const auto& ps : data->preload_scripts) {
-    auto entry = gin_helper::Dictionary::CreateEmpty(isolate);
-    entry.Set("id", ps->id);
-    entry.Set("type", ps->type);
-    entry.Set("filePath", ps->file_path);
-    // BigBuffer uses inline bytes below 64 KB and shared memory above; the
-    // implicit base::span conversion handles both backing stores. byte_span()
-    // would CHECK-fail for the shared-memory case.
-    base::span<const uint8_t> bytes = ps->contents;
-    entry.Set("contents",
-              std::string_view(reinterpret_cast<const char*>(bytes.data()),
-                               bytes.size()));
-    // Match the legacy IPC handler shape: `error` is an Error object when the
-    // file read failed (the legacy path serializes the fs.readFile error
-    // through the IPC), and absent otherwise. preload.ts destructures
-    // `{contents, error}` and checks `if (contents)... else if (error)...`.
-    if (ps->error) {
-      entry.Set("error", v8::Local<v8::Value>(v8::Exception::Error(
-                             gin::StringToV8(isolate, *ps->error))));
-    }
-    scripts.push_back(entry.GetHandle());
-  }
-  out.Set("preloadScripts",
-          v8::Array::New(isolate, scripts.data(), scripts.size()));
-
-  // process: { arch, platform, env, version, versions, execPath } — same
-  // shape as lib/browser/rpc-server.ts builds. arch/platform/version/versions
-  // are filled from this binary's compiled-in metadata instead of being
-  // shipped over the wire (they are identical in browser and renderer).
-  auto proc = gin_helper::Dictionary::CreateEmpty(isolate);
-  proc.Set("arch", node::per_process::metadata.arch);
-  proc.Set("platform", node::per_process::metadata.platform);
-  proc.Set("version", "v" + node::per_process::metadata.versions.node);
-  proc.Set("versions", BuildVersions(isolate));
-  auto env = gin_helper::Dictionary::CreateEmpty(isolate);
-  for (const auto& [k, v] : data->environment)
-    env.Set(k, v);
-  proc.Set("env", env);
-  proc.Set("execPath", data->helper_exec_path);
-  out.Set("process", proc);
-
-  return out.GetHandle();
-}
-
-}  // namespace
-
 void ElectronSandboxedRendererClient::InitializeBindings(
     v8::Local<v8::Object> binding,
     v8::Isolate* const isolate,
@@ -174,13 +89,17 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
 
-  // If the browser pushed startup data via ElectronFrameStartup ahead of this
-  // navigation, hand it to the bundle so it can skip the BROWSER_SANDBOX_LOAD
-  // sync IPC. If not, set startupData to null and the bundle falls back.
+  // The browser pushed the preload script set + process info via
+  // ElectronFrameStartup, ordered ahead of the CommitNavigation that triggered
+  // this DidCreateScriptContext. The push always lands first (associated mojo
+  // ordering); the only documents that reach here without it are ones that
+  // ShouldLoadPreload() filters out (initial empty doc, webview frames), so
+  // the bundle never observes a null startupData in practice.
   auto* api_service = ElectronApiServiceImpl::Get(render_frame);
   v8::Local<v8::Value> startup_data;
-  if (!api_service || !BuildStartupData(isolate, api_service->startup_data())
-                           .ToLocal(&startup_data)) {
+  if (!api_service ||
+      !preload_utils::BuildStartupData(isolate, api_service->startup_data())
+           .ToLocal(&startup_data)) {
     startup_data = v8::Null(isolate);
   }
   b.Set("startupData", startup_data);

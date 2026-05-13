@@ -156,6 +156,11 @@ class Session final : public gin::Wrappable<Session>,
   void UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
                                const std::string& script_id);
   std::vector<PreloadScript> GetPreloadScripts() const;
+  // Re-pushes the service-worker startup data to all alive renderer processes
+  // for this session. Called when a service-worker preload script is
+  // registered or unregistered so SW preload realms spawned afterwards see the
+  // current set without round-tripping a sync IPC.
+  void BroadcastWorkerStartupData();
   v8::Local<v8::Promise> GetSharedDictionaryInfo(
       const gin_helper::Dictionary& options);
   v8::Local<v8::Promise> GetSharedDictionaryUsageInfo();

@@ -36,6 +36,13 @@ interface ElectronFrameStartup {
   SetStartupData(RendererStartupData data);
 };
 
+// Per-process associated interface. The browser pushes the service-worker
+// preload set at RenderProcessReady(), and re-pushes when SW preloads are
+// registered/unregistered while the process is alive.
+interface ElectronWorkerStartup {
+  SetWorkerStartupData(RendererStartupData data);
+};
+
 interface ElectronRenderer {
   Message(
       bool internal,

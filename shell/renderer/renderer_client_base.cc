@@ -36,6 +36,7 @@
 #include "shell/renderer/content_settings_observer.h"
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
+#include "shell/renderer/electron_render_thread_observer.h"
 #include "shell/renderer/oom_stack_trace.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
@@ -220,6 +221,12 @@ bool RendererClientBase::ShouldLoadPreload(
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
+  // Register the per-process startup-data receiver before any service worker
+  // can start. The browser pushes the SW preload set + process info over this
+  // observer's associated interface at RenderProcessReady().
+  render_thread_observer_ = std::make_unique<ElectronRenderThreadObserver>();
+  content::RenderThread::Get()->AddObserver(render_thread_observer_.get());
+
   // Enable MessagePort close event by default.
   // The feature got reverted from stable to test in
   // https://chromium-review.googlesource.com/c/chromium/src/+/5276821
@@ -309,6 +316,19 @@ void RendererClientBase::ExposeInterfacesToBrowser(mojo::BinderMap* binders) {
   // definition of |ExposeElectronRendererInterfacesToBrowser()| to ensure
   // security review coverage.
   ExposeElectronRendererInterfacesToBrowser(this, binders);
+}
+
+void RendererClientBase::SetPendingCreateNewWindowStartupData(
+    mojo_base::BigBuffer data) {
+  // Deserialize the opaque blob from CreateNewWindowReply and stash it for
+  // the about-to-be-created RenderFrame's ElectronApiServiceImpl. Same call
+  // stack, no reentrancy.
+  mojom::RendererStartupDataPtr deserialized;
+  if (mojom::RendererStartupData::Deserialize(base::span<const uint8_t>(data),
+                                              &deserialized)) {
+    ElectronApiServiceImpl::SetPendingNewWindowStartupData(
+        std::move(deserialized));
+  }
 }
 
 void RendererClientBase::RenderFrameCreated(

@@ -108,7 +108,9 @@
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
+#include "shell/browser/preload_script.h"
 #include "shell/browser/protocol_registry.h"
+#include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/tracing/electron_tracing_delegate.h"
@@ -121,6 +123,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
+#include "shell/common/asar/asar_util.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
@@ -725,6 +728,53 @@ bool ElectronBrowserClient::CanCreateWindow(
   return false;
 }
 
+std::optional<mojo_base::BigBuffer>
+ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
+    content::RenderFrameHost* new_window_main_frame,
+    const GURL& target_url) {
+  // A window.open() popup's synchronous about:blank fires
+  // DidCreateScriptContext — and runs the preload — before any async push can
+  // land. We've just run setWindowOpenHandler so the popup's WebContents has
+  // its (possibly overridden) preload set; attach it to the reply.
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(new_window_main_frame);
+  if (!web_contents)
+    return std::nullopt;
+  auto* web_prefs = WebContentsPreferences::From(web_contents);
+  const bool browser_force_sandbox =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableSandbox);
+  if (!browser_force_sandbox && web_prefs && !web_prefs->IsSandboxed())
+    return std::nullopt;
+
+  mojom::RendererStartupDataPtr data;
+  {
+    ScopedAllowBlockingForElectron allow_blocking;
+    data = renderer_startup_data::Build(web_contents->GetBrowserContext(),
+                                        PreloadScript::ScriptType::kWebFrame);
+    std::optional<base::FilePath> preload;
+    if (web_prefs)
+      preload = web_prefs->GetPreloadPath();
+    if (preload && preload->IsAbsolute()) {
+      auto ps = mojom::PreloadScriptData::New();
+      ps->id = "preload-" + preload->AsUTF8Unsafe();
+      ps->type = "frame";
+      ps->file_path = preload->AsUTF8Unsafe();
+      std::string contents;
+      if (asar::ReadFileToString(*preload, &contents)) {
+        ps->contents.assign(contents.begin(), contents.end());
+      } else {
+        ps->contents.clear();
+        ps->error =
+            "ENOENT: no such file or directory, open '" + ps->file_path + "'";
+      }
+      data->preload_scripts.push_back(std::move(ps));
+    }
+  }
+  // Opaque blob — Chromium can't depend on Electron's mojom types.
+  return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
+}
+
 std::unique_ptr<content::VideoOverlayWindow>
 ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
     content::VideoPictureInPictureWindowController* controller) {
@@ -908,6 +958,9 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
 
 void ElectronBrowserClient::RenderProcessReady(
     content::RenderProcessHost* host) {
+  // Push SW preload set + process info before any StartWorker IPC.
+  renderer_startup_data::SendToProcess(host);
+
   if (delegate_) {
     static_cast<api::App*>(delegate_)->RenderProcessReady(host);
   }
