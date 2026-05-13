@@ -16,7 +16,7 @@ const kProtocol = Symbol('protocol');
 const kExtensions = Symbol('extensions');
 const kBinaryType = Symbol('binaryType');
 const kHandlers = Symbol('handlers');
-const kPendingBlobBytes = Symbol('pendingBlobBytes');
+const kQueuedBytes = Symbol('queuedBytes');
 const kSendQueue = Symbol('sendQueue');
 const kSendQueueDepth = Symbol('sendQueueDepth');
 
@@ -67,7 +67,9 @@ export class WebSocket extends EventTarget {
   private [kExtensions]: string = '';
   private [kBinaryType]: BinaryType = 'nodebuffer';
   private [kHandlers] = new Map<string, EventListener | null>();
-  private [kPendingBlobBytes] = 0;
+  // Bytes accepted by send() that have not yet been handed to the native
+  // layer (i.e. still in the JS send queue). Counted in bufferedAmount.
+  private [kQueuedBytes] = 0;
   // Serializes outbound writes so a Blob (which must be read asynchronously)
   // does not let a later string/ArrayBuffer send overtake it on the wire.
   private [kSendQueue]: Promise<unknown> = Promise.resolve();
@@ -147,15 +149,17 @@ export class WebSocket extends EventTarget {
 
     wrapper.on('message', (_event, isText, data) => {
       if (this[kReadyState] !== OPEN) return;
-      let payload: any;
+      let payload: string | Buffer | ArrayBuffer | Blob;
       if (isText) {
-        payload = Buffer.from(data).toString('utf8');
+        payload = data.toString('utf8');
       } else if (this[kBinaryType] === 'arraybuffer') {
-        payload = data;
+        // electron::Buffer::Copy() backs the Buffer with a fresh ArrayBuffer
+        // sized exactly to the message, so .buffer is safe to expose.
+        payload = data.buffer as ArrayBuffer;
       } else if (this[kBinaryType] === 'blob') {
         payload = new Blob([data]);
       } else {
-        payload = Buffer.from(data);
+        payload = data;
       }
       this.dispatchEvent(
         new MessageEvent('message', {
@@ -196,7 +200,7 @@ export class WebSocket extends EventTarget {
   }
 
   get bufferedAmount(): number {
-    return this[kWrapper].getBufferedAmount() + this[kPendingBlobBytes];
+    return this[kWrapper].getBufferedAmount() + this[kQueuedBytes];
   }
 
   get extensions(): string {
@@ -226,18 +230,11 @@ export class WebSocket extends EventTarget {
       this.#enqueueSend(true, Buffer.from(data, 'utf8'));
     } else if (data instanceof Blob) {
       // Blobs must be read asynchronously. Hold a slot in the send queue so
-      // later sends do not overtake this one, and track the size in
-      // bufferedAmount until the bytes have been handed to the network stack.
-      this[kPendingBlobBytes] += data.size;
-      this.#enqueueAsync(() =>
+      // later sends do not overtake this one.
+      this.#enqueueAsync(data.size, () =>
         data.arrayBuffer().then(
-          (ab) => {
-            this[kPendingBlobBytes] -= data.size;
-            this[kWrapper].send(false, new Uint8Array(ab));
-          },
-          () => {
-            this[kPendingBlobBytes] -= data.size;
-          }
+          (ab) => this[kWrapper].send(false, new Uint8Array(ab)),
+          () => {}
         )
       );
     } else if (ArrayBuffer.isView(data)) {
@@ -259,14 +256,19 @@ export class WebSocket extends EventTarget {
     if (this[kSendQueueDepth] === 0) {
       this[kWrapper].send(isText, bytes);
     } else {
-      this.#enqueueAsync(() => this[kWrapper].send(isText, bytes));
+      this.#enqueueAsync(bytes.length, () => this[kWrapper].send(isText, bytes));
     }
   }
 
-  #enqueueAsync(step: () => unknown) {
+  // Chains a step on the send queue and accounts its byte size in
+  // bufferedAmount until the step completes (i.e. until the bytes either reach
+  // the native layer's buffered_amount_ or are dropped).
+  #enqueueAsync(byteSize: number, step: () => unknown) {
     this[kSendQueueDepth]++;
+    this[kQueuedBytes] += byteSize;
     this[kSendQueue] = this[kSendQueue].then(step, step).finally(() => {
       this[kSendQueueDepth]--;
+      this[kQueuedBytes] -= byteSize;
     });
   }
 

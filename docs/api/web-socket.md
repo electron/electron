@@ -165,3 +165,7 @@ not an `EventEmitter`. Listen with `addEventListener()` or the corresponding
   event.
 * `close` - Emitted with a [`CloseEvent`](https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent)
   (`code`, `reason`, `wasClean`) when the connection is closed for any reason.
+  When the connection fails (for example, the handshake is rejected or the
+  network is unreachable), `code` is `1006` and Electron sets `reason` to a
+  short description of the underlying network error so that the failure is
+  diagnosable without a debugger attached.

@@ -112,9 +112,12 @@ describe('net.WebSocket', () => {
       const order: string[] = [];
       ws.addEventListener('error', () => order.push('error'));
       ws.addEventListener('close', () => order.push('close'));
-      await event(ws, 'close');
+      const e = await event<CloseEvent>(ws, 'close');
       expect(order).to.deep.equal(['error', 'close']);
       expect(ws.readyState).to.equal(net.WebSocket.CLOSED);
+      // Network-level failures surface the failure reason in CloseEvent.reason.
+      expect(e.code).to.equal(1006);
+      expect(e.reason).to.match(/net::ERR_\w+/);
     });
 
     it('readyState is CLOSED inside the error handler', async () => {
@@ -264,6 +267,21 @@ describe('net.WebSocket', () => {
       expect(ws.readyState).to.equal(net.WebSocket.CLOSED);
       ws.send('discarded');
       expect(ws.bufferedAmount).to.equal(Buffer.byteLength('discarded'));
+    });
+
+    it('counts bytes queued behind an async Blob send in bufferedAmount', async () => {
+      const { url } = await startWSServer();
+      const ws = new net.WebSocket(url);
+      defer(() => ws.close());
+      await event(ws, 'open');
+      // The Blob holds the send queue open asynchronously; the string send is
+      // chained behind it but must still be reflected in bufferedAmount
+      // synchronously per the WebSocket spec.
+      ws.send(new Blob(['four']));
+      ws.send('three');
+      expect(ws.bufferedAmount).to.be.at.least(4 + 5);
+      ws.close();
+      await event(ws, 'close');
     });
 
     it('preserves send order across Blob and non-Blob sends', async () => {
