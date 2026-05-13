@@ -5,11 +5,12 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_LOCKER_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_LOCKER_H_
 
-#include <memory>
+#include <optional>
+
+#include "v8/include/v8-locker.h"
 
 namespace v8 {
 class Isolate;
-class Locker;
 }  // namespace v8
 
 namespace gin_helper {
@@ -29,7 +30,8 @@ class Locker {
   void operator delete(void*, size_t) = delete;
 
  private:
-  const std::unique_ptr<v8::Locker> locker_;
+  // Inline storage — avoids a heap allocation per C++ -> JS callback.
+  std::optional<v8::Locker> locker_;
 };
 
 }  // namespace gin_helper
