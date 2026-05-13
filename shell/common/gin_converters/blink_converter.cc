@@ -55,8 +55,10 @@ struct Converter<char16_t> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      char16_t* out) {
-    std::u16string code = base::UTF8ToUTF16(gin::V8ToString(isolate, val));
-    if (code.length() != 1)
+    // V8 strings are UTF-16; read directly rather than via UTF-8.
+    std::u16string code;
+    if (!gin::Converter<std::u16string>::FromV8(isolate, val, &code) ||
+        code.length() != 1)
       return false;
     *out = code[0];
     return true;
