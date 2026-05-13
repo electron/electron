@@ -64,7 +64,7 @@ JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
     : isolate_holder_{CreateIsolateHolder(
           Initialize(event_loop, setup_wasm_streaming),
           &max_young_generation_size_)},
-      locker_{std::make_unique<v8::Locker>(isolate())} {
+      locker_{std::in_place, isolate()} {
   v8::Isolate* const isolate = this->isolate();
   isolate->Enter();
 
