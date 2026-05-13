@@ -21,6 +21,7 @@
 #include "shell/renderer/electron_ipc_native.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/mojom/frame/user_activation_notification_type.mojom-shared.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
 #include "third_party/blink/public/web/blink.h"
@@ -36,9 +37,28 @@ ElectronApiServiceImpl::ElectronApiServiceImpl(
     content::RenderFrame* render_frame,
     RendererClientBase* renderer_client)
     : content::RenderFrameObserver(render_frame),
+      content::RenderFrameObserverTracker<ElectronApiServiceImpl>(render_frame),
       renderer_client_(renderer_client) {
   registry_.AddInterface<mojom::ElectronRenderer>(base::BindRepeating(
       &ElectronApiServiceImpl::BindTo, base::Unretained(this)));
+  // Associated with content.mojom.Frame, so SetStartupData() arrives before
+  // the CommitNavigation that follows it — i.e. before DidCreateScriptContext.
+  render_frame->GetAssociatedInterfaceRegistry()
+      ->AddInterface<mojom::ElectronFrameStartup>(
+          base::BindRepeating(&ElectronApiServiceImpl::BindFrameStartupReceiver,
+                              base::Unretained(this)));
+}
+
+void ElectronApiServiceImpl::BindFrameStartupReceiver(
+    mojo::PendingAssociatedReceiver<mojom::ElectronFrameStartup> receiver) {
+  if (frame_startup_receiver_.is_bound())
+    frame_startup_receiver_.reset();
+  frame_startup_receiver_.Bind(std::move(receiver));
+}
+
+void ElectronApiServiceImpl::SetStartupData(
+    mojom::RendererStartupDataPtr data) {
+  startup_data_ = std::move(data);
 }
 
 void ElectronApiServiceImpl::BindTo(

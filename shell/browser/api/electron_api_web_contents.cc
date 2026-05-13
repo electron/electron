@@ -22,6 +22,7 @@
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
 #include "base/no_destructor.h"
+#include "base/path_service.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -73,6 +74,7 @@
 #include "content/public/browser/visibility.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/common/child_process_id.h"
+#include "content/public/common/content_paths.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/webplugininfo.h"
@@ -83,6 +85,7 @@
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "media/base/mime_util.h"
+#include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -110,6 +113,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
+#include "shell/browser/preload_script.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -123,6 +127,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/api/electron_bindings.h"
+#include "shell/common/asar/asar_util.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/base_converter.h"
@@ -2243,10 +2248,131 @@ void WebContents::DidRedirectNavigation(
   EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
+namespace {
+
+// Snapshot of the browser process environment. Mirrors the `{ ...process.env }`
+// spread the legacy BROWSER_SANDBOX_LOAD handler did. uv_os_environ() is what
+// Node uses to back process.env so this is the same cross-platform view the
+// browser-side JS would have produced. Computed lazily once and cached — apps
+// mutating process.env after the first navigation is a known narrow edge case
+// the legacy path was already racy about.
+const base::flat_map<std::string, std::string>&
+GetBrowserEnvironmentSnapshot() {
+  static base::NoDestructor<base::flat_map<std::string, std::string>> snapshot(
+      [] {
+        base::flat_map<std::string, std::string> env;
+        uv_env_item_t* items = nullptr;
+        int count = 0;
+        if (uv_os_environ(&items, &count) == 0) {
+          // SAFETY: uv_os_environ() guarantees `items` points to `count`
+          // contiguous uv_env_item_t entries.
+          const auto span = UNSAFE_BUFFERS(
+              base::span(items, base::checked_cast<size_t>(count)));
+          for (const auto& item : span)
+            env.insert_or_assign(item.name, item.value);
+          uv_os_free_environ(items, count);
+        }
+        return env;
+      }());
+  return *snapshot;
+}
+
+base::FilePath GetHelperExecPath() {
+  base::FilePath path;
+  base::PathService::Get(content::CHILD_PROCESS_EXE, &path);
+  return path;
+}
+
+}  // namespace
+
+// Pushes preload contents + process.env + helperExecPath over an associated
+// channel ordered before CommitNavigation, so the renderer never has to ask.
+void WebContents::MaybeSendRendererStartupData(
+    content::NavigationHandle* navigation_handle) {
+  auto* web_prefs = WebContentsPreferences::From(web_contents());
+  if (!web_prefs || !web_prefs->IsSandboxed())
+    return;
+
+  // Match RendererClientBase::ShouldLoadPreload(): main frames always load
+  // preloads, sub frames only when nodeIntegrationInSubFrames is set. Devtools
+  // and webview edge cases fall back to the legacy sync IPC.
+  bool main_frame = navigation_handle->IsInMainFrame();
+  bool allow_subframes = web_prefs->AllowsNodeIntegrationInSubFrames();
+  if (!main_frame && !allow_subframes)
+    return;
+
+  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
+  if (!rfh || !rfh->IsRenderFrameLive())
+    return;
+
+  // Build the ordered preload list: session-registered preloads of type
+  // 'frame' first (in registration order), then the per-WebContents
+  // webPreferences.preload last — same order as
+  // lib/browser/rpc-server.ts:getPreloadScriptsFromEvent().
+  std::vector<std::pair<std::string, std::string>> typed_paths;
+  auto* session_prefs =
+      SessionPreferences::FromBrowserContext(rfh->GetBrowserContext());
+  if (session_prefs) {
+    for (const auto& script : session_prefs->preload_scripts()) {
+      if (script.script_type != PreloadScript::ScriptType::kWebFrame)
+        continue;
+      if (!script.file_path.IsAbsolute())
+        continue;
+      typed_paths.emplace_back(script.id, script.file_path.AsUTF8Unsafe());
+    }
+  }
+  if (auto preload = web_prefs->GetPreloadPath()) {
+    if (preload->IsAbsolute())
+      typed_paths.emplace_back("preload-" + preload->AsUTF8Unsafe(),
+                               preload->AsUTF8Unsafe());
+  }
+
+  auto data = mojom::RendererStartupData::New();
+  data->preload_scripts.reserve(typed_paths.size());
+  {
+    // We're on the UI thread. The asar is mmap'd and offset-indexed so warm
+    // reads are fast; cold reads block briefly. Crucially the renderer is NOT
+    // parked waiting on us here — we haven't sent CommitNavigation yet — so
+    // unlike the old sync IPC handler this can't amplify under contention.
+    ScopedAllowBlockingForElectron allow_blocking;
+    for (const auto& [id, path] : typed_paths) {
+      auto ps = mojom::PreloadScriptData::New();
+      ps->id = id;
+      ps->type = "frame";
+      ps->file_path = path;
+      std::string contents;
+      if (asar::ReadFileToString(base::FilePath::FromUTF8Unsafe(path),
+                                 &contents)) {
+        ps->contents.assign(contents.begin(), contents.end());
+      } else {
+        ps->contents.clear();
+        ps->error = "ENOENT: no such file or directory, open '" + path + "'";
+      }
+      data->preload_scripts.push_back(std::move(ps));
+    }
+  }
+
+  for (const auto& [k, v] : GetBrowserEnvironmentSnapshot())
+    data->environment[k] = v;
+  data->helper_exec_path = GetHelperExecPath().AsUTF8Unsafe();
+
+  // GetRemoteAssociatedInterfaces() routes over the same channel as
+  // content.mojom.Frame (the navigation channel), so this message is ordered
+  // before the CommitNavigation that the browser sends right after
+  // ReadyToCommitNavigation returns. The renderer's ElectronApiServiceImpl —
+  // created in RenderFrameCreated, before any navigation — will have cached it
+  // by the time DidCreateScriptContext fires.
+  mojo::AssociatedRemote<mojom::ElectronFrameStartup> frame_startup;
+  rfh->GetRemoteAssociatedInterfaces()->GetInterface(&frame_startup);
+  frame_startup->SetStartupData(std::move(data));
+}
+
 void WebContents::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
   base::AutoReset<bool> resetter(&is_safe_to_delete_, false);
   EmitNavigationEvent("-ready-to-commit-navigation", navigation_handle);
+
+  MaybeSendRendererStartupData(navigation_handle);
 
   // Don't focus content in an inactive window.
   if (!owner_window())

@@ -12,15 +12,29 @@ import { setImmediate, clearImmediate } from 'timers';
 declare const binding: {
   process: NodeJS.Process;
   createPreloadScript: (src: string) => Function;
+  // Pushed by the browser via mojom.ElectronFrameStartup ahead of
+  // CommitNavigation, or null if it hasn't arrived (e.g. the initial empty
+  // document). When present, lets us skip the BROWSER_SANDBOX_LOAD sync IPC.
+  startupData: {
+    preloadScripts: ElectronInternal.PreloadScript[];
+    process: NodeJS.Process;
+  } | null;
 };
 
 const ipcRendererUtils =
   require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
 
-const { preloadScripts, process: processProps } = ipcRendererUtils.invokeSync<{
-  preloadScripts: ElectronInternal.PreloadScript[];
-  process: NodeJS.Process;
-}>(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
+// Prefer the data the browser pushed ahead of the navigation. The sync-IPC
+// fallback exists only for cases the push doesn't cover yet (initial empty
+// document, devtools, webview frames) — it parks the renderer main thread on a
+// browser UI-thread roundtrip and amplifies under contention, so it's the slow
+// path.
+const { preloadScripts, process: processProps } =
+  binding.startupData ??
+  ipcRendererUtils.invokeSync<{
+    preloadScripts: ElectronInternal.PreloadScript[];
+    process: NodeJS.Process;
+  }>(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
 
 const electron = require('electron');
 
