@@ -4245,12 +4245,11 @@ v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
   }
 
   auto pid = frame_host->GetProcess()->GetProcess().Pid();
-  v8::Global<v8::Context> context(isolate, isolate->GetCurrentContext());
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDumpForPid(
           pid, std::vector<std::string>(),
           base::BindOnce(&ElectronBindings::DidReceiveMemoryDump,
-                         std::move(context), std::move(promise), pid));
+                         std::move(promise), pid));
   return handle;
 }
 
