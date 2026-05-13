@@ -811,7 +811,7 @@ index 8ce53b96b400611f5d8a94155c6ff6191fcb5963..dea308562c23388eb6b5749d2eb3e30e
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 2c9f428f3af5d142919b3b289980314d84937d1d..65f01861139c26ed11de01c67b52a8b8dcd1ac6b 100644
+index 032ecbcc158ee799bd332a4a6c8c49c12cf42113..b27203fac0393ff3c74ea24b0bf58faf90bc798d 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -1095,10 +1095,10 @@ index 0de24a703da635ebd26ebb0a3eb7f566e3c71ace..c32cda2fd10b2b5dddd09480693cca52
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 2fc5cf187dfd2a27e9fd86145a486463760bc9a2..ba701739a1dc193e09ff70f25d71a11ae7ae2bcf 100644
+index 6a84557632efdc064bed22cd28ee2795028143bb..66ce5d7b09c66f7bd0687f0c9eb14049eb7c881b 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -280,6 +280,7 @@ source_set("common") {
+@@ -279,6 +279,7 @@ source_set("common") {
      "//ui/shell_dialogs",
      "//url",
      "//url/ipc:url_ipc",
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ce8b673534f4d18caef31a4b3472415e828d08a9..e205711e342cda4e8da2ddd42a1c16c50df5ee92 100644
+index f2b1cfce15630c0333b45870b38123dcc3dc31f7..f41f6c665ecec1bd565002630bc729217a2ae291 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -1217,7 +1217,7 @@ index ce8b673534f4d18caef31a4b3472415e828d08a9..e205711e342cda4e8da2ddd42a1c16c5
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3461,6 +3465,7 @@ test("content_unittests") {
+@@ -3462,6 +3466,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",

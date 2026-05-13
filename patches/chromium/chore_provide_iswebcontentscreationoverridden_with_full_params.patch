@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 8ad020fac68de0d8df8e97776a77ac89d82f444e..1d06d82bda0fbccad17bd74bea3ccbe45ca29976 100644
+index 80284feeaca2ec3c66570919ce81182db00ec50f..52ae4da968b3d627c14577e61c744dbc1aaf8b27 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -2273,8 +2273,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2274,8 +2274,7 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,7 +93,7 @@ index 8ad020fac68de0d8df8e97776a77ac89d82f444e..1d06d82bda0fbccad17bd74bea3ccbe4
    if (actor::HasActorTaskPreventingNewWebContents(opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -2287,7 +2286,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -2297,7 +2296,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
