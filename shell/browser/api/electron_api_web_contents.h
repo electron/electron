@@ -42,6 +42,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/models/image_model.h"
 #include "v8/include/cppgc/persistent.h"
 
@@ -95,7 +96,6 @@ class Cursor;
 }
 
 class DevToolsEyeDropper;
-class SkRegion;
 
 namespace electron {
 
@@ -895,7 +895,7 @@ class WebContents final : public ExclusiveAccessContext,
   // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
-  std::unique_ptr<SkRegion> draggable_region_;
+  std::optional<SkRegion> draggable_region_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };

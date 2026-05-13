@@ -2211,7 +2211,7 @@ void WebContents::DraggableRegionsChanged(
     return;
   }
 
-  draggable_region_ = DraggableRegionsToSkRegion(regions);
+  draggable_region_.emplace(DraggableRegionsToSkRegion(regions));
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -2228,7 +2228,9 @@ void WebContents::PrintCrossProcessSubframe(
 #endif
 
 SkRegion* WebContents::draggable_region() {
-  return g_disable_draggable_regions ? nullptr : draggable_region_.get();
+  return g_disable_draggable_regions || !draggable_region_
+             ? nullptr
+             : &*draggable_region_;
 }
 
 void WebContents::DidStartNavigation(
