@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_converters/net_converter.h"
 
+#include <map>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -164,20 +165,31 @@ v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
 v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
     v8::Isolate* isolate,
     net::HttpResponseHeaders* headers) {
-  base::DictValue response_headers;
+  // Build the {name: [value, ...]} object directly rather than round-tripping
+  // through an intermediate base::DictValue and content::V8ValueConverter.
+  // std::map preserves the alphabetically-sorted key order the previous
+  // implementation produced.
+  std::map<std::string, std::vector<std::string>> grouped;
   if (headers) {
     size_t iter = 0;
     std::string key;
     std::string value;
-    while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-      key = base::ToLowerASCII(key);
-      base::ListValue* values = response_headers.FindList(key);
-      if (!values)
-        values = &response_headers.Set(key, base::ListValue())->GetList();
-      values->Append(value);
-    }
+    while (headers->EnumerateHeaderLines(&iter, &key, &value))
+      grouped[base::ToLowerASCII(key)].push_back(std::move(value));
   }
-  return ConvertToV8(isolate, response_headers);
+
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+  v8::Local<v8::Object> result = v8::Object::New(isolate);
+  for (const auto& [key, values] : grouped) {
+    v8::Local<v8::Array> arr =
+        v8::Array::New(isolate, static_cast<int>(values.size()));
+    for (uint32_t i = 0; i < values.size(); ++i)
+      arr->CreateDataProperty(context, i, StringToV8(isolate, values[i]))
+          .Check();
+    result->CreateDataProperty(context, StringToSymbol(isolate, key), arr)
+        .Check();
+  }
+  return result;
 }
 
 bool Converter<net::HttpResponseHeaders*>::FromV8(
@@ -513,6 +525,7 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequestBody& val) {
   const auto& elements = *val.elements();
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::Array> arr = v8::Array::New(isolate, elements.size());
   for (size_t i = 0; i < elements.size(); ++i) {
     const auto& element = elements[i];
@@ -569,8 +582,8 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
       default:
         NOTREACHED() << "Found unsupported data element";
     }
-    arr->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
-             ConvertToV8(isolate, upload_data))
+    arr->CreateDataProperty(context, static_cast<uint32_t>(i),
+                            ConvertToV8(isolate, upload_data))
         .Check();
   }
   return arr;
@@ -642,7 +655,7 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
 // static
 v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
     v8::Isolate* isolate,
-    electron::VerifyRequestParams val) {
+    const electron::VerifyRequestParams& val) {
   auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("hostname", val.hostname);
   dict.Set("certificate", val.certificate);

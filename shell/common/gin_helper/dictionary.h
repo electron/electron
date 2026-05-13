@@ -101,7 +101,7 @@ class Dictionary : public gin::Dictionary {
   }
 
   template <typename T>
-  bool SetHidden(std::string_view key, T val) {
+  bool SetHidden(std::string_view key, const T& val) {
     v8::Isolate* const iso = isolate();
     v8::Local<v8::Value> v8_value;
     if (!gin::TryConvertToV8(iso, val, &v8_value))
@@ -146,9 +146,9 @@ class Dictionary : public gin::Dictionary {
                                       &acc_value))
                 return;
 
-              V val = acc_value.Value;
               v8::Local<v8::Value> v8_value;
-              if (gin::TryConvertToV8(info.GetIsolate(), val, &v8_value))
+              if (gin::TryConvertToV8(info.GetIsolate(), acc_value.Value,
+                                      &v8_value))
                 info.GetReturnValue().Set(v8_value);
             },
             nullptr, v8_value_accessor, attribute)
@@ -168,7 +168,7 @@ class Dictionary : public gin::Dictionary {
   // Note: If we plan to add more Set methods, consider adding an option instead
   // of copying code.
   template <typename T>
-  bool SetReadOnlyNonConfigurable(std::string_view key, T val) {
+  bool SetReadOnlyNonConfigurable(std::string_view key, const T& val) {
     v8::Local<v8::Value> v8_value;
     if (!gin::TryConvertToV8(isolate(), val, &v8_value))
       return false;
