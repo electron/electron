@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Arthur Sonzogni <arthursonzogni@chromium.org>
+Date: Thu, 2 Apr 2026 18:28:34 -0700
+Subject: [Fullscreen] Guard against UAF during EnterFullscreenMode
+
+Entering fullscreen on Windows can spin a nested message loop via
+::SetWindowPos, allowing a pending task to destroy the tab. This adds
+WeakPtr guards to prevent UAF upon return, matching the existing fix
+for ExitFullscreenMode (crbug.com/1506535).
+
+I haven't added tests because testing the precise timing of this
+synchronous Windows-specific destruction is difficult to get right,
+especially from a Linux workstation.
+
+Fixed: 498752242
+Change-Id: I90c926214e9548208de1dbe54c0201a5393a512d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7722343
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Auto-Submit: Arthur Sonzogni <arthursonzogni@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1609608}
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 393808a7959d684fe4e46f86eff687ec15258fa9..ac4dae801611f22848705484fb744185f814b73e 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -8989,7 +8989,13 @@ void RenderFrameHostImpl::EnterFullscreen(
+   if (had_fullscreen_token && !GetView()->HasFocus()) {
+     GetView()->Focus();
+   }
++  // This may spin the message loop and destroy this object.
++  // See crbug.com/1506535, crbug.com/498752242.
++  base::WeakPtr<RenderFrameHostImpl> weak_ptr = GetWeakPtr();
+   delegate_->EnterFullscreenMode(this, *options);
++  if (!weak_ptr) {
++    return;
++  }
+   delegate_->FullscreenStateChanged(this, /*is_fullscreen=*/true,
+                                     std::move(options));
+ 
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 6545ec2edfec6d2712f49abecafc3027b6045c3d..364c749aa7ef82f9050a9e94655712b6d8b36ede 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -4668,7 +4668,13 @@ void WebContentsImpl::EnterFullscreenMode(
+   }
+ 
+   if (delegate_) {
++    // This may spin the message loop and destroy this object.
++    // See crbug.com/1506535, crbug.com/498752242.
++    base::WeakPtr<WebContents> weak_ptr = GetWeakPtr();
+     delegate_->EnterFullscreenModeForTab(requesting_frame, options);
++    if (!weak_ptr) {
++      return;
++    }
+ 
+     if (keyboard_lock_widget_) {
+       delegate_->RequestKeyboardLock(this, esc_key_locked_);
+@@ -4696,8 +4702,9 @@ void WebContentsImpl::ExitFullscreenMode(bool will_cause_resize) {
+                          base::TimeTicks::Now());
+ 
+   if (delegate_) {
+-    // This may spin the message loop and destroy this object crbug.com/1506535
+-    base::WeakPtr<WebContentsImpl> weak_ptr = weak_factory_.GetWeakPtr();
++    // This may spin the message loop and destroy this object.
++    // See crbug.com/1506535, crbug.com/498752242.
++    base::WeakPtr<WebContents> weak_ptr = GetWeakPtr();
+     delegate_->ExitFullscreenModeForTab(this);
+     if (!weak_ptr) {
+       return;
