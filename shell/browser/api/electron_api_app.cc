@@ -1843,7 +1843,8 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   content::GetNetworkService()->ConfigureStubHostResolver(
       enable_built_in_resolver, enable_happy_eyeballs_v3, secure_dns_mode,
       doh_config, additional_dns_query_types_enabled,
-      {} /*fallback_doh_nameservers*/);
+      {} /*fallback_doh_nameservers*/,
+      false /*insecure_dns_via_platform_apis_enabled*/);
 }
 
 // static
