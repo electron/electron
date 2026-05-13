@@ -4,6 +4,31 @@ import { expect } from 'chai';
 
 import { closeWindow } from './lib/window-helpers';
 
+// Layout API methods are added by the feature in this PR but the public
+// docs/api/view.md entries (and the regenerated electron.d.ts) are part of
+// @nikwen's separate documentation effort. Declare them here so the tests
+// type-check until the doc-generated types catch up.
+declare module 'electron/main' {
+  interface View {
+    setLayout(options: object | null): void;
+    setLayoutFlex(spec: object | null): void;
+    setLayoutMargins(margins: { top?: number; left?: number; bottom?: number; right?: number }): void;
+    setBoxFlex(child: View, weight: number, useMinSize?: boolean): void;
+    layout(): void;
+    invalidateLayout(): void;
+    setPreferredSize(size: { width: number; height: number }): void;
+    getPreferredSize(): { width: number; height: number };
+    setUseDefaultFillLayout(use: boolean): void;
+    getLayoutManagerType(): string;
+    getLayoutFlex(): object | null;
+    getOrientation(): string;
+    getMainAxisAlignment(): string;
+    getCrossAxisAlignment(): string;
+    getBetweenChildSpacing(): number;
+    getInsideBorderInsets(): { top: number; left: number; bottom: number; right: number };
+  }
+}
+
 describe('View', () => {
   let w: BaseWindow;
   afterEach(async () => {
@@ -170,6 +195,286 @@ describe('View', () => {
       expect(() => {
         v.setBackgroundBlur(10);
       }).to.not.throw();
+    });
+  });
+
+  describe('view.setLayout', () => {
+    it('accepts type:"fill" and stretches a child to host bounds', () => {
+      w = new BaseWindow({ show: false });
+      const root = new View();
+      w.setContentView(root);
+      const child = new View();
+      root.addChildView(child);
+      root.setLayout({ type: 'fill' } as any);
+      root.setBounds({ x: 0, y: 0, width: 400, height: 300 });
+      (root as any).layout();
+      expect(child.getBounds()).to.deep.equal({ x: 0, y: 0, width: 400, height: 300 });
+    });
+
+    it('accepts type:"box" horizontal and lays out children side by side', () => {
+      w = new BaseWindow({ show: false });
+      const root = new View();
+      w.setContentView(root);
+      const a = new View();
+      const b = new View();
+      // Layout managers honour setPreferredSize, not setBounds.
+      a.setPreferredSize({ width: 100, height: 50 });
+      b.setPreferredSize({ width: 150, height: 50 });
+      root.addChildView(a);
+      root.addChildView(b);
+      root.setLayout({ type: 'box', orientation: 'horizontal', betweenChildSpacing: 10 } as any);
+      root.setBounds({ x: 0, y: 0, width: 400, height: 100 });
+      (root as any).layout();
+      expect(a.getBounds().x).to.equal(0);
+      expect(a.getBounds().width).to.equal(100);
+      // 100 (a width) + 10 spacing = 110
+      expect(b.getBounds().x).to.equal(110);
+      expect(b.getBounds().width).to.equal(150);
+    });
+
+    it('accepts type:"flex" (default) for backward compatibility', () => {
+      w = new BaseWindow({ show: false });
+      const root = new View();
+      w.setContentView(root);
+      // Old shape (no `type` field) still produces a flex layout.
+      root.setLayout({ orientation: 'vertical', crossAxisAlignment: 'stretch' } as any);
+      expect((root as any).getLayoutManagerType()).to.equal('flex');
+    });
+
+    it('setLayout(null) removes the layout manager', () => {
+      const root = new View();
+      root.setLayout({ type: 'fill' } as any);
+      expect((root as any).getLayoutManagerType()).to.equal('fill');
+      root.setLayout(null as any);
+      expect((root as any).getLayoutManagerType()).to.equal('');
+    });
+
+    it('throws on non-object, non-null argument', () => {
+      const root = new View();
+      expect(() => root.setLayout(42 as any)).to.throw();
+    });
+
+    it('JS calculateProposedLayout callback is invoked', () => {
+      w = new BaseWindow({ show: false });
+      const root = new View();
+      w.setContentView(root);
+      const child = new View();
+      root.addChildView(child);
+      let invocations = 0;
+      root.setLayout({
+        calculateProposedLayout: (sb: any) => {
+          invocations++;
+          return {
+            size: { width: sb.width || 0, height: sb.height || 0 },
+            layouts: [{
+              view: child,
+              bounds: { x: 0, y: 0, width: (sb.width || 0) / 2, height: sb.height || 0 }
+            }]
+          };
+        }
+      } as any);
+      root.setBounds({ x: 0, y: 0, width: 400, height: 200 });
+      (root as any).layout();
+      expect(invocations).to.be.greaterThan(0);
+      expect(child.getBounds().width).to.equal(200);
+    });
+
+    it('catches exceptions from JS layout callback without crashing', () => {
+      w = new BaseWindow({ show: false });
+      const root = new View();
+      w.setContentView(root);
+      const child = new View();
+      root.addChildView(child);
+      root.setLayout({
+        calculateProposedLayout: () => {
+          throw new Error('boom');
+        }
+      } as any);
+      // Should not crash the process; the exception is caught by v8::TryCatch
+      // and re-thrown so Node's uncaught-exception handler picks it up.
+      expect(() => {
+        root.setBounds({ x: 0, y: 0, width: 100, height: 100 });
+        (root as any).layout();
+      }).to.not.throw();
+    });
+
+    it('blocks re-entrant setLayout from within JS callback', () => {
+      w = new BaseWindow({ show: false });
+      const root = new View();
+      w.setContentView(root);
+      let reentryError: Error | null = null;
+      root.setLayout({
+        calculateProposedLayout: (sb: any) => {
+          try {
+            root.setLayout({ type: 'fill' } as any);
+          } catch (e) {
+            reentryError = e as Error;
+          }
+          return { size: { width: sb.width || 0, height: sb.height || 0 }, layouts: [] };
+        }
+      } as any);
+      root.setBounds({ x: 0, y: 0, width: 100, height: 100 });
+      (root as any).layout();
+      expect(reentryError).to.not.equal(null);
+      expect(reentryError!.message).to.match(/Cannot call setLayout/);
+    });
+  });
+
+  describe('view.setLayoutFlex', () => {
+    it('flex unbounded grows the child to fill', () => {
+      w = new BaseWindow({ show: false });
+      const root = new View();
+      w.setContentView(root);
+      const child = new View();
+      root.addChildView(child);
+      root.setLayout({ type: 'flex', orientation: 'vertical', crossAxisAlignment: 'stretch' } as any);
+      (child as any).setLayoutFlex({ minimum: 'scale-to-minimum', maximum: 'unbounded', weight: 1 });
+      root.setBounds({ x: 0, y: 0, width: 500, height: 200 });
+      (root as any).layout();
+      expect(child.getBounds().width).to.equal(500);
+      expect(child.getBounds().height).to.equal(200);
+    });
+
+    it('setLayoutFlex(null) clears the flex behavior', () => {
+      const child = new View();
+      (child as any).setLayoutFlex({ minimum: 'scale-to-minimum', maximum: 'unbounded', weight: 1 });
+      (child as any).setLayoutFlex(null);
+      expect((child as any).getLayoutFlex()).to.equal(null);
+    });
+
+    it('throws on invalid spec', () => {
+      const child = new View();
+      expect(() => (child as any).setLayoutFlex(42)).to.throw();
+    });
+  });
+
+  describe('view.setLayoutMargins', () => {
+    it('applies margins around a flexed child', () => {
+      w = new BaseWindow({ show: false });
+      const root = new View();
+      w.setContentView(root);
+      const child = new View();
+      root.addChildView(child);
+      root.setLayout({ type: 'flex', orientation: 'vertical', crossAxisAlignment: 'stretch' } as any);
+      (child as any).setLayoutFlex({ minimum: 'scale-to-minimum', maximum: 'unbounded', weight: 1 });
+      (child as any).setLayoutMargins({ top: 10, left: 5, bottom: 10, right: 5 });
+      root.setBounds({ x: 0, y: 0, width: 200, height: 200 });
+      (root as any).layout();
+      const bounds = child.getBounds();
+      expect(bounds.x).to.equal(5);
+      expect(bounds.y).to.equal(10);
+      expect(bounds.width).to.equal(190);
+      expect(bounds.height).to.equal(180);
+    });
+  });
+
+  describe('view.getLayoutManagerType', () => {
+    it('returns empty string when no layout is set', () => {
+      const v = new View();
+      expect((v as any).getLayoutManagerType()).to.equal('');
+    });
+
+    it('returns "fill" for fill layout', () => {
+      const v = new View();
+      v.setLayout({ type: 'fill' } as any);
+      expect((v as any).getLayoutManagerType()).to.equal('fill');
+    });
+
+    it('returns "box" for box layout', () => {
+      const v = new View();
+      v.setLayout({ type: 'box' } as any);
+      expect((v as any).getLayoutManagerType()).to.equal('box');
+    });
+
+    it('returns "flex" for flex layout', () => {
+      const v = new View();
+      v.setLayout({ type: 'flex' } as any);
+      expect((v as any).getLayoutManagerType()).to.equal('flex');
+    });
+
+    it('returns "js" for custom JS layout', () => {
+      const v = new View();
+      v.setLayout({
+        calculateProposedLayout: () => ({ size: { width: 0, height: 0 }, layouts: [] })
+      } as any);
+      expect((v as any).getLayoutManagerType()).to.equal('js');
+    });
+  });
+
+  describe('view.setPreferredSize|getPreferredSize', () => {
+    it('round-trips a preferred size', () => {
+      const v = new View();
+      (v as any).setPreferredSize({ width: 250, height: 175 });
+      expect((v as any).getPreferredSize()).to.deep.equal({ width: 250, height: 175 });
+    });
+  });
+
+  describe('view.setBoxFlex', () => {
+    it('throws when called outside a box layout', () => {
+      w = new BaseWindow({ show: false });
+      const root = new View();
+      w.setContentView(root);
+      const child = new View();
+      root.addChildView(child);
+      root.setLayout({ type: 'flex' } as any);
+      expect(() => (root as any).setBoxFlex(child, 1)).to.throw(/box layout/);
+    });
+
+    it('throws for a non-child view', () => {
+      const root = new View();
+      const stranger = new View();
+      root.setLayout({ type: 'box' } as any);
+      expect(() => (root as any).setBoxFlex(stranger, 1)).to.throw(/direct child/);
+    });
+
+    it('does not throw when applied to a real child', () => {
+      const root = new View();
+      const child = new View();
+      root.addChildView(child);
+      root.setLayout({ type: 'box', orientation: 'horizontal' } as any);
+      expect(() => (root as any).setBoxFlex(child, 1, true)).to.not.throw();
+    });
+  });
+
+  describe('view.layout|invalidateLayout', () => {
+    it('layout() does not throw on a view without a layout manager', () => {
+      const v = new View();
+      expect(() => (v as any).layout()).to.not.throw();
+    });
+
+    it('invalidateLayout() does not throw on a view without a layout manager', () => {
+      const v = new View();
+      expect(() => (v as any).invalidateLayout()).to.not.throw();
+    });
+  });
+
+  describe('view box-layout getters', () => {
+    it('getOrientation returns the configured value for box layout', () => {
+      const v = new View();
+      v.setLayout({ type: 'box', orientation: 'vertical' } as any);
+      expect((v as any).getOrientation()).to.equal('vertical');
+      v.setLayout({ type: 'box', orientation: 'horizontal' } as any);
+      expect((v as any).getOrientation()).to.equal('horizontal');
+    });
+
+    it('getOrientation returns "" when no box/flex layout is set', () => {
+      const v = new View();
+      expect((v as any).getOrientation()).to.equal('');
+      v.setLayout({ type: 'fill' } as any);
+      expect((v as any).getOrientation()).to.equal('');
+    });
+
+    it('getBetweenChildSpacing reflects the option set on the layout', () => {
+      const v = new View();
+      v.setLayout({ type: 'box', betweenChildSpacing: 17 } as any);
+      expect((v as any).getBetweenChildSpacing()).to.equal(17);
+    });
+
+    it('getInsideBorderInsets returns zero insets by default', () => {
+      const v = new View();
+      v.setLayout({ type: 'box' } as any);
+      const insets = (v as any).getInsideBorderInsets();
+      expect(insets.top + insets.left + insets.bottom + insets.right).to.equal(0);
     });
   });
 });

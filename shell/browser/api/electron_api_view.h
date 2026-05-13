@@ -21,6 +21,16 @@ class Handle;
 
 namespace electron::api {
 
+class JSLayoutManager;
+
+enum class LayoutType {
+  kNone,
+  kFill,
+  kBox,
+  kFlex,
+  kJs,
+};
+
 class View : public gin_helper::EventEmitter<View>,
              private views::ViewObserver {
  public:
@@ -39,7 +49,25 @@ class View : public gin_helper::EventEmitter<View>,
 
   void SetBounds(const gfx::Rect& bounds, gin::Arguments* args);
   gfx::Rect GetBounds() const;
-  void SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value);
+  void SetLayout(v8::Isolate* isolate, v8::Local<v8::Value> value);
+  void SetLayoutFlex(v8::Isolate* isolate, v8::Local<v8::Value> spec);
+  void SetLayoutMargins(const gfx::Insets& margins);
+  void Layout();
+  void InvalidateLayout();
+  void SetPreferredSize(const gfx::Size& size);
+  gfx::Size GetPreferredSize() const;
+  void SetUseDefaultFillLayout(bool use_default);
+  std::string GetLayoutManagerType() const;
+  std::string GetOrientation() const;
+  std::string GetMainAxisAlignment() const;
+  std::string GetCrossAxisAlignment() const;
+  int GetBetweenChildSpacing() const;
+  gfx::Insets GetInsideBorderInsets() const;
+  void SetBoxFlex(v8::Isolate* isolate,
+                  gin_helper::Handle<View> child,
+                  int weight,
+                  gin::Arguments* args);
+  v8::Local<v8::Value> GetLayoutFlex(v8::Isolate* isolate) const;
   std::vector<v8::Local<v8::Value>> GetChildren();
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
   void SetBorderRadius(int radius);
@@ -80,6 +108,8 @@ class View : public gin_helper::EventEmitter<View>,
 
   bool delete_view_ = true;
   raw_ptr<views::View> view_ = nullptr;
+  raw_ptr<JSLayoutManager> js_layout_manager_ = nullptr;
+  LayoutType layout_type_ = LayoutType::kNone;
 };
 
 }  // namespace electron::api
