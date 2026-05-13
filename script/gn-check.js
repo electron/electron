@@ -7,13 +7,10 @@ $ node ./script/gn-check.js [--outDir=dirName]
 const minimist = require('minimist');
 
 const cp = require('node:child_process');
-const path = require('node:path');
 
 const args = minimist(process.argv.slice(2), { string: ['outDir'] });
 
 const { getDepotToolsEnv, getOutDir } = require('./lib/utils');
-
-const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
 
 const OUT_DIR = getOutDir({ outDir: args.outDir });
 if (!OUT_DIR) {
@@ -22,7 +19,6 @@ if (!OUT_DIR) {
 
 const env = {
   ...getDepotToolsEnv(),
-  CHROMIUM_BUILDTOOLS_PATH: path.resolve(SOURCE_ROOT, '..', 'buildtools'),
   DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
 };
 

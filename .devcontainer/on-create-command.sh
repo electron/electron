@@ -54,7 +54,6 @@ if [ ! -f $buildtools/configs/evm.testing.json ]; then
                 \"out\": \"Testing\"
             },
             \"env\": {
-                \"CHROMIUM_BUILDTOOLS_PATH\": \"/workspaces/gclient/src/buildtools\",
                 \"GIT_CACHE_PATH\": \"/workspaces/gclient/.git-cache\"
             },
             \"\$schema\": \"file:///home/builduser/.electron_build_tools/evm-config.schema.json\",
