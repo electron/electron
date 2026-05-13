@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "base/apple/scoped_cftyperef.h"
+#include "base/containers/adapters.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
@@ -144,8 +145,7 @@ class RootViewMacTargeterDelegate : public views::ViewTargeterDelegate {
 
     views::View* skipped_content_view = nullptr;
     views::View::Views children = root->GetChildrenInZOrder();
-    for (auto it = children.rbegin(); it != children.rend(); ++it) {
-      views::View* child = *it;
+    for (views::View* child : base::Reversed(children)) {
       if (!child->GetCanProcessEventsWithinSubtree() || !child->GetVisible()) {
         continue;
       }
