@@ -55,7 +55,8 @@ struct Converter<base::Uuid> {
     return true;
   }
 
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, const base::Uuid& val) {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::Uuid& val) {
     return gin::ConvertToV8(isolate, val.AsLowercaseString());
   }
 };
