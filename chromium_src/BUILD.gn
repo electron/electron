@@ -447,8 +447,8 @@ static_library("chrome") {
 }
 
 # This source set is just so we don't have to depend on all of //chrome/browser
-# You may have to add new files here during the upgrade if //chrome/browser/spellchecker
-# gets more files
+# You may have to add new files here during the upgrade if
+# //chrome/browser/spellchecker gets more files
 source_set("chrome_spellchecker") {
   sources = []
   deps = []
