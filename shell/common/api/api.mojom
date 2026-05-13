@@ -18,6 +18,10 @@ struct PreloadScriptData {
   array<uint8> contents;
   // Set if the file could not be read; surfaced via the 'preload-error' event.
   string? error;
+  // V8 code cache, produced by the first renderer to compile this preload and
+  // persisted under userData/Code Cache/electron-preload/. V8's CachedData
+  // validation self-heals stale blobs.
+  array<uint8>? code_cache;
 };
 
 // Everything a sandboxed renderer needs to bootstrap a preload environment.

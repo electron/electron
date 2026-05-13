@@ -1,5 +1,6 @@
 module electron.mojom;
 
+import "mojo/public/mojom/base/big_buffer.mojom";
 import "third_party/blink/public/mojom/permissions/permission_status.mojom";
 import "third_party/blink/public/mojom/tokens/tokens.mojom";
 import "url/mojom/origin.mojom";
@@ -19,4 +20,10 @@ interface ElectronWebContentsUtility {
   CanAccessClipboardDeprecated(
       PermissionName name,
       blink.mojom.LocalFrameToken frame_token) => (blink.mojom.PermissionStatus status);
+
+  // Reports a V8 code cache produced by compiling a preload script. The
+  // browser persists it (in memory and on disk) keyed by sha256(id) so
+  // subsequent navigations / launches can compile this preload from bytecode
+  // instead of source. Sent off the FCP critical path, after the preload runs.
+  SetPreloadCodeCache(string id, mojo_base.mojom.BigBuffer cache);
 };

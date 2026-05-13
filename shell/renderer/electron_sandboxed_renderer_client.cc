@@ -75,7 +75,15 @@ void ElectronSandboxedRendererClient::InitializeBindings(
     content::RenderFrame* render_frame) {
   gin_helper::Dictionary b(isolate, binding);
   b.SetMethod("get", preload_utils::GetBinding);
-  b.SetMethod("createPreloadScript", preload_utils::CreatePreloadScript);
+  // Bind the RenderFrame so createPreloadScript can look up the preload
+  // contents and V8 code cache from the per-frame mojo-cached startup data —
+  // they never become V8 strings until the single copy for the compile, and
+  // a freshly produced cache is shipped back over the per-frame
+  // ElectronWebContentsUtility channel without crossing into JS.
+  b.SetMethod("createPreloadScript",
+              base::BindRepeating(&preload_utils::CreatePreloadScript,
+                                  base::Unretained(render_frame),
+                                  /*service_worker_data=*/nullptr));
 
   auto process = gin_helper::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);

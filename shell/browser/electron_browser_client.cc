@@ -108,6 +108,7 @@
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
+#include "shell/browser/preload_code_cache.h"
 #include "shell/browser/preload_script.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/renderer_startup_data.h"
@@ -763,6 +764,9 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
       std::string contents;
       if (asar::ReadFileToString(*preload, &contents)) {
         ps->contents.assign(contents.begin(), contents.end());
+        std::vector<uint8_t> cache = preload_code_cache::Get(ps->id);
+        if (!cache.empty())
+          ps->code_cache = std::move(cache);
       } else {
         ps->contents.clear();
         ps->error =

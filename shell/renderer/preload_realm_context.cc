@@ -174,7 +174,20 @@ class PreloadRealmLifetimeController
 
     gin_helper::Dictionary b(isolate, binding);
     b.SetMethod("get", preload_utils::GetBinding);
-    b.SetMethod("createPreloadScript", preload_utils::CreatePreloadScript);
+    // The browser pushed the service-worker preload set + process info via the
+    // per-process ElectronWorkerStartup channel at RenderProcessReady() —
+    // before any StartWorker IPC could have spawned this thread. Capture it
+    // once on the ServiceWorkerData so createPreloadScript can look up preload
+    // contents and code caches without marshaling them through V8.
+    service_worker_data_->SetWorkerStartupData(
+        ElectronRenderThreadObserver::GetWorkerStartupData());
+    // No RenderFrame in the SW preload realm — no per-frame cache lookup or
+    // ship-back channel — but contents are still looked up from the captured
+    // worker startup data instead of crossing the V8 boundary.
+    b.SetMethod(
+        "createPreloadScript",
+        base::BindRepeating(&preload_utils::CreatePreloadScript, nullptr,
+                            base::Unretained(service_worker_data_.get())));
 
     gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
     b.Set("process", process);
@@ -188,13 +201,9 @@ class PreloadRealmLifetimeController
     process.SetReadOnly("type", "service-worker");
     process.SetReadOnly("contextIsolated", true);
 
-    // The browser pushed the service-worker preload set + process info via the
-    // per-process ElectronWorkerStartup channel at RenderProcessReady() —
-    // before any StartWorker IPC could have spawned this thread. Hand it to
-    // the bundle so it never round-trips a sync IPC to the browser UI thread.
-    auto worker_data = ElectronRenderThreadObserver::GetWorkerStartupData();
     v8::Local<v8::Value> startup_data;
-    if (!preload_utils::BuildStartupData(isolate, worker_data)
+    if (!preload_utils::BuildStartupData(
+             isolate, service_worker_data_->worker_startup_data())
              .ToLocal(&startup_data)) {
       startup_data = v8::Null(isolate);
     }

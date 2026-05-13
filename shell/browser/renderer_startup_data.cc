@@ -16,6 +16,7 @@
 #include "ipc/ipc_channel_proxy.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
+#include "shell/browser/preload_code_cache.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/node_includes.h"
@@ -72,6 +73,10 @@ mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
       std::string contents;
       if (asar::ReadFileToString(script.file_path, &contents)) {
         ps->contents.assign(contents.begin(), contents.end());
+        // V8 validates the blob against source/version; no need to here.
+        std::vector<uint8_t> cache = preload_code_cache::Get(script.id);
+        if (!cache.empty())
+          ps->code_cache = std::move(cache);
       } else {
         ps->contents.clear();
         ps->error =

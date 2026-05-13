@@ -9,7 +9,7 @@ import { setImmediate, clearImmediate } from 'timers';
 
 declare const binding: {
   process: NodeJS.Process;
-  createPreloadScript: (src: string) => Function;
+  createPreloadScript: (scriptId: string, paramNames: string[]) => Function | null;
   // Pushed by the browser via mojom.ElectronFrameStartup, ordered ahead of
   // the CommitNavigation that triggered DidCreateScriptContext — always
   // present for documents that reach this bundle.

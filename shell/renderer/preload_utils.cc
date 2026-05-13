@@ -4,25 +4,34 @@
 
 #include "shell/renderer/preload_utils.h"
 
+#include <memory>
 #include <string>
 #include <string_view>
 
 #include "base/containers/span.h"
 #include "base/no_destructor.h"
+#include "base/numerics/safe_conversions.h"
 #include "base/process/process.h"
 #include "base/strings/strcat.h"
 #include "chrome/common/chrome_version.h"
+#include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/electron_version.h"
 #include "mojo/public/cpp/base/big_buffer.h"
+#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/web_contents_utility.mojom.h"
+#include "shell/renderer/electron_api_service_impl.h"
+#include "shell/renderer/service_worker_data.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/electron_node/src/node_metadata.h"
 #include "third_party/icu/source/common/unicode/uvernum.h"
 #include "third_party/icu/source/i18n/unicode/timezone.h"
 #include "third_party/icu/source/i18n/unicode/ulocdata.h"
 #include "v8/include/v8-context.h"
 #include "v8/include/v8-exception.h"
+#include "v8/include/v8-script.h"
 
 namespace electron::preload_utils {
 
@@ -72,14 +81,106 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   return exports;
 }
 
-v8::Local<v8::Value> CreatePreloadScript(v8::Isolate* isolate,
-                                         v8::Local<v8::String> source) {
+namespace {
+
+// Looks up a preload's contents and code cache from the mojo-cached startup
+// data so they can be consumed directly without entering V8.
+const mojom::PreloadScriptDataPtr* LookupPreloadScript(
+    content::RenderFrame* render_frame,
+    ServiceWorkerData* service_worker_data,
+    const std::string& script_id) {
+  const mojom::RendererStartupDataPtr* data = nullptr;
+  if (render_frame) {
+    if (auto* api_service = ElectronApiServiceImpl::Get(render_frame))
+      data = &api_service->startup_data();
+  } else if (service_worker_data) {
+    data = &service_worker_data->worker_startup_data();
+  }
+  if (!data || !*data)
+    return nullptr;
+  for (const auto& ps : (*data)->preload_scripts) {
+    if (ps->id == script_id)
+      return &ps;
+  }
+  return nullptr;
+}
+
+}  // namespace
+
+v8::Local<v8::Value> CreatePreloadScript(
+    content::RenderFrame* render_frame,
+    ServiceWorkerData* service_worker_data,
+    v8::Isolate* isolate,
+    const std::string& script_id,
+    const std::vector<std::string>& param_name_strings) {
   auto context = isolate->GetCurrentContext();
-  auto maybe_script = v8::Script::Compile(context, source);
-  v8::Local<v8::Script> script;
-  if (!maybe_script.ToLocal(&script))
+  std::vector<v8::Local<v8::String>> param_names;
+  param_names.reserve(param_name_strings.size());
+  for (const auto& n : param_name_strings)
+    param_names.push_back(gin::StringToV8(isolate, n));
+
+  // Contents/cache stay in native buffers; only the single NewFromUtf8 copy
+  // for the compile touches V8.
+  const mojom::PreloadScriptDataPtr* ps =
+      LookupPreloadScript(render_frame, service_worker_data, script_id);
+  if (!ps)
     return {};
-  return script->Run(context).ToLocalChecked();
+
+  base::span<const uint8_t> contents = (*ps)->contents;
+  v8::Local<v8::String> body;
+  if (!v8::String::NewFromUtf8(
+           isolate, reinterpret_cast<const char*>(contents.data()),
+           v8::NewStringType::kNormal, base::checked_cast<int>(contents.size()))
+           .ToLocal(&body)) {
+    return {};
+  }
+
+  std::unique_ptr<v8::ScriptCompiler::CachedData> cached_data;
+  if ((*ps)->code_cache) {
+    base::span<const uint8_t> cache = *(*ps)->code_cache;
+    cached_data = std::make_unique<v8::ScriptCompiler::CachedData>(
+        cache.data(), base::checked_cast<int>(cache.size()),
+        v8::ScriptCompiler::CachedData::BufferNotOwned);
+  }
+  bool had_cache = !!cached_data;
+  // ScriptOrigin gives stack traces the real file path instead of <anonymous>.
+  // It's metadata, not part of V8's CachedData hash. Source takes ownership of
+  // cached_data.
+  v8::ScriptOrigin origin(gin::StringToV8(isolate, (*ps)->file_path));
+  v8::ScriptCompiler::Source compiler_source(body, origin,
+                                             cached_data.release());
+  auto options = had_cache ? v8::ScriptCompiler::kConsumeCodeCache
+                           : v8::ScriptCompiler::kNoCompileOptions;
+
+  // CompileFunction() takes the bare body + parameter names — no wrapper
+  // string, and stack traces get correct line numbers.
+  v8::Local<v8::Function> fn;
+  if (!v8::ScriptCompiler::CompileFunction(
+           context, &compiler_source, param_names.size(), param_names.data(), 0,
+           nullptr, options)
+           .ToLocal(&fn)) {
+    return {};
+  }
+
+  // No usable cache (cold, or V8 rejected a stale blob): produce one and ship
+  // it to the browser for persistence. SW realms have no ship-back channel.
+  bool consumed = had_cache && compiler_source.GetCachedData() &&
+                  !compiler_source.GetCachedData()->rejected;
+  if (!consumed && render_frame) {
+    std::unique_ptr<v8::ScriptCompiler::CachedData> produced(
+        v8::ScriptCompiler::CreateCodeCacheForFunction(fn));
+    if (produced && produced->length > 0) {
+      mojo::AssociatedRemote<mojom::ElectronWebContentsUtility> remote;
+      render_frame->GetRemoteAssociatedInterfaces()->GetInterface(&remote);
+      // SAFETY: produced->data points to produced->length contiguous bytes
+      // owned by the CachedData.
+      remote->SetPreloadCodeCache(
+          script_id,
+          mojo_base::BigBuffer(UNSAFE_BUFFERS(base::span(
+              produced->data, base::checked_cast<size_t>(produced->length)))));
+    }
+  }
+  return fn;
 }
 
 double Uptime() {
@@ -146,13 +247,12 @@ v8::MaybeLocal<v8::Value> BuildStartupData(
     entry.Set("id", ps->id);
     entry.Set("type", ps->type);
     entry.Set("filePath", ps->file_path);
-    // BigBuffer uses inline bytes below 64 KB and shared memory above; the
-    // implicit base::span conversion handles both backing stores. byte_span()
-    // would CHECK-fail for the shared-memory case.
+    // The contents are not marshaled to V8 — createPreloadScript() looks them
+    // up from the mojo-cached startup data by id, avoiding a ~150 KB heap
+    // allocation per preload per navigation. JS only needs to know whether
+    // there is anything to run.
     base::span<const uint8_t> bytes = ps->contents;
-    entry.Set("contents",
-              std::string_view(reinterpret_cast<const char*>(bytes.data()),
-                               bytes.size()));
+    entry.Set("hasContents", !bytes.empty());
     // Match the legacy IPC handler shape: `error` is an Error object when the
     // file read failed (the legacy path serialized the fs.readFile error
     // through the IPC), and absent otherwise.

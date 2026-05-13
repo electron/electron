@@ -112,6 +112,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
+#include "shell/browser/preload_code_cache.h"
 #include "shell/browser/preload_script.h"
 #include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
@@ -2304,6 +2305,9 @@ void WebContents::MaybeSendRendererStartupData(
       std::string contents;
       if (asar::ReadFileToString(*preload, &contents)) {
         ps->contents.assign(contents.begin(), contents.end());
+        std::vector<uint8_t> cache = preload_code_cache::Get(ps->id);
+        if (!cache.empty())
+          ps->code_cache = std::move(cache);
       } else {
         ps->contents.clear();
         ps->error =

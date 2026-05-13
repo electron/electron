@@ -9,7 +9,7 @@ import * as events from 'events';
 declare const binding: {
   get: (name: string) => any;
   process: NodeJS.Process;
-  createPreloadScript: (src: string) => Function;
+  createPreloadScript: (scriptId: string, paramNames: string[]) => Function | null;
   // Pushed by the browser via mojom.ElectronWorkerStartup at
   // RenderProcessReady(), before any StartWorker IPC could spawn a worker
   // thread — always present when this bundle runs.
