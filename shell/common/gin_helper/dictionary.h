@@ -45,13 +45,28 @@ class Dictionary : public gin::Dictionary {
     v8::Isolate* const iso = isolate();
     v8::Local<v8::Object> handle = GetHandle();
     v8::Local<v8::Context> context = iso->GetCurrentContext();
-    v8::Local<v8::Value> v8_key = gin::ConvertToV8(iso, key);
     v8::Local<v8::Value> value;
-    // Check for existence before getting, otherwise this method will always
-    // returns true when T == v8::Local<v8::Value>.
-    return handle->Has(context, v8_key).FromMaybe(false) &&
-           handle->Get(context, v8_key).ToLocal(&value) &&
-           gin::ConvertFromV8(iso, value, out);
+    if constexpr (std::is_convertible_v<const K&, std::string_view>) {
+      // GetRealNamedProperty() distinguishes "missing" (empty MaybeLocal)
+      // from "present with undefined value" in one V8 call, replacing the
+      // Has()+Get() pair. It skips C++ named-property interceptors
+      // (process.env, etc.), so detect those and fall back.
+      v8::Local<v8::String> v8_key = MakeKey(key);
+      if (V8_LIKELY(!handle->HasNamedLookupInterceptor())) {
+        if (!handle->GetRealNamedProperty(context, v8_key).ToLocal(&value))
+          return false;
+        return gin::ConvertFromV8(iso, value, out);
+      }
+      return handle->Has(context, v8_key).FromMaybe(false) &&
+             handle->Get(context, v8_key).ToLocal(&value) &&
+             gin::ConvertFromV8(iso, value, out);
+    } else {
+      // GetRealNamedProperty() requires a v8::Name.
+      v8::Local<v8::Value> v8_key = gin::ConvertToV8(iso, key);
+      return handle->Has(context, v8_key).FromMaybe(false) &&
+             handle->Get(context, v8_key).ToLocal(&value) &&
+             gin::ConvertFromV8(iso, value, out);
+    }
   }
 
   // Differences from the Set method in gin::Dictionary:
@@ -61,9 +76,8 @@ class Dictionary : public gin::Dictionary {
     v8::Local<v8::Value> v8_value;
     if (!gin::TryConvertToV8(isolate(), val, &v8_value))
       return false;
-    v8::Maybe<bool> result =
-        GetHandle()->Set(isolate()->GetCurrentContext(),
-                         gin::ConvertToV8(isolate(), key), v8_value);
+    v8::Maybe<bool> result = GetHandle()->Set(isolate()->GetCurrentContext(),
+                                              MakeAnyKey(key), v8_value);
     return result.FromMaybe(false);
   }
 
@@ -211,9 +225,19 @@ class Dictionary : public gin::Dictionary {
  private:
   // DO NOT ADD ANY DATA MEMBER.
 
+  // Internalized so V8 can compare keys by pointer identity in property
+  // lookups, instead of hashing a fresh kNormal string per call.
   [[nodiscard]] v8::Local<v8::String> MakeKey(
       const std::string_view key) const {
-    return gin::StringToV8(isolate(), key);
+    return gin::StringToSymbol(isolate(), key);
+  }
+
+  template <typename K>
+  [[nodiscard]] v8::Local<v8::Value> MakeAnyKey(const K& key) const {
+    if constexpr (std::is_convertible_v<const K&, std::string_view>)
+      return MakeKey(key);
+    else
+      return gin::ConvertToV8(isolate(), key);
   }
 
   [[nodiscard]] v8::Local<v8::Private> MakeHiddenKey(
