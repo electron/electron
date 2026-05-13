@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "vigneshv@google.com" <vigneshv@google.com>
+Date: Tue, 21 Apr 2026 09:35:31 -0700
+Subject: mkvmuxer: fix UAF and double-free in WriteFramesLessThan
+
+Failures in writing frames within `Segment::WriteFramesLessThan` failed
+to increment the `shift_left` compaction counter. This left deleted
+frame pointers in the array as dangling references, triggering
+heap-use-after-free or double-free on cleanup when subsequent
+frames are written or the segment is destroyed.
+
+This patch ensures the `shift_left` array shift bounds counter is
+incremented for each error handling failure path where deletion is
+triggered without immediate break from loop.
+
+Also add unit tests that will fail without this fix.
+
+Bug: 504660052
+Change-Id: I345c90b1ff10bfe82c7ede1f5ec5a4d5f8ee318a
+
+diff --git a/mkvmuxer/mkvmuxer.cc b/mkvmuxer/mkvmuxer.cc
+index 77520b7041547787656da42b5049b4ede420d49b..9ac09cbf434a1a5a2ec5d8136012eabc6d0d9acd 100644
+--- a/mkvmuxer/mkvmuxer.cc
++++ b/mkvmuxer/mkvmuxer.cc
+@@ -4152,12 +4152,14 @@ bool Segment::WriteFramesLessThan(uint64_t timestamp) {
+         doc_type_version_ = 4;
+       if (!cluster->AddFrame(frame_prev)) {
+         delete frame_prev;
++        ++shift_left;
+         continue;
+       }
+ 
+       if (new_cuepoint_ && cues_track_ == frame_prev->track_number()) {
+         if (!AddCuePoint(frame_prev->timestamp(), cues_track_)) {
+           delete frame_prev;
++          ++shift_left;
+           continue;
+         }
+       }
+diff --git a/testing/mkvmuxer_test.cc b/testing/mkvmuxer_test.cc
+index 0b92e73105a8bc8b10ccc6bde5fb47def01d63fc..5d6f2a2142582720920f3f03fc2af97e98f269b4 100644
+--- a/testing/mkvmuxer_test.cc
++++ b/testing/mkvmuxer_test.cc
+@@ -39,6 +39,87 @@ using mkvmuxer::VideoTrack;
+ 
+ namespace test {
+ 
++class FailingWriter : public mkvmuxer::IMkvWriter {
++ public:
++  mkvmuxer::int32 Write(const void* /*buf*/, mkvmuxer::uint32 len) override {
++    if (fail_ && len >= fail_min_len_) {
++      return -1;
++    }
++    pos_ += len;
++    return 0;
++  }
++  mkvmuxer::int64 Position() const override { return pos_; }
++  mkvmuxer::int32 Position(mkvmuxer::int64 position) override {
++    pos_ = position;
++    return 0;
++  }
++  bool Seekable() const override { return true; }
++  void ElementStartNotify(mkvmuxer::uint64, mkvmuxer::int64) override {}
++
++  void StartFailing(mkvmuxer::uint32 min_len) {
++    fail_ = true;
++    fail_min_len_ = min_len;
++  }
++
++ private:
++  mkvmuxer::int64 pos_ = 0;
++  bool fail_ = false;
++  mkvmuxer::uint32 fail_min_len_ = 0;
++};
++
++constexpr uint64_t kMs = 1000000ULL;  // 1 ms in ns (default timecode_scale).
++constexpr uint64_t kAudioFrameLen = 100;  // > all EBML metadata writes.
++constexpr uint64_t kVideoFrameLen = 8;
++
++// Test case from crbug.com/504660052.
++TEST(MkvmuxerUafTest, WriteFramesLessThanDanglingSlot_UseAfterFreeRead) {
++  FailingWriter writer;
++  mkvmuxer::Segment segment;
++  ASSERT_TRUE(segment.Init(&writer));
++
++  const uint64_t vtrack = segment.AddVideoTrack(320, 240, 1);
++  const uint64_t atrack = segment.AddAudioTrack(48000, 2, 2);
++  ASSERT_NE(vtrack, 0u);
++  ASSERT_NE(atrack, 0u);
++
++  uint8_t vdata[kVideoFrameLen] = {};
++  uint8_t adata[kAudioFrameLen] = {};
++
++  ASSERT_TRUE(segment.AddFrame(vdata, kVideoFrameLen, vtrack, 0 * kMs, true));
++  ASSERT_TRUE(segment.AddFrame(adata, kAudioFrameLen, atrack, 10 * kMs, true));
++  ASSERT_TRUE(segment.AddFrame(adata, kAudioFrameLen, atrack, 20 * kMs, true));
++  ASSERT_TRUE(segment.AddFrame(adata, kAudioFrameLen, atrack, 30 * kMs, true));
++
++  writer.StartFailing(/*min_len=*/50);
++
++  // It does not matter whether this succeeds or fails, it should not crash.
++  segment.AddFrame(vdata, kVideoFrameLen, vtrack, 40 * kMs, true);
++}
++
++// Test case from crbug.com/504660052.
++TEST(MkvmuxerUafTest, WriteFramesLessThanDanglingSlot_DoubleFree) {
++  FailingWriter writer;
++  mkvmuxer::Segment segment;
++  ASSERT_TRUE(segment.Init(&writer));
++
++  const uint64_t vtrack = segment.AddVideoTrack(320, 240, 1);
++  const uint64_t atrack = segment.AddAudioTrack(48000, 2, 2);
++  ASSERT_NE(vtrack, 0u);
++  ASSERT_NE(atrack, 0u);
++
++  uint8_t vdata[kVideoFrameLen] = {};
++  uint8_t adata[kAudioFrameLen] = {};
++
++  ASSERT_TRUE(segment.AddFrame(vdata, kVideoFrameLen, vtrack, 0 * kMs, true));
++  ASSERT_TRUE(segment.AddFrame(adata, kAudioFrameLen, atrack, 10 * kMs, true));
++  ASSERT_TRUE(segment.AddFrame(adata, kAudioFrameLen, atrack, 20 * kMs, true));
++  ASSERT_TRUE(segment.AddFrame(adata, kAudioFrameLen, atrack, 30 * kMs, true));
++
++  writer.StartFailing(/*min_len=*/0);
++
++  EXPECT_FALSE(segment.AddFrame(vdata, kVideoFrameLen, vtrack, 40 * kMs, true));
++}
++
+ // Base class containing boiler plate stuff.
+ class MuxerTest : public testing::Test {
+  public:
