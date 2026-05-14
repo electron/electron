@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@salesforce.com>
+Date: Tue, 25 Oct 2022 13:09:55 -0700
+Subject: fix: abort installation attempt at the final mile if the app is
+ running
+
+There is a race condition between ShipIt launching and it performing an atomic rename to "install" the app bundle.  This fixes the race by checking the list of running apps immediately before performing the rename.
+
+diff --git a/Squirrel/SQRLInstaller.h b/Squirrel/SQRLInstaller.h
+index 2de1c384aae200f41de429cc35313e4c2ba9d0de..35a0c99129478f09526667d73c9544c3bfe14706 100644
+--- a/Squirrel/SQRLInstaller.h
++++ b/Squirrel/SQRLInstaller.h
+@@ -37,6 +37,9 @@ extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
+ // There was an error changing the file permissions of the update.
+ extern const NSInteger SQRLInstallerErrorChangingPermissions;
+ 
++// There was a running instance of the app just prior to the update attempt
++extern const NSInteger SQRLInstallerErrorAppStillRunning;
++
+ @class RACCommand;
+ 
+ // Performs the installation of an update, saving its intermediate state to user
+diff --git a/Squirrel/SQRLInstaller.m b/Squirrel/SQRLInstaller.m
+index c1f328fa8c3689218ef260347cb8f9d30b789efe..f502df2f88424ea902a061adfeb30358daf212e4 100644
+--- a/Squirrel/SQRLInstaller.m
++++ b/Squirrel/SQRLInstaller.m
+@@ -36,6 +36,7 @@
+ const NSInteger SQRLInstallerErrorInvalidState = -6;
+ const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
+ const NSInteger SQRLInstallerErrorChangingPermissions = -8;
++const NSInteger SQRLInstallerErrorAppStillRunning = -9;
+ 
+ NSString * const SQRLShipItInstallationAttemptsKey = @"SQRLShipItInstallationAttempts";
+ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
+@@ -286,6 +287,19 @@ - (RACSignal *)installRequest:(SQRLShipItRequest *)request {
+ 			return [[[[self
+ 				renameIfNeeded:request updateBundleURL:updateBundleURL]
+ 				flattenMap:^(SQRLShipItRequest *request) {
++					// Final validation that the application is not running again;
++					NSArray *apps = [[NSRunningApplication runningApplicationsWithBundleIdentifier:request.bundleIdentifier] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSRunningApplication *app, NSDictionary *bindings) {
++						return [[[app bundleURL] URLByStandardizingPath] isEqual:request.targetBundleURL];
++					}]];
++					if ([apps count] != 0) {
++						NSLog(@"Aborting update attempt because there are %lu running instances of the target app", [apps count]);
++						NSDictionary *errorInfo = @{
++							NSLocalizedDescriptionKey: NSLocalizedString(@"App Still Running Error", nil),
++							NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"All instances of the target application should be quit during the update process", nil),
++						};
++						return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorAppStillRunning userInfo:errorInfo]];
++					}
++
+ 					return [[self acquireTargetBundleURLForRequest:request] concat:[RACSignal return:request]];
+ 				}]
+ 				flattenMap:^(SQRLShipItRequest *request) {
+diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
+index 032f0b3e9200b423f1cd25fa2f39bc4117443741..671f8fa2104df85046ff813d4b824a65caae502f 100644
+--- a/Squirrel/ShipIt-main.m
++++ b/Squirrel/ShipIt-main.m
+@@ -199,8 +199,14 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
+ 			return action;
+ 		}]
+ 		subscribeError:^(NSError *error) {
+-			NSLog(@"Installation error: %@", error);
+-			exit(EXIT_FAILURE);
++			if ([[error domain] isEqual:SQRLInstallerErrorDomain] && [error code] == SQRLInstallerErrorAppStillRunning) {
++				NSLog(@"Installation cancelled: %@", error);
++				clearInstallationAttempts(applicationIdentifier);
++				exit(EXIT_SUCCESS);
++			} else {
++				NSLog(@"Installation error: %@", error);
++				exit(EXIT_FAILURE);
++			}
+ 		} completed:^{
+ 			exit(EXIT_SUCCESS);
+ 		}];

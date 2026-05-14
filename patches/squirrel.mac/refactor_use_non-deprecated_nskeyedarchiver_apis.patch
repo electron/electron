@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 22 Jun 2023 12:26:24 +0200
+Subject: refactor: use non-deprecated NSKeyedArchiver APIs
+
+Refs https://chromium-review.googlesource.com/c/chromium/src/+/4628901
+
+Several NSKeyedArchiver methods have been deprecated and replaced as of macOS 10.13:
+
+- unarchiveObjectWithData -> unarchivedObjectOfClass:fromData:error:
+- archivedDataWithRootObject -> archivedDataWithRootObject:requiringSecureCoding:error:
+
+diff --git a/Squirrel/SQRLInstaller.m b/Squirrel/SQRLInstaller.m
+index f502df2f88424ea902a061adfeb30358daf212e4..8969cfda03efd5a11bfe0c531e2702ff12a3f610 100644
+--- a/Squirrel/SQRLInstaller.m
++++ b/Squirrel/SQRLInstaller.m
+@@ -182,14 +182,40 @@ - (SQRLInstallerOwnedBundle *)ownedBundle {
+ 	id archiveData = CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
+ 	if (![archiveData isKindOfClass:NSData.class]) return nil;
+ 
+-	SQRLInstallerOwnedBundle *ownedBundle = [NSKeyedUnarchiver unarchiveObjectWithData:archiveData];
+-	if (![ownedBundle isKindOfClass:SQRLInstallerOwnedBundle.class]) return nil;
++	// unarchivedObjectOfClass:fromData:error: sets secureCoding to true and we don't
++	// archive data with secureCoding enabled - use our own unarchiver to work around that.
++	NSError *error;
++	NSKeyedUnarchiver *unarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:archiveData
++                                                                              error:&error];
++	unarchiver.requiresSecureCoding = NO;
++	SQRLInstallerOwnedBundle *ownedBundle = [unarchiver decodeObjectForKey:NSKeyedArchiveRootObjectKey];
++	[unarchiver finishDecoding];
++
++	if (error) {
++		NSLog(@"Error while unarchiving ownedBundle - %@", error.localizedDescription);
++		return nil;
++	}
++
++	if (!ownedBundle || ![ownedBundle isKindOfClass:SQRLInstallerOwnedBundle.class]) {
++		NSLog(@"Unknown error while unarchiving ownedBundle - did not conform to SQRLInstallerOwnedBundle");
++		return nil;
++	}
+ 
+ 	return ownedBundle;
+ }
+ 
+ - (void)setOwnedBundle:(SQRLInstallerOwnedBundle *)ownedBundle {
+-	NSData *archiveData = (ownedBundle == nil ? nil : [NSKeyedArchiver archivedDataWithRootObject:ownedBundle]);
++	NSData *archiveData = nil;
++	if (ownedBundle != nil) {
++		NSError *error;
++		archiveData = [NSKeyedArchiver archivedDataWithRootObject:ownedBundle
++													requiringSecureCoding:NO
++																					error:&error];
++
++		if (error)
++			NSLog(@"Couldn't archive ownedBundle - %@", error.localizedDescription);
++	}
++
+ 	CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFPropertyListRef)archiveData, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+ 	CFPreferencesSynchronize((__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+ }
