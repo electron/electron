@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Mon, 23 Mar 2026 17:32:05 -0400
+Subject: D3D11: Protect against overflows for texture staging buffers
+
+When TextureStorage11 needs to calculate sizes of intermediate buffers
+for data conversion, do the math in 64-bit using CheckedNumerics.
+Validate that the results fit into 32 bits.
+
+Bug: chromium:491760376
+Change-Id: Ie5942291fe7790c229cb1070fa9a2325fa40ac2f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7695232
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+index 7ffc190cbc798161be6c5b801459e73c35253e68..93607bc7cbe495dfe14c6231218cc4d992ce0888 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+@@ -17,6 +17,7 @@
+ #include <tuple>
+ 
+ #include "common/MemoryBuffer.h"
++#include "common/base/anglebase/numerics/checked_math.h"
+ #include "common/utilities.h"
+ #include "image_util/loadimage.h"
+ #include "libANGLE/Context.h"
+@@ -902,22 +903,35 @@ angle::Result TextureStorage11::setData(const gl::Context *context,
+ 
+     const d3d11::Format &d3d11Format =
+         d3d11::Format::Get(image->getInternalFormat(), mRenderer->getRenderer11DeviceCaps());
+-    const d3d11::DXGIFormatSize &dxgiFormatInfo =
+-        d3d11::GetDXGIFormatSizeInfo(d3d11Format.texFormat);
+ 
+-    const size_t outputPixelSize = dxgiFormatInfo.pixelBytes;
+-
+-    UINT bufferRowPitch   = static_cast<unsigned int>(outputPixelSize) * width;
+-    UINT bufferDepthPitch = bufferRowPitch * height;
+-
+-    const size_t neededSize               = bufferDepthPitch * depth;
+     angle::MemoryBuffer *conversionBuffer = nullptr;
+     const uint8_t *data                   = nullptr;
++    UINT bufferRowPitch                   = 0;
++    UINT bufferDepthPitch                 = 0;
+ 
+     LoadImageFunctionInfo loadFunctionInfo = d3d11Format.getLoadFunctions()(type);
+     if (loadFunctionInfo.requiresConversion)
+     {
+-        ANGLE_TRY(mRenderer->getScratchMemoryBuffer(context11, neededSize, &conversionBuffer));
++        const d3d11::DXGIFormatSize &dxgiFormatInfo =
++            d3d11::GetDXGIFormatSizeInfo(d3d11Format.texFormat);
++
++        const size_t outputPixelSize = dxgiFormatInfo.pixelBytes;
++
++        angle::CheckedNumeric<uint64_t> checkedBufferRowPitch = outputPixelSize;
++        checkedBufferRowPitch *= static_cast<uint64_t>(width);
++
++        angle::CheckedNumeric<uint64_t> checkedBufferDepthPitch = checkedBufferRowPitch * height;
++        angle::CheckedNumeric<uint64_t> checkedNeededSize       = checkedBufferDepthPitch * depth;
++
++        ANGLE_CHECK_GL_MATH(context11, checkedNeededSize.IsValid<size_t>() &&
++                                           checkedBufferRowPitch.IsValid<UINT>() &&
++                                           checkedBufferDepthPitch.IsValid<UINT>());
++
++        bufferRowPitch   = checkedBufferRowPitch.ValueOrDie<UINT>();
++        bufferDepthPitch = checkedBufferDepthPitch.ValueOrDie<UINT>();
++
++        ANGLE_TRY(mRenderer->getScratchMemoryBuffer(
++            context11, checkedNeededSize.ValueOrDie<size_t>(), &conversionBuffer));
+         loadFunctionInfo.loadFunction(mRenderer->getDisplay()->getImageLoadContext(), width, height,
+                                       depth, pixelData + srcSkipBytes, srcRowPitch, srcDepthPitch,
+                                       conversionBuffer->data(), bufferRowPitch, bufferDepthPitch);
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 890d4defd1838d8eff612e4e81f10850fb278292..502aa7bb759593996837d5653413e89d513c87e0 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -17340,6 +17340,23 @@ TEST_P(TextureBufferTestES31, TexBufferFormatMismatch)
+     }
+ }
+ 
++// Test that uploading a max size texture with large formats does not crash.
++TEST_P(Texture2DTestES3, LargeTextureOverflow)
++{
++    // Some backends generate internal errors for OOM. That's OK as long as they don't crash.
++    ScopedIgnorePlatformMessages ignore;
++
++    GLint maxTextureSize;
++    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTextureSize);
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D, texture);
++
++    // This may succeed or generate an error about overflows but it should not crash.
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, maxTextureSize, maxTextureSize, 0, GL_RGB, GL_FLOAT,
++                 nullptr);
++}
++
+ // Create an integer format texture but specify a FLOAT sampler. OpenGL
+ // tolerates this but it causes a Vulkan validation error.
+ TEST_P(Texture2DTestES3, TexImageFormatMismatch)

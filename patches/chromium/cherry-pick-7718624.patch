@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Francisco Ochoa <frankchavez@google.com>
+Date: Thu, 2 Apr 2026 04:43:30 -0700
+Subject: Fix potential integer overflow and add size check.
+
+Perform vertex addition in GetVerticesNeededForDraw within
+base::CheckedNumeric to catch overflows that wrap to negative values and
+bypass buffer bounds checks.
+
+Add size(count variable) check in RequestBuffersAccess.
+
+See (internal-only): go/code-terracotta-review-explainer
+
+This is a phase 1 quick fix.
+
+Bug: 497639714
+Change-Id: Iecb9fe274109013e7d7383e409609d13ea2c7003
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7718624
+Reviewed-by: Stephen Nusko <nuskos@chromium.org>
+Commit-Queue: Francisco Ochoa <frankchavez@google.com>
+Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1609104}
+
+diff --git a/gpu/command_buffer/service/buffer_manager.cc b/gpu/command_buffer/service/buffer_manager.cc
+index 770368605215c9d329f87afa57c11a7e7d7f8d3d..9620813c928b306401903d1594e369dce9b81cc9 100644
+--- a/gpu/command_buffer/service/buffer_manager.cc
++++ b/gpu/command_buffer/service/buffer_manager.cc
+@@ -889,8 +889,9 @@ bool BufferManager::RequestBuffersAccess(
+     GLsizei count,
+     const char* func_name,
+     const char* message_tag) {
+-  DCHECK(error_state);
+-  DCHECK(bindings);
++  CHECK(error_state);
++  CHECK(bindings);
++  CHECK_GE(count, 0);
+ 
+   for (size_t ii = 0; ii < variable_sizes.size(); ++ii) {
+     if (variable_sizes[ii] == 0)
+diff --git a/gpu/command_buffer/service/transform_feedback_manager.cc b/gpu/command_buffer/service/transform_feedback_manager.cc
+index 8bc1ff2d7baec214d3664da1d1a9ab1b61dd4dcc..f2bd17ffc5a02a5a967a61403b9d5cc4905a740b 100644
+--- a/gpu/command_buffer/service/transform_feedback_manager.cc
++++ b/gpu/command_buffer/service/transform_feedback_manager.cc
+@@ -108,8 +108,8 @@ bool TransformFeedback::GetVerticesNeededForDraw(GLenum mode,
+   // Transform feedback only outputs complete primitives, so we need to round
+   // down to the nearest complete primitive before multiplying by the number of
+   // instances.
+-  base::CheckedNumeric<GLsizei> checked_vertices =
+-      vertices_drawn_ + pending_vertices_drawn;
++  base::CheckedNumeric<GLsizei> checked_vertices = vertices_drawn_;
++  checked_vertices += pending_vertices_drawn;
+   base::CheckedNumeric<GLsizei> checked_count = count;
+   base::CheckedNumeric<GLsizei> checked_primcount = primcount;
+   switch (mode) {
