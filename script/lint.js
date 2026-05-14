@@ -116,11 +116,13 @@ const LINTERS = [
     roots: ['shell'],
     test: (filename) => filename.endsWith('.cc') || (filename.endsWith('.h') && !isObjCHeader(filename)),
     run: (opts, filenames) => {
+      const env = {
+        ...getDepotToolsEnv(),
+        CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
+      };
       const clangFormatFlags = opts.fix ? ['--fix'] : [];
       for (const chunk of chunkFilenames(filenames)) {
-        spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk], {
-          env: getDepotToolsEnv()
-        });
+        spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk], { env });
         cpplint([`--filter=${CPPLINT_FILTERS.join(',')}`, ...chunk]);
       }
     }
@@ -130,9 +132,13 @@ const LINTERS = [
     roots: ['shell'],
     test: (filename) => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
     run: (opts, filenames) => {
+      const env = {
+        ...getDepotToolsEnv(),
+        CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools')
+      };
       const clangFormatFlags = opts.fix ? ['--fix'] : [];
       spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames], {
-        env: getDepotToolsEnv()
+        env
       });
       const filter = [...CPPLINT_FILTERS, '-readability/braces'];
       cpplint(['--extensions=mm,h', `--filter=${filter.join(',')}`, ...filenames]);
@@ -169,6 +175,7 @@ const LINTERS = [
         .map((filename) => {
           const env = {
             ...getDepotToolsEnv(),
+            CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools'),
             DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
           };
           const args = ['format', filename];

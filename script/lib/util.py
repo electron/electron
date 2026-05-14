@@ -205,45 +205,37 @@ def get_buildtools_executable(name):
     path += '.exe'
   return path
 
-def get_chromium_buildtools_path_value():
+def get_depot_tools_env():
   def find_depot_tools_on_path():
     cmd = 'where' if sys.platform == 'win32' else 'which'
     try:
-      depot_tools_path = subprocess.check_output(
-        [cmd, 'gclient'],
-        stderr=subprocess.DEVNULL, encoding='utf-8'
-      ).strip()
-      return os.path.dirname(depot_tools_path)
+      subprocess.check_call([cmd, 'gclient'])
+      return os.environ.copy()
     except subprocess.CalledProcessError:
       return None
 
   def check_for_build_tools():
     try:
-      depot_tools_path = subprocess.check_output(
-        'electron-build-tools show depotdir',
-        shell=True, stderr=subprocess.DEVNULL, encoding='utf-8'
-      ).strip()
-      return depot_tools_path
+      output = subprocess.check_output(
+        'electron-build-tools show env --json',
+        shell=True, stderr=subprocess.DEVNULL
+      )
+      env = os.environ.copy()
+      env.update(json.loads(output.decode().strip()))
+      return env
     except subprocess.CalledProcessError:
       return None
 
-  depot_tools_path = check_for_build_tools()
-  if depot_tools_path is None:
-    depot_tools_path = find_depot_tools_on_path()
+  depot_tools_env = check_for_build_tools()
+  if depot_tools_env is None:
+    depot_tools_env = find_depot_tools_on_path()
 
-  if depot_tools_path is None:
+  if depot_tools_env is None:
     raise RuntimeError("Couldn't find depot_tools, ensure it's on your PATH")
 
-  sys.path.append(depot_tools_path)
-  # If CHROMIUM_BUILDTOOLS_PATH is in the environment variables, remove it
-  # so we can see if we're on a version of depot_tools which doesn't need it
-  CHROMIUM_BUILDTOOLS_PATH = os.environ.pop('CHROMIUM_BUILDTOOLS_PATH', None)
-  try:
-    from gclient_paths import GetBuildtoolsPath # pylint: disable=import-outside-toplevel
-    if GetBuildtoolsPath() is None:
-      return CHROMIUM_BUILDTOOLS_PATH or os.path.join(SRC_DIR, 'buildtools')
-  finally:
-    if CHROMIUM_BUILDTOOLS_PATH:
-      os.environ['CHROMIUM_BUILDTOOLS_PATH'] = CHROMIUM_BUILDTOOLS_PATH
+  if 'CHROMIUM_BUILDTOOLS_PATH' not in depot_tools_env:
+    raise RuntimeError(
+      'CHROMIUM_BUILDTOOLS_PATH environment variable must be set'
+    )
 
-  return None
+  return depot_tools_env
