@@ -82,10 +82,12 @@ runs:
 
         export NINJA_SUMMARIZE_BUILD=1
         export NO_COLOR=1
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+
         if [ "${{ inputs.is-release }}" = "true" ]; then
           e build --target electron:release_build
         else
-          e build --target electron:testing_build
+          e build --target electron:testing_build $QUIET_FLAG
         fi
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
@@ -111,10 +113,11 @@ runs:
 
         $env:NINJA_SUMMARIZE_BUILD = 1
         $env:NO_COLOR = 1
+        $quietFlag = if ($env:ACTIONS_STEP_DEBUG -eq "true" -or "${{ inputs.is-release }}" -eq "true") { @() } else { @("-quiet") }
         if ("${{ inputs.is-release }}" -eq "true") {          
           e build --target electron:release_build
         } else {
-          e build --target electron:testing_build
+          e build --target electron:testing_build $quietFlag
         }
         if ($LASTEXITCODE -ne 0) {
           Write-Host "e build failed with exit code $LASTEXITCODE"
@@ -198,8 +201,8 @@ runs:
       shell: bash
       run: |
         cd src
-        e build --target electron:electron_chromedriver_zip
-
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+        e build --target electron:electron_chromedriver_zip $QUIET_FLAG
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
@@ -252,7 +255,8 @@ runs:
           MAC_SDK_ARG=$(sed -n 's|^\(mac_sdk_path = "//out/\)Default/|\1ffmpeg/|p' out/Default/args.gn)
         fi
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $MAC_SDK_ARG $GN_EXTRA_ARGS"
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg $QUIET_FLAG
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
