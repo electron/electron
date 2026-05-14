@@ -375,12 +375,6 @@ class NativeWindow : public views::WidgetDelegate {
 
   views::Widget* widget() const { return widget_.get(); }
   views::View* content_view() const { return content_view_; }
-  bool content_view_hit_test_transparent() const {
-    return content_view_hit_test_transparent_;
-  }
-  void set_content_view_hit_test_transparent(bool transparent) {
-    content_view_hit_test_transparent_ = transparent;
-  }
 
   enum class TitleBarStyle : uint8_t {
     kNormal,
@@ -482,12 +476,6 @@ class NativeWindow : public views::WidgetDelegate {
   // constraints because converting between them will cause rounding errors
   // on HiDPI displays on some environments.
   std::optional<extensions::SizeConstraints> content_size_constraints_;
-
-  // BrowserWindow installs a sibling WebContentsView behind content_view().
-  // When enabled on macOS, hit-testing can treat content_view() as transparent
-  // if it has no interactive child at the target point and continue searching
-  // siblings behind it.
-  bool content_view_hit_test_transparent_ = false;
 
   base::queue<bool> pending_transitions_;
 
