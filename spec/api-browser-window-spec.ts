@@ -1889,6 +1889,26 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform === 'win32')('secondary-monitor creation (Windows)', () => {
+      // Regression test for the secondary-monitor creation deflation: the
+      // HWND was created at (0, 0) using primary-monitor DPI then moved,
+      // so getBounds() reported scaled-by-primary then re-read-at-secondary
+      // values. Threading x/y into params.bounds at construction time makes
+      // the very first DIP->pixel conversion use the target monitor's DPI.
+      // CI runs at a single 96 DPI virtual display so the cross-monitor
+      // behavioural signal can't fire here, but the assertion still catches
+      // regressions in the construction path.
+      afterEach(closeAllWindows);
+
+      for (const frame of [true, false]) {
+        it(`reports requested bounds when created with explicit x/y (frame: ${frame})`, () => {
+          const requested = { x: 120, y: 140, width: 420, height: 320 };
+          const win = new BrowserWindow({ show: false, frame, ...requested });
+          expectBoundsEqual(win.getBounds(), requested);
+        });
+      }
+    });
+
     describe('BrowserWindow.setAspectRatio(ratio)', () => {
       it('resets the behaviour when passing in 0', async () => {
         const size = [300, 400];
