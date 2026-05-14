@@ -226,6 +226,7 @@ namespace {
 
 std::vector<std::string_view> ModifiersToArray(int modifiers) {
   std::vector<std::string_view> modifier_strings;
+  modifier_strings.reserve(Modifiers.size());
 
   for (const auto& [name, mask] : Modifiers)
     if (mask & modifiers)
@@ -362,15 +363,16 @@ v8::Local<v8::Value> Converter<blink::WebKeyboardEvent>::ToV8(
                        static_cast<ui::DomCode>(in.dom_code)));
 
   using Modifiers = blink::WebInputEvent::Modifiers;
-  dict.Set("isAutoRepeat", (in.GetModifiers() & Modifiers::kIsAutoRepeat) != 0);
-  dict.Set("isComposing", (in.GetModifiers() & Modifiers::kIsComposing) != 0);
-  dict.Set("shift", (in.GetModifiers() & Modifiers::kShiftKey) != 0);
-  dict.Set("control", (in.GetModifiers() & Modifiers::kControlKey) != 0);
-  dict.Set("alt", (in.GetModifiers() & Modifiers::kAltKey) != 0);
-  dict.Set("meta", (in.GetModifiers() & Modifiers::kMetaKey) != 0);
+  const int mods = in.GetModifiers();
+  dict.Set("isAutoRepeat", (mods & Modifiers::kIsAutoRepeat) != 0);
+  dict.Set("isComposing", (mods & Modifiers::kIsComposing) != 0);
+  dict.Set("shift", (mods & Modifiers::kShiftKey) != 0);
+  dict.Set("control", (mods & Modifiers::kControlKey) != 0);
+  dict.Set("alt", (mods & Modifiers::kAltKey) != 0);
+  dict.Set("meta", (mods & Modifiers::kMetaKey) != 0);
   dict.Set("location", GetKeyLocationCode(in));
-  dict.Set("_modifiers", in.GetModifiers());
-  dict.Set("modifiers", ModifiersToArray(in.GetModifiers()));
+  dict.Set("_modifiers", mods);
+  dict.Set("modifiers", ModifiersToArray(mods));
 
   return dict.GetHandle();
 }
