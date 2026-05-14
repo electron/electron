@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Thu, 23 Apr 2026 15:49:16 +0200
+Subject: [wasm][turboshaft] Fix Phi handling in Wasm Load Elimination
+
+When a Phi is later found to not have all-identical inputs after
+all, we must unset its replacement.
+
+Fixed: 505481948
+Change-Id: Ic9d405db231f30859f4e0f8831b2db5c76bdd622
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7789282
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106779}
+
+diff --git a/src/compiler/turboshaft/wasm-load-elimination-reducer.h b/src/compiler/turboshaft/wasm-load-elimination-reducer.h
+index e15a7d6cd9392674f875f93446c23c10360086fb..e1b415f5d87dc48baf82eda5da6912d514e4eca9 100644
+--- a/src/compiler/turboshaft/wasm-load-elimination-reducer.h
++++ b/src/compiler/turboshaft/wasm-load-elimination-reducer.h
+@@ -987,6 +987,8 @@ void WasmLoadEliminationAnalyzer::ProcessPhi(OpIndex op_idx, const PhiOp& phi) {
+     }
+     if (same_inputs) {
+       replacements_[op_idx] = first;
++    } else {
++      replacements_[op_idx] = OpIndex::Invalid();
+     }
+   }
+ }
+diff --git a/test/mjsunit/regress/wasm/regress-505481948.js b/test/mjsunit/regress/wasm/regress-505481948.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..50acc24c5b140ce6690f02c394ad9f24b94736ec
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-505481948.js
+@@ -0,0 +1,108 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --nowasm-loop-unrolling --nowasm-loop-peeling
++
++d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js")
++
++const builder = new WasmModuleBuilder();
++
++const arr = builder.addArray(kWasmI32, { final: true });
++const holder = builder.addStruct([makeField(wasmRefType(arr), true)]);
++
++const bigLen = 8;
++const smallLen = 1;
++const victimInit = 0x12345678;
++const expandedVictimLen = 0x40;
++
++const gVictim = builder.addGlobal(wasmRefNullType(arr), true);
++const gHolder = builder.addGlobal(wasmRefNullType(holder), true);
++
++builder.addFunction('expand_victim_length', makeSig([], []))
++  .addLocals(wasmRefType(holder), 1)
++  .addLocals(wasmRefType(arr), 3)
++  .addLocals(kWasmI32, 1)
++  .addBody([
++    kExprI32Const, bigLen,
++    kGCPrefix, kExprArrayNewDefault, arr,
++    kExprLocalSet, 1,
++
++    kExprI32Const, smallLen,
++    kGCPrefix, kExprArrayNewDefault, arr,
++    kExprLocalSet, 2,
++
++    kExprI32Const, smallLen,
++    kGCPrefix, kExprArrayNewDefault, arr,
++    kExprLocalSet, 3,
++
++    kExprLocalGet, 3,
++    kExprI32Const, 0,
++    ...wasmI32Const(victimInit),
++    kGCPrefix, kExprArraySet, arr,
++
++    kExprLocalGet, 1,
++    kGCPrefix, kExprStructNew, holder,
++    kExprLocalSet, 0,
++
++    kExprLocalGet, 3,
++    kExprGlobalSet, gVictim.index,
++    kExprLocalGet, 0,
++    kExprGlobalSet, gHolder.index,
++
++    kExprI32Const, 2,
++    kExprLocalSet, 4,
++
++    kExprLoop, kWasmVoid,
++    kExprLocalGet, 4,
++    kExprI32Const, 2,
++    kExprI32Eq,
++    kExprIf, kWasmRef, arr,
++    kExprLocalGet, 1,
++    kExprElse,
++    kExprLocalGet, 0,
++    kGCPrefix, kExprStructGet, holder, 0,
++    kExprEnd,
++    kExprI32Const, 3,
++    kExprI32Const, expandedVictimLen,
++    kGCPrefix, kExprArraySet, arr,
++
++    kExprLocalGet, 0,
++    kExprLocalGet, 2,
++    kGCPrefix, kExprStructSet, holder, 0,
++
++    kExprLocalGet, 4,
++    kExprI32Const, 1,
++    kExprI32Sub,
++    kExprLocalTee, 4,
++    kExprBrIf, 0,
++    kExprEnd,
++  ])
++  .exportFunc();
++
++builder.addFunction('victim_write', kSig_v_ii)
++  .addBody([
++    kExprGlobalGet, gVictim.index,
++    kExprLocalGet, 0,
++    kExprLocalGet, 1,
++    kGCPrefix, kExprArraySet, arr,
++  ])
++  .exportFunc();
++
++builder.addFunction('get_holder', kSig_r_v)
++  .addBody([
++    kExprGlobalGet, gHolder.index,
++    kGCPrefix, kExprStructGet, holder, 0,
++    kGCPrefix, kExprExternConvertAny,
++  ])
++  .exportFunc();
++
++const instance = builder.instantiate({});
++const wasm = instance.exports;
++
++assertTraps(kTrapArrayOutOfBounds, () => {
++  wasm.expand_victim_length()
++  let addr = 0x10000001;
++  wasm.victim_write(3, addr);
++  wasm.get_holder();
++});
