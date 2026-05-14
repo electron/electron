@@ -376,12 +376,6 @@ class NativeWindow : public base::SupportsUserData,
 
   views::Widget* widget() const { return widget_.get(); }
   views::View* content_view() const { return content_view_; }
-  bool content_view_hit_test_transparent() const {
-    return content_view_hit_test_transparent_;
-  }
-  void set_content_view_hit_test_transparent(bool transparent) {
-    content_view_hit_test_transparent_ = transparent;
-  }
 
   enum class TitleBarStyle : uint8_t {
     kNormal,
@@ -516,12 +510,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // The content view, weak ref.
   raw_ptr<views::View> content_view_ = nullptr;
-
-  // BrowserWindow installs a sibling WebContentsView behind content_view().
-  // When enabled on macOS, hit-testing can treat content_view() as transparent
-  // if it has no interactive child at the target point and continue searching
-  // siblings behind it.
-  bool content_view_hit_test_transparent_ = false;
 
   // The custom height parsed from the "height" option in a Object
   // "titleBarOverlay"
