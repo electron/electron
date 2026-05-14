@@ -279,6 +279,6 @@ See the [Windows Store Guide][].
 [windows store guide]: ./windows-store-guide.md
 [maker-squirrel]: https://www.electronforge.io/config/makers/squirrel.windows
 [maker-msi]: https://www.electronforge.io/config/makers/wix-msi
-[azure trusted signing]: https://azure.microsoft.com/en-us/products/trusted-signing
+[azure artifact signing]: https://azure.microsoft.com/en-us/products/trusted-signing
 [forge-trusted-signing]: https://www.electronforge.io/guides/code-signing/code-signing-windows#using-azure-trusted-signing
 [builder-trusted-signing]: https://www.electron.build/code-signing-win#using-azure-trusted-signing-beta
