@@ -57,6 +57,7 @@ class ElectronBindings {
   static void Crash();
 
   static void DidReceiveMemoryDump(
+      v8::Global<v8::Context> context,
       gin_helper::Promise<gin_helper::Dictionary> promise,
       base::ProcessId target_pid,
       memory_instrumentation::mojom::RequestOutcome outcome,
