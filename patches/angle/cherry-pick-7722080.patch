@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Wed, 1 Apr 2026 15:54:06 -0400
+Subject: Metal: Store LibraryCacheEntry in a shared_ptr
+
+This ensures that if an entry is removed from the cache while it is
+compiling, it is not deleted until it is fully unreferenced.
+
+If there were > kMaxCachedLibraries simultaneous compile requests, it
+was possible that the cache gets trimmed while threads are compiling and
+we can end up writing to removed cache entries.
+
+Bug: chromium:497724490
+Change-Id: Iba4281d5d12c6882de51fc1bf88d60157ffc7fb6
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7722080
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+
+diff --git a/src/libANGLE/renderer/metal/mtl_library_cache.h b/src/libANGLE/renderer/metal/mtl_library_cache.h
+index d936e6a4aeec66c66ae9b4203c61c9480b68563b..93dfc15cad79e7963b53609eee889f705b201c8a 100644
+--- a/src/libANGLE/renderer/metal/mtl_library_cache.h
++++ b/src/libANGLE/renderer/metal/mtl_library_cache.h
+@@ -77,7 +77,7 @@ class LibraryCache : angle::NonCopyable
+         std::mutex lock;
+     };
+ 
+-    LibraryCacheEntry &getCacheEntry(LibraryKey &&key);
++    std::shared_ptr<LibraryCacheEntry> getCacheEntry(LibraryKey &&key);
+ 
+     static constexpr unsigned int kMaxCachedLibraries = 128;
+ 
+@@ -87,7 +87,8 @@ class LibraryCache : angle::NonCopyable
+     // Lock for searching and adding new entries to the cache
+     std::mutex mCacheLock;
+ 
+-    using CacheMap = angle::base::HashingMRUCache<LibraryKey, LibraryCacheEntry, LibraryKeyHasher>;
++    using CacheMap = angle::base::
++        HashingMRUCache<LibraryKey, std::shared_ptr<LibraryCacheEntry>, LibraryKeyHasher>;
+     CacheMap mCache;
+ };
+ 
+diff --git a/src/libANGLE/renderer/metal/mtl_library_cache.mm b/src/libANGLE/renderer/metal/mtl_library_cache.mm
+index 5fb63eaa41cd0520e1210c175ce1253c71ec7486..27512a19defd8f59903b645b0218eaf9468ba7e0 100644
+--- a/src/libANGLE/renderer/metal/mtl_library_cache.mm
++++ b/src/libANGLE/renderer/metal/mtl_library_cache.mm
+@@ -36,15 +36,15 @@
+                                                  bool usesInvariance)
+ {
+     ASSERT(source != nullptr);
+-    LibraryCache::LibraryCacheEntry &entry =
++    std::shared_ptr<LibraryCache::LibraryCacheEntry> entry =
+         getCacheEntry(LibraryKey(source, macros, disableFastMath, usesInvariance));
+ 
+     // Try to lock the entry and return the library if it exists. If we can't lock then it means
+     // another thread is currently compiling.
+-    std::unique_lock<std::mutex> entryLockGuard(entry.lock, std::try_to_lock);
++    std::unique_lock<std::mutex> entryLockGuard(entry->lock, std::try_to_lock);
+     if (entryLockGuard)
+     {
+-        return entry.library;
++        return entry->library;
+     }
+     else
+     {
+@@ -69,23 +69,23 @@
+     }
+ 
+     ASSERT(source != nullptr);
+-    LibraryCache::LibraryCacheEntry &entry =
++    std::shared_ptr<LibraryCache::LibraryCacheEntry> entry =
+         getCacheEntry(LibraryKey(source, macros, disableFastMath, usesInvariance));
+ 
+     // Lock this cache entry while compiling the shader. This causes other threads calling this
+     // function to wait and not duplicate the compilation.
+-    std::lock_guard<std::mutex> entryLockGuard(entry.lock);
+-    if (entry.library)
++    std::lock_guard<std::mutex> entryLockGuard(entry->lock);
++    if (entry->library)
+     {
+-        return entry.library;
++        return entry->library;
+     }
+ 
+-    entry.library = CreateShaderLibrary(metalDevice, *source, macros, disableFastMath,
+-                                        usesInvariance, errorOut);
+-    return entry.library;
++    entry->library = CreateShaderLibrary(metalDevice, *source, macros, disableFastMath,
++                                         usesInvariance, errorOut);
++    return entry->library;
+ }
+ 
+-LibraryCache::LibraryCacheEntry &LibraryCache::getCacheEntry(LibraryKey &&key)
++std::shared_ptr<LibraryCache::LibraryCacheEntry> LibraryCache::getCacheEntry(LibraryKey &&key)
+ {
+     // Lock while searching or adding new items to the cache.
+     std::lock_guard<std::mutex> cacheLockGuard(mCacheLock);
+@@ -98,7 +98,7 @@
+ 
+     angle::TrimCache(kMaxCachedLibraries, kGCLimit, "metal library", &mCache);
+ 
+-    iter = mCache.Put(std::move(key), LibraryCacheEntry());
++    iter = mCache.Put(std::move(key), std::make_shared<LibraryCacheEntry>());
+     return iter->second;
+ }
+ 

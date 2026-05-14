@@ -175,3 +175,17 @@ fix_make_macos_text_replacement_work_on_contenteditable.patch
 fix-dcheck-failure-when-starting-heap-profiler-for-renderer.patch
 fix_use_bundled_devtools_frontend_url_for_remote_debugging.patch
 fix_constrain_allowuniversalaccessfromfileurls_to_file_origins_in.patch
+cherry-pick-7695218.patch
+cherry-pick-7695435.patch
+cherry-pick-7701234.patch
+cherry-pick-7718624.patch
+cherry-pick-7722343.patch
+cherry-pick-7722499.patch
+cherry-pick-7723101.patch
+cherry-pick-7726850.patch
+cherry-pick-7726886.patch
+cherry-pick-7727919.patch
+cherry-pick-7737952.patch
+cherry-pick-7779792.patch
+cherry-pick-7791302.patch
+cherry-pick-7800635.patch
