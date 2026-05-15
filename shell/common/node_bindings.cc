@@ -87,6 +87,7 @@
   V(electron_browser_system_preferences)  \
   V(electron_browser_base_window)         \
   V(electron_browser_clipboard)           \
+  V(electron_browser_clipboard_item)      \
   V(electron_browser_tray)                \
   V(electron_browser_utility_process)     \
   V(electron_browser_view)                \
