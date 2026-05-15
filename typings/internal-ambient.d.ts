@@ -282,7 +282,6 @@ declare namespace NodeJS {
     internalBinding?(name: string): any;
     _linkedBinding(name: string): any;
     _linkedBinding(name: 'electron_common_asar'): AsarBinding;
-    _linkedBinding(name: 'electron_common_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_common_command_line'): Electron.CommandLine;
     _linkedBinding(name: 'electron_common_environment'): EnvironmentBinding;
     _linkedBinding(name: 'electron_common_features'): FeaturesBinding;
@@ -293,6 +292,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
     _linkedBinding(name: 'electron_browser_app'): { app: Electron.App; App: Function };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
+    _linkedBinding(name: 'electron_browser_clipboard'): Electron.Clipboard;
     _linkedBinding(name: 'electron_browser_crash_reporter'): CrashReporterBinding;
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
