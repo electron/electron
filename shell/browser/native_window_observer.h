@@ -77,6 +77,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnWindowUnmaximize() {}
   virtual void OnWindowMinimize() {}
   virtual void OnWindowRestore() {}
+  virtual void OnWindowTiledStateChanged(bool is_tiled) {}
   virtual void OnWindowWillResize(const gfx::Rect& new_bounds,
                                   gfx::ResizeEdge edge,
                                   bool* prevent_default) {}

@@ -6020,6 +6020,45 @@ describe('BrowserWindow module', () => {
     });
   });
 
+  describe('decoration insets', () => {
+    afterEach(closeAllWindows);
+
+    it('does not throw when called', () => {
+      const w = new BrowserWindow({ show: false, frame: false, transparent: true });
+      expect(() => {
+        w.setDecorationInsets({ top: 10, left: 10, bottom: 10, right: 10 });
+      }).to.not.throw();
+    });
+
+    it('accepts zero insets', () => {
+      const w = new BrowserWindow({ show: false, frame: false, transparent: true });
+      expect(() => {
+        w.setDecorationInsets({ top: 0, left: 0, bottom: 0, right: 0 });
+      }).to.not.throw();
+    });
+
+    it('accepts asymmetric insets', () => {
+      const w = new BrowserWindow({ show: false, frame: false, transparent: true });
+      expect(() => {
+        w.setDecorationInsets({ top: 5, left: 10, bottom: 15, right: 20 });
+      }).to.not.throw();
+    });
+  });
+
+  describe('tiled state', () => {
+    afterEach(closeAllWindows);
+
+    it('isTiled() returns a boolean', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.isTiled()).to.be.a('boolean');
+    });
+
+    ifit(process.platform === 'linux')('isTiled() starts as false', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.isTiled()).to.equal(false);
+    });
+  });
+
   ifdescribe(process.platform !== 'linux')('window states (excluding Linux)', () => {
     // Not implemented on Linux.
     afterEach(closeAllWindows);

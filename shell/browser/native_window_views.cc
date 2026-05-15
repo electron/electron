@@ -958,6 +958,53 @@ extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
 }
 #endif
 
+#if BUILDFLAG(IS_LINUX)
+bool NativeWindowViews::IsTiled() const {
+  return is_tiled_;
+}
+
+void NativeWindowViews::SetTiled(bool tiled) {
+  if (is_tiled_ == tiled)
+    return;
+  is_tiled_ = tiled;
+  NotifyWindowTiledStateChanged(tiled);
+}
+#endif
+
+void NativeWindowViews::SetDecorationInsets(const gfx::Insets& insets) {
+#if BUILDFLAG(IS_LINUX)
+  DCHECK(insets.top() >= 0 && insets.left() >= 0 && insets.bottom() >= 0 &&
+         insets.right() >= 0);
+  gfx::Insets old_insets = decoration_insets_;
+  decoration_insets_ = insets;
+
+  // Grow or shrink the widget so the window geometry (content area)
+  // stays the same size. Without this, setting insets would shrink the
+  // visible content by the shadow amount, and changing insets would
+  // cause the compositor to reposition the window.
+  if (!IsMaximized() && !IsFullscreen() && !IsTiled()) {
+    int dl = insets.left() - old_insets.left();
+    int dt = insets.top() - old_insets.top();
+    int dw = insets.width() - old_insets.width();
+    int dh = insets.height() - old_insets.height();
+    if (dl != 0 || dt != 0 || dw != 0 || dh != 0) {
+      gfx::Rect bounds = GetBounds();
+      bounds.set_x(bounds.x() - dl);
+      bounds.set_y(bounds.y() - dt);
+      bounds.set_width(bounds.width() + dw);
+      bounds.set_height(bounds.height() + dh);
+      SetBounds(bounds, false);
+    }
+  }
+
+  if (auto* tree_host = static_cast<ElectronDesktopWindowTreeHostLinux*>(
+          views::DesktopWindowTreeHostLinux::GetHostForWidget(
+              GetAcceleratedWidget()))) {
+    tree_host->ApplyDecorationInsets();
+  }
+#endif
+}
+
 void NativeWindowViews::SetResizable(bool resizable) {
   if (resizable != resizable_) {
     resizable_ = resizable;
