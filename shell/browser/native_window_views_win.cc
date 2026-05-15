@@ -677,6 +677,14 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
 
     RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
 
+    // Re-arm mouse tracking so Windows delivers WM_MOUSELEAVE if the
+    // cursor is already outside the client area (fixes stale :hover).
+    TRACKMOUSEEVENT tme = {};
+    tme.cbSize = sizeof(tme);
+    tme.dwFlags = TME_LEAVE;
+    tme.hwndTrack = legacy_window_;
+    TrackMouseEvent(&tme);
+
     if (forwarding_windows_->empty()) {
       // If UnhookWindowsHookEx fails, the hook is still installed in the
       // system. Leave |mouse_hook_| pointing at the existing hook so that a
