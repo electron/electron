@@ -33,6 +33,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "ui/display/screen.h"
 
 #if defined(TOOLKIT_VIEWS)
 #include "shell/browser/native_window_views.h"
@@ -596,6 +597,20 @@ void BaseWindow::SetPosition(const int x,
 std::array<int, 2U> BaseWindow::GetPosition() const {
   return ToArray(window_->GetPosition());
 }
+
+std::optional<gfx::Point> BaseWindow::GetCursorPoint() const {
+  if (auto* screen = display::Screen::Get()) {
+    const gfx::Point cursor_point = screen->GetCursorScreenPoint();
+    // Ignore positions outside the logical window surface.
+    if (const auto window_bounds = window_->GetBounds();
+        window_bounds.Contains(cursor_point)) {
+      // Return window-local coordinates.
+      return cursor_point - window_bounds.OffsetFromOrigin();
+    }
+  }
+  return {};
+}
+
 void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin::Arguments* const args) {
   if (!window_->MoveAbove(sourceId))
@@ -1219,6 +1234,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("center", &BaseWindow::Center)
       .SetMethod("setPosition", &BaseWindow::SetPosition)
       .SetMethod("getPosition", &BaseWindow::GetPosition)
+      .SetMethod("getCursorPoint", &BaseWindow::GetCursorPoint)
       .SetMethod("setTitle", &BaseWindow::SetTitle)
       .SetMethod("getTitle", &BaseWindow::GetTitle)
       .SetProperty("accessibleTitle", &BaseWindow::GetAccessibleTitle,

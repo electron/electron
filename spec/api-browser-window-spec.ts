@@ -1902,6 +1902,18 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('BrowserWindow.getCursorPoint()', () => {
+      it('returns a point object with x and y or null', () => {
+        const point = w.getCursorPoint();
+        if (point !== null) {
+          expect(point).to.have.property('x');
+          expect(point).to.have.property('y');
+          expect(point.x).to.be.a('number');
+          expect(point.y).to.be.a('number');
+        }
+      });
+    });
+
     describe('BrowserWindow.setContentSize(width, height)', () => {
       it('sets the content size', async () => {
         // NB. The CI server has a very small screen. Attempting to size the window
