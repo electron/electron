@@ -1,0 +1,180 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georgi Davidkov <georgi.davidkov@tick42.com>
+Date: Fri, 15 May 2026 17:22:33 +0300
+Subject: fix: preserve DIP size on programmatic cross-DPI setBounds on Windows
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When BrowserWindow.setBounds() targets coordinates on a monitor with a
+different display scale factor than the window's current monitor, the
+final outer size ends up off by source/destination — e.g., a 400 DIP
+width requested on a 1.375x/1.1x mixed-DPI setup gets reported back as
+~366 DIP.
+
+Root cause:
+DesktopWindowTreeHostWin::SetBoundsInDIP converts the requested DIP
+rect to pixels using the destination display's DSF (origin-resolved,
+intentional per crbug.com/1224715), then ::SetWindowPos moves the HWND.
+Windows fires WM_DPICHANGED synchronously during that move, and
+HWNDMessageHandler::OnDpiChanged applies the OS-suggested lParam rect
+verbatim — but Windows computed that rect as current_rect * new_dpi /
+old_dpi, so the already-destination-DPI-sized pixels we just sent get
+scaled by that ratio again, leaving the final outer off.
+
+Fix:
+Cache the destination-DPI pixel rect in SetBoundsInDIP just before
+::SetWindowPos. OnDpiChanged copies the cached size verbatim onto the
+new bounds in place of the OS-suggested size; position still comes
+from lParam so the window lands where Windows placed it. The cache is
+cleared right after SetBoundsInPixels returns (WM_DPICHANGED is
+dispatched synchronously), so it cannot leak into an unrelated DPI
+change.
+
+Deliberately no MulDiv-style math against Windows' DPI values:
+Chromium's display::Display DSF can disagree with the HWND DPI Windows
+tracks (Windows 10+ text-scale multiplier folds into the former but
+not the latter — e.g., 125% display + 110% text-scale gives Chromium
+DSF=1.375 while WM_DPICHANGED's wParam reports 120). Any cancellation
+involving both values mis-cancels. Passing through the already-correct
+pixel size sidesteps that mismatch entirely.
+
+This is the programmatic-SetBounds analog of the drag-time
+cross-monitor ratchet fix (a separate, in-review patch). The two use
+disjoint cache fields (pending_programmatic_target_rect_ vs
+pre_size_move_*) and will compose textually in OnDpiChanged when both
+land.
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index d7bc932bdc1165273fccade29300739dc15446ef..0d1a4cd4f1d973d85a9cdb9b26d0ff1f23e32380 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -1436,10 +1436,43 @@ void DesktopWindowTreeHostWin::SetBoundsInDIP(const gfx::Rect& bounds) {
+   // positions in variable-DPI situations. See https://crbug.com/1224715 for
+   // details.
+   aura::Window* root = nullptr;
++  const gfx::Rect adjusted_bounds = AdjustedContentBounds(bounds);
+   const gfx::Rect bounds_in_pixels =
+-      display::Screen::Get()->DIPToScreenRectInWindow(
+-          root, AdjustedContentBounds(bounds));
++      display::Screen::Get()->DIPToScreenRectInWindow(root, adjusted_bounds);
++
++  // Programmatic cross-DPI workaround: DIPToScreenRectInWindow above resolves
++  // the destination display from the DIP origin and converts |adjusted_bounds|
++  // using *that* display's DSF. When the resulting ::SetWindowPos crosses to a
++  // monitor with a different DSF, Windows fires WM_DPICHANGED synchronously
++  // and HWNDMessageHandler::OnDpiChanged applies the OS-suggested rect, which
++  // is current_rect * new_dpi / old_dpi — rescaling our already-destination-
++  // DPI-sized pixels again and leaving the final outer off by that ratio.
++  //
++  // Pre-populate a cache holding the destination-DPI pixel rect we computed
++  // here. OnDpiChanged copies the cached size verbatim in place of the
++  // OS-suggested size. We deliberately do NOT do MulDiv-style math against
++  // Windows' DPI values: Chromium's display::Display DSF can disagree with
++  // the HWND DPI Windows tracks (Windows 10+ text-scale multiplier folds
++  // into the former but not the latter), so any cancellation involving the
++  // two mis-cancels. Passing through the already-correct pixel size sidesteps
++  // that mismatch entirely.
++  //
++  // The cache is cleared right after SetBoundsInPixels returns (WM_DPICHANGED
++  // is dispatched synchronously), so it cannot leak into a later unrelated
++  // DPI change.
++  display::win::ScreenWin* screen_win = display::win::GetScreenWin();
++  const float source_dsf = screen_win->GetScaleFactorForHWND(GetHWND());
++  const float dest_dsf =
++      display::Screen::Get()
++          ->GetDisplayMatching(adjusted_bounds)
++          .device_scale_factor();
++  if (source_dsf > 0.f && dest_dsf > 0.f && source_dsf != dest_dsf) {
++    message_handler_->SetPendingProgrammaticDpiTarget(bounds_in_pixels);
++  }
++
+   AsWindowTreeHost()->SetBoundsInPixels(bounds_in_pixels);
++
++  message_handler_->ClearPendingProgrammaticDpiTarget();
+ }
+ 
+ void DesktopWindowTreeHostWin::SetAllowScreenshots(bool allow) {
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 7ce3a67beab569751414bba6dd9f99a038b91261..efe797ccdcff78be9ed0e5a58fd24085d451b12b 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -601,6 +601,15 @@ void HWNDMessageHandler::SetBounds(const gfx::Rect& bounds_in_pixels,
+   SetBoundsInternal(bounds_in_pixels, force_size_changed);
+ }
+ 
++void HWNDMessageHandler::SetPendingProgrammaticDpiTarget(
++    const gfx::Rect& target_rect) {
++  pending_programmatic_target_rect_ = target_rect;
++}
++
++void HWNDMessageHandler::ClearPendingProgrammaticDpiTarget() {
++  pending_programmatic_target_rect_ = gfx::Rect();
++}
++
+ void HWNDMessageHandler::SetParentOrOwner(HWND new_parent) {
+   LONG style = ::GetWindowLong(hwnd(), GWL_STYLE);
+   if (style & WS_CHILD) {
+@@ -2050,7 +2059,22 @@ LRESULT HWNDMessageHandler::OnDpiChanged(UINT msg,
+   if (!ref) {
+     return 0;
+   }
+-  SetBoundsInternal(gfx::Rect(*reinterpret_cast<RECT*>(l_param)), false);
++  // Programmatic cross-DPI move (set by DesktopWindowTreeHostWin::SetBoundsInDIP
++  // just before ::SetWindowPos): SetBoundsInDIP pre-converted the requested DIP
++  // rect using the destination display's DSF; the OS-suggested rect would
++  // rescale it again by new_dpi/old_dpi. The cache already holds the desired
++  // outer rect in destination-DPI pixels, so copy its size verbatim onto the
++  // new bounds. Position still comes from l_param so the window lands where
++  // Windows placed it. No DPI math is involved here on purpose — Chromium's
++  // display DSF can disagree with the HWND DPI Windows tracks (text-scale
++  // multiplier folds into the former but not the latter), so any cancellation
++  // against Windows' DPI values is unsound. The pre-computed pixel size IS
++  // the answer.
++  gfx::Rect new_bounds(*reinterpret_cast<RECT*>(l_param));
++  if (!pending_programmatic_target_rect_.IsEmpty()) {
++    new_bounds.set_size(pending_programmatic_target_rect_.size());
++  }
++  SetBoundsInternal(new_bounds, false);
+   if (!ref) {
+     return 0;
+   }
+diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
+index 49f074050fa937d2506e2aa7a5d6f58c4768d305..080fe8bce109fc687e83cca1d987aa106a3b97db 100644
+--- a/ui/views/win/hwnd_message_handler.h
++++ b/ui/views/win/hwnd_message_handler.h
+@@ -125,6 +125,17 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+   virtual void SetBounds(const gfx::Rect& bounds_in_pixels,
+                          bool force_size_changed);
+ 
++  // Populates the cache consumed by OnDpiChanged so that a programmatic
++  // cross-DPI move initiated by DesktopWindowTreeHostWin::SetBoundsInDIP can
++  // substitute the OS-suggested rect with the destination-DPI size the caller
++  // originally requested. |target_rect| is the desired outer rect already
++  // expressed in destination-DPI screen pixels; OnDpiChanged copies its size
++  // verbatim into the new bounds (position still comes from the OS-suggested
++  // rect, so the window lands where Windows placed it). Always paired with
++  // ClearPendingProgrammaticDpiTarget().
++  void SetPendingProgrammaticDpiTarget(const gfx::Rect& target_rect);
++  void ClearPendingProgrammaticDpiTarget();
++
+   virtual void SetSize(const gfx::Size& size);
+   virtual void CenterWindow(const gfx::Size& size);
+ 
+@@ -696,6 +707,16 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+   // The current DPI.
+   int dpi_;
+ 
++  // Cache populated by DesktopWindowTreeHostWin::SetBoundsInDIP just before a
++  // ::SetWindowPos that may land on a different-DSF monitor. SetBoundsInDIP
++  // pre-converts the requested DIP rect using the destination display's DSF;
++  // the synchronous WM_DPICHANGED that follows would otherwise rescale that
++  // destination-DPI size by new_dpi/old_dpi again. When this cache is
++  // populated, OnDpiChanged copies the cached size verbatim onto the new
++  // bounds instead of the OS-suggested size. Cleared right after the
++  // SetWindowPos returns, so it cannot leak into an unrelated DPI change.
++  gfx::Rect pending_programmatic_target_rect_;
++
+   // This is true if the window is created with a specific size/location, as
+   // opposed to having them set after window creation.
+   bool initial_bounds_valid_ = false;

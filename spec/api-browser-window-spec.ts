@@ -1774,6 +1774,44 @@ describe('BrowserWindow module', () => {
 
         w.setBounds({ x: x + 10, y: y + 10 });
       });
+
+      ifit(process.platform === 'win32')('preserves DIP size across a cross-DPI move', async function () {
+        // Regression test for the programmatic cross-DPI setBounds bug:
+        // DesktopWindowTreeHostWin::SetBoundsInDIP converts the requested DIP
+        // rect to pixels using the destination display's DSF, but Windows
+        // then fires WM_DPICHANGED synchronously and HWNDMessageHandler
+        // rescales those already-correct pixels again. Pre-fix the final
+        // outer was off by source/destination — e.g., 400 DIP requested on a
+        // different-DPI monitor returned ~366. The fix caches the
+        // destination-DPI rect and substitutes its size verbatim in
+        // OnDpiChanged, so getBounds() matches the request modulo
+        // ScaleToEnclosingRect rounding at non-integer DSFs (≤ ~2 DIP).
+        const primary = screen.getPrimaryDisplay();
+        const secondary = screen
+          .getAllDisplays()
+          .find((d) => d.id !== primary.id && d.scaleFactor !== primary.scaleFactor);
+        if (!secondary) {
+          // No second monitor at a different DSF — bug can't manifest.
+          return this.skip();
+        }
+
+        const target = {
+          x: secondary.bounds.x + 50,
+          y: secondary.bounds.y + 50,
+          width: 400,
+          height: 300
+        };
+        w.setBounds(target);
+        // WM_DPICHANGED is dispatched synchronously inside ::SetWindowPos,
+        // but give the message loop a tick to settle any follow-up resize.
+        await setTimeout(50);
+
+        const result = w.getBounds();
+        expect(result.x).to.be.closeTo(target.x, 1);
+        expect(result.y).to.be.closeTo(target.y, 1);
+        expect(result.width).to.be.closeTo(target.width, 3);
+        expect(result.height).to.be.closeTo(target.height, 3);
+      });
     });
 
     describe('BrowserWindow.setSize(width, height)', () => {
