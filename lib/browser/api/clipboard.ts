@@ -1,3 +1,3 @@
-const clipboard = process._linkedBinding('electron_common_clipboard');
+const clipboard = process._linkedBinding('electron_browser_clipboard');
 
 export default clipboard;
