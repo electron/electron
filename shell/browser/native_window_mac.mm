@@ -14,7 +14,6 @@
 #include <vector>
 
 #include "base/apple/scoped_cftyperef.h"
-#include "base/containers/adapters.h"
 #include "base/mac/mac_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
@@ -43,10 +42,10 @@
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/base/hit_test.h"
 #include "ui/display/screen.h"
+#include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
-#include "ui/views/rect_based_targeting_utils.h"
 #include "ui/views/view_targeter.h"
 #include "ui/views/view_targeter_delegate.h"
 #include "ui/views/widget/widget.h"
@@ -118,58 +117,43 @@ struct Converter<electron::NativeWindowMac::VisualEffectState> {
 
 namespace {
 
-// A ViewTargeterDelegate installed on RootViewMac to make BrowserWindow's
-// content_view_ act like a transparent overlay when it has no interactive child
-// at the target point.
+// A ViewTargeterDelegate installed on content_view_ that makes it
+// hit-test-transparent except where one of its descendants covers the
+// target rect.
 //
-// In BrowserWindow, the WebContentsView is added as a sibling of content_view_
-// at a lower Z-order (behind it) so that user-added child views paint above
-// the web content. However, views::ViewTargeterDelegate::TargetForRect
-// iterates children front-to-back and returns the first child whose
-// HitTestRect() is true. content_view_ covers the full window area, so the
-// WebContentsView (and its NativeViewHost) is never reached.
+// In BrowserWindow, the WebContentsView is added as a sibling of
+// content_view_ at a lower z-order so that user-added child views paint
+// above web content. content_view_ itself covers the full window, so the
+// default DoesIntersectRect (a bounds check) would always return true and
+// the parent targeter would stop there, never reaching the WebContentsView
+// behind it. By only intersecting where a child actually does, the parent's
+// default TargetForRect loop skips content_view_ and falls through to the
+// sibling, ultimately resolving to the WebContentsView's NativeViewHost so
+// BridgedContentView::hitTest: routes the event to RenderWidgetHostViewCocoa.
 //
-// Keep sibling traversal in the parent targeter so content_view_ can act
-// transparently here while hit-testing continues to the views behind it.
-class RootViewMacTargeterDelegate : public views::ViewTargeterDelegate {
+// This must never affect TargetForRect's contract — it only narrows
+// HitTestRect, which the default loop already handles by skipping the child.
+// Returning nullptr from TargetForRect (the previous approach) violated the
+// contract and crashed RootView::UpdateCursor (see #51576).
+class ContentViewTargeterDelegate : public views::ViewTargeterDelegate {
  public:
-  explicit RootViewMacTargeterDelegate(electron::NativeWindowMac* window)
-      : window_(window) {}
-
-  views::View* TargetForRect(views::View* root,
-                             const gfx::Rect& rect) override {
-    if (!window_->content_view_hit_test_transparent() ||
-        !window_->content_view() || !views::UsePointBasedTargeting(rect)) {
-      return views::ViewTargeterDelegate::TargetForRect(root, rect);
+  bool DoesIntersectRect(const views::View* target,
+                         const gfx::Rect& rect) const override {
+    if (!views::ViewTargeterDelegate::DoesIntersectRect(target, rect)) {
+      return false;
     }
-
-    views::View* skipped_content_view = nullptr;
-    views::View::Views children = root->GetChildrenInZOrder();
-    for (views::View* child : base::Reversed(children)) {
-      if (!child->GetCanProcessEventsWithinSubtree() || !child->GetVisible()) {
+    for (const views::View* child : target->children()) {
+      if (!child->GetVisible() || !child->GetCanProcessEventsWithinSubtree()) {
         continue;
       }
-
-      gfx::Rect rect_in_child_coords =
-          views::View::ConvertRectToTarget(root, child, rect);
-      if (!child->HitTestRect(rect_in_child_coords)) {
-        continue;
+      gfx::RectF rect_in_child(rect);
+      views::View::ConvertRectToTarget(target, child, &rect_in_child);
+      if (child->HitTestRect(gfx::ToEnclosingRect(rect_in_child))) {
+        return true;
       }
-
-      views::View* target = child->GetEventHandlerForRect(rect_in_child_coords);
-      if (child == window_->content_view() && target == child) {
-        skipped_content_view = child;
-        continue;
-      }
-
-      return target;
     }
-
-    return skipped_content_view ? skipped_content_view : root;
+    return false;
   }
-
- private:
-  raw_ptr<electron::NativeWindowMac> window_;
 };
 
 }  // namespace
@@ -185,8 +169,6 @@ NativeWindowMac::NativeWindowMac(const int32_t base_window_id,
       root_view_(new RootViewMac(this)) {
   ui::NativeTheme::GetInstanceForNativeUi()->AddObserver(this);
   display::Screen::Get()->AddObserver(this);
-  root_view_->SetEventTargeter(std::make_unique<views::ViewTargeter>(
-      std::make_unique<RootViewMacTargeterDelegate>(this)));
 
   int width = options.ValueOrDefault(options::kWidth, 800);
   int height = options.ValueOrDefault(options::kHeight, 600);
@@ -393,6 +375,11 @@ void NativeWindowMac::SetContentView(views::View* view) {
     root_view->RemoveChildView(content_view());
 
   set_content_view(view);
+
+  // Make content_view_ hit-test-transparent where it has no covering child
+  // so events fall through to the sibling WebContentsView in BrowserWindow.
+  view->SetEventTargeter(std::make_unique<views::ViewTargeter>(
+      std::make_unique<ContentViewTargeterDelegate>()));
 
   root_view->AddChildViewRaw(content_view());
 
