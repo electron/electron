@@ -397,6 +397,15 @@ Shows a message box.
 
 The `window` argument allows the dialog to attach itself to a parent window, making it modal.
 
+> [!NOTE]
+> On Linux, when no parent `window` is provided **and** no `BrowserWindow`
+> instances are open, `dialog.showMessageBox()` will block the main process
+> until the dialog is dismissed (behaving like `dialog.showMessageBoxSync()`).
+> This is because Chromium's GLib event loop is not actively iterating without
+> an open window, which would otherwise cause a ~30-second delay in promise
+> resolution. When `BrowserWindow` instances exist, the normal async path is
+> used even without a parent `window`.
+
 ### `dialog.showErrorBox(title, content)`
 
 * `title` string - The title to display in the error box.
