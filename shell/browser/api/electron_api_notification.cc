@@ -273,15 +273,19 @@ void Notification::NotificationClosed(const std::string& reason) {
 }
 
 void Notification::Close() {
-  if (notification_) {
-    if (notification_->is_dismissed()) {
-      notification_->Remove();
-    } else {
-      notification_->Dismiss();
-    }
-    notification_->set_delegate(nullptr);
-    notification_.reset();
+  auto notification = notification_;
+  notification_.reset();
+
+  if (!notification) {
+    return;
   }
+
+  if (notification->is_dismissed()) {
+    notification->Remove();
+  } else {
+    notification->Dismiss();
+  }
+  notification->set_delegate(nullptr);
 }
 
 // Showing notifications
