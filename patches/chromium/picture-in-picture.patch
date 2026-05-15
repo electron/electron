@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index a7a637438116a1c7846194dea4412100a45c9331..d618bd2c639cadad6d66b16b3f928d29597b9a56 100644
+index 6a9cf3d1e64355f0577d1f220d9220fff42b4772..0d171884510ac29e92e02bf035115645d330d678 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
 @@ -4,9 +4,12 @@
@@ -29,16 +29,16 @@ index a7a637438116a1c7846194dea4412100a45c9331..d618bd2c639cadad6d66b16b3f928d29
      : OverlayWindowImageButton(std::move(callback)) {
    SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
  
--  auto* icon = &vector_icons::kCloseChromeRefreshIcon;
+-  auto* icon = &vector_icons::kCloseChromeRefreshOldIcon;
 +  auto* icon = &views::kIcCloseOldIcon;
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
-+  icon = &vector_icons::kCloseChromeRefreshIcon;
++  icon = &vector_icons::kCloseChromeRefreshOldIcon;
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
    SetImageModel(views::Button::STATE_NORMAL,
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 2d97ec9d47de4d2624e3b40cdaf7c07b9d862a90..15b35792469aca29900025733fbcc9d62d7d1d62 100644
+index 39cdc6afa47fc8c9c5561df22b86516abf8496e4..d9eee55a98a1560c2b6b599711b9199fb4d72b47 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -18,13 +18,17 @@
