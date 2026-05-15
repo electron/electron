@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mikt <mikt@google.com>
+Date: Tue, 24 Mar 2026 21:08:00 -0700
+Subject: Add AMSC macro to FilePathWatcherFSEvents
+
+As a band aid fix for potential memory issue.
+
+Bug: 495782021
+Change-Id: I2e53ef61ba9a0cbcff71b22148f800b3c59e0bb3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7699084
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Commit-Queue: Mikihito Matsuura <mikt@google.com>
+Cr-Commit-Position: refs/heads/main@{#1604590}
+
+diff --git a/content/browser/file_system_access/file_path_watcher/file_path_watcher_fsevents.h b/content/browser/file_system_access/file_path_watcher/file_path_watcher_fsevents.h
+index dfe4d30fc71d8ee713e598c2ea92cfa2c2a95ba2..d2a20930389d6aba6762fcb7c34b2d75fa99de85 100644
+--- a/content/browser/file_system_access/file_path_watcher/file_path_watcher_fsevents.h
++++ b/content/browser/file_system_access/file_path_watcher/file_path_watcher_fsevents.h
+@@ -14,6 +14,7 @@
+ 
+ #include "base/apple/scoped_dispatch_object.h"
+ #include "base/files/file_path.h"
++#include "base/memory/safety_checks.h"
+ #include "base/memory/weak_ptr.h"
+ #include "content/browser/file_system_access/file_path_watcher/file_path_watcher.h"
+ #include "content/browser/file_system_access/file_path_watcher/file_path_watcher_fsevents_change_tracker.h"
+@@ -28,6 +29,9 @@ namespace content {
+ // directory. See file_path_watcher_mac.cc for the code that decides when to
+ // use which one.
+ class FilePathWatcherFSEvents : public FilePathWatcher::PlatformDelegate {
++  // TODO(https://crbug.com/495782021): Remove this macro.
++  ADVANCED_MEMORY_SAFETY_CHECKS();
++
+  public:
+   using ChangeEvent = FilePathWatcherFSEventsChangeTracker::ChangeEvent;
+ 
