@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 20 Apr 2026 11:37:22 -0400
+Subject: Translator: Avoid setting initializer for too-large variable
+
+Test credit kbr@chromium.org / gemini.
+
+Fixed: chromium:498400132
+Change-Id: I4b5379de712c22fcfcdbabbaf9c3f92bae209922
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7778457
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 59df57bde5bf185a900b238a30fada9974bd3250..462cef8228d0b9102c96d1a8c4a99eb9aaba364b 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -1676,7 +1676,7 @@ void TParseContext::checkDeclarationIsValidArraySize(const TSourceLoc &line,
+     }
+ }
+ 
+-void TParseContext::checkVariableSize(const TSourceLoc &line,
++bool TParseContext::checkVariableSize(const TSourceLoc &line,
+                                       const ImmutableString &identifier,
+                                       const TType *type)
+ {
+@@ -1694,7 +1694,7 @@ void TParseContext::checkVariableSize(const TSourceLoc &line,
+     if (!mCompileOptions.rejectWebglShadersWithLargeVariables || numErrors() > 0 ||
+         (mShaderType != GL_VERTEX_SHADER && mShaderType != GL_FRAGMENT_SHADER))
+     {
+-        return;
++        return true;
+     }
+ 
+     // Note: the only allowed interface block in webgl shaders is UBOs in std140 mode, so the size
+@@ -1707,7 +1707,7 @@ void TParseContext::checkVariableSize(const TSourceLoc &line,
+     if (variableSize > kWebGLMaxVariableSizeInBytes)
+     {
+         error(line, "Size of declared variable exceeds implementation-defined limit", identifier);
+-        return;
++        return false;
+     }
+ 
+     switch (type->getQualifier())
+@@ -1753,13 +1753,14 @@ void TParseContext::checkVariableSize(const TSourceLoc &line,
+                 error(line,
+                       "Size of declared private variable exceeds implementation-defined limit",
+                       identifier);
+-                return;
++                return false;
+             }
+             mTotalPrivateVariablesSize += variableSize;
+             break;
+         default:
+             break;
+     }
++    return true;
+ }
+ 
+ void TParseContext::checkVaryingLocations(const TSourceLoc &line, const TVariable *variable)
+@@ -2102,7 +2103,10 @@ bool TParseContext::declareVariable(const TSourceLoc &line,
+     if (!checkIsNonVoid(line, identifier, type->getBasicType()))
+         return false;
+ 
+-    checkVariableSize(line, identifier, type);
++    if (!checkVariableSize(line, identifier, type))
++    {
++        return false;
++    }
+     checkVariableLocations(line, *variable);
+ 
+     // Declare the variable in IR
+diff --git a/src/compiler/translator/ParseContext.h b/src/compiler/translator/ParseContext.h
+index cc43abe747084af1b979bc0e7f78f4ce021d6410..4009a08999518695c1028ad519d85a528a675c79 100644
+--- a/src/compiler/translator/ParseContext.h
++++ b/src/compiler/translator/ParseContext.h
+@@ -753,7 +753,7 @@ class TParseContext : angle::NonCopyable
+     bool parseTessControlShaderOutputLayoutQualifier(const TTypeQualifier &typeQualifier);
+     bool parseTessEvaluationShaderInputLayoutQualifier(const TTypeQualifier &typeQualifier);
+ 
+-    void checkVariableSize(const TSourceLoc &line,
++    bool checkVariableSize(const TSourceLoc &line,
+                            const ImmutableString &identifier,
+                            const TType *type);
+     void checkVaryingLocations(const TSourceLoc &line, const TVariable *variable);
