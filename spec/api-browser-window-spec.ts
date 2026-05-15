@@ -8436,13 +8436,48 @@ describe('BrowserWindow module', () => {
       });
 
       // FIXME(nilayarya): Figure out why these tests fail on macOS-x64
-      // virtualDisplay.create() is creating double displays on macOS-x64
+      // virtualDisplay.create() is creating double displays on macOS-x64.
+      // Skip on CI: the GitHub Actions macOS runners lack the
+      // permissions/entitlements needed for CGVirtualDisplay to register
+      // and position a virtual display, so these tests can only run on a
+      // developer machine.
       const testMultiMonitor =
-        process.platform === 'darwin' && process.arch === 'arm64' && screen.getAllDisplays().length === 1;
+        process.platform === 'darwin' &&
+        process.arch === 'arm64' &&
+        screen.getAllDisplays().length === 1 &&
+        !process.env.CI;
 
       ifdescribe(testMultiMonitor)('multi-monitor tests', () => {
         const virtualDisplay = require('@electron-ci/virtual-display');
         const primaryDisplay = screen.getPrimaryDisplay();
+
+        function createDisplay(opts: { width: number; height: number; x: number; y: number }): number {
+          let lastError: Error = new Error('Failed to create virtual display');
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              return virtualDisplay.create(opts);
+            } catch (e) {
+              lastError = e as Error;
+            }
+          }
+          throw lastError;
+        }
+
+        async function waitForDisplayPositioned(expectedX: number, expectedY: number, expectedCount?: number) {
+          const count = expectedCount ?? screen.getAllDisplays().length;
+          for (let i = 0; i < 30; i++) {
+            if (screen.getAllDisplays().length >= count) {
+              const display = screen.getDisplayNearestPoint({ x: expectedX, y: expectedY });
+              if (display.bounds.x === expectedX && display.bounds.y === expectedY) {
+                return display;
+              }
+            }
+            await setTimeout(500);
+          }
+          const display = screen.getDisplayNearestPoint({ x: expectedX, y: expectedY });
+          expect(display.bounds.x).to.equal(expectedX, 'Virtual display did not reach expected x position');
+          return display;
+        }
 
         beforeEach(async () => {
           virtualDisplay.forceCleanup();
@@ -8458,18 +8493,13 @@ describe('BrowserWindow module', () => {
           const targetDisplayY = primaryDisplay.bounds.y;
 
           // Create a new virtual target display to the right of the primary display
-          const targetDisplayId = virtualDisplay.create({
+          const targetDisplayId = createDisplay({
             width: 1920,
             height: 1080,
             x: targetDisplayX,
             y: targetDisplayY
           });
-          // Wait for the target display to be created
-          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
-          // Verify the virtual display is created correctly
-          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
-          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
-          expect(targetDisplay.bounds.y).to.equal(targetDisplayY);
+          const targetDisplay = await waitForDisplayPositioned(targetDisplayX, targetDisplayY, 2);
           expect(targetDisplay.bounds.width).to.equal(1920);
           expect(targetDisplay.bounds.height).to.equal(1080);
 
@@ -8502,18 +8532,14 @@ describe('BrowserWindow module', () => {
           const targetDisplayY = primaryDisplay.bounds.y;
 
           // Create a new virtual target display to the right of the primary display
-          const targetDisplayId = virtualDisplay.create({
+          const targetDisplayId = createDisplay({
             width: 1920,
             height: 1080,
             x: targetDisplayX,
             y: targetDisplayY
           });
 
-          // Wait for the target display to be created
-          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
-          // Verify the virtual display is created correctly - single check for targetDisplay.bounds.x
-          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
-          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+          const targetDisplay = await waitForDisplayPositioned(targetDisplayX, targetDisplayY, 2);
 
           // Bounds for the test window on the virtual target display
           const boundsOnTargetDisplay = {
@@ -8557,7 +8583,7 @@ describe('BrowserWindow module', () => {
           const targetDisplayY = primaryDisplay.bounds.y;
 
           // Create first virtual display to the right of primary
-          const middleDisplayId = virtualDisplay.create({
+          const middleDisplayId = createDisplay({
             width: 1920,
             height: 1080,
             x: targetDisplayX,
@@ -8566,22 +8592,15 @@ describe('BrowserWindow module', () => {
 
           // Create second virtual display to the right of the first (rightmost)
           const rightmostDisplayX = targetDisplayX + 1920;
-          const rightmostDisplayId = virtualDisplay.create({
+          const rightmostDisplayId = createDisplay({
             width: 1920,
             height: 1080,
             x: rightmostDisplayX,
             y: targetDisplayY
           });
 
-          // Wait for the target displays to be created
-          while (screen.getAllDisplays().length !== 3) await setTimeout(1000);
-
-          // Verify the virtual displays are created correctly - single check for origin x values
-          const middleDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
-          expect(middleDisplay.bounds.x).to.equal(targetDisplayX);
-
-          const rightmostDisplay = screen.getDisplayNearestPoint({ x: rightmostDisplayX, y: targetDisplayY });
-          expect(rightmostDisplay.bounds.x).to.equal(rightmostDisplayX);
+          const middleDisplay = await waitForDisplayPositioned(targetDisplayX, targetDisplayY, 3);
+          const rightmostDisplay = await waitForDisplayPositioned(rightmostDisplayX, targetDisplayY, 3);
 
           // Bounds for the test window on the rightmost display
           const boundsOnRightmostDisplay = {
@@ -8630,29 +8649,22 @@ describe('BrowserWindow module', () => {
           const targetDisplayY = primaryDisplay.bounds.y;
 
           // Create a first virtual display to the right of the primary display
-          const targetDisplayId1 = virtualDisplay.create({
+          const targetDisplayId1 = createDisplay({
             width: 1920,
             height: 1080,
             x: targetDisplayX,
             y: targetDisplayY
           });
           // Create a second virtual display to the right of the first
-          const targetDisplayId2 = virtualDisplay.create({
+          const targetDisplayId2 = createDisplay({
             width: 1600,
             height: 900,
             x: targetDisplayX + 1920,
             y: targetDisplayY
           });
 
-          // Wait for the target displays to be created
-          while (screen.getAllDisplays().length !== 3) await setTimeout(1000);
-
-          // Verify the virtual displays are created correctly - single check for origin x values
-          const targetDisplay1 = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
-          expect(targetDisplay1.bounds.x).to.equal(targetDisplayX);
-
-          const targetDisplay2 = screen.getDisplayNearestPoint({ x: targetDisplayX + 1920, y: targetDisplayY });
-          expect(targetDisplay2.bounds.x).to.equal(targetDisplayX + 1920);
+          const targetDisplay1 = await waitForDisplayPositioned(targetDisplayX, targetDisplayY, 3);
+          const targetDisplay2 = await waitForDisplayPositioned(targetDisplayX + 1920, targetDisplayY, 3);
 
           // Window 1 on primary display
           const window1Name = 'test-multi-window-1';
@@ -8746,18 +8758,14 @@ describe('BrowserWindow module', () => {
           const targetDisplayY = primaryDisplay.bounds.y;
 
           // Create a new virtual target display to the right of the primary display
-          const targetDisplayId = virtualDisplay.create({
+          const targetDisplayId = createDisplay({
             width: 1920,
             height: 1080,
             x: targetDisplayX,
             y: targetDisplayY
           });
 
-          // Wait for the target displays to be created
-          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
-
-          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
-          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+          const targetDisplay = await waitForDisplayPositioned(targetDisplayX, targetDisplayY, 2);
 
           // Create window on target display and set fullscreen
           const initialBounds = {
@@ -8796,18 +8804,14 @@ describe('BrowserWindow module', () => {
           const targetDisplayY = primaryDisplay.bounds.y;
 
           // Create a new virtual target display to the right of the primary display
-          const targetDisplayId = virtualDisplay.create({
+          const targetDisplayId = createDisplay({
             width: 1920,
             height: 1080,
             x: targetDisplayX,
             y: targetDisplayY
           });
 
-          // Wait for the target displays to be created
-          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
-
-          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
-          expect(targetDisplay.bounds.x).to.equal(targetDisplayX);
+          const targetDisplay = await waitForDisplayPositioned(targetDisplayX, targetDisplayY, 2);
 
           // Create window on target display and maximize it
           const w1 = new BrowserWindow({
@@ -8856,17 +8860,14 @@ describe('BrowserWindow module', () => {
           const targetDisplayY = primaryDisplay.bounds.y;
 
           // Create a new virtual target display to the right of the primary display
-          const targetDisplayId = virtualDisplay.create({
+          const targetDisplayId = createDisplay({
             width: 1920,
             height: 1080,
             x: targetDisplayX,
             y: targetDisplayY
           });
 
-          // Wait for the target display to be created
-          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
-
-          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          const targetDisplay = await waitForDisplayPositioned(targetDisplayX, targetDisplayY, 2);
 
           // Create window on target display and set kiosk: true
           const initialBounds = {
@@ -8908,27 +8909,24 @@ describe('BrowserWindow module', () => {
           const targetDisplayY = primaryDisplay.bounds.y;
 
           // Create initial virtual display
-          const targetDisplayId = virtualDisplay.create({
+          const targetDisplayId = createDisplay({
             width: 1920,
             height: 1080,
             x: targetDisplayX,
             y: targetDisplayY
           });
-          // Wait for the target display to be created
-          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
 
-          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          const targetDisplay = await waitForDisplayPositioned(targetDisplayX, targetDisplayY, 2);
 
           // Create a new virtual display with double the resolution of the target display
-          const higherResDisplayId = virtualDisplay.create({
+          const higherResDisplayId = createDisplay({
             width: targetDisplay.bounds.width * 2,
             height: targetDisplay.bounds.height * 2,
             x: targetDisplayX + targetDisplay.bounds.width,
             y: targetDisplayY
           });
 
-          // Wait for the target display to be created
-          while (screen.getAllDisplays().length !== 3) await setTimeout(1000);
+          await waitForDisplayPositioned(targetDisplayX + targetDisplay.bounds.width, targetDisplayY, 3);
 
           // Bounds for the test window on the virtual target display
           const initialBounds = {
@@ -8964,28 +8962,28 @@ describe('BrowserWindow module', () => {
           const targetDisplayX = primaryDisplay.bounds.x + primaryDisplay.bounds.width;
           const targetDisplayY = primaryDisplay.bounds.y;
           // Create initial virtual display with high resolution
-          const targetDisplayId = virtualDisplay.create({
+          const targetDisplayId = createDisplay({
             width: 2560,
             height: 1440,
             x: targetDisplayX,
             y: targetDisplayY
           });
 
-          // Wait for the target display to be created
-          while (screen.getAllDisplays().length !== 2) await setTimeout(1000);
-
-          const targetDisplay = screen.getDisplayNearestPoint({ x: targetDisplayX, y: targetDisplayY });
+          const targetDisplay = await waitForDisplayPositioned(targetDisplayX, targetDisplayY, 2);
 
           // Create a new virtual display with half the resolution of the target display shifted down
-          const lowerResDisplayId = virtualDisplay.create({
+          const lowerResDisplayId = createDisplay({
             width: targetDisplay.bounds.width / 2,
             height: targetDisplay.bounds.height / 2,
             x: targetDisplayX + targetDisplay.bounds.width,
             y: targetDisplay.bounds.height / 2
           });
 
-          // Wait for the target display to be created
-          while (screen.getAllDisplays().length !== 3) await setTimeout(1000);
+          await waitForDisplayPositioned(
+            targetDisplayX + targetDisplay.bounds.width,
+            targetDisplay.bounds.height / 2,
+            3
+          );
 
           // Bounds that would overflow on a smaller display
           const initialBounds = {
