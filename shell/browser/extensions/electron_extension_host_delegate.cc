@@ -4,17 +4,61 @@
 
 #include "shell/browser/extensions/electron_extension_host_delegate.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
-#include "extensions/browser/media_capture_util.h"
+#include "base/check.h"
+#include "content/public/browser/media_capture_devices.h"
+#include "extensions/common/extension.h"
+#include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/common/gin_helper/handle.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "v8/include/v8.h"
 
+using blink::MediaStreamDevice;
+using blink::MediaStreamDevices;
+using content::MediaCaptureDevices;
+using extensions::mojom::APIPermissionID;
+
 namespace extensions {
+
+namespace {
+
+const MediaStreamDevice* GetRequestedDeviceOrDefault(
+    const MediaStreamDevices& devices,
+    const std::vector<std::string>& requested_device_ids) {
+  for (const auto& requested_device_id : requested_device_ids) {
+    if (requested_device_id.empty())
+      continue;
+    auto it =
+        std::ranges::find(devices, requested_device_id, &MediaStreamDevice::id);
+    if (it != devices.end())
+      return &(*it);
+  }
+  if (!devices.empty())
+    return &devices[0];
+  return nullptr;
+}
+
+void VerifyMediaAccessPermission(blink::mojom::MediaStreamType type,
+                                 const Extension* extension) {
+  const PermissionsData* permissions_data = extension->permissions_data();
+  if (type == blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
+    CHECK(permissions_data->HasAPIPermission(APIPermissionID::kAudioCapture))
+        << "Audio capture request but no audioCapture permission in manifest.";
+  } else {
+    DCHECK(type == blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE);
+    CHECK(permissions_data->HasAPIPermission(APIPermissionID::kVideoCapture))
+        << "Video capture request but no videoCapture permission in manifest.";
+  }
+}
+
+}  // namespace
 
 ElectronExtensionHostDelegate::ElectronExtensionHostDelegate() = default;
 
@@ -44,9 +88,43 @@ void ElectronExtensionHostDelegate::ProcessMediaAccessRequest(
     const content::MediaStreamRequest& request,
     content::MediaResponseCallback callback,
     const Extension* extension) {
-  // Allow access to the microphone and/or camera.
-  media_capture_util::GrantMediaStreamRequest(web_contents, request,
-                                              std::move(callback), extension);
+  DCHECK(request.audio_type ==
+             blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE ||
+         request.video_type ==
+             blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE);
+
+  blink::mojom::StreamDevicesSet stream_devices_set;
+  stream_devices_set.stream_devices.emplace_back(
+      blink::mojom::StreamDevices::New());
+  blink::mojom::StreamDevices& devices = *stream_devices_set.stream_devices[0];
+
+  if (request.audio_type ==
+      blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
+    VerifyMediaAccessPermission(request.audio_type, extension);
+    const MediaStreamDevice* device = GetRequestedDeviceOrDefault(
+        MediaCaptureDevices::GetInstance()->GetAudioCaptureDevices(),
+        request.requested_audio_device_ids);
+    if (device)
+      devices.audio_device = *device;
+  }
+
+  if (request.video_type ==
+      blink::mojom::MediaStreamType::DEVICE_VIDEO_CAPTURE) {
+    VerifyMediaAccessPermission(request.video_type, extension);
+    const MediaStreamDevice* device = GetRequestedDeviceOrDefault(
+        MediaCaptureDevices::GetInstance()->GetVideoCaptureDevices(),
+        request.requested_video_device_ids);
+    if (device)
+      devices.video_device = *device;
+  }
+
+  std::unique_ptr<content::MediaStreamUI> ui;
+  std::move(callback).Run(
+      stream_devices_set,
+      (devices.audio_device.has_value() || devices.video_device.has_value())
+          ? blink::mojom::MediaStreamRequestResult::OK
+          : blink::mojom::MediaStreamRequestResult::INVALID_STATE,
+      std::move(ui));
 }
 
 bool ElectronExtensionHostDelegate::CheckMediaAccessPermission(
@@ -54,7 +132,7 @@ bool ElectronExtensionHostDelegate::CheckMediaAccessPermission(
     const url::Origin& security_origin,
     blink::mojom::MediaStreamType type,
     const Extension* extension) {
-  media_capture_util::VerifyMediaAccessPermission(type, extension);
+  VerifyMediaAccessPermission(type, extension);
   return true;
 }
 
