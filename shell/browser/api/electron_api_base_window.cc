@@ -44,7 +44,7 @@
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
 #elif BUILDFLAG(IS_LINUX)
-#include "shell/browser/ui/views/opaque_frame_view.h"
+#include "shell/browser/ui/views/electron_frame_view_linux.h"
 #include "ui/gfx/image/image_skia.h"
 #endif
 
