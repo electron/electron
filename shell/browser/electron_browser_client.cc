@@ -42,6 +42,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/security_principal.h"
 #include "content/public/browser/service_worker_version_base_info.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/tts_controller.h"
@@ -767,7 +768,7 @@ void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
         extensions::ExtensionRegistry::Get(browser_context);
     const extensions::Extension* extension =
         registry->enabled_extensions().GetExtensionOrAppByURL(
-            site_instance->GetSiteURL());
+            site_instance->GetSecurityPrincipal().GetDeprecatedSiteURL());
     if (!extension)
       return;
 
@@ -1757,7 +1758,9 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
   if (!web_contents)
     return;
 
-  const GURL& site = render_frame_host->GetSiteInstance()->GetSiteURL();
+  const GURL& site = render_frame_host->GetSiteInstance()
+                         ->GetSecurityPrincipal()
+                         .GetDeprecatedSiteURL();
   if (!site.SchemeIs(extensions::kExtensionScheme))
     return;
 
