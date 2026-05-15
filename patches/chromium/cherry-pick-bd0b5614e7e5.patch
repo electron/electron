@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takashi Sakamoto <tasak@google.com>
+Date: Wed, 8 Apr 2026 23:47:27 -0700
+Subject: Make PassthroughTouchEventQueue weakable to see whether `this` is
+ destroyed or not inside AckCompletedEvents.
+
+PassthroughTouchEventQueue::AckCompletedEvents() synchronously invokes
+nested message loop and the message loop may invoke some method which
+destroys the PassthroughTouchEventQueue instance. This is
+heap-use-after-free.
+
+Bug: 495939973
+Change-Id: I66bebcbce76b2638fdbb38b774cc163396aea509
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7735834
+Owners-Override: Keishi Hattori <keishi@chromium.org>
+Commit-Queue: Takashi Sakamoto <tasak@google.com>
+Reviewed-by: Keishi Hattori <keishi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1611993}
+
+diff --git a/components/input/passthrough_touch_event_queue.cc b/components/input/passthrough_touch_event_queue.cc
+index 65fb5cf5b9c9fbad52896fe6907796196e293ac7..2c35ba81afd655c04bfe2808f4672772b4f8f3e6 100644
+--- a/components/input/passthrough_touch_event_queue.cc
++++ b/components/input/passthrough_touch_event_queue.cc
+@@ -284,6 +284,8 @@ void PassthroughTouchEventQueue::AckCompletedEvents() {
+     return;
+   }
+   base::AutoReset<bool> process_acks(&processing_acks_, true);
++  base::WeakPtr<PassthroughTouchEventQueue> weak_this =
++      weak_ptr_factory_.GetWeakPtr();
+   while (!outstanding_touches_.empty()) {
+     auto iter = outstanding_touches_.begin();
+     if (iter->ack_state() == blink::mojom::InputEventResultState::kUnknown) {
+@@ -293,6 +295,9 @@ void PassthroughTouchEventQueue::AckCompletedEvents() {
+     TouchEventWithLatencyInfoAndAckState event = *iter;
+     outstanding_touches_.erase(iter);
+     AckTouchEventToClient(event, event.ack_source(), event.ack_state());
++    if (!weak_this) {
++      return;
++    }
+   }
+ }
+ 
+diff --git a/components/input/passthrough_touch_event_queue.h b/components/input/passthrough_touch_event_queue.h
+index 5d435954805decefce3388a1d8d97dfb80295037..97f87fb2547d7878e2a9059ec336ac2f9b63311f 100644
+--- a/components/input/passthrough_touch_event_queue.h
++++ b/components/input/passthrough_touch_event_queue.h
+@@ -13,6 +13,7 @@
+ #include "base/feature_list.h"
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/metrics/field_trial_params.h"
+ #include "base/time/time.h"
+ #include "components/input/dispatch_to_renderer_callback.h"
+@@ -291,6 +292,8 @@ class COMPONENT_EXPORT(INPUT) PassthroughTouchEventQueue {
+   // What events types are allowed to bypass the filter.
+   const std::string events_to_always_forward_;
+   static const base::FeatureParam<std::string> kSkipTouchEventFilterType;
++
++  base::WeakPtrFactory<PassthroughTouchEventQueue> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace input
