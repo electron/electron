@@ -33,6 +33,11 @@ on:
         required: false
         type: boolean
         default: false
+      run-include-analysis:
+        description: 'Run analyze_includes.py on the linux-x64 build and upload include-analysis.html as an artifact'
+        required: false
+        type: boolean
+        default: false
   push:
     branches:
       - main
@@ -329,6 +334,7 @@ jobs:
       gn-build-type: testing
       generate-symbols: false
       upload-to-storage: '0'
+      run-include-analysis: ${{ inputs.run-include-analysis || false }}
     secrets: inherit
 
   linux-x64-asan:

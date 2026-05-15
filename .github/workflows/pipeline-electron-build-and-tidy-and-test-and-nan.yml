@@ -63,6 +63,11 @@ on:
         required: false
         type: boolean
         default: false
+      run-include-analysis:
+        description: 'Run analyze_includes.py and upload include-analysis.html as an artifact'
+        required: false
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -85,6 +90,7 @@ jobs:
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
       upload-out-gen-artifacts: true
+      run-include-analysis: ${{ inputs.run-include-analysis }}
     secrets: inherit
   clang-tidy:
     uses: ./.github/workflows/pipeline-segment-electron-clang-tidy.yml
