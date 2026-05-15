@@ -66,7 +66,7 @@ index dcbc233978480679ca28cd58211b70d234d86e98..10af1d1fc92d5d296e2c342db1621bf3
    void DidChangeScrollOffset() override;
    blink::WebMediaStreamDeviceObserver* MediaStreamDeviceObserver() override;
 diff --git a/content/renderer/service_worker/service_worker_context_client.cc b/content/renderer/service_worker/service_worker_context_client.cc
-index b708018b7061eaf610758d6c9230cff1c4e272ef..79cec0d0c508e590f6e5ad481c9e26f91ab68da9 100644
+index ede3d0a8b57f5a44307773da972610f93a7e1c38..ee7932b95d13ca1543be3e3cebb4a79ebe123db5 100644
 --- a/content/renderer/service_worker/service_worker_context_client.cc
 +++ b/content/renderer/service_worker/service_worker_context_client.cc
 @@ -318,6 +318,7 @@ void ServiceWorkerContextClient::WorkerContextStarted(
@@ -89,7 +89,7 @@ index b708018b7061eaf610758d6c9230cff1c4e272ef..79cec0d0c508e590f6e5ad481c9e26f9
  
  void ServiceWorkerContextClient::DidEvaluateScript(bool success) {
 diff --git a/content/renderer/service_worker/service_worker_context_client.h b/content/renderer/service_worker/service_worker_context_client.h
-index 8482d7fab12634e6b9a8d5f9bab6c7e428bb99ee..4f131fbfc9350352bce4430f92b9f2cf9ab266bd 100644
+index c698d80d5c1efdd5e715fc3b40a9d47fc1a44f8d..b3def35a3fb42a73c6f88e897ff0948841850648 100644
 --- a/content/renderer/service_worker/service_worker_context_client.h
 +++ b/content/renderer/service_worker/service_worker_context_client.h
 @@ -163,7 +163,8 @@ class ServiceWorkerContextClient
@@ -153,10 +153,10 @@ index b74b195e3d8a31156d3677ca2d3de6c6237813f6..1334f5f9e307f4f1a730cf04d7726335
    void OnDestruct() override;
    void DidClearWindowObject() override;
 diff --git a/third_party/blink/public/web/modules/service_worker/web_service_worker_context_client.h b/third_party/blink/public/web/modules/service_worker/web_service_worker_context_client.h
-index f96781a047056876b030581b539be0507acc3a1c..cd9be80be2500a001b1895c81ee597dd16fd295b 100644
+index 0a3ea97d48c4d0d4c234dc88b321480a55df85c8..150ba24a544a88ab99d51b8a30af545aecae079a 100644
 --- a/third_party/blink/public/web/modules/service_worker/web_service_worker_context_client.h
 +++ b/third_party/blink/public/web/modules/service_worker/web_service_worker_context_client.h
-@@ -120,7 +120,8 @@ class WebServiceWorkerContextClient {
+@@ -122,7 +122,8 @@ class WebServiceWorkerContextClient {
    //
    // |v8_context| is the V8 context of the worker and is used to support
    // service workers in Chrome extensions.
@@ -200,10 +200,10 @@ index 1316e7116c691030b3c764546c2f71fe61dde592..b633db5ff53aca3d94a6a3f77348f8e6
        ->ContextWillBeDestroyed(script_state_);
    if (next_status == Lifecycle::kV8MemoryIsForciblyPurged ||
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client.h b/third_party/blink/renderer/core/frame/local_frame_client.h
-index 91ac8e855ae05759bea0cf611290fb68aeaeb7b6..4bfc05e5140e67754a97d4ce11638273f6d5922b 100644
+index ab570e15d3bb1821844b3af01eecb109994271d2..71727f49fceb7ea112719a9247acc4e9cc57190e 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client.h
-@@ -314,7 +314,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
+@@ -315,7 +315,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
                                        int32_t world_id) = 0;
    virtual void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                               int32_t world_id) = 0;
@@ -214,7 +214,7 @@ index 91ac8e855ae05759bea0cf611290fb68aeaeb7b6..4bfc05e5140e67754a97d4ce11638273
    virtual bool AllowScriptExtensions() = 0;
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index b684705727d6b9f12ae43bdeda1af4e6a174c740..e2fd1d549ac36eee27e949ab6cbe63989adda9c8 100644
+index 0cf29784fae30be37c48e9ac5fe838b375e643f2..f7e5bc1f243ff70f2fa66856cfc99bbd316c3695 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -309,10 +309,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
@@ -231,7 +231,7 @@ index b684705727d6b9f12ae43bdeda1af4e6a174c740..e2fd1d549ac36eee27e949ab6cbe6398
  }
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.h b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
-index 42ceb0fda673e04c1004c23611983bb33068cb94..3123827b86413a6b764ee17475674c3524b971c4 100644
+index 36e88fc0d657f054e8176aebbd3196d83d83831b..49ee4331844380adaa119c24343b9fda459a4903 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 @@ -80,7 +80,8 @@ class CORE_EXPORT LocalFrameClientImpl final : public LocalFrameClient {
@@ -259,7 +259,7 @@ index 24b317ef1f5df5999e6c2f4e456ba3ab81c5b3c6..229dd5ae1fb264f3a8819030fd9ce245
    bool AllowScriptExtensions() override { return false; }
  
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index d192454a4c4ce1d10ec2951c641757ae49c8eb48..179f95534fb2b96e18cda8a1fe6786ac67e2a622 100644
+index 4f3b666a6660cb23226b266835c5acffe8452e2e..f5f81bf39444115c131556f4bbae306e03da4bcd 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 @@ -182,6 +182,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {

@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index bdf544728dafa0637bd6428244dd1cd93da4b338..c0dc08a56e4cf325df08e0ec220fd774b4c50db9 100644
+index 171bee26e6402c93c9d1ed14f21d483eb25ae57b..41afc71a6349842f152aafb159e81ac5ae17cdf4 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -10313,6 +10313,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -21,10 +21,10 @@ index bdf544728dafa0637bd6428244dd1cd93da4b338..c0dc08a56e4cf325df08e0ec220fd774
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 7db2ece4202a6a47ef42cd6aa3aac894a6d6e660..df1c81758633fb99fdef6a5a2bb53fad677ac359 100644
+index d148cfbcce87c15ac9437c0cbc9ae1268afd5bcd..1c68a17565e449a82301712fc9dea70b8a37d009 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5514,6 +5514,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5512,6 +5512,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    create_params.initially_hidden = renderer_started_hidden;
    create_params.initial_popup_url = params.target_url;
  
@@ -35,7 +35,7 @@ index 7db2ece4202a6a47ef42cd6aa3aac894a6d6e660..df1c81758633fb99fdef6a5a2bb53fad
    // Even though all codepaths leading here are in response to a renderer
    // trying to open a new window, if the new window ends up in a different
    // browsing instance, then the RenderViewHost, RenderWidgetHost,
-@@ -5568,6 +5572,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5566,6 +5570,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    // Sets the newly created WebContents WindowOpenDisposition.
    new_contents_impl->original_window_open_disposition_ = params.disposition;
  
@@ -48,7 +48,7 @@ index 7db2ece4202a6a47ef42cd6aa3aac894a6d6e660..df1c81758633fb99fdef6a5a2bb53fad
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -5609,12 +5619,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5607,12 +5617,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
