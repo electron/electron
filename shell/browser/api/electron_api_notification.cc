@@ -67,6 +67,25 @@ struct Converter<electron::NotificationAction> {
 
 }  // namespace gin
 
+#if BUILDFLAG(IS_WIN)
+namespace {
+
+// Windows appends id/groupId into the toast launch string as key=value pairs;
+// reject delimiter and control bytes so values cannot spoof extra pairs.
+bool NotificationIdOrGroupContainsInvalidWindowsToastChars(
+    const std::string& s) {
+  for (unsigned char c : s) {
+    if (c == '&' || c == '=')
+      return true;
+    if (c < 0x20 || c == 0x7f)
+      return true;
+  }
+  return false;
+}
+
+}  // namespace
+#endif
+
 namespace electron::api {
 
 gin::DeprecatedWrapperInfo Notification::kWrapperInfo = {
@@ -102,12 +121,21 @@ Notification::Notification(gin::Arguments* args) {
 
 Notification::Notification(const NotificationInfo& info)
     : id_(info.id),
-      group_id_(info.group_id),
+      raw_group_id_(info.group_id),
       title_(base::UTF8ToUTF16(info.title)),
       subtitle_(base::UTF8ToUTF16(info.subtitle)),
       body_(base::UTF8ToUTF16(info.body)),
       is_restored_(true),
-      presenter_(nullptr) {}
+      presenter_(nullptr) {
+#if BUILDFLAG(IS_WIN)
+  // Filter out the Windows default group ("Notifications") from the
+  // JS-visible groupId — it's an internal implementation detail.
+  if (raw_group_id_ != "Notifications")
+    group_id_ = raw_group_id_;
+#else
+  group_id_ = raw_group_id_;
+#endif
+}
 
 Notification::~Notification() {
   if (notification_) {
@@ -137,6 +165,17 @@ gin_helper::Handle<Notification> Notification::New(
 #if BUILDFLAG(IS_WIN)
   constexpr size_t kMaxTagLength = 64;
   auto* notif = handle.get();
+  if (NotificationIdOrGroupContainsInvalidWindowsToastChars(notif->id_)) {
+    thrower.ThrowError(
+        "Notification id cannot contain '&', '=', or control characters");
+    return {};
+  }
+  if (NotificationIdOrGroupContainsInvalidWindowsToastChars(notif->group_id_)) {
+    thrower.ThrowError(
+        "Notification groupId cannot contain '&', '=', or control "
+        "characters");
+    return {};
+  }
   if (!notif->id_.empty() &&
       base::UTF8ToWide(notif->id_).length() > kMaxTagLength) {
     thrower.ThrowError(
@@ -441,8 +480,8 @@ v8::Local<v8::Promise> Notification::GetHistory(v8::Isolate* isolate) {
           // by a WeakPtr (API -> platform) and a raw delegate pointer
           // (platform -> API, cleared in ~Notification).
           auto* notif = new Notification(info);
-          notif->notification_ =
-              presenter->CreateNotification(notif, notif->id_);
+          notif->notification_ = presenter->CreateNotification(
+              notif, notif->id_, notif->raw_group_id_);
           if (notif->notification_)
             notif->notification_->Restore();
 

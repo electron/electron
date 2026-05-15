@@ -11,6 +11,7 @@
 #include <string_view>
 
 #include <shlobj.h>
+#include <windows.foundation.collections.h>
 #include <wrl\wrappers\corewrappers.h>
 
 #include "base/containers/fixed_flat_map.h"
@@ -22,6 +23,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/synchronization/lock.h"
 #include "base/task/thread_pool.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -71,6 +73,38 @@ namespace {
 // This string needs to be max 16 characters to work on Windows 10 prior to
 // applying Creators Update (build 15063).
 constexpr wchar_t kGroup[] = L"Notifications";
+
+// Appends &tag=<id>&group=<group> to the launch attribute of the <toast>
+// element so the COM activator can route clicks to the correct Notification
+// object.  Works for both built-in and custom toastXml.
+void InjectLaunchIdentity(IXmlDocument* doc,
+                          const std::string& notification_id,
+                          const std::string& group_id) {
+  ComPtr<ABI::Windows::Data::Xml::Dom::IXmlElement> root;
+  if (FAILED(doc->get_DocumentElement(&root)) || !root)
+    return;
+
+  // Read the existing launch attribute (may be user-supplied).
+  ScopedHString launch_attr_name(L"launch");
+  HSTRING existing_hs = nullptr;
+  std::wstring existing;
+  if (SUCCEEDED(root->GetAttribute(launch_attr_name, &existing_hs)) &&
+      existing_hs) {
+    UINT32 len = 0;
+    const wchar_t* raw = WindowsGetStringRawBuffer(existing_hs, &len);
+    if (raw && len)
+      existing.assign(raw, len);
+    WindowsDeleteString(existing_hs);
+  }
+
+  std::wstring group_w = group_id.empty() ? kGroup : base::UTF8ToWide(group_id);
+  std::wstring suffix = base::UTF8ToWide(base::StrCat(
+      {"&tag=", notification_id, "&group=", base::WideToUTF8(group_w)}));
+
+  std::wstring new_launch = existing + suffix;
+  ScopedHString new_launch_hs(new_launch);
+  root->SetAttribute(launch_attr_name, new_launch_hs);
+}
 
 void DebugLog(std::string_view log_msg) {
   if (electron::debug_notifications)
@@ -155,6 +189,20 @@ constexpr char kXmlVersionHeader[] = "<?xml version=\"1.0\"?>\n";
 
 }  // namespace
 
+namespace {
+
+base::Lock& InitAppIdLock() {
+  static base::NoDestructor<base::Lock> lock;
+  return *lock;
+}
+
+std::wstring& InitAppIdMutable() {
+  static base::NoDestructor<std::wstring> storage;
+  return *storage;
+}
+
+}  // namespace
+
 // static
 ComPtr<winui::Notifications::IToastNotificationManagerStatics>*
     WindowsToastNotification::toast_manager_ = nullptr;
@@ -162,6 +210,24 @@ ComPtr<winui::Notifications::IToastNotificationManagerStatics>*
 // static
 ComPtr<winui::Notifications::IToastNotifier>*
     WindowsToastNotification::toast_notifier_ = nullptr;
+
+// static
+std::wstring WindowsToastNotification::GetInitAppIdCopy() {
+  base::AutoLock lock(InitAppIdLock());
+  return InitAppIdMutable();
+}
+
+// static
+void WindowsToastNotification::SetInitAppId(PCWSTR value) {
+  base::AutoLock lock(InitAppIdLock());
+  InitAppIdMutable() = value ? std::wstring(value) : std::wstring();
+}
+
+// static
+void WindowsToastNotification::ClearInitAppId() {
+  base::AutoLock lock(InitAppIdLock());
+  InitAppIdMutable().clear();
+}
 
 // static
 scoped_refptr<base::SequencedTaskRunner>
@@ -202,6 +268,7 @@ bool WindowsToastNotification::Initialize() {
   if (IsRunningInDesktopBridge()) {
     // Ironically, the Desktop Bridge / UWP environment
     // requires us to not give Windows an appUserModelId.
+    ClearInitAppId();
     return SUCCEEDED(
         (*toast_manager_)
             ->CreateToastNotifier(toast_notifier_->GetAddressOf()));
@@ -210,10 +277,160 @@ bool WindowsToastNotification::Initialize() {
     if (!GetAppUserModelID(&app_id))
       return false;
 
+    SetInitAppId(GetRawAppUserModelID());
     return SUCCEEDED((*toast_manager_)
                          ->CreateToastNotifierWithId(
                              app_id, toast_notifier_->GetAddressOf()));
   }
+}
+
+namespace {
+
+// Converts a WinRT HSTRING to UTF-8 and always frees the HSTRING when non-null.
+std::string Utf8FromReleasedHString(HSTRING hs) {
+  if (!hs)
+    return {};
+  UINT32 len = 0;
+  const wchar_t* raw = WindowsGetStringRawBuffer(hs, &len);
+  std::string utf8;
+  if (raw && len)
+    utf8 = base::WideToUTF8(std::wstring_view(raw, len));
+  WindowsDeleteString(hs);
+  return utf8;
+}
+
+void FillToastTagAndGroupFromToast(
+    winui::Notifications::IToastNotification* toast,
+    NotificationInfo* info) {
+  ComPtr<winui::Notifications::IToastNotification2> toast2;
+  if (FAILED(toast->QueryInterface(IID_PPV_ARGS(&toast2))))
+    return;
+
+  HSTRING tag_hs = nullptr;
+  if (SUCCEEDED(toast2->get_Tag(&tag_hs)) && tag_hs)
+    info->id = Utf8FromReleasedHString(tag_hs);
+
+  HSTRING group_hs = nullptr;
+  if (SUCCEEDED(toast2->get_Group(&group_hs)) && group_hs)
+    info->group_id = Utf8FromReleasedHString(group_hs);
+}
+
+}  // namespace
+
+// static
+std::vector<NotificationInfo>
+WindowsToastNotification::GetNotificationHistory() {
+  std::vector<NotificationInfo> results;
+
+  if (!toast_manager_) {
+    DebugLog("GetNotificationHistory: toast_manager_ is null");
+    return results;
+  }
+
+  ComPtr<winui::Notifications::IToastNotificationManagerStatics2>
+      toast_manager2;
+  if (FAILED(
+          (*toast_manager_)->QueryInterface(IID_PPV_ARGS(&toast_manager2)))) {
+    DebugLog(
+        "GetNotificationHistory: failed to get "
+        "IToastNotificationManagerStatics2");
+    return results;
+  }
+
+  ComPtr<winui::Notifications::IToastNotificationHistory> notification_history;
+  if (FAILED(toast_manager2->get_History(&notification_history))) {
+    DebugLog("GetNotificationHistory: failed to get IToastNotificationHistory");
+    return results;
+  }
+
+  ComPtr<winui::Notifications::IToastNotificationHistory2>
+      notification_history2;
+  if (FAILED(notification_history.As(&notification_history2))) {
+    DebugLog(
+        "GetNotificationHistory: failed to get IToastNotificationHistory2");
+    return results;
+  }
+
+  ComPtr<ABI::Windows::Foundation::Collections::IVectorView<
+      ABI::Windows::UI::Notifications::ToastNotification*>>
+      history_items;
+  HRESULT hr;
+
+  const std::wstring init_app_id = GetInitAppIdCopy();
+  if (init_app_id.empty()) {
+    DebugLog(
+        "GetNotificationHistory: querying without app_id (Desktop Bridge)");
+    hr = notification_history2->GetHistory(&history_items);
+  } else {
+    DebugLog(base::StrCat({"GetNotificationHistory: querying with app_id: ",
+                           base::WideToUTF8(init_app_id)}));
+    ScopedHString app_id(init_app_id);
+    hr = notification_history2->GetHistoryWithId(app_id, &history_items);
+  }
+
+  if (FAILED(hr)) {
+    DebugLog(base::StrCat({"GetNotificationHistory: GetHistory failed",
+                           FailureResultToString(hr)}));
+    return results;
+  }
+
+  unsigned int count = 0;
+  if (FAILED(history_items->get_Size(&count)))
+    return results;
+
+  DebugLog(base::StrCat({"GetNotificationHistory: found ",
+                         base::NumberToString(count), " notifications"}));
+
+  results.reserve(count);
+  for (unsigned int i = 0; i < count; i++) {
+    ComPtr<winui::Notifications::IToastNotification> toast;
+    if (FAILED(history_items->GetAt(i, &toast)))
+      continue;
+
+    NotificationInfo info;
+
+    FillToastTagAndGroupFromToast(toast.Get(), &info);
+
+    ComPtr<IXmlDocument> xml_doc;
+    if (SUCCEEDED(toast->get_Content(&xml_doc))) {
+      ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNodeList> text_nodes;
+      ScopedHString text_tag_name(L"text");
+      if (SUCCEEDED(
+              xml_doc->GetElementsByTagName(text_tag_name, &text_nodes))) {
+        UINT32 text_count = 0;
+        text_nodes->get_Length(&text_count);
+
+        // ToastText04, ToastGeneric, etc. may have 3+ <text> nodes; keep the
+        // first as title and join the rest with newlines for body.
+        for (UINT32 j = 0; j < text_count; j++) {
+          ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNode> text_node;
+          if (FAILED(text_nodes->Item(j, &text_node)))
+            continue;
+
+          ComPtr<ABI::Windows::Data::Xml::Dom::IXmlNodeSerializer> serializer;
+          if (FAILED(text_node.As(&serializer)))
+            continue;
+
+          HSTRING inner_text_hs = nullptr;
+          if (SUCCEEDED(serializer->get_InnerText(&inner_text_hs)) &&
+              inner_text_hs) {
+            std::string text = Utf8FromReleasedHString(inner_text_hs);
+            if (j == 0) {
+              info.title = std::move(text);
+            } else {
+              if (!info.body.empty())
+                info.body.push_back('\n');
+              info.body.append(text);
+            }
+          }
+        }
+      }
+    }
+
+    results.push_back(std::move(info));
+  }
+
+  return results;
 }
 
 WindowsToastNotification::WindowsToastNotification(
@@ -350,6 +567,8 @@ bool WindowsToastNotification::CreateToastXmlDocument(
       return false;
     }
   }
+
+  InjectLaunchIdentity(toast_xml->Get(), notification_id, options.group_id);
   return true;
 }
 
@@ -482,6 +701,9 @@ void WindowsToastNotification::SetupAndShowOnUIThread(
 
   notif->toast_notification_ = notification;
   notif->group_id_ = group_id;
+  std::string effective_group =
+      group_id.empty() ? base::WideToUTF8(kGroup) : group_id;
+  notif->set_notification_group(effective_group);
 
   // Show notification on UI thread (must be called on UI thread)
   hr = (*toast_notifier_)->Show(notification.Get());

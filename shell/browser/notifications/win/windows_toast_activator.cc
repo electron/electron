@@ -446,6 +446,7 @@ void HandleToastActivation(const std::wstring& invoked_args,
   std::wstring type;
   std::wstring action_index_str;
   std::wstring tag_str;
+  std::wstring group_str;
 
   for (const auto& token : base::SplitString(args, L"&", base::KEEP_WHITESPACE,
                                              base::SPLIT_WANT_NONEMPTY)) {
@@ -459,6 +460,8 @@ void HandleToastActivation(const std::wstring& invoked_args,
       action_index_str = kv[1];
     else if (kv[0] == L"tag")
       tag_str = kv[1];
+    else if (kv[0] == L"group")
+      group_str = kv[1];
   }
 
   int action_index = -1;
@@ -538,9 +541,14 @@ void HandleToastActivation(const std::wstring& invoked_args,
   handle_callback(activation_args);
 
   Notification* target = nullptr;
-  for (auto* n : presenter->notifications()) {
-    std::wstring tag = base::UTF8ToWide(n->notification_id());
-    if (tag == tag_str) {
+  if (!tag_str.empty()) {
+    std::string tag_utf8 = base::WideToUTF8(tag_str);
+    std::string group_utf8 = base::WideToUTF8(group_str);
+    for (auto* n : presenter->notifications()) {
+      if (n->notification_id() != tag_utf8)
+        continue;
+      if (!group_utf8.empty() && n->notification_group() != group_utf8)
+        continue;
       target = n;
       break;
     }

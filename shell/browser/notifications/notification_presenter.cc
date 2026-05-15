@@ -19,9 +19,11 @@ NotificationPresenter::~NotificationPresenter() {
 
 base::WeakPtr<Notification> NotificationPresenter::CreateNotification(
     NotificationDelegate* delegate,
-    const std::string& notification_id) {
+    const std::string& notification_id,
+    const std::string& notification_group) {
   Notification* notification = CreateNotificationObject(delegate);
   notification->set_notification_id(notification_id);
+  notification->set_notification_group(notification_group);
   notifications_.insert(notification);
   return notification->GetWeakPtr();
 }

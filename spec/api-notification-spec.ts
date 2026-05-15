@@ -160,6 +160,70 @@ describe('Notification module', () => {
     }).to.throw(/groupTitle requires groupId to be set/);
   });
 
+  ifit(process.platform === 'win32')(
+    'throws when id contains &, =, or control characters (Windows toast launch)',
+    () => {
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          id: 'foo&group=evil',
+          title: 'title',
+          body: 'body'
+        });
+      }).to.throw(/id cannot contain/);
+
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          id: 'a=b',
+          title: 'title',
+          body: 'body'
+        });
+      }).to.throw(/id cannot contain/);
+
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          id: 'line\nbreak',
+          title: 'title',
+          body: 'body'
+        });
+      }).to.throw(/id cannot contain/);
+
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          id: 'x\u007fy',
+          title: 'title',
+          body: 'body'
+        });
+      }).to.throw(/id cannot contain/);
+    }
+  );
+
+  ifit(process.platform === 'win32')(
+    'throws when groupId contains &, =, or control characters (Windows toast launch)',
+    () => {
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          title: 'title',
+          body: 'body',
+          groupId: 'g&h=i'
+        });
+      }).to.throw(/groupId cannot contain/);
+
+      expect(() => {
+        // eslint-disable-next-line no-new
+        new Notification({
+          title: 'title',
+          body: 'body',
+          groupId: 'group\nid'
+        });
+      }).to.throw(/groupId cannot contain/);
+    }
+  );
+
   ifit(process.platform === 'win32')('accepts id and groupId at 64 characters', () => {
     const n = new Notification({
       id: 'a'.repeat(64),
@@ -378,14 +442,17 @@ describe('Notification module', () => {
   // TODO(sethlu): Find way to test init with notification icon?
 
   describe('static methods', () => {
-    ifit(process.platform === 'darwin')('getHistory returns a promise that resolves to an array', async () => {
-      const result = Notification.getHistory();
-      expect(result).to.be.a('promise');
-      const history = await result;
-      expect(history).to.be.an('array');
-    });
+    ifit(process.platform === 'darwin' || process.platform === 'win32')(
+      'getHistory returns a promise that resolves to an array',
+      async () => {
+        const result = Notification.getHistory();
+        expect(result).to.be.a('promise');
+        const history = await result;
+        expect(history).to.be.an('array');
+      }
+    );
 
-    ifit(process.platform === 'darwin')(
+    ifit(process.platform === 'darwin' || process.platform === 'win32')(
       'getHistory returns Notification instances with correct properties',
       async () => {
         const n = new Notification({
@@ -401,49 +468,110 @@ describe('Notification module', () => {
         n.show();
         await shown;
 
-        const history = await Notification.getHistory();
-        // getHistory requires code-signed builds to return results;
-        // skip the content assertions if Notification Center is empty.
-        if (history.length > 0) {
-          const found = history.find((item: any) => item.id === 'history-test-id');
-          if (!found) {
-            expect.fail('Expected to find notification with id "history-test-id" in history');
-          }
-          expect(found).to.be.an.instanceOf(Notification);
-          expect(found.title).to.equal('history test');
-          expect(found.subtitle).to.equal('history subtitle');
-          expect(found.body).to.equal('history body');
-          expect(found.groupId).to.equal('history-group');
+        // On Windows, a toast is only persisted to Action Center after the
+        // popup is dismissed. Close it and give the OS a moment to persist.
+        if (process.platform === 'win32') {
+          n.close();
+          await new Promise((resolve) => setTimeout(resolve, 1000));
         }
 
-        n.close();
+        const history = await Notification.getHistory();
+
+        if (process.platform === 'darwin') {
+          // getHistory requires code-signed builds to return results;
+          // skip the content assertions if Notification Center is empty.
+          if (history.length > 0) {
+            const found = history.find((item: any) => item.id === 'history-test-id');
+            if (!found) {
+              expect.fail('Expected to find notification with id "history-test-id" in history');
+            }
+            expect(found).to.be.an.instanceOf(Notification);
+            expect(found.title).to.equal('history test');
+            expect(found.subtitle).to.equal('history subtitle');
+            expect(found.body).to.equal('history body');
+            expect(found.groupId).to.equal('history-group');
+          }
+          n.close();
+        } else {
+          const found = history.find((item: any) => item.id === 'history-test-id');
+          if (found) {
+            expect(found).to.be.an.instanceOf(Notification);
+            expect(found.title).to.equal('history test');
+            expect(found.body).to.equal('history body');
+            expect(found.groupId).to.equal('history-group');
+          }
+        }
       }
     );
 
-    ifit(process.platform === 'darwin')('getHistory returned notifications can be shown and closed', async () => {
-      const n = new Notification({
-        id: 'history-show-close',
-        title: 'show close test',
-        body: 'body',
-        silent: true
-      });
+    ifit(process.platform === 'win32')(
+      'getHistory joins three toast Generic <text> lines into title and newline-separated body',
+      async () => {
+        const toastXml = `<toast>
+  <visual>
+    <binding template="ToastGeneric">
+      <text>Hist multi title</text>
+      <text>hist multi line two</text>
+      <text>hist multi line three</text>
+    </binding>
+  </visual>
+</toast>`;
 
-      const shown = once(n, 'show');
-      n.show();
-      await shown;
+        const n = new Notification({
+          id: 'history-multi-text-nodes',
+          toastXml,
+          silent: true
+        });
 
-      const history = await Notification.getHistory();
-      if (history.length > 0) {
-        const found = history.find((item: any) => item.id === 'history-show-close');
-        if (!found) {
-          expect.fail('Expected to find notification with id "history-show-close" in history');
+        const shown = once(n, 'show');
+        n.show();
+        await shown;
+
+        n.close();
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const history = await Notification.getHistory();
+        const found = history.find((item: any) => item.id === 'history-multi-text-nodes');
+        if (found) {
+          expect(found).to.be.an.instanceOf(Notification);
+          expect(found.title).to.equal('Hist multi title');
+          expect(found.body).to.equal('hist multi line two\nhist multi line three');
         }
-        // Calling show() and close() on a restored notification should not throw
-        expect(() => {
-          found.show();
-          found.close();
-        }).to.not.throw();
       }
-    });
+    );
+
+    ifit(process.platform === 'darwin' || process.platform === 'win32')(
+      'getHistory returned notifications can be shown and closed',
+      async () => {
+        const n = new Notification({
+          id: 'history-show-close',
+          title: 'show close test',
+          body: 'body',
+          silent: true
+        });
+
+        const shown = once(n, 'show');
+        n.show();
+        await shown;
+
+        if (process.platform === 'win32') {
+          n.close();
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+
+        const history = await Notification.getHistory();
+        const found = history.find((item: any) => item.id === 'history-show-close');
+        if (found) {
+          expect(() => {
+            found.show();
+            found.close();
+          }).to.not.throw();
+        }
+
+        if (process.platform !== 'win32') {
+          n.close();
+        }
+      }
+    );
   });
 });
