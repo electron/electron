@@ -79,21 +79,21 @@ OpaqueFrameView::OpaqueFrameView(NativeWindowViews* window,
   minimize_button_ = CreateButton(
       VIEW_ID_MINIMIZE_BUTTON, IDS_ACCNAME_MINIMIZE,
       views::CAPTION_BUTTON_ICON_MINIMIZE, HTMINBUTTON,
-      views::kWindowControlMinimizeIcon,
+      views::kWindowControlMinimizeOldIcon,
       base::BindRepeating(&views::Widget::Minimize, base::Unretained(frame)));
   maximize_button_ = CreateButton(
       VIEW_ID_MAXIMIZE_BUTTON, IDS_ACCNAME_MAXIMIZE,
       views::CAPTION_BUTTON_ICON_MAXIMIZE_RESTORE, HTMAXBUTTON,
-      views::kWindowControlMaximizeIcon,
+      views::kWindowControlMaximizeOldIcon,
       base::BindRepeating(&views::Widget::Maximize, base::Unretained(frame)));
   restore_button_ = CreateButton(
       VIEW_ID_RESTORE_BUTTON, IDS_ACCNAME_RESTORE,
       views::CAPTION_BUTTON_ICON_MAXIMIZE_RESTORE, HTMAXBUTTON,
-      views::kWindowControlRestoreIcon,
+      views::kWindowControlRestoreOldIcon,
       base::BindRepeating(&views::Widget::Restore, base::Unretained(frame)));
   close_button_ = CreateButton(
       VIEW_ID_CLOSE_BUTTON, IDS_ACCNAME_CLOSE, views::CAPTION_BUTTON_ICON_CLOSE,
-      HTMAXBUTTON, views::kWindowControlCloseIcon,
+      HTMAXBUTTON, views::kWindowControlCloseOldIcon,
       base::BindRepeating(&views::Widget::CloseWithReason,
                           base::Unretained(frame),
                           views::Widget::ClosedReason::kCloseButtonClicked));
