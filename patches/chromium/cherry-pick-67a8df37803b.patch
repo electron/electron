@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takashi Sakamoto <tasak@google.com>
+Date: Tue, 31 Mar 2026 21:48:11 -0700
+Subject: Add CHECK() to ensure the given SharedImageFormat matches the io
+ surface pixel format.
+
+Bug: 497531791
+Change-Id: Icd6861530814067886c65c4dd7baa7d919b164d5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7710673
+Reviewed-by: Hidehiko Abe <hidehiko@chromium.org>
+Owners-Override: Keishi Hattori <keishi@chromium.org>
+Reviewed-by: Keishi Hattori <keishi@chromium.org>
+Commit-Queue: Takashi Sakamoto <tasak@google.com>
+Cr-Commit-Position: refs/heads/main@{#1608285}
+
+diff --git a/components/viz/common/resources/shared_image_format_utils.cc b/components/viz/common/resources/shared_image_format_utils.cc
+index a7bcff8abf6274f02fc4ad2d3ac9e417911dc095..9891b5d5cd82ba48953174d48aeefcb614da06ab 100644
+--- a/components/viz/common/resources/shared_image_format_utils.cc
++++ b/components/viz/common/resources/shared_image_format_utils.cc
+@@ -15,6 +15,10 @@
+ #include "components/viz/common/resources/shared_image_format.h"
+ #include "third_party/skia/include/core/SkColorType.h"
+ 
++#if BUILDFLAG(IS_MAC)
++#include <CoreVideo/CVPixelBuffer.h>
++#endif  // BUILDFLAG(IS_MAC)
++
+ namespace viz {
+ namespace {
+ 
+@@ -373,4 +377,55 @@ base::span<const SharedImageFormat> GetMappableSharedImageFormatForTesting() {
+   return kMappableSharedImageFormats;
+ }
+ 
++#if BUILDFLAG(IS_MAC)
++
++bool MatchesSharedImageFormatWithIOSurfacePixelFormat(
++    const SharedImageFormat& format,
++    OSType io_surface_format,
++    bool override_rgba_to_brga) {
++  switch (io_surface_format) {
++    case kCVPixelFormatType_OneComponent8:
++      return format == SinglePlaneFormat::kR_8;
++    case kCVPixelFormatType_TwoComponent8:
++      return format == SinglePlaneFormat::kRG_88;
++    case kCVPixelFormatType_OneComponent16:
++      return format == SinglePlaneFormat::kR_16;
++    case kCVPixelFormatType_TwoComponent16:
++      return format == SinglePlaneFormat::kRG_1616;
++    case kCVPixelFormatType_ARGB2101010LEPacked:
++      return format == SinglePlaneFormat::kBGRA_1010102;
++    case kCVPixelFormatType_32BGRA:
++      return format == SinglePlaneFormat::kBGRA_8888 ||
++             format == SinglePlaneFormat::kBGRX_8888 ||
++             (override_rgba_to_brga &&
++              (format == SinglePlaneFormat::kRGBA_8888 ||
++               format == SinglePlaneFormat::kRGBX_8888));
++    case kCVPixelFormatType_32RGBA:
++      return format == SinglePlaneFormat::kRGBA_8888 ||
++             format == SinglePlaneFormat::kRGBX_8888;
++    case kCVPixelFormatType_64RGBAHalf:
++      return format == SinglePlaneFormat::kRGBA_F16;
++
++    case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
++      return format == MultiPlaneFormat::kNV12;
++    case kCVPixelFormatType_422YpCbCr8BiPlanarVideoRange:
++      return format == MultiPlaneFormat::kNV16;
++    case kCVPixelFormatType_444YpCbCr8BiPlanarVideoRange:
++      return format == MultiPlaneFormat::kNV24;
++    case kCVPixelFormatType_420YpCbCr8VideoRange_8A_TriPlanar:
++      return format == MultiPlaneFormat::kNV12A;
++    case kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange:
++      return format == MultiPlaneFormat::kP010;
++    case kCVPixelFormatType_422YpCbCr10BiPlanarVideoRange:
++      return format == MultiPlaneFormat::kP210;
++    case kCVPixelFormatType_444YpCbCr10BiPlanarVideoRange:
++      return format == MultiPlaneFormat::kP410;
++    case kCVPixelFormatType_420YpCbCr8Planar:
++      return format == MultiPlaneFormat::kI420;
++  }
++  return false;
++}
++
++#endif  // BUILDFLAG(IS_MAC)
++
+ }  // namespace viz
+diff --git a/components/viz/common/resources/shared_image_format_utils.h b/components/viz/common/resources/shared_image_format_utils.h
+index 65147516858a2f5813d4ed7c2a7313bca57c0c24..ba264dfa6f0e12d3755a790e43101f60fe10b387 100644
+--- a/components/viz/common/resources/shared_image_format_utils.h
++++ b/components/viz/common/resources/shared_image_format_utils.h
+@@ -6,8 +6,14 @@
+ #define COMPONENTS_VIZ_COMMON_RESOURCES_SHARED_IMAGE_FORMAT_UTILS_H_
+ 
+ #include "base/component_export.h"
++#include "build/build_config.h"
+ #include "components/viz/common/resources/shared_image_format.h"
+ 
++#if BUILDFLAG(IS_MAC)
++// Includes `MacTypes.h` for an io surface pixel format, i.e. `OSType`.
++#include <MacTypes.h>
++#endif  // BUILDFLAG(IS_MAC)
++
+ enum SkColorType : int;
+ 
+ namespace viz {
+@@ -129,6 +135,17 @@ bool IsOddSizeMultiPlanarBuffersAllowed();
+ // Returns a span containing all mappable SharedImageFormats.
+ COMPONENT_EXPORT(VIZ_SHARED_IMAGE_FORMAT)
+ base::span<const SharedImageFormat> GetMappableSharedImageFormatForTesting();
++
++#if BUILDFLAG(IS_MAC)
++// Returns whether the given shared image format matches io surface pixel
++// format or not.
++COMPONENT_EXPORT(VIZ_SHARED_IMAGE_FORMAT)
++bool MatchesSharedImageFormatWithIOSurfacePixelFormat(
++    const SharedImageFormat& format,
++    OSType io_surface_format,
++    bool override_rgba_to_brga);
++#endif  // BUILDFLAG(IS_MAC)
++
+ }  // namespace viz
+ 
+ #endif  // COMPONENTS_VIZ_COMMON_RESOURCES_SHARED_IMAGE_FORMAT_UTILS_H_
+diff --git a/gpu/command_buffer/client/internal/mappable_buffer_io_surface.cc b/gpu/command_buffer/client/internal/mappable_buffer_io_surface.cc
+index 797ffe9bfa7fd6552a7c4a37d298da71c0b8bf89..b7b644a90b13fcb1c92a5b7136559097f5a8b980 100644
+--- a/gpu/command_buffer/client/internal/mappable_buffer_io_surface.cc
++++ b/gpu/command_buffer/client/internal/mappable_buffer_io_surface.cc
+@@ -132,6 +132,15 @@ MappableBufferIOSurface::CreateFromHandleImpl(
+     return nullptr;
+   }
+ 
++  // TODO(crbug.com/497531791): Check whether IOSurface pixel format matches
++  // the given SharedImageFormat: `format` or not.
++  // Since there is no information about whether `gr_context_type_ ==
++  // GrContextType::kGL` or not, we will treat `override_rgba_to_brga` as always
++  // true. c.f. IOSurfaceImageBackingFactory::CreateSharedImageGMBs().
++  CHECK(viz::MatchesSharedImageFormatWithIOSurfacePixelFormat(
++      format, IOSurfaceGetPixelFormat(handle.io_surface().get()),
++      true /*override_rgba_to_brga*/));
++
+   int64_t io_surface_width = IOSurfaceGetWidth(handle.io_surface().get());
+   int64_t io_surface_height = IOSurfaceGetHeight(handle.io_surface().get());
+   if (io_surface_width < size.width() || io_surface_height < size.height()) {
