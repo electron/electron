@@ -135,8 +135,19 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
           [content_types_set addObject:utt];
         }
       } else {
-        if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())])
+        // First try to get a UTType conforming to the package type, which is
+        // necessary for custom macOS package types like .rtfd to be recognized
+        // properly in file dialogs. If that fails, fall back to the regular
+        // method.
+        UTType* packageType = [UTType typeWithIdentifier:@"com.apple.package"];
+        UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())
+                                       conformingToType:packageType];
+        if (!utt) {
+          utt = [UTType typeWithFilenameExtension:@(ext.c_str())];
+        }
+        if (utt) {
           [content_types_set addObject:utt];
+        }
       }
     }
 
