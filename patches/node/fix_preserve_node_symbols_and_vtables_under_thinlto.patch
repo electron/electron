@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Sat, 16 May 2026 17:12:29 -0500
+Subject: fix: preserve node symbols and vtables under thinlto
+
+Clang's -fwhole-program-vtables (enabled with ThinLTO) drops
+linkonce_odr vtables it considers unused. Several classes here have
+all-inline virtuals and so have no key function, leaving their vtables
+weak. Under ThinLTO the optimizer drops them, producing undefined
+vtable symbols at link time. Anchor each vtable by moving one virtual
+out-of-line:
+
+  - StaticExternalByteResource (node_builtins.cc)
+  - NgRcBufPointer<T>::External (node_http2.cc)
+  - MemoryRetainerNode          (env.cc)
+  - JSGraphJSNode               (heap_utils.cc)
+
+Also mark N-API entry points with __attribute__((used)) so ThinLTO
+does not strip them when no Node.js source references them directly,
+following https://github.com/nodejs/node/pull/49037 .
+
+Observed on macOS arm64 official builds; latent on Linux/Windows.
+
+diff --git a/src/env.cc b/src/env.cc
+index 79a309661aff7ebb18f96e64d0d2b860ab80dc57..10266fd1233d9b117eefbbbb4f455289b002785a 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -2266,4 +2266,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
+   return profile;
+ }
+ 
++const char* MemoryRetainerNode::Name() {
++  return name_;
++}
++
+ }  // namespace node
+diff --git a/src/heap_utils.cc b/src/heap_utils.cc
+index e52685546a7ac2b6e56edb0ba28408cb1737c336..440adb078b03bdc503cc11a9224c95ecdcfadf01 100644
+--- a/src/heap_utils.cc
++++ b/src/heap_utils.cc
+@@ -48,7 +48,7 @@ namespace heap {
+ 
+ class JSGraphJSNode : public EmbedderGraph::Node {
+  public:
+-  const char* Name() override { return "<JS Node>"; }
++  const char* Name() override;
+   size_t SizeInBytes() override { return 0; }
+   bool IsEmbedderNode() override { return false; }
+   Local<Data> V8Value() { return PersistentToLocal::Strong(persistent_); }
+@@ -75,6 +75,8 @@ class JSGraphJSNode : public EmbedderGraph::Node {
+   Global<Data> persistent_;
+ };
+ 
++const char* JSGraphJSNode::Name() { return "<JS Node>"; }
++
+ class JSGraph : public EmbedderGraph {
+  public:
+   explicit JSGraph(Isolate* isolate) : isolate_(isolate) {}
+diff --git a/src/js_native_api.h b/src/js_native_api.h
+index 31eee1234e1d2ff281068837443164b7970aecf4..714c3a3c50d2822089b1744d28d31e004c820fc6 100644
+--- a/src/js_native_api.h
++++ b/src/js_native_api.h
+@@ -17,7 +17,7 @@
+   __attribute__((visibility("default")))                                       \
+   __attribute__((__import_module__("napi")))
+ #else
+-#define NAPI_EXTERN __attribute__((visibility("default")))
++#define NAPI_EXTERN __attribute__((visibility("default"))) __attribute__((used))
+ #endif
+ #endif
+ 
+diff --git a/src/memory_tracker-inl.h b/src/memory_tracker-inl.h
+index 56f4a180633d39c652449dd3d457d29e4a9f6ac1..765a868da8f5e4e6848e6ed57c46e4acf2c709ec 100644
+--- a/src/memory_tracker-inl.h
++++ b/src/memory_tracker-inl.h
+@@ -63,7 +63,7 @@ class MemoryRetainerNode : public v8::EmbedderGraph::Node {
+     is_root_node_ = is_root_node;
+   }
+ 
+-  const char* Name() override { return name_; }
++  const char* Name() override;
+   const char* NamePrefix() override { return "Node /"; }
+   size_t SizeInBytes() override { return size_; }
+   // TODO(addaleax): Merging this with the "official" WrapperNode() method
+diff --git a/src/node_builtins.cc b/src/node_builtins.cc
+index 29a621c7fdca110a1a931d6cd40dbc5d0bc0b4ce..665cac3d930f8439a83c6265383b850d21ca7433 100644
+--- a/src/node_builtins.cc
++++ b/src/node_builtins.cc
+@@ -990,6 +990,21 @@ void BuiltinLoader::RegisterExternalReferences(
+ }
+ 
+ }  // namespace builtins
++
++template <typename Char, typename IChar, typename Base>
++const IChar* StaticExternalByteResource<Char, IChar, Base>::data() const {
++  return reinterpret_cast<const IChar*>(data_);
++}
++
++template class StaticExternalByteResource<
++    uint8_t,
++    char,
++    v8::String::ExternalOneByteStringResource>;
++template class StaticExternalByteResource<
++    uint16_t,
++    uint16_t,
++    v8::String::ExternalStringResource>;
++
+ }  // namespace node
+ 
+ NODE_BINDING_PER_ISOLATE_INIT(
+diff --git a/src/node_http2.cc b/src/node_http2.cc
+index 084a4773673e5b07aac84a2adc79e3a89d050c84..5b60499bbe696d5c8998336f3f599f7157346f30 100644
+--- a/src/node_http2.cc
++++ b/src/node_http2.cc
+@@ -3625,6 +3625,14 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
+   return;
+ }
+ }  // namespace http2
++
++template <typename T>
++const char* NgRcBufPointer<T>::External::data() const {
++  return const_cast<const char*>(reinterpret_cast<char*>(ptr_.data()));
++}
++
++template class NgRcBufPointer<http2::Http2RcBufferPointerTraits>::External;
++
+ }  // namespace node
+ 
+ NODE_BINDING_CONTEXT_AWARE_INTERNAL(http2, node::http2::Initialize)
+diff --git a/src/node_http_common.h b/src/node_http_common.h
+index 5afb6b97becc4dd8239f6b31d56eaf77d0f8c314..c2d2dadf505b99bc573f4d8b06aeb678488352e7 100644
+--- a/src/node_http_common.h
++++ b/src/node_http_common.h
+@@ -385,9 +385,7 @@ class NgRcBufPointer : public MemoryRetainer {
+    public:
+     explicit External(const NgRcBufPointer<T>& ptr) : ptr_(ptr) {}
+ 
+-    const char* data() const override {
+-      return const_cast<const char*>(reinterpret_cast<char*>(ptr_.data()));
+-    }
++    const char* data() const override;
+ 
+     size_t length() const override {
+       return ptr_.len();
+diff --git a/src/node_union_bytes.h b/src/node_union_bytes.h
+index 4a3f67980fdc925699cc67e40736bddce8f7b857..344e333a1af121d8e1de25c237dbc5bce35fd948 100644
+--- a/src/node_union_bytes.h
++++ b/src/node_union_bytes.h
+@@ -20,9 +20,7 @@ class StaticExternalByteResource : public Base {
+                                       std::shared_ptr<void> owning_ptr)
+       : data_(data), length_(length), owning_ptr_(owning_ptr) {}
+ 
+-  const IChar* data() const override {
+-    return reinterpret_cast<const IChar*>(data_);
+-  }
++  const IChar* data() const override;
+   size_t length() const override { return length_; }
+ 
+   void Dispose() override {
