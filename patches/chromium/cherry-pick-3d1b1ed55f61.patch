@@ -1,0 +1,187 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Cheng <dcheng@chromium.org>
+Date: Thu, 19 Mar 2026 16:51:33 -0700
+Subject: Reland "Gracefully handle overlapping driver handle ranges"
+
+This is a reland of commit 94b006154082f83ff8f3ca493311d19d6e8e11bc
+This fixes the test to allocate the data storage for handles as an array
+of uint8_t, since that's what the mock deserialization routine expects.
+This was missed in the initial review since `DCHECK`-enabled builds do
+not include `ABSL_ASSERT()`.
+
+gemini-cli provided the diagnosis and initial fix. However, upon further
+investigation, the author discovered that `Message::GetArrayView<T>`
+does not behave per the author's expectations: the returned span always
+contains `ArrayHeader::num_elements`, not `ArrayHeader::num_bytes /
+sizeof(T)` elements.
+
+This has several implications:
+
+1. Allocating an array with `AllocateArray<uint16_t>(1)`, and then
+   reading it back with `GetArrayView<uint8_t>(...)` will produce a span
+   of **one** element.
+
+2. Similarly, changing:
+     uint32_t first_object_bytes = in.AllocateArray<16_t>(1);
+     in.GetArrayView<uint16_t>(first_object_bytes)[0] = 0x90ab;
+
+   to:
+     uint32_t first_object_bytes = in.AllocateArray<uint8_t>(2);
+     in.GetArrayView<uint16_t>(first_object_bytes)[0] = 0x90ab;
+
+   as suggested by gemini-cli produces an invalid fix. The returned
+   span from `GetArrayView<uint16_t>()` has **two** elements, even
+   though it only has logical storage for a single uint16_t element.
+
+   The various asserts in `GetArrayView()` do not catch these issues
+   today, for various reasons. This will be separately addressed.
+
+The proper way to do this is to allocate the array as a `uint8_t` and
+also read it back as a `uint8_t`. Unfortunately, this means sprinkling
+`reinterpret_cast<uint16_t>` in various places but there's no real
+alternative in ipcz.
+
+Original change's description:
+> Gracefully handle overlapping driver handle ranges
+>
+> Test originally authored by gemini-cli; substantially rewritten
+> afterwards to interoperate better with MockDriver.
+>
+> Bug: 483956252
+> Change-Id: I6e45c05114986853bdc78f2f48b7c37350f11086
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7677890
+> Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+> Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1601577}
+
+Bug: 483956252
+Change-Id: I3f307483a7a00008bfd5f7cafe973ded0bb1c662
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7685275
+Commit-Queue: Andrea Orru <andreaorru@chromium.org>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1602329}
+
+diff --git a/third_party/ipcz/src/ipcz/message.cc b/third_party/ipcz/src/ipcz/message.cc
+index 436473c8d41a8598c535646f648e4b8f4d71a84c..270abb58e26559d5cf15dc2c939b50b4884743da 100644
+--- a/third_party/ipcz/src/ipcz/message.cc
++++ b/third_party/ipcz/src/ipcz/message.cc
+@@ -131,6 +131,20 @@ DriverObject DeserializeDriverObject(
+     return {};
+   }
+ 
++  // If any driver handles have already claimed, the message is invalid.
++  for (auto i = object_data.first_driver_handle;
++       i < object_data.first_driver_handle + object_data.num_driver_handles;
++       ++i) {
++    if (is_handle_consumed[i]) {
++      return {};
++    }
++  }
++
++  // These two loops cannot be merged: returning early if some handles are
++  // already consumed can result in a handle marked as consumed even though it
++  // was never passed to `DriverObject::Deserialize()`. The cleanup logic in
++  // `DeserializeUnknownType()` would also skip the already-marked handle,
++  // leaking the object's resources.
+   for (auto i = object_data.first_driver_handle;
+        i < object_data.first_driver_handle + object_data.num_driver_handles;
+        ++i) {
+diff --git a/third_party/ipcz/src/ipcz/message_test.cc b/third_party/ipcz/src/ipcz/message_test.cc
+index 17e73c6c124d5776476aa436277dc588618695de..66f52d4023ecadc65cfad02c1f716301ecd31cc1 100644
+--- a/third_party/ipcz/src/ipcz/message_test.cc
++++ b/third_party/ipcz/src/ipcz/message_test.cc
+@@ -45,7 +45,7 @@ class MessageTest : public testing::Test {
+         .WillRepeatedly([&](IpczDriverHandle driver_transport, const void* data,
+                             size_t num_bytes, const IpczDriverHandle* handles,
+                             size_t num_handles, uint32_t, const void*) {
+-          const uint8_t* bytes = static_cast<const uint8_t*>(data);
++          const uint8_t* bytes = reinterpret_cast<const uint8_t*>(data);
+           received_messages_.push(
+               {{bytes, IPCZ_UNSAFE_TODO(bytes + num_bytes)},
+                {handles, IPCZ_UNSAFE_TODO(handles + num_handles)}});
+@@ -73,7 +73,7 @@ class MessageTest : public testing::Test {
+           if (!data || !handles || data_capacity < 2 || handle_capacity < 1) {
+             return IPCZ_RESULT_RESOURCE_EXHAUSTED;
+           }
+-          static_cast<volatile uint16_t*>(data)[0] =
++          reinterpret_cast<volatile uint16_t*>(data)[0] =
+               static_cast<uint16_t>(handle >> 16);
+           handles[0] = handle & 0xffff;
+           return IPCZ_RESULT_OK;
+@@ -94,7 +94,7 @@ class MessageTest : public testing::Test {
+           ABSL_ASSERT(num_bytes == 2);
+           ABSL_ASSERT(num_handles == 1);
+           const uint16_t data_value =
+-              static_cast<const volatile uint16_t*>(data)[0];
++              reinterpret_cast<const volatile uint16_t*>(data)[0];
+           *handle =
+               (static_cast<IpczDriverHandle>(data_value) << 16) | handles[0];
+           return IPCZ_RESULT_OK;
+@@ -383,6 +383,66 @@ TEST_F(MessageTest, UnclaimedDriverObjects) {
+   EXPECT_EQ(kObjectHandle3, out.driver_objects()[2].release());
+ }
+ 
++TEST_F(MessageTest, OverlappingDriverHandles) {
++  Message in(0, 0);
++
++  // Driver objects are serialized as an array of raw bytes and an array of
++  // driver handles. MockDriver uses 32-bit handle values and packs the high 16
++  // bits into the raw bytes and the low 16 bits into the handle value; each
++  // DriverObject is expected to be represented with exactly 2 raw bytes and 1
++  // handle value.
++  uint32_t first_object_bytes = in.AllocateArray<uint8_t>(2);
++  *reinterpret_cast<uint16_t*>(
++      in.GetArrayView<uint8_t>(first_object_bytes).data()) = 0x90ab;
++
++  uint32_t second_object_bytes = in.AllocateArray<uint8_t>(2);
++  *reinterpret_cast<uint16_t*>(
++      in.GetArrayView<uint8_t>(second_object_bytes).data()) = 0x90ab;
++
++  uint32_t object_data_offset = in.AllocateArray<internal::DriverObjectData>(2);
++  in.header().driver_object_data_array = object_data_offset;
++
++  std::vector<IpczDriverHandle> handles = {0x12345678, 0xcdef};
++
++  auto object_data =
++      in.GetArrayView<internal::DriverObjectData>(object_data_offset);
++  // The first driver object data entry references `handles[1]`.
++  object_data[0].driver_data_array = first_object_bytes;
++  object_data[0].first_driver_handle = 1;
++  object_data[0].num_driver_handles = 1;
++
++  // The second driver object data entry references `handles[0]` and
++  // `handles[1]`. This tests that:
++  // - rejection of this entry still frees the resources associated with
++  //   `handles[0]`.
++  // - a second claim on `handles[1]` is rejected.
++  //
++  // This violates MockDriver's expectations of how serialized driver objects
++  // are represented on the wire, but that should not be a problem as the
++  // message should be rejected before trying to call the mock driver's
++  // deserialization method.
++  object_data[1].driver_data_array = second_object_bytes;
++  object_data[1].first_driver_handle = 0;
++  object_data[1].num_driver_handles = 2;
++
++  // This is normally all handled by `DriverTransport::Transmit()`, but this
++  // test manually executes the steps normally taken by `Message::Serialize()`
++  // to build an invalid message.
++  transport().driver_object().driver()->Transmit(
++      transport().driver_object().handle(), in.data_view().data(),
++      in.data_view().size(), handles.data(), handles.size(), IPCZ_NO_FLAGS,
++      nullptr);
++
++  ReceivedMessage serialized = TakeNextReceivedMessage();
++
++  Message out;
++  EXPECT_CALL(driver(), Close(0x12345678, _, _));
++  EXPECT_FALSE(
++      out.DeserializeUnknownType(serialized.AsTransportMessage(), transport()));
++
++  EXPECT_CALL(driver(), Close(0x90abcdef, _, _));
++}
++
+ TEST_F(MessageTest, BadEnums) {
+   // Out of range enum values should be rejected.
+   test::msg::MessageWithEnums m1;
