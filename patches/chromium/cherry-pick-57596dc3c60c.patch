@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Fri, 27 Mar 2026 17:51:46 -0700
+Subject: Validate client_id when registering bundle
+
+This ensures the bundle is associated with the right renderer process.
+
+Fixed: 496415073
+Change-Id: I6a766373ee1e64a8d7c83e55b4ab9a4d90073f02
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7706850
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1606581}
+
+diff --git a/content/browser/renderer_host/embedded_frame_sink_provider_impl.cc b/content/browser/renderer_host/embedded_frame_sink_provider_impl.cc
+index 53322b9a3479ba08bab7fda14ddf9be4c2680d47..00ab4f91905d55e7878b285b54f0d58880b88e0d 100644
+--- a/content/browser/renderer_host/embedded_frame_sink_provider_impl.cc
++++ b/content/browser/renderer_host/embedded_frame_sink_provider_impl.cc
+@@ -60,6 +60,11 @@ void EmbeddedFrameSinkProviderImpl::RegisterEmbeddedFrameSinkBundle(
+     const viz::FrameSinkBundleId& bundle_id,
+     mojo::PendingReceiver<viz::mojom::FrameSinkBundle> receiver,
+     mojo::PendingRemote<viz::mojom::FrameSinkBundleClient> client) {
++  if (bundle_id.client_id() != renderer_client_id_) {
++    receivers_.ReportBadMessage("Invalid client ID");
++    return;
++  }
++
+   host_frame_sink_manager_->CreateFrameSinkBundle(
+       bundle_id, std::move(receiver), std::move(client));
+ }

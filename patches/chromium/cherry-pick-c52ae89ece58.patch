@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takashi Sakamoto <tasak@google.com>
+Date: Mon, 6 Apr 2026 01:10:32 -0700
+Subject: Enable CHECK(!in_on_accessiblity_events) when BUILDFLAG(IS_WIN).
+
+Bug: 495247950
+No-Try: true
+Change-Id: I3577464e3c716b3b2f48b58ca2c37ea63dc6c0a3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7707532
+Reviewed-by: Mitsuru Oshima <oshima@chromium.org>
+Commit-Queue: Takashi Sakamoto <tasak@google.com>
+Cr-Commit-Position: refs/heads/main@{#1610239}
+
+diff --git a/ui/accessibility/platform/browser_accessibility_manager.cc b/ui/accessibility/platform/browser_accessibility_manager.cc
+index 82f3ffa9530d2ecc0142da04a07cd52d528fca23..523466ac4779e5c3b2a59edbb4e6b0477568ad93 100644
+--- a/ui/accessibility/platform/browser_accessibility_manager.cc
++++ b/ui/accessibility/platform/browser_accessibility_manager.cc
+@@ -456,9 +456,13 @@ bool BrowserAccessibilityManager::OnAccessibilityEvents(
+   // remove this exclusion.
+   base::ScopedSafetyChecksExclusion scoped_unsafe;
+ 
+-#if DCHECK_IS_ON()
++#if BUILDFLAG(IS_WIN)
++  CHECK(!in_on_accessibility_events_)
++      << "Should not re-enter OnAccessiblityEvents()";
++#endif  // BUILDFLAG(IS_WIN)
++#if BUILDFLAG(IS_WIN) || DCHECK_IS_ON()
+   base::AutoReset<bool> auto_reset(&in_on_accessibility_events_, true);
+-#endif  // DCHECK_IS_ON()
++#endif  // BUILDFLAG(IS_WIN) || DCHECK_IS_ON()
+ 
+   // Update the cached device scale factor.
+   if (!use_custom_device_scale_factor_for_testing_)
+diff --git a/ui/accessibility/platform/browser_accessibility_manager.h b/ui/accessibility/platform/browser_accessibility_manager.h
+index 57ab56e7b23d4088b75043c1b1787416ff3b8b0e..97cee557838bff14daa8b7c6654b615728ba8f6c 100644
+--- a/ui/accessibility/platform/browser_accessibility_manager.h
++++ b/ui/accessibility/platform/browser_accessibility_manager.h
+@@ -612,7 +612,7 @@ class COMPONENT_EXPORT(AX_PLATFORM) BrowserAccessibilityManager
+   static bool never_suppress_or_delay_events_for_testing_;
+ 
+   // For debug only: True when handling OnAccessibilityEvents.
+-#if DCHECK_IS_ON()
++#if BUILDFLAG(IS_WIN) || DCHECK_IS_ON()
+   bool in_on_accessibility_events_ = false;
+ #endif  // DCHECK_IS_ON()
+ 

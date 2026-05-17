@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Addison Luh <aluh@chromium.org>
+Date: Tue, 28 Apr 2026 18:12:04 -0700
+Subject: Reland "Prevent invalid tree state in AutomationTreeManagerOwner"
+
+This is a reland of commit d2ab7831eecf3a1c192ae64b05c2c6a797b556e9
+
+Fixed tree id in the test.
+
+Original change's description:
+> Prevent invalid tree state in AutomationTreeManagerOwner
+>
+> If an AXTree fails to fully unserialize in the automation tree manager
+> owner, drop and destroy the corrupted client wrapper and its nested
+> static caches immediately. This prevents the tree manager from
+> referencing the corrupted, dangling pointers subsequently.
+>
+> Bug: b:502978647
+> Test: out/Default/accessibility_unittests --gtest_filter=AutomationTreeManagerOwnerTest.UnserializeFailureClearsCachedTree
+> Change-Id: Idbcbdab0e7b7a46d8d094a38f3ba4a32cf301ce7
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7793837
+> Reviewed-by: David Tseng <dtseng@chromium.org>
+> Auto-Submit: Addison Luh <aluh@chromium.org>
+> Commit-Queue: David Tseng <dtseng@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1621369}
+
+Cq-Include-Trybots: luci.chrome.try:linux-chromeos-chrome
+Bug: b:502978647
+Change-Id: I720b30a6baa76570ea54b072e1e9bc0ad6c50f0a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7802331
+Auto-Submit: Addison Luh <aluh@chromium.org>
+Reviewed-by: David Tseng <dtseng@chromium.org>
+Commit-Queue: Addison Luh <aluh@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1622148}
+
+diff --git a/ui/accessibility/platform/automation/automation_tree_manager_owner.cc b/ui/accessibility/platform/automation/automation_tree_manager_owner.cc
+index d6a36fcede4864d1647995136a3743782cf83799..17f0803ff07598b54263e1ffa306b06d01c556a9 100644
+--- a/ui/accessibility/platform/automation/automation_tree_manager_owner.cc
++++ b/ui/accessibility/platform/automation/automation_tree_manager_owner.cc
+@@ -1075,6 +1075,7 @@ void AutomationTreeManagerOwner::DispatchAccessibilityEvents(
+                                            mouse_location)) {
+     DLOG(ERROR) << tree_wrapper->ax_tree()->error();
+     GetAutomationV8Bindings()->SendTreeSerializationError(tree_id);
++    DestroyAccessibilityTree(tree_id);
+     return;
+   }
+ 
+diff --git a/ui/accessibility/platform/automation/automation_tree_manager_owner_unittest.cc b/ui/accessibility/platform/automation/automation_tree_manager_owner_unittest.cc
+index b1ff5ac52a6971f531f15471fd5684918179153a..41b76e70880e3f16bfe0cb8fbfc199a189837e20 100644
+--- a/ui/accessibility/platform/automation/automation_tree_manager_owner_unittest.cc
++++ b/ui/accessibility/platform/automation/automation_tree_manager_owner_unittest.cc
+@@ -998,4 +998,48 @@ TEST_F(AutomationTreeManagerOwnerTest, FireEventsWithListeners) {
+   EXPECT_TRUE(tree_destroyed);
+ }
+ 
++TEST_F(AutomationTreeManagerOwnerTest, UnserializeFailureClearsCachedTree) {
++  EXPECT_TRUE(GetTreeIDToTreeMap().empty());
++
++  const AXTreeID tree_id = AXTreeID::CreateNewAXTreeID();
++  const int valid_node_id = 1;
++  const int invalid_node_id = 2;
++
++  std::vector<AXTreeUpdate> updates;
++  updates.emplace_back();
++  auto& tree_update = updates.back();
++  auto& tree_data = tree_update.tree_data;
++  tree_data.tree_id = tree_id;
++  tree_update.has_tree_data = true;
++  tree_update.root_id = valid_node_id;
++  tree_update.nodes.emplace_back();
++  auto& node_data = tree_update.nodes.back();
++  node_data.role = ax::mojom::Role::kDesktop;
++  node_data.id = valid_node_id;
++  std::vector<AXEvent> events;
++  SendAccessibilityEvents(tree_id, updates, gfx::Point(), events);
++
++  ASSERT_EQ(1U, GetTreeIDToTreeMap().size());
++
++  updates.clear();
++  updates.emplace_back();
++  auto& bad_update = updates.back();
++  bad_update.has_tree_data = true;
++  bad_update.tree_data.tree_id = tree_id;
++  bad_update.root_id = valid_node_id;
++  bad_update.nodes.emplace_back();
++  auto& bad_node_data = bad_update.nodes.back();
++  bad_node_data.id = valid_node_id;
++  // Adds a non-existent node id.
++  bad_node_data.child_ids.push_back(invalid_node_id);
++
++#if AX_FAIL_FAST_BUILD()
++  EXPECT_DEATH_IF_SUPPORTED(
++      SendAccessibilityEvents(tree_id, updates, gfx::Point(), events), "");
++#else
++  SendAccessibilityEvents(tree_id, updates, gfx::Point(), events);
++  EXPECT_TRUE(GetTreeIDToTreeMap().empty());
++#endif
++}
++
+ }  // namespace ui
