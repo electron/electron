@@ -99,6 +99,20 @@ DialogSettings::~DialogSettings() = default;
 
 namespace {
 
+UTType* TypeForFilenameExtension(const std::string& ext) {
+  NSString* extension = @(ext.c_str());
+  UTType* super_type = [UTType typeWithIdentifier:@"com.apple.package"];
+  UTType* package_type = [UTType typeWithFilenameExtension:extension
+                                          conformingToType:super_type];
+
+  // Asking for package conformance can synthesize a dynamic type for ordinary
+  // files like .txt. Only prefer package types that Launch Services knows.
+  if (package_type && ![package_type isDynamic])
+    return package_type;
+
+  return [UTType typeWithFilenameExtension:extension];
+}
+
 void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   NSMutableArray* file_types_list = [NSMutableArray array];
   NSMutableArray* filter_names = [NSMutableArray array];
@@ -122,20 +136,8 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
       if (ext == "*") {
         [content_types_set addObject:[UTType typeWithFilenameExtension:@"*"]];
         break;
-      } else if (ext == "app") {
-        // This handles a bug on macOS where the "app" extension by default
-        // maps to "com.apple.application-file", which is for an Application
-        // file (older single-file carbon based apps), and not modern
-        // Application Bundles (multi file packages as you'd see for all modern
-        // applications).
-        UTType* superType =
-            [UTType typeWithIdentifier:@"com.apple.application-bundle"];
-        if (UTType* utt = [UTType typeWithFilenameExtension:@"app"
-                                           conformingToType:superType]) {
-          [content_types_set addObject:utt];
-        }
       } else {
-        if (UTType* utt = [UTType typeWithFilenameExtension:@(ext.c_str())])
+        if (UTType* utt = TypeForFilenameExtension(ext))
           [content_types_set addObject:utt];
       }
     }
