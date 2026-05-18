@@ -95,20 +95,45 @@ async function killOrphanedElectronProcesses(suiteName) {
   let killed = 0;
   try {
     if (process.platform === 'win32') {
-      // Enumerate by executable path, filter current PID, force-kill each survivor
+      // Enumerate by executable path, also fetching ParentProcessId so we can
+      // skip the current instance's own child processes (GPU, network service,
+      // renderer helpers) which all run as the same electron.exe binary.
       const escapedPath = process.execPath.replace(/\\/g, '\\\\');
       const result = childProcess.spawnSync(
         'wmic',
-        ['process', 'where', `ExecutablePath='${escapedPath}'`, 'get', 'ProcessId', '/format:value'],
+        ['process', 'where', `ExecutablePath='${escapedPath}'`, 'get', 'ProcessId,ParentProcessId', '/format:value'],
         { encoding: 'utf8' }
       );
-      const pids = (result.stdout || '')
-        .split(/\r?\n/)
-        .map((line) => line.match(/^ProcessId=(\d+)/)?.[1])
-        .filter(Boolean)
-        .map(Number)
-        .filter((pid) => pid !== process.pid);
-      for (const pid of pids) {
+      // wmic /format:value outputs blank-line-separated records, each with
+      // Key=Value lines.  Build a pid→ppid map from the output.
+      const pidToParent = new Map();
+      for (const record of (result.stdout || '').split(/(?:\r?\n){2,}/)) {
+        let pid = null;
+        let ppid = null;
+        for (const line of record.split(/\r?\n/)) {
+          const pidMatch = line.match(/^ProcessId=(\d+)/);
+          const ppidMatch = line.match(/^ParentProcessId=(\d+)/);
+          if (pidMatch) pid = Number(pidMatch[1]);
+          if (ppidMatch) ppid = Number(ppidMatch[1]);
+        }
+        if (pid !== null && ppid !== null) pidToParent.set(pid, ppid);
+      }
+      // Walk the parent chain to check whether a pid is descended from us.
+      // Mirrors the Linux isDescendantOfCurrentProcess logic but uses the
+      // pre-built map instead of /proc.
+      const isDescendant = (pid) => {
+        let current = pid;
+        while (current > 1) {
+          const parent = pidToParent.get(current);
+          if (parent === undefined) return false;
+          if (parent === process.pid) return true;
+          if (parent === current) return false; // cycle guard
+          current = parent;
+        }
+        return false;
+      };
+      for (const [pid] of pidToParent) {
+        if (pid === process.pid || isDescendant(pid)) continue;
         try {
           childProcess.spawnSync('taskkill', ['/F', '/PID', String(pid), '/T']);
           killed++;
