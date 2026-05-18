@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 171bee26e6402c93c9d1ed14f21d483eb25ae57b..41afc71a6349842f152aafb159e81ac5ae17cdf4 100644
+index 95195a5fc9a0b9a545dc0e9fd6ca4b094d11b172..fe920c2519a4fba9797802016fb1471c457afb0e 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10313,6 +10313,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10310,6 +10310,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index 171bee26e6402c93c9d1ed14f21d483eb25ae57b..41afc71a6349842f152aafb159e81ac5
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index d148cfbcce87c15ac9437c0cbc9ae1268afd5bcd..1c68a17565e449a82301712fc9dea70b8a37d009 100644
+index fcda548d428b3cba6687f3dc336633c20fb280d0..d8749f842f060e3598c7612a213abe78f90eeb93 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5512,6 +5512,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -62,10 +62,10 @@ index d148cfbcce87c15ac9437c0cbc9ae1268afd5bcd..1c68a17565e449a82301712fc9dea70b
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
-index a2566982ff81db5166e41243232e23af94dc3c05..ff5c410e78fb171963122f8a24802b7bf89a2b67 100644
+index 880e477af76324b66c085eda1daf4880054878c7..b75d4837787a3acb8ded9c9942a6de4ba0ec48b4 100644
 --- a/content/common/frame.mojom
 +++ b/content/common/frame.mojom
-@@ -617,6 +617,10 @@ struct CreateNewWindowParams {
+@@ -624,6 +624,10 @@ struct CreateNewWindowParams {
    pending_associated_remote<blink.mojom.Widget> widget;
    pending_associated_receiver<blink.mojom.FrameWidgetHost> frame_widget_host;
    pending_associated_remote<blink.mojom.FrameWidget> frame_widget;
@@ -170,10 +170,10 @@ index 01caa48d282c0880d45df8e7e9cc6ead048143eb..6ca69566415b3eea9256e82146668004
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 768e2e8ec304bc2f71de932cd23d1b31180f1665..40fb5b5eeb4bde6f9130de1d5e18a9f70056b4b8 100644
+index 18aad21a8231dcdbc22ededca99d4e7a2be5c378..263a2d47cdaeaa4a2a284f9ff58b525577d4b94a 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6867,6 +6867,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6902,6 +6902,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
    params->started_by_ad =
        GetWebFrame()->IsAdFrame() || GetWebFrame()->IsAdScriptInStack();
  

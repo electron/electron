@@ -34,10 +34,10 @@ index 1b8541bfa56a7e53c8396c29ea45a0b5af89ef81..28ffec368e5d6bc1744605e9dda7fc68
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 5669ab89c2df08a3cce6f001dd6e036614157e3e..af47e1db83de0e8c8799a9885768357f7f5b74ab 100644
+index f6760961d5841edac4a422a8340d00349a35f27d..559f67836c5abdf3f11dc66fe1311370cc626060 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4746,10 +4746,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4781,10 +4781,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
