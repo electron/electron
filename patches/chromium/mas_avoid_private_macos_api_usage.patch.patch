@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 741619c116cf4b7c17842e5ac6b783d707f0b772..ced65bd51cc0f49bdffc10c7b581e226d4cac1fd 100644
+index ad8fc896a4b9f5c972a0fb292a990edb3f4cc8e3..6863a8265a450eee8ef98ec1a8176af6830fd08b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1127,6 +1127,7 @@ component("base") {
@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 63b0b556e6ef91d907c0bcec586213a0f3fde5eb..62b212f43a1ed8ee89d1c66221578d8012915482 100644
+index 09252b90755c93cd3ddd893e67d06590a61144c4..dfc998d32f483d0b8241356fb1c5e3155586fe51 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -984,6 +984,7 @@ if (is_clang_or_gcc) {
+@@ -1012,6 +1012,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -811,7 +811,7 @@ index 8ce53b96b400611f5d8a94155c6ff6191fcb5963..dea308562c23388eb6b5749d2eb3e30e
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 032ecbcc158ee799bd332a4a6c8c49c12cf42113..b27203fac0393ff3c74ea24b0bf58faf90bc798d 100644
+index 10d157cafc7700f4d90c7549f94d9f545d107880..7288cf6b85925d1737b03af1dc412b587c7f1e6d 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -974,7 +974,7 @@ index 91a0eee3a76257906f038844922f18fd4765ea66..af6ce45c11ece7ebe6b7cb70673b0c12
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 2e06fa1b797158e3b0722a6c2c6a4d4f1e2cedcc..01ea07db8430ed9aec887837486f914701897363 100644
+index 1519637194b4ac3ba3433eeac6e25ddc73a77da8..9e5bce1b8126dede674526b2ab33c99dda799f47 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -365,6 +365,7 @@ source_set("browser") {
@@ -1107,7 +1107,7 @@ index d3d097db4a87eb42e07dcef13a093281d7bf733a..f6ebf31dca154bba7a67b69575221e46
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index a99405158fbecc5e08b334c4e40f40f51e92b2d9..f35b1a1a6c9c3a28573fee901652a55b82756cfd 100644
+index 1633fcf80738a713c26ad0ecd699801d46346b78..8dd65146b8cc229477daa2f299e9bbee02f40505 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -322,6 +322,7 @@ target(link_target_type, "renderer") {
@@ -1189,10 +1189,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 6f363f39a4af0349cbfc157743b48024422c7c9c..2980e8ea643abbd4cd3b57195b6197ad2aa0a392 100644
+index 2064568d8206c820dd65d227b07bef8e27a2f509..e00f7a0100cc394d47c39620790de4f391983298 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -703,6 +703,7 @@ static_library("test_support") {
+@@ -702,6 +702,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1200,7 +1200,7 @@ index 6f363f39a4af0349cbfc157743b48024422c7c9c..2980e8ea643abbd4cd3b57195b6197ad
    ]
  
    data_deps = [
-@@ -1180,6 +1181,8 @@ static_library("browsertest_support") {
+@@ -1179,6 +1180,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -1209,7 +1209,7 @@ index 6f363f39a4af0349cbfc157743b48024422c7c9c..2980e8ea643abbd4cd3b57195b6197ad
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2087,6 +2090,7 @@ test("content_browsertests") {
+@@ -2088,6 +2091,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1974,7 +1974,7 @@ index 50e20152256616c07cd4a3de44fd18689fd7a8b7..4ab3a4b880a63f19f99b96dec1c30946
    // The root CALayer to display the current frame. This does not change
    // over the lifetime of the object.
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
-index f11bfeee17e02805d09b7a0f64a8649bbc546928..17646c77b12b17d215b4c1cca63099f8b77ee142 100644
+index e8e88314f1d77efb2730586047589a420b795c13..ea54346ac262da3cd23bda17f795152a54c437e6 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 @@ -11,6 +11,7 @@
@@ -1985,7 +1985,7 @@ index f11bfeee17e02805d09b7a0f64a8649bbc546928..17646c77b12b17d215b4c1cca63099f8
  #include "ui/accelerated_widget_mac/ca_renderer_layer_tree.h"
  #include "ui/base/cocoa/animation_utils.h"
  #include "ui/base/cocoa/remote_layer_api.h"
-@@ -40,6 +41,7 @@
+@@ -41,6 +42,7 @@
        gl_make_current_callback_(gl_make_current_callback),
        metal_device_(metal_device),
        no_post_task_for_callback_(no_post_task_for_callback) {
@@ -1993,7 +1993,7 @@ index f11bfeee17e02805d09b7a0f64a8649bbc546928..17646c77b12b17d215b4c1cca63099f8
    if (allow_remote_layers_) {
      root_ca_layer_ = [[CALayer alloc] init];
  #if BUILDFLAG(IS_MAC)
-@@ -52,6 +54,7 @@
+@@ -53,6 +55,7 @@
  #endif
      root_ca_layer_.opaque = YES;
    }
@@ -2001,15 +2001,15 @@ index f11bfeee17e02805d09b7a0f64a8649bbc546928..17646c77b12b17d215b4c1cca63099f8
  }
  
  CALayerTreeCoordinator::~CALayerTreeCoordinator() = default;
-@@ -185,6 +188,7 @@
+@@ -186,6 +189,7 @@
    if (has_resized_since_last_swap_) {
      // Create a new CAContext at the new size. This allows new frame update at
      // the new size to be atomic with things like resizing the NSWindow.
 +#if !IS_MAS_BUILD()
-     if (allow_remote_layers_) {
+     if (base::FeatureList::IsEnabled(features::kCATransactionV2) &&
+         allow_remote_layers_) {
        params.ca_context_fence_mach_port.reset([ca_context_ createFencePort]);
-       [ca_context_ setFencePort:params.ca_context_fence_mach_port.get()];
-@@ -192,6 +196,7 @@
+@@ -194,6 +198,7 @@
        ca_context_ = nil;
        current_tree = nullptr;
      }
@@ -2017,7 +2017,7 @@ index f11bfeee17e02805d09b7a0f64a8649bbc546928..17646c77b12b17d215b4c1cca63099f8
      has_resized_since_last_swap_ = false;
    }
  #endif
-@@ -213,7 +218,7 @@
+@@ -215,7 +220,7 @@
      TRACE_EVENT_INSTANT("test_gpu", "SwapBuffers", "GLImpl",
                          static_cast<int>(gl::GetGLImplementation()), "width",
                          pixel_size_.width());
@@ -2026,7 +2026,7 @@ index f11bfeee17e02805d09b7a0f64a8649bbc546928..17646c77b12b17d215b4c1cca63099f8
      if (allow_remote_layers_) {
  #if !BUILDFLAG(IS_IOS) || BUILDFLAG(IS_IOS_TVOS)
        if (!ca_context_) {
-@@ -236,6 +241,9 @@
+@@ -238,6 +243,9 @@
  #endif  // !BUILDFLAG(IS_IOS) || BUILDFLAG(IS_IOS_TVOS)
        params.ca_context_id = [ca_context_ contextId];
      } else {
@@ -2437,7 +2437,7 @@ index 318bb37f5e065222104ef11c476f6bf7c2758ca1..a7aa661f94df2a435de6727ca89b69e6
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index bd419e64486a063447bf4392eb77d91fbc421173..8c7fa25b2954c63a05788dc7d69a077b3822794f 100644
+index 9ca48ff06731ccf4739f669b3b2209431820bb26..0abbfbc55033983a6a48b717528091d2ab4484ee 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -23,6 +23,7 @@
@@ -2474,7 +2474,7 @@ index bd419e64486a063447bf4392eb77d91fbc421173..8c7fa25b2954c63a05788dc7d69a077b
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1560,9 +1569,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1544,9 +1553,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // for PWAs. However this breaks accessibility on in-process windows,
    // so set it back to NO when a local window gains focus. See
    // https://crbug.com/41485830.
@@ -2486,7 +2486,7 @@ index bd419e64486a063447bf4392eb77d91fbc421173..8c7fa25b2954c63a05788dc7d69a077b
    // Explicitly set the keyboard accessibility state on regaining key
    // window status.
    if (is_key && is_content_first_responder) {
-@@ -1715,17 +1726,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1699,17 +1710,20 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -2507,7 +2507,7 @@ index bd419e64486a063447bf4392eb77d91fbc421173..8c7fa25b2954c63a05788dc7d69a077b
    *pid = getpid();
    id element_id = GetNativeViewAccessible();
  
-@@ -1738,6 +1752,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1722,6 +1736,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    }
  
    *token = ui::RemoteAccessibility::GetTokenForLocalElement(element_id);
