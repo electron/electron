@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Thu, 2 Apr 2026 13:04:33 -0700
+Subject: Use depth when updating 3D compressed textures
+
+The depth parameter was accidentally not considered in every case when
+clearing or decompressing 3D compressed textures. This change ensures
+that the memory allocated for clearing or decompressing is large enough
+to cover all specified depth layers.
+
+Bug: 498706958
+Change-Id: Ic7cae42cf9adee07dda8754e2184a3ee988c1d09
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7727007
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+Commit-Queue: Brandon Jones <bajones@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Auto-Submit: Brandon Jones <bajones@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1609454}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index aeafafece78faa6ece837386fe170592589d1b10..3616c360b8cfb1aac50ac80572cb69586fc4ac0e 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -12211,7 +12211,7 @@ bool GLES2DecoderImpl::ClearCompressedTextureLevel3D(Texture* texture,
+ 
+   GLsizei bytes_required = 0;
+   if (!GetCompressedTexSizeInBytes("ClearCompressedTextureLevel3D", width,
+-                                   height, 1, format, &bytes_required,
++                                   height, depth, format, &bytes_required,
+                                    error_state_.get())) {
+     return false;
+   }
+@@ -12529,8 +12529,8 @@ base::HeapArray<uint8_t> DecompressTextureData(const ContextState& state,
+   auto* api = state.api();
+   uint32_t output_pixel_size = GLES2Util::ComputeImageGroupSize(
+       info.decompressed_format, info.decompressed_type);
+-  auto decompressed_data =
+-      base::HeapArray<uint8_t>::Uninit(output_pixel_size * width * height);
++  auto decompressed_data = base::HeapArray<uint8_t>::Uninit(
++      output_pixel_size * width * height * depth);
+ 
+   // If a PBO is bound, map it to decompress the data.
+   const void* input_data = data;

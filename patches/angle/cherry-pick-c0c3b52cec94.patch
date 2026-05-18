@@ -1,0 +1,214 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shrek Shao <shrekshao@google.com>
+Date: Thu, 2 Apr 2026 13:05:19 -0700
+Subject: GL: Fix heap-buffer-overflow in streamAttributes
+
+When the shiftInstancedArrayDataWithOffset workaround is
+enabled (primarily for Intel drivers on macOS), the number
+of vertices to stream is increased to account for the first
+parameter in drawArraysInstanced.
+
+However, computeStreamingAttributeSizes was not aware of this
+workaround, leading to an under-allocation of the streaming
+buffer. Additionally, the copy loop in streamAttributes used
+the increased vertex count to read from the source client
+memory.
+This resulted in a heap-buffer-overflow because the source
+buffer might only contain enough data for the original instance
+count, and the destination buffer was also too small for the
+shifted layout.
+
+This CL:
+1. Updates computeStreamingAttributeSizes to accept an
+applyExtraOffsetWorkaroundForInstancedAttributes flag and
+correctly calculate the required buffer size when the
+workaround is active.
+2. Updates streamAttributes to only copy the original number
+of vertices from the source memory in both fast and slow paths.
+3. Ensures the destination buffer layout still respects the
+increased vertex count for correct attribute spacing as required
+by the workaround.
+4. Adds a regression test
+ShiftInstancedArrayDataWithOffsetSlowPath in
+VertexAttributeTest.cpp that triggers the workaround
+and the slow path copy loop.
+
+Bug: b/497928952
+Change-Id: I4b59ceec7cf9fc301eacb5b22faa4a3b2c2c863d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7728161
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shrek Shao <shrekshao@google.com>
+Auto-Submit: Shrek Shao <shrekshao@google.com>
+
+diff --git a/src/libANGLE/renderer/gl/VertexArrayGL.cpp b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+index 489cbffbce58773ea2d497cc6f5086660b2f0e6b..f4774a5b9622f79756d8db9c139cb7940e6000c7 100644
+--- a/src/libANGLE/renderer/gl/VertexArrayGL.cpp
++++ b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+@@ -367,11 +367,13 @@ angle::Result VertexArrayGL::syncIndexData(const gl::Context *context,
+     return angle::Result::Continue;
+ }
+ 
+-void VertexArrayGL::computeStreamingAttributeSizes(const gl::AttributesMask &attribsToStream,
+-                                                   GLsizei instanceCount,
+-                                                   const gl::IndexRange &indexRange,
+-                                                   size_t *outStreamingDataSize,
+-                                                   size_t *outMaxAttributeDataSize) const
++void VertexArrayGL::computeStreamingAttributeSizes(
++    const gl::AttributesMask &attribsToStream,
++    GLsizei instanceCount,
++    const gl::IndexRange &indexRange,
++    size_t *outStreamingDataSize,
++    size_t *outMaxAttributeDataSize,
++    bool applyExtraOffsetWorkaroundForInstancedAttributes) const
+ {
+     *outStreamingDataSize    = 0;
+     *outMaxAttributeDataSize = 0;
+@@ -391,9 +393,14 @@ void VertexArrayGL::computeStreamingAttributeSizes(const gl::AttributesMask &att
+         // the attribute with the largest data size.
+         size_t typeSize        = ComputeVertexAttributeTypeSize(attrib);
+         GLuint adjustedDivisor = GetAdjustedDivisor(mAppliedNumViews, binding.getDivisor());
+-        *outStreamingDataSize +=
+-            typeSize * ComputeVertexBindingElementCount(adjustedDivisor, indexRange.vertexCount(),
+-                                                        instanceCount);
++        size_t streamedVertexCount = ComputeVertexBindingElementCount(
++            adjustedDivisor, indexRange.vertexCount(), instanceCount);
++        if (applyExtraOffsetWorkaroundForInstancedAttributes && adjustedDivisor > 0)
++        {
++            streamedVertexCount =
++                (instanceCount + indexRange.start() + adjustedDivisor - 1u) / adjustedDivisor;
++        }
++        *outStreamingDataSize += typeSize * streamedVertexCount;
+         *outMaxAttributeDataSize = std::max(*outMaxAttributeDataSize, typeSize);
+     }
+ }
+@@ -413,7 +420,8 @@ angle::Result VertexArrayGL::streamAttributes(
+     size_t maxAttributeDataSize = 0;
+ 
+     computeStreamingAttributeSizes(attribsToStream, instanceCount, indexRange, &streamingDataSize,
+-                                   &maxAttributeDataSize);
++                                   &maxAttributeDataSize,
++                                   applyExtraOffsetWorkaroundForInstancedAttributes);
+ 
+     if (streamingDataSize == 0)
+     {
+@@ -468,6 +476,7 @@ angle::Result VertexArrayGL::streamAttributes(
+             // shiftInstancedArrayDataWithOffset workaround, otherwise it's const
+             size_t streamedVertexCount = ComputeVertexBindingElementCount(
+                 adjustedDivisor, indexRange.vertexCount(), instanceCount);
++            const size_t originalStreamedVertexCount = streamedVertexCount;
+ 
+             const size_t sourceStride = ComputeVertexAttributeStride(attrib, binding);
+             const size_t destStride   = ComputeVertexAttributeTypeSize(attrib);
+@@ -491,7 +500,6 @@ angle::Result VertexArrayGL::streamAttributes(
+ 
+             if (applyExtraOffsetWorkaroundForInstancedAttributes && adjustedDivisor > 0)
+             {
+-                const size_t originalStreamedVertexCount = streamedVertexCount;
+                 streamedVertexCount =
+                     (instanceCount + indexRange.start() + adjustedDivisor - 1u) / adjustedDivisor;
+ 
+@@ -545,7 +553,7 @@ angle::Result VertexArrayGL::streamAttributes(
+             }
+             else
+             {
+-                for (size_t vertexIdx = 0; vertexIdx < streamedVertexCount; vertexIdx++)
++                for (size_t vertexIdx = 0; vertexIdx < originalStreamedVertexCount; vertexIdx++)
+                 {
+                     uint8_t *out = bufferPointer + curBufferOffset + (destStride * vertexIdx);
+                     const uint8_t *in =
+diff --git a/src/libANGLE/renderer/gl/VertexArrayGL.h b/src/libANGLE/renderer/gl/VertexArrayGL.h
+index 2b08576bbef1e6ecc92ee3bceb0f35fc29763f87..b018e80e48170664d973391bad7b52ee741f82d6 100644
+--- a/src/libANGLE/renderer/gl/VertexArrayGL.h
++++ b/src/libANGLE/renderer/gl/VertexArrayGL.h
+@@ -91,11 +91,13 @@ class VertexArrayGL : public VertexArrayImpl
+ 
+     // Returns the amount of space needed to stream all attributes that need streaming
+     // and the data size of the largest attribute
+-    void computeStreamingAttributeSizes(const gl::AttributesMask &attribsToStream,
+-                                        GLsizei instanceCount,
+-                                        const gl::IndexRange &indexRange,
+-                                        size_t *outStreamingDataSize,
+-                                        size_t *outMaxAttributeDataSize) const;
++    void computeStreamingAttributeSizes(
++        const gl::AttributesMask &attribsToStream,
++        GLsizei instanceCount,
++        const gl::IndexRange &indexRange,
++        size_t *outStreamingDataSize,
++        size_t *outMaxAttributeDataSize,
++        bool applyExtraOffsetWorkaroundForInstancedAttributes) const;
+ 
+     // Stream attributes that have client data
+     angle::Result streamAttributes(const gl::Context *context,
+diff --git a/src/tests/gl_tests/VertexAttributeTest.cpp b/src/tests/gl_tests/VertexAttributeTest.cpp
+index 37327f48eb4f8aa558da7ad45d1f6090f3c4d5b1..4c310f740895acd874753d61362912149f1ae9e3 100644
+--- a/src/tests/gl_tests/VertexAttributeTest.cpp
++++ b/src/tests/gl_tests/VertexAttributeTest.cpp
+@@ -5662,6 +5662,68 @@ void main(void)
+ #    define EMULATED_VAO_CONFIGS
+ #endif
+ 
++class VertexAttributeShiftInstancedArrayDataWithOffsetTest : public VertexAttributeTest
++{};
++
++// Regression test (crbug.com/497928952) for heap-buffer-overflow in streamAttributes() when
++// shiftInstancedArrayDataWithOffset workaround is enabled.
++TEST_P(VertexAttributeShiftInstancedArrayDataWithOffsetTest,
++       ShiftInstancedArrayDataWithOffsetSlowPath)
++{
++    // The workaround is specifically for Mac Intel, but we can enable it for this test.
++    // It is only triggered for drawArraysInstanced with first > 0.
++    // The slow path is triggered when sourceStride != destStride.
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_ANGLE_instanced_arrays") &&
++                       getClientMajorVersion() < 3);
++
++    constexpr char kVS[] = R"(attribute vec4 position;
++attribute vec4 instance;
++varying vec4 color;
++void main() {
++    gl_Position = position + instance * 0.001;
++    color = vec4(1, 0, 0, 1);
++})";
++    constexpr char kFS[] = R"(varying lowp vec4 color;
++void main() {
++    gl_FragColor = color;
++})";
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++    GLint posLoc  = glGetAttribLocation(program, "position");
++    GLint instLoc = glGetAttribLocation(program, "instance");
++
++    auto quadVertices = GetQuadVertices();
++    GLBuffer posBuf;
++    glBindBuffer(GL_ARRAY_BUFFER, posBuf);
++    glBufferData(GL_ARRAY_BUFFER, quadVertices.size() * sizeof(Vector3), quadVertices.data(),
++                 GL_STATIC_DRAW);
++    glEnableVertexAttribArray(posLoc);
++    glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
++
++    const int instanceCount = 1024;
++    const int srcStride     = 20;  // 20 bytes stride for vec4 (16 bytes) forces slow path
++    std::vector<uint8_t> instData(instanceCount * srcStride, 0);
++    GLBuffer instBuf;
++    glBindBuffer(GL_ARRAY_BUFFER, instBuf);
++    glBufferData(GL_ARRAY_BUFFER, instData.size(), instData.data(), GL_STATIC_DRAW);
++    glEnableVertexAttribArray(instLoc);
++    glVertexAttribPointer(instLoc, 4, GL_FLOAT, GL_FALSE, srcStride, nullptr);
++    glVertexAttribDivisorANGLE(instLoc, 1);
++
++    const int first = 100;
++    // This will trigger the workaround and the overflow if the fix is not present.
++    glDrawArraysInstancedANGLE(GL_TRIANGLES, first, 6, instanceCount);
++    EXPECT_GL_NO_ERROR();
++}
++
++ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(
++    VertexAttributeShiftInstancedArrayDataWithOffsetTest,
++    ES2_OPENGL().enable(Feature::ShiftInstancedArrayDataWithOffset),
++    ES2_OPENGLES().enable(Feature::ShiftInstancedArrayDataWithOffset),
++    ES3_OPENGL().enable(Feature::ShiftInstancedArrayDataWithOffset),
++    ES3_OPENGLES().enable(Feature::ShiftInstancedArrayDataWithOffset));
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND(
+     VertexAttributeTest,
+     ES2_VULKAN().enable(Feature::ForceFallbackFormat),

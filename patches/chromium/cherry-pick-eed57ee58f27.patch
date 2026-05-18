@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Tue, 7 Apr 2026 16:05:08 -0700
+Subject: gtk: Fix Use-After-Free in GtkUiPlatformWayland::OnHandleSetTransient
+
+GtkUiPlatformWayland::SetGtkWidgetTransientFor binds a raw GtkWidget*
+to an asynchronous Wayland callback. If the dialog is closed before
+the callback executes, the GtkWidget is destroyed, leading to a
+Use-After-Free when the callback dereferences it.
+
+This CL fixes the issue by using ScopedGObject to hold a strong
+reference to the GtkWidget in the callback. This ensures the widget's
+memory remains valid until the callback completes, even if it has
+been destroyed/disposed by GTK.
+
+R=thestig
+
+Change-Id: I402b18c246c9192038418f1348ff9066089917eb
+Fixed: 500033878
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7737624
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1611064}
+
+diff --git a/ui/gtk/wayland/gtk_ui_platform_wayland.cc b/ui/gtk/wayland/gtk_ui_platform_wayland.cc
+index 0550e0d0fc7ed6696bb9e5af4ece301df2d9623f..b87b35c2a344df45af04bea28b4dc2f7687777ee 100644
+--- a/ui/gtk/wayland/gtk_ui_platform_wayland.cc
++++ b/ui/gtk/wayland/gtk_ui_platform_wayland.cc
+@@ -45,7 +45,7 @@ void GtkUiPlatformWayland::SetGtkWidgetTransientFor(
+     gfx::AcceleratedWidget parent) {
+   ui::LinuxUiDelegate::GetInstance()->ExportWindowHandle(
+       parent, base::BindOnce(&GtkUiPlatformWayland::OnHandleSetTransient,
+-                             weak_factory_.GetWeakPtr(), widget));
++                             weak_factory_.GetWeakPtr(), WrapGObject(widget)));
+ }
+ 
+ void GtkUiPlatformWayland::ClearTransientFor(gfx::AcceleratedWidget parent) {
+@@ -58,8 +58,10 @@ void GtkUiPlatformWayland::ShowGtkWindow(GtkWindow* window) {
+   gtk_window_present(window);
+ }
+ 
+-void GtkUiPlatformWayland::OnHandleSetTransient(GtkWidget* widget,
+-                                                std::string handle) {
++void GtkUiPlatformWayland::OnHandleSetTransient(
++    ScopedGObject<GtkWidget> widget_ref,
++    std::string handle) {
++  GtkWidget* widget = widget_ref.get();
+   auto handle_no_prefix = base::RemovePrefix(handle, "wayland:");
+   if (!handle_no_prefix || handle_no_prefix->empty()) {
+     return;
+diff --git a/ui/gtk/wayland/gtk_ui_platform_wayland.h b/ui/gtk/wayland/gtk_ui_platform_wayland.h
+index a5b1ec690e7450f512ef25f62009f4886fccf5e2..f746cabe0ac0ebd6a94df97646474fa3fbb8b6c9 100644
+--- a/ui/gtk/wayland/gtk_ui_platform_wayland.h
++++ b/ui/gtk/wayland/gtk_ui_platform_wayland.h
+@@ -10,6 +10,7 @@
+ #include "base/functional/callback_forward.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/weak_ptr.h"
++#include "ui/base/glib/scoped_gobject.h"
+ #include "ui/gtk/gtk_ui_platform.h"
+ 
+ namespace gtk {
+@@ -36,7 +37,8 @@ class GtkUiPlatformWayland : public GtkUiPlatform {
+  private:
+   // Called when xdg-foreign exports a parent window passed in
+   // SetGtkWidgetTransientFor.
+-  void OnHandleSetTransient(GtkWidget* widget, std::string handle);
++  void OnHandleSetTransient(ScopedGObject<GtkWidget> widget_ref,
++                            std::string handle);
+ 
+   base::WeakPtrFactory<GtkUiPlatformWayland> weak_factory_{this};
+ };

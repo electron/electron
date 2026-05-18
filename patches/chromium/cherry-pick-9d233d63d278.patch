@@ -1,0 +1,333 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matt Menke <mmenke@chromium.org>
+Date: Tue, 17 Mar 2026 07:09:05 -0700
+Subject: Fix cleanup issue with NetworkContext::RevokeNetworkForNonces().
+
+Bug: 491930142
+Change-Id: Iae9b50bcd04e428ff51b8924c42c9b9ee285fec1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7662610
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Commit-Queue: mmenke <mmenke@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1600514}
+
+diff --git a/services/network/cors/cors_url_loader_factory.cc b/services/network/cors/cors_url_loader_factory.cc
+index 3dc1affaccc7109c998f48aed77506df0a0e5edb..d28291004b1c9f3e5a85b73db2c263813f4d1067 100644
+--- a/services/network/cors/cors_url_loader_factory.cc
++++ b/services/network/cors/cors_url_loader_factory.cc
+@@ -537,7 +537,7 @@ void CorsURLLoaderFactory::Clone(
+ 
+ void CorsURLLoaderFactory::DeleteIfNeeded() {
+   if (url_loaders_.empty() && cors_url_loaders_.empty() &&
+-      !owner_->HasAdditionalReferences()) {
++      !owner_->HasAdditionalReferences() && !prevent_self_deletion_) {
+     owner_->DestroyURLLoaderFactory(this);
+   }
+ }
+@@ -1004,6 +1004,8 @@ net::handles::NetworkHandle CorsURLLoaderFactory::GetBoundNetworkForTesting()
+ void CorsURLLoaderFactory::CancelRequestsIfNonceMatchesAndUrlNotExempted(
+     const base::UnguessableToken& nonce,
+     const std::set<GURL>& exemptions) {
++  CHECK(!prevent_self_deletion_);
++  prevent_self_deletion_ = true;
+   auto iterate_over_set = [&nonce, &exemptions](auto& url_loaders) {
+     // Cancelling the request may cause the URL loader to be deleted from the
+     // data structure, invalidating the iterator if it is currently pointing to
+@@ -1019,6 +1021,8 @@ void CorsURLLoaderFactory::CancelRequestsIfNonceMatchesAndUrlNotExempted(
+ 
+   iterate_over_set(url_loaders_);
+   iterate_over_set(cors_url_loaders_);
++  prevent_self_deletion_ = false;
++  DeleteIfNeeded();
+ }
+ 
+ }  // namespace network::cors
+diff --git a/services/network/cors/cors_url_loader_factory.h b/services/network/cors/cors_url_loader_factory.h
+index 007fa6e6f2d9cdc0e2750f4ac0e6d65371246160..af2c2b79d263d9ea2a1ca3137b154a827cf83d8a 100644
+--- a/services/network/cors/cors_url_loader_factory.h
++++ b/services/network/cors/cors_url_loader_factory.h
+@@ -96,7 +96,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CorsURLLoaderFactory final
+ 
+   // If there are no active loaders and the `owner_` has no remaining external
+   // references (Mojo bindings), requests the owner to destroy this factory
+-  // instance.
++  // instance. Will not delete `this` if `prevent_self_deletion_` is true.
+   void DeleteIfNeeded();
+ 
+   // Exposed for use by PrefetchMatchingURLLoaderFactory.
+@@ -140,6 +140,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CorsURLLoaderFactory final
+   // Cancels all requests matching `nonce` associated with this factory, unless
+   // exempted by a url in `exemptions`. Used to cancel in-progress requests
+   // when network revocation is triggered.
++  //
++  // Note that this may delete `this`.
+   void CancelRequestsIfNonceMatchesAndUrlNotExempted(
+       const base::UnguessableToken& nonce,
+       const std::set<GURL>& exemptions);
+@@ -235,6 +237,22 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CorsURLLoaderFactory final
+ 
+   base::MetricsSubSampler metrics_subsampler_;
+ 
++  // Prevents DeleteIfNeeded() from deleting `this`. Useful for aggregate
++  // operations that walk through all URLLoaders and may delete more than one of
++  // them.
++  //
++  // To use:
++  // * Set to true.
++  // * Walk through loaders, deleting as needed.
++  // * Set to false.
++  // * Call DeleteIfNeeded(), which may delete `this` if all loaders were
++  // deleted.
++  //
++  // If more consumers use this pattern, we could make a helper class that works
++  // like base::AutoReset which sets it to true on construction, and then sets
++  // it to false and calls DeleteIfNeeded() in its destructor.
++  bool prevent_self_deletion_ = false;
++
+   std::optional<base::UnguessableToken> network_restrictions_id_;
+ };
+ 
+diff --git a/services/network/network_context.cc b/services/network/network_context.cc
+index c38a2f62a67bd970bf2862c229cfc04427aa28b7..ff4b0ca49a99ba1d901bc9a9d0fb453d038b77bb 100644
+--- a/services/network/network_context.cc
++++ b/services/network/network_context.cc
+@@ -3624,7 +3624,13 @@ void NetworkContext::RevokeNetworkForNonces(
+     // connection allowlist since there should not be any ongoing
+     // requests.
+     const std::set<GURL>& exemptions = network_revocation_exemptions_[nonce];
+-    for (const auto& factory : url_loader_factories_) {
++    // Destroying all of a factory's URLLoaders may delete the factory,
++    // invalidating the iterator, so have to advance the iterator before calling
++    // CancelRequestsIfNonceMatchesAndUrlNotExempted().
++    for (auto factory_it = url_loader_factories_.begin();
++         factory_it != url_loader_factories_.end();) {
++      auto* factory = factory_it->get();
++      ++factory_it;
+       factory->CancelRequestsIfNonceMatchesAndUrlNotExempted(nonce, exemptions);
+     }
+ #if BUILDFLAG(ENABLE_WEBSOCKETS)
+diff --git a/services/network/network_context_unittest.cc b/services/network/network_context_unittest.cc
+index d15fa421d98c2a8105a5f8ad5f122e80b4d28106..fb1584c2ccc2abd7d33d58e9820670dbd0a7be01 100644
+--- a/services/network/network_context_unittest.cc
++++ b/services/network/network_context_unittest.cc
+@@ -9739,6 +9739,221 @@ TEST_F(NetworkContextTest,
+   EXPECT_EQ(client.completion_status().error_code, net::OK);
+ }
+ 
++// Test the case where a URLLoaderFactory has no live pipes, and
++// RevokeNetworkForNonces() cancels all its URLLoaders, which may cause the
++// factory to be destroyed. This should not result in a UAF.
++TEST_F(NetworkContextTest, RevokeNetworkForNoncesUrlLoaderFactoryWithNoPipes) {
++  net::EmbeddedTestServer test_server;
++  net::test_server::RegisterDefaultHandlers(&test_server);
++  ASSERT_TRUE(test_server.Start());
++
++  std::unique_ptr<NetworkContext> network_context =
++      CreateContextWithParams(CreateNetworkContextParamsForTesting());
++
++  const base::UnguessableToken nonce = base::UnguessableToken::Create();
++  ResourceRequest request;
++  GURL test_url = test_server.GetURL("/hung");
++  request.url = test_url;
++  request.permissions_policy =
++      *CreateStorageAccessPermissionsPolicy(request.url);
++
++  mojo::Remote<mojom::URLLoaderFactory> loader_factory;
++  mojom::URLLoaderFactoryParamsPtr params =
++      mojom::URLLoaderFactoryParams::New();
++  params->process_id = OriginatingProcessId::browser();
++  params->is_orb_enabled = false;
++  params->isolation_info = net::IsolationInfo::CreateTransient(nonce);
++  HangingTestURLLoaderHeaderClient header_client(
++      params->header_client.InitWithNewPipeAndPassReceiver());
++  network_context->CreateURLLoaderFactory(
++      loader_factory.BindNewPipeAndPassReceiver(), std::move(params));
++
++  mojo::PendingRemote<mojom::URLLoader> loader;
++  TestURLLoaderClient client;
++  loader_factory->CreateLoaderAndStart(
++      loader.InitWithNewPipeAndPassReceiver(), 0 /* request_id */,
++      mojom::kURLLoadOptionUseHeaderClient, request, client.CreateRemote(),
++      net::MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS));
++
++  // Wait for OnBeforeSendHeaders.
++  header_client.WaitForOnBeforeSendHeaders();
++
++  // Close the URLLoaderFactory pipe.
++  loader_factory.reset();
++  // Unfortunately, can't flush a closed pipe to make sure the close message was
++  // received, can only spin the message loop to wait for the message to be
++  // received.
++  base::RunLoop().RunUntilIdle();
++
++  // Revoke network access for the nonce.
++  base::test::TestFuture<void> revoked;
++  auto revoked_nonce_pattern = CreateNonceAndAllowlistedPatterns(nonce);
++  std::vector<network::mojom::NonceAndAllowlistedPatternsPtr> nonces_to_urls;
++  nonces_to_urls.push_back(std::move(revoked_nonce_pattern));
++  network_context->RevokeNetworkForNonces(
++      std::move(nonces_to_urls), base::BindOnce(revoked.GetCallback()));
++  EXPECT_TRUE(revoked.Wait());
++
++  // Continue sending headers.
++  header_client.CallOnBeforeSendHeadersCallback();
++
++  // Run the request to completion.
++  client.RunUntilComplete();
++
++  // The request should have been cancelled due to network revocation.
++  EXPECT_EQ(client.completion_status().error_code,
++            net::ERR_NETWORK_ACCESS_REVOKED);
++}
++
++// Test the case where a URLLoaderFactory has no live pipes, and
++// RevokeNetworkForNonces() destroys all its URLLoaders, which may cause the
++// factory to be destroyed it. This should not result in a UAF. This test is
++// different from the one above in that there is a live CorsURLLoader, but no
++// URLLoaders (which have very different deletion logic).
++TEST_F(NetworkContextTest,
++       RevokeNetworkForNoncesUrlLoaderFactoryWithNoPipesCorsUrlLoaderOnly) {
++  std::unique_ptr<NetworkContext> network_context =
++      CreateContextWithParams(CreateNetworkContextParamsForTesting());
++
++  const base::UnguessableToken nonce = base::UnguessableToken::Create();
++  ResourceRequest request;
++  request.url = GURL("https://a.test/");
++  request.permissions_policy =
++      *CreateStorageAccessPermissionsPolicy(request.url);
++
++  mojo::Remote<mojom::URLLoaderFactory> loader_factory;
++  mojom::URLLoaderFactoryParamsPtr params =
++      mojom::URLLoaderFactoryParams::New();
++  params->process_id = OriginatingProcessId::browser();
++  params->is_orb_enabled = false;
++  params->isolation_info = net::IsolationInfo::CreateTransient(nonce);
++
++  // Inject a URLLoaderFactoryOverride that just hangs. This will result in
++  // creating CorsURLLoaders which hang when they try to start URLLoaders.
++  auto url_loader_factory_override = mojom::URLLoaderFactoryOverride::New();
++  mojo::PendingReceiver<network::mojom::URLLoaderFactory>
++      loader_factory_receiver;
++  url_loader_factory_override->overriding_factory =
++      loader_factory_receiver.InitWithNewPipeAndPassRemote();
++  params->factory_override = std::move(url_loader_factory_override);
++
++  HangingTestURLLoaderHeaderClient header_client(
++      params->header_client.InitWithNewPipeAndPassReceiver());
++  network_context->CreateURLLoaderFactory(
++      loader_factory.BindNewPipeAndPassReceiver(), std::move(params));
++
++  // Create a CorsURLLoader.
++  mojo::Remote<mojom::URLLoader> loader;
++  TestURLLoaderClient client;
++  loader_factory->CreateLoaderAndStart(
++      loader.BindNewPipeAndPassReceiver(), 0 /* request_id */,
++      mojom::kURLLoadOptionUseHeaderClient, request, client.CreateRemote(),
++      net::MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS));
++
++  // Wait for the request to make it across the Mojo pie.
++  loader.FlushForTesting();
++
++  // Close the URLLoaderFactory pipe.
++  loader_factory.reset();
++  // Unfortunately, can't flush a closed pipe to make sure the close message was
++  // received, can only spin the message loop to wait for the message to be
++  // received.
++  base::RunLoop().RunUntilIdle();
++
++  // Revoke network access for the nonce.
++  base::test::TestFuture<void> revoked;
++  auto revoked_nonce_pattern = CreateNonceAndAllowlistedPatterns(nonce);
++  std::vector<network::mojom::NonceAndAllowlistedPatternsPtr> nonces_to_urls;
++  nonces_to_urls.push_back(std::move(revoked_nonce_pattern));
++  network_context->RevokeNetworkForNonces(
++      std::move(nonces_to_urls), base::BindOnce(revoked.GetCallback()));
++  EXPECT_TRUE(revoked.Wait());
++
++  // Run the request to completion.
++  client.RunUntilComplete();
++
++  // The request should have been cancelled due to network revocation.
++  EXPECT_EQ(client.completion_status().error_code,
++            net::ERR_NETWORK_ACCESS_REVOKED);
++}
++
++// Test the case where a URLLoaderFactory has no live pipes, and
++// RevokeNetworkForNonces() destroys all its URLLoaders, which may cause the
++// factory to be destroyed it. This should not result in a UAF. This test is
++// different from the ones above in that there is a live URLLoader, but no
++// CorsURLLoaders (which have very different deletion logic).
++TEST_F(NetworkContextTest,
++       RevokeNetworkForNoncesUrlLoaderFactoryWithNoPipesNonCorsUrlLoaderOnly) {
++  std::unique_ptr<NetworkContext> network_context =
++      CreateContextWithParams(CreateNetworkContextParamsForTesting());
++
++  const base::UnguessableToken nonce = base::UnguessableToken::Create();
++  ResourceRequest request;
++  request.url = GURL("https://a.test/");
++  request.permissions_policy =
++      *CreateStorageAccessPermissionsPolicy(request.url);
++
++  mojo::Remote<mojom::URLLoaderFactory> loader_factory;
++  mojom::URLLoaderFactoryParamsPtr params =
++      mojom::URLLoaderFactoryParams::New();
++  params->process_id = OriginatingProcessId::browser();
++  params->is_orb_enabled = false;
++  params->isolation_info = net::IsolationInfo::CreateTransient(nonce);
++
++  auto url_loader_factory_override = mojom::URLLoaderFactoryOverride::New();
++  // Getet the underling URLLoaderFactory to use directly, bypassing the
++  // CorsURLLoaderFactory.
++  mojo::Remote<network::mojom::URLLoaderFactory> non_cors_factory;
++  url_loader_factory_override->overridden_factory_receiver =
++      non_cors_factory.BindNewPipeAndPassReceiver();
++  // Also inject a dummy URLLoaderFactoryOverride. It will not be used.
++  mojo::PendingReceiver<network::mojom::URLLoaderFactory>
++      loader_factory_receiver;
++  url_loader_factory_override->overriding_factory =
++      loader_factory_receiver.InitWithNewPipeAndPassRemote();
++  params->factory_override = std::move(url_loader_factory_override);
++
++  HangingTestURLLoaderHeaderClient header_client(
++      params->header_client.InitWithNewPipeAndPassReceiver());
++  network_context->CreateURLLoaderFactory(
++      loader_factory.BindNewPipeAndPassReceiver(), std::move(params));
++
++  // Create a non-CORS URLLoader.
++  mojo::Remote<mojom::URLLoader> loader;
++  TestURLLoaderClient client;
++  non_cors_factory->CreateLoaderAndStart(
++      loader.BindNewPipeAndPassReceiver(), 0 /* request_id */,
++      mojom::kURLLoadOptionUseHeaderClient, request, client.CreateRemote(),
++      net::MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS));
++
++  // Wait for the request to make it across the Mojo pie.
++  loader.FlushForTesting();
++
++  // Close both the URLLoaderFactory pipes. Have to close the CORS one as well,
++  // as it's the one that actually owns the non-CORS URLLoaders.
++  non_cors_factory.reset();
++  loader_factory.reset();
++  // Unfortunately, can't flush a closed pipe to make sure the close messages
++  // were received, can only spin the message loop to wait for that to happen.
++  base::RunLoop().RunUntilIdle();
++
++  // Revoke network access for the nonce.
++  base::test::TestFuture<void> revoked;
++  auto revoked_nonce_pattern = CreateNonceAndAllowlistedPatterns(nonce);
++  std::vector<network::mojom::NonceAndAllowlistedPatternsPtr> nonces_to_urls;
++  nonces_to_urls.push_back(std::move(revoked_nonce_pattern));
++  network_context->RevokeNetworkForNonces(
++      std::move(nonces_to_urls), base::BindOnce(revoked.GetCallback()));
++  EXPECT_TRUE(revoked.Wait());
++
++  // Run the request to completion.
++  client.RunUntilComplete();
++
++  // The request should have been cancelled due to network revocation.
++  EXPECT_EQ(client.completion_status().error_code,
++            net::ERR_NETWORK_ACCESS_REVOKED);
++}
++
+ TEST_F(NetworkContextTest, RevokeNetworkForNoncesCancelsPreconnectRequests) {
+   std::unique_ptr<NetworkContext> network_context =
+       CreateContextWithParams(CreateNetworkContextParamsForTesting());
