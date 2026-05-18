@@ -83,12 +83,9 @@ See the [Mac App Store Guide][].
 [Azure Artifact Signing][] (formerly known as Azure Trusted Signing) is Microsoft's modern cloud-based signing service.
 It is the cheapest option for code signing on Windows, and it gets rid of SmartScreen warnings.
 
-As of May 2026, Azure Artifact Signing's [Public Trust model](https://learn.microsoft.com/en-us/azure/artifact-signing/concept-trust-models)
-is available to organizations in the USA, Canada, European Union, and United Kingdom, and to individual developers in the US and Canada.
-Microsoft is looking to make the program more widely available.
-
-See Microsoft's [Artifact Signing prerequisites](https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart#prerequisites)
-for updated information.
+Azure Artifact Signing is currently limited to developers in certain countries. Please refer to the
+[Artifact Signing documentation](https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart#prerequisites)
+to see if Artifact Signing is available in your country.
 
 #### Using `jsign` for Azure Artifact Signing
 
