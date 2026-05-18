@@ -10,9 +10,10 @@ declare const binding: {
   get: (name: string) => any;
   process: NodeJS.Process;
   createPreloadScript: (scriptId: string, paramNames: string[]) => Function | null;
-  // Pushed by the browser via mojom.ElectronWorkerStartup at
-  // RenderProcessReady(), before any StartWorker IPC could spawn a worker
-  // thread — always present when this bundle runs.
+  // Delivered by the browser via the service worker's EmbeddedWorkerStartParams
+  // (ContentBrowserClient::GetServiceWorkerStartupData), marshalled onto the
+  // worker thread with the rest of the start params — always present when this
+  // bundle runs.
   startupData: {
     preloadScripts: ElectronInternal.PreloadScript[];
     process: NodeJS.Process;

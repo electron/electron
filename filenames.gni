@@ -741,8 +741,6 @@ filenames = {
     "shell/renderer/electron_ipc_native.h",
     "shell/renderer/electron_render_frame_observer.cc",
     "shell/renderer/electron_render_frame_observer.h",
-    "shell/renderer/electron_render_thread_observer.cc",
-    "shell/renderer/electron_render_thread_observer.h",
     "shell/renderer/electron_renderer_client.cc",
     "shell/renderer/electron_renderer_client.h",
     "shell/renderer/electron_sandboxed_renderer_client.cc",

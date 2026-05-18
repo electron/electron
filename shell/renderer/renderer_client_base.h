@@ -34,8 +34,6 @@ class ExtensionsClient;
 
 namespace electron {
 
-class ElectronRenderThreadObserver;
-
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsRendererClient;
 #endif
@@ -160,7 +158,6 @@ class RendererClientBase : public content::ContentRendererClient
 
   // Receives the per-process service-worker startup data push from the
   // browser, replacing the BROWSER_SANDBOX_LOAD sync IPC for SW preload realms.
-  std::unique_ptr<ElectronRenderThreadObserver> render_thread_observer_;
 
   std::string renderer_client_id_;
   // An increasing ID used for identifying an V8 context in this process.

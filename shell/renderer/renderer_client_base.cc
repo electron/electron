@@ -36,7 +36,6 @@
 #include "shell/renderer/content_settings_observer.h"
 #include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_autofill_agent.h"
-#include "shell/renderer/electron_render_thread_observer.h"
 #include "shell/renderer/oom_stack_trace.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
@@ -220,12 +219,6 @@ bool RendererClientBase::ShouldLoadPreload(
 
 void RendererClientBase::RenderThreadStarted() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
-
-  // Register the per-process startup-data receiver before any service worker
-  // can start. The browser pushes the SW preload set + process info over this
-  // observer's associated interface at RenderProcessReady().
-  render_thread_observer_ = std::make_unique<ElectronRenderThreadObserver>();
-  content::RenderThread::Get()->AddObserver(render_thread_observer_.get());
 
   // Enable MessagePort close event by default.
   // The feature got reverted from stable to test in

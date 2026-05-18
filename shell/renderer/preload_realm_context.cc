@@ -5,14 +5,15 @@
 #include "shell/renderer/preload_realm_context.h"
 
 #include "base/command_line.h"
+#include "base/containers/span.h"
 #include "base/process/process.h"
 #include "base/process/process_metrics.h"
+#include "mojo/public/cpp/base/big_buffer.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
-#include "shell/renderer/electron_render_thread_observer.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
 #include "third_party/blink/renderer/bindings/core/v8/script_controller.h"  // nogncheck
@@ -174,13 +175,21 @@ class PreloadRealmLifetimeController
 
     gin_helper::Dictionary b(isolate, binding);
     b.SetMethod("get", preload_utils::GetBinding);
-    // The browser pushed the service-worker preload set + process info via the
-    // per-process ElectronWorkerStartup channel at RenderProcessReady() —
-    // before any StartWorker IPC could have spawned this thread. Capture it
-    // once on the ServiceWorkerData so createPreloadScript can look up preload
-    // contents and code caches without marshaling them through V8.
-    service_worker_data_->SetWorkerStartupData(
-        ElectronRenderThreadObserver::GetWorkerStartupData());
+    // The browser attached the service-worker preload set + process info to
+    // this worker's EmbeddedWorkerStartParams (see
+    // ContentBrowserClient::GetServiceWorkerStartupData); Chromium marshalled
+    // it onto the worker thread with the rest of the start params, ordered
+    // with worker creation. Deserialize and capture it once on the
+    // ServiceWorkerData so createPreloadScript can look up preload contents
+    // and code caches without marshaling them through V8.
+    if (const std::optional<mojo_base::BigBuffer>& blob =
+            service_worker_data_->proxy()->ElectronPreloadData()) {
+      mojom::RendererStartupDataPtr data;
+      if (mojom::RendererStartupData::Deserialize(
+              base::span<const uint8_t>(*blob), &data)) {
+        service_worker_data_->SetWorkerStartupData(std::move(data));
+      }
+    }
     // No RenderFrame in the SW preload realm — no per-frame cache lookup or
     // ship-back channel — but contents are still looked up from the captured
     // worker startup data instead of crossing the V8 boundary.

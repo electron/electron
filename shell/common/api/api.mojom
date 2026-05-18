@@ -9,8 +9,6 @@ import "third_party/blink/public/mojom/messaging/transferable_message.mojom";
 // document that needs it.
 struct PreloadScriptData {
   string id;
-  // 'frame' or 'service-worker'.
-  string type;
   string file_path;
   // UTF-8 contents. array<uint8> rather than BigBuffer so RendererStartupData
   // can be flat-serialized into an opaque blob for the CreateNewWindowReply
@@ -38,13 +36,6 @@ struct RendererStartupData {
 // SetStartupData() arrives before the CommitNavigation that follows it.
 interface ElectronFrameStartup {
   SetStartupData(RendererStartupData data);
-};
-
-// Per-process associated interface. The browser pushes the service-worker
-// preload set at RenderProcessReady(), and re-pushes when SW preloads are
-// registered/unregistered while the process is alive.
-interface ElectronWorkerStartup {
-  SetWorkerStartupData(RendererStartupData data);
 };
 
 interface ElectronRenderer {

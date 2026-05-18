@@ -17,12 +17,13 @@ scripts, environment, code caches) that the embedder may have customized
 for the new window during CreateNewWindow.
 
 Add an opaque BigBuffer field to CreateNewWindowReply, populated via a
-new ContentBrowserClient::GetExtraCreateNewWindowReplyData() hook (only
-called when target_url is empty — windows that navigate get the data
-through the normal navigation flow), and consumed via a new
-ContentRendererClient::SetPendingCreateNewWindowStartupData() hook
-called before the new RenderFrame is created so it can be picked up by
-RenderFrameCreated() on the same call stack.
+new ContentBrowserClient::GetExtraCreateNewWindowReplyData() hook (called
+unconditionally; the embedder decides whether to return data — Electron
+returns it only for windows that stay on about:blank, since a window
+that navigates gets the data through the normal navigation flow), and
+consumed via a new ContentRendererClient::SetPendingCreateNewWindowStartupData()
+hook called before the new RenderFrame is created so it can be picked up
+by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
 index 6b457850b76db7c8e10c80482cb420e5a62ad367..66e4fd62514df76aeb526ec183b920f155946817 100644

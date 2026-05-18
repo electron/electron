@@ -737,16 +737,21 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
   // DidCreateScriptContext — and runs the preload — before any async push can
   // land. We've just run setWindowOpenHandler so the popup's WebContents has
   // its (possibly overridden) preload set; attach it to the reply.
+  //
+  // Only the about:blank document needs this. A popup that navigates
+  // (window.open(url)) does not run the preload on its initial document and
+  // gets a normal ElectronFrameStartup push at ReadyToCommitNavigation, so
+  // building the data here for it would be pure waste.
+  if (!target_url.is_empty() && !target_url.IsAboutBlank())
+    return std::nullopt;
+
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(new_window_main_frame);
   if (!web_contents)
     return std::nullopt;
-  auto* web_prefs = WebContentsPreferences::From(web_contents);
-  const bool browser_force_sandbox =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kEnableSandbox);
-  if (!browser_force_sandbox && web_prefs && !web_prefs->IsSandboxed())
+  if (!WebContentsPreferences::ShouldUseSandbox(web_contents))
     return std::nullopt;
+  auto* web_prefs = WebContentsPreferences::From(web_contents);
 
   mojom::RendererStartupDataPtr data;
   {
@@ -759,7 +764,6 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
     if (preload && preload->IsAbsolute()) {
       auto ps = mojom::PreloadScriptData::New();
       ps->id = "preload-" + preload->AsUTF8Unsafe();
-      ps->type = "frame";
       ps->file_path = preload->AsUTF8Unsafe();
       std::string contents;
       if (asar::ReadFileToString(*preload, &contents)) {
@@ -776,6 +780,26 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
     }
   }
   // Opaque blob — Chromium can't depend on Electron's mojom types.
+  return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
+}
+
+std::optional<mojo_base::BigBuffer>
+ElectronBrowserClient::GetServiceWorkerStartupData(
+    content::BrowserContext* browser_context,
+    const GURL& scope) {
+  // Only the service-worker preload realm consumes this, and it's only created
+  // when SW preloads are registered. Skip the asar reads + serialization
+  // otherwise — this runs on every service worker start.
+  auto* session_prefs = SessionPreferences::FromBrowserContext(browser_context);
+  if (!session_prefs || !session_prefs->HasServiceWorkerPreloadScript())
+    return std::nullopt;
+
+  mojom::RendererStartupDataPtr data;
+  {
+    ScopedAllowBlockingForElectron allow_blocking;
+    data = renderer_startup_data::Build(
+        browser_context, PreloadScript::ScriptType::kServiceWorker);
+  }
   return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
 }
 
@@ -962,9 +986,6 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
 
 void ElectronBrowserClient::RenderProcessReady(
     content::RenderProcessHost* host) {
-  // Push SW preload set + process info before any StartWorker IPC.
-  renderer_startup_data::SendToProcess(host);
-
   if (delegate_) {
     static_cast<api::App*>(delegate_)->RenderProcessReady(host);
   }

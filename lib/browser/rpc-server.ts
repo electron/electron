@@ -49,8 +49,9 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, function (event, me
 });
 
 // Sandboxed renderers receive their preload scripts and process info via the
-// browser-pushed ElectronFrameStartup / ElectronWorkerStartup mojo interfaces
-// (see electron_api_web_contents.cc and renderer_startup_data.cc), not over
+// browser-pushed ElectronFrameStartup mojo interface for frames, or
+// EmbeddedWorkerStartParams for service workers (see
+// electron_api_web_contents.cc and electron_browser_client.cc), not over
 // sync IPC. This handler is only used by non-sandboxed renderers, which read
 // their own preload files from disk and only need the path list.
 ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD, function (event) {

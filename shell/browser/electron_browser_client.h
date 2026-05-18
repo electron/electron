@@ -195,6 +195,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::optional<mojo_base::BigBuffer> GetExtraCreateNewWindowReplyData(
       content::RenderFrameHost* new_window_main_frame,
       const GURL& target_url) override;
+  std::optional<mojo_base::BigBuffer> GetServiceWorkerStartupData(
+      content::BrowserContext* browser_context,
+      const GURL& scope) override;
   std::unique_ptr<content::VideoOverlayWindow>
   CreateWindowForVideoPictureInPicture(
       content::VideoPictureInPictureWindowController* controller) override;

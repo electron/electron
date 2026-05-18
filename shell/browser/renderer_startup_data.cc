@@ -11,11 +11,7 @@
 #include "base/numerics/safe_conversions.h"
 #include "base/path_service.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/render_process_host.h"
 #include "content/public/common/content_paths.h"
-#include "ipc/ipc_channel_proxy.h"
-#include "mojo/public/cpp/base/big_buffer.h"
-#include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/preload_code_cache.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/asar/asar_util.h"
@@ -66,9 +62,6 @@ mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
         continue;
       auto ps = mojom::PreloadScriptData::New();
       ps->id = script.id;
-      ps->type = type == PreloadScript::ScriptType::kWebFrame
-                     ? "frame"
-                     : "service-worker";
       ps->file_path = script.file_path.AsUTF8Unsafe();
       std::string contents;
       if (asar::ReadFileToString(script.file_path, &contents)) {
@@ -89,27 +82,6 @@ mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
   data->environment = CaptureBrowserEnvironment();
   data->helper_exec_path = GetHelperExecPath().AsUTF8Unsafe();
   return data;
-}
-
-void SendToProcess(content::RenderProcessHost* host) {
-  if (!host || !host->IsInitializedAndNotDead())
-    return;
-  // The renderer's GetWorkerStartupData() early-returns null when launched
-  // without --service-worker-preload, so a push to such a renderer is cached
-  // but never read — cheap and harmless. Pushing unconditionally keeps the
-  // re-push path on registry changes simple and correct.
-  IPC::ChannelProxy* channel = host->GetChannel();
-  if (!channel)
-    return;
-  mojom::RendererStartupDataPtr data;
-  {
-    ScopedAllowBlockingForElectron allow_blocking;
-    data = Build(host->GetBrowserContext(),
-                 PreloadScript::ScriptType::kServiceWorker);
-  }
-  mojo::AssociatedRemote<mojom::ElectronWorkerStartup> remote;
-  channel->GetRemoteAssociatedInterface(&remote);
-  remote->SetWorkerStartupData(std::move(data));
 }
 
 }  // namespace electron::renderer_startup_data
