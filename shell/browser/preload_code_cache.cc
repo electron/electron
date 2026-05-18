@@ -15,16 +15,21 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/task/thread_pool.h"
 #include "chrome/common/chrome_paths.h"
+#include "content/public/browser/browser_thread.h"
 #include "crypto/hash.h"
 
 namespace electron::preload_code_cache {
 
 namespace {
 
-// In-memory tier (UI thread only). The optional<> memoizes a disk miss so
-// it isn't re-tried per navigation.
+// In-memory tier. The optional<> memoizes a disk miss so it isn't re-tried
+// per navigation. UI-thread only: both Get() (from the navigation push paths)
+// and Set() (from the ElectronWebContentsUtility associated receiver on the
+// RenderFrameHost) are dispatched on the UI thread, so the map needs no lock
+// and concurrent SetPreloadCodeCache messages can't race it.
 using Cache = base::flat_map<std::string, std::optional<std::vector<uint8_t>>>;
 Cache& GetMemoryCache() {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   static base::NoDestructor<Cache> cache;
   return *cache;
 }
@@ -71,13 +76,23 @@ std::vector<uint8_t> Get(const std::string& id) {
 void Set(const std::string& id, base::span<const uint8_t> blob) {
   if (blob.empty())
     return;
+  // No first-writer-wins guard: Set() must always overwrite. Get() memoizes
+  // whatever is on disk *including a corrupt blob* (only V8 in the renderer
+  // can validate it), so a renderer that rejected a stale/corrupt cache and
+  // re-produced a good one calls Set() to self-heal — skipping that because
+  // the memoized entry is "non-empty" would pin the bad cache forever. The
+  // duplicate-ship case (two renderers, same preload, first launch) just
+  // writes identical bytes twice; harmless and rare, and Set() is UI-thread
+  // serialized so it's not a data race.
   std::vector<uint8_t> data(blob.begin(), blob.end());
   GetMemoryCache().insert_or_assign(id, data);
   // Fire-and-forget; a lost write just costs one cold compile next launch.
+  // SKIP_ON_SHUTDOWN so an in-flight write finishes (no torn cache file)
+  // rather than being abandoned mid-write during teardown.
   base::ThreadPool::PostTask(
       FROM_HERE,
       {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
-       base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
+       base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
       base::BindOnce(&WriteToDisk, PathForId(id), std::move(data)));
 }
 

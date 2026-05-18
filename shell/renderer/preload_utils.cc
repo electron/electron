@@ -85,7 +85,7 @@ namespace {
 
 // Looks up a preload's contents and code cache from the mojo-cached startup
 // data so they can be consumed directly without entering V8.
-const mojom::PreloadScriptDataPtr* LookupPreloadScript(
+const mojom::PreloadScriptData* LookupPreloadScript(
     content::RenderFrame* render_frame,
     ServiceWorkerData* service_worker_data,
     const std::string& script_id) {
@@ -100,7 +100,7 @@ const mojom::PreloadScriptDataPtr* LookupPreloadScript(
     return nullptr;
   for (const auto& ps : (*data)->preload_scripts) {
     if (ps->id == script_id)
-      return &ps;
+      return ps.get();
   }
   return nullptr;
 }
@@ -114,19 +114,22 @@ v8::Local<v8::Value> CreatePreloadScript(
     const std::string& script_id,
     const std::vector<std::string>& param_name_strings) {
   auto context = isolate->GetCurrentContext();
+
+  // Contents/cache stay in native buffers; only the single NewFromUtf8 copy
+  // for the compile touches V8.
+  const mojom::PreloadScriptData* ps =
+      LookupPreloadScript(render_frame, service_worker_data, script_id);
+  if (!ps)
+    return {};
+
+  // Converted only after the lookup succeeds — a missing script bails above
+  // without paying for the V8 string conversions.
   std::vector<v8::Local<v8::String>> param_names;
   param_names.reserve(param_name_strings.size());
   for (const auto& n : param_name_strings)
     param_names.push_back(gin::StringToV8(isolate, n));
 
-  // Contents/cache stay in native buffers; only the single NewFromUtf8 copy
-  // for the compile touches V8.
-  const mojom::PreloadScriptDataPtr* ps =
-      LookupPreloadScript(render_frame, service_worker_data, script_id);
-  if (!ps)
-    return {};
-
-  base::span<const uint8_t> contents = (*ps)->contents;
+  base::span<const uint8_t> contents = ps->contents;
   v8::Local<v8::String> body;
   if (!v8::String::NewFromUtf8(
            isolate, reinterpret_cast<const char*>(contents.data()),
@@ -136,8 +139,8 @@ v8::Local<v8::Value> CreatePreloadScript(
   }
 
   std::unique_ptr<v8::ScriptCompiler::CachedData> cached_data;
-  if ((*ps)->code_cache) {
-    base::span<const uint8_t> cache = *(*ps)->code_cache;
+  if (ps->code_cache) {
+    base::span<const uint8_t> cache = *ps->code_cache;
     cached_data = std::make_unique<v8::ScriptCompiler::CachedData>(
         cache.data(), base::checked_cast<int>(cache.size()),
         v8::ScriptCompiler::CachedData::BufferNotOwned);
@@ -146,7 +149,7 @@ v8::Local<v8::Value> CreatePreloadScript(
   // ScriptOrigin gives stack traces the real file path instead of <anonymous>.
   // It's metadata, not part of V8's CachedData hash. Source takes ownership of
   // cached_data.
-  v8::ScriptOrigin origin(gin::StringToV8(isolate, (*ps)->file_path));
+  v8::ScriptOrigin origin(gin::StringToV8(isolate, ps->file_path));
   v8::ScriptCompiler::Source compiler_source(body, origin,
                                              cached_data.release());
   auto options = had_cache ? v8::ScriptCompiler::kConsumeCodeCache
@@ -245,7 +248,6 @@ v8::MaybeLocal<v8::Value> BuildStartupData(
   for (const auto& ps : data->preload_scripts) {
     auto entry = gin_helper::Dictionary::CreateEmpty(isolate);
     entry.Set("id", ps->id);
-    entry.Set("type", ps->type);
     entry.Set("filePath", ps->file_path);
     // The contents are not marshaled to V8 — createPreloadScript() looks them
     // up from the mojo-cached startup data by id, avoiding a ~150 KB heap

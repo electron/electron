@@ -42,8 +42,9 @@ v8::Local<v8::Value> CreatePreloadScript(
 
 double Uptime();
 
-// Converts the startup data the browser pushed (via ElectronFrameStartup or
-// ElectronWorkerStartup) into the `{ preloadScripts, process }` shape that
+// Converts the startup data the browser delivered (via ElectronFrameStartup
+// for frames, or EmbeddedWorkerStartParams for service workers) into the
+// `{ preloadScripts, process }` shape that
 // lib/sandboxed_renderer/init.ts and lib/preload_realm/init.ts expect — the
 // same shape the legacy BROWSER_SANDBOX_LOAD sync IPC returned. Returns an
 // empty MaybeLocal when |data| is null.

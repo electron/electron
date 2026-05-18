@@ -53,18 +53,11 @@ class ElectronApiServiceImpl
   void SetStartupData(mojom::RendererStartupDataPtr data) override;
 
   // The data pushed by the browser ahead of CommitNavigation, or null if it
-  // has not arrived yet (e.g. for the initial empty document of a fresh
-  // RenderFrame, or if the message raced the navigation). Callers must handle
-  // the null case by falling back to the legacy sync IPC.
+  // has not arrived (the initial empty document of a fresh RenderFrame, or a
+  // document that doesn't run the sandbox bundle). Consumers look preloads up
+  // by id; a null here means there is nothing to run.
   const mojom::RendererStartupDataPtr& startup_data() const {
     return startup_data_;
-  }
-
-  // Take ownership of the cached startup data (one-shot per navigation). The
-  // caller becomes responsible for it; subsequent calls return null until the
-  // browser sends a fresh SetStartupData for the next navigation.
-  mojom::RendererStartupDataPtr TakeStartupData() {
-    return std::move(startup_data_);
   }
 
   // Stashes the startup data the browser attached to a CreateNewWindowReply

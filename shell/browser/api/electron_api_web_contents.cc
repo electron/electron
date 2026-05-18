@@ -2253,18 +2253,12 @@ void WebContents::DidRedirectNavigation(
 // channel ordered before CommitNavigation, so the renderer never has to ask.
 void WebContents::MaybeSendRendererStartupData(
     content::NavigationHandle* navigation_handle) {
-  // Extension pages, devtools windows, and similar WebContents that never go
-  // through a BrowserWindow/webContents constructor have no
-  // WebContentsPreferences but still run the sandboxed renderer (the default
-  // since Electron 20). Treat null as "default sandboxed, no per-WC preload".
-  // app.enableSandbox() / --enable-sandbox forces all renderers sandboxed
-  // regardless of per-WC webPreferences, so push then too.
-  auto* web_prefs = WebContentsPreferences::From(web_contents());
-  const bool browser_force_sandbox =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kEnableSandbox);
-  if (!browser_force_sandbox && web_prefs && !web_prefs->IsSandboxed())
+  if (!WebContentsPreferences::ShouldUseSandbox(web_contents()))
     return;
+  // May be null for a WebContents that never went through a
+  // BrowserWindow/webContents constructor (extension pages, devtools); such a
+  // WebContents has no per-WC preload but still gets session preloads + env.
+  auto* web_prefs = WebContentsPreferences::From(web_contents());
 
   // Match RendererClientBase::ShouldLoadPreload() — only push for documents
   // that will actually compile the sandbox bundle.
@@ -2300,7 +2294,6 @@ void WebContents::MaybeSendRendererStartupData(
     if (preload && preload->IsAbsolute()) {
       auto ps = mojom::PreloadScriptData::New();
       ps->id = "preload-" + preload->AsUTF8Unsafe();
-      ps->type = "frame";
       ps->file_path = preload->AsUTF8Unsafe();
       std::string contents;
       if (asar::ReadFileToString(*preload, &contents)) {

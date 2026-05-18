@@ -21,6 +21,7 @@
 #include "shell/renderer/electron_ipc_native.h"
 
 #include "base/no_destructor.h"
+#include "content/public/renderer/render_thread.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
@@ -37,7 +38,10 @@ namespace {
 
 mojom::RendererStartupDataPtr* GetPendingNewWindowStartupData() {
   // Process-global, no locking: set, RenderFrame creation, and take are all
-  // one synchronous call stack inside window.open().
+  // one synchronous call stack inside window.open() on the renderer main
+  // thread.
+  DCHECK(content::RenderThread::Get())
+      << "must be called from the renderer main thread";
   static base::NoDestructor<mojom::RendererStartupDataPtr> pending;
   return pending.get();
 }
