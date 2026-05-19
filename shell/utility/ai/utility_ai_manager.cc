@@ -20,6 +20,7 @@
 #include "shell/utility/ai/utility_ai_language_model.h"
 #include "shell/utility/api/electron_api_local_ai_handler.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
+#include "third_party/blink/public/mojom/ai/ai_classifier.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_common.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_proofreader.mojom.h"
@@ -280,7 +281,8 @@ void UtilityAIManager::HandleLanguageModelResult(
           std::vector<blink::mojom::AILanguageModelPromptType>(
               enabled_input_types.begin(), enabled_input_types.end()),
           /*audio_sample_rate_hz=*/std::nullopt,
-          /*audio_channel_count=*/std::nullopt));
+          /*audio_channel_count=*/std::nullopt,
+          /*sampling_mode=*/std::nullopt));
 }
 
 void UtilityAIManager::CanCreateLanguageModel(
@@ -524,6 +526,19 @@ void UtilityAIManager::CanCreateProofreader(
 void UtilityAIManager::CreateProofreader(
     mojo::PendingRemote<blink::mojom::AIManagerCreateProofreaderClient> client,
     blink::mojom::AIProofreaderCreateOptionsPtr options) {
+  NOTIMPLEMENTED();
+}
+
+void UtilityAIManager::CanCreateClassifier(
+    blink::mojom::AIClassifierCreateOptionsPtr options,
+    CanCreateClassifierCallback callback) {
+  std::move(callback).Run(
+      blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
+}
+
+void UtilityAIManager::CreateClassifier(
+    mojo::PendingRemote<blink::mojom::AIManagerCreateClassifierClient> client,
+    blink::mojom::AIClassifierCreateOptionsPtr options) {
   NOTIMPLEMENTED();
 }
 
