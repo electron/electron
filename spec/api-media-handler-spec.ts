@@ -394,14 +394,20 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(ok).to.be.true(message);
   });
 
-  it('is not called when calling legacy getUserMedia with desktop capture constraint', async () => {
-    const ses = session.fromPartition('' + Math.random());
-    ses.setDisplayMediaRequestHandler(() => {
-      throw new Error('bad');
-    });
-    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-    await w.loadURL(serverUrl);
-    const { ok, message } = await w.webContents.executeJavaScript(`
+  // Skipped on macOS: enabling media::kUseSCContentSharingPicker (needed for
+  // useSystemPicker: true) routes every desktop capture through the picker,
+  // so the legacy chromeMediaSource: 'desktop' path hits "missing authorized
+  // filter" and crashes.
+  ifit(process.platform !== 'darwin')(
+    'is not called when calling legacy getUserMedia with desktop capture constraint',
+    async () => {
+      const ses = session.fromPartition('' + Math.random());
+      ses.setDisplayMediaRequestHandler(() => {
+        throw new Error('bad');
+      });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      const { ok, message } = await w.webContents.executeJavaScript(`
       new Promise((resolve, reject) => navigator.getUserMedia({
         video: {
           mandatory: {
@@ -410,8 +416,9 @@ describe('setDisplayMediaRequestHandler', () => {
         },
       }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
     `);
-    expect(ok).to.be.true(message);
-  });
+      expect(ok).to.be.true(message);
+    }
+  );
 
   it('works when calling getUserMedia without a media request handler', async () => {
     const w = new BrowserWindow({ show: false });

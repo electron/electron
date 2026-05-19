@@ -46,7 +46,9 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "base/feature_list.h"
 #include "base/strings/string_number_conversions.h"
+#include "media/base/media_switches.h"
 #include "ui/base/cocoa/permissions_utils.h"
 #endif
 
@@ -147,9 +149,22 @@ base::flat_map<int32_t, uint32_t> MonitorAtomIdToDisplayId() {
 }
 #endif
 
+#if BUILDFLAG(IS_MAC)
+// kUseSCContentSharingPicker makes ShouldUseThumbnailCapturerMac route through
+// a DelegatedSourceListCapturer — a user-driven picker that never enumerates
+// sources. desktopCapturer.getSources() needs an enumerating capturer, so
+// bypass that path.
+bool ShouldUseThumbnailCapturerForGetSources(DesktopMediaList::Type type) {
+  if (base::FeatureList::IsEnabled(media::kUseSCContentSharingPicker))
+    return false;
+  return ShouldUseThumbnailCapturerMac(type);
+}
+#endif  // BUILDFLAG(IS_MAC)
+
 std::unique_ptr<ThumbnailCapturer> MakeWindowCapturer() {
 #if BUILDFLAG(IS_MAC)
-  if (ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kWindow)) {
+  if (ShouldUseThumbnailCapturerForGetSources(
+          DesktopMediaList::Type::kWindow)) {
     return CreateThumbnailCapturerMac(DesktopMediaList::Type::kWindow,
                                       /*web_contents=*/nullptr);
   }
@@ -165,7 +180,8 @@ std::unique_ptr<ThumbnailCapturer> MakeWindowCapturer() {
 
 std::unique_ptr<ThumbnailCapturer> MakeScreenCapturer() {
 #if BUILDFLAG(IS_MAC)
-  if (ShouldUseThumbnailCapturerMac(DesktopMediaList::Type::kScreen)) {
+  if (ShouldUseThumbnailCapturerForGetSources(
+          DesktopMediaList::Type::kScreen)) {
     return CreateThumbnailCapturerMac(DesktopMediaList::Type::kScreen,
                                       /*web_contents=*/nullptr);
   }
