@@ -135,7 +135,7 @@ jobs:
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Run Clang-Tidy
       env:
-        CLANG_TIDY_JOBS: ${{ case(inputs.target-platform == 'macos', 4, 8) }}
+        CLANG_TIDY_JOBS: ${{ case(inputs.target-platform == 'macos', 5, 8) }}
       run: |
         e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
 
