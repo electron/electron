@@ -563,7 +563,8 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
 
   SessionPreferences::CreateForBrowserContext(browser_context);
 
-  protocol_ = Protocol::Create(isolate, browser_context->protocol_registry());
+  protocol_ = Protocol::Create(isolate, browser_context,
+                               browser_context->protocol_registry());
 
   browser_context->SetUserData(
       kElectronApiSessionKey,

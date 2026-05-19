@@ -19,9 +19,12 @@ class Arguments;
 
 namespace electron {
 
+class ElectronBrowserContext;
 class ProtocolRegistry;
 
 namespace api {
+
+class Session;
 
 std::vector<std::string>& GetStandardSchemes();
 std::vector<std::string>& GetCodeCacheSchemes();
@@ -36,6 +39,7 @@ class Protocol final : public gin::Wrappable<Protocol>,
                        public gin_helper::Constructible<Protocol> {
  public:
   static Protocol* Create(v8::Isolate* isolate,
+                          ElectronBrowserContext* browser_context,
                           ProtocolRegistry* protocol_registry);
 
   // gin_helper::Constructible
@@ -49,7 +53,8 @@ class Protocol final : public gin::Wrappable<Protocol>,
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
 
-  explicit Protocol(ProtocolRegistry* protocol_registry);
+  Protocol(ElectronBrowserContext* browser_context,
+           ProtocolRegistry* protocol_registry);
   ~Protocol() override;
 
  private:
@@ -80,6 +85,7 @@ class Protocol final : public gin::Wrappable<Protocol>,
                           const ProtocolHandler& handler);
   bool UninterceptProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolIntercepted(const std::string& scheme);
+  Session* GetSession();
 
   // Old async version of IsProtocolRegistered.
   v8::Local<v8::Promise> IsProtocolHandled(v8::Isolate* isolate,
@@ -105,6 +111,8 @@ class Protocol final : public gin::Wrappable<Protocol>,
 
   // Be compatible with old interface, which accepts optional callback.
   void HandleOptionalCallback(gin::Arguments* args, Error error);
+
+  raw_ptr<ElectronBrowserContext> browser_context_;
 
   // Weak pointer; the lifetime of the ProtocolRegistry is guaranteed to be
   // longer than the lifetime of this JS interface.
