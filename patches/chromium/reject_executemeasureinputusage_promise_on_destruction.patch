@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Tue, 19 May 2026 13:48:47 -0700
+Subject: Reject ExecuteMeasureInputUsage promise on destruction
+
+Without this the promise will hang indefinitely. This
+will be upstreamed.
+
+Change-Id: I8f9e2f77b64973ee97be6bdb99b1e4c1324aaba7
+
+diff --git a/third_party/blink/renderer/modules/ai/language_model.cc b/third_party/blink/renderer/modules/ai/language_model.cc
+index e179b6347e668f5615a5584feb0f31fdef865a73..86e718ead6f838b838fa3639f4e38fe24be4751a 100644
+--- a/third_party/blink/renderer/modules/ai/language_model.cc
++++ b/third_party/blink/renderer/modules/ai/language_model.cc
+@@ -847,6 +847,7 @@ void LanguageModel::ExecuteMeasureInputUsage(
+     ScriptPromiseResolver<IDLDouble>* resolver,
+     AbortSignal* signal,
+     Vector<mojom::blink::AILanguageModelPromptPtr> prompts) {
++  auto reject_fn = RejectOnDestruction(resolver, signal);
+   language_model_remote_->MeasureInputUsage(
+       std::move(prompts),
+       BindOnce(
+@@ -869,7 +870,8 @@ void LanguageModel::ExecuteMeasureInputUsage(
+             }
+             resolver->Resolve(static_cast<double>(usage.value()));
+           },
+-          WrapPersistent(resolver), WrapPersistent(signal)));
++          WrapPersistent(resolver), WrapPersistent(signal))
++          .Then(std::move(reject_fn)));
+ }
+ 
+ bool LanguageModel::ValidateInput(ScriptState* script_state,
