@@ -37,11 +37,10 @@ class OpaqueFrameView : public FramelessView {
 
   static constexpr int kNonClientExtraTopThickness = 1;
 
-  OpaqueFrameView();
+  OpaqueFrameView(NativeWindowViews* window, views::Widget* frame);
   ~OpaqueFrameView() override;
 
   // FramelessView:
-  void Init(NativeWindowViews* window, views::Widget* frame) override;
   int ResizingBorderHitTest(const gfx::Point& point) override;
   void InvalidateCaptionButtons() override;
   gfx::Insets RestoredFrameBorderInsets() const override;

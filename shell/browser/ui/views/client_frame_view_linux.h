@@ -36,10 +36,8 @@ class ClientFrameViewLinux : public FramelessView,
   METADATA_HEADER(ClientFrameViewLinux, FramelessView)
 
  public:
-  ClientFrameViewLinux();
+  ClientFrameViewLinux(NativeWindowViews* window, views::Widget* frame);
   ~ClientFrameViewLinux() override;
-
-  void Init(NativeWindowViews* window, views::Widget* frame) override;
 
   // FramelessView:
   gfx::Insets RestoredFrameBorderInsets() const override;
