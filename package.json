@@ -142,7 +142,7 @@
   },
   "resolutions": {
     "dbus-native/xml2js": "0.5.0",
-    "abstract-socket": "github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19",
+    "abstract-socket": "patch:abstract-socket@npm%3A2.0.0#~/.yarn/patches/abstract-socket-npm-2.0.0-b025d8ca5a.patch",
     "minimist@npm:~0.0.1": "0.2.4",
     "put": "npm:@nornagon/put@0.0.8"
   },
