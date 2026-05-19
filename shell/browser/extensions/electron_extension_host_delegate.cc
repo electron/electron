@@ -27,6 +27,8 @@ using extensions::mojom::APIPermissionID;
 
 namespace extensions {
 
+// These functions are copied from the now deleted upstream implementations
+// https://source.chromium.org/chromium/chromium/src/+/main:extensions/browser/media_capture_util.cc;drc=b9ff62bb6ff2143fc168dff0e3392e4335de1b8a
 namespace {
 
 const MediaStreamDevice* GetRequestedDeviceOrDefault(
@@ -58,36 +60,10 @@ void VerifyMediaAccessPermission(blink::mojom::MediaStreamType type,
   }
 }
 
-}  // namespace
-
-ElectronExtensionHostDelegate::ElectronExtensionHostDelegate() = default;
-
-ElectronExtensionHostDelegate::~ElectronExtensionHostDelegate() = default;
-
-void ElectronExtensionHostDelegate::OnExtensionHostCreated(
-    content::WebContents* web_contents) {
-  ElectronExtensionWebContentsObserver::CreateForWebContents(web_contents);
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  v8::HandleScope scope(isolate);
-  electron::api::WebContents::FromOrCreate(isolate, web_contents);
-}
-
-void ElectronExtensionHostDelegate::CreateTab(
-    std::unique_ptr<content::WebContents> web_contents,
-    const GURL& target_url,
-    const ExtensionId& extension_id,
-    WindowOpenDisposition disposition,
-    const blink::mojom::WindowFeatures& window_features,
-    bool user_gesture) {
-  // TODO(jamescook): Should app_shell support opening popup windows?
-  NOTREACHED();
-}
-
-void ElectronExtensionHostDelegate::ProcessMediaAccessRequest(
-    content::WebContents* web_contents,
-    const content::MediaStreamRequest& request,
-    content::MediaResponseCallback callback,
-    const Extension* extension) {
+void GrantMediaStreamRequest(content::WebContents* web_contents,
+                             const content::MediaStreamRequest& request,
+                             content::MediaResponseCallback callback,
+                             const Extension* extension) {
   DCHECK(request.audio_type ==
              blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE ||
          request.video_type ==
@@ -125,6 +101,41 @@ void ElectronExtensionHostDelegate::ProcessMediaAccessRequest(
           ? blink::mojom::MediaStreamRequestResult::OK
           : blink::mojom::MediaStreamRequestResult::INVALID_STATE,
       std::move(ui));
+}
+
+}  // namespace
+
+ElectronExtensionHostDelegate::ElectronExtensionHostDelegate() = default;
+
+ElectronExtensionHostDelegate::~ElectronExtensionHostDelegate() = default;
+
+void ElectronExtensionHostDelegate::OnExtensionHostCreated(
+    content::WebContents* web_contents) {
+  ElectronExtensionWebContentsObserver::CreateForWebContents(web_contents);
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  v8::HandleScope scope(isolate);
+  electron::api::WebContents::FromOrCreate(isolate, web_contents);
+}
+
+void ElectronExtensionHostDelegate::CreateTab(
+    std::unique_ptr<content::WebContents> web_contents,
+    const GURL& target_url,
+    const ExtensionId& extension_id,
+    WindowOpenDisposition disposition,
+    const blink::mojom::WindowFeatures& window_features,
+    bool user_gesture) {
+  // TODO(jamescook): Should app_shell support opening popup windows?
+  NOTREACHED();
+}
+
+void ElectronExtensionHostDelegate::ProcessMediaAccessRequest(
+    content::WebContents* web_contents,
+    const content::MediaStreamRequest& request,
+    content::MediaResponseCallback callback,
+    const Extension* extension) {
+  // Allow access to the microphone and/or camera.
+  GrantMediaStreamRequest(web_contents, request, std::move(callback),
+                          extension);
 }
 
 bool ElectronExtensionHostDelegate::CheckMediaAccessPermission(
