@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_SERVICES_NODE_NODE_SERVICE_H_
 
 #include <memory>
-#include <vector>
 #include <optional>
 
 #include "base/containers/circular_deque.h"
