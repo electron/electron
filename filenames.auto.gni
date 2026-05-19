@@ -112,6 +112,7 @@ auto_filenames = {
     "docs/api/structures/media-access-permission-request.md",
     "docs/api/structures/memory-info.md",
     "docs/api/structures/memory-usage-details.md",
+    "docs/api/structures/menu-item-badge.md",
     "docs/api/structures/mime-typed-buffer.md",
     "docs/api/structures/mouse-input-event.md",
     "docs/api/structures/mouse-wheel-input-event.md",

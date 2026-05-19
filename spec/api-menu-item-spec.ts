@@ -616,4 +616,55 @@ describe('MenuItems', () => {
       expect(menu._getAcceleratorTextAt(5)).to.equal('Ctrl+?');
     });
   });
+
+  ifdescribe(process.platform === 'darwin')('MenuItem.badge', () => {
+    it('should set badge from constructor options', () => {
+      const item = new MenuItem({
+        label: 'test',
+        badge: { type: 'alerts', count: 3 }
+      });
+
+      expect(item.badge).to.deep.equal({ type: 'alerts', count: 3 });
+    });
+
+    it('should support all badge types', () => {
+      const alerts = new MenuItem({ label: 'a', badge: { type: 'alerts', count: 1 } });
+      const updates = new MenuItem({ label: 'b', badge: { type: 'updates', count: 2 } });
+      const newItems = new MenuItem({ label: 'c', badge: { type: 'new-items', count: 5 } });
+      const custom = new MenuItem({ label: 'd', badge: { type: 'none', content: 'Custom' } });
+
+      expect(alerts.badge).to.deep.equal({ type: 'alerts', count: 1 });
+      expect(updates.badge).to.deep.equal({ type: 'updates', count: 2 });
+      expect(newItems.badge).to.deep.equal({ type: 'new-items', count: 5 });
+      expect(custom.badge).to.deep.equal({ type: 'none', content: 'Custom' });
+    });
+
+    it('should allow dynamic badge updates', () => {
+      const item = new MenuItem({
+        label: 'test',
+        badge: { type: 'alerts', count: 1 }
+      });
+
+      item.badge = { type: 'updates', count: 10 };
+      expect(item.badge).to.deep.equal({ type: 'updates', count: 10 });
+    });
+
+    it('should have undefined badge when not set', () => {
+      const item = new MenuItem({ label: 'test' });
+      expect(item.badge).to.be.undefined();
+    });
+
+    it('should set badge on items added to a menu', () => {
+      const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'alerts', count: 3 } }]);
+
+      expect(menu.items[0].badge).to.deep.equal({ type: 'alerts', count: 3 });
+    });
+
+    it('should update badge after item is added to a menu', () => {
+      const menu = Menu.buildFromTemplate([{ label: 'test', badge: { type: 'alerts', count: 1 } }]);
+
+      menu.items[0].badge = { type: 'updates', count: 5 };
+      expect(menu.items[0].badge).to.deep.equal({ type: 'updates', count: 5 });
+    });
+  });
 });
