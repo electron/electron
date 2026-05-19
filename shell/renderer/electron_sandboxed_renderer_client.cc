@@ -17,6 +17,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
+#include "shell/renderer/electron_api_service_impl.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/preload_realm_context.h"
 #include "shell/renderer/preload_utils.h"
@@ -74,7 +75,15 @@ void ElectronSandboxedRendererClient::InitializeBindings(
     content::RenderFrame* render_frame) {
   gin_helper::Dictionary b(isolate, binding);
   b.SetMethod("get", preload_utils::GetBinding);
-  b.SetMethod("createPreloadScript", preload_utils::CreatePreloadScript);
+  // Bind the RenderFrame so createPreloadScript can look up the preload
+  // contents and V8 code cache from the per-frame mojo-cached startup data —
+  // they never become V8 strings until the single copy for the compile, and
+  // a freshly produced cache is shipped back over the per-frame
+  // ElectronWebContentsUtility channel without crossing into JS.
+  b.SetMethod("createPreloadScript",
+              base::BindRepeating(&preload_utils::CreatePreloadScript,
+                                  base::Unretained(render_frame),
+                                  /*service_worker_data=*/nullptr));
 
   auto process = gin_helper::Dictionary::CreateEmpty(isolate);
   b.Set("process", process);
@@ -87,6 +96,21 @@ void ElectronSandboxedRendererClient::InitializeBindings(
   process.SetReadOnly("pid", base::GetCurrentProcId());
   process.SetReadOnly("sandboxed", true);
   process.SetReadOnly("type", "renderer");
+
+  // The browser pushed the preload script set + process info via
+  // ElectronFrameStartup, ordered ahead of the CommitNavigation that triggered
+  // this DidCreateScriptContext. The push always lands first (associated mojo
+  // ordering); the only documents that reach here without it are ones that
+  // ShouldLoadPreload() filters out (initial empty doc, webview frames), so
+  // the bundle never observes a null startupData in practice.
+  auto* api_service = ElectronApiServiceImpl::Get(render_frame);
+  v8::Local<v8::Value> startup_data;
+  if (!api_service ||
+      !preload_utils::BuildStartupData(isolate, api_service->startup_data())
+           .ToLocal(&startup_data)) {
+    startup_data = v8::Null(isolate);
+  }
+  b.Set("startupData", startup_data);
 }
 
 void ElectronSandboxedRendererClient::RenderFrameCreated(
