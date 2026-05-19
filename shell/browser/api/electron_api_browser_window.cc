@@ -92,6 +92,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   // Note that |GetContentsView|, confusingly, does not refer to the same thing
   // as |BaseWindow::GetContentView|.
   window()->GetContentsView()->AddChildViewAt(web_contents_view->view(), 0);
+  window()->set_content_view_hit_test_transparent(true);
   window()->GetContentsView()->DeprecatedLayoutImmediately();
 
   // Init window after everything has been setup.
