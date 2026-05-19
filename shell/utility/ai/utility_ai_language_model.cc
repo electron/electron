@@ -6,6 +6,7 @@
 
 #include <string_view>
 
+#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/notimplemented.h"
 #include "shell/browser/javascript_environment.h"

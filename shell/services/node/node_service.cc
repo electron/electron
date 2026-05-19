@@ -4,6 +4,7 @@
 
 #include "shell/services/node/node_service.h"
 
+#include <memory>
 #include <sstream>
 #include <utility>
 
