@@ -64,10 +64,12 @@ runs:
           sudo launchctl limit maxfiles 65536 200000
         fi
 
+        export NINJA_SUMMARIZE_BUILD=1
+        export NO_COLOR=1
         if [ "${{ inputs.is-release }}" = "true" ]; then
-          NINJA_SUMMARIZE_BUILD=1 e build --target electron:release_build
+          e build --target electron:release_build
         else
-          NINJA_SUMMARIZE_BUILD=1 e build --target electron:testing_build
+          e build --target electron:testing_build
         fi
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
@@ -87,6 +89,7 @@ runs:
         cd ..
 
         $env:NINJA_SUMMARIZE_BUILD = 1
+        $env:NO_COLOR = 1
         if ("${{ inputs.is-release }}" -eq "true") {          
           e build --target electron:release_build
         } else {
