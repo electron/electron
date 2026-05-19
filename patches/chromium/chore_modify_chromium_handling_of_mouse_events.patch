@@ -34,7 +34,7 @@ index cc3f9bc9383f8272a5cd95b1f2ac56529d86e493..5ca29b84cdaf42ef516ef819ae32b230
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 340a8d61e302c1b1ca6ad0dfb859fc9b0e4106b6..e4da40256ce94d6a0896792a8ef2faa18e1fa5d2 100644
+index 905de3cafd91457a8bc816242a3b029472cb3914..95af2da65403d35d4b7a5eb0d032e01ab8d23f62 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -1417,6 +1417,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
@@ -61,7 +61,7 @@ index a389e96de45c8a380e4db23821feb396dab9bcbb..27322ef34edf3fa8bfbd20b1baddcaf3
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 19f6ade2c4b3b9c66c949c944c41c6a238448016..efa35533610a034ef77d22970273088445976343 100644
+index 6aa7d9ac9a88c03739fcdccce3c445d1410deafe..a122b3cc06eea944f7f90fc988023cabc14a32d1 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -3277,15 +3277,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,

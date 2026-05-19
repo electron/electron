@@ -1,4 +1,5 @@
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
+import { defaultDesktopName } from '@electron/internal/browser/desktop-name';
 
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
@@ -72,8 +73,17 @@ if (process.platform === 'win32') {
   }
 }
 
-// Map process.exit to app.exit, which quits gracefully.
-process.exit = app.exit as () => never;
+// Map process.exit to app.exit, which quits gracefully. When called without
+// an explicit code, fall back to process.exitCode like Node.js does.
+process.exit = ((code: number | string | undefined | null) => {
+  // Refs https://github.com/nodejs/node/blob/fc192ee030ee076b948ce7d9d72cba6c101989b8/lib/internal/process/per_thread.js#L229-L252
+  if (code !== undefined) {
+    // Node.js handles any string to number conversion here for us
+    process.exitCode = code;
+  }
+
+  app.exit(process.exitCode || 0);
+}) as typeof process.exit;
 
 // Load the RPC server.
 require('@electron/internal/browser/rpc-server');
@@ -127,10 +137,7 @@ if (packageJson.productName != null) {
   app.name = `${packageJson.name}`.trim();
 }
 
-// Set application's desktop name (Linux). These usually match the executable name,
-// so use it as the default to ensure the app gets the correct icon in the taskbar and application switcher.
-const desktopName = packageJson.desktopName || `${path.basename(process.execPath)}.desktop`;
-app.setDesktopName(desktopName);
+app.setDesktopName(packageJson.desktopName || defaultDesktopName(app.name));
 
 // Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price

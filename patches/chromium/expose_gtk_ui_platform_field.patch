@@ -22,7 +22,7 @@ index ce94c80f7293ccc34994d79ab11cd09b479331b8..98defaaf3a8dc39f41df7f437073f3fb
  #include "base/memory/raw_ptr.h"
  #include "base/metrics/histogram_macros.h"
 diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
-index 40caafa5ce58104da7d5e96eb1efad1c99a77664..b388fc462e0c320170e5b35550e48b6b19079f40 100644
+index ecc60166a20e4513b3a0cb16032acadaf4a1772a..825c1afd2de17702c76d7fd254ee783d30e4f956 100644
 --- a/ui/gtk/gtk_ui.h
 +++ b/ui/gtk/gtk_ui.h
 @@ -53,6 +53,8 @@ class GtkUi : public ui::LinuxUiAndTheme {

@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index 461819ce0fa732048e4365c40a86ef55d984c35f..f1c85e94cf526d0255f47c003664680d26413ec3 100644
+index 3e3e8d4720a45650c0699f0106a3cdb2fd49e9ca..7de5d24b008f3da6265e84161ca59b9448b86f3b 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -11,6 +11,7 @@
@@ -28,7 +28,7 @@ index 461819ce0fa732048e4365c40a86ef55d984c35f..f1c85e94cf526d0255f47c003664680d
  #if OPENSSL_VERSION_MAJOR >= 3
  #include <openssl/core_names.h>
  #include <openssl/params.h>
-@@ -3090,9 +3091,11 @@ const Cipher Cipher::AES_256_GCM = Cipher::FromNid(NID_aes_256_gcm);
+@@ -3103,9 +3104,11 @@ const Cipher Cipher::AES_256_GCM = Cipher::FromNid(NID_aes_256_gcm);
  const Cipher Cipher::AES_128_KW = Cipher::FromNid(NID_id_aes128_wrap);
  const Cipher Cipher::AES_192_KW = Cipher::FromNid(NID_id_aes192_wrap);
  const Cipher Cipher::AES_256_KW = Cipher::FromNid(NID_id_aes256_wrap);
@@ -41,10 +41,10 @@ index 461819ce0fa732048e4365c40a86ef55d984c35f..f1c85e94cf526d0255f47c003664680d
  
  bool Cipher::isGcmMode() const {
 diff --git a/deps/ncrypto/ncrypto.h b/deps/ncrypto/ncrypto.h
-index 175ec8ba0f2a908ffad2ce48434aeed573b09c90..3218590ddce1e92c2a9d776f20f9fb016612061d 100644
+index 4f86702da88267ded46d33a943a80ae3c2e17fa6..854c29f27f95634b96780b4750d23986d6ba522f 100644
 --- a/deps/ncrypto/ncrypto.h
 +++ b/deps/ncrypto/ncrypto.h
-@@ -306,9 +306,13 @@ class Cipher final {
+@@ -309,9 +309,13 @@ class Cipher final {
  #else
    static constexpr size_t MAX_AUTH_TAG_LENGTH = 16;
  #endif
@@ -119,7 +119,7 @@ index d005bf0ffb93445fa6611a1beb1b465764271ede..01770687bd191c61af02e76d7de24bba
        X509View ca(sk_X509_value(peer_certs.get(), i));
        if (!cert->view().isIssuedBy(ca)) continue;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 4e968477ebcc08fb0ccd6abd4d66240309cf76e8..2e3f31e1765024373c3fc2acd33fc3bfb352a906 100644
+index 980b7fafb3144b1db0ff26dc157e0f08633c3c9e..cb586936a904e7b9a017732e993a35ef1115ff9a 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
 @@ -143,7 +143,7 @@ int SSL_CTX_use_certificate_chain(SSL_CTX* ctx,
@@ -192,10 +192,10 @@ index 33cde71b105c7cf22b559583d2e46bfb50016f6d..659910992dff7c05bb7e367e1cba1425
    // This is to cause hash() to fail when an incorrect
    // outputLength option was passed for a non-XOF hash function.
 diff --git a/src/crypto/crypto_keys.cc b/src/crypto/crypto_keys.cc
-index e805a984322c8348ceba950fe6f45e002ade10b3..bb9b1f8e1b3c6dd8479ee463e303088e3240d6be 100644
+index c05872d73f6fc21cf362928559f3b232a907238d..8efe004ce88ae4d798a24504d47073b331f6525f 100644
 --- a/src/crypto/crypto_keys.cc
 +++ b/src/crypto/crypto_keys.cc
-@@ -1034,6 +1034,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
+@@ -1225,6 +1225,7 @@ void KeyObjectHandle::GetAsymmetricKeyType(
  }
  
  bool KeyObjectHandle::CheckEcKeyData() const {
@@ -203,7 +203,7 @@ index e805a984322c8348ceba950fe6f45e002ade10b3..bb9b1f8e1b3c6dd8479ee463e303088e
    MarkPopErrorOnReturn mark_pop_error_on_return;
  
    const auto& key = data_.GetAsymmetricKey();
-@@ -1043,6 +1044,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
+@@ -1234,6 +1235,9 @@ bool KeyObjectHandle::CheckEcKeyData() const {
  
    return data_.GetKeyType() == kKeyTypePrivate ? ctx.privateCheck()
                                                 : ctx.publicCheck();
@@ -214,7 +214,7 @@ index e805a984322c8348ceba950fe6f45e002ade10b3..bb9b1f8e1b3c6dd8479ee463e303088e
  
  void KeyObjectHandle::CheckEcKeyData(const FunctionCallbackInfo<Value>& args) {
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 205e248e0f20f019e189a6c69d3c011a616b3939..12b0d804c6f1d4998b85160b0aac8eb7a3b5576b 100644
+index 3435e43b3baa0c188b984fa1905c6a8614c77de3..a2fa1132c47d8cc4b875396c6cbaa9db6fe20262 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -533,24 +533,15 @@ Maybe<void> Decorate(Environment* env,

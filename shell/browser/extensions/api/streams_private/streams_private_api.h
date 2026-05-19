@@ -30,7 +30,8 @@ class StreamsPrivateAPI {
       content::FrameTreeNodeId frame_tree_node_id,
       blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
       const GURL& original_url,
-      const std::string& internal_id);
+      const std::string& internal_id,
+      const std::string& mime_type);
 };
 
 }  // namespace extensions

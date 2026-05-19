@@ -64,12 +64,15 @@
 #include "shell/browser/linux/unity_service.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
-#include "shell/browser/ui/views/client_frame_view_linux.h"
-#include "shell/browser/ui/views/linux_frame_layout.h"
+#include "shell/browser/ui/views/electron_frame_view_linux.h"
 #include "shell/browser/ui/views/native_frame_view.h"
-#include "shell/browser/ui/views/opaque_frame_view.h"
+#include "shell/browser/ui/views/native_frame_view_linux.h"
 #include "shell/common/platform_util.h"
+#include "ui/linux/linux_ui.h"
+#include "ui/linux/linux_ui_factory.h"
+#include "ui/linux/window_frame_provider.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
+#include "ui/views/window/frame_view_linux.h"
 #include "ui/views/window/native_frame_view.h"
 
 #if BUILDFLAG(SUPPORTS_OZONE_X11)
@@ -278,6 +281,11 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   // If a client frame, we need to draw our own shadows.
   if (transparent() || has_client_frame())
     params.opacity = InitParams::WindowOpacity::kTranslucent;
+#if BUILDFLAG(IS_LINUX)
+  // Resize handles and shadows on frameless windows need translucent insets.
+  if (!has_frame())
+    params.opacity = InitParams::WindowOpacity::kTranslucent;
+#endif
 
   // The given window is most likely not rectangular since it is translucent and
   // has no standard frame, don't show a shadow for it.
@@ -293,14 +301,17 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
 
   params.native_widget = new ElectronDesktopNativeWidgetAura{this, widget()};
 #elif BUILDFLAG(IS_LINUX)
-  std::string name = Browser::Get()->GetName();
+  // Set the WM_CLASS and XDG App ID to the same value
+  // for best compatibility with both X11 and Wayland.
+  const auto app_id = platform_util::GetXdgAppId();
+  const std::string name = app_id.value_or(Browser::Get()->GetName());
   // Set WM_WINDOW_ROLE.
   params.wm_role_name = "browser-window";
   // Set WM_CLASS.
   params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
   // Set Wayland application ID.
-  if (auto const app_id = platform_util::GetXdgAppId()) {
+  if (app_id) {
     params.wayland_app_id = *app_id;
   }
 
@@ -508,9 +519,15 @@ void NativeWindowViews::SetTitleBarOverlay(
 
   // If anything was updated, ensure the overlay is repainted.
   if (updated) {
-    auto* frame_view =
-        static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
-    frame_view->InvalidateCaptionButtons();
+    auto* fv = widget()->non_client_view()->frame_view();
+    if (auto* frameless = views::AsViewClass<FramelessView>(fv)) {
+      frameless->InvalidateCaptionButtons();
+#if BUILDFLAG(IS_LINUX)
+    } else if (auto* fvl = views::AsViewClass<views::FrameViewLinux>(fv)) {
+      fvl->InvalidateLayout();
+      fvl->SchedulePaint();
+#endif
+    }
   }
 }
 
@@ -533,7 +550,7 @@ void NativeWindowViews::SetContentView(views::View* view) {
   set_content_view(view);
   focused_view_ = view;
   root_view_.GetMainView()->AddChildViewRaw(content_view());
-  root_view_.GetMainView()->DeprecatedLayoutImmediately();
+  FlushPendingRootLayout(root_view_.GetMainView());
 }
 
 void NativeWindowViews::Close() {
@@ -966,10 +983,18 @@ void NativeWindowViews::SetResizable(bool resizable) {
       gfx::Size window_size = GetSize();
       SetSizeConstraints(extensions::SizeConstraints(window_size, window_size));
     }
+    // Forcing OnSizeConstraintsChanged on Windows when !thick_frame_ would
+    // cause HWNDMessageHandler::SizeConstraintsChanged() to add WS_THICKFRAME
+    // based on CanResize(), which destroys transparency on layered windows.
+    // Min/max are still enforced through WM_GETMINMAXINFO directly from the
+    // widget delegate.
+#if BUILDFLAG(IS_WIN)
+    if (thick_frame_ && widget() && widget()->widget_delegate())
+      widget()->OnSizeConstraintsChanged();
+    UpdateThickFrame();
+#else
     if (widget() && widget()->widget_delegate())
       widget()->OnSizeConstraintsChanged();
-#if BUILDFLAG(IS_WIN)
-    UpdateThickFrame();
 #endif
   }
 }
@@ -1134,16 +1159,18 @@ bool NativeWindowViews::IsClosable() const {
 #endif
 }
 
-void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
+void NativeWindowViews::SetAlwaysOnTop(const ui::ZOrderLevel z_order,
                                        const std::string& level,
-                                       int relativeLevel) {
-  bool level_changed = z_order != widget()->GetZOrderLevel();
+                                       const int relativeLevel) {
+  const bool level_changed = z_order != widget()->GetZOrderLevel();
+  const bool always_on_top = z_order != ui::ZOrderLevel::kNormal;
+
   widget()->SetZOrderLevel(z_order);
 
 #if BUILDFLAG(IS_WIN)
   // Reset the placement flag.
   behind_task_bar_ = false;
-  if (z_order != ui::ZOrderLevel::kNormal) {
+  if (always_on_top) {
     // On macOS the window is placed behind the Dock for the following levels.
     // Re-use the same names on Windows to make it easier for the user.
     static constexpr auto levels = base::MakeFixedFlatSet<std::string_view>(
@@ -1153,10 +1180,8 @@ void NativeWindowViews::SetAlwaysOnTop(ui::ZOrderLevel z_order,
 #endif
   MoveBehindTaskBarIfNeeded();
 
-  // This must be notified at the very end or IsAlwaysOnTop
-  // will not yet have been updated to reflect the new status
   if (level_changed)
-    NativeWindow::NotifyWindowAlwaysOnTopChanged();
+    NativeWindow::NotifyWindowAlwaysOnTopChanged(always_on_top);
 }
 
 ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() const {
@@ -1275,9 +1300,8 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
   SkColor compositor_color = background_color;
 #if BUILDFLAG(IS_LINUX)
   // Widget background needs to stay transparent for CSD shadow regions.
-  LinuxFrameLayout* frame_layout = GetLinuxFrameLayout();
-  const bool uses_csd =
-      frame_layout && frame_layout->SupportsClientFrameShadow();
+  auto* fvl = GetFrameViewLinux();
+  const bool uses_csd = fvl && fvl->ShouldDrawRestoredFrameShadow();
   if (transparent() || uses_csd)
     compositor_color = SK_ColorTRANSPARENT;
 #endif
@@ -1285,10 +1309,31 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
+#if BUILDFLAG(IS_LINUX)
+  auto* efvl = views::AsViewClass<ElectronFrameViewLinux>(
+      widget()->non_client_view()->frame_view());
+  gfx::Rect visible_bounds;
+  if (efvl) {
+    // Shrink by the old frame border insets to isolate the visible area.
+    visible_bounds = widget()->GetWindowBoundsInScreen();
+    visible_bounds.Inset(GetRestoredFrameBorderInsets());
+  }
+#endif
+
   has_shadow_ = has_shadow;
   wm::SetShadowElevation(GetNativeWindow(),
                          has_shadow ? wm::kShadowElevationInactiveWindow
                                     : wm::kShadowElevationNone);
+
+#if BUILDFLAG(IS_LINUX)
+  if (efvl) {
+    efvl->SetWantsFrame(!IsTranslucent() &&
+                        (has_shadow || IsWindowControlsOverlayEnabled()));
+    // Grow by the new frame border insets to preserve the visible area.
+    visible_bounds.Inset(-GetRestoredFrameBorderInsets());
+    widget()->SetBounds(visible_bounds);
+  }
+#endif
 }
 
 bool NativeWindowViews::HasShadow() const {
@@ -1502,9 +1547,13 @@ gfx::Insets NativeWindowViews::GetRestoredFrameBorderInsets() const {
   if (!frame_view)
     return gfx::Insets();
 
-  if (auto* frameless = views::AsViewClass<FramelessView>(frame_view)) {
+  if (auto* frameless = views::AsViewClass<FramelessView>(frame_view))
     return frameless->RestoredFrameBorderInsets();
-  }
+
+#if BUILDFLAG(IS_LINUX)
+  if (auto* fvl = views::AsViewClass<views::FrameViewLinux>(frame_view))
+    return fvl->GetRestoredFrameBorderInsets();
+#endif
 
   return gfx::Insets();
 }
@@ -1915,22 +1964,34 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
   return std::make_unique<WinFrameView>(this, widget);
 #else
   if (!has_frame())
-    return std::make_unique<OpaqueFrameView>(this, widget);
+    return std::make_unique<ElectronFrameViewLinux>(this, widget);
 
-  if (has_client_frame())
-    return std::make_unique<ClientFrameViewLinux>(this, widget);
+  if (has_client_frame()) {
+    auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
+    auto getter = base::BindRepeating(
+        [](ui::LinuxUiTheme* theme, bool tiled,
+           bool maximized) -> ui::WindowFrameProvider* {
+          return theme->GetWindowFrameProvider(ui::FrameType::kDefault,
+                                               /*solid_frame=*/false, tiled,
+                                               maximized);
+        },
+        base::Unretained(linux_ui_theme));
+    auto nav_button_provider =
+        linux_ui_theme->CreateNavButtonProvider(ui::FrameType::kDefault);
+    return std::make_unique<NativeFrameViewLinux>(
+        this, widget, std::move(nav_button_provider), std::move(getter));
+  }
 
   return std::make_unique<NativeFrameView>(this, widget);
 #endif
 }
 
 #if BUILDFLAG(IS_LINUX)
-LinuxFrameLayout* NativeWindowViews::GetLinuxFrameLayout() {
+views::FrameViewLinux* NativeWindowViews::GetFrameViewLinux() const {
   auto* ncv = widget()->non_client_view();
   if (!ncv)
     return nullptr;
-  auto* view = views::AsViewClass<FramelessView>(ncv->frame_view());
-  return view ? view->GetLinuxFrameLayout() : nullptr;
+  return views::AsViewClass<views::FrameViewLinux>(ncv->frame_view());
 }
 #endif
 

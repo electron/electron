@@ -229,7 +229,7 @@ function parsePageSize(pageSize: string | ElectronInternal.PageSize) {
 
 // Translate the options of printToPDF.
 
-let pendingPromise: Promise<any> | undefined;
+const printToPDFQueues = new WeakMap<Electron.WebContents, Promise<unknown>>();
 WebContents.prototype.printToPDF = async function (options) {
   const margins = checkType(options.margins ?? {}, 'object', 'margins');
   const pageSize = parsePageSize(options.pageSize ?? 'letter');
@@ -261,16 +261,19 @@ WebContents.prototype.printToPDF = async function (options) {
     ...pageSize
   };
 
-  if (this._printToPDF) {
-    if (pendingPromise) {
-      pendingPromise = pendingPromise.then(() => this._printToPDF(printSettings));
-    } else {
-      pendingPromise = this._printToPDF(printSettings);
-    }
-    return pendingPromise;
-  } else {
+  if (!this._printToPDF) {
     throw new Error('Printing feature is disabled');
   }
+
+  const prev = printToPDFQueues.get(this) ?? Promise.resolve();
+  const next = prev.catch(() => {}).then(() => this._printToPDF(printSettings));
+  printToPDFQueues.set(this, next);
+  next
+    .finally(() => {
+      if (printToPDFQueues.get(this) === next) printToPDFQueues.delete(this);
+    })
+    .catch(() => {});
+  return next;
 };
 
 // TODO(codebytere): deduplicate argument sanitization by moving rest of
@@ -963,6 +966,11 @@ WebContents.prototype._init = function () {
   Object.defineProperty(this, 'zoomFactor', {
     get: () => this.getZoomFactor(),
     set: (factor) => this.setZoomFactor(factor)
+  });
+
+  Object.defineProperty(this, 'zoomMode', {
+    get: () => this.getZoomMode(),
+    set: (mode) => this.setZoomMode(mode)
   });
 
   Object.defineProperty(this, 'frameRate', {

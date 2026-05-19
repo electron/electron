@@ -454,7 +454,7 @@ class WebFrameRenderer final
     if (!MaybeGetRenderFrame(isolate, "setName", &render_frame))
       return;
 
-    render_frame->GetWebFrame()->SetName(blink::WebString::FromUTF8(name));
+    render_frame->GetWebFrame()->SetName(blink::WebString::FromUtf8(name));
   }
 
   void SetZoomLevel(v8::Isolate* isolate, double level) {
@@ -587,7 +587,7 @@ class WebFrameRenderer final
       web_frame->ToWebLocalFrame()
           ->FrameWidget()
           ->GetActiveWebInputMethodController()
-          ->CommitText(blink::WebString::FromUTF8(text),
+          ->CommitText(blink::WebString::FromUtf8(text),
                        std::vector<ui::ImeTextSpan>(), blink::WebRange(), 0);
     }
   }
@@ -609,7 +609,7 @@ class WebFrameRenderer final
     if (web_frame->IsWebLocalFrame()) {
       return web_frame->ToWebLocalFrame()
           ->GetDocument()
-          .InsertStyleSheet(blink::WebString::FromUTF8(css), nullptr,
+          .InsertStyleSheet(blink::WebString::FromUtf8(css), nullptr,
                             css_origin)
           .Utf16();
     }
@@ -775,9 +775,9 @@ class WebFrameRenderer final
 
     blink::WebIsolatedWorldInfo info;
     info.security_origin = blink::WebSecurityOrigin::CreateFromString(
-        blink::WebString::FromUTF8(origin_url));
-    info.content_security_policy = blink::WebString::FromUTF8(security_policy);
-    info.human_readable_name = blink::WebString::FromUTF8(name);
+        blink::WebString::FromUtf8(origin_url));
+    info.content_security_policy = blink::WebString::FromUtf8(security_policy);
+    info.human_readable_name = blink::WebString::FromUtf8(name);
     blink::SetIsolatedWorldInfo(world_id, info);
   }
 
@@ -920,7 +920,7 @@ class WebFrameRenderer final
 
     blink::WebElement element =
         render_frame->GetWebFrame()->GetDocument().QuerySelector(
-            blink::WebString::FromUTF8(selector));
+            blink::WebString::FromUtf8(selector));
     if (element.IsNull())  // not found
       return v8::Null(isolate);
 
@@ -935,7 +935,7 @@ class WebFrameRenderer final
       return v8::Null(isolate);
 
     blink::WebFrame* frame = render_frame->GetWebFrame()->FindFrameByName(
-        blink::WebString::FromUTF8(name));
+        blink::WebString::FromUtf8(name));
     return CreateWebFrameRenderer(isolate, frame);
   }
 };

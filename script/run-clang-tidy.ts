@@ -68,6 +68,18 @@ async function runClangTidy(
   if (fix) args.push('--fix');
   if (checks) args.push(`--checks=${checks}`);
 
+  // On Windows the compilation database has compile commands
+  // that can trip up clang-tidy and produce warnings that
+  // then cause the exit code here to be non-zero since we
+  // check for clean output. These extra args prevent those
+  // warnings and let us get a clean run.
+  // NOTE: `--driver-mode=cl` may not be having much effect,
+  // see https://github.com/llvm/llvm-project/pull/66553
+  if (process.env.TARGET_PLATFORM === 'win' || process.platform === 'win32') {
+    args.push('--extra-arg-before=--driver-mode=cl');
+    args.push('--extra-arg=-Wno-unused-command-line-argument');
+  }
+
   // Remove any files that aren't in the compilation database to prevent
   // errors from cluttering up the output. Since the compilation DB is hundreds
   // of megabytes, this is done with streaming to not hold it all in memory.
@@ -217,9 +229,15 @@ async function main(): Promise<boolean> {
     filenames.push(...opts._.map((filename) => path.resolve(filename)));
   } else {
     filenames.push(
-      ...(await findMatchingFiles(path.resolve(SOURCE_ROOT, 'shell'), (filename: string) =>
-        /.*\.(?:cc|mm)$/.test(filename)
-      ))
+      ...(await findMatchingFiles(path.resolve(SOURCE_ROOT, 'shell'), (filename: string) => {
+        // TODO(dsanders11): This file has clang-tidy compilation errors in CI that don't
+        //                   appear locally, so exclude it for now until that's resolved
+        if (process.env.CI && filename.endsWith('/electron_smooth_round_rect.cc')) {
+          return false;
+        }
+
+        return /.*\.(?:cc|mm)$/.test(filename);
+      }))
     );
   }
 

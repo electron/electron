@@ -130,6 +130,19 @@ describe('deprecate', () => {
     expect(msg).to.include('oldFn');
   });
 
+  it('preserves the return value and `this` of a deprecated function with no replacement', () => {
+    deprecate.setHandler(() => {});
+
+    function oldFn(this: any, a: number, b: number) {
+      return { self: this, sum: a + b };
+    }
+    const deprecatedFn = deprecate.removeFunction(oldFn, 'oldFn');
+    const context = { name: 'ctx' };
+    const result = deprecatedFn.call(context, 2, 3);
+
+    expect(result).to.deep.equal({ self: context, sum: 5 });
+  });
+
   it('warns exactly once when a function is deprecated with a replacement', () => {
     let msg;
     deprecate.setHandler((m) => {

@@ -84,9 +84,12 @@ struct LoginItemSettings {
   std::wstring name;
 
   // used in browser::getLoginItemSettings
-  bool executable_will_launch_at_login = false;
   std::vector<LaunchItem> launch_items;
 #endif
+
+  // used in browser::getLoginItemSettings; only meaningful on Windows but
+  // always emitted so consumers don't observe `undefined`.
+  bool executable_will_launch_at_login = false;
 
   LoginItemSettings();
   ~LoginItemSettings();
@@ -161,11 +164,9 @@ class Browser : private WindowListObserver {
 
   std::u16string GetApplicationNameForProtocol(const GURL& url);
 
-#if !BUILDFLAG(IS_LINUX)
   // get the name, icon and path for an application
   v8::Local<v8::Promise> GetApplicationInfoForProtocol(v8::Isolate* isolate,
                                                        const GURL& url);
-#endif
 
   // Set/Get the badge count.
   bool SetBadgeCount(std::optional<int> count);
@@ -368,7 +369,10 @@ class Browser : private WindowListObserver {
   void OnWindowAllClosed() override;
 
   // Observers of the browser.
-  base::ObserverList<BrowserObserver> observers_;
+  base::ObserverList<BrowserObserver,
+                     false,
+                     base::ObserverListReentrancyPolicy::kAllowReentrancy>
+      observers_;
 
   // Tracks tasks requesting file icons.
   base::CancelableTaskTracker cancelable_task_tracker_;

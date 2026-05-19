@@ -170,7 +170,7 @@ void ElectronRenderFrameObserver::CreateIsolatedWorldContext() {
   // This maps to the name shown in the context combo box in the Console tab
   // of the dev tools.
   info.human_readable_name =
-      blink::WebString::FromUTF8("Electron Isolated Context");
+      blink::WebString::FromUtf8("Electron Isolated Context");
   // Setup document's origin policy in isolated world
   info.security_origin = frame->GetDocument().GetSecurityOrigin();
   blink::SetIsolatedWorldInfo(WorldIDs::ISOLATED_WORLD_ID, info);

@@ -161,8 +161,10 @@ void SerialChooserController::GetDevices() {
     }
   }
 
-  chooser_context_->GetPortManager()->GetDevices(base::BindOnce(
-      &SerialChooserController::OnGetDevices, weak_factory_.GetWeakPtr()));
+  chooser_context_->GetPortManager()->GetDevices(
+      /*allow_bluetooth_system_prompt=*/true,
+      base::BindOnce(&SerialChooserController::OnGetDevices,
+                     weak_factory_.GetWeakPtr()));
 }
 
 void SerialChooserController::AdapterPoweredChanged(BluetoothAdapter* adapter,

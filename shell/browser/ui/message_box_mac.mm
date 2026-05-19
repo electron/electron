@@ -9,6 +9,7 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/containers/flat_map.h"
+#include "base/logging.h"
 #include "base/mac/mac_util.h"
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"

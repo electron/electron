@@ -34,6 +34,7 @@
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "components/proxy_config/proxy_prefs.h"
 #include "content/browser/code_cache/generated_code_cache_context.h"  // nogncheck
+#include "content/browser/storage_partition_impl.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/browsing_data_filter_builder.h"
@@ -555,6 +556,7 @@ gin::WrapperInfo Session::kWrapperInfo =
 Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
     : isolate_(isolate),
       network_emulation_token_(base::UnguessableToken::Create()),
+      network_emulation_client_id_(base::UnguessableToken::Create()),
       browser_context_{browser_context} {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
   data->AddDisposeObserver(this);
@@ -829,6 +831,7 @@ void Session::EnableNetworkEmulation(const gin_helper::Dictionary& options) {
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   network_context->SetNetworkConditions(network_emulation_token_,
+                                        network_emulation_client_id_,
                                         std::move(matched_conditions));
 }
 
@@ -837,6 +840,7 @@ void Session::DisableNetworkEmulation() {
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   std::vector<network::mojom::MatchedNetworkConditionsPtr> network_conditions;
   network_context->SetNetworkConditions(network_emulation_token_,
+                                        network_emulation_client_id_,
                                         std::move(network_conditions));
 }
 
@@ -1338,12 +1342,11 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryUsageInfo() {
   return handle;
 }
 
-v8::Local<v8::Value> Session::Cookies(v8::Isolate* isolate) {
-  if (cookies_.IsEmptyThreadSafe()) {
-    auto handle = Cookies::Create(isolate, browser_context());
-    cookies_.Reset(isolate, handle.ToV8());
+api::Cookies* Session::Cookies(v8::Isolate* isolate) {
+  if (!cookies_) {
+    cookies_ = Cookies::Create(isolate, browser_context());
   }
-  return cookies_.Get(isolate);
+  return cookies_;
 }
 
 api::Extensions* Session::Extensions(v8::Isolate* isolate) {
@@ -1449,17 +1452,14 @@ v8::Local<v8::Value> Session::GetPath(v8::Isolate* isolate) {
 
 void Session::SetCodeCachePath(gin::Arguments* args) {
   base::FilePath code_cache_path;
-  auto* storage_partition = browser_context_->GetDefaultStoragePartition();
-  auto* code_cache_context = storage_partition->GetGeneratedCodeCacheContext();
-  if (code_cache_context) {
-    if (!args->GetNext(&code_cache_path) || !code_cache_path.IsAbsolute()) {
-      args->ThrowTypeError(
-          "Absolute path must be provided to store code cache.");
-      return;
-    }
-    code_cache_context->Initialize(
-        code_cache_path, 0 /* allows disk_cache to choose the size */);
+  if (!args->GetNext(&code_cache_path) || !code_cache_path.IsAbsolute()) {
+    args->ThrowTypeError("Absolute path must be provided to store code cache.");
+    return;
   }
+  auto* storage_partition = browser_context_->GetDefaultStoragePartition();
+  static_cast<content::StoragePartitionImpl*>(storage_partition)
+      ->ReinitializeGeneratedCodeCacheContext(
+          code_cache_path, 0 /* allows disk_cache to choose the size */);
 }
 
 v8::Local<v8::Promise> Session::ClearCodeCaches(

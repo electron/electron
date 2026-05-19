@@ -94,7 +94,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}
   virtual void OnWindowLeaveHtmlFullScreen() {}
-  virtual void OnWindowAlwaysOnTopChanged() {}
+  virtual void OnWindowAlwaysOnTopChanged(bool is_always_on_top) {}
   virtual void OnTouchBarItemResult(const std::string& item_id,
                                     const base::DictValue& details) {}
   virtual void OnNewWindowForTab() {}

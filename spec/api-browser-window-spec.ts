@@ -67,6 +67,9 @@ const isBeforeUnload = (event: Event, level: number, message: string) => {
   return message === 'beforeunload';
 };
 
+const getViewportSize = (w: BrowserWindow) =>
+  w.webContents.executeJavaScript('[window.innerWidth, window.innerHeight]');
+
 describe('BrowserWindow module', () => {
   it('sets the correct class name on the prototype', () => {
     expect(BrowserWindow.prototype.constructor.name).to.equal('BrowserWindow');
@@ -2863,6 +2866,26 @@ describe('BrowserWindow module', () => {
 
   describe('BrowserWindow.setAlwaysOnTop(flag, level)', () => {
     let w: BrowserWindow;
+    const alwaysOnTopSettleTimeout = 5000;
+
+    const waitForAlwaysOnTop = async (alwaysOnTop: boolean, label: string) => {
+      try {
+        await waitUntil(() => w.isAlwaysOnTop() === alwaysOnTop, {
+          rate: 50,
+          timeout: alwaysOnTopSettleTimeout
+        });
+      } catch (error) {
+        throw new Error(`${label}: ${(error as Error).message}`);
+      }
+    };
+
+    const setAlwaysOnTopAndWaitForState = async (alwaysOnTop: boolean, label: string) => {
+      const alwaysOnTopChanged = once(w, 'always-on-top-changed') as Promise<[any, boolean]>;
+      w.setAlwaysOnTop(alwaysOnTop);
+      const [, emittedAlwaysOnTop] = await alwaysOnTopChanged;
+      expect(emittedAlwaysOnTop).to.equal(alwaysOnTop, `${label}: unexpected event payload`);
+      await waitForAlwaysOnTop(alwaysOnTop, label);
+    };
 
     afterEach(closeAllWindows);
 
@@ -2895,12 +2918,19 @@ describe('BrowserWindow module', () => {
     });
 
     it('causes the right value to be emitted on `always-on-top-changed`', async () => {
-      const alwaysOnTopChanged = once(w, 'always-on-top-changed') as Promise<[any, boolean]>;
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
-      w.setAlwaysOnTop(true);
-      const [, alwaysOnTop] = await alwaysOnTopChanged;
-      expect(alwaysOnTop).to.be.true('is not alwaysOnTop');
+      await setAlwaysOnTopAndWaitForState(true, 'single transition');
     });
+
+    ifit(process.platform === 'win32')(
+      'eventually becomes consistent with the emitted value after enable and disable transitions',
+      async () => {
+        expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
+
+        await setAlwaysOnTopAndWaitForState(true, 'enable');
+        await setAlwaysOnTopAndWaitForState(false, 'disable');
+      }
+    );
 
     ifit(process.platform === 'darwin')('honors the alwaysOnTop level of a child window', () => {
       w = new BrowserWindow({ show: false });
@@ -3113,6 +3143,17 @@ describe('BrowserWindow module', () => {
       expect(() => {
         w.setVibrancy('i-am-not-a-valid-vibrancy-type' as any);
       }).to.not.throw();
+    });
+
+    it('preserves the web content viewport after setting vibrancy', async () => {
+      const w = new BrowserWindow({ show: true, width: 800, height: 600 });
+
+      await w.loadURL('about:blank');
+      const contentSize = w.getContentSize();
+      expect(await getViewportSize(w)).to.deep.equal(contentSize);
+
+      w.setVibrancy('titlebar');
+      expect(await getViewportSize(w)).to.deep.equal(contentSize);
     });
   });
 
@@ -3409,6 +3450,16 @@ describe('BrowserWindow module', () => {
       expect(contentSize).to.deep.equal([400, 400]);
       const size = w.getSize();
       expect(size).to.deep.equal([400, 400]);
+    });
+  });
+
+  describe('post-construction web content viewport', () => {
+    afterEach(closeAllWindows);
+    it('matches content size', async () => {
+      const w = new BrowserWindow({ show: true, width: 800, height: 600 });
+
+      await w.loadURL('about:blank');
+      expect(await getViewportSize(w)).to.deep.equal(w.getContentSize());
     });
   });
 
@@ -4321,6 +4372,9 @@ describe('BrowserWindow module', () => {
           throw error;
         });
         process.env.sandboxmain = 'foo';
+        defer(() => {
+          delete process.env.sandboxmain;
+        });
         w.loadFile(path.join(fixtures, 'api', 'preload.html'));
         const [, test] = await once(ipcMain, 'answer');
         expect(test.hasCrash).to.be.true('has crash');
@@ -5080,12 +5134,12 @@ describe('BrowserWindow module', () => {
        * of the browser controlled paths, refs https://chromium-review.googlesource.com/c/chromium/src/+/3774416
        */
       const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-mhtml-save-'));
-      const savePageMHTMLPath = path.join(tmpDir, 'save_page.html');
+      const savePageMHTMLPath = path.join(tmpDir, 'save_page.mhtml');
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
       await w.webContents.savePage(savePageMHTMLPath, 'MHTML');
 
-      expect(fs.existsSync(savePageMHTMLPath)).to.be.true('html path');
+      expect(fs.existsSync(savePageMHTMLPath)).to.be.true('mhtml path');
       expect(fs.existsSync(savePageJsPath)).to.be.false('js path');
       expect(fs.existsSync(savePageCssPath)).to.be.false('css path');
       try {
@@ -5461,19 +5515,18 @@ describe('BrowserWindow module', () => {
         w.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
         w.webContents.executeJavaScript('window.open("")');
 
-        w.webContents.on('did-create-window', async (window) => {
-          const childWindow = new BrowserWindow({ parent: window });
+        const [window] = (await once(w.webContents, 'did-create-window')) as [BrowserWindow];
+        const childWindow = new BrowserWindow({ parent: window });
 
-          await setTimeout();
+        await setTimeout();
 
-          const closed = once(childWindow, 'closed');
-          window.close();
-          await closed;
+        const closed = once(childWindow, 'closed');
+        window.close();
+        await closed;
 
-          expect(() => {
-            BrowserWindow.getFocusedWindow();
-          }).to.not.throw();
-        });
+        expect(() => {
+          BrowserWindow.getFocusedWindow();
+        }).to.not.throw();
       });
 
       it('should not affect the show option', () => {
@@ -5731,6 +5784,20 @@ describe('BrowserWindow module', () => {
           width: 400,
           height: 300,
           frame: true
+        });
+
+        w.setResizable(false);
+        expectBoundsEqual(w.getSize(), [400, 300]);
+        w.setResizable(true);
+        expectBoundsEqual(w.getSize(), [400, 300]);
+      });
+
+      it('does not change window size when disabled and enabled for frameless window', () => {
+        const w = new BrowserWindow({
+          show: false,
+          width: 400,
+          height: 300,
+          frame: false
         });
 
         w.setResizable(false);
@@ -6269,6 +6336,22 @@ describe('BrowserWindow module', () => {
 
         expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
       });
+
+      for (const frame of [true, false]) {
+        it(`fills the display completely with content (frame: ${frame})`, () => {
+          const display = screen.getPrimaryDisplay();
+          const w = new BrowserWindow({
+            show: true,
+            frame,
+            // TODO(mitchchn): The menubar does not go away immediately
+            // on enter-full-screen/show so hide to avoid arbitary timeout.
+            autoHideMenuBar: true,
+            fullscreen: true
+          });
+          expectBoundsEqual(w.getBounds(), display.bounds);
+          expectBoundsEqual(w.getContentBounds(), display.bounds);
+        });
+      }
     });
 
     ifdescribe(process.platform === 'darwin')('fullscreenable state', () => {

@@ -43,6 +43,8 @@ class Connector;
 
 namespace electron::api {
 
+class Session;
+
 class UtilityProcessWrapper final
     : public gin::Wrappable<UtilityProcessWrapper>,
       public gin_helper::EventEmitterMixin<UtilityProcessWrapper>,
@@ -60,7 +62,8 @@ class UtilityProcessWrapper final
                         base::FilePath current_working_directory,
                         bool use_plugin_helper,
                         bool create_network_observer,
-                        bool disclaim_responsibility);
+                        bool disclaim_responsibility,
+                        Session* session);
   ~UtilityProcessWrapper() override;
 
   static UtilityProcessWrapper* Create(gin::Arguments* args);
@@ -78,6 +81,8 @@ class UtilityProcessWrapper final
       cppgc::AllocationHandle& allocation_handle) {
     return weak_factory_.GetWeakCell(allocation_handle);
   }
+
+  bool has_session() const { return session_.Get(); }
 
   // gin::Wrappable
   static const gin::WrapperInfo kWrapperInfo;
@@ -142,6 +147,7 @@ class UtilityProcessWrapper final
   GC_PLUGIN_IGNORE(
       "Context tracking of remote is not needed in the browser process.")
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
+  cppgc::Member<Session> session_;
   std::optional<electron::URLLoaderNetworkObserver>
       url_loader_network_observer_;
   base::CallbackListSubscription network_service_gone_subscription_;

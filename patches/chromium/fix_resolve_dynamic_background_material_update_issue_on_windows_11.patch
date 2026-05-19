@@ -8,7 +8,7 @@ such as the background turning black when maximizing the window and
 dynamic background material settings not taking effect.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index e4da40256ce94d6a0896792a8ef2faa18e1fa5d2..3a5833fcc018f32e86c0a95a42937fb9ac6c5a40 100644
+index 95af2da65403d35d4b7a5eb0d032e01ab8d23f62..d7bc932bdc1165273fccade29300739dc15446ef 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 @@ -167,6 +167,10 @@ void DesktopWindowTreeHostWin::FinishTouchDrag(gfx::Point screen_point) {
@@ -36,10 +36,10 @@ index 27322ef34edf3fa8bfbd20b1baddcaf3b7555618..b8d1fa863fd05ebc3ab8ac5ef8c4d813
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 30a74e1dd183d10e7e1335dc52e5cf6c5bc9ddac..f09ce234b88446352de958f1a2ca552bb0b8ab18 100644
+index fce563eee1adc36b672c06ed3669e1ab12f93cf0..7ce3a67beab569751414bba6dd9f99a038b91261 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -990,13 +990,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
+@@ -993,13 +993,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
  
  void HWNDMessageHandler::PaintAsActiveChanged() {
    if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||
@@ -55,7 +55,7 @@ index 30a74e1dd183d10e7e1335dc52e5cf6c5bc9ddac..f09ce234b88446352de958f1a2ca552b
  }
  
  void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
-@@ -1082,7 +1082,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
+@@ -1080,7 +1080,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
    //   allowing ui::GetResizableFrameThickness() to be used consistently when
    //   removing the visible system frame.
    const bool had_caption_on_init = window_style() & WS_CAPTION;
@@ -71,7 +71,7 @@ index 30a74e1dd183d10e7e1335dc52e5cf6c5bc9ddac..f09ce234b88446352de958f1a2ca552b
    const bool can_maximize = can_resize && delegate_->CanMaximize();
  
    auto set_style_func = [&style](LONG bit, bool should_set) {
-@@ -1687,11 +1694,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
+@@ -1689,11 +1696,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
    // through, but that isn't the case when using Direct3D to draw transparent
    // windows. So we route translucent windows throught to the delegate to
    // allow for a custom hit mask.

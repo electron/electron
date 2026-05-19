@@ -9,14 +9,21 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as net from 'node:net';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as readline from 'node:readline';
 import { setTimeout } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 import { collectStreamBody, getResponse } from './lib/net-helpers';
-import { ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
+import { defer, ifdescribe, ifit, isWayland, listen, waitUntil } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
+import {
+  makeXdgMockDirectories,
+  spawnProtocolInfoWithXdgMock,
+  spawnProtocolNameWithXdgMock,
+  writeProtocolAssociation
+} from './lib/xdg-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -87,6 +94,9 @@ describe('app module', () => {
   });
 
   describe('app name APIs', () => {
+    const originalName = app.name;
+    afterEach(() => (app.name = originalName));
+
     describe('with properties', () => {
       it('returns the name field of package.json', () => {
         expect(app.name).to.equal('Electron Test Main');
@@ -97,7 +107,6 @@ describe('app module', () => {
         app.name = 'electron-test-name';
 
         expect(app.name).to.equal('electron-test-name');
-        app.name = 'Electron Test Main';
       });
     });
 
@@ -111,7 +120,6 @@ describe('app module', () => {
         app.setName('electron-test-name');
 
         expect(app.getName()).to.equal('electron-test-name');
-        app.setName('Electron Test Main');
       });
     });
   });
@@ -833,7 +841,8 @@ describe('app module', () => {
           openAsHidden: false,
           restoreState: false,
           wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false
+          wasOpenedAsHidden: false,
+          executableWillLaunchAtLogin: false
         });
       });
 
@@ -871,7 +880,8 @@ describe('app module', () => {
           openAsHidden: false,
           restoreState: false,
           wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false
+          wasOpenedAsHidden: false,
+          executableWillLaunchAtLogin: false
         });
       });
     });
@@ -1222,6 +1232,9 @@ describe('app module', () => {
   });
 
   describe('getPath(name)', () => {
+    const originalMusicPath = app.getPath('music');
+    afterEach(() => app.setPath('music', originalMusicPath));
+
     it('returns paths that exist', () => {
       const paths = [
         fs.existsSync(app.getPath('exe')),
@@ -1278,6 +1291,9 @@ describe('app module', () => {
   });
 
   describe('setPath(name, path)', () => {
+    const originalMusicPath = app.getPath('music');
+    afterEach(() => app.setPath('music', originalMusicPath));
+
     it('throws when a relative path is passed', () => {
       const badPath = 'hey/hi/hello';
 
@@ -1510,9 +1526,79 @@ describe('app module', () => {
     it('returns an empty string for a bogus protocol', () => {
       expect(app.getApplicationNameForProtocol('bogus-protocol://')).to.equal('');
     });
+
+    ifdescribe(process.platform === 'linux')('on Linux with mocked XDG dirs', () => {
+      const desktopFileId = 'mock-browser.desktop';
+      const mockDisplayName = 'Mock Browser';
+      const mockScheme = 'mockproto';
+      const mockMimeType = `x-scheme-handler/${mockScheme}`;
+
+      let xdgDir: string;
+      let xdgDataHome: string;
+      let xdgConfigHome: string;
+      before(() => {
+        ({ xdgDir, xdgDataHome, xdgConfigHome } = makeXdgMockDirectories('electron-xdg-name-'));
+        writeProtocolAssociation(
+          xdgDataHome,
+          xdgConfigHome,
+          desktopFileId,
+          mockDisplayName,
+          '/usr/bin/true %u',
+          mockMimeType
+        );
+      });
+
+      after(() => {
+        fs.rmSync(xdgDir, { recursive: true, force: true });
+      });
+
+      it('returns the display name for a registered protocol', async () => {
+        const name = await spawnProtocolNameWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome);
+        expect(name).to.equal(mockDisplayName);
+      });
+
+      it('returns an empty string for an unregistered protocol', async () => {
+        const name = await spawnProtocolNameWithXdgMock('unregistered-proto://', xdgDataHome, xdgConfigHome);
+        expect(name).to.equal('');
+      });
+    });
   });
 
-  ifdescribe(process.platform !== 'linux')('getApplicationInfoForProtocol()', () => {
+  describe('getApplicationInfoForProtocol()', () => {
+    const fixtureIcon = path.join(fixturesPath, 'assets', '1x1.png');
+    const desktopFileId = 'mock-browser.desktop';
+    const mockDisplayName = 'Mock Browser';
+    const mockScheme = 'mockproto';
+    const mockMimeType = `x-scheme-handler/${mockScheme}`;
+
+    let xdgDir: string;
+    let xdgDataHome: string;
+    let xdgConfigHome: string;
+    let xdgBinDir: string;
+
+    before(() => {
+      if (process.platform !== 'linux') {
+        return;
+      }
+
+      ({ xdgDir, xdgDataHome, xdgConfigHome, xdgBinDir } = makeXdgMockDirectories('electron-xdg-app-info-'));
+      writeProtocolAssociation(
+        xdgDataHome,
+        xdgConfigHome,
+        desktopFileId,
+        mockDisplayName,
+        '/usr/bin/true %u',
+        mockMimeType,
+        fixtureIcon
+      );
+    });
+
+    after(() => {
+      if (process.platform === 'linux') {
+        fs.rmSync(xdgDir, { recursive: true, force: true });
+      }
+    });
+
     it('returns promise rejection for a bogus protocol', async function () {
       await expect(app.getApplicationInfoForProtocol('bogus-protocol://')).to.eventually.be.rejectedWith(
         'Unable to retrieve installation path to app'
@@ -1520,16 +1606,118 @@ describe('app module', () => {
     });
 
     it('returns resolved promise with appPath, displayName and icon', async function () {
+      if (process.platform === 'linux') {
+        const appInfo = await spawnProtocolInfoWithXdgMock(`${mockScheme}://`, xdgDataHome, xdgConfigHome);
+        expect(appInfo.name).to.equal(mockDisplayName);
+        expect(appInfo.path).to.equal('/usr/bin/true');
+        expect(appInfo.hasIcon).to.equal(true);
+        return;
+      }
+
       const appInfo = await app.getApplicationInfoForProtocol('https://');
       expect(appInfo.path).not.to.be.undefined();
       expect(appInfo.name).not.to.be.undefined();
       expect(appInfo.icon).not.to.be.undefined();
+    });
+
+    ifit(process.platform === 'linux')('resolves an executable name via PATH', async () => {
+      const pathLookupExecutable = 'mock-browser';
+      const pathLookupExecutablePath = path.join(xdgBinDir, pathLookupExecutable);
+      const pathLookupDisplayName = 'Mock Browser PATH';
+      const pathLookupScheme = 'mockproto-path';
+      const pathLookupMimeType = `x-scheme-handler/${pathLookupScheme}`;
+
+      fs.writeFileSync(pathLookupExecutablePath, '#!/bin/sh\nexit 0\n');
+      fs.chmodSync(pathLookupExecutablePath, 0o755);
+      writeProtocolAssociation(
+        xdgDataHome,
+        xdgConfigHome,
+        'mock-browser-path.desktop',
+        pathLookupDisplayName,
+        `${pathLookupExecutable} %u`,
+        pathLookupMimeType,
+        fixtureIcon
+      );
+
+      const appInfo = await spawnProtocolInfoWithXdgMock(`${pathLookupScheme}://`, xdgDataHome, xdgConfigHome, {
+        PATH: [xdgBinDir, process.env.PATH].filter(Boolean).join(':')
+      });
+      expect(appInfo.name).to.equal(pathLookupDisplayName);
+      expect(appInfo.path).to.equal(pathLookupExecutablePath);
+      expect(appInfo.hasIcon).to.equal(true);
     });
   });
 
   describe('isDefaultProtocolClient()', () => {
     it('returns false for a bogus protocol', () => {
       expect(app.isDefaultProtocolClient('bogus-protocol://')).to.equal(false);
+    });
+  });
+
+  ifdescribe(process.platform === 'linux')('default protocol client APIs', () => {
+    const protocol = 'electron-test-linux';
+    const desktopFileId = 'electron-test.desktop';
+    const protocolMimeType = `x-scheme-handler/${protocol}`;
+
+    // GIO caches XDG directory paths at process startup, so we must
+    // operate on the directories it is actually monitoring rather than
+    // creating isolated temp dirs.
+    const gioDataHome = process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share');
+    const gioConfigHome = process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config');
+    const desktopFileDst = path.join(gioDataHome, 'applications', desktopFileId);
+    const mimeappsListPath = path.join(gioConfigHome, 'mimeapps.list');
+
+    beforeEach(() => {
+      const oldDesktopName = process.env.CHROME_DESKTOP;
+
+      // Install the test .desktop file where GIO can discover it.
+      fs.mkdirSync(path.dirname(desktopFileDst), { recursive: true });
+      fs.copyFileSync(
+        path.join(fixturesPath, 'api', 'xdg-mock', 'data', 'applications', desktopFileId),
+        desktopFileDst
+      );
+
+      app.setDesktopName(desktopFileId);
+
+      defer(() => {
+        // Restore CHROME_DESKTOP.
+        if (oldDesktopName !== undefined) {
+          process.env.CHROME_DESKTOP = oldDesktopName;
+        } else {
+          delete process.env.CHROME_DESKTOP;
+        }
+
+        // Remove the test .desktop file.
+        try {
+          fs.unlinkSync(desktopFileDst);
+        } catch {}
+
+        // Remove any association for the test protocol from mimeapps.list.
+        if (fs.existsSync(mimeappsListPath)) {
+          const content = fs.readFileSync(mimeappsListPath, 'utf8');
+          const cleaned = content
+            .split('\n')
+            .filter((line) => !line.includes(protocolMimeType))
+            .join('\n');
+          if (cleaned !== content) {
+            fs.writeFileSync(mimeappsListPath, cleaned);
+          }
+        }
+      });
+    });
+
+    it('sets and queries the default protocol client', async () => {
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
+
+      // GIO needs to discover the newly installed .desktop file via inotify.
+      await waitUntil(() => app.setAsDefaultProtocolClient(protocol));
+
+      await waitUntil(() => app.isDefaultProtocolClient(protocol));
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(true);
+
+      // Changing identity should make the check return false.
+      app.setDesktopName('other-app.desktop');
+      expect(app.isDefaultProtocolClient(protocol)).to.equal(false);
     });
   });
 
@@ -2003,6 +2191,8 @@ describe('app module', () => {
   });
 
   describe('commandLine.hasSwitch', () => {
+    afterEach(() => app.commandLine.removeSwitch('foobar1'));
+
     it('returns true when present', () => {
       app.commandLine.appendSwitch('foobar1');
       expect(app.commandLine.hasSwitch('foobar1')).to.equal(true);
@@ -2026,6 +2216,11 @@ describe('app module', () => {
   });
 
   describe('commandLine.getSwitchValue', () => {
+    afterEach(() => {
+      app.commandLine.removeSwitch('foobar');
+      app.commandLine.removeSwitch('foobar1');
+    });
+
     it('returns the value when present', () => {
       app.commandLine.appendSwitch('foobar', 'æøåü');
       expect(app.commandLine.getSwitchValue('foobar')).to.equal('æøåü');

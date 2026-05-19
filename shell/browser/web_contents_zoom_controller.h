@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 #define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 
+#include <optional>
+
 #include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
@@ -92,12 +94,32 @@ class WebContentsZoomController
 
   ZoomMode zoom_mode() const { return zoom_mode_; }
 
+  // Lightweight setter for the zoom mode without going through SetZoomMode(),
+  // which manipulates HostZoomMap and requires an initialized RenderFrameHost.
+  // Used during initialization before the first navigation commits.
+  void set_zoom_mode(ZoomMode mode) { zoom_mode_ = mode; }
+
+  // Lightweight setter for the tracked zoom level without going through
+  // HostZoomMap. Used during initialization when RFH is not yet available.
+  void set_zoom_level(double level) { zoom_level_ = level; }
+
+  // When true, the zoom mode persists across cross-document navigations
+  // instead of resetting to ZOOM_MODE_DEFAULT.
+  void SetPersistZoomMode(bool persist) { persist_zoom_mode_ = persist; }
+  bool persist_zoom_mode() const { return persist_zoom_mode_; }
+
   // Convenience method to get default zoom level. Implemented here for
   // inlining.
   double GetDefaultZoomLevel() const {
     return content::HostZoomMap::GetForWebContents(web_contents())
         ->GetDefaultZoomLevel();
   }
+
+  // Applies zoom updates for a navigation. Safe to call before the zoom
+  // controller's own DidFinishNavigation fires — a guard prevents
+  // double-execution so WebContents can call this before emitting
+  // did-navigate to ensure JS handlers see the correct zoom values.
+  void ProcessNavigationZoom(content::NavigationHandle* navigation_handle);
 
  protected:
   // content::WebContentsObserver overrides:
@@ -123,6 +145,14 @@ class WebContentsZoomController
   // The current zoom mode.
   ZoomMode zoom_mode_ = ZOOM_MODE_DEFAULT;
 
+  // Whether to persist zoom mode across navigations.
+  bool persist_zoom_mode_ = false;
+
+  // ID of the last navigation whose zoom was already processed.
+  // Prevents ProcessNavigationZoom from running twice for the same
+  // navigation regardless of observer call order.
+  int64_t last_processed_navigation_id_ = -1;
+
   // The current zoom level.
   double zoom_level_;
 
@@ -132,7 +162,7 @@ class WebContentsZoomController
   int old_process_id_ = -1;
   int old_view_id_ = -1;
 
-  std::unique_ptr<ZoomChangedEventData> event_data_;
+  std::optional<ZoomChangedEventData> event_data_;
 
   raw_ptr<WebContentsZoomController> embedder_zoom_controller_ = nullptr;
 

@@ -31,7 +31,7 @@ bool Converter<electron::LaunchItem>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<electron::LaunchItem>::ToV8(
     v8::Isolate* isolate,
-    electron::LaunchItem val) {
+    const electron::LaunchItem& val) {
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("name", val.name);
   dict.Set("path", val.path);
@@ -66,15 +66,17 @@ bool Converter<electron::LoginItemSettings>::FromV8(
 
 v8::Local<v8::Value> Converter<electron::LoginItemSettings>::ToV8(
     v8::Isolate* isolate,
-    electron::LoginItemSettings val) {
+    const electron::LoginItemSettings& val) {
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 #if BUILDFLAG(IS_WIN)
   dict.Set("launchItems", val.launch_items);
-  dict.Set("executableWillLaunchAtLogin", val.executable_will_launch_at_login);
 #elif BUILDFLAG(IS_MAC)
   if (base::mac::MacOSMajorVersion() >= 13)
     dict.Set("status", val.status);
 #endif
+  // Always emit `executableWillLaunchAtLogin` so callers don't see undefined
+  // on non-Windows platforms; the value is only meaningful on Windows.
+  dict.Set("executableWillLaunchAtLogin", val.executable_will_launch_at_login);
   dict.Set("openAtLogin", val.open_at_login);
   dict.Set("openAsHidden", val.open_as_hidden);
   dict.Set("restoreState", val.restore_state);

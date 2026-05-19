@@ -2,35 +2,22 @@ import { BrowserWindow } from 'electron';
 
 import { expect } from 'chai';
 
-import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { stripVTControlCharacters } from 'node:util';
+
+import { spawnAndWait } from './lib/spec-helpers';
+
+const fixtureTimeout = 20000;
+const fixtureKillTimeout = 5000;
 
 const runFixture = async (appPath: string, args: string[] = []) => {
-  const result = cp.spawn(process.execPath, [appPath, ...args], {
-    stdio: 'pipe'
+  return await spawnAndWait(process.execPath, [appPath, ...args], {
+    timeout: fixtureTimeout,
+    killTimeout: fixtureKillTimeout,
+    stripOutput: true
   });
-
-  const stdout: Buffer[] = [];
-  const stderr: Buffer[] = [];
-  result.stdout.on('data', (chunk) => stdout.push(chunk));
-  result.stderr.on('data', (chunk) => stderr.push(chunk));
-
-  const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve) => {
-    result.on('close', (code, signal) => {
-      resolve([code, signal]);
-    });
-  });
-
-  return {
-    code,
-    signal,
-    stdout: stripVTControlCharacters(Buffer.concat(stdout).toString().trim()),
-    stderr: stripVTControlCharacters(Buffer.concat(stderr).toString().trim())
-  };
 };
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'esm');

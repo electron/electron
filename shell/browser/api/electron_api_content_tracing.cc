@@ -12,7 +12,13 @@
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
+#if !defined(ADDRESS_SANITIZER)
+#include "components/heap_profiling/multi_process/client_connection_manager.h"
+#include "components/heap_profiling/multi_process/supervisor.h"
+#include "components/services/heap_profiling/public/cpp/settings.h"
+#endif  // !defined(ADDRESS_SANITIZER)
 #include "content/public/browser/tracing_controller.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -102,6 +108,12 @@ v8::Local<v8::Promise> StopRecording(gin::Arguments* const args) {
   gin_helper::Promise<base::FilePath> promise{args->isolate()};
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
+
   base::FilePath path;
   if (args->GetNext(&path) && !path.empty()) {
     StopTracing(std::move(promise), std::make_optional(path));
@@ -120,6 +132,12 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
   gin_helper::Promise<const std::set<std::string>&> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
+
   // Note: This method always succeeds.
   TracingController::GetInstance()->GetCategories(base::BindOnce(
       gin_helper::Promise<const std::set<std::string>&>::ResolvePromise,
@@ -128,11 +146,97 @@ v8::Local<v8::Promise> GetCategories(v8::Isolate* isolate) {
   return handle;
 }
 
+#if !defined(ADDRESS_SANITIZER)
+
+std::tuple<heap_profiling::Mode, heap_profiling::mojom::StackMode, uint32_t>
+GetHeapProfilingOptions(gin::Arguments* const args) {
+  heap_profiling::Mode mode = heap_profiling::Mode::kAll;
+  heap_profiling::mojom::StackMode stack_mode =
+      heap_profiling::mojom::StackMode::NATIVE_WITHOUT_THREAD_NAMES;
+  uint32_t sampling_rate = 100000;
+
+  gin_helper::Dictionary options;
+
+  if (args->GetNext(&options)) {
+    std::string mode_in;
+    std::string stack_mode_in;
+    std::optional<uint32_t> sampling_rate_in;
+
+    if (options.Get("mode", &mode_in)) {
+      heap_profiling::Mode converted =
+          heap_profiling::ConvertStringToMode(mode_in);
+      if (converted != heap_profiling::Mode::kNone &&
+          converted != heap_profiling::Mode::kManual) {
+        mode = converted;
+      }
+    }
+    if (options.Get("stackMode", &stack_mode_in)) {
+      stack_mode = heap_profiling::ConvertStringToStackMode(stack_mode_in);
+    }
+    if (options.GetOptional("samplingRate", &sampling_rate_in) &&
+        sampling_rate_in && sampling_rate_in.value() >= 1000 &&
+        sampling_rate_in.value() <= 10000000) {
+      sampling_rate = sampling_rate_in.value();
+    }
+  }
+
+  return {mode, stack_mode, sampling_rate};
+}
+
+bool g_heap_profiling_started = false;
+
+#endif  // !defined(ADDRESS_SANITIZER)
+
+v8::Local<v8::Promise> EnableHeapProfiling(gin::Arguments* const args) {
+#if defined(ADDRESS_SANITIZER)
+  // Memory sanitizers are using large memory shadow to keep track of memory
+  // state. Using memlog and memory sanitizers at the same time is slowing down
+  // user experience, causing the browser to be barely responsive. In theory,
+  // memlog and memory sanitizers are compatible and can run at the same time.
+  return gin_helper::Promise<void>::ResolvedPromise(args->isolate());
+#else
+  gin_helper::Promise<void> promise(args->isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  auto* supervisor = heap_profiling::Supervisor::GetInstance();
+
+  if (supervisor->HasStarted() || g_heap_profiling_started) {
+    promise.RejectWithErrorMessage("Heap profiling is already enabled");
+    return handle;
+  }
+
+  // HasStarted() becomes true asynchronously. We keep track of whether we have
+  // called Start() already to avoid calling Start() twice.
+  g_heap_profiling_started = true;
+
+  auto [mode, stack_mode, sampling_rate] = GetHeapProfilingOptions(args);
+
+  supervisor->SetClientConnectionManagerConstructor(
+      [](base::WeakPtr<heap_profiling::Controller> controller_weak_ptr,
+         heap_profiling::Mode mode) {
+        return std::make_unique<heap_profiling::ClientConnectionManager>(
+            controller_weak_ptr, mode);
+      });
+
+  supervisor->Start(mode, stack_mode, sampling_rate,
+                    base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
+                                   std::move(promise)));
+
+  return handle;
+#endif  // defined(ADDRESS_SANITIZER)
+}
+
 v8::Local<v8::Promise> StartTracing(
     v8::Isolate* isolate,
     const base::trace_event::TraceConfig& trace_config) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
 
   if (!TracingController::GetInstance()->StartTracing(
           trace_config,
@@ -165,6 +269,12 @@ v8::Local<v8::Promise> GetTraceBufferUsage(v8::Isolate* isolate) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  if (!electron::Browser::Get()->is_ready()) {
+    promise.RejectWithErrorMessage(
+        "contentTracing cannot be used before app is ready");
+    return handle;
+  }
+
   // Note: This method always succeeds.
   TracingController::GetInstance()->GetTraceBufferUsage(
       base::BindOnce(&OnTraceBufferUsageAvailable, std::move(promise)));
@@ -181,6 +291,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("startRecording", &StartTracing);
   dict.SetMethod("stopRecording", &StopRecording);
   dict.SetMethod("getTraceBufferUsage", &GetTraceBufferUsage);
+  dict.SetMethod("enableHeapProfiling", &EnableHeapProfiling);
 }
 
 }  // namespace

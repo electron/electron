@@ -22,10 +22,10 @@ Additionally:
    invisible in trace viewers.
 
 diff --git a/src/builtins/builtins-trace.cc b/src/builtins/builtins-trace.cc
-index c17d72d477d4c28d25e3f385d8af3c5b7024f7f7..5990e6cee1d08ba0e86059cb7f3affc878dcc632 100644
+index 76e9675d795bd6f65ec1b9c8a524b713160de7cc..ee0967847236b665d2e61b90128c6b4e79b74ea8 100644
 --- a/src/builtins/builtins-trace.cc
 +++ b/src/builtins/builtins-trace.cc
-@@ -181,37 +181,44 @@ BUILTIN(Trace) {
+@@ -183,37 +183,44 @@ BUILTIN(Trace) {
    }
  
  #if defined(V8_USE_PERFETTO)
@@ -49,7 +49,7 @@ index c17d72d477d4c28d25e3f385d8af3c5b7024f7f7..5990e6cee1d08ba0e86059cb7f3affc8
 +  // Use the legacy trace event macros which support all phase types
 +  // (including nestable async 'b'/'e'/'n' and counter 'C' used by Node.js)
 +  if (flags & TRACE_EVENT_FLAG_HAS_ID) {
-     if (num_args) {
+     if (has_arg) {
        MaybeUtf8 arg_contents(isolate, Cast<String>(arg_json));
 -      auto annotation = ctx.event()->add_debug_annotations();
 -      annotation->set_name(arg_name);
@@ -65,7 +65,7 @@ index c17d72d477d4c28d25e3f385d8af3c5b7024f7f7..5990e6cee1d08ba0e86059cb7f3affc8
 -      auto legacy_event = ctx.event()->set_legacy_event();
 -      legacy_event->set_global_id(id);
 +  } else {
-+    if (num_args) {
++    if (has_arg) {
 +      MaybeUtf8 arg_contents(isolate, Cast<String>(arg_json));
 +      INTERNAL_TRACE_EVENT_ADD(
 +          phase, dynamic_category, perfetto::DynamicString(*name), flags,

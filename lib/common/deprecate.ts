@@ -56,7 +56,7 @@ export function removeFunction<T extends Function>(fn: T, removedName: string): 
   const warn = warnOnce(`${fn.name} function`);
   return function (this: any) {
     warn();
-    fn.apply(this, arguments);
+    return fn.apply(this, arguments);
   } as unknown as typeof fn;
 }
 

@@ -12,20 +12,28 @@
 #include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo AutoUpdater::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+const gin::WrapperInfo AutoUpdater::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronAutoUpdater);
 
-AutoUpdater::AutoUpdater() {
+AutoUpdater::AutoUpdater(v8::Isolate* isolate) {
   auto_updater::AutoUpdater::SetDelegate(this);
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  data->AddDisposeObserver(this);
 }
 
-AutoUpdater::~AutoUpdater() {
+AutoUpdater::~AutoUpdater() = default;
+
+void AutoUpdater::OnBeforeMicrotasksRunnerDispose(v8::Isolate* isolate) {
+  gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+  data->RemoveDisposeObserver(this);
   auto_updater::AutoUpdater::SetDelegate(nullptr);
 }
 
@@ -120,8 +128,9 @@ void AutoUpdater::QuitAndInstall() {
 }
 
 // static
-gin_helper::Handle<AutoUpdater> AutoUpdater::Create(v8::Isolate* isolate) {
-  return gin_helper::CreateHandle(isolate, new AutoUpdater());
+AutoUpdater* AutoUpdater::Create(v8::Isolate* isolate) {
+  return cppgc::MakeGarbageCollected<AutoUpdater>(
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate);
 }
 
 gin::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
@@ -138,8 +147,12 @@ gin::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
       .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
 }
 
-const char* AutoUpdater::GetTypeName() {
-  return "AutoUpdater";
+const gin::WrapperInfo* AutoUpdater::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* AutoUpdater::GetHumanReadableName() const {
+  return "Electron / AutoUpdater";
 }
 
 }  // namespace electron::api

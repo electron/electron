@@ -13,6 +13,40 @@ const allDocs = fs
 
 const typingFiles = fs.readdirSync(path.resolve(__dirname, '../typings')).map((child) => `typings/${child}`);
 
+// Recursively collect files under `dir` matching any of the provided
+// extensions. Paths are returned relative to `rootPath` using forward slashes
+// so they are consumable from BUILD.gn.
+const collectHeaderSources = (dir: string, extensions: readonly string[]): string[] => {
+  if (!fs.existsSync(dir)) return [];
+  const results: string[] = [];
+  const walk = (current: string) => {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+      } else if (entry.isFile() && extensions.some((ext) => entry.name.endsWith(ext))) {
+        results.push(path.relative(rootPath, full).replace(/\\/g, '/'));
+      }
+    }
+  };
+  walk(dir);
+  return results.sort();
+};
+
+// Inputs for the `generate_node_headers` action in BUILD.gn. Any change to
+// these files must invalidate the generated node_headers directory, otherwise
+// stale copies are left behind after a Node.js or V8 bump (see electron#51091
+// fallout). install.py is the source of truth for which headers are copied,
+// so it is included explicitly; the rest are enumerated by recursive scan to
+// cover headers that install.py may pick up dynamically.
+const nodeHeaderSources = Array.from(
+  new Set([
+    '../third_party/electron_node/tools/install.py',
+    ...collectHeaderSources(path.resolve(__dirname, '../../third_party/electron_node/src'), ['.h']),
+    ...collectHeaderSources(path.resolve(__dirname, '../../v8/include'), ['.h', '.inc'])
+  ])
+).sort();
+
 const main = async () => {
   const webpackTargets = [
     {
@@ -114,6 +148,10 @@ const main = async () => {
 auto_filenames = {
   api_docs = [
 ${allDocs.map((doc) => `    "${doc}",`).join('\n')}
+  ]
+
+  node_header_sources = [
+${nodeHeaderSources.map((src) => `    "${src}",`).join('\n')}
   ]
 
 ${webpackTargetsWithDeps

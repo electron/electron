@@ -168,10 +168,10 @@ index 06a4f8a239855571dcc67cd81e7da7a255a9ebfd..1fa9e314ad796cdf74f718f0eb2a1553
      }
  
 diff --git a/node.gyp b/node.gyp
-index f5cd416b5fe7a51084bc4af9a4427a8e62599fd8..b7072ce74354495bec49357f962f4ef2999bf727 100644
+index 0620850e0872cfea9a1241b2a56f7bede7fa291a..934bee079ed785e4e72f33f71f445aae4ca6c0a6 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -182,9 +182,9 @@
+@@ -184,9 +184,9 @@
        'src/timers.cc',
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
@@ -182,7 +182,7 @@ index f5cd416b5fe7a51084bc4af9a4427a8e62599fd8..b7072ce74354495bec49357f962f4ef2
        'src/tracing/traced_value.cc',
        'src/tty_wrap.cc',
        'src/udp_wrap.cc',
-@@ -314,9 +314,9 @@
+@@ -318,9 +318,9 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',
@@ -194,10 +194,10 @@ index f5cd416b5fe7a51084bc4af9a4427a8e62599fd8..b7072ce74354495bec49357f962f4ef2
        'src/tracing/traced_value.h',
        'src/timer_wrap.h',
 diff --git a/src/async_wrap.cc b/src/async_wrap.cc
-index 301f77c419f178c4eea258e0896327f69389dda7..d5068a18392a6128ceee7f0146f8f9c77f9924bb 100644
+index 4ebb63b2f591dde25ead2ddd869e1740adc243db..f9123d5a629a43783b9a3ffe14b57f6d6cc9ac5d 100644
 --- a/src/async_wrap.cc
 +++ b/src/async_wrap.cc
-@@ -110,8 +110,7 @@ void AsyncWrap::EmitPromiseResolve(Environment* env, double async_id) {
+@@ -113,8 +113,7 @@ void AsyncWrap::EmitPromiseResolve(Environment* env, double async_id) {
  }
  
  void AsyncWrap::EmitTraceAsyncStart() const {
@@ -208,10 +208,10 @@ index 301f77c419f178c4eea258e0896327f69389dda7..d5068a18392a6128ceee7f0146f8f9c7
                                  get_trigger_async_id());
      TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(async_hooks),
 diff --git a/src/env.cc b/src/env.cc
-index fdabe48dd7776c59298f7d972286d0d2ed062752..c185d822b29c0b691bbf5f724f71f59638c6184d 100644
+index bbb30dd8a50f7b8550caf1967de8547cc7d8af47..ef6e14245fa668d04d0e9b1f71fcce48ec267f4e 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -650,8 +650,8 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
+@@ -649,8 +649,8 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
      return;
    }
  
@@ -222,7 +222,7 @@ index fdabe48dd7776c59298f7d972286d0d2ed062752..c185d822b29c0b691bbf5f724f71f596
  
    Isolate* isolate = env_->isolate();
    HandleScope handle_scope(isolate);
-@@ -893,8 +893,7 @@ Environment::Environment(IsolateData* isolate_data,
+@@ -892,8 +892,7 @@ Environment::Environment(IsolateData* isolate_data,
        time_origin_timestamp_,
        MAYBE_FIELD_PTR(env_info, performance_state));
  
@@ -285,10 +285,10 @@ index 0bc086ccd1ff449c0f3fb08a972a0c45d3178f1c..ca74e83ef6f7b0e8b8496457af3813f0
    bool use_wasm_trap_handler =
        !per_process::cli_options->disable_wasm_trap_handler;
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 3c234205e89be7e976dae5c3fcc73ca67953e034..986a2d8da7fd04b5d4060d9c8d44c61a231dcce6 100644
+index d3568da72a0f99419b4029b93d9eb1e9328d6bd5..0f5da3e48a2049a3e61fe81da94426a3b5928c7d 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -1026,8 +1026,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+@@ -1001,8 +1001,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
  
    ContextifyScript* contextify_script = New(env, args.This());
  
@@ -331,7 +331,7 @@ index c9173d404c79a69743fc75ddb6bba0ac9579c1ef..8ffac047a69b3900f37d712334c504a1
  #define FS_DIR_ASYNC_TRACE_BEGIN0(fs_type, id)                                 \
    TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(TRACING_CATEGORY_NODE2(fs_dir, async),     \
 diff --git a/src/node_file.cc b/src/node_file.cc
-index 96aac2d86695732bf6805f2ad2168a62241b5045..c7a9648b0f83e910190dc620f4b72577ffde6c44 100644
+index bf202f5e2bf5eaf2dd9192dfd701e621126c492c..4c0a128628e0184af53451d37149b33342f6e647 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -147,16 +147,23 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {
@@ -799,7 +799,7 @@ index 0bc9df81d87562243817a6618641a49b602654e3..b6dd8b9a9c21051f3d385d5ecea9c50c
  namespace tracing {
  
 diff --git a/unofficial.gni b/unofficial.gni
-index bff7b0650cfe8578a044e45d0f9e352859909695..a773152813376bef1fa227c331241a1d944c9317 100644
+index df0ae804a5338d8f2ec4d331a1e2ed053c3c3955..eeffbafa4023ed68f56410c858e459f569ed6344 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -143,7 +143,10 @@ template("node_gn_build") {

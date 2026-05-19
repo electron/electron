@@ -31,13 +31,13 @@ jobs:
       contents: read
     steps:
       - name: Generate GitHub App token
-        uses: electron/github-app-auth-action@e14e47722ed120360649d0789e25b9baece12725 # v2.0.0
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
         id: generate-token
         with:
           creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
           org: electron
       - name: Get project item status
-        uses: dsanders11/project-actions/get-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
+        uses: dsanders11/project-actions/get-item@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         id: get-item
         with:
           token: ${{ steps.generate-token.outputs.token }}
@@ -47,7 +47,7 @@ jobs:
         if: >-
           (steps.get-item.outputs.field-status == '🛑 Needs Submitter Response'
           || steps.get-item.outputs.field-status == '🟡 WIP')
-        uses: dsanders11/project-actions/edit-item@5767984408ccc6742f83acc8b8d8ea5e09f329af # v2.0.0
+        uses: dsanders11/project-actions/edit-item@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
         with:
           token: ${{ steps.generate-token.outputs.token }}
           project-number: 118

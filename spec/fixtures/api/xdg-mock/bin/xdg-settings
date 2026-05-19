@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+get_handler() {
+  for list in "$XDG_CONFIG_HOME/mimeapps.list" "$XDG_DATA_HOME/applications/mimeapps.list" "$XDG_DATA_HOME/applications/defaults.list"; do
+    if [ -f "$list" ]; then
+      result=$(grep "^x-scheme-handler/$1=" "$list" | head -n 1 | cut -d= -f2 | cut -d";" -f1)
+      if [ -n "$result" ]; then
+        printf "%s\n" "$result"
+        return 0
+      fi
+    fi
+  done
+  return 1
+}
+if [ "$1" = "set" ] && [ "$2" = "default-url-scheme-handler" ]; then
+  mkdir -p "$XDG_CONFIG_HOME"
+  {
+    printf "[Default Applications]\n"
+    printf "x-scheme-handler/%s=%s\n" "$3" "$4"
+  } > "$XDG_CONFIG_HOME/mimeapps.list"
+  exit 0
+fi
+if [ "$1" = "check" ] && [ "$2" = "default-url-scheme-handler" ]; then
+  if [ "$(get_handler "$3" 2>/dev/null || true)" = "$4" ]; then
+    printf "yes\n"
+  else
+    printf "no\n"
+  fi
+  exit 0
+fi
+exit 1

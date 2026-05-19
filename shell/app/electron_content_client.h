@@ -36,6 +36,9 @@ class ElectronContentClient : public content::ContentClient {
       std::vector<media::CdmHostFilePath>* cdm_host_file_paths) override;
   bool IsFilePickerAllowedForCrossOriginSubframe(
       const url::Origin& origin) override;
+  void ExposeInterfacesToBrowser(
+      scoped_refptr<base::SequencedTaskRunner> io_task_runner,
+      mojo::BinderMap* binders) override;
 };
 
 }  // namespace electron

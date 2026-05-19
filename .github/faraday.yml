@@ -1,0 +1,12 @@
+# faraday trust configuration for electron/electron.
+# A bot listed here is "trusted": its pull requests need 1 maintainer
+# approval instead of 2, provided every commit is verifiably the bot's own.
+# See: https://github.com/electron/faraday
+
+trusted-bots:
+  # Backport PRs to release branches.
+  - login: trop[bot]
+    id: 37223003
+  # Chromium / Node.js roll PRs.
+  - login: electron-roller[bot]
+    id: 84116207

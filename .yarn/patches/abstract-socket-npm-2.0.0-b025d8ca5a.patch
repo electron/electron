@@ -1,0 +1,351 @@
+diff --git a/binding.gyp b/binding.gyp
+index 61f1d0bd5b2fe4f43874f1115cd2fa0dced03207..13e34fd6a17d698449063f22456f43e445246959 100644
+--- a/binding.gyp
++++ b/binding.gyp
+@@ -1,10 +1,17 @@
+ {
+   'targets': [
+     {
+-      'target_name': 'abstract_socket',
+-      'sources': [ 'src/abstract_socket.cc' ],
++      'target_name': 'bindings',
++      'conditions': [
++          ['OS=="linux"', {
++            'cflags!': [ '-fno-exceptions' ],
++            'cflags_cc!': [ '-fno-exceptions' ],
++            'defines': [ '_GNU_SOURCE=1' ],
++            'sources': [ 'src/abstract_socket.cc' ],
++          }],
++      ],
+       'include_dirs': [
+-        '<!(node -e "require(\'nan\')")'
++        '<!(node -p "require(\'node-addon-api\').include_dir")',
+       ]
+     }
+   ]
+diff --git a/lib/abstract_socket.js b/lib/abstract_socket.js
+index a2434860d0f11d73beec855e42ad762a06f58734..557bc0dd1196a871a72a190823530ff938c40808 100644
+--- a/lib/abstract_socket.js
++++ b/lib/abstract_socket.js
+@@ -1,21 +1,18 @@
+ 'use strict';
+ 
++if (process.platform !== 'linux') {
++    throw new Error('This module is only available on Linux');
++}
++
+ const net = require('net');
+-const binding = require('bindings')('abstract_socket.node');
++const binding = require('bindings')();
+ 
+ const socket  = binding.socket;
+ const bind    = binding.bind;
+ const connect = binding.connect;
+ const close   = binding.close;
+ 
+-
+-function errnoException(errorno, syscall) {
+-    // TODO: having the errno message here would be nice
+-    const e = new Error(syscall + ' ' + errorno);
+-    e.errno = e.code = errorno;
+-    e.syscall = syscall;
+-    return e;
+-}
++const errnoException = require('util')._errnoException;
+ 
+ 
+ class AbstractSocketServer extends net.Server {
+diff --git a/package.json b/package.json
+index ea041a3855a38c050d8a0f20d88384f8aa78a1af..f2adb7f2092eca00aeb036b524ce3304f072c98f 100644
+--- a/package.json
++++ b/package.json
+@@ -22,14 +22,11 @@
+     },
+     "dependencies": {
+         "bindings": "^1.2.1",
+-        "nan": "^2.0.9"
++        "node-addon-api": "8.0.0"
+     },
+     "devDependencies": {
+         "should": "8.2.x",
+         "mocha": "2.4.x"
+-    },
+-    "os": [
+-        "linux"
+-    ]
++    }
+ }
+ 
+diff --git a/src/abstract_socket.cc b/src/abstract_socket.cc
+index 9370b9835efcb3d09589a3910bab40a20efa5216..c9e55af65aece42feb29497ffe5cc835562bc602 100644
+--- a/src/abstract_socket.cc
++++ b/src/abstract_socket.cc
+@@ -1,13 +1,10 @@
+-// -D_GNU_SOURCE makes SOCK_NONBLOCK etc. available on linux
+-#undef  _GNU_SOURCE
+-#define _GNU_SOURCE
+-
+ #if !defined(__linux__)
+ # error "Only Linux is supported"
+ #endif
+ 
+-#include <nan.h>
++#include <napi.h>
+ 
++#include <assert.h>
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <unistd.h>
+@@ -17,76 +14,33 @@
+ 
+ namespace {
+ 
+-using v8::FunctionTemplate;
+-using v8::Local;
+-using v8::Object;
+-using v8::String;
+-using v8::Value;
+-
+-
+-#if !defined(SOCK_NONBLOCK)
+-void SetNonBlock(int fd) {
+-    int flags;
+-    int r;
+-
+-    flags = fcntl(fd, F_GETFL);
+-    assert(flags != -1);
+-
+-    r = fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+-    assert(r != -1);
+-}
+-#endif
+-
+-
+-#if !defined(SOCK_CLOEXEC)
+-void SetCloExec(int fd) {
+-    int flags;
+-    int r;
+-
+-    flags = fcntl(fd, F_GETFD);
+-    assert(flags != -1);
+-
+-    r = fcntl(fd, F_SETFD, flags | FD_CLOEXEC);
+-    assert(r != -1);
+-}
+-#endif
++using Napi::FunctionReference;
++using Napi::Object;
++using Napi::String;
++using Napi::Value;
+ 
+ 
+-NAN_METHOD(Socket) {
+-    Nan::HandleScope scope;
++Napi::Value Socket(const Napi::CallbackInfo& info) {
++    Napi::Env env(info.Env());
+     int fd;
+     int type;
+ 
+     assert(info.Length() == 0);
+ 
+     type = SOCK_STREAM;
+-#if defined(SOCK_NONBLOCK)
+-    type |= SOCK_NONBLOCK;
+-#endif
+-#if defined(SOCK_CLOEXEC)
+-    type |= SOCK_CLOEXEC;
+-#endif
++    type |= SOCK_NONBLOCK | SOCK_CLOEXEC;
+ 
+     fd = socket(AF_UNIX, type, 0);
+     if (fd == -1) {
+         fd = -errno;
+-        goto out;
+     }
+ 
+-#if !defined(SOCK_NONBLOCK)
+-    SetNonBlock(fd);
+-#endif
+-#if !defined(SOCK_CLOEXEC)
+-    SetCloExec(fd);
+-#endif
+-
+-out:
+-    info.GetReturnValue().Set(fd);
++    return Napi::Number::New(env, fd);
+ }
+ 
+ 
+-NAN_METHOD(Bind) {
+-    Nan::HandleScope scope;
++Napi::Value Bind(const Napi::CallbackInfo& info) {
++    Napi::Env env(info.Env());
+     sockaddr_un s;
+     socklen_t namelen;
+     int err;
+@@ -95,10 +49,10 @@ NAN_METHOD(Bind) {
+ 
+     assert(info.Length() == 2);
+ 
+-    fd = info[0]->Int32Value();
+-    String::Utf8Value path(info[1]);
++    fd = info[0].As<Napi::Number>().Int32Value();
++    std::string path = info[1].As<Napi::String>();
+ 
+-    if ((*path)[0] != '\0') {
++    if ((path)[0] != '\0') {
+         err = -EINVAL;
+         goto out;
+     }
+@@ -110,7 +64,7 @@ NAN_METHOD(Bind) {
+     }
+ 
+     memset(&s, 0, sizeof s);
+-    memcpy(s.sun_path, *path, len);
++    memcpy(s.sun_path, path.c_str(), len);
+     s.sun_family = AF_UNIX;
+     namelen = offsetof(struct sockaddr_un, sun_path) + len;
+ 
+@@ -119,12 +73,12 @@ NAN_METHOD(Bind) {
+         err = -errno;
+ 
+ out:
+-    info.GetReturnValue().Set(err);
++    return Napi::Number::New(env, err);
+ }
+ 
+ 
+-NAN_METHOD(Connect) {
+-    Nan::HandleScope scope;
++Napi::Value Connect(const Napi::CallbackInfo& info) {
++    Napi::Env env(info.Env());
+     sockaddr_un s;
+     socklen_t namelen;
+     int err;
+@@ -133,10 +87,10 @@ NAN_METHOD(Connect) {
+ 
+     assert(info.Length() == 2);
+ 
+-    fd = info[0]->Int32Value();
+-    String::Utf8Value path(info[1]);
++    fd = info[0].As<Napi::Number>().Int32Value();
++    std::string path = info[1].As<Napi::String>();
+ 
+-    if ((*path)[0] != '\0') {
++    if ((path)[0] != '\0') {
+         err = -EINVAL;
+         goto out;
+     }
+@@ -148,7 +102,7 @@ NAN_METHOD(Connect) {
+     }
+ 
+     memset(&s, 0, sizeof s);
+-    memcpy(s.sun_path, *path, len);
++    memcpy(s.sun_path, path.c_str(), len);
+     s.sun_family = AF_UNIX;
+     namelen = offsetof(struct sockaddr_un, sun_path) + len;
+ 
+@@ -157,59 +111,70 @@ NAN_METHOD(Connect) {
+         err = -errno;
+ 
+ out:
+-    info.GetReturnValue().Set(err);
++    return Napi::Number::New(env, err);
+ }
+ 
+ 
+-NAN_METHOD(Close) {
+-    Nan::HandleScope scope;
++Napi::Value Close(const Napi::CallbackInfo& info) {
++    Napi::Env env(info.Env());
+     int err;
+     int fd;
+ 
+     assert(info.Length() == 1);
+-    fd = info[0]->Int32Value();
+-
+-    // Suppress EINTR and EINPROGRESS.  EINTR means that the close() system call
+-    // was interrupted by a signal.  According to POSIX, the file descriptor is
+-    // in an undefined state afterwards.  It's not safe to try closing it again
+-    // because it may have been closed, despite the signal.  If we call close()
+-    // again, then it would either:
++    fd = info[0].As<Napi::Number>().Int32Value();
++
++    // POSIX 2008 states that it unspecified what the state of a file descriptor
++    // is if close() is interrupted by a signal and fails with EINTR.  This is a
++    // problem for multi-threaded programs since if the fd was actually closed
++    // it may already be reused by another thread hence it is unsafe to attempt
++    // to close it again.  In 2012, POSIX approved a clarification that aimed
++    // to deal with this mess:  http://austingroupbugs.net/view.php?id=529#c1200
++    //
++    // The short summary is that if the fd is never valid after close(), as is
++    // the case in Linux, then <unistd.h> should add:
+     //
+-    //   a) fail with EBADF, or
++    //      #define POSIX_CLOSE_RESTART 0
+     //
+-    //   b) close the wrong file descriptor if another thread or a signal handler
+-    //      has reused it in the mean time.
++    // and the new posix_close() should be implemented as something like:
+     //
+-    // Neither is what we want but scenario B is particularly bad.  Not retrying
+-    // the close() could, in theory, lead to file descriptor leaks but, in
+-    // practice, operating systems do the right thing and close the file
+-    // descriptor, regardless of whether the operation was interrupted by
+-    // a signal.
++    //      int posix_close(int fd, int flags) {
++    //          int r = close(fd);
++    //          if (r < 0 && errno == EINTR)
++    //              return 0 or set errno to EINPROGRESS;
++    //          return r;
++    //      }
+     //
+-    // EINPROGRESS is benign.  It means the close operation was interrupted but
+-    // that the file descriptor has been closed or is being closed in the
+-    // background.  It's informative, not an error.
++    // In contrast, on systems where EINTR means the close() didn't happen (like
++    // HP-UX), POSIX_CLOSE_RESTART should be non-zero and if passed as flag to
++    // posix_close() it should automatically retry close() on EINTR.
++    //
++    // Of course this is nice and all, but apparently adding one constant and
++    // a trivial wrapper was way too much effort for the glibc project:
++    //      https://sourceware.org/bugzilla/show_bug.cgi?id=16302
++    //
++    // But since we actually only care about Linux, we don't have to worry about
++    // all this anyway.  close() always means the fd is gone, even if an error
++    // occurred.  This elevates EINTR to the status of real error, since it
++    // implies behaviour associated with close (e.g. flush) was aborted and can
++    // not be retried since the fd is gone.
++
+     err = 0;
+     if (close(fd))
+-      if (errno != EINTR && errno != EINPROGRESS)
+         err = -errno;
+ 
+-    info.GetReturnValue().Set(err);
++    return Napi::Number::New(env, err);
+ }
+ 
+ 
+-void Initialize(Local<Object> target) {
+-    target->Set(Nan::New("socket").ToLocalChecked(),
+-                Nan::New<FunctionTemplate>(Socket)->GetFunction());
+-    target->Set(Nan::New("bind").ToLocalChecked(),
+-                Nan::New<FunctionTemplate>(Bind)->GetFunction());
+-    target->Set(Nan::New("connect").ToLocalChecked(),
+-                Nan::New<FunctionTemplate>(Connect)->GetFunction());
+-    target->Set(Nan::New("close").ToLocalChecked(),
+-                Nan::New<FunctionTemplate>(Close)->GetFunction());
++Napi::Object Initialize(Napi::Env env, Napi::Object exports) {
++    exports.Set("socket", Napi::Function::New(env, Socket));
++    exports.Set("bind", Napi::Function::New(env, Bind));
++    exports.Set("connect", Napi::Function::New(env, Connect));
++    exports.Set("close", Napi::Function::New(env, Close));
++    return exports;
+ }
+ 
+ 
+ } // anonymous namespace
+ 
+-NODE_MODULE(abstract_socket, Initialize)
++NODE_API_MODULE(abstract_socket, Initialize)

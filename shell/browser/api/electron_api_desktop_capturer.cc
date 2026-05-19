@@ -12,6 +12,7 @@
 #include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
+#include "base/time/time.h"
 #include "chrome/browser/media/webrtc/desktop_capturer_wrapper.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "chrome/browser/media/webrtc/desktop_media_list_observer.h"
@@ -189,6 +190,12 @@ BOOL CALLBACK EnumDisplayMonitorsCallback(HMONITOR monitor,
 }
 #endif
 
+// Give native capturers a few refresh/capture cycles to populate the list
+// before returning the current snapshot. This preserves the old behavior of
+// making progress even when some sources never produce thumbnails (e.g., a
+// password manager window that's marked as uncapturable).
+constexpr base::TimeDelta kDesktopCapturerReadyTimeout = base::Seconds(3);
+
 }  // namespace
 
 namespace gin {
@@ -233,7 +240,10 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
   ListObserver(DesktopCapturer* capturer,
                DesktopMediaList* list,
                bool need_thumbnails)
-      : capturer_{capturer}, list_{list}, need_thumbnails_{need_thumbnails} {}
+      : capturer_{capturer},
+        list_{list},
+        list_type_{list->GetMediaListType()},
+        need_thumbnails_{need_thumbnails} {}
   ~ListObserver() override = default;
 
   [[nodiscard]] bool IsReady() const {
@@ -243,9 +253,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
     if (!need_thumbnails_)
       return true;
 
-    // Every source needs a non-empty thumbnail.
-    // Thumbnails finish one-at-a-time via tasks posted by the worker thread,
-    // so wait until every thumbnail arrives.
+    // are all the tumbnails ready?
     for (int i = 0; i < list_->GetSourceCount(); ++i) {
       if (list_->GetSource(i).thumbnail.isNull())
         return false;
@@ -262,7 +270,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
     base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
         FROM_HERE,
         base::BindOnce(&DesktopCapturer::OnListReady,
-                       capturer_->weak_ptr_factory_.GetWeakPtr(), list_.get()));
+                       capturer_->weak_ptr_factory_.GetWeakPtr(), list_type_));
   }
 
   // DesktopMediaListObserver:
@@ -270,7 +278,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
     has_sources_ = true;
     MaybeNotifyReady();
   }
-  void OnSourceRemoved(int index) override {}
+  void OnSourceRemoved(int index) override { MaybeNotifyReady(); }
   void OnSourceMoved(int old_index, int new_index) override {}
   void OnSourceNameChanged(int index) override {}
   void OnSourceThumbnailChanged(int index) override { MaybeNotifyReady(); }
@@ -289,6 +297,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
 
   raw_ptr<DesktopCapturer> capturer_;
   raw_ptr<DesktopMediaList> list_;
+  DesktopMediaList::Type list_type_;
   bool need_thumbnails_ = false;
   bool has_sources_ = false;
   bool notified_ = false;
@@ -297,6 +306,22 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
 DesktopCapturer::DesktopCapturer() = default;
 
 DesktopCapturer::~DesktopCapturer() = default;
+
+void DesktopCapturer::FinalizeList(std::unique_ptr<ListObserver>& observer,
+                                   std::unique_ptr<DesktopMediaList>& list) {
+  DCHECK(observer);
+  DCHECK(list);
+
+  CollectSourcesFrom(list.get());
+  if (finished_)
+    return;
+
+  list.reset();
+  observer.reset();
+
+  if (--pending_lists_ == 0)
+    HandleSuccess();
+}
 
 void DesktopCapturer::StartHandling(bool capture_window,
                                     bool capture_screen,
@@ -317,6 +342,7 @@ void DesktopCapturer::StartHandling(bool capture_window,
   captured_sources_.clear();
   finished_ = false;
   pending_lists_ = 0;
+  deadline_.Stop();
 
 #if BUILDFLAG(IS_MAC)
   if (!ui::TryPromptUserForScreenCapture()) {
@@ -375,16 +401,51 @@ void DesktopCapturer::StartHandling(bool capture_window,
       pending_lists_++;
     }
   }
+
+  // If no capturers were created (e.g. all factories returned nullptr),
+  // resolve immediately with an empty source list.
+  if (pending_lists_ == 0) {
+    HandleSuccess();
+    return;
+  }
+
+  deadline_.Start(FROM_HERE, kDesktopCapturerReadyTimeout,
+                  base::BindOnce(&DesktopCapturer::OnReadyTimeout,
+                                 weak_ptr_factory_.GetWeakPtr()));
 }
 
-void DesktopCapturer::OnListReady(DesktopMediaList* list) {
+void DesktopCapturer::OnListReady(const DesktopMediaList::Type type) {
   if (finished_)
     return;
 
-  CollectSourcesFrom(list);
+  switch (type) {
+    case DesktopMediaList::Type::kWindow:
+      if (window_capturer_)
+        FinalizeList(window_observer_, window_capturer_);
+      break;
+    case DesktopMediaList::Type::kScreen:
+      if (screen_capturer_)
+        FinalizeList(screen_observer_, screen_capturer_);
+      break;
+    default:
+      NOTREACHED();
+  }
+}
 
-  if (--pending_lists_ == 0)
-    HandleSuccess();
+void DesktopCapturer::OnReadyTimeout() {
+  if (finished_)
+    return;
+
+  if (window_capturer_)
+    FinalizeList(window_observer_, window_capturer_);
+
+  if (finished_)
+    return;
+
+  if (screen_capturer_)
+    FinalizeList(screen_observer_, screen_capturer_);
+
+  DCHECK(finished_ || pending_lists_ > 0);
 }
 
 void DesktopCapturer::CollectSourcesFrom(DesktopMediaList* list) {
@@ -476,15 +537,16 @@ void DesktopCapturer::HandleSuccess() {
   if (finished_)
     return;
   finished_ = true;
+  deadline_.Stop();
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   gin_helper::CallMethod(this, "_onfinished", captured_sources_);
 
-  window_observer_.reset();
-  screen_observer_.reset();
   screen_capturer_.reset();
   window_capturer_.reset();
+  window_observer_.reset();
+  screen_observer_.reset();
 
   Unpin();
 }
@@ -493,16 +555,17 @@ void DesktopCapturer::HandleFailure() {
   if (finished_)
     return;
   finished_ = true;
+  deadline_.Stop();
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
 
   gin_helper::CallMethod(this, "_onerror", "Failed to get sources.");
 
-  window_observer_.reset();
-  screen_observer_.reset();
   screen_capturer_.reset();
   window_capturer_.reset();
+  window_observer_.reset();
+  screen_observer_.reset();
 
   Unpin();
 }

@@ -194,10 +194,15 @@ Returns `NativeImage`
 
 Creates a new `NativeImage` instance from `dataUrl`, a base 64 encoded [Data URL][data-url] string.
 
-### `nativeImage.createFromNamedImage(imageName[, hslShift])` _macOS_
+### `nativeImage.createFromNamedImage(imageName[, options])` _macOS_
 
 * `imageName` string
-* `hslShift` number[] (optional)
+* `options` Object | number[] (optional) - If `options` is a number array  (_Deprecated_), it is interpreted as `hslShift`. If it is an object, the
+following properties can be specified:
+  * `hslShift` number[] (optional)
+  * `pointSize` Number (optional) - Defaults to `30.0`.
+  * `weight` 'ultralight' | 'thin' | 'light' | 'regular' | 'medium' | 'semibold' | 'bold' | 'heavy' | 'black' (optional) - Defaults to `regular`.
+  * `scale` 'small' | 'medium' | 'large' (optional) - Defaults to `medium`.
 
 Returns `NativeImage`
 
@@ -239,6 +244,23 @@ const image = nativeImage.createFromNamedImage('square.and.pencil')
 where `'square.and.pencil'` is the symbol name from the
 [SF Symbols app](https://developer.apple.com/sf-symbols/).
 
+### `nativeImage.createMenuSymbol(imageName)` _macOS_
+
+* `imageName` string
+
+Returns `NativeImage`
+
+Creates a new `NativeImage` instance from an SF Symbol for use in a native [Menu](./menu.md). See [SF Symbols](https://developer.apple.com/sf-symbols/) for a list of possible values.
+
+```js
+const { nativeImage, MenuItem } = require('electron')
+
+const item = new MenuItem({
+  icon: nativeImage.createMenuSymbol('folder.badge.plus'),
+  label: 'Create Folder'
+})
+```
+
 ## Class: NativeImage
 
 > Natively wrap images such as tray, dock, and application icons.
@@ -265,8 +287,20 @@ Returns `Buffer` - A [Buffer][buffer] that contains the image's `JPEG` encoded d
 
 #### `image.toBitmap([options])`
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/48178
+    description: "Normalized `NativeImage.toBitmap()` pixel data to sRGB by default."
+    breaking-changes-header: behavior-changed-nativeimagetobitmap-now-normalizes-color-space
+```
+-->
+
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
+  * `colorSpace` [ColorSpace](structures/color-space.md) (optional) - The target color space
+    for the output pixel data. Defaults to sRGB. Pass the image's original color space to
+    preserve the previous behavior, or another color space to get pixel values in that space.
 
 Returns `Buffer` - A [Buffer][buffer] that contains a copy of the image's raw bitmap pixel
 data.
@@ -289,8 +323,20 @@ Returns `string` - The [Data URL][data-url] of the image.
 
 #### `image.getBitmap([options])` _Deprecated_
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/48178
+    description: "Normalized `NativeImage.toBitmap()` pixel data to sRGB by default."
+    breaking-changes-header: behavior-changed-nativeimagetobitmap-now-normalizes-color-space
+```
+-->
+
 * `options` Object (optional)
   * `scaleFactor` Number (optional) - Defaults to 1.0.
+  * `colorSpace` [ColorSpace](structures/color-space.md) (optional) - The target color space
+    for the output pixel data. Defaults to sRGB. Pass the image's original color space to
+    preserve the previous behavior, or another color space to get pixel values in that space.
 
 Legacy alias for `image.toBitmap()`.
 

@@ -36,6 +36,12 @@ describe('nativeImage module', () => {
     height: 3,
     width: 3
   };
+  const imageColorSpaceSRGB = {
+    path: path.join(fixturesPath, 'assets', 'colorspace-srgb.png')
+  };
+  const imageColorSpaceP3 = {
+    path: path.join(fixturesPath, 'assets', 'colorspace-p3.png')
+  };
 
   const dataUrlImages = [image1x1, image2x2, image3x3];
 
@@ -335,8 +341,29 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.false();
     });
 
+    ifit(process.platform === 'darwin')('returns a valid named symbol with options on darwin', function () {
+      const image = nativeImage.createFromNamedImage('atom', {
+        weight: 'ultralight',
+        scale: 'small',
+        pointSize: 24
+      });
+      expect(image.isEmpty()).to.be.false();
+    });
+
     ifit(process.platform === 'darwin')('returns allows an HSL shift for a valid image on darwin', function () {
       const image = nativeImage.createFromNamedImage('NSActionTemplate', [0.5, 0.2, 0.8]);
+      expect(image.isEmpty()).to.be.false();
+    });
+  });
+
+  describe('createMenuSymbol(name)', () => {
+    it('returns empty for invalid options', () => {
+      const image = nativeImage.createMenuSymbol('totally_not_real');
+      expect(image.isEmpty()).to.be.true();
+    });
+
+    ifit(process.platform === 'darwin')('returns a valid image on darwin', function () {
+      const image = nativeImage.createMenuSymbol('atom');
       expect(image.isEmpty()).to.be.false();
     });
   });
@@ -415,6 +442,35 @@ describe('nativeImage module', () => {
       const image = nativeImage.createFromPath(path.join(fixturesPath, 'assets', 'logo.png'));
       const crop = image.crop({ width: 25, height: 64, x: 0, y: 0 });
       expect(crop.toBitmap().length).to.equal(25 * 64 * 4);
+    });
+
+    it('toBitmap() normalizes color space for consistent pixel values', () => {
+      const srgbImage = nativeImage.createFromPath(imageColorSpaceSRGB.path);
+      const p3Image = nativeImage.createFromPath(imageColorSpaceP3.path);
+
+      // Both default to sRGB normalization
+      const srgbBuf = srgbImage.toBitmap();
+      const p3Buf = p3Image.toBitmap();
+
+      expect(srgbBuf.length).to.equal(p3Buf.length);
+
+      // Pixel values should be nearly identical after sRGB normalization
+      for (let i = 0; i < srgbBuf.length; i++) {
+        expect(Math.abs(srgbBuf[i] - p3Buf[i])).to.be.at.most(3);
+      }
+    });
+
+    it('toBitmap() accepts a colorSpace option', () => {
+      const image = nativeImage.createFromPath(imageColorSpaceP3.path);
+
+      const srgbBuf = image.toBitmap({
+        colorSpace: { primaries: 'bt709', transfer: 'srgb', matrix: 'rgb', range: 'full' }
+      });
+      const p3Buf = image.toBitmap({ colorSpace: { primaries: 'p3', transfer: 'srgb', matrix: 'rgb', range: 'full' } });
+
+      // Both should produce valid buffers of the same size (same pixel dimensions)
+      expect(srgbBuf.length).to.be.greaterThan(0);
+      expect(p3Buf.length).to.equal(srgbBuf.length);
     });
   });
 

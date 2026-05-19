@@ -50,4 +50,18 @@ void NotificationPresenter::GetDeliveredNotifications(
   std::move(callback).Run({});
 }
 
+void NotificationPresenter::RemoveDeliveredNotifications(
+    const std::vector<std::string>& identifiers) {
+  // Default: no-op. Overridden on macOS.
+}
+
+void NotificationPresenter::RemoveAllDeliveredNotifications() {
+  // Default: no-op. Overridden on macOS.
+}
+
+void NotificationPresenter::RemoveDeliveredNotificationsByGroupId(
+    const std::string& group_id) {
+  // Default: no-op. Overridden on macOS.
+}
+
 }  // namespace electron

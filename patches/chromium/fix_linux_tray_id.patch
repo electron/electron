@@ -55,7 +55,7 @@ index 72a61f80eb5dfafe2609ec9e3f8f34c7c84f7abe..af68cc7486c450f9b9765f562fab7185
                                  kPropertyOverlayIconName, "", false);
    properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyStatus,
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-index 5457f98158a094a5b8768352d2868e3005afd395..13ac4e51019ea68fdccd17aac8a4855bde50964b 100644
+index 83e84d3b07fcf58e21bbbd33eac1f79afb7ab7a5..5a29678f5d69087c06e4449f565eb9c3002889a7 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 @@ -37,7 +37,7 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
@@ -67,7 +67,7 @@ index 5457f98158a094a5b8768352d2868e3005afd395..13ac4e51019ea68fdccd17aac8a4855b
  
    StatusIconLinuxDbus(const StatusIconLinuxDbus&) = delete;
    StatusIconLinuxDbus& operator=(const StatusIconLinuxDbus&) = delete;
-@@ -135,6 +135,8 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+@@ -137,6 +137,8 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
    size_t icon_file_id_ = 0;
    base::FilePath icon_file_;
  

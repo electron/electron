@@ -70,6 +70,8 @@ class URLLoaderNetworkObserver
       network::mojom::TransportType transport_type,
       network::mojom::IPAddressSpace ip_address_space,
       OnLocalNetworkAccessPermissionRequiredCallback callback) override {}
+  void OnPlatformLocalNetworkPermissionRequired(
+      OnPlatformLocalNetworkPermissionRequiredCallback callback) override;
   void OnUrlLoaderConnectedToLocalNetwork(
       const GURL& request_url,
       network::mojom::IPAddressSpace response_address_space,

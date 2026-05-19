@@ -122,4 +122,9 @@ void URLLoaderNetworkObserver::Clone(
   receivers_.Add(this, std::move(observer));
 }
 
+void URLLoaderNetworkObserver::OnPlatformLocalNetworkPermissionRequired(
+    OnPlatformLocalNetworkPermissionRequiredCallback callback) {
+  std::move(callback).Run(false);
+}
+
 }  // namespace electron

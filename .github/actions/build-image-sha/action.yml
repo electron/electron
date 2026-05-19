@@ -1,0 +1,24 @@
+name: 'Build Image SHA'
+description: 'Single source of truth for the ghcr.io/electron/build image SHA'
+inputs:
+  override:
+    description: 'Optional override SHA (e.g. from a workflow_dispatch input)'
+    required: false
+    default: ''
+outputs:
+  build-image-sha:
+    description: 'The electron/build image SHA to use'
+    value: ${{ steps.set.outputs.build-image-sha }}
+runs:
+  using: 'composite'
+  steps:
+    - id: set
+      shell: bash
+      env:
+        OVERRIDE: ${{ inputs.override }}
+      run: |
+        if [ -n "$OVERRIDE" ]; then
+          echo "build-image-sha=$OVERRIDE" >> "$GITHUB_OUTPUT"
+        else
+          echo "build-image-sha=daad061f4b99a0ae1c841be4aa09188280a9c8a4" >> "$GITHUB_OUTPUT"
+        fi

@@ -33,6 +33,13 @@ class ScopedHString {
   // Returns string.
   operator HSTRING() const { return str_; }
 
+  // Resets and returns the address for use as an out-parameter. The returned
+  // HSTRING will be released via WindowsDeleteString on destruction.
+  HSTRING* Receive() {
+    Reset();
+    return &str_;
+  }
+
   // Whether there is a string created.
   bool success() const { return str_; }
 

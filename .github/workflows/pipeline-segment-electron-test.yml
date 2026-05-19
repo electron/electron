@@ -79,7 +79,7 @@ jobs:
         cp $(which node) /mnt/runner-externals/node24/bin/
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
-      uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
       with:
         node-version: 22.21.x
     - name: Add TCC permissions on macOS
@@ -122,6 +122,15 @@ jobs:
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
+    - name: Turn off the reopen windows prompt on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      # Tests spawn Electron child apps and SIGINT them; after enough abnormal
+      # exits AppKit shows a modal "...unexpectedly quit while reopening
+      # windows. Do you want to try to reopen its windows again?" alert inside
+      # the open-application AppleEvent handler, which blocks before
+      # applicationDidFinishLaunching: and hangs app.whenReady() forever.
+      # See https://github.com/electron/electron/issues/51462.
+      run: defaults write com.github.Electron ApplePersistenceIgnoreState YES
     - name: Set xcode to 16.4
       if: ${{ inputs.target-platform == 'macos' }}
       run: sudo xcode-select --switch /Applications/Xcode_16.4.app
@@ -131,6 +140,9 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
+    - name: Install pinned Homebrew
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: ./src/electron/.github/actions/install-homebrew
     - name: Turn off screenshot nag on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
