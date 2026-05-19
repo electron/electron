@@ -360,7 +360,12 @@ declare namespace ElectronInternal {
   }
 
   interface PreloadScript extends Electron.PreloadScript {
-    contents?: string;
+    /**
+     * Whether the preload file's contents were read successfully. The actual
+     * contents stay on the C++ side (mojo-cached startup data) and are looked
+     * up by id from createPreloadScript() — they never become a V8 string.
+     */
+    hasContents?: boolean;
     error?: Error;
   }
 }
