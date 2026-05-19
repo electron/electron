@@ -311,6 +311,19 @@ void RendererClientBase::ExposeInterfacesToBrowser(mojo::BinderMap* binders) {
   ExposeElectronRendererInterfacesToBrowser(this, binders);
 }
 
+void RendererClientBase::SetPendingCreateNewWindowStartupData(
+    mojo_base::BigBuffer data) {
+  // Deserialize the opaque blob from CreateNewWindowReply and stash it for
+  // the about-to-be-created RenderFrame's ElectronApiServiceImpl. Same call
+  // stack, no reentrancy.
+  mojom::RendererStartupDataPtr deserialized;
+  if (mojom::RendererStartupData::Deserialize(base::span<const uint8_t>(data),
+                                              &deserialized)) {
+    ElectronApiServiceImpl::SetPendingNewWindowStartupData(
+        std::move(deserialized));
+  }
+}
+
 void RendererClientBase::RenderFrameCreated(
     content::RenderFrame* render_frame) {
 #if defined(TOOLKIT_VIEWS)
