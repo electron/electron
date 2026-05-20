@@ -50,6 +50,12 @@ v8Util.setHiddenValue(global, 'emit-process-event', (event: string) => {
 Object.assign(preloadProcess, binding.process);
 Object.assign(preloadProcess, processProps);
 
+// Test-only (DCHECK builds): expose the js2c code-cache status on the
+// sandboxed preload's process shim for the code-cache spec.
+if ((v8Util as any).getJs2cCodeCacheStatus) {
+  (preloadProcess as any).getJs2cCodeCacheStatus = () => (v8Util as any).getJs2cCodeCacheStatus();
+}
+
 Object.assign(process, processProps);
 
 // Common renderer initialization
