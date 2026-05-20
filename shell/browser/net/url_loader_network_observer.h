@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_NET_URL_LOADER_NETWORK_OBSERVER_H_
 
 #include "base/byte_size.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/process/process_handle.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
@@ -13,10 +14,13 @@
 
 namespace electron {
 
+class ElectronBrowserContext;
+
 class URLLoaderNetworkObserver
     : public network::mojom::URLLoaderNetworkServiceObserver {
  public:
   URLLoaderNetworkObserver();
+  explicit URLLoaderNetworkObserver(ElectronBrowserContext* browser_context);
   ~URLLoaderNetworkObserver() override;
 
   URLLoaderNetworkObserver(const URLLoaderNetworkObserver&) = delete;
@@ -86,6 +90,7 @@ class URLLoaderNetworkObserver
 
   mojo::ReceiverSet<network::mojom::URLLoaderNetworkServiceObserver> receivers_;
   base::ProcessId process_id_ = base::kNullProcessId;
+  raw_ptr<ElectronBrowserContext> browser_context_ = nullptr;
   base::WeakPtrFactory<URLLoaderNetworkObserver> weak_factory_{this};
 };
 

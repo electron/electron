@@ -462,7 +462,8 @@ UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
   loader_params->is_orb_enabled = false;
   loader_params->is_trusted = true;
   if (create_network_observer_) {
-    url_loader_network_observer_.emplace();
+    url_loader_network_observer_.emplace(session_ ? session_->browser_context()
+                                                  : nullptr);
     loader_params->url_loader_network_observer =
         url_loader_network_observer_->Bind();
   }

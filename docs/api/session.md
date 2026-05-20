@@ -918,7 +918,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
 #### `ses.setPermissionRequestHandler(handler)`
 
 * `handler` Function | null
-  * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
+  * `webContents` ([WebContents](web-contents.md) | null) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin. Platform local network requests may pass `null`.
   * `permission` string - The type of requested permission.
     * `clipboard-read` - Request access to read from the clipboard.
     * `clipboard-sanitized-write` - Request access to write to the clipboard.
@@ -926,6 +926,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `fullscreen` - Request control of the app's fullscreen state via the [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API).
     * `geolocation` - Request access to the user's location via the [Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
     * `idle-detection` - Request access to the user's idle state via the [IdleDetector API](https://developer.mozilla.org/en-US/docs/Web/API/IdleDetector).
+    * `local-network` - Request access to devices or services on the user's local network.
     * `media` -  Request access to media devices such as camera, microphone and speakers.
     * `mediaKeySystem` - Request access to DRM protected content.
     * `midi` - Request MIDI access in the [Web MIDI API](https://developer.mozilla.org/en-US/docs/Web/API/Web_MIDI_API).
@@ -954,7 +955,7 @@ Most web APIs do a permission check and then make a permission request if the ch
 const { session } = require('electron')
 
 session.fromPartition('some-partition').setPermissionRequestHandler((webContents, permission, callback) => {
-  if (webContents.getURL() === 'some-host' && permission === 'notifications') {
+  if (webContents?.getURL() === 'some-host' && permission === 'notifications') {
     return callback(false) // denied.
   }
 

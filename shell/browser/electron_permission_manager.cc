@@ -210,6 +210,21 @@ void ElectronPermissionManager::RequestPermissionWithDetails(
                      std::move(response_callback)));
 }
 
+void ElectronPermissionManager::RequestPermissionFromSession(
+    blink::PermissionType permission,
+    base::DictValue details,
+    StatusCallback callback) {
+  if (request_handler_.is_null()) {
+    std::move(callback).Run(content::PermissionResult(
+        blink::mojom::PermissionStatus::DENIED,
+        content::PermissionStatusSource::UNSPECIFIED));
+    return;
+  }
+
+  base::Value dict_value(std::move(details));
+  request_handler_.Run(nullptr, permission, std::move(callback), dict_value);
+}
+
 void ElectronPermissionManager::RequestPermissionsWithDetails(
     content::RenderFrameHost* render_frame_host,
     const content::PermissionRequestDescription& request_description,

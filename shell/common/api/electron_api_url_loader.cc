@@ -37,6 +37,7 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
@@ -486,7 +487,25 @@ void SimpleURLLoaderWrapper::Clone(
 
 void SimpleURLLoaderWrapper::OnPlatformLocalNetworkPermissionRequired(
     OnPlatformLocalNetworkPermissionRequiredCallback callback) {
-  std::move(callback).Run(false);
+  if (!browser_context_) {
+    std::move(callback).Run(false);
+    return;
+  }
+
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  base::DictValue details;
+  details.Set("isPlatformRequest", true);
+
+  permission_manager->RequestPermissionFromSession(
+      blink::PermissionType::LOCAL_NETWORK, std::move(details),
+      base::BindOnce(
+          [](OnPlatformLocalNetworkPermissionRequiredCallback callback,
+             content::PermissionResult result) {
+            std::move(callback).Run(result.status ==
+                                    blink::mojom::PermissionStatus::GRANTED);
+          },
+          std::move(callback)));
 }
 
 void SimpleURLLoaderWrapper::Cancel() {

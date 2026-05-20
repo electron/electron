@@ -1281,8 +1281,13 @@ session.defaultSession.setCertificateVerifyProc((request, callback) => {
   }
 });
 
-session.defaultSession.setPermissionRequestHandler(function (webContents, permission, callback) {
-  if (webContents.getURL() === 'github.com') {
+session.defaultSession.setPermissionRequestHandler(function (webContents, permission, callback, details) {
+  if (permission === 'local-network' && details.isPlatformRequest) {
+    callback(true);
+    return;
+  }
+
+  if (webContents?.getURL() === 'github.com') {
     if (permission === 'notifications') {
       callback(false);
       return;

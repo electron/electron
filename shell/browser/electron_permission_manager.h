@@ -76,6 +76,10 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
       base::DictValue details,
       StatusCallback response_callback);
 
+  void RequestPermissionFromSession(blink::PermissionType permission,
+                                    base::DictValue details,
+                                    StatusCallback callback);
+
   // Handler to dispatch permission requests in JS.
   void SetPermissionRequestHandler(const RequestHandler& handler);
   void SetPermissionCheckHandler(const CheckHandler& handler);

@@ -113,11 +113,11 @@ async function createWindow(backgroundColor?: string) {
   });
 
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, done) => {
-    const parsedUrl = new URL(webContents.getURL());
+    const origin = webContents ? new URL(webContents.getURL()).origin : 'the current session';
 
     const options: Electron.MessageBoxOptions = {
       title: 'Permission Request',
-      message: `Allow '${parsedUrl.origin}' to access '${permission}'?`,
+      message: `Allow '${origin}' to access '${permission}'?`,
       buttons: ['OK', 'Cancel'],
       cancelId: 1
     };
