@@ -1,7 +1,27 @@
 const { app } = require('electron');
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   const url = process.argv[2];
+
+  if (process.env.ELECTRON_PROTOCOL_LOOKUP_MODE === 'info') {
+    try {
+      const info = await app.getApplicationInfoForProtocol(url);
+      process.stdout.write(
+        JSON.stringify({
+          name: info.name,
+          path: info.path,
+          hasIcon: !info.icon.isEmpty()
+        })
+      );
+    } catch (error) {
+      process.stderr.write(`${error.message}\n`);
+      app.exit(1);
+      return;
+    }
+    app.quit();
+    return;
+  }
+
   const name = app.getApplicationNameForProtocol(url);
   process.stdout.write(JSON.stringify({ name }));
   app.quit();
