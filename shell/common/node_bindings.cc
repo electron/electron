@@ -886,6 +886,13 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     DCHECK(!context.IsEmpty());
     snapshot_context_scope.emplace(context);
     set_up_context(context, isolate_data);
+    // The eager Event-constructor cache warm-up in Initialize() was skipped in
+    // the snapshot path because no context existed yet. Do it now that the
+    // snapshot's main context is available -- the Event ObjectTemplate (which
+    // carries preventDefault/defaultPrevented) is only ever populated by
+    // GetConstructor, so without this every native gin event is missing them.
+    gin_helper::internal::Event::GetConstructor(
+        isolate, context, &gin_helper::internal::Event::kWrapperInfo);
   }
 
   node::IsolateSettings is;
