@@ -14,6 +14,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
@@ -150,14 +151,14 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   auto binding = v8::Object::New(isolate);
   InitializeBindings(binding, isolate, context, render_frame);
 
-  v8::LocalVector<v8::String> sandbox_preload_bundle_params(
-      isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "binding")});
+  v8::LocalVector<v8::String> sandbox_preload_bundle_params =
+      js2c::MakeBundleParams(isolate, js2c::kSandboxBundleParams);
 
   v8::LocalVector<v8::Value> sandbox_preload_bundle_args(isolate, {binding});
 
-  util::CompileAndCall(
-      isolate, isolate->GetCurrentContext(), "electron/js2c/sandbox_bundle",
-      &sandbox_preload_bundle_params, &sandbox_preload_bundle_args);
+  util::CompileAndCall(isolate, isolate->GetCurrentContext(),
+                       js2c::kSandboxBundleId, &sandbox_preload_bundle_params,
+                       &sandbox_preload_bundle_args);
 
   v8::HandleScope handle_scope{isolate};
   v8::Context::Scope context_scope{context};

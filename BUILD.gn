@@ -31,6 +31,18 @@ import("filenames.hunspell.gni")
 import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
 
+declare_args() {
+  # Emit a build-time V8 code cache for the electron/js2c/* bundles. When
+  # false an empty stub is compiled and bundles compile from source.
+  #
+  # Cross-arch is supported: the generator is built in v8_snapshot_toolchain
+  # (V8_TARGET_ARCH set to the target) and reads the target's snapshot blob,
+  # so the cache it emits is keyed to the target's read-only checksum -- the
+  # same mechanism that makes V8's mksnapshot cross-arch correct. Cross-OS is
+  # untested and stays off.
+  electron_generate_js2c_code_cache = host_os == target_os
+}
+
 if (is_mac) {
   import("//build/config/mac/rules.gni")
   import("//third_party/icu/config.gni")
@@ -572,7 +584,8 @@ source_set("electron_lib") {
     "//v8:v8_libplatform",
   ]
 
-  if (v8_use_external_startup_data && use_v8_context_snapshot) {
+  if (v8_use_external_startup_data && use_v8_context_snapshot &&
+      current_toolchain == default_toolchain) {
     deps += [ ":mksnapshot_checksum_gen" ]
   }
 
@@ -626,6 +639,19 @@ source_set("electron_lib") {
   }
   if (!is_mac) {
     sources += filenames.lib_sources_views
+  }
+
+  if (electron_generate_js2c_code_cache) {
+    sources += [
+      "$root_gen_dir/electron_natives_code_cache_browser.cc",
+      "$root_gen_dir/electron_natives_code_cache_renderer.cc",
+      "$root_gen_dir/electron_natives_code_cache_sandbox.cc",
+      "$root_gen_dir/electron_natives_code_cache_utility.cc",
+      "$root_gen_dir/electron_natives_code_cache_worker.cc",
+    ]
+    deps += [ ":run_electron_natives_codecache" ]
+  } else {
+    sources += [ "shell/common/node_natives_code_cache_stub.cc" ]
   }
 
   if (is_component_build) {
@@ -847,16 +873,107 @@ source_set("electron_lib") {
   }
 }
 
-action("mksnapshot_checksum_gen") {
-  script = "build/checksum_header.py"
+# Build-time host tool emitting V8 code caches for the electron/js2c/* framework
+# bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it links V8
+# with V8_TARGET_ARCH set to the target and reads the target's snapshot blob --
+# the cache it emits is keyed to the target's read-only checksum and flag hash.
+# Cross-OS stays off; see electron_generate_js2c_code_cache.
+if (electron_generate_js2c_code_cache) {
+  if (current_toolchain == v8_snapshot_toolchain) {
+    executable("electron_natives_codecache") {
+      # Host build tool, not shipped Chromium code.
+      configs += [ "//build/config/compiler:no_chromium_code" ]
+      configs -= [ "//build/config/compiler:chromium_code" ]
+      include_dirs = [
+        ".",
+        "//",
+      ]
+      sources = [ "shell/common/electron_natives_codecache_main.cc" ]
 
-  outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
-  inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
-  args = rebase_path(inputs)
+      # node's zstd binding also needs the compression symbols.
+      deps = [
+        "//third_party/electron_node:libnode",
+        "//third_party/zstd:compress",
+      ]
+    }
+  }
 
-  args += rebase_path(outputs)
+  # One generated cache per process flavor: V8's code-cache key includes
+  # FlagList::Hash() over non-default flags, which differs per process type.
+  # The flag deltas below were captured from live processes.
+  _js2c_cc_flavors = [
+    {
+      name = "sandbox"  # sandboxed renderer (no Node env)
+      flags = "--enable-sharedarraybuffer-per-context"
+    },
+    {
+      name = "renderer"
+      flags = "--enable-sharedarraybuffer-per-context --rehash-snapshot " +
+              "--no-freeze-flags-after-init"
+    },
+    {
+      name = "browser"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+    },
+    {
+      name = "utility"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+    },
+    {
+      name = "worker"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+    },
+  ]
 
-  deps = [ "//tools/v8_context_snapshot" ]
+  foreach(_f, _js2c_cc_flavors) {
+    action("run_electron_natives_codecache_" + _f.name) {
+      deps = [
+        ":electron_natives_codecache($v8_snapshot_toolchain)",
+        "//tools/v8_context_snapshot",
+        "//v8:run_mksnapshot_default",
+      ]
+      script = "//v8/tools/run.py"
+      _gen_dir =
+          get_label_info(":electron_natives_codecache($v8_snapshot_toolchain)",
+                         "root_out_dir")
+      _out = "$root_gen_dir/electron_natives_code_cache_" + _f.name + ".cc"
+      outputs = [ _out ]
+      args = [
+        "./" + rebase_path(_gen_dir + "/electron_natives_codecache",
+                           root_build_dir),
+        rebase_path(_out, root_build_dir),
+        rebase_path("$root_out_dir/$v8_context_snapshot_filename",
+                    root_build_dir),
+        _f.name,
+        _f.flags,
+      ]
+    }
+  }
+
+  group("run_electron_natives_codecache") {
+    public_deps = []
+    foreach(_f, _js2c_cc_flavors) {
+      public_deps += [ ":run_electron_natives_codecache_" + _f.name ]
+    }
+  }
+}
+
+# tools/v8_context_snapshot writes its output to $root_build_dir regardless
+# of toolchain, so this is only well-formed in the default toolchain (where
+# $root_out_dir == $root_build_dir). It is also only needed there -- only the
+# shipped framework reads snapshot_checksum.h.
+if (current_toolchain == default_toolchain) {
+  action("mksnapshot_checksum_gen") {
+    script = "build/checksum_header.py"
+
+    outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
+    inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
+    args = rebase_path(inputs)
+
+    args += rebase_path(outputs)
+
+    deps = [ "//tools/v8_context_snapshot" ]
+  }
 }
 
 electron_paks("packed_resources") {
