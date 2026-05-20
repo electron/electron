@@ -27,6 +27,7 @@
   "parallel/test-inspector-tracing-domain",
   "parallel/test-module-loading-globalpaths",
   "parallel/test-module-print-timing",
+  "parallel/test-node-output-v8-warning",
   "parallel/test-openssl-ca-options",
   "parallel/test-os-checked-function",
   "parallel/test-process-versions",
