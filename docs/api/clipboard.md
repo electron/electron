@@ -71,6 +71,9 @@ clipboard. The two clipboards are independent: writing via
 `clipboard.selection` does not affect the data returned by
 `clipboard.read()` (and vice versa).
 
+> [!NOTE]
+> The `selection` clipboard does not support the W3C [web custom format](https://github.com/w3c/editing/blob/gh-pages/docs/clipboard-pickling/explainer.md#custom-formats).
+
 ```js
 const { clipboard } = require('electron')
 

@@ -40,8 +40,7 @@ async function readBookmark(): Promise<Bookmark | undefined> {
   return undefined;
 }
 
-// FIXME(zcbenz): Clipboard tests are failing on WOA.
-ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard module', () => {
+describe('clipboard module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
 
   describe('reading images via clipboard.read()', () => {
@@ -98,7 +97,10 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     });
 
     it('resolves true with electron application/osclipboard;format="X" for a raw format X on write and read', async () => {
-      const rawFormat = 'public/utf8-plain-text';
+      let rawFormat = 'public/utf8-plain-text';
+      if (process.platform === 'win32') {
+        rawFormat = 'CF_UNICODETEXT';
+      }
       const mime = `electron application/osclipboard;format="${rawFormat}"`;
       await clipboard.write([new ClipboardItem({ [mime]: Buffer.from('x', 'utf8') })]);
       expect(await clipboard.has(mime)).to.be.true();
@@ -319,19 +321,18 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       ).to.throw(TypeError);
     });
 
-    ifit(process.platform !== 'win32')(
-      'writes UTF-8 bytes using a raw format that is used by native apps',
-      async () => {
-        const message = 'Hello from Electron!';
-        let rawFormat = 'text/plain';
-        if (process.platform === 'darwin') {
-          rawFormat = 'public.utf8-plain-text';
-        }
-        const mime = `electron application/osclipboard;format="${rawFormat}"`;
-        await clipboard.write([new ClipboardItem({ [mime]: Buffer.from(message, 'utf8') })]);
-        expect(await clipboard.readText()).to.equal(message);
+    it('writes UTF-8 bytes using a raw format that is used by native apps', async () => {
+      const message = 'Hello from Electron!';
+      let rawFormat = 'text/plain';
+      if (process.platform === 'darwin') {
+        rawFormat = 'public.utf8-plain-text';
+      } else if (process.platform === 'win32') {
+        rawFormat = 'CF_UNICODETEXT';
       }
-    );
+      const mime = `electron application/osclipboard;format="${rawFormat}"`;
+      await clipboard.write([new ClipboardItem({ [mime]: Buffer.from(message, 'utf8') })]);
+      expect(await clipboard.readText()).to.equal(message);
+    });
   });
 
   // The primary selection clipboard is a Linux-only concept exposed under
@@ -365,16 +366,6 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       expect(item, 'expected text/html on selection clipboard').to.exist();
       const buffer = (await item!.getType(mime)) as Buffer;
       expect(buffer.toString('utf8')).to.equal(html);
-    });
-
-    it('preserves "web " custom formats on the selection clipboard', async () => {
-      const mime = 'web application/x-electron-selection-test';
-      const payload = Buffer.from([0xfe, 0xed, 0xfa, 0xce]);
-      await clipboard.selection!.write([new ClipboardItem({ [mime]: payload })]);
-      const items = await clipboard.selection!.read();
-      const item = items.find((i) => i.types.includes(mime));
-      expect(item, 'expected custom format on selection clipboard').to.exist();
-      expect(payload.equals((await item!.getType(mime)) as Buffer)).to.equal(true);
     });
 
     it('is independent of the system clipboard', async () => {
