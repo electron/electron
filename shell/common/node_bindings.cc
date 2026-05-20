@@ -52,6 +52,7 @@
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
 #include "third_party/electron_node/src/module_wrap.h"
+#include "third_party/electron_node/src/node_snapshot_builder.h"
 #include "v8/include/v8-statistics.h"
 
 #if !IS_MAS_BUILD()
@@ -753,8 +754,13 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
-  gin_helper::internal::Event::GetConstructor(
-      isolate, context, &gin_helper::internal::Event::kWrapperInfo);
+  // When consuming the embedded Node startup snapshot, the context is empty
+  // here (it comes from Context::FromSnapshot inside CreateEnvironment); the
+  // Event constructor cache is populated lazily on first use in that path.
+  if (!context.IsEmpty()) {
+    gin_helper::internal::Event::GetConstructor(
+        isolate, context, &gin_helper::internal::Event::kWrapperInfo);
+  }
 
   g_is_initialized = true;
 }
@@ -784,39 +790,59 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       break;
   }
 
-  gin_helper::Dictionary global(isolate, context->Global());
+  // Electron: when consuming the embedded Node startup snapshot, the caller
+  // passed an empty context -- the main context is materialized by
+  // node::CreateEnvironment from the snapshot and read back here.
+  const bool from_snapshot = context.IsEmpty();
 
-  if (browser_env_ == BrowserEnvironment::kBrowser) {
-    const std::vector<std::string> search_paths = {"app.asar", "app",
-                                                   "default_app.asar"};
-    const std::vector<std::string> app_asar_search_paths = {"app.asar"};
-    context->Global()->SetPrivate(
-        context,
-        v8::Private::ForApi(
-            isolate,
-            gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
-        gin::ConvertToV8(isolate,
-                         electron::fuses::IsOnlyLoadAppFromAsarEnabled()
-                             ? app_asar_search_paths
-                             : search_paths));
-    context->Global()->SetPrivate(
-        context,
-        v8::Private::ForApi(
-            isolate, gin::ConvertToV8(isolate, "appSearchPathsOnlyLoadASAR")
-                         .As<v8::String>()),
-        gin::ConvertToV8(isolate,
-                         electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
-  }
+  // Context-dependent setup that must wait until the snapshot main context
+  // exists when from_snapshot is true.
+  auto set_up_context = [&](v8::Local<v8::Context> ctx,
+                            node::IsolateData* iso_data) {
+    if (browser_env_ == BrowserEnvironment::kBrowser) {
+      const std::vector<std::string> search_paths = {"app.asar", "app",
+                                                     "default_app.asar"};
+      const std::vector<std::string> app_asar_search_paths = {"app.asar"};
+      ctx->Global()->SetPrivate(
+          ctx,
+          v8::Private::ForApi(
+              isolate,
+              gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
+          gin::ConvertToV8(isolate,
+                           electron::fuses::IsOnlyLoadAppFromAsarEnabled()
+                               ? app_asar_search_paths
+                               : search_paths));
+      ctx->Global()->SetPrivate(
+          ctx,
+          v8::Private::ForApi(
+              isolate, gin::ConvertToV8(isolate, "appSearchPathsOnlyLoadASAR")
+                           .As<v8::String>()),
+          gin::ConvertToV8(isolate,
+                           electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
+    }
+    ctx->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
+                                         static_cast<void*>(iso_data),
+                                         v8::kEmbedderDataTypeTagDefault);
+  };
 
   std::string init_script = "electron/js2c/" + process_type + "_init";
 
   args.insert(args.begin() + 1, init_script);
 
-  auto* isolate_data = node::CreateIsolateData(isolate, uv_loop_, platform);
+  // The Node startup snapshot's per-isolate data (templates, primordials)
+  // is fed to CreateIsolateData so the bootstrap is deserialized.
+  auto snapshot_wrapper = from_snapshot
+                              ? node::SnapshotBuilder::GetEmbeddedSnapshotData()
+                                    ->AsEmbedderWrapper()
+                              : node::EmbedderSnapshotData::Pointer{};
+  auto* isolate_data =
+      node::CreateIsolateData(isolate, uv_loop_, platform,
+                              /*allocator=*/nullptr, snapshot_wrapper.get());
   isolate_data->max_young_gen_size = max_young_generation_size;
-  context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
-                                           static_cast<void*>(isolate_data),
-                                           v8::kEmbedderDataTypeTagDefault);
+
+  if (!from_snapshot) {
+    set_up_context(context, isolate_data);
+  }
 
   uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                        node::EnvironmentFlags::kHideConsoleWindows |
@@ -848,6 +874,19 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       exec_args, static_cast<node::EnvironmentFlags::Flags>(env_flags),
       process_type);
   DCHECK(env);
+
+  // When consuming the snapshot, the main context was deserialized inside
+  // node::CreateEnvironment and was not entered yet -- enter it for the
+  // rest of this function (process-object setup needs a current context).
+  // The persistent context Enter() happens in electron_browser_main_parts.cc
+  // after this returns.
+  std::optional<v8::Context::Scope> snapshot_context_scope;
+  if (from_snapshot) {
+    context = env->context();
+    DCHECK(!context.IsEmpty());
+    snapshot_context_scope.emplace(context);
+    set_up_context(context, isolate_data);
+  }
 
   node::IsolateSettings is;
 
@@ -964,6 +1003,11 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
+  // The build-time js2c cache covers the electron/js2c/* framework bundles
+  // (browser_init etc.), which the Node startup snapshot's per-builtin cache
+  // (node-internal builtins, fed in Environment::Deserialize) does not.
+  // RefreshCodeCache merges rather than replaces, so this is safe whether
+  // the env was deserialized from a snapshot or bootstrapped from scratch.
   electron::util::FeedEnvironmentCodeCache(env);
   node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
