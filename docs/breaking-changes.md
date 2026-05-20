@@ -234,7 +234,7 @@ async function has (format, clipboardType, isRawFormat) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   let mimeType = format
   if (isRawFormat) {
-    mimeType = `electron application/osclipboard;format="${format}$"`
+    mimeType = `electron application/osclipboard;format="${format}"`
   }
   return clipboardToUse.has(mimeType)
 }
@@ -297,9 +297,9 @@ async function readImage (clipboardType) {
   if (foundItem) {
     let buffer
     if (foundItem.types.includes(PNG_MIME_TYPE)) {
-      buffer = foundItem.getType(PNG_MIME_TYPE)
+      buffer = await foundItem.getType(PNG_MIME_TYPE)
     } else {
-      buffer = foundItem.getType(JPEG_MIME_TYPE)
+      buffer = await foundItem.getType(JPEG_MIME_TYPE)
     }
     return nativeImage.createFromBuffer(buffer)
   }
@@ -308,11 +308,9 @@ async function readImage (clipboardType) {
 async function writeImage (image, clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   return clipboardToUse.write([
-    {
-      data: {
-        'image/png': image.toPNG()
-      }
-    }
+    new ClipboardItem({
+      'image/png': image.toPNG()
+    })
   ])
 }
 
