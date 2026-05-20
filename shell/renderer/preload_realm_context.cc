@@ -12,6 +12,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/renderer/preload_utils.h"
@@ -218,12 +219,12 @@ class PreloadRealmLifetimeController
     }
     b.Set("startupData", startup_data);
 
-    v8::LocalVector<v8::String> preload_realm_bundle_params(
-        isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "binding")});
+    v8::LocalVector<v8::String> preload_realm_bundle_params =
+        js2c::MakeBundleParams(isolate, js2c::kPreloadRealmBundleParams);
 
     v8::LocalVector<v8::Value> preload_realm_bundle_args(isolate, {binding});
 
-    util::CompileAndCall(isolate, context, "electron/js2c/preload_realm_bundle",
+    util::CompileAndCall(isolate, context, js2c::kPreloadRealmBundleId,
                          &preload_realm_bundle_params,
                          &preload_realm_bundle_args);
   }

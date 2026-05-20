@@ -38,6 +38,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -963,6 +964,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
+  electron::util::FeedEnvironmentCodeCache(env);
   node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
@@ -1131,12 +1133,11 @@ void OnNodePreload(node::Environment* env,
   }
 
   // Execute lib/node/init.ts.
-  v8::LocalVector<v8::String> bundle_params(
-      env->isolate(), {node::FIXED_ONE_BYTE_STRING(env->isolate(), "process"),
-                       node::FIXED_ONE_BYTE_STRING(env->isolate(), "require")});
+  v8::LocalVector<v8::String> bundle_params =
+      js2c::MakeBundleParams(env->isolate(), js2c::kNodeInitParams);
   v8::LocalVector<v8::Value> bundle_args(env->isolate(), {process, require});
   electron::util::CompileAndCall(env->isolate(), env->context(),
-                                 "electron/js2c/node_init", &bundle_params,
+                                 js2c::kNodeInitId, &bundle_params,
                                  &bundle_args);
 }
 
