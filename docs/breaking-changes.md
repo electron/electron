@@ -182,7 +182,7 @@ async function readBuffer (format, clipboardType) {
     return clipboardItem.types.includes(format)
   })
   if (foundItem) {
-    const buffer = foundItem.getType(format)
+    const buffer = await foundItem.getType(format)
     return buffer
   }
 }
