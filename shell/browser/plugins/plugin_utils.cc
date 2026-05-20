@@ -22,7 +22,8 @@
 // static
 std::string PluginUtils::GetExtensionIdForMimeType(
     content::BrowserContext* browser_context,
-    const std::string& mime_type) {
+    const std::string& mime_type,
+    bool embedded) {
   auto map = GetMimeTypeToExtensionIdMap(browser_context);
   auto it = map.find(mime_type);
   if (it != map.end())

@@ -67,7 +67,7 @@ index dea308562c23388eb6b5749d2eb3e30eb4088048..19c57be9ab6c445e6c198b8d789d6fd8
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index b27203fac0393ff3c74ea24b0bf58faf90bc798d..2c8eb7d9120bfff54a2fd6df22c56f62cb681cdb 100644
+index 7288cf6b85925d1737b03af1dc412b587c7f1e6d..5d505a13e748b5e0424a922dad3dd3c6ae0ed655 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -561,7 +561,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -106,7 +106,7 @@ index a7aa661f94df2a435de6727ca89b69e686b92887..16e6c4b02aca7f1c4f2e80340898262b
    bool is_visible_on_all_workspaces_ = false;
    gfx::Rect window_bounds_before_fullscreen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 8c7fa25b2954c63a05788dc7d69a077b3822794f..48507f46af283e38c56e88395ab3e534b30193da 100644
+index 0abbfbc55033983a6a48b717528091d2ab4484ee..c6222bfe42b2cfa60415ab9e7cbc9a41ce607388 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -484,6 +484,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
