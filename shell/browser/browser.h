@@ -293,11 +293,6 @@ class Browser : private WindowListObserver {
   PCWSTR GetAppUserModelID();
 #endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_LINUX)
-  // Whether Unity launcher is running.
-  bool IsUnityRunning();
-#endif  // BUILDFLAG(IS_LINUX)
-
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
 

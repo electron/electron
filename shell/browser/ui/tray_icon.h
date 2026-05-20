@@ -41,7 +41,7 @@ class TrayIcon {
   // Sets the hover text for this status icon. This is also used as the label
   // for the menu item which is created as a replacement for the status icon
   // click action on platforms that do not support custom click actions for the
-  // status icon (e.g. Ubuntu Unity).
+  // status icon.
   virtual void SetToolTip(const std::string& tool_tip) = 0;
 
 #if BUILDFLAG(IS_MAC)
