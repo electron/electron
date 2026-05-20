@@ -346,6 +346,55 @@ describe('View', () => {
       const child = new View();
       expect(() => (child as any).setLayoutFlex(42)).to.throw();
     });
+
+    it('getLayoutFlex preserves minimum and maximum rules', () => {
+      const child = new View();
+      (child as any).setLayoutFlex({ minimum: 'scale-to-zero', maximum: 'unbounded', weight: 3, order: 2 });
+      const spec = (child as any).getLayoutFlex();
+      expect(spec).to.not.equal(null);
+      expect(spec.weight).to.equal(3);
+      expect(spec.order).to.equal(2);
+      expect(spec.minimum).to.equal('scale-to-zero');
+      expect(spec.maximum).to.equal('unbounded');
+    });
+
+    it('getLayoutFlex omits min/max after they are cleared', () => {
+      const child = new View();
+      (child as any).setLayoutFlex({ minimum: 'scale-to-minimum', maximum: 'unbounded', weight: 1 });
+      (child as any).setLayoutFlex(null);
+      expect((child as any).getLayoutFlex()).to.equal(null);
+      // Re-setting without min/max should not leak previous cached values.
+      (child as any).setLayoutFlex({ weight: 5 });
+      const spec = (child as any).getLayoutFlex();
+      expect(spec.weight).to.equal(5);
+      expect(spec.minimum).to.equal(undefined);
+      expect(spec.maximum).to.equal(undefined);
+    });
+  });
+
+  describe('view.setUseDefaultFillLayout', () => {
+    it('does not throw and stretches a single child to fill the parent', () => {
+      w = new BaseWindow({ show: false });
+      const root = new View();
+      w.setContentView(root);
+      const child = new View();
+      root.addChildView(child);
+      expect(() => (root as any).setUseDefaultFillLayout(true)).to.not.throw();
+      root.setBounds({ x: 0, y: 0, width: 300, height: 150 });
+      (root as any).layout();
+      const bounds = child.getBounds();
+      expect(bounds.width).to.equal(300);
+      expect(bounds.height).to.equal(150);
+    });
+
+    it('accepts toggling false without affecting layout manager type', () => {
+      const root = new View();
+      (root as any).setUseDefaultFillLayout(true);
+      (root as any).setUseDefaultFillLayout(false);
+      // setUseDefaultFillLayout doesn't go through our SetLayout(), so the
+      // tracked layout_type_ stays at its previous value (none in this test).
+      expect((root as any).getLayoutManagerType()).to.equal('');
+    });
   });
 
   describe('view.setLayoutMargins', () => {

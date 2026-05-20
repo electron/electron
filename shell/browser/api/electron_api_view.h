@@ -10,6 +10,7 @@
 #include "base/memory/raw_ptr.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/event_emitter.h"
+#include "ui/views/layout/flex_layout_types.h"
 #include "ui/views/view.h"
 #include "ui/views/view_observer.h"
 #include "v8/include/v8-value.h"
@@ -110,6 +111,12 @@ class View : public gin_helper::EventEmitter<View>,
   raw_ptr<views::View> view_ = nullptr;
   raw_ptr<JSLayoutManager> js_layout_manager_ = nullptr;
   LayoutType layout_type_ = LayoutType::kNone;
+
+  // Cached min/max flex rules: views::FlexSpecification bakes them into an
+  // opaque FlexRule closure and exposes no accessor, so we remember the
+  // user-provided values here for getLayoutFlex round-trip.
+  std::optional<views::MinimumFlexSizeRule> last_min_flex_rule_;
+  std::optional<views::MaximumFlexSizeRule> last_max_flex_rule_;
 };
 
 }  // namespace electron::api

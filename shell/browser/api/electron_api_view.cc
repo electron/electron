@@ -175,6 +175,25 @@ struct Converter<views::MinimumFlexSizeRule> {
     }
     return true;
   }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   views::MinimumFlexSizeRule in) {
+    switch (in) {
+      case views::MinimumFlexSizeRule::kScaleToZero:
+        return gin::StringToV8(isolate, "scale-to-zero");
+      case views::MinimumFlexSizeRule::kScaleToMinimumSnapToZero:
+        return gin::StringToV8(isolate, "scale-to-minimum-snap-to-zero");
+      case views::MinimumFlexSizeRule::kPreferredSnapToZero:
+        return gin::StringToV8(isolate, "preferred-snap-to-zero");
+      case views::MinimumFlexSizeRule::kScaleToMinimum:
+        return gin::StringToV8(isolate, "scale-to-minimum");
+      case views::MinimumFlexSizeRule::kPreferredSnapToMinimum:
+        return gin::StringToV8(isolate, "preferred-snap-to-minimum");
+      case views::MinimumFlexSizeRule::kPreferred:
+        return gin::StringToV8(isolate, "preferred");
+    }
+    return gin::StringToV8(isolate, "preferred");
+  }
 };
 
 template <>
@@ -193,6 +212,19 @@ struct Converter<views::MaximumFlexSizeRule> {
       return false;
     }
     return true;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   views::MaximumFlexSizeRule in) {
+    switch (in) {
+      case views::MaximumFlexSizeRule::kPreferred:
+        return gin::StringToV8(isolate, "preferred");
+      case views::MaximumFlexSizeRule::kScaleToMaximum:
+        return gin::StringToV8(isolate, "scale-to-maximum");
+      case views::MaximumFlexSizeRule::kUnbounded:
+        return gin::StringToV8(isolate, "unbounded");
+    }
+    return gin::StringToV8(isolate, "preferred");
   }
 };
 
@@ -271,10 +303,11 @@ class JSLayoutManager : public views::LayoutManagerBase {
     base::AutoReset<bool> reset(&is_dispatching_, true);
     views::ProposedLayout result = layout_callback_.Run(size_bounds);
     if (try_catch.HasCaught()) {
-      // Best-effort: fall back to an empty layout and re-throw so Node's
-      // uncaught-exception handler can pick it up. Without this guard a
-      // thrown JS exception would propagate into Chromium's view machinery
-      // and crash the main process.
+      // Without this guard, a JS exception thrown from the callback would
+      // propagate into Chromium's view machinery and crash the main process.
+      // ReThrow() leaves the exception pending on the isolate; delivery to
+      // Node's uncaught-exception handler is best-effort and depends on when
+      // control next returns to JS.
       try_catch.ReThrow();
       return views::ProposedLayout{};
     }
@@ -646,6 +679,8 @@ void View::SetLayoutFlex(v8::Isolate* isolate, v8::Local<v8::Value> spec) {
     return;
   if (spec.IsEmpty() || spec->IsNullOrUndefined()) {
     view_->ClearProperty(views::kFlexBehaviorKey);
+    last_min_flex_rule_.reset();
+    last_max_flex_rule_.reset();
     view_->InvalidateLayout();
     return;
   }
@@ -654,6 +689,21 @@ void View::SetLayoutFlex(v8::Isolate* isolate, v8::Local<v8::Value> spec) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "Invalid flex specification");
     return;
+  }
+  // Cache min/max so getLayoutFlex can return them — FlexSpecification has no
+  // accessor for these once they're baked into its FlexRule closure.
+  gin_helper::Dictionary dict;
+  if (gin::ConvertFromV8(isolate, spec, &dict)) {
+    views::MinimumFlexSizeRule cached_min;
+    if (dict.Get("minimum", &cached_min))
+      last_min_flex_rule_ = cached_min;
+    else
+      last_min_flex_rule_.reset();
+    views::MaximumFlexSizeRule cached_max;
+    if (dict.Get("maximum", &cached_max))
+      last_max_flex_rule_ = cached_max;
+    else
+      last_max_flex_rule_.reset();
   }
   view_->SetProperty(views::kFlexBehaviorKey, fs);
   view_->InvalidateLayout();
@@ -736,6 +786,8 @@ void View::SetBoxFlex(v8::Isolate* isolate,
   bool use_min_size = false;
   args->GetNext(&use_min_size);
   auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+  if (!layout)
+    return;
   layout->SetFlexForView(child->view(), weight, use_min_size);
   view_->InvalidateLayout();
 }
@@ -747,7 +799,13 @@ v8::Local<v8::Value> View::GetLayoutFlex(v8::Isolate* isolate) const {
       view_->GetProperty(views::kFlexBehaviorKey);
   if (!spec)
     return v8::Null(isolate);
-  return gin::ConvertToV8(isolate, *spec);
+  gin::DataObjectBuilder builder(isolate);
+  builder.Set("weight", spec->weight()).Set("order", spec->order());
+  if (last_min_flex_rule_)
+    builder.Set("minimum", *last_min_flex_rule_);
+  if (last_max_flex_rule_)
+    builder.Set("maximum", *last_max_flex_rule_);
+  return builder.Build();
 }
 
 std::string View::GetOrientation() const {
@@ -755,12 +813,16 @@ std::string View::GetOrientation() const {
     return "";
   if (layout_type_ == LayoutType::kBox) {
     auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+    if (!layout)
+      return "";
     return layout->GetOrientation() == views::BoxLayout::Orientation::kHorizontal
                ? "horizontal"
                : "vertical";
   }
   if (layout_type_ == LayoutType::kFlex) {
     auto* layout = static_cast<views::FlexLayout*>(view_->GetLayoutManager());
+    if (!layout)
+      return "";
     return layout->orientation() == views::LayoutOrientation::kHorizontal
                ? "horizontal"
                : "vertical";
@@ -772,6 +834,8 @@ std::string View::GetMainAxisAlignment() const {
   if (!view_ || layout_type_ != LayoutType::kBox)
     return "";
   auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+  if (!layout)
+    return "";
   switch (layout->main_axis_alignment()) {
     case views::LayoutAlignment::kStart:
       return "start";
@@ -791,6 +855,8 @@ std::string View::GetCrossAxisAlignment() const {
   if (!view_ || layout_type_ != LayoutType::kBox)
     return "";
   auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+  if (!layout)
+    return "";
   switch (layout->cross_axis_alignment()) {
     case views::LayoutAlignment::kStart:
       return "start";
@@ -810,6 +876,8 @@ int View::GetBetweenChildSpacing() const {
   if (!view_ || layout_type_ != LayoutType::kBox)
     return 0;
   auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+  if (!layout)
+    return 0;
   return layout->between_child_spacing();
 }
 
@@ -817,6 +885,8 @@ gfx::Insets View::GetInsideBorderInsets() const {
   if (!view_ || layout_type_ != LayoutType::kBox)
     return gfx::Insets();
   auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+  if (!layout)
+    return gfx::Insets();
   return layout->inside_border_insets();
 }
 
