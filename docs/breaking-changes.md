@@ -46,17 +46,6 @@ One API has been removed: `app.isUnityRunning()`. Some Unity-specific APIs no lo
 * `app.setBadgeCount(count)` and `app.badgeCount` _macOS_
 * `BaseWindow.setProgressBar(progress)` and `BrowserWindow.setProgressBar(progress)` _Windows_ _macOS_.
 
-## Planned Breaking API Changes (43.0)
-
-### Behavior Changed: Rounded corners on Linux
-
-Frameless windows default to rounded corners on Linux if the desktop environment supports client-side decorations. This can be configured using the existing `roundedCorners` option on `BrowserWindow`,
-which is now supported on Linux and defaults to `true` on all platforms.
-
-### Behavior Changed: WCO respects the native title bar layout on Linux
-
-Frameless windows with Window Controls Overlay (WCO) now adopt the native title bar layout and user settings on Linux. For example, controls will appear on the left side of the frame on RTL systems, and only the close button will be visible by default on GNOME. Depending on the user's desktop environment and configuration, buttons can appear on the left or right side of the frame (or both). To account for all possibilities, use the CSS variables `env(titlebar-area-x, 0px)` and `env(titlebar-area-width, 100%)` to constrain your app's title bar content to a safe area.
-
 ### Removed: `clipboard` module is no longer available in the renderer process
 
 The `clipboard` module is no longer exposed to renderer processes. It was
@@ -303,6 +292,17 @@ async function writeRTF (text, clipboardType) {
   return writeClipboard(RTF_MIME_TYPE, text, clipboardType)
 }
 ```
+
+## Planned Breaking API Changes (43.0)
+
+### Behavior Changed: Rounded corners on Linux
+
+Frameless windows default to rounded corners on Linux if the desktop environment supports client-side decorations. This can be configured using the existing `roundedCorners` option on `BrowserWindow`,
+which is now supported on Linux and defaults to `true` on all platforms.
+
+### Behavior Changed: WCO respects the native title bar layout on Linux
+
+Frameless windows with Window Controls Overlay (WCO) now adopt the native title bar layout and user settings on Linux. For example, controls will appear on the left side of the frame on RTL systems, and only the close button will be visible by default on GNOME. Depending on the user's desktop environment and configuration, buttons can appear on the left or right side of the frame (or both). To account for all possibilities, use the CSS variables `env(titlebar-area-x, 0px)` and `env(titlebar-area-width, 100%)` to constrain your app's title bar content to a safe area.
 
 ### Behavior Changed: `NativeImage.toBitmap()` now normalizes color space
 
