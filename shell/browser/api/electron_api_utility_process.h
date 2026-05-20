@@ -22,6 +22,7 @@
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
+#include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-forward.h"
 
 namespace gin {
@@ -42,6 +43,8 @@ class Connector;
 }  // namespace mojo
 
 namespace electron::api {
+
+class Session;
 
 class UtilityProcessWrapper final
     : public gin_helper::DeprecatedWrappable<UtilityProcessWrapper>,
@@ -66,6 +69,8 @@ class UtilityProcessWrapper final
       v8::Isolate* isolate) override;
   const char* GetTypeName() override;
 
+  bool has_session() const { return session_.Get(); }
+
  private:
   UtilityProcessWrapper(node::mojom::NodeServiceParamsPtr params,
                         std::u16string display_name,
@@ -74,7 +79,8 @@ class UtilityProcessWrapper final
                         base::FilePath current_working_directory,
                         bool use_plugin_helper,
                         bool create_network_observer,
-                        bool disclaim_responsibility);
+                        bool disclaim_responsibility,
+                        Session* session);
   void OnServiceProcessLaunch(const base::Process& process);
   void CloseConnectorPort();
 
@@ -122,6 +128,7 @@ class UtilityProcessWrapper final
   blink::MessagePortDescriptor host_port_;
   mojo::Receiver<node::mojom::NodeServiceClient> receiver_{this};
   mojo::Remote<node::mojom::NodeService> node_service_remote_;
+  cppgc::Persistent<Session> session_;
   std::optional<electron::URLLoaderNetworkObserver>
       url_loader_network_observer_;
   base::CallbackListSubscription network_service_gone_subscription_;
