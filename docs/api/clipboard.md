@@ -38,7 +38,7 @@ custom MIME types Electron exposes are:
   active app's find pasteboard.
 * `electron application/osclipboard;format="<name>"` — a raw payload
   for a platform-specific clipboard format. The `<name>` is the
-  platform format (e.g. `CF_TEXT` on Windows or
+  platform format (e.g. `HTML Format` on Windows or
   `public.utf8-plain-text` on macOS). `clipboard.read()` also surfaces
   any platform clipboard format that has no standard MIME mapping under
   this MIME type, so a raw OS format round-trips through the same string

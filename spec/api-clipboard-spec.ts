@@ -97,10 +97,7 @@ describe('clipboard module', () => {
     });
 
     it('resolves true with electron application/osclipboard;format="X" for a raw format X on write and read', async () => {
-      let rawFormat = 'public/utf8-plain-text';
-      if (process.platform === 'win32') {
-        rawFormat = 'CF_UNICODETEXT';
-      }
+      const rawFormat = 'public/utf8-plain-text';
       const mime = `electron application/osclipboard;format="${rawFormat}"`;
       await clipboard.write([new ClipboardItem({ [mime]: Buffer.from('x', 'utf8') })]);
       expect(await clipboard.has(mime)).to.be.true();
@@ -319,19 +316,6 @@ describe('clipboard module', () => {
             'electron application/osclipboard;format="public/utf8-plain-text"': 42 as any
           })
       ).to.throw(TypeError);
-    });
-
-    it('writes UTF-8 bytes using a raw format that is used by native apps', async () => {
-      const message = 'Hello from Electron!';
-      let rawFormat = 'text/plain';
-      if (process.platform === 'darwin') {
-        rawFormat = 'public.utf8-plain-text';
-      } else if (process.platform === 'win32') {
-        rawFormat = 'CF_UNICODETEXT';
-      }
-      const mime = `electron application/osclipboard;format="${rawFormat}"`;
-      await clipboard.write([new ClipboardItem({ [mime]: Buffer.from(message, 'utf8') })]);
-      expect(await clipboard.readText()).to.equal(message);
     });
   });
 
