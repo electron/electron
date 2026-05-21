@@ -128,7 +128,7 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
 4. **CRITICAL**: After ANY commit (especially patch commits), immediately run `git status` in the electron repo
     - Look for other modified `.patch` files that only have index/hunk header changes
     - These are dependent patches affected by your fix
-    - Commit them immediately with: `git commit -am "chore: update patches (trivial only)"`
+    - Commit them immediately with: `git commit -am "chore: update patches"`
 5. Return to step 1
 6. When `e build` succeeds, run `e start --version`
 7. Check if you have any pending changes in the Chromium repo by running `git status`
