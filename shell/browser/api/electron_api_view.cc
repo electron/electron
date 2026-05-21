@@ -531,19 +531,17 @@ void View::ApplyBorderRadius() {
   const auto clamp = [max_r](float r) {
     return std::max(0.f, std::min(r, max_r));
   };
-  const gfx::RoundedCornersF r(clamp(border_radii_->upper_left()),
-                               clamp(border_radii_->upper_right()),
-                               clamp(border_radii_->lower_right()),
-                               clamp(border_radii_->lower_left()));
+  const gfx::RoundedCornersF r(
+      clamp(border_radii_->upper_left()), clamp(border_radii_->upper_right()),
+      clamp(border_radii_->lower_right()), clamp(border_radii_->lower_left()));
 
   if (r.IsEmpty() || size.IsEmpty()) {
     view_->SetClipPath(SkPath());
     return;
   }
 
-  const SkRect rect =
-      SkRect::MakeWH(static_cast<SkScalar>(size.width()),
-                     static_cast<SkScalar>(size.height()));
+  const SkRect rect = SkRect::MakeWH(static_cast<SkScalar>(size.width()),
+                                     static_cast<SkScalar>(size.height()));
   const SkVector radii[4] = {{r.upper_left(), r.upper_left()},
                              {r.upper_right(), r.upper_right()},
                              {r.lower_right(), r.lower_right()},
