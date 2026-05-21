@@ -5,7 +5,7 @@ slug: /latest/
 hide_title: false
 ---
 
-# What is Electron?
+ body
 
 Electron is a framework for building desktop applications using JavaScript,
 HTML, and CSS. By embedding [Chromium][chromium] and [Node.js][node] into its
