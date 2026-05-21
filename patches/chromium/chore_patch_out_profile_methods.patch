@@ -43,7 +43,7 @@ index dd48ee2a99aeeddad66c95e7c61b17580bb523e5..1d7fa6c4a7956b9a356e4203e8c61eb7
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index 92bf7255a9363ec9697810666affbed86b3a1456..5488277908e9feb822691132866a2c9672e158ad 100644
+index 521d6303295a6c18926a27a197c4ad016bee1bbd..bd340d4cde175aceaee79c9ba5b3938da20c9487 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -258,10 +258,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
@@ -60,8 +60,8 @@ index 92bf7255a9363ec9697810666affbed86b3a1456..5488277908e9feb822691132866a2c96
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -461,11 +464,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
-     return false;
+@@ -476,11 +479,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+     }
    }
  
 +#if 0

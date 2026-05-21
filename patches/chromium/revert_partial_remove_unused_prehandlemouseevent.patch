@@ -54,7 +54,7 @@ index eab7d151f3a69ffb2c8e8d5fc7ba0fea414a9073..e289c811868c8df8a1a1b450a933684e
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0418e85254d33e00f5f62e82782a7ac56942016e..d60ee1c19aca8881d5e668a6a5441e4ad60e1dde 100644
+index bddeb6efcd5d591c4bdd3b119ae289d95fc988d4..e677e6b28274b4fe5a3e746bce6b3709801ddf5f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4573,6 +4573,12 @@ void WebContentsImpl::RenderWidgetWasResized(
@@ -71,10 +71,10 @@ index 0418e85254d33e00f5f62e82782a7ac56942016e..d60ee1c19aca8881d5e668a6a5441e4a
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 92a8ddb3388e6c3b25fadd73030c9333065d20d3..93abc689f82e1b8fb6d34395eb0f269f45874c3c 100644
+index 9b2f09f456c3ba8a7f7f4842f7fcfb558b985a5e..f6cb3f080322a912f4f3cb078ce9f29ab9bdbb96 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1133,6 +1133,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1134,6 +1134,7 @@ class CONTENT_EXPORT WebContentsImpl
  
    double GetPendingZoomLevel(RenderWidgetHostImpl* rwh) override;
  
@@ -100,10 +100,10 @@ index 5491e0198c1b18fb0405a5fcc6d21d8a08d2034b..f2baf5dfd16fd350a0057955b882ab38
      WebContents* source,
      const input::NativeWebKeyboardEvent& event) {
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 7abc7c9daeac6b764c7d2e90d39f2168f5750931..0e37b66ebfa2dd0fa2e0956f642d64b532dae58a 100644
+index 93c96d0521c4111b5ce48ff8d120ce362e70fc53..0a1f1b470141c5f4dde4e808373d540fba78aa17 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
-@@ -326,6 +326,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -327,6 +327,13 @@ class CONTENT_EXPORT WebContentsDelegate {
    virtual bool HandleContextMenu(RenderFrameHost& render_frame_host,
                                   const ContextMenuParams& params);
  
