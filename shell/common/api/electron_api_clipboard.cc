@@ -156,7 +156,11 @@ void EnumerateAvailableTypes(ui::ClipboardBuffer buffer,
                     // Skip standards — already emitted as MIMEs above.
                     if (IsStandardClipboardFormat(fmt))
                       continue;
-                    const std::string name = fmt.GetName();
+                    // On Windows `GetName()` yields the numeric registered-
+                    // format id; resolve it back to the registered string
+                    // name so the MIME round-trips on write and read.
+                    const std::string name = electron::api::clipboard_util::
+                        ResolvePlatformFormatName(fmt);
                     if (name.empty())
                       continue;
                     // A `web `-prefixed platform name (defensive — not
@@ -216,6 +220,15 @@ std::optional<std::string> ParseOSClipboardFormat(const std::string& mime) {
     return std::nullopt;
   return std::string{*name};
 }
+
+#if !BUILDFLAG(IS_WIN)
+// Windows needs a `GetClipboardFormatName` lookup — see
+// `electron_api_clipboard_win.cc`. Everywhere else `GetName()` already
+// returns the format's string name.
+std::string ResolvePlatformFormatName(const ui::ClipboardFormatType& fmt) {
+  return fmt.GetName();
+}
+#endif
 
 }  // namespace clipboard_util
 
