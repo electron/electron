@@ -110,7 +110,7 @@ Examples of valid `color` values:
 > [!NOTE]
 > Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBAA` or `RGB`.
 
-#### `view.setBorderRadius(radius)`
+#### `view.setBorderRadius(borderRadius)`
 
 <!--
 ```YAML history
@@ -120,7 +120,7 @@ changes:
 ```
 -->
 
-* `radius` Integer | Object - Border radius. When an `Integer`, it is applied
+* `borderRadius` Integer | Object - Border radius. When an `Integer`, it is applied
   uniformly to all four corners. When an `Object`, it can contain the following
   properties (all optional, default `0`):
   * `topLeft` Integer (optional) - Radius of the top-left corner, in pixels.

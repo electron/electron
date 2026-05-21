@@ -15,7 +15,7 @@
 namespace gin_helper {
 class Dictionary;
 class ErrorThrower;
-}
+}  // namespace gin_helper
 
 namespace electron::api {
 
