@@ -17,13 +17,14 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
 #include "v8/include/cppgc/allocation.h"
 
 namespace electron::api {
 
-const gin::WrapperInfo Extensions::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                                   gin::kElectronExtensions};
+const gin::WrapperInfo Extensions::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronExtensions);
 
 Extensions::Extensions(ElectronBrowserContext* browser_context)
     : browser_context_{browser_context} {

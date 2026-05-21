@@ -8,15 +8,14 @@
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/blink_converter.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
 namespace gin_helper::internal {
 
-const gin::WrapperInfo ReplyChannel::kWrapperInfo = {
-    {gin::kEmbedderNativeGin},
-    gin::kElectronReplyChannel};
+const gin::WrapperInfo ReplyChannel::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronReplyChannel);
 
 ReplyChannel::ReplyChannel(v8::Isolate* isolate, InvokeCallback callback)
     : callback_{std::move(callback)} {}

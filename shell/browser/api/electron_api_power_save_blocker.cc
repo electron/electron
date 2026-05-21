@@ -14,6 +14,7 @@
 #include "services/device/public/mojom/wake_lock_provider.mojom.h"
 #include "services/service_manager/public/cpp/connector.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -42,9 +43,8 @@ struct Converter<device::mojom::WakeLockType> {
 
 namespace electron::api {
 
-const gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {
-    {gin::kEmbedderNativeGin},
-    gin::kElectronPowerSaveBlocker};
+const gin::WrapperInfo PowerSaveBlocker::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronPowerSaveBlocker);
 
 PowerSaveBlocker::PowerSaveBlocker(v8::Isolate* isolate)
     : current_lock_type_(device::mojom::WakeLockType::kPreventAppSuspension) {}
