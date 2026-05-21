@@ -46,10 +46,10 @@ index 1c01e4d6699da8760e074a5825784e139ed58fd4..c678a3df0b9e5a8c9e0bd99c1aa540b2
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index a0bca2503ad74338c701bb37ab20aac74c4899f2..f09a883efe6d3af2fb8aeeb7cfa951cdeeee2d51 100644
+index 08f722cb62c69cae1231767792fdede828fcd2d3..90d081c7fa430fa021af75ba642bed272e24398f 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -9786,6 +9786,27 @@
+@@ -9788,6 +9788,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -91,10 +91,10 @@ index 44db0578d21cefe54d4050e00dfb4386305c427c..f2d58d302a48535d6ee78f6d9f2b4674
        return a.EmptyCells() == b.EmptyCells();
      case CSSPropertyID::kFill:
 diff --git a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-index effdf6e183e8d9bb7635a3fe8a0c02936d8bddbf..1d6e8f6a2eb5d97ccdb6ff41cc6c72c53a1f5132 100644
+index e4a870e17bbdba8900f2da09d1aeb2c86817c283..9fc3c04332e3051762519ce3860281e493749c03 100644
 --- a/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
 +++ b/third_party/blink/renderer/core/css/properties/longhands/longhands_custom.cc
-@@ -12442,5 +12442,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
+@@ -12472,5 +12472,36 @@ const CSSValue* InternalEmptyLineHeight::ParseSingleValue(
                                           CSSValueID::kNone>(stream);
  }
  
@@ -132,7 +132,7 @@ index effdf6e183e8d9bb7635a3fe8a0c02936d8bddbf..1d6e8f6a2eb5d97ccdb6ff41cc6c72c5
  }  // namespace css_longhand
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
-index 20604345a4fc646e08dc167e14edb67afef8124c..a027b41cb04fccdda52885b33a8dad27eda3c39c 100644
+index 0a582dbb5b4f5d758cb7009226b2ae180351ab75..846c87fbb59496551b045914745e8158ae5c1b7d 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
 @@ -4220,6 +4220,15 @@ PositionTryFallback StyleBuilderConverter::ConvertSinglePositionTryFallback(
@@ -152,10 +152,10 @@ index 20604345a4fc646e08dc167e14edb67afef8124c..a027b41cb04fccdda52885b33a8dad27
                                                const CSSValue& value) {
    const auto& list = To<CSSValueList>(value);
 diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-index df0688826c85a6ce29cdfb66cecbd1bdf0de12ab..0a5de3250e6ed29d9d05b342f83442396d13c482 100644
+index d56b243fbc43aab3943dc6c8607392220120a300..e4299b9bd0e21c1f628ac453d69e4aa927824d5c 100644
 --- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
 +++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.h
-@@ -466,6 +466,7 @@ class StyleBuilderConverter {
+@@ -467,6 +467,7 @@ class StyleBuilderConverter {
        StyleResolverState&,
        const CSSValue&,
        bool allow_any_keyword_in_position_area = false);
@@ -314,7 +314,7 @@ index 398fc8badaaf1dddc3183211c9302460393da85f..b35c8261b27a2d5c5f6bd84b606925c9
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index 368d39278163d0ec13c6d85209c2622a5eaae2cd..14f1afd0b1d702ee1391eb4f4ea2276ef031b52f 100644
+index 703024a6882d29c41dcdb01730bc6512cb788beb..527e129694979e682f29d6861ef1b98c752ee1b4 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -215,6 +215,10 @@

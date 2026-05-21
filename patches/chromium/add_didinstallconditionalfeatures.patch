@@ -123,10 +123,10 @@ index d098611e170e467ab584112f3c0fb0a4ff9dddad..36e88fc0d657f054e8176aebbd3196d8
                                  int32_t world_id) override;
  
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 86172d090065051f4d3a640fa6cb9f182f4972e6..24b317ef1f5df5999e6c2f4e456ba3ab81c5b3c6 100644
+index 839498b1a5fbd7c08cc9ca01be0d8c92af1b39fb..d8caa479568f20af6cd11ca1447bfaf94a9951bf 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -426,6 +426,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -427,6 +427,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
  
    void DidCreateScriptContext(v8::Local<v8::Context>,
                                int32_t world_id) override {}
