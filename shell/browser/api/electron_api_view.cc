@@ -299,25 +299,35 @@ class JSLayoutManager : public views::LayoutManagerBase {
       const views::SizeBounds& size_bounds) const override {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    v8::TryCatch try_catch(isolate);
+    // is_dispatching_ blocks re-entrant setLayout(): swapping the layout
+    // manager mid-callback would destroy `this` while it is still on the
+    // stack.
     base::AutoReset<bool> reset(&is_dispatching_, true);
-    views::ProposedLayout result = layout_callback_.Run(size_bounds);
-    if (try_catch.HasCaught()) {
-      // Without this guard, a JS exception thrown from the callback would
-      // propagate into Chromium's view machinery and crash the main process.
-      // ReThrow() leaves the exception pending on the isolate; delivery to
-      // Node's uncaught-exception handler is best-effort and depends on when
-      // control next returns to JS.
-      try_catch.ReThrow();
-      return views::ProposedLayout{};
-    }
-    return result;
+    // Exceptions thrown from the JS callback are absorbed by gin's
+    // V8FunctionInvoker — it returns a default-constructed ProposedLayout
+    // and leaves the exception pending on the isolate. V8 observes it when
+    // control next returns to JS; Node then decides whether to surface it
+    // via uncaughtException or to swallow at the binding boundary.
+    return layout_callback_.Run(size_bounds);
   }
 
  private:
   LayoutCallback layout_callback_;
   mutable bool is_dispatching_ = false;
 };
+
+namespace {
+std::string AlignmentToString(views::LayoutAlignment a) {
+  switch (a) {
+    case views::LayoutAlignment::kStart:    return "start";
+    case views::LayoutAlignment::kCenter:   return "center";
+    case views::LayoutAlignment::kEnd:      return "end";
+    case views::LayoutAlignment::kStretch:  return "stretch";
+    case views::LayoutAlignment::kBaseline: return "baseline";
+  }
+  return "";
+}
+}  // namespace
 
 View::View(views::View* view) : view_(view) {
   view_->set_owned_by_client(views::View::OwnedByClientPassKey{});
@@ -637,8 +647,17 @@ void View::SetLayout(v8::Isolate* isolate, v8::Local<v8::Value> value) {
     return;
   }
 
-  // type == "flex" (default) or any unrecognised type: fall through to
-  // FlexLayout for backward compatibility with the previous setLayout shape.
+  // An explicit `type` we don't recognise is an error. An *absent* `type`
+  // falls through to FlexLayout, preserving backward compatibility with
+  // the legacy setLayout({orientation: ...}) shape from PR #35658.
+  if (!type.empty() && type != "flex") {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Unknown layout type: '" + type +
+        "'. Expected one of 'fill', 'box', 'flex', or omit the field.");
+    return;
+  }
+
+  // type == "flex" or omitted: configure a FlexLayout.
   layout_type_ = LayoutType::kFlex;
   auto* layout = view_->SetLayoutManager(std::make_unique<views::FlexLayout>());
   views::LayoutOrientation orientation;
@@ -831,43 +850,29 @@ std::string View::GetOrientation() const {
 }
 
 std::string View::GetMainAxisAlignment() const {
-  if (!view_ || layout_type_ != LayoutType::kBox)
+  if (!view_)
     return "";
-  auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
-  if (!layout)
-    return "";
-  switch (layout->main_axis_alignment()) {
-    case views::LayoutAlignment::kStart:
-      return "start";
-    case views::LayoutAlignment::kCenter:
-      return "center";
-    case views::LayoutAlignment::kEnd:
-      return "end";
-    case views::LayoutAlignment::kStretch:
-      return "stretch";
-    case views::LayoutAlignment::kBaseline:
-      return "baseline";
+  if (layout_type_ == LayoutType::kBox) {
+    auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+    return layout ? AlignmentToString(layout->main_axis_alignment()) : "";
+  }
+  if (layout_type_ == LayoutType::kFlex) {
+    auto* layout = static_cast<views::FlexLayout*>(view_->GetLayoutManager());
+    return layout ? AlignmentToString(layout->main_axis_alignment()) : "";
   }
   return "";
 }
 
 std::string View::GetCrossAxisAlignment() const {
-  if (!view_ || layout_type_ != LayoutType::kBox)
+  if (!view_)
     return "";
-  auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
-  if (!layout)
-    return "";
-  switch (layout->cross_axis_alignment()) {
-    case views::LayoutAlignment::kStart:
-      return "start";
-    case views::LayoutAlignment::kCenter:
-      return "center";
-    case views::LayoutAlignment::kEnd:
-      return "end";
-    case views::LayoutAlignment::kStretch:
-      return "stretch";
-    case views::LayoutAlignment::kBaseline:
-      return "baseline";
+  if (layout_type_ == LayoutType::kBox) {
+    auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+    return layout ? AlignmentToString(layout->cross_axis_alignment()) : "";
+  }
+  if (layout_type_ == LayoutType::kFlex) {
+    auto* layout = static_cast<views::FlexLayout*>(view_->GetLayoutManager());
+    return layout ? AlignmentToString(layout->cross_axis_alignment()) : "";
   }
   return "";
 }

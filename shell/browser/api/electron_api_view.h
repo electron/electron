@@ -115,6 +115,8 @@ class View : public gin_helper::EventEmitter<View>,
   // Cached min/max flex rules: views::FlexSpecification bakes them into an
   // opaque FlexRule closure and exposes no accessor, so we remember the
   // user-provided values here for getLayoutFlex round-trip.
+  // Invariant: every write to view_->kFlexBehaviorKey MUST go through
+  // SetLayoutFlex(), otherwise these caches go stale silently.
   std::optional<views::MinimumFlexSizeRule> last_min_flex_rule_;
   std::optional<views::MaximumFlexSizeRule> last_max_flex_rule_;
 };

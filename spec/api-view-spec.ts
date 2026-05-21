@@ -254,6 +254,30 @@ describe('View', () => {
       expect(() => root.setLayout(42 as any)).to.throw();
     });
 
+    it('throws on an unknown type field', () => {
+      const v = new View();
+      expect(() => v.setLayout({ type: 'fluss' } as any))
+        .to.throw(/Unknown layout type/);
+    });
+
+    it('still accepts the legacy no-type shape as flex', () => {
+      // setLayout({orientation, crossAxisAlignment, ...}) from PR #35658
+      // was without a `type` field. Must keep working for back-compat.
+      const v = new View();
+      expect(() => v.setLayout({ orientation: 'vertical' } as any)).to.not.throw();
+      expect((v as any).getLayoutManagerType()).to.equal('flex');
+    });
+
+    it('setLayout(null) clears a JS layout manager', () => {
+      const v = new View();
+      v.setLayout({
+        calculateProposedLayout: () => ({ size: { width: 0, height: 0 }, layouts: [] })
+      } as any);
+      expect((v as any).getLayoutManagerType()).to.equal('js');
+      v.setLayout(null as any);
+      expect((v as any).getLayoutManagerType()).to.equal('');
+    });
+
     it('JS calculateProposedLayout callback is invoked', () => {
       w = new BaseWindow({ show: false });
       const root = new View();
@@ -279,7 +303,7 @@ describe('View', () => {
       expect(child.getBounds().width).to.equal(200);
     });
 
-    it('catches exceptions from JS layout callback without crashing', () => {
+    it('does not crash when the JS layout callback throws', () => {
       w = new BaseWindow({ show: false });
       const root = new View();
       w.setContentView(root);
@@ -290,8 +314,9 @@ describe('View', () => {
           throw new Error('boom');
         }
       } as any);
-      // Should not crash the process; the exception is caught by v8::TryCatch
-      // and re-thrown so Node's uncaught-exception handler picks it up.
+      // gin's V8FunctionInvoker absorbs the JS exception (it returns a
+      // default-constructed ProposedLayout) so the C++ side stays sane;
+      // the pending v8 exception is delivered to Node on next reentry.
       expect(() => {
         root.setBounds({ x: 0, y: 0, width: 100, height: 100 });
         (root as any).layout();
@@ -483,6 +508,14 @@ describe('View', () => {
       root.setLayout({ type: 'box', orientation: 'horizontal' } as any);
       expect(() => (root as any).setBoxFlex(child, 1, true)).to.not.throw();
     });
+
+    it('accepts weight 0 (child takes only its preferred size)', () => {
+      const root = new View();
+      const child = new View();
+      root.addChildView(child);
+      root.setLayout({ type: 'box', orientation: 'horizontal' } as any);
+      expect(() => (root as any).setBoxFlex(child, 0)).to.not.throw();
+    });
   });
 
   describe('view.layout|invalidateLayout', () => {
@@ -524,6 +557,21 @@ describe('View', () => {
       v.setLayout({ type: 'box' } as any);
       const insets = (v as any).getInsideBorderInsets();
       expect(insets.top + insets.left + insets.bottom + insets.right).to.equal(0);
+    });
+
+    it('getMainAxisAlignment works for flex layout', () => {
+      const v = new View();
+      v.setLayout({ type: 'flex', mainAxisAlignment: 'center' } as any);
+      expect((v as any).getMainAxisAlignment()).to.equal('center');
+    });
+
+    it('getCrossAxisAlignment works for flex layout', () => {
+      // Always set crossAxisAlignment explicitly when probing FlexLayout — the
+      // Chromium accessor dereferences an internal optional, undefined behavior
+      // if SetCrossAxisAlignment was never called. See flex_layout.h:101-103.
+      const v = new View();
+      v.setLayout({ type: 'flex', crossAxisAlignment: 'stretch' } as any);
+      expect((v as any).getCrossAxisAlignment()).to.equal('stretch');
     });
   });
 });
