@@ -1889,15 +1889,12 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(process.platform === 'win32')('secondary-monitor creation (Windows)', () => {
-      // Regression test for the secondary-monitor creation deflation: the
-      // HWND was created at (0, 0) using primary-monitor DPI then moved,
-      // so getBounds() reported scaled-by-primary then re-read-at-secondary
-      // values. Threading x/y into params.bounds at construction time makes
-      // the very first DIP->pixel conversion use the target monitor's DPI.
-      // CI runs at a single 96 DPI virtual display so the cross-monitor
-      // behavioural signal can't fire here, but the assertion still catches
-      // regressions in the construction path.
+    describe('explicit x/y at construction', () => {
+      // Regression: on Windows, the HWND was created at (0,0) with
+      // primary-monitor DPI then moved, producing wrong bounds. Now that
+      // the origin is threaded into params.bounds on all platforms, run
+      // the test everywhere. CI is single-display so this only validates
+      // the construction path, not true cross-monitor behaviour.
       afterEach(closeAllWindows);
 
       for (const frame of [true, false]) {
