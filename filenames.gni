@@ -113,6 +113,7 @@ filenames = {
     "shell/browser/win/dark_mode.h",
     "shell/browser/win/scoped_hstring.cc",
     "shell/browser/win/scoped_hstring.h",
+    "shell/common/api/electron_api_clipboard_win.cc",
     "shell/common/api/electron_api_native_image_win.cc",
     "shell/common/application_info_win.cc",
     "shell/common/command_line_util_win.cc",

@@ -49,6 +49,16 @@ inline constexpr std::string_view kImagePrefix = "image/";
 // Parse `electron application/osclipboard;format="<name>"` → "<name>".
 std::optional<std::string> ParseOSClipboardFormat(const std::string& mime);
 
+// Resolve a raw platform clipboard format to the stable string name used
+// in the `electron application/osclipboard;format="<name>"` MIME. On
+// Windows, `ClipboardFormatType::GetName()` returns the numeric
+// registered-format id (e.g. `"49472"`); this resolves it back to the
+// registered string name (e.g. `"public/utf8-plain-text"`) via
+// `GetClipboardFormatName` so a raw format round-trips through the same
+// MIME on write and read. On other platforms `GetName()` already returns
+// the format's string name, so this is a thin pass-through.
+std::string ResolvePlatformFormatName(const ui::ClipboardFormatType& fmt);
+
 }  // namespace clipboard_util
 
 // The `electron_browser_clipboard` native binding is shaped directly like
