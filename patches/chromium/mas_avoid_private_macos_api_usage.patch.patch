@@ -869,7 +869,7 @@ index 11a27e96a08e9ab067da3ff8d2e09349a36e6875..0e15e181057be466221ff6dad3e20edb
  
  void NativeWidgetNSWindowBridge::SetColorMode(
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f0d3ad2797b81632b55d1bebadd81aa9b49b247a..b4f2d6b658b7ed78433512a989971733657faace 100644
+index 51300b3de301f065874840122531cc88469b1123..62c376be91a463e672e7884f03cc349dc4128d60 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -395,6 +395,7 @@ viz_component("service") {
@@ -880,8 +880,8 @@ index f0d3ad2797b81632b55d1bebadd81aa9b49b247a..b4f2d6b658b7ed78433512a989971733
    }
  
    if (is_ios) {
-@@ -742,6 +743,7 @@ viz_source_set("unit_tests") {
-       "display_embedder/software_output_device_mac_unittest.mm",
+@@ -743,6 +744,7 @@ viz_source_set("unit_tests") {
+       "frame_sinks/external_begin_frame_source_mac_unittest.cc",
      ]
      frameworks = [ "IOSurface.framework" ]
 +    deps += ["//electron/build/config:generate_mas_config"]
@@ -974,7 +974,7 @@ index 91a0eee3a76257906f038844922f18fd4765ea66..af6ce45c11ece7ebe6b7cb70673b0c12
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 00bd98d59b35c2738eb314101e7d495c1b3b0510..e163d76b1f2805b44bdc87c262d0c519db8b5de8 100644
+index 5b413dd1e61e2ccc4a95b3a1c6cdc36b7424f7c0..e04360ef2af8790b920863b1c0aefdd0f6928376 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -365,6 +365,7 @@ source_set("browser") {
@@ -1789,10 +1789,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 02f134df3334d853f719adfcfdada7a48e8027df..d861f3c03b00b38521b5f2e84482930d3d05aa04 100644
+index 20ca6a74c84787b653eacf2cc24dc486ce64ecee..bf3a6d8162076b8cf65414539b8122efbdca0b15 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -442,6 +442,7 @@ component("core") {
+@@ -443,6 +443,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1891,7 +1891,7 @@ index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..3e3aaea0ec6c8fad0d90a931d269af3a
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
-index 5bcd0768406a83da96a3167120f1c6b2fa614ee5..0c3bbf77a56b4ad7d0d95816a9127d03ce5dc3f8 100644
+index b76dbd1d60d41d075eb788915ad69a39e3c5647e..5c098fb0a058df883276d687fe1faff78d5fcce5 100644
 --- a/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 +++ b/third_party/blink/renderer/platform/fonts/mac/font_matcher_mac.mm
 @@ -37,6 +37,7 @@
@@ -1913,7 +1913,7 @@ index 5bcd0768406a83da96a3167120f1c6b2fa614ee5..0c3bbf77a56b4ad7d0d95816a9127d03
  
  namespace blink {
  
-@@ -453,12 +456,16 @@ void ClampVariationValuesToFontAcceptableRange(
+@@ -467,12 +470,16 @@ void ClampVariationValuesToFontAcceptableRange(
    // we are enabling it only on MacOS 13+ because these are our benchmarking
    // platforms.
    NSArray* all_axes;
@@ -2161,7 +2161,7 @@ index ef031ba14e4c649f6f3a5718ac521e6b424d64cb..38e528450196b4dbd5fa6a25b96baa10
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 49a345c713af90eaa7584863b9e8ccb79cb4d976..5ad3ab41a5e3f75851ce2517c2c276311d6fdfe6 100644
+index 1add8ac9c3ec1d35a1e0043de4708171f2337cff..0d8d667d27c6292698c8bad1a68c783ec8ccd97c 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,13 @@ component("base") {

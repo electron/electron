@@ -20,7 +20,7 @@ making three primary changes to Blink:
     * Controls whether the CSS rule is available.
 
 diff --git a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
-index 7b020732e4885deea9cedca545cefcad46931a5b..62bf44f7b2f66fca9421a55743bb1f63a4e75876 100644
+index 1368baada032665b96c67149a55d2f53983878ca..e36017adbbb418fec31aa0018889957fc89cbc7a 100644
 --- a/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 +++ b/third_party/blink/public/mojom/use_counter/metrics/css_property_id.mojom
 @@ -50,7 +50,7 @@ enum CSSSampleId {
@@ -46,10 +46,10 @@ index 1c01e4d6699da8760e074a5825784e139ed58fd4..c678a3df0b9e5a8c9e0bd99c1aa540b2
                      'internal-forced-visited-'):
                  internal_visited_order = 0
 diff --git a/third_party/blink/renderer/core/css/css_properties.json5 b/third_party/blink/renderer/core/css/css_properties.json5
-index 5d82b8d2bc4807c73e3bd9542a1fead67b75c2ce..c2f05715b704340ae5fb4809ff4ab263c159be27 100644
+index dbf03b3a0952ed2b9a1091871d7cb9c843315bad..cf16666433a80d29ca6e724ead33eb07e783b1fe 100644
 --- a/third_party/blink/renderer/core/css/css_properties.json5
 +++ b/third_party/blink/renderer/core/css/css_properties.json5
-@@ -9798,6 +9798,27 @@
+@@ -9966,6 +9966,27 @@
        property_methods: ["ParseShorthand", "CSSValueFromComputedStyleInternal"],
      },
  
@@ -78,7 +78,7 @@ index 5d82b8d2bc4807c73e3bd9542a1fead67b75c2ce..c2f05715b704340ae5fb4809ff4ab263
      {
        name: "-internal-visited-color",
 diff --git a/third_party/blink/renderer/core/css/css_property_equality.cc b/third_party/blink/renderer/core/css/css_property_equality.cc
-index 07d654a34820ffbaea5a202816e2bee8ca75957f..9f2c3318cfa7848bf08e4a877aae2b3e7743d2e2 100644
+index 72bd303dbb4dace5874627b78801f53c9fab7733..4107c3aee586b08f9ce638ebdd6fec5c3a4b9e87 100644
 --- a/third_party/blink/renderer/core/css/css_property_equality.cc
 +++ b/third_party/blink/renderer/core/css/css_property_equality.cc
 @@ -421,6 +421,8 @@ bool CSSPropertyEquality::PropertiesEqual(const PropertyHandle& property,
@@ -314,7 +314,7 @@ index 398fc8badaaf1dddc3183211c9302460393da85f..b35c8261b27a2d5c5f6bd84b606925c9
  
    auto DrawAsSinglePath = [&]() {
 diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
-index c286de7bb6ab3b198fbbd79e4da05b0a509e58e4..e3d93deaa734d80aa0c36e38b511437c531d70d1 100644
+index eaaca34095c24d566184dc9124d1f99bd43879b9..6452daa5457df8d924b1899016cf406020a9b29e 100644
 --- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
 +++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
 @@ -215,6 +215,10 @@
