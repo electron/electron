@@ -311,6 +311,8 @@ class NativeWindowViews : public NativeWindow,
   // Whether to show the WS_THICKFRAME style.
   bool thick_frame_ = true;
 
+  bool content_protected_ = false;
+
   // The bounds of window before maximize/fullscreen.
   gfx::Rect restore_bounds_;
 
