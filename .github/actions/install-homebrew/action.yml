@@ -42,7 +42,15 @@ runs:
         done
 
         if [[ -z "${brew_bin}" ]]; then
-          echo "No matching Homebrew version found, downloading and installing..."
+          echo "No matching Homebrew version found, pinning to ${target_version}..."
+
+          echo "Removing existing Homebrew installation..."
+          sudo rm -rf /{usr/local,opt/homebrew}/{Cellar,Caskroom,Homebrew/Library/Taps}
+          brew cleanup --prune-prefix
+          sudo rm -rf /usr/local/{bin/brew,Homebrew} /opt/homebrew
+
+          echo "Downloading and installing Homebrew package..."
+
           pkg_path="${RUNNER_TEMP}/Homebrew.pkg"
           download_url="https://github.com/Homebrew/brew/releases/download/${target_version}/Homebrew.pkg"
 
