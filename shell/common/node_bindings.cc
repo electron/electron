@@ -958,6 +958,18 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
         node::IsolateSettingsFlags::SHOULD_NOT_SET_PREPARE_STACK_TRACE_CALLBACK;
   }
 
+  if (from_snapshot) {
+    // node::CreateEnvironment already registered the per-isolate message
+    // listener while deserializing the snapshot (SetIsolateErrorHandlers in
+    // node's src/api/environment.cc, taken only on the snapshot path).
+    // Message listeners are additive, so letting SetIsolateUpForNode add it
+    // again would deliver every uncaught error -- and the resulting
+    // uncaughtException -- twice. Keep the snapshot's listener and skip the
+    // duplicate; the custom fatal/OOM handlers above are setters and still
+    // take effect.
+    is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
+  }
+
   node::SetIsolateUpForNode(isolate, is);
   isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
   isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
