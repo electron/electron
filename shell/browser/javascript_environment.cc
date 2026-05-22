@@ -47,6 +47,13 @@ namespace {
 const node::SnapshotData* NodeSnapshotForThisProcess() {
   if (!electron::IsBrowserProcess())
     return nullptr;
+  // The ELECTRON_RUN_AS_NODE entry point (shell/app/node_main.cc) runs without
+  // a process type, so IsBrowserProcess() is true for it too -- but it boots
+  // Node directly and builds its IsolateData without snapshot_data, so handing
+  // it a snapshot-backed isolate would trip node::CreateEnvironment's
+  // snapshot_data CHECK. It isn't the app-start path this targets; skip it.
+  if (electron::IsRunningAsNode())
+    return nullptr;
   return node::SnapshotBuilder::GetEmbeddedSnapshotData();
 }
 
