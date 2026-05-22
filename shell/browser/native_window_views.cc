@@ -1400,13 +1400,14 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 
 void NativeWindowViews::SetContentProtection(const bool enable) {
 #if BUILDFLAG(IS_WIN)
-  widget()->SetAllowScreenshots(!enable);
+  content_protected_ = enable;
+  widget()->SetExcludeFromScreenCapture(enable);
 #endif
 }
 
 bool NativeWindowViews::IsContentProtected() const {
 #if BUILDFLAG(IS_WIN)
-  return !widget()->AreScreenshotsAllowed();
+  return content_protected_;
 #else  // Not implemented on Linux
   return false;
 #endif
