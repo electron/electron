@@ -36,7 +36,7 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
 
 static constexpr auto ResourceTypes =
@@ -205,8 +205,8 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
 
 }  // namespace
 
-const gin::WrapperInfo WebRequest::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                                   gin::kElectronWebRequest};
+const gin::WrapperInfo WebRequest::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronWebRequest);
 
 WebRequest::RequestFilter::RequestFilter(
     std::set<URLPattern> include_url_patterns,
