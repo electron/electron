@@ -71,20 +71,23 @@ index c1bcb3948c4cf68b36dbb1ea985bfb02267ad724..b9ddc1e2139c1a3b869a27f088e6e646
      isolate->SetCaptureStackTraceForUncaughtExceptions(
          true,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index cf7f3f272bf84af330967d5a7cb2c5bee821cc84..e417c908fcb28c5027aa00c1709eb7c55f3db5a5 100644
+index cf7f3f272bf84af330967d5a7cb2c5bee821cc84..29a621c7fdca110a1a931d6cd40dbc5d0bc0b4ce 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -659,12 +659,14 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
+@@ -659,12 +659,17 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
  
  void BuiltinLoader::RefreshCodeCache(const std::vector<CodeCacheInfo>& in) {
    RwLock::ScopedLock lock(code_cache_->mutex);
 -  code_cache_->map.reserve(in.size());
 -  DCHECK(code_cache_->map.empty());
-+  // Electron: this can be called twice -- once with the code cache from a
-+  // Node startup snapshot (populated in Environment::Deserialize for
-+  // node-internal builtins), and once with Electron's build-time js2c cache
-+  // for the electron/js2c/* framework bundles which the snapshot does not
-+  // cover. Merge rather than replace; the caches cover disjoint id sets.
++  // Electron: this can be called more than once. Environment::Deserialize
++  // feeds the Node startup snapshot's own code cache (node-internal builtins,
++  // plus the electron/js2c/* bundles node_mksnapshot compiled while building
++  // the snapshot), and Electron then feeds its build-time js2c cache for
++  // those same electron/js2c/* bundles. The id sets overlap on the js2c
++  // bundles, so merge additively (don't drop the node-internal entries) and
++  // use insert_or_assign so the later, build-time entry wins for shared ids.
++  // Both caches are built against this isolate, so either is valid.
 +  code_cache_->map.reserve(code_cache_->map.size() + in.size());
    for (auto const& [id, data] : in) {
 -    auto result = code_cache_->map.emplace(id, data);
@@ -241,21 +244,20 @@ index c4b39450c5b7f91c46f7027db367c30db34927bb..87481c94863b2cbb43851dd31748fb9d
    // kInternalized strings are created in the old space.
    const v8::NewStringType type = v8::NewStringType::kInternalized;
 diff --git a/tools/snapshot/node_mksnapshot.cc b/tools/snapshot/node_mksnapshot.cc
-index 0842cba257d0ca36e07c97736e5b24cc77f2a053..464f6dd650a641bd1ed082d32128c5d75025721a 100644
+index 0842cba257d0ca36e07c97736e5b24cc77f2a053..32d945aba2bcf12a6d1512a37fbd107afc945837 100644
 --- a/tools/snapshot/node_mksnapshot.cc
 +++ b/tools/snapshot/node_mksnapshot.cc
-@@ -1,7 +1,10 @@
+@@ -1,7 +1,8 @@
  #include <cstdio>
 +#include <cstdlib>
-+#include <fstream>
  #include <iostream>
- #include <sstream>
+-#include <sstream>
  #include <string>
 +#include <string_view>
  #include <vector>
  
  #include "libplatform/libplatform.h"
-@@ -61,6 +64,51 @@ int BuildSnapshot(int argc, char* argv[]) {
+@@ -61,6 +62,52 @@ int BuildSnapshot(int argc, char* argv[]) {
      return 1;
    }
  
@@ -285,10 +287,11 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..464f6dd650a641bd1ed082d32128c5d7
 +    for (int i = 0; i < argc; ++i) {
 +      if (std::string_view(argv[i]).substr(0, kFlag.size()) == kFlag) {
 +        const char* path = argv[i] + kFlag.size();
-+        std::ifstream in(path, std::ios::binary);
-+        std::stringstream ss;
-+        ss << in.rdbuf();
-+        blob_bytes = ss.str();
++        if (const int r = node::ReadFileSync(&blob_bytes, path); r != 0) {
++          std::cerr << "Cannot read V8 snapshot blob " << path << ": "
++                    << uv_strerror(r) << "\n";
++          return 1;
++        }
 +        base_blob.data = blob_bytes.data();
 +        base_blob.raw_size = static_cast<int>(blob_bytes.size());
 +        node::SnapshotBuilder::SetBaseSnapshotForCreation(&base_blob);

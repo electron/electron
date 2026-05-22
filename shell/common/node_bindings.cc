@@ -1022,11 +1022,12 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
-  // The build-time js2c cache covers the electron/js2c/* framework bundles
-  // (browser_init etc.), which the Node startup snapshot's per-builtin cache
-  // (node-internal builtins, fed in Environment::Deserialize) does not.
-  // RefreshCodeCache merges rather than replaces, so this is safe whether
-  // the env was deserialized from a snapshot or bootstrapped from scratch.
+  // Feed Electron's build-time js2c cache for the electron/js2c/* framework
+  // bundles (browser_init etc.). When booting from the Node startup snapshot
+  // these ids may already be present (Environment::Deserialize loads the
+  // caches node_mksnapshot embedded for the same bundles); RefreshCodeCache
+  // uses insert_or_assign, so the build-time entries supersede them while the
+  // node-internal entries are kept. Harmless when bootstrapped from scratch.
   electron::util::FeedEnvironmentCodeCache(env);
   node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
