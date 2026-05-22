@@ -27,6 +27,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronServiceWorkerContext,  // electron::api::ServiceWorkerContext
   kElectronSession,               // electron::api::Session
   kElectronTray,                  // electron::api::Tray
+  kElectronUtilityProcess,        // electron::api::UtilityProcessWrapper
   kElectronWebRequest,            // electron::api::WebRequest
   kLastElectronPointerTag = kElectronWebRequest,
 };
