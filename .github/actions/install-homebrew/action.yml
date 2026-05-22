@@ -84,7 +84,6 @@ runs:
 
           for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
             if [[ -x "${candidate}" ]]; then
-              echo "Found Homebrew version ${current_version} in ${candidate}..."
               current_version="$("${candidate}" --version | awk 'NR == 1 { print $2 }')"
               echo "Found Homebrew version ${current_version} in ${candidate}..."
               if [[ "${current_version}" == "${target_version}" ]]; then
