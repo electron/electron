@@ -13,7 +13,8 @@ from lib.util import store_artifact, scoped_cwd, safe_mkdir, get_out_dir, \
 
 OUT_DIR     = get_out_dir()
 
-BASE_URL = 'https://electron-metadumper.herokuapp.com/?version='
+META_DUMPER_URL = os.environ.get('META_DUMPER_URL')
+BASE_URL = (META_DUMPER_URL or 'https://electron-metadumper.herokuapp.com/') + '?version='
 
 AUTH_TOKEN = os.getenv('META_DUMPER_AUTH_HEADER')
 
@@ -27,10 +28,8 @@ def is_json(myjson):
 def get_content(version, retry_count=5):
   for attempt in range(retry_count):
     try:
-      request = Request(
-        BASE_URL + version,
-        headers={"Authorization": AUTH_TOKEN}
-      )
+      headers = {} if META_DUMPER_URL else {"Authorization": AUTH_TOKEN}
+      request = Request(BASE_URL + version, headers=headers)
 
       with urlopen(request) as resp:
         proposed_content = resp.read()
@@ -53,7 +52,7 @@ def get_content(version, retry_count=5):
   return None
 
 def main():
-  if not AUTH_TOKEN or AUTH_TOKEN == "":
+  if not META_DUMPER_URL and not AUTH_TOKEN:
     raise Exception("Please set META_DUMPER_AUTH_HEADER")
 
   if len(sys.argv) < 2 or not sys.argv[1]:

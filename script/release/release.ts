@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { BlobServiceClient } from '@azure/storage-blob';
+import { BlobServiceClient, ContainerClient } from '@azure/storage-blob';
 import { Octokit } from '@octokit/rest';
 import * as chalk from 'chalk';
 import got from 'got';
@@ -255,6 +255,19 @@ async function mergeShasums(pkgVersion: string) {
 
   const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
   const containerClient = blobServiceClient.getContainerClient('checksums-scratchpad');
+  let containerClient: ContainerClient;
+  if (connectionString.startsWith('{')) {
+    const containerUrls = JSON.parse(connectionString);
+    if (!containerUrls['checksums-scratchpad']) {
+      throw new Error("No SAS URL provided for container 'checksums-scratchpad'");
+    }
+    containerClient = new ContainerClient(containerUrls['checksums-scratchpad']);
+  } else {
+    const blobServiceClient = connectionString.startsWith('https://')
+      ? new BlobServiceClient(connectionString)
+      : BlobServiceClient.fromConnectionString(connectionString);
+    containerClient = blobServiceClient.getContainerClient('checksums-scratchpad');
+  }
   const blobsIter = containerClient.listBlobsFlat({
     prefix: `${pkgVersion}/`
   });
