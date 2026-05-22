@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index 101b14222cfbb9146eff756b620b5c32c304fb0f..6576d5946ae901ac79cd53e9cbd8c74a6f4e50ef 100644
+index 101b14222cfbb9146eff756b620b5c32c304fb0f..dc11cd4a7bcf2fd6f4387b92684e8847ecdd8361 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
 @@ -4,9 +4,12 @@
@@ -25,7 +25,7 @@ index 101b14222cfbb9146eff756b620b5c32c304fb0f..6576d5946ae901ac79cd53e9cbd8c74a
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/base/models/image_model.h"
-@@ -28,10 +31,12 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+@@ -28,9 +31,12 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
      : OverlayWindowImageButton(std::move(callback)) {
    SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
  
@@ -35,11 +35,10 @@ index 101b14222cfbb9146eff756b620b5c32c304fb0f..6576d5946ae901ac79cd53e9cbd8c74a
 +  icon = &(features::IsRoundedIconsEnabled()
                       ? vector_icons::kCloseIcon
                       : vector_icons::kCloseChromeRefreshOldIcon);
--  SetImageModel(views::Button::STATE_NORMAL,
-+#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)  SetImageModel(views::Button::STATE_NORMAL,
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   SetImageModel(views::Button::STATE_NORMAL,
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
- 
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 index 64de8360d5083b0a0833fe035d77fb527478f5d5..cb5354413970f5d019f7c7b264a490279dd52ae5 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
