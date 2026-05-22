@@ -63,6 +63,14 @@ git commit -m "chore: update patches"
 
 The commit message MUST be exactly `chore: update patches` — no qualifier, no body, no trailers. The linter rejects this commit if any patch file contains `+`/`-` content lines (lines that are not diff headers, hunk markers, or `index` lines).
 
+
+### Required Patterns
+
+To pass the linter, use specific Chromium CL formats instead of generic titles:
+- ✅ `7865783: Remove CookiePartitionKeyCollection::Todo()` (instead of generic "fix build")
+- ✅ `7860920: [GlowUp] Create rounded components/vector_icons/ icons` (instead of generic "fix patches")
+- ✅ `chore: update patches` (exactly these words, no body allowed, for metadata-only patch updates)
+
 ## Finding CL References
 
 Use git log or git blame on Chromium source files. Look for:
