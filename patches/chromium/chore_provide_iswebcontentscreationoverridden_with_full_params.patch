@@ -103,10 +103,10 @@ index 24133abf118bf9f2aa3f4786a5d1e4e4b4123fa6..b8bdafb27d870364c820b5795b2653bc
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 5f6944cc62156a1d6aefb038410678849a860ebb..225bee8e93b7ce5587aeec3439c8e006a8d214a0 100644
+index 5e38959ad1b415c9922af624e214f360ec58a086..67298b7596c0f02ec9379b89b526630dafe0038a 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -872,8 +872,7 @@ class Browser : public TabStripModelObserver,
+@@ -871,8 +871,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -223,10 +223,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 42a6140f656ef4007aff05b9aaa00fa650405d16..0e3c7600759cbf30f9dc2c83106feddb040f4fd5 100644
+index a03de7bb86aa38bb1773aa94566918fdf67e28a5..54d21c5b17e4c4b23216b40ebafd9f20003604ac 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5468,8 +5468,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5484,8 +5484,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,

@@ -22,7 +22,7 @@ index fd4b6b1f65bb11e3f08d2258db8c315c60ff03a0..afa8014457c5b3285dafe06c1ceedf1c
      const input::NativeWebKeyboardEvent& event) {
    return KeyboardEventProcessingResult::NOT_HANDLED;
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 37b9dde276f27ce6aa8c7e8e5ecb9fba05324ca6..56df8d4d5db8b68f3a0b043096065aaffe664c11 100644
+index 058e9b72d44c8ded74f9dec73014d7b3ecd7c3eb..f9d9cddf633229fce9e7070927f54bc9ea28c40e 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -104,6 +104,12 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
@@ -54,10 +54,10 @@ index e603788ad79cdb75c204d6878bb69005aaab3c3b..10c8220b6d67078b72243dd4cf5185ab
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1e39a2f05a0f9fa3c2b5ec9361bff12eac7fb8cb..0592bea3d295890e34955bd1995b3b77a7c198a6 100644
+index 9a52cc4324c24460ea00ab094940e9f215aca500..08658e425b311f835c1ecf9dd8d9e8769f1a6be3 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4580,6 +4580,12 @@ void WebContentsImpl::RenderWidgetWasResized(
+@@ -4582,6 +4582,12 @@ void WebContentsImpl::RenderWidgetWasResized(
                               width_changed);
  }
  
@@ -71,10 +71,10 @@ index 1e39a2f05a0f9fa3c2b5ec9361bff12eac7fb8cb..0592bea3d295890e34955bd1995b3b77
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index e9f4e8466a3b7ed26ad4df0d8974d1a3c7ae881e..2236e5442d1a49a01c81d38daf922415cccdfc6a 100644
+index 6df0268523675f14acb5b133d25b4885c092ebe1..e56b708843b94d02f850f3db61c873b7617cd0a4 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1134,6 +1134,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1136,6 +1136,7 @@ class CONTENT_EXPORT WebContentsImpl
  
    double GetPendingZoomLevel(RenderWidgetHostImpl* rwh) override;
  
