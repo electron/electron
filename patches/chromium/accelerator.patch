@@ -9,10 +9,10 @@ This patch makes three changes to Accelerator::GetShortcutText to improve shortc
 2. Ctrl-Shift-= and Ctrl-Plus show up as such
 
 diff --git a/ui/base/accelerators/accelerator.cc b/ui/base/accelerators/accelerator.cc
-index 24f22fb67d69ab52beac30e7f2c7de5e7c8381c7..a7a12fe797d7fb35796f0a121e7709d1748a7cd8 100644
+index 3d8645bd5ddac023516578ae600ad23827cccba9..6e884777e80337164b9b8286fd7efe3169f6e901 100644
 --- a/ui/base/accelerators/accelerator.cc
 +++ b/ui/base/accelerators/accelerator.cc
-@@ -13,6 +13,7 @@
+@@ -14,6 +14,7 @@
  #include "base/i18n/rtl.h"
  #include "base/notreached.h"
  #include "base/strings/string_util.h"
@@ -20,7 +20,7 @@ index 24f22fb67d69ab52beac30e7f2c7de5e7c8381c7..a7a12fe797d7fb35796f0a121e7709d1
  #include "base/strings/utf_string_conversions.h"
  #include "build/build_config.h"
  #include "ui/base/l10n/l10n_util.h"
-@@ -164,6 +165,11 @@ std::u16string Accelerator::GetKeyCodeStringForShortcut() const {
+@@ -228,6 +229,11 @@ std::u16string Accelerator::GetKeyCodeStringForShortcut() const {
  #endif
  
    if (key_string.empty()) {
@@ -32,7 +32,7 @@ index 24f22fb67d69ab52beac30e7f2c7de5e7c8381c7..a7a12fe797d7fb35796f0a121e7709d1
  #if BUILDFLAG(IS_WIN)
      // Our fallback is to try translate the key code to a regular character
      // unless it is one of digits (VK_0 to VK_9). Some keyboard
-@@ -190,6 +196,10 @@ std::u16string Accelerator::GetKeyCodeStringForShortcut() const {
+@@ -254,6 +260,10 @@ std::u16string Accelerator::GetKeyCodeStringForShortcut() const {
            static_cast<std::u16string::value_type>(base::ToUpperASCII(c));
      }
  #endif
@@ -43,7 +43,7 @@ index 24f22fb67d69ab52beac30e7f2c7de5e7c8381c7..a7a12fe797d7fb35796f0a121e7709d1
    }
  
    return key_string;
-@@ -353,7 +363,7 @@ std::vector<std::u16string> Accelerator::GetLongFormModifiers() const {
+@@ -417,7 +427,7 @@ std::vector<std::u16string> Accelerator::GetLongFormModifiers() const {
      modifiers.push_back(l10n_util::GetStringUTF16(IDS_APP_CTRL_KEY));
    }
  
@@ -53,7 +53,7 @@ index 24f22fb67d69ab52beac30e7f2c7de5e7c8381c7..a7a12fe797d7fb35796f0a121e7709d1
    }
  
 diff --git a/ui/base/accelerators/accelerator.h b/ui/base/accelerators/accelerator.h
-index 666ecbc118bec6d51465644ae4e573846c33610b..5f578ea153477379bac69e48fbd4f41a9a24885e 100644
+index a5398099a842918288e61f834e8355328a4fc3c4..ebd9724e45d4be564986b961e16967a9e8509900 100644
 --- a/ui/base/accelerators/accelerator.h
 +++ b/ui/base/accelerators/accelerator.h
 @@ -21,6 +21,7 @@
@@ -72,4 +72,4 @@ index 666ecbc118bec6d51465644ae4e573846c33610b..5f578ea153477379bac69e48fbd4f41a
 +
   private:
    friend class AcceleratorTestMac;
-   std::vector<std::u16string> GetLongFormModifiers() const;
+ 
