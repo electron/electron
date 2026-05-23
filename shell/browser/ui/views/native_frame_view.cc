@@ -17,9 +17,8 @@ gfx::Size NativeFrameView::GetMinimumSize() const {
 }
 
 gfx::Size NativeFrameView::GetMaximumSize() const {
-  // Returning an empty size when maximum size is not set, the window
-  // manager treats it as "no max". On Linux the WM decides the ceiling;
-  // on Windows DefWindowProc clamps the resize to the desktop area.
+  // Returning an empty size when maximum size is not set lets the window
+  // manager treat it as "no explicit max". On Linux the WM decides the ceiling.
   return window_->GetMaximumSize();
 }
 
