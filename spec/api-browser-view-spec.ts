@@ -68,6 +68,70 @@ describe('BrowserView module', () => {
     expect(view.webContents.getType()).to.equal('browserView');
   });
 
+  ifit(process.platform === 'win32')('can set an owner window aspect ratio when no maximum size is set', () => {
+    view = new BrowserView();
+    w.addBrowserView(view);
+    expect(w.getMaximumSize()).to.deep.equal([0, 0]);
+
+    expect(() => {
+      w.setAspectRatio(1);
+      w.setSize(300, 300);
+    }).not.to.throw();
+  });
+
+  ifit(process.platform === 'win32')('allows the owner window to be larger than the screen when enabled', async () => {
+    expect(w.getMaximumSize()).to.deep.equal([0, 0]);
+
+    const p = once(w.webContents, 'destroyed');
+    await closeWindow(w);
+    await p;
+
+    w = new BrowserWindow({
+      show: true,
+      width: 400,
+      height: 400,
+      enableLargerThanScreen: true,
+      webPreferences: {
+        backgroundThrottling: false,
+        session: ses
+      }
+    });
+
+    const displaySize = screen.getPrimaryDisplay().size;
+    const maximumSize = w.getMaximumSize();
+    expect(maximumSize[0]).to.be.greaterThan(displaySize.width);
+    expect(maximumSize[1]).to.be.greaterThan(displaySize.height);
+
+    const requestedSize = [
+      Math.min(displaySize.width + 100, maximumSize[0]),
+      Math.min(displaySize.height + 100, maximumSize[1])
+    ];
+    expect(requestedSize[0]).to.be.greaterThan(displaySize.width);
+    expect(requestedSize[1]).to.be.greaterThan(displaySize.height);
+
+    w.setSize(requestedSize[0], requestedSize[1]);
+    expect(w.getSize()).to.deep.equal(requestedSize);
+  });
+
+  ifit(process.platform === 'win32')('uses explicit maximum size over the larger-than-screen default', async () => {
+    const p = once(w.webContents, 'destroyed');
+    await closeWindow(w);
+    await p;
+
+    w = new BrowserWindow({
+      show: false,
+      enableLargerThanScreen: true,
+      maxWidth: 1200,
+      maxHeight: 900,
+      webPreferences: {
+        backgroundThrottling: false,
+        session: ses
+      }
+    });
+
+    expect(w.getMaximumSize()).to.deep.equal([1200, 900]);
+  });
+
   describe('BrowserView.setBackgroundColor()', () => {
     it('does not throw for valid args', () => {
       view = new BrowserView();
