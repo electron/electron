@@ -210,8 +210,9 @@ void SafeStorage::OnOsCryptReady(const os_crypt_async::Encryptor* encryptor) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
+  const bool encryption_available = encryptor_->IsEncryptionAvailable();
   for (auto& pending : pending_availability_checks_) {
-    pending.Resolve(true);
+    pending.Resolve(encryption_available);
   }
   pending_availability_checks_.clear();
 
@@ -301,7 +302,7 @@ v8::Local<v8::Promise> SafeStorage::IsAsyncEncryptionAvailable(
   EnsureAsyncEncryptorRequested();
 
   if (encryptor_) {
-    promise.Resolve(true);
+    promise.Resolve(encryptor_->IsEncryptionAvailable());
     return handle;
   }
 

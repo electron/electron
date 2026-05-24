@@ -109,6 +109,30 @@ describe('safeStorage module', () => {
     it('should resolve true when async encryption is available', async () => {
       expect(await safeStorage.isAsyncEncryptionAvailable()).to.equal(true);
     });
+
+    it('is ready for first use immediately after app.whenReady()', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'api', 'safe-storage', 'async-first-use-app');
+      const appProcess = cp.spawn(process.execPath, [appPath]);
+
+      let stdout = '';
+      let stderr = '';
+      appProcess.stdout.on('data', (data) => {
+        stdout += data;
+      });
+      appProcess.stderr.on('data', (data) => {
+        stderr += data;
+      });
+
+      const [code] = await once(appProcess, 'exit');
+
+      expect(code, stderr).to.equal(0);
+      const result = JSON.parse(stdout);
+      expect(result).to.deep.equal({
+        isAsyncEncryptionAvailable: true,
+        encryptedIsBuffer: true,
+        decrypted: 'plaintext'
+      });
+    });
   });
 
   describe('SafeStorage.encryptStringAsync()', () => {
