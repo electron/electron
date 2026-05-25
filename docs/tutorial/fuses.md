@@ -93,10 +93,10 @@ The `onlyLoadAppFromAsar` fuse changes the search system that Electron uses to l
 By default, Electron will search for this code in the following order:
 
 1. `app.asar`
-1. `app`
-1. `default_app.asar`
+2. `app`
+3. `default_app.asar`
 
-When this fuse is enabled, Electron will _only_ search for `app.asar`. When combined with the [`embeddedAsarIntegrityValidation`](#embeddedasarintegrityvalidation) fuse, this fuse ensures that
+When this fuse is enabled, Electron will *only* search for `app.asar`. When combined with the [`embeddedAsarIntegrityValidation`](#embeddedasarintegrityvalidation) fuse, this fuse ensures that
 it is impossible to load non-validated code.
 
 ### `loadBrowserProcessSpecificV8Snapshot`
@@ -148,7 +148,7 @@ access from WebAssembly. The feature works by surrounding the WebAssembly memory
 and then installing a signal handler that traps attempt to access memory in the guard region. The feature
 is only supported on the following 64-bit systems:
 
-* Linux, macOS, Windows - x86_64
+* Linux, macOS, Windows - x86\_64
 * Linux, macOS - aarch64
 
 ```text
@@ -165,6 +165,30 @@ additional processing time needed for these nodes.
 than they ideally should be.
 * This extra code, particularly the compare and branch before every memory reference,
 incurs a significant runtime cost.
+
+### `disallowCodeGenerationFromStrings`
+
+**Default:** Disabled
+
+**@electron/fuses:** `FuseV1Options.DisallowCodeGenerationFromStrings`
+
+The `disallowCodeGenerationFromStrings` fuse controls whether V8 allows code generation from strings, such as via `eval`, `new Function()`, etc. When this fuse is enabled, attempts to generate code from strings will throw an exception. This can be a useful security hardening measure, as it can prevent certain types of code injection attacks. However, it can also cause compatibility issues with libraries that rely on this functionality, so it should be tested thoroughly before being enabled.
+
+### `disableProtoThrow`
+
+**Default:** Disabled
+
+**@electron/fuses:** `FuseV1Options.DisableProtoThrow`
+
+The `disableProtoThrow` fuse controls whether V8 throws an exception when code attempts to access the `__proto__` property of an object. When this fuse is enabled, attempts to access `__proto__` will return `undefined` instead of throwing an exception. This can be a useful security hardening measure, as it can prevent certain types of prototype pollution attacks. However, it can also cause compatibility issues with libraries that rely on this functionality, so it should be tested thoroughly before being enabled.
+
+### `frozenIntrinsics`
+
+**Default:** Disabled
+
+**@electron/fuses:** `FuseV1Options.FrozenIntrinsics`
+
+The `frozenIntrinsics` fuse controls whether V8's intrinsic objects (e.g. `Object`, `Array`, etc.) are frozen, which prevents them from being modified. When this fuse is enabled, attempts to modify intrinsic objects will throw an exception. This can be a useful security hardening measure, as it can prevent certain types of prototype pollution attacks. However, it can also cause compatibility issues with libraries that rely on modifying intrinsic objects, so it should be tested thoroughly before being enabled.
 
 ## How do I flip fuses?
 
@@ -193,14 +217,14 @@ app using the `@electron/fuses` CLI.
 npx @electron/fuses read --app /Applications/Foo.app
 ```
 
->[!NOTE]
+> \[!NOTE]
 > If you are using Electron Forge to distribute your application, you can flip fuses using
 > [`@electron-forge/plugin-fuses`](https://www.electronforge.io/config/plugins/fuses),
 > which comes pre-installed with all templates.
 
 ### The hard way
 
-> [!IMPORTANT]
+> \[!IMPORTANT]
 > Glossary:
 >
 > * **Fuse Wire**: A sequence of bytes in the Electron binary used to control the fuses

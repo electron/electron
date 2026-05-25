@@ -10,5 +10,8 @@
   "only_load_app_from_asar": "0",
   "load_browser_process_specific_v8_snapshot": "0",
   "grant_file_protocol_extra_privileges": "1",
-  "wasm_trap_handlers": "1"
+  "wasm_trap_handlers": "1",
+  "disallow_code_generation_from_strings": "0",
+  "disable_proto_throw": "0",
+  "frozen_intrinsics": "0"
 }

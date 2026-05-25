@@ -700,6 +700,13 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
   // Parse and set Node.js cli flags.
   std::vector<std::string> args = ParseNodeCliFlags();
 
+  // Inject fuse-controlled security flags that need to go through
+  // InitializeOncePerProcess (V8 flags) or JS bootstrap (frozen_intrinsics).
+  if (electron::fuses::IsDisallowCodeGenerationFromStringsEnabled())
+    args.push_back("--disallow-code-generation-from-strings");
+  if (electron::fuses::IsFrozenIntrinsicsEnabled())
+    args.push_back("--frozen-intrinsics");
+
   // V8::EnableWebAssemblyTrapHandler can be called only once or it will
   // hard crash. We need to prevent Node.js calling it in the event it has
   // already been called.
@@ -744,6 +751,11 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
 
   if (result->early_return() != 0)
     exit(result->exit_code());
+
+  // Set --disable-proto=throw directly on cli_options
+  // This must happen after InitializeOncePerProcess but before CreateEnvironment reads the value.
+  if (electron::fuses::IsDisableProtoThrowEnabled())
+    node::per_process::cli_options->disable_proto = "throw";
 
 #if BUILDFLAG(IS_WIN)
   // uv_init overrides error mode to suppress the default crash dialog, bring
