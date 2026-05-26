@@ -1974,7 +1974,7 @@ index 68c44fd6f297c48dd091645fc5764d5990c37932..59ddd4cd05d0ee9f38403a93b0b947fa
    // The root CALayer to display the current frame. This does not change
    // over the lifetime of the object.
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
-index 97779227326895c7c8155d0bccb00bf84eee406d..b89231391a7b9b4fcb911c2d070e8d076dac5419 100644
+index 97779227326895c7c8155d0bccb00bf84eee406d..6989910f0a4f0eb812a12f784a27d9abc70aaf62 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.mm
 @@ -11,6 +11,7 @@
@@ -1985,15 +1985,7 @@ index 97779227326895c7c8155d0bccb00bf84eee406d..b89231391a7b9b4fcb911c2d070e8d07
  #include "ui/accelerated_widget_mac/ca_renderer_layer_tree.h"
  #include "ui/base/cocoa/animation_utils.h"
  #include "ui/base/cocoa/remote_layer_api.h"
-@@ -120,6 +121,7 @@
-                      "backpressure GL fence";
-     }
-   }
-+#endif
- }
- 
- void CALayerTreeCoordinator::Present(
-@@ -149,6 +151,7 @@
+@@ -149,6 +150,7 @@
  }
  
  void CALayerTreeCoordinator::EnsureCAContextAndRootLayer() {
@@ -2001,7 +1993,7 @@ index 97779227326895c7c8155d0bccb00bf84eee406d..b89231391a7b9b4fcb911c2d070e8d07
    if (!allow_remote_layers_) {
      return;
    }
-@@ -183,6 +186,7 @@
+@@ -183,6 +185,7 @@
      ca_context_.layer = root_ca_layer_;
    }
  #endif  // !BUILDFLAG(IS_IOS) || BUILDFLAG(IS_IOS_TVOS)
@@ -2009,7 +2001,7 @@ index 97779227326895c7c8155d0bccb00bf84eee406d..b89231391a7b9b4fcb911c2d070e8d07
  }
  
  void CALayerTreeCoordinator::CommitPresentedFrameToCA(
-@@ -211,6 +215,7 @@
+@@ -211,6 +214,7 @@
    if (has_resized_since_last_swap_) {
      // Create a new CAContext for the new size. This allows new frame update at
      // the new size to be atomic with things like resizing the NSWindow.
@@ -2017,7 +2009,7 @@ index 97779227326895c7c8155d0bccb00bf84eee406d..b89231391a7b9b4fcb911c2d070e8d07
      if (base::FeatureList::IsEnabled(features::kCATransactionV2) &&
          allow_remote_layers_) {
        params.ca_context_fence_mach_port.reset([ca_context_ createFencePort]);
-@@ -220,6 +225,7 @@
+@@ -220,6 +224,7 @@
        root_ca_layer_ = nil;
        current_tree = nullptr;
      }
@@ -2025,7 +2017,7 @@ index 97779227326895c7c8155d0bccb00bf84eee406d..b89231391a7b9b4fcb911c2d070e8d07
      has_resized_since_last_swap_ = false;
    }
  #endif
-@@ -242,10 +248,13 @@
+@@ -242,10 +247,13 @@
      TRACE_EVENT_INSTANT("test_gpu", "SwapBuffers", "GLImpl",
                          static_cast<int>(gl::GetGLImplementation()), "width",
                          pixel_size_.width());
