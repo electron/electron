@@ -85,7 +85,7 @@ const win = new BrowserWindow({
 })
 ```
 
-## API Reference
+## API reference
 
 The Window State Persistence APIs are available on both `BaseWindow` and `BrowserWindow` (since `BrowserWindow` extends `BaseWindow`) and work identically.
 
