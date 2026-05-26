@@ -100,7 +100,7 @@ void LoginHandler::EmitEvent(
         api_web_contents->Emit("login", std::move(details), auth_info,
                                base::BindOnce(&LoginHandler::CallbackFromJS,
                                               weak_factory_.GetWeakPtr()));
-  } else if (auto utility_process =
+  } else if (auto* utility_process =
                  api::UtilityProcessWrapper::FromProcessId(process_id);
              utility_process && utility_process->has_session()) {
     // Route auth to the utility process wrapper when the request originated
