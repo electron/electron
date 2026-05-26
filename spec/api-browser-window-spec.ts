@@ -7879,7 +7879,10 @@ describe('BrowserWindow module', () => {
 
       // The main-process busy-loop variant runs in a spawned fixture so the
       // spec runner main thread isn't blocked for 25 seconds.
-      it('should not save window bounds when main thread is busy', async () => {
+      it('should not save window bounds when main thread is busy', async function () {
+        // Fixture sleeps for 25s plus Electron startup overhead, so allow
+        // headroom past mocha's 30s default.
+        this.timeout(60000);
         const appPath = path.join(fixturesPath, 'main-thread-busy');
         const appProcess = childProcess.spawn(process.execPath, [appPath]);
         const [code] = await once(appProcess, 'exit');
