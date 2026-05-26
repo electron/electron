@@ -144,10 +144,7 @@ jobs:
 
           e build --gen=only
 
-          e d gn check ../out/Default //electron:electron_lib
-          e d gn check ../out/Default //electron:electron_app
-          e d gn check ../out/Default //electron/shell/common:mojo
-          e d gn check ../out/Default //electron/shell/common:plugin
+          npm run gn-check -- --outDir Default
 
           # Check the hunspell filenames
           node script/gen-hunspell-filenames.js --check
