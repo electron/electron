@@ -11,11 +11,13 @@
 #include <vector>
 
 #include "base/i18n/rtl.h"
+#include "base/no_destructor.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/native_window_views.h"
 #include "ui/aura/window_delegate.h"
 #include "ui/base/hit_test.h"
+#include "ui/compositor/compositor.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/linux/linux_ui.h"
@@ -212,10 +214,34 @@ void ElectronDesktopWindowTreeHostLinux::OnDeviceScaleFactorChanged() {
   UpdateFrameHints();
 }
 
+void ElectronDesktopWindowTreeHostLinux::SetIgnoreMouseEvents(bool ignore) {
+  if (ignore_mouse_events_ == ignore)
+    return;
+  ignore_mouse_events_ = ignore;
+  UpdateFrameHints();
+  // The input region was queued on the surface's pending state, but it is
+  // only flushed to the compositor when the next frame is submitted. On an
+  // idle transparent overlay (no animation, no GL context), that can be
+  // many seconds away, so callers see a delay before clicks pass through.
+  // Force a redraw so the change takes effect immediately.
+  if (auto* c = compositor())
+    c->ScheduleFullRedraw();
+}
+
 void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
+  // An empty input region means no part of the surface receives pointer
+  // events, so the compositor passes them through to whatever is below.
+  // This mirrors the X11 ShapeInput / Win32 WS_EX_TRANSPARENT behavior of
+  // setIgnoreMouseEvents() and applies regardless of whether the window
+  // has a frame (callers asking to ignore mouse events accept that any
+  // CSD chrome on the window also becomes non-interactive).
+  static const base::NoDestructor<std::optional<std::vector<gfx::Rect>>>
+      kIgnoreRegion{std::vector<gfx::Rect>{gfx::Rect()}};
+
   auto* fvl = native_window_view_->GetFrameViewLinux();
   if (!fvl || !fvl->ShouldDrawRestoredFrameShadow()) {
-    platform_window()->SetInputRegion(std::nullopt);
+    platform_window()->SetInputRegion(ignore_mouse_events_ ? *kIgnoreRegion
+                                                           : std::nullopt);
     if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {
       if (native_window_view_->IsTranslucent()) {
         platform_window()->SetOpaqueRegion(std::vector<gfx::Rect>{});
@@ -231,6 +257,11 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
   }
 
   views::DesktopWindowTreeHostLinux::UpdateFrameHints();
+  if (ignore_mouse_events_) {
+    // Override the input region set by the base class so the ignore state
+    // also covers windows that draw CSD frame shadows.
+    platform_window()->SetInputRegion(*kIgnoreRegion);
+  }
   // Clear the opaque region for translucent windows.
   if (native_window_view_->IsTranslucent() &&
       views::Widget::IsWindowCompositingSupported()) {

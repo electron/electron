@@ -41,6 +41,12 @@ class ElectronDesktopWindowTreeHostLinux
 
   bool SupportsClientFrameShadow() const;
 
+  // Controls whether mouse events are ignored on this window. On Wayland
+  // this is implemented via the input region of the underlying surface and
+  // takes effect through UpdateFrameHints(); on X11 the shape extension is
+  // used directly from NativeWindowViews.
+  void SetIgnoreMouseEvents(bool ignore);
+
  protected:
   // views::DesktopWindowTreeHostLinuxImpl:
   void OnWidgetInitDone() override;
@@ -87,6 +93,7 @@ class ElectronDesktopWindowTreeHostLinux
   base::ScopedObservation<ui::LinuxUi, ui::DeviceScaleFactorObserver>
       scale_observation_{this};
   ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;
+  bool ignore_mouse_events_ = false;
 };
 
 }  // namespace electron

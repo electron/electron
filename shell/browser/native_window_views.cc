@@ -71,6 +71,7 @@
 #include "ui/linux/linux_ui_factory.h"
 #include "ui/linux/window_frame_provider.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
+#include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #include "ui/views/window/frame_view_linux.h"
 #include "ui/views/window/native_frame_view.h"
 
@@ -1393,6 +1394,16 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
               static_cast<x11::Window>(GetAcceleratedWidget()),
           .source_bitmap = x11::Pixmap::None,
       });
+    }
+  } else {
+    // Wayland: delegate to the host so the input region of the underlying
+    // surface is updated through UpdateFrameHints(), which matches the
+    // per-platform behavior of this API (the whole window passes events
+    // through, including any CSD chrome).
+    if (auto* host = views::DesktopWindowTreeHostLinux::GetHostForWidget(
+            GetAcceleratedWidget())) {
+      static_cast<ElectronDesktopWindowTreeHostLinux*>(host)
+          ->SetIgnoreMouseEvents(ignore);
     }
   }
 #endif
