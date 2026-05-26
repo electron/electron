@@ -7875,26 +7875,15 @@ describe('BrowserWindow module', () => {
           expect(savedState.right - savedState.left).to.equal(700);
           expect(savedState.bottom - savedState.top).to.equal(600);
         });
+      });
 
-        it('should not save window bounds when main thread is busy', async () => {
-          // Wait for preferences file to be created if its the first time we're running the test
-          await waitForPrefsFileCreation(preferencesPath);
-
-          const initialModTime = getPrefsModTime(preferencesPath);
-
-          const moved = once(w, 'move');
-          w.setPosition(100, 100);
-          await moved;
-
-          const startTime = Date.now();
-
-          // Keep main thread busy for 25 seconds
-          while (Date.now() - startTime < 25000);
-
-          const finalModTime = getPrefsModTime(preferencesPath);
-
-          expect(finalModTime.getTime()).to.equal(initialModTime.getTime());
-        });
+      // The main-process busy-loop variant runs in a spawned fixture so the
+      // spec runner main thread isn't blocked for 25 seconds.
+      it('should not save window bounds when main thread is busy', async () => {
+        const appPath = path.join(fixturesPath, 'main-thread-busy');
+        const appProcess = childProcess.spawn(process.execPath, [appPath]);
+        const [code] = await once(appProcess, 'exit');
+        expect(code).to.equal(0);
       });
     });
 
@@ -9033,7 +9022,7 @@ describe('BrowserWindow module', () => {
       const preferencesPath = path.join(app.getPath('userData'), 'Local State');
       const windowName = 'test-restore-window';
 
-      it('should emit restored-persisted-state when windowStatePersistence is enabled and state exists', async () => {
+      it('should emit persisted-state-restored when windowStatePersistence is enabled and state exists', async () => {
         await createAndSaveWindowState(preferencesPath, windowName, { width: 300, height: 200 });
 
         const restoredPromise = new Promise<void>((resolve) => {
@@ -9043,7 +9032,7 @@ describe('BrowserWindow module', () => {
             show: false
           });
 
-          w.once('restored-persisted-state', () => {
+          w.once('persisted-state-restored', () => {
             resolve();
             w.destroy();
           });
@@ -9052,7 +9041,7 @@ describe('BrowserWindow module', () => {
         await restoredPromise;
       });
 
-      it('should not emit restored-persisted-state when windowStatePersistence is disabled', async () => {
+      it('should not emit persisted-state-restored when windowStatePersistence is disabled', async () => {
         await createAndSaveWindowState(preferencesPath, windowName, { width: 300, height: 200 });
 
         let eventEmitted = false;
@@ -9063,7 +9052,7 @@ describe('BrowserWindow module', () => {
           show: false
         });
 
-        w.on('restored-persisted-state', () => {
+        w.on('persisted-state-restored', () => {
           eventEmitted = true;
         });
 
@@ -9074,7 +9063,7 @@ describe('BrowserWindow module', () => {
         w.destroy();
       });
 
-      it('should not emit restored-persisted-state when no window state exists on disk', async () => {
+      it('should not emit persisted-state-restored when no window state exists on disk', async () => {
         // Clear any existing state to ensure no state exists
         BrowserWindow.clearPersistedState(windowName);
 
@@ -9086,7 +9075,7 @@ describe('BrowserWindow module', () => {
           show: false
         });
 
-        w.on('restored-persisted-state', () => {
+        w.on('persisted-state-restored', () => {
           eventEmitted = true;
         });
 

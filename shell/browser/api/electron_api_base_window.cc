@@ -352,7 +352,7 @@ void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
 }
 
 void BaseWindow::OnWindowStateRestored() {
-  EmitEventSoon("restored-persisted-state");
+  EmitEventSoon("persisted-state-restored");
 }
 
 #if BUILDFLAG(IS_WIN)

@@ -1009,6 +1009,11 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
   }
 
   if (restore_display_mode_) {
+    // The display-mode change (kiosk/fullscreen/maximize) runs from Show() via
+    // FlushPendingDisplayMode(). It triggers resize/move events that schedule
+    // DebouncedSaveWindowState. Keep is_being_restored_ true until the deferred
+    // callback finishes so transitional bounds aren't persisted over the saved
+    // ones.
     restore_display_mode_callback_ = base::BindOnce(
         [](NativeWindow* window, base::DictValue prefs) {
           if (auto kiosk = prefs.FindBool(electron::kKiosk); kiosk && *kiosk) {
@@ -1020,13 +1025,14 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
                      max && *max) {
             window->Maximize();
           }
+          window->is_being_restored_ = false;
+          window->NotifyWindowStateRestored();
         },
         base::Unretained(this), window_preferences->Clone());
+  } else {
+    is_being_restored_ = false;
+    NotifyWindowStateRestored();
   }
-
-  is_being_restored_ = false;
-
-  NotifyWindowStateRestored();
 }
 
 void NativeWindow::FlushPendingDisplayMode() {

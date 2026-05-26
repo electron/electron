@@ -33,7 +33,7 @@ With this configuration, Electron will automatically:
 
 1. Restore the window's position, size, and display mode when created (if a previous state exists)
 2. Save the window state whenever it changes (position, size, or display mode).
-3. Emit a `restored-persisted-state` event after successfully restoring state.
+3. Emit a `persisted-state-restored` event after successfully restoring state.
 4. Adapt restored window state to multi-monitor setups and display changes automatically.
 
 > [!NOTE]
@@ -94,9 +94,9 @@ For complete API documentation, see:
 - [`windowStatePersistence` in BaseWindowConstructorOptions][base-window-options]
 - [`WindowStatePersistence` object structure][window-state-persistence-structure]
 - [`BaseWindow.clearPersistedState()`][clear-persisted-state]
-- [`restored-persisted-state` event][restored-event]
+- [`persisted-state-restored` event][restored-event]
 
 [base-window-options]: ../api/structures/base-window-options.md
 [window-state-persistence-structure]: ../api/structures/window-state-persistence.md
 [clear-persisted-state]: ../api/base-window.md#basewindowclearpersistedstatename
-[restored-event]: ../api/base-window.md#event-restored-persisted-state
+[restored-event]: ../api/base-window.md#event-persisted-state-restored
