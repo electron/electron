@@ -373,7 +373,7 @@ Calling `event.preventDefault()` will prevent the menu from being displayed.
 
 To convert `point` to DIP, use [`screen.screenToDipPoint(point)`](./screen.md#screenscreentodippointpoint-windows-linux).
 
-#### Event: 'restored-persisted-state'
+#### Event: 'persisted-state-restored'
 
 Emitted after the persisted window state has been restored.
 
