@@ -125,7 +125,7 @@ jobs:
 
     - name: Turn off the analytics setup assistant prompts on macOS
       if: ${{ inputs.target-platform == 'macos' }}
-      run: killall "Setup Assistant"
+      run: sudo killall "Setup Assistant"
 
     - name: Turn off the reopen windows prompt on macOS
       if: ${{ inputs.target-platform == 'macos' }}
