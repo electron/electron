@@ -10,7 +10,7 @@ This feature is particularly useful for applications where users frequently resi
 
 ### Basic usage
 
-To enable Window State Persistence, simply set `windowStatePersistence: true` in your window constructor options and provide a unique `name` for the window.
+To enable Window State Persistence, set `windowStatePersistence: true` in your window constructor options and provide a unique `name` for the window.
 
 ```js
 const { app, BrowserWindow } = require('electron')
