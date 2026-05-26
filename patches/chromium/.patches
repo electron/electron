@@ -149,8 +149,3 @@ fix_initialize_com_on_desktopmedialistcapturethread_on_windows.patch
 fix_use_fresh_lazynow_for_onendworkitemimpl_after_didruntask.patch
 fix_make_macos_text_replacement_work_on_contenteditable.patch
 fix_constrain_allowuniversalaccessfromfileurls_to_file_origins_in.patch
-cherry-pick-bd0b5614e7e5.patch
-cherry-pick-c4653f71b7b1.patch
-cherry-pick-e7eeef31113d.patch
-cherry-pick-70c1db1e1b72.patch
-cherry-pick-66e1a4951c0c.patch
