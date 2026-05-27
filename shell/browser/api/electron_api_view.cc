@@ -236,8 +236,10 @@ struct Converter<views::FlexSpecification> {
     gin_helper::Dictionary dict;
     if (!gin::ConvertFromV8(isolate, val, &dict))
       return false;
-    views::MinimumFlexSizeRule min_rule = views::MinimumFlexSizeRule::kPreferred;
-    views::MaximumFlexSizeRule max_rule = views::MaximumFlexSizeRule::kPreferred;
+    views::MinimumFlexSizeRule min_rule =
+        views::MinimumFlexSizeRule::kPreferred;
+    views::MaximumFlexSizeRule max_rule =
+        views::MaximumFlexSizeRule::kPreferred;
     dict.Get("minimum", &min_rule);
     dict.Get("maximum", &max_rule);
     int weight = 0;
@@ -319,11 +321,16 @@ class JSLayoutManager : public views::LayoutManagerBase {
 namespace {
 std::string AlignmentToString(views::LayoutAlignment a) {
   switch (a) {
-    case views::LayoutAlignment::kStart:    return "start";
-    case views::LayoutAlignment::kCenter:   return "center";
-    case views::LayoutAlignment::kEnd:      return "end";
-    case views::LayoutAlignment::kStretch:  return "stretch";
-    case views::LayoutAlignment::kBaseline: return "baseline";
+    case views::LayoutAlignment::kStart:
+      return "start";
+    case views::LayoutAlignment::kCenter:
+      return "center";
+    case views::LayoutAlignment::kEnd:
+      return "end";
+    case views::LayoutAlignment::kStretch:
+      return "stretch";
+    case views::LayoutAlignment::kBaseline:
+      return "baseline";
   }
   return "";
 }
@@ -591,8 +598,8 @@ void View::SetLayout(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   // Custom JS layout callback path.
   LayoutCallback calculate_proposed_layout;
   if (dict.Get("calculateProposedLayout", &calculate_proposed_layout)) {
-    auto lm = std::make_unique<JSLayoutManager>(
-        std::move(calculate_proposed_layout));
+    auto lm =
+        std::make_unique<JSLayoutManager>(std::move(calculate_proposed_layout));
     js_layout_manager_ = lm.get();
     layout_type_ = LayoutType::kJs;
     view_->SetLayoutManager(std::move(lm));
@@ -834,7 +841,8 @@ std::string View::GetOrientation() const {
     auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
     if (!layout)
       return "";
-    return layout->GetOrientation() == views::BoxLayout::Orientation::kHorizontal
+    return layout->GetOrientation() ==
+                   views::BoxLayout::Orientation::kHorizontal
                ? "horizontal"
                : "vertical";
   }
