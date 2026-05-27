@@ -97,6 +97,22 @@ index cf7f3f272bf84af330967d5a7cb2c5bee821cc84..29a621c7fdca110a1a931d6cd40dbc5d
    }
    code_cache_->has_code_cache = true;
  }
+diff --git a/src/node_external_reference.h b/src/node_external_reference.h
+index a073cde10d1206770eae86c6336ef379869b1164..9283a569363ca883a8c5f7eba54609a8f09030b3 100644
+--- a/src/node_external_reference.h
++++ b/src/node_external_reference.h
+@@ -41,6 +41,11 @@ class ExternalReferenceRegistry {
+   // Registers both the underlying function pointer
+   // and the corresponding CFunctionInfo.
+   void Register(const v8::CFunction& c_func) {
++    // Since the V8 change to store the v8::CFunction directly in
++    // FunctionTemplateInfo (wrapped in a Foreign), the snapshot serializer
++    // encodes the CFunction object address itself, so it must also be a
++    // registered external reference.
++    RegisterT(&c_func);
+     RegisterT(c_func.GetAddress());
+     RegisterT(c_func.GetTypeInfo());
+   }
 diff --git a/src/node_snapshot_builder.h b/src/node_snapshot_builder.h
 index e2302946d1f8cb3806ae9ddc178e2d8ab2602569..2f11cbd91cea15379ab1abd6bac4d69c69a0cc3d 100644
 --- a/src/node_snapshot_builder.h
@@ -163,88 +179,8 @@ index 8561933060ac30e3559d7ce2ac633d25f1e4d6ec..79dad674d21bc82096830eaf5a5100b0
  void SnapshotBuilder::InitializeIsolateParams(const SnapshotData* data,
                                                Isolate::CreateParams* params) {
    CHECK_NULL(params->snapshot_blob);
-diff --git a/src/util.cc b/src/util.cc
-index c4b39450c5b7f91c46f7027db367c30db34927bb..87481c94863b2cbb43851dd31748fb9d50ff44fb 100644
---- a/src/util.cc
-+++ b/src/util.cc
-@@ -22,6 +22,7 @@
- #include "util.h"  // NOLINT(build/include_inline)
- #include <cmath>
- #include <cstdint>
-+#include <cstdlib>
- #include "util-inl.h"
- 
- #include "debug_utils-inl.h"
-@@ -370,6 +371,21 @@ std::string DiagnosticFilename::MakeFilename(
-   return oss.str();
- }
- 
-+// Electron: V8's [fastapi] CL "Store callback and signature in one C++ object"
-+// changed FunctionTemplateRareData::c_function_overloads to store
-+// Managed<CFunctionWithSignature> -- a Foreign holding a heap-allocated
-+// ManagedPtrDestructor*, not the static CFunctionInfo* the embedder
-+// registers. V8's snapshot serializer cannot encode that heap pointer as an
-+// external reference, so any FunctionTemplate with a fast-API c_function
-+// makes snapshot creation abort at SerializedHandleChecker / encoder.
-+// Drop c_function when building a snapshot; the deserialized template uses
-+// the (correct, just slower) slow callback. node_mksnapshot.cc sets the env
-+// var; it is never set in shipped processes.
-+static bool DropCFunctionForSnapshot() {
-+  static const bool drop = getenv("NODE_MKSNAPSHOT_DROP_CFUNCTION") != nullptr;
-+  return drop;
-+}
-+
- Local<v8::FunctionTemplate> NewFunctionTemplate(
-     v8::Isolate* isolate,
-     v8::FunctionCallback callback,
-@@ -377,6 +393,9 @@ Local<v8::FunctionTemplate> NewFunctionTemplate(
-     v8::ConstructorBehavior behavior,
-     v8::SideEffectType side_effect_type,
-     const v8::CFunction* c_function) {
-+  if (c_function != nullptr && DropCFunctionForSnapshot()) {
-+    c_function = nullptr;
-+  }
-   return v8::FunctionTemplate::New(isolate,
-                                    callback,
-                                    Local<v8::Value>(),
-@@ -516,6 +535,7 @@ void SetFastMethod(Isolate* isolate,
-                    const std::string_view name,
-                    v8::FunctionCallback slow_callback,
-                    const v8::MemorySpan<const v8::CFunction>& methods) {
-+  // Electron: see DropCFunctionForSnapshot.
-   Local<v8::FunctionTemplate> t = FunctionTemplate::NewWithCFunctionOverloads(
-       isolate,
-       slow_callback,
-@@ -524,7 +544,8 @@ void SetFastMethod(Isolate* isolate,
-       0,
-       v8::ConstructorBehavior::kThrow,
-       v8::SideEffectType::kHasSideEffect,
--      methods);
-+      DropCFunctionForSnapshot() ? v8::MemorySpan<const v8::CFunction>{}
-+                                 : methods);
- 
-   // kInternalized strings are created in the old space.
-   const v8::NewStringType type = v8::NewStringType::kInternalized;
-@@ -540,6 +561,7 @@ void SetFastMethodNoSideEffect(
-     const std::string_view name,
-     v8::FunctionCallback slow_callback,
-     const v8::MemorySpan<const v8::CFunction>& methods) {
-+  // Electron: see DropCFunctionForSnapshot.
-   Local<v8::FunctionTemplate> t = FunctionTemplate::NewWithCFunctionOverloads(
-       isolate,
-       slow_callback,
-@@ -548,7 +570,8 @@ void SetFastMethodNoSideEffect(
-       0,
-       v8::ConstructorBehavior::kThrow,
-       v8::SideEffectType::kHasNoSideEffect,
--      methods);
-+      DropCFunctionForSnapshot() ? v8::MemorySpan<const v8::CFunction>{}
-+                                 : methods);
- 
-   // kInternalized strings are created in the old space.
-   const v8::NewStringType type = v8::NewStringType::kInternalized;
 diff --git a/tools/snapshot/node_mksnapshot.cc b/tools/snapshot/node_mksnapshot.cc
-index 0842cba257d0ca36e07c97736e5b24cc77f2a053..32d945aba2bcf12a6d1512a37fbd107afc945837 100644
+index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c1be9229f 100644
 --- a/tools/snapshot/node_mksnapshot.cc
 +++ b/tools/snapshot/node_mksnapshot.cc
 @@ -1,7 +1,8 @@
@@ -257,21 +193,10 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..32d945aba2bcf12a6d1512a37fbd107a
  #include <vector>
  
  #include "libplatform/libplatform.h"
-@@ -61,6 +62,52 @@ int BuildSnapshot(int argc, char* argv[]) {
+@@ -61,6 +62,41 @@ int BuildSnapshot(int argc, char* argv[]) {
      return 1;
    }
  
-+  // Electron: V8 stores fast-API c_functions as Managed<CFunctionWithSignature>
-+  // (a Foreign holding a heap-allocated ManagedPtrDestructor*) which the V8
-+  // snapshot serializer cannot encode as an external reference. Tell node to
-+  // drop c_functions while bootstrapping for the snapshot; the deserialized
-+  // FunctionTemplates fall back to their (correct) slow callbacks.
-+#ifdef _WIN32
-+  _putenv_s("NODE_MKSNAPSHOT_DROP_CFUNCTION", "1");
-+#else
-+  setenv("NODE_MKSNAPSHOT_DROP_CFUNCTION", "1", 1);
-+#endif
-+
 +  // Electron: when V8 is built with external startup data (Chromium's V8),
 +  // the snapshot creator cannot build the heap from scratch (that requires
 +  // V8's full setup-isolate delegate, only linked by V8's own mksnapshot).
