@@ -400,35 +400,26 @@ bool ElectronBrowserClient::IsRendererSubFrame(
   return renderer_is_subframe_.contains(process_id);
 }
 
+void ElectronBrowserClient::RegisterPendingProcess(
+    content::ChildProcessId process_id,
+    content::WebContents* web_contents,
+    bool is_subframe) {
+  pending_processes_[process_id] = web_contents;
+
+  if (is_subframe)
+    renderer_is_subframe_.insert(process_id);
+  else
+    renderer_is_subframe_.erase(process_id);
+}
+
+void ElectronBrowserClient::PruneDeadDeferredProcessRegistrations() {
+  base::EraseIf(deferred_process_registrations_, [](const auto& registration) {
+    return !registration.second.web_contents;
+  });
+}
+
 void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
-  // Drain any site instances that were registered before their process was
-  // created. HasProcess() is now true and GetProcess() won't trigger the
-  // CHECK in SiteInstanceImpl::GetProcess(). This fires before
-  // AppendRendererCommandLine, so pending_processes_ will be populated
-  // in time for AppendExtraCommandLineSwitches.
-  auto it = deferred_process_registrations_.begin();
-  while (it != deferred_process_registrations_.end()) {
-    // if WebContents was destroyed (tab closed, etc.), discard.
-    if (!it->web_contents) {
-      it = deferred_process_registrations_.erase(it);
-      continue;
-    }
-
-    if (it->site_instance->HasProcess() &&
-        it->site_instance->GetProcess() == host) {
-      const auto process_id = host->GetID();
-      pending_processes_[process_id] = it->web_contents.get();
-      if (it->is_subframe)
-        renderer_is_subframe_.insert(process_id);
-      else
-        renderer_is_subframe_.erase(process_id);
-      it = deferred_process_registrations_.erase(it);
-    } else {
-      ++it;
-    }
-  }
-
   // Remove in case the host is reused after a crash, otherwise noop.
   host->RemoveObserver(this);
 
@@ -511,21 +502,17 @@ void ElectronBrowserClient::RegisterPendingSiteInstance(
 
   if (!pending_site_instance->HasProcess()) {
     // Process hasn't been assigned yet. Defer registration until
-    // RenderProcessWillLaunch fires, which is guaranteed to happen before
-    // AppendExtraCommandLineSwitches. See crbug.com/388998723.
-    deferred_process_registrations_.push_back(
-        {scoped_refptr<content::SiteInstance>(pending_site_instance),
-         web_contents->GetWeakPtr(), is_subframe});
+    // SiteInstanceGotProcessAndSite fires, which is guaranteed to happen
+    // before AppendExtraCommandLineSwitches. See crbug.com/388998723.
+    PruneDeadDeferredProcessRegistrations();
+    deferred_process_registrations_.insert_or_assign(
+        pending_site_instance->GetId(),
+        DeferredProcessRegistration{web_contents->GetWeakPtr(), is_subframe});
     return;
   }
 
-  const auto pending_process_id = pending_site_instance->GetProcess()->GetID();
-  pending_processes_[pending_process_id] = web_contents;
-
-  if (is_subframe)
-    renderer_is_subframe_.insert(pending_process_id);
-  else
-    renderer_is_subframe_.erase(pending_process_id);
+  RegisterPendingProcess(pending_site_instance->GetProcess()->GetID(),
+                         web_contents, is_subframe);
 }
 
 void ElectronBrowserClient::AppendExtraCommandLineSwitches(
@@ -876,6 +863,19 @@ void ElectronBrowserClient::GetAdditionalWebUISchemes(
 
 void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
     content::SiteInstance* site_instance) {
+  DCHECK(site_instance->HasProcess());
+
+  PruneDeadDeferredProcessRegistrations();
+  if (auto it = deferred_process_registrations_.find(site_instance->GetId());
+      it != deferred_process_registrations_.end()) {
+    if (it->second.web_contents) {
+      RegisterPendingProcess(site_instance->GetProcess()->GetID(),
+                             it->second.web_contents.get(),
+                             it->second.is_subframe);
+    }
+    deferred_process_registrations_.erase(it);
+  }
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context =
       static_cast<ElectronBrowserContext*>(site_instance->GetBrowserContext());
@@ -1019,10 +1019,7 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
   content::ChildProcessId process_id = host->GetID();
   pending_processes_.erase(process_id);
   renderer_is_subframe_.erase(process_id);
-  // Prune deferred registrations with dead WebContents.
-  std::erase_if(
-      deferred_process_registrations_,
-      [](const DeferredProcessRegistration& r) { return !r.web_contents; });
+  PruneDeadDeferredProcessRegistrations();
 
   host->RemoveObserver(this);
 }
