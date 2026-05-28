@@ -479,12 +479,23 @@ bool ElectronBrowserClient::WebPreferencesNeedUpdateForColorRelatedStateChanges(
 void ElectronBrowserClient::RegisterPendingSiteInstance(
     content::RenderFrameHost* rfh,
     content::SiteInstance* pending_site_instance) {
-  // Remember the original web contents for the pending renderer process.
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+  const bool is_subframe = rfh->GetParent() != nullptr;
+
+  if (!pending_site_instance->HasProcess()) {
+    // Process hasn't been assigned yet. Defer registration until
+    // RenderProcessWillLaunch fires, which is guaranteed to happen before
+    // AppendExtraCommandLineSwitches. See crbug.com/388998723.
+    deferred_process_registrations_.push_back(
+        {scoped_refptr<content::SiteInstance>(pending_site_instance),
+         web_contents->GetWeakPtr(), is_subframe});
+    return;
+  }
+
   const auto pending_process_id = pending_site_instance->GetProcess()->GetID();
   pending_processes_[pending_process_id] = web_contents;
 
-  if (rfh->GetParent())
+  if (is_subframe)
     renderer_is_subframe_.insert(pending_process_id);
   else
     renderer_is_subframe_.erase(pending_process_id);
