@@ -333,7 +333,7 @@ v8::Local<v8::Promise> Cookies::Get(v8::Isolate* isolate,
     options.set_do_not_update_access_time();
 
     manager->GetCookieList(GURL(url), options,
-                           net::CookiePartitionKeyCollection::Todo(),
+                           net::CookiePartitionKeyCollection::ContainsAll(),
                            base::BindOnce(&FilterCookieWithStatuses,
                                           std::move(dict), std::move(promise)));
   }
