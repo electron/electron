@@ -1,4 +1,5 @@
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
+import { defaultDesktopName } from '@electron/internal/browser/desktop-name';
 
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
@@ -29,12 +30,11 @@ process.on('uncaughtException', function (error) {
   // We can't import { dialog } at the top of this file as this file is
   // responsible for setting up the require hook for the "electron" module
   // so we import it inside the handler down here
-  import('electron')
-    .then(({ dialog }) => {
-      const stack = error.stack ? error.stack : `${error.name}: ${error.message}`;
-      const message = 'Uncaught Exception:\n' + stack;
-      dialog.showErrorBox('A JavaScript error occurred in the main process', message);
-    });
+  import('electron').then(({ dialog }) => {
+    const stack = error.stack ? error.stack : `${error.name}: ${error.message}`;
+    const message = 'Uncaught Exception:\n' + stack;
+    dialog.showErrorBox('A JavaScript error occurred in the main process', message);
+  });
 });
 
 // Emit 'exit' event on quit.
@@ -64,14 +64,26 @@ if (process.platform === 'win32') {
   if (fs.existsSync(updateDotExe)) {
     const packageDir = path.dirname(path.resolve(updateDotExe));
     const packageName = path.basename(packageDir).replaceAll(/\s/g, '');
-    const exeName = path.basename(process.execPath).replace(/\.exe$/i, '').replaceAll(/\s/g, '');
+    const exeName = path
+      .basename(process.execPath)
+      .replace(/\.exe$/i, '')
+      .replaceAll(/\s/g, '');
 
     app.setAppUserModelId(`com.squirrel.${packageName}.${exeName}`);
   }
 }
 
-// Map process.exit to app.exit, which quits gracefully.
-process.exit = app.exit as () => never;
+// Map process.exit to app.exit, which quits gracefully. When called without
+// an explicit code, fall back to process.exitCode like Node.js does.
+process.exit = ((code: number | string | undefined | null) => {
+  // Refs https://github.com/nodejs/node/blob/fc192ee030ee076b948ce7d9d72cba6c101989b8/lib/internal/process/per_thread.js#L229-L252
+  if (code !== undefined) {
+    // Node.js handles any string to number conversion here for us
+    process.exitCode = code;
+  }
+
+  app.exit(process.exitCode || 0);
+}) as typeof process.exit;
 
 // Load the RPC server.
 require('@electron/internal/browser/rpc-server');
@@ -125,10 +137,7 @@ if (packageJson.productName != null) {
   app.name = `${packageJson.name}`.trim();
 }
 
-// Set application's desktop name (Linux). These usually match the executable name,
-// so use it as the default to ensure the app gets the correct icon in the taskbar and application switcher.
-const desktopName = packageJson.desktopName || `${path.basename(process.execPath)}.desktop`;
-app.setDesktopName(desktopName);
+app.setDesktopName(packageJson.desktopName || defaultDesktopName(app.name));
 
 // Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price
@@ -181,7 +190,9 @@ delete process.appCodeLoaded;
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
   if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
-    const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
+    const { runEntryPointWithESMLoader } = __non_webpack_require__(
+      'internal/modules/run_main'
+    ) as typeof import('@node/lib/internal/modules/run_main');
     const main = (require('url') as typeof url).pathToFileURL(path.join(packagePath, mainStartupScript));
     runEntryPointWithESMLoader(async (cascadedLoader: any) => {
       try {
@@ -199,6 +210,6 @@ if (packagePath) {
   }
 } else {
   console.error('Failed to locate a valid package to load (app, app.asar or default_app.asar)');
-  console.error('This normally means you\'ve damaged the Electron package somehow');
+  console.error("This normally means you've damaged the Electron package somehow");
   appCodeLoaded!();
 }

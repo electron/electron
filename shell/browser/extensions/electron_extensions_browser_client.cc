@@ -33,8 +33,9 @@
 #include "extensions/common/manifest_constants.h"
 #include "extensions/common/manifest_handlers/chrome_url_overrides_handler.h"
 #include "extensions/common/manifest_handlers/devtools_page_handler.h"
-#include "extensions/common/manifest_url_handlers.h"
+#include "extensions/common/manifest_handlers/manifest_url_handlers.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
@@ -42,6 +43,7 @@
 #include "shell/browser/extensions/electron_component_extension_resource_manager.h"
 #include "shell/browser/extensions/electron_extension_host_delegate.h"
 #include "shell/browser/extensions/electron_extension_system_factory.h"
+#include "shell/browser/extensions/electron_extension_tab_util.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_extensions_api_client.h"
 #include "shell/browser/extensions/electron_extensions_browser_api_provider.h"
@@ -125,6 +127,12 @@ ElectronExtensionsBrowserClient::GetContextRedirectedToOriginal(
   return GetOriginalContext(context);
 }
 
+content::BrowserContext* ElectronExtensionsBrowserClient::
+    GetContextRedirectedToOriginalWithoutAshInternals(
+        content::BrowserContext* context) {
+  return GetOriginalContext(context);
+}
+
 content::BrowserContext* ElectronExtensionsBrowserClient::GetContextOwnInstance(
     content::BrowserContext* context) {
   return context;
@@ -204,7 +212,7 @@ bool AllowCrossRendererResourceLoad(
     const network::ResourceRequest& request,
     network::mojom::RequestDestination destination,
     ui::PageTransition page_transition,
-    int child_id,
+    content::ChildProcessId child_id,
     bool is_incognito,
     const extensions::Extension* extension,
     const extensions::ExtensionSet& extensions,
@@ -235,7 +243,7 @@ bool ElectronExtensionsBrowserClient::AllowCrossRendererResourceLoad(
     const network::ResourceRequest& request,
     network::mojom::RequestDestination destination,
     ui::PageTransition page_transition,
-    int child_id,
+    content::ChildProcessId child_id,
     bool is_incognito,
     const extensions::Extension* extension,
     const extensions::ExtensionSet& extensions,
@@ -250,11 +258,6 @@ bool ElectronExtensionsBrowserClient::AllowCrossRendererResourceLoad(
 
   // Couldn't determine if resource is allowed. Block the load.
   return false;
-}
-
-PrefService* ElectronExtensionsBrowserClient::GetPrefServiceForContext(
-    BrowserContext* context) {
-  return static_cast<ElectronBrowserContext*>(context)->prefs();
 }
 
 void ElectronExtensionsBrowserClient::GetEarlyExtensionPrefsObservers(
@@ -378,6 +381,28 @@ ElectronExtensionsBrowserClient::GetExtensionWebContentsObserver(
     content::WebContents* web_contents) {
   return extensions::ElectronExtensionWebContentsObserver::FromWebContents(
       web_contents);
+}
+
+bool ElectronExtensionsBrowserClient::IsValidTabId(
+    content::BrowserContext* browser_context,
+    const int tab_id,
+    const bool include_incognito,
+    content::WebContents** web_contents) const {
+  auto* contents = extensions::GetElectronTabById(tab_id, browser_context);
+  if (!contents)
+    return false;
+
+  if (web_contents)
+    *web_contents = contents->web_contents();
+
+  return true;
+}
+
+extensions::ScriptExecutor*
+ElectronExtensionsBrowserClient::GetScriptExecutorForTab(
+    content::WebContents& web_contents) {
+  auto* contents = electron::api::WebContents::From(&web_contents);
+  return contents ? contents->script_executor() : nullptr;
 }
 
 extensions::KioskDelegate* ElectronExtensionsBrowserClient::GetKioskDelegate() {

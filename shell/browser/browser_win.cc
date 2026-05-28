@@ -607,7 +607,7 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
   std::string badge_alt_string;
   if (count.has_value()) {
     badge_count_ = count.value();
-    badge_alt_string = (uint64_t)badge_count_ <= badging::kMaxBadgeContent
+    badge_alt_string = badge_count_ <= badging::kMaxBadgeContent
                            // Case 1.
                            ? l10n_util::GetPluralStringFUTF8(
                                  IDS_BADGE_UNREAD_NOTIFICATIONS, badge_count_)

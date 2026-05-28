@@ -32,7 +32,9 @@ describe('Notification module', () => {
       body: 'body'
     });
 
-    expect(() => { (n as any).id = 'new-id'; }).to.throw();
+    expect(() => {
+      (n as any).id = 'new-id';
+    }).to.throw();
   });
 
   ifit(process.platform === 'darwin' || process.platform === 'win32')('defaults id to a UUID when not provided', () => {
@@ -45,15 +47,18 @@ describe('Notification module', () => {
     expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
-  ifit(process.platform === 'darwin' || process.platform === 'win32')('defaults id to a UUID when empty string is provided', () => {
-    const n = new Notification({
-      id: '',
-      title: 'title',
-      body: 'body'
-    });
+  ifit(process.platform === 'darwin' || process.platform === 'win32')(
+    'defaults id to a UUID when empty string is provided',
+    () => {
+      const n = new Notification({
+        id: '',
+        title: 'title',
+        body: 'body'
+      });
 
-    expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
-  });
+      expect(n.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    }
+  );
 
   ifit(process.platform === 'darwin' || process.platform === 'win32')('inits and gets groupId property', () => {
     const n = new Notification({
@@ -72,17 +77,22 @@ describe('Notification module', () => {
       groupId: 'E017VKL2N8H|C07RBMNS9EK'
     });
 
-    expect(() => { (n as any).groupId = 'new-group'; }).to.throw();
+    expect(() => {
+      (n as any).groupId = 'new-group';
+    }).to.throw();
   });
 
-  ifit(process.platform === 'darwin' || process.platform === 'win32')('defaults groupId to empty string when not provided', () => {
-    const n = new Notification({
-      title: 'title',
-      body: 'body'
-    });
+  ifit(process.platform === 'darwin' || process.platform === 'win32')(
+    'defaults groupId to empty string when not provided',
+    () => {
+      const n = new Notification({
+        title: 'title',
+        body: 'body'
+      });
 
-    expect(n.groupId).to.equal('');
-  });
+      expect(n.groupId).to.equal('');
+    }
+  );
 
   ifit(process.platform === 'win32')('inits and gets groupTitle property', () => {
     const n = new Notification({
@@ -103,7 +113,9 @@ describe('Notification module', () => {
       groupTitle: 'My Group Title'
     });
 
-    expect(() => { (n as any).groupTitle = 'new-title'; }).to.throw();
+    expect(() => {
+      (n as any).groupTitle = 'new-title';
+    }).to.throw();
   });
 
   ifit(process.platform === 'win32')('defaults groupTitle to empty string when not provided', () => {
@@ -220,7 +232,8 @@ describe('Notification module', () => {
         {
           type: 'button',
           text: '1'
-        }, {
+        },
+        {
           type: 'button',
           text: '2'
         }
@@ -237,7 +250,8 @@ describe('Notification module', () => {
       {
         type: 'button',
         text: '3'
-      }, {
+      },
+      {
         type: 'button',
         text: '4'
       }
@@ -362,4 +376,228 @@ describe('Notification module', () => {
   });
 
   // TODO(sethlu): Find way to test init with notification icon?
+
+  describe('static methods', () => {
+    ifit(process.platform === 'darwin')('getHistory returns a promise that resolves to an array', async () => {
+      const result = Notification.getHistory();
+      expect(result).to.be.a('promise');
+      const history = await result;
+      expect(history).to.be.an('array');
+    });
+
+    ifit(process.platform === 'darwin')(
+      'getHistory returns Notification instances with correct properties',
+      async () => {
+        const n = new Notification({
+          id: 'history-test-id',
+          title: 'history test',
+          subtitle: 'history subtitle',
+          body: 'history body',
+          groupId: 'history-group',
+          silent: true
+        });
+
+        const shown = once(n, 'show');
+        n.show();
+        await shown;
+
+        const history = await Notification.getHistory();
+        // getHistory requires code-signed builds to return results;
+        // skip the content assertions if Notification Center is empty.
+        if (history.length > 0) {
+          const found = history.find((item: any) => item.id === 'history-test-id');
+          if (!found) {
+            expect.fail('Expected to find notification with id "history-test-id" in history');
+          }
+          expect(found).to.be.an.instanceOf(Notification);
+          expect(found.title).to.equal('history test');
+          expect(found.subtitle).to.equal('history subtitle');
+          expect(found.body).to.equal('history body');
+          expect(found.groupId).to.equal('history-group');
+        }
+
+        n.close();
+      }
+    );
+
+    ifit(process.platform === 'darwin')('remove does not throw with a string argument', () => {
+      expect(() => Notification.remove('nonexistent-id')).to.not.throw();
+    });
+
+    ifit(process.platform === 'darwin')('remove does not throw with an array argument', () => {
+      expect(() => Notification.remove(['id-1', 'id-2'])).to.not.throw();
+    });
+
+    ifit(process.platform === 'darwin')('remove throws with no arguments', () => {
+      expect(() => (Notification.remove as any)()).to.throw(/Expected a string or array of strings/);
+    });
+
+    ifit(process.platform === 'darwin')('remove throws with an invalid argument type', () => {
+      expect(() => (Notification.remove as any)(123)).to.throw(/Expected a string or array of strings/);
+    });
+
+    ifit(process.platform === 'darwin')('remove does not throw with an empty array', () => {
+      expect(() => Notification.remove([])).to.not.throw();
+    });
+
+    ifit(process.platform === 'darwin')('remove does not throw with an empty string', () => {
+      expect(() => Notification.remove('')).to.not.throw();
+    });
+
+    ifit(process.platform === 'darwin')('removeAll does not throw', () => {
+      expect(() => Notification.removeAll()).to.not.throw();
+    });
+
+    ifit(process.platform === 'darwin')('removeGroup does not throw', () => {
+      expect(() => Notification.removeGroup('nonexistent-group')).to.not.throw();
+    });
+
+    ifit(process.platform === 'darwin')('getHistory returned notifications can be shown and closed', async () => {
+      const n = new Notification({
+        id: 'history-show-close',
+        title: 'show close test',
+        body: 'body',
+        silent: true
+      });
+
+      const shown = once(n, 'show');
+      n.show();
+      await shown;
+
+      const history = await Notification.getHistory();
+      if (history.length > 0) {
+        const found = history.find((item: any) => item.id === 'history-show-close');
+        if (!found) {
+          expect.fail('Expected to find notification with id "history-show-close" in history');
+        }
+        // Calling show() and close() on a restored notification should not throw
+        expect(() => {
+          found.show();
+          found.close();
+        }).to.not.throw();
+      }
+    });
+
+    ifit(process.platform === 'darwin')('remove removes a notification by id', async () => {
+      const n = new Notification({
+        id: 'remove-test-id',
+        title: 'remove test',
+        body: 'remove body',
+        silent: true
+      });
+
+      const shown = once(n, 'show');
+      n.show();
+      await shown;
+
+      Notification.remove('remove-test-id');
+
+      // Give the notification center a moment to process the removal
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const history = await Notification.getHistory();
+      const found = history.find((item: any) => item.id === 'remove-test-id');
+      expect(found).to.be.undefined();
+    });
+
+    ifit(process.platform === 'darwin')('remove accepts an array of ids', async () => {
+      const n1 = new Notification({
+        id: 'remove-array-1',
+        title: 'test 1',
+        body: 'body 1',
+        silent: true
+      });
+      const n2 = new Notification({
+        id: 'remove-array-2',
+        title: 'test 2',
+        body: 'body 2',
+        silent: true
+      });
+
+      const shown1 = once(n1, 'show');
+      n1.show();
+      await shown1;
+
+      const shown2 = once(n2, 'show');
+      n2.show();
+      await shown2;
+
+      Notification.remove(['remove-array-1', 'remove-array-2']);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const history = await Notification.getHistory();
+      const found1 = history.find((item: any) => item.id === 'remove-array-1');
+      const found2 = history.find((item: any) => item.id === 'remove-array-2');
+      expect(found1).to.be.undefined();
+      expect(found2).to.be.undefined();
+    });
+
+    ifit(process.platform === 'darwin')('removeAll removes all notifications', async () => {
+      const n = new Notification({
+        id: 'remove-all-test',
+        title: 'removeAll test',
+        body: 'body',
+        silent: true
+      });
+
+      const shown = once(n, 'show');
+      n.show();
+      await shown;
+
+      Notification.removeAll();
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const history = await Notification.getHistory();
+      const found = history.find((item: any) => item.id === 'remove-all-test');
+      expect(found).to.be.undefined();
+    });
+
+    ifit(process.platform === 'darwin')('removeGroup removes notifications by groupId', async () => {
+      const n1 = new Notification({
+        id: 'group-keep',
+        title: 'keep',
+        body: 'body',
+        groupId: 'group-a',
+        silent: true
+      });
+      const n2 = new Notification({
+        id: 'group-remove-1',
+        title: 'remove 1',
+        body: 'body',
+        groupId: 'group-b',
+        silent: true
+      });
+      const n3 = new Notification({
+        id: 'group-remove-2',
+        title: 'remove 2',
+        body: 'body',
+        groupId: 'group-b',
+        silent: true
+      });
+
+      for (const n of [n1, n2, n3]) {
+        const shown = once(n, 'show');
+        n.show();
+        await shown;
+      }
+
+      Notification.removeGroup('group-b');
+
+      // Give the notification center a moment to fetch and remove
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const history = await Notification.getHistory();
+      // In code-signed builds, group-a notification should remain
+      // while group-b notifications should be gone
+      const foundB1 = history.find((item: any) => item.id === 'group-remove-1');
+      const foundB2 = history.find((item: any) => item.id === 'group-remove-2');
+      expect(foundB1).to.be.undefined();
+      expect(foundB2).to.be.undefined();
+
+      // Clean up
+      Notification.removeAll();
+    });
+  });
 });

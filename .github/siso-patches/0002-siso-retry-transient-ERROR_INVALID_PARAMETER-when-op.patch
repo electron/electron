@@ -1,0 +1,145 @@
+From 1786f2266cba6a66343e5af2b724214930c8292f Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sam@electronjs.org>
+Date: Wed, 22 Apr 2026 16:27:51 -0700
+Subject: [PATCH] siso: retry transient ERROR_INVALID_PARAMETER when opening
+ ninja files on Windows
+
+ManifestParser.Load fans out across all subninja files (~90k in a
+Chromium build) at NumCPU parallelism. On Windows builders where out/
+is served through a filesystem filter driver (e.g. bindflt/wcifs for
+container bind mounts), CreateFileW can intermittently return
+ERROR_INVALID_PARAMETER under this concurrent open burst. Without a
+retry a single transient failure aborts the entire manifest load.
+
+Wrap the os.Open call in readFile in a small Windows-only
+retry for ERROR_INVALID_PARAMETER (5 attempts, 5-80ms backoff). Each
+retry is logged via clog.Warningf and also written to stderr so it is
+visible in CI step output where glog warnings are file-only by default.
+Other platforms keep the direct os.Open path.
+
+diff --git a/siso/hashfs/state.go b/siso/hashfs/state.go
+index 1be99639..abe2fbcc 100644
+--- a/siso/hashfs/state.go
++++ b/siso/hashfs/state.go
+@@ -250,7 +250,7 @@ func loadFile(ctx context.Context, opts Option) ([]byte, error) {
+ 	if opts.UseMmap {
+ 		// Use mmap to read the compressed file. The data is backed by the
+ 		// OS page cache rather than the Go heap, avoiding a large allocation.
+-		data, err := mmapfile.Read(opts.StateFile)
++		data, err := mmapfile.Read(ctx, opts.StateFile)
+ 		if err != nil {
+ 			return nil, err
+ 		}
+diff --git a/siso/mmapfile/mmap_unix.go b/siso/mmapfile/mmap_unix.go
+index 345c02de..9bafe560 100644
+--- a/siso/mmapfile/mmap_unix.go
++++ b/siso/mmapfile/mmap_unix.go
+@@ -7,6 +7,7 @@
+ package mmapfile
+ 
+ import (
++	"context"
+ 	"fmt"
+ 	"os"
+ 
+@@ -16,7 +17,7 @@ import (
+ // Read maps path read-only into memory. The returned slice is page-cache
+ // backed and stays valid until Unmap is called. An empty file returns
+ // (nil, nil).
+-func Read(path string) ([]byte, error) {
++func Read(_ context.Context, path string) ([]byte, error) {
+ 	f, err := os.Open(path)
+ 	if err != nil {
+ 		return nil, err
+diff --git a/siso/mmapfile/mmap_windows.go b/siso/mmapfile/mmap_windows.go
+index fc00bc9e..31e16150 100644
+--- a/siso/mmapfile/mmap_windows.go
++++ b/siso/mmapfile/mmap_windows.go
+@@ -7,6 +7,7 @@
+ package mmapfile
+ 
+ import (
++	"context"
+ 	"fmt"
+ 	"os"
+ 	"unsafe"
+@@ -17,8 +18,8 @@ import (
+ // Read maps path read-only into memory. The returned slice is page-cache
+ // backed and stays valid until Unmap is called. An empty file returns
+ // (nil, nil).
+-func Read(path string) ([]byte, error) {
+-	f, err := os.Open(path)
++func Read(ctx context.Context, path string) ([]byte, error) {
++	f, err := openFile(ctx, path)
+ 	if err != nil {
+ 		return nil, err
+ 	}
+diff --git a/siso/mmapfile/openfile_windows.go b/siso/mmapfile/openfile_windows.go
+new file mode 100644
+index 00000000..2c71562c
+--- /dev/null
++++ b/siso/mmapfile/openfile_windows.go
+@@ -0,0 +1,50 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++//go:build windows
++
++package mmapfile
++
++import (
++	"context"
++	"errors"
++	"fmt"
++	"os"
++	"time"
++
++	"golang.org/x/sys/windows"
++
++	"go.chromium.org/build/siso/o11y/clog"
++)
++
++// openFile opens fname for reading, retrying transient
++// ERROR_INVALID_PARAMETER failures.
++//
++// On Windows, CreateFileW can intermittently return
++// ERROR_INVALID_PARAMETER when the target lives behind a filesystem
++// filter driver (e.g. bindflt/wcifs for container bind mounts) under
++// highly concurrent opens. loadFile fans out across ~90k subninja
++// files at NumCPU parallelism, so a single transient failure would
++// otherwise abort the whole manifest load.
++func openFile(ctx context.Context, fname string) (*os.File, error) {
++	const maxAttempts = 5
++	delay := 5 * time.Millisecond
++	for i := 0; ; i++ {
++		f, err := os.Open(fname)
++		if err == nil {
++			return f, nil
++		}
++		if i+1 >= maxAttempts || !errors.Is(err, windows.ERROR_INVALID_PARAMETER) {
++			return nil, err
++		}
++		clog.Warningf(ctx, "open %s: %v; retrying (%d/%d) after %s", fname, err, i+1, maxAttempts, delay)
++		fmt.Fprintf(os.Stderr, "siso: open %s: %v; retrying (%d/%d) after %s\n", fname, err, i+1, maxAttempts, delay)
++		select {
++		case <-time.After(delay):
++		case <-ctx.Done():
++			return nil, context.Cause(ctx)
++		}
++		delay *= 2
++	}
++}
+diff --git a/siso/toolsupport/ninjautil/file_parser.go b/siso/toolsupport/ninjautil/file_parser.go
+index 39ed7af6..a81fc9a5 100644
+--- a/siso/toolsupport/ninjautil/file_parser.go
++++ b/siso/toolsupport/ninjautil/file_parser.go
+@@ -110,7 +110,7 @@ func (p *fileParser) parseFile(ctx context.Context, fname string) error {
+ // not outlive Load, which releases all mappings before returning.
+ func (p *fileParser) readFile(ctx context.Context, fname string) ([]byte, error) {
+ 	defer trace.StartRegion(ctx, "ninja.read").End()
+-	buf, err := mmapfile.Read(fname)
++	buf, err := mmapfile.Read(ctx, fname)
+ 	if err != nil {
+ 		return nil, err
+ 	}

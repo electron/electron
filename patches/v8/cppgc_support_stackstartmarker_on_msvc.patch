@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 19 May 2026 16:13:03 +0900
+Subject: [cppgc] Support StackStartMarker on MSVC
+
+Use the `_AddressOfReturnAddress()` intrinsic as the stack address
+primitive.
+
+diff --git a/include/cppgc/heap.h b/include/cppgc/heap.h
+index 2968a0af197240f76aaac317444ae072d248ec94..cdba7480b447f9ac6d93013faa40393430dc9aa9 100644
+--- a/include/cppgc/heap.h
++++ b/include/cppgc/heap.h
+@@ -15,6 +15,10 @@
+ #include "cppgc/platform.h"
+ #include "v8config.h"  // NOLINT(build/include_directory)
+ 
++#if defined(V8_CC_MSVC)
++#include <intrin.h>
++#endif
++
+ /**
+  * cppgc - A C++ garbage collection library.
+  */
+@@ -37,7 +41,11 @@ class Heap;
+  */
+ class V8_EXPORT StackStartMarker {
+  public:
++#if defined(V8_CC_MSVC)
++  StackStartMarker() : stack_start_(_AddressOfReturnAddress()) {}
++#else
+   StackStartMarker() : stack_start_(__builtin_frame_address(0)) {}
++#endif
+   void* stack_start() const { return stack_start_; }
+ 
+  private:

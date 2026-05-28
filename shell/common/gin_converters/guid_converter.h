@@ -47,17 +47,17 @@ struct Converter<base::Uuid> {
     if (!gin::ConvertFromV8(isolate, val, &guid))
       return false;
 
-    base::Uuid parsed = base::Uuid::ParseLowercase(base::ToLowerASCII(guid));
+    base::Uuid parsed = base::Uuid::ParseCaseInsensitive(guid);
     if (!parsed.is_valid())
       return false;
 
-    *out = parsed;
+    *out = std::move(parsed);
     return true;
   }
 
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, base::Uuid val) {
-    const std::string guid = val.AsLowercaseString();
-    return gin::ConvertToV8(isolate, guid);
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const base::Uuid& val) {
+    return gin::ConvertToV8(isolate, val.AsLowercaseString());
   }
 };
 
@@ -76,7 +76,7 @@ struct Converter<UUID> {
       if (guid[0] == '{' && guid[guid.length() - 1] == '}') {
         guid = guid.substr(1, guid.length() - 2);
       }
-      unsigned char* uid_cstr = (unsigned char*)guid.c_str();
+      auto* uid_cstr = reinterpret_cast<unsigned char*>(guid.data());
       RPC_STATUS result = UuidFromStringA(uid_cstr, &uid);
       if (result == RPC_S_INVALID_STRING_UUID) {
         return false;

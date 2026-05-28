@@ -21,6 +21,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
@@ -49,8 +50,8 @@ struct Converter<electron::TrayIcon::IconType> {
 
 namespace electron::api {
 
-const gin::WrapperInfo Tray::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                             gin::kElectronTray};
+const gin::WrapperInfo Tray::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronTray);
 
 Tray::Tray(v8::Isolate* isolate,
            v8::Local<v8::Value> image,

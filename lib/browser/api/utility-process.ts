@@ -10,7 +10,7 @@ class ForkUtilityProcess extends EventEmitter implements Electron.UtilityProcess
   #handle: ElectronInternal.UtilityProcessWrapper | null;
   #stdout: Duplex | null = null;
   #stderr: Duplex | null = null;
-  constructor (modulePath: string, args?: string[], options?: Electron.ForkOptions) {
+  constructor(modulePath: string, args?: string[], options?: Electron.ForkOptions) {
     super();
 
     if (!modulePath) {
@@ -53,7 +53,7 @@ class ForkUtilityProcess extends EventEmitter implements Electron.UtilityProcess
     }
 
     if (typeof options.stdio === 'string') {
-      const stdio : Array<'pipe' | 'ignore' | 'inherit'> = [];
+      const stdio: Array<'pipe' | 'ignore' | 'inherit'> = [];
       switch (options.stdio) {
         case 'inherit':
         case 'ignore':
@@ -119,27 +119,27 @@ class ForkUtilityProcess extends EventEmitter implements Electron.UtilityProcess
     };
   }
 
-  get pid () {
+  get pid() {
     return this.#handle?.pid;
   }
 
-  get stdout () {
+  get stdout() {
     return this.#stdout;
   }
 
-  get stderr () {
+  get stderr() {
     return this.#stderr;
   }
 
-  postMessage (message: any, transfer?: MessagePortMain[]) {
+  postMessage(message: any, transfer?: MessagePortMain[]) {
     if (Array.isArray(transfer)) {
-      transfer = transfer.map((o: any) => o instanceof MessagePortMain ? o._internalPort : o);
+      transfer = transfer.map((o: any) => (o instanceof MessagePortMain ? o._internalPort : o));
       return this.#handle?.postMessage(message, transfer);
     }
     return this.#handle?.postMessage(message);
   }
 
-  kill () : boolean {
+  kill(): boolean {
     if (this.#handle === null) {
       return false;
     }
@@ -147,6 +147,6 @@ class ForkUtilityProcess extends EventEmitter implements Electron.UtilityProcess
   }
 }
 
-export function fork (modulePath: string, args?: string[], options?: Electron.ForkOptions) {
+export function fork(modulePath: string, args?: string[], options?: Electron.ForkOptions) {
   return new ForkUtilityProcess(modulePath, args, options);
 }

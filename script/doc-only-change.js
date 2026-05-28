@@ -5,7 +5,7 @@ const args = minimist(process.argv.slice(2));
 
 const octokit = new Octokit();
 
-async function checkIfDocOnlyChange () {
+async function checkIfDocOnlyChange() {
   let { prNumber, prURL } = args;
 
   if (prNumber || prURL) {
@@ -17,20 +17,27 @@ async function checkIfDocOnlyChange () {
         }
       }
 
-      const filesChanged = await octokit.paginate(octokit.pulls.listFiles.endpoint.merge({
-        owner: 'electron',
-        repo: 'electron',
-        pull_number: prNumber,
-        per_page: 100
-      }));
+      const filesChanged = await octokit.paginate(
+        octokit.pulls.listFiles.endpoint.merge({
+          owner: 'electron',
+          repo: 'electron',
+          pull_number: prNumber,
+          per_page: 100
+        })
+      );
 
-      console.log('Changed Files: ', filesChanged.map(fileInfo => fileInfo.filename));
+      console.log(
+        'Changed Files: ',
+        filesChanged.map((fileInfo) => fileInfo.filename)
+      );
 
-      const nonDocChange = filesChanged.length === 0 || filesChanged.find(({ filename }) => {
-        const fileDirs = filename.split('/');
-        if (fileDirs[0] !== 'docs') return true;
-        return false;
-      });
+      const nonDocChange =
+        filesChanged.length === 0 ||
+        filesChanged.find(({ filename }) => {
+          const fileDirs = filename.split('/');
+          if (fileDirs[0] !== 'docs') return true;
+          return false;
+        });
 
       process.exit(nonDocChange ? 1 : 0);
     } catch (error) {

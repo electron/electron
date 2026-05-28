@@ -21,7 +21,7 @@
     "@types/semver": "^7.5.8",
     "@types/stream-json": "^1.7.8",
     "@types/temp": "^0.9.4",
-    "@xmldom/xmldom": "^0.8.12",
+    "@xmldom/xmldom": "^0.8.13",
     "buffer": "^6.0.3",
     "chalk": "^4.1.0",
     "check-for-leaks": "^1.2.1",
@@ -32,8 +32,9 @@
     "lint-staged": "^16.1.0",
     "markdownlint-cli2": "^0.18.0",
     "minimist": "^1.2.8",
-    "node-gyp": "^11.4.2",
+    "node-gyp": "^12.3.0",
     "null-loader": "^4.0.1",
+    "oxfmt": "^0.42.0",
     "oxlint": "^1.57.0",
     "pre-flight": "^2.0.0",
     "process": "^0.11.10",
@@ -54,8 +55,10 @@
   "scripts": {
     "asar": "asar",
     "generate-version-json": "node script/generate-version-json.js",
-    "lint": "node ./script/lint.js && npm run lint:docs && npm run lint:chromium-roller",
+    "lint": "node ./script/lint.js && npm run lint:fmt && npm run lint:docs && npm run lint:chromium-roller",
     "lint:js": "node ./script/lint.js --js",
+    "lint:fmt": "oxfmt --check \"{lib,spec,script,build,default_app,npm,typings}/**/*.{js,ts,mjs,cjs}\"",
+    "format": "oxfmt --write \"{lib,spec,script,build,default_app,npm,typings}/**/*.{js,ts,mjs,cjs}\"",
     "lint:clang-format": "python3 script/run-clang-format.py -r -c shell/ || (echo \"\\nCode not formatted correctly.\" && exit 1)",
     "lint:clang-tidy": "ts-node ./script/run-clang-tidy.ts",
     "lint:cpp": "node ./script/lint.js --cc",
@@ -75,7 +78,7 @@
     "gn-typescript-definitions": "npm run create-typescript-definitions && node script/cp.mjs electron.d.ts",
     "pre-flight": "pre-flight",
     "gn-check": "node ./script/gn-check.js",
-    "gn-format": "python3 script/run-gn-format.py",
+    "gn-format": "node ./script/lint.js --gn --fix",
     "precommit": "lint-staged",
     "preinstall": "node -e 'process.exit(0)'",
     "pretest": "npm run create-typescript-definitions",
@@ -96,8 +99,12 @@
     "*": [
       "npm run lint:chromium-roller"
     ],
+    "*.{js,ts,mjs,cjs}": [
+      "oxfmt --write"
+    ],
     "*.{js,ts}": [
-      "node script/lint.js --js --fix --only --"
+      "node script/lint.js --js --fix --only --",
+      "oxfmt --write"
     ],
     "*.{js,ts,d.ts}": [
       "ts-node script/gen-filenames.ts"
@@ -110,7 +117,7 @@
     ],
     "*.{gn,gni}": [
       "npm run gn-check",
-      "npm run gn-format"
+      "node ./script/lint.js --gn --fix --only --"
     ],
     "*.py": [
       "node script/lint.js --py --fix --only --"
@@ -135,8 +142,10 @@
   },
   "resolutions": {
     "dbus-native/xml2js": "0.5.0",
-    "abstract-socket": "github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19",
-    "minimist@npm:~0.0.1": "0.2.4"
+    "abstract-socket": "patch:abstract-socket@npm%3A2.0.0#~/.yarn/patches/abstract-socket-npm-2.0.0-b025d8ca5a.patch",
+    "minimist@npm:~0.0.1": "0.2.4",
+    "put": "npm:@nornagon/put@0.0.8",
+    "get-intrinsic": "^1.3.0"
   },
   "packageManager": "yarn@4.12.0",
   "workspaces": [

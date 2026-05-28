@@ -725,7 +725,18 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
         {
           v8::Context::Scope inner_destination_context_scope(
               destination_context);
-          proxy.Set(key, passed_value.ToLocalChecked());
+          // Use CreateDataProperty (not Set) so that a key named "__proto__"
+          // becomes an own data property instead of invoking the inherited
+          // Object.prototype.__proto__ setter and mutating the prototype.
+          v8::Local<v8::Value> proxied_value = passed_value.ToLocalChecked();
+          if (key->IsName()) {
+            std::ignore = proxy.GetHandle()->CreateDataProperty(
+                destination_context, key.As<v8::Name>(), proxied_value);
+          } else {
+            std::ignore = proxy.GetHandle()->CreateDataProperty(
+                destination_context, key.As<v8::Uint32>()->Value(),
+                proxied_value);
+          }
         }
       }
     }

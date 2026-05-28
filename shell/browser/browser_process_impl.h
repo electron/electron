@@ -32,6 +32,10 @@ namespace printing {
 class PrintJobManager;
 }
 
+namespace metrics {
+class MetricsServiceClient;
+}
+
 namespace electron {
 class ResolveProxyHelper;
 }
@@ -121,7 +125,11 @@ class BrowserProcessImpl : public BrowserProcess {
   resource_coordinator::TabManager* GetTabManager() override;
   SerialPolicyAllowedPorts* serial_policy_allowed_ports() override;
   HidSystemTrayIcon* hid_system_tray_icon() override;
+  void set_hid_system_tray_icon_for_test(
+      std::unique_ptr<HidSystemTrayIcon> icon) override;
   UsbSystemTrayIcon* usb_system_tray_icon() override;
+  void set_usb_system_tray_icon_for_test(
+      std::unique_ptr<UsbSystemTrayIcon> icon) override;
   os_crypt_async::OSCryptAsync* os_crypt_async() override;
   void set_additional_os_crypt_async_provider_for_test(
       size_t precedence,
@@ -145,6 +153,7 @@ class BrowserProcessImpl : public BrowserProcess {
  private:
   void CreateNetworkQualityObserver();
   void CreateOSCryptAsync();
+  void CreateMetricsServiceClient();
   network::NetworkQualityTracker* GetNetworkQualityTracker();
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -166,6 +175,7 @@ class BrowserProcessImpl : public BrowserProcess {
       network_quality_observer_;
   std::unique_ptr<supervised_user::DeviceParentalControls>
       device_parental_controls_;
+  std::unique_ptr<metrics::MetricsServiceClient> metrics_service_client_;
 
   std::unique_ptr<os_crypt_async::OSCryptAsync> os_crypt_async_;
 };

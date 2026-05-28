@@ -22,15 +22,9 @@ try {
   // ignore. tests are skipped below if this is undefined.
 }
 
-const draggablePageURL = pathToFileURL(
-  path.join(fixtures, 'pages', 'draggable-page.html')
-);
-const iframePageURL = pathToFileURL(
-  path.join(fixtures, 'pages', 'iframe.html')
-);
-const webviewPageURL = pathToFileURL(
-  path.join(fixtures, 'pages', 'webview.html')
-);
+const draggablePageURL = pathToFileURL(path.join(fixtures, 'pages', 'draggable-page.html'));
+const iframePageURL = pathToFileURL(path.join(fixtures, 'pages', 'iframe.html'));
+const webviewPageURL = pathToFileURL(path.join(fixtures, 'pages', 'webview.html'));
 
 const testWindowOpts: Electron.BrowserWindowConstructorOptions = {
   x: 0,
@@ -168,9 +162,7 @@ describe('draggable regions', function () {
 
     beforeEach(async () => {
       const parentWindow = new BrowserWindow({ show: false });
-      await parentWindow.loadFile(
-        path.join(fixtures, 'pages', 'base-page.html')
-      );
+      await parentWindow.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
 
       parentWindow.webContents.setWindowOpenHandler(() => ({
         action: 'allow',
@@ -179,9 +171,7 @@ describe('draggable regions', function () {
 
       const newBrowserWindow = once(parentWindow.webContents, 'did-create-window');
 
-      await parentWindow.webContents.executeJavaScript(
-        `void window.open('${draggablePageURL.href}', '_blank');`
-      );
+      await parentWindow.webContents.executeJavaScript(`void window.open('${draggablePageURL.href}', '_blank');`);
 
       [childWindow] = await newBrowserWindow;
       await once(childWindow, 'ready-to-show');
@@ -212,11 +202,12 @@ describe('draggable regions', function () {
       beforeEach(() => {
         w = new BrowserWindow({
           ...testWindowOpts,
-          webPreferences: frameType === 'webview'
-            ? {
-                webviewTag: true
-              }
-            : {}
+          webPreferences:
+            frameType === 'webview'
+              ? {
+                  webviewTag: true
+                }
+              : {}
         });
       });
 
@@ -243,9 +234,7 @@ describe('draggable regions', function () {
         await w.loadURL(subframePageURL.href);
         await loadDraggableSubframe(w);
 
-        await w.loadFile(
-          path.join(fixtures, 'pages', 'base-page.html')
-        );
+        await w.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
 
         const { start, end } = await performDrag(w);
 

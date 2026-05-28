@@ -7,10 +7,10 @@ This allows us to show Chrome extension panels on pages served over
 custom protocols.
 
 diff --git a/front_end/core/root/Runtime.ts b/front_end/core/root/Runtime.ts
-index 747706050ed526b7ce9fd447a4034b6a9b64db7f..f39ad77366375bd4a428f78979f1847002f6bdbb 100644
+index b6e9771755a8fa5d33ea6cfd8d80fed146569b26..9871dd1b4f2c1f7cd2389d6e0f2802ac3ff03ba2 100644
 --- a/front_end/core/root/Runtime.ts
 +++ b/front_end/core/root/Runtime.ts
-@@ -649,6 +649,7 @@ export type HostConfig = Platform.TypeScriptUtilities.RecursivePartial<{
+@@ -669,6 +669,7 @@ export type HostConfig = Platform.TypeScriptUtilities.RecursivePartial<{
     * or guest mode, rather than a "normal" profile.
     */
    isOffTheRecord: boolean,
@@ -19,7 +19,7 @@ index 747706050ed526b7ce9fd447a4034b6a9b64db7f..f39ad77366375bd4a428f78979f18470
    devToolsAnimationStylesInStylesTab: HostConfigAnimationStylesInStylesTab,
    devToolsJpegXlImageFormat: HostConfigJpegXlImageFormat,
 diff --git a/front_end/panels/common/ExtensionServer.ts b/front_end/panels/common/ExtensionServer.ts
-index b33686022049d7dda75f2f5c0877573c334635fa..70adb4ad2d51995277d7a054b6af17c30af39a3f 100644
+index 7d572f4fd65b5c3bb555d8bfeca9e995e9ad7ffc..d6cc0dd2df9ceedfa5aa896d866e6b5438cddeb4 100644
 --- a/front_end/panels/common/ExtensionServer.ts
 +++ b/front_end/panels/common/ExtensionServer.ts
 @@ -12,6 +12,7 @@ import * as Host from '../../core/host/host.js';
@@ -30,7 +30,7 @@ index b33686022049d7dda75f2f5c0877573c334635fa..70adb4ad2d51995277d7a054b6af17c3
  import * as SDK from '../../core/sdk/sdk.js';
  import type * as Protocol from '../../generated/protocol.js';
  import * as Bindings from '../../models/bindings/bindings.js';
-@@ -1622,7 +1623,8 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
+@@ -1645,7 +1646,8 @@ export class ExtensionServer extends Common.ObjectWrapper.ObjectWrapper<EventTyp
        return false;
      }
  

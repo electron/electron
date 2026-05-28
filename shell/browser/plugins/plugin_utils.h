@@ -20,11 +20,13 @@ class PluginUtils {
   PluginUtils(const PluginUtils&) = delete;
   PluginUtils& operator=(const PluginUtils&) = delete;
 
-  // If there's an extension that is allowed to handle |mime_type|, returns its
-  // ID. Otherwise returns an empty string.
+  // If there's an extension that is allowed to handle `mime_type`, returns its
+  // ID. Otherwise returns an empty string. If `embedded` is true, skips generic
+  // handlers that do not allow embedding for `mime_type`.
   static std::string GetExtensionIdForMimeType(
       content::BrowserContext* browser_context,
-      const std::string& mime_type);
+      const std::string& mime_type,
+      bool embedded);
 
   // Returns a map populated with MIME types that are handled by an extension as
   // keys and the corresponding extensions Ids as values.

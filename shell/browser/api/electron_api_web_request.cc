@@ -36,7 +36,7 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_util.h"
 
 static constexpr auto ResourceTypes =
@@ -121,8 +121,7 @@ void ToDictionary(gin_helper::Dictionary* details,
                  HttpResponseHeadersToV8(info->response_headers.get()));
   }
 
-  auto* render_frame_host = content::RenderFrameHost::FromID(
-      info->render_process_id, info->frame_routing_id);
+  auto* render_frame_host = content::RenderFrameHost::FromID(info->global_id);
   if (render_frame_host) {
     details->SetGetter("frame", render_frame_host);
     auto* web_contents =
@@ -205,8 +204,8 @@ CalculateOnBeforeSendHeadersDelta(const net::HttpRequestHeaders* old_headers,
 
 }  // namespace
 
-const gin::WrapperInfo WebRequest::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                                   gin::kElectronWebRequest};
+const gin::WrapperInfo WebRequest::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronWebRequest);
 
 WebRequest::RequestFilter::RequestFilter(
     std::set<URLPattern> include_url_patterns,
@@ -611,8 +610,8 @@ WebRequest::AuthRequiredResponse WebRequest::OnAuthRequired(
     const net::AuthChallengeInfo& auth_info,
     WebRequest::AuthCallback callback,
     net::AuthCredentials* credentials) {
-  content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
-      request_info->render_process_id, request_info->frame_routing_id);
+  content::RenderFrameHost* rfh =
+      content::RenderFrameHost::FromID(request_info->global_id);
   content::WebContents* web_contents = nullptr;
   if (rfh)
     web_contents = content::WebContents::FromRenderFrameHost(rfh);
@@ -630,7 +629,8 @@ WebRequest::AuthRequiredResponse WebRequest::OnAuthRequired(
   blocked_requests_[request_info->id].login_handler =
       std::make_unique<LoginHandler>(
           auth_info, web_contents,
-          static_cast<base::ProcessId>(request_info->render_process_id),
+          static_cast<base::ProcessId>(
+              request_info->global_id.child_id.GetUnsafeValue()),
           request_info->url, response_headers, std::move(login_callback));
 
   return AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING;

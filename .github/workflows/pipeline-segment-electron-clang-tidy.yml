@@ -111,8 +111,6 @@ jobs:
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
         echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
-    - name: Add CHROMIUM_BUILDTOOLS_PATH to env
-      run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Checkout Electron
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
@@ -134,18 +132,40 @@ jobs:
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Run Clang-Tidy
+      env:
+        # macOS runners have fewer CPU cores, so use fewer jobs for better results
+        CLANG_TIDY_JOBS: ${{ case(inputs.target-platform == 'macos', 5, 8) }}
       run: |
-        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH}
+        e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
 
-        export GN_EXTRA_ARGS="target_cpu=\"${TARGET_ARCH}\""
+        # For macOS use_remoteexec=false will cause GN errors, so even though we're doing no remote build, set it
+        export GN_EXTRA_ARGS="use_remoteexec=true target_cpu=\"${TARGET_ARCH}\""
         if [ "${{ inputs.target-platform }}" = "win" ]; then
           export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
         fi
 
-        e build --only-gen
+        e build --gen=only
+
+        # Copy macOS framework headers so clang-tidy can find them via -F.
+        # This must happen after e build since e init -f may
+        # recreate the output directory.
+        if [ "${{ inputs.target-platform }}" = "macos" ]; then
+          OUT=src/out/${ELECTRON_OUT_DIR}
+          SQRL=src/third_party/squirrel.mac
+
+          mkdir -p ${OUT}/{ReactiveObjC,Squirrel,Mantle}.framework/Headers
+
+          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/*.h ${OUT}/ReactiveObjC.framework/Headers/
+          cp ${SQRL}/vendor/ReactiveObjC/ReactiveObjC/extobjc/*.h ${OUT}/ReactiveObjC.framework/Headers/
+
+          cp ${SQRL}/Squirrel/*.h ${OUT}/Squirrel.framework/Headers/
+
+          cp ${SQRL}/vendor/Mantle/Mantle/include/*.h ${OUT}/Mantle.framework/Headers/
+          cp ${SQRL}/vendor/Mantle/Mantle/extobjc/include/*.h ${OUT}/Mantle.framework/Headers/
+        fi
 
         cd src/electron
-        node script/yarn.js lint:clang-tidy --jobs 8 --out-dir ../out/${ELECTRON_OUT_DIR}
+        node script/yarn.js lint:clang-tidy --jobs ${CLANG_TIDY_JOBS} --out-dir ../out/${ELECTRON_OUT_DIR}
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"

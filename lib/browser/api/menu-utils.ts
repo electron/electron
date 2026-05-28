@@ -1,13 +1,16 @@
-function splitArray<T> (arr: T[], predicate: (x: T) => boolean) {
-  const result = arr.reduce((multi, item) => {
-    const current = multi[multi.length - 1];
-    if (predicate(item)) {
-      if (current.length > 0) multi.push([]);
-    } else {
-      current.push(item);
-    }
-    return multi;
-  }, [[]] as T[][]);
+function splitArray<T>(arr: T[], predicate: (x: T) => boolean) {
+  const result = arr.reduce(
+    (multi, item) => {
+      const current = multi[multi.length - 1];
+      if (predicate(item)) {
+        if (current.length > 0) multi.push([]);
+      } else {
+        current.push(item);
+      }
+      return multi;
+    },
+    [[]] as T[][]
+  );
 
   if (result[result.length - 1].length === 0) {
     return result.slice(0, result.length - 1);
@@ -15,7 +18,7 @@ function splitArray<T> (arr: T[], predicate: (x: T) => boolean) {
   return result;
 }
 
-function joinArrays (arrays: any[][], joinIDs: any[]) {
+function joinArrays(arrays: any[][], joinIDs: any[]) {
   return arrays.reduce((joined, arr, i) => {
     if (i > 0 && arr.length) {
       if (joinIDs.length > 0) {
@@ -29,26 +32,23 @@ function joinArrays (arrays: any[][], joinIDs: any[]) {
   }, []);
 }
 
-function pushOntoMultiMap<K, V> (map: Map<K, V[]>, key: K, value: V) {
+function pushOntoMultiMap<K, V>(map: Map<K, V[]>, key: K, value: V) {
   if (!map.has(key)) {
     map.set(key, []);
   }
   map.get(key)!.push(value);
 }
 
-function indexOfGroupContainingID<T> (groups: {id?: T}[][], id: T, ignoreGroup: {id?: T}[]) {
+function indexOfGroupContainingID<T>(groups: { id?: T }[][], id: T, ignoreGroup: { id?: T }[]) {
   return groups.findIndex(
-    candidateGroup =>
-      candidateGroup !== ignoreGroup &&
-      candidateGroup.some(
-        candidateItem => candidateItem.id === id
-      )
+    (candidateGroup) =>
+      candidateGroup !== ignoreGroup && candidateGroup.some((candidateItem) => candidateItem.id === id)
   );
 }
 
 // Sort nodes topologically using a depth-first approach. Encountered cycles
 // are broken.
-function sortTopologically<T> (originalOrder: T[], edgesById: Map<T, T[]>) {
+function sortTopologically<T>(originalOrder: T[], edgesById: Map<T, T[]>) {
   const sorted = [] as T[];
   const marked = new Set<T>();
 
@@ -71,7 +71,7 @@ function sortTopologically<T> (originalOrder: T[], edgesById: Map<T, T[]>) {
   return sorted;
 }
 
-function attemptToMergeAGroup<T> (groups: {before?: T[], after?: T[], id?: T}[][]) {
+function attemptToMergeAGroup<T>(groups: { before?: T[]; after?: T[]; id?: T }[][]) {
   for (let i = 0; i < groups.length; i++) {
     const group = groups[i];
     for (const item of group) {
@@ -90,7 +90,7 @@ function attemptToMergeAGroup<T> (groups: {before?: T[], after?: T[], id?: T}[][
   return false;
 }
 
-function mergeGroups<T> (groups: {before?: T[], after?: T[], id?: T}[][]) {
+function mergeGroups<T>(groups: { before?: T[]; after?: T[]; id?: T }[][]) {
   let merged = true;
   while (merged) {
     merged = attemptToMergeAGroup(groups);
@@ -98,7 +98,7 @@ function mergeGroups<T> (groups: {before?: T[], after?: T[], id?: T}[][]) {
   return groups;
 }
 
-function sortItemsInGroup<T> (group: {before?: T[], after?: T[], id?: T}[]) {
+function sortItemsInGroup<T>(group: { before?: T[]; after?: T[]; id?: T }[]) {
   const originalOrder = group.map((node, i) => i);
   const edges = new Map();
   const idToIndex = new Map(group.map((item, i) => [item.id, i]));
@@ -123,10 +123,14 @@ function sortItemsInGroup<T> (group: {before?: T[], after?: T[], id?: T}[]) {
   }
 
   const sortedNodes = sortTopologically(originalOrder, edges);
-  return sortedNodes.map(i => group[i]);
+  return sortedNodes.map((i) => group[i]);
 }
 
-function findEdgesInGroup<T> (groups: {beforeGroupContaining?: T[], afterGroupContaining?: T[], id?: T}[][], i: number, edges: Map<any, any>) {
+function findEdgesInGroup<T>(
+  groups: { beforeGroupContaining?: T[]; afterGroupContaining?: T[]; id?: T }[][],
+  i: number,
+  edges: Map<any, any>
+) {
   const group = groups[i];
   for (const item of group) {
     if (item.beforeGroupContaining) {
@@ -150,7 +154,7 @@ function findEdgesInGroup<T> (groups: {beforeGroupContaining?: T[], afterGroupCo
   }
 }
 
-function sortGroups<T> (groups: {id?: T}[][]) {
+function sortGroups<T>(groups: { id?: T }[][]) {
   const originalOrder = groups.map((item, i) => i);
   const edges = new Map();
 
@@ -159,13 +163,15 @@ function sortGroups<T> (groups: {id?: T}[][]) {
   }
 
   const sortedGroupIndexes = sortTopologically(originalOrder, edges);
-  return sortedGroupIndexes.map(i => groups[i]);
+  return sortedGroupIndexes.map((i) => groups[i]);
 }
 
-export function sortMenuItems (menuItems: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[]) {
+export function sortMenuItems(menuItems: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[]) {
   const isSeparator = (i: Electron.MenuItemConstructorOptions | Electron.MenuItem) => {
     const opts = i as Electron.MenuItemConstructorOptions;
-    return i.type === 'separator' && !opts.before && !opts.after && !opts.beforeGroupContaining && !opts.afterGroupContaining;
+    return (
+      i.type === 'separator' && !opts.before && !opts.after && !opts.beforeGroupContaining && !opts.afterGroupContaining
+    );
   };
   const separators = menuItems.filter(isSeparator);
 

@@ -7,7 +7,7 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index a1bb1a46029020d26d7bb88d314c5c5e5a967063..66c325724421c5315e89c0a02c19459f1dcb239d 100644
+index 71f651ae10d849f5ede76144b57d445740f57111..a606eb79a60b2ab18882c33ad5fc8584d9f1d144 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
 @@ -133,6 +133,7 @@ class KeyStorageLinux;
@@ -18,7 +18,7 @@ index a1bb1a46029020d26d7bb88d314c5c5e5a967063..66c325724421c5315e89c0a02c19459f
  class Profile;
  class ProfileImpl;
  class ScopedAllowBlockingForProfile;
-@@ -285,6 +286,9 @@ class BackendImpl;
+@@ -284,6 +285,9 @@ class BackendImpl;
  class InFlightIO;
  bool CleanupDirectorySync(const base::FilePath&);
  }  // namespace disk_cache

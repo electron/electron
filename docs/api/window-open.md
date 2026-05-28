@@ -33,10 +33,14 @@ because it is invoked in the main process.
 Returns [`Window`](https://developer.mozilla.org/en-US/docs/Web/API/Window) | null
 
 `features` is a comma-separated key-value list, following the standard format of
-the browser. Electron will parse [`BrowserWindowConstructorOptions`](structures/browser-window-options.md) out of this
-list where possible, for convenience. For full control and better ergonomics,
-consider using `webContents.setWindowOpenHandler` to customize the
-BrowserWindow creation.
+the browser. For convenience, Electron will parse a subset of presentational
+[`BrowserWindowConstructorOptions`](structures/browser-window-options.md) out of
+this list (such as `width`, `height`, `x`, `y`, `show`, `frame`, `title`,
+`backgroundColor`). Because the renderer is untrusted, options that cause the
+main process to access the filesystem or that are otherwise privileged (such as
+`icon`) are ignored. For full control and better ergonomics, use
+`webContents.setWindowOpenHandler` to customize the BrowserWindow creation from
+the main process.
 
 A subset of [`WebPreferences`](structures/web-preferences.md) can be set directly,
 unnested, from the features string: `zoomFactor`, `nodeIntegration`, `javascript`,
@@ -56,9 +60,10 @@ window.open('https://github.com', '_blank', 'top=500,left=200,frame=false,nodeIn
   enabled on the parent window.
 * JavaScript will always be disabled in the opened `window` if it is disabled on
   the parent window.
-* Non-standard features (that are not handled by Chromium or Electron) given in
-  `features` will be passed to any registered `webContents`'s
-  `did-create-window` event handler in the `options` argument.
+* Features that are not handled by Chromium and not in Electron's allowlist of
+  presentational `BrowserWindowConstructorOptions` are ignored. The raw
+  `features` string is still available to the main process via
+  `setWindowOpenHandler`.
 * `frameName` follows the specification of `target` located in the [native documentation](https://developer.mozilla.org/en-US/docs/Web/API/Window/open#parameters).
 * When opening `about:blank`, the child window's [`WebPreferences`](structures/web-preferences.md) will be copied
   from the parent window, and there is no way to override it because Chromium

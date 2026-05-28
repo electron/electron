@@ -18,13 +18,19 @@ describe('net module (session)', () => {
     await session.defaultSession.clearCache();
     if (respondNTimes.routeFailure && this.test) {
       if (!this.test.isFailed()) {
-        throw new Error('Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error');
+        throw new Error(
+          'Failing this test due an unhandled error in the respondOnce route handler, check the logs above for the actual error'
+        );
       }
     }
   });
 
   describe('HTTP basics', () => {
-    for (const extraOptions of [{}, { credentials: 'include' }, { useSessionCookies: false, credentials: 'include' }] as ClientRequestConstructorOptions[]) {
+    for (const extraOptions of [
+      {},
+      { credentials: 'include' },
+      { useSessionCookies: false, credentials: 'include' }
+    ] as ClientRequestConstructorOptions[]) {
       describe(`authentication when ${JSON.stringify(extraOptions)}`, () => {
         it('should share credentials with WebContents', async () => {
           const [user, pass] = ['user', 'pass'];
@@ -60,7 +66,10 @@ describe('net module (session)', () => {
             return response.writeHead(200).end('ok');
           }, 2);
           const customSession = session.fromPartition(`net-proxy-test-${Math.random()}`);
-          await customSession.setProxy({ proxyRules: proxyUrl.replace('http://', ''), proxyBypassRules: '<-loopback>' });
+          await customSession.setProxy({
+            proxyRules: proxyUrl.replace('http://', ''),
+            proxyBypassRules: '<-loopback>'
+          });
           const bw = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
           bw.webContents.on('login', (event, details, authInfo, cb) => {
             event.preventDefault();
@@ -68,7 +77,12 @@ describe('net module (session)', () => {
           });
           await bw.loadURL('http://127.0.0.1:9999');
           bw.close();
-          const request = net.request({ method: 'GET', url: 'http://127.0.0.1:9999', session: customSession, ...extraOptions });
+          const request = net.request({
+            method: 'GET',
+            url: 'http://127.0.0.1:9999',
+            session: customSession,
+            ...extraOptions
+          });
           let logInCount = 0;
           request.on('login', () => {
             logInCount++;
@@ -124,7 +138,12 @@ describe('net module (session)', () => {
         });
         await bw.loadURL('http://127.0.0.1:9999');
         bw.close();
-        const request = net.request({ method: 'GET', url: 'http://127.0.0.1:9999', session: customSession, credentials: 'omit' });
+        const request = net.request({
+          method: 'GET',
+          url: 'http://127.0.0.1:9999',
+          session: customSession,
+          credentials: 'omit'
+        });
         request.on('login', () => {
           expect.fail();
         });
@@ -187,7 +206,10 @@ describe('net module (session)', () => {
       expect(response.headers['x-cookie']).to.equal('undefined');
     });
 
-    for (const extraOptions of [{ useSessionCookies: true }, { credentials: 'include' }] as ClientRequestConstructorOptions[]) {
+    for (const extraOptions of [
+      { useSessionCookies: true },
+      { credentials: 'include' }
+    ] as ClientRequestConstructorOptions[]) {
       describe(`when ${JSON.stringify(extraOptions)}`, () => {
         it('should be able to use the sessions cookie store', async () => {
           const serverUrl = await respondOnce.toSingleURL((request, response) => {
@@ -313,7 +335,8 @@ describe('net module (session)', () => {
               name: 'wild_cookie',
               sameSite: 'no_restriction',
               value: cookie127Val
-            }), sess.cookies.set({
+            }),
+            sess.cookies.set({
               url: localhostUrl,
               name: 'wild_cookie',
               sameSite: 'no_restriction',
@@ -378,11 +401,13 @@ describe('net module (session)', () => {
     it('throws when an invalid domain is passed', async () => {
       const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
 
-      await expect(sess.cookies.set({
-        url: 'https://electronjs.org',
-        domain: 'wssss.iamabaddomain.fun',
-        name: 'cookie1'
-      })).to.eventually.be.rejectedWith(/The cookie was set with an invalid Domain attribute/);
+      await expect(
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'wssss.iamabaddomain.fun',
+          name: 'cookie1'
+        })
+      ).to.eventually.be.rejectedWith(/The cookie was set with an invalid Domain attribute/);
     });
 
     it('should be able correctly filter out cookies that are session', async () => {
@@ -459,14 +484,18 @@ describe('net module (session)', () => {
         expect(() => {
           session.defaultSession.webRequest.onBeforeRequest(
             { urls: ['*://www.googleapis.com'] },
-            (details, callback) => { callback({ cancel: false }); }
+            (details, callback) => {
+              callback({ cancel: false });
+            }
           );
         }).to.throw('Invalid url pattern *://www.googleapis.com: Empty path.');
 
         expect(() => {
           session.defaultSession.webRequest.onBeforeRequest(
             { urls: ['*://www.googleapis.com/', '*://blahblah.dev'] },
-            (details, callback) => { callback({ cancel: false }); }
+            (details, callback) => {
+              callback({ cancel: false });
+            }
           );
         }).to.throw('Invalid url pattern *://blahblah.dev: Empty path.');
       });
@@ -475,7 +504,9 @@ describe('net module (session)', () => {
         expect(() => {
           session.defaultSession.webRequest.onBeforeRequest(
             { urls: ['*://www.googleapis.com/'] },
-            (details, callback) => { callback({ cancel: false }); }
+            (details, callback) => {
+              callback({ cancel: false });
+            }
           );
         }).to.not.throw();
       });
@@ -489,19 +520,18 @@ describe('net module (session)', () => {
           response.end();
         });
         let requestIsIntercepted = false;
-        session.defaultSession.webRequest.onBeforeRequest(
-          (details, callback) => {
-            if (details.url === `${serverUrl}${requestUrl}`) {
-              requestIsIntercepted = true;
-              callback({
-                redirectURL: `${serverUrl}${redirectUrl}`
-              });
-            } else {
-              callback({
-                cancel: false
-              });
-            }
-          });
+        session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+          if (details.url === `${serverUrl}${requestUrl}`) {
+            requestIsIntercepted = true;
+            callback({
+              redirectURL: `${serverUrl}${redirectUrl}`
+            });
+          } else {
+            callback({
+              cancel: false
+            });
+          }
+        });
 
         const urlRequest = net.request(`${serverUrl}${requestUrl}`);
         const response = await getResponse(urlRequest);
@@ -597,7 +627,7 @@ describe('net module (session)', () => {
           webRequestDetails = details;
           cb({});
         });
-        const body = await net.fetch(serverUrl, { bypassCustomProtocolHandlers: true }).then(r => r.text());
+        const body = await net.fetch(serverUrl, { bypassCustomProtocolHandlers: true }).then((r) => r.text());
         expect(body).to.equal('hi');
         expect(webRequestDetails).to.have.property('url', serverUrl);
       });

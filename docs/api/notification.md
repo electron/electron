@@ -76,11 +76,89 @@ app.whenReady().then(() => {
 })
 ```
 
+#### `Notification.getHistory()` _macOS_
+
+Returns `Promise<Notification[]>` - Resolves with an array of `Notification` objects representing all delivered notifications still present in Notification Center.
+
+Each returned `Notification` is a live object connected to the corresponding delivered notification. Interaction events (`click`, `reply`, `action`, `close`) will fire on these objects when the user interacts with the notification in Notification Center. This is useful after an app restart to re-attach event handlers to notifications from a previous session.
+
+The returned notifications have their `id`, `groupId`, `title`, `subtitle`, and `body` properties populated from information available in the Notification Center. Other properties (e.g., `actions`, `silent`, `icon`) are not available from delivered notifications and will have default values.
+
+> [!NOTE]
+> Like all macOS notification APIs, this method requires the application to be
+> code-signed. In unsigned development builds, notifications are not delivered
+> to Notification Center and this method will resolve with an empty array.
+
+> [!NOTE]
+> Unlike notifications created with `new Notification()`, notifications returned
+> by `getHistory()` will remain visible in Notification Center when the object
+> is garbage collected. Calling `show()` on a restored notification will remove
+> the original from Notification Center and post a new one with the same
+> properties.
+
+```js
+const { Notification, app } = require('electron')
+
+app.whenReady().then(async () => {
+  // Restore notifications from a previous session
+  const notifications = await Notification.getHistory()
+  for (const n of notifications) {
+    console.log(`Found delivered notification: ${n.id} - ${n.title}`)
+    n.on('click', () => {
+      console.log(`User clicked: ${n.id}`)
+    })
+    n.on('reply', (event) => {
+      console.log(`User replied to ${n.id}: ${event.reply}`)
+    })
+  }
+  // Keep references so events continue to fire
+})
+```
+
+#### `Notification.remove(id)` _macOS_
+
+* `id` (string | string[]) - The notification identifier(s) to remove. These correspond to the `id` values set in the [`Notification` constructor](#new-notificationoptions).
+
+Removes one or more delivered notifications from Notification Center by their identifier(s).
+
+```js
+const { Notification } = require('electron')
+
+// Remove a single notification
+Notification.remove('my-notification-id')
+
+// Remove multiple notifications
+Notification.remove(['msg-1', 'msg-2', 'msg-3'])
+```
+
+#### `Notification.removeAll()` _macOS_
+
+Removes all of the app's delivered notifications from Notification Center.
+
+```js
+const { Notification } = require('electron')
+
+Notification.removeAll()
+```
+
+#### `Notification.removeGroup(groupId)` _macOS_
+
+* `groupId` string - The group identifier of the notifications to remove. This corresponds to the `groupId` value set in the [`Notification` constructor](#new-notificationoptions).
+
+Removes all delivered notifications with the given `groupId` from Notification Center.
+
+```js
+const { Notification } = require('electron')
+
+// Remove all notifications in the 'chat-thread-1' group
+Notification.removeGroup('chat-thread-1')
+```
+
 ### `new Notification([options])`
 
 * `options` Object (optional)
-  * `id` string (optional) _macOS_ _Windows_ - A unique identifier for the notification. On macOS, maps to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. On Windows, maps to the toast notification's [`Tag`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.tag) property. Defaults to a random UUID if not provided or if an empty string is passed. This can be used to remove or update previously delivered notifications.
-  * `groupId` string (optional) _macOS_ _Windows_ - A string identifier used to visually group notifications together in Notification Center / Action Center. On macOS, maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property. On Windows, maps to the toast notification's [`Group`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.group) property.
+  * `id` string (optional) _macOS_ _Windows_ - A unique identifier for the notification. On macOS, maps to `UNNotificationRequest`'s [`identifier`](https://developer.apple.com/documentation/usernotifications/unnotificationrequest/identifier) property. On Windows, maps to the toast notification's [`Tag`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.tag) property. Defaults to a random UUID if not provided or if an empty string is passed. Use this identifier with [`Notification.remove()`](#notificationremoveid-macos) to remove specific delivered notifications, or with [`Notification.getHistory()`](#notificationgethistory-macos) to identify them.
+  * `groupId` string (optional) _macOS_ _Windows_ - A string identifier used to visually group notifications together in Notification Center / Action Center. On macOS, maps to `UNNotificationContent`'s [`threadIdentifier`](https://developer.apple.com/documentation/usernotifications/unnotificationcontent/threadidentifier) property. On Windows, maps to the toast notification's [`Group`](https://learn.microsoft.com/en-us/uwp/api/windows.ui.notifications.toastnotification.group) property. Use this identifier with [`Notification.removeGroup()`](#notificationremovegroupgroupid-macos) to remove all notifications in a group.
   * `groupTitle` string (optional) _Windows_ - A title for the notification group header. When both `groupId` and `groupTitle` are specified, Windows will display a header above the notification that groups related notifications together. Maps to the toast notification's [`header`](https://learn.microsoft.com/en-us/windows/apps/design/shell/tiles-and-notifications/toast-headers) element.
   * `title` string (optional) - A title for the notification, which will be displayed at the top of the notification window when it is shown.
   * `subtitle` string (optional) _macOS_ - A subtitle for the notification, which will be displayed below the title.
@@ -254,7 +332,7 @@ app.whenReady().then(() => {
 })
 ```
 
-#### Event: 'failed' _Windows_
+#### Event: 'failed' _macOS_ _Windows_
 
 Returns:
 
@@ -291,6 +369,10 @@ call this method before the OS will display it.
 
 If the notification has been shown before, this method will dismiss the previously
 shown notification and create a new one with identical properties.
+
+On macOS, calling `show()` on a notification returned by `Notification.getHistory()` will
+remove the original notification from Notification Center and post a new one with the same
+properties.
 
 ```js
 const { Notification, app } = require('electron')

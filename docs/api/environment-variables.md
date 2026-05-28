@@ -203,13 +203,22 @@ the one downloaded by `npm install`. Usage:
 export ELECTRON_OVERRIDE_DIST_PATH=/Users/username/projects/electron/out/Testing
 ```
 
-### `ELECTRON_SKIP_BINARY_DOWNLOAD`
+### `ELECTRON_INSTALL_PLATFORM`
 
-If you want to install your project's dependencies but don't need to use Electron functionality,
-you can set the `ELECTRON_SKIP_BINARY_DOWNLOAD` environment variable to prevent the binary from being
-downloaded. For instance, this feature can be useful in continuous integration environments when
-running unit tests that mock out the `electron` module.
+Manually overrides platform used by `electron` package during an install.
+This can be useful if you are on one platform (e.g macOS) but want to
+download binaries for another platform (e.g Windows or Linux). Usage:
 
 ```sh
-ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm install
+ELECTRON_INSTALL_PLATFORM=darwin npm install
+```
+
+### `ELECTRON_INSTALL_ARCH`
+
+Manually overrides architecture used by `electron` package during an install.
+This can be useful if you are on one arch (e.g `arm64`) but want to download
+binaries meant for another arch. Note that this will not work under Rosetta. Usage:
+
+```sh
+ELECTRON_INSTALL_ARCH=arm64 npm install
 ```

@@ -87,7 +87,7 @@ WinCaptionButtonContainer::WinCaptionButtonContainer(WinFrameView* frame_view)
   UpdateButtonToolTipsForWindowControlsOverlay();
 }
 
-WinCaptionButtonContainer::~WinCaptionButtonContainer() {}
+WinCaptionButtonContainer::~WinCaptionButtonContainer() = default;
 
 int WinCaptionButtonContainer::NonClientHitTest(const gfx::Point& point) const {
   DCHECK(HitTestPoint(point))

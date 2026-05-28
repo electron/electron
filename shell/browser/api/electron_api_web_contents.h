@@ -42,6 +42,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/models/image_model.h"
 #include "v8/include/cppgc/persistent.h"
 
@@ -95,7 +96,6 @@ class Cursor;
 }
 
 class DevToolsEyeDropper;
-class SkRegion;
 
 namespace electron {
 
@@ -197,6 +197,7 @@ class WebContents final : public ExclusiveAccessContext,
   int32_t GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   [[nodiscard]] Type type() const { return type_; }
+  v8::Local<v8::Value> Clone(v8::Isolate* isolate);
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void Reload();
   void ReloadIgnoringCache();
@@ -335,6 +336,8 @@ class WebContents final : public ExclusiveAccessContext,
   double GetZoomLevel() const;
   void SetZoomFactor(gin_helper::ErrorThrower thrower, double factor);
   double GetZoomFactor() const;
+  void SetZoomMode(gin_helper::ErrorThrower thrower, const std::string& mode);
+  std::string GetZoomMode() const;
 
   // Callback triggered on permission response.
   void OnEnterFullscreenModeForTab(
@@ -635,6 +638,11 @@ class WebContents final : public ExclusiveAccessContext,
       content::NavigationHandle* navigation_handle) override;
   void ReadyToCommitNavigation(
       content::NavigationHandle* navigation_handle) override;
+  // Pushes preload script contents + process info to a sandboxed renderer over
+  // the navigation's associated mojo channel, ahead of CommitNavigation.
+  // Replaces the BROWSER_SANDBOX_LOAD sync IPC for the common path.
+  void MaybeSendRendererStartupData(
+      content::NavigationHandle* navigation_handle);
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   void WebContentsDestroyed() override;
@@ -821,7 +829,10 @@ class WebContents final : public ExclusiveAccessContext,
   bool enable_devtools_ = true;
 
   // Observers of this WebContents.
-  base::ObserverList<ExtendedWebContentsObserver> observers_;
+  base::ObserverList<ExtendedWebContentsObserver,
+                     false,
+                     base::ObserverListReentrancyPolicy::kAllowReentrancy>
+      observers_;
 
   v8::Global<v8::Value> pending_child_web_preferences_;
 
@@ -877,13 +888,19 @@ class WebContents final : public ExclusiveAccessContext,
   const scoped_refptr<base::TaskRunner> print_task_runner_;
 #endif
 
-  // Track navigation state in order to avoid potential re-entrancy crashes.
+  // Track navigation state in order to avoid potential re-entrancy crashes
+  // in LoadURL. Checked by LoadURL to reject re-entrant navigation attempts.
   bool is_safe_to_delete_ = true;
+
+  // Set to true while dispatching JS events via Emit(). When true, Destroy()
+  // defers guest WebContents deletion to prevent use-after-free when a JS
+  // handler calls webContents.destroy() mid-emission.
+  bool is_emitting_event_ = false;
 
   // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
-  std::unique_ptr<SkRegion> draggable_region_;
+  std::optional<SkRegion> draggable_region_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };

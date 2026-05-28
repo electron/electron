@@ -25,19 +25,15 @@
 
 namespace electron {
 
-WinFrameView::WinFrameView() = default;
-
-WinFrameView::~WinFrameView() = default;
-
-void WinFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
-  window_ = window;
-  frame_ = frame;
-
+WinFrameView::WinFrameView(NativeWindowViews* window, views::Widget* frame)
+    : FramelessView{window, frame} {
   if (window->IsWindowControlsOverlayEnabled()) {
     caption_button_container_ =
         AddChildView(std::make_unique<WinCaptionButtonContainer>(this));
   }
 }
+
+WinFrameView::~WinFrameView() = default;
 
 void WinFrameView::InvalidateCaptionButtons() {
   if (!caption_button_container_)
@@ -261,7 +257,7 @@ void WinFrameView::LayoutWindowControlsOverlay() {
   window()->NotifyLayoutWindowControlsOverlay();
 }
 
-bool WinFrameView::GetShouldPaintAsActive() {
+bool WinFrameView::GetShouldPaintAsActive() const {
   return ShouldPaintAsActive();
 }
 
@@ -284,14 +280,29 @@ gfx::Size WinFrameView::GetMaximumSize() const {
   return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
 }
 
+int WinFrameView::ResizingBorderHitTest(const gfx::Point& point) {
+  if (RestoredFrameBorderInsets().IsEmpty())
+    return FramelessView::ResizingBorderHitTest(point);
+
+  // With insets, side/bottom resize targets sit outside the frame and are
+  // handled by WM_NCHITTEST, so the internal hit test can be zero-ed out.
+  // The exception is the top edge for frameless windows, which still need
+  // an inner resize band since there is no non-client titlebar to provide one.
+  const gfx::Insets inside =
+      window_->has_frame()
+          ? gfx::Insets()
+          : gfx::Insets::TLBR(kResizeInsideBoundsSize, 0, 0, 0);
+  return ResizingBorderHitTestImpl(point, inside);
+}
+
 gfx::Insets WinFrameView::RestoredFrameBorderInsets() const {
-  if (window_->has_frame() || !window_->has_thick_frame() ||
-      !window_->IsResizable())
+  if (window_->has_frame() || !window_->has_thick_frame())
     return {};
 
-  const int thickness =
-      display::win::GetScreenWin()->GetSystemMetricsInDIP(SM_CXSIZEFRAME) +
-      display::win::GetScreenWin()->GetSystemMetricsInDIP(SM_CXPADDEDBORDER);
+  // TODO(mitchchn): despite the name, this method gives the correct
+  // DPI-adjusted insets for the sides, not the top, when restored.
+  const int thickness = FrameTopBorderThickness(/*restored=*/true);
+  // Inverse of ResizingBorderHitTest: resize insets go on sides but not top.
   return gfx::Insets::TLBR(0, thickness, thickness, thickness);
 }
 

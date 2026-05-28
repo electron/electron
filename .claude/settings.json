@@ -11,6 +11,7 @@
       "Bash(e patches:*)",
       "Bash(e sync:*)",
       "Skill(electron-chromium-upgrade)",
+      "Skill(electron-node-upgrade)",
       "Read(*)",
       "Bash(echo:*)",
       "Bash(e build:*)",

@@ -12,7 +12,9 @@
 #include "base/functional/callback_helpers.h"
 #include "base/strings/string_split.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/global_routing_id.h"
 #include "extensions/browser/extension_navigation_ui_data.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_response_headers.h"
@@ -28,6 +30,30 @@
 #include "url/origin.h"
 
 namespace electron {
+
+namespace {
+
+class NoOpHeaderClient final : public network::mojom::TrustedHeaderClient {
+ public:
+  NoOpHeaderClient() = default;
+  NoOpHeaderClient(const NoOpHeaderClient&) = delete;
+  NoOpHeaderClient& operator=(const NoOpHeaderClient&) = delete;
+  ~NoOpHeaderClient() override = default;
+
+  void OnBeforeSendHeaders(const net::HttpRequestHeaders& headers,
+                           OnBeforeSendHeadersCallback callback) override {
+    std::move(callback).Run(net::OK, std::nullopt);
+  }
+
+  void OnHeadersReceived(const std::string& headers,
+                         const net::IPEndPoint& remote_endpoint,
+                         const std::optional<net::SSLInfo>& ssl_info,
+                         OnHeadersReceivedCallback callback) override {
+    std::move(callback).Run(net::OK, std::nullopt, std::nullopt);
+  }
+};
+
+}  // namespace
 
 ProxyingURLLoaderFactory::InProgressRequest::FollowRedirectParams::
     FollowRedirectParams() = default;
@@ -116,7 +142,9 @@ void ProxyingURLLoaderFactory::InProgressRequest::UpdateRequestInfo() {
   network::ResourceRequest request_for_info = request_;
   request_for_info.request_initiator = original_initiator_;
   info_.emplace(extensions::WebRequestInfoInitParams(
-      request_id_, factory_->render_process_id_, frame_routing_id_,
+      request_id_,
+      content::GlobalRenderFrameHostId(factory_->render_process_id_,
+                                       frame_routing_id_),
       factory_->navigation_ui_data_ ? factory_->navigation_ui_data_->DeepCopy()
                                     : nullptr,
       request_for_info, false,
@@ -869,8 +897,14 @@ void ProxyingURLLoaderFactory::OnLoaderCreated(
     int32_t request_id,
     mojo::PendingReceiver<network::mojom::TrustedHeaderClient> receiver) {
   auto it = network_request_id_to_web_request_id_.find(request_id);
-  if (it == network_request_id_to_web_request_id_.end())
+  if (it == network_request_id_to_web_request_id_.end()) {
+    // Chromium can require the header client pipe to be bound even when
+    // Electron is using the pass-through path. Dropping the receiver here
+    // disconnects the URLLoader and causes the request to fail with ERR_FAILED.
+    mojo::MakeSelfOwnedReceiver(std::make_unique<NoOpHeaderClient>(),
+                                std::move(receiver));
     return;
+  }
 
   auto request_it = requests_.find(it->second);
   DCHECK(request_it != requests_.end());

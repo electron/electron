@@ -20,6 +20,7 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/models/image_model.h"
 #include "v8/include/cppgc/persistent.h"
@@ -51,8 +52,8 @@ struct Converter<SharingItem> {
 
 namespace electron::api {
 
-const gin::WrapperInfo Menu::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                             gin::kElectronMenu};
+const gin::WrapperInfo Menu::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronMenu);
 
 Menu::Menu(gin::Arguments* args)
     : model_(std::make_unique<ElectronMenuModel>(this)) {
@@ -114,6 +115,18 @@ std::u16string Menu::GetLabelForCommandId(int command_id) const {
   v8::HandleScope scope(isolate);
   v8::Local<v8::Value> val = gin_helper::CallMethod(
       isolate, const_cast<Menu*>(this), "_getLabelForCommandId", command_id);
+  std::u16string label;
+  if (!gin::ConvertFromV8(isolate, val, &label))
+    label.clear();
+  return label;
+}
+
+std::u16string Menu::GetAccessibilityLabelForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val =
+      gin_helper::CallMethod(isolate, const_cast<Menu*>(this),
+                             "_getAccessibilityLabelForCommandId", command_id);
   std::u16string label;
   if (!gin::ConvertFromV8(isolate, val, &label))
     label.clear();

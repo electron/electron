@@ -107,7 +107,7 @@ When signing the app with `@electron/osx-sign`, it will automatically add the
 necessary entitlements to your app's entitlements.
 
 <details>
-<summary>Extra steps without `electron-osx-sign`</summary>
+<summary>Extra steps without `@electron/osx-sign`</summary>
 
 If you are signing your app without using `@electron/osx-sign`, you must ensure
 the app bundle's entitlements have at least following keys:

@@ -30,12 +30,17 @@ namespace gin {
 class Arguments;
 }  // namespace gin
 
+#if BUILDFLAG(IS_LINUX)
+namespace views {
+class FrameViewLinux;
+}  // namespace views
+#endif
+
 namespace electron {
 
 #if BUILDFLAG(IS_LINUX)
-class ClientFrameViewLinux;
+class NativeFrameViewLinux;
 class GlobalMenuBarX11;
-class LinuxFrameLayout;
 #endif
 
 #if BUILDFLAG(SUPPORTS_OZONE_X11)
@@ -201,7 +206,7 @@ class NativeWindowViews : public NativeWindow,
   SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
 
 #if BUILDFLAG(IS_LINUX)
-  LinuxFrameLayout* GetLinuxFrameLayout();
+  views::FrameViewLinux* GetFrameViewLinux() const;
 #endif
 
  private:
@@ -305,6 +310,8 @@ class NativeWindowViews : public NativeWindow,
 
   // Whether to show the WS_THICKFRAME style.
   bool thick_frame_ = true;
+
+  bool content_protected_ = false;
 
   // The bounds of window before maximize/fullscreen.
   gfx::Rect restore_bounds_;

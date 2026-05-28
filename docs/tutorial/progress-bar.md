@@ -20,13 +20,9 @@ On macOS, the progress bar will be displayed as a part of the dock icon.
 
 ![macOS Progress Bar](../images/macos-progress-bar.png)
 
-On Linux, the Unity graphical interface also has a similar feature that allows
-you to specify the progress bar in the launcher.
-
-![Linux Progress Bar](../images/linux-progress-bar.png)
-
 > NOTE: on Windows, each window can have its own progress bar, whereas on macOS
-and Linux (Unity) there can be only one progress bar for the application.
+there can be only one progress bar for the application. On Linux, progress bars
+are not supported.
 
 ----
 
@@ -101,7 +97,7 @@ app.on('activate', () => {
 })
 ```
 
-After launching the Electron application, the dock (macOS) or taskbar (Windows, Unity)
+After launching the Electron application, the dock (macOS) or taskbar (Windows)
 should show a progress bar that starts at zero and progresses through 100% to completion.
 It should then show indeterminate (Windows) or pin to 100% (other operating systems)
 briefly and then loop.
@@ -113,4 +109,4 @@ when using [Mission Control](https://support.apple.com/en-us/HT204100):
 
 ![Mission Control Progress Bar](../images/mission-control-progress-bar.png)
 
-[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress-options
+[setprogressbar]: ../api/browser-window.md#winsetprogressbarprogress-options-windows-macos

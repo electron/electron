@@ -29,9 +29,10 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin {
 
@@ -295,7 +296,8 @@ bool IsDeletion(net::CookieChangeCause cause) {
 
 }  // namespace
 
-gin::DeprecatedWrapperInfo Cookies::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo Cookies::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronCookies);
 
 Cookies::Cookies(ElectronBrowserContext* browser_context)
     : browser_context_{browser_context} {
@@ -463,10 +465,10 @@ void Cookies::OnCookieChanged(const net::CookieChangeInfo& change) {
 }
 
 // static
-gin_helper::Handle<Cookies> Cookies::Create(
-    v8::Isolate* isolate,
-    ElectronBrowserContext* browser_context) {
-  return gin_helper::CreateHandle(isolate, new Cookies{browser_context});
+Cookies* Cookies::Create(v8::Isolate* isolate,
+                         ElectronBrowserContext* browser_context) {
+  return cppgc::MakeGarbageCollected<Cookies>(
+      isolate->GetCppHeap()->GetAllocationHandle(), browser_context);
 }
 
 gin::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(
@@ -479,8 +481,12 @@ gin::ObjectTemplateBuilder Cookies::GetObjectTemplateBuilder(
       .SetMethod("flushStore", &Cookies::FlushStore);
 }
 
-const char* Cookies::GetTypeName() {
-  return "Cookies";
+const gin::WrapperInfo* Cookies::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* Cookies::GetHumanReadableName() const {
+  return "Electron / Cookies";
 }
 
 }  // namespace electron::api

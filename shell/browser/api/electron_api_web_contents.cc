@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "base/base64.h"
+#include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/flat_set.h"
 #include "base/containers/id_map.h"
@@ -83,11 +84,14 @@
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "media/base/mime_util.h"
+#include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/network/public/cpp/web_sandbox_flags.h"
+#include "services/network/public/mojom/web_sandbox_flags.mojom-shared.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/memory_instrumentation.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/electron_api_browser_window.h"
@@ -108,6 +112,9 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
+#include "shell/browser/preload_code_cache.h"
+#include "shell/browser/preload_script.h"
+#include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -121,6 +128,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/api/electron_bindings.h"
+#include "shell/common/asar/asar_util.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/base_converter.h"
@@ -156,6 +164,7 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "third_party/blink/public/common/peerconnection/webrtc_ip_handling_policy.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 #include "third_party/blink/public/mojom/frame/find_in_page.mojom.h"
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
@@ -464,6 +473,8 @@ constexpr char kFooterTemplate[] = "footerTemplate";
 constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
 constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
 constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
+constexpr char kDpiHorizontal[] = "horizontal";
+constexpr char kDpiVertical[] = "vertical";
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 constexpr std::string_view CursorTypeToString(
@@ -970,14 +981,51 @@ WebContents::WebContents(v8::Isolate* isolate,
                             options);
 }
 
+namespace {
+std::optional<WebContentsZoomController::ZoomMode> ParseZoomMode(
+    const std::string& mode) {
+  if (mode == "default")
+    return WebContentsZoomController::ZOOM_MODE_DEFAULT;
+  if (mode == "isolated")
+    return WebContentsZoomController::ZOOM_MODE_ISOLATED;
+  if (mode == "manual")
+    return WebContentsZoomController::ZOOM_MODE_MANUAL;
+  if (mode == "disabled")
+    return WebContentsZoomController::ZOOM_MODE_DISABLED;
+  return std::nullopt;
+}
+}  // namespace
+
 void WebContents::InitZoomController(content::WebContents* web_contents,
                                      const gin_helper::Dictionary& options) {
   WebContentsZoomController* const zoom_controller =
       WebContentsZoomController::GetOrCreateForWebContents(web_contents);
 
-  double zoom_factor;
+  double zoom_factor = 0;
   if (options.Get(options::kZoomFactor, &zoom_factor))
     zoom_controller->SetDefaultZoomFactor(zoom_factor);
+
+  std::string zoom_mode_str;
+  if (options.Get(options::kZoomMode, &zoom_mode_str)) {
+    // Set mode and persist flag directly on the controller rather than going
+    // through SetZoomMode(), which manipulates HostZoomMap temporary zoom
+    // levels and requires a fully initialized RenderFrameHost.
+    // The mode will take full effect once the first navigation commits.
+    auto mode = ParseZoomMode(zoom_mode_str);
+    if (mode) {
+      bool persist = *mode == WebContentsZoomController::ZOOM_MODE_ISOLATED ||
+                     *mode == WebContentsZoomController::ZOOM_MODE_MANUAL;
+      zoom_controller->SetPersistZoomMode(persist);
+      zoom_controller->set_zoom_mode(*mode);
+      // When persisting zoom mode AND a custom zoom factor is set, initialize
+      // the tracked zoom level from the factor. Otherwise the first navigation
+      // would apply zoom_level_=0 (default) instead of the factor, because
+      // SetZoomFactorOnNavigationIfNeeded is skipped in persist mode.
+      if (persist && zoom_factor > 0)
+        zoom_controller->set_zoom_level(
+            blink::ZoomFactorToZoomLevel(zoom_factor));
+    }
+  }
 
   // Nothing to do with ZoomController, but this function gets called in all
   // init cases!
@@ -1120,15 +1168,18 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  // DevTools frontend messages use base::Unretained delegate callbacks.
+  // Clear the delegate before other teardown work can trigger callbacks
+  // into this partially destroyed WebContents.
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+
   if (web_contents()) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         web_contents()->GetBrowserContext()->GetPermissionControllerDelegate());
     if (permission_manager)
       permission_manager->CancelPendingRequests(web_contents());
   }
-
-  if (inspectable_web_contents_)
-    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
 
   if (owner_window_) {
     owner_window_->RemoveBackgroundThrottlingSource(this);
@@ -1180,7 +1231,9 @@ void WebContents::DeleteThisIfAlive() {
 void WebContents::Destroy() {
   // The content::WebContents should be destroyed asynchronously when possible
   // as user may choose to destroy WebContents during an event of it.
-  if (Browser::Get()->is_shutting_down() || is_guest()) {
+  if (Browser::Get()->is_shutting_down()) {
+    DeleteThisIfAlive();
+  } else if (is_guest() && is_safe_to_delete_ && !is_emitting_event_) {
     DeleteThisIfAlive();
   } else {
     content::GetUIThreadTaskRunner({})->PostTask(
@@ -1393,6 +1446,26 @@ content::WebContents* WebContents::OpenURLFromTab(
         navigation_handle_callback) {
   auto weak_this = GetWeakPtr();
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
+    content::FrameTreeNode* initiator =
+        params.frame_tree_node_id ? content::FrameTreeNode::GloballyFindByID(
+                                        params.frame_tree_node_id)
+                                  : nullptr;
+    if (initiator && !initiator->IsMainFrame()) {
+      using SandboxFlags = network::mojom::WebSandboxFlags;
+      const SandboxFlags flags = initiator->active_sandbox_flags();
+      auto allow = [flags](SandboxFlags flag) {
+        return (flags & flag) == SandboxFlags::kNone;
+      };
+      if (!allow(SandboxFlags::kPopups)) {
+        if (auto* rfh = initiator->current_frame_host()) {
+          rfh->AddMessageToConsole(
+              blink::mojom::ConsoleMessageLevel::kError,
+              "Blocked opening a new window because the iframe is sandboxed "
+              "and the 'allow-popups' keyword is not set.");
+        }
+        return nullptr;
+      }
+    }
     Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
          params.post_data);
     return nullptr;
@@ -1440,17 +1513,21 @@ void WebContents::BeforeUnloadFired(content::WebContents* tab,
 
 void WebContents::SetContentsBounds(content::WebContents* source,
                                     const gfx::Rect& rect) {
+  base::AutoReset<bool> resetter(&is_emitting_event_, true);
   if (!Emit("content-bounds-updated", rect))
     observers_.Notify(&ExtendedWebContentsObserver::OnSetContentBounds, rect);
 }
 
 void WebContents::CloseContents(content::WebContents* source) {
-  Emit("close");
+  {
+    base::AutoReset<bool> resetter(&is_emitting_event_, true);
+    Emit("close");
 
-  auto* autofill_driver_factory =
-      AutofillDriverFactory::FromWebContents(web_contents());
-  if (autofill_driver_factory) {
-    autofill_driver_factory->CloseAllPopups();
+    auto* autofill_driver_factory =
+        AutofillDriverFactory::FromWebContents(web_contents());
+    if (autofill_driver_factory) {
+      autofill_driver_factory->CloseAllPopups();
+    }
   }
 
   Destroy();
@@ -1963,6 +2040,7 @@ void WebContents::FrameDeleted(content::FrameTreeNodeId frame_tree_node_id) {
 }
 
 void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
+  base::AutoReset<bool> resetter(&is_emitting_event_, true);
   const auto id = render_view_host->GetProcess()->GetID().GetUnsafeValue();
   // This event is necessary for tracking any states with respect to
   // intermediate render view hosts aka speculative render view hosts. Currently
@@ -2139,7 +2217,7 @@ void WebContents::DraggableRegionsChanged(
     return;
   }
 
-  draggable_region_ = DraggableRegionsToSkRegion(regions);
+  draggable_region_.emplace(DraggableRegionsToSkRegion(regions));
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -2156,7 +2234,9 @@ void WebContents::PrintCrossProcessSubframe(
 #endif
 
 SkRegion* WebContents::draggable_region() {
-  return g_disable_draggable_regions ? nullptr : draggable_region_.get();
+  return g_disable_draggable_regions || !draggable_region_
+             ? nullptr
+             : &*draggable_region_;
 }
 
 void WebContents::DidStartNavigation(
@@ -2171,10 +2251,84 @@ void WebContents::DidRedirectNavigation(
   EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
+// Pushes preload contents + process.env + helperExecPath over an associated
+// channel ordered before CommitNavigation, so the renderer never has to ask.
+void WebContents::MaybeSendRendererStartupData(
+    content::NavigationHandle* navigation_handle) {
+  if (!WebContentsPreferences::ShouldUseSandbox(web_contents()))
+    return;
+  // May be null for a WebContents that never went through a
+  // BrowserWindow/webContents constructor (extension pages, devtools); such a
+  // WebContents has no per-WC preload but still gets session preloads + env.
+  auto* web_prefs = WebContentsPreferences::From(web_contents());
+
+  // Match RendererClientBase::ShouldLoadPreload() — only push for documents
+  // that will actually compile the sandbox bundle.
+  const GURL& url = navigation_handle->GetURL();
+  bool main_frame = navigation_handle->IsInMainFrame();
+  bool allow_subframes =
+      web_prefs && web_prefs->AllowsNodeIntegrationInSubFrames();
+  bool is_devtools_like =
+      url.SchemeIs("devtools") || url.SchemeIs("chrome-extension");
+  if (!main_frame && !allow_subframes && !is_devtools_like)
+    return;
+
+  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
+  if (!rfh || !rfh->IsRenderFrameLive())
+    return;
+
+  // Build the ordered preload list: session-registered preloads of type
+  // 'frame' first (in registration order), then the per-WebContents
+  // webPreferences.preload last — same order as the legacy
+  // BROWSER_SANDBOX_LOAD handler's getPreloadScriptsFromEvent().
+  mojom::RendererStartupDataPtr data;
+  {
+    // We're on the UI thread. The asar is mmap'd and offset-indexed so warm
+    // reads are fast; cold reads block briefly. Crucially the renderer is NOT
+    // parked waiting on us here — we haven't sent CommitNavigation yet — so
+    // unlike the old sync IPC handler this can't amplify under contention.
+    ScopedAllowBlockingForElectron allow_blocking;
+    data = renderer_startup_data::Build(rfh->GetBrowserContext(),
+                                        PreloadScript::ScriptType::kWebFrame);
+    std::optional<base::FilePath> preload;
+    if (web_prefs)
+      preload = web_prefs->GetPreloadPath();
+    if (preload && preload->IsAbsolute()) {
+      auto ps = mojom::PreloadScriptData::New();
+      ps->id = "preload-" + preload->AsUTF8Unsafe();
+      ps->file_path = preload->AsUTF8Unsafe();
+      std::string contents;
+      if (asar::ReadFileToString(*preload, &contents)) {
+        ps->contents.assign(contents.begin(), contents.end());
+        std::vector<uint8_t> cache = preload_code_cache::Get(ps->id);
+        if (!cache.empty())
+          ps->code_cache = std::move(cache);
+      } else {
+        ps->contents.clear();
+        ps->error =
+            "ENOENT: no such file or directory, open '" + ps->file_path + "'";
+      }
+      data->preload_scripts.push_back(std::move(ps));
+    }
+  }
+
+  // GetRemoteAssociatedInterfaces() routes over the same channel as
+  // content.mojom.Frame (the navigation channel), so this message is ordered
+  // before the CommitNavigation that the browser sends right after
+  // ReadyToCommitNavigation returns. The renderer's ElectronApiServiceImpl —
+  // created in RenderFrameCreated, before any navigation — will have cached it
+  // by the time DidCreateScriptContext fires.
+  mojo::AssociatedRemote<mojom::ElectronFrameStartup> frame_startup;
+  rfh->GetRemoteAssociatedInterfaces()->GetInterface(&frame_startup);
+  frame_startup->SetStartupData(std::move(data));
+}
+
 void WebContents::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
   base::AutoReset<bool> resetter(&is_safe_to_delete_, false);
   EmitNavigationEvent("-ready-to-commit-navigation", navigation_handle);
+
+  MaybeSendRendererStartupData(navigation_handle);
 
   // Don't focus content in an inactive window.
   if (!owner_window())
@@ -2202,6 +2356,9 @@ void WebContents::DidFinishNavigation(
 
   if (!navigation_handle->HasCommitted())
     return;
+
+  base::AutoReset<bool> resetter(&is_emitting_event_, true);
+
   bool is_main_frame = navigation_handle->IsInMainFrame();
   content::RenderFrameHost* frame_host =
       navigation_handle->GetRenderFrameHost();
@@ -2211,9 +2368,6 @@ void WebContents::DidFinishNavigation(
     frame_routing_id = frame_host->GetRoutingID();
   }
   if (!navigation_handle->IsErrorPage()) {
-    // FIXME: All the Emit() calls below could potentially result in |this|
-    // being destroyed (by JS listening for the event and calling
-    // webContents.destroy()).
     auto url = navigation_handle->GetURL();
     bool is_same_document = navigation_handle->IsSameDocument();
     if (is_same_document) {
@@ -2231,6 +2385,9 @@ void WebContents::DidFinishNavigation(
       Emit("did-frame-navigate", url, http_response_code, http_status_text,
            is_main_frame, frame_process_id, frame_routing_id);
       if (is_main_frame) {
+        // Ensure zoom is updated before JS handlers see the event.
+        if (auto* zc = GetZoomController())
+          zc->ProcessNavigationZoom(navigation_handle);
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
 
@@ -2316,9 +2473,16 @@ void WebContents::DevToolsOpened() {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   DCHECK(inspectable_web_contents_);
-  DCHECK(inspectable_web_contents_->GetDevToolsWebContents());
-  auto handle = FromOrCreate(
-      isolate, inspectable_web_contents_->GetDevToolsWebContents());
+
+  // GetDevToolsWebContents() can be null here when DevTools were closed
+  // re-entrantly during InspectableWebContents::LoadCompleted() — e.g. when
+  // a JS handler for `devtools-focused` (fired from the activate path inside
+  // SetIsDocked) calls closeDevTools() before LoadCompleted finishes.
+  content::WebContents* const dtwc = GetDevToolsWebContents();
+  if (!dtwc)
+    return;
+
+  auto handle = FromOrCreate(isolate, dtwc);
   devtools_web_contents_.Reset(isolate, handle.ToV8());
 
   // Set inspected tabID.
@@ -2326,12 +2490,11 @@ void WebContents::DevToolsOpened() {
       "DevToolsAPI", "setInspectedTabId", base::Value(ID()));
 
   // Inherit owner window in devtools when it doesn't have one.
-  auto* devtools = inspectable_web_contents_->GetDevToolsWebContents();
-  bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
-  if (owner_window() && !has_window) {
-    CHECK(!owner_window_.WasInvalidated());
+  bool has_window = dtwc->GetUserData(NativeWindowRelay::UserDataKey());
+  if (owner_window_ && !has_window) {
+    DCHECK(!owner_window_.WasInvalidated());
     DCHECK_EQ(handle->owner_window(), nullptr);
-    handle->SetOwnerWindow(devtools, owner_window());
+    handle->SetOwnerWindow(dtwc, owner_window());
   }
 
   Emit("devtools-opened");
@@ -2460,6 +2623,33 @@ base::ProcessId WebContents::GetOSProcessID() const {
   const auto& process =
       web_contents()->GetPrimaryMainFrame()->GetProcess()->GetProcess();
   return process.IsValid() ? process.Pid() : base::kNullProcessId;
+}
+
+v8::Local<v8::Value> WebContents::Clone(v8::Isolate* isolate) {
+  auto new_contents = web_contents()->Clone();
+  DCHECK(new_contents);
+
+  // Copy WebContentsPreferences from the original WebContents to the cloned one
+  v8::Local<v8::Value> current_prefs = GetLastWebPreferences(isolate);
+  gin_helper::Dictionary pref_dict;
+  gin::ConvertFromV8(isolate, gin::ConvertToV8(isolate, current_prefs),
+                     &pref_dict);
+  new WebContentsPreferences(new_contents.get(), pref_dict);
+
+  // Use CreateAndTake to properly take ownership of the cloned WebContents
+  // and create a new wrapper with the appropriate type
+  auto wrapper = CreateAndTake(isolate, std::move(new_contents), type_);
+
+  // We call HandleNewRenderFrame here as at this point the empty "about:blank"
+  // render frame has already been created. This ensures that preferences like
+  // background color, scheduler throttling, and Mojo connection are properly
+  // set up for the cloned WebContents.
+  auto* frame = wrapper->MainFrame();
+  if (frame) {
+    wrapper->HandleNewRenderFrame(frame);
+  }
+
+  return gin::ConvertToV8(isolate, wrapper);
 }
 
 GURL WebContents::GetURL() const {
@@ -3017,7 +3207,7 @@ void WebContents::InspectElement(int x, int y) {
   if (!enable_devtools_ || !inspectable_web_contents_)
     return;
 
-  if (!inspectable_web_contents_->GetDevToolsWebContents())
+  if (!GetDevToolsWebContents())
     OpenDevTools(nullptr);
   inspectable_web_contents_->InspectElement(x, y);
 }
@@ -3356,10 +3546,16 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Set custom dots per inch (dpi)
   if (gin_helper::Dictionary dpi; options.Get(kDpi, &dpi)) {
+    // `webContents.print()` exposes `dpi: { horizontal, vertical }` in JS.
+    // Keep backward compatibility with internal key names as a fallback.
     settings.Set(printing::kSettingDpiHorizontal,
-                 dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72));
+                 dpi.ValueOrDefault(
+                     kDpiHorizontal,
+                     dpi.ValueOrDefault(printing::kSettingDpiHorizontal, 72)));
     settings.Set(printing::kSettingDpiVertical,
-                 dpi.ValueOrDefault(printing::kSettingDpiVertical, 72));
+                 dpi.ValueOrDefault(
+                     kDpiVertical,
+                     dpi.ValueOrDefault(printing::kSettingDpiVertical, 72)));
   }
 
   print_task_runner_->PostTaskAndReplyWithResult(
@@ -3898,6 +4094,37 @@ double WebContents::GetZoomFactor() const {
   return blink::ZoomLevelToZoomFactor(level);
 }
 
+void WebContents::SetZoomMode(gin_helper::ErrorThrower thrower,
+                              const std::string& mode) {
+  auto zoom_mode = ParseZoomMode(mode);
+  if (!zoom_mode) {
+    thrower.ThrowError(
+        "'zoomMode' must be 'default', 'isolated', 'manual', or 'disabled'");
+    return;
+  }
+
+  // When set via the Electron JS API, persist isolated/manual modes across
+  // navigations. The extensions API calls SetZoomMode on the controller
+  // directly and won't set this flag, preserving Chromium's default behavior.
+  GetZoomController()->SetPersistZoomMode(
+      *zoom_mode == WebContentsZoomController::ZOOM_MODE_ISOLATED ||
+      *zoom_mode == WebContentsZoomController::ZOOM_MODE_MANUAL);
+  GetZoomController()->SetZoomMode(*zoom_mode);
+}
+
+std::string WebContents::GetZoomMode() const {
+  switch (GetZoomController()->zoom_mode()) {
+    case WebContentsZoomController::ZOOM_MODE_ISOLATED:
+      return "isolated";
+    case WebContentsZoomController::ZOOM_MODE_MANUAL:
+      return "manual";
+    case WebContentsZoomController::ZOOM_MODE_DISABLED:
+      return "disabled";
+    default:
+      return "default";
+  }
+}
+
 void WebContents::SetTemporaryZoomLevel(double level) {
   GetZoomController()->SetTemporaryZoomLevel(level);
 }
@@ -4100,12 +4327,11 @@ v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
   }
 
   auto pid = frame_host->GetProcess()->GetProcess().Pid();
-  v8::Global<v8::Context> context(isolate, isolate->GetCurrentContext());
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDumpForPid(
           pid, std::vector<std::string>(),
           base::BindOnce(&ElectronBindings::DidReceiveMemoryDump,
-                         std::move(context), std::move(promise), pid));
+                         std::move(promise), pid));
   return handle;
 }
 
@@ -4509,7 +4735,8 @@ void WebContents::OnDevToolsSearchCompleted(
 
 void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.
-  if (enter_fullscreen && owner_window()->IsFullscreen()) {
+  if (enter_fullscreen && (owner_window()->IsFullscreen() ||
+                           owner_window()->IsSimpleFullScreen())) {
     native_fullscreen_ = true;
     UpdateHtmlApiFullscreen(true);
     return;
@@ -4594,6 +4821,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::SetBackgroundThrottling)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
+      .SetMethod("clone", &WebContents::Clone)
       .SetMethod("_loadURL", &WebContents::LoadURL)
       .SetMethod("reload", &WebContents::Reload)
       .SetMethod("reloadIgnoringCache", &WebContents::ReloadIgnoringCache)
@@ -4677,6 +4905,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
       .SetMethod("setZoomFactor", &WebContents::SetZoomFactor)
       .SetMethod("getZoomFactor", &WebContents::GetZoomFactor)
+      .SetMethod("setZoomMode", &WebContents::SetZoomMode)
+      .SetMethod("getZoomMode", &WebContents::GetZoomMode)
       .SetMethod("getType", &WebContents::type)
       .SetMethod("_getPreloadScript", &WebContents::GetPreloadScript)
       .SetMethod("getLastWebPreferences", &WebContents::GetLastWebPreferences)
@@ -4823,6 +5053,21 @@ gin_helper::Handle<WebContents> WebContents::CreateFromWebPreferences(
           // has already navigated by the time we wrap the webContents.
           zoom_controller->SetZoomLevel(
               blink::ZoomFactorToZoomLevel(zoom_factor));
+        }
+      }
+
+      std::string zoom_mode_str;
+      if (web_preferences.Get(options::kZoomMode, &zoom_mode_str)) {
+        auto mode = ParseZoomMode(zoom_mode_str);
+        if (mode) {
+          auto* zoom_controller = WebContentsZoomController::FromWebContents(
+              web_contents->web_contents());
+          if (zoom_controller) {
+            zoom_controller->SetPersistZoomMode(
+                *mode == WebContentsZoomController::ZOOM_MODE_ISOLATED ||
+                *mode == WebContentsZoomController::ZOOM_MODE_MANUAL);
+            zoom_controller->SetZoomMode(*mode);
+          }
         }
       }
     }

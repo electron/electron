@@ -35,25 +35,32 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
         const url = 'http://electronjs.org';
         try {
           (autoUpdater.setFeedURL as any)(url, { header: 'val' });
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
         expect(autoUpdater.getFeedURL()).to.equal(url);
       });
 
       it('throws if no url is provided when using the old style', () => {
-        expect(() => (autoUpdater.setFeedURL as any)()).to.throw('Expected an options object with a \'url\' property to be provided');
+        expect(() => (autoUpdater.setFeedURL as any)()).to.throw(
+          "Expected an options object with a 'url' property to be provided"
+        );
       });
 
       it('sets url successfully using new ({ url }) syntax', () => {
         const url = 'http://mymagicurl.local';
         try {
           autoUpdater.setFeedURL({ url });
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
         expect(autoUpdater.getFeedURL()).to.equal(url);
       });
 
       it('throws if no url is provided when using the new style', () => {
-        expect(() => autoUpdater.setFeedURL({ noUrl: 'lol' } as any)
-        ).to.throw('Expected options object to contain a \'url\' string property in setFeedUrl call');
+        expect(() => autoUpdater.setFeedURL({ noUrl: 'lol' } as any)).to.throw(
+          "Expected options object to contain a 'url' string property in setFeedUrl call"
+        );
       });
     });
   });
@@ -63,7 +70,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
       const errorEvent = once(autoUpdater, 'error') as Promise<[Error]>;
       autoUpdater.quitAndInstall();
       const [error] = await errorEvent;
-      expect(error.message).to.equal('No update available, can\'t quit and install');
+      expect(error.message).to.equal("No update available, can't quit and install");
     });
   });
 });

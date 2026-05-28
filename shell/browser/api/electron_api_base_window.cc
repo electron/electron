@@ -44,7 +44,7 @@
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
 #elif BUILDFLAG(IS_LINUX)
-#include "shell/browser/ui/views/opaque_frame_view.h"
+#include "shell/browser/ui/views/electron_frame_view_linux.h"
 #include "ui/gfx/image/image_skia.h"
 #endif
 
@@ -321,8 +321,8 @@ void BaseWindow::OnWindowLeaveHtmlFullScreen() {
   Emit("leave-html-full-screen");
 }
 
-void BaseWindow::OnWindowAlwaysOnTopChanged() {
-  Emit("always-on-top-changed", IsAlwaysOnTop());
+void BaseWindow::OnWindowAlwaysOnTopChanged(const bool is_always_on_top) {
+  Emit("always-on-top-changed", is_always_on_top);
 }
 
 void BaseWindow::OnExecuteAppCommand(const std::string_view command_name) {

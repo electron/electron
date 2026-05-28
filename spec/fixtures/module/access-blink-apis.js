@@ -2,8 +2,8 @@ window.delayed = true;
 
 global.getGlobalNames = () => {
   return Object.getOwnPropertyNames(global)
-    .filter(key => typeof global[key] === 'function')
-    .filter(key => key !== 'WebView')
+    .filter((key) => typeof global[key] === 'function')
+    .filter((key) => key !== 'WebView')
     .sort();
 };
 

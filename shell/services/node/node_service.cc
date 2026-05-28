@@ -136,7 +136,7 @@ void NodeService::Initialize(
   }
 #endif
 
-  js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
+  js_env_.emplace(node_bindings_->uv_loop());
 
   v8::Isolate* const isolate = js_env_->isolate();
   v8::HandleScope scope{isolate};

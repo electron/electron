@@ -95,7 +95,9 @@ describe('webContents.setWindowOpenHandler', () => {
         assert.fail('did-create-window should not be called with an overridden window.open');
       });
 
-      await browserWindow.webContents.loadURL('data:text/html,<a target="_blank" href="http://example.com" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>');
+      await browserWindow.webContents.loadURL(
+        'data:text/html,<a target="_blank" href="http://example.com" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>'
+      );
       browserWindow.webContents.sendInputEvent({ type: 'mouseDown', x: 10, y: 10, button: 'left', clickCount: 1 });
       browserWindow.webContents.sendInputEvent({ type: 'mouseUp', x: 10, y: 10, button: 'left', clickCount: 1 });
 
@@ -114,9 +116,25 @@ describe('webContents.setWindowOpenHandler', () => {
         assert.fail('did-create-window should not be called with an overridden window.open');
       });
 
-      await browserWindow.webContents.loadURL('data:text/html,<a href="http://example.com" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>');
-      browserWindow.webContents.sendInputEvent({ type: 'mouseDown', x: 10, y: 10, button: 'left', clickCount: 1, modifiers: ['shift'] });
-      browserWindow.webContents.sendInputEvent({ type: 'mouseUp', x: 10, y: 10, button: 'left', clickCount: 1, modifiers: ['shift'] });
+      await browserWindow.webContents.loadURL(
+        'data:text/html,<a href="http://example.com" style="display: block; width: 100%; height: 100%; position: fixed; left: 0; top: 0;">link</a>'
+      );
+      browserWindow.webContents.sendInputEvent({
+        type: 'mouseDown',
+        x: 10,
+        y: 10,
+        button: 'left',
+        clickCount: 1,
+        modifiers: ['shift']
+      });
+      browserWindow.webContents.sendInputEvent({
+        type: 'mouseUp',
+        x: 10,
+        y: 10,
+        button: 'left',
+        clickCount: 1,
+        modifiers: ['shift']
+      });
 
       await denied;
     });
@@ -125,13 +143,15 @@ describe('webContents.setWindowOpenHandler', () => {
       const testFrameName = 'test-frame-name';
       const testFeatures = 'top=10&left=10&something-unknown&show=no';
       const testUrl = 'app://does-not-exist/';
-      const details = await new Promise<Electron.HandlerDetails>(resolve => {
+      const details = await new Promise<Electron.HandlerDetails>((resolve) => {
         browserWindow.webContents.setWindowOpenHandler((details) => {
           setTimeout(() => resolve(details));
           return { action: 'deny' };
         });
 
-        browserWindow.webContents.executeJavaScript(`window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`);
+        browserWindow.webContents.executeJavaScript(
+          `window.open('${testUrl}', '${testFrameName}', '${testFeatures}') && true`
+        );
       });
       const { url, frameName, features, disposition, referrer } = details;
       expect(url).to.equal(testUrl);
@@ -145,18 +165,20 @@ describe('webContents.setWindowOpenHandler', () => {
     });
 
     it('includes post body', async () => {
-      const details = await new Promise<Electron.HandlerDetails>(resolve => {
+      const details = await new Promise<Electron.HandlerDetails>((resolve) => {
         browserWindow.webContents.setWindowOpenHandler((details) => {
           setTimeout(() => resolve(details));
           return { action: 'deny' };
         });
 
-        browserWindow.webContents.loadURL(`data:text/html,${encodeURIComponent(`
+        browserWindow.webContents.loadURL(
+          `data:text/html,${encodeURIComponent(`
           <form action="http://example.com" target="_blank" method="POST" id="form">
             <input name="key" value="value"></input>
           </form>
           <script>form.submit()</script>
-        `)}`);
+        `)}`
+        );
       });
       const { url, frameName, features, disposition, referrer, postBody } = details;
       expect(url).to.equal('http://example.com/');
@@ -169,10 +191,12 @@ describe('webContents.setWindowOpenHandler', () => {
       });
       expect(postBody).to.deep.equal({
         contentType: 'application/x-www-form-urlencoded',
-        data: [{
-          type: 'rawData',
-          bytes: Buffer.from('key=value')
-        }]
+        data: [
+          {
+            type: 'rawData',
+            bytes: Buffer.from('key=value')
+          }
+        ]
       });
     });
 
@@ -193,8 +217,12 @@ describe('webContents.setWindowOpenHandler', () => {
         return { action: 'allow' };
       });
 
-      const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
-      await browserWindow.webContents.executeJavaScript("window.open('about:blank?one', 'named-target', 'show=no') && true");
+      const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<
+        [BrowserWindow, Electron.DidCreateWindowDetails]
+      >;
+      await browserWindow.webContents.executeJavaScript(
+        "window.open('about:blank?one', 'named-target', 'show=no') && true"
+      );
       const [childWindow] = await didCreateWindow;
       expect(handlerCallCount).to.equal(1);
       expect(childWindow.webContents.getURL()).to.equal('about:blank?one');
@@ -214,20 +242,30 @@ describe('webContents.setWindowOpenHandler', () => {
       await didNavigate;
 
       expect(sameWindow).to.be.true('window.open with matching frame name should return the same window proxy');
-      expect(handlerCallCount).to.equal(1, 'setWindowOpenHandler should not be called when Blink resolves the named target');
+      expect(handlerCallCount).to.equal(
+        1,
+        'setWindowOpenHandler should not be called when Blink resolves the named target'
+      );
       expect(childWindow.webContents.getURL()).to.equal('about:blank?two');
       expect(BrowserWindow.getAllWindows()).to.have.lengthOf(2);
     });
 
     it('can change webPreferences of child windows', async () => {
-      browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { defaultFontSize: 30 } } }));
+      browserWindow.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { webPreferences: { defaultFontSize: 30 } }
+      }));
 
-      const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
+      const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<
+        [BrowserWindow, Electron.DidCreateWindowDetails]
+      >;
       browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
       const [childWindow] = await didCreateWindow;
 
       await childWindow.webContents.executeJavaScript("document.write('hello')");
-      const size = await childWindow.webContents.executeJavaScript("getComputedStyle(document.querySelector('body')).fontSize");
+      const size = await childWindow.webContents.executeJavaScript(
+        "getComputedStyle(document.querySelector('body')).fontSize"
+      );
       expect(size).to.equal('30px');
     });
 
@@ -235,6 +273,40 @@ describe('webContents.setWindowOpenHandler', () => {
       browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
       browserWindow.webContents.executeJavaScript("window.open('https://127.0.0.1')");
       expect(await browserWindow.webContents.executeJavaScript('42')).to.equal(42);
+    });
+
+    it('does not propagate non-allowlisted features-string options like icon to the BrowserWindow', async () => {
+      browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
+
+      const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<
+        [BrowserWindow, Electron.DidCreateWindowDetails]
+      >;
+      browserWindow.webContents.executeJavaScript(
+        "window.open('about:blank', '', 'show=no,width=400,icon=/tmp/does-not-exist.png') && true"
+      );
+      const [, details] = await didCreateWindow;
+
+      expect(details.options).to.not.have.property('icon');
+      expect(details.options.width).to.equal(400);
+      expect(details.options.show).to.equal(false);
+    });
+
+    it('still allows the main process to set icon via overrideBrowserWindowOptions', async () => {
+      const iconPath = nodePath.join(__dirname, 'fixtures', 'assets', 'icon.ico');
+      browserWindow.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { icon: iconPath }
+      }));
+
+      const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<
+        [BrowserWindow, Electron.DidCreateWindowDetails]
+      >;
+      browserWindow.webContents.executeJavaScript(
+        "window.open('about:blank', '', 'show=no,icon=/tmp/attacker.png') && true"
+      );
+      const [, details] = await didCreateWindow;
+
+      expect((details.options as any).icon).to.equal(iconPath);
     });
 
     it('can open an offscreen child window from an onscreen parent', async () => {
@@ -304,7 +376,9 @@ describe('webContents.setWindowOpenHandler', () => {
       const [childWindow] = await didCreateWindow;
       const display = screen.getPrimaryDisplay();
       childWindow.setBounds(display.bounds);
-      await childWindow.webContents.executeJavaScript("const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;");
+      await childWindow.webContents.executeJavaScript(
+        "const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;"
+      );
       const screenCapture = new ScreenCapture(display);
       // color-scheme is set to dark so background should not be white
       await screenCapture.expectColorAtCenterDoesNotMatch(HexColors.WHITE);
@@ -357,7 +431,9 @@ describe('webContents.setWindowOpenHandler', () => {
       const uncaughtExceptionEmitted = new Promise<void>((resolve, reject) => {
         process.on('uncaughtException', (thrown) => {
           try {
-            expect(thrown.message).to.equal('Invalid webContents. Created window should be connected to webContents passed with options object.');
+            expect(thrown.message).to.equal(
+              'Invalid webContents. Created window should be connected to webContents passed with options object.'
+            );
             resolve();
           } catch (e) {
             reject(e);
@@ -386,7 +462,7 @@ describe('webContents.setWindowOpenHandler', () => {
     it('spawns browser window when createWindow is provided', async () => {
       const browserWindowTitle = 'Child browser window';
 
-      const childWindow = await new Promise<Electron.BrowserWindow>(resolve => {
+      const childWindow = await new Promise<Electron.BrowserWindow>((resolve) => {
         browserWindow.webContents.setWindowOpenHandler(() => {
           return {
             action: 'allow',
@@ -431,7 +507,7 @@ describe('webContents.setWindowOpenHandler', () => {
     });
 
     it('spawns browser window with overridden options', async () => {
-      const childWindow = await new Promise<Electron.BrowserWindow>(resolve => {
+      const childWindow = await new Promise<Electron.BrowserWindow>((resolve) => {
         browserWindow.webContents.setWindowOpenHandler(() => {
           return {
             action: 'allow',
@@ -458,7 +534,7 @@ describe('webContents.setWindowOpenHandler', () => {
     });
 
     it('spawns browser window with access to opener property', async () => {
-      const childWindow = await new Promise<Electron.BrowserWindow>(resolve => {
+      const childWindow = await new Promise<Electron.BrowserWindow>((resolve) => {
         browserWindow.webContents.setWindowOpenHandler(() => {
           return {
             action: 'allow',
@@ -479,7 +555,7 @@ describe('webContents.setWindowOpenHandler', () => {
     });
 
     it('spawns browser window without access to opener property because of noopener attribute ', async () => {
-      const childWindow = await new Promise<Electron.BrowserWindow>(resolve => {
+      const childWindow = await new Promise<Electron.BrowserWindow>((resolve) => {
         browserWindow.webContents.setWindowOpenHandler(() => {
           return {
             action: 'allow',
@@ -494,7 +570,9 @@ describe('webContents.setWindowOpenHandler', () => {
       });
 
       await once(childWindow.webContents, 'ready-to-show');
-      await expect(childWindow.webContents.executeJavaScript('window.opener.document.title')).to.be.rejectedWith('Script failed to execute, this normally means an error was thrown. Check the renderer console for the error.');
+      await expect(childWindow.webContents.executeJavaScript('window.opener.document.title')).to.be.rejectedWith(
+        'Script failed to execute, this normally means an error was thrown. Check the renderer console for the error.'
+      );
     });
   });
 });

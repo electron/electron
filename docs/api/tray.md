@@ -38,7 +38,7 @@ app.whenReady().then(() => {
 
 * Tray icon uses [StatusNotifierItem](https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/)
   by default, when it is not available in user's desktop environment the
-  `GtkStatusIcon` will be used instead.
+  `GtkStatusIcon` will be used instead. If StatusNotifierItem is available, the first tray icon created will use SNI, while subsequently-created icons will use `GtkStatusIcon`.
 * The `click` event is emitted when the tray icon receives activation from
   user, however the StatusNotifierItem spec does not specify which action would
   cause an activation, for some environments it is left mouse click, but for

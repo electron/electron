@@ -47,4 +47,9 @@ describe('autofill', () => {
     const value = await w.webContents.executeJavaScript("document.querySelector('input').value");
     expect(value).to.equal('13:01');
   });
+
+  // An OOPIF datalist case is not asserted here because
+  // webContents.sendInputEvent forwards keyboard events to the main frame's
+  // RenderWidgetHost only, so a spec test cannot drive keyboard input into an
+  // out-of-process subframe.
 });

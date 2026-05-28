@@ -11,6 +11,7 @@
 #include <string_view>
 #include <utility>
 
+#include "base/auto_reset.h"
 #include "base/base64.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/containers/span.h"
@@ -25,6 +26,7 @@
 #include "base/values.h"
 #include "build/util/chromium_git_revision.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
+#include "chrome/common/pref_names.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -153,10 +155,6 @@ GURL GetDevToolsURL(bool can_dock) {
   auto url_string = absl::StrFormat(
       kChromeUIDevToolsURL, GetRemoteBaseURL().spec(), can_dock ? "true" : "");
   return GURL(url_string);
-}
-
-void OnOpenItemComplete(const base::FilePath& path, const std::string& result) {
-  platform_util::ShowItemInFolder(path);
 }
 
 constexpr base::TimeDelta kInitialBackoffDelay = base::Milliseconds(250);
@@ -451,13 +449,17 @@ void InspectableWebContents::ShowDevTools(bool activate) {
 }
 
 void InspectableWebContents::CloseDevTools() {
+  if (is_showing_devtools_) {
+    close_devtools_pending_ = true;
+    return;
+  }
   if (GetDevToolsWebContents()) {
     frontend_loaded_ = false;
+    embedder_message_dispatcher_.reset();
     if (managed_devtools_web_contents_) {
       view_->CloseDevTools();
       managed_devtools_web_contents_.reset();
     }
-    embedder_message_dispatcher_.reset();
     if (!is_guest())
       web_contents_->Focus();
   }
@@ -552,52 +554,74 @@ void InspectableWebContents::CloseWindow() {
 void InspectableWebContents::LoadCompleted() {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 
-  frontend_loaded_ = true;
-  if (managed_devtools_web_contents_)
-    view_->ShowDevTools(activate_);
+  if (!GetDevToolsWebContents())
+    return;
 
-  // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
-  if (!can_dock_) {
-    SetIsDocked(DispatchCallback(), false);
-    if (!devtools_title_.empty()) {
-      view_->SetTitle(devtools_title_);
-    }
-  } else {
-    if (dock_state_.empty()) {
-      const base::DictValue& prefs =
-          pref_service_->GetDict(kDevToolsPreferences);
-      const std::string* current_dock_state =
-          prefs.FindString("currentDockState");
-      if (current_dock_state) {
-        std::string sanitized;
-        base::RemoveChars(*current_dock_state, "\"", &sanitized);
-        dock_state_ = IsValidDockState(sanitized) ? sanitized : "right";
-      } else {
-        dock_state_ = "right";
+  frontend_loaded_ = true;
+
+  // ShowDevTools and SetIsDocked trigger focus on the DevTools WebContents.
+  // Focus events fire JS handlers via V8 microtask checkpoints, and those
+  // handlers can call closeDevTools() re-entrantly. Guard the entire show
+  // phase so that any re-entrant close is deferred until the stack unwinds.
+  {
+    base::AutoReset<bool> guard(&is_showing_devtools_, true);
+
+    if (managed_devtools_web_contents_)
+      view_->ShowDevTools(activate_);
+
+    // If the devtools can dock, "SetIsDocked" will be called by devtools
+    // itself.
+    if (!can_dock_) {
+      SetIsDocked(DispatchCallback(), false);
+      if (!devtools_title_.empty()) {
+        view_->SetTitle(devtools_title_);
       }
-    }
-#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-    auto* api_web_contents = api::WebContents::From(GetWebContents());
-    if (api_web_contents) {
-      auto* win =
-          static_cast<NativeWindowViews*>(api_web_contents->owner_window());
-      // When WCO is enabled, undock the devtools if the current dock
-      // position overlaps with the position of window controls to avoid
-      // broken layout.
-      if (win && win->IsWindowControlsOverlayEnabled()) {
-        if (IsAppRTL() && dock_state_ == "left") {
-          dock_state_ = "undocked";
-        } else if (dock_state_ == "right") {
-          dock_state_ = "undocked";
+    } else {
+      if (dock_state_.empty()) {
+        const base::DictValue& prefs =
+            pref_service_->GetDict(kDevToolsPreferences);
+        const std::string* current_dock_state =
+            prefs.FindString("currentDockState");
+        if (current_dock_state) {
+          std::string sanitized;
+          base::RemoveChars(*current_dock_state, "\"", &sanitized);
+          dock_state_ = IsValidDockState(sanitized) ? sanitized : "right";
+        } else {
+          dock_state_ = "right";
         }
       }
-    }
+#if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
+      auto* api_web_contents = api::WebContents::From(GetWebContents());
+      if (api_web_contents) {
+        auto* win =
+            static_cast<NativeWindowViews*>(api_web_contents->owner_window());
+        // When WCO is enabled, undock the devtools if the current dock
+        // position overlaps with the position of window controls to avoid
+        // broken layout.
+        if (win && win->IsWindowControlsOverlayEnabled()) {
+          if (IsAppRTL() && dock_state_ == "left") {
+            dock_state_ = "undocked";
+          } else if (dock_state_ == "right") {
+            dock_state_ = "undocked";
+          }
+        }
+      }
 #endif
-    std::u16string javascript = base::UTF8ToUTF16(
-        "EUI.DockController.DockController.instance().setDockSide(\"" +
-        dock_state_ + "\");");
-    GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
-        javascript, base::NullCallback());
+      std::u16string javascript = base::UTF8ToUTF16(
+          "EUI.DockController.DockController.instance().setDockSide(\"" +
+          dock_state_ + "\");");
+      GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
+          javascript, base::NullCallback());
+    }
+  }
+
+  // If CloseDevTools was called re-entrantly during the show phase (e.g. from
+  // a JS devtools-focused handler), execute the deferred close now that the
+  // focus notification stack has fully unwound.
+  if (close_devtools_pending_) {
+    close_devtools_pending_ = false;
+    CloseDevTools();
+    return;
   }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -750,8 +774,22 @@ void InspectableWebContents::ShowItemInFolder(
     return;
 
   base::FilePath path = base::FilePath::FromUTF8Unsafe(file_system_path);
-  platform_util::OpenPath(path.DirName(),
-                          base::BindOnce(&OnOpenItemComplete, path));
+
+  // Only reveal paths that fall under a DevTools workspace folder the user has
+  // explicitly added. The DevTools frontend is renderer-hosted and may be
+  // attacker-controlled, so it must not be able to point this at arbitrary
+  // filesystem locations.
+  const base::DictValue& added_paths =
+      pref_service_->GetDict(prefs::kDevToolsFileSystemPaths);
+  const bool under_registered_root =
+      std::ranges::any_of(added_paths, [&path](const auto& entry) {
+        const base::FilePath root = base::FilePath::FromUTF8Unsafe(entry.first);
+        return root == path || root.IsParent(path);
+      });
+  if (!under_registered_root)
+    return;
+
+  platform_util::ShowItemInFolder(path);
 }
 
 void InspectableWebContents::SaveToFile(const std::string& url,

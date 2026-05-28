@@ -47,7 +47,7 @@ ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
       dict = pdf_extension_util::GetStrings(
           pdf_extension_util::PdfViewerContext::kAll);
-      dict.Merge(pdf_extension_util::GetAdditionalData(browser_context()));
+      dict.Merge(pdf_extension_util::GetAdditionalData(GetSenderWebContents()));
 #endif
       break;
     case api::resources_private::Component::kIdentity:

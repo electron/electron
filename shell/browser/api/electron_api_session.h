@@ -45,11 +45,6 @@ namespace net {
 class ProxyConfig;
 }
 
-namespace v8 {
-template <typename T>
-class TracedReference;
-}
-
 namespace electron {
 
 class ElectronBrowserContext;
@@ -57,8 +52,11 @@ struct PreloadScript;
 
 namespace api {
 
+class Cookies;
+class Extensions;
 class NetLog;
 class Protocol;
+class ServiceWorkerContext;
 class WebRequest;
 
 class Session final : public gin::Wrappable<Session>,
@@ -164,10 +162,10 @@ class Session final : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ClearSharedDictionaryCache();
   v8::Local<v8::Promise> ClearSharedDictionaryCacheForIsolationKey(
       const gin_helper::Dictionary& options);
-  v8::Local<v8::Value> Cookies(v8::Isolate* isolate);
-  v8::Local<v8::Value> Extensions(v8::Isolate* isolate);
+  api::Cookies* Cookies(v8::Isolate* isolate);
+  api::Extensions* Extensions(v8::Isolate* isolate);
   api::Protocol* Protocol();
-  v8::Local<v8::Value> ServiceWorkerContext(v8::Isolate* isolate);
+  api::ServiceWorkerContext* ServiceWorkerContext();
   WebRequest* WebRequest(v8::Isolate* isolate);
   api::NetLog* NetLog(v8::Isolate* isolate);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
@@ -210,18 +208,21 @@ class Session final : public gin::Wrappable<Session>,
   void SetDisplayMediaRequestHandler(v8::Isolate* isolate,
                                      v8::Local<v8::Value> val);
 
-  // Cached gin_helper::Wrappable objects.
-  v8::TracedReference<v8::Value> cookies_;
-  v8::TracedReference<v8::Value> extensions_;
+  cppgc::Member<api::Cookies> cookies_;
+  cppgc::Member<api::Extensions> extensions_;
   cppgc::Member<api::Protocol> protocol_;
   cppgc::Member<api::NetLog> net_log_;
-  v8::TracedReference<v8::Value> service_worker_context_;
+  cppgc::Member<api::ServiceWorkerContext> service_worker_context_;
   cppgc::Member<api::WebRequest> web_request_;
 
   raw_ptr<v8::Isolate> isolate_;
 
-  // The client id to enable the network throttler.
+  // The profile id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;
+
+  // The client id for the network throttler, identifying this Session as
+  // the throttling client.
+  base::UnguessableToken network_emulation_client_id_;
 
   raw_ptr<ElectronBrowserContext> browser_context_;
 

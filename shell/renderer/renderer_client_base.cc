@@ -25,6 +25,7 @@
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
@@ -265,14 +266,14 @@ void RendererClientBase::RenderThreadStarted() {
       ParseSchemesCLISwitch(command_line, switches::kFetchSchemes);
   for (const std::string& scheme : fetch_enabled_schemes) {
     blink::WebSecurityPolicy::RegisterURLSchemeAsSupportingFetchAPI(
-        blink::WebString::FromUTF8(scheme));
+        blink::WebString::FromUtf8(scheme));
   }
 
   std::vector<std::string> service_worker_schemes =
       ParseSchemesCLISwitch(command_line, switches::kServiceWorkerSchemes);
   for (const std::string& scheme : service_worker_schemes)
     blink::WebSecurityPolicy::RegisterURLSchemeAsAllowingServiceWorkers(
-        blink::WebString::FromUTF8(scheme));
+        blink::WebString::FromUtf8(scheme));
 
   std::vector<std::string> csp_bypassing_schemes =
       ParseSchemesCLISwitch(command_line, switches::kBypassCSPSchemes);
@@ -284,7 +285,7 @@ void RendererClientBase::RenderThreadStarted() {
       ParseSchemesCLISwitch(command_line, switches::kCodeCacheSchemes);
   for (const auto& scheme : code_cache_schemes_list) {
     blink::WebSecurityPolicy::RegisterURLSchemeAsCodeCacheWithHashing(
-        blink::WebString::FromUTF8(scheme));
+        blink::WebString::FromUtf8(scheme));
   }
 
   // Allow file scheme to handle service worker by default.
@@ -309,6 +310,19 @@ void RendererClientBase::ExposeInterfacesToBrowser(mojo::BinderMap* binders) {
   // definition of |ExposeElectronRendererInterfacesToBrowser()| to ensure
   // security review coverage.
   ExposeElectronRendererInterfacesToBrowser(this, binders);
+}
+
+void RendererClientBase::SetPendingCreateNewWindowStartupData(
+    mojo_base::BigBuffer data) {
+  // Deserialize the opaque blob from CreateNewWindowReply and stash it for
+  // the about-to-be-created RenderFrame's ElectronApiServiceImpl. Same call
+  // stack, no reentrancy.
+  mojom::RendererStartupDataPtr deserialized;
+  if (mojom::RendererStartupData::Deserialize(base::span<const uint8_t>(data),
+                                              &deserialized)) {
+    ElectronApiServiceImpl::SetPendingNewWindowStartupData(
+        std::move(deserialized));
+  }
 }
 
 void RendererClientBase::RenderFrameCreated(
@@ -635,13 +649,13 @@ void RendererClientBase::SetupMainWorldOverrides(
     }
   }
 
-  v8::LocalVector<v8::String> isolated_bundle_params(
-      isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "isolatedApi")});
+  v8::LocalVector<v8::String> isolated_bundle_params =
+      js2c::MakeBundleParams(isolate, js2c::kIsolatedBundleParams);
 
   v8::LocalVector<v8::Value> isolated_bundle_args(isolate,
                                                   {isolated_api.GetHandle()});
 
-  util::CompileAndCall(isolate, context, "electron/js2c/isolated_bundle",
+  util::CompileAndCall(isolate, context, js2c::kIsolatedBundleId,
                        &isolated_bundle_params, &isolated_bundle_args);
 }
 

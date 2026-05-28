@@ -10,10 +10,13 @@ import { compareVersions, getChromiumVersionFromDEPS } from './lib/utils.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ELECTRON_DIR = resolve(__dirname, '..');
 
-const CL_REGEX = /https:\/\/chromium-review\.googlesource\.com\/c\/(chromium\/src|devtools\/devtools-frontend|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
+const CL_REGEX =
+  /https:\/\/chromium-review\.googlesource\.com\/c\/(chromium\/src|devtools\/devtools-frontend|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
+const DEPS_BUMP_MSG_REGEX = /^chore: bump chromium in DEPS to (\S+)$/;
+const PATCHES_UPDATE_MSG = 'chore: update patches';
 
-function getCurrentBranch () {
+function getCurrentBranch() {
   // In CI, use `GITHUB_HEAD_REF` since we checkout the PR branch in detached HEAD state
   if (process.env.GITHUB_HEAD_REF) {
     return process.env.GITHUB_HEAD_REF;
@@ -30,7 +33,7 @@ function getCurrentBranch () {
   }
 }
 
-function getCommitsSinceMergeBase (mergeBase) {
+function getCommitsSinceMergeBase(mergeBase) {
   try {
     const output = execSync(`git log --format=%H%n%B%n---COMMIT_END--- ${mergeBase}..HEAD`, {
       cwd: ELECTRON_DIR,
@@ -59,7 +62,56 @@ function getCommitsSinceMergeBase (mergeBase) {
   }
 }
 
-async function fetchChromiumDashCommit (commitSha, repo) {
+function getChangedFilesForCommit(sha) {
+  try {
+    return execSync(`git diff-tree --no-commit-id --name-only -r ${sha}`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8'
+    })
+      .trim()
+      .split('\n')
+      .filter(Boolean);
+  } catch {
+    return null;
+  }
+}
+
+function getCommitDiffForFile(sha, filename) {
+  try {
+    return execSync(`git show --format= ${sha} -- ${filename}`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8'
+    });
+  } catch {
+    return null;
+  }
+}
+
+function getChromiumVersionForCommit(sha) {
+  try {
+    const depsContent = execSync(`git show ${sha}:DEPS`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8'
+    });
+    return getChromiumVersionFromDEPS(depsContent);
+  } catch {
+    return null;
+  }
+}
+
+function getParentChromiumVersion(sha) {
+  try {
+    const depsContent = execSync(`git show ${sha}^:DEPS`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8'
+    });
+    return getChromiumVersionFromDEPS(depsContent);
+  } catch {
+    return null;
+  }
+}
+
+async function fetchChromiumDashCommit(commitSha, repo) {
   const url = `https://chromiumdash.appspot.com/fetch_commit?commit=${commitSha}&repo=${repo}`;
   const response = await fetch(url);
 
@@ -74,7 +126,7 @@ async function fetchChromiumDashCommit (commitSha, repo) {
   }
 }
 
-async function getGerritPatchDetails (clUrl) {
+async function getGerritPatchDetails(clUrl) {
   const parsedUrl = new URL(clUrl);
   const match = /^\/c\/(.+?)\/\+\/(\d+)/.exec(parsedUrl.pathname);
   if (!match) {
@@ -100,14 +152,15 @@ async function getGerritPatchDetails (clUrl) {
     const currentRevision = data.current_revision;
     return {
       commitSha: currentRevision,
-      project: data.project
+      project: data.project,
+      subject: data.subject
     };
   } catch {
     return null;
   }
 }
 
-async function main () {
+async function main() {
   const currentBranch = getCurrentBranch();
 
   // Check if we're on a roller/chromium/* branch
@@ -133,16 +186,7 @@ async function main () {
   }
 
   // Get version range
-  let baseVersion = null;
-  try {
-    const baseDepsContent = execSync(`git show ${mergeBase}:DEPS`, {
-      cwd: ELECTRON_DIR,
-      encoding: 'utf8'
-    });
-    baseVersion = getChromiumVersionFromDEPS(baseDepsContent);
-  } catch {
-    // baseVersion remains null
-  }
+  const baseVersion = getChromiumVersionForCommit(mergeBase);
   const depsContent = await fs.readFile(resolve(ELECTRON_DIR, 'DEPS'), 'utf8');
   const newVersion = getChromiumVersionFromDEPS(depsContent);
 
@@ -162,6 +206,9 @@ async function main () {
   let hasErrors = false;
   const checkedCLs = new Map(); // Cache CL check results
 
+  // Collect all commit titles for fixup validation
+  const commitTitles = new Set(commits.map((c) => c.message.split('\n')[0]));
+
   for (const commit of commits) {
     const shortSha = commit.sha.substring(0, 7);
     const firstLine = commit.message.split('\n')[0];
@@ -174,6 +221,114 @@ async function main () {
       continue;
     }
 
+    console.log(`\nChecking commit ${shortSha}: ${firstLine}`);
+
+    // Validate fixup commits reference an existing commit title
+    if (firstLine.startsWith('fixup! ')) {
+      const targetTitle = firstLine.slice('fixup! '.length);
+      if (!commitTitles.has(targetTitle)) {
+        console.error(`  ❌ fixup! commit does not match any other commit title`);
+        console.error(`     Target: "${targetTitle}"`);
+        hasErrors = true;
+      }
+      continue;
+    }
+
+    // Validate Chromium version bump commits
+    const parentVersion = getParentChromiumVersion(commit.sha);
+    const commitVersion = getChromiumVersionForCommit(commit.sha);
+    const depsVersionChanged = parentVersion && commitVersion && parentVersion !== commitVersion;
+    const bumpMsgMatch = DEPS_BUMP_MSG_REGEX.exec(firstLine);
+
+    if (depsVersionChanged) {
+      const changedFiles = getChangedFilesForCommit(commit.sha);
+
+      // Must be the only change in the commit
+      if (!changedFiles || changedFiles.length !== 1 || changedFiles[0] !== 'DEPS') {
+        const filesDesc = changedFiles ? changedFiles.join(', ') : 'unknown';
+        console.error(`  ❌ Commit changes chromium_version in DEPS but also modifies other files: ${filesDesc}`);
+        hasErrors = true;
+      }
+
+      // Commit message must match the expected pattern
+      if (!bumpMsgMatch) {
+        console.error(`  ❌ Commit changes chromium_version in DEPS but message does not match expected format`);
+        console.error(`     Expected: "chore: bump chromium in DEPS to ${commitVersion}"`);
+        console.error(`     Got:      "${firstLine}"`);
+        hasErrors = true;
+      } else if (bumpMsgMatch[1] !== commitVersion) {
+        console.error(`  ❌ Chromium version in commit message does not match DEPS`);
+        console.error(`     Message version: ${bumpMsgMatch[1]}`);
+        console.error(`     DEPS version:    ${commitVersion}`);
+        hasErrors = true;
+      } else {
+        console.log(`  ✅ DEPS bump commit to ${commitVersion} is valid`);
+      }
+
+      continue;
+    }
+
+    if (bumpMsgMatch && !depsVersionChanged) {
+      console.error(`  ❌ Commit message says it bumps chromium in DEPS but chromium_version was not changed`);
+      hasErrors = true;
+      continue;
+    }
+
+    // Validate "chore: update patches" commits
+    if (firstLine === PATCHES_UPDATE_MSG) {
+      let commitValid = true;
+
+      // Must have no commit message body
+      const bodyLines = commit.message.trim().split('\n').slice(1);
+      const nonEmptyBodyLines = bodyLines.filter((line) => line.trim().length > 0);
+      if (nonEmptyBodyLines.length > 0) {
+        console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit must not have a commit message body`);
+        hasErrors = true;
+        commitValid = false;
+      }
+
+      const changedFiles = getChangedFilesForCommit(commit.sha);
+      if (!changedFiles || changedFiles.length === 0) {
+        console.error(`  ❌ Could not determine changed files for "${PATCHES_UPDATE_MSG}" commit`);
+        hasErrors = true;
+        continue;
+      }
+
+      // Must only contain non-content changes to files under patches/
+      // Mirrors the logic in build-tools `e patches --commit-updates`
+      for (const filename of changedFiles) {
+        if (!filename.startsWith('patches/')) {
+          console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit modifies non-patch file: ${filename}`);
+          hasErrors = true;
+          commitValid = false;
+          continue;
+        }
+
+        const fileDiff = getCommitDiffForFile(commit.sha, filename);
+        if (fileDiff === null) {
+          console.error(`  ❌ Could not get diff for ${filename}`);
+          hasErrors = true;
+          commitValid = false;
+          continue;
+        }
+
+        const changedLines = fileDiff.matchAll(/^[-+].*$/gm);
+        for (const line of changedLines) {
+          if (!line[0].match(/^[-+](--|\+\+|index|@@) /)) {
+            console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit contains content changes in ${filename}`);
+            hasErrors = true;
+            commitValid = false;
+            break;
+          }
+        }
+      }
+
+      if (commitValid) {
+        console.log(`  ✅ "${PATCHES_UPDATE_MSG}" commit is valid`);
+      }
+      continue;
+    }
+
     const cls = [...commit.message.matchAll(CL_REGEX)].map((match) => ({
       url: match[0],
       fullRepo: match[1],
@@ -182,11 +337,13 @@ async function main () {
     }));
 
     if (cls.length === 0) {
-      // No CLs in this commit, skip
+      console.error(`  ❌ Commit does not match any allowed pattern and references no CLs`);
+      console.error(
+        `     Allowed: fixup! commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", or a commit referencing one or more CLs`
+      );
+      hasErrors = true;
       continue;
     }
-
-    console.log(`\nChecking commit ${shortSha}: ${firstLine}`);
 
     for (const cl of cls) {
       // Skip CLs annotated with #nolint
@@ -244,9 +401,7 @@ async function main () {
       // For non-Chromium CLs, we need to find the corresponding Chromium commit
       let chromiumVersion = clEarliestVersion;
       if (repo !== 'chromium' && dashDetails.relations) {
-        const chromiumRelation = dashDetails.relations.find(
-          (rel) => rel.from_commit === gerritDetails.commitSha
-        );
+        const chromiumRelation = dashDetails.relations.find((rel) => rel.from_commit === gerritDetails.commitSha);
         if (chromiumRelation) {
           const chromiumDash = await fetchChromiumDashCommit(chromiumRelation.to_commit, 'chromium');
           if (chromiumDash?.earliest) {
@@ -257,8 +412,7 @@ async function main () {
 
       // CL should have landed after the base version and at or before the new version
       const isInRange =
-        compareVersions(chromiumVersion, baseVersion) > 0 &&
-        compareVersions(chromiumVersion, newVersion) <= 0;
+        compareVersions(chromiumVersion, baseVersion) > 0 && compareVersions(chromiumVersion, newVersion) <= 0;
 
       if (!isInRange) {
         const error = `CL earliest version ${chromiumVersion} is outside roller range (${baseVersion} -> ${newVersion})`;
@@ -268,8 +422,28 @@ async function main () {
         continue;
       }
 
-      checkedCLs.set(cl.url, { valid: true });
+      checkedCLs.set(cl.url, { valid: true, subject: gerritDetails.subject });
       console.log(`  ✅ CL ${cl.clNumber}: version ${chromiumVersion} is within range`);
+    }
+
+    // If exactly one CL is referenced (excluding #nolint), the commit title
+    // must be the CL number followed by the CL subject.
+    const enforceableCLs = cls.filter((cl) => cl.fragment !== '#nolint');
+    if (enforceableCLs.length === 1) {
+      const cl = enforceableCLs[0];
+      const cached = checkedCLs.get(cl.url);
+      const clSubject = cached?.subject;
+      if (clSubject) {
+        const expectedTitle = `${cl.clNumber}: ${clSubject}`;
+        if (firstLine !== expectedTitle) {
+          console.error(`  ❌ Commit title does not match the expected format for referenced CL ${cl.clNumber}`);
+          console.error(`     Expected: "${expectedTitle}"`);
+          console.error(`     Got:      "${firstLine}"`);
+          hasErrors = true;
+        } else {
+          console.log(`  ✅ Commit title matches CL ${cl.clNumber} subject`);
+        }
+      }
     }
   }
 
@@ -277,6 +451,7 @@ async function main () {
   if (hasErrors) {
     console.log('  NOTE: Add "Skip-Lint: <reason>" to a commit message to skip linting that commit.');
   }
+  // TODO(dsanders11): Remove the exit code guard once we're confident Claude follows the guidelines
   process.exit(hasErrors && process.env.CI ? 1 : 0);
 }
 

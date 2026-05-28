@@ -79,6 +79,7 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -97,10 +98,14 @@
 #if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
 #include "base/no_destructor.h"
+#include "base/strings/utf_string_conversions.h"
 #include "content/browser/mac_helpers.h"
+#include "device/fido/strings/grit/fido_strings.h"
 #include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
+#include "shell/browser/webauthn/electron_authenticator_request_delegate.h"
 #include "shell/common/process_util.h"
+#include "ui/base/resource/resource_bundle.h"
 #endif
 
 #if BUILDFLAG(IS_LINUX)
@@ -371,8 +376,8 @@ struct Converter<net::SecureDnsMode> {
 
 namespace electron::api {
 
-gin::WrapperInfo App::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                      gin::kElectronApp};
+gin::WrapperInfo App::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronApp);
 
 namespace {
 
@@ -991,17 +996,15 @@ std::string App::GetLocaleCountryCode() {
   WCHAR locale_name[LOCALE_NAME_MAX_LENGTH] = {0};
 
   if (GetLocaleInfoEx(LOCALE_NAME_USER_DEFAULT, LOCALE_SISO3166CTRYNAME,
-                      (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR)) ||
+                      locale_name, std::size(locale_name)) ||
       GetLocaleInfoEx(LOCALE_NAME_SYSTEM_DEFAULT, LOCALE_SISO3166CTRYNAME,
-                      (LPWSTR)&locale_name,
-                      sizeof(locale_name) / sizeof(WCHAR))) {
+                      locale_name, std::size(locale_name))) {
     base::WideToUTF8(locale_name, wcslen(locale_name), &region);
   }
 #elif BUILDFLAG(IS_MAC)
   CFLocaleRef locale = CFLocaleCopyCurrent();
-  CFStringRef value = CFStringRef(
-      static_cast<CFTypeRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode)));
+  auto value =
+      static_cast<CFStringRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode));
   if (value != nil) {
     char temporaryCString[3];
     const CFIndex kCStringSize = sizeof(temporaryCString);
@@ -1665,6 +1668,52 @@ bool App::IsInApplicationsFolder() {
   return ElectronBundleMover::IsCurrentAppInApplicationsFolder();
 }
 
+void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
+                            gin::Arguments* args) {
+  gin_helper::Dictionary options;
+  if (!args->GetNext(&options)) {
+    thrower.ThrowTypeError("configureWebAuthn requires an options object");
+    return;
+  }
+
+  gin_helper::Dictionary touch_id;
+  if (options.Get("touchID", &touch_id)) {
+    std::string keychain_access_group;
+    if (!touch_id.Get("keychainAccessGroup", &keychain_access_group) ||
+        keychain_access_group.empty()) {
+      thrower.ThrowTypeError(
+          "configureWebAuthn: 'touchID.keychainAccessGroup' must be a "
+          "non-empty string");
+      return;
+    }
+
+    // Optional: lets apps customize the macOS Touch ID prompt. The OS renders
+    // it as `"<App Name>" is trying to <promptReason>`. A `$1` placeholder, if
+    // present, is replaced with the relying party ID; otherwise the string is
+    // used verbatim. The default, IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON, is
+    // "verify your identity on $1".
+    std::string prompt_reason;
+    if (touch_id.Has("promptReason")) {
+      if (!touch_id.Get("promptReason", &prompt_reason) ||
+          prompt_reason.empty()) {
+        thrower.ThrowTypeError(
+            "configureWebAuthn: 'touchID.promptReason' must be a non-empty "
+            "string");
+        return;
+      }
+    }
+
+    ElectronWebAuthenticationDelegate::SetTouchIdKeychainAccessGroup(
+        std::move(keychain_access_group));
+
+    if (!prompt_reason.empty()) {
+      ui::ResourceBundle::GetSharedInstance().OverrideLocaleStringResource(
+          IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON,
+          base::UTF8ToUTF16(prompt_reason));
+    }
+  }
+}
+
 int DockBounce(gin::Arguments* args) {
   int request_id = -1;
   std::string type = "informational";
@@ -1794,7 +1843,8 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   content::GetNetworkService()->ConfigureStubHostResolver(
       enable_built_in_resolver, enable_happy_eyeballs_v3, secure_dns_mode,
       doh_config, additional_dns_query_types_enabled,
-      {} /*fallback_doh_nameservers*/);
+      {} /*fallback_doh_nameservers*/,
+      false /*insecure_dns_via_platform_apis_enabled*/);
 }
 
 // static
@@ -1858,11 +1908,9 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod(
           "removeAsDefaultProtocolClient",
           base::BindRepeating(&Browser::RemoveAsDefaultProtocolClient, browser))
-#if !BUILDFLAG(IS_LINUX)
       .SetMethod(
           "getApplicationInfoForProtocol",
           base::BindRepeating(&Browser::GetApplicationInfoForProtocol, browser))
-#endif
       .SetMethod(
           "getApplicationNameForProtocol",
           base::BindRepeating(&Browser::GetApplicationNameForProtocol, browser))
@@ -1894,6 +1942,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("moveToApplicationsFolder", &App::MoveToApplicationsFolder)
       .SetMethod("isInApplicationsFolder", &App::IsInApplicationsFolder)
       .SetMethod("setActivationPolicy", &App::SetActivationPolicy)
+      .SetMethod("configureWebAuthn", &App::ConfigureWebAuthn)
 #endif
       .SetMethod("setAboutPanelOptions",
                  base::BindRepeating(&Browser::SetAboutPanelOptions, browser))
@@ -1916,10 +1965,6 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetUserTasks, browser))
       .SetMethod("getJumpListSettings", &App::GetJumpListSettings)
       .SetMethod("setJumpList", &App::SetJumpList)
-#endif
-#if BUILDFLAG(IS_LINUX)
-      .SetMethod("isUnityRunning",
-                 base::BindRepeating(&Browser::IsUnityRunning, browser))
 #endif
       .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)

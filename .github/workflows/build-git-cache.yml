@@ -2,25 +2,38 @@ name: Build Git Cache
 # This workflow updates git cache on the cross-instance cache volumes
 # It runs daily at midnight.
 
-on:  
+on:
   schedule:
     - cron: "0 0 * * *"
 
 permissions: {}
 
 jobs:
-  build-git-cache-linux:
+  setup:
     if: github.repository == 'electron/electron'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+
+  build-git-cache-linux:
+    needs: setup
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
     container:
-      image: ghcr.io/electron/build:eac3529546ea8f3aa356d31e345715eef342233b
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
     env:
-      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}      
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
@@ -34,12 +47,12 @@ jobs:
         target-platform: linux
 
   build-git-cache-windows:
-    if: github.repository == 'electron/electron'
+    needs: setup
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
     container:
-      image: ghcr.io/electron/build:eac3529546ea8f3aa356d31e345715eef342233b
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root --device /dev/fuse --cap-add SYS_ADMIN
       volumes:
         - /mnt/win-cache:/mnt/win-cache
@@ -59,14 +72,13 @@ jobs:
         target-platform: win
 
   build-git-cache-macos:
-    if: github.repository == 'electron/electron'
+    # This job updates the same git cache as linux, so it needs to run after the linux one.
+    needs: [setup, build-git-cache-linux]
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
-    # This job updates the same git cache as linux, so it needs to run after the linux one.
-    needs: build-git-cache-linux
     container:
-      image: ghcr.io/electron/build:eac3529546ea8f3aa356d31e345715eef342233b
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
