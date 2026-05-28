@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 const { downloadArtifact } = require('@electron/get');
-
-const extract = require('extract-zip');
+const { ZipReaderStream } = require('@zip.js/zip.js');
 
 const childProcess = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { Readable, Writable } = require('stream');
 
 const { version } = require('./package');
 
@@ -76,23 +76,51 @@ function isInstalled() {
 }
 
 // unzips and makes path.txt point at the correct executable
-function extractFile(zipPath) {
+async function extractFile(zipPath) {
   const distPath = process.env.ELECTRON_OVERRIDE_DIST_PATH || path.join(__dirname, 'dist');
+  const targetDir = path.join(__dirname, 'dist');
 
-  return extract(zipPath, { dir: path.join(__dirname, 'dist') }).then(() => {
-    // If the zip contains an "electron.d.ts" file,
-    // move that up
-    const srcTypeDefPath = path.join(distPath, 'electron.d.ts');
-    const targetTypeDefPath = path.join(__dirname, 'electron.d.ts');
-    const hasTypeDefinitions = fs.existsSync(srcTypeDefPath);
+  const fileStream = Readable.toWeb(fs.createReadStream(zipPath));
+  const zipStream = fileStream.pipeThrough(new ZipReaderStream());
 
-    if (hasTypeDefinitions) {
-      fs.renameSync(srcTypeDefPath, targetTypeDefPath);
+  for await (const entry of zipStream) {
+    const entryPath = path.join(targetDir, entry.filename);
+
+    if (!entryPath.startsWith(targetDir + path.sep) && entryPath !== targetDir) {
+      throw new Error(`Zip entry outside target directory: ${entry.filename}`);
     }
 
-    // Write a "path.txt" file.
-    return fs.promises.writeFile(path.join(__dirname, 'path.txt'), platformPath);
-  });
+    if (entry.directory) {
+      fs.mkdirSync(entryPath, { recursive: true });
+    } else {
+      fs.mkdirSync(path.dirname(entryPath), { recursive: true });
+      const writable = fs.createWriteStream(entryPath);
+      await entry.readable.pipeTo(Writable.toWeb(writable));
+
+      if (entry.executable) {
+        fs.chmodSync(entryPath, 0o755);
+      } else if (entry.externalFileAttribute) {
+        // Restore Unix file permissions if available
+        const unixMode = (entry.externalFileAttribute >>> 16) & 0xFFFF;
+        if (unixMode !== 0) {
+          fs.chmodSync(entryPath, unixMode);
+        }
+      }
+    }
+  }
+
+  // If the zip contains an "electron.d.ts" file,
+  // move that up
+  const srcTypeDefPath = path.join(distPath, 'electron.d.ts');
+  const targetTypeDefPath = path.join(__dirname, 'electron.d.ts');
+  const hasTypeDefinitions = fs.existsSync(srcTypeDefPath);
+
+  if (hasTypeDefinitions) {
+    fs.renameSync(srcTypeDefPath, targetTypeDefPath);
+  }
+
+  // Write a "path.txt" file.
+  await fs.promises.writeFile(path.join(__dirname, 'path.txt'), platformPath);
 }
 
 function getPlatformPath() {
