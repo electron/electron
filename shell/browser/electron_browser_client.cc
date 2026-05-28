@@ -1019,6 +1019,11 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
   content::ChildProcessId process_id = host->GetID();
   pending_processes_.erase(process_id);
   renderer_is_subframe_.erase(process_id);
+  // Prune deferred registrations with dead WebContents.
+  std::erase_if(
+      deferred_process_registrations_,
+      [](const DeferredProcessRegistration& r) { return !r.web_contents; });
+
   host->RemoveObserver(this);
 }
 
