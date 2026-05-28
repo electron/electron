@@ -402,6 +402,33 @@ bool ElectronBrowserClient::IsRendererSubFrame(
 
 void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
+  // Drain any site instances that were registered before their process was
+  // created. HasProcess() is now true and GetProcess() won't trigger the
+  // CHECK in SiteInstanceImpl::GetProcess(). This fires before
+  // AppendRendererCommandLine, so pending_processes_ will be populated
+  // in time for AppendExtraCommandLineSwitches.
+  auto it = deferred_process_registrations_.begin();
+  while (it != deferred_process_registrations_.end()) {
+    // if WebContents was destroyed (tab closed, etc.), discard.
+    if (!it->web_contents) {
+      it = deferred_process_registrations_.erase(it);
+      continue;
+    }
+
+    if (it->site_instance->HasProcess() &&
+        it->site_instance->GetProcess() == host) {
+      const auto process_id = host->GetID();
+      pending_processes_[process_id] = it->web_contents.get();
+      if (it->is_subframe)
+        renderer_is_subframe_.insert(process_id);
+      else
+        renderer_is_subframe_.erase(process_id);
+      it = deferred_process_registrations_.erase(it);
+    } else {
+      ++it;
+    }
+  }
+
   // Remove in case the host is reused after a crash, otherwise noop.
   host->RemoveObserver(this);
 
