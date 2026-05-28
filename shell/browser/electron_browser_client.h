@@ -14,6 +14,8 @@
 #include "base/containers/flat_map.h"
 #include "base/containers/flat_set.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/ref_counted.h"
+#include "base/memory/weak_ptr.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/frame_tree_node_id.h"
@@ -33,6 +35,7 @@ class ClientCertificateDelegate;
 class NavigationHandle;
 class PlatformNotificationService;
 class NavigationThrottleRegistry;
+class SiteInstance;
 class QuotaPermissionContext;
 }  // namespace content
 
@@ -368,6 +371,16 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       pending_processes_;
 
   base::flat_set<content::ChildProcessId> renderer_is_subframe_;
+
+  // Registrations from RegisterPendingSiteInstance() for site instances that
+  // did not yet have a process. Drained in RenderProcessWillLaunch() before
+  // the command line is built.
+  struct DeferredProcessRegistration {
+    scoped_refptr<content::SiteInstance> site_instance;
+    base::WeakPtr<content::WebContents> web_contents;
+    bool is_subframe;
+  };
+  std::vector<DeferredProcessRegistration> deferred_process_registrations_;
 
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;
