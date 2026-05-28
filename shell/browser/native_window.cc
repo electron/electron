@@ -1026,13 +1026,13 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
             window->Maximize();
           }
           window->is_being_restored_ = false;
-          window->NotifyWindowStateRestored();
         },
         base::Unretained(this), window_preferences->Clone());
   } else {
     is_being_restored_ = false;
-    NotifyWindowStateRestored();
   }
+
+  NotifyWindowStateRestored();
 }
 
 void NativeWindow::FlushPendingDisplayMode() {
