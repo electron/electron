@@ -128,8 +128,8 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   // - id_: JavaScript `id` — toast tag / stable key (history, activations).
   // - group_id_: JavaScript `groupId` from the constructor; for instances
   //   restored via `getHistory()` it is the developer-visible value (e.g. on
-  //   Windows the WinRT default group may be filtered out so this stays empty
-  //   when the app never set a group).
+  //   Windows kWindowsToastDefaultGroupUtf8 may be filtered out so this stays
+  //   empty when the app never set a group).
   // - raw_group_id_: Only used for `getHistory()` restores. Exact group string
   //   returned by the platform before that filtering. Passed into
   //   `CreateNotification(..., notification_group)` so the native object still

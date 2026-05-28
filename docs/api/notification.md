@@ -56,7 +56,7 @@ The callback remains registered until replaced by another call to `handleActivat
 This provides a centralized way to handle notification interactions that works in all scenarios:
 
 * Cold start (app launched from notification click)
-* Notifications persisted in AC that have no in-memory representation after app re-start
+* Notifications still in Action Center after the app restarts, with no in-memory `Notification` object
 * Notification object was garbage collected
 * Notification object is still in memory (callback is invoked in addition to instance events)
 
@@ -92,26 +92,25 @@ The returned notifications have their `id`, `groupId`, `title`, and `body` prope
 > [!NOTE]
 > On Windows, notifications that have been dismissed by the user or have expired
 > are no longer present in Action Center and will not appear in the results.
-> Electron automatically injects the notification's `id` and `groupId` into the
-> toast's `launch` attribute so that click events are routed to the correct
-> restored object. This works for both built-in and custom `toastXml`
-> notifications.
 
 > [!NOTE]
-> For objects returned by `getHistory()`, `show()` is a no-op on every platform:
-> the main-process `Notification::Show()` implementation in
-> `shell/browser/api/electron_api_notification.cc` returns immediately when the
-> instance was restored (`is_restored_`), so native `show()` is never invoked.
-> That keeps the delivered notification in place while the object stays
-> connected for interaction events (Windows routes activations via the toast
-> `launch` payload; macOS uses `Restore()` plus the notification center
-> delegate). Calling `show()` on a non-restored notification still posts or
-> replaces a notification as usual.
+> On Windows, set `id` and `groupId` when you show notifications so you can
+> match user interactions to your data. If the app may handle a notification
+> before you call `getHistory()` (for example, after a cold start from Action
+> Center), register `Notification.handleActivation()` early in startup. If you
+> use a custom `toastXml`, put `id` and `groupId` in the toast `launch` attribute
+> if you need them in the activation payload.
 
 > [!NOTE]
-> Unlike notifications created with `new Notification()`, notifications returned
-> by `getHistory()` will remain visible in Notification Center / Action Center
-> when the object is garbage collected.
+> `getHistory()` does not post new notifications. It returns objects for
+> deliveries already in Notification Center / Action Center (for example, after
+> an app restart). Calling `show()` on those objects has no effect. A notification
+> created with `new Notification()` and `show()` also remains in the center until
+> the user dismisses it or it expires; releasing the JavaScript object does not
+> remove it from the center, but instance events (`click`, `reply`, `action`) only
+> fire while you keep a reference to that object, or after you obtain a new object
+> from `getHistory()` or handle the interaction with `handleActivation()` on
+> Windows.
 
 ```js
 const { Notification, app } = require('electron')
@@ -348,10 +347,9 @@ call this method before the OS will display it.
 If the notification has been shown before, this method will dismiss the previously
 shown notification and create a new one with identical properties.
 
-For a notification returned by `Notification.getHistory()`, this method does nothing:
-the instance is marked restored and `show()` returns before touching the platform
-notification, so the entry stays in Notification Center / Action Center and
-interaction events keep routing to the same object.
+For a notification returned by `Notification.getHistory()`, this method does
+nothing. The notification is already in Notification Center / Action Center;
+listen for events on the object returned from `getHistory()` instead.
 
 ```js
 const { Notification, app } = require('electron')

@@ -33,6 +33,7 @@
 #include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/notifications/win/windows_toast_activator.h"
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/ui/win/jump_list.h"
 #include "shell/browser/window_list.h"
@@ -401,6 +402,7 @@ std::vector<std::string> Browser::GetRecentDocuments() {
 
 void Browser::SetAppUserModelID(const std::wstring& name) {
   electron::SetAppUserModelID(name);
+  NotificationActivator::RegisterActivator();
 }
 
 bool Browser::SetUserTasks(const std::vector<UserTask>& tasks) {

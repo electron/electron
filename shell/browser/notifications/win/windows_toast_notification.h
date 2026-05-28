@@ -54,6 +54,12 @@ class WindowsToastNotification : public Notification {
   // WinRT/COM calls.
   static std::vector<NotificationInfo> GetNotificationHistory();
 
+  // Finds a delivered toast in Action Center by tag and group. Must run on
+  // GetToastTaskRunner().
+  static ComPtr<ABI::Windows::UI::Notifications::IToastNotification>
+  FindDeliveredToast(const std::string& notification_id,
+                     const std::string& group_id);
+
   // Sequenced runner for blocking WinRT toast work (Show, history). Used by
   // NotificationPresenterWin::GetDeliveredNotifications among others.
   static scoped_refptr<base::SequencedTaskRunner> GetToastTaskRunner();
@@ -67,6 +73,7 @@ class WindowsToastNotification : public Notification {
   void Show(const NotificationOptions& options) override;
   void Dismiss() override;
   void Remove() override;
+  void Restore() override;
 
  private:
   friend class ToastEventHandler;
@@ -146,6 +153,7 @@ class WindowsToastNotification : public Notification {
 
   // Stored for Remove() to use when removing from Action Center
   std::string group_id_;
+  bool is_restored_ = false;
 };
 
 class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,

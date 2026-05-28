@@ -328,9 +328,8 @@ NotificationActivator::~NotificationActivator() = default;
 
 // static
 void NotificationActivator::RegisterActivator() {
-  if (g_registered_ || g_registration_in_progress)
+  if (g_registration_in_progress)
     return;
-  g_registration_in_progress = true;
 
   // For packaged (MSIX) apps, COM server registration is handled via the app
   // manifest (com:Extension and desktop:ToastNotificationActivation), so we
@@ -340,6 +339,21 @@ void NotificationActivator::RegisterActivator() {
   // For unpackaged apps, we need to create the Start Menu shortcut with
   // AUMID/CLSID properties and register the COM server in the registry.
   bool is_packaged = IsRunningInDesktopBridge();
+
+  if (g_registered_) {
+    // App may call setAppUserModelId after early registration at launch.
+    if (!is_packaged) {
+      base::ThreadPool::PostTask(
+          FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
+          base::BindOnce([]() {
+            EnsureShortcut();
+            EnsureCLSIDRegistry();
+          }));
+    }
+    return;
+  }
+
+  g_registration_in_progress = true;
 
   // Perform all blocking filesystem / registry work off the UI thread.
   base::ThreadPool::PostTask(
@@ -382,6 +396,9 @@ void NotificationActivator::RegisterActivator() {
                   }
                   g_cookie_ = cookie;
                   g_registered_ = true;
+                  if (electron::debug_notifications) {
+                    LOG(INFO) << "Registered Windows toast COM activator";
+                  }
                 }));
           },
           is_packaged));
@@ -474,6 +491,22 @@ void HandleToastActivation(const std::wstring& invoked_args,
     std::wstring_view key_view(entry.key);
     if (key_view == L"reply") {
       reply_text = base::WideToUTF8(entry.value);
+    }
+  }
+
+  if (type == L"reply" && reply_text.empty()) {
+    bool has_user_input = false;
+    for (const auto& entry : inputs) {
+      if (!entry.key.empty() && !entry.value.empty()) {
+        has_user_input = true;
+        break;
+      }
+    }
+    if (!has_user_input) {
+      DebugLog(
+          "Ignoring reply activation without user input (duplicate COM/WinRT "
+          "delivery)");
+      return;
     }
   }
 

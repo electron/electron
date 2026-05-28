@@ -7,6 +7,7 @@
 // and released it as MIT to the world.
 
 #include "shell/browser/notifications/win/windows_toast_notification.h"
+#include "shell/browser/notifications/win/windows_toast_constants.h"
 
 #include <string_view>
 
@@ -25,10 +26,12 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/synchronization/lock.h"
 #include "base/task/thread_pool.h"
+#include "base/win/core_winrt_util.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/win/notification_presenter_win.h"
+#include "shell/browser/notifications/win/windows_toast_activator.h"
 #include "shell/browser/win/scoped_hstring.h"
 #include "shell/common/application_info.h"
 #include "third_party/libxml/chromium/xml_writer.h"
@@ -62,42 +65,6 @@ namespace winui = ABI::Windows::UI;
 namespace electron {
 
 namespace {
-
-// This string needs to be max 16 characters to work on Windows 10 prior to
-// applying Creators Update (build 15063).
-constexpr wchar_t kGroup[] = L"Notifications";
-
-// Appends &tag=<id>&group=<group> to the launch attribute of the <toast>
-// element so the COM activator can route clicks to the correct Notification
-// object.  Works for both built-in and custom toastXml.
-void InjectLaunchIdentity(IXmlDocument* doc,
-                          const std::string& notification_id,
-                          const std::string& group_id) {
-  ComPtr<ABI::Windows::Data::Xml::Dom::IXmlElement> root;
-  if (FAILED(doc->get_DocumentElement(&root)) || !root)
-    return;
-
-  // Read the existing launch attribute (may be user-supplied).
-  ScopedHString launch_attr_name(L"launch");
-  HSTRING existing_hs = nullptr;
-  std::wstring existing;
-  if (SUCCEEDED(root->GetAttribute(launch_attr_name, &existing_hs)) &&
-      existing_hs) {
-    UINT32 len = 0;
-    const wchar_t* raw = WindowsGetStringRawBuffer(existing_hs, &len);
-    if (raw && len)
-      existing.assign(raw, len);
-    WindowsDeleteString(existing_hs);
-  }
-
-  std::wstring group_w = group_id.empty() ? kGroup : base::UTF8ToWide(group_id);
-  std::wstring suffix = base::UTF8ToWide(base::StrCat(
-      {"&tag=", notification_id, "&group=", base::WideToUTF8(group_w)}));
-
-  std::wstring new_launch = existing + suffix;
-  ScopedHString new_launch_hs(new_launch);
-  root->SetAttribute(launch_attr_name, new_launch_hs);
-}
 
 void DebugLog(std::string_view log_msg) {
   if (electron::debug_notifications)
@@ -311,22 +278,91 @@ void FillToastTagAndGroupFromToast(
 }  // namespace
 
 // static
+ComPtr<winui::Notifications::IToastNotification>
+WindowsToastNotification::FindDeliveredToast(const std::string& notification_id,
+                                             const std::string& group_id) {
+  ComPtr<winui::Notifications::IToastNotificationManagerStatics2>
+      toast_manager2;
+  HRESULT hr = base::win::GetActivationFactory<
+      winui::Notifications::IToastNotificationManagerStatics2,
+      RuntimeClass_Windows_UI_Notifications_ToastNotificationManager>(
+      &toast_manager2);
+  if (FAILED(hr))
+    return nullptr;
+
+  ComPtr<winui::Notifications::IToastNotificationHistory> notification_history;
+  if (FAILED(toast_manager2->get_History(&notification_history)))
+    return nullptr;
+
+  ComPtr<winui::Notifications::IToastNotificationHistory2>
+      notification_history2;
+  if (FAILED(notification_history.As(&notification_history2)))
+    return nullptr;
+
+  ComPtr<ABI::Windows::Foundation::Collections::IVectorView<
+      ABI::Windows::UI::Notifications::ToastNotification*>>
+      history_items;
+
+  const std::wstring init_app_id = GetInitAppIdCopy();
+  if (init_app_id.empty()) {
+    hr = notification_history2->GetHistory(&history_items);
+  } else {
+    ScopedHString app_id(init_app_id);
+    hr = notification_history2->GetHistoryWithId(app_id, &history_items);
+  }
+  if (FAILED(hr))
+    return nullptr;
+
+  const std::wstring want_group = group_id.empty()
+                                      ? std::wstring(kWindowsToastDefaultGroup)
+                                      : base::UTF8ToWide(group_id);
+
+  unsigned int count = 0;
+  if (FAILED(history_items->get_Size(&count)))
+    return nullptr;
+
+  for (unsigned int i = 0; i < count; i++) {
+    ComPtr<winui::Notifications::IToastNotification> toast;
+    if (FAILED(history_items->GetAt(i, &toast)))
+      continue;
+
+    NotificationInfo info;
+    FillToastTagAndGroupFromToast(toast.Get(), &info);
+
+    if (info.id != notification_id)
+      continue;
+    const std::wstring toast_group =
+        info.group_id.empty() ? std::wstring(kWindowsToastDefaultGroup)
+                              : base::UTF8ToWide(info.group_id);
+    if (toast_group != want_group)
+      continue;
+
+    return toast;
+  }
+
+  return nullptr;
+}
+
+// static
 std::vector<NotificationInfo>
 WindowsToastNotification::GetNotificationHistory() {
   std::vector<NotificationInfo> results;
 
-  if (!toast_manager_) {
-    DebugLog("GetNotificationHistory: toast_manager_ is null");
-    return results;
-  }
-
+  // GetNotificationHistory runs on GetToastTaskRunner(), not the UI thread
+  // where toast_manager_ was created. QueryInterface on the cached manager
+  // fails across apartments; activate IToastNotificationManagerStatics2 on
+  // this thread instead (same pattern as CreateToastNotification).
   ComPtr<winui::Notifications::IToastNotificationManagerStatics2>
       toast_manager2;
-  if (FAILED(
-          (*toast_manager_)->QueryInterface(IID_PPV_ARGS(&toast_manager2)))) {
+  HRESULT hr = base::win::GetActivationFactory<
+      winui::Notifications::IToastNotificationManagerStatics2,
+      RuntimeClass_Windows_UI_Notifications_ToastNotificationManager>(
+      &toast_manager2);
+  if (FAILED(hr)) {
     DebugLog(
-        "GetNotificationHistory: failed to get "
-        "IToastNotificationManagerStatics2");
+        base::StrCat({"GetNotificationHistory: failed to get "
+                      "IToastNotificationManagerStatics2",
+                      FailureResultToString(hr)}));
     return results;
   }
 
@@ -347,7 +383,6 @@ WindowsToastNotification::GetNotificationHistory() {
   ComPtr<ABI::Windows::Foundation::Collections::IVectorView<
       ABI::Windows::UI::Notifications::ToastNotification*>>
       history_items;
-  HRESULT hr;
 
   const std::wstring init_app_id = GetInitAppIdCopy();
   if (init_app_id.empty()) {
@@ -446,7 +481,58 @@ WindowsToastNotification::~WindowsToastNotification() {
 // The method will eventually result in a display or failure signal being posted
 // back to the UI thread, where further callbacks (clicked, dismissed, failed)
 // are handled by ToastEventHandler.
+void WindowsToastNotification::Restore() {
+  is_restored_ = true;
+  const std::string id = notification_id();
+  const std::string group = notification_group();
+  base::WeakPtr<Notification> weak = GetWeakPtr();
+  scoped_refptr<base::SingleThreadTaskRunner> ui_runner =
+      content::GetUIThreadTaskRunner({});
+
+  DebugLog(base::StrCat({"Restore: attaching to delivered toast id=", id}));
+
+  GetToastTaskRunner()->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          [](base::WeakPtr<Notification> weak, std::string id,
+             std::string group,
+             scoped_refptr<base::SingleThreadTaskRunner> ui_runner) {
+            ComPtr<winui::Notifications::IToastNotification> toast =
+                WindowsToastNotification::FindDeliveredToast(id, group);
+            if (!toast) {
+              DebugLog(base::StrCat(
+                  {"Restore: no delivered toast found for id=", id}));
+              return;
+            }
+            ui_runner->PostTask(
+                FROM_HERE,
+                base::BindOnce(
+                    [](base::WeakPtr<Notification> weak,
+                       ComPtr<winui::Notifications::IToastNotification> toast,
+                       std::string group) {
+                      auto* self =
+                          static_cast<WindowsToastNotification*>(weak.get());
+                      if (!self)
+                        return;
+                      if (FAILED(self->SetupCallbacks(toast.Get()))) {
+                        DebugLog("Restore: SetupCallbacks failed");
+                        return;
+                      }
+                      self->toast_notification_ = toast;
+                      self->group_id_ = group;
+                      DebugLog(
+                          "Restore: attached Activated handler to "
+                          "delivered toast");
+                    },
+                    weak, std::move(toast), std::move(group)));
+          },
+          weak, id, group, ui_runner));
+}
+
 void WindowsToastNotification::Show(const NotificationOptions& options) {
+  if (is_restored_)
+    return;
+
   DebugLog("WindowsToastNotification::Show called");
   DebugLog(base::StrCat(
       {"toast_xml empty: ", options.toast_xml.empty() ? "yes" : "no"}));
@@ -561,7 +647,12 @@ bool WindowsToastNotification::CreateToastXmlDocument(
     }
   }
 
-  InjectLaunchIdentity(toast_xml->Get(), notification_id, options.group_id);
+  // Do not inject tag/group into the toast launch attribute here. That steers
+  // body clicks through the COM activator (often spawning a new process)
+  // instead of the in-process Activated handler. Tag and group are already set
+  // on the WinRT toast via put_Tag/put_Group. getHistory() uses Restore() to
+  // attach handlers to delivered toasts; cold-start routing uses
+  // handleActivation.
   return true;
 }
 
@@ -619,8 +710,9 @@ bool WindowsToastNotification::CreateToastNotification(
   }
 
   // Use provided group_id if non-empty, otherwise fall back to default
-  std::wstring group_str =
-      options.group_id.empty() ? kGroup : base::UTF8ToWide(options.group_id);
+  std::wstring group_str = options.group_id.empty()
+                               ? kWindowsToastDefaultGroup
+                               : base::UTF8ToWide(options.group_id);
   ScopedHString group(group_str);
   DebugLog(
       base::StrCat({"Setting group: ", base::WideToUTF8(group_str),
@@ -695,7 +787,7 @@ void WindowsToastNotification::SetupAndShowOnUIThread(
   notif->toast_notification_ = notification;
   notif->group_id_ = group_id;
   std::string effective_group =
-      group_id.empty() ? base::WideToUTF8(kGroup) : group_id;
+      group_id.empty() ? kWindowsToastDefaultGroupUtf8 : group_id;
   notif->set_notification_group(effective_group);
 
   // Show notification on UI thread (must be called on UI thread)
@@ -773,8 +865,8 @@ void WindowsToastNotification::Remove() {
     return;
 
   // Use stored group_id if set, otherwise fall back to default
-  std::wstring group_str =
-      group_id_.empty() ? kGroup : base::UTF8ToWide(group_id_);
+  std::wstring group_str = group_id_.empty() ? kWindowsToastDefaultGroup
+                                             : base::UTF8ToWide(group_id_);
   ScopedHString group(group_str);
   std::wstring tag_str = GetTag(notification_id());
   ScopedHString tag(tag_str);
@@ -1053,11 +1145,26 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     notif_id = notification_->notification_id();
   }
 
-  bool structured = arguments_w.find(L"&tag=") != std::wstring::npos ||
-                    arguments_w.find(L"type=action") != std::wstring::npos ||
-                    arguments_w.find(L"type=reply") != std::wstring::npos;
-  if (structured)
+  const bool has_tag_in_args =
+      arguments_w.find(L"&tag=") != std::wstring::npos ||
+      base::StartsWith(arguments_w, L"tag=", base::CompareCase::SENSITIVE);
+  const bool is_action_or_reply =
+      arguments_w.find(L"type=action") != std::wstring::npos ||
+      arguments_w.find(L"type=reply") != std::wstring::npos;
+
+  // Action/reply use structured launch args and are delivered by the registered
+  // COM activator (with user input). Ignore the in-process Activated event so
+  // we do not call HandleToastActivation twice (this matched pre-history
+  // behavior).
+  if (is_action_or_reply)
     return S_OK;
+
+  if (has_tag_in_args && !notification_) {
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce(&HandleToastActivation, arguments_w,
+                                  std::vector<ActivationUserInput>{}));
+    return S_OK;
+  }
 
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,

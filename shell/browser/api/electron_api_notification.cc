@@ -30,6 +30,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/notifications/win/windows_toast_activator.h"
+#include "shell/browser/notifications/win/windows_toast_constants.h"
 #endif
 
 namespace gin {
@@ -128,9 +129,9 @@ Notification::Notification(const NotificationInfo& info)
       is_restored_(true),
       presenter_(nullptr) {
 #if BUILDFLAG(IS_WIN)
-  // Filter out the Windows default group ("Notifications") from the
-  // JS-visible groupId — it's an internal implementation detail.
-  if (raw_group_id_ != "Notifications")
+  // Filter out the WinRT default group (kWindowsToastDefaultGroupUtf8) from the
+  // JS-visible groupId — it's an internal implementation detail when unset.
+  if (raw_group_id_ != kWindowsToastDefaultGroupUtf8)
     group_id_ = raw_group_id_;
 #else
   group_id_ = raw_group_id_;
@@ -545,6 +546,13 @@ void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
+#if BUILDFLAG(IS_WIN)
+  // Loaded when the app first accesses `electron.Notification` (see
+  // lib/browser/api/module-list.ts). Register COM so toast activations hit this
+  // process without also calling handleActivation or getHistory.
+  electron::NotificationActivator::RegisterActivator();
+#endif
+
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("Notification", Notification::GetConstructor(isolate, context));
