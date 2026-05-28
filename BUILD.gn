@@ -564,6 +564,11 @@ source_set("electron_lib") {
     "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
     "//third_party/electron_node:libnode",
+
+    # Provides the strong SnapshotBuilder::GetEmbeddedSnapshotData() (the
+    # embedded Node startup snapshot) that overrides libnode's weak no-snapshot
+    # stub. Lets the browser process boot Node from a snapshot.
+    "//third_party/electron_node:node_snapshot",
     "//third_party/highway:libhwy",
     "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
@@ -893,8 +898,38 @@ if (electron_generate_js2c_code_cache) {
       # node's zstd binding also needs the compression symbols.
       deps = [
         "//third_party/electron_node:libnode",
+
+        # libnode no longer carries the GetEmbeddedSnapshotData stub; this
+        # (non-browser-flavor) tool builds caches against the v8 context
+        # snapshot, not the embedded Node snapshot, so it links the stub.
+        "//third_party/electron_node:node_snapshot_stub",
         "//third_party/zstd:compress",
       ]
+    }
+
+    # The browser process boots from the embedded Node startup snapshot, whose
+    # read-only heap (and thus the code-cache read-only checksum) is owned
+    # uniquely by the SnapshotCreator-produced blob -- matching no standalone
+    # snapshot file. This variant links the real node_snapshot so it builds the
+    # browser bundles' cache against that exact snapshot's isolate (via
+    # GetEmbeddedSnapshotData + InitializeIsolateParams in the tool), the only
+    # isolate whose read-only checksum matches the runtime browser process.
+    if (node_use_node_snapshot) {
+      executable("electron_natives_codecache_snapshot") {
+        # Host build tool, not shipped Chromium code.
+        configs += [ "//build/config/compiler:no_chromium_code" ]
+        configs -= [ "//build/config/compiler:chromium_code" ]
+        include_dirs = [
+          ".",
+          "//",
+        ]
+        sources = [ "shell/common/electron_natives_codecache_main.cc" ]
+        deps = [
+          "//third_party/electron_node:libnode",
+          "//third_party/electron_node:node_snapshot",
+          "//third_party/zstd:compress",
+        ]
+      }
     }
   }
 
@@ -912,10 +947,6 @@ if (electron_generate_js2c_code_cache) {
               "--no-freeze-flags-after-init"
     },
     {
-      name = "browser"
-      flags = "--rehash-snapshot --no-freeze-flags-after-init"
-    },
-    {
       name = "utility"
       flags = "--rehash-snapshot --no-freeze-flags-after-init"
     },
@@ -924,6 +955,19 @@ if (electron_generate_js2c_code_cache) {
       flags = "--rehash-snapshot --no-freeze-flags-after-init"
     },
   ]
+
+  # The browser flavor is special-cased below when a Node startup snapshot is
+  # embedded: its isolate (and so its code-cache read-only checksum) comes from
+  # that snapshot, not the v8 context snapshot. Without a snapshot it boots from
+  # the v8 context snapshot like the rest.
+  if (!node_use_node_snapshot) {
+    _js2c_cc_flavors += [
+      {
+        name = "browser"
+        flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      },
+    ]
+  }
 
   foreach(_f, _js2c_cc_flavors) {
     action("run_electron_natives_codecache_" + _f.name) {
@@ -950,10 +994,42 @@ if (electron_generate_js2c_code_cache) {
     }
   }
 
+  # Browser flavor, built against the embedded Node startup snapshot so its
+  # code-cache read-only checksum matches the runtime browser isolate.
+  if (node_use_node_snapshot) {
+    action("run_electron_natives_codecache_browser") {
+      deps = [
+        ":electron_natives_codecache_snapshot($v8_snapshot_toolchain)",
+        "//v8:run_mksnapshot_default",
+      ]
+      script = "//v8/tools/run.py"
+      _gen_dir = get_label_info(
+              ":electron_natives_codecache_snapshot($v8_snapshot_toolchain)",
+              "root_out_dir")
+      _out = "$root_gen_dir/electron_natives_code_cache_browser.cc"
+      outputs = [ _out ]
+      args = [
+        "./" + rebase_path(_gen_dir + "/electron_natives_codecache_snapshot",
+                           root_build_dir),
+        rebase_path(_out, root_build_dir),
+
+        # Base blob for V8's global init; the isolate itself is created from the
+        # embedded snapshot, which overrides this (the tool ignores it when the
+        # real node_snapshot is linked).
+        rebase_path("$root_out_dir/snapshot_blob.bin", root_build_dir),
+        "browser",
+        "--rehash-snapshot --no-freeze-flags-after-init",
+      ]
+    }
+  }
+
   group("run_electron_natives_codecache") {
     public_deps = []
     foreach(_f, _js2c_cc_flavors) {
       public_deps += [ ":run_electron_natives_codecache_" + _f.name ]
+    }
+    if (node_use_node_snapshot) {
+      public_deps += [ ":run_electron_natives_codecache_browser" ]
     }
   }
 }

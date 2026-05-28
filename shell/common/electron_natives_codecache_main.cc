@@ -25,6 +25,7 @@
 
 #include "libplatform/libplatform.h"
 #include "node_builtins.h"
+#include "node_snapshot_builder.h"
 #include "shell/common/js2c_bundle_ids.h"
 #include "v8.h"
 
@@ -136,11 +137,32 @@ int main(int argc, char* argv[]) {
   v8::Isolate::CreateParams create_params;
   create_params.array_buffer_allocator =
       v8::ArrayBuffer::Allocator::NewDefaultAllocator();
+
+  // Electron: when this tool is linked with the real node_snapshot (the
+  // browser flavor), create the isolate FROM the embedded Node startup
+  // snapshot -- the browser process boots from that same snapshot, and the
+  // V8 code-cache key embeds the isolate's read-only-heap checksum, which a
+  // SnapshotCreator-produced snapshot owns uniquely (it differs from every
+  // standalone blob). Building the cache here, against the shipped snapshot,
+  // is the only way its read-only checksum matches the runtime browser
+  // isolate. Other flavors link the weak stub (null here) and create their
+  // isolate from the external startup blob loaded above.
+  const node::SnapshotData* node_sd =
+      node::SnapshotBuilder::GetEmbeddedSnapshotData();
+  const bool from_node_snapshot = node_sd != nullptr;
+  if (from_node_snapshot)
+    node::SnapshotBuilder::InitializeIsolateParams(node_sd, &create_params);
+
   v8::Isolate* isolate = v8::Isolate::New(create_params);
   {
     v8::Isolate::Scope isolate_scope(isolate);
     v8::HandleScope handle_scope(isolate);
-    v8::Local<v8::Context> context = v8::Context::New(isolate);
+    // From a Node snapshot isolate the main context is at index 0; otherwise
+    // create a fresh one (matches each consuming process).
+    v8::Local<v8::Context> context =
+        from_node_snapshot
+            ? v8::Context::FromSnapshot(isolate, 0).ToLocalChecked()
+            : v8::Context::New(isolate);
     v8::Context::Scope context_scope(context);
 
     // The ctor self-registers all builtins, incl. electron/js2c/*.
