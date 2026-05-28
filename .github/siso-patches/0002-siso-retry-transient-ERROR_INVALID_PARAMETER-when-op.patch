@@ -8,74 +8,77 @@ ManifestParser.Load fans out across all subninja files (~90k in a
 Chromium build) at NumCPU parallelism. On Windows builders where out/
 is served through a filesystem filter driver (e.g. bindflt/wcifs for
 container bind mounts), CreateFileW can intermittently return
-ERROR_INVALID_PARAMETER under this concurrent open burst. The previous
-patch removes the redundant per-chunk re-open, but the single remaining
-open per file can still hit the race; without a retry a single transient
-failure aborts the entire manifest load.
+ERROR_INVALID_PARAMETER under this concurrent open burst. Without a
+retry a single transient failure aborts the entire manifest load.
 
-Wrap the remaining os.Open call in readFile in a small Windows-only
+Wrap the os.Open call in readFile in a small Windows-only
 retry for ERROR_INVALID_PARAMETER (5 attempts, 5-80ms backoff). Each
 retry is logged via clog.Warningf and also written to stderr so it is
 visible in CI step output where glog warnings are file-only by default.
 Other platforms keep the direct os.Open path.
----
- siso/toolsupport/ninjautil/file_parser.go     |  3 +-
- siso/toolsupport/ninjautil/openfile_other.go  | 18 +++++++
- .../toolsupport/ninjautil/openfile_windows.go | 50 +++++++++++++++++++
- 3 files changed, 69 insertions(+), 2 deletions(-)
- create mode 100644 siso/toolsupport/ninjautil/openfile_other.go
- create mode 100644 siso/toolsupport/ninjautil/openfile_windows.go
 
-diff --git a/siso/toolsupport/ninjautil/file_parser.go b/siso/toolsupport/ninjautil/file_parser.go
-index 75b1d6e..4a3e639 100644
---- a/siso/toolsupport/ninjautil/file_parser.go
-+++ b/siso/toolsupport/ninjautil/file_parser.go
-@@ -7,7 +7,6 @@ package ninjautil
+diff --git a/siso/hashfs/state.go b/siso/hashfs/state.go
+index 1be99639..abe2fbcc 100644
+--- a/siso/hashfs/state.go
++++ b/siso/hashfs/state.go
+@@ -250,7 +250,7 @@ func loadFile(ctx context.Context, opts Option) ([]byte, error) {
+ 	if opts.UseMmap {
+ 		// Use mmap to read the compressed file. The data is backed by the
+ 		// OS page cache rather than the Go heap, avoiding a large allocation.
+-		data, err := mmapfile.Read(opts.StateFile)
++		data, err := mmapfile.Read(ctx, opts.StateFile)
+ 		if err != nil {
+ 			return nil, err
+ 		}
+diff --git a/siso/mmapfile/mmap_unix.go b/siso/mmapfile/mmap_unix.go
+index 345c02de..9bafe560 100644
+--- a/siso/mmapfile/mmap_unix.go
++++ b/siso/mmapfile/mmap_unix.go
+@@ -7,6 +7,7 @@
+ package mmapfile
+ 
  import (
- 	"context"
++	"context"
  	"fmt"
--	"os"
- 	"path/filepath"
- 	"runtime/trace"
- 	"sync"
-@@ -108,7 +107,7 @@ func (p *fileParser) parseFile(ctx context.Context, fname string) error {
- // readFile reads a file of fname in parallel.
- func (p *fileParser) readFile(ctx context.Context, fname string) ([]byte, error) {
- 	defer trace.StartRegion(ctx, "ninja.read").End()
--	f, err := os.Open(fname)
-+	f, err := openFile(ctx, fname)
+ 	"os"
+ 
+@@ -16,7 +17,7 @@ import (
+ // Read maps path read-only into memory. The returned slice is page-cache
+ // backed and stays valid until Unmap is called. An empty file returns
+ // (nil, nil).
+-func Read(path string) ([]byte, error) {
++func Read(_ context.Context, path string) ([]byte, error) {
+ 	f, err := os.Open(path)
+ 	if err != nil {
+ 		return nil, err
+diff --git a/siso/mmapfile/mmap_windows.go b/siso/mmapfile/mmap_windows.go
+index fc00bc9e..31e16150 100644
+--- a/siso/mmapfile/mmap_windows.go
++++ b/siso/mmapfile/mmap_windows.go
+@@ -7,6 +7,7 @@
+ package mmapfile
+ 
+ import (
++	"context"
+ 	"fmt"
+ 	"os"
+ 	"unsafe"
+@@ -17,8 +18,8 @@ import (
+ // Read maps path read-only into memory. The returned slice is page-cache
+ // backed and stays valid until Unmap is called. An empty file returns
+ // (nil, nil).
+-func Read(path string) ([]byte, error) {
+-	f, err := os.Open(path)
++func Read(ctx context.Context, path string) ([]byte, error) {
++	f, err := openFile(ctx, path)
  	if err != nil {
  		return nil, err
  	}
-diff --git a/siso/toolsupport/ninjautil/openfile_other.go b/siso/toolsupport/ninjautil/openfile_other.go
+diff --git a/siso/mmapfile/openfile_windows.go b/siso/mmapfile/openfile_windows.go
 new file mode 100644
-index 0000000..9fca690
+index 00000000..2c71562c
 --- /dev/null
-+++ b/siso/toolsupport/ninjautil/openfile_other.go
-@@ -0,0 +1,18 @@
-+// Copyright 2026 The Chromium Authors
-+// Use of this source code is governed by a BSD-style license that can be
-+// found in the LICENSE file.
-+
-+//go:build !windows
-+
-+package ninjautil
-+
-+import (
-+	"context"
-+	"os"
-+)
-+
-+// openFile opens fname for reading.
-+// See openfile_windows.go for the Windows variant with transient-error retry.
-+func openFile(ctx context.Context, fname string) (*os.File, error) {
-+	return os.Open(fname)
-+}
-diff --git a/siso/toolsupport/ninjautil/openfile_windows.go b/siso/toolsupport/ninjautil/openfile_windows.go
-new file mode 100644
-index 0000000..f9d8e9d
---- /dev/null
-+++ b/siso/toolsupport/ninjautil/openfile_windows.go
++++ b/siso/mmapfile/openfile_windows.go
 @@ -0,0 +1,50 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
@@ -83,7 +86,7 @@ index 0000000..f9d8e9d
 +
 +//go:build windows
 +
-+package ninjautil
++package mmapfile
 +
 +import (
 +	"context"
@@ -127,6 +130,16 @@ index 0000000..f9d8e9d
 +		delay *= 2
 +	}
 +}
--- 
-2.52.0
-
+diff --git a/siso/toolsupport/ninjautil/file_parser.go b/siso/toolsupport/ninjautil/file_parser.go
+index 39ed7af6..a81fc9a5 100644
+--- a/siso/toolsupport/ninjautil/file_parser.go
++++ b/siso/toolsupport/ninjautil/file_parser.go
+@@ -110,7 +110,7 @@ func (p *fileParser) parseFile(ctx context.Context, fname string) error {
+ // not outlive Load, which releases all mappings before returning.
+ func (p *fileParser) readFile(ctx context.Context, fname string) ([]byte, error) {
+ 	defer trace.StartRegion(ctx, "ninja.read").End()
+-	buf, err := mmapfile.Read(fname)
++	buf, err := mmapfile.Read(ctx, fname)
+ 	if err != nil {
+ 		return nil, err
+ 	}
