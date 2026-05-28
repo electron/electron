@@ -2674,13 +2674,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"abstract-socket@github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19":
-  version: 2.1.1
-  resolution: "abstract-socket@https://github.com/deepak1556/node-abstractsocket.git#commit=928cc591decd12aff7dad96449da8afc29832c19"
+"abstract-socket@npm:2.0.0":
+  version: 2.0.0
+  resolution: "abstract-socket@npm:2.0.0"
   dependencies:
     bindings: "npm:^1.2.1"
-    node-addon-api: "npm:8.0.0"
-  checksum: 10c0/b2117ef92456f0c8fedbac9cf9a6cdec2b957bd320943e01eeff396ebfc2ca50eb2a67cef4461ce5326e4b97d6d2fd16777037131518a1f0b7aa7a5b6ef4f207
+    nan: "npm:^2.0.9"
+    node-gyp: "npm:latest"
+  checksum: 10c0/f144d105439491ce9d493f6806d6d27219c89548e2648a0f5391f55529fcb8573fc8a398961794ece6f3bbdf1986e1a9437784dd7808653583250729c71a9469
+  conditions: os=linux
+  languageName: node
+  linkType: hard
+
+"abstract-socket@patch:abstract-socket@npm%3A2.0.0#~/.yarn/patches/abstract-socket-npm-2.0.0-b025d8ca5a.patch":
+  version: 2.0.0
+  resolution: "abstract-socket@patch:abstract-socket@npm%3A2.0.0#~/.yarn/patches/abstract-socket-npm-2.0.0-b025d8ca5a.patch::version=2.0.0&hash=469521"
+  dependencies:
+    bindings: "npm:^1.2.1"
+    nan: "npm:^2.0.9"
+    node-gyp: "npm:latest"
+  checksum: 10c0/ce0d4ab8d04a0cba93b0afb31d1ae9dd22e6fda84c656aee5fcea7a778ef537e5ec59d693f00e7bf47981622544c96243d16927e8baaff850557d13c0a72b8cd
+  conditions: os=linux
   languageName: node
   linkType: hard
 
@@ -4463,7 +4477,7 @@ __metadata:
     "@types/uuid": "npm:^3.4.6"
     "@types/w3c-web-serial": "npm:^1.0.7"
     "@types/ws": "npm:^7.2.0"
-    abstract-socket: "github:deepak1556/node-abstractsocket#928cc591decd12aff7dad96449da8afc29832c19"
+    abstract-socket: "npm:2.0.0"
     basic-auth: "npm:^2.0.1"
     busboy: "npm:^1.6.0"
     chai: "npm:^4.2.0"
@@ -5794,19 +5808,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"get-intrinsic@npm:^1.0.2, get-intrinsic@npm:^1.1.1, get-intrinsic@npm:^1.1.3, get-intrinsic@npm:^1.2.0":
-  version: 1.2.1
-  resolution: "get-intrinsic@npm:1.2.1"
-  dependencies:
-    function-bind: "npm:^1.1.1"
-    has: "npm:^1.0.3"
-    has-proto: "npm:^1.0.1"
-    has-symbols: "npm:^1.0.3"
-  checksum: 10c0/49eab47f9de8f1a4f9b458b8b74ee5199fb2614414a91973eb175e07db56b52b6df49b255cc7ff704cb0786490fb93bfe8f2ad138b590a8de09b47116a366bc9
-  languageName: node
-  linkType: hard
-
-"get-intrinsic@npm:^1.2.5, get-intrinsic@npm:^1.2.6, get-intrinsic@npm:^1.3.0":
+"get-intrinsic@npm:^1.3.0":
   version: 1.3.0
   resolution: "get-intrinsic@npm:1.3.0"
   dependencies:
@@ -8395,6 +8397,15 @@ __metadata:
   dependencies:
     node-gyp: "npm:latest"
   checksum: 10c0/b986dd257dca53ab43a3b6ca6d0eafde697b69e1d63b242fa4aece50ce97eb169f9c4a5d8eb0eb5f58d118a9595fee11f3198fa210f023440053bb6f54109e73
+  languageName: node
+  linkType: hard
+
+"nan@npm:^2.0.9":
+  version: 2.26.2
+  resolution: "nan@npm:2.26.2"
+  dependencies:
+    node-gyp: "npm:latest"
+  checksum: 10c0/ff204c964729279cf3abb8b170c77753ed36092e2235f11bfb0204dfd3e8cc2d5a3bcfdfd3b677f06a0743d7f835d873dce59f23a2dbf6fb671d9351cc655d73
   languageName: node
   linkType: hard
 

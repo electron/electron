@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index d83118cbc1e4c1ecf4ba3f4df2d730800c5cf7dd..37b9dde276f27ce6aa8c7e8e5ecb9fba05324ca6 100644
+index 372f4f18da78f24f0e128fd007eab82d40a6c1d0..058e9b72d44c8ded74f9dec73014d7b3ecd7c3eb 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -25,6 +25,7 @@
@@ -19,7 +19,7 @@ index d83118cbc1e4c1ecf4ba3f4df2d730800c5cf7dd..37b9dde276f27ce6aa8c7e8e5ecb9fba
  #include "ui/gfx/geometry/point_f.h"
  #include "ui/gfx/mojom/delegated_ink_point_renderer.mojom.h"
  #include "ui/gfx/native_ui_types.h"
-@@ -310,6 +311,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
+@@ -315,6 +316,9 @@ class CONTENT_EXPORT RenderWidgetHostDelegate {
    // Returns the associated RenderViewHostDelegateView*, if possible.
    virtual RenderViewHostDelegateView* GetDelegateView();
  
@@ -30,10 +30,10 @@ index d83118cbc1e4c1ecf4ba3f4df2d730800c5cf7dd..37b9dde276f27ce6aa8c7e8e5ecb9fba
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 03f49a97d123e88f48fd4d9dd05f8ca39dd6f317..60becbb427815301697adcf414cdc45d97825d24 100644
+index dd1c8e469c9b15fd1567feac76426472c1011cb4..25e14ad90f6f427e4a9985878610f30187ecf822 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2076,6 +2076,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
+@@ -2091,6 +2091,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_) {
      view_->UpdateCursor(cursor);
    }
@@ -44,10 +44,10 @@ index 03f49a97d123e88f48fd4d9dd05f8ca39dd6f317..60becbb427815301697adcf414cdc45d
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 26dd8cd2187098127c6ba8ac2c4e01e6454b2f98..517fea0b7bd398f31aa78adc7944def9b9dbc4ce 100644
+index 0a61596b781d3a3e55aa329828894f0f303a9177..a03de7bb86aa38bb1773aa94566918fdf67e28a5 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -6358,6 +6358,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -6393,6 +6393,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index 26dd8cd2187098127c6ba8ac2c4e01e6454b2f98..517fea0b7bd398f31aa78adc7944def9
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 248b5785df198036b539e49a5f2ebf10e1e6cf18..abde4c8b4d369d541378ceab6fc33d443741e0e2 100644
+index 5a3dcb8d2ced95507d2b1fcc59e07b029f0ab703..6df0268523675f14acb5b133d25b4885c092ebe1 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1207,6 +1207,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1217,6 +1217,7 @@ class CONTENT_EXPORT WebContentsImpl
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -72,7 +72,7 @@ index 248b5785df198036b539e49a5f2ebf10e1e6cf18..abde4c8b4d369d541378ceab6fc33d44
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 3f7f7a8659715c5db22b6d4507e2a492ecfdf1b7..882eb3babb1970071c362cc036adf444ba445ef0 100644
+index 80b10240c960a43fcc84abca1e028129f0b48bd3..11e0c023f35e4291aa9af06424f7ac46eb97c60f 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -33,6 +33,7 @@

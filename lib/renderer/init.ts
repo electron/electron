@@ -120,26 +120,34 @@ if (nodeIntegration) {
       return false;
     }
   };
-} else {
-  // Delete Node's symbols after the Environment has been loaded in a
-  // non context-isolated environment
-  if (!process.contextIsolated) {
-    process.once('loaded', function () {
-      delete (global as any).process;
-      delete (global as any).Buffer;
-      delete (global as any).setImmediate;
-      delete (global as any).clearImmediate;
-      delete (global as any).global;
-      // eslint-disable-next-line n/no-deprecated-api
-      delete (global as any).root;
-      // eslint-disable-next-line n/no-deprecated-api
-      delete (global as any).GLOBAL;
-    });
-  }
 }
+
+// In a non context-isolated renderer without Node integration, the Node
+// globals (process, Buffer, ...) must be removed from the renderer's main
+// world before the page's own scripts run, but only after the preload
+// scripts have had a chance to use them. The 'loaded' event fires on the
+// next tick after init returns, which is before any async ESM preload
+// finishes executing, leaving its code with no `process` (#46142). So we
+// instead schedule the deletion explicitly once preloads are loaded.
+const shouldDeleteRendererNodeGlobals = !nodeIntegration && !process.contextIsolated;
 
 const { appCodeLoaded } = process;
 delete process.appCodeLoaded;
+
+const onPreloadsLoaded = () => {
+  if (shouldDeleteRendererNodeGlobals) {
+    delete (global as any).process;
+    delete (global as any).Buffer;
+    delete (global as any).setImmediate;
+    delete (global as any).clearImmediate;
+    delete (global as any).global;
+    // eslint-disable-next-line n/no-deprecated-api
+    delete (global as any).root;
+    // eslint-disable-next-line n/no-deprecated-api
+    delete (global as any).GLOBAL;
+  }
+  appCodeLoaded!();
+};
 
 const { preloadPaths } = ipcRendererUtils.invokeSync<{ preloadPaths: string[] }>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
 const cjsPreloads = preloadPaths.filter((p) => path.extname(p) !== '.mjs');
@@ -174,7 +182,7 @@ if (esmPreloads.length) {
           ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
         });
     }
-  }).finally(() => appCodeLoaded!());
+  }).finally(onPreloadsLoaded);
 } else {
-  appCodeLoaded!();
+  onPreloadsLoaded();
 }

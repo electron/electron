@@ -1966,10 +1966,6 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("getJumpListSettings", &App::GetJumpListSettings)
       .SetMethod("setJumpList", &App::SetJumpList)
 #endif
-#if BUILDFLAG(IS_LINUX)
-      .SetMethod("isUnityRunning",
-                 base::BindRepeating(&Browser::IsUnityRunning, browser))
-#endif
       .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)
       .SetMethod("getAppPath", &App::GetAppPath)

@@ -326,7 +326,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index 2fa0432a9180603ff652b7a13106c4b2ed7b37e3..29dbd2157a16330e9aec2d66b2e3b507becb11f8 100644
+index e822eb0f051f477a0fb74e4f83ce8d9d710239ec..9624cd92e31e98cb186611fc68c4f010e2ffdc51 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 @@ -321,8 +321,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
@@ -365,10 +365,10 @@ index 2fa0432a9180603ff652b7a13106c4b2ed7b37e3..29dbd2157a16330e9aec2d66b2e3b507
                               kMaxNumberOfBuffers, std::move(receiver),
                               std::move(receiver_on_io_thread)),
 diff --git a/content/public/browser/desktop_media_id.h b/content/public/browser/desktop_media_id.h
-index b10c5376caa9a832826868c72dbc44ee54705283..e9b27b53d9b34fbb0a3410eb2fcc15306497cdf4 100644
+index 1b9ddbef4bac9a53659d20bd774207e1e88c6fbe..2286d92825752fe88e08b2fe7410e42d8b55d85d 100644
 --- a/content/public/browser/desktop_media_id.h
 +++ b/content/public/browser/desktop_media_id.h
-@@ -28,6 +28,8 @@ struct CONTENT_EXPORT DesktopMediaID {
+@@ -35,6 +35,8 @@ struct CONTENT_EXPORT DesktopMediaID {
    static constexpr Id kNullId = 0;
    // Represents a fake id to create a dummy capturer for autotests.
    static constexpr Id kFakeId = -3;

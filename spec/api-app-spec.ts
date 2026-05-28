@@ -632,8 +632,7 @@ describe('app module', () => {
   });
 
   describe('app.badgeCount', () => {
-    const platformIsNotSupported =
-      process.platform === 'win32' || (process.platform === 'linux' && !app.isUnityRunning());
+    const platformIsNotSupported = process.platform === 'win32' || process.platform === 'linux';
 
     const expectedBadgeCount = 42;
 

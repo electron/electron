@@ -129,7 +129,7 @@ jobs:
         for target_cpu in ${{ inputs.target-archs }}
         do
           e init -f --root=$(pwd) --out=Default ${{ inputs.gn-build-type }} --import ${{ inputs.gn-build-type }} --target-cpu $target_cpu --remote-build none
-          cd src
+          cd src/electron
           export GN_EXTRA_ARGS="target_cpu=\"$target_cpu\""
           if [ "${{ inputs.target-platform }}" = "linux" ]; then
             if [ "$target_cpu" = "arm" ]; then
@@ -144,15 +144,14 @@ jobs:
 
           e build --gen=only
 
-          e d gn check out/Default //electron:electron_lib
-          e d gn check out/Default //electron:electron_app
-          e d gn check out/Default //electron/shell/common:mojo
-          e d gn check out/Default //electron/shell/common:plugin
+          npm run gn-check -- --outDir Default
 
           # Check the hunspell filenames
-          node electron/script/gen-hunspell-filenames.js --check
-          node electron/script/gen-libc++-filenames.js --check
-          cd ..
+          node script/gen-hunspell-filenames.js --check
+
+          node script/gen-libc++-filenames.js --check
+          node script/yarn.js ts-node script/gen-filenames.ts -- --check
+          cd ../..
         done
     - name: Wait for active SSH sessions
       if: always() && !cancelled()

@@ -132,6 +132,9 @@ jobs:
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Run Clang-Tidy
+      env:
+        # macOS runners have fewer CPU cores, so use fewer jobs for better results
+        CLANG_TIDY_JOBS: ${{ case(inputs.target-platform == 'macos', 5, 8) }}
       run: |
         e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
 
@@ -162,7 +165,7 @@ jobs:
         fi
 
         cd src/electron
-        node script/yarn.js lint:clang-tidy --jobs 8 --out-dir ../out/${ELECTRON_OUT_DIR}
+        node script/yarn.js lint:clang-tidy --jobs ${CLANG_TIDY_JOBS} --out-dir ../out/${ELECTRON_OUT_DIR}
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"

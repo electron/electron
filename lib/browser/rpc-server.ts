@@ -5,7 +5,6 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import { clipboard } from 'electron/common';
 import { webFrameMain } from 'electron/main';
 
-import * as fs from 'fs';
 import * as path from 'path';
 
 // Implements window.close()
@@ -49,60 +48,23 @@ ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_CLIPBOARD_SYNC, function (event, me
   return (clipboard as any)[method](...args);
 });
 
-const getPreloadScriptsFromEvent = (event: ElectronInternal.IpcMainInternalEvent) => {
-  const session: Electron.Session = event.type === 'service-worker' ? event.session : event.sender.session;
-  let preloadScripts = session.getPreloadScripts();
-
-  if (event.type === 'frame') {
-    preloadScripts = preloadScripts.filter((script) => script.type === 'frame');
-
-    const webPrefPreload = event.sender._getPreloadScript();
-    if (webPrefPreload) preloadScripts.push(webPrefPreload);
-  } else if (event.type === 'service-worker') {
-    preloadScripts = preloadScripts.filter((script) => script.type === 'service-worker');
-  } else {
-    throw new Error(`getPreloadScriptsFromEvent: event.type is invalid (${(event as any).type})`);
+// Sandboxed renderers receive their preload scripts and process info via the
+// browser-pushed ElectronFrameStartup mojo interface for frames, or
+// EmbeddedWorkerStartParams for service workers (see
+// electron_api_web_contents.cc and electron_browser_client.cc), not over
+// sync IPC. This handler is only used by non-sandboxed renderers, which read
+// their own preload files from disk and only need the path list.
+ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD, function (event) {
+  if (event.type !== 'frame') {
+    throw new Error(`BROWSER_NONSANDBOX_LOAD: invalid event.type (${(event as any).type})`);
   }
-
+  const session: Electron.Session = event.sender.session;
+  let preloadScripts = session.getPreloadScripts().filter((script) => script.type === 'frame');
+  const webPrefPreload = event.sender._getPreloadScript();
+  if (webPrefPreload) preloadScripts.push(webPrefPreload);
   // TODO(samuelmaddock): Remove filter after Session.setPreloads is fully
   // deprecated. The new API will prevent relative paths from being registered.
-  return preloadScripts.filter((script) => path.isAbsolute(script.filePath));
-};
-
-const readPreloadScript = async function (script: Electron.PreloadScript): Promise<ElectronInternal.PreloadScript> {
-  let contents;
-  let error;
-  try {
-    contents = await fs.promises.readFile(script.filePath, 'utf8');
-  } catch (err) {
-    if (err instanceof Error) {
-      error = err;
-    }
-  }
-  return {
-    ...script,
-    contents,
-    error
-  };
-};
-
-ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD, async function (event) {
-  const preloadScripts = getPreloadScriptsFromEvent(event);
-  return {
-    preloadScripts: await Promise.all(preloadScripts.map(readPreloadScript)),
-    process: {
-      arch: process.arch,
-      platform: process.platform,
-      env: { ...process.env },
-      version: process.version,
-      versions: process.versions,
-      execPath: process.helperExecPath
-    }
-  };
-});
-
-ipcMainUtils.handleSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD, function (event) {
-  const preloadScripts = getPreloadScriptsFromEvent(event);
+  preloadScripts = preloadScripts.filter((script) => path.isAbsolute(script.filePath));
   return { preloadPaths: preloadScripts.map((script) => script.filePath) };
 });
 

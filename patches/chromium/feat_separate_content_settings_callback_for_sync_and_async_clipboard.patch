@@ -20,10 +20,10 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 7ed353d3dfe079f90c0c36e5d37219b24a0239e2..24f75cbada86669028e5e40fe7b62c01e8316121 100644
+index 1c31e16a4db45f2d36d91abdbd3056959633c1da..f1edc34d7fd034a08af91f265b9e4cf2d870679a 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
-@@ -567,7 +567,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
+@@ -566,7 +566,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
        return ContentSettingsType::LOCAL_NETWORK;
      case PermissionType::LOOPBACK_NETWORK:
        return ContentSettingsType::LOOPBACK_NETWORK;

@@ -10,11 +10,11 @@
 namespace electron {
 
 // Convert draggable regions in raw format to SkRegion format.
-std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(
+SkRegion DraggableRegionsToSkRegion(
     const std::vector<blink::mojom::DraggableRegionPtr>& regions) {
-  auto sk_region = std::make_unique<SkRegion>();
+  SkRegion sk_region;
   for (const auto& region : regions) {
-    sk_region->op(
+    sk_region.op(
         SkIRect::MakeLTRB(region->bounds.x(), region->bounds.y(),
                           region->bounds.right(), region->bounds.bottom()),
         region->draggable ? SkRegion::kUnion_Op : SkRegion::kDifference_Op);

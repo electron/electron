@@ -18,8 +18,8 @@ if (!OUT_DIR) {
 }
 
 const env = {
-  ...getDepotToolsEnv(),
-  DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
+  DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
+  ...getDepotToolsEnv()
 };
 
 const gnCheckDirs = [

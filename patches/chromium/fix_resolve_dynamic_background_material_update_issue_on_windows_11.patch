@@ -8,10 +8,10 @@ such as the background turning black when maximizing the window and
 dynamic background material settings not taking effect.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 95af2da65403d35d4b7a5eb0d032e01ab8d23f62..d7bc932bdc1165273fccade29300739dc15446ef 100644
+index 2ec269f3617cb5e5049b1623c316c638114cde3f..1c67a2f59eb97288266096b102882ab2dddcd8fe 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -167,6 +167,10 @@ void DesktopWindowTreeHostWin::FinishTouchDrag(gfx::Point screen_point) {
+@@ -176,6 +176,10 @@ void DesktopWindowTreeHostWin::FinishTouchDrag(gfx::Point screen_point) {
    }
  }
  
@@ -23,7 +23,7 @@ index 95af2da65403d35d4b7a5eb0d032e01ab8d23f62..d7bc932bdc1165273fccade29300739d
  
  void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 27322ef34edf3fa8bfbd20b1baddcaf3b7555618..b8d1fa863fd05ebc3ab8ac5ef8c4d81361ce45fe 100644
+index 0bd3b00c03a32f0e9c5c71798e6278b6781a5332..5334cdaee4966804f5aa08538bcfb964ba8309ae 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 @@ -93,6 +93,8 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
@@ -36,7 +36,7 @@ index 27322ef34edf3fa8bfbd20b1baddcaf3b7555618..b8d1fa863fd05ebc3ab8ac5ef8c4d813
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index fce563eee1adc36b672c06ed3669e1ab12f93cf0..7ce3a67beab569751414bba6dd9f99a038b91261 100644
+index 66cd4a3c08f4f8cd2eda7de3bd43028b9885eca4..21a5205507ccb9d55d5131fcb49bf840bb5d2748 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -993,13 +993,13 @@ void HWNDMessageHandler::FrameTypeChanged() {

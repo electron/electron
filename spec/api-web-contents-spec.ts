@@ -545,24 +545,21 @@ describe('webContents module', () => {
       }
     });
 
-    it('fails if loadURL is called inside did-start-loading', (done) => {
-      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
-        expect(validatedURL).to.contain('blank.html');
-        done();
-      });
+    it('fails if loadURL is called inside did-start-loading', async () => {
+      const result = Promise.all([once(w.webContents, 'did-fail-load'), once(w.webContents, 'did-stop-loading')]);
 
       w.webContents.once('did-start-loading', () => {
         w.loadURL(`file://${fixturesPath}/pages/blank.html`);
       });
 
       w.loadURL('data:text/html,<h1>HELLO</h1>');
+
+      const [[, , , validatedURL]] = await result;
+      expect(validatedURL).to.contain('blank.html');
     });
 
-    it('fails if loadurl is called after the navigation is ready to commit', (done) => {
-      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
-        expect(validatedURL).to.contain('blank.html');
-        done();
-      });
+    it('fails if loadurl is called after the navigation is ready to commit', async () => {
+      const result = Promise.all([once(w.webContents, 'did-fail-load'), once(w.webContents, 'did-stop-loading')]);
 
       // @ts-expect-error internal-only event.
       w.webContents.once('-ready-to-commit-navigation', () => {
@@ -570,9 +567,12 @@ describe('webContents module', () => {
       });
 
       w.loadURL('data:text/html,<h1>HELLO</h1>');
+
+      const [[, , , validatedURL]] = await result;
+      expect(validatedURL).to.contain('blank.html');
     });
 
-    it('fails if loadURL is called inside did-redirect-navigation', (done) => {
+    it('fails if loadURL is called inside did-redirect-navigation', async () => {
       const server = http.createServer((req, res) => {
         if (req.url === '/302') {
           res.statusCode = 302;
@@ -585,23 +585,18 @@ describe('webContents module', () => {
         }
       });
 
-      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
-        expect(validatedURL).to.contain('blank.html');
-        server.close();
-        done();
-      });
+      const { url } = await listen(server);
 
-      listen(server)
-        .then(({ url }) => {
-          w.webContents.once('did-redirect-navigation', () => {
-            w.loadURL(`file://${fixturesPath}/pages/blank.html`);
-          });
-          w.loadURL(`${url}/302`);
-        })
-        .catch((e) => {
-          server.close();
-          done(e);
-        });
+      const result = Promise.all([once(w.webContents, 'did-fail-load'), once(w.webContents, 'did-stop-loading')]);
+
+      w.webContents.once('did-redirect-navigation', () => {
+        w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      });
+      w.loadURL(`${url}/302`);
+
+      const [[, , , validatedURL]] = await result;
+      server.close();
+      expect(validatedURL).to.contain('blank.html');
     });
 
     it('sets appropriate error information on rejection', async () => {
