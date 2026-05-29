@@ -11,6 +11,7 @@ mojom("mojom") {
     "//mojo/public/mojom/base",
     "//sandbox/policy/mojom",
     "//third_party/blink/public/mojom:mojom_core",
+    "//third_party/blink/public/mojom/tokens",
   ]
 
   if (enable_prompt_api) {

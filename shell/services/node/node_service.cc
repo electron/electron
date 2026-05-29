@@ -276,8 +276,9 @@ void NodeService::BindAIManager(
   }
 
   mojo::MakeSelfOwnedReceiver(
-      std::make_unique<UtilityAIManager>(params->web_contents_id,
-                                         params->security_origin),
+      std::make_unique<UtilityAIManager>(
+          params->web_contents_id, params->security_origin, params->frame_token,
+          params->render_process_id),
       std::move(ai_manager));
 }
 
@@ -285,8 +286,9 @@ void NodeService::FlushPendingAIManagerBindings() {
   auto pending = std::move(pending_ai_manager_bindings_);
   for (auto& binding : pending) {
     mojo::MakeSelfOwnedReceiver(
-        std::make_unique<UtilityAIManager>(binding.params->web_contents_id,
-                                           binding.params->security_origin),
+        std::make_unique<UtilityAIManager>(
+            binding.params->web_contents_id, binding.params->security_origin,
+            binding.params->frame_token, binding.params->render_process_id),
         std::move(binding.receiver));
   }
 }

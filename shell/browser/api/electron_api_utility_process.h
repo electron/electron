@@ -26,6 +26,7 @@
 #include "v8/include/v8-forward.h"
 
 #if BUILDFLAG(ENABLE_PROMPT_API)
+#include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
 #endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
@@ -72,6 +73,8 @@ class UtilityProcessWrapper final
 #if BUILDFLAG(ENABLE_PROMPT_API)
   void BindAIManager(std::optional<int32_t> web_contents_id,
                      const url::Origin& security_origin,
+                     const blink::LocalFrameToken& frame_token,
+                     int32_t render_process_id,
                      mojo::PendingReceiver<blink::mojom::AIManager> ai_manager);
 #endif  // BUILDFLAG(ENABLE_PROMPT_API)
 

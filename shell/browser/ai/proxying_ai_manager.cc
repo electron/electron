@@ -11,6 +11,7 @@
 #include "base/notimplemented.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/weak_document_ptr.h"
 #include "gin/weak_cell.h"
 #include "mojo/public/cpp/bindings/callback_helpers.h"
@@ -71,7 +72,8 @@ ProxyingAIManager::GetAIManagerRemote() {
       }
 
       session->Get()->LocalAIHandler()->BindAIManager(
-          web_contents_id, rfh->GetLastCommittedOrigin(),
+          web_contents_id, rfh->GetLastCommittedOrigin(), rfh->GetFrameToken(),
+          rfh->GetProcess()->GetID().GetUnsafeValue(),
           ai_manager_remote_.BindNewPipeAndPassReceiver());
     }
   }

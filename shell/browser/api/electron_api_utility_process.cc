@@ -506,10 +506,14 @@ UtilityProcessWrapper::CreateURLLoaderFactoryParams() {
 void UtilityProcessWrapper::BindAIManager(
     std::optional<int32_t> web_contents_id,
     const url::Origin& security_origin,
+    const blink::LocalFrameToken& frame_token,
+    int32_t render_process_id,
     mojo::PendingReceiver<blink::mojom::AIManager> ai_manager) {
   auto params = node::mojom::BindAIManagerParams::New();
   params->web_contents_id = web_contents_id;
   params->security_origin = security_origin;
+  params->frame_token = frame_token;
+  params->render_process_id = render_process_id;
 
   node_service_remote_->BindAIManager(std::move(params), std::move(ai_manager));
 }

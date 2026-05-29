@@ -18,6 +18,10 @@ The `localAIHandler` module has the following methods:
     * `webContentsId` Integer - The [unique id](web-contents.md#contentsid-readonly) of
       the [WebContents](web-contents.md) calling the Prompt API.
     * `securityOrigin` string - Origin of the page calling the Prompt API.
+    * `frameToken` string - The [frame token](web-frame-main.md#frameframetoken-readonly)
+      of the frame calling the Prompt API.
+    * `renderProcessId` Integer - The [process id](web-frame-main.md#frameprocessid-readonly)
+      of the renderer process hosting the frame calling the Prompt API.
 
 Sets the handler for new Prompt API binding requests from the renderer process. This happens
 once per pair of `webContentsId` and `securityOrigin`. Returning `null` from the handler

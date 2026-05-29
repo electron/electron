@@ -1,4 +1,4 @@
-import { BrowserWindow, session, utilityProcess } from 'electron/main';
+import { BrowserWindow, session, utilityProcess, webFrameMain } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -1114,6 +1114,74 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       expect(message.details).to.have.property('securityOrigin');
       expect(message.details.securityOrigin).to.be.a('string').and.not.be.empty();
+    });
+
+    it('receives frameToken in the details object', async () => {
+      const aiHandler = await forkAndRegisterHandler('handler-details-language-model.js');
+
+      const message = await listenForMessage(aiHandler, 'handler-called', async () => {
+        await w.webContents.executeJavaScript('LanguageModel.availability()');
+      });
+
+      expect(message.details).to.have.property('frameToken');
+      expect(message.details.frameToken).to.be.a('string').and.not.be.empty();
+      expect(message.details.frameToken).to.equal(w.webContents.mainFrame.frameToken);
+    });
+
+    it('receives renderProcessId in the details object', async () => {
+      const aiHandler = await forkAndRegisterHandler('handler-details-language-model.js');
+
+      const message = await listenForMessage(aiHandler, 'handler-called', async () => {
+        await w.webContents.executeJavaScript('LanguageModel.availability()');
+      });
+
+      expect(message.details).to.have.property('renderProcessId');
+      expect(message.details.renderProcessId).to.be.a('number');
+      expect(message.details.renderProcessId).to.equal(w.webContents.mainFrame.processId);
+    });
+
+    it('provides a frameToken and renderProcessId that resolve to the calling frame', async () => {
+      const aiHandler = await forkAndRegisterHandler('handler-details-language-model.js');
+
+      const message = await listenForMessage(aiHandler, 'handler-called', async () => {
+        await w.webContents.executeJavaScript('LanguageModel.availability()');
+      });
+
+      const { frameToken, renderProcessId } = message.details;
+      const frame = webFrameMain.fromFrameToken(renderProcessId, frameToken);
+      expect(frame).to.not.be.null();
+      expect(frame!.frameToken).to.equal(w.webContents.mainFrame.frameToken);
+    });
+
+    it('provides a frameToken and renderProcessId that resolve to a calling iframe', async () => {
+      const aiHandler = await forkAndRegisterHandler('handler-details-language-model.js');
+
+      // Attach a same-origin iframe and wait for it to finish loading.
+      const frameLoaded = once(w.webContents, 'did-frame-finish-load');
+      await w.webContents.executeJavaScript(`
+        const iframe = document.createElement('iframe');
+        iframe.src = 'blank.html';
+        document.body.appendChild(iframe);
+        null;
+      `);
+      await frameLoaded;
+
+      const subframe = w.webContents.mainFrame.frames[0];
+      expect(subframe).to.not.be.undefined();
+
+      // Trigger the Prompt API from within the iframe
+      const message = await listenForMessage(aiHandler, 'handler-called', async () => {
+        await subframe.executeJavaScript('LanguageModel.availability()');
+      });
+
+      const { frameToken, renderProcessId } = message.details;
+      const frame = webFrameMain.fromFrameToken(renderProcessId, frameToken);
+      expect(frame).to.not.be.null();
+
+      // The resolved frame is the iframe, not the main frame
+      expect(frame!.frameToken).to.equal(subframe.frameToken);
+      expect(frame!.frameToken).to.not.equal(w.webContents.mainFrame.frameToken);
+      expect(frame!.parent).to.equal(w.webContents.mainFrame);
     });
 
     it('is called once per webContentsId and securityOrigin pair', async () => {

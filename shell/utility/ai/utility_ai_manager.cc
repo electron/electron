@@ -135,8 +135,13 @@ struct Converter<blink::mojom::AILanguageModelCreateOptionsPtr> {
 namespace electron {
 
 UtilityAIManager::UtilityAIManager(std::optional<int32_t> web_contents_id,
-                                   const url::Origin& security_origin)
-    : web_contents_id_(web_contents_id), security_origin_(security_origin) {
+                                   const url::Origin& security_origin,
+                                   const blink::LocalFrameToken& frame_token,
+                                   int32_t render_process_id)
+    : web_contents_id_(web_contents_id),
+      security_origin_(security_origin),
+      frame_token_(frame_token),
+      render_process_id_(render_process_id) {
   create_model_client_set_.set_disconnect_with_reason_handler(
       base::BindRepeating(
           &UtilityAIManager::OnCreateLanguageModelClientDisconnect,
@@ -184,6 +189,8 @@ v8::Global<v8::Object>& UtilityAIManager::GetLanguageModelClass() {
         details.Set("webContentsId", nullptr);
       }
       details.Set("securityOrigin", security_origin_.Serialize());
+      details.Set("frameToken", frame_token_.ToString());
+      details.Set("renderProcessId", render_process_id_);
 
       v8::Local<v8::Value> val = handler->Run(details);
 

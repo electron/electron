@@ -10,6 +10,7 @@ import "services/network/public/mojom/host_resolver.mojom";
 import "services/network/public/mojom/url_loader_factory.mojom";
 import "third_party/blink/public/mojom/ai/ai_manager.mojom";
 import "third_party/blink/public/mojom/messaging/message_port_descriptor.mojom";
+import "third_party/blink/public/mojom/tokens/tokens.mojom";
 import "url/mojom/origin.mojom";
 
 struct URLLoaderFactoryParams {
@@ -29,6 +30,8 @@ struct NodeServiceParams {
 struct BindAIManagerParams {
   int32? web_contents_id;
   url.mojom.Origin security_origin;
+  blink.mojom.LocalFrameToken frame_token;
+  int32 render_process_id;
 };
 
 interface NodeServiceClient {

@@ -16,6 +16,7 @@
 #include "services/on_device_model/public/mojom/download_observer.mojom-forward.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
+#include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/mojom/ai/ai_classifier.mojom-forward.h"
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom-forward.h"
 #include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
@@ -34,7 +35,9 @@ class UtilityAILanguageModel;
 class UtilityAIManager : public blink::mojom::AIManager {
  public:
   UtilityAIManager(std::optional<int32_t> web_contents_id,
-                   const url::Origin& security_origin);
+                   const url::Origin& security_origin,
+                   const blink::LocalFrameToken& frame_token,
+                   int32_t render_process_id);
   UtilityAIManager(const UtilityAIManager&) = delete;
   UtilityAIManager& operator=(const UtilityAIManager&) = delete;
 
@@ -108,6 +111,8 @@ class UtilityAIManager : public blink::mojom::AIManager {
 
   std::optional<int32_t> web_contents_id_;
   url::Origin security_origin_;
+  blink::LocalFrameToken frame_token_;
+  int32_t render_process_id_;
 
   v8::Global<v8::Object> language_model_class_;
 
