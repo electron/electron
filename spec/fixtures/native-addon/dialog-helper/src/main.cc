@@ -79,6 +79,13 @@ napi_value GetDialogInfo(napi_env env, napi_callback_info info) {
                           &directory_val);
   napi_set_named_property(env, result, "directory", directory_val);
 
+  napi_value allowed_file_types_val;
+  napi_create_string_utf8(env, di.allowed_file_types.c_str(),
+                          di.allowed_file_types.size(),
+                          &allowed_file_types_val);
+  napi_set_named_property(env, result, "allowedFileTypes",
+                          allowed_file_types_val);
+
   // NSSavePanel-specific string/boolean properties
   napi_value name_field_label_val;
   napi_create_string_utf8(env, di.name_field_label.c_str(),

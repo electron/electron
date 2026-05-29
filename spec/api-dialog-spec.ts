@@ -748,6 +748,25 @@ describe('dialog module', () => {
           await p;
         });
 
+        it('applies extension filters for macOS file packages', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            filters: [{ name: 'rich text files', extensions: ['rtf', 'rtfd'] }],
+            properties: ['openFile']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(JSON.parse(info.allowedFileTypes)).to.deep.equal([
+            'rtf',
+            'rtfd'
+          ]);
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
         it('applies multiple properties simultaneously', async () => {
           const w = new BrowserWindow({ show: false });
           const p = dialog.showOpenDialog(w, {

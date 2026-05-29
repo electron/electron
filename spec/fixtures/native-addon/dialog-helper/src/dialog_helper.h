@@ -24,6 +24,7 @@ struct DialogInfo {
   std::string prompt;        // Button label (NSSavePanel prompt)
   std::string panel_message; // Panel message text (NSSavePanel message)
   std::string directory;     // Current directory URL path
+  std::string allowed_file_types;  // JSON array string, e.g. '["txt","rtfd"]'
 
   // NSSavePanel-specific properties
   std::string name_field_label;  // Label for the name field

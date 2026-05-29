@@ -97,6 +97,18 @@ DialogSettings::~DialogSettings() = default;
 
 namespace {
 
+NSString* FileTypeFromExtension(std::string ext) {
+  // macOS is incapable of understanding multiple file extensions,
+  // so we need to tokenize the extension that's been passed in.
+  // We want to err on the side of allowing files, so we pass
+  // along only the final extension ('tar.gz' => 'gz').
+  auto pos = ext.rfind('.');
+  if (pos != std::string::npos)
+    ext.erase(0, pos + 1);
+
+  return @(ext.c_str());
+}
+
 void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   NSMutableArray* file_types_list = [NSMutableArray array];
   NSMutableArray* filter_names = [NSMutableArray array];
@@ -104,21 +116,11 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   // Create array to keep file types and their name.
   for (const Filter& filter : filters) {
     NSMutableOrderedSet* file_type_set =
-        [NSMutableOrderedSet orderedSetWithCapacity:filters.size()];
+        [NSMutableOrderedSet orderedSetWithCapacity:filter.second.size()];
     [filter_names addObject:@(filter.first.c_str())];
 
-    for (std::string ext : filter.second) {
-      // macOS is incapable of understanding multiple file extensions,
-      // so we need to tokenize the extension that's been passed in.
-      // We want to err on the side of allowing files, so we pass
-      // along only the final extension ('tar.gz' => 'gz').
-      auto pos = ext.rfind('.');
-      if (pos != std::string::npos) {
-        ext.erase(0, pos + 1);
-      }
-
-      [file_type_set addObject:@(ext.c_str())];
-    }
+    for (std::string ext : filter.second)
+      [file_type_set addObject:FileTypeFromExtension(std::move(ext))];
 
     [file_types_list addObject:[file_type_set array]];
   }
@@ -134,6 +136,10 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
       file_types = nil;
   }
 
+  // Keep extension-based filtering here instead of mapping extensions to UTType.
+  // Some macOS document packages are registered only through bundle metadata
+  // such as LSTypeIsPackage, and NSOpenPanel can filter those packages correctly
+  // when it receives their filename extensions directly.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   [dialog setAllowedFileTypes:file_types];

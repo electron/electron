@@ -4,6 +4,27 @@
 
 namespace {
 
+std::string GetAllowedFileTypesJSON(NSSavePanel* panel) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  NSArray<NSString*>* allowed_file_types = [panel allowedFileTypes];
+#pragma clang diagnostic pop
+
+  if (!allowed_file_types)
+    return "null";
+
+  std::string json = "[";
+  for (NSUInteger i = 0; i < [allowed_file_types count]; ++i) {
+    if (i > 0)
+      json += ",";
+    json += "\"";
+    json += [[allowed_file_types objectAtIndex:i] UTF8String] ?: "";
+    json += "\"";
+  }
+  json += "]";
+  return json;
+}
+
 // Extract the NSWindow* from the native handle buffer.
 // The buffer contains an NSView* (the content view of the window).
 NSWindow* GetNSWindowFromHandle(char* handle, size_t size) {
@@ -42,6 +63,7 @@ DialogInfo GetDialogInfo(char* handle, size_t size) {
     info.panel_message = [[panel message] UTF8String] ?: "";
     if ([panel directoryURL])
       info.directory = [[[panel directoryURL] path] UTF8String] ?: "";
+    info.allowed_file_types = GetAllowedFileTypesJSON(panel);
     info.can_choose_files = [panel canChooseFiles];
     info.can_choose_directories = [panel canChooseDirectories];
     info.allows_multiple_selection = [panel allowsMultipleSelection];
@@ -60,6 +82,7 @@ DialogInfo GetDialogInfo(char* handle, size_t size) {
     info.panel_message = [[panel message] UTF8String] ?: "";
     if ([panel directoryURL])
       info.directory = [[[panel directoryURL] path] UTF8String] ?: "";
+    info.allowed_file_types = GetAllowedFileTypesJSON(panel);
     info.name_field_label = [[panel nameFieldLabel] UTF8String] ?: "";
     info.name_field_value = [[panel nameFieldStringValue] UTF8String] ?: "";
     info.shows_tag_field = [panel showsTagField];
