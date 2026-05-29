@@ -21,10 +21,10 @@ index 8b649c04abccf1e6ade18e315095a3960d407e7b..70c882dfa6f0493164f8706090fb2151
  
     private:
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 7c640559dc7a09730f0053be8798d10bc8ac1a1c..24127c579e149345cc9b937b17dbfe630b0d3c35 100644
+index 9f49bb0b6873eb2a6218f4fad1429d25a7c54f91..9e56b056202cc4e8bfd5391521fab0f0d3f61d0d 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -225,6 +225,7 @@ void IsolateHolder::WillCreateMicrotasksRunner() {
+@@ -226,6 +226,7 @@ void IsolateHolder::WillCreateMicrotasksRunner() {
  
  void IsolateHolder::WillDestroyMicrotasksRunner() {
    DCHECK(g_initialized_microtasks_runner);

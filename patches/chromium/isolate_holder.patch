@@ -15,10 +15,10 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 15904644aa5451c6cb0fc2a46a67678824cd0bec..64edf6fe78d2478cb9e12e8767a09e2b6c7c6ad2 100644
+index edbb2bddac505f1602dd0749300f61ed287bc898..738ac76c69435dcf7bd26fc0e170ecb3d5f7c678 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -81,7 +81,8 @@ IsolateHolder::IsolateHolder(
+@@ -82,7 +82,8 @@ IsolateHolder::IsolateHolder(
      v8::AddHistogramSampleCallback add_histogram_sample_callback,
      scoped_refptr<base::SingleThreadTaskRunner> user_visible_task_runner,
      scoped_refptr<base::SingleThreadTaskRunner> best_effort_task_runner,
@@ -28,7 +28,7 @@ index 15904644aa5451c6cb0fc2a46a67678824cd0bec..64edf6fe78d2478cb9e12e8767a09e2b
      : IsolateHolder(std::move(task_runner),
                      access_mode,
                      isolate_type,
-@@ -92,7 +93,8 @@ IsolateHolder::IsolateHolder(
+@@ -93,7 +94,8 @@ IsolateHolder::IsolateHolder(
                                               std::move(cpp_heap)),
                      isolate_creation_mode,
                      std::move(user_visible_task_runner),
@@ -38,7 +38,7 @@ index 15904644aa5451c6cb0fc2a46a67678824cd0bec..64edf6fe78d2478cb9e12e8767a09e2b
  
  IsolateHolder::IsolateHolder(
      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
-@@ -101,7 +103,8 @@ IsolateHolder::IsolateHolder(
+@@ -102,7 +104,8 @@ IsolateHolder::IsolateHolder(
      std::unique_ptr<v8::Isolate::CreateParams> params,
      IsolateCreationMode isolate_creation_mode,
      scoped_refptr<base::SingleThreadTaskRunner> user_visible_task_runner,
@@ -48,7 +48,7 @@ index 15904644aa5451c6cb0fc2a46a67678824cd0bec..64edf6fe78d2478cb9e12e8767a09e2b
      : access_mode_(access_mode), isolate_type_(isolate_type) {
    CHECK(Initialized())
        << "You need to invoke gin::IsolateHolder::Initialize first";
-@@ -112,7 +115,7 @@ IsolateHolder::IsolateHolder(
+@@ -113,7 +116,7 @@ IsolateHolder::IsolateHolder(
    v8::ArrayBuffer::Allocator* allocator = params->array_buffer_allocator;
    DCHECK(allocator);
  

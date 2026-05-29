@@ -112,7 +112,7 @@ index df038b9d2a798185d3ea49c4e705e0963262f580..c108e5b7cc32c512326a3e70d32f6313
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 855d963e8a0ab485caea73a9987d49f69ebfab14..3d5a5dc4dd96da5350f25f0647fc2b4e7d18c5a0 100644
+index 1def1e308a4a7619b794baa610a7d9e9d92e5814..66197ddd55cf5a38e685b51ca23a62d7d90ed6b0 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -373,6 +373,9 @@ URLLoader::URLLoader(
@@ -155,10 +155,10 @@ index 855d963e8a0ab485caea73a9987d49f69ebfab14..3d5a5dc4dd96da5350f25f0647fc2b4e
  
    if (expected_response_headers_for_synthetic_response &&
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index e1628486eaafd34ae9218a925db8950e654e08bd..ffbad0a1153fd017d36e19be2b9db53bfc6b4d7c 100644
+index 3280de7caa9183bc1d5b9392f63e1756a21a647a..466346bd9fedc3bc043489a923b28f3f4e827ee3 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
-@@ -628,6 +628,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+@@ -629,6 +629,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
    std::unique_ptr<ResourceScheduler::ScheduledResourceRequest>
        resource_scheduler_request_handle_;
  
