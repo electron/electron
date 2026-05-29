@@ -5,7 +5,7 @@ import { expect } from 'chai';
 import { on, once } from 'node:events';
 import * as path from 'node:path';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { deferKillUtilityProcess, ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 const features = process._linkedBinding('electron_common_features');
@@ -54,6 +54,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     const aiHandler = utilityProcess.fork(getFixturePath(fixtureName));
     await once(aiHandler, 'spawn');
     w.webContents.session.registerLocalAIHandler(aiHandler);
+    deferKillUtilityProcess(aiHandler);
 
     return aiHandler;
   }
@@ -1237,10 +1238,12 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       const aiHandler1 = utilityProcess.fork(getFixturePath('basic-language-model.js'));
       await once(aiHandler1, 'spawn');
+      deferKillUtilityProcess(aiHandler1);
       ses1.registerLocalAIHandler(aiHandler1);
 
       const aiHandler2 = utilityProcess.fork(getFixturePath('default-language-model.js'));
       await once(aiHandler2, 'spawn');
+      deferKillUtilityProcess(aiHandler2);
       ses2.registerLocalAIHandler(aiHandler2);
 
       try {
@@ -1284,10 +1287,12 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
 
       const aiHandler1 = utilityProcess.fork(getFixturePath('basic-language-model.js'));
       await once(aiHandler1, 'spawn');
+      deferKillUtilityProcess(aiHandler1);
       ses1.registerLocalAIHandler(aiHandler1);
 
       const aiHandler2 = utilityProcess.fork(getFixturePath('basic-language-model.js'));
       await once(aiHandler2, 'spawn');
+      deferKillUtilityProcess(aiHandler2);
       ses2.registerLocalAIHandler(aiHandler2);
 
       try {

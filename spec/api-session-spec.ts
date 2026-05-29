@@ -22,7 +22,7 @@ import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { defer, deferKillUtilityProcess, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('session module', () => {
@@ -2383,6 +2383,7 @@ describe('session module', () => {
       const aiHandler = utilityProcess.fork(
         path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
+      deferKillUtilityProcess(aiHandler);
       w.webContents.session.registerLocalAIHandler(aiHandler);
 
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
@@ -2395,6 +2396,7 @@ describe('session module', () => {
       const aiHandler = utilityProcess.fork(
         path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
+      deferKillUtilityProcess(aiHandler);
       session.registerLocalAIHandler(aiHandler);
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
 
@@ -2409,6 +2411,7 @@ describe('session module', () => {
       const aiHandler = utilityProcess.fork(
         path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
+      deferKillUtilityProcess(aiHandler);
       session.registerLocalAIHandler(aiHandler);
       await expect(w.webContents.executeJavaScript('LanguageModel.create()')).to.eventually.be.fulfilled();
 
@@ -2425,6 +2428,7 @@ describe('session module', () => {
       const aiHandler1 = utilityProcess.fork(
         path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
+      deferKillUtilityProcess(aiHandler1);
       session.registerLocalAIHandler(aiHandler1);
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
 
@@ -2434,6 +2438,7 @@ describe('session module', () => {
       const aiHandler2 = utilityProcess.fork(
         path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
+      deferKillUtilityProcess(aiHandler2);
       session.registerLocalAIHandler(aiHandler2);
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
       await expect(w.webContents.executeJavaScript('LanguageModel.create()')).to.eventually.be.fulfilled();
@@ -2454,7 +2459,7 @@ describe('session module', () => {
       const aiHandler = utilityProcess.fork(
         path.join(path.resolve(__dirname, 'fixtures', 'api', 'local-ai-handler'), 'default-language-model.js')
       );
-
+      deferKillUtilityProcess(aiHandler);
       session.registerLocalAIHandler(aiHandler);
       expect(await w.webContents.executeJavaScript('LanguageModel.availability()')).to.equal('available');
 
