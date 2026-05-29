@@ -168,8 +168,8 @@ const LINTERS = [
       const allOk = filenames
         .map((filename) => {
           const env = {
-            ...getDepotToolsEnv(),
-            DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
+            DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
+            ...getDepotToolsEnv()
           };
           const args = ['format', filename];
           if (!opts.fix) args.push('--dry-run');

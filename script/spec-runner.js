@@ -420,8 +420,7 @@ async function installSpecModules(dir) {
   const { status } = childProcess.spawnSync(process.execPath, yarnArgs, {
     env,
     cwd: dir,
-    stdio: 'inherit',
-    shell: process.platform === 'win32'
+    stdio: 'inherit'
   });
   if (status !== 0 && !process.env.IGNORE_YARN_INSTALL_ERROR) {
     console.log(`${fail} Failed to yarn install in '${dir}'`);

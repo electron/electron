@@ -4440,7 +4440,7 @@ describe('paste execCommand', () => {
   });
 });
 
-ifdescribe(process.platform !== 'linux' || app.isUnityRunning())('navigator.setAppBadge/clearAppBadge', () => {
+ifdescribe(process.platform !== 'linux')('navigator.setAppBadge/clearAppBadge', () => {
   let w: BrowserWindow;
 
   const expectedBadgeCount = 42;

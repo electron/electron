@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index f4fee8a45adc76700c37d22dcf1f73beaa13c349..aae2699c9616ecf6e781b01546da37a48a2af453 100644
+index c97a981aeec0465c6c80f30d3e3d8fe1a814c410..165afa5a8421e57613983dbefc28e819de7e5264 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2645,6 +2645,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2665,6 +2665,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,10 +33,10 @@ index f4fee8a45adc76700c37d22dcf1f73beaa13c349..aae2699c9616ecf6e781b01546da37a4
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index e37c415fa5c207743e866d9ad6424ba0e8b5a9b4..5c2a55ffd097a146dae02a3c8a1443b720b3f29f 100644
+index 9f31bab965cf69cc2b77f8670307c25e696159e2..9edc236d56fb523095ca4ca0978d5137f651f624 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -874,6 +874,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -886,6 +886,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,10 +51,10 @@ index e37c415fa5c207743e866d9ad6424ba0e8b5a9b4..5c2a55ffd097a146dae02a3c8a1443b7
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 0d65e524b1b0f27def0fbc67eb12eccd5700455f..8f56df77d93a3adda52ae0e72c79393560077fe2 100644
+index e3cb88a321929c7666040d2b1911c624a80894d6..9ad43c6b8fd02f872109cb7ec35dae087beb4580 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1436,6 +1436,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1458,6 +1458,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  
@@ -85,7 +85,7 @@ index 5a85ad9a264b8498a220bfc0e87ff618478b917a..2b6971342cf2aeed469e9326eca0464a
    // `cache_storage` may be null if COEP is not enabled, we cannot bind
    // eagerly in that case.
 diff --git a/third_party/blink/public/mojom/service_worker/embedded_worker.mojom b/third_party/blink/public/mojom/service_worker/embedded_worker.mojom
-index 68a0ff7e4a2ad41c0108f6ed5fcf6c38ad4c9984..d80f813d15f236269bdcc90e9091b54e7c2c19d6 100644
+index a863f8280663bf5ca2e2972da07037a1c22b059e..7737a102d10a242070f5646ff1f7b171eff7f43c 100644
 --- a/third_party/blink/public/mojom/service_worker/embedded_worker.mojom
 +++ b/third_party/blink/public/mojom/service_worker/embedded_worker.mojom
 @@ -4,6 +4,7 @@
@@ -193,10 +193,10 @@ index b9901c1df106b25535ac86ed8c12185453bf475d..f01a6c0c5e9a712ffbf15b71bfa9f2a7
    const net::StorageAccessApiStatus parent_storage_access_api_status;
  
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-index 1ef29aeb97bde4a6c8c23fd4e30230c878dc5845..98a2eaa9e798b721fa96d9682645e60befb5842a 100644
+index d7453149e4ac065f481f4197df6a25a8178e84a7..1287c42db21f02b30e4ecdc81427269f9caef599 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-@@ -724,6 +724,9 @@ WorkerGlobalScope::WorkerGlobalScope(
+@@ -730,6 +730,9 @@ WorkerGlobalScope::WorkerGlobalScope(
            std::move(creation_params->top_level_frame_security_origin)) {
    // Workers should always maintain the default world of an isolate.
    CHECK(creation_params->is_default_world_of_isolate);
@@ -256,10 +256,10 @@ index 5c0ec7ee2de0527a4f5bae468a301ab085c34ec9..fcf30c3eccf15cf14b07ce1c0c0d294c
        std::make_unique<ServiceWorkerGlobalScopeProxy>(
            *this, *worker_context_client_, initiator_thread_task_runner),
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index e9e4864dbb1433d70344c58c4aeac6a906c50e02..56eec943db03597b02271c4f8a5f3270d084b0a7 100644
+index f5f81bf39444115c131556f4bbae306e03da4bcd..c61fd4132abf888e35f02565afc6ab69e903c73a 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-@@ -318,6 +318,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
+@@ -323,6 +323,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
    return WorkerGlobalScope()->HasUsbEventHandlers();
  }
  
@@ -272,10 +272,10 @@ index e9e4864dbb1433d70344c58c4aeac6a906c50e02..56eec943db03597b02271c4f8a5f3270
      const WebString& name,
      mojo::ScopedInterfaceEndpointHandle handle) {
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
-index 8bd1e63239ec48e35132276df588b4a28f04461b..1ecf7e35802a19e9fd5fbab4dc678e1eaae162a4 100644
+index 0abeafb3b651f7e3b01e297d5c14ee55bff4abcc..f60bb46ffccc750fa5685983b7c9ebbf97e7150e 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
-@@ -111,6 +111,7 @@ class ServiceWorkerGlobalScopeProxy final : public WebServiceWorkerContextProxy,
+@@ -114,6 +114,7 @@ class ServiceWorkerGlobalScopeProxy final : public WebServiceWorkerContextProxy,
    mojom::blink::ServiceWorkerFetchHandlerType FetchHandlerType() override;
    bool HasHidEventHandlers() override;
    bool HasUsbEventHandlers() override;

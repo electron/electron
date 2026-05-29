@@ -208,6 +208,10 @@ Emitted when the window exits from a maximized state.
 
 Emitted when the window is minimized.
 
+> [!NOTE]
+> On Wayland, “minimized” is not currently a supported state. The minimize event will only fire when triggered by client-side decoration (e.g. clicking the minimize
+> button on a frameless window’s Window Control Overlay)
+
 #### Event: 'restore'
 
 Emitted when the window is restored from a minimized state.
@@ -1129,7 +1133,7 @@ Sets the `menu` as the window's menu bar.
 
 Remove the window's menu bar.
 
-#### `win.setProgressBar(progress[, options])`
+#### `win.setProgressBar(progress[, options])` _Windows_ _macOS_
 
 * `progress` Double
 * `options` Object (optional)
@@ -1139,10 +1143,6 @@ Sets progress value in progress bar. Valid range is \[0, 1.0].
 
 Remove progress bar when progress < 0;
 Change to indeterminate mode when progress > 1.
-
-On Linux platform, only supports Unity desktop environment, you need to specify
-the `*.desktop` file name to `desktopName` field in `package.json`. By default,
-it will assume `{app.name}.desktop`.
 
 On Windows, a mode can be passed. Accepted values are `none`, `normal`,
 `indeterminate`, `error`, and `paused`. If you call `setProgressBar` without a

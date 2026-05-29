@@ -14,6 +14,17 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (43.0)
 
+### Removed: Unity desktop environment support on Linux
+
+Unity has not been the default desktop environment in Ubuntu LTS since version 16.04, which is not supported by current versions of Electron. The deprecation does not
+prevent Electron from running on Unity if it is installed in a newer distribution, but it will no longer offer unique functionality. In general, Electron supports
+modern [Freedesktop](https://specifications.freedesktop.org/) standards on Linux rather than APIs which only work in specific environments.
+
+One API has been removed: `app.isUnityRunning()`. Some Unity-specific APIs no longer function on Linux, but remain supported on other platforms:
+
+* `app.setBadgeCount(count)` and `app.badgeCount` _macOS_
+* `BaseWindow.setProgressBar(progress)` and `BrowserWindow.setProgressBar(progress)` _Windows_ _macOS_.
+
 ### Behavior Changed: `NativeImage.toBitmap()` now normalizes color space
 
 `NativeImage.toBitmap()` (and its deprecated alias `NativeImage.getBitmap()`) now normalizes pixel data to sRGB by default. Previously, raw pixel data was returned without color space conversion, which meant pixel values from images with different embedded color profiles (e.g., Display P3 on macOS) could differ for the same visual color.

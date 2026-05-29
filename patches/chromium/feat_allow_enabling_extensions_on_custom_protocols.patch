@@ -30,7 +30,7 @@ index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..a0e361cf2d2960de4f429a9d37459e26
    URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
    if (result != URLPattern::ParseResult::kSuccess) {
 diff --git a/extensions/browser/api/web_request/extension_web_request_event_router.h b/extensions/browser/api/web_request/extension_web_request_event_router.h
-index 9a29ff2c8a38a5a41d97179e9870d06f087439cf..893b3dbe6c1f75c98ece7f74f4265f937a7162bf 100644
+index 1230aedc8a3d5ec016914f8494e3e1ac718b05ce..6e769a9386529d11b01a86c2b9f5cd16d35d6807 100644
 --- a/extensions/browser/api/web_request/extension_web_request_event_router.h
 +++ b/extensions/browser/api/web_request/extension_web_request_event_router.h
 @@ -55,7 +55,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
@@ -58,7 +58,7 @@ index b98a85280fb8abef06b2f7420115a48b37727377..0da1f574a01bf32702cc1d8068a440b1
  //
  // Extension
 diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
-index d4328ca22fdeefd3dca88bfe959dfb849705b109..ba24e788d4a2e467d24f6369e2d93ea3b4a0c9d7 100644
+index c87bf379e53cc7bf7820ac650d7cd3277716551e..9b735022c0e59ace6b5ed41ebbf40b7f8c4859b6 100644
 --- a/extensions/common/url_pattern.cc
 +++ b/extensions/common/url_pattern.cc
 @@ -140,6 +140,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {

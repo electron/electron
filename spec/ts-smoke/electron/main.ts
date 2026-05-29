@@ -321,9 +321,6 @@ app.setJumpList([
   }
 ]);
 
-if (app.isUnityRunning()) {
-  console.log('unity running');
-}
 if (app.isAccessibilitySupportEnabled()) {
   console.log('a11y running');
 }

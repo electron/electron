@@ -122,6 +122,11 @@ jobs:
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
+
+    - name: Turn off the analytics setup assistant prompts on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: sudo su root -c "killall 'Setup Assistant'" || true
+
     - name: Turn off the reopen windows prompt on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       # Tests spawn Electron child apps and SIGINT them; after enough abnormal
@@ -140,9 +145,6 @@ jobs:
         path: src/electron
         fetch-depth: 0
         ref: ${{ github.event.pull_request.head.sha }}
-    - name: Install pinned Homebrew
-      if: ${{ inputs.target-platform == 'macos' }}
-      uses: ./src/electron/.github/actions/install-homebrew
     - name: Turn off screenshot nag on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: |
