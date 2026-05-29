@@ -1,4 +1,4 @@
-const { localAIHandler, LanguageModel } = require('electron/utility');
+const { localAIHandler, LanguageModelUtility } = require('electron/utility');
 
 function sendInProgressPromptHandlerCallMessage() {
   process.parentPort.postMessage({ type: 'in-progress-prompt-handler-call' });
@@ -11,7 +11,7 @@ process.parentPort.on('message', (e) => {
   const { command } = e.data;
   if (command === 'set-handler') {
     localAIHandler.setPromptAPIHandler(() => {
-      return LanguageModel;
+      return LanguageModelUtility;
     });
   }
 

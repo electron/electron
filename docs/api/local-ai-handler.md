@@ -13,7 +13,7 @@ The `localAIHandler` module has the following methods:
 
 #### `localAIHandler.setPromptAPIHandler(promptAPIHandler)` _Experimental_
 
-* `promptAPIHandler` Function\<typeof [LanguageModel](language-model.md) | null\>
+* `promptAPIHandler` Function\<typeof [LanguageModelUtility](language-model-utility.md) | null\>
   * `details` Object
     * `webContentsId` Integer - The [unique id](web-contents.md#contentsid-readonly) of
       the [WebContents](web-contents.md) calling the Prompt API.

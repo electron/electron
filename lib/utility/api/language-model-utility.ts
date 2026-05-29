@@ -3,7 +3,7 @@ interface LanguageModelConstructorValues {
   contextWindow: number;
 }
 
-export default class LanguageModel implements Electron.LanguageModel {
+export default class LanguageModelUtility implements Electron.LanguageModelUtility {
   contextUsage: number;
   contextWindow: number;
 
@@ -12,8 +12,8 @@ export default class LanguageModel implements Electron.LanguageModel {
     this.contextWindow = values.contextWindow;
   }
 
-  static async create(): Promise<LanguageModel> {
-    return new LanguageModel({
+  static async create(): Promise<LanguageModelUtility> {
+    return new LanguageModelUtility({
       contextUsage: 0,
       contextWindow: 0
     });
@@ -34,7 +34,7 @@ export default class LanguageModel implements Electron.LanguageModel {
   }
 
   async clone() {
-    return new LanguageModel({
+    return new LanguageModelUtility({
       contextUsage: this.contextUsage,
       contextWindow: this.contextWindow
     });

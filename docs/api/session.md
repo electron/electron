@@ -1684,7 +1684,7 @@ For more information, refer to Chromium's [`BrowsingDataRemover` interface][brow
 
 * `handler` [UtilityProcess](utility-process.md#class-utilityprocess) | null
 
-Registers a local AI handler `UtilityProcess`. To clear the handler, call `registerLocalAIHandler(null)`, which will disconnect any existing Prompt API sessions and destroy any `LanguageModel` instances.
+Registers a local AI handler `UtilityProcess`. To clear the handler, call `registerLocalAIHandler(null)`, which will disconnect any existing Prompt API sessions and destroy any `LanguageModelUtility` instances.
 
 ### Instance Properties
 

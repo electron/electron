@@ -1,7 +1,7 @@
-const { localAIHandler, LanguageModel } = require('electron/utility');
+const { localAIHandler, LanguageModelUtility } = require('electron/utility');
 
 localAIHandler.setPromptAPIHandler(() => {
-  const BuggyLanguageModel = class extends LanguageModel {
+  const BuggyLanguageModel = class extends LanguageModelUtility {
     static async create() {
       return 'foobar';
     }

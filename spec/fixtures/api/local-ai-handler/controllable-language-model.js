@@ -1,4 +1,4 @@
-const { localAIHandler, LanguageModel } = require('electron/utility');
+const { localAIHandler, LanguageModelUtility } = require('electron/utility');
 
 const { once } = require('node:events');
 
@@ -35,7 +35,7 @@ async function waitForAbort(signal, messageType) {
 }
 
 localAIHandler.setPromptAPIHandler(() => {
-  const ControllableLanguageModel = class extends LanguageModel {
+  const ControllableLanguageModel = class extends LanguageModelUtility {
     static async create(options) {
       process.parentPort.postMessage({ type: 'create-called', options });
       if (createResponse === 'reject') {

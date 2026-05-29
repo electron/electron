@@ -1,10 +1,10 @@
-## Class: LanguageModel
+## Class: LanguageModelUtility
 
 > Implement local AI language models
 
 Process: [Utility](../glossary.md#utility-process)
 
-### `new LanguageModel(initialState)`
+### `new LanguageModelUtility(initialState)`
 
 * `initialState` Object
   * `contextUsage` number
@@ -15,15 +15,15 @@ Process: [Utility](../glossary.md#utility-process)
 
 ### Static Methods
 
-The `LanguageModel` class has the following static methods:
+The `LanguageModelUtility` class has the following static methods:
 
-#### `LanguageModel.create(options)` _Experimental_
+#### `LanguageModelUtility.create(options)` _Experimental_
 
 * `options` [LanguageModelCreateOptions](structures/language-model-create-options.md)
 
-Returns `Promise<LanguageModel>`. Creates a new `LanguageModel` with the provided `options`.
+Returns `Promise<LanguageModelUtility>`. Creates a new `LanguageModelUtility` with the provided `options`.
 
-#### `LanguageModel.availability([options])` _Experimental_
+#### `LanguageModelUtility.availability([options])` _Experimental_
 
 * `options` [LanguageModelCreateCoreOptions](structures/language-model-create-core-options.md) (optional)
 
@@ -38,48 +38,48 @@ Determines the availability of the language model and returns one of the followi
 
 ### Instance Properties
 
-The following properties are available on instances of `LanguageModel`:
+The following properties are available on instances of `LanguageModelUtility`:
 
-#### `languageModel.contextUsage` _Experimental_
+#### `languageModelUtility.contextUsage` _Experimental_
 
 A `number` representing how many tokens are currently in the context window.
 
-#### `languageModel.contextWindow` _Experimental_
+#### `languageModelUtility.contextWindow` _Experimental_
 
 A `number` representing the size of the context window, in tokens.
 
 ### Instance Methods
 
-The following methods are available on instances of `LanguageModel`:
+The following methods are available on instances of `LanguageModelUtility`:
 
-#### `languageModel.prompt(input, options)` _Experimental_
+#### `languageModelUtility.prompt(input, options)` _Experimental_
 
 * `input` [LanguageModelMessage[]](structures/language-model-message.md)
 * `options` [LanguageModelPromptOptions](structures/language-model-prompt-options.md)
 
 Returns `Promise<string> | Promise<import('stream/web').ReadableStream<string>>`. Prompt the model for a response.
 
-#### `languageModel.append(input, options)` _Experimental_
+#### `languageModelUtility.append(input, options)` _Experimental_
 
 * `input` [LanguageModelMessage[]](structures/language-model-message.md)
 * `options` [LanguageModelAppendOptions](structures/language-model-append-options.md)
 
 Returns `Promise<undefined>`. Append a message without prompting for a response.
 
-#### `languageModel.measureContextUsage(input, options)` _Experimental_
+#### `languageModelUtility.measureContextUsage(input, options)` _Experimental_
 
 * `input` [LanguageModelMessage[]](structures/language-model-message.md)
 * `options` [LanguageModelPromptOptions](structures/language-model-prompt-options.md)
 
 Returns `Promise<number>`. Measure how many tokens the input would use.
 
-#### `languageModel.clone(options)` _Experimental_
+#### `languageModelUtility.clone(options)` _Experimental_
 
 * `options` [LanguageModelCloneOptions](structures/language-model-clone-options.md)
 
-Returns `Promise<LanguageModel>`. Clones the `LanguageModel` such that the
+Returns `Promise<LanguageModelUtility>`. Clones the `LanguageModelUtility` such that the
 context and initial prompt should be preserved.
 
-#### `languageModel.destroy()` _Experimental_
+#### `languageModelUtility.destroy()` _Experimental_
 
 Destroys the model, and any ongoing executions are aborted.

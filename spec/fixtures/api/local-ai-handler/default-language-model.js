@@ -1,5 +1,5 @@
-const { localAIHandler, LanguageModel } = require('electron/utility');
+const { localAIHandler, LanguageModelUtility } = require('electron/utility');
 
 localAIHandler.setPromptAPIHandler(() => {
-  return LanguageModel;
+  return LanguageModelUtility;
 });

@@ -1,9 +1,9 @@
-const { localAIHandler, LanguageModel } = require('electron/utility');
+const { localAIHandler, LanguageModelUtility } = require('electron/utility');
 
 const { ReadableStream } = require('node:stream/web');
 
 localAIHandler.setPromptAPIHandler(() => {
-  const StreamingLanguageModel = class extends LanguageModel {
+  const StreamingLanguageModel = class extends LanguageModelUtility {
     static async create() {
       return new StreamingLanguageModel({
         contextUsage: 0,

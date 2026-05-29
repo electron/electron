@@ -1,4 +1,4 @@
-import LanguageModel from '@electron/internal/utility/api/language-model';
+import LanguageModelUtility from '@electron/internal/utility/api/language-model-utility';
 import { ParentPort } from '@electron/internal/utility/parent-port';
 
 import { EventEmitter } from 'events';
@@ -14,11 +14,11 @@ process.argv.splice(1, 1, entryScript);
 
 // These are used by C++ to more easily identify these objects.
 v8Util.setHiddenValue(global, 'isReadableStream', (val: unknown) => val instanceof ReadableStream);
-v8Util.setHiddenValue(global, 'isLanguageModel', (val: unknown) => val instanceof LanguageModel);
+v8Util.setHiddenValue(global, 'isLanguageModel', (val: unknown) => val instanceof LanguageModelUtility);
 v8Util.setHiddenValue(
   global,
   'isLanguageModelClass',
-  (val: any) => Object.is(val, LanguageModel) || val?.prototype instanceof LanguageModel || false
+  (val: any) => Object.is(val, LanguageModelUtility) || val?.prototype instanceof LanguageModelUtility || false
 );
 
 // Import common settings.

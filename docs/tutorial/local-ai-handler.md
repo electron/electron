@@ -49,18 +49,18 @@ const win = new BrowserWindow({
 
 ### 1. Create the utility process script
 
-The utility process script registers your `LanguageModel` subclass. The
+The utility process script registers your `LanguageModelUtility` subclass. The
 handler function receives a `details` object with information about the
-caller, and must return a class that extends `LanguageModel`.
+caller, and must return a class that extends `LanguageModelUtility`.
 
 ```js title='ai-handler.js (Utility Process)'
-const { localAIHandler, LanguageModel } = require('electron/utility')
+const { localAIHandler, LanguageModelUtility } = require('electron/utility')
 
 localAIHandler.setPromptAPIHandler((details) => {
   // details.webContentsId — ID of the calling WebContents
   // details.securityOrigin — origin of the calling page
 
-  return class MyLanguageModel extends LanguageModel {
+  return class MyLanguageModel extends LanguageModelUtility {
     static async create (options) {
       // options.signal - AbortSignal to cancel the creation of the model
       // options.initialPrompts - initial prompts to pass to the language model
@@ -182,7 +182,7 @@ provide proper isolation between origins.
 ## Further reading
 
 - [`localAIHandler` API reference](../api/local-ai-handler.md)
-- [`LanguageModel` API reference](../api/language-model.md)
+- [`LanguageModel` API reference](../api/language-model-utility.md)
 - [`ses.registerLocalAIHandler()`](../api/session.md#sesregisterlocalaihandlerhandler-experimental)
 - [`utilityProcess.fork()`](../api/utility-process.md#utilityprocessforkmodulepath-args-options)
 - [`electron/llm`](https://github.com/electron/llm)

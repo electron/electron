@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { localAIHandler, net, systemPreferences, LanguageModel } from 'electron/utility';
+import { localAIHandler, net, systemPreferences, LanguageModelUtility } from 'electron/utility';
 
 process.parentPort.on('message', (e) => {
   if (e.data === 'Hello from parent!') {
@@ -72,7 +72,7 @@ if (process.platform === 'darwin') {
 // https://github.com/electron/electron/blob/main/docs/api/local-ai-handler.md
 
 localAIHandler.setPromptAPIHandler((details) => {
-  return class MyLanguageModel extends LanguageModel {
+  return class MyLanguageModel extends LanguageModelUtility {
     private details = details;
 
     static async create() {

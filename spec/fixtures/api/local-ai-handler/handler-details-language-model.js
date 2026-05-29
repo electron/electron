@@ -1,4 +1,4 @@
-const { localAIHandler, LanguageModel } = require('electron/utility');
+const { localAIHandler, LanguageModelUtility } = require('electron/utility');
 
 let callCount = 0;
 
@@ -14,5 +14,5 @@ localAIHandler.setPromptAPIHandler((details) => {
   callCount++;
   process.parentPort.postMessage({ type: 'handler-called', details, callCount });
 
-  return LanguageModel;
+  return LanguageModelUtility;
 });
