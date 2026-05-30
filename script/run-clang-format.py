@@ -130,12 +130,12 @@ def run_clang_format_diff(args, file_name):
         print(" ".join(invocation))
         return [], []
     try:
-        with subprocess.Popen(' '.join(invocation),
+        with subprocess.Popen(invocation,
                               stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE,
                               universal_newlines=True,
                               encoding='utf-8',
-                              shell=True) as proc:
+                              shell=False) as proc:
             outs = list(proc.stdout.readlines())
             errs = list(proc.stderr.readlines())
             proc.wait()
