@@ -7,3 +7,11 @@ is_official_build = true
 # who have an LGPL requirement to ship ffmpeg as a dynamically linked library,
 # we build ffmpeg as a shared library.
 is_component_ffmpeg = true
+
+# Track which grit resource IDs the linked binary actually references and
+# repack the locale .pak files with only those strings.
+# TODO: extend to Windows (PDB-based extraction) and macOS (needs Mach-O
+# support in tools/resources/generate_resource_allowlist.py).
+# Only the Linux wiring in //electron/BUILD.gn consumes the allowlist today;
+# on other platforms this only makes grit emit the (free) marker symbols.
+enable_resource_allowlist_generation = true
