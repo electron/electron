@@ -1,0 +1,370 @@
+name: Generate PGO Profiles
+
+# Builds PGO-instrumented Electron for each supported platform, runs the
+# benchmark workload set against it (Speedometer 3, JetStream 2, MotionMark -
+# the same set Chromium's PGO bots use), and produces merged .profdata files.
+#
+# Profiles are always uploaded as workflow artifacts; optionally they are also
+# published to the build-tools storage account via OIDC (the pgo-upload
+# environment) and served at https://dev-cdn.electronjs.org/pgo/.
+#
+# Profile/arch coverage:
+#   - linux x64   -> used by all Linux arches (x64, arm, arm64), like Chromium
+#   - win x64     -> used by win x64 and x86 (arm64 cannot run on CI hosts yet)
+#   - macos x64   -> darwin x64
+#   - macos arm64 -> darwin arm64
+
+on:
+  workflow_dispatch:
+    inputs:
+      build-image-sha:
+        type: string
+        description: 'Override the build image SHA to use (defaults to pinned SHA)'
+        default: ''
+        required: false
+      skip-linux:
+        type: boolean
+        description: 'Skip the Linux profile'
+        default: false
+        required: false
+      skip-macos:
+        type: boolean
+        description: 'Skip the macOS profiles'
+        default: false
+        required: false
+      skip-windows:
+        type: boolean
+        description: 'Skip the Windows profile'
+        default: false
+        required: false
+      upload-to-storage:
+        type: boolean
+        description: 'Upload generated profiles to Azure blob storage'
+        default: true
+        required: false
+
+defaults:
+  run:
+    shell: bash
+
+permissions: {}
+
+jobs:
+  setup:
+    if: ${{ github.repository == 'electron/electron' }}
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - name: Get Build Image SHA
+      id: set-output
+      uses: ./.github/actions/build-image-sha
+      with:
+        build-image-sha: ${{ inputs.build-image-sha }}
+
+  # Sync the source tree once per platform (same pattern as build.yml).
+  checkout-linux:
+    needs: setup
+    if: ${{ !inputs.skip-linux }}
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    outputs:
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+
+  checkout-macos:
+    needs: setup
+    if: ${{ !inputs.skip-macos }}
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    outputs:
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        generate-sas-token: 'true'
+        target-platform: macos
+
+  checkout-windows:
+    needs: setup
+    if: ${{ !inputs.skip-windows }}
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/win-cache:/mnt/win-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
+      TARGET_OS: 'win'
+    outputs:
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        generate-sas-token: 'true'
+        target-platform: win
+
+  # Windows builds need the patched siso binary (same as build.yml).
+  build-siso-windows:
+    needs: setup
+    if: ${{ !inputs.skip-windows }}
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
+
+  # ---------------------------------------------------------------------------
+  # Instrumented builds (gn-build-type: pgo-instrument -> build/args/pgo-instrument.gn)
+  # ---------------------------------------------------------------------------
+
+  build-linux-x64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: checkout-linux
+    with:
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      target-platform: linux
+      target-arch: x64
+      is-release: false
+      gn-build-type: pgo-instrument
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
+  build-macos-x64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: checkout-macos
+    with:
+      build-runs-on: macos-15-xlarge
+      target-platform: macos
+      target-arch: x64
+      target-variant: darwin
+      is-release: false
+      gn-build-type: pgo-instrument
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
+  build-macos-arm64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: checkout-macos
+    with:
+      build-runs-on: macos-15-xlarge
+      target-platform: macos
+      target-arch: arm64
+      target-variant: darwin
+      is-release: false
+      gn-build-type: pgo-instrument
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
+  build-windows-x64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: [checkout-windows, build-siso-windows]
+    with:
+      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      target-platform: win
+      target-arch: x64
+      is-release: false
+      gn-build-type: pgo-instrument
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
+  # ---------------------------------------------------------------------------
+  # Profile collection (runs benchmarks against the instrumented builds)
+  # ---------------------------------------------------------------------------
+
+  collect-linux-x64:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    needs: [checkout-linux, build-linux-x64]
+    with:
+      target-platform: linux
+      target-arch: x64
+      artifact-key: linux_x64
+      collect-runs-on: electron-arc-centralus-linux-amd64-8core
+      collect-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
+    secrets: inherit
+
+  collect-macos-x64:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    needs: build-macos-x64
+    with:
+      target-platform: macos
+      target-arch: x64
+      artifact-key: darwin_x64
+      collect-runs-on: macos-15-large
+    secrets: inherit
+
+  collect-macos-arm64:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    needs: build-macos-arm64
+    with:
+      target-platform: macos
+      target-arch: arm64
+      artifact-key: darwin_arm64
+      collect-runs-on: macos-15
+    secrets: inherit
+
+  collect-windows-x64:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    needs: build-windows-x64
+    with:
+      target-platform: win
+      target-arch: x64
+      artifact-key: win_x64
+      collect-runs-on: windows-latest
+    secrets: inherit
+
+  # ---------------------------------------------------------------------------
+  # Publish: a single OIDC-authenticated job uploads every collected profile to
+  # the build-tools storage account, served at https://dev-cdn.electronjs.org/pgo/
+  # ---------------------------------------------------------------------------
+
+  upload-profiles:
+    name: Upload Profiles to dev-cdn
+    needs: [collect-linux-x64, collect-macos-x64, collect-macos-arm64, collect-windows-x64]
+    # Run as long as at least one collection might have produced a profile;
+    # the job fails if none did.
+    if: ${{ !cancelled() && inputs.upload-to-storage }}
+    runs-on: ubuntu-latest
+    # The pgo-upload environment holds the Azure OIDC credentials and is
+    # restricted to protected branches.
+    environment: pgo-upload
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+    - name: Download Profile Artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        pattern: pgo-profile-*
+        path: profiles
+        merge-multiple: true
+    - name: Verify Profiles Exist
+      run: |
+        ls -la profiles/
+        count=$(find profiles -name '*.profdata' | wc -l)
+        if [ "$count" -eq 0 ]; then
+          echo "ERROR: no .profdata files were produced by the collection jobs"
+          exit 1
+        fi
+        echo "Found $count profile(s) to upload"
+    - name: Azure Login
+      uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43
+      with:
+        client-id: ${{ secrets.AZURE_OIDC_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_OIDC_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_OIDC_SUBSCRIPTION_ID }}
+    - name: Upload Profiles to Azure
+      env:
+        AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_PGO_STORAGE_ACCOUNT_NAME }}
+      run: |
+        az storage blob upload-batch \
+          --account-name "$AZURE_STORAGE_ACCOUNT" \
+          --destination pgo \
+          --source profiles \
+          --pattern '*.profdata' \
+          --auth-mode login
+        echo "## Uploaded PGO Profiles" >> $GITHUB_STEP_SUMMARY
+        for f in profiles/*.profdata; do
+          echo "- https://dev-cdn.electronjs.org/pgo/$(basename "$f")" >> $GITHUB_STEP_SUMMARY
+        done
+
+  # Aggregate gate so a single status reflects the whole run.
+  pgo-done:
+    needs: [collect-linux-x64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, upload-profiles]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+    - name: Check job statuses
+      env:
+        NEEDS_CONTEXT: ${{ toJSON(needs) }}
+      run: |
+        echo "$NEEDS_CONTEXT" | python3 -c '
+        import json, sys
+        needs = json.load(sys.stdin)
+        failed = [k for k, v in needs.items() if v["result"] == "failure"]
+        skipped = [k for k, v in needs.items() if v["result"] == "skipped"]
+        succeeded = [k for k, v in needs.items() if v["result"] == "success"]
+        print(f"succeeded: {succeeded}")
+        print(f"skipped:   {skipped}")
+        print(f"failed:    {failed}")
+        if failed:
+            sys.exit(1)
+        if not succeeded:
+            print("ERROR: every profile job was skipped")
+            sys.exit(1)
+        '

@@ -1,0 +1,14 @@
+import("release.gn")
+
+# Build with PGO instrumentation (-fprofile-generate). Binaries built with
+# this config are used only to collect profile data via
+# script/pgo/collect-profile.js - they run at roughly half speed and are not
+# shippable.
+#
+# Note: use_thin_lto automatically defaults to false when chrome_pgo_phase is
+# 1, so the expensive ThinLTO link is skipped for instrumented builds.
+chrome_pgo_phase = 1
+
+# Profiles are generated from dcheck-off builds (mixing dcheck states between
+# the profiled binary and the final binary distorts hotness).
+dcheck_always_on = false
