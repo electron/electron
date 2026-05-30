@@ -16,6 +16,7 @@
 #include "base/containers/fixed_flat_set.h"
 #include "base/containers/span.h"
 #include "base/dcheck_is_on.h"
+#include "base/json/json_reader.h"
 #include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
@@ -41,7 +42,9 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
+#include "content/public/common/url_constants.h"
 #include "ipc/constants.mojom.h"
+#include "net/cert/x509_certificate.h"
 #include "net/http/http_response_headers.h"
 #include "net/http/http_status_code.h"
 #include "services/network/public/cpp/simple_url_loader.h"
@@ -64,8 +67,15 @@
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
+#include "ui/events/keycodes/dom/keycode_converter.h"
+#include "ui/events/keycodes/keyboard_code_conversion.h"
+#include "ui/events/keycodes/keyboard_codes.h"
 #include "url/url_util.h"
 #include "v8/include/v8.h"
+
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+#include "shell/browser/ui/certificate_viewer.h"
+#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "content/public/browser/child_process_security_policy.h"
@@ -167,6 +177,17 @@ constexpr auto kValidDockStates = base::MakeFixedFlatSet<std::string_view>(
 
 bool IsValidDockState(const std::string& state) {
   return kValidDockStates.contains(state);
+}
+
+// Combines a keyboard code and modifier mask into a single int for shortcut
+// whitelisting, mirroring Chrome's DevToolsEventForwarder.
+int CombineKeyCodeAndModifiers(int key_code, int modifiers) {
+  return key_code | (modifiers << 16);
+}
+
+bool KeyWhitelistingAllowed(int key_code, int modifiers) {
+  return (ui::VKEY_F1 <= key_code && key_code <= ui::VKEY_F12) ||
+         modifiers != 0;
 }
 
 }  // namespace
@@ -850,6 +871,110 @@ void InspectableWebContents::SetEyeDropperActive(bool active) {
     delegate_->DevToolsSetEyeDropperActive(active);
 }
 
+void InspectableWebContents::SetWhitelistedShortcuts(
+    const std::string& message) {
+  std::optional<base::Value> parsed =
+      base::JSONReader::Read(message, base::JSON_PARSE_RFC);
+  if (!parsed || !parsed->is_list())
+    return;
+  whitelisted_shortcut_keys_.clear();
+  for (const auto& list_item : parsed->GetList()) {
+    if (!list_item.is_dict())
+      continue;
+    const base::DictValue& dict = list_item.GetDict();
+    const int key_code = dict.FindInt("keyCode").value_or(0);
+    if (key_code == 0)
+      continue;
+    const int modifiers = dict.FindInt("modifiers").value_or(0);
+    if (!KeyWhitelistingAllowed(key_code, modifiers)) {
+      LOG(WARNING) << "Key whitelisting forbidden: (" << key_code << ","
+                   << modifiers << ")";
+      continue;
+    }
+    whitelisted_shortcut_keys_.insert(
+        CombineKeyCodeAndModifiers(key_code, modifiers));
+  }
+}
+
+bool InspectableWebContents::ForwardKeyboardEvent(
+    const input::NativeWebKeyboardEvent& event) {
+  if (!frontend_loaded_ || whitelisted_shortcut_keys_.empty())
+    return false;
+
+  std::string event_type;
+  switch (event.GetType()) {
+    case blink::WebInputEvent::Type::kKeyDown:
+    case blink::WebInputEvent::Type::kRawKeyDown:
+      event_type = "keydown";
+      break;
+    case blink::WebInputEvent::Type::kKeyUp:
+      event_type = "keyup";
+      break;
+    default:
+      return false;
+  }
+
+  const int key_code = ui::LocatedToNonLocatedKeyboardCode(
+      static_cast<ui::KeyboardCode>(event.windows_key_code));
+  const int modifiers =
+      event.GetModifiers() &
+      (blink::WebInputEvent::kShiftKey | blink::WebInputEvent::kControlKey |
+       blink::WebInputEvent::kAltKey | blink::WebInputEvent::kMetaKey);
+  if (!whitelisted_shortcut_keys_.contains(
+          CombineKeyCodeAndModifiers(key_code, modifiers))) {
+    return false;
+  }
+
+  base::DictValue event_data;
+  event_data.Set("type", event_type);
+  event_data.Set("key", ui::KeycodeConverter::DomKeyToKeyString(
+                            ui::DomKey(event.dom_key)));
+  event_data.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
+                             static_cast<ui::DomCode>(event.dom_code)));
+  event_data.Set("keyCode", key_code);
+  event_data.Set("modifiers", modifiers);
+  CallClientFunction("DevToolsAPI", "keyEventUnhandled",
+                     base::Value(std::move(event_data)));
+  return true;
+}
+
+void InspectableWebContents::ShowCertificateViewer(
+    const std::string& cert_chain) {
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
+  // |cert_chain| is a JSON list of base64-encoded DER certificates, sent by
+  // the DevTools Security panel.
+  std::optional<base::Value> parsed =
+      base::JSONReader::Read(cert_chain, base::JSON_PARSE_RFC);
+  if (!parsed || !parsed->is_list())
+    return;
+
+  std::vector<std::string> decoded;
+  decoded.reserve(parsed->GetList().size());
+  for (const auto& item : parsed->GetList()) {
+    if (!item.is_string())
+      return;
+    std::string der;
+    if (!base::Base64Decode(item.GetString(), &der))
+      return;
+    decoded.push_back(std::move(der));
+  }
+  if (decoded.empty())
+    return;
+
+  const std::vector<std::string_view> der_views(decoded.begin(), decoded.end());
+  scoped_refptr<net::X509Certificate> certificate =
+      net::X509Certificate::CreateFromDERCertChain(der_views);
+  if (!certificate)
+    return;
+
+  content::WebContents* devtools_web_contents = GetDevToolsWebContents();
+  ShowPlatformCertificateViewer(
+      certificate.get(), devtools_web_contents
+                             ? devtools_web_contents->GetTopLevelNativeWindow()
+                             : gfx::NativeWindow());
+#endif
+}
+
 void InspectableWebContents::ZoomIn() {
   double new_level = GetNextZoomLevel(GetDevToolsZoomLevel(), false);
   SetZoomLevelForWebContents(GetDevToolsWebContents(), new_level);
@@ -990,6 +1115,16 @@ void InspectableWebContents::DispatchProtocolMessage(
           base::Value(base::NumberToString(pos ? 0 : total_size)));
     }
   }
+}
+
+void InspectableWebContents::AgentHostClosed(
+    content::DevToolsAgentHost* agent_host) {
+  // The inspected target has gone away (e.g. its WebContents was destroyed,
+  // or another DevTools client force-detached this one). The frontend is now
+  // inspecting nothing, so close it like Chrome does.
+  DCHECK_EQ(agent_host, agent_host_.get());
+  agent_host_ = nullptr;
+  CloseDevTools();
 }
 
 void InspectableWebContents::RenderFrameHostChanged(
@@ -1150,6 +1285,41 @@ void InspectableWebContents::RunBeforeUnloadDialog(
 
 void InspectableWebContents::CancelDialogs(content::WebContents* web_contents,
                                            bool reset_state) {}
+
+void InspectableWebContents::ActivateContents(content::WebContents* contents) {
+  // Called when the DevTools frontend requests focus, e.g. window.focus().
+  if (managed_devtools_web_contents_ && view_)
+    view_->ActivateDevTools();
+}
+
+void InspectableWebContents::ContentsZoomChange(bool zoom_in) {
+  // Ctrl+wheel / pinch zooming inside the DevTools frontend.
+  if (zoom_in)
+    ZoomIn();
+  else
+    ZoomOut();
+}
+
+content::WebContents* InspectableWebContents::OpenURLFromTab(
+    content::WebContents* source,
+    const content::OpenURLParams& params,
+    base::OnceCallback<void(content::NavigationHandle&)>
+        navigation_handle_callback) {
+  // Navigations inside the DevTools frontend: requests for devtools:// URLs
+  // reload the frontend in place; anything else is handed to the embedding
+  // app (devtools-open-url) so the frontend can't be navigated away.
+  if (params.url.SchemeIs(content::kChromeDevToolsScheme)) {
+    content::WebContents* devtools_web_contents = GetDevToolsWebContents();
+    if (!devtools_web_contents)
+      return nullptr;
+    devtools_web_contents->GetController().Reload(content::ReloadType::NORMAL,
+                                                  false);
+    return devtools_web_contents;
+  }
+
+  OpenInNewTab(params.url.spec());
+  return nullptr;
+}
 
 void InspectableWebContents::OnWebContentsFocused(
     content::RenderWidgetHost* render_widget_host) {
