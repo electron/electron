@@ -87,7 +87,8 @@ void SafeStorage::EnsureAsyncEncryptorRequested() {
       os_crypt_async::Encryptor::Option::kEncryptSyncCompat);
 }
 
-void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
+void SafeStorage::OnOsCryptReady(
+    scoped_refptr<os_crypt_async::Encryptor> encryptor) {
   encryptor_ = std::move(encryptor);
   is_available_ = true;
 
