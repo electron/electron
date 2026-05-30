@@ -15,6 +15,12 @@ name: Generate PGO Profiles
 #   - macos arm64 -> darwin arm64
 
 on:
+  # TEMPORARY: run on pushes to this branch so the workflow can be exercised
+  # end-to-end before it lands on main (workflow_dispatch is only available
+  # from the default branch). Remove before merging.
+  push:
+    branches:
+      - sam/pgo-generation-infra
   workflow_dispatch:
     inputs:
       build-image-sha:
@@ -296,8 +302,9 @@ jobs:
     name: Upload Profiles to dev-cdn
     needs: [collect-linux-x64, collect-macos-x64, collect-macos-arm64, collect-windows-x64]
     # Run as long as at least one collection might have produced a profile;
-    # the job fails if none did.
-    if: ${{ !cancelled() && inputs.upload-to-storage }}
+    # the job fails if none did. Push events (the temporary testing trigger)
+    # have no inputs, so they always upload.
+    if: ${{ !cancelled() && (github.event_name == 'push' || inputs.upload-to-storage) }}
     runs-on: ubuntu-latest
     # The pgo-upload environment holds the Azure OIDC credentials and is
     # restricted to protected branches.
