@@ -78,6 +78,12 @@ class InspectableWebContents
       base::OnceCallback<void(base::Value)> cb = base::NullCallback());
   void InspectElement(int x, int y);
 
+  // Forwards a keyboard event from the inspected page to the DevTools
+  // frontend if the frontend has asked for it via
+  // InspectorFrontendHost.setWhitelistedShortcuts (e.g. F8 to pause).
+  // Returns true if the event was consumed by DevTools.
+  bool ForwardKeyboardEvent(const input::NativeWebKeyboardEvent& event);
+
   // Return the last position and size of devtools window.
   [[nodiscard]] const gfx::Rect& dev_tools_bounds() const {
     return devtools_bounds_;
@@ -128,9 +134,9 @@ class InspectableWebContents
   void SearchInPath(int search_request_id,
                     const std::string& file_system_path,
                     const std::string& query) override;
-  void SetWhitelistedShortcuts(const std::string& message) override {}
+  void SetWhitelistedShortcuts(const std::string& message) override;
   void SetEyeDropperActive(bool active) override;
-  void ShowCertificateViewer(const std::string& cert_chain) override {}
+  void ShowCertificateViewer(const std::string& cert_chain) override;
   void ZoomIn() override;
   void ZoomOut() override;
   void ResetZoom() override;
@@ -209,7 +215,7 @@ class InspectableWebContents
   // content::DevToolsAgentHostClient:
   void DispatchProtocolMessage(content::DevToolsAgentHost* agent_host,
                                base::span<const uint8_t> message) override;
-  void AgentHostClosed(content::DevToolsAgentHost* agent_host) override {}
+  void AgentHostClosed(content::DevToolsAgentHost* agent_host) override;
 
   // content::WebContentsObserver:
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
@@ -242,6 +248,13 @@ class InspectableWebContents
                           const base::FilePath& path) override;
   bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
                          const content::ContextMenuParams& params) override;
+  void ActivateContents(content::WebContents* contents) override;
+  void ContentsZoomChange(bool zoom_in) override;
+  content::WebContents* OpenURLFromTab(
+      content::WebContents* source,
+      const content::OpenURLParams& params,
+      base::OnceCallback<void(content::NavigationHandle&)>
+          navigation_handle_callback) override;
   content::JavaScriptDialogManager* GetJavaScriptDialogManager(
       content::WebContents* source) override;
 
@@ -309,6 +322,10 @@ class InspectableWebContents
 
   // origin -> script
   base::flat_map<std::string, std::string> extensions_api_;
+
+  // Keyboard shortcuts (key_code | modifiers << 16) that the DevTools
+  // frontend wants to receive even when the inspected page has focus.
+  base::flat_set<int> whitelisted_shortcut_keys_;
 
   SEQUENCE_CHECKER(sequence_checker_);
 

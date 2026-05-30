@@ -1548,9 +1548,16 @@ bool WebContents::HandleKeyboardEvent(
   if (type_ == Type::kWebView && embedder_) {
     // Send the unhandled keyboard events back to the embedder.
     return embedder_->HandleKeyboardEvent(source, event);
-  } else {
-    return PlatformHandleKeyboardEvent(source, event);
   }
+
+  // Let DevTools consume shortcuts it has registered for (e.g. F8 to pause)
+  // even though the inspected page has focus.
+  if (inspectable_web_contents_ &&
+      inspectable_web_contents_->ForwardKeyboardEvent(event)) {
+    return true;
+  }
+
+  return PlatformHandleKeyboardEvent(source, event);
 }
 
 #if !BUILDFLAG(IS_MAC)
