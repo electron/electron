@@ -49,8 +49,9 @@ The process mirrors Chromium's own PGO recipe
 3. Merge and upload. In CI, collection jobs produce raw `.profraw` artifacts
    (collection hosts can't always run the x64 LLVM tooling - e.g. Linux arm64
    runners); the `merge-profiles` job then merges each platform/arch's set
-   into a `.profdata` using `fetch-llvm-profdata.js` (which downloads the
-   llvm-profdata binary matching Electron's pinned clang version), and the
+   into a `.profdata` using the in-tree llvm-profdata tooling (the merge job
+   restores the Linux src cache and runs Chromium's standard
+   `tools/clang/scripts/update.py --package=coverage_tools`), and the
    `upload-profiles` job authenticates to Azure with OIDC through the
    `pgo-upload` GitHub environment and uploads to the `pgo` container of the
    build-tools storage account. Uploaded profiles are served at

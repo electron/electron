@@ -347,13 +347,16 @@ jobs:
     env:
       ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
       ELECTRON_OUT_DIR: Default
+      # Must match checkout-linux's GCLIENT_EXTRA_ARGS - generate-deps-hash.js
+      # includes it in the cache key, and this job restores the cache that
+      # checkout-linux saved.
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
         fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
     - name: Install Dependencies
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
@@ -373,7 +376,6 @@ jobs:
       with:
         path: src/electron
         fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
@@ -542,19 +544,54 @@ jobs:
 
   merge-profiles:
     name: Merge Profiles
-    needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64]
+    # checkout-linux is needed for the container image SHA and because this
+    # job restores the src cache it creates (for the in-tree llvm-profdata
+    # tooling).
+    needs: [checkout-linux, collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64]
     # Merge whatever was collected, even if some platforms failed. The
     # repository guard is needed because !cancelled() overrides the skip
     # propagation that normally keeps fork runs from reaching this job.
     if: ${{ !cancelled() && github.repository == 'electron/electron' }}
-    runs-on: ubuntu-latest
+    runs-on: electron-arc-centralus-linux-amd64-4core
+    container:
+      image: ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
     permissions:
       contents: read
+    env:
+      # Must match checkout-linux so the DEPS hash resolves to its cache.
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
         path: src/electron
+        fetch-depth: 0
+    - name: Generate DEPS Hash
+      run: |
+        node src/electron/script/generate-deps-hash.js
+        DEPSHASH=v2-src-cache-$(cat src/electron/.depshash)
+        echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
+        echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
+    # The src cache provides tools/clang/scripts/update.py and DEPS-pinned
+    # toolchain metadata so the exact llvm-profdata matching Electron's clang
+    # can be downloaded with Chromium's standard tooling.
+    - name: Restore src cache via AKS
+      uses: ./src/electron/.github/actions/restore-cache-aks
+    - name: Checkout Electron (after cache restore)
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Download llvm-profdata
+      run: |
+        # NOTE: --output-dir is required - extracting the coverage_tools
+        # package into its default location replaces the clang installation
+        # under third_party/llvm-build.
+        python3 src/tools/clang/scripts/update.py --package=coverage_tools --output-dir=/tmp/coverage-tools
+        /tmp/coverage-tools/bin/llvm-profdata --version
     - name: Download Profraw Artifacts
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
@@ -562,11 +599,7 @@ jobs:
         path: profraw
     - name: Merge Profiles
       run: |
-        PROFDATA=$(node src/electron/script/pgo/fetch-llvm-profdata.js \
-          --deps src/electron/DEPS \
-          --output-dir llvm-coverage-tools | tail -1)
-        echo "Using llvm-profdata: $PROFDATA"
-        "$PROFDATA" --version
+        PROFDATA=/tmp/coverage-tools/bin/llvm-profdata
 
         SHORT_SHA=$(git -C src/electron rev-parse --short HEAD)
         TIMESTAMP=$(date +%s)
