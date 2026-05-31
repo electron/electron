@@ -126,7 +126,8 @@ jobs:
           --electron out/Default/electron.exe \
           --output out/Default/pgo-profraw \
           --work-dir "$TEMP/electron-pgo" \
-          --no-merge
+          --no-merge \
+          --target-arch ${{ inputs.target-arch }}
     # Upload partial results even when a workload failed.
     - name: Upload Profraw as Workflow Artifact
       if: ${{ !cancelled() }}

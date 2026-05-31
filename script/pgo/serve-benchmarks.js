@@ -343,14 +343,21 @@ function startServer(workDir, port, opts = {}) {
   let scheme;
 
   if (opts.tls) {
-    server = http2.createSecureServer(
-      {
-        cert: fs.readFileSync(opts.tls.certPath),
-        key: fs.readFileSync(opts.tls.keyPath),
-        allowHTTP1: true
-      },
-      handler
-    );
+    const serverOptions = {
+      cert: fs.readFileSync(opts.tls.certPath),
+      key: fs.readFileSync(opts.tls.keyPath),
+      allowHTTP1: true
+    };
+    // Cap concurrent HTTP/2 streams when requested. Benchmark pages fire
+    // hundreds of resource fetches at once; on constrained clients the
+    // multiplexed burst (TLS + stream buffers for every request at once)
+    // can exhaust the renderer's address space.
+    if (opts.maxConcurrentStreams) {
+      serverOptions.settings = {
+        maxConcurrentStreams: opts.maxConcurrentStreams
+      };
+    }
+    server = http2.createSecureServer(serverOptions, handler);
     scheme = 'https';
   } else {
     server = http.createServer(handler);

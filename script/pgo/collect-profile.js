@@ -8,6 +8,7 @@
 //     --electron <path to instrumented electron binary> \
 //     --output <path to write merged .profdata> \
 //     [--work-dir <scratch dir>] [--port 8765] [--no-sandbox] [--no-merge]
+//     [--target-arch <arch>]
 //
 // --no-sandbox is required when running as root inside CI containers; the
 // sandbox setup paths are a negligible fraction of profile counters.
@@ -173,7 +174,13 @@ async function main() {
     tls = { certPath: certs.certPath, keyPath: certs.keyPath };
     caCertPath = certs.caCertPath;
   }
-  const server = startServer(benchmarksDir, port, { tls });
+  // 32-bit Windows (WOW64) cannot absorb the fully multiplexed HTTP/2 burst
+  // of benchmark page loads on an instrumented binary - the concurrent TLS
+  // and stream buffers exhaust the renderer's address space and JetStream's
+  // initialization (which also makes large wasm allocations) fails. Cap
+  // concurrent streams there; other platforms keep full multiplexing.
+  const maxConcurrentStreams = process.platform === 'win32' && args['target-arch'] === 'x86' ? 8 : undefined;
+  const server = startServer(benchmarksDir, port, { tls, maxConcurrentStreams });
   const baseUrl = tls ? `https://localhost:${port}` : `http://127.0.0.1:${port}`;
 
   // 2. Run the instrumented build through the workloads.
