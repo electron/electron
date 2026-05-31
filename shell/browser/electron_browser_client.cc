@@ -1271,7 +1271,7 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   // gets approval from ChildProcessSecurityPolicy. Keep this logic in sync with
   // ExtensionWebContentsObserver::RenderFrameCreated.
   extensions::Manifest::Type type = extension->GetType();
-  if (type == extensions::Manifest::TYPE_EXTENSION &&
+  if (type == extensions::Manifest::Type::kExtension &&
       AllowFileAccess(extension->id(), web_contents->GetBrowserContext())) {
     factories->emplace(url::kFileScheme,
                        FileURLLoaderFactory::Create(render_process_id));
