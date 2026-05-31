@@ -120,8 +120,115 @@ async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function runWorkload(win, workload) {
+// ---------------------------------------------------------------------------
+// Failure diagnostics
+//
+// Workload failures on CI are otherwise nearly undebuggable - official builds
+// crash without messages and a hung page looks identical to a slow one. These
+// observers record enough state to tell the difference: per-resource network
+// accounting (completed / failed / still pending), renderer crashes with
+// their reason, renderer hangs, and a memory + DOM snapshot at failure time.
+// ---------------------------------------------------------------------------
+
+function attachDiagnostics(win) {
+  const diag = {
+    requests: new Map(),
+    consoleErrors: [],
+    rendererGone: null,
+    unresponsive: false,
+    reset() {
+      this.requests.clear();
+      this.consoleErrors = [];
+      this.rendererGone = null;
+      this.unresponsive = false;
+    }
+  };
+
+  win.webContents.on('render-process-gone', (_event, details) => {
+    diag.rendererGone = details;
+    log(`DIAGNOSTIC: renderer process gone: ${JSON.stringify(details)}`);
+  });
+  win.webContents.on('unresponsive', () => {
+    diag.unresponsive = true;
+    log('DIAGNOSTIC: renderer became unresponsive');
+  });
+  win.webContents.on('console-message', (event, legacyLevel, legacyMessage) => {
+    const level = typeof event.level === 'string' ? event.level : legacyLevel;
+    const message = event.message !== undefined ? event.message : legacyMessage;
+    if (level === 'error' || level === 3) {
+      diag.consoleErrors.push(String(message).slice(0, 500));
+    }
+  });
+
+  // Non-blocking observers: track every resource the page requests so a
+  // failure report can say exactly which loads never finished.
+  const filter = { urls: ['*://*/*'] };
+  const { webRequest } = win.webContents.session;
+  webRequest.onSendHeaders(filter, (details) => {
+    diag.requests.set(details.url, 'pending');
+  });
+  webRequest.onCompleted(filter, (details) => {
+    diag.requests.set(details.url, 'completed');
+  });
+  webRequest.onErrorOccurred(filter, (details) => {
+    diag.requests.set(details.url, `failed: ${details.error}`);
+  });
+
+  return diag;
+}
+
+async function reportWorkloadFailure(win, workloadName, diag) {
+  log(`=== failure diagnostics for ${workloadName} ===`);
+
+  if (diag.rendererGone) {
+    log(`renderer process gone: ${JSON.stringify(diag.rendererGone)}`);
+  }
+  if (diag.unresponsive) log('renderer is unresponsive (main thread hung)');
+
+  const entries = [...diag.requests.entries()];
+  const pending = entries.filter(([, s]) => s === 'pending');
+  const failed = entries.filter(([, s]) => String(s).startsWith('failed'));
+  log(
+    `resources: ${entries.length} requested, ` +
+      `${entries.length - pending.length - failed.length} completed, ` +
+      `${failed.length} failed, ${pending.length} never finished`
+  );
+  for (const [url, status] of failed.slice(0, 15)) log(`  ${status}: ${url}`);
+  for (const [url] of pending.slice(0, 15)) log(`  never finished: ${url}`);
+
+  if (diag.consoleErrors.length > 0) {
+    log(`console errors (${diag.consoleErrors.length}):`);
+    for (const message of diag.consoleErrors.slice(0, 15)) log(`  ${message}`);
+  }
+
+  // Memory + DOM snapshot, best effort: a hung renderer may never respond,
+  // so give it a strict deadline rather than hanging the collection further.
+  try {
+    const state = await Promise.race([
+      win.webContents.executeJavaScript(
+        `JSON.stringify({
+          memory: typeof performance !== 'undefined' && performance.memory ? {
+            usedJSHeapMB: Math.round(performance.memory.usedJSHeapSize / 1048576),
+            heapLimitMB: Math.round(performance.memory.jsHeapSizeLimit / 1048576)
+          } : null,
+          readyState: document.readyState,
+          bodyPreview: document.body ? document.body.innerText.slice(0, 400) : null
+        })`,
+        true
+      ),
+      sleep(10000).then(() => {
+        throw new Error('renderer did not respond to state query within 10s');
+      })
+    ]);
+    log(`page state: ${state}`);
+  } catch (err) {
+    log(`could not query page state: ${err.message}`);
+  }
+}
+
+async function runWorkload(win, workload, diag) {
   log(`starting workload: ${workload.name}`);
+  if (diag) diag.reset();
   const startTime = Date.now();
   await win.loadURL(workload.url);
 
@@ -142,7 +249,10 @@ async function runWorkload(win, workload) {
         /* page busy - retry */
       }
     }
-    if (!started) throw new Error(`workload ${workload.name} never became startable`);
+    if (!started) {
+      if (diag) await reportWorkloadFailure(win, workload.name, diag);
+      throw new Error(`workload ${workload.name} never became startable`);
+    }
   }
 
   // Poll for completion.
@@ -168,12 +278,14 @@ async function runWorkload(win, workload) {
         }
       }
       if (!succeeded) {
+        if (diag) await reportWorkloadFailure(win, workload.name, diag);
         throw new Error(`workload ${workload.name} ended in an error state after ${elapsed}s`);
       }
       log(`finished workload: ${workload.name} in ${elapsed}s`);
       return { name: workload.name, ok: true, seconds: Number(elapsed) };
     }
   }
+  if (diag) await reportWorkloadFailure(win, workload.name, diag);
   throw new Error(`workload ${workload.name} timed out after ${workload.timeoutMin} minutes`);
 }
 
@@ -444,8 +556,10 @@ app.whenReady().then(async () => {
   const results = [];
   let exitCode = 0;
 
+  const diag = attachDiagnostics(win);
+
   let phases = [
-    ...WORKLOADS.map((workload) => () => runWorkload(win, workload)),
+    ...WORKLOADS.map((workload) => () => runWorkload(win, workload, diag)),
     () => runMainProcessWorkload(MAIN_PROCESS_WORKLOAD_MS),
     () => runIpcBridgeWorkload(IPC_BRIDGE_WORKLOAD_MS),
     () => runNetworkWorkload(win, NETWORK_WORKLOAD_MS)

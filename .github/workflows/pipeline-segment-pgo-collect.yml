@@ -120,6 +120,8 @@ jobs:
     - name: Collect PGO Profile (win)
       if: ${{ inputs.target-platform == 'win' }}
       timeout-minutes: 150
+      env:
+        TARGET_ARCH: ${{ inputs.target-arch }}
       run: |
         cd src
         node electron/script/pgo/collect-profile.js \
@@ -127,7 +129,7 @@ jobs:
           --output out/Default/pgo-profraw \
           --work-dir "$TEMP/electron-pgo" \
           --no-merge \
-          --target-arch ${{ inputs.target-arch }}
+          --target-arch "$TARGET_ARCH"
     # Upload partial results even when a workload failed.
     - name: Upload Profraw as Workflow Artifact
       if: ${{ !cancelled() }}
