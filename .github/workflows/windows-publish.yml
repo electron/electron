@@ -111,23 +111,3 @@ jobs:
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
     secrets: inherit
-
-  publish-x86-win:
-    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
-    permissions:
-      artifact-metadata: write
-      attestations: write
-      contents: read
-      id-token: write
-    needs: [checkout-windows, build-siso]
-    with:
-      environment: production-release
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
-      target-platform: win
-      target-arch: x86
-      is-release: true
-      publish: true
-      gn-build-type: release
-      generate-symbols: true
-      upload-to-storage: ${{ inputs.upload-to-storage }}
-    secrets: inherit
