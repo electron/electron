@@ -3,21 +3,38 @@ From: Charles Kerr <charles@charleskerr.com>
 Date: Sat, 16 May 2026 17:12:29 -0500
 Subject: fix: preserve node symbols and vtables under thinlto
 
-Clang's -fwhole-program-vtables (enabled with ThinLTO) drops
-linkonce_odr vtables it considers unused. Several classes here have
-all-inline virtuals and so have no key function, leaving their vtables
-weak. Under ThinLTO the optimizer drops them, producing undefined
-vtable symbols at link time. Anchor each vtable by moving one virtual
-out-of-line:
+Electron's official macOS builds enable ThinLTO with whole-program
+vtables (-fwhole-program-vtables implies -fsplit-lto-unit). Under this
+configuration, Mach-O LTO localizes weak (linkonce_odr/weak_odr)
+unnamed_addr vtables during LTO code generation even when other LTO
+partitions still reference them, producing undefined-symbol errors at
+link time:
 
-  - StaticExternalByteResource (node_builtins.cc)
-  - NgRcBufPointer<T>::External (node_http2.cc)
-  - MemoryRetainerNode          (env.cc)
-  - JSGraphJSNode               (heap_utils.cc)
+  ld64.lld: error: undefined symbol: vtable for
+      node::StaticExternalByteResource<unsigned char, char,
+      v8::String::ExternalOneByteStringResource>
 
-Also mark N-API entry points with __attribute__((used)) so ThinLTO
-does not strip them when no Node.js source references them directly,
-following https://github.com/nodejs/node/pull/49037 .
+Three classes of fixes, all of which give the affected symbols strong
+(non-discardable, non-localizable) linkage:
+
+1. N-API entry points: mark with __attribute__((used)) so ThinLTO does
+   not strip them when no Node.js source references them directly,
+   following https://github.com/nodejs/node/pull/49037 .
+
+2. Non-template classes whose virtuals are all inline
+   (MemoryRetainerNode, JSGraphJSNode): move one virtual out of line.
+   This gives the class a key function, so its vtable is emitted as a
+   strong symbol in that translation unit.
+
+3. Class template instantiations (StaticExternalByteResource<...>,
+   NgRcBufPointer<Http2RcBufferPointerTraits>::External): these always
+   have weak vtables per the Itanium C++ ABI, and no linker option
+   prevents Mach-O LTO from localizing them. Add explicit
+   specializations for the instantiations node actually uses; an
+   explicit specialization is an ordinary class that can have a key
+   function (an out-of-line destructor), giving it a strong vtable.
+   The specialization bodies are identical to the primary templates,
+   and the primary templates and their users are unchanged.
 
 Observed on macOS arm64 official builds; latent on Linux/Windows.
 
@@ -83,7 +100,7 @@ index 56f4a180633d39c652449dd3d457d29e4a9f6ac1..765a868da8f5e4e6848e6ed57c46e4ac
    size_t SizeInBytes() override { return size_; }
    // TODO(addaleax): Merging this with the "official" WrapperNode() method
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 29a621c7fdca110a1a931d6cd40dbc5d0bc0b4ce..665cac3d930f8439a83c6265383b850d21ca7433 100644
+index 29a621c7fdca110a1a931d6cd40dbc5d0bc0b4ce..1c7d05b6288679ac5b96933b7d7f198aa666aabb 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -990,6 +990,21 @@ void BuiltinLoader::RegisterExternalReferences(
@@ -91,69 +108,225 @@ index 29a621c7fdca110a1a931d6cd40dbc5d0bc0b4ce..665cac3d930f8439a83c6265383b850d
  
  }  // namespace builtins
 +
-+template <typename Char, typename IChar, typename Base>
-+const IChar* StaticExternalByteResource<Char, IChar, Base>::data() const {
-+  return reinterpret_cast<const IChar*>(data_);
-+}
-+
-+template class StaticExternalByteResource<
++// Key functions of the StaticExternalByteResource explicit specializations
++// (see node_union_bytes.h). Defining them here anchors the specializations'
++// vtables in this translation unit as strong symbols.
++StaticExternalByteResource<
 +    uint8_t,
 +    char,
-+    v8::String::ExternalOneByteStringResource>;
-+template class StaticExternalByteResource<
++    v8::String::ExternalOneByteStringResource>::~StaticExternalByteResource() =
++    default;
++StaticExternalByteResource<
 +    uint16_t,
 +    uint16_t,
-+    v8::String::ExternalStringResource>;
++    v8::String::ExternalStringResource>::~StaticExternalByteResource() =
++    default;
 +
  }  // namespace node
  
  NODE_BINDING_PER_ISOLATE_INIT(
 diff --git a/src/node_http2.cc b/src/node_http2.cc
-index 084a4773673e5b07aac84a2adc79e3a89d050c84..5b60499bbe696d5c8998336f3f599f7157346f30 100644
+index 084a4773673e5b07aac84a2adc79e3a89d050c84..15020fc1f5c70bf3ea58bf248626daa41297b9e5 100644
 --- a/src/node_http2.cc
 +++ b/src/node_http2.cc
-@@ -3625,6 +3625,14 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
+@@ -3625,6 +3625,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
    return;
  }
  }  // namespace http2
 +
-+template <typename T>
-+const char* NgRcBufPointer<T>::External::data() const {
-+  return const_cast<const char*>(reinterpret_cast<char*>(ptr_.data()));
-+}
-+
-+template class NgRcBufPointer<http2::Http2RcBufferPointerTraits>::External;
++// Key function of the NgRcBufPointer<Http2RcBufferPointerTraits>::External
++// explicit specialization (see node_http2.h). Defining it here anchors the
++// specialization's vtable in this translation unit as a strong symbol.
++NgRcBufPointer<http2::Http2RcBufferPointerTraits>::External::~External() =
++    default;
 +
  }  // namespace node
  
  NODE_BINDING_CONTEXT_AWARE_INTERNAL(http2, node::http2::Initialize)
-diff --git a/src/node_http_common.h b/src/node_http_common.h
-index 5afb6b97becc4dd8239f6b31d56eaf77d0f8c314..c2d2dadf505b99bc573f4d8b06aeb678488352e7 100644
---- a/src/node_http_common.h
-+++ b/src/node_http_common.h
-@@ -385,9 +385,7 @@ class NgRcBufPointer : public MemoryRetainer {
-    public:
-     explicit External(const NgRcBufPointer<T>& ptr) : ptr_(ptr) {}
+diff --git a/src/node_http2.h b/src/node_http2.h
+index 259b71840b66d4a73cd15572ad3689bf8b0d6086..541cfa82bab0c604b165f5026348fc08355dc904 100644
+--- a/src/node_http2.h
++++ b/src/node_http2.h
+@@ -144,6 +144,96 @@ struct Http2RcBufferPointerTraits {
+ using Http2Headers = NgHeaders<Http2HeadersTraits>;
+ using Http2RcBufferPointer = NgRcBufPointer<Http2RcBufferPointerTraits>;
  
--    const char* data() const override {
--      return const_cast<const char*>(reinterpret_cast<char*>(ptr_.data()));
--    }
-+    const char* data() const override;
- 
-     size_t length() const override {
-       return ptr_.len();
++}  // namespace http2
++
++// ThinLTO: class template instantiations always have weak (linkonce_odr)
++// vtables. On Mach-O, LTO localizes weak unnamed_addr vtables during code
++// generation even when other LTO partitions still reference them, which
++// fails the link with undefined vtable symbols. This explicit specialization
++// is an ordinary class that can have a key function (the out-of-line
++// destructor), so its vtable is a strong symbol that ThinLTO must keep
++// external. The body is otherwise identical to the primary template in
++// node_http_common.h.
++template <>
++class NgRcBufPointer<http2::Http2RcBufferPointerTraits>::External
++    : public v8::String::ExternalOneByteStringResource {
++ public:
++  explicit External(
++      const NgRcBufPointer<http2::Http2RcBufferPointerTraits>& ptr)
++      : ptr_(ptr) {}
++
++  // Key function; defined in node_http2.cc to anchor the vtable.
++  ~External() override;
++
++  const char* data() const override {
++    return const_cast<const char*>(reinterpret_cast<char*>(ptr_.data()));
++  }
++
++  size_t length() const override {
++    return ptr_.len();
++  }
++
++  static inline
++  v8::MaybeLocal<v8::String> GetInternalizedString(
++      Environment* env,
++      const NgRcBufPointer<http2::Http2RcBufferPointerTraits>& ptr) {
++    return v8::String::NewFromOneByte(
++        env->isolate(),
++        ptr.data(),
++        v8::NewStringType::kInternalized,
++        ptr.len());
++  }
++
++  template <typename Allocator>
++  static v8::MaybeLocal<v8::String> New(
++      Allocator* allocator,
++      NgRcBufPointer<http2::Http2RcBufferPointerTraits> ptr) {
++    Environment* env = allocator->env();
++    if (ptr.IsStatic()) {
++      auto& static_str_map = env->isolate_data()->static_str_map;
++      const char* header_name = reinterpret_cast<const char*>(ptr.data());
++      v8::Eternal<v8::String>& eternal = static_str_map[header_name];
++      if (eternal.IsEmpty()) {
++        v8::Local<v8::String> str;
++        if (!GetInternalizedString(env, ptr).ToLocal(&str)) {
++          ptr.reset();
++          return {};
++        }
++        eternal.Set(env->isolate(), str);
++        return str;
++      }
++      return eternal.Get(env->isolate());
++    }
++
++    size_t len = ptr.len();
++
++    if (len == 0) {
++      ptr.reset();
++      return v8::String::Empty(env->isolate());
++    }
++
++    if (ptr.IsInternalizable() && len < 64) {
++      v8::MaybeLocal<v8::String> ret = GetInternalizedString(env, ptr);
++      ptr.reset();
++      return ret;
++    }
++
++    allocator->StopTrackingMemory(ptr.get());
++    External* h_str = new External(std::move(ptr));
++    v8::MaybeLocal<v8::String> str =
++        v8::String::NewExternalOneByte(env->isolate(), h_str);
++    if (str.IsEmpty())
++      delete h_str;
++
++    return str;
++  }
++
++ private:
++  NgRcBufPointer<http2::Http2RcBufferPointerTraits> ptr_;
++};
++
++namespace http2 {
++
+ struct NgHttp2StreamWrite : public MemoryRetainer {
+   BaseObjectPtr<AsyncWrap> req_wrap;
+   uv_buf_t buf;
 diff --git a/src/node_union_bytes.h b/src/node_union_bytes.h
-index 4a3f67980fdc925699cc67e40736bddce8f7b857..344e333a1af121d8e1de25c237dbc5bce35fd948 100644
+index 4a3f67980fdc925699cc67e40736bddce8f7b857..c8e69ea97ab3c79f395b029be711902d1395dd56 100644
 --- a/src/node_union_bytes.h
 +++ b/src/node_union_bytes.h
-@@ -20,9 +20,7 @@ class StaticExternalByteResource : public Base {
-                                       std::shared_ptr<void> owning_ptr)
-       : data_(data), length_(length), owning_ptr_(owning_ptr) {}
+@@ -41,6 +41,81 @@ class StaticExternalByteResource : public Base {
+   std::shared_ptr<void> owning_ptr_;
+ };
  
--  const IChar* data() const override {
--    return reinterpret_cast<const IChar*>(data_);
--  }
-+  const IChar* data() const override;
-   size_t length() const override { return length_; }
- 
-   void Dispose() override {
++// ThinLTO: class template instantiations always have weak (linkonce_odr)
++// vtables. On Mach-O, LTO localizes weak unnamed_addr vtables during code
++// generation even when other LTO partitions still reference them, which
++// fails the link with undefined vtable symbols. These explicit
++// specializations are ordinary classes that can have key functions (the
++// out-of-line destructor), so their vtables are strong symbols that ThinLTO
++// must keep external. The bodies are identical to the primary template.
++template <>
++class StaticExternalByteResource<uint8_t,
++                                 char,
++                                 v8::String::ExternalOneByteStringResource>
++    : public v8::String::ExternalOneByteStringResource {
++ public:
++  explicit StaticExternalByteResource(const uint8_t* data,
++                                      size_t length,
++                                      std::shared_ptr<void> owning_ptr)
++      : data_(data), length_(length), owning_ptr_(owning_ptr) {}
++
++  // Key function; defined in node_builtins.cc to anchor the vtable.
++  ~StaticExternalByteResource() override;
++
++  const char* data() const override {
++    return reinterpret_cast<const char*>(data_);
++  }
++  size_t length() const override { return length_; }
++
++  void Dispose() override {
++    // We ignore Dispose calls from V8, even if we "own" a resource via
++    // owning_ptr_. All instantiations of this class are static or owned by a
++    // static map, and will be destructed when static variables are destructed.
++  }
++
++  StaticExternalByteResource(const StaticExternalByteResource&) = delete;
++  StaticExternalByteResource& operator=(const StaticExternalByteResource&) =
++      delete;
++
++ private:
++  const uint8_t* data_;
++  const size_t length_;
++  std::shared_ptr<void> owning_ptr_;
++};
++
++template <>
++class StaticExternalByteResource<uint16_t,
++                                 uint16_t,
++                                 v8::String::ExternalStringResource>
++    : public v8::String::ExternalStringResource {
++ public:
++  explicit StaticExternalByteResource(const uint16_t* data,
++                                      size_t length,
++                                      std::shared_ptr<void> owning_ptr)
++      : data_(data), length_(length), owning_ptr_(owning_ptr) {}
++
++  // Key function; defined in node_builtins.cc to anchor the vtable.
++  ~StaticExternalByteResource() override;
++
++  const uint16_t* data() const override { return data_; }
++  size_t length() const override { return length_; }
++
++  void Dispose() override {
++    // We ignore Dispose calls from V8, even if we "own" a resource via
++    // owning_ptr_. All instantiations of this class are static or owned by a
++    // static map, and will be destructed when static variables are destructed.
++  }
++
++  StaticExternalByteResource(const StaticExternalByteResource&) = delete;
++  StaticExternalByteResource& operator=(const StaticExternalByteResource&) =
++      delete;
++
++ private:
++  const uint16_t* data_;
++  const size_t length_;
++  std::shared_ptr<void> owning_ptr_;
++};
++
+ using StaticExternalOneByteResource =
+     StaticExternalByteResource<uint8_t,
+                                char,
