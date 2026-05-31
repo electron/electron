@@ -1,9 +1,21 @@
 // PGO profile collection driver.
 //
 // This app runs inside the *instrumented* Electron build (chrome_pgo_phase = 1)
-// and drives the benchmark workloads that train the profile. It mirrors the
-// benchmark set Chromium's own PGO bots use (tools/pgo/generate_profile.py):
-// Speedometer 3, JetStream 2, and MotionMark.
+// and drives the workloads that train the profile.
+//
+// Workload phases:
+//   1. Browser benchmarks - Speedometer 3 (x3), JetStream 2, MotionMark; the
+//      same set Chromium's own PGO bots use (tools/pgo/generate_profile.py).
+//   2. Main-process workload - Node.js Buffer/crypto/fs/JSON loops. Real apps
+//      run significant main-process code that browser benchmarks never touch;
+//      without this phase those paths are cold-marked by the profile (measured
+//      at -63% on Buffer operations).
+//   3. IPC + contextBridge workload - bridge marshaling and ipcRenderer.invoke
+//      round trips at multiple payload sizes. contextBridge is Electron's
+//      hottest app-facing native code and is invisible to browser benchmarks.
+//   4. Network workload - renderer fetch/WebSocket loops plus Node-side HTTPS,
+//      training Chromium's TLS/H2/network-service code and Node's separate
+//      TLS/HTTP stack.
 //
 // Design notes:
 //  - The app quits itself with app.quit() when every workload has finished.
@@ -12,19 +24,30 @@
 //    normal shutdown. Killing the process loses all profile data.
 //  - Workload completion is detected by polling well-known globals inside the
 //    page (each benchmark exposes its runner state on `window`).
-//  - Every BrowserWindow uses default webPreferences so the renderer
-//    configuration matches what apps ship.
+//  - Benchmark BrowserWindows use default webPreferences so the renderer
+//    configuration matches what apps ship; the bridge workload window uses
+//    contextIsolation + a preload, matching Electron's security defaults.
 //
 // Environment:
 //   PGO_BENCHMARK_BASE_URL  base URL of the local benchmark server
 //                           (default http://127.0.0.1:8765)
 //   PGO_RESULTS_FILE        where to write a JSON summary of what ran
-const { app, BrowserWindow } = require('electron');
+//   PGO_WORKLOAD_FILTER     comma-separated list of workload names to run
+//                           (default: all). Useful for debugging a single
+//                           phase without waiting for the full set.
+const { app, BrowserWindow, ipcMain } = require('electron');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
+const https = require('node:https');
+const os = require('node:os');
 const path = require('node:path');
 
 const BASE_URL = process.env.PGO_BENCHMARK_BASE_URL || 'http://127.0.0.1:8765';
 const RESULTS_FILE = process.env.PGO_RESULTS_FILE || path.join(app.getPath('temp'), 'pgo-benchmark-results.json');
+
+// ---------------------------------------------------------------------------
+// Phase 1: browser benchmarks
+// ---------------------------------------------------------------------------
 
 // Each workload:
 //   url        - what to load
@@ -143,6 +166,248 @@ async function runWorkload (win, workload) {
   throw new Error(`workload ${workload.name} timed out after ${workload.timeoutMin} minutes`);
 }
 
+// ---------------------------------------------------------------------------
+// Phase 2: main-process workload
+//
+// Trains Node.js code paths that only exist in the main process: Buffer
+// operations (node::Buffer + simdutf base64/hex), crypto, synchronous fs, and
+// V8 JSON in the Node context. Loops are chunked with setImmediate yields so
+// the event loop stays responsive.
+// ---------------------------------------------------------------------------
+
+async function runMainProcessWorkload (durationMs) {
+  log('starting workload: main-process');
+  const startTime = Date.now();
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pgo-main-workload-'));
+
+  const filePayload = crypto.randomBytes(4096);
+  const bufA = Buffer.alloc(16 * 1024, 1);
+  const bufB = Buffer.alloc(16 * 1024, 2);
+  const deepObj = {
+    users: Array.from({ length: 100 }, (_, i) => ({
+      id: i,
+      name: `user-${i}`,
+      tags: ['a', 'b', 'c'],
+      prefs: { theme: 'dark', nested: { list: [1, 2, 3], flag: i % 2 === 0 } },
+      history: Array.from({ length: 10 }, (_, j) => ({ ts: 1700000000 + j, action: `act-${j}` }))
+    }))
+  };
+  const deepJson = JSON.stringify(deepObj);
+
+  const deadline = Date.now() + durationMs;
+  let iterations = 0;
+  while (Date.now() < deadline) {
+    for (let i = 0; i < 50; i++) {
+      // Buffer operations: concat, slice, compare, base64/hex encode + decode.
+      const joined = Buffer.concat([bufA, bufB]);
+      joined.subarray(1024, 8192);
+      bufA.compare(bufB);
+      const b64 = joined.toString('base64');
+      Buffer.from(b64, 'base64');
+      const hex = bufA.toString('hex');
+      Buffer.from(hex, 'hex');
+      bufA.toString('utf8', 0, 1024);
+
+      // Crypto: hashing, HMAC, random generation.
+      crypto.createHash('sha256').update(joined).digest();
+      crypto.createHmac('sha256', 'pgo-key').update(filePayload).digest();
+      crypto.randomBytes(1024);
+
+      // Synchronous fs: write/read/stat/unlink cycles.
+      const f = path.join(tmp, `f${i % 20}.bin`);
+      fs.writeFileSync(f, filePayload);
+      fs.readFileSync(f);
+      fs.statSync(f);
+
+      // V8 JSON in the Node context.
+      JSON.parse(deepJson);
+      JSON.stringify(deepObj);
+
+      iterations++;
+    }
+    // Yield so timers/IPC stay serviceable.
+    await new Promise(resolve => setImmediate(resolve));
+  }
+
+  fs.rmSync(tmp, { recursive: true, force: true });
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+  log(`finished workload: main-process in ${elapsed}s (${iterations} iterations)`);
+  return { name: 'main-process', ok: true, seconds: Number(elapsed) };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3: IPC + contextBridge workload
+//
+// Drives contextBridge marshaling (electron_api_context_bridge.cc) and
+// ipcRenderer.invoke round trips at multiple payload sizes from a window
+// configured the way real apps are configured (contextIsolation + preload).
+// ---------------------------------------------------------------------------
+
+async function runIpcBridgeWorkload (durationMs) {
+  log('starting workload: ipc-contextbridge');
+  const startTime = Date.now();
+
+  ipcMain.handle('pgo-ping', (_event, payload) => payload);
+
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600,
+    show: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false
+    }
+  });
+  await win.loadURL('data:text/html,<html><body>pgo ipc workload</body></html>');
+
+  // The driver runs in the main world and calls across the bridge. Payload
+  // sizes cover the spectrum apps use: small control messages, medium JSON
+  // payloads, and large binary transfers.
+  const result = await win.webContents.executeJavaScript(`(async () => {
+    const small = { id: 1, type: 'msg', body: 'hello world' };
+    const medium = { rows: Array.from({ length: 200 }, (_, i) => ({ i, name: 'row-' + i, values: [i, i * 2, i * 3] })) };
+    const arr = Array.from({ length: 500 }, (_, i) => ({ i, label: 'item-' + i }));
+    const typed = new Uint8Array(64 * 1024).fill(7);
+    const big = new Uint8Array(${5 * 1024 * 1024}).fill(7);
+
+    const deadline = Date.now() + ${durationMs};
+    let bridgeCalls = 0;
+    let ipcCalls = 0;
+    while (Date.now() < deadline) {
+      // Pure bridge marshaling (no IPC): primitives, objects, arrays, typed arrays.
+      for (let i = 0; i < 200; i++) {
+        window.pgoBridge.echo(42);
+        window.pgoBridge.echo('a string value');
+        window.pgoBridge.echo(small);
+        window.pgoBridge.echo(arr);
+        window.pgoBridge.echo(typed);
+        window.pgoBridge.transform(small);
+        window.pgoBridge.withCallback(small, (v) => v);
+        bridgeCalls += 7;
+      }
+      // Bridge + IPC round trips at multiple sizes.
+      await window.pgoBridge.invoke('pgo-ping', small);
+      await window.pgoBridge.invoke('pgo-ping', medium);
+      await window.pgoBridge.invoke('pgo-ping', typed);
+      await window.pgoBridge.invoke('pgo-ping', big);
+      ipcCalls += 4;
+    }
+    return { bridgeCalls, ipcCalls };
+  })()`, true);
+
+  win.destroy();
+  ipcMain.removeHandler('pgo-ping');
+
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+  log(`finished workload: ipc-contextbridge in ${elapsed}s ` +
+      `(${result.bridgeCalls} bridge calls, ${result.ipcCalls} ipc round trips)`);
+  return { name: 'ipc-contextbridge', ok: true, seconds: Number(elapsed) };
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4: network workload
+//
+// Renderer side: fetch loops (parallel requests, varied sizes, repeats for
+// cache hits) and WebSocket echo against the local benchmark server. When the
+// server is HTTPS this trains Chromium's TLS handshake, certificate
+// verification, and HTTP/2 session code.
+//
+// Main-process side: Node https.get and globalThis.fetch (undici) loops -
+// Node's TLS/HTTP stack is entirely separate from Chromium's and is used by
+// apps that make API calls from the main process. Requires NODE_EXTRA_CA_CERTS
+// to point at the collection CA (set by collect-profile.js).
+// ---------------------------------------------------------------------------
+
+async function runNetworkWorkload (win, durationMs) {
+  log('starting workload: network');
+  const startTime = Date.now();
+  const isTls = BASE_URL.startsWith('https:');
+  const wsUrl = BASE_URL.replace(/^http/, 'ws') + '/__pgo/ws';
+
+  // Renderer: parallel fetches + WebSocket echo. Runs for the first half of
+  // the budget; the Node-side loop runs for the second half.
+  const rendererBudget = Math.floor(durationMs / 2);
+  await win.loadURL(`${BASE_URL}/speedometer/`);
+  const rendererResult = await win.webContents.executeJavaScript(`(async () => {
+    const deadline = Date.now() + ${rendererBudget};
+    let requests = 0;
+    let wsMessages = 0;
+
+    // Fetch loops: parallel requests at varied sizes plus POST echoes.
+    while (Date.now() < deadline) {
+      await Promise.all([
+        fetch('/__pgo/data?bytes=1024').then(r => r.arrayBuffer()),
+        fetch('/__pgo/data?bytes=65536').then(r => r.arrayBuffer()),
+        fetch('/__pgo/data?bytes=1048576').then(r => r.arrayBuffer()),
+        fetch('/__pgo/echo', { method: 'POST', body: JSON.stringify({ seq: requests, data: 'x'.repeat(2048) }) }).then(r => r.json())
+      ]);
+      requests += 4;
+    }
+
+    // WebSocket echo for a fixed slice of the budget.
+    try {
+      const ws = new WebSocket('${wsUrl}');
+      await new Promise((resolve, reject) => {
+        ws.onopen = resolve;
+        ws.onerror = () => reject(new Error('websocket failed to connect'));
+      });
+      const wsDeadline = Date.now() + 10000;
+      const payload = 'pgo-websocket-payload-'.repeat(50);
+      while (Date.now() < wsDeadline) {
+        await new Promise((resolve) => {
+          ws.onmessage = resolve;
+          ws.send(payload);
+        });
+        wsMessages++;
+      }
+      ws.close();
+    } catch (err) {
+      // WebSocket failure degrades coverage but should not fail collection.
+      console.warn('websocket workload failed:', err.message);
+    }
+
+    return { requests, wsMessages };
+  })()`, true);
+
+  // Main process: Node-side HTTPS/HTTP requests.
+  let nodeRequests = 0;
+  const nodeDeadline = Date.now() + Math.floor(durationMs / 2);
+  const dataUrl = `${BASE_URL}/__pgo/data?bytes=65536`;
+  while (Date.now() < nodeDeadline) {
+    // node:https / node:http via the classic API.
+    await new Promise((resolve, reject) => {
+      const mod = isTls ? https : require('node:http');
+      mod.get(dataUrl, (res) => {
+        res.on('data', () => {});
+        res.on('end', resolve);
+      }).on('error', reject);
+    }).catch(() => {});
+    // undici fetch (Node's fetch implementation - a separate HTTP stack).
+    try {
+      const res = await fetch(dataUrl);
+      await res.arrayBuffer();
+    } catch { /* degraded coverage only */ }
+    nodeRequests += 2;
+  }
+
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+  log(`finished workload: network in ${elapsed}s ` +
+      `(renderer: ${rendererResult.requests} fetches + ${rendererResult.wsMessages} ws messages, node: ${nodeRequests} requests)`);
+  return { name: 'network', ok: true, seconds: Number(elapsed) };
+}
+
+// ---------------------------------------------------------------------------
+// Orchestration
+// ---------------------------------------------------------------------------
+
+// Durations for the non-browser phases. Long enough for meaningful counter
+// volume on instrumented builds (which run at roughly half speed), short
+// relative to the 30-50 minute browser benchmark phase.
+const MAIN_PROCESS_WORKLOAD_MS = 75 * 1000;
+const IPC_BRIDGE_WORKLOAD_MS = 75 * 1000;
+const NETWORK_WORKLOAD_MS = 90 * 1000;
+
 app.whenReady().then(async () => {
   const win = new BrowserWindow({
     width: 1200,
@@ -153,12 +418,31 @@ app.whenReady().then(async () => {
 
   const results = [];
   let exitCode = 0;
-  for (const workload of WORKLOADS) {
+
+  let phases = [
+    ...WORKLOADS.map(workload => () => runWorkload(win, workload)),
+    () => runMainProcessWorkload(MAIN_PROCESS_WORKLOAD_MS),
+    () => runIpcBridgeWorkload(IPC_BRIDGE_WORKLOAD_MS),
+    () => runNetworkWorkload(win, NETWORK_WORKLOAD_MS)
+  ];
+  let phaseNames = [
+    ...WORKLOADS.map(w => w.name),
+    'main-process', 'ipc-contextbridge', 'network'
+  ];
+
+  if (process.env.PGO_WORKLOAD_FILTER) {
+    const allowed = process.env.PGO_WORKLOAD_FILTER.split(',').map(s => s.trim());
+    phases = phases.filter((_, i) => allowed.includes(phaseNames[i]));
+    phaseNames = phaseNames.filter(name => allowed.includes(name));
+    log(`workload filter active: ${phaseNames.join(', ')}`);
+  }
+
+  for (let i = 0; i < phases.length; i++) {
     try {
-      results.push(await runWorkload(win, workload));
+      results.push(await phases[i]());
     } catch (err) {
       log(`ERROR: ${err.message}`);
-      results.push({ name: workload.name, ok: false, error: err.message });
+      results.push({ name: phaseNames[i], ok: false, error: err.message });
       // A failed workload reduces profile coverage but the data collected so
       // far is still valid - keep going and report partial failure.
       exitCode = 1;
@@ -176,3 +460,6 @@ app.whenReady().then(async () => {
   if (exitCode !== 0) log('one or more workloads failed - see results file');
   app.quit();
 });
+
+// The bridge workload closes its own window mid-run; never let that quit the app.
+app.on('window-all-closed', () => {});

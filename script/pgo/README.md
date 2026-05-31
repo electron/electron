@@ -33,15 +33,28 @@ profile covers every builtin with zero rejections.
 ## How profiles are generated
 
 The process mirrors Chromium's own PGO recipe
-(`tools/pgo/generate_profile.py`):
+(`tools/pgo/generate_profile.py`), extended with Electron-specific workloads:
 
 1. Build an **instrumented** Electron: `build/args/pgo-instrument.gn`
    (`chrome_pgo_phase = 1`).
 2. Run `script/pgo/collect-profile.js`, which:
-   - serves Speedometer 3, JetStream 2, and MotionMark from a local server
-     (pinned revisions, no external network during collection);
+   - serves Speedometer 3, JetStream 2, and MotionMark from a local
+     HTTPS/HTTP-2 server (pinned revisions, no external network during
+     collection; an ephemeral CA is installed into the host trust store so
+     the real certificate verification path is trained);
    - launches the instrumented build with `LLVM_PROFILE_FILE` set and drives
-     every workload via `script/pgo/benchmark-app`;
+     every workload via `script/pgo/benchmark-app`:
+     - **browser benchmarks** - Speedometer 3 (x3), JetStream 2, MotionMark
+       (the same set Chromium's PGO bots run);
+     - **main-process workload** - Node.js Buffer/crypto/fs/JSON loops.
+       Browser benchmarks never execute Node-only native code, which would
+       otherwise be cold-marked by the profile (measured at -63% on Buffer
+       operations without this phase);
+     - **IPC + contextBridge workload** - bridge marshaling and
+       `ipcRenderer.invoke` round trips at multiple payload sizes;
+     - **network workload** - renderer fetch/WebSocket loops plus Node-side
+       HTTPS, training Chromium's TLS/H2/network-service code and Node's
+       separate TLS/HTTP stack;
    - relies on a clean `app.quit()` so every Electron process writes its
      counters (killed processes write nothing);
    - merges the resulting `.profraw` files with `llvm-profdata` into a single

@@ -80,6 +80,14 @@ jobs:
       run: |
         cd src/out/Default
         unzip -:o dist.zip
+    # NSS tools provide certutil, which collect-profile.js uses to install the
+    # ephemeral collection CA into the trust store Chromium reads on Linux.
+    - name: Install NSS tools (linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      run: |
+        if ! command -v certutil >/dev/null 2>&1; then
+          apt-get update -qq && apt-get install -y -qq libnss3-tools
+        fi
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server

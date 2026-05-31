@@ -34,7 +34,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { fetchBenchmarks, startServer } = require('./serve-benchmarks');
+const { fetchBenchmarks, startServer, generateCerts } = require('./serve-benchmarks');
 
 const SRC_DIR = path.resolve(__dirname, '..', '..', '..');
 
@@ -52,6 +52,49 @@ function parseArgs (argv) {
 function log (...args) {
   // eslint-disable-next-line no-console
   console.log('[collect-profile]', ...args);
+}
+
+// Installs the ephemeral collection CA into the host's trust store so the
+// instrumented build exercises the real certificate verification path during
+// the network workloads. A bypass flag (--ignore-certificate-errors) would
+// train the wrong branch - verification short-circuits before the chain
+// building / signature checking / trust lookup code that real apps run on
+// every connection.
+//
+// Trust installation is per-platform:
+//   linux  - Chromium reads the NSS user DB (certutil from libnss3-tools)
+//   darwin - system keychain (runners have passwordless sudo)
+//   win32  - machine ROOT store (runners are administrators)
+//
+// Returns true on success. On failure the caller falls back to plain HTTP -
+// network workload coverage degrades but collection still succeeds.
+function installTrustedCA (caCertPath) {
+  try {
+    if (process.platform === 'linux') {
+      const nssDb = path.join(os.homedir(), '.pki', 'nssdb');
+      if (!fs.existsSync(nssDb)) {
+        fs.mkdirSync(nssDb, { recursive: true });
+        execFileSync('certutil', ['-d', `sql:${nssDb}`, '-N', '--empty-password'], { stdio: 'pipe' });
+      }
+      execFileSync('certutil', [
+        '-d', `sql:${nssDb}`, '-A', '-t', 'C,,', '-n', 'Electron PGO Ephemeral CA', '-i', caCertPath
+      ], { stdio: 'pipe' });
+    } else if (process.platform === 'darwin') {
+      execFileSync('sudo', [
+        'security', 'add-trusted-cert', '-d', '-r', 'trustRoot',
+        '-k', '/Library/Keychains/System.keychain', caCertPath
+      ], { stdio: 'pipe' });
+    } else if (process.platform === 'win32') {
+      execFileSync('certutil', ['-addstore', '-f', 'ROOT', caCertPath], { stdio: 'pipe' });
+    } else {
+      return false;
+    }
+    log('collection CA installed into the host trust store');
+    return true;
+  } catch (err) {
+    log(`WARNING: could not install collection CA (${err.message}); network workloads fall back to HTTP`);
+    return false;
+  }
 }
 
 // llvm-profdata ships in the clang "coverage tools" package, which is not part
@@ -97,9 +140,23 @@ async function main () {
   fs.mkdirSync(profrawDir, { recursive: true });
   fs.mkdirSync(benchmarksDir, { recursive: true });
 
-  // 1. Benchmarks.
+  // 1. Benchmarks, TLS material, and the local server.
+  //
+  //    The server prefers HTTPS + HTTP/2 with a CA installed into the host
+  //    trust store, so resource loads and the network workloads train
+  //    Chromium's TLS handshake, certificate verification, and H2 session
+  //    code. If cert generation or trust installation fails, collection falls
+  //    back to plain HTTP (lower network coverage, everything else intact).
   fetchBenchmarks(benchmarksDir);
-  const server = startServer(benchmarksDir, port);
+  let tls = null;
+  let caCertPath = null;
+  const certs = generateCerts(path.join(workDir, 'certs'));
+  if (certs && installTrustedCA(certs.caCertPath)) {
+    tls = { certPath: certs.certPath, keyPath: certs.keyPath };
+    caCertPath = certs.caCertPath;
+  }
+  const server = startServer(benchmarksDir, port, { tls });
+  const baseUrl = tls ? `https://localhost:${port}` : `http://127.0.0.1:${port}`;
 
   // 2. Run the instrumented build through the workloads.
   //    %m = profile merge pools: multiple processes share pool files and merge
@@ -125,8 +182,11 @@ async function main () {
       env: {
         ...process.env,
         LLVM_PROFILE_FILE: profilePattern,
-        PGO_BENCHMARK_BASE_URL: `http://127.0.0.1:${port}`,
-        PGO_RESULTS_FILE: resultsFile
+        PGO_BENCHMARK_BASE_URL: baseUrl,
+        PGO_RESULTS_FILE: resultsFile,
+        // Node's TLS stack (used by the main-process network workload) does
+        // not read the OS trust store; point it at the collection CA.
+        ...(caCertPath ? { NODE_EXTRA_CA_CERTS: caCertPath } : {})
       },
       stdio: 'inherit'
     });
