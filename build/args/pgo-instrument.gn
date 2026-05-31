@@ -12,3 +12,11 @@ chrome_pgo_phase = 1
 # Profiles are generated from dcheck-off builds (mixing dcheck states between
 # the profiled binary and the final binary distorts hotness).
 dcheck_always_on = false
+
+# Instrumented binaries are never shipped, so debug symbols and macOS dSYM
+# generation are pure overhead. Both are large enough to exhaust CI runner
+# disk space on macOS (the instrumented framework plus its dSYM does not fit),
+# and neither affects profile collection. Chromium's own PGO builders also use
+# symbol_level = 0.
+symbol_level = 0
+enable_dsyms = false
