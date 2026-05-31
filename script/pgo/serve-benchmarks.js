@@ -12,6 +12,8 @@
 //   /__pgo/data?bytes=N   -> N bytes of deterministic payload (network training)
 //   /__pgo/echo           -> POST echo (network training)
 //   /__pgo/ws             -> WebSocket echo (network training)
+//   /__pgo/compressed?bytes=N&encoding=gzip|br|zstd
+//                         -> Content-Encoding response (decompression training)
 //
 // When TLS material is provided the server speaks HTTP/2 with an HTTP/1.1
 // fallback, so resource loads during collection train Chromium's TLS
@@ -22,6 +24,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const http2 = require('node:http2');
 const path = require('node:path');
+const zlib = require('node:zlib');
 
 // Pin exact revisions for reproducible profiles.
 const BENCHMARKS = [
@@ -202,7 +205,63 @@ function handleDynamicRequest(req, res, urlPath, query) {
     return true;
   }
 
+  // Pre-compressed JSON payloads served with a real Content-Encoding header,
+  // so the client's network stack (net::GzipSourceStream / BrotliSourceStream /
+  // ZstdSourceStream) performs the decompression.
+  if (urlPath === '/__pgo/compressed') {
+    const bytes = Math.min(parseInt(query.get('bytes') || '102400', 10), 8 * 1024 * 1024);
+    const encoding = query.get('encoding') || 'gzip';
+    const payload = compressedPayload(bytes, encoding);
+    if (!payload) {
+      res.writeHead(400);
+      return res.end('unsupported encoding');
+    }
+    const headers = {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store',
+      'Access-Control-Allow-Origin': '*'
+    };
+    if (encoding !== 'identity') headers['Content-Encoding'] = encoding;
+    res.writeHead(200, headers);
+    res.end(payload);
+    return true;
+  }
+
   return false;
+}
+
+// Compressible JSON payloads (rows of records, like an API response),
+// compressed once per (size, encoding) and cached.
+const compressedCache = new Map();
+function compressedPayload(bytes, encoding) {
+  const key = `${bytes}:${encoding}`;
+  if (compressedCache.has(key)) return compressedCache.get(key);
+
+  const rows = [];
+  let size = 0;
+  let i = 0;
+  while (size < bytes) {
+    const row = JSON.stringify({
+      id: i,
+      name: `record-${i}`,
+      email: `user${i}@example.com`,
+      tags: ['alpha', 'beta', 'gamma'],
+      score: i * 3.14159
+    });
+    rows.push(row);
+    size += row.length;
+    i++;
+  }
+  const raw = Buffer.from('[' + rows.join(',') + ']');
+
+  let out = null;
+  if (encoding === 'identity') out = raw;
+  else if (encoding === 'gzip') out = zlib.gzipSync(raw);
+  else if (encoding === 'br') out = zlib.brotliCompressSync(raw);
+  else if (encoding === 'zstd' && zlib.zstdCompressSync) out = zlib.zstdCompressSync(raw);
+
+  compressedCache.set(key, out);
+  return out;
 }
 
 function makeRequestHandler(workDir, port) {

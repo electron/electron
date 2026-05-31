@@ -150,6 +150,7 @@
   "packageManager": "yarn@4.12.0",
   "workspaces": [
     ".github/workflows",
+    "script/pgo",
     "spec",
     "spec/fixtures/native-addon/*"
   ],

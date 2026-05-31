@@ -61,6 +61,12 @@ jobs:
       uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
       with:
         node-version: 22.21.x
+    # Installs only the @electron-ci/pgo workspace's dependencies (a focused
+    # install takes seconds; a full yarn install takes minutes).
+    - name: Install collection dependencies
+      run: |
+        cd src/electron
+        node script/yarn.js workspaces focus @electron-ci/pgo --production
     - name: Download Generated Artifacts
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:

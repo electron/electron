@@ -114,6 +114,150 @@ function installTrustedCA(caCertPath) {
 // of the default toolchain download. IMPORTANT: it must be extracted to its
 // own directory - extracting a package into third_party/llvm-build replaces
 // the existing clang installation.
+// Generates the packaged-app fixture: an ASAR archive shaped like real
+// packaged Electron apps. Two patterns coexist in production:
+//   - bundled apps (the majority of large production apps): a few
+//     multi-megabyte bundles produced by esbuild/webpack, plus resources
+//   - unbundled apps (electron-builder defaults): many small modules
+// The fixture contains both, plus resources, so the ASAR read paths (header
+// parse, lookup, large extraction, small extraction) and V8 large-script
+// parsing are all covered. Built here (plain Node - Electron's asar hooks
+// are not active in this process) with @electron/asar from the
+// @electron-ci/pgo workspace; the benchmark app only reads from it.
+async function generateAsarFixture(workDir) {
+  const asar = require('@electron/asar');
+
+  const srcDir = path.join(workDir, 'asar-fixture-src');
+  const archivePath = path.join(workDir, 'asar-fixture.asar');
+  if (fs.existsSync(archivePath)) return archivePath;
+
+  // --- Bundled-app pattern: webpack-style bundles. Each generated module is
+  // a realistic mix of functions, classes, object literals and string data so
+  // V8's parser and compiler do representative work when the bundle loads.
+  const distDir = path.join(srcDir, 'dist');
+  fs.mkdirSync(distDir, { recursive: true });
+
+  const makeBundle = (name, moduleCount) => {
+    const parts = ['// Generated webpack-style bundle for PGO training\n', '(() => {\n', 'var __modules__ = {\n'];
+    for (let m = 0; m < moduleCount; m++) {
+      // Each module is ~3KB - the realistic average for webpack module output.
+      const fields = Array.from(
+        { length: 24 },
+        (_, f) =>
+          `field_${f}: { label: 'Field ${f} of module ${m}', value: ${m * f}, enabled: ${f % 2 === 0}, validators: ['required', 'max:${f * 10}'] }`
+      ).join(',\n    ');
+      const handlers = Array.from(
+        { length: 8 },
+        (_, h) =>
+          `  function handler_${h}(event, payload) {\n` +
+          `    const result = { type: 'event_${h}', source: ${m}, items: [] };\n` +
+          '    for (let i = 0; i < (payload && payload.length ? payload.length : 4); i++) {\n' +
+          `      result.items.push({ index: i, score: i * ${h + 1} + ${m % 7}, tag: 'item-' + i });\n` +
+          '    }\n' +
+          '    return result;\n' +
+          '  }'
+      ).join('\n');
+      parts.push(
+        `${m}: (module, exports, __require__) => {\n` +
+          `  const config = { id: ${m}, name: 'module-${m}', flags: { a: ${m % 2 === 0}, b: ${m % 3 === 0} }, weights: [${[m, m * 2, m * 3, m * 5].join(',')}] };\n` +
+          `  const schema = {\n    ${fields}\n  };\n` +
+          `${handlers}\n` +
+          '  function transform(input) {\n' +
+          '    let acc = 0;\n' +
+          '    for (let i = 0; i < config.weights.length; i++) acc += config.weights[i] * (input + i);\n' +
+          '    return acc;\n' +
+          '  }\n' +
+          '  class Service {\n' +
+          '    constructor() { this.cache = new Map(); this.hits = 0; }\n' +
+          '    resolve(key) {\n' +
+          '      if (this.cache.has(key)) { this.hits++; return this.cache.get(key); }\n' +
+          "      const value = transform(key) + '-' + config.name;\n" +
+          '      this.cache.set(key, value);\n' +
+          '      return value;\n' +
+          '    }\n' +
+          '  }\n' +
+          '  module.exports = { config, schema, transform, Service, handlers: [handler_0, handler_1, handler_2, handler_3, handler_4, handler_5, handler_6, handler_7] };\n' +
+          '},\n'
+      );
+    }
+    parts.push('};\n');
+    parts.push(
+      'var __cache__ = {};\n' +
+        'function __require__(id) {\n' +
+        '  if (__cache__[id]) return __cache__[id].exports;\n' +
+        '  var module = (__cache__[id] = { exports: {} });\n' +
+        '  __modules__[id](module, module.exports, __require__);\n' +
+        '  return module.exports;\n' +
+        '}\n' +
+        'var __entry__ = __require__(0);\n' +
+        `for (var i = 1; i < ${moduleCount}; i += 97) __require__(i);\n` +
+        `module.exports = { entry: __entry__, require: __require__, count: ${moduleCount} };\n`
+    );
+    parts.push('})();\n');
+    fs.writeFileSync(path.join(distDir, name), parts.join(''));
+  };
+
+  // Sizes mirror real apps: a main bundle, a larger vendor bundle, a preload.
+  makeBundle('main.bundle.js', 2600); // ~8 MB
+  makeBundle('vendor.bundle.js', 3900); // ~12 MB
+  makeBundle('preload.bundle.js', 650); // ~2 MB
+
+  // --- Unbundled long-tail pattern: a small module dependency tree.
+  const libDir = path.join(srcDir, 'lib');
+  fs.mkdirSync(libDir, { recursive: true });
+  const leaves = 100;
+  const midSize = 20;
+  for (let i = 0; i < leaves; i++) {
+    fs.writeFileSync(
+      path.join(libDir, `leaf-${i}.js`),
+      "'use strict';\n" +
+        `const data = { id: ${i}, values: [${Array.from({ length: 30 }, (_, j) => i * j).join(',')}] };\n` +
+        'function compute(x) { let acc = 0; for (const v of data.values) acc += v * x; return acc; }\n' +
+        'module.exports = { data, compute };\n'
+    );
+  }
+  const mids = Math.floor(leaves / midSize);
+  for (let m = 0; m < mids; m++) {
+    const requires = Array.from({ length: midSize }, (_, j) => `require('./leaf-${m * midSize + j}.js')`).join(', ');
+    fs.writeFileSync(
+      path.join(libDir, `mid-${m}.js`),
+      `'use strict';\nconst leaves = [${requires}];\n` +
+        'module.exports = { leaves, sum: () => leaves.reduce((a, l) => a + l.compute(2), 0) };\n'
+    );
+  }
+  const midRequires = Array.from({ length: mids }, (_, m) => `require('./lib/mid-${m}.js')`).join(', ');
+  fs.writeFileSync(
+    path.join(srcDir, 'index.js'),
+    `'use strict';\nconst mids = [${midRequires}];\n` +
+      'module.exports = { mids, total: () => mids.reduce((a, m) => a + m.sum(), 0) };\n'
+  );
+
+  // --- Resources: locales, pages, manifest (read, not required).
+  const resourcesDir = path.join(srcDir, 'resources');
+  fs.mkdirSync(resourcesDir, { recursive: true });
+  for (let i = 0; i < 20; i++) {
+    const messages = {};
+    for (let k = 0; k < 200; k++) messages[`string_${k}`] = `Translated message number ${k} for locale ${i}`;
+    fs.writeFileSync(path.join(resourcesDir, `locale-${i}.json`), JSON.stringify(messages));
+  }
+  for (let i = 0; i < 10; i++) {
+    fs.writeFileSync(
+      path.join(resourcesDir, `page-${i}.html`),
+      `<!DOCTYPE html><html><head><title>Page ${i}</title></head><body>` +
+        Array.from({ length: 50 }, (_, j) => `<div class="row" data-id="${j}">Content row ${j}</div>`).join('') +
+        '</body></html>'
+    );
+  }
+  fs.writeFileSync(
+    path.join(srcDir, 'package.json'),
+    JSON.stringify({ name: 'pgo-fixture-app', version: '1.0.0', main: 'dist/main.bundle.js' }, null, 2)
+  );
+
+  await asar.createPackage(srcDir, archivePath);
+  log(`packaged-app fixture: ${archivePath} (${(fs.statSync(archivePath).size / 1024 / 1024).toFixed(1)} MB)`);
+  return archivePath;
+}
+
 function ensureLlvmProfdata() {
   const exeSuffix = process.platform === 'win32' ? '.exe' : '';
   const coverageToolsDir = path.join(SRC_DIR, 'third_party', 'llvm-coverage-tools');
@@ -167,6 +311,7 @@ async function main() {
   //    code. If cert generation or trust installation fails, collection falls
   //    back to plain HTTP (lower network coverage, everything else intact).
   fetchBenchmarks(benchmarksDir);
+  const asarFixture = await generateAsarFixture(workDir);
   let tls = null;
   let caCertPath = null;
   const certs = generateCerts(path.join(workDir, 'certs'));
@@ -209,6 +354,7 @@ async function main() {
         LLVM_PROFILE_FILE: profilePattern,
         PGO_BENCHMARK_BASE_URL: baseUrl,
         PGO_RESULTS_FILE: resultsFile,
+        PGO_ASAR_FIXTURE: asarFixture,
         // Node's TLS stack (used by the main-process network workload) does
         // not read the OS trust store; point it at the collection CA.
         ...(caCertPath ? { NODE_EXTRA_CA_CERTS: caCertPath } : {})
