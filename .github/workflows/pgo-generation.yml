@@ -629,7 +629,10 @@ jobs:
           fi
           out="profiles/electron-${target}-${TIMESTAMP}-${SHORT_SHA}.profdata"
           echo "Merging $count profraw files for $target"
-          "$PROFDATA" merge -o "$out" "$dir"*.profraw
+          # --failure-mode=all: child processes killed during shutdown leave
+          # truncated .profraw files behind (Chromium's own merge tooling
+          # tolerates these too); skip them rather than failing the platform.
+          "$PROFDATA" merge --failure-mode=all -o "$out" "$dir"*.profraw
           merged=$((merged+1))
         done
         if [ "$merged" -eq 0 ]; then
