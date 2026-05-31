@@ -73,7 +73,7 @@ jobs:
       id: set-output
       uses: ./.github/actions/build-image-sha
       with:
-        build-image-sha: ${{ inputs.build-image-sha }}
+        override: ${{ inputs.build-image-sha }}
 
   # Sync the source tree once per platform (same pattern as build.yml).
   checkout-linux:
@@ -426,8 +426,10 @@ jobs:
   merge-profiles:
     name: Merge Profiles
     needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64]
-    # Merge whatever was collected, even if some platforms failed.
-    if: ${{ !cancelled() }}
+    # Merge whatever was collected, even if some platforms failed. The
+    # repository guard is needed because !cancelled() overrides the skip
+    # propagation that normally keeps fork runs from reaching this job.
+    if: ${{ !cancelled() && github.repository == 'electron/electron' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -489,7 +491,7 @@ jobs:
     needs: merge-profiles
     # Push events (the temporary testing trigger) have no inputs, so they
     # always upload.
-    if: ${{ !cancelled() && needs.merge-profiles.result == 'success' && (github.event_name == 'push' || inputs.upload-to-storage) }}
+    if: ${{ !cancelled() && github.repository == 'electron/electron' && needs.merge-profiles.result == 'success' && (github.event_name == 'push' || inputs.upload-to-storage) }}
     runs-on: ubuntu-latest
     # The pgo-upload environment holds the Azure OIDC credentials and is
     # restricted to protected branches.
@@ -527,7 +529,7 @@ jobs:
   # Aggregate gate so a single status reflects the whole run.
   pgo-done:
     needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64, merge-profiles, upload-profiles]
-    if: always() && !cancelled()
+    if: always() && !cancelled() && github.repository == 'electron/electron'
     runs-on: ubuntu-latest
     permissions: {}
     steps:

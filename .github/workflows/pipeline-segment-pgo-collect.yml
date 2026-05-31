@@ -37,11 +37,25 @@ jobs:
     container: ${{ fromJSON(inputs.collect-container) }}
     permissions:
       contents: read
+    # Reusable workflows do not inherit the caller's defaults; without this,
+    # run steps on Windows runners execute under PowerShell.
+    defaults:
+      run:
+        shell: bash
     env:
       ELECTRON_OUT_DIR: Default
       BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
+    # The runner executes JavaScript actions with its own (arm64) node
+    # binaries, which cannot run inside the arm32v7 container userland. Copy
+    # the container's arm32 node over them before any action runs. Same
+    # workaround as pipeline-segment-electron-test.yml.
+    - name: Fix node20 on arm32 runners
+      if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
+      run: |
+        cp $(which node) /mnt/runner-externals/node20/bin/
+        cp $(which node) /mnt/runner-externals/node24/bin/
     - name: Checkout Electron
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       with:
@@ -113,7 +127,11 @@ jobs:
           --output out/Default/pgo-profraw \
           --work-dir "$TEMP/electron-pgo" \
           --no-merge
+    # Upload whatever was collected even when a benchmark workload failed -
+    # a partial profile is still valid and the merge job tolerates partial
+    # results. The collect step's failure still fails the job for visibility.
     - name: Upload Profraw as Workflow Artifact
+      if: ${{ !cancelled() }}
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
         name: pgo-profraw-${{ inputs.target-platform }}-${{ inputs.target-arch }}

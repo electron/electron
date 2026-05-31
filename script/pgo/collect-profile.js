@@ -117,7 +117,7 @@ async function main () {
   if (args['no-sandbox']) electronArgs.push('--no-sandbox');
 
   const startTime = Date.now();
-  const exitCode = await new Promise((resolve, reject) => {
+  let exitCode = await new Promise((resolve, reject) => {
     const child = spawn(electronBinary, electronArgs, {
       env: {
         ...process.env,
@@ -134,8 +134,20 @@ async function main () {
 
   const elapsedMin = ((Date.now() - startTime) / 60000).toFixed(1);
   log(`instrumented run finished with exit code ${exitCode} in ${elapsedMin} minutes`);
+
+  // Electron's clean-shutdown path (app.quit()) always exits 0, so workload
+  // failures are reported through the results file rather than the exit code.
+  let failedWorkloads = [];
   if (fs.existsSync(resultsFile)) {
-    log(`workload results:\n${fs.readFileSync(resultsFile, 'utf8')}`);
+    const results = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
+    log(`workload results:\n${JSON.stringify(results, null, 2)}`);
+    failedWorkloads = results.filter(r => !r.ok);
+  } else {
+    log('WARNING: no results file was written - the app may have crashed');
+    failedWorkloads = [{ name: 'all', error: 'results file missing' }];
+  }
+  if (exitCode === 0 && failedWorkloads.length > 0) {
+    exitCode = 1;
   }
 
   // 3. Merge (or hand off the raw files for later merging).
@@ -166,7 +178,10 @@ async function main () {
 
   // A failed workload produces a usable but lower-coverage profile; surface it
   // as a job failure so CI runs are investigated, while still keeping the
-  // merged output for debugging.
+  // collected output (the CI artifact upload runs even when this step fails).
+  if (failedWorkloads.length > 0) {
+    log(`FAILED workloads: ${failedWorkloads.map(w => w.name).join(', ')}`);
+  }
   process.exit(exitCode);
 }
 

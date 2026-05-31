@@ -26,34 +26,55 @@ const path = require('node:path');
 const BASE_URL = process.env.PGO_BENCHMARK_BASE_URL || 'http://127.0.0.1:8765';
 const RESULTS_FILE = process.env.PGO_RESULTS_FILE || path.join(app.getPath('temp'), 'pgo-benchmark-results.json');
 
-// Each workload: a URL and a JS expression that evaluates to true when done.
+// Each workload:
+//   url        - what to load
+//   startExpr  - (optional) expression that starts the benchmark; it must
+//                return false (without side effects) until the page is ready
+//                to start, and true once the benchmark has been started.
+//   doneExpr   - expression that evaluates to true when the run has ended
+//                (successfully or not).
+//   successExpr- (optional) evaluated after doneExpr fires; distinguishes a
+//                successful run from an error state. Defaults to success.
 // Iteration counts are chosen so each workload contributes meaningful counter
 // volume without making CI runs excessively long.
+const SPEEDOMETER_DONE = 'window.benchmarkClient && window.benchmarkClient._hasResults === true';
+// _hasResults is set on both completion and error; real success means metrics
+// were computed.
+const SPEEDOMETER_SUCCESS = '!!(window.benchmarkClient && window.benchmarkClient.metrics && window.benchmarkClient.metrics.Score)';
+
 const WORKLOADS = [
   {
     name: 'speedometer3-run1',
     url: `${BASE_URL}/speedometer/?startAutomatically=true&iterationCount=10`,
-    doneExpr: 'window.benchmarkClient && window.benchmarkClient._hasResults === true',
+    doneExpr: SPEEDOMETER_DONE,
+    successExpr: SPEEDOMETER_SUCCESS,
     timeoutMin: 30
   },
   {
     name: 'speedometer3-run2',
     url: `${BASE_URL}/speedometer/?startAutomatically=true&iterationCount=10`,
-    doneExpr: 'window.benchmarkClient && window.benchmarkClient._hasResults === true',
+    doneExpr: SPEEDOMETER_DONE,
+    successExpr: SPEEDOMETER_SUCCESS,
     timeoutMin: 30
   },
   {
     name: 'speedometer3-run3',
     url: `${BASE_URL}/speedometer/?startAutomatically=true&iterationCount=10`,
-    doneExpr: 'window.benchmarkClient && window.benchmarkClient._hasResults === true',
+    doneExpr: SPEEDOMETER_DONE,
+    successExpr: SPEEDOMETER_SUCCESS,
     timeoutMin: 30
   },
   {
     name: 'jetstream2',
     url: `${BASE_URL}/jetstream/index.html`,
-    // JetStream needs an explicit start call once its driver is ready.
-    startExpr: 'typeof JetStream !== "undefined" && JetStream.start && (JetStream.start(), true)',
-    doneExpr: 'typeof JetStream !== "undefined" && JetStream.done === true',
+    // The JetStream driver is ready once its async initialize() has run
+    // prepareToRun(), which replaces the "Loading..." status with the
+    // "Start Test" button. Calling start() before that point does nothing
+    // useful, so gate on the button existing.
+    startExpr: '!!document.querySelector("#status a.button") && (JetStream.start(), true)',
+    // On completion the driver adds the "done" class to #result-summary
+    // (JetStreamDriver.js); there is no JetStream.done property.
+    doneExpr: '!!document.querySelector("#result-summary.done")',
     timeoutMin: 45
   },
   {
@@ -102,6 +123,19 @@ async function runWorkload (win, workload) {
     } catch { /* page busy running benchmark - retry */ }
     if (done) {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+      // The run ended - check whether it ended in success or in an error
+      // state (e.g. Speedometer sets _hasResults on errors too).
+      let succeeded = true;
+      if (workload.successExpr) {
+        try {
+          succeeded = await win.webContents.executeJavaScript(workload.successExpr, true);
+        } catch {
+          succeeded = false;
+        }
+      }
+      if (!succeeded) {
+        throw new Error(`workload ${workload.name} ended in an error state after ${elapsed}s`);
+      }
       log(`finished workload: ${workload.name} in ${elapsed}s`);
       return { name: workload.name, ok: true, seconds: Number(elapsed) };
     }
@@ -134,7 +168,11 @@ app.whenReady().then(async () => {
   fs.writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
   log(`results written to ${RESULTS_FILE}`);
 
-  // Clean shutdown is what flushes the PGO counters from every process.
-  process.exitCode = exitCode;
+  // Clean shutdown is what flushes the PGO counters from every process. Note
+  // that app.quit() always exits 0 regardless of process.exitCode (app.exit()
+  // would honor a code but skips the clean shutdown we need), so failures are
+  // reported through RESULTS_FILE - collect-profile.js reads it and sets the
+  // CI exit code.
+  if (exitCode !== 0) log('one or more workloads failed - see results file');
   app.quit();
 });
