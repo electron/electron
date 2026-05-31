@@ -1793,9 +1793,6 @@ dist_zip("electron_dist_zip") {
     ":electron_version_file",
     ":licenses",
   ]
-  if (electron_use_resource_allowlist) {
-    data_deps += [ ":electron_resource_allowlist_check" ]
-  }
   if (is_linux) {
     if (is_official_build) {
       data_deps += [
@@ -1812,6 +1809,12 @@ dist_zip("electron_dist_zip") {
     data_deps += [ "//sandbox/linux:chrome_sandbox" ]
   }
   deps = data_deps
+  if (electron_use_resource_allowlist) {
+    # Build-order dep only (not data_deps): the check must pass before the
+    # dist zip is created, but its stamp output must not be packed into the
+    # zip's runtime deps.
+    deps += [ ":electron_resource_allowlist_check" ]
+  }
   outputs = [ "$root_build_dir/dist.zip" ]
 }
 
