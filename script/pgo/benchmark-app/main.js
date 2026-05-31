@@ -126,9 +126,15 @@ async function runWorkload(win, workload) {
   await win.loadURL(workload.url);
 
   // Some benchmarks need an explicit start once their driver has loaded.
+  // The polling window only needs to fail fast on genuinely broken pages
+  // (server died, driver threw - the start control never appears); it costs
+  // nothing on healthy runs, which exit the moment the page is ready. It must
+  // be generous enough for the slowest legitimate case: JetStream loads ~100
+  // test files over TLS, on an instrumented 32-bit binary under WOW64, which
+  // exceeds 60 seconds.
   if (workload.startExpr) {
     let started = false;
-    for (let i = 0; i < 60 && !started; i++) {
+    for (let i = 0; i < 300 && !started; i++) {
       await sleep(1000);
       try {
         started = await win.webContents.executeJavaScript(workload.startExpr, true);
