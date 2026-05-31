@@ -39,6 +39,7 @@
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
 #include "media/audio/audio_manager.h"
@@ -1149,6 +1150,14 @@ void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
         "before app is ready");
     return;
   }
+
+  // Append --disable-gpu to the command line so that all Chromium subsystems
+  // that check the switch (e.g. GpuProcessHost, viz compositor) respect the
+  // decision.  The switch must be set before GpuDataManager is initialised
+  // because InitializeGpuModes() reads it to decide which GPU modes to add.
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (!command_line->HasSwitch(::switches::kDisableGpu))
+    command_line->AppendSwitch(::switches::kDisableGpu);
 
   // If the GpuDataManager is already initialized, disable hardware
   // acceleration immediately. Otherwise, set a flag to disable it in
