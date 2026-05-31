@@ -483,9 +483,11 @@ jobs:
       target-platform: linux
       target-arch: arm64
       artifact-key: linux_arm64
-      # Instrumented builds carry per-process profile counters (~2x memory);
-      # the standard 16GB arm64 runner gets OOM-killed running Speedometer.
-      collect-runs-on: LinuxArm64Large
+      # Instrumented arm64 Electron crashes (silent SIGTRAP ~30s in) on the
+      # GitHub-hosted arm64 runners; instrumented collection is proven to work
+      # on the ARC arm64 nodes (the arm32 collection runs there), so run arm64
+      # collection there too.
+      collect-runs-on: electron-arc-centralus-linux-arm64-4core
       collect-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
     secrets: inherit
 

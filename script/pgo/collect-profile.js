@@ -112,7 +112,10 @@ async function main () {
     path.join(__dirname, 'benchmark-app'),
     // Benchmark content is served from localhost; the renderer needs no
     // network access beyond that.
-    '--disable-background-networking'
+    '--disable-background-networking',
+    // Route Chromium/V8 logging to stderr so CI logs capture pre-crash
+    // diagnostics - official builds otherwise crash without any message.
+    '--enable-logging=stderr'
   ];
   if (args['no-sandbox']) electronArgs.push('--no-sandbox');
 
