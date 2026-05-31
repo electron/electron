@@ -93,6 +93,7 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "chrome/browser/win/chrome_select_file_dialog_factory.h"
+#include "components/os_crypt/async/browser/os_crypt_win.h"
 #include "ui/base/l10n/l10n_util_win.h"
 #include "ui/gfx/system_fonts_win.h"
 #include "ui/strings/grit/app_locale_settings.h"
@@ -615,6 +616,11 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoopCommon() {
   media::SetLocalizedStringProvider(MediaStringProvider);
 
 #if BUILDFLAG(IS_WIN)
+  auto* local_state = g_browser_process->local_state();
+  DCHECK(local_state);
+
+  bool os_crypt_init = os_crypt_async::Init(local_state);
+  DCHECK(os_crypt_init);
 #endif
 }
 

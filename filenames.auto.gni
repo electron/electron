@@ -90,6 +90,7 @@ auto_filenames = {
     "docs/api/structures/cpu-usage.md",
     "docs/api/structures/crash-report.md",
     "docs/api/structures/custom-scheme.md",
+    "docs/api/structures/decrypt-string-async-return-value.md",
     "docs/api/structures/desktop-capturer-source.md",
     "docs/api/structures/display.md",
     "docs/api/structures/enable-heap-profiling-options.md",

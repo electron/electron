@@ -33,7 +33,6 @@ import("filenames.gni")
 import("filenames.hunspell.gni")
 import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
-
 declare_args() {
   # Emit a build-time V8 code cache for the electron/js2c/* bundles. When
   # false an empty stub is compiled and bundles compile from source.
