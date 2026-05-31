@@ -173,6 +173,8 @@ jobs:
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
+      generate-chromedriver: false
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
@@ -191,6 +193,8 @@ jobs:
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
+      generate-chromedriver: false
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
@@ -209,6 +213,8 @@ jobs:
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
+      generate-chromedriver: false
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
@@ -227,6 +233,8 @@ jobs:
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
+      generate-chromedriver: false
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
@@ -245,6 +253,8 @@ jobs:
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
+      generate-chromedriver: false
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
@@ -262,6 +272,8 @@ jobs:
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
+      generate-chromedriver: false
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
@@ -279,6 +291,8 @@ jobs:
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
+      generate-chromedriver: false
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
@@ -296,6 +310,8 @@ jobs:
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
+      generate-chromedriver: false
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
