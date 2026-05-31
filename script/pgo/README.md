@@ -125,7 +125,7 @@ python3 <src>/v8/tools/builtins-pgo/get_hints.py \
 
 Point release builds at the profiles with:
 
-```
+```gn
 # C++ binary profile
 pgo_data_path = "//path/to/electron-<platform>-<arch>-....profdata"
 
