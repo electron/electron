@@ -1,18 +1,22 @@
 name: Generate PGO Profiles
 
-# Builds PGO-instrumented Electron for each supported platform, runs the
-# benchmark workload set against it (Speedometer 3, JetStream 2, MotionMark -
-# the same set Chromium's PGO bots use), and produces merged .profdata files.
+# Builds PGO-instrumented Electron for every published platform/arch that can
+# run its own binaries on CI, runs the benchmark workload set against each
+# (Speedometer 3, JetStream 2, MotionMark - the same set Chromium's PGO bots
+# use), and produces merged .profdata files.
 #
 # Profiles are always uploaded as workflow artifacts; optionally they are also
 # published to the build-tools storage account via OIDC (the pgo-upload
 # environment) and served at https://dev-cdn.electronjs.org/pgo/.
 #
-# Profile/arch coverage:
-#   - linux x64   -> used by all Linux arches (x64, arm, arm64), like Chromium
-#   - win x64     -> used by win x64 and x86 (arm64 cannot run on CI hosts yet)
-#   - macos x64   -> darwin x64
-#   - macos arm64 -> darwin arm64
+# Profile coverage (every published Electron platform/arch):
+#   - linux x64, arm, arm64    (arm/arm64 run on arm64 CI hosts)
+#   - win x64, x86, arm64      (x86 runs on x64 hosts via WOW64)
+#   - macos x64, arm64
+#
+# Architecture: collect jobs produce raw .profraw files (arch-independent
+# data); a single x64 merge job converts them to .profdata with the matching
+# llvm-profdata, since the LLVM tooling cannot run on the arm collect hosts.
 
 on:
   # TEMPORARY: run on pushes to this branch so the workflow can be exercised
@@ -30,7 +34,7 @@ on:
         required: false
       skip-linux:
         type: boolean
-        description: 'Skip the Linux profile'
+        description: 'Skip the Linux profiles'
         default: false
         required: false
       skip-macos:
@@ -40,7 +44,7 @@ on:
         required: false
       skip-windows:
         type: boolean
-        description: 'Skip the Windows profile'
+        description: 'Skip the Windows profiles'
         default: false
         required: false
       upload-to-storage:
@@ -187,6 +191,42 @@ jobs:
       upload-to-storage: '0'
     secrets: inherit
 
+  build-linux-arm:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: checkout-linux
+    with:
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      target-platform: linux
+      target-arch: arm
+      is-release: false
+      gn-build-type: pgo-instrument
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
+  build-linux-arm64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: checkout-linux
+    with:
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      target-platform: linux
+      target-arch: arm64
+      is-release: false
+      gn-build-type: pgo-instrument
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
   build-macos-x64:
     permissions:
       contents: read
@@ -240,8 +280,43 @@ jobs:
       upload-to-storage: '0'
     secrets: inherit
 
+  build-windows-x86:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: [checkout-windows, build-siso-windows]
+    with:
+      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      target-platform: win
+      target-arch: x86
+      is-release: false
+      gn-build-type: pgo-instrument
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
+  build-windows-arm64:
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    needs: [checkout-windows, build-siso-windows]
+    with:
+      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      target-platform: win
+      target-arch: arm64
+      is-release: false
+      gn-build-type: pgo-instrument
+      generate-symbols: false
+      upload-to-storage: '0'
+    secrets: inherit
+
   # ---------------------------------------------------------------------------
-  # Profile collection (runs benchmarks against the instrumented builds)
+  # Profile collection (runs benchmarks against the instrumented builds and
+  # produces raw .profraw artifacts)
   # ---------------------------------------------------------------------------
 
   collect-linux-x64:
@@ -255,6 +330,32 @@ jobs:
       artifact-key: linux_x64
       collect-runs-on: electron-arc-centralus-linux-amd64-8core
       collect-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
+    secrets: inherit
+
+  collect-linux-arm:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    needs: [checkout-linux, build-linux-arm]
+    with:
+      target-platform: linux
+      target-arch: arm
+      artifact-key: linux_arm
+      collect-runs-on: electron-arc-centralus-linux-arm64-4core
+      collect-container: '{"image":"ghcr.io/electron/test:arm32v7-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init --memory=12g","volumes":["/home/runner/externals:/mnt/runner-externals"]}'
+    secrets: inherit
+
+  collect-linux-arm64:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    needs: [checkout-linux, build-linux-arm64]
+    with:
+      target-platform: linux
+      target-arch: arm64
+      artifact-key: linux_arm64
+      collect-runs-on: ubuntu-22.04-arm
+      collect-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
     secrets: inherit
 
   collect-macos-x64:
@@ -293,18 +394,102 @@ jobs:
       collect-runs-on: windows-latest
     secrets: inherit
 
+  collect-windows-x86:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    needs: build-windows-x86
+    with:
+      target-platform: win
+      target-arch: x86
+      artifact-key: win_x86
+      collect-runs-on: windows-latest
+    secrets: inherit
+
+  collect-windows-arm64:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
+    needs: build-windows-arm64
+    with:
+      target-platform: win
+      target-arch: arm64
+      artifact-key: win_arm64
+      collect-runs-on: windows-11-arm
+    secrets: inherit
+
   # ---------------------------------------------------------------------------
-  # Publish: a single OIDC-authenticated job uploads every collected profile to
+  # Merge: one x64 job converts every platform/arch's .profraw set into a
+  # named .profdata using the llvm-profdata that matches Electron's clang.
+  # ---------------------------------------------------------------------------
+
+  merge-profiles:
+    name: Merge Profiles
+    needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64]
+    # Merge whatever was collected, even if some platforms failed.
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+    - name: Download Profraw Artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        pattern: pgo-profraw-*
+        path: profraw
+    - name: Merge Profiles
+      run: |
+        PROFDATA=$(node src/electron/script/pgo/fetch-llvm-profdata.js \
+          --deps src/electron/DEPS \
+          --output-dir llvm-coverage-tools | tail -1)
+        echo "Using llvm-profdata: $PROFDATA"
+        "$PROFDATA" --version
+
+        SHORT_SHA=$(git -C src/electron rev-parse --short HEAD)
+        TIMESTAMP=$(date +%s)
+        mkdir -p profiles
+        merged=0
+        for dir in profraw/pgo-profraw-*/; do
+          [ -d "$dir" ] || continue
+          target=$(basename "$dir" | sed 's/^pgo-profraw-//')
+          count=$(find "$dir" -name '*.profraw' | wc -l)
+          if [ "$count" -eq 0 ]; then
+            echo "WARNING: no profraw files for $target, skipping"
+            continue
+          fi
+          out="profiles/electron-${target}-${TIMESTAMP}-${SHORT_SHA}.profdata"
+          echo "Merging $count profraw files for $target"
+          "$PROFDATA" merge -o "$out" "$dir"*.profraw
+          merged=$((merged+1))
+        done
+        if [ "$merged" -eq 0 ]; then
+          echo "ERROR: no profiles were merged - every collection failed"
+          exit 1
+        fi
+        echo "Merged $merged profile(s):"
+        ls -la profiles/
+    - name: Upload Merged Profiles as Workflow Artifact
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: pgo-profiles
+        path: profiles/
+        if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Publish: a single OIDC-authenticated job uploads the merged profiles to
   # the build-tools storage account, served at https://dev-cdn.electronjs.org/pgo/
   # ---------------------------------------------------------------------------
 
   upload-profiles:
     name: Upload Profiles to dev-cdn
-    needs: [collect-linux-x64, collect-macos-x64, collect-macos-arm64, collect-windows-x64]
-    # Run as long as at least one collection might have produced a profile;
-    # the job fails if none did. Push events (the temporary testing trigger)
-    # have no inputs, so they always upload.
-    if: ${{ !cancelled() && (github.event_name == 'push' || inputs.upload-to-storage) }}
+    needs: merge-profiles
+    # Push events (the temporary testing trigger) have no inputs, so they
+    # always upload.
+    if: ${{ !cancelled() && needs.merge-profiles.result == 'success' && (github.event_name == 'push' || inputs.upload-to-storage) }}
     runs-on: ubuntu-latest
     # The pgo-upload environment holds the Azure OIDC credentials and is
     # restricted to protected branches.
@@ -313,21 +498,11 @@ jobs:
       contents: read
       id-token: write
     steps:
-    - name: Download Profile Artifacts
+    - name: Download Merged Profiles
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
-        pattern: pgo-profile-*
+        name: pgo-profiles
         path: profiles
-        merge-multiple: true
-    - name: Verify Profiles Exist
-      run: |
-        ls -la profiles/
-        count=$(find profiles -name '*.profdata' | wc -l)
-        if [ "$count" -eq 0 ]; then
-          echo "ERROR: no .profdata files were produced by the collection jobs"
-          exit 1
-        fi
-        echo "Found $count profile(s) to upload"
     - name: Azure Login
       uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43
       with:
@@ -351,7 +526,7 @@ jobs:
 
   # Aggregate gate so a single status reflects the whole run.
   pgo-done:
-    needs: [collect-linux-x64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, upload-profiles]
+    needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64, merge-profiles, upload-profiles]
     if: always() && !cancelled()
     runs-on: ubuntu-latest
     permissions: {}

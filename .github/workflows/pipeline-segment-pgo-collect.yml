@@ -52,8 +52,6 @@ jobs:
       uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
       with:
         node-version: 22.21.x
-    - name: Install Dependencies
-      uses: ./src/electron/.github/actions/install-dependencies
     - name: Download Generated Artifacts
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
@@ -79,55 +77,46 @@ jobs:
     - name: Turn off the reopen windows prompt on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.github.Electron ApplePersistenceIgnoreState YES
+    # Collection produces raw .profraw files (arch-independent data). Merging
+    # into .profdata happens in the merge-profiles job of pgo-generation.yml,
+    # which runs on an x64 host with the matching llvm-profdata - some collect
+    # hosts (Linux arm/arm64) cannot run the x64 LLVM tooling.
     - name: Collect PGO Profile (linux)
       if: ${{ inputs.target-platform == 'linux' }}
-      timeout-minutes: 120
+      timeout-minutes: 150
       run: |
-        export DISPLAY=:99
-        Xvfb :99 -screen 0 1280x1024x24 -ac &
         cd src
-        node electron/script/pgo/collect-profile.js \
-          --electron out/Default/electron \
-          --output out/Default/electron.profdata \
-          --work-dir /tmp/electron-pgo \
-          --no-sandbox
+        xvfb-run -a -s "-screen 0 1280x1024x24" \
+          node electron/script/pgo/collect-profile.js \
+            --electron out/Default/electron \
+            --output out/Default/pgo-profraw \
+            --work-dir /tmp/electron-pgo \
+            --no-sandbox \
+            --no-merge
     - name: Collect PGO Profile (macos)
       if: ${{ inputs.target-platform == 'macos' }}
-      timeout-minutes: 120
+      timeout-minutes: 150
       run: |
         cd src
         node electron/script/pgo/collect-profile.js \
           --electron "out/Default/Electron.app/Contents/MacOS/Electron" \
-          --output out/Default/electron.profdata \
-          --work-dir /tmp/electron-pgo
+          --output out/Default/pgo-profraw \
+          --work-dir /tmp/electron-pgo \
+          --no-merge
     - name: Collect PGO Profile (win)
       if: ${{ inputs.target-platform == 'win' }}
-      timeout-minutes: 120
+      timeout-minutes: 150
       run: |
         cd src
         node electron/script/pgo/collect-profile.js \
           --electron out/Default/electron.exe \
-          --output out/Default/electron.profdata \
-          --work-dir "$TEMP/electron-pgo"
-    - name: Name Profile
-      env:
-        TARGET_PLATFORM: ${{ inputs.target-platform }}
-      run: |
-        cd src
-        TIMESTAMP=$(date +%s)
-        SHORT_SHA=$(git -C electron rev-parse --short HEAD)
-        PROFILE_NAME="electron-${TARGET_PLATFORM}-${TARGET_ARCH}-${TIMESTAMP}-${SHORT_SHA}.profdata"
-        mkdir -p pgo-profile-upload
-        mv out/Default/electron.profdata "pgo-profile-upload/$PROFILE_NAME"
-        echo "PROFILE_NAME=$PROFILE_NAME" >> $GITHUB_ENV
-        echo "Generated profile: $PROFILE_NAME"
-        ls -la pgo-profile-upload/
-    # The profile is published as a workflow artifact; the upload-profiles job
-    # in pgo-generation.yml pushes it to Azure (dev-cdn.electronjs.org/pgo/)
-    # via OIDC.
-    - name: Upload Profile as Workflow Artifact
+          --output out/Default/pgo-profraw \
+          --work-dir "$TEMP/electron-pgo" \
+          --no-merge
+    - name: Upload Profraw as Workflow Artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
       with:
-        name: pgo-profile-${{ inputs.target-platform }}-${{ inputs.target-arch }}
-        path: src/pgo-profile-upload/
+        name: pgo-profraw-${{ inputs.target-platform }}-${{ inputs.target-arch }}
+        path: src/out/Default/pgo-profraw/
         if-no-files-found: error
+        retention-days: 7

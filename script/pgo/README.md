@@ -31,11 +31,15 @@ The process mirrors Chromium's own PGO recipe
      counters (killed processes write nothing);
    - merges the resulting `.profraw` files with `llvm-profdata` into a single
      `.profdata`.
-3. Upload the merged profiles. In CI this is done by the `upload-profiles`
-   job in the `pgo-generation` workflow: it authenticates to Azure with OIDC
-   through the `pgo-upload` GitHub environment and uploads to the `pgo`
-   container of the build-tools storage account. Uploaded profiles are served
-   at `https://dev-cdn.electronjs.org/pgo/<profile-name>`.
+3. Merge and upload. In CI, collection jobs produce raw `.profraw` artifacts
+   (collection hosts can't always run the x64 LLVM tooling - e.g. Linux arm64
+   runners); the `merge-profiles` job then merges each platform/arch's set
+   into a `.profdata` using `fetch-llvm-profdata.js` (which downloads the
+   llvm-profdata binary matching Electron's pinned clang version), and the
+   `upload-profiles` job authenticates to Azure with OIDC through the
+   `pgo-upload` GitHub environment and uploads to the `pgo` container of the
+   build-tools storage account. Uploaded profiles are served at
+   `https://dev-cdn.electronjs.org/pgo/<profile-name>`.
 
 ## Running locally
 
@@ -64,9 +68,16 @@ pgo_data_path = "//path/to/electron.profdata"
 
 ## Platform notes
 
-- Profiles are platform-specific (and arch-specific on macOS/Windows where it
-  matters). The CI workflow generates one profile per platform/arch it can
-  run benchmarks on.
-- Cross-compiled targets that cannot run their own binaries (e.g. Windows
-  arm64 built on x64 runners) reuse the host-arch profile for their platform,
-  matching what Chromium does for Linux.
+Profiles are generated for every published Electron platform/arch - each
+combo's instrumented build runs its own benchmarks:
+
+| Profile | Collection host |
+|---|---|
+| linux-x64 | x64 ARC runner (build container) |
+| linux-arm | arm64 ARC runner (arm32v7 test container) |
+| linux-arm64 | `ubuntu-22.04-arm` (arm64v8 test container) |
+| win-x64 | `windows-latest` |
+| win-x86 | `windows-latest` (WOW64) |
+| win-arm64 | `windows-11-arm` |
+| macos-x64 | `macos-15-large` |
+| macos-arm64 | `macos-15` |

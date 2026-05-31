@@ -7,10 +7,17 @@
 //   node script/pgo/collect-profile.js \
 //     --electron <path to instrumented electron binary> \
 //     --output <path to write merged .profdata> \
-//     [--work-dir <scratch dir>] [--port 8765] [--no-sandbox]
+//     [--work-dir <scratch dir>] [--port 8765] [--no-sandbox] [--no-merge]
 //
 // --no-sandbox is required when running as root inside CI containers; the
 // sandbox setup paths are a negligible fraction of profile counters.
+//
+// --no-merge skips the llvm-profdata merge and instead copies the raw
+// .profraw files into --output (treated as a directory). Use this on hosts
+// that cannot run llvm-profdata (no Chromium checkout, or non-x64 hosts like
+// the Linux arm64 CI runners) - .profraw files are arch-independent data and
+// can be merged later on any machine with a matching llvm-profdata (see
+// fetch-llvm-profdata.js).
 //
 // The flow mirrors Chromium's tools/pgo/generate_profile.py:
 //   1. Serve the benchmark workloads locally (Speedometer 3, JetStream 2,
@@ -54,7 +61,7 @@ function log (...args) {
 function ensureLlvmProfdata () {
   const exeSuffix = process.platform === 'win32' ? '.exe' : '';
   const coverageToolsDir = path.join(SRC_DIR, 'third_party', 'llvm-coverage-tools');
-  const profdataPath = path.join(coverageToolsDir, 'Release+Asserts', 'bin', `llvm-profdata${exeSuffix}`);
+  const profdataPath = path.join(coverageToolsDir, 'bin', `llvm-profdata${exeSuffix}`);
   if (fs.existsSync(profdataPath)) return profdataPath;
 
   log('downloading llvm coverage tools (llvm-profdata)');
@@ -131,7 +138,7 @@ async function main () {
     log(`workload results:\n${fs.readFileSync(resultsFile, 'utf8')}`);
   }
 
-  // 3. Merge.
+  // 3. Merge (or hand off the raw files for later merging).
   const profrawFiles = fs.readdirSync(profrawDir)
     .filter(f => f.endsWith('.profraw'))
     .map(f => path.join(profrawDir, f));
@@ -141,14 +148,21 @@ async function main () {
       'down cleanly, or the binary was not built with chrome_pgo_phase = 1'
     );
   }
-  log(`merging ${profrawFiles.length} profraw files`);
 
-  const llvmProfdata = ensureLlvmProfdata();
-  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  execFileSync(llvmProfdata, ['merge', '-o', outputPath, ...profrawFiles], { stdio: 'inherit' });
-
-  const sizeMB = (fs.statSync(outputPath).size / 1024 / 1024).toFixed(1);
-  log(`wrote ${outputPath} (${sizeMB} MB)`);
+  if (args['no-merge']) {
+    fs.mkdirSync(outputPath, { recursive: true });
+    for (const file of profrawFiles) {
+      fs.copyFileSync(file, path.join(outputPath, path.basename(file)));
+    }
+    log(`copied ${profrawFiles.length} profraw files to ${outputPath} (merge skipped)`);
+  } else {
+    log(`merging ${profrawFiles.length} profraw files`);
+    const llvmProfdata = ensureLlvmProfdata();
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    execFileSync(llvmProfdata, ['merge', '-o', outputPath, ...profrawFiles], { stdio: 'inherit' });
+    const sizeMB = (fs.statSync(outputPath).size / 1024 / 1024).toFixed(1);
+    log(`wrote ${outputPath} (${sizeMB} MB)`);
+  }
 
   // A failed workload produces a usable but lower-coverage profile; surface it
   // as a job failure so CI runs are investigated, while still keeping the
