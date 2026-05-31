@@ -37,8 +37,7 @@ jobs:
     container: ${{ fromJSON(inputs.collect-container) }}
     permissions:
       contents: read
-    # Reusable workflows do not inherit the caller's defaults; without this,
-    # run steps on Windows runners execute under PowerShell.
+    # Callers' defaults do not propagate into reusable workflows.
     defaults:
       run:
         shell: bash
@@ -47,10 +46,7 @@ jobs:
       BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
-    # The runner executes JavaScript actions with its own (arm64) node
-    # binaries, which cannot run inside the arm32v7 container userland. Copy
-    # the container's arm32 node over them before any action runs. Same
-    # workaround as pipeline-segment-electron-test.yml.
+    # Same workaround as pipeline-segment-electron-test.yml.
     - name: Fix node20 on arm32 runners
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
       run: |
@@ -90,10 +86,7 @@ jobs:
     - name: Turn off the reopen windows prompt on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.github.Electron ApplePersistenceIgnoreState YES
-    # Collection produces raw .profraw files (arch-independent data). Merging
-    # into .profdata happens in the merge-profiles job of pgo-generation.yml,
-    # which runs on an x64 host with the matching llvm-profdata - some collect
-    # hosts (Linux arm/arm64) cannot run the x64 LLVM tooling.
+    # Raw .profraw output; merging happens in pgo-generation.yml's merge job.
     - name: Collect PGO Profile (linux)
       if: ${{ inputs.target-platform == 'linux' }}
       timeout-minutes: 150
@@ -126,9 +119,7 @@ jobs:
           --output out/Default/pgo-profraw \
           --work-dir "$TEMP/electron-pgo" \
           --no-merge
-    # Upload whatever was collected even when a benchmark workload failed -
-    # a partial profile is still valid and the merge job tolerates partial
-    # results. The collect step's failure still fails the job for visibility.
+    # Upload partial results even when a workload failed.
     - name: Upload Profraw as Workflow Artifact
       if: ${{ !cancelled() }}
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
