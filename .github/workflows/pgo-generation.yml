@@ -351,6 +351,9 @@ jobs:
       # includes it in the cache key, and this job restores the cache that
       # checkout-linux saved.
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+      # Remote build execution credential - same as the build segment; without
+      # it the d8 build cannot use siso remote exec.
+      ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
     steps:
     - name: Checkout Electron
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -379,9 +382,16 @@ jobs:
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+    # Note: e init must run from the workspace root (the parent of src/) -
+    # build-tools resolves src/, the siso backend config, and the out dir
+    # relative to --root.
     - name: Build Instrumented d8
       run: |
-        cd src
+        # actions/checkout writes loose refs only; electron's BUILD.gn reads
+        # .git/packed-refs for version stamping (same workaround as the
+        # build-electron action).
+        (cd src/electron && git pack-refs)
+
         e init -f --root=$(pwd) --out=Default pgo-builtins-x64 --import pgo-builtins-instrument --target-cpu x64 --remote-build siso
         e build --target v8:d8
     - name: Generate Builtins Profile
@@ -473,7 +483,9 @@ jobs:
       target-platform: linux
       target-arch: arm64
       artifact-key: linux_arm64
-      collect-runs-on: ubuntu-22.04-arm
+      # Instrumented builds carry per-process profile counters (~2x memory);
+      # the standard 16GB arm64 runner gets OOM-killed running Speedometer.
+      collect-runs-on: LinuxArm64Large
       collect-container: '{"image":"ghcr.io/electron/test:arm64v8-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
     secrets: inherit
 

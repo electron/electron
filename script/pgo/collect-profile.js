@@ -128,7 +128,12 @@ async function main () {
       stdio: 'inherit'
     });
     child.on('error', reject);
-    child.on('exit', (code) => resolve(code ?? 1));
+    child.on('exit', (code, signal) => {
+      // A signal exit (code === null) usually means the OOM killer (SIGKILL)
+      // or a crash (SIGSEGV/SIGABRT) - log it so CI failures are diagnosable.
+      if (signal) log(`electron was killed by signal ${signal}`);
+      resolve(code ?? 1);
+    });
   });
   server.close();
 
