@@ -17,6 +17,12 @@ name: Generate PGO Profiles
 # Architecture: collect jobs produce raw .profraw files (arch-independent
 # data); a single x64 merge job converts them to .profdata with the matching
 # llvm-profdata, since the LLVM tooling cannot run on the arm collect hosts.
+#
+# In addition to the C++ binary profiles, the generate-v8-builtins-profiles
+# job produces an Electron-specific V8 builtins PGO profile (block hints for
+# the code mksnapshot bakes into the snapshot). V8 builtin block graphs are
+# arch-independent, so - mirroring upstream V8, where arm64 consumes the x64
+# profile - one x64-generated profile covers Electron's x64 and arm64 builds.
 
 on:
   # TEMPORARY: run on pushes to this branch so the workflow can be exercised
@@ -315,6 +321,117 @@ jobs:
     secrets: inherit
 
   # ---------------------------------------------------------------------------
+  # V8 builtins PGO: build an instrumented d8 with Electron's exact V8
+  # configuration and generate the builtins block-hint profile by running
+  # JetStream 2 (the same workload upstream V8 uses). Builtin block graphs are
+  # arch-independent, so the x64 profile covers x64 and arm64 release builds;
+  # 32-bit targets (win-x86, linux-arm) keep using upstream's x86 profile.
+  #
+  # This is what upstream cannot provide for Electron: Chrome's published
+  # builtins profiles reject the promise/async builtins because Electron's
+  # Node.js integration changes their codegen (v8_promise_internal_field_count,
+  # v8_enable_javascript_promise_hooks).
+  # ---------------------------------------------------------------------------
+
+  generate-v8-builtins-profiles:
+    name: Generate V8 Builtins Profiles
+    needs: checkout-linux
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    container:
+      image: ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+    permissions:
+      contents: read
+    env:
+      ELECTRON_DEPOT_TOOLS_DISABLE_LOG: true
+      ELECTRON_OUT_DIR: Default
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Install Dependencies
+      uses: ./src/electron/.github/actions/install-dependencies
+    - name: Set Chromium Git Cookie
+      uses: ./src/electron/.github/actions/set-chromium-cookie
+    - name: Install Build Tools
+      uses: ./src/electron/.github/actions/install-build-tools
+    - name: Generate DEPS Hash
+      run: |
+        node src/electron/script/generate-deps-hash.js
+        DEPSHASH=v2-src-cache-$(cat src/electron/.depshash)
+        echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
+        echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
+    - name: Restore src cache via AKS
+      uses: ./src/electron/.github/actions/restore-cache-aks
+    - name: Checkout Electron (after cache restore)
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Run Electron Only Hooks
+      run: |
+        e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+    - name: Build Instrumented d8
+      run: |
+        cd src
+        e init -f --root=$(pwd) --out=Default pgo-builtins-x64 --import pgo-builtins-instrument --target-cpu x64 --remote-build siso
+        e build --target v8:d8
+    - name: Generate Builtins Profile
+      run: |
+        # JetStream 2.2 at the same pinned revision the browser collection uses.
+        git init /tmp/jetstream
+        git -C /tmp/jetstream remote add origin https://github.com/WebKit/JetStream.git
+        git -C /tmp/jetstream fetch --quiet --depth 1 origin 332d8ee1e4d5c40d9492c56f6865e64a9525ee9f
+        git -C /tmp/jetstream checkout --quiet FETCH_HEAD
+
+        # d8's default V8-sandbox reservation aborts in CI containers when the
+        # full virtual reservation fails; allow the partial-reservation
+        # fallback (matches Chrome/Electron embedder behavior, does not change
+        # the profiled builtin code paths).
+        D8="$(pwd)/src/out/Default/d8"
+        D8_FLAGS="--no-sandbox-prohibit-insecure-mode"
+        "$D8" $D8_FLAGS -e "console.log('d8 ok')"
+
+        cd /tmp/jetstream
+        "$D8" $D8_FLAGS --turbo-profiling-output=/tmp/v8.builtins.log cli.js
+        cd "$GITHUB_WORKSPACE"
+
+        # The profile is final at this point - unlike the C++ .profraw
+        # artifacts there is nothing to merge, so it is named for publishing
+        # here and uploaded directly by the upload-profiles job.
+        TIMESTAMP=$(date +%s)
+        SHORT_SHA=$(git -C src/electron rev-parse --short HEAD)
+        PROFILE_NAME="electron-v8-x64-${TIMESTAMP}-${SHORT_SHA}.profile"
+        mkdir -p src/v8-builtins-profiles
+        python3 src/v8/tools/builtins-pgo/get_hints.py /tmp/v8.builtins.log "src/v8-builtins-profiles/$PROFILE_NAME"
+        echo "Profile lines: $(wc -l < "src/v8-builtins-profiles/$PROFILE_NAME")"
+
+        # Spot-check: the promise/async builtins that upstream's profile cannot
+        # cover for Electron must have hints in ours.
+        for builtin in RunMicrotasks AsyncFunctionAwait FulfillPromise PromiseConstructor PromisePrototypeThen; do
+          count=$(grep -c ",$builtin," "src/v8-builtins-profiles/$PROFILE_NAME" || true)
+          echo "  $builtin: $count hints"
+          if [ "$count" -eq 0 ]; then
+            echo "ERROR: no hints for $builtin - the profile does not cover Electron's V8 configuration"
+            exit 1
+          fi
+        done
+    - name: Upload V8 Builtins Profiles
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: pgo-v8-builtins-profiles
+        path: src/v8-builtins-profiles/
+        if-no-files-found: error
+        retention-days: 7
+
+  # ---------------------------------------------------------------------------
   # Profile collection (runs benchmarks against the instrumented builds and
   # produces raw .profraw artifacts)
   # ---------------------------------------------------------------------------
@@ -488,7 +605,10 @@ jobs:
 
   upload-profiles:
     name: Upload Profiles to dev-cdn
-    needs: merge-profiles
+    # generate-v8-builtins-profiles is in needs only so that its artifact is
+    # available when this job runs; its success is NOT required - the C++
+    # profiles publish regardless of whether the builtins profile succeeded.
+    needs: [merge-profiles, generate-v8-builtins-profiles]
     # Push events (the temporary testing trigger) have no inputs, so they
     # always upload.
     if: ${{ !cancelled() && github.repository == 'electron/electron' && needs.merge-profiles.result == 'success' && (github.event_name == 'push' || inputs.upload-to-storage) }}
@@ -505,6 +625,15 @@ jobs:
       with:
         name: pgo-profiles
         path: profiles
+    # Optional - the artifact only exists if the V8 builtins job succeeded.
+    # Downloaded into the same directory so a single upload-batch publishes
+    # everything.
+    - name: Download V8 Builtins Profiles
+      continue-on-error: true
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: pgo-v8-builtins-profiles
+        path: profiles
     - name: Azure Login
       uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43
       with:
@@ -515,20 +644,22 @@ jobs:
       env:
         AZURE_STORAGE_ACCOUNT: ${{ secrets.AZURE_PGO_STORAGE_ACCOUNT_NAME }}
       run: |
+        # Uploads both the C++ .profdata files and the V8 builtins .profile
+        # files - the merge job's output directory contains only publishable
+        # artifacts.
         az storage blob upload-batch \
           --account-name "$AZURE_STORAGE_ACCOUNT" \
           --destination pgo \
           --source profiles \
-          --pattern '*.profdata' \
           --auth-mode login
         echo "## Uploaded PGO Profiles" >> $GITHUB_STEP_SUMMARY
-        for f in profiles/*.profdata; do
+        for f in profiles/*; do
           echo "- https://dev-cdn.electronjs.org/pgo/$(basename "$f")" >> $GITHUB_STEP_SUMMARY
         done
 
   # Aggregate gate so a single status reflects the whole run.
   pgo-done:
-    needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64, merge-profiles, upload-profiles]
+    needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64, generate-v8-builtins-profiles, merge-profiles, upload-profiles]
     if: always() && !cancelled() && github.repository == 'electron/electron'
     runs-on: ubuntu-latest
     permissions: {}
