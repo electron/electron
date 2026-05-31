@@ -56,7 +56,7 @@ const MIME_TYPES = {
   '.woff2': 'font/woff2'
 };
 
-function parseArgs (argv) {
+function parseArgs(argv) {
   const args = {};
   for (let i = 2; i < argv.length; i++) {
     if (argv[i].startsWith('--')) {
@@ -67,7 +67,7 @@ function parseArgs (argv) {
   return args;
 }
 
-function fetchBenchmarks (workDir) {
+function fetchBenchmarks(workDir) {
   for (const benchmark of BENCHMARKS) {
     const dest = path.join(workDir, benchmark.name);
     if (fs.existsSync(path.join(dest, '.git'))) {
@@ -91,7 +91,7 @@ function fetchBenchmarks (workDir) {
 // instrumented build exercises the real certificate verification path (a
 // bypass flag like --ignore-certificate-errors would train the wrong branch).
 // The key material never leaves the collection host and is discarded with it.
-function generateCerts (certDir) {
+function generateCerts(certDir) {
   fs.mkdirSync(certDir, { recursive: true });
   const caKey = path.join(certDir, 'ca.key');
   const caCert = path.join(certDir, 'ca.pem');
@@ -102,26 +102,60 @@ function generateCerts (certDir) {
 
   try {
     execFileSync('openssl', ['genrsa', '-out', caKey, '2048'], { stdio: 'pipe' });
-    execFileSync('openssl', [
-      'req', '-x509', '-new', '-key', caKey, '-sha256', '-days', '2',
-      '-subj', '/CN=Electron PGO Ephemeral CA', '-out', caCert
-    ], { stdio: 'pipe' });
+    execFileSync(
+      'openssl',
+      [
+        'req',
+        '-x509',
+        '-new',
+        '-key',
+        caKey,
+        '-sha256',
+        '-days',
+        '2',
+        '-subj',
+        '/CN=Electron PGO Ephemeral CA',
+        '-out',
+        caCert
+      ],
+      { stdio: 'pipe' }
+    );
 
     execFileSync('openssl', ['genrsa', '-out', leafKey, '2048'], { stdio: 'pipe' });
-    execFileSync('openssl', [
-      'req', '-new', '-key', leafKey,
-      '-subj', '/CN=localhost', '-out', leafCsr
-    ], { stdio: 'pipe' });
-    fs.writeFileSync(extFile, [
-      'basicConstraints=CA:FALSE',
-      'keyUsage=digitalSignature,keyEncipherment',
-      'extendedKeyUsage=serverAuth',
-      'subjectAltName=DNS:localhost,IP:127.0.0.1'
-    ].join('\n'));
-    execFileSync('openssl', [
-      'x509', '-req', '-in', leafCsr, '-CA', caCert, '-CAkey', caKey,
-      '-CAcreateserial', '-sha256', '-days', '2', '-extfile', extFile, '-out', leafCert
-    ], { stdio: 'pipe' });
+    execFileSync('openssl', ['req', '-new', '-key', leafKey, '-subj', '/CN=localhost', '-out', leafCsr], {
+      stdio: 'pipe'
+    });
+    fs.writeFileSync(
+      extFile,
+      [
+        'basicConstraints=CA:FALSE',
+        'keyUsage=digitalSignature,keyEncipherment',
+        'extendedKeyUsage=serverAuth',
+        'subjectAltName=DNS:localhost,IP:127.0.0.1'
+      ].join('\n')
+    );
+    execFileSync(
+      'openssl',
+      [
+        'x509',
+        '-req',
+        '-in',
+        leafCsr,
+        '-CA',
+        caCert,
+        '-CAkey',
+        caKey,
+        '-CAcreateserial',
+        '-sha256',
+        '-days',
+        '2',
+        '-extfile',
+        extFile,
+        '-out',
+        leafCert
+      ],
+      { stdio: 'pipe' }
+    );
   } catch (err) {
     console.warn(`[serve-benchmarks] could not generate TLS certificates (${err.message}); falling back to HTTP`);
     return null;
@@ -134,7 +168,7 @@ function generateCerts (certDir) {
 // Request handling (shared between HTTP/1.1 and HTTP/2)
 // ---------------------------------------------------------------------------
 
-function handleDynamicRequest (req, res, urlPath, query) {
+function handleDynamicRequest(req, res, urlPath, query) {
   if (urlPath === '/__pgo/data') {
     const bytes = Math.min(parseInt(query.get('bytes') || '1024', 10), 64 * 1024 * 1024);
     // Deterministic non-compressible payload so transfer sizes are stable.
@@ -171,7 +205,7 @@ function handleDynamicRequest (req, res, urlPath, query) {
   return false;
 }
 
-function makeRequestHandler (workDir, port) {
+function makeRequestHandler(workDir, port) {
   const realBase = fs.realpathSync(workDir);
   return (req, res) => {
     // Map /name/rest -> workDir/name/rest, with directory index handling.
@@ -222,19 +256,22 @@ function makeRequestHandler (workDir, port) {
 
 const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 
-function attachWebSocketEcho (server) {
+function attachWebSocketEcho(server) {
   server.on('upgrade', (req, socket) => {
     if (!req.url.startsWith('/__pgo/ws')) {
       socket.destroy();
       return;
     }
     const key = req.headers['sec-websocket-key'];
-    const accept = crypto.createHash('sha1').update(key + WS_GUID).digest('base64');
+    const accept = crypto
+      .createHash('sha1')
+      .update(key + WS_GUID)
+      .digest('base64');
     socket.write(
       'HTTP/1.1 101 Switching Protocols\r\n' +
-      'Upgrade: websocket\r\n' +
-      'Connection: Upgrade\r\n' +
-      `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
+        'Upgrade: websocket\r\n' +
+        'Connection: Upgrade\r\n' +
+        `Sec-WebSocket-Accept: ${accept}\r\n\r\n`
     );
 
     let buffer = Buffer.alloc(0);
@@ -266,11 +303,12 @@ function attachWebSocketEcho (server) {
         }
         buffer = buffer.subarray(offset + maskLen + payloadLen);
 
-        if (opcode === 0x8) { // close
+        if (opcode === 0x8) {
+          // close
           socket.end(Buffer.from([0x88, 0x00]));
           return;
         }
-        const respOpcode = opcode === 0x9 ? 0xA : opcode; // pong for ping, else echo
+        const respOpcode = opcode === 0x9 ? 0xa : opcode; // pong for ping, else echo
         // Server-to-client frames are unmasked.
         let header;
         if (payload.length < 126) {
@@ -299,17 +337,20 @@ function attachWebSocketEcho (server) {
 
 // opts.tls: { certPath, keyPath } -> serve HTTP/2 + HTTP/1.1 over TLS.
 // Without TLS material the server is plain HTTP/1.1 (local development).
-function startServer (workDir, port, opts = {}) {
+function startServer(workDir, port, opts = {}) {
   const handler = makeRequestHandler(workDir, port);
   let server;
   let scheme;
 
   if (opts.tls) {
-    server = http2.createSecureServer({
-      cert: fs.readFileSync(opts.tls.certPath),
-      key: fs.readFileSync(opts.tls.keyPath),
-      allowHTTP1: true
-    }, handler);
+    server = http2.createSecureServer(
+      {
+        cert: fs.readFileSync(opts.tls.certPath),
+        key: fs.readFileSync(opts.tls.keyPath),
+        allowHTTP1: true
+      },
+      handler
+    );
     scheme = 'https';
   } else {
     server = http.createServer(handler);

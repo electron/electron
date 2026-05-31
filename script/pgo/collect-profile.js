@@ -38,7 +38,7 @@ const { fetchBenchmarks, startServer, generateCerts } = require('./serve-benchma
 
 const SRC_DIR = path.resolve(__dirname, '..', '..', '..');
 
-function parseArgs (argv) {
+function parseArgs(argv) {
   const args = {};
   for (let i = 2; i < argv.length; i++) {
     if (argv[i].startsWith('--')) {
@@ -49,7 +49,7 @@ function parseArgs (argv) {
   return args;
 }
 
-function log (...args) {
+function log(...args) {
   // eslint-disable-next-line no-console
   console.log('[collect-profile]', ...args);
 }
@@ -68,7 +68,7 @@ function log (...args) {
 //
 // Returns true on success. On failure the caller falls back to plain HTTP -
 // network workload coverage degrades but collection still succeeds.
-function installTrustedCA (caCertPath) {
+function installTrustedCA(caCertPath) {
   try {
     if (process.platform === 'linux') {
       const nssDb = path.join(os.homedir(), '.pki', 'nssdb');
@@ -76,14 +76,26 @@ function installTrustedCA (caCertPath) {
         fs.mkdirSync(nssDb, { recursive: true });
         execFileSync('certutil', ['-d', `sql:${nssDb}`, '-N', '--empty-password'], { stdio: 'pipe' });
       }
-      execFileSync('certutil', [
-        '-d', `sql:${nssDb}`, '-A', '-t', 'C,,', '-n', 'Electron PGO Ephemeral CA', '-i', caCertPath
-      ], { stdio: 'pipe' });
+      execFileSync(
+        'certutil',
+        ['-d', `sql:${nssDb}`, '-A', '-t', 'C,,', '-n', 'Electron PGO Ephemeral CA', '-i', caCertPath],
+        { stdio: 'pipe' }
+      );
     } else if (process.platform === 'darwin') {
-      execFileSync('sudo', [
-        'security', 'add-trusted-cert', '-d', '-r', 'trustRoot',
-        '-k', '/Library/Keychains/System.keychain', caCertPath
-      ], { stdio: 'pipe' });
+      execFileSync(
+        'sudo',
+        [
+          'security',
+          'add-trusted-cert',
+          '-d',
+          '-r',
+          'trustRoot',
+          '-k',
+          '/Library/Keychains/System.keychain',
+          caCertPath
+        ],
+        { stdio: 'pipe' }
+      );
     } else if (process.platform === 'win32') {
       execFileSync('certutil', ['-addstore', '-f', 'ROOT', caCertPath], { stdio: 'pipe' });
     } else {
@@ -101,18 +113,22 @@ function installTrustedCA (caCertPath) {
 // of the default toolchain download. IMPORTANT: it must be extracted to its
 // own directory - extracting a package into third_party/llvm-build replaces
 // the existing clang installation.
-function ensureLlvmProfdata () {
+function ensureLlvmProfdata() {
   const exeSuffix = process.platform === 'win32' ? '.exe' : '';
   const coverageToolsDir = path.join(SRC_DIR, 'third_party', 'llvm-coverage-tools');
   const profdataPath = path.join(coverageToolsDir, 'bin', `llvm-profdata${exeSuffix}`);
   if (fs.existsSync(profdataPath)) return profdataPath;
 
   log('downloading llvm coverage tools (llvm-profdata)');
-  execFileSync('python3', [
-    path.join(SRC_DIR, 'tools', 'clang', 'scripts', 'update.py'),
-    '--package=coverage_tools',
-    `--output-dir=${coverageToolsDir}`
-  ], { stdio: 'inherit' });
+  execFileSync(
+    'python3',
+    [
+      path.join(SRC_DIR, 'tools', 'clang', 'scripts', 'update.py'),
+      '--package=coverage_tools',
+      `--output-dir=${coverageToolsDir}`
+    ],
+    { stdio: 'inherit' }
+  );
 
   if (!fs.existsSync(profdataPath)) {
     throw new Error(`llvm-profdata not found at ${profdataPath} after download`);
@@ -120,10 +136,12 @@ function ensureLlvmProfdata () {
   return profdataPath;
 }
 
-async function main () {
+async function main() {
   const args = parseArgs(process.argv);
   if (!args.electron || !args.output) {
-    console.error('Usage: collect-profile.js --electron <binary> --output <profdata> [--work-dir <dir>] [--port <port>]');
+    console.error(
+      'Usage: collect-profile.js --electron <binary> --output <profdata> [--work-dir <dir>] [--port <port>]'
+    );
     process.exit(1);
   }
 
@@ -209,7 +227,7 @@ async function main () {
   if (fs.existsSync(resultsFile)) {
     const results = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
     log(`workload results:\n${JSON.stringify(results, null, 2)}`);
-    failedWorkloads = results.filter(r => !r.ok);
+    failedWorkloads = results.filter((r) => !r.ok);
   } else {
     log('WARNING: no results file was written - the app may have crashed');
     failedWorkloads = [{ name: 'all', error: 'results file missing' }];
@@ -219,13 +237,14 @@ async function main () {
   }
 
   // 3. Merge (or hand off the raw files for later merging).
-  const profrawFiles = fs.readdirSync(profrawDir)
-    .filter(f => f.endsWith('.profraw'))
-    .map(f => path.join(profrawDir, f));
+  const profrawFiles = fs
+    .readdirSync(profrawDir)
+    .filter((f) => f.endsWith('.profraw'))
+    .map((f) => path.join(profrawDir, f));
   if (profrawFiles.length === 0) {
     throw new Error(
       'no .profraw files were written - the instrumented build did not shut ' +
-      'down cleanly, or the binary was not built with chrome_pgo_phase = 1'
+        'down cleanly, or the binary was not built with chrome_pgo_phase = 1'
     );
   }
 
@@ -248,7 +267,7 @@ async function main () {
   // as a job failure so CI runs are investigated, while still keeping the
   // collected output (the CI artifact upload runs even when this step fails).
   if (failedWorkloads.length > 0) {
-    log(`FAILED workloads: ${failedWorkloads.map(w => w.name).join(', ')}`);
+    log(`FAILED workloads: ${failedWorkloads.map((w) => w.name).join(', ')}`);
   }
   process.exit(exitCode);
 }

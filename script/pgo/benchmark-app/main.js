@@ -63,7 +63,8 @@ const RESULTS_FILE = process.env.PGO_RESULTS_FILE || path.join(app.getPath('temp
 const SPEEDOMETER_DONE = 'window.benchmarkClient && window.benchmarkClient._hasResults === true';
 // _hasResults is set on both completion and error; real success means metrics
 // were computed.
-const SPEEDOMETER_SUCCESS = '!!(window.benchmarkClient && window.benchmarkClient.metrics && window.benchmarkClient.metrics.Score)';
+const SPEEDOMETER_SUCCESS =
+  '!!(window.benchmarkClient && window.benchmarkClient.metrics && window.benchmarkClient.metrics.Score)';
 
 const WORKLOADS = [
   {
@@ -110,16 +111,16 @@ const WORKLOADS = [
   }
 ];
 
-function log (...args) {
+function log(...args) {
   // eslint-disable-next-line no-console
   console.log('[pgo-benchmark]', ...args);
 }
 
-async function sleep (ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function runWorkload (win, workload) {
+async function runWorkload(win, workload) {
   log(`starting workload: ${workload.name}`);
   const startTime = Date.now();
   await win.loadURL(workload.url);
@@ -131,7 +132,9 @@ async function runWorkload (win, workload) {
       await sleep(1000);
       try {
         started = await win.webContents.executeJavaScript(workload.startExpr, true);
-      } catch { /* page busy - retry */ }
+      } catch {
+        /* page busy - retry */
+      }
     }
     if (!started) throw new Error(`workload ${workload.name} never became startable`);
   }
@@ -143,7 +146,9 @@ async function runWorkload (win, workload) {
     let done = false;
     try {
       done = await win.webContents.executeJavaScript(workload.doneExpr, true);
-    } catch { /* page busy running benchmark - retry */ }
+    } catch {
+      /* page busy running benchmark - retry */
+    }
     if (done) {
       const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
       // The run ended - check whether it ended in success or in an error
@@ -175,7 +180,7 @@ async function runWorkload (win, workload) {
 // the event loop stays responsive.
 // ---------------------------------------------------------------------------
 
-async function runMainProcessWorkload (durationMs) {
+async function runMainProcessWorkload(durationMs) {
   log('starting workload: main-process');
   const startTime = Date.now();
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pgo-main-workload-'));
@@ -226,7 +231,7 @@ async function runMainProcessWorkload (durationMs) {
       iterations++;
     }
     // Yield so timers/IPC stay serviceable.
-    await new Promise(resolve => setImmediate(resolve));
+    await new Promise((resolve) => setImmediate(resolve));
   }
 
   fs.rmSync(tmp, { recursive: true, force: true });
@@ -243,7 +248,7 @@ async function runMainProcessWorkload (durationMs) {
 // configured the way real apps are configured (contextIsolation + preload).
 // ---------------------------------------------------------------------------
 
-async function runIpcBridgeWorkload (durationMs) {
+async function runIpcBridgeWorkload(durationMs) {
   log('starting workload: ipc-contextbridge');
   const startTime = Date.now();
 
@@ -264,7 +269,8 @@ async function runIpcBridgeWorkload (durationMs) {
   // The driver runs in the main world and calls across the bridge. Payload
   // sizes cover the spectrum apps use: small control messages, medium JSON
   // payloads, and large binary transfers.
-  const result = await win.webContents.executeJavaScript(`(async () => {
+  const result = await win.webContents.executeJavaScript(
+    `(async () => {
     const small = { id: 1, type: 'msg', body: 'hello world' };
     const medium = { rows: Array.from({ length: 200 }, (_, i) => ({ i, name: 'row-' + i, values: [i, i * 2, i * 3] })) };
     const arr = Array.from({ length: 500 }, (_, i) => ({ i, label: 'item-' + i }));
@@ -294,14 +300,18 @@ async function runIpcBridgeWorkload (durationMs) {
       ipcCalls += 4;
     }
     return { bridgeCalls, ipcCalls };
-  })()`, true);
+  })()`,
+    true
+  );
 
   win.destroy();
   ipcMain.removeHandler('pgo-ping');
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
-  log(`finished workload: ipc-contextbridge in ${elapsed}s ` +
-      `(${result.bridgeCalls} bridge calls, ${result.ipcCalls} ipc round trips)`);
+  log(
+    `finished workload: ipc-contextbridge in ${elapsed}s ` +
+      `(${result.bridgeCalls} bridge calls, ${result.ipcCalls} ipc round trips)`
+  );
   return { name: 'ipc-contextbridge', ok: true, seconds: Number(elapsed) };
 }
 
@@ -319,7 +329,7 @@ async function runIpcBridgeWorkload (durationMs) {
 // to point at the collection CA (set by collect-profile.js).
 // ---------------------------------------------------------------------------
 
-async function runNetworkWorkload (win, durationMs) {
+async function runNetworkWorkload(win, durationMs) {
   log('starting workload: network');
   const startTime = Date.now();
   const isTls = BASE_URL.startsWith('https:');
@@ -329,7 +339,8 @@ async function runNetworkWorkload (win, durationMs) {
   // the budget; the Node-side loop runs for the second half.
   const rendererBudget = Math.floor(durationMs / 2);
   await win.loadURL(`${BASE_URL}/speedometer/`);
-  const rendererResult = await win.webContents.executeJavaScript(`(async () => {
+  const rendererResult = await win.webContents.executeJavaScript(
+    `(async () => {
     const deadline = Date.now() + ${rendererBudget};
     let requests = 0;
     let wsMessages = 0;
@@ -368,7 +379,9 @@ async function runNetworkWorkload (win, durationMs) {
     }
 
     return { requests, wsMessages };
-  })()`, true);
+  })()`,
+    true
+  );
 
   // Main process: Node-side HTTPS/HTTP requests.
   let nodeRequests = 0;
@@ -378,22 +391,28 @@ async function runNetworkWorkload (win, durationMs) {
     // node:https / node:http via the classic API.
     await new Promise((resolve, reject) => {
       const mod = isTls ? https : require('node:http');
-      mod.get(dataUrl, (res) => {
-        res.on('data', () => {});
-        res.on('end', resolve);
-      }).on('error', reject);
+      mod
+        .get(dataUrl, (res) => {
+          res.on('data', () => {});
+          res.on('end', resolve);
+        })
+        .on('error', reject);
     }).catch(() => {});
     // undici fetch (Node's fetch implementation - a separate HTTP stack).
     try {
       const res = await fetch(dataUrl);
       await res.arrayBuffer();
-    } catch { /* degraded coverage only */ }
+    } catch {
+      /* degraded coverage only */
+    }
     nodeRequests += 2;
   }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
-  log(`finished workload: network in ${elapsed}s ` +
-      `(renderer: ${rendererResult.requests} fetches + ${rendererResult.wsMessages} ws messages, node: ${nodeRequests} requests)`);
+  log(
+    `finished workload: network in ${elapsed}s ` +
+      `(renderer: ${rendererResult.requests} fetches + ${rendererResult.wsMessages} ws messages, node: ${nodeRequests} requests)`
+  );
   return { name: 'network', ok: true, seconds: Number(elapsed) };
 }
 
@@ -420,20 +439,17 @@ app.whenReady().then(async () => {
   let exitCode = 0;
 
   let phases = [
-    ...WORKLOADS.map(workload => () => runWorkload(win, workload)),
+    ...WORKLOADS.map((workload) => () => runWorkload(win, workload)),
     () => runMainProcessWorkload(MAIN_PROCESS_WORKLOAD_MS),
     () => runIpcBridgeWorkload(IPC_BRIDGE_WORKLOAD_MS),
     () => runNetworkWorkload(win, NETWORK_WORKLOAD_MS)
   ];
-  let phaseNames = [
-    ...WORKLOADS.map(w => w.name),
-    'main-process', 'ipc-contextbridge', 'network'
-  ];
+  let phaseNames = [...WORKLOADS.map((w) => w.name), 'main-process', 'ipc-contextbridge', 'network'];
 
   if (process.env.PGO_WORKLOAD_FILTER) {
-    const allowed = process.env.PGO_WORKLOAD_FILTER.split(',').map(s => s.trim());
+    const allowed = process.env.PGO_WORKLOAD_FILTER.split(',').map((s) => s.trim());
     phases = phases.filter((_, i) => allowed.includes(phaseNames[i]));
-    phaseNames = phaseNames.filter(name => allowed.includes(name));
+    phaseNames = phaseNames.filter((name) => allowed.includes(name));
     log(`workload filter active: ${phaseNames.join(', ')}`);
   }
 
