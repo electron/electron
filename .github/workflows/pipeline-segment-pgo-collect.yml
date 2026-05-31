@@ -49,7 +49,7 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform != 'linux' }}
-      uses: actions/setup-node@f2ec51b95446788ed35b9c2c0eb6f55cf08aa78a
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
       with:
         node-version: 22.21.x
     - name: Install Dependencies
