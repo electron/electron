@@ -1,4 +1,5 @@
 import("//build/config/locales.gni")
+import("//device/vr/buildflags/buildflags.gni")
 import("//electron/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//tools/grit/repack.gni")
@@ -141,10 +142,14 @@ template("electron_extra_paks") {
       "$root_gen_dir/content/quota_internals_resources.pak",
       "$root_gen_dir/content/service_worker_resources.pak",
       "$root_gen_dir/content/traces_internals_resources.pak",
-      "$root_gen_dir/content/webxr_internals_resources.pak",
       "$root_gen_dir/ui/resources/ui_lottie_resources.pak",
       "$root_gen_dir/ui/webui/resources/webui_resources.pak",
     ]
+    if (enable_vr) {
+      # webxr_internals resources are only generated when VR support is
+      # enabled (see //content/browser/resources/BUILD.gn).
+      sources += [ "$root_gen_dir/content/webxr_internals_resources.pak" ]
+    }
     deps += [
       "//base/tracing/protos:chrome_track_event_resources",
       "//components/autofill/core/browser:autofill_address_rewriter_resources",
