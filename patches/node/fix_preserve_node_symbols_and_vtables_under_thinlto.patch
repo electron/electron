@@ -39,10 +39,10 @@ Three classes of fixes, all of which give the affected symbols strong
 Observed on macOS arm64 official builds; latent on Linux/Windows.
 
 diff --git a/src/env.cc b/src/env.cc
-index 79a309661aff7ebb18f96e64d0d2b860ab80dc57..10266fd1233d9b117eefbbbb4f455289b002785a 100644
+index a09603573c02466c0d25431fe6168ca33ee4692e..8c9affd0d259fa2f3a6512deb636b1b47ccae9ed 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -2266,4 +2266,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
+@@ -2267,4 +2267,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
    return profile;
  }
  
