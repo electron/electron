@@ -1,0 +1,9 @@
+{
+  "name": "@electron-ci/pgo",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "PGO profile collection tooling (see README.md)",
+  "dependencies": {
+    "@electron/asar": "^4.0.1"
+  }
+}
