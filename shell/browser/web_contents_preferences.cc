@@ -306,6 +306,17 @@ WebContentsPreferences* WebContentsPreferences::From(
   return FromWebContents(web_contents);
 }
 
+// static
+bool WebContentsPreferences::ShouldUseSandbox(
+    content::WebContents* web_contents) {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableSandbox)) {
+    return true;
+  }
+  auto* prefs = From(web_contents);
+  return !prefs || prefs->IsSandboxed();
+}
+
 void WebContentsPreferences::AppendCommandLineSwitches(
     base::CommandLine* command_line,
     bool is_subframe) {

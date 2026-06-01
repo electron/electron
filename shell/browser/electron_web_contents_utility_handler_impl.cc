@@ -12,6 +12,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+#include "shell/browser/preload_code_cache.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 
@@ -57,6 +58,17 @@ void ElectronWebContentsUtilityHandlerImpl::SetTemporaryZoomLevel(
   if (api_web_contents) {
     api_web_contents->SetTemporaryZoomLevel(level);
   }
+}
+
+void ElectronWebContentsUtilityHandlerImpl::SetPreloadCodeCache(
+    const std::string& id,
+    mojo_base::BigBuffer cache) {
+  // Persist the freshly produced V8 code cache so subsequent navigations and
+  // launches compile this preload from bytecode instead of re-parsing source.
+  // Renderer-supplied data: V8 validates the blob against the source + V8
+  // version + flags at consume time, so a malformed or stale blob just costs
+  // one rejected compile and is then overwritten.
+  preload_code_cache::Set(id, base::span<const uint8_t>(cache));
 }
 
 void ElectronWebContentsUtilityHandlerImpl::CanAccessClipboardDeprecated(
