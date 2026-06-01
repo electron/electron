@@ -319,13 +319,16 @@ async function main() {
     tls = { certPath: certs.certPath, keyPath: certs.keyPath };
     caCertPath = certs.caCertPath;
   }
-  // 32-bit Windows (WOW64) cannot absorb the fully multiplexed HTTP/2 burst
-  // of benchmark page loads on an instrumented binary - the concurrent TLS
-  // and stream buffers exhaust the renderer's address space and JetStream's
-  // initialization (which also makes large wasm allocations) fails. Cap
-  // concurrent streams there; other platforms keep full multiplexing.
-  const maxConcurrentStreams = process.platform === 'win32' && args['target-arch'] === 'x86' ? 8 : undefined;
-  const server = startServer(benchmarksDir, port, { tls, maxConcurrentStreams });
+  // Cap concurrent HTTP/2 streams on every host. Benchmark pages (JetStream
+  // especially) fire hundreds of resource fetches at once; fully multiplexed
+  // over one connection, the concurrent TLS and stream buffers overwhelm
+  // slower collection hosts - 32-bit Windows exhausts its address space, and
+  // 4-core arm64 / Windows runners hit page-load errors in JetStream's
+  // driver. Capping also keeps serving realistic: no production server
+  // grants a single connection unbounded concurrency. Verified by run #15:
+  // capped win-x86 collected successfully on the same runner type where
+  // uncapped win-x64 failed.
+  const server = startServer(benchmarksDir, port, { tls, maxConcurrentStreams: 8 });
   const baseUrl = tls ? `https://localhost:${port}` : `http://127.0.0.1:${port}`;
 
   // 2. Run the instrumented build through the workloads.

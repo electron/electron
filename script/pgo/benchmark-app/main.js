@@ -215,7 +215,13 @@ async function reportWorkloadFailure(win, workloadName, diag) {
           readyState: document.readyState,
           pageErrors: window.__pgoErrors || [],
           driverErrorFlag: typeof allIsGood !== 'undefined' ? !allIsGood : null,
-          bodyPreview: document.body ? document.body.innerText.slice(0, 400) : null
+          // JetStream's driver records why it refused to start; surface the
+          // actual failures rather than only the refusal banner.
+          benchmarkErrors:
+            typeof JetStream !== 'undefined' && JetStream.driver && Array.isArray(JetStream.driver.errors)
+              ? JetStream.driver.errors.slice(0, 10)
+              : null,
+          bodyPreview: document.body ? document.body.innerText.slice(0, 1200) : null
         })`,
         true
       ),
