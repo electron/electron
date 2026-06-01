@@ -5,11 +5,14 @@
 #include "shell/renderer/preload_realm_context.h"
 
 #include "base/command_line.h"
+#include "base/containers/span.h"
 #include "base/process/process.h"
 #include "base/process/process_metrics.h"
+#include "mojo/public/cpp/base/big_buffer.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/renderer/preload_utils.h"
@@ -173,7 +176,28 @@ class PreloadRealmLifetimeController
 
     gin_helper::Dictionary b(isolate, binding);
     b.SetMethod("get", preload_utils::GetBinding);
-    b.SetMethod("createPreloadScript", preload_utils::CreatePreloadScript);
+    // The browser attached the service-worker preload set + process info to
+    // this worker's EmbeddedWorkerStartParams (see
+    // ContentBrowserClient::GetServiceWorkerStartupData); Chromium marshalled
+    // it onto the worker thread with the rest of the start params, ordered
+    // with worker creation. Deserialize and capture it once on the
+    // ServiceWorkerData so createPreloadScript can look up preload contents
+    // and code caches without marshaling them through V8.
+    if (const std::optional<mojo_base::BigBuffer>& blob =
+            service_worker_data_->proxy()->ElectronPreloadData()) {
+      mojom::RendererStartupDataPtr data;
+      if (mojom::RendererStartupData::Deserialize(
+              base::span<const uint8_t>(*blob), &data)) {
+        service_worker_data_->SetWorkerStartupData(std::move(data));
+      }
+    }
+    // No RenderFrame in the SW preload realm — no per-frame cache lookup or
+    // ship-back channel — but contents are still looked up from the captured
+    // worker startup data instead of crossing the V8 boundary.
+    b.SetMethod(
+        "createPreloadScript",
+        base::BindRepeating(&preload_utils::CreatePreloadScript, nullptr,
+                            base::Unretained(service_worker_data_.get())));
 
     gin_helper::Dictionary process = gin::Dictionary::CreateEmpty(isolate);
     b.Set("process", process);
@@ -187,12 +211,20 @@ class PreloadRealmLifetimeController
     process.SetReadOnly("type", "service-worker");
     process.SetReadOnly("contextIsolated", true);
 
-    v8::LocalVector<v8::String> preload_realm_bundle_params(
-        isolate, {node::FIXED_ONE_BYTE_STRING(isolate, "binding")});
+    v8::Local<v8::Value> startup_data;
+    if (!preload_utils::BuildStartupData(
+             isolate, service_worker_data_->worker_startup_data())
+             .ToLocal(&startup_data)) {
+      startup_data = v8::Null(isolate);
+    }
+    b.Set("startupData", startup_data);
+
+    v8::LocalVector<v8::String> preload_realm_bundle_params =
+        js2c::MakeBundleParams(isolate, js2c::kPreloadRealmBundleParams);
 
     v8::LocalVector<v8::Value> preload_realm_bundle_args(isolate, {binding});
 
-    util::CompileAndCall(isolate, context, "electron/js2c/preload_realm_bundle",
+    util::CompileAndCall(isolate, context, js2c::kPreloadRealmBundleId,
                          &preload_realm_bundle_params,
                          &preload_realm_bundle_args);
   }

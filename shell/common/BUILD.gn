@@ -35,6 +35,7 @@ mojom("web_contents_utility") {
 
   public_deps = [
     "//content/public/common:interfaces",
+    "//mojo/public/mojom/base",
     "//third_party/blink/public/mojom/tokens",
     "//url/mojom:url_mojom_origin",
   ]
