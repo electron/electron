@@ -1,0 +1,147 @@
+name: Pipeline Segment - PGO Profile Collection
+
+on:
+  workflow_call:
+    inputs:
+      target-platform:
+        type: string
+        description: 'Platform to collect on, can be macos, win or linux'
+        required: true
+      target-arch:
+        type: string
+        description: 'Arch the instrumented build was made for'
+        required: true
+      artifact-key:
+        type: string
+        description: 'Key of the generated_artifacts_* artifact holding the instrumented dist (e.g. linux_x64, darwin_arm64, win_x64)'
+        required: true
+      collect-runs-on:
+        type: string
+        description: 'What host to run the profile collection on'
+        required: true
+      collect-container:
+        type: string
+        description: 'JSON container information for aks runs-on'
+        required: false
+        default: '{"image":null}'
+
+concurrency:
+  group: electron-pgo-collect-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref_protected != true }}
+
+permissions: {}
+
+jobs:
+  collect:
+    runs-on: ${{ inputs.collect-runs-on }}
+    container: ${{ fromJSON(inputs.collect-container) }}
+    permissions:
+      contents: read
+    # Callers' defaults do not propagate into reusable workflows.
+    defaults:
+      run:
+        shell: bash
+    env:
+      ELECTRON_OUT_DIR: Default
+      BUILD_TYPE: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}
+      TARGET_ARCH: ${{ inputs.target-arch }}
+    steps:
+    # Same workaround as pipeline-segment-electron-test.yml.
+    - name: Fix node20 on arm32 runners
+      if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
+      run: |
+        cp $(which node) /mnt/runner-externals/node20/bin/
+        cp $(which node) /mnt/runner-externals/node24/bin/
+    - name: Checkout Electron
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      with:
+        path: src/electron
+    - name: Setup Node.js/npm
+      if: ${{ inputs.target-platform != 'linux' }}
+      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+      with:
+        node-version: 22.21.x
+    # Installs only the @electron-ci/pgo workspace's dependencies (a focused
+    # install takes seconds; a full yarn install takes minutes).
+    - name: Install collection dependencies
+      run: |
+        cd src/electron
+        node script/yarn.js workspaces focus @electron-ci/pgo --production
+    - name: Download Generated Artifacts
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+      with:
+        name: generated_artifacts_${{ inputs.artifact-key }}
+        path: ./generated_artifacts_${{ env.BUILD_TYPE }}_${{ inputs.target-arch }}
+    - name: Restore Generated Artifacts
+      run: ./src/electron/script/actions/restore-artifacts.sh
+    - name: Unzip Dist (win)
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        cd src/out/Default
+        Expand-Archive -Force dist.zip -DestinationPath ./
+    - name: Unzip Dist (unix)
+      if: ${{ inputs.target-platform != 'win' }}
+      run: |
+        cd src/out/Default
+        unzip -:o dist.zip
+    # NSS tools provide certutil, which collect-profile.js uses to install the
+    # ephemeral collection CA into the trust store Chromium reads on Linux.
+    - name: Install NSS tools (linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      run: |
+        if ! command -v certutil >/dev/null 2>&1; then
+          apt-get update -qq && apt-get install -y -qq libnss3-tools
+        fi
+    - name: Turn off the unexpectedly quit dialog on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: defaults write com.apple.CrashReporter DialogType server
+    - name: Turn off the reopen windows prompt on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: defaults write com.github.Electron ApplePersistenceIgnoreState YES
+    # Raw .profraw output; merging happens in pgo-generation.yml's merge job.
+    - name: Collect PGO Profile (linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      timeout-minutes: 150
+      run: |
+        cd src
+        xvfb-run -a -s "-screen 0 1280x1024x24" \
+          node electron/script/pgo/collect-profile.js \
+            --electron out/Default/electron \
+            --output out/Default/pgo-profraw \
+            --work-dir /tmp/electron-pgo \
+            --no-sandbox \
+            --no-merge
+    - name: Collect PGO Profile (macos)
+      if: ${{ inputs.target-platform == 'macos' }}
+      timeout-minutes: 150
+      run: |
+        cd src
+        node electron/script/pgo/collect-profile.js \
+          --electron "out/Default/Electron.app/Contents/MacOS/Electron" \
+          --output out/Default/pgo-profraw \
+          --work-dir /tmp/electron-pgo \
+          --no-merge
+    - name: Collect PGO Profile (win)
+      if: ${{ inputs.target-platform == 'win' }}
+      timeout-minutes: 150
+      env:
+        TARGET_ARCH: ${{ inputs.target-arch }}
+      run: |
+        cd src
+        node electron/script/pgo/collect-profile.js \
+          --electron out/Default/electron.exe \
+          --output out/Default/pgo-profraw \
+          --work-dir "$TEMP/electron-pgo" \
+          --no-merge \
+          --target-arch "$TARGET_ARCH"
+    # Upload partial results even when a workload failed.
+    - name: Upload Profraw as Workflow Artifact
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: pgo-profraw-${{ inputs.target-platform }}-${{ inputs.target-arch }}
+        path: src/out/Default/pgo-profraw/
+        if-no-files-found: error
+        retention-days: 7
