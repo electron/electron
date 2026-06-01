@@ -127,18 +127,16 @@ async function sleep(ms) {
 // Workload failures on CI are otherwise nearly undebuggable - official builds
 // crash without messages and a hung page looks identical to a slow one. These
 // observers record enough state to tell the difference: per-resource network
-// accounting (completed / failed / still pending), renderer crashes with
-// their reason, renderer hangs, and a memory + DOM snapshot at failure time.
+// crashes with their reason, renderer hangs, page-side errors, benchmark
+// resource counters, and a memory + DOM snapshot at failure time.
 // ---------------------------------------------------------------------------
 
 function attachDiagnostics(win) {
   const diag = {
-    requests: new Map(),
     consoleErrors: [],
     rendererGone: null,
     unresponsive: false,
     reset() {
-      this.requests.clear();
       this.consoleErrors = [];
       this.rendererGone = null;
       this.unresponsive = false;
@@ -161,19 +159,13 @@ function attachDiagnostics(win) {
     }
   });
 
-  // Non-blocking observers: track every resource the page requests so a
-  // failure report can say exactly which loads never finished.
-  const filter = { urls: ['*://*/*'] };
-  const { webRequest } = win.webContents.session;
-  webRequest.onSendHeaders(filter, (details) => {
-    diag.requests.set(details.url, 'pending');
-  });
-  webRequest.onCompleted(filter, (details) => {
-    diag.requests.set(details.url, 'completed');
-  });
-  webRequest.onErrorOccurred(filter, (details) => {
-    diag.requests.set(details.url, `failed: ${details.error}`);
-  });
+  // IMPORTANT: do NOT attach session.webRequest observers here. Observing
+  // requests routes every fetch through the browser process's webRequest
+  // path, which intermittently (~10-35% of runs) drops responses before the
+  // renderer consumes them - benchmark pages then see failed fetches that
+  // the network layer reports as completed, and JetStream refuses to start.
+  // Reproduced reliably with instrumented builds; resource-level failure
+  // detail comes from the benchmark's own counters in the page state instead.
 
   return diag;
 }
@@ -185,17 +177,6 @@ async function reportWorkloadFailure(win, workloadName, diag) {
     log(`renderer process gone: ${JSON.stringify(diag.rendererGone)}`);
   }
   if (diag.unresponsive) log('renderer is unresponsive (main thread hung)');
-
-  const entries = [...diag.requests.entries()];
-  const pending = entries.filter(([, s]) => s === 'pending');
-  const failed = entries.filter(([, s]) => String(s).startsWith('failed'));
-  log(
-    `resources: ${entries.length} requested, ` +
-      `${entries.length - pending.length - failed.length} completed, ` +
-      `${failed.length} failed, ${pending.length} never finished`
-  );
-  for (const [url, status] of failed.slice(0, 15)) log(`  ${status}: ${url}`);
-  for (const [url] of pending.slice(0, 15)) log(`  never finished: ${url}`);
 
   if (diag.consoleErrors.length > 0) {
     log(`console errors (${diag.consoleErrors.length}):`);
@@ -215,11 +196,16 @@ async function reportWorkloadFailure(win, workloadName, diag) {
           readyState: document.readyState,
           pageErrors: window.__pgoErrors || [],
           driverErrorFlag: typeof allIsGood !== 'undefined' ? !allIsGood : null,
-          // JetStream's driver records why it refused to start; surface the
-          // actual failures rather than only the refusal banner.
-          benchmarkErrors:
-            typeof JetStream !== 'undefined' && JetStream.driver && Array.isArray(JetStream.driver.errors)
-              ? JetStream.driver.errors.slice(0, 10)
+          // The benchmark's own resource accounting (replaces webRequest
+          // observers, which themselves disrupt page fetches - see
+          // attachDiagnostics).
+          resourceCounter:
+            typeof JetStream !== 'undefined' && JetStream.counter
+              ? {
+                  loaded: JetStream.counter.loadedResources,
+                  total: JetStream.counter.totalResources,
+                  failed: JetStream.counter.failedPreloadResources
+                }
               : null,
           bodyPreview: document.body ? document.body.innerText.slice(0, 1200) : null
         })`,
