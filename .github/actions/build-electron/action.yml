@@ -29,6 +29,14 @@ inputs:
   upload-out-gen-artifacts:
     description: 'Whether to upload the out/${dir}/gen artifacts'
     required: false
+  generate-chromedriver:
+    description: 'Build and upload chromedriver'
+    required: false
+    default: 'true'
+  generate-test-artifacts:
+    description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots, mksnapshot fixup). Only disable when no test job consumes this build.'
+    required: false
+    default: 'true'
 runs:
   using: "composite"
   steps:
@@ -154,6 +162,7 @@ runs:
         fi
     - name: Fixup Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
+      if: ${{ inputs.generate-test-artifacts == 'true' }}
       run: |
         cd src
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
@@ -179,7 +188,7 @@ runs:
         fi
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
+      if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' && inputs.generate-test-artifacts == 'true' }}
       run: |
         cd src
         if [ "${{ inputs.target-arch }}" = "arm" ]; then
@@ -199,6 +208,7 @@ runs:
         rm -f out/Default/libffmpeg.so
     - name: Build Chromedriver ${{ inputs.step-suffix }}
       shell: bash
+      if: ${{ inputs.generate-chromedriver == 'true' }}
       run: |
         cd src
         QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
@@ -321,6 +331,8 @@ runs:
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
       if: always() && !cancelled()
       shell: bash
+      env:
+        GENERATE_TEST_ARTIFACTS: ${{ inputs.generate-test-artifacts }}
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
       if: always() && !cancelled()
@@ -329,6 +341,7 @@ runs:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
     - name: Upload Src Artifacts ${{ inputs.step-suffix }}
+      if: ${{ inputs.generate-test-artifacts == 'true' }}
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}
