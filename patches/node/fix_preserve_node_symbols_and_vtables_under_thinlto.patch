@@ -100,10 +100,10 @@ index 56f4a180633d39c652449dd3d457d29e4a9f6ac1..765a868da8f5e4e6848e6ed57c46e4ac
    size_t SizeInBytes() override { return size_; }
    // TODO(addaleax): Merging this with the "official" WrapperNode() method
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 04d76fdd3d170a7c501bd773b698d380b8bb2426..a092861d9458b2c3ae4b340045290225825ce6f8 100644
+index 29a621c7fdca110a1a931d6cd40dbc5d0bc0b4ce..1c7d05b6288679ac5b96933b7d7f198aa666aabb 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -929,6 +929,21 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -990,6 +990,21 @@ void BuiltinLoader::RegisterExternalReferences(
  }
  
  }  // namespace builtins

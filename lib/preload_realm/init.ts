@@ -1,6 +1,4 @@
 import '@electron/internal/sandboxed_renderer/pre-init';
-import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
-import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import {
   createPreloadProcessObject,
   executeSandboxedPreloadScripts
@@ -11,16 +9,18 @@ import * as events from 'events';
 declare const binding: {
   get: (name: string) => any;
   process: NodeJS.Process;
-  createPreloadScript: (src: string) => Function;
+  createPreloadScript: (scriptId: string, paramNames: string[]) => Function | null;
+  // Delivered by the browser via the service worker's EmbeddedWorkerStartParams
+  // (ContentBrowserClient::GetServiceWorkerStartupData), marshalled onto the
+  // worker thread with the rest of the start params — always present when this
+  // bundle runs.
+  startupData: {
+    preloadScripts: ElectronInternal.PreloadScript[];
+    process: NodeJS.Process;
+  };
 };
 
-const ipcRendererUtils =
-  require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
-
-const { preloadScripts, process: processProps } = ipcRendererUtils.invokeSync<{
-  preloadScripts: ElectronInternal.PreloadScript[];
-  process: NodeJS.Process;
-}>(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
+const { preloadScripts, process: processProps } = binding.startupData;
 
 const electron = require('electron');
 
