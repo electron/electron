@@ -195,6 +195,17 @@ jobs:
     - name: Run Electron Only Hooks
       run: |
         e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+    # Release builds consume Electron-generated PGO profiles, resolved through
+    # the state files in build/pgo_profiles. The gclient hooks that download
+    # them do not run in build jobs ("Run Electron Only Hooks" sets
+    # process_deps=False, and cross-compiled targets do not match the host's
+    # checkout_* vars), so fetch exactly this build's profile here.
+    - name: Download PGO Profiles
+      if: ${{ inputs.gn-build-type == 'release' }}
+      env:
+        PGO_TARGET: ${{ inputs.target-platform }}-${{ inputs.target-arch }}
+      run: |
+        python3 src/electron/script/pgo/download-profiles.py --targets "$PGO_TARGET,v8-builtins"
     - name: Regenerate DEPS Hash
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
