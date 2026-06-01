@@ -1,5 +1,7 @@
 # Electron FAQ
 
+Does this fire a docs only change?
+
 ## Why am I having trouble installing Electron?
 
 When running `npm install electron`, some users occasionally encounter
