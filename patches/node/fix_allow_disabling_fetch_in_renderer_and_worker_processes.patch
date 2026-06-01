@@ -95,6 +95,18 @@ index b7062241d590e36f797babffb5945060ef759322..ae895839723609dcdec2c037facb1720
    AddOption("--experimental-websocket",
              "experimental WebSocket API",
              &EnvironmentOptions::experimental_websocket,
+diff --git a/src/node_options.h b/src/node_options.h
+index 4964a74eb295d19bf0f37b6bd4750433d0088670..bafd9c7b3cfb62043ff4544eac1c7ffb4468ad1e 100644
+--- a/src/node_options.h
++++ b/src/node_options.h
+@@ -124,6 +124,7 @@ class EnvironmentOptions : public Options {
+   bool enable_source_maps = false;
+   bool experimental_addon_modules = false;
+   bool experimental_eventsource = false;
++  bool experimental_fetch = true;
+   bool experimental_websocket = true;
+   bool experimental_sqlite = HAVE_SQLITE;
+   bool experimental_webstorage = false;
 diff --git a/test/parallel/test-process-env-allowed-flags-are-documented.js b/test/parallel/test-process-env-allowed-flags-are-documented.js
 index 97301c99e1755645ecf37647b1feecf886f38c78..c3c23594a0123f822038a3b3341965f32b9d6ee6 100644
 --- a/test/parallel/test-process-env-allowed-flags-are-documented.js
