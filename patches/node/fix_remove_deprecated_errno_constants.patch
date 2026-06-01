@@ -10,10 +10,10 @@ This change removes the usage of these constants to fix a compilation failure du
 See: https://github.com/llvm/llvm-project/pull/80542
 
 diff --git a/deps/uv/include/uv.h b/deps/uv/include/uv.h
-index 0295eeddbb4eb1cffd9dbcd02e037907fadc1b7e..7c2f9d2a8b13584ff6b33cd3ff4745e9fb3c4170 100644
+index e7c63e7bdec298980f00cf74c35bc8579c6bb36d..9c21ac5299a4b25781629dac5c393cc1eec2869e 100644
 --- a/deps/uv/include/uv.h
 +++ b/deps/uv/include/uv.h
-@@ -156,7 +156,6 @@ struct uv__queue {
+@@ -154,7 +154,6 @@ struct uv__queue {
    XX(EFTYPE, "inappropriate file type or format")                             \
    XX(EILSEQ, "illegal byte sequence")                                         \
    XX(ESOCKTNOSUPPORT, "socket type not supported")                            \
@@ -86,10 +86,10 @@ index fd28e0904d05e24e8eeb74fa36abd9727699a649..fea0426496978c0003fe1481afcf93fc
    NODE_DEFINE_CONSTANT(target, ETIMEDOUT);
  #endif
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 0388e2e31c9739b8b4bfbcbfb1f8c11b2a84c233..c6404e00d04e61b675a8c4a02139b36da25bd2a8 100644
+index e5432453ac2123ca3ff6b00e990a1954782858c8..9a69e79bc0d8056454c556077ac9f5e47a87a463 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
-@@ -897,10 +897,6 @@ const char* errno_string(int errorno) {
+@@ -895,10 +895,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ENOBUFS);
  #endif
  
@@ -100,7 +100,7 @@ index 0388e2e31c9739b8b4bfbcbfb1f8c11b2a84c233..c6404e00d04e61b675a8c4a02139b36d
  #ifdef ENODEV
      ERRNO_CASE(ENODEV);
  #endif
-@@ -939,14 +935,6 @@ const char* errno_string(int errorno) {
+@@ -937,14 +933,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ENOSPC);
  #endif
  
@@ -115,7 +115,7 @@ index 0388e2e31c9739b8b4bfbcbfb1f8c11b2a84c233..c6404e00d04e61b675a8c4a02139b36d
  #ifdef ENOSYS
      ERRNO_CASE(ENOSYS);
  #endif
-@@ -1029,10 +1017,6 @@ const char* errno_string(int errorno) {
+@@ -1027,10 +1015,6 @@ const char* errno_string(int errorno) {
      ERRNO_CASE(ESTALE);
  #endif
  
