@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index c97a981aeec0465c6c80f30d3e3d8fe1a814c410..165afa5a8421e57613983dbefc28e819de7e5264 100644
+index 8672211976053cc1ceea63a1e38c2d8b6fccff9b..5fca4fcc6608a2468e7f75db99bfafc772d604a4 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2665,6 +2665,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2582,6 +2582,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,10 +33,10 @@ index c97a981aeec0465c6c80f30d3e3d8fe1a814c410..165afa5a8421e57613983dbefc28e819
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 9f31bab965cf69cc2b77f8670307c25e696159e2..9edc236d56fb523095ca4ca0978d5137f651f624 100644
+index a802bf1313efb37fffcf8a29acdcdb260e26232e..c7486e4a9f12f12a4fc0f77687f57f2619020326 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -886,6 +886,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -870,6 +870,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,10 +51,10 @@ index 9f31bab965cf69cc2b77f8670307c25e696159e2..9edc236d56fb523095ca4ca0978d5137
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index af9365807d450d82dd980928fa25cee7cbd7a980..2f425bfce9bc1909ce3910d71cec0c56271c5622 100644
+index 10407f870d3362aa7de4af4e5c9efbd7232fcef6..17f220be4861f1306f1f0fbcc1c69876154a36e8 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1458,6 +1458,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1430,6 +1430,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  
@@ -73,7 +73,7 @@ index af9365807d450d82dd980928fa25cee7cbd7a980..2f425bfce9bc1909ce3910d71cec0c56
    // The delegate will be owned by the manager. It's valid to return nullptr.
    virtual SpeechRecognitionManagerDelegate*
 diff --git a/content/renderer/service_worker/embedded_worker_instance_client_impl.cc b/content/renderer/service_worker/embedded_worker_instance_client_impl.cc
-index 5a85ad9a264b8498a220bfc0e87ff618478b917a..2b6971342cf2aeed469e9326eca0464a44b0adbe 100644
+index 09b1643acd842bc8824847c9f1d10c2445747b04..c8e1d507f8ef7093031656cbf4be3acb36fea945 100644
 --- a/content/renderer/service_worker/embedded_worker_instance_client_impl.cc
 +++ b/content/renderer/service_worker/embedded_worker_instance_client_impl.cc
 @@ -97,6 +97,7 @@ void EmbeddedWorkerInstanceClientImpl::StartWorker(
@@ -85,7 +85,7 @@ index 5a85ad9a264b8498a220bfc0e87ff618478b917a..2b6971342cf2aeed469e9326eca0464a
    // `cache_storage` may be null if COEP is not enabled, we cannot bind
    // eagerly in that case.
 diff --git a/third_party/blink/public/mojom/service_worker/embedded_worker.mojom b/third_party/blink/public/mojom/service_worker/embedded_worker.mojom
-index a863f8280663bf5ca2e2972da07037a1c22b059e..7737a102d10a242070f5646ff1f7b171eff7f43c 100644
+index 68a0ff7e4a2ad41c0108f6ed5fcf6c38ad4c9984..d80f813d15f236269bdcc90e9091b54e7c2c19d6 100644
 --- a/third_party/blink/public/mojom/service_worker/embedded_worker.mojom
 +++ b/third_party/blink/public/mojom/service_worker/embedded_worker.mojom
 @@ -4,6 +4,7 @@
@@ -193,10 +193,10 @@ index b9901c1df106b25535ac86ed8c12185453bf475d..f01a6c0c5e9a712ffbf15b71bfa9f2a7
    const net::StorageAccessApiStatus parent_storage_access_api_status;
  
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-index d7453149e4ac065f481f4197df6a25a8178e84a7..1287c42db21f02b30e4ecdc81427269f9caef599 100644
+index 09cc0667b157d309d9ee5e2ba9a3867e67ba235b..ad008dccd077726e768a9466683e83b466d3312b 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-@@ -730,6 +730,9 @@ WorkerGlobalScope::WorkerGlobalScope(
+@@ -712,6 +712,9 @@ WorkerGlobalScope::WorkerGlobalScope(
            std::move(creation_params->top_level_frame_security_origin)) {
    // Workers should always maintain the default world of an isolate.
    CHECK(creation_params->is_default_world_of_isolate);
@@ -256,10 +256,10 @@ index 5c0ec7ee2de0527a4f5bae468a301ab085c34ec9..fcf30c3eccf15cf14b07ce1c0c0d294c
        std::make_unique<ServiceWorkerGlobalScopeProxy>(
            *this, *worker_context_client_, initiator_thread_task_runner),
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index fe6d9ac879e8bfe3e0887ea4c2068f64954dcc9d..d6f1b42b62e9e145329f5b565916652ab292163d 100644
+index e9e4864dbb1433d70344c58c4aeac6a906c50e02..56eec943db03597b02271c4f8a5f3270d084b0a7 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-@@ -326,6 +326,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
+@@ -318,6 +318,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
    return WorkerGlobalScope()->HasUsbEventHandlers();
  }
  
@@ -272,10 +272,10 @@ index fe6d9ac879e8bfe3e0887ea4c2068f64954dcc9d..d6f1b42b62e9e145329f5b565916652a
      const WebString& name,
      mojo::ScopedInterfaceEndpointHandle handle) {
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
-index 0abeafb3b651f7e3b01e297d5c14ee55bff4abcc..f60bb46ffccc750fa5685983b7c9ebbf97e7150e 100644
+index 8bd1e63239ec48e35132276df588b4a28f04461b..1ecf7e35802a19e9fd5fbab4dc678e1eaae162a4 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
-@@ -114,6 +114,7 @@ class ServiceWorkerGlobalScopeProxy final : public WebServiceWorkerContextProxy,
+@@ -111,6 +111,7 @@ class ServiceWorkerGlobalScopeProxy final : public WebServiceWorkerContextProxy,
    mojom::blink::ServiceWorkerFetchHandlerType FetchHandlerType() override;
    bool HasHidEventHandlers() override;
    bool HasUsbEventHandlers() override;

@@ -29,7 +29,7 @@ removed if Node exposed a public API for supplying a code cache to a
 caller-parameterized builtin compile.
 
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 04d76fdd3d170a7c501bd773b698d380b8bb2426..cf7f3f272bf84af330967d5a7cb2c5bee821cc84 100644
+index a092861d9458b2c3ae4b340045290225825ce6f8..59d290ce006832121e24193ab5258613a3ed0b17 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -1,4 +1,5 @@
