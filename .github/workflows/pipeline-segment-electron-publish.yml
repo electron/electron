@@ -206,6 +206,13 @@ jobs:
       - name: Run Electron Only Hooks
         run: |
           e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+      - name: Download PGO Profiles
+        if: ${{ inputs.gn-build-type == 'release' }}
+        env:
+          PGO_TARGET: ${{ inputs.target-platform }}-${{ inputs.target-arch }}
+        run: >
+          python3 src/electron/script/pgo/download-profiles.py --targets
+          "$PGO_TARGET,v8-builtins"
       - name: Regenerate DEPS Hash
         run: >
           (cd src/electron && git checkout .) && node
