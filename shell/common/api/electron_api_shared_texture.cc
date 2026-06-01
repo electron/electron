@@ -101,10 +101,10 @@ gpu::SharedImageInterface* GetSharedImageInterface() {
   }
 }
 
-std::string GetBase64StringFromSyncToken(gpu::SharedImageInterface* sii,
-                                         gpu::SyncToken& sync_token) {
+std::string GetBase64StringFromSyncToken(gpu::SyncToken& sync_token) {
   if (!sync_token.verified_flush()) {
-    sii->VerifySyncToken(sync_token);
+    if (auto* sii = GetSharedImageInterface())
+      sii->VerifySyncToken(sync_token);
   }
 
   auto sync_token_data = base::Base64Encode(UNSAFE_BUFFERS(
@@ -188,18 +188,14 @@ struct ImportedSharedTexture
   void SetupReleaseSyncTokenCallback();
 
   // Transfer to other Chromium processes.
-  v8::Local<v8::Value> StartTransferSharedTexture(
-      gpu::SharedImageInterface* sii,
-      v8::Isolate* isolate);
+  v8::Local<v8::Value> StartTransferSharedTexture(v8::Isolate* isolate);
 
   // Get the creation sync token for the shared image. This is called
   // after |finishTransferSharedTexture| and users need to pass the
   // sync token back to the source object, and call |setReleaseSyncToken|
   // to prevent the resource being released before actual acquisition
   // happens for the target object.
-  v8::Local<v8::Value> GetFrameCreationSyncToken(
-      gpu::SharedImageInterface* sii,
-      v8::Isolate* isolate);
+  v8::Local<v8::Value> GetFrameCreationSyncToken(v8::Isolate* isolate);
 
   // Set a release sync token for this shared texture. This is set
   // when |finishTransferSharedTexture| is called and prevent the source
@@ -284,7 +280,6 @@ v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
 }
 
 v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
-    gpu::SharedImageInterface* sii,
     v8::Isolate* isolate) {
   auto exported = client_shared_image->Export();
 
@@ -303,8 +298,7 @@ v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
   gin_helper::Dictionary root(isolate, v8::Object::New(isolate));
   root.SetReadOnly("transfer", encoded);
 
-  auto sync_token =
-      GetBase64StringFromSyncToken(sii, frame_creation_sync_token);
+  auto sync_token = GetBase64StringFromSyncToken(frame_creation_sync_token);
   root.SetReadOnly("syncToken", sync_token);
 
   root.SetReadOnly("pixelFormat",
@@ -317,12 +311,10 @@ v8::Local<v8::Value> ImportedSharedTexture::StartTransferSharedTexture(
 }
 
 v8::Local<v8::Value> ImportedSharedTexture::GetFrameCreationSyncToken(
-    gpu::SharedImageInterface* sii,
     v8::Isolate* isolate) {
   gin::Dictionary root(isolate, v8::Object::New(isolate));
 
-  auto sync_token =
-      GetBase64StringFromSyncToken(sii, frame_creation_sync_token);
+  auto sync_token = GetBase64StringFromSyncToken(frame_creation_sync_token);
   root.Set("syncToken", sync_token);
 
   return gin::ConvertToV8(isolate, root);
@@ -437,14 +429,13 @@ void ImportedTextureStartTransferSharedTexture(
     return;
   }
 
-  auto* sii = GetSharedImageInterface();
-  if (!sii) {
+  if (!GetSharedImageInterface()) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Failed to start shared texture transfer: GPU is not available");
     return;
   }
 
-  auto ret = wrapper->ist->StartTransferSharedTexture(sii, isolate);
+  auto ret = wrapper->ist->StartTransferSharedTexture(isolate);
   info.GetReturnValue().Set(ret);
 }
 
@@ -479,14 +470,13 @@ void ImportedTextureGetFrameCreationSyncToken(
     return;
   }
 
-  auto* sii = GetSharedImageInterface();
-  if (!sii) {
+  if (!GetSharedImageInterface()) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Failed to get frame creation sync token: GPU is not available");
     return;
   }
 
-  auto ret = wrapper->ist->GetFrameCreationSyncToken(sii, isolate);
+  auto ret = wrapper->ist->GetFrameCreationSyncToken(isolate);
   info.GetReturnValue().Set(ret);
 }
 
@@ -509,8 +499,7 @@ void ImportedTextureSetReleaseSyncToken(
     return;
   }
 
-  auto* sii = GetSharedImageInterface();
-  if (!sii) {
+  if (!GetSharedImageInterface()) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "Failed to set release sync token: GPU is not available");
     return;
