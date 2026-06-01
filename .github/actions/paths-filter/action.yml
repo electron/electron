@@ -1,0 +1,104 @@
+name: 'Paths Filter'
+description: 'Check which file path groups are modified, similar to dorny/paths-filter'
+inputs:
+  filters:
+    description: |
+      YAML filter configuration. Each top-level key becomes an output.
+      Values are arrays of glob patterns: * matches within a single path
+      segment, ** matches across path separators.
+      Prefix with ! to negate. Brace expansion {a,b} is supported.
+    required: true
+outputs:
+  results:
+    description: 'JSON object mapping each filter name to "true" or "false"'
+    value: ${{ steps.check.outputs.results }}
+runs:
+  using: 'composite'
+  steps:
+    - id: check
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        EVENT_NAME: ${{ github.event_name }}
+        FILTERS: ${{ inputs.filters }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        BEFORE_SHA: ${{ github.event.before }}
+        CURRENT_SHA: ${{ github.sha }}
+      run: |
+        set -eo pipefail
+
+        get_changed_files() {
+          case "$EVENT_NAME" in
+            pull_request)
+              gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --paginate --jq '.[]?.filename'
+              ;;
+            push)
+              if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
+                gh api "repos/${GITHUB_REPOSITORY}/compare/${BEFORE_SHA}...${CURRENT_SHA}" --paginate --jq '.files[]?.filename'
+              else
+                # No usable before SHA (e.g. a release branch like 42-x-y being
+                # created), so there is no range to diff against. Mark every
+                # filter as changed to be safe.
+                echo "__all__"
+              fi
+              ;;
+            *)
+              # Manual runs do not have a change range, so mark every filter as changed.
+              echo "__all__"
+              ;;
+          esac
+        }
+
+        CHANGED_FILES=$(get_changed_files | sort -u)
+
+        # Convert a glob pattern to an ERE regex
+        # * matches any chars except /, ** matches everything including /
+        glob_to_regex() {
+          echo "$1" | sed -E \
+            -e 's/\?/[^\/]/g' \
+            -e 's/\./\\./g' \
+            -e 's/\*\*\//DOUBLESTAR_SLASH/g' \
+            -e 's/\*\*/DOUBLESTAR/g' \
+            -e 's/\*/[^\/]*/g' \
+            -e 's|DOUBLESTAR_SLASH|(.+/)?|g' \
+            -e 's/DOUBLESTAR/.+/g' \
+            -e 's/\{/(/g' \
+            -e 's/\}/)/g' \
+            -e 's/,/|/g'
+        }
+
+        # Parse filters YAML to JSON
+        FILTERS_JSON=$(echo "$FILTERS" | yq -o=json '.')
+        results="{}"
+
+        for filter in $(echo "$FILTERS_JSON" | jq -r 'keys[]'); do
+          matched=false
+
+          while IFS= read -r pattern; do
+            negated=false
+            if [[ "$pattern" == !* ]]; then
+              negated=true
+              pattern="${pattern:1}"
+            fi
+
+            regex="^$(glob_to_regex "$pattern")$"
+
+            if [[ "$CHANGED_FILES" == "__all__" ]]; then
+              matched=true
+            elif [[ -z "$CHANGED_FILES" ]]; then
+              matched=false # No files changed, so no pattern (negated or not) can match.
+            elif [[ "$negated" == true ]]; then
+              echo "$CHANGED_FILES" | grep -qvE "$regex" && matched=true
+            else
+              echo "$CHANGED_FILES" | grep -qE "$regex" && matched=true
+            fi
+          done < <(echo "$FILTERS_JSON" | jq -r ".[\"$filter\"][]")
+
+          results=$(echo "$results" | jq -c --arg k "$filter" --arg v "$matched" '. + {($k): $v}')
+        done
+
+        # Echo the results as nicely formatted JSON
+        echo "Filter results:"
+        echo "$results" | jq '.'
+
+        echo "results=${results}" >> "$GITHUB_OUTPUT"
