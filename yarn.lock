@@ -643,6 +643,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@electron-ci/pgo@workspace:script/pgo":
+  version: 0.0.0-use.local
+  resolution: "@electron-ci/pgo@workspace:script/pgo"
+  dependencies:
+    "@electron/asar": "npm:^4.0.1"
+  languageName: unknown
+  linkType: soft
+
 "@electron-ci/uv-dlopen@npm:*, @electron-ci/uv-dlopen@workspace:spec/fixtures/native-addon/uv-dlopen":
   version: 0.0.0-use.local
   resolution: "@electron-ci/uv-dlopen@workspace:spec/fixtures/native-addon/uv-dlopen"
