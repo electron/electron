@@ -172,6 +172,10 @@ runs:
           SEDOPTION="-i ''"
         fi
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+        # The Electron builtins profile path is a bare value on the line after
+        # --turbo-profiling-input; both lines must go or mksnapshot treats the
+        # leftover path as a script to execute.
+        sed $SEDOPTION '/.*pgo_profiles/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--reorder-builtins/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--warn-about-builtin-profile-data/d' out/Default/mksnapshot_args
