@@ -21,7 +21,7 @@ index e62cb6024b8a25289bf941778169aa242ad7e477..6772a4904e4d0ff1783b22632d67fac7
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9c2253a1e664e6b27e9c818736fcd5b87d3a833b..8d52f6459b42087840e2e04d62b74baa64dc62b3 100644
+index ae5eb43ebf70065d7ec46a34ed4cee8a3bd8b783..04f6685cc59b981a9945ff4082674ed510a7bc4d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5577,6 +5577,10 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -77,7 +77,7 @@ index 880e477af76324b66c085eda1daf4880054878c7..b75d4837787a3acb8ded9c9942a6de4b
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 96ae650b9a760ee98401963a4938eb660a17653e..526a1727fb571ed65dfd9cd6425be2fb725b4d0b 100644
+index b993be15536c1c7cb29a5cf4ffe9827d2a7e4834..806f3d2f0076b50946a7b24e30cbfc1ff3d6bccb 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -870,6 +870,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -90,7 +90,7 @@ index 96ae650b9a760ee98401963a4938eb660a17653e..526a1727fb571ed65dfd9cd6425be2fb
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 883ea64724b33bd6cc9fea7ae94b14ea15ea7275..19f4278c2a095ada47802d18f7316847c6ea5363 100644
+index 1f90fbd32fc435323a04e78572290b1b25206f54..3ce975d8f80f1eb1bb48dda5ccb9cc14a22bed2c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -206,6 +206,7 @@ class TrustedURLLoaderHeaderClient;
@@ -224,10 +224,10 @@ index d92bab531c12c62a5321a23f4a0cb89691668127..2060e04795ba8e7a923fd0fe3485b8c5
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 4cd39c9f0eb1791f9e95c7f31830d4fd571941fd..4edf0fc216beac78f667779969af03ec54fbe7bc 100644
+index f36ed413289cb86d701ff38ea975e5cad4f70032..b8cec53c03b8e4f9be2d9178a150d926b1b9115b 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2333,6 +2333,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2347,6 +2347,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  
