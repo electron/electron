@@ -30,7 +30,7 @@ runs:
         get_changed_files() {
           case "$EVENT_NAME" in
             pull_request)
-              gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --paginate --jq '.[]?.filename'
+              gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --paginate --jq '.[]? | .filename, (.previous_filename // empty)'
               ;;
             push)
               if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
@@ -88,11 +88,11 @@ runs:
             elif [[ -z "$CHANGED_FILES" ]]; then
               matched=false # No files changed, so no pattern (negated or not) can match.
             elif [[ "$negated" == true ]]; then
-              echo "$CHANGED_FILES" | grep -qvE "$regex" && matched=true
+              grep -qvE "$regex" <<< "$CHANGED_FILES" && matched=true
             else
-              echo "$CHANGED_FILES" | grep -qE "$regex" && matched=true
+              grep -qE "$regex" <<< "$CHANGED_FILES" && matched=true
             fi
-          done < <(echo "$FILTERS_JSON" | jq -r ".[\"$filter\"][]")
+          done < <(echo "$FILTERS_JSON" | jq -r --arg k "$filter" '.[$k][]')
 
           results=$(echo "$results" | jq -c --arg k "$filter" --arg v "$matched" '. + {($k): $v}')
         done
