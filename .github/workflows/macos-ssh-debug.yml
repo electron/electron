@@ -1,0 +1,45 @@
+name: macOS SSH Debug
+
+# Description:
+# This workflow spins up the same macOS runner that the arm64 publish jobs
+# use, frees up disk space, and then opens an SSH session over a Cloudflare
+# tunnel for interactive debugging.
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  macos-ssh-debug:
+    if: github.repository == 'electron/electron'
+    runs-on: macos-15-xlarge
+    timeout-minutes: 360
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: |
+            .github/actions/free-space-macos
+          sparse-checkout-cone-mode: false
+
+      - name: Free Space on macOS
+        uses: ./.github/actions/free-space-macos
+
+      - name: Check disk space after freeing up space
+        run: df -h
+
+      - name: Fetch authorized SSH keys
+        run: |
+          DELIM=$(openssl rand -hex 16)
+          {
+            echo "AUTHORIZED_KEYS<<${DELIM}"
+            curl -fsSL https://github.com/marshallofsound.keys
+            echo "${DELIM}"
+          } >> "$GITHUB_ENV"
+
+      - name: Start SSH session over Cloudflare tunnel
+        uses: valeriangalliat/action-sshd-cloudflared@69f78222a3a1a5b554316d3cfe60ca1ed9c809da # v4
