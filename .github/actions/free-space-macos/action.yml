@@ -74,6 +74,14 @@ runs:
           done
         fi
 
+        # Simulator runtime images (iOS/xrOS/watchOS/tvOS) staged as MobileAssets.
+        # tmpify of /Library/Developer/CoreSimulator above only removes the mount
+        # points; the backing images here are ~113GB that Electron never uses.
+        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_iOSSimulatorRuntime
+        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_xrOSSimulatorRuntime
+        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_watchOSSimulatorRuntime
+        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_appleTVOSSimulatorRuntime
+
         sudo rm -rf /Applications/Safari.app
         sudo rm -rf "/Applications/Google Chrome.app"
         sudo rm -rf "/Applications/Google Chrome for Testing.app"
