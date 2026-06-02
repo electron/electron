@@ -55,16 +55,9 @@ gpu::ContextSupport* GetContextSupport() {
     if (!factory)
       return nullptr;
 
-    auto* context_factory = factory->GetContextFactory();
-    if (!context_factory)
-      return nullptr;
-
     scoped_refptr<viz::RasterContextProvider> provider =
-        context_factory->SharedMainThreadRasterContextProvider();
-    if (!provider)
-      return nullptr;
-
-    return provider->ContextSupport();
+        factory->GetContextFactory()->SharedMainThreadRasterContextProvider();
+    return provider ? provider->ContextSupport() : nullptr;
   } else {
     base::WeakPtr<blink::WebGraphicsContext3DProviderWrapper> wrapper =
         blink::SharedGpuContext::ContextProviderWrapper();
@@ -85,22 +78,12 @@ gpu::SharedImageInterface* GetSharedImageInterface() {
     if (!factory)
       return nullptr;
 
-    auto* context_factory = factory->GetContextFactory();
-    if (!context_factory)
-      return nullptr;
-
     scoped_refptr<viz::RasterContextProvider> provider =
-        context_factory->SharedMainThreadRasterContextProvider();
-    if (!provider)
-      return nullptr;
-
-    return provider->SharedImageInterface();
+        factory->GetContextFactory()->SharedMainThreadRasterContextProvider();
+    return provider ? provider->SharedImageInterface() : nullptr;
   } else {
     auto* provider = blink::SharedGpuContext::SharedImageInterfaceProvider();
-    if (!provider)
-      return nullptr;
-
-    return provider->SharedImageInterface();
+    return provider ? provider->SharedImageInterface() : nullptr;
   }
 }
 
@@ -209,8 +192,7 @@ struct ImportedSharedTexture
   // object is safe to do the further release. If set, users can call
   // `release()` on the source object without worrying the target object
   // didn't finish acquiring the resource at gpu process.
-  void SetReleaseSyncToken(v8::Isolate* isolate,
-                           v8::Local<v8::Value> options);
+  void SetReleaseSyncToken(v8::Isolate* isolate, v8::Local<v8::Value> options);
 
   // The cleanup happens at destructor.
  private:
@@ -323,9 +305,8 @@ v8::Local<v8::Value> ImportedSharedTexture::GetFrameCreationSyncToken(
   return gin::ConvertToV8(isolate, root);
 }
 
-void ImportedSharedTexture::SetReleaseSyncToken(
-    v8::Isolate* isolate,
-    v8::Local<v8::Value> options) {
+void ImportedSharedTexture::SetReleaseSyncToken(v8::Isolate* isolate,
+                                                v8::Local<v8::Value> options) {
   std::string sync_token_data;
   gin::Dictionary dict(isolate, options.As<v8::Object>());
   dict.Get("syncToken", &sync_token_data);
