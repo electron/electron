@@ -190,19 +190,19 @@ index 7396e13aaca99b14569287fc1f35acfc532bd294..4468fcec66683cc4e0b335405b076fdb
        std::unique_ptr<PrintSettings> print_settings,
        GetPrintPreviewParamsCallback callback);
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 02e10bb608506cde987ed1f42f793e61a63935f8..de281f127f0f3992e0fc864a90c44c96f2ce489d 100644
+index 02e10bb608506cde987ed1f42f793e61a63935f8..f7f7d35b348211b7180702ea62175785ad533ec0 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -71,6 +71,20 @@ namespace printing {
  
  namespace {
  
-+std::string PrintReasonFromPrintStatus(PrintViewManager::PrintStatus status) {
-+  if (status == PrintViewManager::PrintStatus::kInvalid) {
++std::string PrintReasonFromPrintStatus(PrintViewManagerBase::PrintStatus status) {
++  if (status == PrintViewManagerBase::PrintStatus::kInvalid) {
 +    return "Invalid printer settings";
-+  } else if (status == PrintViewManager::PrintStatus::kCanceled) {
++  } else if (status == PrintViewManagerBase::PrintStatus::kCanceled) {
 +    return "Print job canceled";
-+  } else if (status == PrintViewManager::PrintStatus::kFailed) {
++  } else if (status == PrintViewManagerBase::PrintStatus::kFailed) {
 +    return "Print job failed";
 +  }
 +  return "";
