@@ -1035,6 +1035,7 @@ describe('asar package', function () {
         const dirs = fs.readdirSync(p, { withFileTypes: true });
         for (const dir of dirs) {
           expect(dir).to.be.an.instanceof(fs.Dirent);
+          expect(dir.parentPath).to.equal(p);
         }
         const names = dirs.map((a) => a.name);
         expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
@@ -1147,6 +1148,7 @@ describe('asar package', function () {
         const dirs = await promisify(fs.readdir)(p, { withFileTypes: true });
         for (const dir of dirs) {
           expect(dir).to.be.an.instanceof(fs.Dirent);
+          expect(dir.parentPath).to.equal(p);
         }
 
         const names = dirs.map((a: any) => a.name);
@@ -1280,6 +1282,7 @@ describe('asar package', function () {
         const dirs = await fs.promises.readdir(p, { withFileTypes: true });
         for (const dir of dirs) {
           expect(dir).to.be.an.instanceof(fs.Dirent);
+          expect(dir.parentPath).to.equal(p);
         }
         const names = dirs.map((a) => a.name);
         expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
@@ -1300,6 +1303,28 @@ describe('asar package', function () {
       itremote('throws ENOENT error when can not find file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         await expectToThrowErrorWithCode(() => fs.promises.readdir(p), 'ENOENT');
+      });
+    });
+
+    describe('fs.globSync', function () {
+      itremote('supports withFileTypes with a cwd inside an asar archive', function () {
+        const cwd = path.join(asarDir, 'a.asar');
+        const dirents = fs.globSync('*.js', { cwd, withFileTypes: true });
+        expect(dirents).to.have.lengthOf(1);
+        expect(dirents[0]).to.be.an.instanceof(fs.Dirent);
+        expect(dirents[0].name).to.equal('ping.js');
+        expect(dirents[0].parentPath).to.equal(cwd);
+      });
+    });
+
+    describe('fs.glob', function () {
+      itremote('supports withFileTypes with a cwd inside an asar archive', async function () {
+        const cwd = path.join(asarDir, 'a.asar');
+        const dirents = await promisify(fs.glob)('*.js', { cwd, withFileTypes: true });
+        expect(dirents).to.have.lengthOf(1);
+        expect(dirents[0]).to.be.an.instanceof(fs.Dirent);
+        expect(dirents[0].name).to.equal('ping.js');
+        expect(dirents[0].parentPath).to.equal(cwd);
       });
     });
 
