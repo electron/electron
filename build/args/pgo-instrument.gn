@@ -13,6 +13,13 @@ chrome_pgo_phase = 1
 # the profiled binary and the final binary distorts hotness).
 dcheck_always_on = false
 
+# release.gn points v8_builtins_profiling_log_file at the downloaded Electron
+# builtins profile, but profile generation must work from a tree with no
+# Electron profiles present (the instrumented build is how the first profile
+# gets made). Reset to V8's stock resolution; builtin block layout does not
+# affect C++ counter semantics, so collection fidelity is unchanged.
+v8_builtins_profiling_log_file = "default"
+
 # Instrumented binaries are never shipped, so debug symbols and macOS dSYM
 # generation are pure overhead. Both are large enough to exhaust CI runner
 # disk space on macOS (the instrumented framework plus its dSYM does not fit),
