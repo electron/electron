@@ -310,6 +310,7 @@ int NodeMain() {
     }
 
     v8::HandleScope scope(isolate);
+    electron::util::FeedEnvironmentCodeCache(env);
     node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
 
     // Potential reasons we get Nothing here may include: the env

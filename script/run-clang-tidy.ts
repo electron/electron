@@ -217,9 +217,16 @@ async function main(): Promise<boolean> {
     filenames.push(...opts._.map((filename) => path.resolve(filename)));
   } else {
     filenames.push(
-      ...(await findMatchingFiles(path.resolve(SOURCE_ROOT, 'shell'), (filename: string) =>
-        /.*\.(?:cc|mm)$/.test(filename)
-      ))
+      ...(await findMatchingFiles(path.resolve(SOURCE_ROOT, 'shell'), (filename: string) => {
+        // Build-only host tool compiled in v8_snapshot_toolchain; its
+        // transitively-included generated buildflag headers aren't present
+        // for clang-tidy in CI.
+        if (filename.endsWith('/electron_natives_codecache_main.cc')) {
+          return false;
+        }
+
+        return /.*\.(?:cc|mm)$/.test(filename);
+      }))
     );
   }
 

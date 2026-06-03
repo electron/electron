@@ -107,7 +107,10 @@
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
+#include "shell/browser/preload_code_cache.h"
+#include "shell/browser/preload_script.h"
 #include "shell/browser/protocol_registry.h"
+#include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/tracing/electron_tracing_delegate.h"
@@ -120,6 +123,7 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
+#include "shell/common/asar/asar_util.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
@@ -722,6 +726,80 @@ bool ElectronBrowserClient::CanCreateWindow(
   }
 
   return false;
+}
+
+std::optional<mojo_base::BigBuffer>
+ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
+    content::RenderFrameHost* new_window_main_frame,
+    const GURL& target_url) {
+  // A window.open() popup's synchronous about:blank fires
+  // DidCreateScriptContext — and runs the preload — before any async push can
+  // land. We've just run setWindowOpenHandler so the popup's WebContents has
+  // its (possibly overridden) preload set; attach it to the reply.
+  //
+  // Only the about:blank document needs this. A popup that navigates
+  // (window.open(url)) does not run the preload on its initial document and
+  // gets a normal ElectronFrameStartup push at ReadyToCommitNavigation, so
+  // building the data here for it would be pure waste.
+  if (!target_url.is_empty() && !target_url.IsAboutBlank())
+    return std::nullopt;
+
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(new_window_main_frame);
+  if (!web_contents)
+    return std::nullopt;
+  if (!WebContentsPreferences::ShouldUseSandbox(web_contents))
+    return std::nullopt;
+  auto* web_prefs = WebContentsPreferences::From(web_contents);
+
+  mojom::RendererStartupDataPtr data;
+  {
+    ScopedAllowBlockingForElectron allow_blocking;
+    data = renderer_startup_data::Build(web_contents->GetBrowserContext(),
+                                        PreloadScript::ScriptType::kWebFrame);
+    std::optional<base::FilePath> preload;
+    if (web_prefs)
+      preload = web_prefs->GetPreloadPath();
+    if (preload && preload->IsAbsolute()) {
+      auto ps = mojom::PreloadScriptData::New();
+      ps->id = "preload-" + preload->AsUTF8Unsafe();
+      ps->file_path = preload->AsUTF8Unsafe();
+      std::string contents;
+      if (asar::ReadFileToString(*preload, &contents)) {
+        ps->contents.assign(contents.begin(), contents.end());
+        std::vector<uint8_t> cache = preload_code_cache::Get(ps->id);
+        if (!cache.empty())
+          ps->code_cache = std::move(cache);
+      } else {
+        ps->contents.clear();
+        ps->error =
+            "ENOENT: no such file or directory, open '" + ps->file_path + "'";
+      }
+      data->preload_scripts.push_back(std::move(ps));
+    }
+  }
+  // Opaque blob — Chromium can't depend on Electron's mojom types.
+  return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
+}
+
+std::optional<mojo_base::BigBuffer>
+ElectronBrowserClient::GetServiceWorkerStartupData(
+    content::BrowserContext* browser_context,
+    const GURL& scope) {
+  // Only the service-worker preload realm consumes this, and it's only created
+  // when SW preloads are registered. Skip the asar reads + serialization
+  // otherwise — this runs on every service worker start.
+  auto* session_prefs = SessionPreferences::FromBrowserContext(browser_context);
+  if (!session_prefs || !session_prefs->HasServiceWorkerPreloadScript())
+    return std::nullopt;
+
+  mojom::RendererStartupDataPtr data;
+  {
+    ScopedAllowBlockingForElectron allow_blocking;
+    data = renderer_startup_data::Build(
+        browser_context, PreloadScript::ScriptType::kServiceWorker);
+  }
+  return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
 }
 
 std::unique_ptr<content::VideoOverlayWindow>
