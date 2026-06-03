@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 import hashlib
 import json
@@ -43,6 +44,14 @@ TOOLCHAIN_PROFILE_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
                                       'toolchain-profile')
 CXX_OBJECTS_NAME = get_zip_name(PROJECT_NAME, ELECTRON_VERSION,
                                       'libcxx_objects')
+
+# Storage (internal) uploads are deferred here and flushed concurrently at the
+# end of main() - each upload is an independent, network-latency-bound azput
+# round trip, so running them sequentially wastes most of the publish step.
+# GitHub release uploads stay sequential: they share a release object and
+# append to GITHUB_OUTPUT, neither of which is safe to write concurrently.
+STORAGE_UPLOAD_CONCURRENCY = 4
+pending_storage_uploads = []
 
 
 def main():
@@ -160,6 +169,8 @@ def main():
         os.path.join(OUT_DIR, 'windows_toolchain_profile.json'),
         'toolchain_profile.json')
     upload_electron(release, toolchain_profile_zip, args)
+
+  flush_storage_uploads(args)
 
   return 0
 
@@ -344,9 +355,9 @@ def upload_electron(release, file_path, args):
   # if upload_to_storage is set, skip github upload.
   # todo (vertedinde): migrate this variable to upload_to_storage
   if args.upload_to_storage:
-    key_prefix = f'release-builds/{args.version}_{args.upload_timestamp}'
-    store_artifact(os.path.dirname(file_path), key_prefix, [file_path])
-    upload_sha256_checksum(args.version, file_path, key_prefix)
+    # Queue for the concurrent flush in flush_storage_uploads(); the file is
+    # fully written at this point so it is safe to upload later.
+    pending_storage_uploads.append(file_path)
     return
 
   # Upload the file.
@@ -354,6 +365,25 @@ def upload_electron(release, file_path, args):
 
   # Upload the checksum file.
   upload_sha256_checksum(args.version, file_path)
+
+
+def flush_storage_uploads(args):
+  if not pending_storage_uploads:
+    return
+  key_prefix = f'release-builds/{args.version}_{args.upload_timestamp}'
+
+  def upload_one(file_path):
+    store_artifact(os.path.dirname(file_path), key_prefix, [file_path])
+    upload_sha256_checksum(args.version, file_path, key_prefix)
+
+  count = len(pending_storage_uploads)
+  print(f'Uploading {count} files to storage '
+        f'({STORAGE_UPLOAD_CONCURRENCY} concurrent uploads)')
+  with ThreadPoolExecutor(max_workers=STORAGE_UPLOAD_CONCURRENCY) as pool:
+    # list() drains the iterator so the first failed upload raises here and
+    # fails the publish step.
+    list(pool.map(upload_one, pending_storage_uploads))
+  pending_storage_uploads.clear()
 
 
 def upload_io_to_github(release, filename, filepath, version):
