@@ -832,7 +832,14 @@ app.whenReady().then(async () => {
     () => runIpcBridgeWorkload(IPC_BRIDGE_TIMEOUT_MS, IPC_BRIDGE_MAX_CALLS),
     () => runNetworkWorkload(win, NETWORK_TIMEOUT_MS, NETWORK_MAX_REQUESTS)
   ];
-  let phaseNames = [...WORKLOADS.map((w) => w.name), 'main-process', 'async-churn', 'packaged-app', 'ipc-contextbridge', 'network'];
+  let phaseNames = [
+    ...WORKLOADS.map((w) => w.name),
+    'main-process',
+    'async-churn',
+    'packaged-app',
+    'ipc-contextbridge',
+    'network'
+  ];
 
   if (process.env.PGO_WORKLOAD_FILTER) {
     const allowed = process.env.PGO_WORKLOAD_FILTER.split(',').map((s) => s.trim());
