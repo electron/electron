@@ -74,7 +74,7 @@ index e52685546a7ac2b6e56edb0ba28408cb1737c336..440adb078b03bdc503cc11a9224c95ec
   public:
    explicit JSGraph(Isolate* isolate) : isolate_(isolate) {}
 diff --git a/src/js_native_api.h b/src/js_native_api.h
-index 31eee1234e1d2ff281068837443164b7970aecf4..714c3a3c50d2822089b1744d28d31e004c820fc6 100644
+index d2375ecd32483ff57840d30f804100372f2e12db..396f7848952e941b3e667b47424c51664cac72ef 100644
 --- a/src/js_native_api.h
 +++ b/src/js_native_api.h
 @@ -17,7 +17,7 @@
@@ -100,10 +100,10 @@ index 56f4a180633d39c652449dd3d457d29e4a9f6ac1..765a868da8f5e4e6848e6ed57c46e4ac
    size_t SizeInBytes() override { return size_; }
    // TODO(addaleax): Merging this with the "official" WrapperNode() method
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 04d76fdd3d170a7c501bd773b698d380b8bb2426..a092861d9458b2c3ae4b340045290225825ce6f8 100644
+index 180fefa046d9a070fc31fbb0a3555817823332a2..ea275fb15b444ad6e0dcff27cb9a2fc6e2197585 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -929,6 +929,21 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -932,6 +932,21 @@ void BuiltinLoader::RegisterExternalReferences(
  }
  
  }  // namespace builtins
