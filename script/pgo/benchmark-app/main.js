@@ -140,6 +140,35 @@ async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// loadURL can hang forever: a wedged network service (observed on instrumented
+// builds - socket pool exhausted by stale keep-alive sockets that are never
+// reaped) leaves the navigation queued indefinitely, and the per-workload
+// timeout only starts counting AFTER the load resolves. Without this guard a
+// single wedged navigation hangs collection until the CI job timeout instead
+// of failing one workload and moving on.
+const NAVIGATION_TIMEOUT_MS = 2 * 60 * 1000;
+
+async function loadURLWithTimeout(win, url) {
+  const load = win.loadURL(url);
+  // If the timeout wins the race the eventual loadURL rejection has no
+  // listener; swallow it so it does not surface as an unhandled rejection.
+  load.catch(() => {});
+  let timer;
+  try {
+    await Promise.race([
+      load,
+      new Promise((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`navigation to ${url.slice(0, 80)} timed out after ${NAVIGATION_TIMEOUT_MS / 1000}s`)),
+          NAVIGATION_TIMEOUT_MS
+        );
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Failure diagnostics
 //
@@ -244,7 +273,12 @@ async function runWorkload(win, workload, diag) {
   log(`starting workload: ${workload.name}`);
   if (diag) diag.reset();
   const startTime = Date.now();
-  await win.loadURL(workload.url);
+  try {
+    await loadURLWithTimeout(win, workload.url);
+  } catch (err) {
+    if (diag) await reportWorkloadFailure(win, workload.name, diag);
+    throw err;
+  }
 
   // Install page-side error capture for failure diagnostics. Benchmark
   // drivers swallow uncaught exceptions (window.onerror) silently; recording
@@ -583,13 +617,18 @@ async function runIpcBridgeWorkload(durationMs, maxCalls) {
       nodeIntegration: false
     }
   });
-  await win.loadURL('data:text/html,<html><body>pgo ipc workload</body></html>');
+  // This window spawns a fresh renderer; attach diagnostics so a crash during
+  // load reports its render-process-gone details instead of a bare ERR_FAILED.
+  const diag = attachDiagnostics(win);
+  let result;
+  try {
+    await loadURLWithTimeout(win, 'data:text/html,<html><body>pgo ipc workload</body></html>');
 
-  // The driver runs in the main world and calls across the bridge. Payload
-  // sizes cover the spectrum apps use: small control messages, medium JSON
-  // payloads, and large binary transfers.
-  const result = await win.webContents.executeJavaScript(
-    `(async () => {
+    // The driver runs in the main world and calls across the bridge. Payload
+    // sizes cover the spectrum apps use: small control messages, medium JSON
+    // payloads, and large binary transfers.
+    result = await win.webContents.executeJavaScript(
+      `(async () => {
     const small = { id: 1, type: 'msg', body: 'hello world' };
     const medium = { rows: Array.from({ length: 200 }, (_, i) => ({ i, name: 'row-' + i, values: [i, i * 2, i * 3] })) };
     const arr = Array.from({ length: 500 }, (_, i) => ({ i, label: 'item-' + i }));
@@ -621,11 +660,15 @@ async function runIpcBridgeWorkload(durationMs, maxCalls) {
     }
     return { bridgeCalls, ipcCalls };
   })()`,
-    true
-  );
-
-  win.destroy();
-  ipcMain.removeHandler('pgo-ping');
+      true
+    );
+  } catch (err) {
+    await reportWorkloadFailure(win, 'ipc-contextbridge', diag);
+    throw err;
+  } finally {
+    win.destroy();
+    ipcMain.removeHandler('pgo-ping');
+  }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
   log(
@@ -658,7 +701,7 @@ async function runNetworkWorkload(win, durationMs, maxRequests) {
   // Renderer: parallel fetches + WebSocket echo. Runs for the first half of
   // the budget; the Node-side loop runs for the second half.
   const rendererBudget = Math.floor(durationMs / 2);
-  await win.loadURL(`${BASE_URL}/speedometer/`);
+  await loadURLWithTimeout(win, `${BASE_URL}/speedometer/`);
   const rendererResult = await win.webContents.executeJavaScript(
     `(async () => {
     const deadline = Date.now() + ${rendererBudget};
@@ -789,7 +832,14 @@ app.whenReady().then(async () => {
     () => runIpcBridgeWorkload(IPC_BRIDGE_TIMEOUT_MS, IPC_BRIDGE_MAX_CALLS),
     () => runNetworkWorkload(win, NETWORK_TIMEOUT_MS, NETWORK_MAX_REQUESTS)
   ];
-  let phaseNames = [...WORKLOADS.map((w) => w.name), 'main-process', 'packaged-app', 'ipc-contextbridge', 'network'];
+  let phaseNames = [
+    ...WORKLOADS.map((w) => w.name),
+    'main-process',
+    'async-churn',
+    'packaged-app',
+    'ipc-contextbridge',
+    'network'
+  ];
 
   if (process.env.PGO_WORKLOAD_FILTER) {
     const allowed = process.env.PGO_WORKLOAD_FILTER.split(',').map((s) => s.trim());
@@ -798,12 +848,30 @@ app.whenReady().then(async () => {
     log(`workload filter active: ${phaseNames.join(', ')}`);
   }
 
+  // Transient child-process crashes (a renderer dying at spawn surfaces as a
+  // fast ERR_FAILED load) are retried once; profile counters are cumulative so
+  // a retried workload only adds coverage. Slow failures are NOT retried -
+  // they are timeouts, and rerunning a 30-45 minute workload risks blowing
+  // the job time limit for no new information.
+  const RETRY_IF_FAILED_WITHIN_MS = 5 * 60 * 1000;
   for (let i = 0; i < phases.length; i++) {
+    const attemptStart = Date.now();
     try {
       results.push(await phases[i]());
     } catch (err) {
       log(`ERROR: ${err.message}`);
-      results.push({ name: phaseNames[i], ok: false, error: err.message });
+      let failure = err;
+      if (Date.now() - attemptStart < RETRY_IF_FAILED_WITHIN_MS) {
+        log(`workload ${phaseNames[i]} failed quickly - retrying once`);
+        try {
+          results.push(await phases[i]());
+          continue;
+        } catch (retryErr) {
+          log(`ERROR (retry): ${retryErr.message}`);
+          failure = retryErr;
+        }
+      }
+      results.push({ name: phaseNames[i], ok: false, error: failure.message });
       // A failed workload reduces profile coverage but the data collected so
       // far is still valid - keep going and report partial failure.
       exitCode = 1;
