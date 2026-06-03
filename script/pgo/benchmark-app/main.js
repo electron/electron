@@ -90,6 +90,20 @@ const WORKLOADS = [
     timeoutMin: 30
   },
   {
+    name: 'speedometer3-run4',
+    url: `${BASE_URL}/speedometer/?startAutomatically=true&iterationCount=10`,
+    doneExpr: SPEEDOMETER_DONE,
+    successExpr: SPEEDOMETER_SUCCESS,
+    timeoutMin: 30
+  },
+  {
+    name: 'speedometer3-run5',
+    url: `${BASE_URL}/speedometer/?startAutomatically=true&iterationCount=10`,
+    doneExpr: SPEEDOMETER_DONE,
+    successExpr: SPEEDOMETER_SUCCESS,
+    timeoutMin: 30
+  },
+  {
     name: 'jetstream2',
     url: `${BASE_URL}/jetstream/index.html`,
     // The JetStream driver is ready once its async initialize() has run
@@ -108,7 +122,12 @@ const WORKLOADS = [
     startExpr: 'typeof benchmarkController !== "undefined" && (benchmarkController.startBenchmark(), true)',
     // MotionMark shows the results section when the run completes.
     doneExpr: '!!document.querySelector("section#results.selected")',
-    timeoutMin: 45
+    timeoutMin: 45,
+    // MotionMark's full ramp runs 5+ minutes and over-weights canvas/Skia
+    // paths in the merged profile (9-15% of hot mass vs ~4% in Chrome's
+    // corpus). The counters accumulated up to the cap are kept; the rest of
+    // the ramp adds mass to already-hot paths without improving coverage.
+    softCapMs: 120 * 1000
   }
 ];
 
@@ -284,6 +303,14 @@ async function runWorkload(win, workload, diag) {
   const deadline = Date.now() + workload.timeoutMin * 60 * 1000;
   while (Date.now() < deadline) {
     await sleep(5000);
+    // Soft cap: treat a long-running benchmark as complete. Profile counters
+    // accumulate continuously, so everything up to this point is kept.
+    if (workload.softCapMs && Date.now() - startTime > workload.softCapMs) {
+      log(
+        `workload ${workload.name} reached soft cap after ${Math.round((Date.now() - startTime) / 1000)}s; keeping counters collected so far`
+      );
+      return { name: workload.name, ok: true, seconds: Math.round((Date.now() - startTime) / 1000) };
+    }
     let done = false;
     try {
       done = await win.webContents.executeJavaScript(workload.doneExpr, true);
@@ -323,7 +350,7 @@ async function runWorkload(win, workload, diag) {
 // the event loop stays responsive.
 // ---------------------------------------------------------------------------
 
-async function runMainProcessWorkload(durationMs) {
+async function runMainProcessWorkload(durationMs, maxIterations) {
   log('starting workload: main-process');
   const startTime = Date.now();
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pgo-main-workload-'));
@@ -344,7 +371,7 @@ async function runMainProcessWorkload(durationMs) {
 
   const deadline = Date.now() + durationMs;
   let iterations = 0;
-  while (Date.now() < deadline) {
+  while (Date.now() < deadline && iterations < maxIterations) {
     for (let i = 0; i < 50; i++) {
       // Buffer operations: concat, slice, compare, base64/hex encode + decode.
       const joined = Buffer.concat([bufA, bufB]);
@@ -414,6 +441,54 @@ async function runMainProcessWorkload(durationMs) {
 // afterwards; over-weighting them in the profile takes optimization away
 // from the runtime-hot paths.
 // ---------------------------------------------------------------------------
+
+// Trains the per-async-operation machinery: AsyncHooks scopes, AsyncWrap,
+// BaseObject refcounts, StreamBase. Every async op in every app runs these,
+// but they only see a handful of counts per operation, so the heavyweight
+// workloads (whose op counts are deliberately capped) leave them below the
+// hot threshold. Each op here is intentionally tiny - the counts land in the
+// async plumbing rather than in payload processing, so volume is cheap.
+async function runAsyncChurnWorkload(maxOps) {
+  log('starting workload: async-churn');
+  const startTime = Date.now();
+  const net = require('node:net');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pgo-async-'));
+  const probeFile = path.join(tmp, 'probe');
+  fs.writeFileSync(probeFile, 'x');
+
+  // In-process TCP echo server: socket roundtrips exercise StreamBase and
+  // LibuvStreamWrap without depending on the benchmark HTTP server.
+  const echoServer = net.createServer((sock) => sock.on('data', (d) => sock.write(d)));
+  await new Promise((resolve) => echoServer.listen(0, '127.0.0.1', resolve));
+  const sock = net.connect(echoServer.address().port, '127.0.0.1');
+  await new Promise((resolve) => sock.once('connect', resolve));
+
+  let ops = 0;
+  while (ops < maxOps) {
+    const batch = [];
+    for (let i = 0; i < 100; i++) {
+      batch.push(fs.promises.stat(probeFile));
+      batch.push(new Promise((resolve) => setImmediate(resolve)));
+      batch.push(new Promise((resolve) => process.nextTick(resolve)));
+    }
+    // Socket roundtrip: one small write, await the echo.
+    batch.push(
+      new Promise((resolve) => {
+        sock.once('data', resolve);
+        sock.write('ping');
+      })
+    );
+    await Promise.all(batch);
+    ops += 301;
+  }
+
+  sock.destroy();
+  echoServer.close();
+  fs.rmSync(tmp, { recursive: true, force: true });
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+  log(`finished workload: async-churn in ${elapsed}s (${ops} async ops)`);
+  return { name: 'async-churn', ok: true, seconds: Number(elapsed) };
+}
 
 async function runPackagedAppWorkload() {
   log('starting workload: packaged-app');
@@ -492,7 +567,7 @@ async function runPackagedAppWorkload() {
 // configured the way real apps are configured (contextIsolation + preload).
 // ---------------------------------------------------------------------------
 
-async function runIpcBridgeWorkload(durationMs) {
+async function runIpcBridgeWorkload(durationMs, maxCalls) {
   log('starting workload: ipc-contextbridge');
   const startTime = Date.now();
 
@@ -522,9 +597,10 @@ async function runIpcBridgeWorkload(durationMs) {
     const big = new Uint8Array(${5 * 1024 * 1024}).fill(7);
 
     const deadline = Date.now() + ${durationMs};
+    const maxCalls = ${maxCalls};
     let bridgeCalls = 0;
     let ipcCalls = 0;
-    while (Date.now() < deadline) {
+    while (Date.now() < deadline && bridgeCalls < maxCalls) {
       // Pure bridge marshaling (no IPC): primitives, objects, arrays, typed arrays.
       for (let i = 0; i < 200; i++) {
         window.pgoBridge.echo(42);
@@ -573,7 +649,7 @@ async function runIpcBridgeWorkload(durationMs) {
 // to point at the collection CA (set by collect-profile.js).
 // ---------------------------------------------------------------------------
 
-async function runNetworkWorkload(win, durationMs) {
+async function runNetworkWorkload(win, durationMs, maxRequests) {
   log('starting workload: network');
   const startTime = Date.now();
   const isTls = BASE_URL.startsWith('https:');
@@ -586,13 +662,14 @@ async function runNetworkWorkload(win, durationMs) {
   const rendererResult = await win.webContents.executeJavaScript(
     `(async () => {
     const deadline = Date.now() + ${rendererBudget};
+    const maxRequests = ${maxRequests};
     let requests = 0;
     let wsMessages = 0;
 
     // Fetch loops: parallel requests at varied sizes plus POST echoes, plus
     // Content-Encoding responses so the network service's decompression
     // streams (gzip / brotli / zstd) are trained.
-    while (Date.now() < deadline) {
+    while (Date.now() < deadline && requests < maxRequests) {
       await Promise.all([
         fetch('/__pgo/data?bytes=1024').then(r => r.arrayBuffer()),
         fetch('/__pgo/data?bytes=65536').then(r => r.arrayBuffer()),
@@ -614,8 +691,9 @@ async function runNetworkWorkload(win, durationMs) {
         ws.onerror = () => reject(new Error('websocket failed to connect'));
       });
       const wsDeadline = Date.now() + 10000;
+      const wsMaxMessages = 30000; // cap: time-boxed loops run away on fast hosts
       const payload = 'pgo-websocket-payload-'.repeat(50);
-      while (Date.now() < wsDeadline) {
+      while (Date.now() < wsDeadline && wsMessages < wsMaxMessages) {
         await new Promise((resolve) => {
           ws.onmessage = resolve;
           ws.send(payload);
@@ -637,7 +715,7 @@ async function runNetworkWorkload(win, durationMs) {
   let nodeRequests = 0;
   const nodeDeadline = Date.now() + Math.floor(durationMs / 2);
   const dataUrl = `${BASE_URL}/__pgo/data?bytes=65536`;
-  while (Date.now() < nodeDeadline) {
+  while (Date.now() < nodeDeadline && nodeRequests < maxRequests) {
     // node:https / node:http via the classic API.
     await new Promise((resolve, reject) => {
       const mod = isTls ? https : require('node:http');
@@ -670,12 +748,25 @@ async function runNetworkWorkload(win, durationMs) {
 // Orchestration
 // ---------------------------------------------------------------------------
 
-// Durations for the non-browser phases. Long enough for meaningful counter
-// volume on instrumented builds (which run at roughly half speed), short
-// relative to the 30-50 minute browser benchmark phase.
-const MAIN_PROCESS_WORKLOAD_MS = 75 * 1000;
-const IPC_BRIDGE_WORKLOAD_MS = 75 * 1000;
-const NETWORK_WORKLOAD_MS = 90 * 1000;
+// The non-browser phases are capped by ITERATIONS, not duration. PGO hotness
+// is a threshold (a path is hot once it clears ~10^5-10^6 counts), so a few
+// thousand iterations mark every exercised path hot. Letting these tight
+// synthetic loops run for a fixed wall time instead generated billions of
+// counts (the top 2 blocks held ~10% of the entire profile), which inflated
+// the global hot threshold and crowded Blink out of the hot set. The
+// duration constants remain only as backstops for pathologically slow hosts.
+// Cap calibration: per-async-op overhead paths (AsyncHooks scopes, BaseObject
+// refcounts, StreamBase) see a handful of counts per operation, so they need
+// tens of thousands of operations to clear the hot threshold (~10^5 counts).
+// These values put them at 2-3x the threshold while keeping the hottest
+// serialization loops 4+ orders of magnitude below the old runaway counts.
+const MAIN_PROCESS_MAX_ITERATIONS = 25000;
+const MAIN_PROCESS_TIMEOUT_MS = 75 * 1000;
+const IPC_BRIDGE_MAX_CALLS = 50000;
+const IPC_BRIDGE_TIMEOUT_MS = 75 * 1000;
+const NETWORK_MAX_REQUESTS = 8000; // per side (renderer fetches / node requests)
+const ASYNC_CHURN_MAX_OPS = 250000;
+const NETWORK_TIMEOUT_MS = 90 * 1000;
 
 app.whenReady().then(async () => {
   const win = new BrowserWindow({
@@ -692,10 +783,11 @@ app.whenReady().then(async () => {
 
   let phases = [
     ...WORKLOADS.map((workload) => () => runWorkload(win, workload, diag)),
-    () => runMainProcessWorkload(MAIN_PROCESS_WORKLOAD_MS),
+    () => runMainProcessWorkload(MAIN_PROCESS_TIMEOUT_MS, MAIN_PROCESS_MAX_ITERATIONS),
+    () => runAsyncChurnWorkload(ASYNC_CHURN_MAX_OPS),
     () => runPackagedAppWorkload(),
-    () => runIpcBridgeWorkload(IPC_BRIDGE_WORKLOAD_MS),
-    () => runNetworkWorkload(win, NETWORK_WORKLOAD_MS)
+    () => runIpcBridgeWorkload(IPC_BRIDGE_TIMEOUT_MS, IPC_BRIDGE_MAX_CALLS),
+    () => runNetworkWorkload(win, NETWORK_TIMEOUT_MS, NETWORK_MAX_REQUESTS)
   ];
   let phaseNames = [...WORKLOADS.map((w) => w.name), 'main-process', 'packaged-app', 'ipc-contextbridge', 'network'];
 
