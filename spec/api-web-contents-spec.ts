@@ -1404,6 +1404,42 @@ describe('webContents module', () => {
     );
   });
 
+  describe('DevTools native integration', () => {
+    afterEach(closeAllWindows);
+
+    async function openDevTools(w: BrowserWindow) {
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      await waitUntil(() => w.webContents.devToolsWebContents!.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+    }
+
+    it('uses the native showContextMenuAtPoint implementation', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      // The DevTools frontend should route context menus through the native
+      // DevToolsHost binding rather than a JS override injected by Electron.
+      const usesNativeContextMenu = await w.webContents.devToolsWebContents!.executeJavaScript(
+        'typeof DevToolsHost !== "undefined" && InspectorFrontendHost.showContextMenuAtPoint.toString().includes("DevToolsHost")'
+      );
+      expect(usesNativeContextMenu).to.be.true();
+    });
+
+    it('uses the native window.confirm implementation', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      // window.confirm should be the platform implementation (backed by the
+      // DevTools JavaScript dialog manager), not a JS override.
+      const confirmIsNative = await w.webContents.devToolsWebContents!.executeJavaScript(
+        'window.confirm.toString().includes("[native code]")'
+      );
+      expect(confirmIsNative).to.be.true();
+    });
+  });
+
   describe('before-mouse-event event', () => {
     afterEach(closeAllWindows);
     it('can prevent document mouse events', async () => {
