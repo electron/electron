@@ -426,7 +426,6 @@ auto_filenames = {
     "lib/renderer/api/ipc-renderer.ts",
     "lib/renderer/ipc-native-setup.ts",
     "lib/renderer/ipc-renderer-bindings.ts",
-    "lib/renderer/ipc-renderer-internal-utils.ts",
     "lib/renderer/ipc-renderer-internal.ts",
     "lib/sandboxed_renderer/pre-init.ts",
     "lib/sandboxed_renderer/preload.ts",

@@ -300,6 +300,9 @@ async function main() {
   if (!fs.existsSync(electronBinary)) {
     throw new Error(`instrumented electron binary not found: ${electronBinary}`);
   }
+  // Stale pool files from a previous run would silently merge into this
+  // collection (%m pools append counters); always start clean.
+  fs.rmSync(profrawDir, { recursive: true, force: true });
   fs.mkdirSync(profrawDir, { recursive: true });
   fs.mkdirSync(benchmarksDir, { recursive: true });
 
@@ -334,7 +337,16 @@ async function main() {
   // 2. Run the instrumented build through the workloads.
   //    %m = profile merge pools: multiple processes share pool files and merge
   //    counters atomically, keeping the file count manageable.
-  const profilePattern = path.join(profrawDir, 'electron-%4m.profraw');
+  // %c (continuous mode, Darwin): counters live in an mmap established at
+  // process startup, before the renderer sandbox locks down, so sandboxed
+  // child processes don't need an exit-time file write. Without it, renderer
+  // profraws race sandbox lockdown and lose ("Operation not permitted") on a
+  // per-process coin flip - collections that lose the web-benchmark renderers
+  // ship profiles with Blink effectively absent from the hot set.
+  const profilePattern = path.join(
+    profrawDir,
+    process.platform === 'darwin' ? 'electron-%c%4m.profraw' : 'electron-%4m.profraw'
+  );
   const resultsFile = path.join(workDir, 'benchmark-results.json');
 
   log(`launching instrumented electron: ${electronBinary}`);
