@@ -523,6 +523,8 @@ filenames = {
     "shell/browser/ui/autofill_popup.cc",
     "shell/browser/ui/autofill_popup.h",
     "shell/browser/ui/certificate_trust.h",
+    "shell/browser/ui/devtools_context_menu.cc",
+    "shell/browser/ui/devtools_context_menu.h",
     "shell/browser/ui/devtools_manager_delegate.cc",
     "shell/browser/ui/devtools_manager_delegate.h",
     "shell/browser/ui/devtools_ui.cc",

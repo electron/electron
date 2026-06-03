@@ -147,9 +147,6 @@ if (packageJson.v8Flags != null) {
 
 app.setAppPath(packagePath);
 
-// Load the chrome devtools support.
-require('@electron/internal/browser/devtools');
-
 // Load protocol module to ensure it is populated on app ready
 require('@electron/internal/browser/api/protocol');
 
