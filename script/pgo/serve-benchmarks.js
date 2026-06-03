@@ -423,6 +423,19 @@ function startServer(workDir, port, opts = {}) {
     scheme = 'http';
   }
 
+  // Node closes idle keep-alive sockets after 5s by default. Instrumented
+  // Chromium builds intermittently fail to reap a socket the server closed
+  // while idle: it stays counted against the per-group connection pool limit
+  // (6), and once all six slots are held by dead sockets every later request
+  // to the origin queues forever - the next loadURL hangs indefinitely
+  // (reproduced locally; the renderer, browser, and network service all sit
+  // idle while the navigation waits for a pool slot). Benchmark workloads
+  // have idle gaps between phases, so keep sockets alive for far longer than
+  // any gap instead. headersTimeout must exceed keepAliveTimeout or node
+  // resets sockets mid-request.
+  server.keepAliveTimeout = 10 * 60 * 1000;
+  server.headersTimeout = 11 * 60 * 1000;
+
   attachWebSocketEcho(server);
 
   const host = opts.tls ? 'localhost' : '127.0.0.1';
