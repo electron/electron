@@ -29,6 +29,17 @@ can be created from, eliminating the Node bootstrap recompile.
   snapshot's per-builtin cache.
 - node_mksnapshot.cc: read --electron-v8-snapshot-blob, set the c_function
   drop env var, plumb the base blob to the SnapshotCreator.
+- node_wasi.cc: make the per-instantiation CFunction in
+  WasiFunction::SetFunction static. Since the V8 change to store the
+  v8::CFunction pointer directly in FunctionTemplateInfo (wrapped in a
+  Foreign), the CFunction must outlive the FunctionTemplate; a stack
+  local leaves a dangling pointer that TurboFan dereferences when
+  compiling the fast API call, crashing the wasi tests under
+  --turbo-fast-api-calls. Mirrors the wasi half of
+  https://github.com/nodejs/node/pull/62572 (see also
+  https://github.com/v8/node/pull/254); the matching external
+  reference registration fix is already in node_external_reference.h
+  below.
 
 diff --git a/node.gni b/node.gni
 index 8239967653fee7791800ee3292e77b91bffaaef9..c71d66df5d78b8e86ef5cf405ca7c9c8d7e716ee 100644
@@ -179,6 +190,19 @@ index 8561933060ac30e3559d7ce2ac633d25f1e4d6ec..79dad674d21bc82096830eaf5a5100b0
  void SnapshotBuilder::InitializeIsolateParams(const SnapshotData* data,
                                                Isolate::CreateParams* params) {
    CHECK_NULL(params->snapshot_blob);
+diff --git a/src/node_wasi.cc b/src/node_wasi.cc
+index f5aff2f65fe6b9f48cf970ab3e7c57cfe4885f85..3a5108db01568649089c08ee6e3a34d91f136e3f 100644
+--- a/src/node_wasi.cc
++++ b/src/node_wasi.cc
+@@ -234,7 +234,7 @@ void WASI::New(const FunctionCallbackInfo<Value>& args) {
+ template <typename FT, FT F, typename R, typename... Args>
+ void WASI::WasiFunction<FT, F, R, Args...>::SetFunction(
+     Environment* env, const char* name, Local<FunctionTemplate> tmpl) {
+-  auto c_function = CFunction::Make(FastCallback);
++  static auto c_function = CFunction::Make(FastCallback);
+   Local<FunctionTemplate> t =
+       FunctionTemplate::New(env->isolate(),
+                             SlowCallback,
 diff --git a/tools/snapshot/node_mksnapshot.cc b/tools/snapshot/node_mksnapshot.cc
 index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c1be9229f 100644
 --- a/tools/snapshot/node_mksnapshot.cc
