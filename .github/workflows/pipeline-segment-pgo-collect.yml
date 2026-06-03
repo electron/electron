@@ -118,10 +118,17 @@ jobs:
       timeout-minutes: 150
       run: |
         cd src
+        # --no-sandbox is safe and standard for profile collection: this is an
+        # instrumented, non-shippable build that only loads vendored benchmark
+        # content from a localhost server (no untrusted web content), on an
+        # ephemeral runner. It guarantees child processes can write their
+        # profile data; %c continuous mode in collect-profile.js is the
+        # primary mechanism and this is belt-and-braces (matches linux above).
         node electron/script/pgo/collect-profile.js \
           --electron "out/Default/Electron.app/Contents/MacOS/Electron" \
           --output out/Default/pgo-profraw \
           --work-dir /tmp/electron-pgo \
+          --no-sandbox \
           --no-merge
     - name: Collect PGO Profile (win)
       if: ${{ inputs.target-platform == 'win' }}
