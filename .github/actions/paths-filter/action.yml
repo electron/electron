@@ -34,7 +34,8 @@ runs:
               ;;
             push)
               if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
-                gh api "repos/${GITHUB_REPOSITORY}/compare/${BEFORE_SHA}...${CURRENT_SHA}" --paginate --jq '.files[]?.filename'
+                git fetch origin "$BEFORE_SHA"
+                git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA"
               fi
               ;;
           esac
