@@ -8619,6 +8619,62 @@ describe('BrowserWindow module', () => {
 
           w.destroy();
         });
+
+        it('should restore display modes when using showInactive()', async () => {
+          await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const shown = once(w, 'show');
+          const enterFullScreen = once(w, 'enter-full-screen');
+
+          await setTimeout(2000);
+          expect(w.isVisible()).to.equal(false);
+
+          w.showInactive();
+          await shown;
+          expect(w.isVisible()).to.equal(true);
+
+          // Fullscreen state should still be restored correctly
+          if (!w.isFullScreen()) await enterFullScreen;
+          expect(w.isFullScreen()).to.equal(true);
+
+          w.destroy();
+        });
+
+        it('should save state when window is destroyed without being shown', async () => {
+          const workArea = screen.getPrimaryDisplay().workArea;
+          const bounds = { width: 250, height: 250, x: workArea.x + 50, y: workArea.y + 50 };
+
+          const w1 = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false,
+            ...bounds
+          });
+
+          w1.setBounds({ ...bounds, width: 300, height: 300 });
+          w1.destroy();
+
+          // Allow time for state to be flushed on close
+          await setTimeout(500);
+
+          const w2 = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const restoredBounds = w2.getBounds();
+          expect(restoredBounds.width).to.equal(300);
+          expect(restoredBounds.height).to.equal(300);
+
+          w2.destroy();
+        });
       });
 
       // FIXME(nilayarya): Figure out why these tests fail on macOS-x64

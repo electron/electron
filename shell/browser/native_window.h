@@ -589,7 +589,16 @@ class NativeWindow : public views::WidgetDelegate {
   gfx::Rect overlay_rect_;
 
   // Flag to prevent SaveWindowState calls during window restoration.
+  // This flag is set true at the start of RestoreWindowState() and reset to
+  // false when the restoration completes. For display mode restoration
+  // (fullscreen/maximize/kiosk), the reset happens via observer callbacks
+  // (OnWindowEnterFullScreen/OnWindowMaximize) to handle async transitions.
   bool is_being_restored_ = false;
+
+  // Tracks whether the current display mode transition was initiated by
+  // window state restoration (vs. user action). Used to reset is_being_restored_
+  // in the correct observer callback.
+  bool is_restoration_transition_ = false;
 
   // The boolean parsing of the "windowStatePersistence" option
   bool window_state_persistence_enabled_ = false;
