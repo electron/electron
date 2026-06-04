@@ -73,6 +73,13 @@ if (!result.canceled && result.filePaths.length > 0) {
 }
 ```
 
+### Removed: `showHiddenFiles` in Dialogs on Linux
+
+The `showHiddenFiles` property is no longer supported on Linux.
+It continues to work on macOS and Windows. GTK intends for this feature
+to be a user choice rather than an app choice, and has removed the API
+to do this programmatically.
+
 ## Planned Breaking API Changes (42.0)
 
 ### Behavior Changed: macOS notifications now use `UNNotification` API
@@ -168,12 +175,6 @@ When a new cookie is set, the change cause is `inserted`.
 When a cookie is deleted, the change cause remains `explicit`.
 When the cookie being set is identical to an existing one (same name, domain, path, and value, with no actual changes), the change cause is `inserted-no-change-overwrite`.
 When the value of the cookie being set remains unchanged but some of its attributes are updated, such as the expiration attribute, the change cause will be `inserted-no-value-change-overwrite`.
-
-### Deprecated: `showHiddenFiles` in Dialogs on Linux
-
-This property will still be honored on macOS and Windows, but support on Linux
-will be removed in a future version of Electron. GTK intends for this to be a user choice rather
-than an app choice and has removed the API to do this programmatically.
 
 ## Planned Breaking API Changes (40.0)
 
