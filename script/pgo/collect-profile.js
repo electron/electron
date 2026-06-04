@@ -343,9 +343,16 @@ async function main() {
   // profraws race sandbox lockdown and lose ("Operation not permitted") on a
   // per-process coin flip - collections that lose the web-benchmark renderers
   // ship profiles with Blink effectively absent from the hot set.
+  // %c must pair with %p (one file per process), NOT %m: the continuous-mode
+  // mmap is MAP_SHARED over __llvm_prf_data, whose Values field holds raw
+  // heap pointers to value-profiling nodes. With shared pool files, a fresh
+  // process reads another process's heap pointer out of the pool and
+  // dereferences it in __llvm_profile_instrument_target - an instant SIGSEGV
+  // under ASLR that killed renderers on a per-spawn coin flip on mac arm64
+  // (where -vp-counters-per-site=6 makes value sites densest).
   const profilePattern = path.join(
     profrawDir,
-    process.platform === 'darwin' ? 'electron-%c%4m.profraw' : 'electron-%4m.profraw'
+    process.platform === 'darwin' ? 'electron-%c%p.profraw' : 'electron-%4m.profraw'
   );
   const resultsFile = path.join(workDir, 'benchmark-results.json');
 
