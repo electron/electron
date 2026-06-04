@@ -43,7 +43,7 @@
     "tap-xunit": "^2.4.1",
     "temp": "^0.9.4",
     "ts-loader": "^8.0.2",
-    "ts-node": "6.2.0",
+    "ts-node": "10.9.2",
     "typescript": "^5.8.3",
     "url": "^0.11.4",
     "webpack": "^5.104.1",
