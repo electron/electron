@@ -103,7 +103,11 @@ jobs:
     # Raw .profraw output; merging happens in pgo-generation.yml's merge job.
     - name: Collect PGO Profile (linux)
       if: ${{ inputs.target-platform == 'linux' }}
-      timeout-minutes: 150
+      # Must exceed collect-profile.js's retry deadline (240 min, after which
+      # no new wipe-and-relaunch attempts start) by enough headroom for the
+      # in-flight attempt to finish and flush its counters - a step-timeout
+      # kill loses the exit-time profraw write.
+      timeout-minutes: 330
       run: |
         cd src
         xvfb-run -a -s "-screen 0 1280x1024x24" \
@@ -115,7 +119,11 @@ jobs:
             --no-merge
     - name: Collect PGO Profile (macos)
       if: ${{ inputs.target-platform == 'macos' }}
-      timeout-minutes: 150
+      # Must exceed collect-profile.js's retry deadline (240 min, after which
+      # no new wipe-and-relaunch attempts start) by enough headroom for the
+      # in-flight attempt to finish and flush its counters - a step-timeout
+      # kill loses the exit-time profraw write.
+      timeout-minutes: 330
       run: |
         cd src
         # --no-sandbox is safe and standard for profile collection: this is an
@@ -132,7 +140,11 @@ jobs:
           --no-merge
     - name: Collect PGO Profile (win)
       if: ${{ inputs.target-platform == 'win' }}
-      timeout-minutes: 150
+      # Must exceed collect-profile.js's retry deadline (240 min, after which
+      # no new wipe-and-relaunch attempts start) by enough headroom for the
+      # in-flight attempt to finish and flush its counters - a step-timeout
+      # kill loses the exit-time profraw write.
+      timeout-minutes: 330
       env:
         TARGET_ARCH: ${{ inputs.target-arch }}
       run: |

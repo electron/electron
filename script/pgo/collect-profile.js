@@ -8,7 +8,7 @@
 //     --electron <path to instrumented electron binary> \
 //     --output <path to write merged .profdata> \
 //     [--work-dir <scratch dir>] [--port 8765] [--no-sandbox] [--no-merge]
-//     [--target-arch <arch>]
+//     [--target-arch <arch>] [--attempts <n>] [--retry-deadline-minutes <n>]
 //
 // --no-sandbox is required when running as root inside CI containers; the
 // sandbox setup paths are a negligible fraction of profile counters.
@@ -19,6 +19,10 @@
 // the Linux arm64 CI runners) - .profraw files are arch-independent data and
 // can be merged later on any machine with a matching llvm-profdata (see
 // fetch-llvm-profdata.js).
+//
+// Failed collections are retried (up to --attempts, default 5) by wiping the
+// profraw dir and relaunching the app from scratch, so a published profile
+// only ever contains counters from one fully-successful run.
 //
 // The flow mirrors Chromium's tools/pgo/generate_profile.py:
 //   1. Serve the benchmark workloads locally (Speedometer 3, JetStream 2,
@@ -300,10 +304,6 @@ async function main() {
   if (!fs.existsSync(electronBinary)) {
     throw new Error(`instrumented electron binary not found: ${electronBinary}`);
   }
-  // Stale pool files from a previous run would silently merge into this
-  // collection (%m pools append counters); always start clean.
-  fs.rmSync(profrawDir, { recursive: true, force: true });
-  fs.mkdirSync(profrawDir, { recursive: true });
   fs.mkdirSync(benchmarksDir, { recursive: true });
 
   // 1. Benchmarks, TLS material, and the local server.
@@ -368,48 +368,85 @@ async function main() {
   ];
   if (args['no-sandbox']) electronArgs.push('--no-sandbox');
 
-  const startTime = Date.now();
-  let exitCode = await new Promise((resolve, reject) => {
-    const child = spawn(electronBinary, electronArgs, {
-      env: {
-        ...process.env,
-        LLVM_PROFILE_FILE: profilePattern,
-        PGO_BENCHMARK_BASE_URL: baseUrl,
-        PGO_RESULTS_FILE: resultsFile,
-        PGO_ASAR_FIXTURE: asarFixture,
-        // Node's TLS stack (used by the main-process network workload) does
-        // not read the OS trust store; point it at the collection CA.
-        ...(caCertPath ? { NODE_EXTRA_CA_CERTS: caCertPath } : {})
-      },
-      stdio: 'inherit'
-    });
-    child.on('error', reject);
-    child.on('exit', (code, signal) => {
-      // A signal exit (code === null) usually means the OOM killer (SIGKILL)
-      // or a crash (SIGSEGV/SIGABRT) - log it so CI failures are diagnosable.
-      if (signal) log(`electron was killed by signal ${signal}`);
-      resolve(code ?? 1);
-    });
-  });
-  server.close();
-
-  const elapsedMin = ((Date.now() - startTime) / 60000).toFixed(1);
-  log(`instrumented run finished with exit code ${exitCode} in ${elapsedMin} minutes`);
-
-  // Electron's clean-shutdown path (app.quit()) always exits 0, so workload
-  // failures are reported through the results file rather than the exit code.
+  // A failed attempt's counters cannot be separated from good ones once they
+  // are on disk (and Darwin's %c continuous-mode counters accumulate for the
+  // whole app lifetime), so failures are retried by wiping the profraw dir
+  // and relaunching the app from scratch: a published profile only ever
+  // contains counters from one fully-successful run. Non-final attempts
+  // abort on the first workload failure (PGO_ABORT_ON_FAILURE) since their
+  // output is discarded anyway; the final attempt runs to completion so a
+  // persistent failure still yields a maximal partial profile.
+  const maxAttempts = parseInt(args.attempts || '5', 10);
+  // Attempts can be slow when a workload burns its own timeout before
+  // failing (jetstream2 alone allows 45 minutes), so the attempt count alone
+  // does not bound the step duration. Stop launching retries once this much
+  // wall clock has elapsed: the in-flight attempt must finish and cleanly
+  // flush its counters before the CI step timeout kills the process tree (a
+  // hard kill loses the exit-time profraw write entirely on Windows/Linux).
+  const retryDeadlineMs = parseInt(args['retry-deadline-minutes'] || '240', 10) * 60 * 1000;
+  const collectionStart = Date.now();
+  let exitCode = 1;
   let failedWorkloads = [];
-  if (fs.existsSync(resultsFile)) {
-    const results = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
-    log(`workload results:\n${JSON.stringify(results, null, 2)}`);
-    failedWorkloads = results.filter((r) => !r.ok);
-  } else {
-    log('WARNING: no results file was written - the app may have crashed');
-    failedWorkloads = [{ name: 'all', error: 'results file missing' }];
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const finalAttempt = attempt === maxAttempts;
+    // Always start clean: counters from a failed attempt (or stale %m pool
+    // files from a previous run, which append) must not merge into this one.
+    fs.rmSync(profrawDir, { recursive: true, force: true });
+    fs.mkdirSync(profrawDir, { recursive: true });
+    fs.rmSync(resultsFile, { force: true });
+
+    log(`collection attempt ${attempt}/${maxAttempts}`);
+    const startTime = Date.now();
+    exitCode = await new Promise((resolve, reject) => {
+      const child = spawn(electronBinary, electronArgs, {
+        env: {
+          ...process.env,
+          LLVM_PROFILE_FILE: profilePattern,
+          PGO_BENCHMARK_BASE_URL: baseUrl,
+          PGO_RESULTS_FILE: resultsFile,
+          PGO_ASAR_FIXTURE: asarFixture,
+          ...(finalAttempt ? {} : { PGO_ABORT_ON_FAILURE: '1' }),
+          // Node's TLS stack (used by the main-process network workload) does
+          // not read the OS trust store; point it at the collection CA.
+          ...(caCertPath ? { NODE_EXTRA_CA_CERTS: caCertPath } : {})
+        },
+        stdio: 'inherit'
+      });
+      child.on('error', reject);
+      child.on('exit', (code, signal) => {
+        // A signal exit (code === null) usually means the OOM killer (SIGKILL)
+        // or a crash (SIGSEGV/SIGABRT) - log it so CI failures are diagnosable.
+        if (signal) log(`electron was killed by signal ${signal}`);
+        resolve(code ?? 1);
+      });
+    });
+
+    const elapsedMin = ((Date.now() - startTime) / 60000).toFixed(1);
+    log(`instrumented run finished with exit code ${exitCode} in ${elapsedMin} minutes`);
+
+    // Electron's clean-shutdown path (app.quit()) always exits 0, so workload
+    // failures are reported through the results file rather than the exit code.
+    failedWorkloads = [];
+    if (fs.existsSync(resultsFile)) {
+      const results = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
+      log(`workload results:\n${JSON.stringify(results, null, 2)}`);
+      failedWorkloads = results.filter((r) => !r.ok);
+    } else {
+      log('WARNING: no results file was written - the app may have crashed');
+      failedWorkloads = [{ name: 'all', error: 'results file missing' }];
+    }
+    if (exitCode === 0 && failedWorkloads.length > 0) {
+      exitCode = 1;
+    }
+    if (exitCode === 0 || finalAttempt) break;
+    if (Date.now() - collectionStart > retryDeadlineMs) {
+      log(`retry deadline reached after attempt ${attempt} - keeping this attempt's partial output`);
+      break;
+    }
+    const reason = failedWorkloads.map((w) => w.name).join(', ') || `exit code ${exitCode}`;
+    log(`attempt ${attempt} failed (${reason}) - wiping profiles and retrying`);
   }
-  if (exitCode === 0 && failedWorkloads.length > 0) {
-    exitCode = 1;
-  }
+  server.close();
 
   // 3. Merge (or hand off the raw files for later merging).
   const profrawFiles = fs
