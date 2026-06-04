@@ -742,8 +742,8 @@ describe('chrome extensions', () => {
             createdWorlds: number[];
             isolatedWorlds: number[];
           }) => {
-            expect(isolatedWorlds.some(worldId => worldId >= (1 << 20))).to.equal(true);
-            expect([...startupWorlds, ...createdWorlds].some(worldId => worldId >= (1 << 20))).to.equal(true);
+            expect(isolatedWorlds.some((worldId) => worldId >= 1 << 20)).to.equal(true);
+            expect([...startupWorlds, ...createdWorlds].some((worldId) => worldId >= 1 << 20)).to.equal(true);
           };
 
           const createWorldDiscoveryWindow = async () => {

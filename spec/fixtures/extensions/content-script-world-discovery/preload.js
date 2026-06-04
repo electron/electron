@@ -7,9 +7,11 @@ const kExtensionWorldIdBase = 1 << 20;
 const injectIntoWorld = (worldId) => {
   if (worldId < kExtensionWorldIdBase) return;
 
-  webFrame.executeJavaScriptInIsolatedWorld(worldId, [{
-    code: 'window.__electronWorldDiscovered = true;'
-  }]);
+  webFrame.executeJavaScriptInIsolatedWorld(worldId, [
+    {
+      code: 'window.__electronWorldDiscovered = true;'
+    }
+  ]);
 };
 
 const startupWorlds = webFrame.getIsolatedWorlds();

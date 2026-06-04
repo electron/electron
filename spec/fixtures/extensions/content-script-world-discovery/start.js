@@ -1,2 +1,1 @@
-document.documentElement.dataset.worldDiscovered =
-  window.__electronWorldDiscovered ? 'yes' : 'no';
+document.documentElement.dataset.worldDiscovered = window.__electronWorldDiscovered ? 'yes' : 'no';

@@ -125,11 +125,14 @@ describe('webFrame module', () => {
 
     const navigationState = once(ipcMain, 'isolated-world-navigation-state');
     win.webContents.send('get-isolated-world-navigation-state');
-    const [, state] = await navigationState as [unknown, {
-      startupWorlds: number[];
-      createdWorlds: number[];
-      isolatedWorlds: number[];
-    }];
+    const [, state] = (await navigationState) as [
+      unknown,
+      {
+        startupWorlds: number[];
+        createdWorlds: number[];
+        isolatedWorlds: number[];
+      }
+    ];
 
     expect(state.startupWorlds).to.deep.equal([]);
     expect(state.createdWorlds).to.include(1234);
