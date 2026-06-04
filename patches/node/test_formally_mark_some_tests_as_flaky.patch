@@ -53,3 +53,18 @@ index 627e61911d15cad151bfdf5af83c6ada93e62ba8..01e820390ecc039c7ae104a94e88c36c
  # https://github.com/nodejs/node/issues/44898
  test-watch-mode: PASS, FLAKY
  test-watch-mode-inspect: PASS, FLAKY
+diff --git a/test/test-runner/test-runner.status b/test/test-runner/test-runner.status
+index e8b4ff2d32248c3d55c6324e61b0b29d723db782..efacb984b9800a65b73cb622c2113329302bcaf6 100644
+--- a/test/test-runner/test-runner.status
++++ b/test/test-runner/test-runner.status
+@@ -9,3 +9,10 @@ prefix test-runner
+ # https://github.com/nodejs/node/pull/54888#issuecomment-2351128116
+ # TODO(pmarchini): This test is failing when isolation is set to none and must be fixed.
+ test-watch-create-isolation-none: SKIP
++
++# Watch-mode tests race under parallel load in Electron: the watcher fires an
++# extra re-run before the assertion, so the expected single-run output
++# ("tests 1") arrives with accumulated subtests. They pass in isolation.
++test-run-watch-repeatedly: PASS, FLAKY
++test-run-watch-run-duration: PASS, FLAKY
++test-run-watch-without-file: PASS, FLAKY
