@@ -35,20 +35,15 @@ runs:
             push)
               if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
                 gh api "repos/${GITHUB_REPOSITORY}/compare/${BEFORE_SHA}...${CURRENT_SHA}" --paginate --jq '.files[]?.filename'
-              else
-                # No usable before SHA (e.g. a release branch like 42-x-y being
-                # created), so there is no range to diff against. Mark every
-                # filter as changed to be safe.
-                echo "__all__"
               fi
-              ;;
-            *)
-              # Manual runs do not have a change range, so mark every filter as changed.
-              echo "__all__"
               ;;
           esac
         }
 
+        ALL_CHANGED=false
+        if [[ "$EVENT_NAME" == "push" && ( -z "$BEFORE_SHA" || "$BEFORE_SHA" == "0000000000000000000000000000000000000000" ) ]] || [[ "$EVENT_NAME" != "pull_request" && "$EVENT_NAME" != "push" ]]; then
+          ALL_CHANGED=true
+        fi
         CHANGED_FILES=$(get_changed_files | sort -u)
 
         # Convert a glob pattern to an ERE regex
@@ -83,7 +78,7 @@ runs:
 
             regex="^$(glob_to_regex "$pattern")$"
 
-            if [[ "$CHANGED_FILES" == "__all__" ]]; then
+            if [[ "$ALL_CHANGED" == true ]]; then
               matched=true
             elif [[ -z "$CHANGED_FILES" ]]; then
               matched=false # No files changed, so no pattern (negated or not) can match.
