@@ -54,9 +54,9 @@ runs:
         # Convert a glob pattern to an ERE regex
         # * matches any chars except /, ** matches everything including /
         glob_to_regex() {
-          echo "$1" | sed -E \
+          printf '%s\n' "$1" | sed -E \
+            -e 's/[][\\.^$()+|]/\\&/g' \
             -e 's/\?/[^\/]/g' \
-            -e 's/\./\\./g' \
             -e 's/\*\*\//DOUBLESTAR_SLASH/g' \
             -e 's/\*\*/DOUBLESTAR/g' \
             -e 's/\*/[^\/]*/g' \
