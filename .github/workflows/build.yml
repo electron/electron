@@ -76,7 +76,7 @@ jobs:
             - CONTRIBUTING.md
             - CODE_OF_CONDUCT.md
           src:
-            - '!{docs,.claude}/**'
+            - '!{docs/**,.claude/**,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,README.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md}'
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
