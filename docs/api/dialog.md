@@ -40,7 +40,7 @@ added:
     * `openFile` - Allow files to be selected.
     * `openDirectory` - Allow directories to be selected.
     * `multiSelections` - Allow multiple paths to be selected.
-    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
+    * `showHiddenFiles` _macOS_ _Windows_ - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `promptToCreate` _Windows_ - Prompt for creation if the file path entered
       in the dialog does not exist. This does not actually create the file at
@@ -124,7 +124,7 @@ changes:
     * `openFile` - Allow files to be selected.
     * `openDirectory` - Allow directories to be selected.
     * `multiSelections` - Allow multiple paths to be selected.
-    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
+    * `showHiddenFiles` _macOS_ _Windows_ - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `promptToCreate` _Windows_ - Prompt for creation if the file path entered
       in the dialog does not exist. This does not actually create the file at
@@ -216,7 +216,7 @@ added:
   * `showsTagField` boolean (optional) _macOS_ - Show the tags input box,
     defaults to `true`.
   * `properties` string[]&#32;(optional)
-    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
+    * `showHiddenFiles` _macOS_ _Windows_ - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
@@ -257,7 +257,7 @@ changes:
     displayed in front of the filename text field.
   * `showsTagField` boolean (optional) _macOS_ - Show the tags input box, defaults to `true`.
   * `properties` string[]&#32;(optional)
-    * `showHiddenFiles` _macOS_ _Windows_ _Deprecated_ - Show hidden files in dialog. Deprecated on Linux.
+    * `showHiddenFiles` _macOS_ _Windows_ - Show hidden files in dialog.
     * `createDirectory` _macOS_ - Allow creating new directories from dialog.
     * `treatPackageAsDirectory` _macOS_ - Treat packages, such as `.app` folders,
       as a directory instead of a file.
