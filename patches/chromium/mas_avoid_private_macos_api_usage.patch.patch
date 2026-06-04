@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 4dae6c29c574c95b99dc2671aaf9e0c299e1d385..6cc1aa8adfd2d6ea2b61a5e7de74e3388372e911 100644
+index 2ef26a79a061daf2b9851e5f09d48aa4eaae5d1e..32024fa6d65eeaffdf6a2f7e31dbf92a98956645 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1123,6 +1123,7 @@ component("base") {
@@ -869,7 +869,7 @@ index 11db2cec66f579f5d7b344eb6abe97a569f2736f..9e4d80f999db6a7e98cc9ade0da27e83
  
  void NativeWidgetNSWindowBridge::SetColorMode(
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 2488069770015aa9242bf297cb12b71bf6f76aea..318dad91af8ae979efa3304f4e052c004aa7244e 100644
+index c499037bb38abae27984c012be6cffe90b70bcf3..70e268692d04596f943c2cc78d3de2d7a0cf8831 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -397,6 +397,7 @@ viz_component("service") {
@@ -880,7 +880,7 @@ index 2488069770015aa9242bf297cb12b71bf6f76aea..318dad91af8ae979efa3304f4e052c00
    }
  
    if (is_ios) {
-@@ -748,6 +749,7 @@ viz_source_set("unit_tests") {
+@@ -753,6 +754,7 @@ viz_source_set("unit_tests") {
        "frame_sinks/external_begin_frame_source_mac_unittest.cc",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -974,7 +974,7 @@ index 91a0eee3a76257906f038844922f18fd4765ea66..af6ce45c11ece7ebe6b7cb70673b0c12
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d5d3ddea66a6f0d2d1f74d13bf509f27ac3229b5..fe772f20f24529f727de9e56266e33afd8d2029b 100644
+index db1802442bc9b2df581f9799a85559f3a1ee19c1..0c06f17e1e91692f423036f56794aeabd386dd16 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -368,6 +368,7 @@ source_set("browser") {
@@ -1107,7 +1107,7 @@ index 3ffec396d89d634cfca582f2fed802c62dbc2271..bbc01131d8b6ce6abf0eaa6bd945c5cb
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 13d16598c2a988909d2c214908d6f3379a4622f7..cdbcca29ac90b34b964c4baa46a11dd2f4c590a8 100644
+index 24128fea831c8c4a2072eed4aba7d4f8c32a3c91..388cd81f9151834ca1352b8dc22b42e98ab7f22b 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -321,6 +321,7 @@ target(link_target_type, "renderer") {
@@ -1189,10 +1189,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ea4954e2e752efbc9ce72509d65c07a9e9b29ec3..651e99d1a2dc96ad3c862a774138487563c4c89f 100644
+index 7967a3470cc161715de2be3dca7c8816b0474c65..41e7b975f2ead4b84803a63f221bca7614fe91ed 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -703,6 +703,7 @@ static_library("test_support") {
+@@ -707,6 +707,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1200,7 +1200,7 @@ index ea4954e2e752efbc9ce72509d65c07a9e9b29ec3..651e99d1a2dc96ad3c862a7741384875
    ]
  
    data_deps = [
-@@ -1180,6 +1181,8 @@ static_library("browsertest_support") {
+@@ -1184,6 +1185,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -1209,7 +1209,7 @@ index ea4954e2e752efbc9ce72509d65c07a9e9b29ec3..651e99d1a2dc96ad3c862a7741384875
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2089,6 +2092,7 @@ test("content_browsertests") {
+@@ -2093,6 +2096,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index ea4954e2e752efbc9ce72509d65c07a9e9b29ec3..651e99d1a2dc96ad3c862a7741384875
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3487,6 +3491,7 @@ test("content_unittests") {
+@@ -3491,6 +3495,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1342,7 +1342,7 @@ index fb3a0e10509b0e6c0d7aaa276bb700718a89d320..a82ced1e1c4015b5bd35f541b79fe6c5
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 02ddb6aedb21d85dfb7de91944198c291399063e..adb9c6165f52162b8fd84792c6b710034e263c4a 100644
+index 5c576a1f19cdcf2a8702e02d43c64fcd4262019a..9de734949a14d773f9d08155b216ce93852b480b 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -26,6 +26,7 @@
@@ -1789,10 +1789,10 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e84a67cee87b9f77d894fbcc83f1f21df5973960..49fdfb15d85e7548164eb586fc7305bb206471e0 100644
+index c8402e500c8fc21c525e4578cc3e6789e6b99066..70f1643765b3c7d8dfd791db5c2f59dfcbb7f3f0 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -443,6 +443,7 @@ component("core") {
+@@ -445,6 +445,7 @@ component("core") {
      "//ui/gfx/geometry",
      "//ui/gfx/geometry:geometry_skia",
      "//ui/strings",
@@ -1943,7 +1943,7 @@ index eb90cda4852ca7dc0932cc77801f6b4d62c5624d..2b2dedabfc75548cb46227905035cdc6
  }
  
 diff --git a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
-index 68c44fd6f297c48dd091645fc5764d5990c37932..59ddd4cd05d0ee9f38403a93b0b947fabf5d8273 100644
+index fd6ad2f7ee66085fb881975970f0070d49762026..09601977f9ac8bc0f094d5d743ce0cecabea2e1a 100644
 --- a/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 +++ b/ui/accelerated_widget_mac/ca_layer_tree_coordinator.h
 @@ -8,13 +8,16 @@
@@ -1963,7 +1963,7 @@ index 68c44fd6f297c48dd091645fc5764d5990c37932..59ddd4cd05d0ee9f38403a93b0b947fa
  @class CALayer;
  @protocol MTLDevice;
  
-@@ -126,7 +129,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
+@@ -129,7 +132,9 @@ class ACCELERATED_WIDGET_MAC_EXPORT CALayerTreeCoordinator {
    // both the current tree and the pending trees.
    size_t presented_ca_layer_trees_max_length_ = 2;
  

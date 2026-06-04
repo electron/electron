@@ -9,7 +9,7 @@ Electron when a session is non persistent we do not initialize the
 ExtensionSystem, so this check is not relevant for Electron.
 
 diff --git a/extensions/browser/script_injection_tracker.cc b/extensions/browser/script_injection_tracker.cc
-index 282701b10bf1760469a0638501d0a6435d45afd5..b1af4901f287812cd2444198f550038946de12f0 100644
+index dccdb5a9fe7672927ec65010c014ae64850506e7..03e9be961545f415ed893b2a3e75a333e0d0cf6a 100644
 --- a/extensions/browser/script_injection_tracker.cc
 +++ b/extensions/browser/script_injection_tracker.cc
 @@ -177,7 +177,6 @@ std::vector<const UserScript*> GetLoadedDynamicScripts(
