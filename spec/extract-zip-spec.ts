@@ -34,7 +34,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-const extract: (zipPath: string, opts: { dir: string }) => Promise<void> = require('extract-zip');
+const extract: (zipPath: string, opts: { dir: string }) => Promise<void> = require('../npm/extract');
 
 /**
  * Creates a zip file buffer containing entries stored without compression.

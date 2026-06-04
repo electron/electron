@@ -12,6 +12,7 @@
     "checksums.json",
     "cli.js",
     "electron.d.ts",
+    "extract.js",
     "index.js",
     "install.js"
   ],
