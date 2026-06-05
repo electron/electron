@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Fri, 5 Jun 2026 15:17:53 -0700
+Subject: fix: handle render process reuse in RendererStartupHelper on all
+ platforms
+
+RendererStartupHelper::OnRenderProcessLaunched() CHECKs that any
+non-guest process belonging to its BrowserContext was registered when
+OnRenderProcessHostCreated() was dispatched. That invariant breaks when
+a RenderProcessHost is re-initialized from inside the process-death
+notification: an observer that runs before RendererStartupHelper (for
+example an app calling webContents.reload() synchronously from the
+'render-process-gone' event, which is emitted inside
+RenderProcessHostImpl::ProcessDied()'s observer loop) re-enters
+RenderProcessHostImpl::Init(). The OnRenderProcessHostCreated()
+dispatch from that re-init is ignored because the stale
+process_mojo_map_ entry from the previous renderer is still present,
+RendererStartupHelper then untracks the process when its own
+RenderProcessExited() runs, and once the relaunched process finishes
+launching, OnRenderProcessLaunched() finds no registration and the
+CHECK brings down the browser process.
+
+Chromium hit the same race and replaced the CHECK with a graceful
+re-register on Android (crrev.com/c/7330559) and ChromeOS
+(crrev.com/c/7862000, crbug.com/512916518). The race is
+platform-agnostic, so apply the same handling on all platforms.
+
+This patch can be removed when upstream drops the platform guard
+around the re-register path.
+
+diff --git a/extensions/browser/renderer_startup_helper.cc b/extensions/browser/renderer_startup_helper.cc
+index cacaf4fe5faf634e263546bef9111b8841ec1297..0bede7652a2975c4227eb3790a4f31521d849c7c 100644
+--- a/extensions/browser/renderer_startup_helper.cc
++++ b/extensions/browser/renderer_startup_helper.cc
+@@ -266,13 +266,22 @@ void RendererStartupHelper::OnRenderProcessLaunched(
+     // extensions should have already been initialized in
+     // OnRenderProcessHostCreated(), if it corresponds to the same context.
+     ExtensionsBrowserClient* client = ExtensionsBrowserClient::Get();
+-#if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
+-    // On Android and ChromeOS, handle race condition during process restart:
++    // Handle a race condition during process restart (upstream applies this
++    // only on Android and ChromeOS, but it is reachable on all platforms in
++    // Electron — for example when an app calls webContents.reload()
++    // synchronously from the 'render-process-gone' event, which is emitted
++    // inside the RenderProcessHost's process-death observer loop):
+     // 1. OnRenderProcessHostCreated() initializes extensions and populates
+     // process_mojo_map_.
+-    // 2. Process startup fails in some cases.
+-    // 3. RenderProcessExited() clears process_mojo_map_ via UntrackProcess().
+-    // 4. The process is reused and OnRenderProcessLaunched() is still called.
++    // 2. The renderer process exits or fails to launch.
++    // 3. An observer notified before this one re-enters
++    // RenderProcessHostImpl::Init(), whose OnRenderProcessHostCreated()
++    // dispatch is ignored here because the stale process_mojo_map_ entry
++    // from the previous renderer is still present.
++    // 4. RenderProcessExited() then clears process_mojo_map_ via
++    // UntrackProcess().
++    // 5. The relaunched process reaches OnRenderProcessLaunched() with no
++    // registration, which used to fail a CHECK on desktop platforms.
+     //
+     // Re-register the process to restore Mojo communication without
+     // re-initializing extensions to avoid duplicate loading.
+@@ -280,10 +289,6 @@ void RendererStartupHelper::OnRenderProcessLaunched(
+         client->IsSameContext(browser_context_, host->GetBrowserContext())) {
+       RegisterProcess(host);
+     }
+-#else
+-    CHECK(GetRenderer(host) != nullptr ||
+-          !client->IsSameContext(browser_context_, host->GetBrowserContext()));
+-#endif  // BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS)
+     return;
+   }
+   // Otherwise, we should *not* have initialized the host yet.
