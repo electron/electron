@@ -214,8 +214,10 @@ export const roleList: Record<RoleId, Role> = {
     accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
     nonNativeMacOSRole: true,
     webContentsMethod: (wc) => {
-      const target = isDevTools(wc) ? getParentWebContents(wc) : wc;
-      target?.toggleDevTools();
+      const parentForDevToolsWebContents = webContents
+        .getAllWebContents()
+        .find(({ devToolsWebContents }) => devToolsWebContents === wc);
+      (parentForDevToolsWebContents || wc).toggleDevTools();
     }
   },
   togglefullscreen: {
@@ -355,19 +357,6 @@ export const roleList: Record<RoleId, Role> = {
     label: 'Share',
     submenu: []
   }
-};
-
-const isDevTools = (wc: WebContents): boolean => {
-  return wc.getType() === 'remote' || wc.getURL().startsWith('devtools://') || wc.hostWebContents != null;
-};
-
-const getParentWebContents = (devToolsWebContents: WebContents): WebContents | undefined => {
-  for (const wc of webContents.getAllWebContents()) {
-    if (wc.devToolsWebContents === devToolsWebContents) {
-      return wc;
-    }
-  }
-  return undefined;
 };
 
 const hasRole = (role: keyof typeof roleList) => {
