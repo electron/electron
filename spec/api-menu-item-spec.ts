@@ -14,7 +14,7 @@ import { once } from 'node:events';
 
 import { roleList, execute } from '../lib/browser/api/menu-item-roles';
 import { ifit, ifdescribe } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { closeAllWindows, cleanupWebContents } from './lib/window-helpers';
 
 function keys<Key extends string, Value>(record: Record<Key, Value>) {
   return Object.keys(record) as Key[];
@@ -518,6 +518,7 @@ describe('MenuItems', () => {
 
   describe('MenuItem toggleDevTools role', () => {
     afterEach(closeAllWindows);
+    afterEach(cleanupWebContents);
 
     it('toggles devtools on the focused webContents', async () => {
       const w = new BaseWindow({ show: false });
@@ -537,13 +538,13 @@ describe('MenuItems', () => {
     });
 
     it('toggles parent devtools when invoked with the devtools webContents', async () => {
-      const w = new BaseWindow();
+      const w = new BaseWindow({ show: false });
       const wcv = new WebContentsView();
       w.setContentView(wcv);
       await wcv.webContents.loadURL('about:blank');
 
       const opened = once(wcv.webContents, 'devtools-opened');
-      wcv.webContents.openDevTools({ mode: 'detach' });
+      wcv.webContents.openDevTools({ mode: 'bottom' });
       await opened;
       expect(wcv.webContents.isDevToolsOpened()).to.be.true();
 
