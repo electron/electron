@@ -537,7 +537,7 @@ describe('MenuItems', () => {
     });
 
     it('toggles parent devtools when invoked with the devtools webContents', async () => {
-      const w = new BaseWindow({ show: true });
+      const w = new BaseWindow();
       const wcv = new WebContentsView();
       w.setContentView(wcv);
       await wcv.webContents.loadURL('about:blank');
@@ -545,6 +545,7 @@ describe('MenuItems', () => {
       const opened = once(wcv.webContents, 'devtools-opened');
       wcv.webContents.openDevTools({ mode: 'detach' });
       await opened;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.true();
 
       const devToolsWc = wcv.webContents.devToolsWebContents!;
       expect(devToolsWc).to.not.be.null();
