@@ -55,6 +55,10 @@ const RESULTS_FILE = process.env.PGO_RESULTS_FILE || path.join(app.getPath('temp
 //   startExpr  - (optional) expression that starts the benchmark; it must
 //                return false (without side effects) until the page is ready
 //                to start, and true once the benchmark has been started.
+//   startFailExpr - (optional) expression that evaluates to true once the
+//                page can never become startable (e.g. the driver flagged a
+//                load error); fails the attempt immediately instead of
+//                waiting out the full start-polling window.
 //   doneExpr   - expression that evaluates to true when the run has ended
 //                (successfully or not).
 //   successExpr- (optional) evaluated after doneExpr fires; distinguishes a
@@ -111,6 +115,10 @@ const WORKLOADS = [
     // "Start Test" button. Calling start() before that point does nothing
     // useful, so gate on the button existing.
     startExpr: '!!document.querySelector("#status a.button") && (JetStream.start(), true)',
+    // The driver sets allIsGood = false (via window.onerror / a failed
+    // resource preload) and then refuses to run a partial suite, so the
+    // Start button will never appear.
+    startFailExpr: 'typeof allIsGood !== "undefined" && allIsGood === false',
     // On completion the driver adds the "done" class to #result-summary
     // (JetStreamDriver.js); there is no JetStream.done property.
     doneExpr: '!!document.querySelector("#result-summary.done")',
@@ -325,6 +333,15 @@ async function runWorkload(win, workload, diag) {
         started = await win.webContents.executeJavaScript(workload.startExpr, true);
       } catch {
         /* page busy - retry */
+      }
+      if (!started && workload.startFailExpr) {
+        let unstartable = false;
+        try {
+          unstartable = await win.webContents.executeJavaScript(workload.startFailExpr, true);
+        } catch {
+          /* page busy - keep polling */
+        }
+        if (unstartable) break;
       }
     }
     if (!started) {
@@ -848,33 +865,27 @@ app.whenReady().then(async () => {
     log(`workload filter active: ${phaseNames.join(', ')}`);
   }
 
-  // Transient child-process crashes (a renderer dying at spawn surfaces as a
-  // fast ERR_FAILED load) are retried once; profile counters are cumulative so
-  // a retried workload only adds coverage. Slow failures are NOT retried -
-  // they are timeouts, and rerunning a 30-45 minute workload risks blowing
-  // the job time limit for no new information.
-  const RETRY_IF_FAILED_WITHIN_MS = 5 * 60 * 1000;
+  // No in-app retry: a failed attempt's counters cannot be excised from
+  // already-running processes (continuous-mode counters in particular are
+  // app-lifetime cumulative), so retrying in-process would leave the failed
+  // attempt's mass in the profile. Failures are instead retried by
+  // collect-profile.js, which wipes the profraw dir and relaunches the whole
+  // app. When the orchestrator signals a relaunch is coming
+  // (PGO_ABORT_ON_FAILURE), bail on the first failure - finishing the
+  // remaining workloads is wasted work. On the final attempt the variable is
+  // unset and the run continues past failures so the partial profile keeps
+  // as much coverage as possible.
   for (let i = 0; i < phases.length; i++) {
-    const attemptStart = Date.now();
     try {
       results.push(await phases[i]());
     } catch (err) {
       log(`ERROR: ${err.message}`);
-      let failure = err;
-      if (Date.now() - attemptStart < RETRY_IF_FAILED_WITHIN_MS) {
-        log(`workload ${phaseNames[i]} failed quickly - retrying once`);
-        try {
-          results.push(await phases[i]());
-          continue;
-        } catch (retryErr) {
-          log(`ERROR (retry): ${retryErr.message}`);
-          failure = retryErr;
-        }
-      }
-      results.push({ name: phaseNames[i], ok: false, error: failure.message });
-      // A failed workload reduces profile coverage but the data collected so
-      // far is still valid - keep going and report partial failure.
+      results.push({ name: phaseNames[i], ok: false, error: err.message });
       exitCode = 1;
+      if (process.env.PGO_ABORT_ON_FAILURE) {
+        log('aborting remaining workloads; the orchestrator will wipe profiles and relaunch');
+        break;
+      }
     }
   }
 
