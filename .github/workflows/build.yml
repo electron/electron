@@ -149,9 +149,12 @@ jobs:
         generate-sas-token: 'true'
         target-platform: macos
 
+  # No plain src gate here: the docs-only compile needs this checkout even
+  # when src is false. pgo-only changes have no consumer for it, so they
+  # skip it via the docs-only output instead.
   checkout-linux:
     needs: setup
-    if: ${{ !inputs.skip-linux}}
+    if: ${{ (needs.setup.outputs.src == 'true' || needs.setup.outputs.docs-only == 'true') && !inputs.skip-linux }}
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
