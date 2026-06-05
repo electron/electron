@@ -831,7 +831,7 @@ index a5fc9193711a7cc2eee45171178c070321177ca2..b4554165e3c5344c7ff0b21ccc3986c3
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index d58c5eff9f8fbca96d0912ab9a19d06974fd8016..94ee727830545ff1576685722c0fd0dd215131cf 100644
+index b3162bd2434b339ab9e65dfdb220e62e13c76b32..e4d55c27f13102c975c0c7a843ebabac3237404d 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -1270,7 +1270,7 @@ index 3504d7197bd3225b6b83d7e057f389d8327b9ff7..92547d8bc700f3139f4bbc77d621152e
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index f300e8d331057e894b43b74944e5052c39206844..4ff5277d550485cd79c5b5316d89c730ba709254 100644
+index b71deca88f60904cd9b500a0c8f2d3d576979164..6defe5e0ccd0dc20bee280b1951735e4f5ec961f 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -39,7 +39,9 @@
@@ -1291,7 +1291,7 @@ index f300e8d331057e894b43b74944e5052c39206844..4ff5277d550485cd79c5b5316d89c730
  
  // A simple helper class that forwards any Bluetooth device connect notification
  // to its wrapped |_adapter|.
-@@ -162,8 +165,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -176,8 +179,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -1302,7 +1302,7 @@ index f300e8d331057e894b43b74944e5052c39206844..4ff5277d550485cd79c5b5316d89c730
        device_paired_status_callback_(
            base::BindRepeating(&IsDeviceSystemPaired)) {
  }
-@@ -314,8 +319,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -328,8 +333,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
