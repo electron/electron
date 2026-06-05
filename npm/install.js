@@ -2,7 +2,7 @@
 
 const { downloadArtifact } = require('@electron/get');
 
-const extract = require('extract-zip');
+const { extract } = require('@electron-internal/extract-zip');
 
 const childProcess = require('child_process');
 const fs = require('fs');
