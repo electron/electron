@@ -150,6 +150,7 @@
   "parallel/test-trace-events-vm",
   "parallel/test-trace-events-worker-metadata",
   "parallel/test-tz-version",
+  "parallel/test-vm-global-contextual-store",
   "parallel/test-webcrypto-derivebits-cfrg",
   "parallel/test-webcrypto-derivekey-cfrg",
   "parallel/test-webcrypto-encrypt-decrypt",
