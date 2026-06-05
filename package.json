@@ -5,7 +5,7 @@
   "description": "Build cross platform desktop apps with JavaScript, HTML, and CSS",
   "devDependencies": {
     "@azure/storage-blob": "^12.28.0",
-    "@datadog/datadog-ci": "^5.9.1",
+    "@datadog/datadog-ci": "^5.17.0",
     "@electron/asar": "^4.0.1",
     "@electron/docs-parser": "^2.0.0",
     "@electron/fiddle-core": "^1.3.4",
@@ -145,8 +145,7 @@
     "abstract-socket": "patch:abstract-socket@npm%3A2.0.0#~/.yarn/patches/abstract-socket-npm-2.0.0-b025d8ca5a.patch",
     "minimist@npm:~0.0.1": "0.2.4",
     "put": "npm:@nornagon/put@0.0.8",
-    "get-intrinsic": "^1.3.0",
-    "simple-git": "3.36.0"
+    "get-intrinsic": "^1.3.0"
   },
   "packageManager": "yarn@4.12.0",
   "workspaces": [
