@@ -667,7 +667,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        BRANCH="pgo-update-${GITHUB_REF_NAME}-${GITHUB_RUN_ID}"
+        BRANCH="pgo/update/${GITHUB_REF_NAME}-${GITHUB_RUN_ID}"
         BASE_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/$GITHUB_REF_NAME" --jq .object.sha)
         gh api "repos/$GITHUB_REPOSITORY/git/refs" \
           --field ref="refs/heads/$BRANCH" \
@@ -681,7 +681,7 @@ jobs:
         GH_TOKEN: ${{ fromJSON(steps.secret-service.outputs.secrets).PGO_PROFILE_UPDATER_APP_TOKEN }}
       run: |
         BASE_BRANCH="$GITHUB_REF_NAME"
-        BRANCH="pgo-update-${BASE_BRANCH}-${GITHUB_RUN_ID}"
+        BRANCH="pgo/update/${BASE_BRANCH}-${GITHUB_RUN_ID}"
 
         # Map every uploaded profile to its state file in build/pgo_profiles.
         updated=0
