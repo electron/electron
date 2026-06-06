@@ -12,12 +12,28 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-import { roleList, execute } from '../lib/browser/api/menu-item-roles';
+/* oxlint-disable-next-line no-restricted-imports */
+import { roleList } from '../lib/browser/api/menu-item-roles';
 import { ifit, ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows, cleanupWebContents } from './lib/window-helpers';
 
 function keys<Key extends string, Value>(record: Record<Key, Value>) {
   return Object.keys(record) as Key[];
+}
+
+// Helper to execute a menu item by its role
+function executeByRole(role: MenuItemConstructorOptions['role'], win: BaseWindow, wc: Electron.WebContents) {
+  let handledByRole = true;
+  const menu = Menu.buildFromTemplate([
+    {
+      role,
+      click: () => {
+        handledByRole = false;
+      }
+    }
+  ]);
+  menu.items[0].click({}, win, wc);
+  return handledByRole;
 }
 
 describe('MenuItems', () => {
@@ -264,7 +280,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 });
       const item = new MenuItem({ role: 'asdfghjkl' as any });
 
-      const canExecute = execute(item.role as any, win, win.webContents);
+      const canExecute = executeByRole(item.role as any, win, win.webContents);
       expect(canExecute).to.be.false('can execute');
     });
 
@@ -272,7 +288,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 });
       const item = new MenuItem({ role: 'reload' });
 
-      const canExecute = execute(item.role as any, win, win.webContents);
+      const canExecute = executeByRole(item.role as any, win, win.webContents);
       expect(canExecute).to.be.true('can execute');
     });
 
@@ -280,7 +296,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 });
       const item = new MenuItem({ role: 'resetZoom' });
 
-      const canExecute = execute(item.role as any, win, win.webContents);
+      const canExecute = executeByRole(item.role as any, win, win.webContents);
       expect(canExecute).to.be.true('can execute');
     });
 
@@ -527,12 +543,12 @@ describe('MenuItems', () => {
       await wcv.webContents.loadURL('about:blank');
 
       const opened = once(wcv.webContents, 'devtools-opened');
-      expect(execute('toggledevtools', w, wcv.webContents)).to.be.true();
+      expect(executeByRole('toggleDevTools', w, wcv.webContents)).to.be.true();
       await opened;
       expect(wcv.webContents.isDevToolsOpened()).to.be.true();
 
       const closed = once(wcv.webContents, 'devtools-closed');
-      execute('toggledevtools', w, wcv.webContents);
+      executeByRole('toggleDevTools', w, wcv.webContents);
       await closed;
       expect(wcv.webContents.isDevToolsOpened()).to.be.false();
     });
@@ -552,7 +568,7 @@ describe('MenuItems', () => {
       expect(devToolsWc).to.not.be.null();
 
       const closed = once(wcv.webContents, 'devtools-closed');
-      expect(execute('toggledevtools', w, devToolsWc)).to.be.true();
+      expect(executeByRole('toggleDevTools', w, devToolsWc)).to.be.true();
       await closed;
       expect(wcv.webContents.isDevToolsOpened()).to.be.false();
     });
