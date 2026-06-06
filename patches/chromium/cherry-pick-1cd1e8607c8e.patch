@@ -1,0 +1,408 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisto Yanagisawa <yyanagisawa@chromium.org>
+Date: Wed, 1 Apr 2026 18:14:48 -0700
+Subject: Block invalid responses for Static Router cache source
+
+This CL implements a security fix for the Service Worker Static Routing
+API. When a navigation request matches a 'cache' source and receives an
+opaque response, it is now blocked with net::ERR_FAILED if the new
+feature flag kServiceWorkerStaticRouterOpaqueCheck is enabled.
+This also follows https://fetch.spec.whatwg.org/#concept-http-fetch
+Step 3.5.6.
+
+This is implemented in both ServiceWorkerMainResourceLoader (browser)
+and ServiceWorkerSubresourceLoader (renderer) to ensure comprehensive
+coverage of requests.
+
+A new UMA ServiceWorker.StaticRouter.*.OpaqueResponse is
+added to track how often this case occurs in the wild.
+
+Bug: 495999481
+Change-Id: Icd72687e6d79fd98312e70d0d9a072f75f595e8e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7703459
+Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
+Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1608913}
+
+diff --git a/content/browser/service_worker/service_worker_browsertest.cc b/content/browser/service_worker/service_worker_browsertest.cc
+index 5167c8c8c6a6685a8acc748cff7ce356049063ca..61d0142fb201a27786fe7f2d183b3e6d716a1830 100644
+--- a/content/browser/service_worker/service_worker_browsertest.cc
++++ b/content/browser/service_worker/service_worker_browsertest.cc
+@@ -35,6 +35,7 @@
+ #include "base/task/sequenced_task_runner.h"
+ #include "base/task/task_traits.h"
+ #include "base/test/bind.h"
++#include "base/test/metrics/histogram_tester.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "base/test/with_feature_override.h"
+ #include "base/time/time.h"
+@@ -7482,6 +7483,13 @@ IN_PROC_BROWSER_TEST_F(ServiceWorkerStaticRouterBrowserTest,
+   // The result should be got from the cache, and no network access is
+   // expected.
+   EXPECT_EQ(0, GetRequestCount(relative_url));
++
++  // Sync histograms from the renderer process.
++  FetchHistogramsFromChildProcesses();
++
++  // Check UMA (success case should record true).
++  histogram_tester().ExpectBucketCount(
++      "ServiceWorker.StaticRouter.Subresource.ValidResponse", true, 1);
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(ServiceWorkerStaticRouterBrowserTest,
+diff --git a/content/browser/service_worker/service_worker_main_resource_loader.cc b/content/browser/service_worker/service_worker_main_resource_loader.cc
+index 0aa8f0ef427ccc11589312e5d4c1dc0bbe5ac6af..63f683c703ca5f668e81a84e84c90ae38684bdc3 100644
+--- a/content/browser/service_worker/service_worker_main_resource_loader.cc
++++ b/content/browser/service_worker/service_worker_main_resource_loader.cc
+@@ -909,6 +909,17 @@ void ServiceWorkerMainResourceLoader::DidDispatchFetchEvent(
+         cache_matcher_->cache_lookup_start();
+     response_head_->service_worker_router_info->cache_lookup_time =
+         cache_matcher_->cache_lookup_duration();
++
++    // Block invalid responses from the static router.
++    if (response_head_->service_worker_router_info->matched_source_type ==
++        network::mojom::ServiceWorkerRouterSourceType::kCache) {
++      if (!IsValidStaticRouterResponse(resource_request_, response) &&
++          base::FeatureList::IsEnabled(
++              features::kServiceWorkerStaticRouterOpaqueCheck)) {
++        CommitCompleted(net::ERR_FAILED, "Invalid response from static router");
++        return;
++      }
++    }
+   }
+ 
+   // Record the timing of when the fetch event is dispatched on the worker
+diff --git a/content/common/features.cc b/content/common/features.cc
+index 7230b6bab9644325e32dca844261ce8565415a1d..6ef8a76f0967fa44ab8d7bda3d5a72323ea02e71 100644
+--- a/content/common/features.cc
++++ b/content/common/features.cc
+@@ -645,6 +645,12 @@ BASE_FEATURE(kServiceWorkerStaticRouterRaceRequestFix2,
+ BASE_FEATURE(kServiceWorkerStaticRouterConsolidateMainScriptResponse,
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ 
++// crbug.com/495999481: When this is enabled, the navigation request should be
++// blocked when it receives an opaque response from the service worker static
++// router.
++BASE_FEATURE(kServiceWorkerStaticRouterOpaqueCheck,
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
+ // (crbug.com/1371756): When enabled, the static routing API starts
+ // ServiceWorker when the routing result of a main resource request was network
+ // fallback.
+diff --git a/content/common/features.h b/content/common/features.h
+index 6c52c3c8608e437077ddb8311a7bb00e4f4a8b0b..15c8c015f18283044900b21dba10ad4ff9a28c08 100644
+--- a/content/common/features.h
++++ b/content/common/features.h
+@@ -202,6 +202,7 @@ CONTENT_EXPORT extern const base::FeatureParam<std::string>
+     kServiceWorkerBypassFetchHandlerBypassedHashStrings;
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kServiceWorkerSrcdocSupport);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kServiceWorkerStaticRouterRaceRequestFix2);
++CONTENT_EXPORT BASE_DECLARE_FEATURE(kServiceWorkerStaticRouterOpaqueCheck);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(
+     kServiceWorkerStaticRouterConsolidateMainScriptResponse);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(
+diff --git a/content/common/service_worker/service_worker_resource_loader.cc b/content/common/service_worker/service_worker_resource_loader.cc
+index 9c907e5e2c6773da307a00d8c7ef84c0d3bc82ed..b917f19c6035b2f5a45e77064e619a179da630cf 100644
+--- a/content/common/service_worker/service_worker_resource_loader.cc
++++ b/content/common/service_worker/service_worker_resource_loader.cc
+@@ -6,13 +6,77 @@
+ 
+ #include "base/check_op.h"
+ #include "base/feature_list.h"
++#include "base/metrics/histogram_functions.h"
+ #include "base/metrics/histogram_macros.h"
++#include "base/strings/strcat.h"
+ #include "base/trace_event/trace_event.h"
+ #include "content/public/common/content_features.h"
++#include "services/network/public/cpp/resource_request.h"
++#include "services/network/public/mojom/fetch_api.mojom.h"
+ #include "services/network/public/mojom/service_worker_router_info.mojom-shared.h"
++#include "third_party/blink/public/mojom/fetch/fetch_api_response.mojom.h"
+ #include "third_party/perfetto/include/perfetto/tracing/track_event_args.h"
+ 
+ namespace content {
++
++// static
++bool ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++    network::mojom::RequestMode request_mode,
++    network::mojom::RedirectMode redirect_mode,
++    const blink::mojom::FetchAPIResponsePtr& response) {
++  // This validation follows the Fetch spec.
++  // 4.4 HTTP fetch, Step 3.5.6.
++  // If one of the following is true
++  // - response’s type is "error"
++  // - request’s mode is "same-origin" and response’s type is "cors"
++  // - request’s mode is not "no-cors" and response’s type is "opaque"
++  // - request’s redirect mode is not "manual" and response’s type is
++  //   "opaqueredirect"
++  // - request’s redirect mode is not "follow" and response’s URL list has more
++  //   than one item
++  // then return a network error.
++  // Note: Existing validation functions do not fully follow the spec.
++  if (!response) {
++    return true;
++  }
++
++  if (response->response_type == network::mojom::FetchResponseType::kError) {
++    return false;
++  }
++  if (request_mode == network::mojom::RequestMode::kSameOrigin &&
++      response->response_type == network::mojom::FetchResponseType::kCors) {
++    return false;
++  }
++  if (request_mode != network::mojom::RequestMode::kNoCors &&
++      response->response_type == network::mojom::FetchResponseType::kOpaque) {
++    return false;
++  }
++  if (redirect_mode != network::mojom::RedirectMode::kManual &&
++      response->response_type ==
++          network::mojom::FetchResponseType::kOpaqueRedirect) {
++    return false;
++  }
++  if (redirect_mode != network::mojom::RedirectMode::kFollow &&
++      response->url_list.size() > 1) {
++    return false;
++  }
++
++  return true;
++}
++
++bool ServiceWorkerResourceLoader::IsValidStaticRouterResponse(
++    const network::ResourceRequest& resource_request,
++    const blink::mojom::FetchAPIResponsePtr& response) {
++  bool is_valid = IsValidServiceWorkerResponse(
++      resource_request.mode, resource_request.redirect_mode, response);
++  base::UmaHistogramBoolean(
++      base::StrCat({"ServiceWorker.StaticRouter.",
++                    IsMainResourceLoader() ? "MainResource" : "Subresource",
++                    ".ValidResponse"}),
++      is_valid);
++  return is_valid;
++}
++
+ ServiceWorkerResourceLoader::ServiceWorkerResourceLoader() = default;
+ ServiceWorkerResourceLoader::~ServiceWorkerResourceLoader() = default;
+ 
+diff --git a/content/common/service_worker/service_worker_resource_loader.h b/content/common/service_worker/service_worker_resource_loader.h
+index b74b9c7f5bf991c9fb48de7088ed59913ebcb937..d0ec8bd4d970d1faa566287e300e8074614ba397 100644
+--- a/content/common/service_worker/service_worker_resource_loader.h
++++ b/content/common/service_worker/service_worker_resource_loader.h
+@@ -9,9 +9,19 @@
+ 
+ #include "base/check_op.h"
+ #include "content/common/content_export.h"
++#include "mojo/public/cpp/base/big_buffer.h"
+ #include "services/network/public/mojom/service_worker_router_info.mojom-shared.h"
+ #include "services/network/public/mojom/url_loader.mojom.h"
+ #include "third_party/blink/public/common/service_worker/service_worker_router_rule.h"
++#include "third_party/blink/public/mojom/fetch/fetch_api_response.mojom-forward.h"
++
++namespace net {
++struct RedirectInfo;
++}  // namespace net
++
++namespace network {
++struct ResourceRequest;
++}  // namespace network
+ 
+ namespace content {
+ // A common interface in between:
+@@ -70,6 +80,19 @@ class CONTENT_EXPORT ServiceWorkerResourceLoader {
+     kAutoPreload,
+   };
+ 
++  // Static helper to validate the response from the Service Worker according
++  // to the Fetch spec (4.4 HTTP fetch, Step 3.5.6).
++  static bool IsValidServiceWorkerResponse(
++      network::mojom::RequestMode request_mode,
++      network::mojom::RedirectMode redirect_mode,
++      const blink::mojom::FetchAPIResponsePtr& response);
++
++  // Validates the response from the static router's cache source and records
++  // the result to UMA. Returns true if the response is valid.
++  bool IsValidStaticRouterResponse(
++      const network::ResourceRequest& resource_request,
++      const blink::mojom::FetchAPIResponsePtr& response);
++
+   ServiceWorkerResourceLoader();
+   virtual ~ServiceWorkerResourceLoader();
+ 
+diff --git a/content/common/service_worker/service_worker_resource_loader_unittest.cc b/content/common/service_worker/service_worker_resource_loader_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..1a4fe5c4424db80b7758506959dd8964ef4e375d
+--- /dev/null
++++ b/content/common/service_worker/service_worker_resource_loader_unittest.cc
+@@ -0,0 +1,102 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "content/common/service_worker/service_worker_resource_loader.h"
++
++#include "services/network/public/mojom/fetch_api.mojom.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/public/mojom/fetch/fetch_api_response.mojom.h"
++
++namespace content {
++
++TEST(ServiceWorkerResourceLoaderTest, IsValidServiceWorkerResponse) {
++  auto request_mode = network::mojom::RequestMode::kSameOrigin;
++  auto redirect_mode = network::mojom::RedirectMode::kFollow;
++
++  // Normal response.
++  {
++    auto response = blink::mojom::FetchAPIResponse::New();
++    response->response_type = network::mojom::FetchResponseType::kDefault;
++    EXPECT_TRUE(ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++        request_mode, redirect_mode, response));
++  }
++
++  // Error response.
++  {
++    auto response = blink::mojom::FetchAPIResponse::New();
++    response->response_type = network::mojom::FetchResponseType::kError;
++    EXPECT_FALSE(ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++        request_mode, redirect_mode, response));
++  }
++
++  // same-origin request and cors response.
++  {
++    auto response = blink::mojom::FetchAPIResponse::New();
++    response->response_type = network::mojom::FetchResponseType::kCors;
++    EXPECT_FALSE(ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++        network::mojom::RequestMode::kSameOrigin, redirect_mode, response));
++  }
++
++  // cross-origin request (cors) and cors response (OK).
++  {
++    auto response = blink::mojom::FetchAPIResponse::New();
++    response->response_type = network::mojom::FetchResponseType::kCors;
++    EXPECT_TRUE(ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++        network::mojom::RequestMode::kCors, redirect_mode, response));
++  }
++
++  // cors request and opaque response.
++  {
++    auto response = blink::mojom::FetchAPIResponse::New();
++    response->response_type = network::mojom::FetchResponseType::kOpaque;
++    EXPECT_FALSE(ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++        network::mojom::RequestMode::kCors, redirect_mode, response));
++  }
++
++  // no-cors request and opaque response (OK).
++  {
++    auto response = blink::mojom::FetchAPIResponse::New();
++    response->response_type = network::mojom::FetchResponseType::kOpaque;
++    EXPECT_TRUE(ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++        network::mojom::RequestMode::kNoCors, redirect_mode, response));
++  }
++
++  // opaqueredirect response and manual redirect mode (OK).
++  {
++    auto response = blink::mojom::FetchAPIResponse::New();
++    response->response_type =
++        network::mojom::FetchResponseType::kOpaqueRedirect;
++    EXPECT_TRUE(ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++        request_mode, network::mojom::RedirectMode::kManual, response));
++  }
++
++  // opaqueredirect response and follow redirect mode.
++  {
++    auto response = blink::mojom::FetchAPIResponse::New();
++    response->response_type =
++        network::mojom::FetchResponseType::kOpaqueRedirect;
++    EXPECT_FALSE(ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++        request_mode, network::mojom::RedirectMode::kFollow, response));
++  }
++
++  // multiple URLs in URL list and follow redirect mode (OK).
++  {
++    auto response = blink::mojom::FetchAPIResponse::New();
++    response->url_list.emplace_back("http://a.test/1");
++    response->url_list.emplace_back("http://a.test/2");
++    EXPECT_TRUE(ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++        request_mode, network::mojom::RedirectMode::kFollow, response));
++  }
++
++  // multiple URLs in URL list and manual redirect mode.
++  {
++    auto response = blink::mojom::FetchAPIResponse::New();
++    response->url_list.emplace_back("http://a.test/1");
++    response->url_list.emplace_back("http://a.test/2");
++    EXPECT_FALSE(ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
++        request_mode, network::mojom::RedirectMode::kManual, response));
++  }
++}
++
++}  // namespace content
+diff --git a/content/renderer/service_worker/service_worker_subresource_loader.cc b/content/renderer/service_worker/service_worker_subresource_loader.cc
+index e0c8b704cb4ea0693ae8aac3bb4ed914cb2ce654..9cabd3343980c13aaf7d4612111f23c3e44ce38f 100644
+--- a/content/renderer/service_worker/service_worker_subresource_loader.cc
++++ b/content/renderer/service_worker/service_worker_subresource_loader.cc
+@@ -36,6 +36,7 @@
+ #include "services/network/public/mojom/service_worker_router_info.mojom.h"
+ #include "services/network/public/mojom/url_response_head.mojom.h"
+ #include "third_party/blink/public/common/blob/blob_utils.h"
++#include "third_party/blink/public/common/loader/resource_type_util.h"
+ #include "third_party/blink/public/common/service_worker/service_worker_loader_helpers.h"
+ #include "third_party/blink/public/common/service_worker/service_worker_type_converters.h"
+ #include "third_party/blink/public/mojom/blob/blob.mojom.h"
+@@ -1517,6 +1518,19 @@ void ServiceWorkerSubresourceLoader::DidCacheStorageMatch(
+   // EagerResponse should be used only if `in_related_fetch_event` is set.
+   CHECK(result.value()->is_response());
+   auto& response = result.value()->get_response();
++
++  // Block invalid responses from the static router.
++  if (response_head_->service_worker_router_info &&
++      response_head_->service_worker_router_info->matched_source_type ==
++          network::mojom::ServiceWorkerRouterSourceType::kCache) {
++    if (!IsValidStaticRouterResponse(resource_request_, response) &&
++        base::FeatureList::IsEnabled(
++            features::kServiceWorkerStaticRouterOpaqueCheck)) {
++      CommitCompleted(net::ERR_FAILED, "Invalid response from static router");
++      return;
++    }
++  }
++
+   if (response->parsed_headers) {
+     // We intend to reset the parsed header. Or, invalid parsed headers
+     // should be set.
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index f5d72a89c7229bf8e897c90660feca482ac82594..663360b48ec307e99d700ce2c075201355e30349 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -3083,6 +3083,7 @@ test("content_unittests") {
+     "../common/service_worker/race_network_request_simple_buffer_manager_unittest.cc",
+     "../common/service_worker/race_network_request_url_loader_client_unittest.cc",
+     "../common/service_worker/race_network_request_write_buffer_manager_unittest.cc",
++    "../common/service_worker/service_worker_resource_loader_unittest.cc",
+     "../common/service_worker/service_worker_router_evaluator_unittest.cc",
+     "../common/url_utils_unittest.cc",
+     "../common/web_ui_loading_util_unittest.cc",
+diff --git a/tools/metrics/histograms/metadata/service/histograms.xml b/tools/metrics/histograms/metadata/service/histograms.xml
+index 261abb47e2bc436918a042af34ebfdaff6eb5580..abd096a6def89f20b89a1106440e97893cd5d379 100644
+--- a/tools/metrics/histograms/metadata/service/histograms.xml
++++ b/tools/metrics/histograms/metadata/service/histograms.xml
+@@ -1863,6 +1863,21 @@ chromium-metrics-reviews@google.com.
+   </token>
+ </histogram>
+ 
++<histogram name="ServiceWorker.StaticRouter.{Resource}.ValidResponse"
++    enum="Boolean" expires_after="2027-03-26">
++  <owner>yyanagisawa@chromium.org</owner>
++  <owner>chrome-worker@google.com</owner>
++  <summary>
++    Records whether a response from the ServiceWorker Static Routing API with
++    source: 'cache' is valid according to the Fetch spec (4.4 HTTP fetch, Step
++    3.5.6). If it's invalid, it is a security risk and should be blocked.
++  </summary>
++  <token key="Resource">
++    <variant name="MainResource" summary="main resource"/>
++    <variant name="Subresource" summary="subresource"/>
++  </token>
++</histogram>
++
+ <histogram name="ServiceWorker.Storage.DeleteAndStartOverResult"
+     enum="ServiceWorkerDeleteAndStartOverResult" expires_after="2024-08-04">
+   <owner>yyanagisawa@chromium.org</owner>
