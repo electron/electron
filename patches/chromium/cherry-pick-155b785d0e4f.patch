@@ -1,0 +1,187 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Baron <dbaron@chromium.org>
+Date: Mon, 4 May 2026 18:23:42 -0700
+Subject: Add stronger (D)CHECK()s around batch setting of attributes.
+
+This adds additional CHECK()s and DCHECK()s around two Element functions
+(ParserSetAttributes and CloneAttributesFrom) that set attributes in
+batches and then do multiple AttributeChanged notifications.  This is
+only safe for newly-created elements for which this won't run script.
+
+This fixes one caller that would trigger these checks to not use
+CloneAttributesFrom.
+
+This also removes some code that is unnecessary given these checks.
+
+Bug: 496280532
+Change-Id: Ic8c44e3cfae20272f2ab480f5eb169c565298801
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7810037
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: David Baron <dbaron@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1625093}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 09fce9bb340492d48bb5a621665563a38314b0a0..a2245f6ba0f92e64fe6077767285edd90ce41d9b 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -1075,6 +1075,16 @@ void Element::removeAttribute(const QualifiedName& name) {
+   RemoveAttributeInternal(index, AttributeModificationReason::kDirectly);
+ }
+ 
++void Element::RemoveAllAttributes() {
++  while (hasAttributes()) {
++    const AttributeCollection& attributes = GetElementData()->Attributes();
++    // Use a reason of kByCloning since our caller is going to use the cloning
++    // process to restore a different set of attributes.
++    RemoveAttributeInternal(attributes.size() - 1,
++                            AttributeModificationReason::kByCloning);
++  }
++}
++
+ void Element::SetBooleanAttribute(const QualifiedName& name, bool value) {
+   if (value) {
+     setAttribute(name, g_empty_atom);
+@@ -3899,9 +3909,14 @@ void Element::StripScriptingAttributes(
+ 
+ void Element::ParserSetAttributes(
+     const Vector<Attribute, kAttributePrealloc>& attribute_vector) {
++  // We must start with a newly-created element.  If we don't, it would not be
++  // safe to batch the AttributeChanged notifications the way we do, since on
++  // elements that are not newly-created, AttributeChanged might run script.
+   DCHECK(!isConnected());
+   DCHECK(!parentNode());
+   DCHECK(!element_data_);
++  DCHECK(!HasChildren());
++  DCHECK_EQ(attribute_or_class_bloom_, 0u);
+ 
+   if (!attribute_vector.empty()) {
+     if (ElementDataCache* cache = GetDocument().GetElementDataCache()) {
+@@ -3912,15 +3927,9 @@ void Element::ParserSetAttributes(
+           ShareableElementData::CreateWithAttributes(attribute_vector);
+     }
+ 
+-    DCHECK_EQ(nullptr, ElementTraversal::FirstChild(*this));
+-
+-    // NOTE: AttributeChanged() will add back the class names (if any),
+-    // so it is safe to reset the filter here.
+-    attribute_or_class_bloom_ = 0;
+     for (const Attribute& attribute : attribute_vector) {
+       attribute_or_class_bloom_ |= FilterForAttribute(attribute.GetName());
+     }
+-    UpdateSubtreeBloomFilterAfterInsert();
+   }
+ 
+   ParserDidSetAttributes();
+@@ -11070,22 +11079,6 @@ void Element::DetachAttrNodeFromElementWithValue(Attr* attr_node,
+   }
+ }
+ 
+-void Element::DetachAllAttrNodesFromElement() {
+-  AttrNodeList* list = GetAttrNodeList();
+-  if (!list) {
+-    return;
+-  }
+-
+-  AttributeCollection attributes = GetElementData()->Attributes();
+-  for (const Attribute& attr : attributes) {
+-    if (Attr* attr_node = AttrIfExists(attr.GetName())) {
+-      attr_node->DetachFromElementWithValue(attr.Value());
+-    }
+-  }
+-
+-  RemoveAttrNodeList();
+-}
+-
+ void Element::WillRecalcStyle(const StyleRecalcChange) {
+   DCHECK(HasCustomStyleCallbacks());
+ }
+@@ -11105,9 +11098,16 @@ void Element::AdjustStyle(ComputedStyleBuilder&) {
+ }
+ 
+ void Element::CloneAttributesFrom(const Element& other) {
+-  if (GetElementRareData()) {
+-    DetachAllAttrNodesFromElement();
+-  }
++  // We must start with a newly-created element.  If we don't, it would not be
++  // safe to batch the AttributeChanged notifications the way we do, since on
++  // elements that are not newly-created, AttributeChanged might run script.
++  DCHECK(!isConnected());
++  DCHECK(!parentNode());
++  DCHECK(!element_data_);
++  DCHECK(!HasChildren());
++  CHECK_EQ(attribute_or_class_bloom_, 0u);
++  CHECK(!hasAttributes());
++  CHECK(!GetAttrNodeList());
+ 
+   other.SynchronizeAllAttributes();
+   if (!other.element_data_) {
+@@ -11159,19 +11159,6 @@ void Element::CloneAttributesFrom(const Element& other) {
+     element_data_ = other.element_data_->MakeUniqueCopy();
+   }
+ 
+-  // Since we're going through the list of attributes now, we use the
+-  // opportunity to recreate the Bloom filter; in particular, it may
+-  // be different from the source's Bloom filter if it came from a document
+-  // with different quirks mode setting.
+-  Element* first_child = ElementTraversal::FirstChild(*this);
+-  if (!first_child) {
+-    attribute_or_class_bloom_ = 0;
+-  } else if (!first_child->nextSibling()) {
+-    attribute_or_class_bloom_ = first_child->attribute_or_class_bloom_;
+-  } else {
+-    // Two or more children left; we don't consider it worth it
+-    // to try to reset the filter fully.
+-  }
+   for (wtf_size_t i = 0; i < element_data_->Attributes().size(); ++i) {
+     const Attribute& attr = element_data_->Attributes().at(i);
+     attribute_or_class_bloom_ |= FilterForAttribute(attr.GetName());
+@@ -11179,7 +11166,6 @@ void Element::CloneAttributesFrom(const Element& other) {
+         AttributeModificationParams(attr.GetName(), g_null_atom, attr.Value(),
+                                     AttributeModificationReason::kByCloning));
+   }
+-  UpdateSubtreeBloomFilterAfterInsert();
+ 
+   if (other.nonce() != g_null_atom) {
+     setNonce(other.nonce());
+diff --git a/third_party/blink/renderer/core/dom/element.h b/third_party/blink/renderer/core/dom/element.h
+index cd4e25e6323a6144a4dab7b4b4b1c201c668cf35..cc386dcff9fe999b37269704072315264ba12ebe 100644
+--- a/third_party/blink/renderer/core/dom/element.h
++++ b/third_party/blink/renderer/core/dom/element.h
+@@ -617,6 +617,7 @@ class CORE_EXPORT Element : public ContainerNode, public Animatable {
+   }
+   void removeAttributeNS(const AtomicString& namespace_uri,
+                          const AtomicString& local_name);
++  void RemoveAllAttributes();
+ 
+   Attr* DetachAttribute(wtf_size_t index);
+ 
+@@ -2460,7 +2461,6 @@ class CORE_EXPORT Element : public ContainerNode, public Animatable {
+   ElementRareDataVector& EnsureElementRareData();
+ 
+   void RemoveAttrNodeList();
+-  void DetachAllAttrNodesFromElement();
+   void DetachAttrNodeFromElementWithValue(Attr*, const AtomicString& value);
+   void DetachAttrNodeAtIndex(Attr*, wtf_size_t index);
+ 
+diff --git a/third_party/blink/renderer/core/editing/commands/replace_node_with_span_command.cc b/third_party/blink/renderer/core/editing/commands/replace_node_with_span_command.cc
+index 23e9cd1b02a729507fa125e8f67f1174a218da4f..65ff217174686c71a931f2dab4575fa48cb70749 100644
+--- a/third_party/blink/renderer/core/editing/commands/replace_node_with_span_command.cc
++++ b/third_party/blink/renderer/core/editing/commands/replace_node_with_span_command.cc
+@@ -56,9 +56,14 @@ static void SwapInNodePreservingAttributesAndChildren(
+   for (const auto& child : children)
+     new_element->AppendChild(child);
+ 
+-  // FIXME: Fix this to send the proper MutationRecords when MutationObservers
+-  // are present.
+-  new_element->CloneAttributesFrom(element_to_replace);
++  new_element->RemoveAllAttributes();
++  // Make a copy of element_to_replace's attributes since setting attributes
++  // on new_element could run script and thus modify attributes on either
++  // element.
++  AttributeVector attributes(element_to_replace.Attributes());
++  for (const Attribute& attr : attributes) {
++    new_element->SetAttributeWithoutValidation(attr.GetName(), attr.Value());
++  }
+ 
+   parent_node->RemoveChild(&element_to_replace, ASSERT_NO_EXCEPTION);
+ }
