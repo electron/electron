@@ -1,0 +1,1028 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisto Yanagisawa <yyanagisawa@chromium.org>
+Date: Sun, 12 Apr 2026 19:16:13 -0700
+Subject: Enforce CORP for Static Router Cache Source
+
+This CL ensures that Cross-Origin Resource Policy (CORP) is correctly
+enforced and reported when using the Service Worker Static Routing API's
+cache source, gated by a feature flag.
+
+Key changes:
+1. Feature Flag: Introduced kServiceWorkerStaticRouterCORPCheck
+   to gate the new blocking behavior in content/common/features.h.
+2. UMA: Added ServiceWorker.StaticRouter.{Subresource|MainResource}.CORPCheckResult
+   to monitor policy violations in both enforcement and shadow modes.
+3. Reporting: Pass the client's COEP/DIP Reporters from the browser to
+   the renderer via ControllerServiceWorkerInfo, ensuring security
+   violations are properly reported.
+4. Unit Tests: Added comprehensive unit tests in
+   ServiceWorkerResourceLoaderTest to verify CORP blocking logic and
+   UMA recording across different scenarios.
+5. Testing Config: Added fieldtrial_testing_config.json entry to enable
+   the feature for automated testing.
+6. Refactoring: Encapsulated policy and reporter information into Mojo
+   structs (CrossOriginEmbedderPolicyInfo and
+   DocumentIsolationPolicyInfo) to ensure type safety and consistent
+   handling. Replaced acronyms with full names (e.g., coep ->
+   cross_origin_embedder_policy) for better readability.
+
+DanglingUntriaged-notes: In WebEmbeddedWorkerImplTest, the mock client
+holds a pointer to the proxy which can be destroyed first during
+termination tests. This is a known lifecycle pattern in this specific
+unit test environment.
+
+Bug: 497436273
+Change-Id: Iaf3b66daa02573637a196e26a54e0816cf7b87f6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7725522
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
+Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Hidehiko Abe <hidehiko@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1613472}
+
+diff --git a/content/browser/service_worker/service_worker_container_host.cc b/content/browser/service_worker/service_worker_container_host.cc
+index 09322f81321775f399e6524f602be36291565142..8c1f6bced79c4a5f56b875ede5572db437ff0a7c 100644
+--- a/content/browser/service_worker/service_worker_container_host.cc
++++ b/content/browser/service_worker/service_worker_container_host.cc
+@@ -87,17 +87,19 @@ ServiceWorkerContainerHostForClient::ServiceWorkerContainerHostForClient(
+     blink::mojom::ServiceWorkerContainerInfoForClientPtr& container_info,
+     const PolicyContainerPolicies& policy_container_policies,
+     mojo::PendingRemote<network::mojom::CrossOriginEmbedderPolicyReporter>
+-        coep_reporter,
++        cross_origin_embedder_policy_reporter,
+     mojo::PendingRemote<network::mojom::DocumentIsolationPolicyReporter>
+-        dip_reporter,
++        document_isolation_policy_reporter,
+     ukm::SourceId ukm_source_id)
+     : service_worker_client_(std::move(service_worker_client)),
+       container_(
+           container_info->client_receiver.InitWithNewEndpointAndPassRemote()),
+       ukm_source_id_(std::move(ukm_source_id)),
+       policy_container_policies_(policy_container_policies.Clone()),
+-      coep_reporter_(std::move(coep_reporter)),
+-      dip_reporter_(std::move(dip_reporter)) {
++      cross_origin_embedder_policy_reporter_(
++          std::move(cross_origin_embedder_policy_reporter)),
++      document_isolation_policy_reporter_(
++          std::move(document_isolation_policy_reporter)) {
+   CHECK(container_.is_bound());
+   CHECK(service_worker_client_);
+   CHECK(!service_worker_client_->is_response_committed());
+@@ -480,6 +482,11 @@ ServiceWorkerContainerHostForClient::CreateControllerServiceWorkerInfo() {
+       controller_info->router_data->initial_running_status =
+           controller()->running_status();
+     }
++
++    controller_info->cross_origin_embedder_policy =
++        CreateCrossOriginEmbedderPolicyInfo();
++    controller_info->document_isolation_policy =
++        CreateDocumentIsolationPolicyInfo();
+   }
+ 
+   // Note that |controller_info->remote_controller| is null if the controller
+@@ -706,26 +713,9 @@ ServiceWorkerContainerHostForClient::GetRemoteControllerServiceWorker() {
+ 
+ void ServiceWorkerContainerHostForClient::CloneControllerServiceWorker(
+     mojo::PendingReceiver<blink::mojom::ControllerServiceWorker> receiver) {
+-  mojo::PendingRemote<network::mojom::CrossOriginEmbedderPolicyReporter>
+-      coep_reporter_to_be_passed;
+-  mojo::PendingRemote<network::mojom::DocumentIsolationPolicyReporter>
+-      dip_reporter_to_be_passed;
+-  if (coep_reporter_) {
+-    coep_reporter_->Clone(
+-        coep_reporter_to_be_passed.InitWithNewPipeAndPassReceiver());
+-  }
+-
+-  if (dip_reporter_) {
+-    dip_reporter_->Clone(
+-        dip_reporter_to_be_passed.InitWithNewPipeAndPassReceiver());
+-  }
+-
+-  controller()->controller()->Clone(
+-      std::move(receiver),
+-      policy_container_policies_.cross_origin_embedder_policy,
+-      std::move(coep_reporter_to_be_passed),
+-      policy_container_policies_.document_isolation_policy,
+-      std::move(dip_reporter_to_be_passed));
++  controller()->controller()->Clone(std::move(receiver),
++                                    CreateCrossOriginEmbedderPolicyInfo(),
++                                    CreateDocumentIsolationPolicyInfo());
+ }
+ 
+ bool ServiceWorkerContainerHostForClient::AllowServiceWorker(
+@@ -1392,4 +1382,28 @@ ServiceWorkerVersion* ServiceWorkerContainerHostForClient::controller() const {
+   return service_worker_client().controller();
+ }
+ 
++blink::mojom::CrossOriginEmbedderPolicyInfoPtr
++ServiceWorkerContainerHostForClient::CreateCrossOriginEmbedderPolicyInfo()
++    const {
++  auto info = blink::mojom::CrossOriginEmbedderPolicyInfo::New(
++      policy_container_policies_.cross_origin_embedder_policy,
++      mojo::NullRemote());
++  if (cross_origin_embedder_policy_reporter_) {
++    cross_origin_embedder_policy_reporter_->Clone(
++        info->reporter.InitWithNewPipeAndPassReceiver());
++  }
++  return info;
++}
++
++blink::mojom::DocumentIsolationPolicyInfoPtr
++ServiceWorkerContainerHostForClient::CreateDocumentIsolationPolicyInfo() const {
++  auto info = blink::mojom::DocumentIsolationPolicyInfo::New(
++      policy_container_policies_.document_isolation_policy, mojo::NullRemote());
++  if (document_isolation_policy_reporter_) {
++    document_isolation_policy_reporter_->Clone(
++        info->reporter.InitWithNewPipeAndPassReceiver());
++  }
++  return info;
++}
++
+ }  // namespace content
+diff --git a/content/browser/service_worker/service_worker_container_host.h b/content/browser/service_worker/service_worker_container_host.h
+index 7f857d80f65bc5e8826303710ca3be9e3edfd704..1b39ef850f7c06b49e29eeac60b0850b40620215 100644
+--- a/content/browser/service_worker/service_worker_container_host.h
++++ b/content/browser/service_worker/service_worker_container_host.h
+@@ -328,7 +328,25 @@ class CONTENT_EXPORT ServiceWorkerContainerHostForClient final
+   ukm::SourceId ukm_source_id() const { return ukm_source_id_; }
+   ServiceWorkerVersion* controller() const;
+ 
++  const mojo::Remote<network::mojom::CrossOriginEmbedderPolicyReporter>&
++  cross_origin_embedder_policy_reporter() const {
++    return cross_origin_embedder_policy_reporter_;
++  }
++  const mojo::Remote<network::mojom::DocumentIsolationPolicyReporter>&
++  document_isolation_policy_reporter() const {
++    return document_isolation_policy_reporter_;
++  }
++
++  const PolicyContainerPolicies& policy_container_policies() const {
++    return policy_container_policies_;
++  }
++
+  private:
++  blink::mojom::CrossOriginEmbedderPolicyInfoPtr
++  CreateCrossOriginEmbedderPolicyInfo() const;
++  blink::mojom::DocumentIsolationPolicyInfoPtr
++  CreateDocumentIsolationPolicyInfo() const;
++
+   // Callback for ServiceWorkerContextCore::RegisterServiceWorker().
+   void RegistrationComplete(const GURL& script_url,
+                             const GURL& scope,
+@@ -438,11 +456,12 @@ class CONTENT_EXPORT ServiceWorkerContainerHostForClient final
+   // An endpoint connected to the COEP reporter. A clone of this connection is
+   // passed to the service worker. Bound on response commit.
+   mojo::Remote<network::mojom::CrossOriginEmbedderPolicyReporter>
+-      coep_reporter_;
++      cross_origin_embedder_policy_reporter_;
+ 
+   // An endpoint connected to the DocumentIsolationPolicy reporter. A clone of
+   // this connection is passed to the service worker. Bound on response commit.
+-  mojo::Remote<network::mojom::DocumentIsolationPolicyReporter> dip_reporter_;
++  mojo::Remote<network::mojom::DocumentIsolationPolicyReporter>
++      document_isolation_policy_reporter_;
+ 
+   base::WeakPtrFactory<ServiceWorkerContainerHostForClient> weak_ptr_factory_{
+       this};
+diff --git a/content/browser/service_worker/service_worker_main_resource_loader.cc b/content/browser/service_worker/service_worker_main_resource_loader.cc
+index c0b19ecbc837c2cc67980dedea9a0db7206e8393..6c678f4108ad20ed6ddd339666ed0de22e70d484 100644
+--- a/content/browser/service_worker/service_worker_main_resource_loader.cc
++++ b/content/browser/service_worker/service_worker_main_resource_loader.cc
+@@ -25,7 +25,9 @@
+ #include "base/trace_event/trace_event.h"
+ #include "content/browser/loader/navigation_url_loader.h"
+ #include "content/browser/loader/response_head_update_params.h"
++#include "content/browser/renderer_host/policy_container_host.h"
+ #include "content/browser/service_worker/service_worker_client.h"
++#include "content/browser/service_worker/service_worker_container_host.h"
+ #include "content/browser/service_worker/service_worker_context_core.h"
+ #include "content/browser/service_worker/service_worker_context_wrapper.h"
+ #include "content/browser/service_worker/service_worker_loader_helpers.h"
+@@ -44,6 +46,8 @@
+ #include "net/base/load_timing_info.h"
+ #include "net/http/http_request_headers.h"
+ #include "net/http/http_status_code.h"
++#include "services/network/public/cpp/cross_origin_embedder_policy.h"
++#include "services/network/public/cpp/document_isolation_policy.h"
+ #include "services/network/public/cpp/features.h"
+ #include "services/network/public/cpp/timing_allow_origin_parser.h"
+ #include "services/network/public/mojom/fetch_api.mojom.h"
+@@ -929,11 +933,23 @@ void ServiceWorkerMainResourceLoader::DidDispatchFetchEvent(
+     // Block invalid responses from the static router.
+     if (response_head_->service_worker_router_info->matched_source_type ==
+         network::mojom::ServiceWorkerRouterSourceType::kCache) {
+-      if (!IsValidStaticRouterResponse(resource_request_, response) &&
+-          base::FeatureList::IsEnabled(
+-              features::kServiceWorkerStaticRouterOpaqueCheck)) {
+-        CommitCompleted(net::ERR_FAILED, "Invalid response from static router");
+-        return;
++      if (service_worker_client_ && service_worker_client_->container_host()) {
++        ServiceWorkerContainerHostForClient* container_host =
++            service_worker_client_->container_host();
++        if (!IsValidStaticRouterResponse(
++                resource_request_, response,
++                container_host->policy_container_policies()
++                    .cross_origin_embedder_policy,
++                container_host->cross_origin_embedder_policy_reporter().get(),
++                container_host->policy_container_policies()
++                    .document_isolation_policy,
++                container_host->document_isolation_policy_reporter().get()) &&
++            base::FeatureList::IsEnabled(
++                features::kServiceWorkerStaticRouterOpaqueCheck)) {
++          CommitCompleted(net::ERR_FAILED,
++                          "Invalid response from static router");
++          return;
++        }
+       }
+     }
+   }
+diff --git a/content/common/features.cc b/content/common/features.cc
+index a7fd3313121ebe538ac8823a5934c3f1293959ca..64918087f210f5657cecf3ab55ad5537fd3d3ae1 100644
+--- a/content/common/features.cc
++++ b/content/common/features.cc
+@@ -641,6 +641,10 @@ BASE_FEATURE(kServiceWorkerSrcdocSupport, base::FEATURE_ENABLED_BY_DEFAULT);
+ BASE_FEATURE(kServiceWorkerStaticRouterRaceRequestFix2,
+              base::FEATURE_DISABLED_BY_DEFAULT);
+ 
++// Enforce CORP check for Service Worker Static Router's cache source.
++BASE_FEATURE(kServiceWorkerStaticRouterCORPCheck,
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
+ // crbug.com/495999481: When this is enabled, the navigation request should be
+ // blocked when it receives an opaque response from the service worker static
+ // router.
+diff --git a/content/common/features.h b/content/common/features.h
+index e0a0fa85f42791bd3a118aae3cff1edc22c94a13..e441740be62fc9510165da8a9dab8f0eda453ad8 100644
+--- a/content/common/features.h
++++ b/content/common/features.h
+@@ -206,6 +206,7 @@ CONTENT_EXPORT extern const base::FeatureParam<std::string>
+     kServiceWorkerBypassFetchHandlerBypassedHashStrings;
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kServiceWorkerSrcdocSupport);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kServiceWorkerStaticRouterRaceRequestFix2);
++CONTENT_EXPORT BASE_DECLARE_FEATURE(kServiceWorkerStaticRouterCORPCheck);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kServiceWorkerStaticRouterOpaqueCheck);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(
+     kServiceWorkerStaticRouterStartServiceWorker);
+diff --git a/content/common/service_worker/service_worker_resource_loader.cc b/content/common/service_worker/service_worker_resource_loader.cc
+index ae9b0a76e9a7ee1c4164faad0bb791c1c99e8186..18e8dacc434713bbb61599e5cf9a80b4a306fbcc 100644
+--- a/content/common/service_worker/service_worker_resource_loader.cc
++++ b/content/common/service_worker/service_worker_resource_loader.cc
+@@ -10,8 +10,13 @@
+ #include "base/metrics/histogram_macros.h"
+ #include "base/strings/strcat.h"
+ #include "base/trace_event/trace_event.h"
++#include "content/common/features.h"
+ #include "content/public/common/content_features.h"
++#include "services/network/public/cpp/cross_origin_embedder_policy.h"
++#include "services/network/public/cpp/cross_origin_resource_policy.h"
++#include "services/network/public/cpp/document_isolation_policy.h"
+ #include "services/network/public/cpp/resource_request.h"
++#include "services/network/public/mojom/cross_origin_embedder_policy.mojom.h"
+ #include "services/network/public/mojom/fetch_api.mojom.h"
+ #include "services/network/public/mojom/service_worker_router_info.mojom-shared.h"
+ #include "third_party/blink/public/mojom/fetch/fetch_api_response.mojom.h"
+@@ -66,9 +71,53 @@ bool ServiceWorkerResourceLoader::IsValidServiceWorkerResponse(
+ 
+ bool ServiceWorkerResourceLoader::IsValidStaticRouterResponse(
+     const network::ResourceRequest& resource_request,
+-    const blink::mojom::FetchAPIResponsePtr& response) {
++    const blink::mojom::FetchAPIResponsePtr& response,
++    const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy,
++    network::mojom::CrossOriginEmbedderPolicyReporter*
++        cross_origin_embedder_policy_reporter,
++    const network::DocumentIsolationPolicy& document_isolation_policy,
++    network::mojom::DocumentIsolationPolicyReporter*
++        document_isolation_policy_reporter) {
+   bool is_valid = IsValidServiceWorkerResponse(
+       resource_request.mode, resource_request.redirect_mode, response);
++
++  if (is_valid && response) {
++    std::optional<std::string> corp_header_value;
++    auto it =
++        response->headers.find(network::CrossOriginResourcePolicy::kHeaderName);
++    if (it != response->headers.end()) {
++      corp_header_value = it->second;
++    }
++
++    // Since the static router's cache source is handled by the browser process
++    // on behalf of the service worker, we should perform the CORP check
++    // here to ensure the security.
++    // The check is performed against the client's COEP and DIP.
++    CORPCheckResult result = CORPCheckResult::kSuccess;
++    bool is_enabled = base::FeatureList::IsEnabled(
++        features::kServiceWorkerStaticRouterCORPCheck);
++    if (network::CrossOriginResourcePolicy::IsBlockedByHeaderValue(
++            resource_request.url, resource_request.url,
++            resource_request.request_initiator, corp_header_value,
++            resource_request.mode, resource_request.destination,
++            response->request_include_credentials, cross_origin_embedder_policy,
++            is_enabled ? cross_origin_embedder_policy_reporter : nullptr,
++            document_isolation_policy,
++            is_enabled ? document_isolation_policy_reporter : nullptr)) {
++      if (is_enabled) {
++        is_valid = false;
++        result = CORPCheckResult::kBlocked;
++      } else {
++        result = CORPCheckResult::kViolation;
++      }
++    }
++    base::UmaHistogramEnumeration(
++        base::StrCat({"ServiceWorker.StaticRouter.",
++                      IsMainResourceLoader() ? "MainResource" : "Subresource",
++                      ".CORPCheckResult"}),
++        result);
++  }
++
+   base::UmaHistogramBoolean(
+       base::StrCat({"ServiceWorker.StaticRouter.",
+                     IsMainResourceLoader() ? "MainResource" : "Subresource",
+diff --git a/content/common/service_worker/service_worker_resource_loader.h b/content/common/service_worker/service_worker_resource_loader.h
+index d0ec8bd4d970d1faa566287e300e8074614ba397..b1b5b3c60127841e17d6a527a62ccea05212494a 100644
+--- a/content/common/service_worker/service_worker_resource_loader.h
++++ b/content/common/service_worker/service_worker_resource_loader.h
+@@ -10,6 +10,10 @@
+ #include "base/check_op.h"
+ #include "content/common/content_export.h"
+ #include "mojo/public/cpp/base/big_buffer.h"
++#include "services/network/public/cpp/cross_origin_embedder_policy.h"
++#include "services/network/public/cpp/document_isolation_policy.h"
++#include "services/network/public/mojom/cross_origin_embedder_policy.mojom-forward.h"
++#include "services/network/public/mojom/document_isolation_policy.mojom-forward.h"
+ #include "services/network/public/mojom/service_worker_router_info.mojom-shared.h"
+ #include "services/network/public/mojom/url_loader.mojom.h"
+ #include "third_party/blink/public/common/service_worker/service_worker_router_rule.h"
+@@ -80,6 +84,16 @@ class CONTENT_EXPORT ServiceWorkerResourceLoader {
+     kAutoPreload,
+   };
+ 
++  // Results of the CORP check for the static router's cache source.
++  // These values are persisted to logs. Entries should not be renumbered and
++  // numeric values should never be reused.
++  enum class CORPCheckResult {
++    kSuccess = 0,    // Not blocked by policy.
++    kBlocked = 1,    // Blocked by policy, and feature flag enabled.
++    kViolation = 2,  // Blocked by policy, but feature flag disabled.
++    kMaxValue = kViolation,
++  };
++
+   // Static helper to validate the response from the Service Worker according
+   // to the Fetch spec (4.4 HTTP fetch, Step 3.5.6).
+   static bool IsValidServiceWorkerResponse(
+@@ -91,7 +105,13 @@ class CONTENT_EXPORT ServiceWorkerResourceLoader {
+   // the result to UMA. Returns true if the response is valid.
+   bool IsValidStaticRouterResponse(
+       const network::ResourceRequest& resource_request,
+-      const blink::mojom::FetchAPIResponsePtr& response);
++      const blink::mojom::FetchAPIResponsePtr& response,
++      const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy,
++      network::mojom::CrossOriginEmbedderPolicyReporter*
++          cross_origin_embedder_policy_reporter,
++      const network::DocumentIsolationPolicy& document_isolation_policy,
++      network::mojom::DocumentIsolationPolicyReporter*
++          document_isolation_policy_reporter);
+ 
+   ServiceWorkerResourceLoader();
+   virtual ~ServiceWorkerResourceLoader();
+diff --git a/content/common/service_worker/service_worker_resource_loader_unittest.cc b/content/common/service_worker/service_worker_resource_loader_unittest.cc
+index 1a4fe5c4424db80b7758506959dd8964ef4e375d..fd2f13214155dc10775bad530c817ddf77ee78c9 100644
+--- a/content/common/service_worker/service_worker_resource_loader_unittest.cc
++++ b/content/common/service_worker/service_worker_resource_loader_unittest.cc
+@@ -4,12 +4,46 @@
+ 
+ #include "content/common/service_worker/service_worker_resource_loader.h"
+ 
++#include "base/test/metrics/histogram_tester.h"
++#include "base/test/scoped_feature_list.h"
++#include "content/common/features.h"
++#include "content/public/common/content_features.h"
++#include "services/network/public/cpp/resource_request.h"
+ #include "services/network/public/mojom/fetch_api.mojom.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/public/mojom/fetch/fetch_api_response.mojom.h"
+ 
+ namespace content {
+ 
++namespace {
++
++class TestServiceWorkerResourceLoader : public ServiceWorkerResourceLoader {
++ public:
++  explicit TestServiceWorkerResourceLoader(bool is_main_resource)
++      : is_main_resource_(is_main_resource) {}
++  ~TestServiceWorkerResourceLoader() override = default;
++
++  bool IsMainResourceLoader() override { return is_main_resource_; }
++
++  void CommitResponseBody(
++      const network::mojom::URLResponseHeadPtr& response_head,
++      mojo::ScopedDataPipeConsumerHandle response_body,
++      std::optional<mojo_base::BigBuffer> cached_metadata) override {}
++
++  void CommitEmptyResponseAndComplete() override {}
++
++  void CommitCompleted(int error_code, const char* reason) override {}
++
++  void HandleRedirect(
++      const net::RedirectInfo& redirect_info,
++      const network::mojom::URLResponseHeadPtr& response_head) override {}
++
++ private:
++  bool is_main_resource_;
++};
++
++}  // namespace
++
+ TEST(ServiceWorkerResourceLoaderTest, IsValidServiceWorkerResponse) {
+   auto request_mode = network::mojom::RequestMode::kSameOrigin;
+   auto redirect_mode = network::mojom::RedirectMode::kFollow;
+@@ -99,4 +133,80 @@ TEST(ServiceWorkerResourceLoaderTest, IsValidServiceWorkerResponse) {
+   }
+ }
+ 
++TEST(ServiceWorkerResourceLoaderTest, IsValidStaticRouterResponse) {
++  TestServiceWorkerResourceLoader loader(/*is_main_resource=*/false);
++  base::HistogramTester histogram_tester;
++
++  network::ResourceRequest request;
++  request.url = GURL("https://b.test/resource");
++  request.request_initiator = url::Origin::Create(GURL("https://a.test/"));
++  request.mode = network::mojom::RequestMode::kNoCors;
++  request.destination = network::mojom::RequestDestination::kImage;
++
++  auto response = blink::mojom::FetchAPIResponse::New();
++  response->response_type = network::mojom::FetchResponseType::kOpaque;
++
++  network::CrossOriginEmbedderPolicy coep;
++  coep.value = network::mojom::CrossOriginEmbedderPolicyValue::kRequireCorp;
++  network::DocumentIsolationPolicy dip;
++
++  // Case 1: Same-origin request should be valid even without CORP.
++  {
++    network::ResourceRequest same_origin_request;
++    same_origin_request.url = GURL("https://a.test/resource");
++    same_origin_request.request_initiator =
++        url::Origin::Create(GURL("https://a.test/"));
++    same_origin_request.mode = network::mojom::RequestMode::kNoCors;
++
++    EXPECT_TRUE(loader.IsValidStaticRouterResponse(
++        same_origin_request, response, coep, nullptr, dip, nullptr));
++    histogram_tester.ExpectBucketCount(
++        "ServiceWorker.StaticRouter.Subresource.CORPCheckResult",
++        ServiceWorkerResourceLoader::CORPCheckResult::kSuccess, 1);
++  }
++
++  // Case 2: Cross-origin request without CORP, flag OFF.
++  {
++    base::test::ScopedFeatureList scoped_feature_list;
++    scoped_feature_list.InitAndDisableFeature(
++        features::kServiceWorkerStaticRouterCORPCheck);
++
++    EXPECT_TRUE(loader.IsValidStaticRouterResponse(request, response, coep,
++                                                   nullptr, dip, nullptr));
++    histogram_tester.ExpectBucketCount(
++        "ServiceWorker.StaticRouter.Subresource.CORPCheckResult",
++        ServiceWorkerResourceLoader::CORPCheckResult::kViolation, 1);
++  }
++
++  // Case 3: Cross-origin request without CORP, flag ON.
++  {
++    base::test::ScopedFeatureList scoped_feature_list;
++    scoped_feature_list.InitAndEnableFeature(
++        features::kServiceWorkerStaticRouterCORPCheck);
++
++    EXPECT_FALSE(loader.IsValidStaticRouterResponse(request, response, coep,
++                                                    nullptr, dip, nullptr));
++    histogram_tester.ExpectBucketCount(
++        "ServiceWorker.StaticRouter.Subresource.CORPCheckResult",
++        ServiceWorkerResourceLoader::CORPCheckResult::kBlocked, 1);
++  }
++
++  // Case 4: Cross-origin request WITH CORP, flag ON.
++  {
++    base::test::ScopedFeatureList scoped_feature_list;
++    scoped_feature_list.InitAndEnableFeature(
++        features::kServiceWorkerStaticRouterCORPCheck);
++
++    auto corp_response = blink::mojom::FetchAPIResponse::New();
++    corp_response->response_type = network::mojom::FetchResponseType::kOpaque;
++    corp_response->headers["Cross-Origin-Resource-Policy"] = "cross-origin";
++
++    EXPECT_TRUE(loader.IsValidStaticRouterResponse(request, corp_response, coep,
++                                                   nullptr, dip, nullptr));
++    histogram_tester.ExpectBucketCount(
++        "ServiceWorker.StaticRouter.Subresource.CORPCheckResult",
++        ServiceWorkerResourceLoader::CORPCheckResult::kSuccess, 2);
++  }
++}
++
+ }  // namespace content
+diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
+index 3a88a4aa8175887c0b58f81859ce1807007bfe4b..8d7d7f5f54552a04f101feb7f6fef6603cae22bc 100644
+--- a/content/renderer/renderer_blink_platform_impl.cc
++++ b/content/renderer/renderer_blink_platform_impl.cc
+@@ -980,7 +980,11 @@ void RendererBlinkPlatformImpl::CreateServiceWorkerSubresourceLoaderFactory(
+           /*remote_controller=*/mojo::NullRemote(),
+           /*remote_cache_storage=*/mojo::NullRemote(), client_id.Utf8(),
+           blink::mojom::ServiceWorkerFetchHandlerBypassOption::kDefault,
+-          /*router_rules=*/std::nullopt, blink::EmbeddedWorkerStatus::kStopped,
++          /*router_rules=*/std::nullopt, network::CrossOriginEmbedderPolicy(),
++          mojo::NullRemote() /*coep_reporter*/,
++          network::DocumentIsolationPolicy(),
++          mojo::NullRemote() /*dip_reporter*/,
++          blink::EmbeddedWorkerStatus::kStopped,
+           /*running_status_receiver=*/mojo::NullReceiver()),
+       network::SharedURLLoaderFactory::Create(std::move(fallback_factory)),
+       std::move(receiver), std::move(task_runner));
+diff --git a/content/renderer/service_worker/controller_service_worker_connector.cc b/content/renderer/service_worker/controller_service_worker_connector.cc
+index 74f72e53784f218664c36ccaabc9d55236f6a87e..3ec959f02c704737b36deaba86d734fc3b081a44 100644
+--- a/content/renderer/service_worker/controller_service_worker_connector.cc
++++ b/content/renderer/service_worker/controller_service_worker_connector.cc
+@@ -24,13 +24,29 @@ ControllerServiceWorkerConnector::ControllerServiceWorkerConnector(
+     blink::mojom::ServiceWorkerFetchHandlerBypassOption
+         fetch_handler_bypass_option,
+     std::optional<blink::ServiceWorkerRouterRules> router_rules,
++    const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy,
++    mojo::PendingRemote<network::mojom::CrossOriginEmbedderPolicyReporter>
++        cross_origin_embedder_policy_reporter,
++    const network::DocumentIsolationPolicy& document_isolation_policy,
++    mojo::PendingRemote<network::mojom::DocumentIsolationPolicyReporter>
++        document_isolation_policy_reporter,
+     std::optional<blink::EmbeddedWorkerStatus> initial_running_status,
+     mojo::PendingReceiver<blink::mojom::ServiceWorkerRunningStatusCallback>
+         running_status_receiver)
+-    : client_id_(client_id),
++    : cross_origin_embedder_policy_(cross_origin_embedder_policy),
++      document_isolation_policy_(document_isolation_policy),
++      client_id_(client_id),
+       fetch_handler_bypass_option_(fetch_handler_bypass_option),
+       running_status_(initial_running_status),
+       running_status_receiver_(this) {
++  if (cross_origin_embedder_policy_reporter) {
++    cross_origin_embedder_policy_reporter_.Bind(
++        std::move(cross_origin_embedder_policy_reporter));
++  }
++  if (document_isolation_policy_reporter) {
++    document_isolation_policy_reporter_.Bind(
++        std::move(document_isolation_policy_reporter));
++  }
+   container_host_.Bind(std::move(remote_container_host));
+   container_host_.set_disconnect_handler(base::BindOnce(
+       &ControllerServiceWorkerConnector::OnContainerHostConnectionClosed,
+diff --git a/content/renderer/service_worker/controller_service_worker_connector.h b/content/renderer/service_worker/controller_service_worker_connector.h
+index 4a4d4e1aa1c17222ec728ae765c92ff04a09e0b8..6fc60a3d501a01af4d8810b8fff1296e817fcf69 100644
+--- a/content/renderer/service_worker/controller_service_worker_connector.h
++++ b/content/renderer/service_worker/controller_service_worker_connector.h
+@@ -14,6 +14,10 @@
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "mojo/public/cpp/bindings/receiver_set.h"
+ #include "mojo/public/cpp/bindings/remote.h"
++#include "services/network/public/cpp/cross_origin_embedder_policy.h"
++#include "services/network/public/cpp/document_isolation_policy.h"
++#include "services/network/public/mojom/cross_origin_embedder_policy.mojom.h"
++#include "services/network/public/mojom/document_isolation_policy.mojom.h"
+ #include "third_party/blink/public/common/service_worker/embedded_worker_status.h"
+ #include "third_party/blink/public/mojom/cache_storage/cache_storage.mojom.h"
+ #include "third_party/blink/public/mojom/service_worker/controller_service_worker.mojom.h"
+@@ -83,6 +87,12 @@ class CONTENT_EXPORT ControllerServiceWorkerConnector
+       blink::mojom::ServiceWorkerFetchHandlerBypassOption
+           fetch_handler_bypass_option,
+       std::optional<blink::ServiceWorkerRouterRules> router_rules,
++      const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy,
++      mojo::PendingRemote<network::mojom::CrossOriginEmbedderPolicyReporter>
++          cross_origin_embedder_policy_reporter,
++      const network::DocumentIsolationPolicy& document_isolation_policy,
++      mojo::PendingRemote<network::mojom::DocumentIsolationPolicyReporter>
++          document_isolation_policy_reporter,
+       std::optional<blink::EmbeddedWorkerStatus> initial_running_status,
+       mojo::PendingReceiver<blink::mojom::ServiceWorkerRunningStatusCallback>
+           running_status_receiver);
+@@ -131,6 +141,29 @@ class CONTENT_EXPORT ControllerServiceWorkerConnector
+     return router_evaluator_.get();
+   }
+ 
++  const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy()
++      const {
++    return cross_origin_embedder_policy_;
++  }
++
++  const network::DocumentIsolationPolicy& document_isolation_policy() const {
++    return document_isolation_policy_;
++  }
++
++  network::mojom::CrossOriginEmbedderPolicyReporter*
++  cross_origin_embedder_policy_reporter() const {
++    return cross_origin_embedder_policy_reporter_
++               ? cross_origin_embedder_policy_reporter_.get()
++               : nullptr;
++  }
++
++  network::mojom::DocumentIsolationPolicyReporter*
++  document_isolation_policy_reporter() const {
++    return document_isolation_policy_reporter_
++               ? document_isolation_policy_reporter_.get()
++               : nullptr;
++  }
++
+   // Returns recent ServiceWorker's running status.
+   //
+   // The ServiceWorkerVersion status change callback will send an IPC to update
+@@ -167,6 +200,13 @@ class CONTENT_EXPORT ControllerServiceWorkerConnector
+   // Connection to the cache storage.
+   mojo::Remote<blink::mojom::CacheStorage> cache_storage_;
+ 
++  network::CrossOriginEmbedderPolicy cross_origin_embedder_policy_;
++  mojo::Remote<network::mojom::CrossOriginEmbedderPolicyReporter>
++      cross_origin_embedder_policy_reporter_;
++  network::DocumentIsolationPolicy document_isolation_policy_;
++  mojo::Remote<network::mojom::DocumentIsolationPolicyReporter>
++      document_isolation_policy_reporter_;
++
+   base::ObserverList<Observer>::Unchecked observer_list_;
+ 
+   // The web-exposed client id, used for FetchEvent#clientId (i.e.,
+diff --git a/content/renderer/service_worker/service_worker_provider_context.cc b/content/renderer/service_worker/service_worker_provider_context.cc
+index 694035f994b5f1d4a7382eaa9912b37a7fd06f99..a6ed175b9d9e8623c3f566f2555c828b9dd661af 100644
+--- a/content/renderer/service_worker/service_worker_provider_context.cc
++++ b/content/renderer/service_worker/service_worker_provider_context.cc
+@@ -56,6 +56,12 @@ void CreateSubresourceLoaderFactoryForProviderContext(
+     blink::mojom::ServiceWorkerFetchHandlerBypassOption
+         fetch_handler_bypass_option,
+     std::optional<blink::ServiceWorkerRouterRules> router_rules,
++    const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy,
++    mojo::PendingRemote<network::mojom::CrossOriginEmbedderPolicyReporter>
++        cross_origin_embedder_policy_reporter,
++    const network::DocumentIsolationPolicy& document_isolation_policy,
++    mojo::PendingRemote<network::mojom::DocumentIsolationPolicyReporter>
++        document_isolation_policy_reporter,
+     std::optional<blink::EmbeddedWorkerStatus> initial_running_status,
+     mojo::PendingReceiver<blink::mojom::ServiceWorkerRunningStatusCallback>
+         running_status_receiver,
+@@ -68,7 +74,10 @@ void CreateSubresourceLoaderFactoryForProviderContext(
+   auto connector = base::MakeRefCounted<ControllerServiceWorkerConnector>(
+       std::move(remote_container_host), std::move(remote_controller),
+       std::move(remote_cache_storage), client_id, fetch_handler_bypass_option,
+-      router_rules, initial_running_status, std::move(running_status_receiver));
++      router_rules, cross_origin_embedder_policy,
++      std::move(cross_origin_embedder_policy_reporter),
++      document_isolation_policy, std::move(document_isolation_policy_reporter),
++      initial_running_status, std::move(running_status_receiver));
+   connector->AddBinding(std::move(connector_receiver));
+   ServiceWorkerSubresourceLoaderFactory::Create(
+       std::move(connector),
+@@ -168,6 +177,20 @@ ServiceWorkerProviderContext::GetSubresourceLoaderFactoryInternal() {
+     // extra contention on the main thread.
+     auto task_runner = base::ThreadPool::CreateSequencedTaskRunner(
+         {base::MayBlock(), base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN});
++    mojo::PendingRemote<network::mojom::CrossOriginEmbedderPolicyReporter>
++        cross_origin_embedder_policy_reporter;
++    if (cross_origin_embedder_policy_reporter_) {
++      cross_origin_embedder_policy_reporter_->Clone(
++          cross_origin_embedder_policy_reporter
++              .InitWithNewPipeAndPassReceiver());
++    }
++    mojo::PendingRemote<network::mojom::DocumentIsolationPolicyReporter>
++        document_isolation_policy_reporter;
++    if (document_isolation_policy_reporter_) {
++      document_isolation_policy_reporter_->Clone(
++          document_isolation_policy_reporter.InitWithNewPipeAndPassReceiver());
++    }
++
+     task_runner->PostTask(
+         FROM_HERE,
+         base::BindOnce(
+@@ -175,6 +198,10 @@ ServiceWorkerProviderContext::GetSubresourceLoaderFactoryInternal() {
+             std::move(remote_container_host), std::move(remote_controller_),
+             std::move(remote_cache_storage_), client_id_,
+             fetch_handler_bypass_option_, router_rules_,
++            cross_origin_embedder_policy_,
++            std::move(cross_origin_embedder_policy_reporter),
++            document_isolation_policy_,
++            std::move(document_isolation_policy_reporter),
+             initial_running_status_, std::move(running_status_receiver_),
+             fallback_loader_factory_->Clone(),
+             controller_connector_.BindNewPipeAndPassReceiver(),
+@@ -434,6 +461,29 @@ void ServiceWorkerProviderContext::SetController(
+   remote_controller_ = std::move(controller_info->remote_controller);
+   fetch_handler_bypass_option_ = controller_info->fetch_handler_bypass_option;
+   sha256_script_checksum_ = controller_info->sha256_script_checksum;
++
++  cross_origin_embedder_policy_ = network::CrossOriginEmbedderPolicy();
++  cross_origin_embedder_policy_reporter_.reset();
++  if (controller_info->cross_origin_embedder_policy) {
++    cross_origin_embedder_policy_ =
++        controller_info->cross_origin_embedder_policy->value;
++    if (controller_info->cross_origin_embedder_policy->reporter) {
++      cross_origin_embedder_policy_reporter_.Bind(
++          std::move(controller_info->cross_origin_embedder_policy->reporter));
++    }
++  }
++
++  document_isolation_policy_ = network::DocumentIsolationPolicy();
++  document_isolation_policy_reporter_.reset();
++  if (controller_info->document_isolation_policy) {
++    document_isolation_policy_ =
++        controller_info->document_isolation_policy->value;
++    if (controller_info->document_isolation_policy->reporter) {
++      document_isolation_policy_reporter_.Bind(
++          std::move(controller_info->document_isolation_policy->reporter));
++    }
++  }
++
+   if (controller_info->router_data) {
+     router_rules_ = controller_info->router_data->router_rules;
+     initial_running_status_ =
+diff --git a/content/renderer/service_worker/service_worker_provider_context.h b/content/renderer/service_worker/service_worker_provider_context.h
+index 6ae61059bd71f2a15177235103841c9034579e14..201a029046b82ca75d770aca76247a1e9848ecef 100644
+--- a/content/renderer/service_worker/service_worker_provider_context.h
++++ b/content/renderer/service_worker/service_worker_provider_context.h
+@@ -22,6 +22,10 @@
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "mojo/public/cpp/bindings/receiver_set.h"
+ #include "mojo/public/cpp/bindings/remote.h"
++#include "services/network/public/cpp/cross_origin_embedder_policy.h"
++#include "services/network/public/cpp/document_isolation_policy.h"
++#include "services/network/public/mojom/cross_origin_embedder_policy.mojom.h"
++#include "services/network/public/mojom/document_isolation_policy.mojom.h"
+ #include "services/network/public/mojom/url_loader_factory.mojom.h"
+ #include "third_party/blink/public/mojom/service_worker/controller_service_worker.mojom-shared.h"
+ #include "third_party/blink/public/mojom/service_worker/controller_service_worker.mojom.h"
+@@ -339,6 +343,12 @@ class CONTENT_EXPORT ServiceWorkerProviderContext
+ 
+   // Tracks feature usage for UseCounter.
+   std::set<blink::mojom::WebFeature> used_features_;
++  network::CrossOriginEmbedderPolicy cross_origin_embedder_policy_;
++  mojo::Remote<network::mojom::CrossOriginEmbedderPolicyReporter>
++      cross_origin_embedder_policy_reporter_;
++  network::DocumentIsolationPolicy document_isolation_policy_;
++  mojo::Remote<network::mojom::DocumentIsolationPolicyReporter>
++      document_isolation_policy_reporter_;
+ 
+   // Corresponds to this context's ServiceWorkerContainer. May be null when not
+   // yet created, when already destroyed, or when this client is not a Document
+diff --git a/content/renderer/service_worker/service_worker_provider_context_unittest.cc b/content/renderer/service_worker/service_worker_provider_context_unittest.cc
+index f533cd03f4ea382002c897e2587fdbfac1275ebb..69f072666266702b7b926c8878f44fe37ed3fe77 100644
+--- a/content/renderer/service_worker/service_worker_provider_context_unittest.cc
++++ b/content/renderer/service_worker/service_worker_provider_context_unittest.cc
+@@ -206,11 +206,8 @@ class FakeControllerServiceWorker
+   }
+   void Clone(
+       mojo::PendingReceiver<blink::mojom::ControllerServiceWorker> receiver,
+-      const network::CrossOriginEmbedderPolicy&,
+-      mojo::PendingRemote<network::mojom::CrossOriginEmbedderPolicyReporter>,
+-      const network::DocumentIsolationPolicy&,
+-      mojo::PendingRemote<network::mojom::DocumentIsolationPolicyReporter>)
+-      override {
++      blink::mojom::CrossOriginEmbedderPolicyInfoPtr,
++      blink::mojom::DocumentIsolationPolicyInfoPtr) override {
+     receivers_.Add(this, std::move(receiver));
+   }
+ 
+@@ -480,9 +477,7 @@ TEST_F(ServiceWorkerProviderContextTest, SetControllerServiceWorker) {
+   auto controller_info1 = blink::mojom::ControllerServiceWorkerInfo::New();
+   mojo::Remote<blink::mojom::ControllerServiceWorker> remote_controller1;
+   fake_controller1.Clone(remote_controller1.BindNewPipeAndPassReceiver(),
+-                         network::CrossOriginEmbedderPolicy(),
+-                         mojo::NullRemote(), network::DocumentIsolationPolicy(),
+-                         mojo::NullRemote());
++                         nullptr, nullptr);
+   controller_info1->mode =
+       blink::mojom::ControllerServiceWorkerMode::kControlled;
+   controller_info1->fetch_handler_type =
+@@ -528,9 +523,7 @@ TEST_F(ServiceWorkerProviderContextTest, SetControllerServiceWorker) {
+   auto controller_info2 = blink::mojom::ControllerServiceWorkerInfo::New();
+   mojo::Remote<blink::mojom::ControllerServiceWorker> remote_controller2;
+   fake_controller2.Clone(remote_controller2.BindNewPipeAndPassReceiver(),
+-                         network::CrossOriginEmbedderPolicy(),
+-                         mojo::NullRemote(), network::DocumentIsolationPolicy(),
+-                         mojo::NullRemote());
++                         nullptr, nullptr);
+   controller_info2->mode =
+       blink::mojom::ControllerServiceWorkerMode::kControlled;
+   controller_info2->fetch_handler_type =
+@@ -622,9 +615,7 @@ TEST_F(ServiceWorkerProviderContextTest, SetControllerServiceWorker) {
+   auto controller_info4 = blink::mojom::ControllerServiceWorkerInfo::New();
+   mojo::Remote<blink::mojom::ControllerServiceWorker> remote_controller4;
+   fake_controller4.Clone(remote_controller4.BindNewPipeAndPassReceiver(),
+-                         network::CrossOriginEmbedderPolicy(),
+-                         mojo::NullRemote(), network::DocumentIsolationPolicy(),
+-                         mojo::NullRemote());
++                         nullptr, nullptr);
+   controller_info4->mode =
+       blink::mojom::ControllerServiceWorkerMode::kControlled;
+   controller_info4->fetch_handler_type =
+@@ -781,10 +772,8 @@ TEST_F(ServiceWorkerProviderContextTest, OnNetworkProviderDestroyed) {
+   FakeControllerServiceWorker fake_controller;
+   auto controller_info = blink::mojom::ControllerServiceWorkerInfo::New();
+   mojo::Remote<blink::mojom::ControllerServiceWorker> remote_controller;
+-  fake_controller.Clone(remote_controller.BindNewPipeAndPassReceiver(),
+-                        network::CrossOriginEmbedderPolicy(),
+-                        mojo::NullRemote(), network::DocumentIsolationPolicy(),
+-                        mojo::NullRemote());
++  fake_controller.Clone(remote_controller.BindNewPipeAndPassReceiver(), nullptr,
++                        nullptr);
+   controller_info->mode =
+       blink::mojom::ControllerServiceWorkerMode::kControlled;
+   controller_info->fetch_handler_type =
+@@ -832,10 +821,8 @@ TEST_F(ServiceWorkerProviderContextTest,
+   FakeControllerServiceWorker fake_controller;
+   auto controller_info = blink::mojom::ControllerServiceWorkerInfo::New();
+   mojo::Remote<blink::mojom::ControllerServiceWorker> remote_controller;
+-  fake_controller.Clone(remote_controller.BindNewPipeAndPassReceiver(),
+-                        network::CrossOriginEmbedderPolicy(),
+-                        mojo::NullRemote(), network::DocumentIsolationPolicy(),
+-                        mojo::NullRemote());
++  fake_controller.Clone(remote_controller.BindNewPipeAndPassReceiver(), nullptr,
++                        nullptr);
+   controller_info->mode =
+       blink::mojom::ControllerServiceWorkerMode::kControlled;
+   controller_info->fetch_handler_type =
+diff --git a/content/renderer/service_worker/service_worker_subresource_loader.cc b/content/renderer/service_worker/service_worker_subresource_loader.cc
+index 4a29c7f49f835df5782852186cf2a69f9b76a8b4..c6cb254ca5540491cd003c3e8ed0794790e019de 100644
+--- a/content/renderer/service_worker/service_worker_subresource_loader.cc
++++ b/content/renderer/service_worker/service_worker_subresource_loader.cc
+@@ -1515,7 +1515,12 @@ void ServiceWorkerSubresourceLoader::DidCacheStorageMatch(
+   if (response_head_->service_worker_router_info &&
+       response_head_->service_worker_router_info->matched_source_type ==
+           network::mojom::ServiceWorkerRouterSourceType::kCache) {
+-    if (!IsValidStaticRouterResponse(resource_request_, response) &&
++    if (!IsValidStaticRouterResponse(
++            resource_request_, response,
++            controller_connector_->cross_origin_embedder_policy(),
++            controller_connector_->cross_origin_embedder_policy_reporter(),
++            controller_connector_->document_isolation_policy(),
++            controller_connector_->document_isolation_policy_reporter()) &&
+         base::FeatureList::IsEnabled(
+             features::kServiceWorkerStaticRouterOpaqueCheck)) {
+       CommitCompleted(net::ERR_FAILED, "Invalid response from static router");
+diff --git a/third_party/blink/public/mojom/service_worker/controller_service_worker.mojom b/third_party/blink/public/mojom/service_worker/controller_service_worker.mojom
+index 2063c9d3417391610aeb54ab2c557134fc7c8034..853d2304a7c643cddf67ada1154f399df0847f28 100644
+--- a/third_party/blink/public/mojom/service_worker/controller_service_worker.mojom
++++ b/third_party/blink/public/mojom/service_worker/controller_service_worker.mojom
+@@ -53,16 +53,21 @@ interface ControllerServiceWorker {
+   // Connects a new pipe to this controller instance.
+   // |cross_origin_embedder_policy| is the policy for the client which uses the
+   // counterpart of |receiver|.
+-  // |coep_reporter| is the endpoint to report the error raised by the CORP
+-  // validation based on |cross_origin_embedder_policy|. This can be null when
+-  // it's not supported yet.
+   Clone(pending_receiver<ControllerServiceWorker> receiver,
+-        network.mojom.CrossOriginEmbedderPolicy cross_origin_embedder_policy,
+-        pending_remote<network.mojom.CrossOriginEmbedderPolicyReporter>?
+-            coep_reporter,
+-        network.mojom.DocumentIsolationPolicy document_isolation_policy,
+-        pending_remote<network.mojom.DocumentIsolationPolicyReporter>?
+-            dip_reporter);
++        CrossOriginEmbedderPolicyInfo? cross_origin_embedder_policy,
++        DocumentIsolationPolicyInfo? document_isolation_policy);
++};
++
++// Struct to represent Cross-Origin-Embedder-Policy and its reporter.
++struct CrossOriginEmbedderPolicyInfo {
++  network.mojom.CrossOriginEmbedderPolicy value;
++  pending_remote<network.mojom.CrossOriginEmbedderPolicyReporter>? reporter;
++};
++
++// Struct to represent Document-Isolation-Policy and its reporter.
++struct DocumentIsolationPolicyInfo {
++  network.mojom.DocumentIsolationPolicy value;
++  pending_remote<network.mojom.DocumentIsolationPolicyReporter>? reporter;
+ };
+ 
+ // A convenient struct to keep ServiceWorker static routing API data.
+@@ -142,6 +147,10 @@ struct ControllerServiceWorkerInfo {
+ 
+   // The set of features the controller has used, for UseCounter purposes.
+   array<WebFeature> used_features;
++
++  // The security policies of the client being controlled.
++  CrossOriginEmbedderPolicyInfo? cross_origin_embedder_policy;
++  DocumentIsolationPolicyInfo? document_isolation_policy;
+ };
+ 
+ // A renderer-side interface for talking across threads. The main thread
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+index 9ea342396cff164787bdc733d509b37c356d6d3a..0e2e309a75f67271678a535533184f959e0b105d 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+@@ -1657,16 +1657,33 @@ void ServiceWorkerGlobalScope::DispatchFetchEventForSubresource(
+ 
+ void ServiceWorkerGlobalScope::Clone(
+     mojo::PendingReceiver<mojom::blink::ControllerServiceWorker> receiver,
+-    const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy,
+-    mojo::PendingRemote<
+-        network::mojom::blink::CrossOriginEmbedderPolicyReporter> coep_reporter,
+-    const network::DocumentIsolationPolicy& document_isolation_policy,
+-    mojo::PendingRemote<network::mojom::blink::DocumentIsolationPolicyReporter>
+-        dip_reporter) {
+-  DCHECK(IsContextThread());
++    mojom::blink::CrossOriginEmbedderPolicyInfoPtr
++        cross_origin_embedder_policy_info,
++    mojom::blink::DocumentIsolationPolicyInfoPtr
++        document_isolation_policy_info) {
++  DCHECK(IsContextThread());
++  network::CrossOriginEmbedderPolicy cross_origin_embedder_policy;
++  mojo::PendingRemote<network::mojom::blink::CrossOriginEmbedderPolicyReporter>
++      cross_origin_embedder_policy_reporter;
++  if (cross_origin_embedder_policy_info) {
++    cross_origin_embedder_policy = cross_origin_embedder_policy_info->value;
++    cross_origin_embedder_policy_reporter =
++        std::move(cross_origin_embedder_policy_info->reporter);
++  }
++
++  network::DocumentIsolationPolicy document_isolation_policy;
++  mojo::PendingRemote<network::mojom::blink::DocumentIsolationPolicyReporter>
++      document_isolation_policy_reporter;
++  if (document_isolation_policy_info) {
++    document_isolation_policy = document_isolation_policy_info->value;
++    document_isolation_policy_reporter =
++        std::move(document_isolation_policy_info->reporter);
++  }
++
+   auto checker = std::make_unique<CrossOriginResourcePolicyChecker>(
+-      cross_origin_embedder_policy, std::move(coep_reporter),
+-      document_isolation_policy, std::move(dip_reporter));
++      cross_origin_embedder_policy,
++      std::move(cross_origin_embedder_policy_reporter),
++      document_isolation_policy, std::move(document_isolation_policy_reporter));
+ 
+   controller_receivers_.Add(
+       std::move(receiver), std::move(checker),
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h
+index 97c569a0ba81fc955d57801c6e134c97bfa4a7d8..1588b2afea2dc40cc768c59b162f37dcf401ba28 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.h
+@@ -451,14 +451,10 @@ class MODULES_EXPORT ServiceWorkerGlobalScope final
+       DispatchFetchEventForSubresourceCallback callback) override;
+   void Clone(
+       mojo::PendingReceiver<mojom::blink::ControllerServiceWorker> receiver,
+-      const network::CrossOriginEmbedderPolicy& cross_origin_embedder_policy,
+-      mojo::PendingRemote<
+-          network::mojom::blink::CrossOriginEmbedderPolicyReporter>
+-          coep_reporter,
+-      const network::DocumentIsolationPolicy& document_isolation_policy,
+-      mojo::PendingRemote<
+-          network::mojom::blink::DocumentIsolationPolicyReporter> dip_reporter)
+-      override;
++      mojom::blink::CrossOriginEmbedderPolicyInfoPtr
++          cross_origin_embedder_policy_info,
++      mojom::blink::DocumentIsolationPolicyInfoPtr
++          document_isolation_policy_info) override;
+ 
+   // Implements mojom::blink::ServiceWorker.
+   void InitializeGlobalScope(
+diff --git a/third_party/blink/renderer/modules/service_worker/web_embedded_worker_impl_test.cc b/third_party/blink/renderer/modules/service_worker/web_embedded_worker_impl_test.cc
+index 68d40fc60df94dab6b0d80a2a0370c80b8bf0b5b..48859206c62e5247bc21a2238a2f30ab5042c903 100644
+--- a/third_party/blink/renderer/modules/service_worker/web_embedded_worker_impl_test.cc
++++ b/third_party/blink/renderer/modules/service_worker/web_embedded_worker_impl_test.cc
+@@ -399,6 +399,7 @@ class MockServiceWorkerContextClient final
+   void WorkerContextStarted(
+       WebServiceWorkerContextProxy* proxy,
+       scoped_refptr<base::SequencedTaskRunner> worker_task_runner) override {
++    proxy_ = proxy;
+     worker_task_runner_ = std::move(worker_task_runner);
+     mojo::PendingAssociatedRemote<mojom::blink::ServiceWorkerHost> host_remote;
+     auto host_receiver = host_remote.InitWithNewEndpointAndPassReceiver();
+@@ -458,18 +459,6 @@ class MockServiceWorkerContextClient final
+         mock_policy_container_host.BindNewEndpointAndPassDedicatedRemote();
+     web_policy_container_ = nullptr;
+ 
+-    // ControllerServiceWorker requires Clone to ensure
+-    // CrossOriginResourcePolicyChecker. See
+-    // ServiceWorkerGlobalScope::DispatchFetchEventForSubresource().
+-    mojo::Remote<mojom::blink::ControllerServiceWorker>
+-        stub_controller_service_worker;
+-    proxy->BindControllerServiceWorker(
+-        stub_controller_service_worker.BindNewPipeAndPassReceiver());
+-    stub_controller_service_worker->Clone(
+-        controller_service_worker_.BindNewPipeAndPassReceiver(),
+-        network::CrossOriginEmbedderPolicy(), mojo::NullRemote(),
+-        network::DocumentIsolationPolicy(), mojo::NullRemote());
+-
+     // To make the other side callable.
+     host_receiver.EnableUnassociatedUsage();
+     associated_interfaces_recevier_from_browser.EnableUnassociatedUsage();
+@@ -534,6 +523,17 @@ class MockServiceWorkerContextClient final
+     test_data_uploader_ = std::make_unique<TestDataUploader>(upload_contents);
+     ResourceRequestBody src(test_data_uploader_->BindNewPipeAndPassRemote());
+     request->body = std::move(src);
++
++    if (!controller_service_worker_.is_bound()) {
++      mojo::Remote<mojom::blink::ControllerServiceWorker>
++          stub_controller_service_worker;
++      proxy_->BindControllerServiceWorker(
++          stub_controller_service_worker.BindNewPipeAndPassReceiver());
++      stub_controller_service_worker->Clone(
++          controller_service_worker_.BindNewPipeAndPassReceiver(), nullptr,
++          nullptr);
++    }
++
+     auto params = mojom::blink::DispatchFetchEventParams::New();
+     params->request = std::move(request);
+     params->client_id = "foo";
+@@ -582,6 +582,7 @@ class MockServiceWorkerContextClient final
+   base::WaitableEvent classic_script_load_failure_event_;
+ 
+   scoped_refptr<base::SequencedTaskRunner> worker_task_runner_;
++  raw_ptr<WebServiceWorkerContextProxy, DanglingUntriaged> proxy_ = nullptr;
+   mojo::Remote<mojom::blink::ControllerServiceWorker>
+       controller_service_worker_;
+   std::unique_ptr<TestDataUploader> test_data_uploader_;

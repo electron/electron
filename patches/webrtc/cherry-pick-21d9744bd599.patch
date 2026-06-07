@@ -1,0 +1,149 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Erik=20Spr=C3=A5ng?= <sprang@webrtc.org>
+Date: Tue, 21 Apr 2026 13:16:27 +0200
+Subject: Always release VideoEncoders before destruction.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Without a `Release()` call there is a potential for race conditions
+between asynchronous encoder callbacks and the destructor sequence.
+
+Bug: chromium:504620824
+Change-Id: I1fba23ef3a4a238503cdf8d2ea5831e815d7b902
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/465582
+Auto-Submit: Erik Språng <sprang@webrtc.org>
+Reviewed-by: Sergey Silkin <ssilkin@webrtc.org>
+Commit-Queue: Sergey Silkin <ssilkin@webrtc.org>
+Commit-Queue: Erik Språng <sprang@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#47495}
+
+diff --git a/video/video_stream_encoder.cc b/video/video_stream_encoder.cc
+index b3a715967611fea5b6d36850102ab04fd7651819..9004c31ff8399db0834e7e8a6d46feec4799e491 100644
+--- a/video/video_stream_encoder.cc
++++ b/video/video_stream_encoder.cc
+@@ -1069,6 +1069,7 @@ void VideoStreamEncoder::ReconfigureEncoder() {
+     // Destroy existing encoder instance before creating a new one. Otherwise
+     // attempt to create another instance will fail if encoder factory
+     // supports only single instance of encoder of given type.
++    ReleaseEncoder();
+     encoder_.reset();
+ 
+     encoder_ = MaybeCreateFrameDumpingEncoderWrapper(
+diff --git a/video/video_stream_encoder_unittest.cc b/video/video_stream_encoder_unittest.cc
+index 8c75752b8de0d88ec461dde695477b28001134dd..c13884483f813621310217961cc8eccfeba69214 100644
+--- a/video/video_stream_encoder_unittest.cc
++++ b/video/video_stream_encoder_unittest.cc
+@@ -28,6 +28,7 @@
+ #include "api/array_view.h"
+ #include "api/environment/environment.h"
+ #include "api/environment/environment_factory.h"
++#include "api/fec_controller_override.h"
+ #include "api/field_trials.h"
+ #include "api/field_trials_view.h"
+ #include "api/location.h"
+@@ -42,6 +43,7 @@
+ #include "api/test/mock_video_encoder_factory.h"
+ #include "api/test/rtc_error_matchers.h"
+ #include "api/test/time_controller.h"
++#include "api/test/video/function_video_encoder_factory.h"
+ #include "api/units/data_rate.h"
+ #include "api/units/time_delta.h"
+ #include "api/units/timestamp.h"
+@@ -2186,6 +2188,96 @@ TEST_F(VideoStreamEncoderTest,
+   video_stream_encoder_->Stop();
+ }
+ 
++TEST_F(VideoStreamEncoderTest,
++       EncoderReleasedBeforeDestructionOnReconfiguration) {
++  class ReleaseCheckEncoderProxy : public VideoEncoder {
++   public:
++    ReleaseCheckEncoderProxy(VideoEncoder* encoder, bool& released)
++        : encoder_(encoder), released_(released) {}
++    ~ReleaseCheckEncoderProxy() override = default;
++
++    int32_t Encode(const VideoFrame& input_image,
++                   const std::vector<VideoFrameType>* frame_types) override {
++      return encoder_->Encode(input_image, frame_types);
++    }
++
++    int32_t InitEncode(const VideoCodec* config,
++                       const Settings& settings) override {
++      return encoder_->InitEncode(config, settings);
++    }
++
++    int32_t RegisterEncodeCompleteCallback(
++        EncodedImageCallback* callback) override {
++      return encoder_->RegisterEncodeCompleteCallback(callback);
++    }
++
++    int32_t Release() override {
++      released_ = true;
++      return encoder_->Release();
++    }
++
++    void SetRates(const RateControlParameters& parameters) override {
++      encoder_->SetRates(parameters);
++    }
++
++    VideoEncoder::EncoderInfo GetEncoderInfo() const override {
++      return encoder_->GetEncoderInfo();
++    }
++
++    void SetFecControllerOverride(
++        FecControllerOverride* fec_controller_override) override {
++      encoder_->SetFecControllerOverride(fec_controller_override);
++    }
++
++   private:
++    VideoEncoder* const encoder_;
++    bool& released_;
++  };
++
++  bool released[2] = {false, false};
++  int instance_count = 0;
++
++  test::FunctionVideoEncoderFactory factory(
++      [this, &instance_count, &released](const Environment& env,
++                                         const SdpVideoFormat& format) {
++        RTC_CHECK_LT(instance_count, 2);
++        bool& r = released[instance_count++];
++        return std::make_unique<ReleaseCheckEncoderProxy>(&fake_encoder_, r);
++      });
++
++  video_send_config_.encoder_settings.encoder_factory = &factory;
++  ConfigureEncoder(video_encoder_config_.Copy());
++
++  video_stream_encoder_->OnBitrateUpdatedAndWaitForManagedResources(
++      kTargetBitrate, kTargetBitrate, 0, 0, 0);
++
++  // Capture a frame and wait for it to synchronize with the encoder thread.
++  video_source_.IncomingCapturedFrame(CreateFrame(1, nullptr));
++  WaitForEncodedFrame(1);
++
++  EXPECT_EQ(instance_count, 1);
++  EXPECT_FALSE(released[0]);
++
++  VideoEncoderConfig video_encoder_config = video_encoder_config_.Copy();
++  // Changing the max payload data length recreates encoder.
++  video_stream_encoder_->ConfigureEncoder(std::move(video_encoder_config),
++                                          kMaxPayloadLength / 2);
++
++  // Capture a frame and wait for it to synchronize with the encoder thread.
++  video_source_.IncomingCapturedFrame(CreateFrame(2, nullptr));
++  WaitForEncodedFrame(2);
++
++  // We expect that two encoders were created.
++  EXPECT_EQ(instance_count, 2);
++  // The first encoder should have been released before destruction.
++  EXPECT_TRUE(released[0]);
++
++  video_stream_encoder_->Stop();
++
++  // The second encoder should also be released after Stop().
++  EXPECT_TRUE(released[1]);
++}
++
+ TEST_F(VideoStreamEncoderTest, BitrateLimitsChangeReconfigureRateAllocator) {
+   video_stream_encoder_->OnBitrateUpdatedAndWaitForManagedResources(
+       kTargetBitrate, kTargetBitrate, 0, 0, 0);

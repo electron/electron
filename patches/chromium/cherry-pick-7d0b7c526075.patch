@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takashi Sakamoto <tasak@google.com>
+Date: Sun, 29 Mar 2026 18:47:51 -0700
+Subject: Add AMSC macro to QuicProxyDatagramClientSocket
+
+Bug: 495798630
+Change-Id: I28ae57bb6fe11c62e3a6e6468c5a4639c15b6c0c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7706475
+Commit-Queue: Takashi Sakamoto <tasak@google.com>
+Reviewed-by: David Schinazi <dschinazi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1606861}
+
+diff --git a/net/quic/quic_proxy_datagram_client_socket.h b/net/quic/quic_proxy_datagram_client_socket.h
+index 4c7fad91550fe2630ddb662bbfc5d15854ae8450..8afaa11e48429d8de4f0ea8ff5f7c9ceb91cd1ca 100644
+--- a/net/quic/quic_proxy_datagram_client_socket.h
++++ b/net/quic/quic_proxy_datagram_client_socket.h
+@@ -10,6 +10,7 @@
+ #include <queue>
+ #include <string_view>
+ 
++#include "base/memory/advanced_memory_safety_checks.h"
+ #include "net/base/completion_once_callback.h"
+ #include "net/base/ip_endpoint.h"
+ #include "net/base/net_export.h"
+@@ -37,6 +38,9 @@ class ProxyDelegate;
+ class NET_EXPORT_PRIVATE QuicProxyDatagramClientSocket
+     : public DatagramClientSocket,
+       public quic::QuicSpdyStream::Http3DatagramVisitor {
++  // TODO(crbug.com/495798630): Remove this macro once it gets fixed.
++  ADVANCED_MEMORY_SAFETY_CHECKS();
++
+  public:
+   // Initializes a QuicProxyDatagramClientSocket with the provided network
+   // log (source_net_log) and destination URL. The destination URL is
