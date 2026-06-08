@@ -2554,6 +2554,22 @@ describe('webContents module', () => {
         w.webContents.reload();
         expect(w.webContents.isCrashed()).to.equal(false);
       });
+
+      it('survives a synchronous reload() from the render-process-gone handler', async () => {
+        // Regression test: a synchronous reload() from 'render-process-gone'
+        // used to re-enter renderer process launch mid-teardown and
+        // CHECK-crash the browser process. See
+        // WebContents::PrimaryMainFrameRenderProcessGone.
+        const crashEvent = once(w.webContents, 'render-process-gone');
+        w.webContents.once('render-process-gone', () => {
+          // Deliberately synchronous.
+          w.webContents.reload();
+        });
+        w.webContents.forcefullyCrashRenderer();
+        await crashEvent;
+        await once(w.webContents, 'did-finish-load');
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
     });
   }
 
