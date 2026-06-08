@@ -520,10 +520,10 @@ index ee2df2f709b17571747f53efc208ea9d234d076f..e20e5d5233db5bf1bbb81560bbf3d403
  }  // namespace content
  
 diff --git a/content/public/browser/sandboxed_process_launcher_delegate.cc b/content/public/browser/sandboxed_process_launcher_delegate.cc
-index 677e2e1eb7a70cc809e07609739d21b7ac14caf3..ac2bf1b91d6f5360811360f24954cf43afe5ae8a 100644
+index 939a9a2e90f799afa3c1aeb4d3247d860aa128cf..96606f9d5b8be1bd30bbbdcce355c1fcf61a96e4 100644
 --- a/content/public/browser/sandboxed_process_launcher_delegate.cc
 +++ b/content/public/browser/sandboxed_process_launcher_delegate.cc
-@@ -100,11 +100,23 @@ ZygoteCommunication* SandboxedProcessLauncherDelegate::GetZygote() {
+@@ -88,11 +88,23 @@ ZygoteCommunication* SandboxedProcessLauncherDelegate::GetZygote() {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
