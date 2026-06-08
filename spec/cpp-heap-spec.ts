@@ -165,6 +165,176 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('downloadItem module', () => {
+    it('should survive GC while a download is in progress', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { session } = require('electron');
+          const http = require('node:http');
+          const os = require('node:os');
+          const path = require('node:path');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          // Server that sends headers + part of the body, then holds the
+          // connection open so the download stays in the IN_PROGRESS state.
+          let releaseBody: () => void = () => {};
+          const bodyHeld = new Promise<void>((resolve) => {
+            releaseBody = resolve;
+          });
+          const server = http.createServer(async (_req: any, res: any) => {
+            res.writeHead(200, {
+              'Content-Length': 1024,
+              'Content-Type': 'application/octet-stream',
+              'Content-Disposition': 'attachment; filename="inflight.bin"'
+            });
+            res.write(Buffer.alloc(512));
+            await bodyHeld;
+            res.end(Buffer.alloc(512));
+          });
+          await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+          const { port } = server.address();
+
+          const ses = session.fromPartition('cppheap-download-inflight');
+          let item: any = await new Promise((resolve) => {
+            ses.once('will-download', (_e: any, downloadItem: any) => resolve(downloadItem));
+            ses.downloadURL(`http://127.0.0.1:${port}`);
+          });
+          item.savePath = path.join(os.tmpdir(), 'cppheap-download-inflight.bin');
+
+          // Drop the only JS reference while the download is still running.
+          item = null;
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const stillAlive = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / DownloadItem']);
+
+          releaseBody();
+          server.close();
+          return stillAlive;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'DownloadItem should survive GC while the download is in progress');
+    });
+
+    it('should be released after the download completes', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { session } = require('electron');
+          const http = require('node:http');
+          const os = require('node:os');
+          const path = require('node:path');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          const payload = Buffer.alloc(1024);
+          const server = http.createServer((_req: any, res: any) => {
+            res.writeHead(200, {
+              'Content-Length': payload.length,
+              'Content-Type': 'application/octet-stream',
+              'Content-Disposition': 'attachment; filename="done.bin"'
+            });
+            res.end(payload);
+          });
+          await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+          const { port } = server.address();
+
+          const ses = session.fromPartition('cppheap-download-done');
+          await new Promise<void>((resolve) => {
+            ses.once('will-download', (_e: any, item: any) => {
+              item.savePath = path.join(os.tmpdir(), 'cppheap-download-done.bin');
+              item.once('done', () => resolve());
+            });
+            ses.downloadURL(`http://127.0.0.1:${port}`);
+          });
+          server.close();
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const found = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / DownloadItem']);
+          return !found;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'DownloadItem should be released after the download completes and GC runs');
+    });
+
+    it('should not leak when performing multiple downloads', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { session } = require('electron');
+        const http = require('node:http');
+        const os = require('node:os');
+        const path = require('node:path');
+        const { getCppHeapStatistics } = require('node:v8');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const payload = Buffer.alloc(1024);
+        const server = http.createServer((_req: any, res: any) => {
+          res.writeHead(200, {
+            'Content-Length': payload.length,
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': 'attachment; filename="leak.bin"'
+          });
+          res.end(payload);
+        });
+        await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+        const { port } = server.address();
+
+        const ses = session.fromPartition('cppheap-download-leak');
+        const savePath = path.join(os.tmpdir(), 'cppheap-download-leak.bin');
+
+        async function downloadOnce() {
+          await new Promise<void>((resolve) => {
+            ses.once('will-download', (_e: any, item: any) => {
+              item.savePath = savePath;
+              item.once('done', () => resolve());
+            });
+            ses.downloadURL(`http://127.0.0.1:${port}`);
+          });
+        }
+
+        async function measure(n: number) {
+          for (let i = 0; i < n; i++) {
+            await downloadOnce();
+          }
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          return getCppHeapStatistics('brief').used_size_bytes;
+        }
+
+        await measure(5);
+        const after1 = await measure(10);
+        const after2 = await measure(10);
+        server.close();
+        return { after1, after2 };
+      });
+
+      const growth = result.after2 - result.after1;
+      expect(growth).to.be.at.most(
+        result.after1 * 0.1,
+        `C++ heap grew by ${growth} bytes between two identical rounds of downloads — likely a leak`
+      );
+    });
+  });
+
   ifdescribe(isTestingBindingAvailable())('SafeV8Function callback conversion', () => {
     const gcTestArgv = ['--js-flags=--expose-gc'];
 
