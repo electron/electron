@@ -91,7 +91,6 @@
 #include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
-#include "ui/gfx/win/hwnd_util.h"
 #include "ui/gfx/win/msg_util.h"
 #endif
 
@@ -428,7 +427,10 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   if ((has_frame() || has_client_frame()) && use_content_size_)
     size = ContentBoundsToWindowBounds(gfx::Rect(size)).size();
 
-  widget()->CenterWindow(size);
+  // Bounds need to be re-applied before centering to account for frame
+  // insets, which weren't available on init.
+  SetSize(size);
+  Center();
 
 #if BUILDFLAG(IS_WIN)
   // Save initial window state.
@@ -442,13 +444,6 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   aura::Window* window = GetNativeWindow();
   if (window)
     window->AddPreTargetHandler(this);
-
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
-  // The initial params.bounds was applied before the frame view existed, so
-  // non-client insets weren't accounted for and bounds need to be set again.
-  if (!GetRestoredFrameBorderInsets().IsEmpty())
-    SetBounds(gfx::Rect(GetPosition(), size), false);
-#endif
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -1174,24 +1169,21 @@ ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() const {
   return widget()->GetZOrderLevel();
 }
 
-// We previous called widget()->CenterWindow() here, but in
-// Chromium CL 4916277 behavior was changed to center relative to the
-// parent window if there is one. We want to keep the old behavior
-// for now to avoid breaking API contract, but should consider the long
-// term plan for this aligning with upstream.
 void NativeWindowViews::Center() {
-#if BUILDFLAG(IS_LINUX)
+  // On Windows we previously called gfx::CenterAndSizeWindow on the HWND.
+  // That had the problem of placing windows slightly too high if they have
+  // insets, since top/bottom insets are asymmetric. It also introduces
+  // DIP/pixel conversion errors at fractional scales. We also avoid
+  // widget()->CenterWindow(), since in addition to those issues it centers
+  // relative to the parent window when one exists as of Chromium CL 4916277.
+  //
+  // Centering the logical rect (size without insets) avoids all of the above
+  // and works on Windows and Linux.
   auto display =
       display::Screen::Get()->GetDisplayNearestWindow(GetNativeWindow());
-  gfx::Rect window_bounds_in_screen = display.work_area();
-  window_bounds_in_screen.ClampToCenteredSize(GetSize());
-  widget()->SetBounds(window_bounds_in_screen);
-#else
-  HWND hwnd = GetAcceleratedWidget();
-  gfx::Size size =
-      display::win::GetScreenWin()->DIPToScreenSize(hwnd, GetSize());
-  gfx::CenterAndSizeWindow(nullptr, hwnd, size);
-#endif
+  gfx::Rect bounds = display.work_area();
+  bounds.ClampToCenteredSize(GetSize());
+  SetBounds(bounds, false);
 }
 
 void NativeWindowViews::Invalidate() {
