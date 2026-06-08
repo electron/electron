@@ -81,8 +81,8 @@ describe('safeStorage module', () => {
   });
 
   describe('SafeStorage.isAsyncEncryptionAvailable()', () => {
-    it('should return true when async encryption is available', () => {
-      expect(safeStorage.isAsyncEncryptionAvailable()).to.equal(true);
+    it('should resolve true when async encryption is available', async () => {
+      expect(await safeStorage.isAsyncEncryptionAvailable()).to.equal(true);
     });
   });
 
