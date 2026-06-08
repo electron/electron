@@ -121,7 +121,7 @@ WebViewGuestDelegate::CreateNewGuestWindow(
     }
 
     if (widget_view && !create_params.initially_hidden)
-      widget_view->Show();
+      guest_contents_impl->WasShown();
     return base::WrapUnique(
         static_cast<content::WebContentsImpl*>(guest_contents_impl));
   }
