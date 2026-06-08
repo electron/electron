@@ -13,9 +13,12 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "url/gurl.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace gin {
 
@@ -58,33 +61,31 @@ namespace {
 // api::DownloadItem are fully independent, and either one may be destroyed
 // before the other.
 struct UserDataLink : base::SupportsUserData::Data {
-  explicit UserDataLink(base::WeakPtr<DownloadItem> item)
-      : download_item(item) {}
+  explicit UserDataLink(DownloadItem* item) : download_item(item) {}
 
-  base::WeakPtr<DownloadItem> download_item;
+  cppgc::WeakPersistent<DownloadItem> download_item;
 };
 
 const void* kElectronApiDownloadItemKey = &kElectronApiDownloadItemKey;
 
 }  // namespace
 
-gin::DeprecatedWrapperInfo DownloadItem::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo DownloadItem::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronDownloadItem);
 
 // static
 DownloadItem* DownloadItem::FromDownloadItem(download::DownloadItem* item) {
   // ^- say that 7 times fast in a row
   auto* data = static_cast<UserDataLink*>(
       item->GetUserData(kElectronApiDownloadItemKey));
-  return data ? data->download_item.get() : nullptr;
+  return data ? data->download_item.Get() : nullptr;
 }
 
 DownloadItem::DownloadItem(v8::Isolate* isolate, download::DownloadItem* item)
     : download_item_(item), isolate_(isolate) {
   download_item_->AddObserver(this);
-  download_item_->SetUserData(
-      kElectronApiDownloadItemKey,
-      std::make_unique<UserDataLink>(weak_factory_.GetWeakPtr()));
+  download_item_->SetUserData(kElectronApiDownloadItemKey,
+                              std::make_unique<UserDataLink>(this));
 }
 
 DownloadItem::~DownloadItem() {
@@ -109,7 +110,7 @@ void DownloadItem::OnDownloadUpdated(download::DownloadItem* item) {
     return;
   if (download_item_->IsDone()) {
     Emit("done", item->GetState());
-    Unpin();
+    keep_alive_.Clear();
   } else {
     Emit("updated", item->GetState());
   }
@@ -117,7 +118,7 @@ void DownloadItem::OnDownloadUpdated(download::DownloadItem* item) {
 
 void DownloadItem::OnDownloadDestroyed(download::DownloadItem* /*item*/) {
   download_item_ = nullptr;
-  Unpin();
+  keep_alive_.Clear();
 }
 
 void DownloadItem::Pause() {
@@ -295,24 +296,23 @@ gin::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("getEndTime", &DownloadItem::GetEndTime);
 }
 
-const char* DownloadItem::GetTypeName() {
-  return "DownloadItem";
+const gin::WrapperInfo* DownloadItem::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* DownloadItem::GetHumanReadableName() const {
+  return "Electron / DownloadItem";
 }
 
 // static
-gin_helper::Handle<DownloadItem> DownloadItem::FromOrCreate(
-    v8::Isolate* isolate,
-    download::DownloadItem* item) {
+DownloadItem* DownloadItem::FromOrCreate(v8::Isolate* isolate,
+                                         download::DownloadItem* item) {
   DownloadItem* existing = FromDownloadItem(item);
   if (existing)
-    return gin_helper::CreateHandle(isolate, existing);
+    return existing;
 
-  auto handle =
-      gin_helper::CreateHandle(isolate, new DownloadItem(isolate, item));
-
-  handle->Pin(isolate);
-
-  return handle;
+  return cppgc::MakeGarbageCollected<DownloadItem>(
+      isolate->GetCppHeap()->GetAllocationHandle(), isolate, item);
 }
 
 }  // namespace electron::api
