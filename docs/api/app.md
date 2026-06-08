@@ -701,12 +701,13 @@ Overrides the current application's name.
 * `name` string - The `.desktop` filename (e.g. `'my-app.desktop'`).
 
 Sets the [`.desktop` filename](https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html) on Linux.
-This should match the name of the installed `.desktop` file for the packaged app. If it does not match, the app may not
-show the correct icon or be able to support desktop integration features such as keyboard shortcuts.
+This should match the base filename of the app's installed `.desktop` file. The `.desktop` suffix is optional.
 
-The value is used to determine the default `WM_CLASS` on X11 as well as the XDG application ID on Wayland.
+This value is used to determine the default XDG application ID on Wayland and `WM_CLASS` on X11. If it is not set,
+Electron will attempt to infer a name, but it may not match the packaged app's actual `.desktop` file. This could result
+in the app showing a generic icon or failing to respond to global keyboard shortcuts.
 
-Can also be set using `desktopName` in `package.json`. If no `.desktop` name is provided, Electron will choose a default value which may be inaccurate.
+This API must be called before the `ready` event. The value can also be set using `desktopName` in `package.json`.
 
 ### `app.getLocale()`
 
