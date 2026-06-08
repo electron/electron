@@ -208,16 +208,14 @@ void ProxyingURLLoaderFactory::InProgressRequest::RestartInternal() {
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::FollowRedirect(
-    const std::vector<std::string>& removed_headers,
-    const net::HttpRequestHeaders& modified_headers,
-    const net::HttpRequestHeaders& modified_cors_exempt_headers,
+    network::HttpRequestHeadersUpdateParams headers_update_params,
     const std::optional<GURL>& new_url) {
   if (new_url)
     request_.url = new_url.value();
 
-  for (const std::string& header : removed_headers)
+  for (const std::string& header : headers_update_params.removed_headers)
     request_.headers.RemoveHeader(header);
-  request_.headers.MergeFrom(modified_headers);
+  request_.headers.MergeFrom(headers_update_params.modified_headers);
 
   // Call this before checking |current_request_uses_header_client_| as it
   // calculates it.
@@ -230,13 +228,15 @@ void ProxyingURLLoaderFactory::InProgressRequest::FollowRedirect(
     // the onBeforeSendHeaders callback(s) to run as these may modify request
     // headers and if so we'll pass these modifications to FollowRedirect.
     if (current_request_uses_header_client_) {
-      target_loader_->FollowRedirect(removed_headers, modified_headers,
-                                     modified_cors_exempt_headers, new_url);
+      target_loader_->FollowRedirect(std::move(headers_update_params), new_url);
     } else {
       auto params = std::make_unique<FollowRedirectParams>();
-      params->removed_headers = removed_headers;
-      params->modified_headers = modified_headers;
-      params->modified_cors_exempt_headers = modified_cors_exempt_headers;
+      params->removed_headers =
+          std::move(headers_update_params.removed_headers);
+      params->modified_headers =
+          std::move(headers_update_params.modified_headers);
+      params->modified_cors_exempt_headers =
+          std::move(headers_update_params.modified_cors_exempt_headers);
       params->new_url = new_url;
       pending_follow_redirect_params_ = std::move(params);
     }
@@ -581,11 +581,15 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToSendHeaders(
     }
 
     if (target_loader_.is_bound()) {
-      target_loader_->FollowRedirect(
-          pending_follow_redirect_params_->removed_headers,
-          pending_follow_redirect_params_->modified_headers,
-          pending_follow_redirect_params_->modified_cors_exempt_headers,
-          pending_follow_redirect_params_->new_url);
+      network::HttpRequestHeadersUpdateParams headers_update_params;
+      headers_update_params.removed_headers =
+          std::move(pending_follow_redirect_params_->removed_headers);
+      headers_update_params.modified_headers =
+          std::move(pending_follow_redirect_params_->modified_headers);
+      headers_update_params.modified_cors_exempt_headers = std::move(
+          pending_follow_redirect_params_->modified_cors_exempt_headers);
+      target_loader_->FollowRedirect(std::move(headers_update_params),
+                                     pending_follow_redirect_params_->new_url);
     }
 
     pending_follow_redirect_params_.reset();
