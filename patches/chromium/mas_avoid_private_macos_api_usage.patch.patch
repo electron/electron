@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b02f8565567977bfec774cc29fa31cb81ea26bcb..e628057ea53643b16cb099d5a47ef52ddcb438f7 100644
+index 20acbdf375d1d9c929a674e43e7e48e0e500e780..62d57abb5be19f1a9489ff37fb23b8d23255ea77 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1123,6 +1123,7 @@ component("base") {
@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 0d96440c65f9a4c56cf0c83d85b37b83c7855964..200cb3742dc88af0d29d29301798a5d5c8b1c2f8 100644
+index c5f769419c56b6045a4d4a2ada2665a8a40c052b..9e66e5770b7363963b92fddd4e70b6c45b0080f1 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1018,6 +1018,7 @@ if (is_clang_or_gcc) {
+@@ -1022,6 +1022,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -811,7 +811,7 @@ index ed35001dafab3cb5734f6f6524daac083f5533d6..67e2719de154b7e48b43f9a908e7614d
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 6e0a50325d731a7e20fe86ab2f85d2f2751e8ec5..50e7d60f222b0769bf28d0b602d1b3c42dfda3a3 100644
+index 11db2cec66f579f5d7b344eb6abe97a569f2736f..9e4d80f999db6a7e98cc9ade0da27e834afabf53 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -869,10 +869,10 @@ index 6e0a50325d731a7e20fe86ab2f85d2f2751e8ec5..50e7d60f222b0769bf28d0b602d1b3c4
  
  void NativeWidgetNSWindowBridge::SetColorMode(
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 51300b3de301f065874840122531cc88469b1123..62c376be91a463e672e7884f03cc349dc4128d60 100644
+index 77130b166305abfe4b51c9f518b8fc0152d72490..3e1ee3da00e48c4e423415d89c618fecd66deaa7 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -395,6 +395,7 @@ viz_component("service") {
+@@ -397,6 +397,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mojo_mac.h",
        ]
      }
@@ -880,7 +880,7 @@ index 51300b3de301f065874840122531cc88469b1123..62c376be91a463e672e7884f03cc349d
    }
  
    if (is_ios) {
-@@ -743,6 +744,7 @@ viz_source_set("unit_tests") {
+@@ -747,6 +748,7 @@ viz_source_set("unit_tests") {
        "frame_sinks/external_begin_frame_source_mac_unittest.cc",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -974,7 +974,7 @@ index 91a0eee3a76257906f038844922f18fd4765ea66..af6ce45c11ece7ebe6b7cb70673b0c12
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 5c951c886cde1ab748eb96b784be3779cf8ab33f..8948ff48d2de1cab0016ed8875bf1552f873e82d 100644
+index ed8312a7012138e31df0607e4c31b0b325634d7a..c713efe70212061659aa898edf7cc0d694587335 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -365,6 +365,7 @@ source_set("browser") {
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8db0619c7217e0ed0b70b865b82f489f49429539..55fe9fdab83537c5ea9e544eafa366ba7c393363 100644
+index 357fa2fd339817a3a5e644c1fa394db3ab559dde..b20a04f4f9884656f219ed9a34414966c4a5bfc5 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -704,6 +704,7 @@ static_library("test_support") {
@@ -1209,7 +1209,7 @@ index 8db0619c7217e0ed0b70b865b82f489f49429539..55fe9fdab83537c5ea9e544eafa366ba
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2089,6 +2092,7 @@ test("content_browsertests") {
+@@ -2090,6 +2093,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index 8db0619c7217e0ed0b70b865b82f489f49429539..55fe9fdab83537c5ea9e544eafa366ba
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3484,6 +3488,7 @@ test("content_unittests") {
+@@ -3485,6 +3489,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1789,7 +1789,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 20ca6a74c84787b653eacf2cc24dc486ce64ecee..bf3a6d8162076b8cf65414539b8122efbdca0b15 100644
+index 84aab1e89bf9d9921773d66e4c7686e8da8c0ce5..fe435864e891376c299045b8a55a17f8c5264526 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -443,6 +443,7 @@ component("core") {
@@ -2376,10 +2376,10 @@ index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c50
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 4c281810fd2a52765e6dbc9947da9133289e30b6..9b0cee479a8cc0b0c0aeb536b91ef8ac16ed027f 100644
+index c0d3bad4973286f2a83fd101d50de97f90114a89..0f2ea3dee8f13ae6cb196c5fb493b3ae87a67a76 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -778,6 +778,8 @@ component("views") {
+@@ -780,6 +780,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2388,7 +2388,7 @@ index 4c281810fd2a52765e6dbc9947da9133289e30b6..9b0cee479a8cc0b0c0aeb536b91ef8ac
    }
  
    if (is_win) {
-@@ -1194,6 +1196,8 @@ source_set("test_support") {
+@@ -1196,6 +1198,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
