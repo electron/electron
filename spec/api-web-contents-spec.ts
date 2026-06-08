@@ -2556,25 +2556,17 @@ describe('webContents module', () => {
       });
 
       it('survives a synchronous reload() from the render-process-gone handler', async () => {
-        // Regression test for a browser-process CHECK crash in
-        // extensions::RendererStartupHelper::OnRenderProcessLaunched.
-        // 'render-process-gone' used to be emitted synchronously from inside
-        // the RenderProcessHost's process-death observer loop, so a reload()
-        // in the handler re-entered RenderProcessHostImpl::Init() and the
-        // relaunched renderer tripped the CHECK, taking down the browser
-        // process on Windows/macOS/Linux. The emit is now deferred by one
-        // task (see WebContents::PrimaryMainFrameRenderProcessGone), which
-        // must keep a synchronous reload from the handler safe.
+        // Regression test: a synchronous reload() from 'render-process-gone'
+        // used to re-enter renderer process launch mid-teardown and
+        // CHECK-crash the browser process. See
+        // WebContents::PrimaryMainFrameRenderProcessGone.
         const crashEvent = once(w.webContents, 'render-process-gone');
         w.webContents.once('render-process-gone', () => {
-          // Deliberately synchronous - this must not crash the browser
-          // process.
+          // Deliberately synchronous.
           w.webContents.reload();
         });
         w.webContents.forcefullyCrashRenderer();
         await crashEvent;
-        // On unpatched builds the browser process dies before the reload
-        // completes; reaching did-finish-load proves it survived.
         await once(w.webContents, 'did-finish-load');
         expect(w.webContents.isCrashed()).to.equal(false);
       });

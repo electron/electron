@@ -2017,16 +2017,11 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::PrimaryMainFrameRenderProcessGone(
     base::TerminationStatus status) {
-  // This observer is notified while RenderProcessHostImpl::ProcessDied() is
-  // still iterating the host's observer list. Emitting synchronously lets
-  // apps re-enter RenderProcessHostImpl::Init() from inside that loop (for
-  // example by calling webContents.reload() from the event handler), which
-  // trips a CHECK in extensions::RendererStartupHelper when the relaunched
-  // process finishes launching, because observers that had not yet been
-  // notified of the death see a stale registration for the host. Defer the
-  // emit by one task so the death notification fully unwinds before app code
-  // can react. The exit code is captured now because a navigation started in
-  // the interim could reset it.
+  // This fires while RenderProcessHostImpl is still notifying observers of
+  // the process death. Emit asynchronously so app code (e.g. a synchronous
+  // reload() in the handler) can't re-launch the renderer from inside that
+  // loop, which trips a CHECK in extensions::RendererStartupHelper. The exit
+  // code is captured now because a navigation in the interim could reset it.
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(&WebContents::EmitRenderProcessGone,
                                 weak_factory_.GetWeakPtr(), status,

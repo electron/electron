@@ -682,9 +682,7 @@ class WebContents final : public ExclusiveAccessContext,
 
   void OnElectronBrowserConnectionError();
 
-  // Emits 'render-process-gone'. Posted (not called synchronously) from
-  // PrimaryMainFrameRenderProcessGone() so app code cannot re-enter renderer
-  // process setup from inside the process-death notification.
+  // Posted from PrimaryMainFrameRenderProcessGone(); see the comment there.
   void EmitRenderProcessGone(base::TerminationStatus status, int exit_code);
 
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
