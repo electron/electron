@@ -215,3 +215,4 @@ cherry-pick-cd7556b9adf6.patch
 cherry-pick-a72c80884d88.patch
 cherry-pick-e5e651024478.patch
 build_disable_llvm_unroll-add-parallel-reductions_on_apple_targets.patch
+fix_handle_render_process_reuse_in_rendererstartuphelper_on_all.patch
