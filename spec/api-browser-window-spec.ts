@@ -64,6 +64,17 @@ const expectBoundsEqual = (actual: any, expected: any) => {
   }
 };
 
+// Is the window centered at the given size?
+const expectCenteredBounds = (win: BrowserWindow, width: number, height: number) => {
+  const { workArea } = screen.getDisplayMatching(win.getBounds());
+  expectBoundsEqual(win.getBounds(), {
+    x: workArea.x + Math.floor((workArea.width - width) / 2),
+    y: workArea.y + Math.floor((workArea.height - height) / 2),
+    width,
+    height
+  });
+};
+
 const isBeforeUnload = (event: Event, level: number, message: string) => {
   return message === 'beforeunload';
 };
@@ -103,6 +114,14 @@ describe('BrowserWindow module', () => {
         w.destroy();
       }).not.to.throw();
     });
+
+    for (const frame of [true, false]) {
+      ifit(process.platform !== 'darwin')(`creates a window centered at the requested size (frame: ${frame})`, () => {
+        const w = new BrowserWindow({ show: false, frame, width: 600, height: 400 });
+        expectCenteredBounds(w, 600, 400);
+        w.destroy();
+      });
+    }
   });
 
   describe('garbage collection', () => {
@@ -1901,6 +1920,20 @@ describe('BrowserWindow module', () => {
         await move;
         expect(w.getPosition()).to.deep.equal(pos);
       });
+    });
+
+    ifdescribe(process.platform !== 'darwin')('BrowserWindow.center()', () => {
+      for (const frame of [true, false]) {
+        it(`moves a window to the center and preserves its size (frame: ${frame})`, () => {
+          const w = new BrowserWindow({ show: false, frame, width: 600, height: 400 });
+
+          const { workArea } = screen.getDisplayMatching(w.getBounds());
+          w.setPosition(workArea.x, workArea.y);
+          w.center();
+          expectCenteredBounds(w, 600, 400);
+          w.destroy();
+        });
+      }
     });
 
     describe('BrowserWindow.setContentSize(width, height)', () => {
