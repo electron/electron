@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Thu, 30 Apr 2026 16:12:35 -0700
+Subject: [mac] Prototype compressed pixel format support for video decoding
+
+Backport of unlanded upstream prototype
+https://chromium-review.googlesource.com/c/chromium/src/+/7805362
+
+Adds a disabled-by-default VideoToolboxCompressedPixelFormats feature
+that requests lossless compressed pixel formats (Apple GPU framebuffer
+compression) from VideoToolbox decode sessions, cutting video playback
+memory bandwidth on Apple Silicon. 8-bit content only for now.
+
+Differs from upstream: the commented-out 10-bit Lossless case lines in
+video_toolbox_frame_converter.cc are dropped.
+
+Remove this patch once the CL lands upstream and rolls into Electron.
+
+Bug: 500766607
+Change-Id: I57f7c7a3be7b6d088fff177584415d8c3b258df2
+
+diff --git a/media/gpu/mac/video_toolbox_decompression_session_manager.mm b/media/gpu/mac/video_toolbox_decompression_session_manager.mm
+index d00f4f2cb631669957aca23b383d4cefc51f00b1..fcde67da09f2632a59210afc5651a03ff09df52b 100644
+--- a/media/gpu/mac/video_toolbox_decompression_session_manager.mm
++++ b/media/gpu/mac/video_toolbox_decompression_session_manager.mm
+@@ -4,11 +4,13 @@
+ 
+ #include "media/gpu/mac/video_toolbox_decompression_session_manager.h"
+ 
++#include <CoreVideo/CoreVideo.h>
+ #include <Foundation/Foundation.h>
+ 
+ #include <memory>
+ 
+ #include "base/apple/bridging.h"
++#include "base/feature_list.h"
+ #include "base/functional/bind.h"
+ #include "base/logging.h"
+ #include "media/base/media_log.h"
+@@ -21,6 +23,11 @@
+ 
+ namespace media {
+ 
++namespace {
++BASE_FEATURE(kVideoToolboxCompressedPixelFormats,
++             base::FEATURE_DISABLED_BY_DEFAULT);
++}  // namespace
++
+ VideoToolboxDecompressionSessionManager::
+     VideoToolboxDecompressionSessionManager(
+         scoped_refptr<base::SequencedTaskRunner> task_runner,
+@@ -242,6 +249,17 @@
+     pixel_format = session_metadata.bit_depth > 8
+                        ? kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
+                        : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
++    if (__builtin_available(macOS 12.0, iOS 15.0, *)) {
++      if (session_metadata.bit_depth == 8 &&
++          base::FeatureList::IsEnabled(kVideoToolboxCompressedPixelFormats)) {
++        FourCharCode compressed_format =
++            kCVPixelFormatType_Lossless_420YpCbCr8BiPlanarVideoRange;
++        if (CVIsCompressedPixelFormatAvailable(compressed_format)) {
++          pixel_format = compressed_format;
++          LOG(ERROR) << "USING COMPRESSED FORMAT";
++        }
++      }
++    }
+   }
+ 
+   if (session_metadata.has_alpha) {
+diff --git a/media/gpu/mac/video_toolbox_frame_converter.cc b/media/gpu/mac/video_toolbox_frame_converter.cc
+index 6c21b632220d6238f7dbe0c10155565c1bd2f086..0baf043d5c78c4530ba7058e2bc59856727b004e 100644
+--- a/media/gpu/mac/video_toolbox_frame_converter.cc
++++ b/media/gpu/mac/video_toolbox_frame_converter.cc
+@@ -49,6 +49,7 @@ std::optional<viz::SharedImageFormat> PixelFormatToImageFormat(
+     OSType pixel_format) {
+   switch (pixel_format) {
+     case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
++    case kCVPixelFormatType_Lossless_420YpCbCr8BiPlanarVideoRange:
+       return viz::MultiPlaneFormat::kNV12;
+     case kCVPixelFormatType_422YpCbCr8BiPlanarVideoRange:
+       return viz::MultiPlaneFormat::kNV16;
+@@ -70,6 +71,7 @@ std::optional<viz::SharedImageFormat> PixelFormatToImageFormat(
+ VideoPixelFormat PixelFormatToVideoPixelFormat(OSType pixel_format) {
+   switch (pixel_format) {
+     case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
++    case kCVPixelFormatType_Lossless_420YpCbCr8BiPlanarVideoRange:
+       return PIXEL_FORMAT_NV12;
+     case kCVPixelFormatType_422YpCbCr8BiPlanarVideoRange:
+       return PIXEL_FORMAT_NV16;
