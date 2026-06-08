@@ -8619,6 +8619,58 @@ describe('BrowserWindow module', () => {
 
           w.destroy();
         });
+
+        it('should restore display modes when shown via showInactive()', async () => {
+          await createAndSaveWindowState(preferencesPath, windowName, { fullscreen: true });
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          const enterFullScreen = once(w, 'enter-full-screen');
+
+          await setTimeout(2000);
+          expect(w.isVisible()).to.equal(false);
+
+          // showInactive() should flush the deferred display-mode restore just
+          // like show() does.
+          w.showInactive();
+
+          if (!w.isFullScreen()) await enterFullScreen;
+          expect(w.isFullScreen()).to.equal(true);
+
+          w.destroy();
+        });
+
+        it('should save state when destroyed before being shown', async () => {
+          await createAndSaveWindowState(preferencesPath, windowName, { width: 400, height: 300 });
+
+          const w = new BrowserWindow({
+            name: windowName,
+            windowStatePersistence: true,
+            show: false
+          });
+
+          // Mutate bounds while the window is still hidden and never shown.
+          const newBounds = { x: 100, y: 150, width: 500, height: 450 };
+          w.setBounds(newBounds);
+
+          const initialModTime = getPrefsModTime(preferencesPath);
+
+          // Destroying without ever calling show()/showInactive() must still
+          // flush the latest state to disk (the restore guard must not suppress
+          // the close-time save).
+          w.destroy();
+
+          await waitForPrefsUpdate(initialModTime, preferencesPath);
+
+          const savedState = getWindowStateFromDisk(windowName, preferencesPath);
+          expect(savedState).to.not.be.null();
+          expect(savedState.right - savedState.left).to.equal(newBounds.width);
+          expect(savedState.bottom - savedState.top).to.equal(newBounds.height);
+        });
       });
 
       // FIXME(nilayarya): Figure out why these tests fail on macOS-x64

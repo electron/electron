@@ -584,6 +584,12 @@ void NativeWindow::NotifyWindowHide() {
 }
 
 void NativeWindow::NotifyWindowMaximize() {
+  // A restoration-initiated maximize transition has completed; lift the guard
+  // so subsequent state changes are persisted again.
+  if (awaiting_restore_display_mode_transition_) {
+    awaiting_restore_display_mode_transition_ = false;
+    is_being_restored_ = false;
+  }
   observers_.Notify(&NativeWindowObserver::OnWindowMaximize);
 }
 
@@ -630,6 +636,13 @@ void NativeWindow::NotifyWindowMoved() {
 }
 
 void NativeWindow::NotifyWindowEnterFullScreen() {
+  // A restoration-initiated fullscreen (or kiosk, which routes through
+  // fullscreen) transition has completed; lift the guard so subsequent state
+  // changes are persisted again.
+  if (awaiting_restore_display_mode_transition_) {
+    awaiting_restore_display_mode_transition_ = false;
+    is_being_restored_ = false;
+  }
   NotifyLayoutWindowControlsOverlay();
   observers_.Notify(&NativeWindowObserver::OnWindowEnterFullScreen);
 }
@@ -851,7 +864,8 @@ void NativeWindow::DebouncedSaveWindowState() {
 }
 
 void NativeWindow::SaveWindowState() {
-  if (!window_state_persistence_enabled_ || is_being_restored_)
+  if (!window_state_persistence_enabled_ || is_being_restored_ ||
+      is_transitioning_fullscreen())
     return;
 
   gfx::Rect bounds = GetBounds();
@@ -919,6 +933,17 @@ void NativeWindow::SaveWindowState() {
 }
 
 void NativeWindow::FlushWindowState() {
+  // Window destroyed before Show()/ShowInactive() ever ran the deferred
+  // restore: drop the pending callback and clear the guard so the final save
+  // isn't suppressed. During a real restoration transition the callback has
+  // already been moved out, so this is a no-op and transitional bounds stay
+  // suppressed.
+  if (restore_display_mode_callback_) {
+    restore_display_mode_callback_.Reset();
+    is_being_restored_ = false;
+    awaiting_restore_display_mode_transition_ = false;
+  }
+
   if (save_window_state_timer_.IsRunning()) {
     save_window_state_timer_.FireNow();
   } else {
@@ -1009,23 +1034,35 @@ void NativeWindow::RestoreWindowState(const gin_helper::Dictionary& options) {
   }
 
   if (restore_display_mode_) {
-    // The display-mode change (kiosk/fullscreen/maximize) runs from Show() via
-    // FlushPendingDisplayMode(). It triggers resize/move events that schedule
-    // DebouncedSaveWindowState. Keep is_being_restored_ true until the deferred
-    // callback finishes so transitional bounds aren't persisted over the saved
-    // ones.
+    // The display-mode change (kiosk/fullscreen/maximize) runs from Show()/
+    // ShowInactive() via FlushPendingDisplayMode(). It triggers resize/move
+    // events that schedule DebouncedSaveWindowState. Keep is_being_restored_
+    // true until the transition completes so transitional bounds aren't
+    // persisted over the saved ones. Because these transitions are async on
+    // macOS, the reset is deferred to the matching Notify* observer
+    // (NotifyWindowEnterFullScreen/NotifyWindowMaximize) rather than reset
+    // synchronously here.
     restore_display_mode_callback_ = base::BindOnce(
         [](NativeWindow* window, base::DictValue prefs) {
+          bool transition_initiated = true;
           if (auto kiosk = prefs.FindBool(electron::kKiosk); kiosk && *kiosk) {
+            window->awaiting_restore_display_mode_transition_ = true;
             window->SetKiosk(true);
           } else if (auto fs = prefs.FindBool(electron::kFullscreen);
                      fs && *fs) {
+            window->awaiting_restore_display_mode_transition_ = true;
             window->SetFullScreen(true);
           } else if (auto max = prefs.FindBool(electron::kMaximized);
                      max && *max) {
+            window->awaiting_restore_display_mode_transition_ = true;
             window->Maximize();
+          } else {
+            transition_initiated = false;
           }
-          window->is_being_restored_ = false;
+          // No display-mode transition to wait on (saved state was normal):
+          // lift the guard immediately.
+          if (!transition_initiated)
+            window->is_being_restored_ = false;
         },
         base::Unretained(this), window_preferences->Clone());
   } else {

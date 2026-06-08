@@ -606,6 +606,8 @@ void NativeWindowViews::Show() {
 }
 
 void NativeWindowViews::ShowInactive() {
+  FlushPendingDisplayMode();
+
   widget()->ShowInactive();
 
   NotifyWindowShow();

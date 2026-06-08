@@ -591,6 +591,11 @@ class NativeWindow : public views::WidgetDelegate {
   // Flag to prevent SaveWindowState calls during window restoration.
   bool is_being_restored_ = false;
 
+  // True while a restoration-initiated display-mode transition
+  // (fullscreen/maximize/kiosk) is in flight. Cleared from the matching
+  // Notify* observer once the (possibly async) transition completes.
+  bool awaiting_restore_display_mode_transition_ = false;
+
   // The boolean parsing of the "windowStatePersistence" option
   bool window_state_persistence_enabled_ = false;
 
