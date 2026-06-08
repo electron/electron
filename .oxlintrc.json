@@ -349,6 +349,20 @@
     },
     {
       "files": [
+        "spec/**/api-*.ts",
+        "spec/**/api-*.js",
+        "spec/**/api-*.mjs"
+      ],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [{
+            "regex": "^\\.\\./"
+          }]
+        }]
+      }
+    },
+    {
+      "files": [
         "**/*.d.ts"
       ],
       "rules": {
