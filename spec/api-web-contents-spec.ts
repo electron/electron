@@ -2554,6 +2554,29 @@ describe('webContents module', () => {
         w.webContents.reload();
         expect(w.webContents.isCrashed()).to.equal(false);
       });
+
+      it('survives a synchronous reload() from the render-process-gone handler', async () => {
+        // Regression test for a browser-process CHECK crash in
+        // extensions::RendererStartupHelper::OnRenderProcessLaunched.
+        // Reloading synchronously inside 'render-process-gone' re-enters
+        // RenderProcessHostImpl::Init() while the process-death observer loop
+        // is still on the stack; when the relaunched renderer finished
+        // launching, the stale process registration tripped a CHECK and took
+        // down the browser process on Windows/macOS/Linux. See
+        // fix_handle_render_process_reuse_in_rendererstartuphelper_on_all.patch.
+        const crashEvent = once(w.webContents, 'render-process-gone');
+        w.webContents.once('render-process-gone', () => {
+          // Deliberately synchronous - this must not crash the browser
+          // process.
+          w.webContents.reload();
+        });
+        w.webContents.forcefullyCrashRenderer();
+        await crashEvent;
+        // On unpatched builds the browser process dies before the reload
+        // completes; reaching did-finish-load proves it survived.
+        await once(w.webContents, 'did-finish-load');
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
     });
   }
 
