@@ -207,7 +207,7 @@ async function check () {
   console.log(hasFormat)
   // 'true' or 'false'
   const rawFormat = 'electron application/osclipboard;format="public/utf8-plain-text"'
-  const hasRawFormat = await clipboard.has('rawFormat')
+  const hasRawFormat = await clipboard.has(rawFormat)
 }
 
 check()
