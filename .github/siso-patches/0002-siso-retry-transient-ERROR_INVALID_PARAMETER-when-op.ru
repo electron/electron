@@ -19,7 +19,6 @@ Other platforms keep the direct os.Open path.
 
 diff --git a/siso/hashfs/state.go b/siso/hashfs/state.go
 index 1be99639..abe2fbcc 100644
---- a/siso/hashfs/state.go
 +++ b/siso/hashfs/state.go
 @@ -250,7 +250,7 @@ func loadFile(ctx context.Context, opts Option) ([]byte, error) {
  	if opts.UseMmap {
@@ -32,7 +31,7 @@ index 1be99639..abe2fbcc 100644
  		}
 diff --git a/siso/mmapfile/mmap_unix.go b/siso/mmapfile/mmap_unix.go
 index 345c02de..9bafe560 100644
---- a/siso/mmapfile/mmap_unix.go
+
 +++ b/siso/mmapfile/mmap_unix.go
 @@ -7,6 +7,7 @@
  package mmapfile
@@ -53,7 +52,7 @@ index 345c02de..9bafe560 100644
  		return nil, err
 diff --git a/siso/mmapfile/mmap_windows.go b/siso/mmapfile/mmap_windows.go
 index fc00bc9e..31e16150 100644
---- a/siso/mmapfile/mmap_windows.go
+
 +++ b/siso/mmapfile/mmap_windows.go
 @@ -7,6 +7,7 @@
  package mmapfile
@@ -132,7 +131,7 @@ index 00000000..2c71562c
 +}
 diff --git a/siso/toolsupport/ninjautil/file_parser.go b/siso/toolsupport/ninjautil/file_parser.go
 index 39ed7af6..a81fc9a5 100644
---- a/siso/toolsupport/ninjautil/file_parser.go
+
 +++ b/siso/toolsupport/ninjautil/file_parser.go
 @@ -110,7 +110,7 @@ func (p *fileParser) parseFile(ctx context.Context, fname string) error {
  // not outlive Load, which releases all mappings before returning.
