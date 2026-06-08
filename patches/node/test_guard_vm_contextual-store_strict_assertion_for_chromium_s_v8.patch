@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 4 Jun 2026 10:26:11 -0400
+Subject: test: guard vm contextual-store strict assertion for Chromium's V8
+
+test-vm-global-contextual-store was added upstream in
+https://github.com/nodejs/node/pull/62571. It asserts that an undeclared
+strict-mode contextual store (`"use strict"; z = 42`) throws a ReferenceError.
+
+Electron uses Chromium's V8, which removed v8::PropertyCallbackInfo<T>::This()
+(https://github.com/nodejs/node/issues/60616). Without the receiver, the
+contextify property setter cannot distinguish a contextual store (`z = 42`)
+from an explicit `this.z = 42` store, so the undeclared strict-mode contextual
+store is written to the sandbox instead of throwing. Preserving explicit global
+stores (relied on by `globalThis.x = v` in vm modules, e.g.
+test-vm-module-referrer-realm) matters more than this edge case, so skip the
+ReferenceError assertion under Electron.
+
+This patch can be removed once Chromium's V8 exposes the receiver again or the
+contextify setter can otherwise detect a contextual store.
+
+diff --git a/test/parallel/test-vm-global-contextual-store.js b/test/parallel/test-vm-global-contextual-store.js
+index 1ae74adb541b586a99e148e8dcff39e0b613acb2..8c349cf0cc86c936da51a8f956595e608c03a48b 100644
+--- a/test/parallel/test-vm-global-contextual-store.js
++++ b/test/parallel/test-vm-global-contextual-store.js
+@@ -14,6 +14,13 @@ assert.strictEqual(ctx.x, 42);
+ vm.runInContext('y = 42', ctx);
+ assert.strictEqual(ctx.y, 42);
+ 
+-assert.throws(() => vm.runInContext('"use strict"; z = 42', ctx),
+-              /ReferenceError: z is not defined/);
+-assert.strictEqual(Object.hasOwn(ctx, 'z'), false);
++// Electron uses Chromium's V8, which removed v8::PropertyCallbackInfo::This()
++// (https://github.com/nodejs/node/issues/60616). Without the receiver, the
++// contextify property setter cannot distinguish a contextual store (`z = 42`)
++// from an explicit `this.z = 42` store, so an undeclared strict-mode contextual
++// store is written to the sandbox instead of throwing a ReferenceError.
++if (!process.versions.electron) {
++  assert.throws(() => vm.runInContext('"use strict"; z = 42', ctx),
++                /ReferenceError: z is not defined/);
++  assert.strictEqual(Object.hasOwn(ctx, 'z'), false);
++}
