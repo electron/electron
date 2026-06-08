@@ -13,6 +13,7 @@ import {
   session,
   systemPreferences,
   WebContents,
+  WebContentsView,
   WebFrameMain
 } from 'electron/main';
 
@@ -102,6 +103,23 @@ describe('BrowserWindow module', () => {
         } as any);
         w.destroy();
       }).not.to.throw();
+    });
+
+    it('does not leak BrowserWindow backgroundColor into shared webPreferences', () => {
+      const sharedPrefs: Electron.WebPreferences = {};
+      const w = new BrowserWindow({
+        show: false,
+        backgroundColor: '#00f',
+        webPreferences: sharedPrefs
+      });
+      const view = new WebContentsView({ webPreferences: sharedPrefs });
+      const windowPrefs = w.webContents.getLastWebPreferences() as any;
+      const viewPrefs = view.webContents.getLastWebPreferences() as any;
+      expect(windowPrefs!.backgroundColor).to.equal('#00f');
+      expect(viewPrefs!.backgroundColor).to.be.undefined();
+      expect(Object.keys(sharedPrefs)).to.have.lengthOf(0);
+      view.webContents.close();
+      w.destroy();
     });
   });
 
