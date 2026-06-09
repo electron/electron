@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hirokazu Honda <hiroh@chromium.org>
+Date: Thu, 28 May 2026 17:32:03 -0700
+Subject: [M148] media/base: Use safe math in
+ VideoFrame::GetVisibleDataInternal
+
+Original change's description:
+> media/base: Use safe math in VideoFrame::GetVisibleDataInternal
+>
+> This CL updates VideoFrame::GetVisibleDataInternal() to use
+> size_t for the local plane_stride (avoiding implicit truncation
+> from stride()) and refactors offset and size calculations using
+> base::CheckedNumeric to prevent signed integer wraparound/overflow.
+>
+> Bug: 515429352
+> Test: video.EncodeAccel.*
+> Change-Id: Ia36795a360b501db578684ecd95423c23e59aa48
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7874236
+> Commit-Queue: Hirokazu Honda <hiroh@chromium.org>
+> Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1636633}
+
+(cherry picked from commit 3c569434034b9f87d61aee8ca4fc147e2f565704)
+
+Bug: 517405700,515429352
+Change-Id: Ia36795a360b501db578684ecd95423c23e59aa48
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7882121
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#3934}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/media/base/video_frame.cc b/media/base/video_frame.cc
+index 4b169b37a683f07e7c94988f1134b3e1a8796648..e016af5aa74f855889783d771e12b039656311ee 100644
+--- a/media/base/video_frame.cc
++++ b/media/base/video_frame.cc
+@@ -1292,19 +1292,35 @@ base::span<T> VideoFrame::GetVisibleDataInternal(base::span<T> data,
+                           base::bits::AlignDownDeprecatedDoNotUse(
+                               visible_rect_.y(), alignment.height()));
+ 
+-  const int plane_stride = stride(plane);
++  const size_t plane_stride = stride(plane);
+   const gfx::Size subsample = SampleSize(format(), plane);
+   DCHECK(offset.x() % subsample.width() == 0);
+   DCHECK(offset.y() % subsample.height() == 0);
+-  const auto visible_plane_offset = base::checked_cast<size_t>(
+-      // Row offset.
+-      plane_stride * (offset.y() / subsample.height()) +
+-      // Column offset.
++
++  // Use CheckedNumeric for offset calculation to prevent overflow.
++  // Row offset.
++  base::CheckedNumeric<size_t> checked_offset = plane_stride;
++  checked_offset *= base::checked_cast<size_t>(offset.y() / subsample.height());
++  // Column offset.
++  checked_offset += base::checked_cast<size_t>(
+       BytesPerElement(format(), plane) * (offset.x() / subsample.width()));
++  const size_t visible_plane_offset = checked_offset.ValueOrDie();
++
++  const size_t visible_rows = base::checked_cast<size_t>(GetVisibleRows(plane));
++  const size_t visible_row_bytes =
++      base::checked_cast<size_t>(GetVisibleRowBytes(plane));
++
++  // Use CheckedNumeric for size calculation to prevent overflow.
+   // In the last row, bytes between visible width and the full stride are not
+   // the part of the visible plane.
+-  size_t visible_plane_size =
+-      plane_stride * (GetVisibleRows(plane) - 1) + GetVisibleRowBytes(plane);
++  base::CheckedNumeric<size_t> checked_visible_plane_size = 0;
++  if (visible_rows > 0) {
++    checked_visible_plane_size = plane_stride;
++    checked_visible_plane_size *= (visible_rows - 1);
++    checked_visible_plane_size += visible_row_bytes;
++  }
++  const size_t visible_plane_size = checked_visible_plane_size.ValueOrDie();
++
+   return data.subspan(visible_plane_offset, visible_plane_size);
+ }
+ 

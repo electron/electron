@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin McNee <mcnee@chromium.org>
+Date: Fri, 29 May 2026 14:40:21 -0700
+Subject: [M148] MimeHandlerView: Guard against malicious script execution
+ during post message
+
+Original change's description:
+> MimeHandlerView: Guard against malicious script execution during post message
+>
+> When looking up the postMessage function for the inner embed, a
+> malicious script could execute and destroy the parent frame. We now use
+> a weak ptr so that we do not proceed if the object has been
+> synchronously destroyed.
+>
+> Fixed: 516910450
+> Change-Id: Ide9d209f0a5399920c7f3d9a8d631947ed68040a
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7880786
+> Reviewed-by: Andy Phan <andyphan@chromium.org>
+> Commit-Queue: Andy Phan <andyphan@chromium.org>
+> Auto-Submit: Kevin McNee <mcnee@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1637767}
+
+(cherry picked from commit 6787a994f7a92c0b50a91cbe8947a88f9ca9b431)
+
+Bug: 517793936,516910450
+Change-Id: Ide9d209f0a5399920c7f3d9a8d631947ed68040a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7881336
+Reviewed-by: Andy Phan <andyphan@chromium.org>
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Kevin McNee <mcnee@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#3992}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/extensions/renderer/guest_view/mime_handler_view/post_message_support.cc b/extensions/renderer/guest_view/mime_handler_view/post_message_support.cc
+index d14bb357965aeef9ed529a65a1831e3f907a69e9..2f46b515276208f1622936082ec5719d95335d6f 100644
+--- a/extensions/renderer/guest_view/mime_handler_view/post_message_support.cc
++++ b/extensions/renderer/guest_view/mime_handler_view/post_message_support.cc
+@@ -145,10 +145,16 @@ void PostMessageSupport::PostJavaScriptMessage(v8::Isolate* isolate,
+   v8::Local<v8::Object> target_window_proxy =
+       target_frame->GlobalProxy(isolate);
+   gin::Dictionary window_object(isolate, target_window_proxy);
++  auto weak_this = weak_factory_.GetWeakPtr();
+   v8::Local<v8::Function> post_message;
+   if (!window_object.Get(std::string(kPostMessageName), &post_message)) {
+     return;
+   }
++  if (!weak_this) {
++    // Getting the function may have executed a malicious script that destroyed
++    // `this`. See https://crbug.com/516910450
++    return;
++  }
+ 
+   v8::Local<v8::Value> args[] = {
+       message,

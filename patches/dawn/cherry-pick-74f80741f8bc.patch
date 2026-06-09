@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Wallez <cwallez@chromium.org>
+Date: Mon, 8 Jun 2026 04:56:47 -0700
+Subject: [M148] [dawn][native] Disallow TransientAttachment for internal
+ usages.
+
+Original change's description:
+> [dawn][native] Disallow TransientAttachment for internal usages.
+>
+> Contrary to additional usages that are strict additions,
+> TransientAttachment is an opt-in to additional constraints, so it would
+> have user-visible effects (plus validation for external usages would need
+> to take into account the potential internal TransientAttachment).
+>
+> Fixed: 517247333
+> Change-Id: Ib197ad592433a2c6ee1b2de2e50e734995f3a111
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/311915
+> Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+> Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+> Commit-Queue: David Neto <dneto@google.com>
+> Auto-Submit: Corentin Wallez <cwallez@chromium.org>
+
+(cherry picked from commit 836ae06d5a9063469d793f6f176e4f69f992df24)
+
+Bug: 519444790,517247333
+Change-Id: Ib197ad592433a2c6ee1b2de2e50e734995f3a111
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/314775
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/dawn/native/Texture.cpp b/src/dawn/native/Texture.cpp
+index edaa26c8d8c1fa2cc1e882c585d0fc479c4463b6..6d68e529c5044dd12686603f9217619c3af8b5f8 100644
+--- a/src/dawn/native/Texture.cpp
++++ b/src/dawn/native/Texture.cpp
+@@ -731,6 +731,19 @@ MaybeError ValidateTextureDescriptor(
+             !device->HasFeature(Feature::DawnInternalUsages),
+             "The internalUsageDesc is not empty while the dawn-internal-usages feature is not "
+             "enabled");
++
++        // Disallow TransientAttachment because it is not an expansion of usages but instead an
++        // additional constraint and would need to have visible effects (for users of the API that
++        // don't have access to the internal usages). Use an allow-list to explicitly opt-in usages
++        // to be allowed as internal usages in the future.
++        constexpr wgpu::TextureUsage kAllowedInternalUsages =
++            wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::CopyDst |
++            wgpu::TextureUsage::TextureBinding | wgpu::TextureUsage::StorageBinding |
++            wgpu::TextureUsage::RenderAttachment;
++        DAWN_INVALID_IF(!IsSubset(internalUsageDesc->internalUsage, kAllowedInternalUsages),
++                        "internalUsage contains %s which are not allowed as internal usages.",
++                        internalUsageDesc->internalUsage & ~kAllowedInternalUsages);
++
+         usage |= internalUsageDesc->internalUsage;
+     }
+ 
+diff --git a/src/dawn/tests/unittests/validation/InternalUsageValidationTests.cpp b/src/dawn/tests/unittests/validation/InternalUsageValidationTests.cpp
+index e1a6e4a1b00db746ed8b8f32bc6d6f356d8e8f6f..8977ddf7b7ad9efa959b5164bd48ac41577d5471 100644
+--- a/src/dawn/tests/unittests/validation/InternalUsageValidationTests.cpp
++++ b/src/dawn/tests/unittests/validation/InternalUsageValidationTests.cpp
+@@ -108,6 +108,29 @@ TEST_F(TextureInternalUsageValidationTest, Basic) {
+     device.CreateTexture(&textureDesc);
+ }
+ 
++// Test that TransientAttachment cannot be passed as internal usage.
++TEST_F(TextureInternalUsageValidationTest, TransientAttachment) {
++    wgpu::TextureDescriptor textureDesc = {};
++    textureDesc.size = {1, 1};
++    textureDesc.format = wgpu::TextureFormat::RGBA8Unorm;
++
++    wgpu::DawnTextureInternalUsageDescriptor internalDesc = {};
++    textureDesc.nextInChain = &internalDesc;
++
++    // Success case: Texture is Render+Transient and Render as internal usage.
++    textureDesc.usage =
++        wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TransientAttachment;
++    internalDesc.internalUsage = wgpu::TextureUsage::RenderAttachment;
++    device.CreateTexture(&textureDesc);
++
++    // Failure case: Texture is Render+Transient for both normal and internal usages.
++    textureDesc.usage =
++        wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TransientAttachment;
++    internalDesc.internalUsage =
++        wgpu::TextureUsage::RenderAttachment | wgpu::TextureUsage::TransientAttachment;
++    ASSERT_DEVICE_ERROR(device.CreateTexture(&textureDesc));
++}
++
+ // Test that internal usages takes part in other validation that
+ // depends on the usage.
+ TEST_F(TextureInternalUsageValidationTest, UsageValidation) {

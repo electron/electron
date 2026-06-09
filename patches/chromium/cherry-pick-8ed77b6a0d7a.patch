@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charlie Reis <creis@chromium.org>
+Date: Tue, 2 Jun 2026 12:36:08 -0700
+Subject: [M148] Early return if a nested message loop deletes the RFH.
+
+Original change's description:
+> Early return if a nested message loop deletes the RFH.
+>
+> Bug: 516608438
+> Change-Id: Id8dca00538f844f024d31c3f362363582d2dd1f6
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7879617
+> Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+> Commit-Queue: Charlie Reis <creis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1637734}
+
+(cherry picked from commit f4e79665719591b82490c347611095cb4f6098b8)
+
+Bug: 517793443,516608438
+Change-Id: Id8dca00538f844f024d31c3f362363582d2dd1f6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7886194
+Commit-Queue: Charlie Reis <creis@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4212}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 4a78876901322f0c7e574a5106fb1e5d1b3d68cd..aca7d60e2e98448f3fd31f4e81c2acee57616c99 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -6318,10 +6318,16 @@ void RenderFrameHostImpl::DidCommitPageActivation(
+   });
+ #endif
+ 
++  base::WeakPtr<RenderFrameHostImpl> weak_ptr = GetWeakPtr();
+   DidCommitNavigationInternal(
+       std::move(owned_request), std::move(params),
+       /*same_document_params=*/nullptr,
+       /*did_commit_ipc_received_time=*/base::TimeTicks());
++  if (!weak_ptr) {
++    // This RFH may be deleted after DidCommitNavigationInternal due to a nested
++    // message loop. All callers should handle this.
++    return;
++  }
+ 
+   // NOTE: Navigation metrics assume that not much work is done between
+   // DidCommitNavigationInternal() and the end of this function. Avoid adding
+@@ -16150,10 +16156,17 @@ bool RenderFrameHostImpl::DidCommitNavigationInternal(
+                                            : navigation_request->StartedByAd();
+ 
+   // TODO(crbug.com/40150370): Do not pass |params| to DidNavigate().
+-  NavigationRequest* raw_navigation_request = navigation_request.get();
+-  raw_navigation_request->frame_tree_node()->navigator().DidNavigate(
++  FrameTreeNode* frame_tree_node = navigation_request->frame_tree_node();
++  base::WeakPtr<RenderFrameHostImpl> weak_ptr = GetWeakPtr();
++  frame_tree_node->navigator().DidNavigate(
+       this, *params, std::move(navigation_request), is_same_document_navigation,
+       caused_by_ad);
++  if (!weak_ptr) {
++    // This RFH may be deleted after DidNavigate due to a nested message loop.
++    // That occurs before the navigation has actually committed, so return false
++    // to indicate that the commit did not succeed.
++    return false;
++  }
+ 
+   // Run any deferred shared storage operations from response headers now that
+   // commit has occurred.

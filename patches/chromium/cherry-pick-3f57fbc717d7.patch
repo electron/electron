@@ -1,0 +1,106 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Wed, 3 Jun 2026 14:26:59 -0700
+Subject: [M148] Fix UAF in BluetoothDeviceInquiryDelegate on macOS
+
+Original change's description:
+> Fix UAF in BluetoothDeviceInquiryDelegate on macOS
+>
+> On destruction, BluetoothDiscoveryManagerMacClassic releases its strong
+> reference to BluetoothDeviceInquiryDelegate while an asynchronous
+> callback may be enqueued on the main run loop. The subsequent callback
+> execution on a deallocated receiver could lead to memory corruption.
+>
+> This CL fixes the issue by:
+> 1. Adding a `resetOwner` method to `BluetoothDeviceInquiryDelegate` to
+>    clear its weak pointer to the manager.
+> 2. Checking if the manager is still valid in the delegate callbacks.
+> 3. In `~BluetoothDiscoveryManagerMacClassic`, stopping the inquiry,
+>    resetting the delegate's owner, and keeping the delegate alive for
+>    one turn of the main run loop using `dispatch_async`.
+>
+> Bug: 518237527
+> Change-Id: I34d77372651e1996fcf9e6b709eaad1cf44540e6
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7889579
+> Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+> Commit-Queue: Alvin Ji <alvinji@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1640412}
+
+(cherry picked from commit 673a5aee77ad12e118c8edac73359acdeb7f491c)
+
+Bug: 519444194,518237527
+Change-Id: I34d77372651e1996fcf9e6b709eaad1cf44540e6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7900417
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4227}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/device/bluetooth/bluetooth_discovery_manager_mac.mm b/device/bluetooth/bluetooth_discovery_manager_mac.mm
+index bccb75c98b137ef735bb0c3eed5ed71ba4a6e94f..42a26abcfe7924e3dc51550beeb66e6c1137fac1 100644
+--- a/device/bluetooth/bluetooth_discovery_manager_mac.mm
++++ b/device/bluetooth/bluetooth_discovery_manager_mac.mm
+@@ -26,6 +26,8 @@ @interface BluetoothDeviceInquiryDelegate
+ - (instancetype)initWithManager:
+     (device::BluetoothDiscoveryManagerMacClassic*)manager;
+ 
++- (void)resetOwner;
++
+ @end
+ 
+ namespace device {
+@@ -48,10 +50,21 @@ explicit BluetoothDiscoveryManagerMacClassic(Observer* observer)
+       const BluetoothDiscoveryManagerMacClassic&) = delete;
+ 
+   ~BluetoothDiscoveryManagerMacClassic() override {
++    [inquiry_ stop];
++    [inquiry_delegate_ resetOwner];
+     // IOBluetoothDeviceInquiry's delegate property is configured as "assign"
+     // rather than "weak". If it is not manually reset then our delegate could be
+     // accessed after we drop our strong reference and the object is freed.
+     inquiry_.delegate = nil;
++
++    // Keep the delegate alive for one more turn of the main run loop to allow
++    // any already-enqueued callbacks to fire safely (and become no-ops since
++    // the owner has been reset to nullptr) rather than hitting a deallocated
++    // object. See FB13705522.
++    BluetoothDeviceInquiryDelegate* __strong delegate = inquiry_delegate_;
++    dispatch_async(dispatch_get_main_queue(), ^{
++      (void)delegate;
++    });
+   }
+ 
+   // BluetoothDiscoveryManagerMac override.
+@@ -213,18 +226,31 @@ - (instancetype)initWithManager:
+   return self;
+ }
+ 
++- (void)resetOwner {
++  _manager = nullptr;
++}
++
+ - (void)deviceInquiryStarted:(IOBluetoothDeviceInquiry*)sender {
++  if (!_manager) {
++    return;
++  }
+   _manager->DeviceInquiryStarted(sender);
+ }
+ 
+ - (void)deviceInquiryDeviceFound:(IOBluetoothDeviceInquiry*)sender
+                           device:(IOBluetoothDevice*)device {
++  if (!_manager) {
++    return;
++  }
+   _manager->DeviceFound(sender, device);
+ }
+ 
+ - (void)deviceInquiryComplete:(IOBluetoothDeviceInquiry*)sender
+                         error:(IOReturn)error
+                       aborted:(BOOL)aborted {
++  if (!_manager) {
++    return;
++  }
+   _manager->DeviceInquiryComplete(sender, error, aborted);
+ }
+ 

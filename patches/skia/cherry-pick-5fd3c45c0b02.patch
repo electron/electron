@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kaylee Lubick <kjlubick@google.com>
+Date: Wed, 27 May 2026 09:25:32 -0400
+Subject: [M148] Remove serialization of drawables from SkCustomTypeface
+
+Original change's description:
+> Remove serialization of drawables from SkCustomTypeface
+>
+> We added it here https://review.skia.org/540736 but ended up not
+> using it for Skottie (only paths). This will help reduce the attack
+> surface of deserializing fonts.
+>
+> Change-Id: Id890c3d0f56f11377563f795f9bfede5a7d84d66
+> Bug: 513820666
+> Fixed: 513820666
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1245976
+> Reviewed-by: Alexis Cruz-Ayala <alexisdavidc@google.com>
+> Auto-Submit: Kaylee Lubick <kjlubick@google.com>
+> Commit-Queue: Kaylee Lubick <kjlubick@google.com>
+> Commit-Queue: Alexis Cruz-Ayala <alexisdavidc@google.com>
+
+(cherry picked from commit 9da67e212e59fbe4f144a92315ca6f8b876c9c01)
+
+Bug: 517793645,513820666,513820666
+Change-Id: Id890c3d0f56f11377563f795f9bfede5a7d84d66
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1249196
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+
+diff --git a/gm/userfont.cpp b/gm/userfont.cpp
+index 280007944ee47af66a0550f85fb815bab6fe39a8..92e2c9cda637c6864367e9ec9e9a5ab098bd6678 100644
+--- a/gm/userfont.cpp
++++ b/gm/userfont.cpp
+@@ -15,11 +15,13 @@
+ #include "include/core/SkSize.h"
+ #include "include/core/SkStream.h"
+ #include "include/core/SkString.h"
++#include "include/core/SkTextBlob.h"
+ #include "include/utils/SkCustomTypeface.h"
+ #include "src/core/SkFontPriv.h"
+ #include "tools/Resources.h"
+ #include "tools/fonts/FontToolUtils.h"
+ 
++
+ static sk_sp<SkDrawable> make_drawable(const SkPath& path) {
+     const auto bounds = path.computeTightBounds();
+ 
+@@ -73,8 +75,6 @@ static sk_sp<SkTypeface> make_tf() {
+     return builder.detach();
+ }
+ 
+-#include "include/core/SkTextBlob.h"
+-
+ static sk_sp<SkTypeface> round_trip(sk_sp<SkTypeface> tf) {
+     auto data = tf->serialize();
+     SkMemoryStream stream(data->data(), data->size());
+@@ -90,9 +90,8 @@ public:
+     UserFontGM() {}
+ 
+     void onOnceBeforeDraw() override {
+-        fTF = make_tf();
+         // test serialization
+-        fTF = round_trip(fTF);
++        fTF = round_trip(make_tf());
+     }
+ 
+     static sk_sp<SkTextBlob> make_blob(sk_sp<SkTypeface> tf, float size, float* spacing) {
+diff --git a/src/utils/SkCustomTypeface.cpp b/src/utils/SkCustomTypeface.cpp
+index 9252fdec682679b216d7ecbee105d86608c8206d..4ed4aa63f69964731c65a4bbf133abdf9f3159f3 100644
+--- a/src/utils/SkCustomTypeface.cpp
++++ b/src/utils/SkCustomTypeface.cpp
+@@ -19,6 +19,7 @@
+ #include "include/core/SkMatrix.h"
+ #include "include/core/SkPaint.h"
+ #include "include/core/SkPath.h"
++#include "include/core/SkPathBuilder.h"
+ #include "include/core/SkPoint.h"
+ #include "include/core/SkRect.h"
+ #include "include/core/SkRefCnt.h"
+@@ -395,15 +396,20 @@ std::unique_ptr<SkStreamAsset> SkUserTypeface::onOpenStream(int* ttcIndex) const
+     wstream.write32(this->glyphCount());
+ 
+     for (const auto& rec : fGlyphRecs) {
+-        wstream.write32(rec.isDrawable() ? GlyphType::kDrawable : GlyphType::kPath);
++        wstream.write32(GlyphType::kPath);
+ 
+         wstream.writeScalar(rec.fAdvance);
+ 
+         wstream.write(&rec.fBounds, sizeof(rec.fBounds));
+ 
+-        auto data = rec.isDrawable()
+-                ? rec.fDrawable->serialize()
+-                : rec.fPath.serialize();
++        sk_sp<SkData> data;
++        if (rec.isDrawable()) {
++            // We simplify drawables on serialization to make deserializing easier/safer.
++            SkPath empty = SkPath::Rect(rec.fBounds);
++            data = empty.serialize();
++        } else {
++           data = rec.fPath.serialize();
++        }
+ 
+         const size_t sz = data->size();
+         SkASSERT(SkIsAlign4(sz));
+@@ -465,8 +471,8 @@ sk_sp<SkTypeface> SkCustomTypefaceBuilder::Deserialize(SkStream* stream) {
+ 
+     for (int i = 0; i < glyphCount; ++i) {
+         uint32_t gtype;
+-        if (!stream->readU32(&gtype) ||
+-            (gtype != GlyphType::kDrawable && gtype != GlyphType::kPath)) {
++        // We don't support deserializing GlyphType::kDrawable because drawables can be *anything*
++        if (!stream->readU32(&gtype) || (gtype != GlyphType::kPath)) {
+             return nullptr;
+         }
+ 
+@@ -480,7 +486,7 @@ sk_sp<SkTypeface> SkCustomTypefaceBuilder::Deserialize(SkStream* stream) {
+             return nullptr;
+         }
+ 
+-        // SkPath and SkDrawable cannot read from a stream, so we have to page them into ram
++        // SkPath cannot be read from a stream, so we have to page them into ram
+         size_t sz;
+         if (stream->read(&sz, sizeof(sz)) != sizeof(sz)) {
+             return nullptr;
+@@ -497,27 +503,12 @@ sk_sp<SkTypeface> SkCustomTypefaceBuilder::Deserialize(SkStream* stream) {
+             return nullptr;
+         }
+ 
+-        switch (gtype) {
+-            case GlyphType::kDrawable: {
+-                SkDeserialProcs procs;
+-                procs.fAllowSkSL = false;
+-                auto drawable = SkDrawable::Deserialize(data->data(), data->size(), &procs);
+-                if (!drawable) {
+-                    return nullptr;
+-                }
+-                builder.setGlyph(i, advance, std::move(drawable), bounds);
+-            } break;
+-            case GlyphType::kPath: {
+-                size_t bytesRead = 0;
+-                auto path = SkPath::ReadFromMemory(data->data(), data->size(), &bytesRead);
+-                if (path.has_value() && (bytesRead == data->size())) {
+-                    builder.setGlyph(i, advance, *path);
+-                } else {
+-                    return nullptr;
+-                }
+-            } break;
+-            default:
+-                return nullptr;
++        size_t bytesRead = 0;
++        auto path = SkPath::ReadFromMemory(data->data(), data->size(), &bytesRead);
++        if (path.has_value() && (bytesRead == data->size())) {
++            builder.setGlyph(i, advance, *path);
++        } else {
++            return nullptr;
+         }
+     }
+ 

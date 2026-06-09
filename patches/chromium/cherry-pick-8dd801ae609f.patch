@@ -1,0 +1,409 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Nidhi Jaju <nidhijaju@chromium.org>
+Date: Tue, 2 Jun 2026 03:25:49 -0700
+Subject: [M148] Fix re-entrant deletion crash in HTTP/2 stream delegates
+
+Original change's description:
+> Fix re-entrant deletion crash in HTTP/2 stream delegates
+>
+> This CL adds defensive WeakPtr checks inside SpdyHttpStream,
+> BidirectionalStreamSpdyImpl, and SpdyProxyClientSocket around calls
+> to SpdyReadQueue::Dequeue() or read operations that consume the
+> underlying buffers. Since Dequeue() fires SpdyBuffer consume
+> callbacks which can trigger session window updates, exceed the capped
+> frames queue limit, and drain the session, the stream and its
+> delegates can be synchronously deleted mid-execution.
+>
+> Bug: 511736002
+> Change-Id: Ic6f3c1f875a059195a94d602b4ea91ba6df541d7
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7889155
+> Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+> Commit-Queue: Nidhi Jaju <nidhijaju@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1639190}
+
+(cherry picked from commit f08d5d071e409f77af3dd135420dd5a98d8080eb)
+
+Bug: 519050858,511736002
+Change-Id: Ic6f3c1f875a059195a94d602b4ea91ba6df541d7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7894855
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4202}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/net/spdy/bidirectional_stream_spdy_impl.cc b/net/spdy/bidirectional_stream_spdy_impl.cc
+index 27fe395a94481e494ff9e021bcf45ba4cf575b6f..8ca28b7bb8c922da53e988a48eda92e3807128c6 100644
+--- a/net/spdy/bidirectional_stream_spdy_impl.cc
++++ b/net/spdy/bidirectional_stream_spdy_impl.cc
+@@ -88,7 +88,15 @@ int BidirectionalStreamSpdyImpl::ReadData(IOBuffer* buf, int buf_len) {
+ 
+   // If there is data buffered, complete the IO immediately.
+   if (!read_data_queue_.IsEmpty()) {
+-    return read_data_queue_.Dequeue(buf->first(buf_len));
++    // Dequeueing can fire consume callbacks that trigger session
++    // teardown and destroy `this`.
++    base::WeakPtr<BidirectionalStreamSpdyImpl> self =
++        weak_factory_.GetWeakPtr();
++    int rv = read_data_queue_.Dequeue(buf->first(buf_len));
++    if (!self) {
++      return ERR_CONNECTION_CLOSED;
++    }
++    return rv;
+   } else if (stream_closed_) {
+     return closed_stream_status_;
+   }
+@@ -369,12 +377,20 @@ void BidirectionalStreamSpdyImpl::DoBufferedRead() {
+ 
+   int rv = 0;
+   if (read_buffer_) {
++    // ReadData() can fire consume callbacks that trigger session
++    // teardown and destroy `this`.
++    base::WeakPtr<BidirectionalStreamSpdyImpl> self =
++        weak_factory_.GetWeakPtr();
+     rv = ReadData(read_buffer_.get(), read_buffer_len_);
++    if (!self) {
++      return;
++    }
+     DCHECK_NE(ERR_IO_PENDING, rv);
+     read_buffer_ = nullptr;
+     read_buffer_len_ = 0;
+-    if (delegate_)
++    if (delegate_) {
+       delegate_->OnDataRead(rv);
++    }
+   }
+ }
+ 
+diff --git a/net/spdy/spdy_http_stream.cc b/net/spdy/spdy_http_stream.cc
+index 54677771aeb2104ce96551222964ccb61d912ae9..4532862239de7bca98fd8bbbddbd77e572f17bd4 100644
+--- a/net/spdy/spdy_http_stream.cc
++++ b/net/spdy/spdy_http_stream.cc
+@@ -117,7 +117,14 @@ int SpdyHttpStream::ReadResponseBody(IOBuffer* buf,
+ 
+   // If we have data buffered, complete the IO immediately.
+   if (!response_body_queue_.IsEmpty()) {
+-    return response_body_queue_.Dequeue(buf->first(buf_len));
++    // Dequeueing can fire consume callbacks that trigger session
++    // teardown and destroy `this`.
++    base::WeakPtr<SpdyHttpStream> self = weak_factory_.GetWeakPtr();
++    int rv = response_body_queue_.Dequeue(buf->first(buf_len));
++    if (!self) {
++      return ERR_CONNECTION_CLOSED;
++    }
++    return rv;
+   } else if (stream_closed_) {
+     return closed_stream_status_;
+   }
+@@ -527,11 +534,19 @@ void SpdyHttpStream::DoBufferedReadCallback() {
+     return;
+ 
+   if (!response_body_queue_.IsEmpty()) {
++    // Dequeueing can fire consume callbacks that trigger synchronous session
++    // teardown and destroy `this`.
++    base::WeakPtr<SpdyHttpStream> self = weak_factory_.GetWeakPtr();
+     int rv =
+         response_body_queue_.Dequeue(user_buffer_->first(user_buffer_len_));
++    if (!self) {
++      return;
++    }
+     user_buffer_ = nullptr;
+     user_buffer_len_ = 0;
+-    DoResponseCallback(rv);
++    if (response_callback_) {
++      DoResponseCallback(rv);
++    }
+     return;
+   }
+ 
+diff --git a/net/spdy/spdy_http_stream_unittest.cc b/net/spdy/spdy_http_stream_unittest.cc
+index 4fda9971246bc0b4dedea1d1158b54229d27a52f..90772d9ff8c41246ae9287ddc78fbffe456807ee 100644
+--- a/net/spdy/spdy_http_stream_unittest.cc
++++ b/net/spdy/spdy_http_stream_unittest.cc
+@@ -14,6 +14,7 @@
+ #include "base/memory/raw_ptr.h"
+ #include "base/run_loop.h"
+ #include "base/task/single_thread_task_runner.h"
++#include "base/test/run_until.h"
+ #include "net/base/chunked_upload_data_stream.h"
+ #include "net/base/load_timing_info.h"
+ #include "net/base/load_timing_info_test_util.h"
+@@ -168,6 +169,13 @@ class SpdyHttpStreamTest : public TestWithTaskEnvironment {
+     session_ = CreateSpdySession(http_session_.get(), key_, NetLogWithSource());
+   }
+ 
++  void set_session_max_recv_window_size(int32_t val) {
++    session_->session_max_recv_window_size_ = val;
++  }
++  void set_session_recv_window_size(int32_t val) {
++    session_->session_recv_window_size_ = val;
++  }
++
+   SpdyTestUtil spdy_util_;
+   SpdySessionDependencies session_deps_;
+   const GURL url_;
+@@ -1263,6 +1271,147 @@ TEST_F(SpdyHttpStreamTest, DownloadWithEmptyDataFrame) {
+   base::RunLoop().RunUntilIdle();
+ }
+ 
++TEST_F(SpdyHttpStreamTest, ReadResponseBodyExceedsCappedFramesLimit) {
++  // Set the capped frames limit to 1.
++  session_deps_.session_max_queued_capped_frames = 1;
++
++  spdy::SpdySerializedFrame req1(spdy_util_.ConstructSpdyGet(
++      base::span<const std::string_view>(), 1, LOWEST));
++  spdy::SpdySerializedFrame req2(spdy_util_.ConstructSpdyGet(
++      base::span<const std::string_view>(), 3, LOWEST));
++  spdy::SpdySerializedFrame req3(spdy_util_.ConstructSpdyGet(
++      base::span<const std::string_view>(), 5, LOWEST));
++
++  spdy::SpdySerializedFrame rst1(
++      spdy_util_.ConstructSpdyRstStream(1, spdy::ERROR_CODE_CANCEL));
++  spdy::SpdySerializedFrame rst2(
++      spdy_util_.ConstructSpdyRstStream(3, spdy::ERROR_CODE_CANCEL));
++
++  MockWrite writes[] = {
++      CreateMockWrite(req1, 0), CreateMockWrite(req2, 1),
++      CreateMockWrite(req3, 2), CreateMockWrite(rst1, 5),
++      CreateMockWrite(rst2, 6),
++  };
++
++  spdy::SpdySerializedFrame resp3(spdy_util_.ConstructSpdyGetReply(
++      base::span<const std::string_view>(), 5));
++  spdy::SpdySerializedFrame body3(
++      spdy_util_.ConstructSpdyDataFrame(5, "some data", false));
++
++  MockRead reads[] = {
++      CreateMockRead(resp3, 3), CreateMockRead(body3, 4),
++      MockRead(ASYNC, ERR_IO_PENDING, 7), MockRead(ASYNC, 0, 8),  // EOF
++  };
++
++  InitSession(reads, writes);
++
++  // Set small session receive window so that reading "some data" (9 bytes)
++  // triggers a WINDOW_UPDATE.
++  set_session_max_recv_window_size(10);
++  set_session_recv_window_size(10);
++
++  HttpRequestInfo request1;
++  request1.method = "GET";
++  request1.url = url_;
++  request1.traffic_annotation =
++      MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS);
++  NetLogWithSource net_log;
++  auto http_stream1 = std::make_unique<SpdyHttpStream>(
++      session_, net_log.source(), /*dns_aliases=*/std::set<std::string>());
++  http_stream1->RegisterRequest(&request1);
++  ASSERT_THAT(http_stream1->InitializeStream(true, LOWEST, net_log,
++                                             CompletionOnceCallback()),
++              IsOk());
++
++  HttpRequestInfo request2;
++  request2.method = "GET";
++  request2.url = url_;
++  request2.traffic_annotation =
++      MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS);
++  auto http_stream2 = std::make_unique<SpdyHttpStream>(
++      session_, net_log.source(), /*dns_aliases=*/std::set<std::string>());
++  http_stream2->RegisterRequest(&request2);
++  ASSERT_THAT(http_stream2->InitializeStream(true, LOWEST, net_log,
++                                             CompletionOnceCallback()),
++              IsOk());
++
++  HttpRequestInfo request3;
++  request3.method = "GET";
++  request3.url = url_;
++  request3.traffic_annotation =
++      MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS);
++  auto http_stream3 = std::make_unique<SpdyHttpStream>(
++      session_, net_log.source(), /*dns_aliases=*/std::set<std::string>());
++  http_stream3->RegisterRequest(&request3);
++  ASSERT_THAT(http_stream3->InitializeStream(true, LOWEST, net_log,
++                                             CompletionOnceCallback()),
++              IsOk());
++
++  HttpResponseInfo response1;
++  HttpResponseInfo response2;
++  HttpResponseInfo response3;
++  TestCompletionCallback callback1;
++  TestCompletionCallback callback2;
++  TestCompletionCallback callback3;
++  HttpRequestHeaders headers;
++
++  EXPECT_THAT(
++      http_stream1->SendRequest(headers, &response1, callback1.callback()),
++      IsError(ERR_IO_PENDING));
++  EXPECT_THAT(
++      http_stream2->SendRequest(headers, &response2, callback2.callback()),
++      IsError(ERR_IO_PENDING));
++  EXPECT_THAT(
++      http_stream3->SendRequest(headers, &response3, callback3.callback()),
++      IsError(ERR_IO_PENDING));
++
++  EXPECT_THAT(callback3.WaitForResult(), IsOk());
++
++  // Read response headers of http_stream3 first.
++  TestCompletionCallback headers_callback3;
++  int rv = http_stream3->ReadResponseHeaders(headers_callback3.callback());
++  if (rv == ERR_IO_PENDING) {
++    rv = headers_callback3.WaitForResult();
++  }
++  EXPECT_THAT(rv, IsOk());
++
++  // Wait until body3 (sequence 4) is read and buffered before we cancel other
++  // streams.
++  base::ByteSize received_bytes_after_headers =
++      http_stream3->GetTotalReceivedBytes();
++  ASSERT_TRUE(base::test::RunUntil([&]() {
++    return http_stream3->GetTotalReceivedBytes() > received_bytes_after_headers;
++  }));
++
++  // Cancel stream1 and stream2 to enqueue 2 capped frames (RST_STREAM).
++  // Do not run the message loop yet, so these remain in the write queue.
++  http_stream1->Close(true);
++  http_stream2->Close(true);
++
++  // Read response body of http_stream3. This triggers Dequeue, consuming data,
++  // which will try to send a WINDOW_UPDATE frame. Since the write queue already
++  // has 2 capped frames (rst1, rst2) and the limit is 1, this third capped
++  // frame triggers draining the session asynchronously.
++  auto buf = base::MakeRefCounted<IOBufferWithSize>(10);
++  TestCompletionCallback read_callback;
++  rv = http_stream3->ReadResponseBody(buf.get(), 10, read_callback.callback());
++
++  if (rv == ERR_IO_PENDING) {
++    rv = read_callback.WaitForResult();
++  }
++  EXPECT_GT(rv, 0);
++
++  // Wait for the posted DoDrainSession task to execute and close the stream.
++  ASSERT_TRUE(base::test::RunUntil(
++      [&]() { return http_stream3->IsResponseBodyComplete(); }));
++
++  sequenced_data_->Resume();
++  ASSERT_TRUE(base::test::RunUntil(
++      [&]() { return sequenced_data_->AllReadDataConsumed(); }));
++
++  EXPECT_TRUE(http_stream3->IsResponseBodyComplete());
++}
++
+ // TODO(willchan): Write a longer test for SpdyStream that exercises all
+ // methods.
+ 
+diff --git a/net/spdy/spdy_proxy_client_socket.cc b/net/spdy/spdy_proxy_client_socket.cc
+index 9ac506402505a75c56e412a6fd85007c7bbee0b8..3963896271f13ae2eed18197179cfdb5d5aca5bb 100644
+--- a/net/spdy/spdy_proxy_client_socket.cc
++++ b/net/spdy/spdy_proxy_client_socket.cc
+@@ -191,7 +191,13 @@ void SpdyProxyClientSocket::ApplySocketTag(const SocketTag& tag) {
+ int SpdyProxyClientSocket::Read(IOBuffer* buf,
+                                 int buf_len,
+                                 CompletionOnceCallback callback) {
++  // ReadIfReady() can fire consume callbacks that trigger session
++  // teardown and destroy `this`.
++  base::WeakPtr<SpdyProxyClientSocket> self = weak_factory_.GetWeakPtr();
+   int rv = ReadIfReady(buf, buf_len, std::move(callback));
++  if (!self) {
++    return ERR_CONNECTION_CLOSED;
++  }
+   if (rv == ERR_IO_PENDING) {
+     user_buffer_ = buf;
+     user_buffer_len_ = static_cast<size_t>(buf_len);
+@@ -214,7 +220,13 @@ int SpdyProxyClientSocket::ReadIfReady(IOBuffer* buf,
+ 
+   DCHECK(next_state_ == STATE_OPEN || next_state_ == STATE_CLOSED);
+   DCHECK(buf);
++  // PopulateUserReadBuffer() can fire consume callbacks that trigger session
++  // teardown and destroy `this`.
++  base::WeakPtr<SpdyProxyClientSocket> self = weak_factory_.GetWeakPtr();
+   size_t result = PopulateUserReadBuffer(buf->first(buf_len));
++  if (!self) {
++    return ERR_CONNECTION_CLOSED;
++  }
+   if (result == 0) {
+     read_callback_ = std::move(callback);
+     return ERR_IO_PENDING;
+@@ -575,7 +587,13 @@ void SpdyProxyClientSocket::OnDataReceived(std::unique_ptr<SpdyBuffer> buffer) {
+ 
+   if (read_callback_) {
+     if (user_buffer_) {
++      // PopulateUserReadBuffer() can fire consume callbacks that trigger
++      // session teardown and destroy `this`.
++      base::WeakPtr<SpdyProxyClientSocket> self = weak_factory_.GetWeakPtr();
+       int rv = PopulateUserReadBuffer(user_buffer_->first(user_buffer_len_));
++      if (!self) {
++        return;
++      }
+       user_buffer_ = nullptr;
+       user_buffer_len_ = 0;
+       std::move(read_callback_).Run(rv);
+diff --git a/net/spdy/spdy_read_queue.cc b/net/spdy/spdy_read_queue.cc
+index 9e97b0a72e4d5b7e45a545a57f5ca52d2fb25317..ff36ff82a1f8e0702832493df8b782fecab194e7 100644
+--- a/net/spdy/spdy_read_queue.cc
++++ b/net/spdy/spdy_read_queue.cc
+@@ -36,18 +36,32 @@ void SpdyReadQueue::Enqueue(std::unique_ptr<SpdyBuffer> buffer) {
+ size_t SpdyReadQueue::Dequeue(base::span<uint8_t> out) {
+   DCHECK_GT(out.size(), 0u);
+   size_t bytes_copied = 0;
++  // The destructor of SpdyBuffer and SpdyBuffer::Consume() run ConsumeCallbacks
++  // that can re-enter arbitrary network-stack code (session WINDOW_UPDATE ->
++  // DoDrainSession) and synchronously destroy the SpdyHttpStream that owns
++  // `this`. Defer firing them until after we are done touching member state.
++  std::vector<std::unique_ptr<SpdyBuffer>> to_discard;
++  size_t to_consume = 0;
+   while (!queue_.empty() && !out.empty()) {
+     SpdyBuffer* buffer = queue_.front().get();
+     size_t bytes_to_copy = std::min(out.size(), buffer->GetRemainingSize());
+     out.take_first(bytes_to_copy)
+         .copy_from(buffer->GetRemaining().first(bytes_to_copy));
+     bytes_copied += bytes_to_copy;
+-    if (bytes_to_copy == buffer->GetRemainingSize())
++    if (bytes_to_copy == buffer->GetRemainingSize()) {
++      to_discard.push_back(std::move(queue_.front()));
+       queue_.pop_front();
+-    else
+-      buffer->Consume(bytes_to_copy);
++    } else {
++      to_consume = bytes_to_copy;
++      break;
++    }
+   }
+   total_size_ -= bytes_copied;
++  if (to_consume) {
++    // May delete `this`.
++    queue_.front()->Consume(to_consume);
++  }
++  // `to_discard` destruction may delete `this`; do not touch members past here.
+   return bytes_copied;
+ }
+ 
+diff --git a/net/spdy/spdy_session.h b/net/spdy/spdy_session.h
+index a5896d76fbd73c5dfd0abcae77d5dfaadbaa3d54..53d3a8e34fd586a205496cd7a80f4e6d6987fa1c 100644
+--- a/net/spdy/spdy_session.h
++++ b/net/spdy/spdy_session.h
+@@ -61,6 +61,7 @@
+ namespace net {
+ 
+ namespace test {
++class SpdyHttpStreamTest;
+ class SpdyStreamTest;
+ }
+ 
+@@ -617,16 +618,16 @@ class NET_EXPORT SpdySession
+   }
+ 
+  private:
+-  friend class test::SpdyStreamTest;
+   friend class base::RefCounted<SpdySession>;
+   friend class HttpNetworkTransactionTest;
+   friend class HttpProxyClientSocketPoolTest;
+-  friend class SpdyHttpStreamTest;
+   friend class SpdyNetworkTransactionTest;
+   friend class SpdyProxyClientSocketTest;
+   friend class SpdySessionPoolTest;
+   friend class SpdySessionTest;
+   friend class SpdyStreamRequest;
++  friend class test::SpdyHttpStreamTest;
++  friend class test::SpdyStreamTest;
+ 
+   using PendingStreamRequestQueue =
+       base::circular_deque<base::WeakPtr<SpdyStreamRequest>>;
