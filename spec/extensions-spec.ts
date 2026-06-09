@@ -48,7 +48,7 @@ describe('chrome extensions', () => {
     wss = new WebSocket.Server({ noServer: true });
     wss.on('connection', function connection(ws) {
       ws.on('message', function incoming(message) {
-        if (message === 'foo') {
+        if (message.toString() === 'foo') {
           ws.send('bar');
         }
       });
