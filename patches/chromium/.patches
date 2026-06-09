@@ -154,3 +154,11 @@ build_disable_llvm_unroll-add-parallel-reductions_on_apple_targets.patch
 feat_carry_embedder_startup_data_in_createnewwindowreply.patch
 feat_deliver_service_worker_preload_data_via_embeddedworkerstartparams.patch
 cherry-pick-2cdb07c74d06.patch
+cherry-pick-3f6678d31736.patch
+cherry-pick-409ec3ebc79c.patch
+cherry-pick-cd7201c2fce0.patch
+cherry-pick-c92de87bddf2.patch
+cherry-pick-db94c2cb8239.patch
+cherry-pick-b534033a6391.patch
+cherry-pick-36f6889ed145.patch
+cherry-pick-f9e6631b2ded.patch
