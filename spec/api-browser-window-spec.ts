@@ -4122,6 +4122,30 @@ describe('BrowserWindow module', () => {
         await waitFor(() => fs.statSync(cacheFile).size > 100, 'cache file to be overwritten');
         expect(fs.statSync(cacheFile).size).to.be.greaterThan(100);
       });
+
+      it('does not consume a cache produced from different source of the same length', async () => {
+        // V8's CachedData source check hashes only the source length, so the
+        // browser must invalidate by content.
+        const preloadSource = (marker: string) =>
+          `require('electron').ipcRenderer.send('preload-code-cache-marker', '${marker}');\n`;
+
+        fs.writeFileSync(preload, preloadSource('first-'));
+        const w1 = makeWindow();
+        const marker1 = once(ipcMain, 'preload-code-cache-marker');
+        await w1.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        expect((await marker1)[1]).to.equal('first-');
+        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile);
+        w1.destroy();
+
+        const second = preloadSource('second');
+        expect(second.length).to.equal(preloadSource('first-').length);
+        fs.writeFileSync(preload, second);
+
+        const w2 = makeWindow();
+        const marker2 = once(ipcMain, 'preload-code-cache-marker');
+        await w2.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        expect((await marker2)[1]).to.equal('second');
+      });
     });
 
     describe('window.open() popup preload', () => {
