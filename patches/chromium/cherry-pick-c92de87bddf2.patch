@@ -1,0 +1,227 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maggie Chen <magchen@chromium.org>
+Date: Fri, 29 May 2026 16:05:48 -0700
+Subject: Fix GPU process lost race in DisplayLinkMacMojo
+
+DisplayLinkMacMojo manages objects like mojo::Remote, mojo::Receiver,
+and vsync callbacks that are bound to a dedicated VSync thread.
+Previously, OnGpuProcessLost attempts to recreate new objects on the
+main thread while destroying the old objects on the VSync thread, which
+can lead to race conditions or DCHECK failures.
+
+This CL serialize the destroy-then-recreate to ensures that these
+objects are cleaned up on the VSync thread before reconnecting the IPC
+on the main thread.
+
+Bug: 517227707
+Change-Id: Ie052347db9869d69e8de7beec2248a3241ff4b65
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7881564
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Commit-Queue: Maggie Chen <magchen@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1638792}
+
+diff --git a/ui/compositor/display_link_mac_mojo.h b/ui/compositor/display_link_mac_mojo.h
+index 8bdd487c126b79fb5d45cd69c1b577162ba55672..0efb961bc098364b1f5f712582f750d3d9250acf 100644
+--- a/ui/compositor/display_link_mac_mojo.h
++++ b/ui/compositor/display_link_mac_mojo.h
+@@ -5,6 +5,8 @@
+ #ifndef UI_COMPOSITOR_DISPLAY_LINK_MAC_MOJO_H_
+ #define UI_COMPOSITOR_DISPLAY_LINK_MAC_MOJO_H_
+ 
++#include <optional>
++
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/threading/thread.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+@@ -84,7 +86,8 @@ class COMPOSITOR_EXPORT DisplayLinkMacMojo
+  private:
+   // VSyncIpc is connected when DisplayLinkMacMojo is created, and it's
+   // reconnected after the GPU process is lost.
+-  void ConnectVSyncIpc(viz::HostFrameSinkManager* host_frame_sink_manager);
++  void ConnectVSyncIpcAndAddDisplayObserver(
++      viz::HostFrameSinkManager* host_frame_sink_manager);
+ 
+   void InitDisplaysOnVSyncThread();
+ 
+@@ -94,6 +97,31 @@ class COMPOSITOR_EXPORT DisplayLinkMacMojo
+ 
+   void DisplaysRemovedOnVSyncThread(std::vector<int64_t> display_ids);
+ 
++  // This sequence is called to prevent race conditions during GPU process loss.
++  // The flow is:
++  // OnGpuProcessLost() (Main thread) ->
++  // OnGpuProcessLostOnVSyncThread() (VSync thread) ->
++  // ContinueGpuProcessLostOnMainThread() (Main thread)
++  //
++  // Note: OnGpuProcessLostOnVSyncThread() must use base::Unretained(this) to
++  // ensure that thread-affine Mojo objects are always cleaned up on the VSync
++  // thread, even if this class is being destroyed. The recovery task
++  // (ContinueGpuProcessLostOnMainThread) uses a WeakPtr because recovery
++  // should only proceed if this instance has not been destroyed.
++  void ContinueGpuProcessLostOnMainThread(
++      viz::HostFrameSinkManager* host_frame_sink_manager);
++  void OnGpuProcessLostOnVSyncThread(
++      viz::HostFrameSinkManager* host_frame_sink_manager,
++      scoped_refptr<base::SingleThreadTaskRunner> main_task_runner,
++      base::WeakPtr<DisplayLinkMacMojo> weak_ptr);
++
++  void ResetStateOnVSyncThread();
++
++  // To prevent AddObserver from being called multiple times
++  std::optional<display::ScopedDisplayObserver> display_observer_;
++
++  int pending_gpu_lost_count_ = 0;
++
+   std::map<int64_t, scoped_refptr<DisplayLinkMac>> display_links_;
+   std::map<int64_t, std::unique_ptr<VSyncCallbackMac>> vsync_callbacks_;
+ 
+diff --git a/ui/compositor/display_link_mac_mojo.mm b/ui/compositor/display_link_mac_mojo.mm
+index 0fd296b3c3272ffada6cc896af6c1b9e9d1eb0b4..28fafba7b74c547c0091e2450214ea4078fc6d37 100644
+--- a/ui/compositor/display_link_mac_mojo.mm
++++ b/ui/compositor/display_link_mac_mojo.mm
+@@ -6,6 +6,7 @@
+ 
+ #include <utility>
+ 
++#include "base/task/bind_post_task.h"
+ #include "components/viz/common/frame_sinks/begin_frame_args.h"
+ #include "components/viz/host/host_frame_sink_manager.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+@@ -32,11 +33,7 @@
+ 
+   // To ensure VSyncThread task_runner() is valid, StartWithOptions() must be
+   // called before ConnectVSyncIpc().
+-  ConnectVSyncIpc(host_frame_sink_manager);
+-
+-  // Display AddObserver can only be called on the browser main thread.
+-  DCHECK(display::Screen::HasScreen());
+-  display::Screen::Get()->AddObserver(this);
++  ConnectVSyncIpcAndAddDisplayObserver(host_frame_sink_manager);
+ 
+   // Now |external_begin_frame_controller_| is valid after ConnectVSyncIpc(). We
+   // can start getting DisplayLinks for all displays.
+@@ -46,9 +43,7 @@
+ }
+ 
+ DisplayLinkMacMojo::~DisplayLinkMacMojo() {
+-  if (display::Screen::HasScreen()) {
+-    display::Screen::Get()->RemoveObserver(this);
+-  }
++  display_observer_.reset();
+ 
+   // Stop the VSync thread.
+   Stop();
+@@ -67,54 +62,79 @@
+ 
+ void DisplayLinkMacMojo::CleanUp() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(vsync_thread_sequence_checker_);
++  ResetStateOnVSyncThread();
++}
++
++void DisplayLinkMacMojo::ResetStateOnVSyncThread() {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(vsync_thread_sequence_checker_);
+ 
+   // Created on the VSync thread and must be destroyed on the same thread.
+   vsync_callbacks_.clear();
+   display_links_.clear();
+ 
+   // The remote and receiver are connected to IPC to issue and receive mojom
+-  // interrace calls on the VSync thread. These dtors are required to run on the
++  // interface calls on the VSync thread. These dtors are required to run on the
+   // same thread.
+   external_begin_frame_controller_.reset();
+   client_receiver_.reset();
+ }
+ 
+ // Called on the browser main thread.
++// OnGpuProcessLost can handle multiple GPU process losses occurring in rapid
++// succession.
+ void DisplayLinkMacMojo::OnGpuProcessLost(
+     viz::HostFrameSinkManager* host_frame_sink_manager) {
+-  // Destroy all DisplayLinks on the VSyncThread.
+-  DCHECK(display::Screen::HasScreen());
+-  display::Screen::Get()->RemoveObserver(this);
++  pending_gpu_lost_count_++;
+ 
+-  if (!vsync_callbacks_.empty()) {
+-    task_runner()->PostTask(
+-        FROM_HERE, base::DoNothingWithBoundArgs(std::move(vsync_callbacks_)));
+-  }
+-  if (!display_links_.empty()) {
+-    task_runner()->PostTask(
+-        FROM_HERE, base::DoNothingWithBoundArgs(std::move(display_links_)));
+-  }
++  display_observer_.reset();
+ 
+-  // Reconnect IPC. Destory the old controller and the old receiver on the
+-  // VSyncThread first.
+-  if (external_begin_frame_controller_) {
+-    task_runner()->PostTask(FROM_HERE, base::DoNothingWithBoundArgs(std::move(
+-                                           external_begin_frame_controller_)));
+-  }
+-  if (client_receiver_) {
+-    task_runner()->DeleteSoon(FROM_HERE, std::move(client_receiver_));
++  // Ensure the WeakPtr are created and bound to the sequence on CrBrowserMain.
++  // The dereferencing (checking if the pointer is still valid) and invalidation
++  // happens on the Main thread only. A WeakPtr is passed to the VSync thread
++  // only to be used as an argument for the recovery task
++  // (ContinueGpuProcessLostOnMainThread).
++  task_runner()->PostTask(
++      FROM_HERE,
++      base::BindOnce(&DisplayLinkMacMojo::OnGpuProcessLostOnVSyncThread,
++                     base::Unretained(this), host_frame_sink_manager,
++                     base::SingleThreadTaskRunner::GetCurrentDefault(),
++                     weak_ptr_factory_.GetWeakPtr()));
++}
++
++// Called on the browser main thread.
++void DisplayLinkMacMojo::ContinueGpuProcessLostOnMainThread(
++    viz::HostFrameSinkManager* host_frame_sink_manager) {
++  pending_gpu_lost_count_--;
++  if (pending_gpu_lost_count_ > 0) {
++    return;
+   }
+ 
+-  ConnectVSyncIpc(host_frame_sink_manager);
++  ConnectVSyncIpcAndAddDisplayObserver(host_frame_sink_manager);
+ 
+-  display::Screen::Get()->AddObserver(this);
+   task_runner()->PostTask(
+       FROM_HERE, base::BindOnce(&DisplayLinkMacMojo::InitDisplaysOnVSyncThread,
+                                 base::Unretained(this)));
+ }
+ 
++void DisplayLinkMacMojo::OnGpuProcessLostOnVSyncThread(
++    viz::HostFrameSinkManager* host_frame_sink_manager,
++    scoped_refptr<base::SingleThreadTaskRunner> main_task_runner,
++    base::WeakPtr<DisplayLinkMacMojo> weak_ptr) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(vsync_thread_sequence_checker_);
++
++  ResetStateOnVSyncThread();
++
++  // After destroying the old objects on the VSync thread, return to the main
++  // thread to continue the recovery process. We use a WeakPtr because recovery
++  // should only proceed if this instance has not been destroyed.
++  main_task_runner->PostTask(
++      FROM_HERE,
++      base::BindOnce(&DisplayLinkMacMojo::ContinueGpuProcessLostOnMainThread,
++                     weak_ptr, host_frame_sink_manager));
++}
++
+ // Called on the browser main thread
+-void DisplayLinkMacMojo::ConnectVSyncIpc(
++void DisplayLinkMacMojo::ConnectVSyncIpcAndAddDisplayObserver(
+     viz::HostFrameSinkManager* host_frame_sink_manager) {
+   CHECK(host_frame_sink_manager);
+ 
+@@ -146,6 +166,10 @@
+   params->external_begin_frame_controller_client = std::move(remote_client);
+ 
+   host_frame_sink_manager->CreateCompositorDisplayLink(std::move(params));
++
++  // Display AddObserver can only be called on the browser main thread.
++  // Only add a observer after IPC is connected.
++  display_observer_.emplace(this);
+ }
+ 
+ // Called on the VSync thread directly from IPC.
