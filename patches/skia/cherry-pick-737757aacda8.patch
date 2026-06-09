@@ -1,0 +1,241 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tiago Vignatti <vignatti@google.com>
+Date: Mon, 1 Jun 2026 17:42:10 +0000
+Subject: [M144-LTS] Restrict deserial types further in SkGlyph and
+ SkCustomTypeface
+
+Importantly, we don't want typefaces or textblobs in
+SkPictureBackedGlyphDrawable. In fact, we can look at
+the code used to make the drawables by our various backends
+[1][2][3][4] and see we only draw paths and use paints. Thus, we can
+restrict deserializing these to just those (and the helper tags).
+
+The SVG fonts could be a bit more complex [5] but chromium doesn't
+use those (SkGraphics::SetOpenTypeSVGDecoderFactory is never called)
+
+See also http://graphviz/#57cc93d0c3c73546055bec64fa8e27cb
+
+[1] https://skia.googlesource.com/skia/+/9da67e212e59fbe4f144a92315ca6f8b876c9c01/src/ports/SkFontHost_FreeType_common.cpp#1567
+[2] https://skia.googlesource.com/skia/+/9da67e212e59fbe4f144a92315ca6f8b876c9c01/src/ports/SkFontHost_FreeType_common.cpp#1078
+[3] https://skia.googlesource.com/skia/+/9da67e212e59fbe4f144a92315ca6f8b876c9c01/src/ports/SkScalerContext_win_dw.cpp#677
+[4] https://skia.googlesource.com/skia/+/9da67e212e59fbe4f144a92315ca6f8b876c9c01/src/ports/SkTypeface_fontations.cpp#1336
+
+[4] https://skia.googlesource.com/skia/+/9da67e212e59fbe4f144a92315ca6f8b876c9c01/modules/svg/src/SkSVGOpenTypeSVGDecoder.cpp#160
+
+Bug: 516457532
+Change-Id: I49380246374e4eb32f77af4ce8140660178d9b71
+Fixed: 517794293
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1245617
+Reviewed-by: Florin Malita <fmalita@google.com>
+(cherry picked from commit f1b8ba877c07cccc080451fc4f6b17c27fa76581)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1249736
+Owners-Override: Kaylee Lubick <kjlubick@google.com>
+Commit-Queue: Alexis Cruz-Ayala <alexisdavidc@google.com>
+Auto-Submit: Kaylee Lubick <kjlubick@google.com>
+Reviewed-by: Alexis Cruz-Ayala <alexisdavidc@google.com>
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1251417
+Reviewed-by: Kaylee Lubick <kjlubick@google.com>
+
+diff --git a/include/core/SkSerialProcs.h b/include/core/SkSerialProcs.h
+index 39274962667510e497e1a8a7d8ac3fb1c33988df..6d546a2857b0da195afdf45a9b1ca3932f436904 100644
+--- a/include/core/SkSerialProcs.h
++++ b/include/core/SkSerialProcs.h
+@@ -8,6 +8,7 @@
+ #ifndef SkSerialProcs_DEFINED
+ #define SkSerialProcs_DEFINED
+ 
++#include "include/core/SkFourByteTag.h"
+ #include "include/core/SkRefCnt.h"
+ #include "include/private/base/SkAPI.h"
+ 
+@@ -87,6 +88,8 @@ using SkSlugProc = sk_sp<sktext::gpu::Slug> (*)(SkReadBuffer&, void* ctx);
+  */
+ using SkDeserialTypefaceProc = sk_sp<SkTypeface> (*)(const void* data, size_t length, void* ctx);
+ 
++using SkDeserialAllowTagsProc = bool(*)(SkFourByteTag, void* ctx);
++
+ struct SK_API SkSerialProcs {
+     SkSerialPictureProc fPictureProc = nullptr;
+     void*               fPictureCtx = nullptr;
+@@ -116,6 +119,10 @@ struct SK_API SkDeserialProcs {
+     // parameters and returns a bool). Given that there are only two valid implementations of that
+     // proc, we just insert the bool directly.
+     bool                         fAllowSkSL = true;
++
++    // Can be used to restrict the tags that will be deserialized from SkPictures.
++    SkDeserialAllowTagsProc      fAllowTagsProc = nullptr;
++    void*                        fAllowTagsCtx = nullptr;
+ };
+ 
+ #endif
+diff --git a/src/core/SkDebugUtils.h b/src/core/SkDebugUtils.h
+index a32b2e48bfbb9cf15182c475f217275b64271ba0..8f5012f6c1cd0f9142b026e9dadfaf5e9126da63 100644
+--- a/src/core/SkDebugUtils.h
++++ b/src/core/SkDebugUtils.h
+@@ -8,6 +8,7 @@
+ #ifndef SkDebugUtils_DEFINED
+ #define SkDebugUtils_DEFINED
+ 
++#include "include/core/SkFourByteTag.h"
+ #include "include/core/SkTileMode.h"
+ #include "include/private/base/SkAssert.h"
+ #include "include/private/base/SkDebug.h"
+@@ -51,5 +52,9 @@ inline void SkDumpBuffer(uint8_t const* const buffer, int w, int h, int rowBytes
+ inline void SkDumpBuffer(uint8_t*, int, int, int) {}
+ #endif
+ 
++static inline void SkDumpTag(SkFourByteTag tag) {
++    SkDebugf("%c%c%c%c", (char)(tag >> 24), (char)(tag >> 16) & 0xFF, (char)(tag >> 8) & 0xFF, (char)tag & 0xFF);
++}
++
+ 
+ #endif // SkDebugUtils_DEFINED
+diff --git a/src/core/SkGlyph.cpp b/src/core/SkGlyph.cpp
+index 47d9fd3346a7b9e263abd3384dde08fe9e1ae70a..eaf45c2d04d2f852e5810f5c534d69a1ed8ed7fd 100644
+--- a/src/core/SkGlyph.cpp
++++ b/src/core/SkGlyph.cpp
+@@ -19,6 +19,7 @@
+ #include "include/private/base/SkTo.h"
+ #include "src/base/SkArenaAlloc.h"
+ #include "src/base/SkBezierCurves.h"
++#include "src/core/SkPictureData.h"
+ #include "src/core/SkReadBuffer.h"
+ #include "src/core/SkScalerContext.h"
+ #include "src/core/SkWriteBuffer.h"
+@@ -47,7 +48,14 @@ SkPictureBackedGlyphDrawable::MakeFromBuffer(SkReadBuffer& buffer) {
+     // Propagate the outer buffer's allow-SkSL setting to the picture decoder, using the flag on
+     // the deserial procs.
+     SkDeserialProcs procs;
+-    procs.fAllowSkSL = buffer.allowSkSL();
++    procs.fAllowSkSL = false;
++    procs.fAllowTagsProc = [](SkFourByteTag tag, void*) -> bool {
++        return tag == SK_PICT_BUFFER_SIZE_TAG ||
++               tag == SK_PICT_FACTORY_TAG ||
++               tag == SK_PICT_PAINT_BUFFER_TAG ||
++               tag == SK_PICT_PATH_BUFFER_TAG ||
++               tag == SK_PICT_READER_TAG;
++    };
+     sk_sp<SkPicture> picture = SkPicture::MakeFromData(pictureData.get(), &procs);
+     if (!buffer.validate(picture != nullptr)) {
+         return nullptr;
+diff --git a/src/core/SkPictureData.cpp b/src/core/SkPictureData.cpp
+index 319f4b8f8725edcb418f50d64eac8897357d2509..d39af048a250b2cc88d45c87e448790bbf7a5c0e 100644
+--- a/src/core/SkPictureData.cpp
++++ b/src/core/SkPictureData.cpp
+@@ -18,6 +18,7 @@
+ #include "include/private/base/SkTemplates.h"
+ #include "include/private/base/SkTo.h"
+ #include "src/base/SkAutoMalloc.h"
++#include "src/core/SkDebugUtils.h"
+ #include "src/core/SkPicturePriv.h"
+ #include "src/core/SkPictureRecord.h"
+ #include "src/core/SkPtrRecorder.h"
+@@ -309,6 +310,11 @@ bool SkPictureData::parseStreamTag(SkStream* stream,
+                                    const SkDeserialProcs& procs,
+                                    SkTypefacePlayback* topLevelTFPlayback,
+                                    int recursionLimit) {
++    if (procs.fAllowTagsProc && !procs.fAllowTagsProc(tag, procs.fAllowTagsCtx)) {
++        // Typefaces are always set but if there's 0 of them, we won't mark the stream as invalid
++        // if the typeface tag is not allowed.
++        return size == 0;
++    }
+     switch (tag) {
+         case SK_PICT_READER_TAG:
+             SkASSERT(nullptr == fOpData);
+@@ -450,6 +456,15 @@ bool new_array_from_buffer(SkReadBuffer& buffer, uint32_t inCount,
+ }
+ 
+ void SkPictureData::parseBufferTag(SkReadBuffer& buffer, uint32_t tag, uint32_t size) {
++#if defined(SK_DUMP_TAGS)
++    SkDebugf("parseBufferTag ");
++    SkDumpTag(tag);
++    SkDebugf(" size %u\n", size);
++#endif
++    if (!buffer.allowTags(tag)) {
++        buffer.validate(size == 0);
++        return;
++    }
+     switch (tag) {
+         case SK_PICT_PAINT_BUFFER_TAG: {
+             if (!buffer.validate(SkTFitsIn<int>(size))) {
+diff --git a/src/core/SkPictureData.h b/src/core/SkPictureData.h
+index ecfef8aa0e6c413b3980f8fd64088fff65ebff25..4626fc55e4aadb9e526bfbf29d7e5660f4cab535 100644
+--- a/src/core/SkPictureData.h
++++ b/src/core/SkPictureData.h
+@@ -71,7 +71,7 @@ public:
+ #define SK_PICT_PAINT_BUFFER_TAG    SkSetFourByteTag('p', 'n', 't', ' ')
+ #define SK_PICT_PATH_BUFFER_TAG     SkSetFourByteTag('p', 't', 'h', ' ')
+ #define SK_PICT_TEXTBLOB_BUFFER_TAG SkSetFourByteTag('b', 'l', 'o', 'b')
+-#define SK_PICT_SLUG_BUFFER_TAG SkSetFourByteTag('s', 'l', 'u', 'g')
++#define SK_PICT_SLUG_BUFFER_TAG     SkSetFourByteTag('s', 'l', 'u', 'g')
+ #define SK_PICT_VERTICES_BUFFER_TAG SkSetFourByteTag('v', 'e', 'r', 't')
+ #define SK_PICT_IMAGE_BUFFER_TAG    SkSetFourByteTag('i', 'm', 'a', 'g')
+ 
+diff --git a/src/core/SkReadBuffer.h b/src/core/SkReadBuffer.h
+index 6578908dccd52cd9fa60f4193038b2b40b52f1a8..773db6df3f761f6ccdec8de774e303baf14f4e8b 100644
+--- a/src/core/SkReadBuffer.h
++++ b/src/core/SkReadBuffer.h
+@@ -11,6 +11,7 @@
+ #include "include/core/SkColor.h"
+ #include "include/core/SkColorFilter.h"
+ #include "include/core/SkFlattenable.h"
++#include "include/core/SkFourByteTag.h"
+ #include "include/core/SkImageFilter.h"
+ #include "include/core/SkPaint.h"
+ #include "include/core/SkPathEffect.h"
+@@ -186,6 +187,13 @@ public:
+     bool allowSkSL() const { return fAllowSkSL; }
+     void setAllowSkSL(bool allow) { fAllowSkSL = allow; }
+ 
++    bool allowTags(SkFourByteTag tag) const {
++        if (!fProcs.fAllowTagsProc) {
++            return true;
++        }
++        return fProcs.fAllowTagsProc(tag, fProcs.fAllowTagsCtx);
++    }
++
+     /**
+      *  If isValid is false, sets the buffer to be "invalid". Returns true if the buffer
+      *  is still valid.
+diff --git a/tests/SkGlyphTest.cpp b/tests/SkGlyphTest.cpp
+index 015a998b78674c6b908ee21324cf8810490c8a54..5133477a45d8698ba8d2129a501bf65153426292 100644
+--- a/tests/SkGlyphTest.cpp
++++ b/tests/SkGlyphTest.cpp
+@@ -462,13 +462,16 @@ static sk_sp<SkDrawable> make_nested_sksl_drawable(SkSLSource source) {
+     return recorder.finishRecordingAsDrawable();
+ }
+ 
+-DEF_TEST(SkPictureBackedGlyphDrawable_SkSL, reporter) {
++
++DEF_TEST(SkPictureBackedGlyphDrawable_RejectsAnyShadersThatNeedSkSL, reporter) {
+     for (SkSLSource source : {SkSLSource::kShader,
+                               SkSLSource::kColorFilter,
+                               SkSLSource::kBlender,
+                               SkSLSource::kImageFilter}) {
+         for (const sk_sp<SkDrawable>& drawable : {make_sksl_drawable(source),
+                                                   make_nested_sksl_drawable(source)}) {
++            // Make sure that regardless if the passed in buffer has sksl set or not, we
++            // don't deserialize it.
+             for (bool allowSkSL : {true, false}) {
+                 skiatest::ReporterContext ctx{reporter,
+                         SkStringPrintf("source: %d, allow sksl: %d", (int) source, allowSkSL)};
+@@ -479,6 +482,8 @@ DEF_TEST(SkPictureBackedGlyphDrawable_SkSL, reporter) {
+                 SkPictureBackedGlyphDrawable::FlattenDrawable(writeBuffer, drawable.get());
+ 
+                 sk_sp<SkData> data = writeBuffer.snapshotAsData();
++                REPORTER_ASSERT(reporter, data);
++                REPORTER_ASSERT(reporter, data->size() > 0);
+ 
+                 SkReadBuffer readBuffer{data->data(), data->size()};
+                 readBuffer.setAllowSkSL(allowSkSL);
+@@ -486,8 +491,8 @@ DEF_TEST(SkPictureBackedGlyphDrawable_SkSL, reporter) {
+                 sk_sp<SkPictureBackedGlyphDrawable> dstDrawable =
+                         SkPictureBackedGlyphDrawable::MakeFromBuffer(readBuffer);
+ 
+-                REPORTER_ASSERT(reporter, readBuffer.isValid() == allowSkSL);
+-                REPORTER_ASSERT(reporter, !!dstDrawable == allowSkSL);
++                REPORTER_ASSERT(reporter, !readBuffer.isValid());
++                REPORTER_ASSERT(reporter, !dstDrawable);
+             }
+         }
+     }

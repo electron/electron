@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin Ellis <kevers@google.com>
+Date: Mon, 1 Jun 2026 11:52:18 -0700
+Subject: [M148] [vt] Fix use after capture in OnTransitionCaptured
+
+Original change's description:
+> [vt] Fix use after capture in OnTransitionCaptured
+>
+> Bug: 517168239
+> Change-Id: I2ae2b01ec9f87158cf4a4b604c4b901bc509e0c8
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7881960
+> Commit-Queue: Vladimir Levin <vmpstr@chromium.org>
+> Reviewed-by: Vladimir Levin <vmpstr@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1637664}
+
+(cherry picked from commit e3c41472f7a775661fffabbbb71ca04c6793a555)
+
+Bug: 517794258,517168239
+Change-Id: I2ae2b01ec9f87158cf4a4b604c4b901bc509e0c8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7886800
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4161}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/third_party/blink/renderer/core/view_transition/view_transition_supplement.cc b/third_party/blink/renderer/core/view_transition/view_transition_supplement.cc
+index 3b4e1c382c2b72f1172bb000375c864844a3b30f..f4d526a03752abda8ada401ad9f37c4f4d594989 100644
+--- a/third_party/blink/renderer/core/view_transition/view_transition_supplement.cc
++++ b/third_party/blink/renderer/core/view_transition/view_transition_supplement.cc
+@@ -326,10 +326,11 @@ void ViewTransitionSupplement::OnTransitionCaptured(
+   if (--in_flight_capture_requests_ == 0) {
+     std::sort(captured_transitions_.begin(), captured_transitions_.end(),
+               CompareTransitions);
+-    for (auto captured_transition : captured_transitions_) {
++    HeapVector<Member<ViewTransition>> local_copy(captured_transitions_);
++    captured_transitions_.clear();
++    for (auto captured_transition : local_copy) {
+       captured_transition->OnCapturePhaseComplete();
+     }
+-    captured_transitions_.clear();
+   }
+ }
+ 

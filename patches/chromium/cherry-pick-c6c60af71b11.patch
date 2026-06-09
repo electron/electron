@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shunya Shishido <sisidovski@chromium.org>
+Date: Wed, 3 Jun 2026 03:10:50 -0700
+Subject: [M148] Prevent UAF on duplicate RaceNetworkRequest tokens
+
+Original change's description:
+> Prevent UAF on duplicate RaceNetworkRequest tokens
+>
+> Reorder map insertions in
+> ServiceWorkerGlobalScope::InsertNewItemToRaceNetworkRequests
+> to only publish the raw pointer into the secondary lookup index
+> (race_network_request_fetch_event_ids_)
+> AFTER the owning std::unique_ptr has been successfully inserted into the
+> primary map (race_network_requests_).
+>
+> Previously, the raw pointer was published before the owning insert was
+> attempted. Since WTF::HashMap::insert does not consume the unique_ptr on
+> a key collision, the newly allocated RaceNetworkRequestInfo object was
+> deleted at function scope exit, leaving a dangling pointer in the
+> secondary index. Subsequent event resolution or abortion triggered a UaF
+> during lookup in RemoveItemFromRaceNetworkRequests.
+>
+> Bug: 517705966
+> Change-Id: I9563109b4f2603f5bf5893a6351300d38a91e7f7
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7889215
+> Reviewed-by: Takashi Nakayama <tnak@chromium.org>
+> Commit-Queue: Shunya Shishido <sisidovski@chromium.org>
+> Reviewed-by: Minoru Chikamune <chikamune@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1639189}
+
+(cherry picked from commit 22e05cd18d2bac48027a218d142a074061177f4b)
+
+Bug: 519444118,517705966
+Change-Id: I9563109b4f2603f5bf5893a6351300d38a91e7f7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7898679
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4220}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+index 0e2e309a75f67271678a535533184f959e0b105d..08bb3745ae2b3f6d31f6e84a739acf3385e53fbd 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+@@ -2842,9 +2842,15 @@ void ServiceWorkerGlobalScope::InsertNewItemToRaceNetworkRequests(
+   auto info = std::make_unique<RaceNetworkRequestInfo>(
+       fetch_event_id, race_network_request_token,
+       std::move(url_loader_factory));
+-  race_network_request_fetch_event_ids_.insert(fetch_event_id, info.get());
++  RaceNetworkRequestInfo* info_raw = info.get();
+   auto insert_result = race_network_requests_.insert(race_network_request_token,
+                                                      std::move(info));
++  // WTF::HashMap::insert does not consume |info| on a duplicate key; in that
++  // case |info| (and |info_raw|) is freed at scope exit. Only publish the raw
++  // pointer into the secondary index after the owning insert succeeds.
++  if (insert_result.is_new_entry) {
++    race_network_request_fetch_event_ids_.insert(fetch_event_id, info_raw);
++  }
+ 
+   // DumpWithoutCrashing if the token is empty, or not inserted as a new entry
+   // to |race_network_request_loader_factories_|.

@@ -1,0 +1,217 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Kvitek <kvitekp@chromium.org>
+Date: Fri, 29 May 2026 13:52:17 -0700
+Subject: [M148] [headless][win] Safeguard message handler code for potential
+ UAF
+
+Original change's description:
+> [headless][win] Safeguard message handler code for potential UAF
+>
+> HWNDMessageHandlerHeadless code frequently calls
+> HWNDMessageHandlerDelegate methods which could destroy the window
+> invalidating 'this' pointer. This CL adds safeguards to prevent UAF
+> after delegate calls.
+>
+> Bug: 513748868
+> Change-Id: If0fc3042bf330a30ab953cbdc499b31e6b102714
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7868576
+> Reviewed-by: David Bienvenu <davidbienvenu@chromium.org>
+> Commit-Queue: Peter Kvitek <kvitekp@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1636225}
+
+(cherry picked from commit dce2a77c9cca8e7078ff535c8d2f6bc83da6c297)
+
+Bug: 517793777,513748868
+Change-Id: If0fc3042bf330a30ab953cbdc499b31e6b102714
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7885916
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#3985}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
+index 558f6ecaced6ec55f33e445d132eef660e93b85b..132f30a012171f57068aaf1410fa8ebf8e68a819 100644
+--- a/ui/views/win/hwnd_message_handler.h
++++ b/ui/views/win/hwnd_message_handler.h
+@@ -257,6 +257,11 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+   // Returns true if IsFrameSystemDrawn() and there's actually a frame to draw.
+   bool HasSystemFrame() const;
+ 
++  // Allow WeakPtr use in subclasses.
++  base::WeakPtr<HWNDMessageHandler> GetWeakPtr() {
++    return msg_handler_weak_factory_.GetWeakPtr();
++  }
++
+  private:
+   friend class ::views::test::DesktopWindowTreeHostWinTestApi;
+ 
+diff --git a/ui/views/win/hwnd_message_handler_headless.cc b/ui/views/win/hwnd_message_handler_headless.cc
+index 3f4f33d2daf956e99a7b2836c0bd748123adbb19..821a8d62974c79cd8e34c58ecd39aae6b06b03d4 100644
+--- a/ui/views/win/hwnd_message_handler_headless.cc
++++ b/ui/views/win/hwnd_message_handler_headless.cc
+@@ -56,7 +56,12 @@ void HWNDMessageHandlerHeadless::Init(HWND parent, const gfx::Rect& bounds) {
+ 
+   initial_bounds_valid_ = !bounds.IsEmpty();
+ 
++  auto weak_ptr = GetWeakPtr();
++
+   WindowImpl::Init(parent, bounds);
++  if (!weak_ptr) {
++    return;
++  }
+ 
+   // In headless mode remember the expected window bounds possibly adjusted
+   // according to the scale factor.
+@@ -78,6 +83,10 @@ void HWNDMessageHandlerHeadless::Init(HWND parent, const gfx::Rect& bounds) {
+     }
+   }
+ 
++  if (!weak_ptr) {
++    return;
++  }
++
+   InitExtras();
+ }
+ 
+@@ -158,7 +167,14 @@ void HWNDMessageHandlerHeadless::SetSize(const gfx::Size& size) {
+   bool size_changed = bounds_.size() != size;
+   gfx::Rect bounds = bounds_;
+   bounds.set_size(size);
++
++  auto weak_ptr = GetWeakPtr();
++
+   SetHeadlessWindowBounds(bounds);
++  if (!weak_ptr) {
++    return;
++  }
++
+   if (size_changed) {
+     delegate_->HandleClientSizeChanged(GetClientAreaBounds().size());
+   }
+@@ -206,6 +222,8 @@ void HWNDMessageHandlerHeadless::Show(ui::mojom::WindowShowState show_state,
+ 
+   bool activate = true;
+ 
++  auto weak_ptr = GetWeakPtr();
++
+   switch (show_state) {
+     case ui::mojom::WindowShowState::kMinimized:
+       Minimize();
+@@ -229,6 +247,10 @@ void HWNDMessageHandlerHeadless::Show(ui::mojom::WindowShowState show_state,
+       break;
+   }
+ 
++  if (!weak_ptr) {
++    return;
++  }
++
+   // In headless mode the platform window is always hidden, so instead of
+   // showing it just maintain a local flag to track the expected headless
+   // window visibility state and explicitly activate window just like
+@@ -236,6 +258,9 @@ void HWNDMessageHandlerHeadless::Show(ui::mojom::WindowShowState show_state,
+   if (!is_visible_) {
+     is_visible_ = true;
+     delegate_->HandleVisibilityChanged(/*visible=*/true);
++    if (!weak_ptr) {
++      return;
++    }
+   }
+ 
+   if (activate) {
+@@ -262,7 +287,14 @@ void HWNDMessageHandlerHeadless::Maximize() {
+   window_state_ = WindowState::kMaximized;
+ 
+   gfx::Rect bounds = GetZoomedWindowBounds();
++
++  auto weak_ptr = GetWeakPtr();
++
+   SetBoundsInternal(bounds, /*force_size_changed=*/false);
++  if (!weak_ptr) {
++    return;
++  }
++
+   delegate_->HandleCommand(static_cast<int>(SC_MAXIMIZE));
+ }
+ 
+@@ -273,17 +305,33 @@ void HWNDMessageHandlerHeadless::Minimize() {
+ 
+   window_state_ = WindowState::kMinimized;
+ 
++  auto weak_ptr = GetWeakPtr();
++
+   // Windows automatiaclly deactivates minimized windows, so we need to
+   // replicate this behavior to prevent focus not being restored, see
+   // https://crbug.com/358998544.
+   was_active_before_minimize_ = is_active_;
+   if (is_active_) {
+     Deactivate();
++    if (!weak_ptr) {
++      return;
++    }
+   }
+ 
+   delegate_->HandleWindowMinimizedOrRestored(/*restored=*/false);
++  if (!weak_ptr) {
++    return;
++  }
++
+   delegate_->HandleCommand(static_cast<int>(SC_MINIMIZE));
++  if (!weak_ptr) {
++    return;
++  }
++
+   delegate_->HandleNativeBlur(nullptr);
++  if (!weak_ptr) {
++    return;
++  }
+ }
+ 
+ void HWNDMessageHandlerHeadless::Restore() {
+@@ -294,12 +342,24 @@ void HWNDMessageHandlerHeadless::Restore() {
+   auto prev_state = window_state_;
+   window_state_ = WindowState::kNormal;
+ 
++  auto weak_ptr = GetWeakPtr();
++
+   RestoreBounds();
++  if (!weak_ptr) {
++    return;
++  }
+ 
+   if (prev_state == WindowState::kMinimized) {
+     delegate_->HandleWindowMinimizedOrRestored(/*restored=*/true);
++    if (!weak_ptr) {
++      return;
++    }
++
+     if (was_active_before_minimize_) {
+       Activate();
++      if (!weak_ptr) {
++        return;
++      }
+     }
+   }
+ 
+@@ -445,13 +505,21 @@ void HWNDMessageHandlerHeadless::SetBoundsInternal(
+     bool force_size_changed) {
+   gfx::Rect old_bounds = GetClientAreaBounds();
+ 
++  auto weak_ptr = GetWeakPtr();
++
+   SetHeadlessWindowBounds(bounds_in_pixels);
++  if (!weak_ptr) {
++    return;
++  }
+ 
+   // In normal mode the delegate is called when the platform window receives
+   // WM_MOVE/WM_MOVING messages, however, in headless mode platform window is
+   // never moved, so call the delegate here. See http://crbug.com/401294443.
+   if (old_bounds.origin() != bounds_in_pixels.origin()) {
+     delegate_->HandleMove();
++    if (!weak_ptr) {
++      return;
++    }
+   }
+ 
+   // Notify the delegate pretending the platform window size has been changed.
