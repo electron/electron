@@ -110,7 +110,7 @@ struct Converter<blink::mojom::AILanguageModelPromptContentPtr> {
       auto dst_buf = v8::ArrayBuffer::New(isolate, dst_n_bytes);
 
       UNSAFE_BUFFERS(
-          std::ranges::copy(raw_data, static_cast<char*>(dst_buf->Data())));
+          std::ranges::copy(raw_data, static_cast<float*>(dst_buf->Data())));
 
       dict.Set("type", "audio");
       dict.Set("value", dst_buf);
@@ -320,16 +320,18 @@ class PromptResponder {
                       ->Get(isolate->GetCurrentContext(),
                             gin::StringToV8(isolate, "value"))
                       .ToLocalChecked();
-              DCHECK(val->IsString());
 
               std::string value;
 
-              if (gin::ConvertFromV8(isolate, val, &value)) {
+              if (val->IsString() && gin::ConvertFromV8(isolate, val, &value)) {
                 weak_ptr->responder_->OnStreaming(value);
                 weak_ptr->Read(isolate);
               } else {
                 weak_ptr->SendError();
                 weak_ptr->DeleteThis();
+                auto err = v8::Exception::TypeError(gin::StringToV8(
+                    isolate, "ReadableStream chunks must be strings"));
+                node::errors::TriggerUncaughtException(isolate, err, {});
               }
             }
           }

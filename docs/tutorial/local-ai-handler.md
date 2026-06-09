@@ -77,7 +77,7 @@ localAIHandler.setPromptAPIHandler((details) => {
     }
 
     async prompt (input) {
-      // input is a string or LanguageModelMessage[]
+      // input is a LanguageModelMessage[]
       // Return a string response from your model, or a ReadableStream
       // to return a streaming response.
       return 'This is a response from your local LLM!'
