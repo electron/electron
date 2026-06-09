@@ -40,7 +40,7 @@ index fbfe1abebb19119387d55a1296aba5fd1ca7d99b..2c2d263bc026a0b63010498fb02d9bb8
      frontend_url = "/devtools/inspector.html";
    } else {
 diff --git a/content/public/browser/devtools_manager_delegate.cc b/content/public/browser/devtools_manager_delegate.cc
-index 7f53c03404eb8923b3797fcb80b2c6a8193e4479..7318459a6aa7f33040d76c9d403e775e5c7a8f3c 100644
+index 8257dd01a79e617ff12554fd6cf5d32dc1abaf50..0a664b4ac5b28c7c9f6a2838859c915f9af5cbc1 100644
 --- a/content/public/browser/devtools_manager_delegate.cc
 +++ b/content/public/browser/devtools_manager_delegate.cc
 @@ -116,6 +116,10 @@ bool DevToolsManagerDelegate::HasBundledFrontendResources() {
@@ -55,7 +55,7 @@ index 7f53c03404eb8923b3797fcb80b2c6a8193e4479..7318459a6aa7f33040d76c9d403e775e
    return false;
  }
 diff --git a/content/public/browser/devtools_manager_delegate.h b/content/public/browser/devtools_manager_delegate.h
-index 1a4805b295c757607948c68efd93bb4da18f7611..fc7f58eb69732715fe6b108fe2e1f211f9a90e15 100644
+index f08399ea042217b4c72d0a5cb4d71067ced65a87..90c14b184bca1b8680b2d3a533755f14b7fbf510 100644
 --- a/content/public/browser/devtools_manager_delegate.h
 +++ b/content/public/browser/devtools_manager_delegate.h
 @@ -160,6 +160,13 @@ class CONTENT_EXPORT DevToolsManagerDelegate {

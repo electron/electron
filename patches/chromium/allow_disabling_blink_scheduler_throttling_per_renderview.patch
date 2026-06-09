@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/navigation_controller_impl_unittest.cc b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
-index 935d7468caa021bb0ca4eee6697b7609e44462cc..b33df97061273c0b1ea51e159324cb2b1d84ce26 100644
+index cffde5776187bc05cc0098324f5b151797fed2d8..8edbe411fe6322b330ba1d12b576630f8904919c 100644
 --- a/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 +++ b/content/browser/renderer_host/navigation_controller_impl_unittest.cc
 @@ -171,6 +171,12 @@ class MockPageBroadcast : public blink::mojom::PageBroadcast {
@@ -116,10 +116,10 @@ index 932658273154ef2e022358e493a8e7c00c86e732..57bbfb5cde62c9496c351c861880a189
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 45a11bc1e38bbfae5eade96938b4debe6a4ec6c8..431bfe0f883aa6da9803c989839a070d060a9232 100644
+index eb8ca629c5544149e703987960c5acc9eb39e0ad..3b2601bd9a919aa44afccc63dc6e872467557a37 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -2477,6 +2477,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+@@ -2485,6 +2485,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
    TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
                 "old_state", old_state, "new_state", new_state);
  
@@ -130,7 +130,7 @@ index 45a11bc1e38bbfae5eade96938b4debe6a4ec6c8..431bfe0f883aa6da9803c989839a070d
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4030,10 +4034,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4038,10 +4042,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  

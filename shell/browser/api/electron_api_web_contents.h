@@ -686,6 +686,9 @@ class WebContents final : public ExclusiveAccessContext,
 
   void OnElectronBrowserConnectionError();
 
+  // Posted from PrimaryMainFrameRenderProcessGone(); see the comment there.
+  void EmitRenderProcessGone(base::TerminationStatus status, int exit_code);
+
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
 
