@@ -66,8 +66,8 @@ mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
       std::string contents;
       if (asar::ReadFileToString(script.file_path, &contents)) {
         ps->contents.assign(contents.begin(), contents.end());
-        // V8 validates the blob against source/version; no need to here.
-        std::vector<uint8_t> cache = preload_code_cache::Get(script.id);
+        std::vector<uint8_t> cache =
+            preload_code_cache::Get(script.id, ps->contents);
         if (!cache.empty())
           ps->code_cache = std::move(cache);
       } else {
