@@ -591,7 +591,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
     it('rejects when ReadableStream returns an invalid value', async () => {
       await forkAndRegisterHandler('buggy-streaming-language-model.js');
 
-      await expectRejectedWithError(/has been destroyed/, 'Test prompt');
+      await expectRejectedWithError(/error occurred/, 'Test prompt');
     });
 
     it('rejects when handler promise rejects', async () => {
