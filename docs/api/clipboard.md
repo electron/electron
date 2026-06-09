@@ -128,13 +128,7 @@ clipboard.writeText('hello i am a bit of text!')
 
 Returns `Promise<ClipboardItem[]>` - A promise that resolves with an array of
 [ClipboardItem](clipboard-item.md) objects containing the clipboard's
-contents. Each `ClipboardItem` has a `types` array of MIME types and a
-`getType(type)` method that returns a `Promise<Buffer>` for the payload of
-that type. The one exception is
-`getType('electron application/bookmark')`, which resolves to a plain
-[Bookmark](structures/bookmark.md) object instead of a `Buffer`. The items
-returned by `clipboard.read()` are lightweight — the platform clipboard is
-queried lazily, only when `getType` is called.
+contents.
 
 ```js
 const { clipboard } = require('electron')
@@ -156,17 +150,7 @@ dumpClipboard()
 
 * `data` [ClipboardItem](clipboard-item.md)[] - An array of
   [`ClipboardItem`](clipboard-item.md) instances constructed via
-  `new ClipboardItem({ [mime]: payload })`. The accepted payload type
-  depends on the MIME type. Text-typed MIME types (`text/plain`,
-  `text/html`, `text/rtf`, and `electron application/findtext`) accept a
-  `string`. The `electron application/bookmark` MIME type accepts a plain
-  `{ title: string, url: string }` object. All other MIME types — the
-  W3C `web` custom format prefix,
-  `electron application/osclipboard;format="..."`, `image/*`, and any
-  other arbitrary MIME — accept a
-  [`Buffer`](https://nodejs.org/api/buffer.html) (committed verbatim). If
-  you have a `Blob` or a `Promise`, resolve it to a `Buffer` (or a
-  `string` for text MIME types) before calling `write()`.
+  `new ClipboardItem({ [mime]: payload })`.
 
 Returns `Promise<void>` - Resolves once the data has been written to the
 clipboard. All entries supplied in a single `write()` call are committed
