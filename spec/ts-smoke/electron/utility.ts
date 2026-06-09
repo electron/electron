@@ -88,4 +88,4 @@ localAIHandler.setPromptAPIHandler((details) => {
   };
 });
 
-localAIHandler.setPromptAPIHandler(null);
+localAIHandler.setPromptAPIHandler(() => null);
