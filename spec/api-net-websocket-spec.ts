@@ -19,8 +19,7 @@ async function startWSServer(
   options: WSS.ServerOptions = {}
 ): Promise<StartedServer> {
   const server = http.createServer();
-  // permessage-deflate negotiation in ws@7 can race a server-initiated close;
-  // it isn't the subject under test, so keep it off for determinism.
+  // permessage-deflate is not the subject under test, so keep it off for determinism.
   const wss = new WSS.Server({ server, perMessageDeflate: false, ...options });
   if (onConnection) wss.on('connection', onConnection);
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -156,7 +155,7 @@ describe('net.WebSocket', () => {
   describe('messaging', () => {
     it('echoes text messages', async () => {
       const { url } = await startWSServer((ws) => {
-        ws.on('message', (m: Buffer | string) => ws.send(m));
+        ws.on('message', (data: Buffer, isBinary: boolean) => ws.send(data, { binary: isBinary }));
       });
       const ws = new net.WebSocket(url);
       defer(() => ws.close());
@@ -171,7 +170,7 @@ describe('net.WebSocket', () => {
 
     it('echoes binary messages as Buffer by default', async () => {
       const { url } = await startWSServer((ws) => {
-        ws.on('message', (m: Buffer | string) => ws.send(m));
+        ws.on('message', (data: Buffer, isBinary: boolean) => ws.send(data, { binary: isBinary }));
       });
       const ws = new net.WebSocket(url);
       defer(() => ws.close());
