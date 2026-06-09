@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bryan Oltman <bryanoltman@google.com>
+Date: Mon, 1 Jun 2026 08:12:20 -0700
+Subject: [M148] [macOS] Prevent UAF during fullscreen controller transition
+ complete
+
+Original change's description:
+> [macOS] Prevent UAF during fullscreen controller transition complete
+>
+> Closing a window while transitioning out of fullscreen can cause a
+> use-after-free crash if a modal sheet animation is run. This CL checks
+> if the NativeWidgetNSWindowBridge was destroyed during child window
+> ordering and aborts completion if so.
+>
+> Fixed: 517040438
+> Change-Id: I89b979cbf716202036f6484059bec002b3779064
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7881662
+> Commit-Queue: Bryan Oltman <bryanoltman@google.com>
+> Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1637915}
+
+(cherry picked from commit d698fc88d0d073cf6be985297e6cf41a13225c2d)
+
+Bug: 517794411,517040438
+Change-Id: I89b979cbf716202036f6484059bec002b3779064
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7888516
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4152}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+index 672d90ed9bf76ba4c66d83d3f0ccd9970b0bb1b3..80716959470b5984f939b416b215a2d1994a2e53 100644
+--- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
++++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
+@@ -1552,7 +1552,14 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+   UpdateWindowDisplay();
+ 
+   // Add any children that were skipped during the fullscreen transition.
++  // A weak pointer is needed because OrderChildren() can synchronously run a
++  // modal sheet animation (ShowAsModalSheet), entering a nested run-loop during
++  // which this bridge may be destroyed.
++  base::WeakPtr<NativeWidgetNSWindowBridge> weak_ptr = factory_.GetWeakPtr();
+   OrderChildren();
++  if (!weak_ptr) {
++    return;
++  }
+ 
+   host_->OnWindowFullscreenTransitionComplete(is_fullscreen);
+   if (is_fullscreen && immersive_mode_controller_) {
