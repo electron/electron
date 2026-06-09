@@ -71,6 +71,7 @@ class ElectronDesktopWindowTreeHostLinux
   void AddAdditionalInitProperties(
       const views::Widget::InitParams& params,
       ui::PlatformWindowInitProperties* properties) override;
+  void SetOpacity(float opacity) override;
 
  private:
   void UpdateWindowState(ui::PlatformWindowState new_state);

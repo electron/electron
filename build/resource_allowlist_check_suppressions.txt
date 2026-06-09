@@ -1,0 +1,17 @@
+# Resources that are referenced by code linked into the electron binary but
+# intentionally not shipped. Used by build/check_resource_allowlist.py.
+#
+# Keep this list as close to empty as possible: if the binary can request a
+# resource, ship it. Only add entries here when shipping the resource is
+# impossible or meaningless, and explain why.
+#
+# Line formats:
+#   IDS_SOME_NAME              exact resource name
+#   IDR_SOME_PREFIX_*          fnmatch glob on the resource name
+#   header:path/to/grit/foo.h  every resource generated from that .grd
+#   12345                      numeric resource id
+
+# UMA/UKM/crash upload endpoint "strings". The grd intentionally produces an
+# empty pak in non-branded (chromium) builds, so there is nothing to ship, and
+# Electron does not report metrics to Google servers.
+header:components/metrics/grit/metrics_server_urls.h

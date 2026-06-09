@@ -57,10 +57,15 @@ jobs:
         src: ${{ steps.filter.outputs.src }}
         build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
+        pgo-only: ${{ steps.set-output.outputs.pgo-only }}
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
       with:
         ref: ${{ github.event.pull_request.head.sha }}
+    # The filters are evaluated per-pattern and OR'd together, so the src
+    # exclusions must live inside a single negated brace pattern - a second
+    # negated pattern would match (and re-include) every file the first one
+    # excluded.
     - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
       id: filter
       with:
@@ -75,8 +80,10 @@ jobs:
             - SECURITY.md
             - CONTRIBUTING.md
             - CODE_OF_CONDUCT.md
+          pgo:
+            - 'build/pgo_profiles/*.pgo.txt'
           src:
-            - '!{docs,.claude}/**'
+            - '!{docs/**,.claude/**,build/pgo_profiles/*.pgo.txt}'
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
@@ -86,11 +93,16 @@ jobs:
       id: set-output
       run: |
         echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
+        echo "pgo-only=${{ steps.filter.outputs.pgo == 'true' && steps.filter.outputs.src == 'false' && steps.filter.outputs.docs == 'false' }}" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
+  # pgo-only changes skip lint too: the state files are machine-written
+  # single-line text files no linter covers, and skipping reports the
+  # required "lint / Lint" check as skipped, which branch protection treats
+  # as satisfied.
   lint:
     needs: setup
-    if: ${{ !inputs.skip-lint }}
+    if: ${{ !inputs.skip-lint && needs.setup.outputs.pgo-only != 'true' }}
     uses: ./.github/workflows/pipeline-electron-lint.yml
     permissions:
       contents: read
@@ -129,7 +141,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
       with:
         path: src/electron
         fetch-depth: 0
@@ -140,9 +152,12 @@ jobs:
         generate-sas-token: 'true'
         target-platform: macos
 
+  # No plain src gate here: the docs-only compile needs this checkout even
+  # when src is false. pgo-only changes have no consumer for it, so they
+  # skip it via the docs-only output instead.
   checkout-linux:
     needs: setup
-    if: ${{ !inputs.skip-linux}}
+    if: ${{ (needs.setup.outputs.src == 'true' || needs.setup.outputs.docs-only == 'true') && !inputs.skip-linux }}
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -161,7 +176,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
       with:
         path: src/electron
         fetch-depth: 0
@@ -193,7 +208,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
       with:
         path: src/electron
         fetch-depth: 0

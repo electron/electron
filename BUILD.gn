@@ -14,6 +14,7 @@ import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
+import("//tools/resources/generate_resource_allowlist.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
@@ -1052,12 +1053,87 @@ if (current_toolchain == default_toolchain) {
   }
 }
 
+# Resource allowlisting (slimmed locale paks + the completeness check) is only
+# wired up for Linux so far: Windows needs PDB-based extraction and macOS needs
+# Mach-O support in tools/resources/generate_resource_allowlist.py.
+electron_use_resource_allowlist =
+    enable_resource_allowlist_generation && is_linux
+
+if (electron_use_resource_allowlist) {
+  # The list of grit resource IDs actually referenced by the electron
+  # executable's link inputs, extracted from the ui::AllowlistedResource<id>
+  # markers that --allowlist-support plants at every resource-macro use. Used
+  # to repack only reachable strings into the locale .pak files.
+  electron_resource_allowlist_file =
+      "$target_gen_dir/electron_resource_allowlist.txt"
+
+  # TODO: on Windows this should extract from electron.exe.pdb instead of the
+  # inputs pseudo-link (and the executable must then stop depending on
+  # :packed_resources to avoid a dependency cycle).
+  generate_resource_allowlist("electron_resource_allowlist") {
+    deps = [ ":electron_resource_allowlist_inputs" ]
+    inputs = [
+      "$root_out_dir/libelectron_resource_allowlist_inputs$shlib_extension",
+    ]
+    output = electron_resource_allowlist_file
+  }
+}
+
 electron_paks("packed_resources") {
   if (is_mac) {
     output_dir = "$root_gen_dir/electron_repack"
     copy_data_to_bundle = true
   } else {
     output_dir = root_out_dir
+  }
+  if (electron_use_resource_allowlist) {
+    locale_allowlist = electron_resource_allowlist_file
+    deps = [ ":electron_resource_allowlist" ]
+  }
+}
+
+if (electron_use_resource_allowlist) {
+  # Asserts that every grit resource the binary can request is present in one
+  # of the shipped .pak files, so a missing string/.grd fails the build
+  # instead of rendering as an empty string at runtime.
+  action("electron_resource_allowlist_check") {
+    script = "build/check_resource_allowlist.py"
+    deps = [
+      ":electron_resource_allowlist",
+      ":packed_resources",
+    ]
+    _shipped_paks = [
+      "$root_out_dir/resources.pak",
+      "$root_out_dir/chrome_100_percent.pak",
+      "$root_out_dir/locales/en-US.pak",
+    ]
+    if (enable_hidpi) {
+      _shipped_paks += [ "$root_out_dir/chrome_200_percent.pak" ]
+    }
+    inputs = [
+               electron_resource_allowlist_file,
+               "build/resource_allowlist_check_suppressions.txt",
+             ] + _shipped_paks
+    outputs = [ "$target_gen_dir/electron_resource_allowlist_check.stamp" ]
+    args = [
+      "--allowlist",
+      rebase_path(electron_resource_allowlist_file, root_build_dir),
+      "--gen-dir",
+      rebase_path(root_gen_dir, root_build_dir),
+      "--grit-dir",
+      rebase_path("//tools/grit", root_build_dir),
+      "--suppressions",
+      rebase_path("build/resource_allowlist_check_suppressions.txt",
+                  root_build_dir),
+      "--stamp",
+      rebase_path(outputs[0], root_build_dir),
+    ]
+    foreach(pak, _shipped_paks) {
+      args += [
+        "--pak",
+        rebase_path(pak, root_build_dir),
+      ]
+    }
   }
 }
 
@@ -1148,6 +1224,15 @@ if (is_mac) {
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
+
+    # Perform full ThinLTO optimization in the link step for the framework
+    # (where all of Chromium/Electron's code lives on macOS), matching what
+    # Chrome does for its framework. The default thinlto_optimize_default
+    # config links with --lto-O0, which skips link-time optimization entirely
+    # and gives up most of the benefit of ThinLTO and PGO.
+    configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
+    configs += [ "//build/config/compiler:thinlto_optimize_max" ]
+
     framework_contents = [
       "Resources",
       "Libraries",
@@ -1478,8 +1563,47 @@ if (is_mac) {
     ]
   }
 
+  # Deps that determine the native code linked into the electron executable.
+  # Shared with :electron_resource_allowlist_inputs below so the resource
+  # allowlist is computed from exactly the same link inputs as the shipped
+  # binary.
+  electron_app_link_deps = [
+    ":default_app_asar",
+    ":electron_app_manifest",
+    ":electron_lib",
+    ":electron_win32_resources",
+    "//components/crash/core/app",
+    "//content:sandbox_helper_win",
+    "//electron/buildflags",
+    "//third_party/electron_node:libnode",
+    "//ui/strings",
+  ]
+
+  if (electron_use_resource_allowlist) {
+    # Pseudo-link sharing the executable's link inputs: --collect-inputs-only
+    # makes gcc_solink_wrapper.py skip the real link and write the list of
+    # link inputs instead. generate_resource_allowlist greps those inputs for
+    # ui::AllowlistedResource<id> markers, which is the supported way to
+    # extract the referenced-resource set on ELF (the markers are dropped from
+    # the linked binary by --gc-sections and the debug strings live in .dwo
+    # files with use_debug_fission).
+    shared_library("electron_resource_allowlist_inputs") {
+      ldflags = [ "--collect-inputs-only" ]
+      deps = electron_app_link_deps
+    }
+  }
+
   executable("electron_app") {
     output_name = electron_project_name
+
+    # Perform full ThinLTO optimization in the link step for the main binary,
+    # matching what Chrome does for its main executable. The default
+    # thinlto_optimize_default config links with --lto-O0, which skips
+    # link-time optimization entirely and gives up most of the benefit of
+    # ThinLTO and PGO.
+    configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
+    configs += [ "//build/config/compiler:thinlto_optimize_max" ]
+
     if (is_win) {
       sources = [ "shell/app/electron_main_win.cc" ]
     } else if (is_linux) {
@@ -1490,18 +1614,7 @@ if (is_mac) {
       ]
     }
     include_dirs = [ "." ]
-    deps = [
-      ":default_app_asar",
-      ":electron_app_manifest",
-      ":electron_lib",
-      ":electron_win32_resources",
-      ":packed_resources",
-      "//components/crash/core/app",
-      "//content:sandbox_helper_win",
-      "//electron/buildflags",
-      "//third_party/electron_node:libnode",
-      "//ui/strings",
-    ]
+    deps = electron_app_link_deps + [ ":packed_resources" ]
 
     data = []
     data_deps = []
@@ -1714,6 +1827,12 @@ dist_zip("electron_dist_zip") {
     data_deps += [ "//sandbox/linux:chrome_sandbox" ]
   }
   deps = data_deps
+  if (electron_use_resource_allowlist) {
+    # Build-order dep only (not data_deps): the check must pass before the
+    # dist zip is created, but its stamp output must not be packed into the
+    # zip's runtime deps.
+    deps += [ ":electron_resource_allowlist_check" ]
+  }
   outputs = [ "$root_build_dir/dist.zip" ]
 }
 

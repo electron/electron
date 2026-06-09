@@ -1,13 +1,39 @@
-import { BrowserWindow, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron/main';
+import {
+  BaseWindow,
+  BrowserWindow,
+  WebContentsView,
+  app,
+  Menu,
+  MenuItem,
+  MenuItemConstructorOptions
+} from 'electron/main';
 
 import { expect } from 'chai';
 
-import { roleList, execute } from '../lib/browser/api/menu-item-roles';
+import { once } from 'node:events';
+
+/* oxlint-disable-next-line no-restricted-imports */
+import { roleList } from '../lib/browser/api/menu-item-roles';
 import { ifit, ifdescribe } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
+import { closeAllWindows, cleanupWebContents } from './lib/window-helpers';
 
 function keys<Key extends string, Value>(record: Record<Key, Value>) {
   return Object.keys(record) as Key[];
+}
+
+// Helper to execute a menu item by its role
+function executeByRole(role: MenuItemConstructorOptions['role'], win: BaseWindow, wc: Electron.WebContents) {
+  let handledByRole = true;
+  const menu = Menu.buildFromTemplate([
+    {
+      role,
+      click: () => {
+        handledByRole = false;
+      }
+    }
+  ]);
+  menu.items[0].click({}, win, wc);
+  return handledByRole;
 }
 
 describe('MenuItems', () => {
@@ -254,7 +280,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 });
       const item = new MenuItem({ role: 'asdfghjkl' as any });
 
-      const canExecute = execute(item.role as any, win, win.webContents);
+      const canExecute = executeByRole(item.role as any, win, win.webContents);
       expect(canExecute).to.be.false('can execute');
     });
 
@@ -262,7 +288,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 });
       const item = new MenuItem({ role: 'reload' });
 
-      const canExecute = execute(item.role as any, win, win.webContents);
+      const canExecute = executeByRole(item.role as any, win, win.webContents);
       expect(canExecute).to.be.true('can execute');
     });
 
@@ -270,7 +296,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 });
       const item = new MenuItem({ role: 'resetZoom' });
 
-      const canExecute = execute(item.role as any, win, win.webContents);
+      const canExecute = executeByRole(item.role as any, win, win.webContents);
       expect(canExecute).to.be.true('can execute');
     });
 
@@ -503,6 +529,48 @@ describe('MenuItems', () => {
       });
       expect(item.label).to.equal('View');
       expect(item.submenu!.items[0].role).to.equal('close');
+    });
+  });
+
+  describe('MenuItem toggleDevTools role', () => {
+    afterEach(closeAllWindows);
+    afterEach(cleanupWebContents);
+
+    it('toggles devtools on the focused webContents', async () => {
+      const w = new BaseWindow({ show: false });
+      const wcv = new WebContentsView();
+      w.setContentView(wcv);
+      await wcv.webContents.loadURL('about:blank');
+
+      const opened = once(wcv.webContents, 'devtools-opened');
+      expect(executeByRole('toggleDevTools', w, wcv.webContents)).to.be.true();
+      await opened;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.true();
+
+      const closed = once(wcv.webContents, 'devtools-closed');
+      executeByRole('toggleDevTools', w, wcv.webContents);
+      await closed;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.false();
+    });
+
+    it('toggles parent devtools when invoked with the devtools webContents', async () => {
+      const w = new BaseWindow({ show: false });
+      const wcv = new WebContentsView();
+      w.setContentView(wcv);
+      await wcv.webContents.loadURL('about:blank');
+
+      const opened = once(wcv.webContents, 'devtools-opened');
+      wcv.webContents.openDevTools({ mode: 'bottom' });
+      await opened;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.true();
+
+      const devToolsWc = wcv.webContents.devToolsWebContents!;
+      expect(devToolsWc).to.not.be.null();
+
+      const closed = once(wcv.webContents, 'devtools-closed');
+      expect(executeByRole('toggleDevTools', w, devToolsWc)).to.be.true();
+      await closed;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.false();
     });
   });
 

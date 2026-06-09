@@ -26,6 +26,7 @@
   "ignorePatterns": [
     ".github/workflows/node_modules",
     "spec/node_modules",
+    "script/pgo/node_modules",
     "spec/fixtures/native-addon",
     "shell/browser/resources/win/resource.h",
     "shell/common/node_includes.h",
@@ -238,18 +239,29 @@
   },
   "overrides": [
     {
-      "files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
+      "files": [
+        "**/*.ts",
+        "**/*.tsx",
+        "**/*.mts",
+        "**/*.cts"
+      ],
       "rules": {
         "no-use-before-define": "off"
       }
     },
     {
-      "files": ["lib/browser/**", "lib/utility/**"],
+      "files": [
+        "lib/browser/**",
+        "lib/utility/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
-            "paths": ["electron", "electron/renderer"],
+            "paths": [
+              "electron",
+              "electron/renderer"
+            ],
             "patterns": [
               "./*",
               "../*",
@@ -274,19 +286,32 @@
         "no-restricted-imports": [
           "error",
           {
-            "paths": ["electron", "electron/main"],
-            "patterns": ["./*", "../*", "@electron/internal/browser/*"]
+            "paths": [
+              "electron",
+              "electron/main"
+            ],
+            "patterns": [
+              "./*",
+              "../*",
+              "@electron/internal/browser/*"
+            ]
           }
         ]
       }
     },
     {
-      "files": ["lib/common/**"],
+      "files": [
+        "lib/common/**"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
-            "paths": ["electron", "electron/main", "electron/renderer"],
+            "paths": [
+              "electron",
+              "electron/main",
+              "electron/renderer"
+            ],
             "patterns": [
               "./*",
               "../*",
@@ -313,13 +338,33 @@
       }
     },
     {
-      "files": ["spec/**/*.ts", "spec/**/*.js", "spec/**/*.mjs"],
+      "files": [
+        "spec/**/*.ts",
+        "spec/**/*.js",
+        "spec/**/*.mjs"
+      ],
       "rules": {
         "no-only-tests/no-only-tests": "error"
       }
     },
     {
-      "files": ["**/*.d.ts"],
+      "files": [
+        "spec/**/api-*.ts",
+        "spec/**/api-*.js",
+        "spec/**/api-*.mjs"
+      ],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [{
+            "regex": "^\\.\\./"
+          }]
+        }]
+      }
+    },
+    {
+      "files": [
+        "**/*.d.ts"
+      ],
       "rules": {
         "no-useless-constructor": "off",
         "no-unused-vars": "off"
