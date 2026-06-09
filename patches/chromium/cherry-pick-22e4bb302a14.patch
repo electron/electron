@@ -1,0 +1,123 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Tue, 2 Jun 2026 11:44:04 -0700
+Subject: [M148] Add validation to cursor theme name to prevent path traversal.
+
+Original change's description:
+> Add validation to cursor theme name to prevent path traversal.
+>
+> On Linux Ozone/X11 platforms, a compromised GPU process could
+> potentially exploit its cloned X11 connection to hijack the XSETTINGS
+> selection, supplying a malicious cursor theme name.
+>
+> This CL remediates the issue by sanitizing and validating any cursor
+> theme name retrieved from GetCursorThemeName() or recursive inherits
+> parsing during the cursor loading process, rejecting absolute paths,
+> relative parent references, and paths with multiple components.
+>
+> Fixed: 518105731
+> Change-Id: Ia0f9eb7b433dc1d7a200485dfb70e1ec67e68910
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7890525
+> Reviewed-by: Lei Zhang <thestig@chromium.org>
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1639694}
+
+(cherry picked from commit 633de441a4c8d326e1575eef15167d9e38e4cdb1)
+
+Bug: 519051210,518105731
+Change-Id: Ia0f9eb7b433dc1d7a200485dfb70e1ec67e68910
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7895318
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4211}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/ui/base/x/x11_cursor_loader.cc b/ui/base/x/x11_cursor_loader.cc
+index 04365d8b5bd5f6f95b9517e5aba9e8a2eb6ae6ae..150a4f1b5b1dfa8df9153489f55b970faa1ef76c 100644
+--- a/ui/base/x/x11_cursor_loader.cc
++++ b/ui/base/x/x11_cursor_loader.cc
+@@ -151,12 +151,22 @@ base::FilePath CanonicalizePath(base::FilePath path) {
+   return path;
+ }
+ 
++bool IsValidCursorThemeName(const std::string& theme) {
++  base::FilePath theme_path(theme);
++  return !theme.empty() && theme != "." && !theme_path.IsAbsolute() &&
++         !theme_path.ReferencesParent() && theme_path.BaseName() == theme_path;
++}
++
+ scoped_refptr<base::RefCountedMemory> ReadCursorFromThemeImpl(
+     const std::string& theme,
+     const std::string& cursor_name,
+     base::flat_set<ThemeAndCursorName>* parent_theme_and_cursor_names,
+     base::flat_map<ThemeAndCursorName, scoped_refptr<base::RefCountedMemory>>*
+         cache) {
++  if (!IsValidCursorThemeName(theme)) {
++    return nullptr;
++  }
++
+   constexpr const char kCursorDir[] = "cursors";
+   constexpr const char kThemeInfo[] = "index.theme";
+ 
+@@ -266,6 +276,10 @@ std::vector<XCursorLoader::Image> ReadCursorImages(
+ 
+ }  // namespace
+ 
++bool IsValidCursorThemeNameForTesting(const std::string& theme) {
++  return IsValidCursorThemeName(theme);
++}
++
+ XCursorLoader::XCursorLoader(x11::Connection* connection,
+                              base::RepeatingClosure on_cursor_config_changed)
+     : connection_(connection),
+diff --git a/ui/base/x/x11_cursor_loader.h b/ui/base/x/x11_cursor_loader.h
+index 94d08728c76385d20a5d389d88eb75d4ca6d5265..570a70ce957ac9aae1c59c2adb584b6944daa301 100644
+--- a/ui/base/x/x11_cursor_loader.h
++++ b/ui/base/x/x11_cursor_loader.h
+@@ -89,6 +89,9 @@ class COMPONENT_EXPORT(UI_BASE_X) XCursorLoader {
+   base::WeakPtrFactory<XCursorLoader> weak_factory_{this};
+ };
+ 
++COMPONENT_EXPORT(UI_BASE_X)
++bool IsValidCursorThemeNameForTesting(const std::string& theme);
++
+ COMPONENT_EXPORT(UI_BASE_X)
+ std::vector<XCursorLoader::Image> ParseCursorFile(
+     scoped_refptr<base::RefCountedMemory> file,
+diff --git a/ui/base/x/x11_cursor_loader_unittest.cc b/ui/base/x/x11_cursor_loader_unittest.cc
+index d72f51d933da6dc160c53d63ae266d69cfef97f6..3cdf6dbd25514b1221ac5948e0d5a2dc33ce359c 100644
+--- a/ui/base/x/x11_cursor_loader_unittest.cc
++++ b/ui/base/x/x11_cursor_loader_unittest.cc
+@@ -262,4 +262,31 @@ TEST(XCursorLoaderTest, Animated) {
+   EXPECT_EQ(images[1].frame_delay.InMilliseconds(), 500);
+ }
+ 
++TEST(XCursorLoaderTest, ThemeNameValidation) {
++  const char* const kInvalidThemes[] = {
++      "",
++      ".",
++      "..",
++      "/foo",
++      "/tmp/evil",
++      "../foo",
++      "foo/..",
++      "../../../../tmp/poc-cursor-evil",
++      "foo/bar",
++  };
++  for (const char* theme : kInvalidThemes) {
++    EXPECT_FALSE(IsValidCursorThemeNameForTesting(theme));
++  }
++
++  const char* const kValidThemes[] = {
++      "default",
++      "Adwaita",
++      "DMZ-White",
++      "my_theme-123",
++  };
++  for (const char* theme : kValidThemes) {
++    EXPECT_TRUE(IsValidCursorThemeNameForTesting(theme));
++  }
++}
++
+ }  // namespace ui
