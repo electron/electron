@@ -763,12 +763,13 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
       preload = web_prefs->GetPreloadPath();
     if (preload && preload->IsAbsolute()) {
       auto ps = mojom::PreloadScriptData::New();
-      ps->id = "preload-" + preload->AsUTF8Unsafe();
+      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
       ps->file_path = preload->AsUTF8Unsafe();
       std::string contents;
       if (asar::ReadFileToString(*preload, &contents)) {
         ps->contents.assign(contents.begin(), contents.end());
-        std::vector<uint8_t> cache = preload_code_cache::Get(ps->id);
+        std::vector<uint8_t> cache =
+            preload_code_cache::Get(ps->id, ps->contents);
         if (!cache.empty())
           ps->code_cache = std::move(cache);
       } else {
