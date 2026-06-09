@@ -11,10 +11,10 @@ This patch should be upstreamed as a conditional revert of the logic in desktop
 vs mobile runtimes.  i.e. restore the old logic only on desktop platforms
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 4e780f81fd89e7d0a9a829563f5f8154255e477a..7f02edc6c3816d703b6088098792deba7de5889e 100644
+index b117a257279a93e2ef147315bccc3b5d58d306fc..aa211c4104ae45d951267fb0002863c560489303 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2155,9 +2155,8 @@ RenderWidgetHostImpl::GetWidgetInputHandler() {
+@@ -2163,9 +2163,8 @@ RenderWidgetHostImpl::GetWidgetInputHandler() {
  void RenderWidgetHostImpl::NotifyScreenInfoChanged() {
    // The resize message (which may not happen immediately) will carry with it
    // the screen info as well as the new size (if the screen has changed scale
