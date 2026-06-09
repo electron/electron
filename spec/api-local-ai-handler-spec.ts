@@ -500,7 +500,7 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       expect(message.input).to.deep.equal(input.map((msg) => ({ ...msg, prefix: false })));
     });
 
-    it('passes responseConstraint option to the handler', async () => {
+    it('passes responseConstraint object to the handler', async () => {
       const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
 
       const responseConstraint = { type: 'object', properties: { name: { type: 'string' } } };
@@ -508,6 +508,20 @@ ifdescribe(features.isPromptAPIEnabled())('localAIHandler module', () => {
       const message = await listenForMessage(aiHandler, 'prompt-called', async () => {
         await w.webContents.executeJavaScript(
           `LanguageModel.create().then(model => model.prompt('test', { responseConstraint: ${JSON.stringify(responseConstraint)} }))`
+        );
+      });
+
+      expect(message.options.responseConstraint).to.deep.equal(responseConstraint);
+    });
+
+    it('passes responseConstraint regex to the handler', async () => {
+      const aiHandler = await forkAndRegisterHandler('controllable-language-model.js');
+
+      const responseConstraint = /foobar/;
+
+      const message = await listenForMessage(aiHandler, 'prompt-called', async () => {
+        await w.webContents.executeJavaScript(
+          `LanguageModel.create().then(model => model.prompt('test', { responseConstraint: ${responseConstraint.toString()} }))`
         );
       });
 

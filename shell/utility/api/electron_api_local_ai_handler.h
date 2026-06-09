@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_SHELL_UTILITY_API_ELECTRON_LOCAL_AI_HANDLER_H_
-#define ELECTRON_SHELL_UTILITY_API_ELECTRON_LOCAL_AI_HANDLER_H_
+#ifndef ELECTRON_SHELL_UTILITY_API_ELECTRON_API_LOCAL_AI_HANDLER_H_
+#define ELECTRON_SHELL_UTILITY_API_ELECTRON_API_LOCAL_AI_HANDLER_H_
 
 #include <optional>
 
@@ -29,4 +29,4 @@ void SetHandlerChangedCallback(base::RepeatingClosure callback);
 
 }  // namespace electron::api::local_ai_handler
 
-#endif  // ELECTRON_SHELL_UTILITY_API_ELECTRON_LOCAL_AI_HANDLER_H_
+#endif  // ELECTRON_SHELL_UTILITY_API_ELECTRON_API_LOCAL_AI_HANDLER_H_
