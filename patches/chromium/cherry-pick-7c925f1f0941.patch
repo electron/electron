@@ -1,0 +1,337 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter Kvitek <kvitekp@chromium.org>
+Date: Tue, 2 Jun 2026 12:36:52 -0700
+Subject: [M144-LTS][headless][linux] Safeguard headless window code against
+ potential UAF
+
+ui::HeadlessWindow synchronously callsbacks delegate methods during state-changing operations. If an observer synchronously closes the widget during these callbacks, the associated ui::HeadlessWindow instance is deleted while its methods are still executing on the stack.
+
+This CL adds weak ptr checks to avoid ui::HeadlessWindow code execution after a delegate callback that invalidates 'this'.
+
+(cherry picked from commit 583fe61da24f865e1da49dc1ad1b297c7c9cf6d4)
+
+Bug: 516674532
+Change-Id: I788ba9b19c733c7af17010744bd66b25783ddf9c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7879467
+Commit-Queue: Peter Kvitek <kvitekp@chromium.org>
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1637863}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7885098
+Reviewed-by: Peter Kvitek <kvitekp@chromium.org>
+Owners-Override: Artem Sumaneev <asumaneev@google.com>
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Cr-Commit-Position: refs/branch-heads/7559@{#4941}
+Cr-Branched-From: 223dfbac1c7542a06b422390d954afe5b560b607-refs/heads/main@{#1552494}
+
+diff --git a/ui/ozone/BUILD.gn b/ui/ozone/BUILD.gn
+index abb2ee9d82d291a82621cf449c391ce68ba86939..37904b1b3b7c433c55cebc2d96639fec8d1c6133 100644
+--- a/ui/ozone/BUILD.gn
++++ b/ui/ozone/BUILD.gn
+@@ -37,6 +37,7 @@ ozone_platform_interactive_ui_tests_sources =
+ if (ozone_platform_headless) {
+   ozone_platforms += [ "headless" ]
+   ozone_platform_deps += [ "platform/headless" ]
++  ozone_platform_test_deps += [ "platform/headless:headless_unittests" ]
+ }
+ 
+ if (ozone_platform_drm) {
+@@ -361,6 +362,7 @@ static_library("test_support") {
+   visibility = [
+     ":*",
+     "platform/flatland:flatland_unittests",
++    "platform/headless:headless_unittests",
+     "platform/wayland:test_support",
+     "platform/wayland:wayland_unittests",
+     "platform/x11:x11_unittests",
+diff --git a/ui/ozone/platform/headless/BUILD.gn b/ui/ozone/platform/headless/BUILD.gn
+index 650058400a2450255d8421ac449c5c47ae019f1b..dc07e2b6433d07f597c1558e85f031cb2e68dd89 100644
+--- a/ui/ozone/platform/headless/BUILD.gn
++++ b/ui/ozone/platform/headless/BUILD.gn
+@@ -59,3 +59,18 @@ source_set("headless") {
+     deps += [ "//gpu/vulkan" ]
+   }
+ }
++
++source_set("headless_unittests") {
++  testonly = true
++  sources = [ "headless_window_unittest.cc" ]
++  deps = [
++    ":headless",
++    "//base",
++    "//base/test:test_support",
++    "//testing/gtest",
++    "//ui/display:test_support",
++    "//ui/events:test_support",
++    "//ui/ozone:platform",
++    "//ui/ozone:test_support",
++  ]
++}
+diff --git a/ui/ozone/platform/headless/headless_window.cc b/ui/ozone/platform/headless/headless_window.cc
+index d11ccc52615c913c95f902f86079f1ce904c4560..a0061fa1697539d16f04860deb0bc1547460a268 100644
+--- a/ui/ozone/platform/headless/headless_window.cc
++++ b/ui/ozone/platform/headless/headless_window.cc
+@@ -78,18 +78,31 @@ void HeadlessWindow::SetFullscreen(bool fullscreen, int64_t target_display_id) {
+     return;
+   }
+ 
++  // PlatformWindowDelegate callbacks can destroy the window, invalidating
++  // `this`. Keep a weak pointer and check it after each callback, here and
++  // below.
++  auto weak_ptr = GetWeakPtr();
++
+   if (fullscreen) {
+     if (window_state_ != PlatformWindowState::kMaximized &&
+         window_state_ != PlatformWindowState::kFullScreen) {
+       restored_bounds_ = bounds_;
+     }
+     ZoomWindowBounds();
++    if (!weak_ptr) {
++      return;
++    }
++
+     UpdateWindowState(PlatformWindowState::kFullScreen);
+   } else {
+     if (window_state_ != PlatformWindowState::kFullScreen) {
+       return;
+     }
+     RestoreWindowBounds();
++    if (!weak_ptr) {
++      return;
++    }
++
+     UpdateWindowState(PlatformWindowState::kNormal);
+   }
+ }
+@@ -101,21 +114,37 @@ void HeadlessWindow::Maximize() {
+ 
+   if (window_state_ != PlatformWindowState::kMaximized &&
+       window_state_ != PlatformWindowState::kFullScreen) {
++    auto weak_ptr = GetWeakPtr();
++
+     restored_bounds_ = bounds_;
+     ZoomWindowBounds();
++    if (!weak_ptr) {
++      return;
++    }
++
+     UpdateWindowState(PlatformWindowState::kMaximized);
+   }
+ }
+ 
+ void HeadlessWindow::Minimize() {
+   if (window_state_ != PlatformWindowState::kMinimized) {
++    auto weak_ptr = GetWeakPtr();
++
+     // Minimized window retains its size and position, however, it's made
+     // hidden by Aura.
+     if (window_state_ == PlatformWindowState::kMaximized ||
+         window_state_ == PlatformWindowState::kFullScreen) {
+       RestoreWindowBounds();
++      if (!weak_ptr) {
++        return;
++      }
+     }
++
+     UpdateWindowState(PlatformWindowState::kMinimized);
++    if (!weak_ptr) {
++      return;
++    }
++
+     // Minimized windows are inactive. Aura activates minimized windows
+     // when restoring. If we don't deactivate the window here, the subsequent
+     // activation will be optimized away, causing https://crbug.com/358998544.
+@@ -125,7 +154,13 @@ void HeadlessWindow::Minimize() {
+ 
+ void HeadlessWindow::Restore() {
+   if (window_state_ != PlatformWindowState::kNormal) {
++    auto weak_ptr = GetWeakPtr();
++
+     RestoreWindowBounds();
++    if (!weak_ptr) {
++      return;
++    }
++
+     UpdateWindowState(PlatformWindowState::kNormal);
+   }
+ }
+diff --git a/ui/ozone/platform/headless/headless_window.h b/ui/ozone/platform/headless/headless_window.h
+index 646e398135bfd51429272977a2471f17eb038290..a7dc0249fb00f5a2ebd0f0adaa10c8c83459888b 100644
+--- a/ui/ozone/platform/headless/headless_window.h
++++ b/ui/ozone/platform/headless/headless_window.h
+@@ -9,6 +9,7 @@
+ 
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/scoped_refptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "ui/gfx/geometry/point.h"
+ #include "ui/gfx/geometry/rect.h"
+ #include "ui/gfx/image/image_skia.h"
+@@ -73,6 +74,10 @@ class HeadlessWindow : public PlatformWindow {
+  protected:
+   PlatformWindowDelegate* delegate() { return delegate_; }
+ 
++  base::WeakPtr<HeadlessWindow> GetWeakPtr() {
++    return weak_ptr_factory_.GetWeakPtr();
++  }
++
+  private:
+   enum class ActivationState {
+     kUnknown,
+@@ -90,6 +95,8 @@ class HeadlessWindow : public PlatformWindow {
+   std::optional<gfx::Rect> restored_bounds_;
+   PlatformWindowState window_state_ = PlatformWindowState::kUnknown;
+   ActivationState activation_state_ = ActivationState::kUnknown;
++
++  base::WeakPtrFactory<HeadlessWindow> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace ui
+diff --git a/ui/ozone/platform/headless/headless_window_unittest.cc b/ui/ozone/platform/headless/headless_window_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..0881a9841c2c2d9ca8d04d2ac63e396a70763af6
+--- /dev/null
++++ b/ui/ozone/platform/headless/headless_window_unittest.cc
+@@ -0,0 +1,143 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/ozone/platform/headless/headless_window.h"
++
++#include <memory>
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "ui/display/test/test_screen.h"
++#include "ui/gfx/geometry/rect.h"
++#include "ui/ozone/platform/headless/headless_window_manager.h"
++#include "ui/platform_window/platform_window_delegate.h"
++
++namespace ui {
++namespace {
++
++// A PlatformWindowDelegate that simulates the production behaviour of
++// DesktopWindowTreeHostPlatform: when the platform window calls back into the
++// delegate (OnBoundsChanged / OnWindowStateChanged), an observer may
++// synchronously call Widget::CloseNow(), which ends up calling
++// HeadlessWindow::Close() -> delegate_->OnClosed() ->
++// DWTHP::OnClosed() -> SetPlatformWindow(nullptr) -> ~HeadlessWindow().
++//
++// This delegate models that by resetting its owned unique_ptr<PlatformWindow>
++// from inside the chosen callback.
++class DestroyingDelegate : public PlatformWindowDelegate {
++ public:
++  enum class DestroyOn {
++    kNone,
++    kBoundsChanged,
++    kWindowStateChanged,
++  };
++
++  explicit DestroyingDelegate(DestroyOn destroy_on) : destroy_on_(destroy_on) {}
++  ~DestroyingDelegate() override = default;
++
++  void set_destroy_on(DestroyOn destroy_on) { destroy_on_ = destroy_on; }
++
++  void SetWindow(std::unique_ptr<PlatformWindow> window) {
++    window_ = std::move(window);
++  }
++
++  // PlatformWindowDelegate:
++  void OnBoundsChanged(const BoundsChange& change) override {
++    if (destroy_on_ == DestroyOn::kBoundsChanged) {
++      window_.reset();
++    }
++  }
++  void OnDamageRect(const gfx::Rect& damaged_region) override {}
++  void DispatchEvent(Event* event) override {}
++  void OnCloseRequest() override {}
++  void OnClosed() override { window_.reset(); }
++  void OnWindowStateChanged(PlatformWindowState old_state,
++                            PlatformWindowState new_state) override {
++    if (destroy_on_ == DestroyOn::kWindowStateChanged) {
++      window_.reset();
++    }
++  }
++  void OnLostCapture() override {}
++  void OnAcceleratedWidgetAvailable(gfx::AcceleratedWidget widget) override {}
++  void OnWillDestroyAcceleratedWidget() override {}
++  void OnAcceleratedWidgetDestroyed() override {}
++  void OnActivationChanged(bool active) override {}
++  void OnCursorUpdate() override {}
++  bool CanMaximize() const override { return true; }
++  bool CanFullscreen() const override { return true; }
++  gfx::Rect ConvertRectToPixels(const gfx::Rect& rect_in_dip) const override {
++    return rect_in_dip;
++  }
++  gfx::Rect ConvertRectToDIP(const gfx::Rect& rect_in_pixels) const override {
++    return rect_in_pixels;
++  }
++
++ private:
++  DestroyOn destroy_on_ = DestroyOn::kNone;
++  std::unique_ptr<PlatformWindow> window_;
++};
++
++class HeadlessWindowCrashTest : public ::testing::Test {
++ public:
++  HeadlessWindowCrashTest() = default;
++  ~HeadlessWindowCrashTest() override = default;
++
++ protected:
++  display::test::TestScreen test_screen_{/*create_display=*/true,
++                                         /*register_screen=*/true};
++  HeadlessWindowManager manager_;
++};
++
++TEST_F(HeadlessWindowCrashTest, DestroyViaObserverInSetFullscreen) {
++  DestroyingDelegate delegate(DestroyingDelegate::DestroyOn::kBoundsChanged);
++
++  auto window = std::make_unique<HeadlessWindow>(&delegate, &manager_,
++                                                 gfx::Rect(0, 0, 100, 100));
++  HeadlessWindow* headless_window = window.get();
++  delegate.SetWindow(std::move(window));
++
++  headless_window->SetFullscreen(/*fullscreen=*/true,
++                                 /*target_display_id=*/-1);
++}
++
++TEST_F(HeadlessWindowCrashTest, DestroyViaObserverInMaximize) {
++  DestroyingDelegate delegate(
++      DestroyingDelegate::DestroyOn::kWindowStateChanged);
++
++  auto window = std::make_unique<HeadlessWindow>(&delegate, &manager_,
++                                                 gfx::Rect(0, 0, 100, 100));
++  HeadlessWindow* headless_window = window.get();
++  delegate.SetWindow(std::move(window));
++
++  headless_window->Maximize();
++}
++
++TEST_F(HeadlessWindowCrashTest, DestroyViaObserverInMinimize) {
++  DestroyingDelegate delegate(
++      DestroyingDelegate::DestroyOn::kWindowStateChanged);
++
++  auto window = std::make_unique<HeadlessWindow>(&delegate, &manager_,
++                                                 gfx::Rect(0, 0, 100, 100));
++  HeadlessWindow* headless_window = window.get();
++  delegate.SetWindow(std::move(window));
++
++  headless_window->Minimize();
++}
++
++TEST_F(HeadlessWindowCrashTest, DestroyViaObserverInRestore) {
++  DestroyingDelegate delegate(DestroyingDelegate::DestroyOn::kNone);
++
++  auto window = std::make_unique<HeadlessWindow>(&delegate, &manager_,
++                                                 gfx::Rect(0, 0, 100, 100));
++  HeadlessWindow* headless_window = window.get();
++  delegate.SetWindow(std::move(window));
++
++  headless_window->Maximize();
++
++  delegate.set_destroy_on(DestroyingDelegate::DestroyOn::kBoundsChanged);
++
++  headless_window->Restore();
++}
++
++}  // namespace
++}  // namespace ui
