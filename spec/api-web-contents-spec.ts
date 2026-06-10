@@ -998,7 +998,7 @@ describe('webContents module', () => {
       // Builds a [A, R, B] history stack where R is marked skippable by
       // Chromium's history manipulation intervention: the document at R
       // navigates away without ever receiving a user gesture.
-      async function buildStackWithSkippableEntry () {
+      async function buildStackWithSkippableEntry() {
         const urlA = `${serverUrl}/a`;
         const urlR = `${serverUrl}/r`;
         const urlB = `${serverUrl}/b`;
@@ -1018,15 +1018,15 @@ describe('webContents module', () => {
         await w.loadURL(`${serverUrl}/2`);
 
         const entries = w.webContents.navigationHistory.getAllEntries();
-        expect(entries.map(entry => entry.shouldSkipOnBackForwardUI)).to.deep.equal([false, false]);
+        expect(entries.map((entry) => entry.shouldSkipOnBackForwardUI)).to.deep.equal([false, false]);
       });
 
       it('is true for entries skipped by the history manipulation intervention', async () => {
         const { urlA, urlR, urlB } = await buildStackWithSkippableEntry();
 
         const entries = w.webContents.navigationHistory.getAllEntries();
-        expect(entries.map(entry => entry.url)).to.deep.equal([urlA, urlR, urlB]);
-        expect(entries.map(entry => entry.shouldSkipOnBackForwardUI)).to.deep.equal([false, true, false]);
+        expect(entries.map((entry) => entry.url)).to.deep.equal([urlA, urlR, urlB]);
+        expect(entries.map((entry) => entry.shouldSkipOnBackForwardUI)).to.deep.equal([false, true, false]);
 
         const activeIndex = w.webContents.navigationHistory.getActiveIndex();
         expect(w.webContents.navigationHistory.getEntryAtIndex(activeIndex).shouldSkipOnBackForwardUI).to.be.false();
