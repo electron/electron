@@ -18,7 +18,6 @@
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
-#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/function_template.h"
 #include "shell/common/api/electron_api_clipboard_item.h"
@@ -28,6 +27,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/skia_util.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/clipboard/clipboard_constants.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
@@ -78,9 +78,9 @@ bool IsStandardClipboardFormat(const ui::ClipboardFormatType& fmt) {
 // platform clipboard format name — the inverse of
 // `clipboard_util::ParseOSClipboardFormat`.
 std::string BuildOSClipboardFormat(const std::string& name) {
-  return base::StringPrintf(
-      "%s;format=\"%s\"", electron::api::clipboard_util::kOSClipboardMimePrefix,
-      name);
+  return absl::StrFormat("%s;format=\"%s\"",
+                         electron::api::clipboard_util::kOSClipboardMimePrefix,
+                         name);
 }
 
 using TypesCallback = base::OnceCallback<void(std::vector<std::string>)>;
