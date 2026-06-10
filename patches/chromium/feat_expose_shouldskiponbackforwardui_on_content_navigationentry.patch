@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Wed, 10 Jun 2026 20:47:33 +0000
+Subject: feat: expose ShouldSkipOnBackForwardUI on content::NavigationEntry
+
+Chromium's history manipulation intervention marks a NavigationEntry as
+skippable (should_skip_on_back_forward_ui_) when the document added it to
+the session history without ever receiving a user activation. The flag is
+consulted by GoBack()/GoForward()/CanGoBack() but is only readable via
+content::NavigationEntryImpl, so embedders that surface session history to
+their own UI cannot tell which entries the intervention will skip.
+
+Add a public const accessor on content::NavigationEntry, implemented by
+NavigationEntryImpl, so embedders can read the flag without reaching into
+content internals.
+
+This is a reasonable candidate to upstream to Chromium proper: the flag is
+already user-observable through back/forward behavior, and exposing it
+read-only lets embedders honor the intervention in custom history UI.
+
+diff --git a/content/browser/renderer_host/navigation_entry_impl.cc b/content/browser/renderer_host/navigation_entry_impl.cc
+index f637f70f6cb28d5a7d204d4d721f9fdd0da3cb51..b7bfd872e00c4f758301fa9feea4367a795db105 100644
+--- a/content/browser/renderer_host/navigation_entry_impl.cc
++++ b/content/browser/renderer_host/navigation_entry_impl.cc
+@@ -844,6 +844,10 @@ int64_t NavigationEntryImpl::GetMainFrameDocumentSequenceNumber() const {
+   return frame_tree_->frame_entry->document_sequence_number();
+ }
+ 
++bool NavigationEntryImpl::ShouldSkipOnBackForwardUI() const {
++  return should_skip_on_back_forward_ui_;
++}
++
+ void NavigationEntryImpl::SetCanLoadLocalResources(bool allow) {
+   can_load_local_resources_ = allow;
+ }
+diff --git a/content/browser/renderer_host/navigation_entry_impl.h b/content/browser/renderer_host/navigation_entry_impl.h
+index 863d846e6c28277c1705d6a6c5d338089a234fb7..caa5b5e9672deaae89a51c270330fafd5834aaea 100644
+--- a/content/browser/renderer_host/navigation_entry_impl.h
++++ b/content/browser/renderer_host/navigation_entry_impl.h
+@@ -185,6 +185,7 @@ class CONTENT_EXPORT NavigationEntryImpl : public NavigationEntry {
+   bool GetRemoveExtraHeadersOnCrossOriginRedirect() const override;
+   void SetRemoveExtraHeadersOnCrossOriginRedirect(bool value) override;
+   int64_t GetMainFrameDocumentSequenceNumber() const override;
++  bool ShouldSkipOnBackForwardUI() const override;
+ 
+   // Creates a copy of this NavigationEntryImpl that can be modified
+   // independently from the original, but that shares FrameNavigationEntries.
+diff --git a/content/public/browser/navigation_entry.h b/content/public/browser/navigation_entry.h
+index 2b1ea038d99dc22c11cec27da3d1a63a6d613590..20191b4a4861ae2dbba26cb66755c7b039279fa6 100644
+--- a/content/public/browser/navigation_entry.h
++++ b/content/public/browser/navigation_entry.h
+@@ -266,6 +266,12 @@ class NavigationEntry : public base::SupportsUserData {
+   // This persists across same-document navigations and stays the same after
+   // a history navigation to an already visited document.
+   virtual int64_t GetMainFrameDocumentSequenceNumber() const = 0;
++
++  // Returns true if this entry will be skipped by back/forward UI
++  // navigations, due to the history manipulation intervention (i.e. the
++  // document added this entry to the session history without ever receiving
++  // a user activation).
++  virtual bool ShouldSkipOnBackForwardUI() const = 0;
+ };
+ 
+ }  // namespace content
