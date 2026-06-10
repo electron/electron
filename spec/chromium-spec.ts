@@ -452,6 +452,29 @@ describe('web security', () => {
     });
   });
 
+  describe('WebAssembly streaming compilation', () => {
+    it('works in a renderer with nodeIntegration', async () => {
+      const server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'application/wasm');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        // Minimal valid WebAssembly module (magic number + version).
+        res.end(Buffer.from([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00]));
+      });
+      const { url: serverUrl } = await listen(server);
+      defer(() => server.close());
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { nodeIntegration: true, contextIsolation: false }
+      });
+      await w.loadURL('about:blank');
+      const result = await w.webContents.executeJavaScript(
+        `WebAssembly.instantiateStreaming(fetch('${serverUrl}')).then(() => 'loaded')`
+      );
+      expect(result).to.equal('loaded');
+    });
+  });
+
   describe('csp', () => {
     for (const sandbox of [true, false]) {
       describe(`when sandbox: ${sandbox}`, () => {
