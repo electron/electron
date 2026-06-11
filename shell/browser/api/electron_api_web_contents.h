@@ -648,6 +648,11 @@ class WebContents final : public ExclusiveAccessContext,
       content::NavigationHandle* navigation_handle);
   void MaybeSendRendererStartupData(content::RenderFrameHost* rfh);
   void SendRendererStartupData(content::RenderFrameHost* rfh);
+  // Preload-registry generation last pushed to each live frame. Lets the
+  // ReadyToCommitNavigation push no-op when the frame-creation push already
+  // delivered an identical payload. Entries are erased in RenderFrameDeleted.
+  std::map<content::GlobalRenderFrameHostToken, uint64_t>
+      pushed_startup_generations_;
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   void WebContentsDestroyed() override;

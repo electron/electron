@@ -1997,6 +1997,8 @@ void WebContents::RenderFrameCreated(
 
 void WebContents::RenderFrameDeleted(
     content::RenderFrameHost* render_frame_host) {
+  pushed_startup_generations_.erase(render_frame_host->GetGlobalFrameToken());
+
   // A RenderFrameHost can be deleted when:
   // - A WebContents is removed and its containing frames are disposed.
   // - An <iframe> is removed from the DOM.
@@ -2298,7 +2300,26 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
-  SendRendererStartupData(navigation_handle->GetRenderFrameHost());
+  // Skip when this frame already received the current preload-registry
+  // generation — normally from the frame-creation push moments ago — since
+  // the payload would be identical. Within a frame's lifetime the payload
+  // can only change through the registry (webPreferences.preload is fixed
+  // per WebContents); env / preload file contents are snapshotted at frame
+  // creation, which under RenderDocument is per-document anyway.
+  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
+  if (!rfh)
+    return;
+  auto it = pushed_startup_generations_.find(rfh->GetGlobalFrameToken());
+  if (it != pushed_startup_generations_.end()) {
+    auto* session_prefs =
+        SessionPreferences::FromBrowserContext(rfh->GetBrowserContext());
+    const uint64_t generation =
+        session_prefs ? session_prefs->preload_generation() : 0;
+    if (it->second == generation)
+      return;
+  }
+
+  SendRendererStartupData(rfh);
 }
 
 void WebContents::MaybeSendRendererStartupData(content::RenderFrameHost* rfh) {
@@ -2366,6 +2387,13 @@ void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
   mojo::AssociatedRemote<mojom::ElectronFrameStartup> frame_startup;
   rfh->GetRemoteAssociatedInterfaces()->GetInterface(&frame_startup);
   frame_startup->SetStartupData(std::move(data));
+
+  // Record the registry generation this frame now holds so the commit-time
+  // push can be skipped when nothing changed.
+  auto* session_prefs =
+      SessionPreferences::FromBrowserContext(rfh->GetBrowserContext());
+  pushed_startup_generations_[rfh->GetGlobalFrameToken()] =
+      session_prefs ? session_prefs->preload_generation() : 0;
 }
 
 void WebContents::ReadyToCommitNavigation(

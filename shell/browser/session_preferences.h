@@ -30,6 +30,12 @@ class SessionPreferences : public base::SupportsUserData::Data {
 
   bool HasServiceWorkerPreloadScript();
 
+  // Monotonic counter, bumped whenever the preload script registry changes.
+  // Used to skip redundant RendererStartupData pushes: a frame that already
+  // received the current generation would get an identical payload.
+  uint64_t preload_generation() const { return preload_generation_; }
+  void BumpPreloadGeneration() { ++preload_generation_; }
+
  private:
   SessionPreferences();
 
@@ -37,6 +43,7 @@ class SessionPreferences : public base::SupportsUserData::Data {
   static int kLocatorKey;
 
   std::vector<PreloadScript> preload_scripts_;
+  uint64_t preload_generation_ = 0;
 };
 
 }  // namespace electron

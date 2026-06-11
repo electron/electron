@@ -1138,6 +1138,7 @@ std::string Session::RegisterPreloadScript(
   }
 
   preload_scripts.push_back(new_preload_script);
+  prefs->BumpPreloadGeneration();
   // A service worker that starts after this point picks up the new preload
   // automatically — GetServiceWorkerStartupData() rebuilds from
   // SessionPreferences on every StartWorker.
@@ -1160,6 +1161,7 @@ void Session::UnregisterPreloadScript(gin_helper::ErrorThrower thrower,
   // If the script is found, erase it from the vector
   if (it != preload_scripts.end()) {
     preload_scripts.erase(it);
+    prefs->BumpPreloadGeneration();
     return;
   }
 
