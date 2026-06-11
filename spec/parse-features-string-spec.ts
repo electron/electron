@@ -22,7 +22,9 @@ describe('feature-string parsing', () => {
 
   describe('parseFeatures allowlist', () => {
     it('passes through allowlisted presentational options', () => {
-      const { options } = parseFeatures('width=400,height=300,show=no,frame=no,title=hi,backgroundColor=#fff,left=10,top=20');
+      const { options } = parseFeatures(
+        'width=400,height=300,show=no,frame=no,title=hi,backgroundColor=#fff,left=10,top=20'
+      );
       expect(options).to.deep.equal({
         width: 400,
         height: 300,

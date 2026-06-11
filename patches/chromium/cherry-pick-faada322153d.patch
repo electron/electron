@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sergio Solano <sergiosolano@google.com>
+Date: Mon, 6 Apr 2026 09:15:42 -0700
+Subject: [media/gpu] Enforce safe range for NativePixmapPlane construction
+
+This is a quick fix for a potential security issue where internal
+calculations for strides or offsets could lead to sign-extension or
+truncation vulnerabilities in the NativePixmapPlane constructor.
+
+By using base::checked_cast<int> at call sites, we ensure that any
+out-of-range values trigger a safe crash instead of silent corruption.
+We also use base::strict_cast<uint64_t> for plane sizes and correct
+literal types (e.g., 0u) to satisfy reviewer feedback and improve
+overall type correctness.
+
+For further reference: (Internal only) go/code-terracotta-review-explainer
+
+Project: Project-Fortify
+Bug: b:497542537
+Change-Id: I82647b3c8a94368e9e6273e341e0976d8648a4d7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7724047
+Reviewed-by: Andres Calderon Jaramillo <andrescj@chromium.org>
+Reviewed-by: Stephen Nusko <nuskos@chromium.org>
+Commit-Queue: Sergio Solano <sergiosolano@google.com>
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1610319}
+
+diff --git a/chromeos/ash/experiences/arc/video_accelerator/protected_buffer_manager.cc b/chromeos/ash/experiences/arc/video_accelerator/protected_buffer_manager.cc
+index 719f270f86e6b83b61eddc609216afad6e2f940a..5f9f4518051cf87fb8090776bd9fb192be0f47f5 100644
+--- a/chromeos/ash/experiences/arc/video_accelerator/protected_buffer_manager.cc
++++ b/chromeos/ash/experiences/arc/video_accelerator/protected_buffer_manager.cc
+@@ -505,7 +505,7 @@ scoped_refptr<gfx::NativePixmap> ProtectedBufferManager::ImportDummyFd(
+   // also on failure.
+   gfx::NativePixmapHandle pixmap_handle;
+   pixmap_handle.planes.emplace_back(
+-      gfx::NativePixmapPlane(0, 0, 0, std::move(dummy_fd)));
++      gfx::NativePixmapPlane(0, 0, 0u, std::move(dummy_fd)));
+   ui::OzonePlatform* platform = ui::OzonePlatform::GetInstance();
+   ui::SurfaceFactoryOzone* factory = platform->GetSurfaceFactoryOzone();
+   scoped_refptr<gfx::NativePixmap> pixmap =
+diff --git a/media/gpu/chromeos/mock_native_pixmap_dmabuf.cc b/media/gpu/chromeos/mock_native_pixmap_dmabuf.cc
+index 02baece099cd95d5734173cb354429bec0eb4203..12fe2ab8225dfb2100e2ef3e495a552a252f7ef1 100644
+--- a/media/gpu/chromeos/mock_native_pixmap_dmabuf.cc
++++ b/media/gpu/chromeos/mock_native_pixmap_dmabuf.cc
+@@ -59,7 +59,9 @@ scoped_refptr<const gfx::NativePixmapDmaBuf> CreateMockNativePixmapDmaBuf(
+       LOG(ERROR) << "Failed to open a file";
+       return nullptr;
+     }
+-    handle.planes.emplace_back(plane.stride, plane.offset, plane.size,
++    handle.planes.emplace_back(base::checked_cast<int>(plane.stride),
++                               base::checked_cast<int>(plane.offset),
++                               base::strict_cast<uint64_t>(plane.size),
+                                base::ScopedFD(file.TakePlatformFile()));
+   }
+   handle.modifier = modifier;
+diff --git a/media/gpu/chromeos/native_pixmap_frame_resource.cc b/media/gpu/chromeos/native_pixmap_frame_resource.cc
+index ff78c814b9fb8155f4c50fe41e4c54534747d3bc..0c8ae555b0c113a5ca1965b388a9a41387fb4e7a 100644
+--- a/media/gpu/chromeos/native_pixmap_frame_resource.cc
++++ b/media/gpu/chromeos/native_pixmap_frame_resource.cc
+@@ -125,7 +125,9 @@ scoped_refptr<NativePixmapFrameResource> NativePixmapFrameResource::Create(
+   handle.planes.reserve(num_planes);
+   for (size_t i = 0; i < num_planes; ++i) {
+     const auto& plane = layout.planes()[i];
+-    handle.planes.emplace_back(plane.stride, plane.offset, plane.size,
++    handle.planes.emplace_back(base::checked_cast<int>(plane.stride),
++                               base::checked_cast<int>(plane.offset),
++                               base::strict_cast<uint64_t>(plane.size),
+                                std::move(dmabuf_fds[i]));
+   }
+   handle.modifier = layout.modifier();
+diff --git a/media/gpu/chromeos/platform_video_frame_utils.cc b/media/gpu/chromeos/platform_video_frame_utils.cc
+index f8f18e84b72d4d152de94b202ee92d45fe9b1e0b..241b32dbe86e76665cffc27425e953099af79a84 100644
+--- a/media/gpu/chromeos/platform_video_frame_utils.cc
++++ b/media/gpu/chromeos/platform_video_frame_utils.cc
+@@ -517,7 +517,9 @@ gfx::GpuMemoryBufferHandle CreateGpuMemoryBufferHandle(
+       for (size_t i = 0; i < num_planes; ++i) {
+         const auto& plane = video_frame->layout().planes()[i];
+         native_pixmap_handle.planes.emplace_back(
+-            plane.stride, plane.offset, plane.size, std::move(duped_fds[i]));
++            base::checked_cast<int>(plane.stride),
++            base::checked_cast<int>(plane.offset),
++            base::strict_cast<uint64_t>(plane.size), std::move(duped_fds[i]));
+       }
+       handle = gfx::GpuMemoryBufferHandle(std::move(native_pixmap_handle));
+     } break;
+diff --git a/media/gpu/test/test_gbm_buffer_manager.cc b/media/gpu/test/test_gbm_buffer_manager.cc
+index 07e7d414364ab58f8905c6bfd5519fae9dbbde63..a9733bdffd134d56926186bfd4c051279685b2e8 100644
+--- a/media/gpu/test/test_gbm_buffer_manager.cc
++++ b/media/gpu/test/test_gbm_buffer_manager.cc
+@@ -108,9 +108,9 @@ TestGbmBuffer::TestGbmBuffer(gbm_bo* buffer_object)
+   for (size_t i = 0;
+        i < static_cast<size_t>(gbm_bo_get_plane_count(buffer_object)); ++i) {
+     native_pixmap_handle.planes.push_back(gfx::NativePixmapPlane(
+-        gbm_bo_get_stride_for_plane(buffer_object, i),
+-        gbm_bo_get_offset(buffer_object, i),
+-        gbm_bo_get_plane_size(buffer_object, i),
++        base::checked_cast<int>(gbm_bo_get_stride_for_plane(buffer_object, i)),
++        base::checked_cast<int>(gbm_bo_get_offset(buffer_object, i)),
++        base::strict_cast<uint64_t>(gbm_bo_get_plane_size(buffer_object, i)),
+         base::ScopedFD(gbm_bo_get_plane_fd(buffer_object, i))));
+   }
+   handle_ = gfx::GpuMemoryBufferHandle(std::move(native_pixmap_handle));

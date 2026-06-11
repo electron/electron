@@ -1,5 +1,5 @@
 /* global chrome */
-function testStorageClear (callback) {
+function testStorageClear(callback) {
   chrome.storage.sync.clear(function () {
     chrome.storage.sync.get(null, function (syncItems) {
       chrome.storage.local.clear(function () {
@@ -11,7 +11,7 @@ function testStorageClear (callback) {
   });
 }
 
-function testStorageRemove (callback) {
+function testStorageRemove(callback) {
   chrome.storage.sync.remove('bar', function () {
     chrome.storage.sync.get({ foo: 'baz' }, function (syncItems) {
       chrome.storage.local.remove(['hello'], function () {
@@ -23,7 +23,7 @@ function testStorageRemove (callback) {
   });
 }
 
-function testStorageSet (callback) {
+function testStorageSet(callback) {
   chrome.storage.sync.set({ foo: 'bar', bar: 'foo' }, function () {
     chrome.storage.sync.get({ foo: 'baz', bar: 'fooo' }, function (syncItems) {
       chrome.storage.local.set({ hello: 'world', world: 'hello' }, function () {
@@ -35,25 +35,17 @@ function testStorageSet (callback) {
   });
 }
 
-function testStorage (callback) {
+function testStorage(callback) {
   testStorageSet(function (syncForSet, localForSet) {
     testStorageRemove(function (syncForRemove, localForRemove) {
       testStorageClear(function (syncForClear, localForClear) {
-        callback(
-          syncForSet, localForSet,
-          syncForRemove, localForRemove,
-          syncForClear, localForClear
-        );
+        callback(syncForSet, localForSet, syncForRemove, localForRemove, syncForClear, localForClear);
       });
     });
   });
 }
 
-testStorage(function (
-  syncForSet, localForSet,
-  syncForRemove, localForRemove,
-  syncForClear, localForClear
-) {
+testStorage(function (syncForSet, localForSet, syncForRemove, localForRemove, syncForClear, localForClear) {
   setTimeout(() => {
     const message = JSON.stringify({
       runtimeId: chrome.runtime.id,

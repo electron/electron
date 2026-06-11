@@ -1,0 +1,162 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sangbaek Park <sangbaekpark@google.com>
+Date: Wed, 1 Apr 2026 17:36:52 -0700
+Subject: media: Fix cross-thread data race and deadlock in stream wrapper
+
+This CL fixes a potential Use-After-Free (UAF) vulnerability caused by
+a cross-thread data race in MediaFoundationStreamWrapper, as well as a
+subsequent self-deadlock issue introduced by the initial synchronization
+attempt.
+
+Previously, `demuxer_stream_` was accessed by Media Foundation
+threadpool threads via `IsEncrypted()` without synchronization.
+Concurrently, the Chromium media thread could null it out during
+teardown in `DetachDemuxerStream()`. This race condition could bypass
+BackupRefPtr protections and lead to a UAF when dereferencing the
+pointer to check the decoder config.
+
+To fix this, `demuxer_stream_` accesses are now safely protected by
+`lock_`. To avoid non-recursive mutex self-deadlocks when internal
+paths (like `OnDemuxerStreamRead` -> `ReportEncryptionType`) check the
+stored encryption state instead of lock since the encrypted state won't
+change.
+
+Bug: 497985088
+Change-Id: Ibf5168a8f65a9eb7d80da55165866d0c8721953c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7719604
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Sangbaek Park <sangbaekpark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1608895}
+
+diff --git a/media/renderers/win/media_foundation_audio_stream.cc b/media/renderers/win/media_foundation_audio_stream.cc
+index 06ed8aa39057c645723868689c7cf36f3d8969b0..339b82f0af1068c00ba4ab6f838ad212dfa5cc0b 100644
+--- a/media/renderers/win/media_foundation_audio_stream.cc
++++ b/media/renderers/win/media_foundation_audio_stream.cc
+@@ -60,11 +60,6 @@ HRESULT MediaFoundationAudioStream::Create(
+   return S_OK;
+ }
+ 
+-bool MediaFoundationAudioStream::IsEncrypted() const {
+-  AudioDecoderConfig audio_config = demuxer_stream_->audio_decoder_config();
+-  return audio_config.is_encrypted();
+-}
+-
+ HRESULT MediaFoundationAudioStream::GetMediaType(
+     IMFMediaType** media_type_out) {
+   AudioDecoderConfig decoder_config = demuxer_stream_->audio_decoder_config();
+diff --git a/media/renderers/win/media_foundation_audio_stream.h b/media/renderers/win/media_foundation_audio_stream.h
+index 2608074b9f1a77cedbed77f1c98e0f30ece2b60e..25affcb25b79db03d7428b4f0fbaa175792e0623 100644
+--- a/media/renderers/win/media_foundation_audio_stream.h
++++ b/media/renderers/win/media_foundation_audio_stream.h
+@@ -25,7 +25,6 @@ class MediaFoundationAudioStream : public MediaFoundationStreamWrapper {
+                         DemuxerStream* demuxer_stream,
+                         std::unique_ptr<MediaLog> media_log,
+                         MediaFoundationStreamWrapper** stream_out);
+-  bool IsEncrypted() const override;
+   HRESULT GetMediaType(IMFMediaType** media_type_out) override;
+ };
+ 
+diff --git a/media/renderers/win/media_foundation_stream_wrapper.cc b/media/renderers/win/media_foundation_stream_wrapper.cc
+index fd7189e6b22e9f714a1b34a258a8a7411b1b983f..18bb9c1971d92c3ab40416fba76ac1f2ad29dfbd 100644
+--- a/media/renderers/win/media_foundation_stream_wrapper.cc
++++ b/media/renderers/win/media_foundation_stream_wrapper.cc
+@@ -79,13 +79,17 @@ HRESULT MediaFoundationStreamWrapper::RuntimeClassInitialize(
+   {
+     base::AutoLock auto_lock(lock_);
+     parent_source_ = parent_source;
++    demuxer_stream_ = demuxer_stream;
+   }
+-  demuxer_stream_ = demuxer_stream;
+   stream_id_ = stream_id;
+-  stream_type_ = demuxer_stream_->type();
++  stream_type_ = demuxer_stream->type();
++  is_encrypted_ = (stream_type_ == DemuxerStream::Type::VIDEO)
++                      ? demuxer_stream->video_decoder_config().is_encrypted()
++                      : demuxer_stream->audio_decoder_config().is_encrypted();
+ 
+   DVLOG_FUNC(1) << "stream_id=" << stream_id
+-                << ", stream_type=" << DemuxerStream::GetTypeName(stream_type_);
++                << ", stream_type=" << DemuxerStream::GetTypeName(stream_type_)
++                << ", is_encrypted=" << is_encrypted_;
+ 
+   media_log_ = std::move(media_log);
+   if (base::FeatureList::IsEnabled(kMediaFoundationBatchRead)) {
+@@ -127,6 +131,7 @@ void MediaFoundationStreamWrapper::DetachDemuxerStream() {
+   DVLOG_FUNC(1);
+   DCHECK(task_runner_->RunsTasksInCurrentSequence());
+ 
++  base::AutoLock auto_lock(lock_);
+   demuxer_stream_ = nullptr;
+ }
+ 
+@@ -643,6 +648,10 @@ bool MediaFoundationStreamWrapper::AreFormatChangesEnabled() {
+   return true;
+ }
+ 
++bool MediaFoundationStreamWrapper::IsEncrypted() const {
++  return is_encrypted_;
++}
++
+ GUID MediaFoundationStreamWrapper::GetLastKeyId() const {
+   return last_key_id_;
+ }
+diff --git a/media/renderers/win/media_foundation_stream_wrapper.h b/media/renderers/win/media_foundation_stream_wrapper.h
+index 39c4956f0f2798db6d3c32dbd48d9599feaae386..a60e60ff233c5ce738cca92959ad95123cef65ab 100644
+--- a/media/renderers/win/media_foundation_stream_wrapper.h
++++ b/media/renderers/win/media_foundation_stream_wrapper.h
+@@ -79,7 +79,7 @@ class MEDIA_EXPORT MediaFoundationStreamWrapper
+   // TODO: revisting inheritance and potentially replacing it with composition.
+ 
+   // The stream is encrypted or not.
+-  virtual bool IsEncrypted() const = 0;
++  bool IsEncrypted() const;
+   // Let derived class to adjust the IMFSample if necessary.
+   virtual HRESULT TransformSample(Microsoft::WRL::ComPtr<IMFSample>& sample);
+   // Allow derived class to tell us if we can send MEStreamFormatChanged to MF.
+@@ -145,7 +145,7 @@ class MEDIA_EXPORT MediaFoundationStreamWrapper
+ 
+   // Need exclusive access to some members between calls from MF threadpool
+   // thread and calling thread from Chromium media stack.
+-  base::Lock lock_;
++  mutable base::Lock lock_;
+ 
+   // Indicates whether the stream is selected in the MF pipeline.
+   bool selected_ GUARDED_BY(lock_) = false;
+@@ -209,6 +209,8 @@ class MEDIA_EXPORT MediaFoundationStreamWrapper
+ 
+   bool encryption_type_reported_ = false;
+ 
++  bool is_encrypted_ = false;
++
+   // NOTE: Weak pointers must be invalidated before all other member variables.
+   base::WeakPtrFactory<MediaFoundationStreamWrapper> weak_factory_{this};
+ };
+diff --git a/media/renderers/win/media_foundation_video_stream.cc b/media/renderers/win/media_foundation_video_stream.cc
+index cd6f7f7187a29a87b98a740a8abc82eb14a67ced..230a8416449f56efa10eb395fd556d4d86099907 100644
+--- a/media/renderers/win/media_foundation_video_stream.cc
++++ b/media/renderers/win/media_foundation_video_stream.cc
+@@ -352,11 +352,6 @@ HRESULT MediaFoundationVideoStream::Create(
+   return S_OK;
+ }
+ 
+-bool MediaFoundationVideoStream::IsEncrypted() const {
+-  VideoDecoderConfig decoder_config = demuxer_stream_->video_decoder_config();
+-  return decoder_config.is_encrypted();
+-}
+-
+ HRESULT MediaFoundationVideoStream::GetMediaType(
+     IMFMediaType** media_type_out) {
+   VideoDecoderConfig decoder_config = demuxer_stream_->video_decoder_config();
+diff --git a/media/renderers/win/media_foundation_video_stream.h b/media/renderers/win/media_foundation_video_stream.h
+index a356c036a787b7a46f0a3a86c68640b22f056caa..dceb1ca59d7c77abfa2d8c16cc01f88fb42c031e 100644
+--- a/media/renderers/win/media_foundation_video_stream.h
++++ b/media/renderers/win/media_foundation_video_stream.h
+@@ -23,8 +23,6 @@ class MediaFoundationVideoStream : public MediaFoundationStreamWrapper {
+                         std::unique_ptr<MediaLog> media_log,
+                         MediaFoundationStreamWrapper** stream_out);
+ 
+-  bool IsEncrypted() const override;
+-
+  protected:
+   HRESULT GetMediaType(IMFMediaType** media_type_out) override;
+ };

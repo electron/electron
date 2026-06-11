@@ -10,12 +10,15 @@ app.whenReady().then(() => {
     }
   });
 
-  w.loadURL('data:text/html,' + encodeURIComponent(
-    '<webview id="wv" src="about:blank" style="width:100px;height:100px"></webview>' +
-    '<script>document.getElementById("wv").addEventListener("dom-ready", function() {' +
-    '  document.title = "READY:" + this.getWebContentsId();' +
-    '});</script>'
-  ));
+  w.loadURL(
+    'data:text/html,' +
+      encodeURIComponent(
+        '<webview id="wv" src="about:blank" style="width:100px;height:100px"></webview>' +
+          '<script>document.getElementById("wv").addEventListener("dom-ready", function() {' +
+          '  document.title = "READY:" + this.getWebContentsId();' +
+          '});</script>'
+      )
+  );
 
   const check = setInterval(() => {
     if (!w.getTitle().startsWith('READY:')) return;

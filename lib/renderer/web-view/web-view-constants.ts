@@ -12,7 +12,7 @@ export const enum WEB_VIEW_ATTRIBUTES {
   USERAGENT = 'useragent',
   BLINKFEATURES = 'blinkfeatures',
   DISABLEBLINKFEATURES = 'disableblinkfeatures',
-  WEBPREFERENCES = 'webpreferences',
+  WEBPREFERENCES = 'webpreferences'
 }
 
 export const enum WEB_VIEW_ERROR_MESSAGES {

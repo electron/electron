@@ -58,13 +58,7 @@ export const syncMethods = new Set([
   ...navigationHistorySyncMethods
 ]);
 
-export const properties = new Set([
-  'audioMuted',
-  'userAgent',
-  'zoomLevel',
-  'zoomFactor',
-  'frameRate'
-]);
+export const properties = new Set(['audioMuted', 'userAgent', 'zoomLevel', 'zoomFactor', 'frameRate']);
 
 export const asyncMethods = new Set([
   'capturePage',

@@ -23,14 +23,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-function atob (str) {
+function atob(str) {
   return Buffer.from(str, 'base64').toString('binary');
 }
 
 // in this case, frames has a very specific meaning, which will be
 // detailed once i finish writing the code
 
-function ToWebM (frames) {
+function ToWebM(frames) {
   const info = checkFrames(frames);
 
   // max duration by cluster in milliseconds
@@ -206,22 +206,24 @@ function ToWebM (frames) {
           data: Math.round(clusterTimecode),
           id: 0xe7 // Timecode
         }
-      ].concat(clusterFrames.map(function (webp) {
-        const block = makeSimpleBlock({
-          discardable: 0,
-          frame: webp.data.slice(4),
-          invisible: 0,
-          keyframe: 1,
-          lacing: 0,
-          trackNum: 1,
-          timecode: Math.round(clusterCounter)
-        });
-        clusterCounter += webp.duration;
-        return {
-          data: block,
-          id: 0xa3
-        };
-      }))
+      ].concat(
+        clusterFrames.map(function (webp) {
+          const block = makeSimpleBlock({
+            discardable: 0,
+            frame: webp.data.slice(4),
+            invisible: 0,
+            keyframe: 1,
+            lacing: 0,
+            trackNum: 1,
+            timecode: Math.round(clusterCounter)
+          });
+          clusterCounter += webp.duration;
+          return {
+            data: block,
+            id: 0xa3
+          };
+        })
+      )
     };
 
     // Add cluster to segment
@@ -237,7 +239,8 @@ function ToWebM (frames) {
     }
     const data = generateEBML([segment.data[i]]);
     position += data.size || data.byteLength || data.length;
-    if (i !== 2) { // not cues
+    if (i !== 2) {
+      // not cues
       // Save results to avoid having to encode everything twice
       segment.data[i] = data;
     }
@@ -248,14 +251,16 @@ function ToWebM (frames) {
 
 // sums the lengths of all the frames and gets the duration, woo
 
-function checkFrames (frames) {
+function checkFrames(frames) {
   const width = frames[0].width;
   const height = frames[0].height;
   let duration = frames[0].duration;
   for (let i = 1; i < frames.length; i++) {
     if (frames[i].width !== width) throw new Error('Frame ' + (i + 1) + ' has a different width');
     if (frames[i].height !== height) throw new Error('Frame ' + (i + 1) + ' has a different height');
-    if (frames[i].duration < 0 || frames[i].duration > 0x7fff) throw new Error('Frame ' + (i + 1) + ' has a weird duration (must be between 0 and 32767)');
+    if (frames[i].duration < 0 || frames[i].duration > 0x7fff) {
+      throw new Error('Frame ' + (i + 1) + ' has a weird duration (must be between 0 and 32767)');
+    }
     duration += frames[i].duration;
   }
   return {
@@ -265,7 +270,7 @@ function checkFrames (frames) {
   };
 }
 
-function numToBuffer (num) {
+function numToBuffer(num) {
   const parts = [];
   while (num > 0) {
     parts.push(num & 0xff);
@@ -274,7 +279,7 @@ function numToBuffer (num) {
   return new Uint8Array(parts.reverse());
 }
 
-function numToFixedBuffer (num, size) {
+function numToFixedBuffer(num, size) {
   const parts = new Uint8Array(size);
   for (let i = size - 1; i >= 0; i--) {
     parts[i] = num & 0xff;
@@ -283,7 +288,7 @@ function numToFixedBuffer (num, size) {
   return parts;
 }
 
-function strToBuffer (str) {
+function strToBuffer(str) {
   // return new Blob([str]);
 
   const arr = new Uint8Array(str.length);
@@ -301,9 +306,9 @@ function strToBuffer (str) {
 // at all really, but the reason is that there's some code below that i dont really
 // feel like understanding, and this is easier than using my brain.
 
-function bitsToBuffer (bits) {
+function bitsToBuffer(bits) {
   const data = [];
-  const pad = (bits.length % 8) ? (new Array(1 + 8 - (bits.length % 8))).join('0') : '';
+  const pad = bits.length % 8 ? new Array(1 + 8 - (bits.length % 8)).join('0') : '';
   bits = pad + bits;
   for (let i = 0; i < bits.length; i += 8) {
     data.push(parseInt(bits.substr(i, 8), 2));
@@ -311,7 +316,7 @@ function bitsToBuffer (bits) {
   return new Uint8Array(data);
 }
 
-function generateEBML (json) {
+function generateEBML(json) {
   const ebml = [];
   for (const item of json) {
     if (!('id' in item)) {
@@ -322,14 +327,16 @@ function generateEBML (json) {
 
     let data = item.data;
     if (typeof data === 'object') data = generateEBML(data);
-    if (typeof data === 'number') data = ('size' in item) ? numToFixedBuffer(data, item.size) : bitsToBuffer(data.toString(2));
+    if (typeof data === 'number') {
+      data = 'size' in item ? numToFixedBuffer(data, item.size) : bitsToBuffer(data.toString(2));
+    }
     if (typeof data === 'string') data = strToBuffer(data);
 
     const len = data.size || data.byteLength || data.length;
     const zeroes = Math.ceil(Math.ceil(Math.log(len) / Math.log(2)) / 8);
     const sizeStr = len.toString(2);
-    const padded = (new Array((zeroes * 7 + 7 + 1) - sizeStr.length)).join('0') + sizeStr;
-    const size = (new Array(zeroes)).join('0') + '1' + padded;
+    const padded = new Array(zeroes * 7 + 7 + 1 - sizeStr.length).join('0') + sizeStr;
+    const size = new Array(zeroes).join('0') + '1' + padded;
 
     // i actually dont quite understand what went on up there, so I'm not really
     // going to fix this, i'm probably just going to write some hacky thing which
@@ -345,7 +352,7 @@ function generateEBML (json) {
   return new Uint8Array(buffer);
 }
 
-function toFlatArray (arr, outBuffer) {
+function toFlatArray(arr, outBuffer) {
   if (outBuffer == null) {
     outBuffer = [];
   }
@@ -361,25 +368,28 @@ function toFlatArray (arr, outBuffer) {
   return outBuffer;
 }
 
-function makeSimpleBlock (data) {
+function makeSimpleBlock(data) {
   let flags = 0;
   if (data.keyframe) flags |= 128;
   if (data.invisible) flags |= 8;
-  if (data.lacing) flags |= (data.lacing << 1);
+  if (data.lacing) flags |= data.lacing << 1;
   if (data.discardable) flags |= 1;
   if (data.trackNum > 127) {
     throw new Error('TrackNumber > 127 not supported');
   }
-  const out = [data.trackNum | 0x80, data.timecode >> 8, data.timecode & 0xff, flags].map(function (e) {
-    return String.fromCharCode(e);
-  }).join('') + data.frame;
+  const out =
+    [data.trackNum | 0x80, data.timecode >> 8, data.timecode & 0xff, flags]
+      .map(function (e) {
+        return String.fromCharCode(e);
+      })
+      .join('') + data.frame;
 
   return out;
 }
 
 // here's something else taken verbatim from weppy, awesome rite?
 
-function parseWebP (riff) {
+function parseWebP(riff) {
   const VP8 = riff.RIFF[0].WEBP[0];
 
   const frameStart = VP8.indexOf('\x9d\x01\x2a'); // A VP8 keyframe starts with the 0x9d012a header
@@ -388,10 +398,10 @@ function parseWebP (riff) {
 
   // the code below is literally copied verbatim from the bitstream spec
   let tmp = (c[1] << 8) | c[0];
-  const width = tmp & 0x3FFF;
+  const width = tmp & 0x3fff;
   const horizontalScale = tmp >> 14;
   tmp = (c[3] << 8) | c[2];
-  const height = tmp & 0x3FFF;
+  const height = tmp & 0x3fff;
   const verticalScale = tmp >> 14;
   return {
     width,
@@ -410,7 +420,7 @@ function parseWebP (riff) {
 // break which makes me make up puns. well, enough riff-raff (aha a
 // rescue of sorts), this function was ripped wholesale from weppy
 
-function parseRIFF (string) {
+function parseRIFF(string) {
   let offset = 0;
   const chunks = {};
 
@@ -418,10 +428,17 @@ function parseRIFF (string) {
     const id = string.substr(offset, 4);
     chunks[id] = chunks[id] || [];
     if (id === 'RIFF' || id === 'LIST') {
-      const len = parseInt(string.substr(offset + 4, 4).split('').map(function (i) {
-        const unpadded = i.charCodeAt(0).toString(2);
-        return (new Array(8 - unpadded.length + 1)).join('0') + unpadded;
-      }).join(''), 2);
+      const len = parseInt(
+        string
+          .substr(offset + 4, 4)
+          .split('')
+          .map(function (i) {
+            const unpadded = i.charCodeAt(0).toString(2);
+            return new Array(8 - unpadded.length + 1).join('0') + unpadded;
+          })
+          .join(''),
+        2
+      );
       const data = string.substr(offset + 4 + 4, len);
       offset += 4 + 4 + len;
       chunks[id].push(parseRIFF(data));
@@ -441,21 +458,24 @@ function parseRIFF (string) {
 // here's a little utility function that acts as a utility for other functions
 // basically, the only purpose is for encoding "Duration", which is encoded as
 // a double (considerably more difficult to encode than an integer)
-function doubleToString (num) {
-  return Array.prototype.slice.call(
-    new Uint8Array(
-      (
-        new Float64Array([num]) // create a float64 array
-      ).buffer) // extract the array buffer
-    , 0) // convert the Uint8Array into a regular array
-    .map(function (e) { // since it's a regular array, we can now use map
+function doubleToString(num) {
+  return Array.prototype.slice
+    .call(
+      new Uint8Array(
+        new Float64Array([num]).buffer // create a float64 array
+      ), // extract the array buffer
+      0
+    ) // convert the Uint8Array into a regular array
+    .map(function (e) {
+      // since it's a regular array, we can now use map
       return String.fromCharCode(e); // encode all the bytes individually
     })
     .reverse() // correct the byte endianness (assume it's little endian for now)
     .join(''); // join the bytes in holy matrimony as a string
 }
 
-function WhammyVideo (speed, quality = 0.8) { // a more abstract-ish API
+function WhammyVideo(speed, quality = 0.8) {
+  // a more abstract-ish API
   this.frames = [];
   this.duration = 1000 / speed;
   this.quality = quality;
@@ -468,8 +488,11 @@ function WhammyVideo (speed, quality = 0.8) { // a more abstract-ish API
  */
 WhammyVideo.prototype.add = function (frame, duration) {
   if (typeof duration !== 'undefined' && this.duration) throw new Error("you can't pass a duration if the fps is set");
-  if (typeof duration === 'undefined' && !this.duration) throw new Error("if you don't have the fps set, you need to have durations here.");
-  if (frame.canvas) { // CanvasRenderingContext2D
+  if (typeof duration === 'undefined' && !this.duration) {
+    throw new Error("if you don't have the fps set, you need to have durations here.");
+  }
+  if (frame.canvas) {
+    // CanvasRenderingContext2D
     frame = frame.canvas;
   }
   if (frame.toDataURL) {
@@ -477,9 +500,11 @@ WhammyVideo.prototype.add = function (frame, duration) {
     // quickly store image data so we don't block cpu. encode in compile method.
     frame = frame.getContext('2d').getImageData(0, 0, frame.width, frame.height);
   } else if (typeof frame !== 'string') {
-    throw new TypeError('frame must be a a HTMLCanvasElement, a CanvasRenderingContext2D or a DataURI formatted string');
+    throw new TypeError(
+      'frame must be a a HTMLCanvasElement, a CanvasRenderingContext2D or a DataURI formatted string'
+    );
   }
-  if (typeof frame === 'string' && !(/^data:image\/webp;base64,/ig).test(frame)) {
+  if (typeof frame === 'string' && !/^data:image\/webp;base64,/gi.test(frame)) {
     throw new Error('Input must be formatted properly as a base64 encoded DataURI of type image/webp');
   }
   this.frames.push({
@@ -489,11 +514,13 @@ WhammyVideo.prototype.add = function (frame, duration) {
 };
 
 WhammyVideo.prototype.compile = function (callback) {
-  const webm = new ToWebM(this.frames.map(function (frame) {
-    const webp = parseWebP(parseRIFF(atob(frame.image.slice(23))));
-    webp.duration = frame.duration;
-    return webp;
-  }));
+  const webm = new ToWebM(
+    this.frames.map(function (frame) {
+      const webp = parseWebP(parseRIFF(atob(frame.image.slice(23))));
+      webp.duration = frame.duration;
+      return webp;
+    })
+  );
   callback(webm);
 };
 

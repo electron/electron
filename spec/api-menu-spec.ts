@@ -7,10 +7,10 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
+import { sortMenuItems } from '../lib/browser/api/menu-utils';
 import { singleModifierCombinations } from './lib/accelerator-helpers';
 import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
-import { sortMenuItems } from '../lib/browser/api/menu-utils';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -31,10 +31,7 @@ describe('Menu module', function () {
     });
 
     it('should be able to accept only MenuItems', () => {
-      const menu = Menu.buildFromTemplate([
-        new MenuItem({ label: 'one' }),
-        new MenuItem({ label: 'two' })
-      ]);
+      const menu = Menu.buildFromTemplate([new MenuItem({ label: 'one' }), new MenuItem({ label: 'two' })]);
       expect(menu.items[0].label).to.equal('one');
       expect(menu.items[1].label).to.equal('two');
     });
@@ -43,9 +40,7 @@ describe('Menu module', function () {
       const menu = Menu.buildFromTemplate([
         {
           label: 'one',
-          submenu: [
-            new MenuItem({ label: 'two' }) as any
-          ]
+          submenu: [new MenuItem({ label: 'two' }) as any]
         }
       ]);
       expect(menu.items[0].label).to.equal('one');
@@ -53,10 +48,7 @@ describe('Menu module', function () {
     });
 
     it('should be able to accept MenuItems and plain objects', () => {
-      const menu = Menu.buildFromTemplate([
-        new MenuItem({ label: 'one' }),
-        { label: 'two' }
-      ]);
+      const menu = Menu.buildFromTemplate([new MenuItem({ label: 'one' }), { label: 'two' }]);
       expect(menu.items[0].label).to.equal('one');
       expect(menu.items[1].label).to.equal('two');
     });
@@ -528,10 +520,12 @@ describe('Menu module', function () {
           {
             id: '2',
             label: 'two'
-          }, {
+          },
+          {
             id: '3',
             label: 'three'
-          }, {
+          },
+          {
             id: '1',
             label: 'one',
             before: ['2']
@@ -553,7 +547,8 @@ describe('Menu module', function () {
           {
             id: '1',
             label: 'one'
-          }, {
+          },
+          {
             id: '3',
             label: 'three'
           }
@@ -568,13 +563,17 @@ describe('Menu module', function () {
         const menuOne = Menu.buildFromTemplate([
           {
             type: 'separator'
-          }, {
+          },
+          {
             label: 'a'
-          }, {
+          },
+          {
             label: 'b'
-          }, {
+          },
+          {
             label: 'c'
-          }, {
+          },
+          {
             type: 'separator'
           }
         ]);
@@ -587,17 +586,23 @@ describe('Menu module', function () {
         const menuTwo = Menu.buildFromTemplate([
           {
             type: 'separator'
-          }, {
+          },
+          {
             type: 'separator'
-          }, {
+          },
+          {
             label: 'a'
-          }, {
+          },
+          {
             label: 'b'
-          }, {
+          },
+          {
             label: 'c'
-          }, {
+          },
+          {
             type: 'separator'
-          }, {
+          },
+          {
             type: 'separator'
           }
         ]);
@@ -626,7 +631,8 @@ describe('Menu module', function () {
           {
             type: 'separator',
             before: ['bar']
-          }]);
+          }
+        ]);
 
         expect(menuOne.items).to.have.length(3);
         expect(menuOne.items[0].label).to.equal('Foo');
@@ -639,16 +645,20 @@ describe('Menu module', function () {
           {
             id: '2',
             label: 'two'
-          }, {
+          },
+          {
             id: '3',
             label: 'three'
-          }, {
+          },
+          {
             id: '4',
             label: 'four'
-          }, {
+          },
+          {
             id: '5',
             label: 'five'
-          }, {
+          },
+          {
             id: '1',
             label: 'one',
             before: ['2']
@@ -667,16 +677,20 @@ describe('Menu module', function () {
           new MenuItem({
             id: '2',
             label: 'two'
-          }), new MenuItem({
+          }),
+          new MenuItem({
             id: '3',
             label: 'three'
-          }), new MenuItem({
+          }),
+          new MenuItem({
             id: '4',
             label: 'four'
-          }), new MenuItem({
+          }),
+          new MenuItem({
             id: '5',
             label: 'five'
-          }), new MenuItem({
+          }),
+          new MenuItem({
             id: '1',
             label: 'one',
             before: ['2']
@@ -733,11 +747,7 @@ describe('Menu module', function () {
 
   describe('Menu.insert', () => {
     it('should throw when attempting to insert at out-of-range indices', () => {
-      const menu = Menu.buildFromTemplate([
-        { label: '1' },
-        { label: '2' },
-        { label: '3' }
-      ]);
+      const menu = Menu.buildFromTemplate([{ label: '1' }, { label: '2' }, { label: '3' }]);
 
       const item = new MenuItem({ label: 'badInsert' });
 
@@ -751,11 +761,7 @@ describe('Menu module', function () {
     });
 
     it('should store item in @items by its index', () => {
-      const menu = Menu.buildFromTemplate([
-        { label: '1' },
-        { label: '2' },
-        { label: '3' }
-      ]);
+      const menu = Menu.buildFromTemplate([{ label: '1' }, { label: '2' }, { label: '3' }]);
 
       const item = new MenuItem({ label: 'inserted' });
 
@@ -769,11 +775,7 @@ describe('Menu module', function () {
 
   describe('Menu.append', () => {
     it('should add the item to the end of the menu', () => {
-      const menu = Menu.buildFromTemplate([
-        { label: '1' },
-        { label: '2' },
-        { label: '3' }
-      ]);
+      const menu = Menu.buildFromTemplate([{ label: '1' }, { label: '2' }, { label: '3' }]);
 
       const item = new MenuItem({ label: 'inserted' });
       menu.append(item);
@@ -791,11 +793,7 @@ describe('Menu module', function () {
 
     beforeEach(() => {
       w = new BrowserWindow({ show: false, width: 200, height: 200 });
-      menu = Menu.buildFromTemplate([
-        { label: '1' },
-        { label: '2' },
-        { label: '3' }
-      ]);
+      menu = Menu.buildFromTemplate([{ label: '1' }, { label: '2' }, { label: '3' }]);
     });
 
     afterEach(async () => {
@@ -832,14 +830,18 @@ describe('Menu module', function () {
 
     it('returns immediately', () => {
       const input = { window: w, x: 100, y: 101 };
-      const output = menu.popup(input) as unknown as {x: number, y: number, browserWindow: BrowserWindow};
+      const output = menu.popup(input) as unknown as { x: number; y: number; browserWindow: BrowserWindow };
       expect(output.x).to.equal(input.x);
       expect(output.y).to.equal(input.y);
       expect(output.browserWindow).to.equal(input.window);
     });
 
     it('works without a given BrowserWindow and options', () => {
-      const { browserWindow, x, y } = menu.popup({ x: 100, y: 101 }) as unknown as {x: number, y: number, browserWindow: BrowserWindow};
+      const { browserWindow, x, y } = menu.popup({ x: 100, y: 101 }) as unknown as {
+        x: number;
+        y: number;
+        browserWindow: BrowserWindow;
+      };
 
       expect(browserWindow.constructor.name).to.equal('BrowserWindow');
       expect(x).to.equal(100);
@@ -852,7 +854,7 @@ describe('Menu module', function () {
         x: 100,
         y: 101,
         callback: () => done()
-      }) as unknown as {x: number, y: number};
+      }) as unknown as { x: number; y: number };
 
       expect(x).to.equal(100);
       expect(y).to.equal(101);
@@ -901,7 +903,9 @@ describe('Menu module', function () {
         await closed;
       };
 
-      const failOnEvent = () => { done(new Error('Menu closed prematurely')); };
+      const failOnEvent = () => {
+        done(new Error('Menu closed prematurely'));
+      };
 
       assert(!w.isVisible());
       w.on('show', async () => {
@@ -935,7 +939,7 @@ describe('Menu module', function () {
       const chunk = singleModifierCombinations.slice(i, i + chunkSize);
       it(`does not crash when rendering menu item with single accelerator combinations ${++chunkCount}/${totalChunks}`, async () => {
         const menu = Menu.buildFromTemplate([
-          ...chunk.map(combination => ({
+          ...chunk.map((combination) => ({
             label: `Test ${combination}`,
             accelerator: combination
           }))
@@ -946,33 +950,32 @@ describe('Menu module', function () {
     }
   });
 
-  ifit(process.platform === 'darwin')(
-    'emits menu close event even if submenu closes first',
-    async () => {
-      const menu = Menu.buildFromTemplate([{
+  ifit(process.platform === 'darwin')('emits menu close event even if submenu closes first', async () => {
+    const menu = Menu.buildFromTemplate([
+      {
         label: 'parent',
-        submenu: [{
-          label: 'child'
-        }]
-      }]);
+        submenu: [
+          {
+            label: 'child'
+          }
+        ]
+      }
+    ]);
 
-      const menuWillClose = once(menu, 'menu-will-close');
-      (menu as any)._simulateSubmenuCloseSequenceForTesting();
+    const menuWillClose = once(menu, 'menu-will-close');
+    (menu as any)._simulateSubmenuCloseSequenceForTesting();
 
-      await Promise.race([
-        menuWillClose,
-        setTimeout(1000).then(() => {
-          throw new Error('menu-will-close was not emitted');
-        })
-      ]);
-    });
+    await Promise.race([
+      menuWillClose,
+      setTimeout(1000).then(() => {
+        throw new Error('menu-will-close was not emitted');
+      })
+    ]);
+  });
 
   describe('Menu.setApplicationMenu', () => {
     it('sets a menu', () => {
-      const menu = Menu.buildFromTemplate([
-        { label: '1' },
-        { label: '2' }
-      ]);
+      const menu = Menu.buildFromTemplate([{ label: '1' }, { label: '2' }]);
 
       Menu.setApplicationMenu(menu);
       expect(Menu.getApplicationMenu()).to.not.be.null('application menu');
@@ -990,7 +993,7 @@ describe('Menu module', function () {
 
       let output = '';
       await new Promise<void>((resolve) => {
-        appProcess.stdout.on('data', data => {
+        appProcess.stdout.on('data', (data) => {
           output += data;
           if (data.includes('Window has')) {
             resolve();
@@ -1005,8 +1008,12 @@ describe('Menu module', function () {
       const appProcess = cp.spawn(process.execPath, [appPath]);
 
       let output = '';
-      appProcess.stdout.on('data', data => { output += data; });
-      appProcess.stderr.on('data', data => { output += data; });
+      appProcess.stdout.on('data', (data) => {
+        output += data;
+      });
+      appProcess.stderr.on('data', (data) => {
+        output += data;
+      });
 
       const [code] = await once(appProcess, 'exit');
       if (!output.includes('Window has no menu')) {

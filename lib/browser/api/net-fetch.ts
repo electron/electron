@@ -4,7 +4,11 @@ import { ClientRequestConstructorOptions, ClientRequest, IncomingMessage, Sessio
 
 import { Readable, Writable, isReadable } from 'stream';
 
-function createDeferredPromise<T, E extends Error = Error> (): { promise: Promise<T>; resolve: (x: T) => void; reject: (e: E) => void; } {
+function createDeferredPromise<T, E extends Error = Error>(): {
+  promise: Promise<T>;
+  resolve: (x: T) => void;
+  reject: (e: E) => void;
+} {
   let res: (x: T) => void;
   let rej: (e: E) => void;
   const promise = new Promise<T>((resolve, reject) => {
@@ -15,8 +19,12 @@ function createDeferredPromise<T, E extends Error = Error> (): { promise: Promis
   return { promise, resolve: res!, reject: rej! };
 }
 
-export function fetchWithSession (input: RequestInfo, init: (RequestInit & {bypassCustomProtocolHandlers?: boolean}) | undefined, session: SessionT | undefined,
-  request: (options: ClientRequestConstructorOptions | string) => ClientRequest) {
+export function fetchWithSession(
+  input: RequestInfo,
+  init: (RequestInit & { bypassCustomProtocolHandlers?: boolean }) | undefined,
+  session: SessionT | undefined,
+  request: (options: ClientRequestConstructorOptions | string) => ClientRequest
+) {
   const p = createDeferredPromise<Response>();
   let req: Request;
   try {
@@ -76,16 +84,18 @@ export function fetchWithSession (input: RequestInfo, init: (RequestInit & {bypa
   // We can't set credentials to same-origin unless there's an origin set.
   const credentials = req.credentials === 'same-origin' && !origin ? 'include' : req.credentials;
 
-  const r = request(allowAnyProtocol({
-    session,
-    method: req.method,
-    url: req.url,
-    origin,
-    credentials,
-    cache: req.cache,
-    referrerPolicy: req.referrerPolicy,
-    redirect: req.redirect
-  }));
+  const r = request(
+    allowAnyProtocol({
+      session,
+      method: req.method,
+      url: req.url,
+      origin,
+      credentials,
+      cache: req.cache,
+      referrerPolicy: req.referrerPolicy,
+      redirect: req.redirect
+    })
+  );
 
   (r as any)._urlLoaderOptions.bypassCustomProtocolHandlers = !!init?.bypassCustomProtocolHandlers;
 
@@ -105,7 +115,10 @@ export function fetchWithSession (input: RequestInfo, init: (RequestInit & {bypa
       headers.set(k, Array.isArray(v) ? v.join(', ') : v);
     }
     const nullBodyStatus = [101, 204, 205, 304];
-    const body = nullBodyStatus.includes(resp.statusCode) || req.method === 'HEAD' ? null : Readable.toWeb(resp as unknown as Readable) as ReadableStream;
+    const body =
+      nullBodyStatus.includes(resp.statusCode) || req.method === 'HEAD'
+        ? null
+        : (Readable.toWeb(resp as unknown as Readable) as ReadableStream);
     const rResp = new Response(body, {
       headers,
       status: resp.statusCode,
@@ -122,7 +135,9 @@ export function fetchWithSession (input: RequestInfo, init: (RequestInit & {bypa
   // pipeTo expects a WritableStream<Uint8Array>. Node.js' Writable.toWeb returns WritableStream<any>,
   // which causes a TS structural mismatch.
   const writable = Writable.toWeb(r as unknown as Writable) as unknown as WritableStream<Uint8Array>;
-  if (!req.body?.pipeTo(writable).then(() => r.end())) { r.end(); }
+  if (!req.body?.pipeTo(writable).then(() => r.end())) {
+    r.end();
+  }
 
   return p.promise;
 }

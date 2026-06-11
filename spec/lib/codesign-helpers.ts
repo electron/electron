@@ -7,14 +7,11 @@ import * as path from 'node:path';
 const features = process._linkedBinding('electron_common_features');
 const fixturesPath = path.resolve(__dirname, '..', 'fixtures');
 
-export const shouldRunCodesignTests =
-    process.platform === 'darwin' &&
-    !process.mas &&
-    !features.isComponentBuild();
+export const shouldRunCodesignTests = process.platform === 'darwin' && !process.mas && !features.isComponentBuild();
 
 let identity: string | null;
 
-export function getCodesignIdentity () {
+export function getCodesignIdentity() {
   if (identity === undefined) {
     const result = cp.spawnSync(path.resolve(__dirname, '../../script/codesign/get-trusted-identity.sh'));
     if (result.status !== 0 || result.stdout.toString().trim().length === 0) {
@@ -26,7 +23,7 @@ export function getCodesignIdentity () {
   return identity;
 }
 
-export async function copyMacOSFixtureApp (newDir: string, fixture: string | null = 'initial') {
+export async function copyMacOSFixtureApp(newDir: string, fixture: string | null = 'initial') {
   const appBundlePath = path.resolve(process.execPath, '../../..');
   const newPath = path.resolve(newDir, 'Electron.app');
   cp.spawnSync('cp', ['-R', appBundlePath, path.dirname(newPath)]);
@@ -38,7 +35,9 @@ export async function copyMacOSFixtureApp (newDir: string, fixture: string | nul
   const plistPath = path.resolve(newPath, 'Contents', 'Info.plist');
   await fs.promises.writeFile(
     plistPath,
-    (await fs.promises.readFile(plistPath, 'utf8')).replace('<key>BuildMachineOSBuild</key>', `<key>NSAppTransportSecurity</key>
+    (await fs.promises.readFile(plistPath, 'utf8')).replace(
+      '<key>BuildMachineOSBuild</key>',
+      `<key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
         <true/>
@@ -52,12 +51,13 @@ export async function copyMacOSFixtureApp (newDir: string, fixture: string | nul
                 <true/>
             </dict>
         </dict>
-    </dict><key>BuildMachineOSBuild</key>`)
+    </dict><key>BuildMachineOSBuild</key>`
+    )
   );
   return newPath;
-};
+}
 
-export function spawn (cmd: string, args: string[], opts: any = {}) {
+export function spawn(cmd: string, args: string[], opts: any = {}) {
   let out = '';
   const child = cp.spawn(cmd, args, opts);
   child.stdout.on('data', (chunk: Buffer) => {
@@ -66,7 +66,7 @@ export function spawn (cmd: string, args: string[], opts: any = {}) {
   child.stderr.on('data', (chunk: Buffer) => {
     out += chunk.toString();
   });
-  return new Promise<{ code: number, out: string }>((resolve) => {
+  return new Promise<{ code: number; out: string }>((resolve) => {
     child.on('exit', (code, signal) => {
       expect(signal).to.equal(null);
       resolve({
@@ -75,12 +75,12 @@ export function spawn (cmd: string, args: string[], opts: any = {}) {
       });
     });
   });
-};
+}
 
-export function signApp (appPath: string, identity: string) {
+export function signApp(appPath: string, identity: string) {
   return spawn('codesign', ['-s', identity, '--deep', '--force', appPath]);
-};
+}
 
-export function unsignApp (appPath: string) {
+export function unsignApp(appPath: string) {
   return spawn('codesign', ['--remove-signature', '--deep', appPath]);
-};
+}

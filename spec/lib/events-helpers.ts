@@ -5,20 +5,29 @@
 
 import { on } from 'node:events';
 
-export const emittedNTimes = async (emitter: NodeJS.EventEmitter, eventName: string, times: number, trigger?: () => void) => {
+export const emittedNTimes = async (
+  emitter: NodeJS.EventEmitter,
+  eventName: string,
+  times: number,
+  trigger?: () => void
+) => {
   const events: any[][] = [];
   const iter = on(emitter, eventName);
   if (trigger) await Promise.resolve(trigger());
   for await (const args of iter) {
     events.push(args);
-    if (events.length === times) { break; }
+    if (events.length === times) {
+      break;
+    }
   }
   return events;
 };
 
 export const emittedUntil = async (emitter: NodeJS.EventEmitter, eventName: string, untilFn: Function) => {
   for await (const args of on(emitter, eventName)) {
-    if (untilFn(...args)) { return args; }
+    if (untilFn(...args)) {
+      return args;
+    }
   }
   return [];
 };

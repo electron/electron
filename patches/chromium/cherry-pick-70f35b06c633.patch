@@ -1,0 +1,239 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Wed, 1 Apr 2026 01:41:59 -0700
+Subject: media: Fix UAF bug in MediaFoundationVideoEncodeAccelerator
+
+The MF VEA used fake COM refcounting while registering its `this`
+pointer with the  Media Foundation API. This led to a use after free bug
+if the encoder was deleted while an OS callback was pending.
+
+This change decouples the encoder's lifetime from the OS callback's
+lifetime by removing `IMFAsyncCallback` from the main class and
+introducing `MFAsyncCallbackProxy`, a true COM object. The proxy
+receives the events and safely posts them to the parent class via
+`base::WeakPtr`, ensuring that the main object is not accessed after
+it is freed.
+
+Bug: 497151750
+Change-Id: I29d6969cc5db8d30e9e2ee2793d34ab326d560f3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7712934
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1608366}
+
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+index 4a9884e2b6381481dc1b38373d187da9bf9a807d..1571472c24d070035d09ddcf1672e76045a42d44 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+@@ -11,6 +11,7 @@
+ #include <mfapi.h>
+ #include <mferror.h>
+ #include <mftransform.h>
++#include <wrl/implements.h>
+ 
+ #include <algorithm>
+ #include <iterator>
+@@ -201,6 +202,67 @@ bool IsOdd(int value) {
+ 
+ }  // namespace
+ 
++// A proxy class that implements IMFAsyncCallback and routes the events back to
++// the MediaFoundationVideoEncodeAccelerator safely via a WeakPtr. This
++// decouples the encoder's lifetime from the OS callback's lifetime. If the
++// encoder is destroyed while a callback is pending, the WeakPtr will be
++// invalidated, and the posted task will be safely dropped, preventing a
++// use-after-free.
++class MFAsyncCallbackProxy
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          IMFAsyncCallback> {
++ public:
++  MFAsyncCallbackProxy(
++      scoped_refptr<base::SequencedTaskRunner> task_runner,
++      base::WeakPtr<MediaFoundationVideoEncodeAccelerator> parent)
++      : task_runner_(std::move(task_runner)),
++        parent_weak_ptr_(std::move(parent)) {}
++
++  ~MFAsyncCallbackProxy() override = default;
++
++  IFACEMETHODIMP GetParameters(DWORD* pdwFlags, DWORD* pdwQueue) override {
++    *pdwFlags = MFASYNC_FAST_IO_PROCESSING_CALLBACK;
++    *pdwQueue = MFASYNC_CALLBACK_QUEUE_TIMER;
++    return S_OK;
++  }
++
++  IFACEMETHODIMP Invoke(IMFAsyncResult* pAsyncResult) override {
++    MediaEventType event_type = MEUnknown;
++    HRESULT status = GetEvent(pAsyncResult, &event_type);
++
++    // Invoke() is called on some random OS thread, so we must post to our event
++    // handler since MediaFoundationVideoEncodeAccelerator is single threaded.
++    task_runner_->PostTask(
++        FROM_HERE,
++        base::BindOnce(
++            &MediaFoundationVideoEncodeAccelerator::MediaEventHandler,
++            parent_weak_ptr_, event_type, status));
++    return S_OK;
++  }
++
++ private:
++  HRESULT GetEvent(IMFAsyncResult* pAsyncResult, MediaEventType* event_type) {
++    Microsoft::WRL::ComPtr<IUnknown> state;
++    RETURN_IF_FAILED(pAsyncResult->GetState(&state));
++
++    Microsoft::WRL::ComPtr<IMFMediaEventGenerator> event_generator;
++    RETURN_IF_FAILED(state.As(&event_generator));
++
++    Microsoft::WRL::ComPtr<IMFMediaEvent> media_event;
++    RETURN_IF_FAILED(event_generator->EndGetEvent(pAsyncResult, &media_event));
++
++    RETURN_IF_FAILED(media_event->GetType(event_type));
++
++    HRESULT status = S_OK;
++    RETURN_IF_FAILED(media_event->GetStatus(&status));
++    return status;
++  }
++
++  scoped_refptr<base::SequencedTaskRunner> task_runner_;
++  base::WeakPtr<MediaFoundationVideoEncodeAccelerator> parent_weak_ptr_;
++};
++
+ struct MediaFoundationVideoEncodeAccelerator::PendingInput {
+   PendingInput() = default;
+   ~PendingInput() = default;
+@@ -269,7 +331,6 @@ MediaFoundationVideoEncodeAccelerator::
+     ~MediaFoundationVideoEncodeAccelerator() {
+   DVLOG(3) << __func__;
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  DCHECK(async_callback_ref_.IsOne());
+ }
+ 
+ VideoEncodeAccelerator::SupportedProfiles
+@@ -606,7 +667,16 @@ bool MediaFoundationVideoEncodeAccelerator::InitializeMFT(
+     return false;
+   }
+ 
+-  event_generator_->BeginGetEvent(this, nullptr);
++  proxy_callback_ = Microsoft::WRL::Make<MFAsyncCallbackProxy>(
++      task_runner_, weak_factory_.GetWeakPtr());
++
++  hr = event_generator_->BeginGetEvent(proxy_callback_.Get(),
++                                       event_generator_.Get());
++  if (FAILED(hr)) {
++    NotifyErrorStatus({EncoderStatus::Codes::kEncoderInitializationError,
++                       "Couldn't begin get event: " + PrintHr(hr)});
++    return false;
++  }
+ 
+   // Start the asynchronous processing model
+   hr = encoder_->ProcessMessage(MFT_MESSAGE_COMMAND_FLUSH, 0);
+@@ -2602,7 +2672,12 @@ void MediaFoundationVideoEncodeAccelerator::MediaEventHandler(
+     default:
+       break;
+   }
+-  event_generator_->BeginGetEvent(this, nullptr);
++  HRESULT hr = event_generator_->BeginGetEvent(proxy_callback_.Get(),
++                                               event_generator_.Get());
++  if (FAILED(hr)) {
++    NotifyErrorStatus({EncoderStatus::Codes::kSystemAPICallError,
++                       "Failed to begin get event: " + PrintHr(hr)});
++  }
+ }
+ 
+ void MediaFoundationVideoEncodeAccelerator::SetState(State state) {
+@@ -2991,47 +3066,4 @@ bool MediaFoundationVideoEncodeAccelerator::InitMFVideoProcessor() {
+   return initialized;
+ }
+ 
+-HRESULT MediaFoundationVideoEncodeAccelerator::GetParameters(DWORD* pdwFlags,
+-                                                             DWORD* pdwQueue) {
+-  *pdwFlags = MFASYNC_FAST_IO_PROCESSING_CALLBACK;
+-  *pdwQueue = MFASYNC_CALLBACK_QUEUE_TIMER;
+-  return S_OK;
+-}
+-
+-HRESULT MediaFoundationVideoEncodeAccelerator::Invoke(
+-    IMFAsyncResult* pAsyncResult) {
+-  ComMFMediaEvent media_event;
+-  RETURN_IF_FAILED(event_generator_->EndGetEvent(pAsyncResult, &media_event));
+-
+-  MediaEventType event_type = MEUnknown;
+-  RETURN_IF_FAILED(media_event->GetType(&event_type));
+-
+-  HRESULT status = S_OK;
+-  media_event->GetStatus(&status);
+-
+-  // Invoke() is called on some random OS thread, so we must post to our event
+-  // handler since MediaFoundationVideoEncodeAccelerator is single threaded.
+-  task_runner_->PostTask(
+-      FROM_HERE,
+-      base::BindOnce(&MediaFoundationVideoEncodeAccelerator::MediaEventHandler,
+-                     weak_ptr_, event_type, status));
+-  return status;
+-}
+-
+-ULONG MediaFoundationVideoEncodeAccelerator::AddRef() {
+-  return async_callback_ref_.Increment();
+-}
+-
+-ULONG MediaFoundationVideoEncodeAccelerator::Release() {
+-  DCHECK(!async_callback_ref_.IsOne());
+-  return async_callback_ref_.Decrement() ? 1 : 0;
+-}
+-
+-HRESULT MediaFoundationVideoEncodeAccelerator::QueryInterface(REFIID riid,
+-                                                              void** ppv) {
+-  static const QITAB kQI[] = {
+-      QITABENT(MediaFoundationVideoEncodeAccelerator, IMFAsyncCallback), {0}};
+-  return QISearch(this, kQI, riid, ppv);
+-}
+-
+ }  // namespace media
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+index 90af4607c82e2ac477ab44fd0489e6c91f913474..c48808fbc3822ddb141213187fee61f2a374aa34 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+@@ -45,6 +45,7 @@ namespace media {
+ class VideoRateControlWrapper;
+ class TemporalScalabilityIdExtractor;
+ class VEAEncodingLatencyMetricsHelper;
++class MFAsyncCallbackProxy;
+ 
+ // Media Foundation implementation of the VideoEncodeAccelerator interface for
+ // Windows.
+@@ -54,9 +55,10 @@ class VEAEncodingLatencyMetricsHelper;
+ // correct task runners. It starts an internal encoder thread on which
+ // VideoEncodeAccelerator implementation tasks are posted.
+ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator
+-    : public VideoEncodeAccelerator,
+-      public IMFAsyncCallback {
++    : public VideoEncodeAccelerator {
+  public:
++  friend class MFAsyncCallbackProxy;
++
+   using GetCommandBufferStubCB =
+       base::RepeatingCallback<gpu::CommandBufferStub*()>;
+   explicit MediaFoundationVideoEncodeAccelerator(
+@@ -96,13 +98,6 @@ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator
+           get_command_buffer_helper_cb,
+       scoped_refptr<base::SingleThreadTaskRunner> gpu_task_runner) override;
+ 
+-  // IMFAsyncCallback implementation
+-  IFACEMETHODIMP GetParameters(DWORD* pdwFlags, DWORD* pdwQueue) override;
+-  IFACEMETHODIMP Invoke(IMFAsyncResult* pAsyncResult) override;
+-  IFACEMETHODIMP_(ULONG) AddRef() override;
+-  IFACEMETHODIMP_(ULONG) Release() override;
+-  IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv) override;
+-
+   struct GetCommandBufferHelperResult {
+     GetCommandBufferHelperResult();
+     GetCommandBufferHelperResult(const GetCommandBufferHelperResult& other);
+@@ -323,7 +318,7 @@ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator
+   ComMFTransform encoder_;
+   ComCodecAPI codec_api_;
+   ComMFMediaEventGenerator event_generator_;
+-  base::AtomicRefCount async_callback_ref_{1};
++  Microsoft::WRL::ComPtr<IMFAsyncCallback> proxy_callback_;
+ 
+   DWORD input_stream_id_ = 0u;
+   DWORD output_stream_id_ = 0u;

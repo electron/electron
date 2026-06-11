@@ -39,7 +39,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       let text = '<string>Hi</string>';
       // CL: https://chromium-review.googlesource.com/c/chromium/src/+/5187335
       if (process.platform === 'darwin') {
-        text = '<meta charset=\'utf-8\'><string>Hi</string>';
+        text = "<meta charset='utf-8'><string>Hi</string>";
       }
       clipboard.writeHTML('<string>Hi</string>');
       expect(clipboard.readHTML()).to.equal(text);
@@ -97,7 +97,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       let markup = '<b>Hi</b>';
       // CL: https://chromium-review.googlesource.com/c/chromium/src/+/5187335
       if (process.platform === 'darwin') {
-        markup = '<meta charset=\'utf-8\'><b>Hi</b>';
+        markup = "<meta charset='utf-8'><b>Hi</b>";
       }
       const bookmark = { title: 'a title', url: 'test' };
       clipboard.write({

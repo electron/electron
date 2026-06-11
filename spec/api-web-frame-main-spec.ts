@@ -18,12 +18,14 @@ describe('webFrameMain module', () => {
 
   const fileUrl = (filename: string) => url.pathToFileURL(path.join(subframesPath, filename)).href;
 
-  type Server = { server: http.Server, url: string, crossOriginUrl: string }
+  type Server = { server: http.Server; url: string; crossOriginUrl: string };
 
   /** Creates an HTTP server whose handler embeds the given iframe src. */
-  const createServer = async (options: {
-    headers?: Record<string, string>
-  } = {}): Promise<Server> => {
+  const createServer = async (
+    options: {
+      headers?: Record<string, string>;
+    } = {}
+  ): Promise<Server> => {
     const server = http.createServer((req, res) => {
       if (options.headers) {
         for (const [k, v] of Object.entries(options.headers)) {
@@ -88,7 +90,7 @@ describe('webFrameMain module', () => {
     });
 
     it('can traverse all frames in root', () => {
-      const urls = webFrame.framesInSubtree.map(frame => frame.url);
+      const urls = webFrame.framesInSubtree.map((frame) => frame.url);
       expect(urls).to.deep.equal([
         fileUrl('frame-with-frame-container.html'),
         fileUrl('frame-with-frame.html'),
@@ -97,11 +99,8 @@ describe('webFrameMain module', () => {
     });
 
     it('can traverse all frames in subtree', () => {
-      const urls = webFrame.frames[0].framesInSubtree.map(frame => frame.url);
-      expect(urls).to.deep.equal([
-        fileUrl('frame-with-frame.html'),
-        fileUrl('frame.html')
-      ]);
+      const urls = webFrame.frames[0].framesInSubtree.map((frame) => frame.url);
+      expect(urls).to.deep.equal([fileUrl('frame-with-frame.html'), fileUrl('frame.html')]);
     });
 
     describe('cross-origin', () => {
@@ -169,7 +168,7 @@ describe('webFrameMain module', () => {
       expect(childWebContents.mainFrame.origin).to.equal('file://');
     });
 
-    it('should show parent frame\'s origin when about:blank child window opened through cross-origin subframe', async () => {
+    it("should show parent frame's origin when about:blank child window opened through cross-origin subframe", async () => {
       const w = new BrowserWindow({ show: false });
       const serverA = await createServer();
       const serverB = await createServer();
@@ -213,9 +212,7 @@ describe('webFrameMain module', () => {
 
       expect(webFrame.visibilityState).to.equal('visible');
       w.hide();
-      await expect(
-        waitUntil(() => webFrame.visibilityState === 'hidden')
-      ).to.eventually.be.fulfilled();
+      await expect(waitUntil(() => webFrame.visibilityState === 'hidden')).to.eventually.be.fulfilled();
     });
   });
 
@@ -246,18 +243,11 @@ describe('webFrameMain module', () => {
       const webFrame = w.webContents.mainFrame;
       const p = () => webFrame.executeJavaScript('new Promise((r,e) => setTimeout(e("error!"), 500));');
       await expect(p()).to.be.eventually.rejectedWith('error!');
-      const errorTypes = new Set([
-        Error,
-        ReferenceError,
-        EvalError,
-        RangeError,
-        SyntaxError,
-        TypeError,
-        URIError
-      ]);
+      const errorTypes = new Set([Error, ReferenceError, EvalError, RangeError, SyntaxError, TypeError, URIError]);
       for (const error of errorTypes) {
-        await expect(webFrame.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`))
-          .to.eventually.be.rejectedWith(/Error/);
+        await expect(
+          webFrame.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`)
+        ).to.eventually.be.rejectedWith(/Error/);
       }
     });
 
@@ -545,7 +535,9 @@ describe('webFrameMain module', () => {
 
     it('emits when nested frames are created', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = emittedNTimes(w.webContents, 'frame-created', 2) as Promise<[any, Electron.FrameCreatedDetails][]>;
+      const promise = emittedNTimes(w.webContents, 'frame-created', 2) as Promise<
+        [any, Electron.FrameCreatedDetails][]
+      >;
       w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
       const [[, mainDetails], [, nestedDetails]] = await promise;
       expect(mainDetails.frame).to.equal(w.webContents.mainFrame);
@@ -583,7 +575,7 @@ describe('webFrameMain module', () => {
 
     it('emits for sub frame', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = new Promise<void>(resolve => {
+      const promise = new Promise<void>((resolve) => {
         w.webContents.on('frame-created', (e, { frame }) => {
           frame!.on('dom-ready', () => {
             if (frame!.name === 'frameA') {

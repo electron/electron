@@ -1,0 +1,184 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "mark a. foltz" <mfoltz@chromium.org>
+Date: Tue, 28 Apr 2026 09:46:49 -0700
+Subject: [M146] [Presentation API] Fix Use-After-Free in
+ PresentationAvailability
+
+Original change's description:
+> [Presentation API] Fix Use-After-Free in PresentationAvailability
+>
+> This CL fixes a Use-After-Free/Use-After-Poison vulnerability caused by
+> re-entrant modifications of collections during promise resolution.
+>
+> 1. In PresentationAvailability, we now swap availability_resolvers_ to
+>    a local vector before iterating. This prevents re-entrant calls
+>    (e.g., from JS calling getAvailability()) from modifying the
+>    collection being iterated.
+>
+> 2. In PresentationAvailabilityState, we now copy the availabilities set
+>    to a local vector using strong Member references and null checks.
+>    This ensures objects stay alive during iteration and handles
+>    WeakMember references safely.
+>
+> A regression test is added to verify that re-entrant RequestAvailability
+> calls no longer trigger memory safety issues.
+>
+> Fixed: 456795077, 502249087
+> Change-Id: I34d722892b4d253b17d27612f0895c033dd46eaa
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7793737
+> Reviewed-by: Muyao Xu <muyaoxu@google.com>
+> Commit-Queue: Mark Foltz <mfoltz@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1620515}
+
+(cherry picked from commit 959627a8a6af4b0e26380aa129e0e40266003f93)
+
+Bug: 507046103,456795077,502249087
+Change-Id: I34d722892b4d253b17d27612f0895c033dd46eaa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7800635
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7680@{#4018}
+Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
+
+diff --git a/third_party/blink/renderer/modules/presentation/presentation_availability.cc b/third_party/blink/renderer/modules/presentation/presentation_availability.cc
+index 582bc7e5f416bef7d82bf947dc94bb80d6e38df4..13e5fb6359ce348dbcb0be8dba85ea942e96173d 100644
+--- a/third_party/blink/renderer/modules/presentation/presentation_availability.cc
++++ b/third_party/blink/renderer/modules/presentation/presentation_availability.cc
+@@ -129,18 +129,20 @@ void PresentationAvailability::AddResolver(
+ }
+ 
+ void PresentationAvailability::RejectPendingPromises() {
+-  for (auto& resolver : availability_resolvers_) {
++  HeapVector<Member<ScriptPromiseResolver<PresentationAvailability>>> resolvers;
++  resolvers.swap(availability_resolvers_);
++  for (auto& resolver : resolvers) {
+     resolver->RejectWithDOMException(DOMExceptionCode::kNotSupportedError,
+                                      kNotSupportedErrorInfo);
+   }
+-  availability_resolvers_.clear();
+ }
+ 
+ void PresentationAvailability::ResolvePendingPromises() {
+-  for (auto& resolver : availability_resolvers_) {
++  HeapVector<Member<ScriptPromiseResolver<PresentationAvailability>>> resolvers;
++  resolvers.swap(availability_resolvers_);
++  for (auto& resolver : resolvers) {
+     resolver->Resolve(this);
+   }
+-  availability_resolvers_.clear();
+ }
+ 
+ void PresentationAvailability::Trace(Visitor* visitor) const {
+diff --git a/third_party/blink/renderer/modules/presentation/presentation_availability_state.cc b/third_party/blink/renderer/modules/presentation/presentation_availability_state.cc
+index eadd9ea791f99387701a5614d2bab5552a1b77c4..9786f71ce7e1dc72c166c459022bef15409b1348 100644
+--- a/third_party/blink/renderer/modules/presentation/presentation_availability_state.cc
++++ b/third_party/blink/renderer/modules/presentation/presentation_availability_state.cc
+@@ -103,16 +103,23 @@ void PresentationAvailabilityState::UpdateAvailability(
+       observer->AvailabilityChanged(screen_availability);
+     }
+ 
++    HeapVector<Member<PresentationAvailability>> availabilities;
++    for (auto& availability_ptr : listener->availabilities) {
++      if (availability_ptr) {
++        availabilities.push_back(availability_ptr);
++      }
++    }
++    listener->availabilities.clear();
++
+     if (screen_availability == mojom::blink::ScreenAvailability::DISABLED) {
+-      for (auto& availability_ptr : listener->availabilities) {
++      for (auto& availability_ptr : availabilities) {
+         availability_ptr->RejectPendingPromises();
+       }
+     } else {
+-      for (auto& availability_ptr : listener->availabilities) {
++      for (auto& availability_ptr : availabilities) {
+         availability_ptr->ResolvePendingPromises();
+       }
+     }
+-    listener->availabilities.clear();
+ 
+     for (const auto& availability_url : listener->urls) {
+       MaybeStopListeningToURL(availability_url);
+diff --git a/third_party/blink/renderer/modules/presentation/presentation_availability_state_test.cc b/third_party/blink/renderer/modules/presentation/presentation_availability_state_test.cc
+index 14da3c758232c5455c1ea26a3204c9e968626abd..3718d5021082159c3a0f916307078949a5d54deb 100644
+--- a/third_party/blink/renderer/modules/presentation/presentation_availability_state_test.cc
++++ b/third_party/blink/renderer/modules/presentation/presentation_availability_state_test.cc
+@@ -38,6 +38,37 @@ class MockPresentationAvailabilityObserver
+   const Vector<KURL> urls_;
+ };
+ 
++// Helper class for ReentrantRequestAvailability test.
++class ReentrantResolver final
++    : public ThenCallable<PresentationAvailability, ReentrantResolver> {
++ public:
++  ReentrantResolver(PresentationAvailabilityState* state,
++                    PresentationAvailability* availability,
++                    base::OnceClosure callback)
++      : state_(state),
++        availability_(availability),
++        callback_(std::move(callback)) {}
++
++  void React(ScriptState*, PresentationAvailability*) {
++    // Simulate re-entrant RequestAvailability call.
++    state_->RequestAvailability(availability_);
++    if (callback_) {
++      std::move(callback_).Run();
++    }
++  }
++
++  void Trace(Visitor* visitor) const override {
++    visitor->Trace(state_);
++    visitor->Trace(availability_);
++    ThenCallable<PresentationAvailability, ReentrantResolver>::Trace(visitor);
++  }
++
++ private:
++  Member<PresentationAvailabilityState> state_;
++  Member<PresentationAvailability> availability_;
++  base::OnceClosure callback_;
++};
++
+ // Helper classes for WaitForPromise{Fulfillment,Rejection}(). Provides a
+ // function that invokes |callback| when a ScriptPromise is resolved/rejected.
+ class ClosureOnResolve final
+@@ -638,4 +669,38 @@ TEST_F(PresentationAvailabilityStateTest,
+   ChangeURLState(url2_, ScreenAvailability::SOURCE_NOT_SUPPORTED);
+ }
+ 
++TEST_F(PresentationAvailabilityStateTest, ReentrantRequestAvailability) {
++  PresentationAvailabilityStateTestingContext context;
++  EXPECT_CALL(mock_presentation_service_, ListenForScreenAvailability(url1_))
++      .Times(1);
++
++  auto* resolver =
++      MakeGarbageCollected<ScriptPromiseResolver<PresentationAvailability>>(
++          context.GetScriptState(), context.GetExceptionContext());
++  auto* availability = MakeGarbageCollected<PresentationAvailability>(
++      context.GetExecutionContext(), Vector<KURL>({url1_}), false);
++  availability->AddResolver(resolver);
++  state_->AddObserver(availability);
++  auto promise = resolver->Promise();
++
++  base::RunLoop run_loop;
++  promise.Then(context.GetScriptState(),
++               MakeGarbageCollected<ReentrantResolver>(state_, availability,
++                                                       run_loop.QuitClosure()));
++
++  TestRequestAvailability({ScreenAvailability::AVAILABLE}, availability);
++
++  // Execute pending microtasks to trigger the re-entrant call.
++  context.GetScriptState()
++      ->GetContext()
++      ->GetMicrotaskQueue()
++      ->PerformCheckpoint(context.GetScriptState()->GetIsolate());
++  run_loop.Run();
++
++  // The re-entrant RequestAvailability call added 'availability' back to
++  // listener->availabilities.
++  state_->UpdateAvailability(url1_, ScreenAvailability::AVAILABLE);
++  state_->RemoveObserver(availability);
++}
++
+ }  // namespace blink

@@ -14,7 +14,7 @@ if (process.argv.includes('--app-enable-sandbox')) {
 let currentWindowSandboxed = false;
 
 app.whenReady().then(() => {
-  function testWindow (isSandboxed, callback) {
+  function testWindow(isSandboxed, callback) {
     currentWindowSandboxed = isSandboxed;
     const currentWindow = new BrowserWindow({
       show: false,
@@ -51,9 +51,14 @@ app.whenReady().then(() => {
     testWindow();
   });
 
-  function finish () {
-    if (connected && argv.sandbox != null && argv.noSandbox != null &&
-        argv.noSandboxDevtools != null && argv.sandboxDevtools != null) {
+  function finish() {
+    if (
+      connected &&
+      argv.sandbox != null &&
+      argv.noSandbox != null &&
+      argv.noSandboxDevtools != null &&
+      argv.sandboxDevtools != null
+    ) {
       client.once('end', () => {
         app.exit(0);
       });
@@ -61,7 +66,8 @@ app.whenReady().then(() => {
     }
   }
 
-  const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
+  const socketPath =
+    process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
   const client = net.connect(socketPath, () => {
     connected = true;
     finish();

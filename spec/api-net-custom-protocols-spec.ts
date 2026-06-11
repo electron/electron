@@ -16,55 +16,69 @@ describe('net module custom protocols', () => {
   });
 
   it('can make requests to custom protocols', async () => {
-    protocol.registerStringProtocol('electron-test', (req, cb) => { cb('hello ' + req.url); });
+    protocol.registerStringProtocol('electron-test', (req, cb) => {
+      cb('hello ' + req.url);
+    });
     defer(() => {
       protocol.unregisterProtocol('electron-test');
     });
-    const body = await net.fetch('electron-test://foo').then(r => r.text());
+    const body = await net.fetch('electron-test://foo').then((r) => r.text());
     expect(body).to.equal('hello electron-test://foo');
   });
 
   it('runs through intercept handlers', async () => {
-    protocol.interceptStringProtocol('http', (req, cb) => { cb('hello ' + req.url); });
+    protocol.interceptStringProtocol('http', (req, cb) => {
+      cb('hello ' + req.url);
+    });
     defer(() => {
       protocol.uninterceptProtocol('http');
     });
-    const body = await net.fetch('http://foo').then(r => r.text());
+    const body = await net.fetch('http://foo').then((r) => r.text());
     expect(body).to.equal('hello http://foo/');
   });
 
   it('file: runs through intercept handlers', async () => {
-    protocol.interceptStringProtocol('file', (req, cb) => { cb('hello ' + req.url); });
+    protocol.interceptStringProtocol('file', (req, cb) => {
+      cb('hello ' + req.url);
+    });
     defer(() => {
       protocol.uninterceptProtocol('file');
     });
-    const body = await net.fetch('file://foo').then(r => r.text());
+    const body = await net.fetch('file://foo').then((r) => r.text());
     expect(body).to.equal('hello file://foo/');
   });
 
   it('can be redirected', async () => {
-    protocol.interceptStringProtocol('file', (req, cb) => { cb({ statusCode: 302, headers: { location: 'electron-test://bar' } }); });
+    protocol.interceptStringProtocol('file', (req, cb) => {
+      cb({ statusCode: 302, headers: { location: 'electron-test://bar' } });
+    });
     defer(() => {
       protocol.uninterceptProtocol('file');
     });
-    protocol.registerStringProtocol('electron-test', (req, cb) => { cb('hello ' + req.url); });
+    protocol.registerStringProtocol('electron-test', (req, cb) => {
+      cb('hello ' + req.url);
+    });
     defer(() => {
       protocol.unregisterProtocol('electron-test');
     });
-    const body = await net.fetch('file://foo').then(r => r.text());
+    const body = await net.fetch('file://foo').then((r) => r.text());
     expect(body).to.equal('hello electron-test://bar');
   });
 
   it('can be redirected from http to a custom scheme', async () => {
-    protocol.interceptStringProtocol('http', (req, cb) => { cb({ statusCode: 302, headers: { location: 'electron-test://bar' } }); });
+    protocol.interceptStringProtocol('http', (req, cb) => {
+      cb({ statusCode: 302, headers: { location: 'electron-test://bar' } });
+    });
     defer(() => {
       protocol.uninterceptProtocol('http');
     });
-    protocol.registerStringProtocol('electron-test', (req, cb) => { cb('hello ' + req.url); });
+    protocol.registerStringProtocol('electron-test', (req, cb) => {
+      cb('hello ' + req.url);
+    });
     defer(() => {
       protocol.unregisterProtocol('electron-test');
     });
-    const body = await net.fetch('http://foo').then(r => r.text());
+    const body = await net.fetch('http://foo').then((r) => r.text());
     expect(body).to.equal('hello electron-test://bar');
   });
 
@@ -76,7 +90,7 @@ describe('net module custom protocols', () => {
     defer(() => {
       protocol.uninterceptProtocol('file');
     });
-    const body = await net.fetch('file:///redirect-me').then(r => r.text());
+    const body = await net.fetch('file:///redirect-me').then((r) => r.text());
     expect(body).to.equal('redirected-to file:///target');
   });
 
@@ -88,7 +102,9 @@ describe('net module custom protocols', () => {
     defer(() => {
       protocol.unregisterProtocol('electron-test');
     });
-    await expect(net.fetch('electron-test://redirect', { redirect: 'error' })).to.eventually.be.rejectedWith('Attempted to redirect, but redirect policy was \'error\'');
+    await expect(net.fetch('electron-test://redirect', { redirect: 'error' })).to.eventually.be.rejectedWith(
+      "Attempted to redirect, but redirect policy was 'error'"
+    );
   });
 
   it('a 307 redirected POST request preserves the body', async () => {

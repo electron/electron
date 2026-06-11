@@ -44,7 +44,9 @@ const defaultOptions = [
 // change it back when done.
 const resetPackageJson = ({ useESM }) => {
   // This won't always exist in CI.
-  if (!fs.existsSync(ROOT_PACKAGE_JSON)) { return; }
+  if (!fs.existsSync(ROOT_PACKAGE_JSON)) {
+    return;
+  }
 
   const packageJson = JSON.parse(fs.readFileSync(ROOT_PACKAGE_JSON, 'utf-8'));
   packageJson.type = useESM ? 'module' : 'commonjs';
@@ -61,15 +63,12 @@ const getCustomOptions = () => {
   }
 
   // Necessary or Node.js will try to run from out/Release/node.
-  customOptions = customOptions.concat([
-    '--shell',
-    utils.getAbsoluteElectronExec()
-  ]);
+  customOptions = customOptions.concat(['--shell', utils.getAbsoluteElectronExec()]);
 
   return customOptions;
 };
 
-async function main () {
+async function main() {
   // Optionally validate that all disabled specs still exist.
   if (args.validateDisabled) {
     const missing = [];
@@ -110,13 +109,12 @@ async function main () {
     if (JUNIT_DIR) {
       fs.mkdirSync(JUNIT_DIR);
       const converterStream = require('tap-xunit')();
-      fs.createReadStream(
-        path.resolve(NODE_DIR, TAP_FILE_NAME)
-      ).pipe(converterStream).pipe(
-        fs.createWriteStream(path.resolve(JUNIT_DIR, 'nodejs.xml'))
-      ).on('close', () => {
-        process.exit(testCode);
-      });
+      fs.createReadStream(path.resolve(NODE_DIR, TAP_FILE_NAME))
+        .pipe(converterStream)
+        .pipe(fs.createWriteStream(path.resolve(JUNIT_DIR, 'nodejs.xml')))
+        .on('close', () => {
+          process.exit(testCode);
+        });
     }
   });
 }

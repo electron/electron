@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Max Ihlenfeldt <max@igalia.com>
+Date: Mon, 8 Jun 2026 20:27:52 -0700
+Subject: [M144-LTS] wayland: Fix UAF/dangling ptr in
+ ReleasePressedPointerButtons()
+
+Dispatching the event may destroy the window, and if we release multiple
+buttons we use a freed/dangling pointer. Fix this by using a weak
+pointer.
+
+(cherry picked from commit edce928690cb0bbca49e411fc88b8293dcd9dc8a)
+
+Fixed: 516501794
+Change-Id: I85b0ab643896cc80d9248f4ae18300125fa7167b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7880226
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Max Ihlenfeldt <max@igalia.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1639248}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7898875
+Reviewed-by: Artem Sumaneev <asumaneev@google.com>
+Owners-Override: Artem Sumaneev <asumaneev@google.com>
+Reviewed-by: Max Ihlenfeldt <max@igalia.com>
+Commit-Queue: Gyuyoung Kim (xWF) <qkim@google.com>
+Cr-Commit-Position: refs/branch-heads/7559@{#4972}
+Cr-Branched-From: 223dfbac1c7542a06b422390d954afe5b560b607-refs/heads/main@{#1552494}
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_event_source.cc b/ui/ozone/platform/wayland/host/wayland_event_source.cc
+index 4e421ccbd36d4efebd43c9def5b575b7d8d5e336..7b04c1ef004fbe3041f4d3307c77d15a06fd5586 100644
+--- a/ui/ozone/platform/wayland/host/wayland_event_source.cc
++++ b/ui/ozone/platform/wayland/host/wayland_event_source.cc
+@@ -391,8 +391,11 @@ void WaylandEventSource::OnPointerButtonEvent(
+     return;
+   }
+ 
+-  WaylandWindow* prev_focused_window =
+-      window_manager_->GetCurrentPointerFocusedWindow();
++  // Dispatching the event may delete the previously focused window.
++  base::WeakPtr<WaylandWindow> prev_focused_window =
++      window_manager_->GetCurrentPointerFocusedWindow()
++          ? window_manager_->GetCurrentPointerFocusedWindow()->AsWeakPtr()
++          : nullptr;
+   if (window) {
+     window_manager_->SetPointerFocusedWindow(window);
+   }
+@@ -430,10 +433,11 @@ void WaylandEventSource::OnPointerButtonEvent(
+   }
+ }
+ 
+-void WaylandEventSource::OnPointerButtonEventInternal(WaylandWindow* window,
+-                                                      EventType type) {
++void WaylandEventSource::OnPointerButtonEventInternal(
++    base::WeakPtr<WaylandWindow> window,
++    EventType type) {
+   if (window) {
+-    window_manager_->SetPointerFocusedWindow(window);
++    window_manager_->SetPointerFocusedWindow(window.get());
+   }
+ }
+ 
+@@ -939,10 +943,14 @@ void WaylandEventSource::ReleasePressedPointerButtons(
+     return;
+   }
+ 
++  // Dispatching the event may delete the window.
++  base::WeakPtr<WaylandWindow> window_weak =
++      window ? window->AsWeakPtr() : nullptr;
+   for (const auto& [button, name] : kMouseButtonToStringMap) {
+     if (button & pointer_flags_) {
+       VLOG(1) << "Synthesizing pointer release for: " << name;
+-      OnPointerButtonEvent(EventType::kMouseReleased, button, timestamp, window,
++      OnPointerButtonEvent(EventType::kMouseReleased, button, timestamp,
++                           window_weak.get(),
+                            wl::EventDispatchPolicy::kImmediate,
+                            /*allow_release_of_unpressed_button=*/false,
+                            /*is_synthesized=*/true);
+diff --git a/ui/ozone/platform/wayland/host/wayland_event_source.h b/ui/ozone/platform/wayland/host/wayland_event_source.h
+index f39137fef2ed59b4a798f347961455596e51302f..92182c78cc42131416d67e191ad383490cc292be 100644
+--- a/ui/ozone/platform/wayland/host/wayland_event_source.h
++++ b/ui/ozone/platform/wayland/host/wayland_event_source.h
+@@ -237,7 +237,8 @@ class WaylandEventSource : public PlatformEventSource,
+   gfx::Vector2dF ComputeFlingVelocity();
+ 
+   // Wrap up method to support async pointer down/up event processing.
+-  void OnPointerButtonEventInternal(WaylandWindow* window, EventType type);
++  void OnPointerButtonEventInternal(base::WeakPtr<WaylandWindow> window,
++                                    EventType type);
+ 
+   // Wrap up method to support async touch release processing.
+   void OnTouchReleaseInternal(PointerId id);

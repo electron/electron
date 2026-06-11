@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen Nusko <nuskos@chromium.org>
+Date: Sun, 29 Mar 2026 23:45:15 -0700
+Subject: [MiracleFix] Replace DCHECK with CHECK in media/base and media/mojo.
+
+These assertions are critical for maintaining invariants and should
+cause a crash in all build configurations if violated.
+
+This is a speculative hardening based on the linked bug.
+
+Bug: 495259842
+Change-Id: I44509ce9b18f994d748bc42255ffa85ca3496abc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7695435
+Auto-Submit: Stephen Nusko <nuskos@chromium.org>
+Reviewed-by: Colin Blundell <blundell@chromium.org>
+Reviewed-by: Takashi Toyoshima <toyoshim@chromium.org>
+Commit-Queue: Stephen Nusko <nuskos@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1606907}
+
+diff --git a/media/base/decrypt_config.cc b/media/base/decrypt_config.cc
+index 2b889ba1b15dd515f2cba7d98220c03e3076769c..d5b560be082d05f2cb588c32f1e31f260c902f0b 100644
+--- a/media/base/decrypt_config.cc
++++ b/media/base/decrypt_config.cc
+@@ -47,12 +47,12 @@ DecryptConfig::DecryptConfig(
+       subsamples_(subsamples),
+       encryption_pattern_(std::move(encryption_pattern)) {
+   // Unencrypted blocks should not have a DecryptConfig.
+-  DCHECK_NE(encryption_scheme_, EncryptionScheme::kUnencrypted);
++  CHECK_NE(encryption_scheme_, EncryptionScheme::kUnencrypted);
+   CHECK_GT(key_id_.size(), 0u);
+   CHECK_EQ(iv_.size(), static_cast<size_t>(DecryptConfig::kDecryptionKeySize));
+ 
+   // Pattern not allowed for non-'cbcs' schemes.
+-  DCHECK(encryption_scheme_ == EncryptionScheme::kCbcs || !encryption_pattern_);
++  CHECK(encryption_scheme_ == EncryptionScheme::kCbcs || !encryption_pattern_);
+ }
+ 
+ DecryptConfig::~DecryptConfig() = default;
+diff --git a/media/mojo/common/media_type_converters.cc b/media/mojo/common/media_type_converters.cc
+index ea13051529d4a41ea0f659bd45d5465ab764ebf6..33cf43104e31a23c203e9038286928a53acf901f 100644
+--- a/media/mojo/common/media_type_converters.cc
++++ b/media/mojo/common/media_type_converters.cc
+@@ -43,6 +43,17 @@ std::unique_ptr<media::DecryptConfig>
+ TypeConverter<std::unique_ptr<media::DecryptConfig>,
+               media::mojom::DecryptConfigPtr>::
+     Convert(const media::mojom::DecryptConfigPtr& input) {
++  // Required invariants by the DecryptConfig constructor, to prevent a renderer
++  // from crashing the GPU we check them here as well and gracefully return
++  // nullptr instead.
++  if (input->encryption_scheme == media::EncryptionScheme::kUnencrypted) {
++    return nullptr;
++  }
++  // Pattern not allowed for non-'cbcs' schemes.
++  if (input->encryption_scheme != media::EncryptionScheme::kCbcs &&
++      input->encryption_pattern) {
++    return nullptr;
++  }
+   return std::make_unique<media::DecryptConfig>(
+       input->encryption_scheme, input->key_id, input->iv, input->subsamples,
+       input->encryption_pattern);
+@@ -203,8 +214,10 @@ TypeConverter<media::mojom::AudioBufferPtr, media::AudioBuffer>::Convert(
+     // `media::AudioBuffer`.
+     // `data_size()` refers to the amount of memory really used by the audio
+     // data. The rest is padding, which we don't need to copy.
+-    DCHECK_GT(input.data_size(), 0u);
+-    DCHECK_GE(input.data_size(), input.data_->span().size());
++    // Safe to CHECK here since this is into Mojo not From mojo (and thus not
++    // untrusted input).
++    CHECK_GT(input.data_size(), 0u);
++    CHECK_GE(input.data_size(), input.data_->span().size());
+     auto buffer_start = input.data_->span().begin();
+     auto buffer_end = buffer_start + input.data_size();
+     buffer->data.assign(buffer_start, buffer_end);
+@@ -252,7 +265,8 @@ TypeConverter<scoped_refptr<media::AudioBuffer>, media::mojom::AudioBufferPtr>::
+       base::CheckMul(input->frame_count,
+                      base::CheckMul(input->channel_count, bytes_per_channel))
+           .ValueOrDefault(0u);
+-  if (input->data.size() < min_data_size) {
++  if (input->data.size() < min_data_size ||
++      input->data.size() % input->channel_count != 0) {
+     DLOG(ERROR) << "Received invalid AudioBuffer, replace it with EOS.";
+     return media::AudioBuffer::CreateEOSBuffer();
+   }
+@@ -261,7 +275,6 @@ TypeConverter<scoped_refptr<media::AudioBuffer>, media::mojom::AudioBufferPtr>::
+   // one in the case of interleaved data.
+   std::vector<const uint8_t*> channel_ptrs(input->channel_count, nullptr);
+   const size_t size_per_channel = input->data.size() / input->channel_count;
+-  DCHECK_EQ(0u, input->data.size() % input->channel_count);
+   for (int i = 0; i < input->channel_count; ++i) {
+     channel_ptrs[i] = UNSAFE_TODO(input->data.data() + i * size_per_channel);
+   }
