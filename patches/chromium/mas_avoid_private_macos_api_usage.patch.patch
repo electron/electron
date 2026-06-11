@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ea4954e2e752efbc9ce72509d65c07a9e9b29ec3..651e99d1a2dc96ad3c862a774138487563c4c89f 100644
+index 24f26b9acdfad071b6f45c1cd50b3b96a1c60d5d..522375283dce1b2e7abb4c3546f706bcbd2aa69e 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -1209,7 +1209,7 @@ index ea4954e2e752efbc9ce72509d65c07a9e9b29ec3..651e99d1a2dc96ad3c862a7741384875
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2089,6 +2092,7 @@ test("content_browsertests") {
+@@ -2090,6 +2093,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index ea4954e2e752efbc9ce72509d65c07a9e9b29ec3..651e99d1a2dc96ad3c862a7741384875
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3487,6 +3491,7 @@ test("content_unittests") {
+@@ -3488,6 +3492,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1250,10 +1250,10 @@ index 448f1df3e1c1a2a1a9c1c37549910101c2c092bf..01027720a432e6f1bd9830b71ae7201f
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index b71deca88f60904cd9b500a0c8f2d3d576979164..6defe5e0ccd0dc20bee280b1951735e4f5ec961f 100644
+index 8940cda1ea6211df84da098078a1f90c66666013..335e42c54e5d6a9f591065519443e99c8bc49b91 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -39,7 +39,9 @@
+@@ -40,7 +40,9 @@
  #include "device/bluetooth/bluetooth_discovery_session_outcome.h"
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
@@ -1263,15 +1263,15 @@ index b71deca88f60904cd9b500a0c8f2d3d576979164..6defe5e0ccd0dc20bee280b1951735e4
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -53,6 +55,7 @@
+@@ -54,6 +56,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
 +#endif
  
- // A simple helper class that forwards any Bluetooth device connect notification
- // to its wrapped |_adapter|.
-@@ -176,8 +179,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+ namespace device {
+ class BluetoothDevicesConnectListenerBridge;
+@@ -237,8 +240,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -1282,7 +1282,7 @@ index b71deca88f60904cd9b500a0c8f2d3d576979164..6defe5e0ccd0dc20bee280b1951735e4
        device_paired_status_callback_(
            base::BindRepeating(&IsDeviceSystemPaired)) {
  }
-@@ -328,8 +333,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -399,8 +404,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
