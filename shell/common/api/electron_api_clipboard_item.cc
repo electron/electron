@@ -87,10 +87,17 @@ void ResolveAsBuffer(gin_helper::Promise<v8::Local<v8::Value>> promise,
 
 void ResolveAsBuffer(gin_helper::Promise<v8::Local<v8::Value>> promise,
                      const std::string& bytes) {
+  return ResolveAsBuffer(std::move(promise), base::as_byte_span(bytes));
+}
+
+void ResolveAsBookmark(gin_helper::Promise<v8::Local<v8::Value>> promise,
+                       const electron::api::BookmarkInfo& info) {
   v8::Isolate* const isolate = promise.isolate();
   v8::HandleScope scope{isolate};
-  promise.Resolve(electron::Buffer::Copy(isolate, base::as_byte_span(bytes))
-                      .ToLocalChecked());
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
+  dict.Set("title", info.title);
+  dict.Set("url", info.url);
+  promise.Resolve(dict.GetHandle());
 }
 
 // Look up `format_string` in Chromium's web-custom-format mapping, then
@@ -134,7 +141,7 @@ v8::Local<v8::Promise> ReadMime(ui::ClipboardBuffer buffer,
 
   // W3C "web "-prefixed custom formats — preserve the bytes verbatim
   // through the raw read path so payloads survive byte-for-byte.
-  if (base::StartsWith(mime, ui::kWebClipboardFormatPrefix)) {
+  if (mime.starts_with(ui::kWebClipboardFormatPrefix)) {
     ReadRawAndResolve(std::move(promise), buffer, mime);
     return handle;
   }
@@ -196,7 +203,7 @@ v8::Local<v8::Promise> ReadMime(ui::ClipboardBuffer buffer,
     return handle;
   }
 
-  if (base::StartsWith(mime, cu::kImagePrefix)) {
+  if (mime.starts_with(cu::kImagePrefix)) {
     // `ReadPng` schedules PNG decoding on the thread pool, which requires
     // the browser to be ready.
     if (!electron::Browser::Get()->is_ready()) {
@@ -242,12 +249,9 @@ v8::Local<v8::Promise> ReadMime(ui::ClipboardBuffer buffer,
         base::BindOnce(
             [](gin_helper::Promise<v8::Local<v8::Value>> promise,
                ui::ClipboardUrlInfo url_info) {
-              v8::Isolate* iso = promise.isolate();
-              v8::HandleScope scope{iso};
-              auto dict = gin_helper::Dictionary::CreateEmpty(iso);
-              dict.Set("title", url_info.title);
-              dict.Set("url", url_info.url.spec());
-              promise.Resolve(dict.GetHandle());
+              ResolveAsBookmark(std::move(promise),
+                                electron::api::BookmarkInfo{
+                                    url_info.title, url_info.url.spec()});
             },
             std::move(promise)));
     return handle;
@@ -315,13 +319,28 @@ ClipboardItem::ClipboardItem(gin::Arguments* args)
 
   for (uint32_t i = 0; i < keys->Length(); ++i) {
     v8::Local<v8::Value> key, value;
-    if (!keys->Get(context, i).ToLocal(&key))
-      continue;
-    if (!data->Get(context, key).ToLocal(&value))
-      continue;
+    if (!keys->Get(context, i).ToLocal(&key)) {
+      isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
+          isolate,
+          "Failed to construct 'ClipboardItem': unable to read an items "
+          "object key.")));
+      return;
+    }
+    if (!data->Get(context, key).ToLocal(&value)) {
+      isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
+          isolate,
+          "Failed to construct 'ClipboardItem': unable to read the payload "
+          "for a MIME entry.")));
+      return;
+    }
     std::string mime;
-    if (!gin::ConvertFromV8(isolate, key, &mime))
-      continue;
+    if (!gin::ConvertFromV8(isolate, key, &mime)) {
+      isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
+          isolate,
+          "Failed to construct 'ClipboardItem': MIME type keys must be "
+          "strings.")));
+      return;
+    }
 
     if (mime == electron::api::clipboard_util::kBookmarkMime) {
       // Bookmark MIME takes a structured `{ title, url }` object.
@@ -450,11 +469,11 @@ void ClipboardItem::WriteTo(ui::ScopedClipboardWriter& writer) const {
     // std::vector<uint8_t> — raw byte payload.
     const auto& bytes = std::get<std::vector<uint8_t>>(payload);
     const base::span<const uint8_t> span{bytes};
-    if (base::StartsWith(mime, ui::kWebClipboardFormatPrefix)) {
+    if (mime.starts_with(ui::kWebClipboardFormatPrefix)) {
       WriteWebCustomData(writer, mime, span);
     } else if (auto os_format = clipboard_util::ParseOSClipboardFormat(mime)) {
       WriteRawData(writer, *os_format, span);
-    } else if (base::StartsWith(mime, clipboard_util::kImagePrefix)) {
+    } else if (mime.starts_with(clipboard_util::kImagePrefix)) {
       // Decode the supplied PNG/JPEG bytes via the same auto-detecting
       // helper `nativeImage.createFromBuffer` uses.
       gfx::ImageSkia image_skia;
@@ -477,9 +496,7 @@ void ClipboardItem::WriteTo(ui::ScopedClipboardWriter& writer) const {
 }
 
 v8::Local<v8::Promise> ClipboardItem::GetType(const std::string& mime,
-                                              gin::Arguments* args) {
-  v8::Isolate* const isolate = args->isolate();
-
+                                              v8::Isolate* const isolate) {
   // Read-side: delegate to the per-MIME async read path bound to this
   // item's source buffer. No v8 closures are captured at `clipboard.read()`
   // time — the platform clipboard is queried lazily here.
@@ -503,10 +520,7 @@ v8::Local<v8::Promise> ClipboardItem::GetType(const std::string& mime,
       [&](const auto& payload) {
         using T = std::decay_t<decltype(payload)>;
         if constexpr (std::is_same_v<T, BookmarkInfo>) {
-          auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-          dict.Set("title", payload.title);
-          dict.Set("url", payload.url);
-          promise.Resolve(dict.GetHandle());
+          ResolveAsBookmark(std::move(promise), payload);
         } else if constexpr (std::is_same_v<T, std::u16string>) {
           promise.Resolve(gin::ConvertToV8(isolate, payload));
         } else {  // std::vector<uint8_t>

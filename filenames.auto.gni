@@ -403,6 +403,7 @@ auto_filenames = {
     "../third_party/electron_node/src/tracing/agent.h",
     "../third_party/electron_node/src/tracing/node_trace_buffer.h",
     "../third_party/electron_node/src/tracing/node_trace_writer.h",
+    "../third_party/electron_node/src/tracing/trace_categories.h",
     "../third_party/electron_node/src/tracing/trace_event.h",
     "../third_party/electron_node/src/tracing/trace_event_common.h",
     "../third_party/electron_node/src/tracing/traced_value.h",
