@@ -82,7 +82,7 @@ class Clipboard {
   // Async; backed by Chromium's `Clipboard::GetAllAvailableFormats`.
   static v8::Local<v8::Promise> Has(ui::ClipboardBuffer buffer,
                                     const std::string& format_string,
-                                    gin::Arguments* args);
+                                    v8::Isolate* isolate);
 
   // Synchronous in Chromium (`ui::Clipboard::Clear`).
   static void Clear(ui::ClipboardBuffer buffer);
@@ -93,12 +93,12 @@ class Clipboard {
   // `ClipboardItem::GetType`, which is where the per-MIME read dispatch
   // table now lives.
   static v8::Local<v8::Promise> Read(ui::ClipboardBuffer buffer,
-                                     gin::Arguments* args);
+                                     v8::Isolate* isolate);
 
   // Fast path for the common `clipboard.readText()` call so it avoids the
   // per-MIME dispatch overhead used by `ClipboardItem::GetType`.
   static v8::Local<v8::Promise> ReadText(ui::ClipboardBuffer buffer,
-                                         gin::Arguments* args);
+                                         v8::Isolate* isolate);
 
   // Atomic write of every MIME-keyed entry across the supplied
   // `ClipboardItem`s. gin auto-converts the JS array via the built-in
@@ -113,13 +113,13 @@ class Clipboard {
   static v8::Local<v8::Promise> Write(
       ui::ClipboardBuffer buffer,
       const std::vector<cppgc::Persistent<ClipboardItem>>& items,
-      gin::Arguments* args);
+      v8::Isolate* isolate);
 
   // Convenience wrapper that funnels through `Write` so the public
   // `writeText` API uses the same atomic-write path.
   static v8::Local<v8::Promise> WriteText(ui::ClipboardBuffer buffer,
                                           const std::u16string& text,
-                                          gin::Arguments* args);
+                                          v8::Isolate* isolate);
 
   // The macOS find pasteboard is a separate pasteboard and the backing
   // Cocoa API is synchronous, so these stay synchronous as well.

@@ -100,7 +100,7 @@ The four read/write methods now all return Promises, matching
   constructor. Each payload value is `Buffer | string | Object` (a `string` is
   committed as UTF-8 and a `Buffer` is committed verbatim; resolve any
   `Blob` or `Promise` payload to one of those first). The
-  `electron application/bookmark` MIME type instead takes a
+  `electron application/bookmark` custom format instead takes a
   `{ title, url }` object. All entries in a single `write()` call are
   committed atomically.
 * `clipboard.readText()` returns `Promise<string>`.
@@ -110,7 +110,7 @@ The four read/write methods now all return Promises, matching
 underlying Chromium clipboard API is asynchronous. Additionally, instead
 of taking a format, `clipboard.has()` accepts a MIME type. To check for
 a raw format, eg `public/utf8-plain-text`, use the `electron application/osclipboard`
-MIME type (`electron application/osclipboard;format="public/utf8-plain-text"`).
+custom format (`electron application/osclipboard;format="public/utf8-plain-text"`).
 
 The narrowly-scoped helpers (`availableFormats`, `readBookmark`,
 `writeBookmark`, `readBuffer`, `writeBuffer`, `readFindText`,
@@ -129,10 +129,10 @@ now reached through a new `clipboard.selection` sub-namespace.
   | `clipboard.has(format, 'selection')` _Linux_ | `clipboard.selection.has(mimetype)` (returns `Promise<boolean>`) |
   | `clipboard.read()` | `clipboard.read()` now returns `Promise<ClipboardItem[]>` |
   | `clipboard.read('selection')` _Linux_ | `clipboard.selection.read()` (returns `Promise<ClipboardItem[]>`) |
-  | `clipboard.readBookmark()` | `clipboard.read()` with `electron application/bookmark` MIME type |
-  | `clipboard.readBuffer(format)` | `clipboard.read()` with `electron application/osclipboard;format="..."` MIME type |
-  | `clipboard.readBuffer('selection')` _Linux_ | `clipboard.selection.read()` with `electron application/osclipboard;format="..."` MIME type |
-  | `clipboard.readFindText()` _macOS_ | `clipboard.read()` with `electron application/findtext` MIME type |
+  | `clipboard.readBookmark()` | `clipboard.read()` with `electron application/bookmark` custom format |
+  | `clipboard.readBuffer(format)` | `clipboard.read()` with `electron application/osclipboard;format="..."` custom format |
+  | `clipboard.readBuffer('selection')` _Linux_ | `clipboard.selection.read()` with `electron application/osclipboard;format="..."` custom format |
+  | `clipboard.readFindText()` _macOS_ | `clipboard.read()` with `electron application/findtext` custom format |
   | `clipboard.readHTML([type])` | `clipboard.read()` with `text/html` MIME type |
   | `clipboard.readImage([type])` | `clipboard.read()` with `image/*` MIME type |
   | `clipboard.readRTF([type])` | `clipboard.read()` with `text/rtf` MIME type |
@@ -140,10 +140,10 @@ now reached through a new `clipboard.selection` sub-namespace.
   | `clipboard.readText('selection')` _Linux_ | `clipboard.selection.readText()` (returns `Promise<string>`) |
   | `clipboard.write(data)` | `clipboard.write([new ClipboardItem({ [mime]: Buffer / string })])` — accepts an array of `ClipboardItem` objects (each with a MIME-keyed `data` record) and returns `Promise<void>` |
   | `clipboard.write(data, 'selection')` _Linux_ | `clipboard.selection.write([new ClipboardItem({ [mime]: Buffer / string })])` (returns `Promise<void>`) |
-  | `clipboard.writeBookmark(title, url[, type])` | `clipboard.write()` with `electron application/bookmark` MIME type |
-  | `clipboard.writeBuffer(format, buffer[, type])` | `clipboard.write()` with `electron application/osclipboard;format="..."` MIME type |
-  | `clipboard.writeBuffer(format, buffer, 'selection')` _Linux_ | `clipboard.selection.write()` with `electron application/osclipboard;format="..."` MIME type |
-  | `clipboard.writeFindText(text)` _macOS_ | `clipboard.write()` with `electron application/findtext` MIME type |
+  | `clipboard.writeBookmark(title, url[, type])` | `clipboard.write()` with `electron application/bookmark` custom format |
+  | `clipboard.writeBuffer(format, buffer[, type])` | `clipboard.write()` with `electron application/osclipboard;format="..."` custom format |
+  | `clipboard.writeBuffer(format, buffer, 'selection')` _Linux_ | `clipboard.selection.write()` with `electron application/osclipboard;format="..."` custom format |
+  | `clipboard.writeFindText(text)` _macOS_ | `clipboard.write()` with `electron application/findtext` custom format |
   | `clipboard.writeHTML(markup[, type])` | `clipboard.write()` with `text/html` MIME type |
   | `clipboard.writeImage(image[, type])` | `clipboard.write()` with `image/*` MIME type |
   | `clipboard.writeRTF(text[, type])` | `clipboard.write()` with `text/rtf` MIME type |

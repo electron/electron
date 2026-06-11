@@ -167,7 +167,7 @@ void EnumerateAvailableTypes(ui::ClipboardBuffer buffer,
                     // normally produced) is exposed verbatim; everything
                     // else is wrapped in the osclipboard MIME.
                     std::string mime =
-                        base::StartsWith(name, ui::kWebClipboardFormatPrefix)
+                        name.starts_with(ui::kWebClipboardFormatPrefix)
                             ? name
                             : BuildOSClipboardFormat(name);
                     if (std::find(types.begin(), types.end(), mime) ==
@@ -240,8 +240,7 @@ std::string ResolvePlatformFormatName(const ui::ClipboardFormatType& fmt) {
 // pasteboard pseudo-MIME.
 v8::Local<v8::Promise> Clipboard::Has(ui::ClipboardBuffer buffer,
                                       const std::string& format_string,
-                                      gin::Arguments* const args) {
-  v8::Isolate* const isolate = args->isolate();
+                                      v8::Isolate* const isolate) {
   gin_helper::Promise<bool> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -258,8 +257,7 @@ v8::Local<v8::Promise> Clipboard::Has(ui::ClipboardBuffer buffer,
 }
 
 v8::Local<v8::Promise> Clipboard::ReadText(ui::ClipboardBuffer buffer,
-                                           gin::Arguments* const args) {
-  v8::Isolate* const isolate = args->isolate();
+                                           v8::Isolate* const isolate) {
   gin_helper::Promise<std::u16string> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -294,8 +292,7 @@ v8::Local<v8::Promise> Clipboard::ReadText(ui::ClipboardBuffer buffer,
 // talks to `ui::Clipboard` on demand — no v8 closures are captured at
 // `clipboard.read()` time.
 v8::Local<v8::Promise> Clipboard::Read(ui::ClipboardBuffer buffer,
-                                       gin::Arguments* const args) {
-  v8::Isolate* const isolate = args->isolate();
+                                       v8::Isolate* const isolate) {
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -336,8 +333,7 @@ v8::Local<v8::Promise> Clipboard::Read(ui::ClipboardBuffer buffer,
 v8::Local<v8::Promise> Clipboard::Write(
     ui::ClipboardBuffer buffer,
     const std::vector<cppgc::Persistent<ClipboardItem>>& items,
-    gin::Arguments* const args) {
-  v8::Isolate* const isolate = args->isolate();
+    v8::Isolate* const isolate) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
@@ -371,8 +367,7 @@ v8::Local<v8::Promise> Clipboard::Write(
 
 v8::Local<v8::Promise> Clipboard::WriteText(ui::ClipboardBuffer buffer,
                                             const std::u16string& text,
-                                            gin::Arguments* const args) {
-  v8::Isolate* const isolate = args->isolate();
+                                            v8::Isolate* const isolate) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 

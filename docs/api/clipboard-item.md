@@ -31,7 +31,7 @@ Process: [Main](../glossary.md#main-process)
   constructor's `items` parameter. The accepted value type depends on the
   MIME type. Text-typed MIME types (`text/plain`, `text/html`,
   `text/rtf`, and `electron application/findtext`) accept a `string`. The
-  `electron application/bookmark` MIME type accepts a [Bookmark](structures/bookmark.md) object. All other MIME types accept a
+  `electron application/bookmark` custom format accepts a [Bookmark](structures/bookmark.md) object. All other MIME types accept a
   [`Buffer`](https://nodejs.org/api/buffer.html) of the raw payload
   bytes.
 
@@ -43,7 +43,7 @@ types) before calling the constructor.
 
 ```js
 // Each `ClipboardItem` describes one clipboard entry with one or more
-// MIME-typed representations. The bookmark MIME type takes a structured
+// MIME-typed representations. The bookmark custom format takes a structured
 // `{ title, url }` object instead of a Buffer.
 const { clipboard, ClipboardItem, nativeImage } = require('electron')
 

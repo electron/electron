@@ -23,14 +23,14 @@ to [Buffer](https://nodejs.org/api/buffer.html) payloads.
 
 In addition to the standard MIME types (`text/plain`, `text/html`,
 `text/rtf`, `image/png`, `image/jpeg`, …), Electron exposes a small
-set of custom MIME types so the clipboard can carry desktop-specific
+set of custom formats so the clipboard can carry desktop-specific
 payloads. These follow the W3C
 [custom format proposal](https://github.com/w3c/editing/blob/gh-pages/docs/clipboard-pickling/explainer.md#custom-formats),
 using an `electron` prefix instead of `web` to avoid collisions. The
-custom MIME types Electron exposes are:
+custom formats Electron exposes are:
 
 * `electron application/bookmark` — a URL bookmark. Unlike every other
-  MIME type, its payload is a [Bookmark](structures/bookmark.md) object
+  MIME type/custom format, its payload is a [Bookmark](structures/bookmark.md) object
   on both the write and read sides rather than a `Buffer`, so
   `getType('electron application/bookmark')` resolves to
   `{ title: string, url: string }`.
@@ -41,11 +41,11 @@ custom MIME types Electron exposes are:
   platform format (e.g. `HTML Format` on Windows or
   `public.utf8-plain-text` on macOS). `clipboard.read()` also surfaces
   any platform clipboard format that has no standard MIME mapping under
-  this MIME type, so a raw OS format round-trips through the same string
+  this custom format, so a raw OS format round-trips through the same string
   on write and read.
 
 Beyond the well-known MIME types, both `clipboard.read()` and
-`clipboard.write()` accept arbitrary MIME types including MIME types starting with
+`clipboard.write()` accept arbitrary MIME types including custom formats starting with
 the `web` prefix (followed by a space, e.g. `web application/x.my-format`)
 that follow the W3C [web custom format proposal](https://github.com/w3c/editing/blob/gh-pages/docs/clipboard-pickling/explainer.md#custom-formats).
 
@@ -181,7 +181,7 @@ clipboard.write([
 Returns `Promise<boolean>` - A promise that resolves with `true` if the
 clipboard contains data of the specified `mimetype`, otherwise `false`.
 To check for a raw format, eg `public/utf8-plain-text`, use the `electron application/osclipboard`
-MIME type (`electron application/osclipboard;format="public/utf8-plain-text"`).
+custom format (`electron application/osclipboard;format="public/utf8-plain-text"`).
 
 ```js
 const { clipboard } = require('electron')

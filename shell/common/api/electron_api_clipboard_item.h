@@ -128,7 +128,7 @@ class ClipboardItem final : public gin::Wrappable<ClipboardItem>,
  private:
   // Exposed to JS via the prototype template.
   std::vector<std::string> GetTypes() const { return types_; }
-  v8::Local<v8::Promise> GetType(const std::string& mime, gin::Arguments* args);
+  v8::Local<v8::Promise> GetType(const std::string& mime, v8::Isolate* isolate);
 
   std::vector<std::string> types_;
   const bool is_read_side_;
