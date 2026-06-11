@@ -257,20 +257,20 @@ describe('debugger module', () => {
       w.webContents.debugger.attach();
       try {
         await w.webContents.debugger.sendCommand('Network.enable');
+        await w.webContents.debugger.sendCommand('Page.enable');
         await w.webContents.debugger.sendCommand('Target.setAutoAttach', {
           autoAttach: true,
           flatten: true,
           waitForDebuggerOnStart: false
         });
 
-        const pending = new Set([`${url}/style.css`, `${url}/script.js`]);
-        const sawSubresources = new Promise<void>((resolve) => {
+        const requestedUrls = new Set<string>();
+        const loadEvent = new Promise<void>((resolve) => {
           w.webContents.debugger.on('message', (_event, method, params) => {
-            if (method === 'Network.requestWillBeSent' && pending.has(params.request.url)) {
-              pending.delete(params.request.url);
-              if (pending.size === 0) {
-                resolve();
-              }
+            if (method === 'Network.requestWillBeSent') {
+              requestedUrls.add(params.request.url);
+            } else if (method === 'Page.loadEventFired') {
+              resolve();
             }
           });
         });
@@ -280,7 +280,9 @@ describe('debugger module', () => {
         // session here, dropping these subresource requests.
         await w.loadURL(`${url}/page`);
 
-        await sawSubresources;
+        await loadEvent;
+        expect(requestedUrls).to.include(`${url}/style.css`);
+        expect(requestedUrls).to.include(`${url}/script.js`);
       } finally {
         if (w.webContents.debugger.isAttached()) {
           w.webContents.debugger.detach();
