@@ -30,9 +30,8 @@ class SessionPreferences : public base::SupportsUserData::Data {
 
   bool HasServiceWorkerPreloadScript();
 
-  // Monotonic counter, bumped whenever the preload script registry changes.
-  // Used to skip redundant RendererStartupData pushes: a frame that already
-  // received the current generation would get an identical payload.
+  // Bumped whenever the preload script registry changes; used to skip
+  // redundant RendererStartupData pushes.
   uint64_t preload_generation() const { return preload_generation_; }
   void BumpPreloadGeneration() { ++preload_generation_; }
 

@@ -1952,11 +1952,8 @@ void WebContents::HandleNewRenderFrame(
   if (web_frame)
     web_frame->MaybeSetupMojoConnection();
 
-  // Push renderer startup data as soon as the frame exists so that a script
-  // context forced onto the frame's initial empty document — before the
-  // first navigation commits, or after it was cancelled — observes preload
-  // scripts + process info instead of null. ReadyToCommitNavigation pushes a
-  // fresh copy for every committed navigation.
+  // Push startup data as soon as the frame exists so a script context forced
+  // onto the initial empty document observes preload scripts + process info.
   MaybeSendRendererStartupData(render_frame_host);
 }
 
@@ -2273,13 +2270,10 @@ void WebContents::DidRedirectNavigation(
   EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
-// Pushes preload contents + process.env + helperExecPath over an associated
-// channel, so the renderer never has to ask. Called from two places:
-// HandleNewRenderFrame (so the frame's initial empty document has startup
-// data before any script context can be created on it) and
-// ReadyToCommitNavigation (ordered before CommitNavigation, so every
-// committed document observes a fresh copy — including preload scripts
-// registered after the frame was created).
+// Pushes preload contents + process info over the frame's associated channel
+// so the renderer never has to ask: once at frame creation (covers contexts
+// forced on the initial empty document) and again ahead of CommitNavigation
+// when the preload registry changed in between.
 void WebContents::MaybeSendRendererStartupData(
     content::NavigationHandle* navigation_handle) {
   if (!WebContentsPreferences::ShouldUseSandbox(web_contents()))
@@ -2300,12 +2294,8 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
-  // Skip when this frame already received the current preload-registry
-  // generation — normally from the frame-creation push moments ago — since
-  // the payload would be identical. Within a frame's lifetime the payload
-  // can only change through the registry (webPreferences.preload is fixed
-  // per WebContents); env / preload file contents are snapshotted at frame
-  // creation, which under RenderDocument is per-document anyway.
+  // Skip when this frame already holds the current preload-registry
+  // generation — the frame-creation push delivered an identical payload.
   content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
   if (!rfh)
     return;
@@ -2376,14 +2366,9 @@ void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
     }
   }
 
-  // GetRemoteAssociatedInterfaces() routes over the same channel as
-  // content.mojom.Frame (the navigation channel), so a push from
-  // ReadyToCommitNavigation is ordered before the CommitNavigation that the
-  // browser sends right after it returns, and a push from
-  // HandleNewRenderFrame is ordered before everything else on the frame. The
-  // renderer's ElectronApiServiceImpl — created in RenderFrameCreated, before
-  // any navigation — will have cached it by the time DidCreateScriptContext
-  // fires.
+  // Associated-channel ordering: a creation-time push lands before anything
+  // else on the frame, and a commit-time push lands before the
+  // CommitNavigation sent right after ReadyToCommitNavigation returns.
   mojo::AssociatedRemote<mojom::ElectronFrameStartup> frame_startup;
   rfh->GetRemoteAssociatedInterfaces()->GetInterface(&frame_startup);
   frame_startup->SetStartupData(std::move(data));

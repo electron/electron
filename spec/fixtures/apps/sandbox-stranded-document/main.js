@@ -1,12 +1,8 @@
-// Standalone repro for the sandboxed-renderer "startupData is null"
-// TypeError. See README.md for the production trigger this models.
-//
-// A main-process navigation guard (will-redirect + preventDefault) cancels
-// the first navigation before it commits, so the browser never pushes the
-// ElectronFrameStartup startup data and the WebContentsView is stranded on
-// its initial empty document. Anything that then forces a script context on
-// that document (here: a CDP debugger attach, or DevTools) runs the sandbox
-// bundle with binding.startupData === null.
+// Repro for the sandboxed-renderer "startupData is null" TypeError: a
+// main-process navigation guard cancels the first navigation before commit,
+// stranding the view on its initial empty document, then a forced script
+// context (CDP debugger or DevTools) runs the sandbox bundle. Startup data
+// is now pushed at frame creation, so PRELOAD-RAN logs instead of a throw.
 const { app, BaseWindow, WebContentsView } = require('electron');
 const http = require('node:http');
 const path = require('node:path');

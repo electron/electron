@@ -4667,14 +4667,10 @@ describe('BrowserWindow module', () => {
       });
 
       describe('initial empty document', () => {
-        // The ElectronFrameStartup startup data is pushed at frame creation
-        // and again ahead of every committed navigation, so even a script
-        // context forced onto a frame's initial empty document — before the
-        // first navigation commits, or after it was cancelled by a
-        // main-process navigation guard (will-redirect + preventDefault) —
-        // observes preload scripts. Regression test for
-        // "TypeError: Cannot destructure property 'preloadScripts' of
-        // 'binding.startupData' as it is null". A standalone repro lives in
+        // Startup data is pushed at frame creation, so a script context
+        // forced onto the initial empty document — racing or after cancelling
+        // the first navigation — runs preloads instead of throwing
+        // "Cannot destructure property 'preloadScripts'". Standalone repro:
         // spec/fixtures/apps/sandbox-stranded-document.
         let redirectServer: http.Server;
         let redirectServerUrl: string;
@@ -4744,11 +4740,6 @@ describe('BrowserWindow module', () => {
         });
 
         it('runs preloads on a context forced before the first navigation commits', async () => {
-          // A script context can be forced onto the frame's initial empty
-          // document while the first navigation is still pending — e.g.
-          // webFrameMain.executeJavaScript or a CDP client attaching at
-          // startup, racing a slow server. The frame-creation push must
-          // already have landed by then.
           const strandedPreload = path.join(fixtures, 'module', 'preload-stranded.js');
           const w = new BrowserWindow({
             show: false,

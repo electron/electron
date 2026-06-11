@@ -23,8 +23,8 @@ namespace electron::renderer_startup_data {
 namespace {
 
 // Browser process.env, captured fresh per push so a `process.env.FOO = ...`
-// in main is visible to the next renderer — same semantics as the legacy
-// `{ ...process.env }` spread, same per-navigation timing.
+// in main is visible to subsequently created frames — same semantics as the
+// legacy `{ ...process.env }` spread.
 base::flat_map<std::string, std::string> CaptureBrowserEnvironment() {
   base::flat_map<std::string, std::string> env;
   uv_env_item_t* items = nullptr;

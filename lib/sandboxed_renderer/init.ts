@@ -11,10 +11,8 @@ declare const binding: {
   process: NodeJS.Process;
   createPreloadScript: (scriptId: string, paramNames: string[]) => Function | null;
   // Pushed by the browser via mojom.ElectronFrameStartup at frame creation
-  // and again ahead of every CommitNavigation, so it should always be present
-  // by the time this bundle runs. The null fallback below is defensive: an
-  // unexpected edge case is degraded to a preload-less init with a warning
-  // instead of a TypeError that would abort the whole bundle.
+  // and ahead of every CommitNavigation. Null only in unexpected edge cases,
+  // degraded below to a warning + preload-less init.
   startupData: {
     preloadScripts: ElectronInternal.PreloadScript[];
     process: NodeJS.Process;

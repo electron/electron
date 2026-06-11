@@ -638,19 +638,15 @@ class WebContents final : public ExclusiveAccessContext,
       content::NavigationHandle* navigation_handle) override;
   void ReadyToCommitNavigation(
       content::NavigationHandle* navigation_handle) override;
-  // Pushes preload script contents + process info to a sandboxed renderer
-  // over the frame's associated mojo channel. Replaces the
-  // BROWSER_SANDBOX_LOAD sync IPC. The NavigationHandle variant runs ahead of
-  // CommitNavigation for every committed navigation; the RenderFrameHost
-  // variant runs at frame creation so the initial empty document has startup
-  // data before any script context can be created on it.
+  // Pushes preload contents + process info to a sandboxed renderer at frame
+  // creation and ahead of CommitNavigation; replaces the BROWSER_SANDBOX_LOAD
+  // sync IPC.
   void MaybeSendRendererStartupData(
       content::NavigationHandle* navigation_handle);
   void MaybeSendRendererStartupData(content::RenderFrameHost* rfh);
   void SendRendererStartupData(content::RenderFrameHost* rfh);
-  // Preload-registry generation last pushed to each live frame. Lets the
-  // ReadyToCommitNavigation push no-op when the frame-creation push already
-  // delivered an identical payload. Entries are erased in RenderFrameDeleted.
+  // Preload-registry generation last pushed per frame; lets the commit-time
+  // push no-op when the payload would be identical.
   std::map<content::GlobalRenderFrameHostToken, uint64_t>
       pushed_startup_generations_;
   void DidFinishNavigation(
