@@ -13,10 +13,10 @@ FallThrough method was also removed upstream; drop it here too.
 Ref: https://chromium-review.googlesource.com/c/chromium/src/+/7885632
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index f62eb36b57542a4944d21347573d2123a6c6a9d3..37a7fab723d6c5a933a5432b13c743560b877ae7 100644
+index 5e1d9149dc755a9dc3eb1fcce4e4161c978ff859..a9e14e53bb6e3f5082a3cf6a0786cf63d9381b5b 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
-@@ -299,21 +299,16 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -321,21 +321,16 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
  
      std::vector<uint8_t> cbor_buffer;
      ConvertJSONToCBOR(crdtp::SpanFrom(raw_message), &cbor_buffer);
@@ -42,7 +42,7 @@ index f62eb36b57542a4944d21347573d2123a6c6a9d3..37a7fab723d6c5a933a5432b13c74356
    }
  
    void schedulePauseOnNextStatement(const std::string& reason) {
-@@ -406,13 +401,6 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -428,13 +423,6 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
      sendMessageToFrontend(json);
    }
  
