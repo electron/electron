@@ -43,10 +43,18 @@ index dd48ee2a99aeeddad66c95e7c61b17580bb523e5..1d7fa6c4a7956b9a356e4203e8c61eb7
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index d2d8acc57172030503da76ca42fc519d04378d28..974d0acc7ea73856fbc3b23ad9e23cd174f8eb2a 100644
+index d2d8acc57172030503da76ca42fc519d04378d28..15e401f06c5f9424d52a1ea46ccf0f5b26fec341 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
-@@ -270,10 +270,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -16,7 +16,6 @@
+ #include "build/branding_buildflags.h"
+ #include "build/build_config.h"
+ #include "chrome/browser/browser_process.h"
+-#include "chrome/browser/glic/public/glic_enabling.h"
+ #include "chrome/common/chrome_features.h"
+ #include "chrome/common/extensions/api/pdf_viewer_private.h"
+ #include "chrome/common/url_constants.h"
+@@ -270,10 +269,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -60,7 +68,7 @@ index d2d8acc57172030503da76ca42fc519d04378d28..974d0acc7ea73856fbc3b23ad9e23cd1
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -488,11 +491,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -488,11 +490,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      }
    }
  

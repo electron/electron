@@ -94,7 +94,8 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
       .Set("validStart", val->valid_start().InSecondsFSinceUnixEpoch())
       .Set("validExpiry", val->valid_expiry().InSecondsFSinceUnixEpoch())
       .Set("fingerprint",
-           net::HashValue(val->CalculateFingerprint256(val->cert_buffer()))
+           net::HashValue(net::HASH_VALUE_SHA256,
+                          val->CalculateFingerprint256(val->cert_buffer()))
                .ToString());
 
   const auto& intermediate_buffers = val->intermediate_buffers();

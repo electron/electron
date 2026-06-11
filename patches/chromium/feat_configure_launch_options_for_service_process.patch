@@ -167,11 +167,11 @@ index 34b4e7c1b449312e9cb517be192a39a6b5286e3c..4f39415717f423b9a87f83779851e08b
                             FinishStartSandboxedProcessOnLauncherThread,
                         this));
 diff --git a/content/browser/service_host/service_process_host_impl.cc b/content/browser/service_host/service_process_host_impl.cc
-index 4c0b23afb38066f4d29ead2d5705ae2b58ddca34..b79eb508bdfc1ae08dce254cfa57ab6c9b7bfc8a 100644
+index dc36ce2cbb1830b6ceb5a896c3c14607a1138bf4..9efbfdd9af5970c04f573001e91e63395dd3bab5 100644
 --- a/content/browser/service_host/service_process_host_impl.cc
 +++ b/content/browser/service_host/service_process_host_impl.cc
-@@ -69,6 +69,21 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
-     utility_options.WithGpuClientAllowed();
+@@ -72,6 +72,21 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
+     utility_options.WithPriority(*service_options.priority);
    }
  
 +#if BUILDFLAG(IS_WIN)
@@ -193,7 +193,7 @@ index 4c0b23afb38066f4d29ead2d5705ae2b58ddca34..b79eb508bdfc1ae08dce254cfa57ab6c
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index dc561adf556b3f9548dd49aa4b2fc13207e388b4..ad6f5d92fe0f72d2ba6c173282b218c2bc6b9a55 100644
+index 4d1115c7855e73b0ac8f175198a13b95ce7db0c5..b9e9000ba6a25649ba1b481010c256c2b2613dab 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
 @@ -248,13 +248,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
@@ -259,7 +259,7 @@ index dc561adf556b3f9548dd49aa4b2fc13207e388b4..ad6f5d92fe0f72d2ba6c173282b218c2
  UtilityProcessHost::Options&
  UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
      mojo::GenericPendingReceiver receiver) {
-@@ -552,9 +591,30 @@ bool UtilityProcessHost::StartProcess() {
+@@ -558,9 +597,30 @@ bool UtilityProcessHost::StartProcess() {
    }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
@@ -292,10 +292,10 @@ index dc561adf556b3f9548dd49aa4b2fc13207e388b4..ad6f5d92fe0f72d2ba6c173282b218c2
  #if BUILDFLAG(IS_WIN)
    if (!options_.preload_libraries_.empty()) {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index dfdcb66d65f07f4543703396eb529a6ec02b3f4a..96c0cadf5caf5bf27f2a767c43f0f1da04298800 100644
+index 84307516e8250a8fa351f3777f29c587dc9b3185..8999341cdabf92311d1ce0c15a905a3d54f4c356 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
-@@ -30,6 +30,7 @@
+@@ -31,6 +31,7 @@
  
  #if BUILDFLAG(IS_WIN)
  #include "base/synchronization/waitable_event.h"
@@ -303,7 +303,7 @@ index dfdcb66d65f07f4543703396eb529a6ec02b3f4a..96c0cadf5caf5bf27f2a767c43f0f1da
  #endif  // BUILDFLAG(IS_WIN)
  
  namespace base {
-@@ -133,14 +134,36 @@ class CONTENT_EXPORT UtilityProcessHost final
+@@ -134,14 +135,36 @@ class CONTENT_EXPORT UtilityProcessHost final
          std::variant<base::FilePath, base::ScopedFD> file);
  #endif
  
@@ -343,7 +343,7 @@ index dfdcb66d65f07f4543703396eb529a6ec02b3f4a..96c0cadf5caf5bf27f2a767c43f0f1da
      // Requests that the process bind a receiving pipe targeting the interface
      // named by `receiver`. Calls to this method generally end up in
      // `ChildThreadImpl::OnBindReceiver()` and the option is used for testing
-@@ -184,6 +207,32 @@ class CONTENT_EXPORT UtilityProcessHost final
+@@ -188,6 +211,32 @@ class CONTENT_EXPORT UtilityProcessHost final
      std::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -520,10 +520,10 @@ index ee2df2f709b17571747f53efc208ea9d234d076f..e20e5d5233db5bf1bbb81560bbf3d403
  }  // namespace content
  
 diff --git a/content/public/browser/sandboxed_process_launcher_delegate.cc b/content/public/browser/sandboxed_process_launcher_delegate.cc
-index 677e2e1eb7a70cc809e07609739d21b7ac14caf3..ac2bf1b91d6f5360811360f24954cf43afe5ae8a 100644
+index 939a9a2e90f799afa3c1aeb4d3247d860aa128cf..96606f9d5b8be1bd30bbbdcce355c1fcf61a96e4 100644
 --- a/content/public/browser/sandboxed_process_launcher_delegate.cc
 +++ b/content/public/browser/sandboxed_process_launcher_delegate.cc
-@@ -100,11 +100,23 @@ ZygoteCommunication* SandboxedProcessLauncherDelegate::GetZygote() {
+@@ -88,11 +88,23 @@ ZygoteCommunication* SandboxedProcessLauncherDelegate::GetZygote() {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -584,7 +584,7 @@ index 4159eef9e1f54c82ac0d8ad6437925dd3c6fa3ec..b835257f686635b91f80c2d6651fb735
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/content/public/browser/service_process_host.cc b/content/public/browser/service_process_host.cc
-index a3970c9358d7e03b58e646c85a488d97609c44fd..1afc67fab97a3bb9515afefb8a3f051147d1d678 100644
+index eb41fe8d0f48f4f3f2d06cc55b64c4eb10ab83d5..ce6d73b0484a57159c30c159f7c71486eefd9a1b 100644
 --- a/content/public/browser/service_process_host.cc
 +++ b/content/public/browser/service_process_host.cc
 @@ -53,6 +53,26 @@ ServiceProcessHost::Options::WithExtraCommandLineSwitches(
@@ -652,7 +652,7 @@ index a3970c9358d7e03b58e646c85a488d97609c44fd..1afc67fab97a3bb9515afefb8a3f0511
  ServiceProcessHost::Options&
  ServiceProcessHost::Options::WithPreloadedLibraries(
 diff --git a/content/public/browser/service_process_host.h b/content/public/browser/service_process_host.h
-index ea68aa0d16c46ad53b63e10027e81503610051d9..ac1ffa290b59d964931a312a911efbecc5eb04ac 100644
+index a1c6af43275b002a042561acb25e27533451c325..30b34b7c56f525e9dd2f181fad11d15dde2523d0 100644
 --- a/content/public/browser/service_process_host.h
 +++ b/content/public/browser/service_process_host.h
 @@ -15,6 +15,7 @@
@@ -660,10 +660,10 @@ index ea68aa0d16c46ad53b63e10027e81503610051d9..ac1ffa290b59d964931a312a911efbec
  #include "base/memory/weak_ptr.h"
  #include "base/observer_list_types.h"
 +#include "base/process/launch.h"
+ #include "base/process/process.h"
  #include "base/process/process_handle.h"
  #include "content/common/content_export.h"
- #include "content/public/browser/service_process_info.h"
-@@ -29,6 +30,10 @@
+@@ -30,6 +31,10 @@
  #include "base/types/pass_key.h"
  #endif  // BUILDFLAG(IS_WIN)
  
@@ -674,7 +674,7 @@ index ea68aa0d16c46ad53b63e10027e81503610051d9..ac1ffa290b59d964931a312a911efbec
  namespace base {
  class Process;
  }  // namespace base
-@@ -98,6 +103,16 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -99,6 +104,16 @@ class CONTENT_EXPORT ServiceProcessHost {
      // Specifies extra command line switches to append before launch.
      Options& WithExtraCommandLineSwitches(std::vector<std::string> switches);
  
@@ -691,7 +691,7 @@ index ea68aa0d16c46ad53b63e10027e81503610051d9..ac1ffa290b59d964931a312a911efbec
      // Specifies a callback to be invoked with service process once it's
      // launched. Will be on UI thread.
      Options& WithProcessCallback(
-@@ -111,6 +126,24 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -112,6 +127,24 @@ class CONTENT_EXPORT ServiceProcessHost {
      // the service process terminates, notifications are silently skipped.
      // Will be called on the UI thread.
      Options& WithObserver(base::WeakPtr<Observer> observer);
@@ -716,7 +716,7 @@ index ea68aa0d16c46ad53b63e10027e81503610051d9..ac1ffa290b59d964931a312a911efbec
  
  #if BUILDFLAG(IS_WIN)
      // Specifies libraries to preload before the sandbox is locked down. Paths
-@@ -140,12 +173,27 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -144,6 +177,12 @@ class CONTENT_EXPORT ServiceProcessHost {
      std::optional<GURL> site;
      std::optional<int> child_flags;
      std::vector<std::string> extra_switches;
@@ -729,9 +729,10 @@ index ea68aa0d16c46ad53b63e10027e81503610051d9..ac1ffa290b59d964931a312a911efbec
      base::OnceCallback<void(const base::Process&)> process_callback;
      base::WeakPtr<Observer> observer;
  #if BUILDFLAG(IS_WIN)
-     std::vector<base::FilePath> preload_libraries;
+@@ -151,6 +190,15 @@ class CONTENT_EXPORT ServiceProcessHost {
  #endif  // BUILDFLAG(IS_WIN)
      std::optional<bool> allow_gpu_client;
+     std::optional<base::Process::Priority> priority;
 +    base::FilePath current_directory;
 +    base::EnvironmentMap environment;
 +    bool clear_environment = false;
@@ -745,7 +746,7 @@ index ea68aa0d16c46ad53b63e10027e81503610051d9..ac1ffa290b59d964931a312a911efbec
  
    // An interface which can be implemented and used with
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 1d798fecab6c7df12cddfb0a63e8985a3fafcb4d..5d0f821b7c86f7f2f3ca1212f3dc356168e647a5 100644
+index 89c0ffefa7b6627705dd8f597c8a433fa3080a03..3f402ee2080c905813bf3d18800180c759a94372 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -616,11 +616,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {

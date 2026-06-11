@@ -300,9 +300,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
 
   // URLLoader:
   void FollowRedirect(
-      const std::vector<std::string>& removed_headers,
-      const net::HttpRequestHeaders& modified_headers,
-      const net::HttpRequestHeaders& modified_cors_exempt_headers,
+      network::HttpRequestHeadersUpdateParams headers_update_params,
       const std::optional<GURL>& new_url) override {}
   void SetPriority(net::RequestPriority priority,
                    int32_t intra_priority_value) override {}
@@ -346,18 +344,19 @@ ElectronURLLoaderFactory::RedirectedRequest::RedirectedRequest(
 ElectronURLLoaderFactory::RedirectedRequest::~RedirectedRequest() = default;
 
 void ElectronURLLoaderFactory::RedirectedRequest::FollowRedirect(
-    const std::vector<std::string>& removed_headers,
-    const net::HttpRequestHeaders& modified_headers,
-    const net::HttpRequestHeaders& modified_cors_exempt_headers,
+    network::HttpRequestHeadersUpdateParams headers_update_params,
     const std::optional<GURL>& new_url) {
   // Update |request_| with info from the redirect, so that it's accurate
   // The following references code in WorkerScriptLoader::FollowRedirect
   bool should_clear_upload = false;
-  net::RedirectUtil::UpdateHttpRequest(
-      request_.url, request_.method, redirect_info_, removed_headers,
-      modified_headers, &request_.headers, &should_clear_upload);
-  request_.cors_exempt_headers.MergeFrom(modified_cors_exempt_headers);
-  for (const std::string& name : removed_headers)
+  net::RedirectUtil::UpdateHttpRequest(request_.url, request_.method,
+                                       redirect_info_,
+                                       headers_update_params.removed_headers,
+                                       headers_update_params.modified_headers,
+                                       &request_.headers, &should_clear_upload);
+  request_.cors_exempt_headers.MergeFrom(
+      headers_update_params.modified_cors_exempt_headers);
+  for (const std::string& name : headers_update_params.removed_headers)
     request_.cors_exempt_headers.RemoveHeader(name);
 
   if (should_clear_upload)

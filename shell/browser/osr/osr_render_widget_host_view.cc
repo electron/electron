@@ -440,7 +440,7 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
 
   ResizeRootLayer(true);
   SetPainting(parent_host_view_->is_painting());
-  Show();
+  ShowWithVisibility(content::PageVisibilityState::kVisible);
 }
 
 input::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
@@ -578,7 +578,8 @@ void OffScreenRenderWidgetHostView::CancelWidget() {
       parent_host_view_->set_popup_host_view(nullptr);
     } else if (parent_host_view_->child_host_view_ == this) {
       parent_host_view_->set_child_host_view(nullptr);
-      parent_host_view_->Show();
+      parent_host_view_->ShowWithVisibility(
+          content::PageVisibilityState::kVisible);
     } else {
       parent_host_view_->RemoveGuestHostView(this);
     }

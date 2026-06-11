@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 61a22cfc16244a462513ff2ab2aeb3a58264e4f2..2f6fab0748add9ce97b0f319dd4b4643b0517963 100644
+index 3b18bd353b20b41c7f5478c1d32143bf2746b6e2..ab846a413dca5081f5d011a0b8f62b129d01aa3f 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -174,6 +174,11 @@
@@ -134,7 +134,7 @@ index 61a22cfc16244a462513ff2ab2aeb3a58264e4f2..2f6fab0748add9ce97b0f319dd4b4643
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1088,6 +1198,13 @@ void NetworkContext::SetClient(
+@@ -1082,6 +1192,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -160,10 +160,10 @@ index 61a22cfc16244a462513ff2ab2aeb3a58264e4f2..2f6fab0748add9ce97b0f319dd4b4643
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 1c90acb35dc362cd40b5e2e5d9860cf3f6610d37..b8ee6115bc2a3490ba1f0c1f22498fb93e9044ef 100644
+index 0c7eadcba491a1829c0a824bc47686d3472a84df..c245d0410391ae7dc2ec7a12a2a0958b6505228a 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -123,6 +123,7 @@ class SimpleUrlPatternMatcher;
+@@ -122,6 +122,7 @@ class SimpleUrlPatternMatcher;
  }
  
  namespace network {
@@ -171,7 +171,7 @@ index 1c90acb35dc362cd40b5e2e5d9860cf3f6610d37..b8ee6115bc2a3490ba1f0c1f22498fb9
  class CookieManager;
  class HostResolver;
  class MdnsResponderManager;
-@@ -259,6 +260,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -258,6 +259,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -180,7 +180,7 @@ index 1c90acb35dc362cd40b5e2e5d9860cf3f6610d37..b8ee6115bc2a3490ba1f0c1f22498fb9
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -1007,6 +1010,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -1006,6 +1009,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -190,7 +190,7 @@ index 1c90acb35dc362cd40b5e2e5d9860cf3f6610d37..b8ee6115bc2a3490ba1f0c1f22498fb9
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 398dfa01baeb7ea7b425f84934269a365897fa30..5f1025436099c9302b0f45818ac9ed43a9d4cd61 100644
+index b5dfc9440d8ce3e59cc45c3e61c66d152c698c66..204a9632c99fca9d16adb2ebe187445a0f8681ff 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -336,6 +336,17 @@ struct SocketBrokerRemotes {
@@ -222,7 +222,7 @@ index 398dfa01baeb7ea7b425f84934269a365897fa30..5f1025436099c9302b0f45818ac9ed43
    CreateURLLoaderFactory(
        pending_receiver<URLLoaderFactory> url_loader_factory,
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index bd8e8eddcc1a4826e27620303da1024c5fc6342d..d8859e01c177b61411f8978f31d5c07a7799dc38 100644
+index c6c5e369fd1ee6ab39fb55c7c0edf18d6a8b13d3..77b9797f5b8b13e4cb28253071f4c4e8dfdd6577 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -63,6 +63,8 @@ class TestNetworkContext : public mojom::NetworkContext {
