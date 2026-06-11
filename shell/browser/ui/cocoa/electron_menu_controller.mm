@@ -527,7 +527,22 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   if (icon.IsImage()) {
     item.image = icon.GetImage().ToNSImage();
   } else {
+    std::u16string role = model->GetRoleAt(index);
     item.image = nil;
+    // Since macOS Tahoe introduced default menu icons, some role-based
+    // menu items receive a system-provided icon. When we clear `item.image`
+    // (set it to nil) AppKit may remove or fail to restore the role's
+    // default icon. To ensure the correct icon is shown, we force AppKit to
+    // refresh the item by reassigning its action selector (clear then set),
+    // which causes the menu item to update its displayed icon.
+    if (!role.empty()) {
+      for (const Role& pair : kRolesMap) {
+        if (role == base::ASCIIToUTF16(pair.role)) {
+          item.action = pair.selector;
+          break;
+        }
+      }
+    }
   }
 }
 
