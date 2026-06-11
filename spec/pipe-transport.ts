@@ -5,30 +5,34 @@ export class PipeTransport {
 
   onmessage?: (message: string) => void;
 
-  constructor (pipeWrite: NodeJS.WritableStream, pipeRead: NodeJS.ReadableStream) {
+  constructor(pipeWrite: NodeJS.WritableStream, pipeRead: NodeJS.ReadableStream) {
     this._pipeWrite = pipeWrite;
-    pipeRead.on('data', buffer => this._dispatch(buffer));
+    pipeRead.on('data', (buffer) => this._dispatch(buffer));
   }
 
-  send (message: Object) {
+  send(message: Object) {
     this._pipeWrite!.write(JSON.stringify(message));
     this._pipeWrite!.write('\0');
   }
 
-  _dispatch (buffer: Buffer) {
+  _dispatch(buffer: Buffer) {
     let end = buffer.indexOf('\0');
     if (end === -1) {
       this._pendingMessage += buffer.toString();
       return;
     }
     const message = this._pendingMessage + buffer.toString(undefined, 0, end);
-    if (this.onmessage) { this.onmessage.call(null, JSON.parse(message)); }
+    if (this.onmessage) {
+      this.onmessage.call(null, JSON.parse(message));
+    }
 
     let start = end + 1;
     end = buffer.indexOf('\0', start);
     while (end !== -1) {
       const message = buffer.toString(undefined, start, end);
-      if (this.onmessage) { this.onmessage.call(null, JSON.parse(message)); }
+      if (this.onmessage) {
+        this.onmessage.call(null, JSON.parse(message));
+      }
       start = end + 1;
       end = buffer.indexOf('\0', start);
     }

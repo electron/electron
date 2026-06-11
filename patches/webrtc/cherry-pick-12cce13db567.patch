@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "mark a. foltz" <mfoltz@chromium.org>
+Date: Mon, 20 Apr 2026 15:16:47 -0700
+Subject: [M146] [Pipewire] Fix mouse cursor data race.
+
+Original change's description:
+> [Pipewire] Fix mouse cursor data race.
+>
+> This addresses a potential data race when the mouse cursor is updated
+> on the Pipewire thread and read by the capture thread.
+>
+> Bug: chromium:504551032
+> Change-Id: I1afb9febe8bb41ce62c63872e2cb5514e908dd38
+> Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/465440
+> Reviewed-by: Tomas Gunnarsson <tommi@webrtc.org>
+> Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+> Auto-Submit: Mark Foltz <mfoltz@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#47502}
+
+(cherry picked from commit 90b22181ec922900e26de71463b8e0ed47a5c2dd)
+
+Bug: chromium:505447120,chromium:504551032
+Change-Id: I1afb9febe8bb41ce62c63872e2cb5514e908dd38
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/468120
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7680@{#9}
+Cr-Branched-From: d1972add2a63b2a528a6471d447f82e0010b5215-refs/heads/main@{#46853}
+
+diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+index f420038f090030274e46acf1d310cce16552cf99..ffe6bfde5c211e4d41c50040caf188658e62497d 100644
+--- a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
++++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+@@ -124,8 +124,9 @@ class SharedScreenCastStreamPrivate {
+   Mutex latest_frame_lock_ RTC_ACQUIRED_AFTER(queue_lock_);
+   SharedDesktopFrame* latest_available_frame_
+       RTC_GUARDED_BY(&latest_frame_lock_) = nullptr;
+-  std::unique_ptr<MouseCursor> mouse_cursor_;
+-  DesktopVector mouse_cursor_position_ = DesktopVector(-1, -1);
++  std::unique_ptr<MouseCursor> mouse_cursor_ RTC_GUARDED_BY(&latest_frame_lock_);
++  DesktopVector mouse_cursor_position_ RTC_GUARDED_BY(&latest_frame_lock_) =
++      DesktopVector(-1, -1);
+ 
+   int64_t modifier_;
+   std::unique_ptr<EglDmaBuf> egl_dmabuf_;
+@@ -690,6 +691,7 @@ SharedScreenCastStreamPrivate::CaptureFrame() {
+ }
+ 
+ std::unique_ptr<MouseCursor> SharedScreenCastStreamPrivate::CaptureCursor() {
++  MutexLock latest_frame_lock(&latest_frame_lock_);
+   if (!mouse_cursor_) {
+     return nullptr;
+   }
+@@ -698,6 +700,7 @@ std::unique_ptr<MouseCursor> SharedScreenCastStreamPrivate::CaptureCursor() {
+ }
+ 
+ DesktopVector SharedScreenCastStreamPrivate::CaptureCursorPosition() {
++  MutexLock latest_frame_lock(&latest_frame_lock_);
+   return mouse_cursor_position_;
+ }
+ 
+@@ -769,20 +772,28 @@ void SharedScreenCastStreamPrivate::ProcessBuffer(pw_buffer* buffer) {
+           mouse_frame->CopyPixelsFrom(
+               bitmap_data, bitmap->stride,
+               DesktopRect::MakeWH(bitmap->size.width, bitmap->size.height));
+-          mouse_cursor_ = std::make_unique<MouseCursor>(
+-              mouse_frame, DesktopVector(cursor->hotspot.x, cursor->hotspot.y));
++          {
++            MutexLock latest_frame_lock(&latest_frame_lock_);
++            mouse_cursor_ = std::make_unique<MouseCursor>(
++                mouse_frame,
++                DesktopVector(cursor->hotspot.x, cursor->hotspot.y));
++          }
+ 
+           if (observer_) {
+             observer_->OnCursorShapeChanged();
+           }
+         }
+-        mouse_cursor_position_.set(cursor->position.x, cursor->position.y);
++        {
++          MutexLock latest_frame_lock(&latest_frame_lock_);
++          mouse_cursor_position_.set(cursor->position.x, cursor->position.y);
++        }
+ 
+         if (observer_) {
+           observer_->OnCursorPositionChanged();
+         }
+       } else {
+         // Indicate an invalid cursor
++        MutexLock latest_frame_lock(&latest_frame_lock_);
+         mouse_cursor_position_.set(-1, -1);
+       }
+     }

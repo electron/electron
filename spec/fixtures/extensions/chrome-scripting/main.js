@@ -5,23 +5,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 const map = {
-  executeScript () {
-    chrome.runtime.sendMessage({ method: 'executeScript' }, response => {
+  executeScript() {
+    chrome.runtime.sendMessage({ method: 'executeScript' }, (response) => {
       console.log(JSON.stringify(response));
     });
   },
-  registerContentScripts () {
-    chrome.runtime.sendMessage({ method: 'registerContentScripts' }, response => {
+  registerContentScripts() {
+    chrome.runtime.sendMessage({ method: 'registerContentScripts' }, (response) => {
       console.log(JSON.stringify(response));
     });
   },
-  insertCSS () {
-    chrome.runtime.sendMessage({ method: 'insertCSS' }, response => {
+  insertCSS() {
+    chrome.runtime.sendMessage({ method: 'insertCSS' }, (response) => {
       console.log(JSON.stringify(response));
     });
   },
-  globalParams () {
-    chrome.runtime.sendMessage({ method: 'globalParams' }, response => {
+  globalParams() {
+    chrome.runtime.sendMessage({ method: 'globalParams' }, (response) => {
       console.log(JSON.stringify(response));
     });
   }

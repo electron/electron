@@ -2,7 +2,9 @@ import { parseArgs } from 'node:util';
 
 import { cleanReleaseArtifacts } from '../release-artifact-cleanup';
 
-const { values: { tag: _tag, releaseID } } = parseArgs({
+const {
+  values: { tag: _tag, releaseID }
+} = parseArgs({
   options: {
     tag: {
       type: 'string'
@@ -24,8 +26,7 @@ const tag = _tag;
 cleanReleaseArtifacts({
   releaseID,
   tag
-})
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+}).catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keishi Hattori <keishi@google.com>
+Date: Thu, 2 Apr 2026 19:17:37 -0700
+Subject: Fix realloc while iterating in HTMLSlotElement::DetachLayoutTree
+
+Bug: 497830330
+Change-Id: Id29714983245bcb58f3f3c2174f4b098c963d948
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7718078
+Commit-Queue: Keishi Hattori <keishi@chromium.org>
+Reviewed-by: Takashi Sakamoto <tasak@google.com>
+Cr-Commit-Position: refs/heads/main@{#1609626}
+
+diff --git a/third_party/blink/renderer/core/html/html_slot_element.cc b/third_party/blink/renderer/core/html/html_slot_element.cc
+index 6633ea6f52bd9f159859854b0903db48c7ff058d..cb6bc168a7837c1edf2384d8c32f7f6faae07245 100644
+--- a/third_party/blink/renderer/core/html/html_slot_element.cc
++++ b/third_party/blink/renderer/core/html/html_slot_element.cc
+@@ -365,7 +365,8 @@ void HTMLSlotElement::AttachLayoutTreeForSlotChildren(AttachContext& context) {
+ void HTMLSlotElement::DetachLayoutTree(bool performing_reattach) {
+   if (SupportsAssignment()) {
+     auto* host = OwnerShadowHost();
+-    const HeapVector<Member<Node>>& flat_tree_children = assigned_nodes_;
++    // Defensive copy to prevent UAF from sync recalc. See crbug.com/497830330.
++    const HeapVector<Member<Node>> flat_tree_children = assigned_nodes_;
+     for (auto& node : flat_tree_children) {
+       // Don't detach the assigned node if the node is no longer a child of the
+       // host.

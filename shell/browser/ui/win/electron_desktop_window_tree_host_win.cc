@@ -106,9 +106,6 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
     return false;
 
   if (!native_window_view_->has_frame()) {
-    const int thickness = ::GetSystemMetrics(SM_CXSIZEFRAME) +
-                          ::GetSystemMetrics(SM_CXPADDEDBORDER);
-
     if (IsMaximized()) {
       // Windows by default extends the maximized window slightly larger than
       // current workspace, for frameless window since the standard frame has
@@ -122,6 +119,8 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
       //
       // Please make sure you tested maximized frameless window under multiple
       // monitors with different DPIs before changing this code.
+      const int thickness = ::GetSystemMetrics(SM_CXSIZEFRAME) +
+                            ::GetSystemMetrics(SM_CXPADDEDBORDER);
       *insets = gfx::Insets::TLBR(thickness, thickness, thickness, thickness);
       return true;
     } else if (native_window_view_->has_thick_frame()) {
@@ -129,7 +128,8 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
       // windows with standard frames. Non-resizable windows still get input
       // insets for stable bounds and so they can be dragged from outer edges,
       // also like in windows with standard frames.
-      *insets = gfx::Insets::TLBR(0, thickness, thickness, thickness);
+      *insets = gfx::Insets::TLBR(0, frame_thickness, frame_thickness,
+                                  frame_thickness);
       return true;
     }
   }

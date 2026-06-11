@@ -2,35 +2,22 @@ import { BrowserWindow } from 'electron';
 
 import { expect } from 'chai';
 
-import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { stripVTControlCharacters } from 'node:util';
+
+import { spawnAndWait } from './lib/spec-helpers';
+
+const fixtureTimeout = 20000;
+const fixtureKillTimeout = 5000;
 
 const runFixture = async (appPath: string, args: string[] = []) => {
-  const result = cp.spawn(process.execPath, [appPath, ...args], {
-    stdio: 'pipe'
+  return await spawnAndWait(process.execPath, [appPath, ...args], {
+    timeout: fixtureTimeout,
+    killTimeout: fixtureKillTimeout,
+    stripOutput: true
   });
-
-  const stdout: Buffer[] = [];
-  const stderr: Buffer[] = [];
-  result.stdout.on('data', (chunk) => stdout.push(chunk));
-  result.stderr.on('data', (chunk) => stderr.push(chunk));
-
-  const [code, signal] = await new Promise<[number | null, NodeJS.Signals | null]>((resolve) => {
-    result.on('close', (code, signal) => {
-      resolve([code, signal]);
-    });
-  });
-
-  return {
-    code,
-    signal,
-    stdout: stripVTControlCharacters(Buffer.concat(stdout).toString().trim()),
-    stderr: stripVTControlCharacters(Buffer.concat(stderr).toString().trim())
-  };
 };
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'esm');
@@ -66,28 +53,28 @@ describe('esm', () => {
       expect(result.stdout).to.equal('Exit with app, ready: false');
     });
 
-    it('import \'electron/lol\' should throw', async () => {
+    it("import 'electron/lol' should throw", async () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-lol.mjs'));
       expect(result.code).to.equal(1);
       expect(result.stderr).to.match(/Error \[ERR_MODULE_NOT_FOUND\]/);
     });
 
-    it('import \'electron/main\' should not throw', async () => {
+    it("import 'electron/main' should not throw", async () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-main.mjs'));
       expect(result.code).to.equal(0);
     });
 
-    it('import \'electron/renderer\' should not throw', async () => {
+    it("import 'electron/renderer' should not throw", async () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-renderer.mjs'));
       expect(result.code).to.equal(0);
     });
 
-    it('import \'electron/common\' should not throw', async () => {
+    it("import 'electron/common' should not throw", async () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-common.mjs'));
       expect(result.code).to.equal(0);
     });
 
-    it('import \'electron/utility\' should not throw', async () => {
+    it("import 'electron/utility' should not throw", async () => {
       const result = await runFixture(path.resolve(fixturePath, 'electron-modules', 'import-utility.mjs'));
       expect(result.code).to.equal(0);
     });
@@ -105,7 +92,7 @@ describe('esm', () => {
       }
     });
 
-    async function loadWindowWithPreload (preload: string, webPreferences: Electron.WebPreferences) {
+    async function loadWindowWithPreload(preload: string, webPreferences: Electron.WebPreferences) {
       const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'e-spec-preload-'));
       tempDirs.push(tmpDir);
       const preloadPath = path.resolve(tmpDir, 'preload.mjs');
@@ -142,43 +129,54 @@ describe('esm', () => {
       });
 
       it('should support an esm entrypoint', async () => {
-        const [webContents] = await loadWindowWithPreload('import { resolve } from "path"; window.resolvePath = resolve;', {
-          nodeIntegration: true,
-          sandbox: false,
-          contextIsolation: false
-        });
+        const [webContents] = await loadWindowWithPreload(
+          'import { resolve } from "path"; window.resolvePath = resolve;',
+          {
+            nodeIntegration: true,
+            sandbox: false,
+            contextIsolation: false
+          }
+        );
 
         const exposedType = await webContents.executeJavaScript('typeof window.resolvePath');
         expect(exposedType).to.equal('function');
       });
 
       it('should delay load until the ESM import chain is complete', async () => {
-        const [webContents] = await loadWindowWithPreload(`import { resolve } from "path";
+        const [webContents] = await loadWindowWithPreload(
+          `import { resolve } from "path";
         await new Promise(r => setTimeout(r, 500));
-        window.resolvePath = resolve;`, {
-          nodeIntegration: true,
-          sandbox: false,
-          contextIsolation: false
-        });
+        window.resolvePath = resolve;`,
+          {
+            nodeIntegration: true,
+            sandbox: false,
+            contextIsolation: false
+          }
+        );
 
         const exposedType = await webContents.executeJavaScript('typeof window.resolvePath');
         expect(exposedType).to.equal('function');
       });
 
       it('should support a top-level await fetch blocking the page load', async () => {
-        const [webContents] = await loadWindowWithPreload(`
+        const [webContents] = await loadWindowWithPreload(
+          `
         const r = await fetch("package/package.json");
-        window.packageJson = await r.json();`, {
-          nodeIntegration: true,
-          sandbox: false,
-          contextIsolation: false
-        });
+        window.packageJson = await r.json();`,
+          {
+            nodeIntegration: true,
+            sandbox: false,
+            contextIsolation: false
+          }
+        );
 
         const packageJson = await webContents.executeJavaScript('window.packageJson');
         expect(packageJson).to.deep.equal(require('./fixtures/esm/package/package.json'));
       });
 
-      const hostsUrl = pathToFileURL(process.platform === 'win32' ? 'C:\\Windows\\System32\\drivers\\etc\\hosts' : '/etc/hosts');
+      const hostsUrl = pathToFileURL(
+        process.platform === 'win32' ? 'C:\\Windows\\System32\\drivers\\etc\\hosts' : '/etc/hosts'
+      );
 
       describe('without context isolation', () => {
         it('should use Blinks dynamic loader in the main world', async () => {
@@ -201,11 +199,14 @@ describe('esm', () => {
         });
 
         it('should use Node.js ESM dynamic loader in the preload', async () => {
-          const [, preloadError] = await loadWindowWithPreload(`await import(${JSON.stringify((pathToFileURL(badFilePath)))})`, {
-            nodeIntegration: true,
-            sandbox: false,
-            contextIsolation: false
-          });
+          const [, preloadError] = await loadWindowWithPreload(
+            `await import(${JSON.stringify(pathToFileURL(badFilePath))})`,
+            {
+              nodeIntegration: true,
+              sandbox: false,
+              contextIsolation: false
+            }
+          );
 
           expect(preloadError).to.not.equal(null);
           // This is a node.js specific error message
@@ -220,11 +221,14 @@ describe('esm', () => {
 
       describe('with context isolation', () => {
         it('should use Node.js ESM dynamic loader in the isolated context', async () => {
-          const [, preloadError] = await loadWindowWithPreload(`await import(${JSON.stringify((pathToFileURL(badFilePath)))})`, {
-            nodeIntegration: true,
-            sandbox: false,
-            contextIsolation: true
-          });
+          const [, preloadError] = await loadWindowWithPreload(
+            `await import(${JSON.stringify(pathToFileURL(badFilePath))})`,
+            {
+              nodeIntegration: true,
+              sandbox: false,
+              contextIsolation: true
+            }
+          );
 
           expect(preloadError).to.not.equal(null);
           // This is a node.js specific error message
@@ -253,7 +257,7 @@ describe('esm', () => {
     });
 
     describe('electron modules', () => {
-      it('import \'electron/lol\' should throw', async () => {
+      it("import 'electron/lol' should throw", async () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/lol";', {
           sandbox: false
         });
@@ -261,28 +265,28 @@ describe('esm', () => {
         expect(error?.message).to.match(/Cannot find package 'electron'/);
       });
 
-      it('import \'electron/main\' should not throw', async () => {
+      it("import 'electron/main' should not throw", async () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/main";', {
           sandbox: false
         });
         expect(error).to.equal(null);
       });
 
-      it('import \'electron/renderer\' should not throw', async () => {
+      it("import 'electron/renderer' should not throw", async () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/renderer";', {
           sandbox: false
         });
         expect(error).to.equal(null);
       });
 
-      it('import \'electron/common\' should not throw', async () => {
+      it("import 'electron/common' should not throw", async () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/common";', {
           sandbox: false
         });
         expect(error).to.equal(null);
       });
 
-      it('import \'electron/utility\' should not throw', async () => {
+      it("import 'electron/utility' should not throw", async () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/utility";', {
           sandbox: false
         });

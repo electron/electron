@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index befaa423abbe86f523a7b8902d74599e56c5b078..290b3446c2bd84a9f4a002dcfdd58e5eac75fcfe 100644
+index 2160b91871e1389797c99e5c53682f22f30f3740..c375cf55c02698254d5ffbf5525953552d02a83d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -111,6 +111,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -25,7 +25,7 @@ index befaa423abbe86f523a7b8902d74599e56c5b078..290b3446c2bd84a9f4a002dcfdd58e5e
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
    COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.ZeroFilled");
-@@ -337,6 +345,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -333,6 +341,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
      // but also otherwise just doesn't work, and the only real alternative
      // is disabling shared-readonly-heap mode altogether.
      static Isolate::CreateParams first_params = *params;

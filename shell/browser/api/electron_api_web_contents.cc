@@ -1118,15 +1118,18 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  // DevTools frontend messages use base::Unretained delegate callbacks.
+  // Clear the delegate before other teardown work can trigger callbacks
+  // into this partially destroyed WebContents.
+  if (inspectable_web_contents_)
+    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+
   if (web_contents()) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         web_contents()->GetBrowserContext()->GetPermissionControllerDelegate());
     if (permission_manager)
       permission_manager->CancelPendingRequests(web_contents());
   }
-
-  if (inspectable_web_contents_)
-    inspectable_web_contents_->GetView()->SetDelegate(nullptr);
 
   if (owner_window_) {
     owner_window_->RemoveBackgroundThrottlingSource(this);
@@ -1982,11 +1985,24 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::PrimaryMainFrameRenderProcessGone(
     base::TerminationStatus status) {
+  // This fires while RenderProcessHostImpl is still notifying observers of
+  // the process death. Emit asynchronously so app code (e.g. a synchronous
+  // reload() in the handler) can't re-launch the renderer from inside that
+  // loop, which trips a CHECK in extensions::RendererStartupHelper. The exit
+  // code is captured now because a navigation in the interim could reset it.
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&WebContents::EmitRenderProcessGone,
+                                weak_factory_.GetWeakPtr(), status,
+                                web_contents()->GetCrashedErrorCode()));
+}
+
+void WebContents::EmitRenderProcessGone(base::TerminationStatus status,
+                                        int exit_code) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
-  details.Set("exitCode", web_contents()->GetCrashedErrorCode());
+  details.Set("exitCode", exit_code);
   Emit("render-process-gone", details);
 }
 

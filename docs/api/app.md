@@ -697,6 +697,19 @@ Overrides the current application's name.
 > [!NOTE]
 > This function overrides the name used internally by Electron; it does not affect the name that the OS uses.
 
+### `app.setDesktopName(name)` _Linux_
+
+* `name` string - The `.desktop` filename (e.g. `'my-app.desktop'`).
+
+Sets the [`.desktop` filename](https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html) on Linux.
+This should match the base filename of the app's installed `.desktop` file. The `.desktop` suffix is optional.
+
+This value is used to determine the default XDG application ID on Wayland and `WM_CLASS` on X11. If it is not set,
+Electron will attempt to infer a name, but it may not match the packaged app's actual `.desktop` file. This could result
+in the app showing a generic icon or failing to respond to global keyboard shortcuts.
+
+This API must be called before the `ready` event. The value can also be set using `desktopName` in `package.json`.
+
 ### `app.getLocale()`
 
 Returns `string` - The current application locale, fetched using Chromium's `l10n_util` library.
@@ -1235,6 +1248,12 @@ This API must be called after the `ready` event is emitted.
       credentials will be stored under. This value **must** also be present in
       your app's `keychain-access-groups` code-signing entitlement, and is
       typically of the form `<TEAM_ID>.<BUNDLE_ID>.webauthn`.
+    * `promptReason` string (optional) - Customizes the reason text shown in
+      the macOS Touch ID prompt. macOS renders the prompt as
+      `"<App Name>" is trying to <promptReason>`, so the value should be a
+      lowercase sentence fragment. An optional `$1` placeholder is replaced
+      with the relying party ID (e.g. `example.com`) of the request being
+      authenticated. Defaults to `verify your identity on $1`.
 
 Configures platform authenticators for the Web Authentication API
 (`navigator.credentials.create()` / `navigator.credentials.get()`). Until this
@@ -1251,7 +1270,8 @@ const { app } = require('electron')
 
 app.configureWebAuthn({
   touchID: {
-    keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn'
+    keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn',
+    promptReason: 'sign in to $1'
   }
 })
 ```

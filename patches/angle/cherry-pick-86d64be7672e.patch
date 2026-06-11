@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 23 Mar 2026 13:38:34 -0400
+Subject: Translator: Fix codegen of switch with empty last case
+
+... which is not actually allowed, except may be introduced to the AST
+by transformations that remove dead code.  The parser in this change
+makes sure the switch ends in some branch just in case.
+
+To pass the unit tests, PruneEmptyCases is improved to consider cases
+whose only code is "break" as empty.
+
+Bug: angleproject:488064108
+Change-Id: I728ee897b82a9a15d4c778839480969f3f743ace
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7694532
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 462cef8228d0b9102c96d1a8c4a99eb9aaba364b..1f38e4484654255924a3d0b2c4aca3b1df8c2701 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -8248,6 +8248,19 @@ TIntermSwitch *TParseContext::addSwitch(TIntermTyped *init,
+         return nullptr;
+     }
+ 
++    // In case the last statement isn't already a branch, add |break| automatically.  Some AST
++    // transformations may dead-code-eliminate the contents of the last |case| and leave the switch
++    // statements ending in a case (which is what the check above forbids).  Most generators do not
++    // handle this unexpected situation.
++    //
++    // Note that a branch may be present inside a nested block, but that's ok, the extra branch
++    // added here gets eliminated in |PruneNoOps|.
++    if (statementCount > 0 &&
++        statementList->getChildNode(statementCount - 1)->getAsBranchNode() == nullptr)
++    {
++        statementList->appendStatement(new TIntermBranch(EOpBreak, nullptr));
++    }
++
+     mIRBuilder.endSwitch();
+ 
+     markStaticUseIfSymbol(init);
+diff --git a/src/compiler/translator/tree_ops/PruneEmptyCases.cpp b/src/compiler/translator/tree_ops/PruneEmptyCases.cpp
+index 276c8c98ed6d0312de096a1c5ec01eaf98fb9403..374438c0e4eaed7ef2f85e89e43f4896e913b13e 100644
+--- a/src/compiler/translator/tree_ops/PruneEmptyCases.cpp
++++ b/src/compiler/translator/tree_ops/PruneEmptyCases.cpp
+@@ -79,10 +79,18 @@ bool PruneEmptyCasesTraverser::visitSwitch(Visit visit, TIntermSwitch *node)
+     // blocks are marked for pruning.
+     size_t i                       = statements->size();
+     size_t lastNoOpInStatementList = i;
++
+     while (i > 0)
+     {
+         --i;
+         TIntermNode *statement = statements->at(i);
++
++        // Ignore the last |break| for the purposes of this pruning
++        if (i + 1 == statements->size() && statement->getAsBranchNode() != nullptr &&
++            statement->getAsBranchNode()->getFlowOp() == EOpBreak)
++        {
++            continue;
++        }
+         if (statement->getAsCaseNode() || IsEmptyBlock(statement))
+         {
+             lastNoOpInStatementList = i;
+@@ -111,7 +119,24 @@ bool PruneEmptyCasesTraverser::visitSwitch(Visit visit, TIntermSwitch *node)
+     }
+     if (lastNoOpInStatementList < statements->size())
+     {
+-        statements->erase(statements->begin() + lastNoOpInStatementList, statements->end());
++        // The extra cases can only be removed if there is no |default|, otherwise dropping them
++        // changes the cases that land in |default|.
++        bool hasDefault = false;
++        for (i = 0; i < lastNoOpInStatementList; ++i)
++        {
++            TIntermNode *statement = statements->at(i);
++            if (statement->getAsCaseNode() != nullptr &&
++                !statement->getAsCaseNode()->hasCondition())
++            {
++                hasDefault = true;
++                break;
++            }
++        }
++
++        if (!hasDefault)
++        {
++            statements->erase(statements->begin() + lastNoOpInStatementList, statements->end());
++        }
+     }
+ 
+     return true;
+diff --git a/src/tests/compiler_tests/PrunePureLiteralStatements_test.cpp b/src/tests/compiler_tests/PrunePureLiteralStatements_test.cpp
+index 910ccc519fa7a0f8673a3fdb18edb8f9eb344e53..a97651499ad9e8d162d6307f3e1d92382954b7ba 100644
+--- a/src/tests/compiler_tests/PrunePureLiteralStatements_test.cpp
++++ b/src/tests/compiler_tests/PrunePureLiteralStatements_test.cpp
+@@ -143,9 +143,10 @@ TEST_F(PrunePureLiteralStatementsTest, SwitchLiteralExpressionOnlyLastCase)
+         "    }\n"
+         "}\n";
+     compile(shaderString);
+-    ASSERT_TRUE(foundInCode("default"));
+-    ASSERT_TRUE(foundInCode("case"));
++    ASSERT_TRUE(notFoundInCode("default"));
++    ASSERT_TRUE(notFoundInCode("case"));
+     ASSERT_TRUE(notFoundInCode("42"));
++    ASSERT_TRUE(notFoundInCode("switch"));
+ }
+ 
+ // Test that the pruning correctly handles the pruning inside switch statements - pruning isn't
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index bfd75aedb62c39c6a3a5ae3e4038a357009fe390..30161c88c1379844d48279a2c758ab61b3a10e1d 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -22247,9 +22247,6 @@ void main()
+ // it is no-op.
+ TEST_P(GLSLTest_ES3, EmptyLastCaseInSwitch)
+ {
+-    // Incorrect translation before IR.
+-    ANGLE_SKIP_TEST_IF(!getEGLWindow()->isFeatureEnabled(Feature::UseIr));
+-
+     constexpr char kFS[] = R"(#version 300 es
+ uniform int ui;
+ out mediump vec4 color;
+@@ -22277,6 +22274,36 @@ void main(void)
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Regression test for codegen errors when the last case of a switch is dead-code-eliminated.
++TEST_P(GLSLTest_ES3, EmptyLastCaseInSwitch2)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision mediump float;
++uniform int a, b;
++out vec4 color;
++void main() {
++    float r = 0.25;
++    switch(a) {
++        case 0:
++            switch(b) {
++                default:
++                    r = 0.75;
++                case 0:
++                    switch(b) { }
++            }
++            break;
++        default:
++            r = 0.5;
++    }
++    color = vec4(r, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_NEAR(0, 0, GLColor(63, 0, 0, 255), 1);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test that if the uniform struct specifier is referenced by non-uniform variables, the
+ // sortUniforms() step does not reorder the uniform struct specifier and place it after where it is
+ // referenced.

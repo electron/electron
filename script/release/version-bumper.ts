@@ -4,21 +4,15 @@ import { valid, coerce, inc } from 'semver';
 
 import { parseArgs } from 'node:util';
 
-import { VersionBumpType } from './types';
-import {
-  isNightly,
-  isAlpha,
-  isBeta,
-  nextNightly,
-  nextAlpha,
-  nextBeta,
-  isStable
-} from './version-utils';
 import { getElectronVersion } from '../lib/get-version';
+import { VersionBumpType } from './types';
+import { isNightly, isAlpha, isBeta, nextNightly, nextAlpha, nextBeta, isStable } from './version-utils';
 
 // run the script
-async function main () {
-  const { values: { bump, dryRun, help } } = parseArgs({
+async function main() {
+  const {
+    values: { bump, dryRun, help }
+  } = parseArgs({
     options: {
       bump: {
         type: 'string'
@@ -57,7 +51,7 @@ async function main () {
 }
 
 // get next version for release based on [nightly, alpha, beta, stable]
-export async function nextVersion (bumpType: VersionBumpType, version: string) {
+export async function nextVersion(bumpType: VersionBumpType, version: string) {
   if (isNightly(version) || isAlpha(version) || isBeta(version)) {
     switch (bumpType) {
       case 'nightly':

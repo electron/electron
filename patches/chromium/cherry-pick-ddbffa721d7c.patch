@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Sun, 31 May 2026 20:29:35 -0700
+Subject: [M148] bluetooth: Prevent UAF in macOS Bluetooth listeners
+
+Original change's description:
+> bluetooth: Prevent UAF in macOS Bluetooth listeners
+>
+> Implement the FB13705522 workaround for BluetoothDevicesConnectListener
+> and BluetoothDeviceDisconnectListener on macOS. This ensures that these
+> listeners stay alive past any already-enqueued notifications on the main
+> run loop, preventing Use-After-Free (UAF) when the C++ owner is
+> destroyed.
+>
+> Bug: 516987814
+> Change-Id: I542200f213f499370dc89a7cf68dde9fc6299285
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7884382
+> Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+> Commit-Queue: Alvin Ji <alvinji@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1638719}
+
+(cherry picked from commit 75b964de97d2781d1f8329f2fb754862dc212c63)
+
+Bug: 518122985,516987814
+Change-Id: I542200f213f499370dc89a7cf68dde9fc6299285
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7886959
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4121}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
+index 4ff5277d550485cd79c5b5316d89c730ba709254..6defe5e0ccd0dc20bee280b1951735e4f5ec961f 100644
+--- a/device/bluetooth/bluetooth_adapter_mac.mm
++++ b/device/bluetooth/bluetooth_adapter_mac.mm
+@@ -103,6 +103,9 @@ - (instancetype)initWithAdapter:
+ 
+ - (void)deviceConnected:(IOBluetoothUserNotification*)notification
+                  device:(IOBluetoothDevice*)device {
++  if (!_ui_task_runner) {
++    return;
++  }
+   _ui_task_runner->PostTask(
+       FROM_HERE,
+       base::BindOnce(&device::BluetoothAdapterMac::OnConnectNotification,
+@@ -111,6 +114,17 @@ - (void)deviceConnected:(IOBluetoothUserNotification*)notification
+ 
+ - (void)stopListening {
+   [_connectNotification unregister];
++  _ui_task_runner = nullptr;
++  _adapter = nullptr;
++
++  // Keep self alive for a brief period to allow any already-enqueued
++  // notifications on the main run loop to fire safely (and become no-ops
++  // since _ui_task_runner is now null) rather than hitting a deallocated
++  // object. See FB13705522.
++  __strong auto strongSelf = self;
++  dispatch_async(dispatch_get_main_queue(), ^{
++    (void)strongSelf;
++  });
+ }
+ 
+ @end
+diff --git a/device/bluetooth/bluetooth_classic_device_mac.mm b/device/bluetooth/bluetooth_classic_device_mac.mm
+index 47ce0ba52e98407460f6e0a8b36baf1d9ddc590b..7c366c95a1bfc18ed1e527276de775f7bbe64b0b 100644
+--- a/device/bluetooth/bluetooth_classic_device_mac.mm
++++ b/device/bluetooth/bluetooth_classic_device_mac.mm
+@@ -86,6 +86,15 @@ - (void)stopListening {
+   // destruction will see a null |_device| and become a no-op instead of
+   // dereferencing a freed object.
+   _device = nullptr;
++
++  // Keep self alive for a brief period to allow any already-enqueued
++  // notifications on the main run loop to fire safely (and become no-ops
++  // since _device is now null) rather than hitting a deallocated object.
++  // See FB13705522.
++  __strong auto strongSelf = self;
++  dispatch_async(dispatch_get_main_queue(), ^{
++    (void)strongSelf;
++  });
+ }
+ 
+ @end

@@ -35,6 +35,9 @@ class FramelessView : public views::FrameView {
 
   virtual void Init(NativeWindowViews* window, views::Widget* frame);
 
+  // Width in DIPs of the inside resize border for frameless windows.
+  static constexpr int kResizeInsideBoundsSize = 5;
+
   // Returns whether the |point| is on frameless window's resizing border.
   virtual int ResizingBorderHitTest(const gfx::Point& point);
 

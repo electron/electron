@@ -3,23 +3,23 @@ import * as sinon from 'sinon';
 
 import { SpawnSyncReturns } from 'node:child_process';
 
-import { ifdescribe } from './lib/spec-helpers';
 import { nextVersion } from '../script/release/version-bumper';
+import { ifdescribe } from './lib/spec-helpers';
 
 class GitFake {
   branches: {
-    [key: string]: string[],
+    [key: string]: string[];
   };
 
-  constructor () {
+  constructor() {
     this.branches = {};
   }
 
-  setBranch (channel: string): void {
+  setBranch(channel: string): void {
     this.branches[channel] = [];
   }
 
-  setVersion (channel: string, latestTag: string): void {
+  setVersion(channel: string, latestTag: string): void {
     const tags = [latestTag];
     if (channel === 'alpha') {
       const versionStrs = latestTag.split(`${channel}.`);
@@ -34,14 +34,14 @@ class GitFake {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  exec (command: string, args: string[], options?: any): SpawnSyncReturns<string> {
+  exec(command: string, args: string[], options?: any): SpawnSyncReturns<string> {
     let stdout = '';
     const stderr = '';
     const status = 0;
 
     // handle for promoting from current master HEAD
     let branch = 'stable';
-    const v = (args[2] === 'HEAD') ? 'stable' : args[3];
+    const v = args[2] === 'HEAD' ? 'stable' : args[3];
     if (v.includes('nightly')) branch = 'nightly';
     if (v.includes('alpha')) branch = 'alpha';
     if (v.includes('beta')) branch = 'beta';
@@ -54,105 +54,104 @@ class GitFake {
 }
 
 describe('version-bumper', () => {
-  ifdescribe(!(process.platform === 'linux' && process.arch.indexOf('arm') === 0) && process.platform !== 'darwin')('nextVersion', () => {
-    describe('bump versions', () => {
-      const nightlyPattern = /[0-9.]*(-nightly.(\d{4})(\d{2})(\d{2}))$/g;
-      const betaPattern = /[0-9.]*(-beta[0-9.]*)/g;
+  ifdescribe(!(process.platform === 'linux' && process.arch.indexOf('arm') === 0) && process.platform !== 'darwin')(
+    'nextVersion',
+    () => {
+      describe('bump versions', () => {
+        const nightlyPattern = /[0-9.]*(-nightly.(\d{4})(\d{2})(\d{2}))$/g;
+        const betaPattern = /[0-9.]*(-beta[0-9.]*)/g;
 
-      it('bumps to nightly from stable', async () => {
-        const version = 'v2.0.0';
-        const next = await nextVersion('nightly', version);
-        const matches = next.match(nightlyPattern);
-        expect(matches).to.have.lengthOf(1);
-      });
+        it('bumps to nightly from stable', async () => {
+          const version = 'v2.0.0';
+          const next = await nextVersion('nightly', version);
+          const matches = next.match(nightlyPattern);
+          expect(matches).to.have.lengthOf(1);
+        });
 
-      it('bumps to nightly from beta', async () => {
-        const version = 'v2.0.0-beta.1';
-        const next = await nextVersion('nightly', version);
-        const matches = next.match(nightlyPattern);
-        expect(matches).to.have.lengthOf(1);
-      });
+        it('bumps to nightly from beta', async () => {
+          const version = 'v2.0.0-beta.1';
+          const next = await nextVersion('nightly', version);
+          const matches = next.match(nightlyPattern);
+          expect(matches).to.have.lengthOf(1);
+        });
 
-      it('bumps to nightly from nightly', async () => {
-        const version = 'v2.0.0-nightly.19950901';
-        const next = await nextVersion('nightly', version);
-        const matches = next.match(nightlyPattern);
-        expect(matches).to.have.lengthOf(1);
-      });
+        it('bumps to nightly from nightly', async () => {
+          const version = 'v2.0.0-nightly.19950901';
+          const next = await nextVersion('nightly', version);
+          const matches = next.match(nightlyPattern);
+          expect(matches).to.have.lengthOf(1);
+        });
 
-      it('bumps to a nightly version above our switch from N-0-x to N-x-y branch names', async () => {
-        const version = 'v2.0.0-nightly.19950901';
-        const next = await nextVersion('nightly', version);
-        // If it starts with v8 then we didn't bump above the 8-x-y branch
-        expect(next.startsWith('v8')).to.equal(false);
-      });
+        it('bumps to a nightly version above our switch from N-0-x to N-x-y branch names', async () => {
+          const version = 'v2.0.0-nightly.19950901';
+          const next = await nextVersion('nightly', version);
+          // If it starts with v8 then we didn't bump above the 8-x-y branch
+          expect(next.startsWith('v8')).to.equal(false);
+        });
 
-      it('throws error when bumping to beta from stable', () => {
-        const version = 'v2.0.0';
-        return expect(
-          nextVersion('beta', version)
-        ).to.be.rejectedWith('Cannot bump to beta from stable.');
-      });
+        it('throws error when bumping to beta from stable', () => {
+          const version = 'v2.0.0';
+          return expect(nextVersion('beta', version)).to.be.rejectedWith('Cannot bump to beta from stable.');
+        });
 
-      it('bumps to beta from nightly', async () => {
-        const version = 'v2.0.0-nightly.19950901';
-        const next = await nextVersion('beta', version);
-        const matches = next.match(betaPattern);
-        expect(matches).to.have.lengthOf(1);
-      });
+        it('bumps to beta from nightly', async () => {
+          const version = 'v2.0.0-nightly.19950901';
+          const next = await nextVersion('beta', version);
+          const matches = next.match(betaPattern);
+          expect(matches).to.have.lengthOf(1);
+        });
 
-      it('bumps to beta from beta', async () => {
-        const version = 'v2.0.0-beta.8';
-        const next = await nextVersion('beta', version);
-        expect(next).to.equal('2.0.0-beta.9');
-      });
+        it('bumps to beta from beta', async () => {
+          const version = 'v2.0.0-beta.8';
+          const next = await nextVersion('beta', version);
+          expect(next).to.equal('2.0.0-beta.9');
+        });
 
-      it('bumps to beta from beta if the previous beta is at least beta.10', async () => {
-        const version = 'v6.0.0-beta.15';
-        const next = await nextVersion('beta', version);
-        expect(next).to.equal('6.0.0-beta.16');
-      });
+        it('bumps to beta from beta if the previous beta is at least beta.10', async () => {
+          const version = 'v6.0.0-beta.15';
+          const next = await nextVersion('beta', version);
+          expect(next).to.equal('6.0.0-beta.16');
+        });
 
-      it('bumps to stable from beta', async () => {
-        const version = 'v2.0.0-beta.1';
-        const next = await nextVersion('stable', version);
-        expect(next).to.equal('2.0.0');
-      });
+        it('bumps to stable from beta', async () => {
+          const version = 'v2.0.0-beta.1';
+          const next = await nextVersion('stable', version);
+          expect(next).to.equal('2.0.0');
+        });
 
-      it('bumps to stable from stable', async () => {
-        const version = 'v2.0.0';
-        const next = await nextVersion('stable', version);
-        expect(next).to.equal('2.0.1');
-      });
+        it('bumps to stable from stable', async () => {
+          const version = 'v2.0.0';
+          const next = await nextVersion('stable', version);
+          expect(next).to.equal('2.0.1');
+        });
 
-      it('bumps to minor from stable', async () => {
-        const version = 'v2.0.0';
-        const next = await nextVersion('minor', version);
-        expect(next).to.equal('2.1.0');
-      });
+        it('bumps to minor from stable', async () => {
+          const version = 'v2.0.0';
+          const next = await nextVersion('minor', version);
+          expect(next).to.equal('2.1.0');
+        });
 
-      it('bumps to stable from nightly', async () => {
-        const version = 'v2.0.0-nightly.19950901';
-        const next = await nextVersion('stable', version);
-        expect(next).to.equal('2.0.0');
-      });
+        it('bumps to stable from nightly', async () => {
+          const version = 'v2.0.0-nightly.19950901';
+          const next = await nextVersion('stable', version);
+          expect(next).to.equal('2.0.0');
+        });
 
-      it('throws on an invalid version', () => {
-        const version = 'vI.AM.INVALID';
-        return expect(
-          nextVersion('beta', version)
-        ).to.be.rejectedWith(`Invalid current version: ${version}`);
-      });
+        it('throws on an invalid version', () => {
+          const version = 'vI.AM.INVALID';
+          return expect(nextVersion('beta', version)).to.be.rejectedWith(`Invalid current version: ${version}`);
+        });
 
-      it('throws on an invalid bump type', () => {
-        const version = 'v2.0.0';
-        return expect(
-          // @ts-expect-error 'WRONG' is not a valid bump type
-          nextVersion('WRONG', version)
-        ).to.be.rejectedWith('Invalid bump type.');
+        it('throws on an invalid bump type', () => {
+          const version = 'v2.0.0';
+          return expect(
+            // @ts-expect-error 'WRONG' is not a valid bump type
+            nextVersion('WRONG', version)
+          ).to.be.rejectedWith('Invalid bump type.');
+        });
       });
-    });
-  });
+    }
+  );
 
   // If we don't plan on continuing to support an alpha channel past Electron 15,
   // these tests will be removed. Otherwise, integrate into the bump versions tests
@@ -189,9 +188,7 @@ describe('version-bumper', () => {
 
     it('throws error when bumping to alpha from stable', () => {
       const version = 'v2.0.0';
-      return expect(
-        nextVersion('alpha', version)
-      ).to.be.rejectedWith('Cannot bump to alpha from stable.');
+      return expect(nextVersion('alpha', version)).to.be.rejectedWith('Cannot bump to alpha from stable.');
     });
 
     it('bumps to alpha from alpha', async () => {

@@ -5,7 +5,7 @@ import path = require('node:path');
 const IS_CI = !!process.env.CI;
 const ARTIFACT_DIR = path.join(__dirname, '..', 'artifacts');
 
-async function ensureArtifactDir (): Promise<void> {
+async function ensureArtifactDir(): Promise<void> {
   if (!IS_CI) {
     return;
   }
@@ -13,10 +13,7 @@ async function ensureArtifactDir (): Promise<void> {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
 }
 
-export async function createArtifact (
-  fileName: string,
-  data: Buffer
-): Promise<void> {
+export async function createArtifact(fileName: string, data: Buffer): Promise<void> {
   if (!IS_CI) {
     return;
   }
@@ -25,10 +22,7 @@ export async function createArtifact (
   await fs.writeFile(path.join(ARTIFACT_DIR, fileName), data);
 }
 
-export async function createArtifactWithRandomId (
-  makeFileName: (id: string) => string,
-  data: Buffer
-): Promise<string> {
+export async function createArtifactWithRandomId(makeFileName: (id: string) => string, data: Buffer): Promise<string> {
   const randomId = randomBytes(12).toString('hex');
   const fileName = makeFileName(randomId);
   await createArtifact(fileName, data);

@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Wilson <mjwilson@chromium.org>
+Date: Wed, 15 Apr 2026 03:37:44 -0700
+Subject: Disable denormals before isolate creation for AudioWorklet threads
+
+This is to ensure consistency in the denormal flag state between the
+isolate and the global scope.
+
+Bug: 499565267
+Change-Id: Iec7735bd6bc543da2ad08aea2f7bc716265dc54d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7744866
+Reviewed-by: Hiroshige Hayashizaki <hiroshige@chromium.org>
+Commit-Queue: Michael Wilson <mjwilson@chromium.org>
+Reviewed-by: Hongchan Choi <hongchan@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1615043}
+
+diff --git a/third_party/blink/renderer/core/workers/worker_backing_thread.cc b/third_party/blink/renderer/core/workers/worker_backing_thread.cc
+index 38d221a6ca9b996bb3134669b0dbf73a6b94650a..5997bed33ccb8d9382cc0771c892a633081b7f14 100644
+--- a/third_party/blink/renderer/core/workers/worker_backing_thread.cc
++++ b/third_party/blink/renderer/core/workers/worker_backing_thread.cc
+@@ -18,6 +18,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"
+ #include "third_party/blink/renderer/core/inspector/worker_thread_debugger.h"
+ #include "third_party/blink/renderer/core/workers/worker_backing_thread_startup_data.h"
++#include "third_party/blink/renderer/platform/audio/denormal_disabler.h"
+ #include "third_party/blink/renderer/platform/heap/thread_state.h"
+ #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/main_thread.h"
+@@ -91,6 +92,14 @@ void RemoveForegroundedWorkerIsolate(v8::Isolate* isolate) {
+   ForegroundedIsolates().erase(isolate);
+ }
+ 
++bool IsDenormalDisabledThreadType(ThreadType type) {
++  // Disable denormals on WebAudio threads for performance reasons.  See:
++  // https://esdiscuss.org/topic/float-denormal-issue-in-javascript-processor-node-in-web-audio-api
++  return type == ThreadType::kOfflineAudioWorkletThread ||
++         type == ThreadType::kRealtimeAudioWorkletThread ||
++         type == ThreadType::kSemiRealtimeAudioWorkletThread;
++}
++
+ }  // namespace
+ 
+ // Wrapper functions defined in third_party/blink/public/web/blink.h
+@@ -119,7 +128,9 @@ void SetMemorySaverModeForWorkerThreadIsolates(bool memory_saver_mode_enabled);
+ 
+ WorkerBackingThread::WorkerBackingThread(const ThreadCreationParams& params)
+     : backing_thread_(blink::NonMainThread::CreateThread(
+-          ThreadCreationParams(params).SetSupportsGC(true))) {}
++          ThreadCreationParams(params).SetSupportsGC(true))),
++      is_denormal_disabled_thread_(
++          IsDenormalDisabledThreadType(params.thread_type)) {}
+ 
+ WorkerBackingThread::~WorkerBackingThread() = default;
+ 
+@@ -127,6 +138,12 @@ void WorkerBackingThread::InitializeOnBackingThread(
+     const WorkerBackingThreadStartupData& startup_data) {
+   DCHECK(backing_thread_->IsCurrentThread());
+ 
++  // Denormals must be disabled before the V8 isolate is initialized so that the
++  // isolate's internal state and generated code respect the flag.
++  if (is_denormal_disabled_thread_) {
++    DenormalModifier::DisableDenormals();
++  }
++
+   DCHECK(!isolate_);
+   ThreadScheduler* scheduler = BackingThread().Scheduler();
+   isolate_ = V8PerIsolateData::Initialize(
+diff --git a/third_party/blink/renderer/core/workers/worker_backing_thread.h b/third_party/blink/renderer/core/workers/worker_backing_thread.h
+index 445aad71b09ba7cd35a9269d73a57edc7d567079..4c5f3cc73c08fc241f1323dd4eeee6033ee80bd4 100644
+--- a/third_party/blink/renderer/core/workers/worker_backing_thread.h
++++ b/third_party/blink/renderer/core/workers/worker_backing_thread.h
+@@ -56,6 +56,7 @@ class CORE_EXPORT WorkerBackingThread final {
+  private:
+   std::unique_ptr<blink::NonMainThread> backing_thread_;
+   v8::Isolate* isolate_ = nullptr;
++  const bool is_denormal_disabled_thread_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/modules/webaudio/audio_worklet_global_scope.cc b/third_party/blink/renderer/modules/webaudio/audio_worklet_global_scope.cc
+index b258751aa6efce1111861943c9b0b8f1fc00abb3..e3c9d55a5b63baf7c94bbd1b4bfe3dadd30f94cc 100644
+--- a/third_party/blink/renderer/modules/webaudio/audio_worklet_global_scope.cc
++++ b/third_party/blink/renderer/modules/webaudio/audio_worklet_global_scope.cc
+@@ -23,7 +23,6 @@
+ #include "third_party/blink/renderer/modules/webaudio/audio_worklet_processor.h"
+ #include "third_party/blink/renderer/modules/webaudio/audio_worklet_processor_definition.h"
+ #include "third_party/blink/renderer/modules/webaudio/cross_thread_audio_worklet_processor_info.h"
+-#include "third_party/blink/renderer/platform/audio/denormal_disabler.h"
+ #include "third_party/blink/renderer/platform/bindings/callback_method_retriever.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/wtf/text/strcat.h"
+@@ -36,9 +35,6 @@ AudioWorkletGlobalScope::AudioWorkletGlobalScope(
+     : WorkletGlobalScope(std::move(creation_params),
+                          thread->GetWorkerReportingProxy(),
+                          thread) {
+-  // Disable denormals for performance.
+-  DenormalModifier::DisableDenormals();
+-
+   // Audio is prone to jank introduced by e.g. the garbage collector. Workers
+   // are generally put in a background mode (as they are non-visible). Audio is
+   // an exception here, requiring low-latency behavior similar to any visible

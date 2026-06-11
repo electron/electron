@@ -9,7 +9,7 @@ import * as path from 'node:path';
 
 import { startRemoteControlApp, ifdescribe, ifit } from './lib/spec-helpers';
 
-function isTestingBindingAvailable () {
+function isTestingBindingAvailable() {
   try {
     process._linkedBinding('electron_common_testing');
     return true;
@@ -24,19 +24,23 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     // ELECTRON_ENABLE_LOGGING might be set in the environment, so remove it
     const { ELECTRON_ENABLE_LOGGING: _, ...envWithoutEnableLogging } = process.env;
     const rc = await startRemoteControlApp([], { env: envWithoutEnableLogging });
-    const stderrComplete = new Promise<string>(resolve => {
+    const stderrComplete = new Promise<string>((resolve) => {
       let stderr = '';
-      rc.process.stderr!.on('data', function listener (chunk) {
+      rc.process.stderr!.on('data', function listener(chunk) {
         stderr += chunk.toString('utf8');
       });
-      rc.process.on('close', () => { resolve(stderr); });
+      rc.process.on('close', () => {
+        resolve(stderr);
+      });
     });
     const [hasLoggingSwitch, hasLoggingVar] = await rc.remotely(() => {
       // Make sure we're actually capturing stderr by logging a known value to
       // stderr.
       console.error('SENTINEL');
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
-      setTimeout(() => { process.exit(0); });
+      setTimeout(() => {
+        process.exit(0);
+      });
       return [require('electron').app.commandLine.hasSwitch('enable-logging'), !!process.env.ELECTRON_ENABLE_LOGGING];
     });
     expect(hasLoggingSwitch).to.be.false();
@@ -49,16 +53,20 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
 
   it('logs to stderr when --enable-logging is passed', async () => {
     const rc = await startRemoteControlApp(['--enable-logging']);
-    const stderrComplete = new Promise<string>(resolve => {
+    const stderrComplete = new Promise<string>((resolve) => {
       let stderr = '';
-      rc.process.stderr!.on('data', function listener (chunk) {
+      rc.process.stderr!.on('data', function listener(chunk) {
         stderr += chunk.toString('utf8');
       });
-      rc.process.on('close', () => { resolve(stderr); });
+      rc.process.on('close', () => {
+        resolve(stderr);
+      });
     });
     rc.remotely(() => {
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
-      setTimeout(() => { require('electron').app.quit(); });
+      setTimeout(() => {
+        require('electron').app.quit();
+      });
     });
     const stderr = await stderrComplete;
     expect(stderr).to.match(/TEST_LOG/);
@@ -66,16 +74,20 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
 
   it('logs to stderr when ELECTRON_ENABLE_LOGGING is set', async () => {
     const rc = await startRemoteControlApp([], { env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1' } });
-    const stderrComplete = new Promise<string>(resolve => {
+    const stderrComplete = new Promise<string>((resolve) => {
       let stderr = '';
-      rc.process.stderr!.on('data', function listener (chunk) {
+      rc.process.stderr!.on('data', function listener(chunk) {
         stderr += chunk.toString('utf8');
       });
-      rc.process.on('close', () => { resolve(stderr); });
+      rc.process.on('close', () => {
+        resolve(stderr);
+      });
     });
     rc.remotely(() => {
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
-      setTimeout(() => { require('electron').app.quit(); });
+      setTimeout(() => {
+        require('electron').app.quit();
+      });
     });
     const stderr = await stderrComplete;
     expect(stderr).to.match(/TEST_LOG/);
@@ -86,7 +98,9 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     const userDataDir = await rc.remotely(() => {
       const { app } = require('electron');
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
-      setTimeout(() => { app.quit(); });
+      setTimeout(() => {
+        app.quit();
+      });
       return app.getPath('userData');
     });
     await once(rc.process, 'exit');
@@ -102,7 +116,9 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     const userDataDir = await rc.remotely(() => {
       const { app } = require('electron');
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
-      setTimeout(() => { app.quit(); });
+      setTimeout(() => {
+        app.quit();
+      });
       return app.getPath('userData');
     });
     await once(rc.process, 'exit');
@@ -118,7 +134,9 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
     const rc = await startRemoteControlApp(['--enable-logging', '--log-file=' + logFilePath]);
     rc.remotely(() => {
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
-      setTimeout(() => { require('electron').app.quit(); });
+      setTimeout(() => {
+        require('electron').app.quit();
+      });
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
@@ -130,7 +148,11 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
   ifit(process.platform === 'win32')('child process logs to the given file when --log-file is passed', async () => {
     const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
     const preloadPath = path.resolve(__dirname, 'fixtures', 'log-test.js');
-    const rc = await startRemoteControlApp(['--enable-logging', `--log-file=${logFilePath}`, `--boot-eval=preloadPath=${JSON.stringify(preloadPath)}`]);
+    const rc = await startRemoteControlApp([
+      '--enable-logging',
+      `--log-file=${logFilePath}`,
+      `--boot-eval=preloadPath=${JSON.stringify(preloadPath)}`
+    ]);
     rc.remotely(() => {
       process._linkedBinding('electron_common_testing').log(0, 'MAIN_PROCESS_TEST_LOG');
       const { app, BrowserWindow } = require('electron');
@@ -143,7 +165,9 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       });
       w.loadURL('about:blank');
       w.webContents.once('did-finish-load', () => {
-        setTimeout(() => { app.quit(); });
+        setTimeout(() => {
+          app.quit();
+        });
       });
     });
     await once(rc.process, 'exit');
@@ -157,10 +181,14 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
 
   it('logs to the given file when ELECTRON_LOG_FILE is set', async () => {
     const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
-    const rc = await startRemoteControlApp([], { env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1', ELECTRON_LOG_FILE: logFilePath } });
+    const rc = await startRemoteControlApp([], {
+      env: { ...process.env, ELECTRON_ENABLE_LOGGING: '1', ELECTRON_LOG_FILE: logFilePath }
+    });
     rc.remotely(() => {
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
-      setTimeout(() => { require('electron').app.quit(); });
+      setTimeout(() => {
+        require('electron').app.quit();
+      });
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
@@ -171,10 +199,16 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
 
   it('does not lose early log messages when logging to a given file with --log-file', async () => {
     const logFilePath = path.join(app.getPath('temp'), 'test-log-file-' + uuid.v4());
-    const rc = await startRemoteControlApp(['--enable-logging', '--log-file=' + logFilePath, '--boot-eval=process._linkedBinding(\'electron_common_testing\').log(0, \'EARLY_LOG\')']);
+    const rc = await startRemoteControlApp([
+      '--enable-logging',
+      '--log-file=' + logFilePath,
+      "--boot-eval=process._linkedBinding('electron_common_testing').log(0, 'EARLY_LOG')"
+    ]);
     rc.remotely(() => {
       process._linkedBinding('electron_common_testing').log(0, 'LATER_LOG');
-      setTimeout(() => { require('electron').app.quit(); });
+      setTimeout(() => {
+        require('electron').app.quit();
+      });
     });
     await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
@@ -185,17 +219,23 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
   });
 
   it('enables logging when switch is appended during first tick', async () => {
-    const rc = await startRemoteControlApp(['--boot-eval=require(\'electron\').app.commandLine.appendSwitch(\'--enable-logging\')']);
-    const stderrComplete = new Promise<string>(resolve => {
+    const rc = await startRemoteControlApp([
+      "--boot-eval=require('electron').app.commandLine.appendSwitch('--enable-logging')"
+    ]);
+    const stderrComplete = new Promise<string>((resolve) => {
       let stderr = '';
-      rc.process.stderr!.on('data', function listener (chunk) {
+      rc.process.stderr!.on('data', function listener(chunk) {
         stderr += chunk.toString('utf8');
       });
-      rc.process.on('close', () => { resolve(stderr); });
+      rc.process.on('close', () => {
+        resolve(stderr);
+      });
     });
     rc.remotely(() => {
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
-      setTimeout(() => { require('electron').app.quit(); });
+      setTimeout(() => {
+        require('electron').app.quit();
+      });
     });
     const stderr = await stderrComplete;
     expect(stderr).to.match(/TEST_LOG/);
@@ -203,17 +243,21 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
 
   it('respects --log-level', async () => {
     const rc = await startRemoteControlApp(['--enable-logging', '--log-level=1']);
-    const stderrComplete = new Promise<string>(resolve => {
+    const stderrComplete = new Promise<string>((resolve) => {
       let stderr = '';
-      rc.process.stderr!.on('data', function listener (chunk) {
+      rc.process.stderr!.on('data', function listener(chunk) {
         stderr += chunk.toString('utf8');
       });
-      rc.process.on('close', () => { resolve(stderr); });
+      rc.process.on('close', () => {
+        resolve(stderr);
+      });
     });
     rc.remotely(() => {
       process._linkedBinding('electron_common_testing').log(0, 'TEST_INFO_LOG');
       process._linkedBinding('electron_common_testing').log(1, 'TEST_WARNING_LOG');
-      setTimeout(() => { require('electron').app.quit(); });
+      setTimeout(() => {
+        require('electron').app.quit();
+      });
     });
     const stderr = await stderrComplete;
     expect(stderr).to.match(/TEST_WARNING_LOG/);

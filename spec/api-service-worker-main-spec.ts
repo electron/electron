@@ -65,7 +65,7 @@ describe('ServiceWorkerMain module', () => {
     ses.getPreloadScripts().map(({ id }) => ses.unregisterPreloadScript(id));
   });
 
-  function registerPreload (scriptName: string) {
+  function registerPreload(scriptName: string) {
     const id = ses.registerPreloadScript({
       type: 'service-worker',
       filePath: path.resolve(preloadRealmFixtures, scriptName)
@@ -73,23 +73,30 @@ describe('ServiceWorkerMain module', () => {
     expect(id).to.be.a('string');
   }
 
-  async function loadWorkerScript (scriptUrl?: string) {
+  async function loadWorkerScript(scriptUrl?: string) {
     const scriptParams = scriptUrl ? `?scriptUrl=${scriptUrl}` : '';
     return wc.loadURL(`${baseUrl}/index.html${scriptParams}`);
   }
 
-  async function unregisterAllServiceWorkers () {
-    await wc.executeJavaScript(`(${async function () {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        registration.unregister();
-      }
-    }}())`);
+  async function unregisterAllServiceWorkers() {
+    await wc.executeJavaScript(
+      `(${async function () {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          registration.unregister();
+        }
+      }}())`
+    );
   }
 
-  async function waitForServiceWorker (expectedRunningStatus: Electron.ServiceWorkersRunningStatusChangedEventParams['runningStatus'] = 'starting') {
+  async function waitForServiceWorker(
+    expectedRunningStatus: Electron.ServiceWorkersRunningStatusChangedEventParams['runningStatus'] = 'starting'
+  ) {
     const serviceWorkerPromise = new Promise<Electron.ServiceWorkerMain>((resolve) => {
-      function onRunningStatusChanged ({ versionId, runningStatus }: Electron.ServiceWorkersRunningStatusChangedEventParams) {
+      function onRunningStatusChanged({
+        versionId,
+        runningStatus
+      }: Electron.ServiceWorkersRunningStatusChangedEventParams) {
         if (runningStatus === expectedRunningStatus) {
           const serviceWorker = serviceWorkers.getWorkerFromVersionID(versionId)!;
           serviceWorkers.off('running-status-changed', onRunningStatusChanged);
@@ -104,7 +111,7 @@ describe('ServiceWorkerMain module', () => {
   }
 
   /** Runs a test using the framework in preload-tests.js */
-  const runTest = async (serviceWorker: Electron.ServiceWorkerMain, rpc: { name: string, args: any[] }) => {
+  const runTest = async (serviceWorker: Electron.ServiceWorkerMain, rpc: { name: string; args: any[] }) => {
     const uuid = crypto.randomUUID();
     serviceWorker.send('test', uuid, rpc.name, ...rpc.args);
     return new Promise((resolve, reject) => {

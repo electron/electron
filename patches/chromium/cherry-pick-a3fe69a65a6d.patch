@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kartar Singh <kartarsingh@google.com>
+Date: Fri, 29 May 2026 08:27:37 -0700
+Subject: [M148] Prevent Use-After-Free in
+ RenderWidgetHostViewAura::ShowWithVisibility.
+
+Original change's description:
+> Prevent Use-After-Free in RenderWidgetHostViewAura::ShowWithVisibility.
+>
+> Use base::WeakPtr to guard against view destruction during ShowImpl
+> on Windows builds.
+>
+> Bug: 516691130
+> Change-Id: I857c1900ab55f6b0d26e54db35652df4d14d32b8
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7883318
+> Reviewed-by: Jonathan Ross <jonross@chromium.org>
+> Commit-Queue: Kartar Singh <kartarsingh@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1637761}
+
+(cherry picked from commit d86edd3226e233b4556c7fc7022042824806e3d9)
+
+Bug: 517793286,516691130
+Change-Id: I857c1900ab55f6b0d26e54db35652df4d14d32b8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7881333
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#3971}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 2ae3a467ca4be802cd53b5823f23bf0224c3a761..9205e9f6decbb4fcae4881e0d51dde9eabe853ce 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -1018,8 +1018,15 @@ void RenderWidgetHostViewAura::ShowWithVisibility(
+   }
+ 
+   window_->Show();
++
++  base::WeakPtr<RenderWidgetHostViewAura> weak_this(
++      weak_ptr_factory_.GetWeakPtr());
++
+   ShowImpl(page_visibility);
+ #if BUILDFLAG(IS_WIN)
++  if (!weak_this) {
++    return;
++  }
+   if (page_visibility != PageVisibilityState::kVisible &&
+       legacy_render_widget_host_HWND_) {
+     legacy_render_widget_host_HWND_->Hide();

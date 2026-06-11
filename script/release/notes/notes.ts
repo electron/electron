@@ -24,27 +24,10 @@ const NO_NOTES = 'No notes';
 const docTypes = new Set(['doc', 'docs']);
 const featTypes = new Set(['feat', 'feature']);
 const fixTypes = new Set(['fix']);
-const otherTypes = new Set([
-  'spec',
-  'build',
-  'test',
-  'chore',
-  'deps',
-  'refactor',
-  'tools',
-  'perf',
-  'style',
-  'ci'
-]);
-const knownTypes = new Set([
-  ...docTypes.keys(),
-  ...featTypes.keys(),
-  ...fixTypes.keys(),
-  ...otherTypes.keys()
-]);
+const otherTypes = new Set(['spec', 'build', 'test', 'chore', 'deps', 'refactor', 'tools', 'perf', 'style', 'ci']);
+const knownTypes = new Set([...docTypes.keys(), ...featTypes.keys(), ...fixTypes.keys(), ...otherTypes.keys()]);
 
-const getCacheDir = () =>
-  process.env.NOTES_CACHE_PATH || _resolve(__dirname, '.cache');
+const getCacheDir = () => process.env.NOTES_CACHE_PATH || _resolve(__dirname, '.cache');
 
 /**
  ***
@@ -63,13 +46,13 @@ type MinimalPR = {
 // link to a GitHub item, e.g. an issue or pull request
 class GHKey {
   // eslint-disable-next-line no-useless-constructor
-  constructor (
+  constructor(
     public readonly owner: string,
     public readonly repo: string,
     public readonly number: number
   ) {}
 
-  static NewFromPull (pull: MinimalPR) {
+  static NewFromPull(pull: MinimalPR) {
     const owner = pull.base.repo.owner.login;
     const repo = pull.base.repo.name;
     const number = pull.number;
@@ -87,7 +70,7 @@ class Commit {
   public subject: string | null = null;
 
   // eslint-disable-next-line no-useless-constructor
-  constructor (
+  constructor(
     public readonly hash: string,
     public readonly owner: string,
     public readonly repo: string
@@ -122,11 +105,7 @@ const runGit = async (dir: string, args: string[]) => {
   return response.stdout.trim();
 };
 
-const getCommonAncestor = async (
-  dir: string,
-  point1: string,
-  point2: string
-) => {
+const getCommonAncestor = async (dir: string, point1: string, point2: string) => {
   return runGit(dir, ['merge-base', point1, point2]);
 };
 
@@ -216,22 +195,15 @@ const parseCommitMessage = (commitMessage: string, commit: Commit) => {
   }
 
   // Check for a comment that indicates a PR
-  const backportPattern =
-    /(?:^|\n)(?:manual |manually )?backport.*(?:#(\d+)|\/pull\/(\d+))/im;
+  const backportPattern = /(?:^|\n)(?:manual |manually )?backport.*(?:#(\d+)|\/pull\/(\d+))/im;
   if ((match = commitMessage.match(backportPattern))) {
     // This might be the first or second capture group depending on if it's a link or not.
-    const backportNumber = match[1]
-      ? parseInt(match[1], 10)
-      : parseInt(match[2], 10);
+    const backportNumber = match[1] ? parseInt(match[1], 10) : parseInt(match[2], 10);
     commit.prKeys.add(new GHKey(owner, repo, backportNumber));
   }
 
   // https://help.github.com/articles/closing-issues-using-keywords/
-  if (
-    body.match(
-      /\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/i
-    )
-  ) {
+  if (body.match(/\b(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved|for)\s#(\d+)\b/i)) {
     commit.semanticType = commit.semanticType || 'fix';
   }
 
@@ -254,8 +226,7 @@ const parseCommitMessage = (commitMessage: string, commit: Commit) => {
   return commit;
 };
 
-const parsePullText = (pull: MinimalPR, commit: Commit) =>
-  parseCommitMessage(`${pull.title}\n\n${pull.body}`, commit);
+const parsePullText = (pull: MinimalPR, commit: Commit) => parseCommitMessage(`${pull.title}\n\n${pull.body}`, commit);
 
 const getLocalCommitHashes = async (dir: string, ref: string) => {
   const args = ['log', '--format=%H', ref];
@@ -265,23 +236,12 @@ const getLocalCommitHashes = async (dir: string, ref: string) => {
 };
 
 // return an array of Commits
-const getLocalCommits = async (
-  module: LocalRepo,
-  point1: string,
-  point2: string
-) => {
+const getLocalCommits = async (module: LocalRepo, point1: string, point2: string) => {
   const { owner, repo, dir } = module;
 
   const fieldSep = ',';
   const format = ['%H', '%s'].join(fieldSep);
-  const args = [
-    'log',
-    '--cherry-pick',
-    '--right-only',
-    '--first-parent',
-    `--format=${format}`,
-    `${point1}..${point2}`
-  ];
+  const args = ['log', '--cherry-pick', '--right-only', '--first-parent', `--format=${format}`, `${point1}..${point2}`];
   const logs = (await runGit(dir, args))
     .split(/\r?\n/) // split into lines
     .map((field) => field.trim());
@@ -297,10 +257,7 @@ const getLocalCommits = async (
   return commits;
 };
 
-const checkCache = async <T>(
-  name: string,
-  operation: () => Promise<T>
-): Promise<T> => {
+const checkCache = async <T>(name: string, operation: () => Promise<T>): Promise<T> => {
   const filename = _resolve(getCacheDir(), name);
   if (existsSync(filename)) {
     return JSON.parse(readFileSync(filename, 'utf8'));
@@ -314,10 +271,7 @@ const checkCache = async <T>(
 };
 
 // helper function to add some resiliency to volatile GH api endpoints
-async function runRetryable<T> (
-  fn: () => Promise<T>,
-  maxRetries: number
-): Promise<T | null> {
+async function runRetryable<T>(fn: () => Promise<T>, maxRetries: number): Promise<T | null> {
   let lastError: Error & { status?: number };
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -335,8 +289,7 @@ async function runRetryable<T> (
   return null;
 }
 
-const getPullCacheFilename = (ghKey: GHKey) =>
-  `${ghKey.owner}-${ghKey.repo}-pull-${ghKey.number}`;
+const getPullCacheFilename = (ghKey: GHKey) => `${ghKey.owner}-${ghKey.repo}-pull-${ghKey.number}`;
 
 const getCommitPulls = async (owner: string, repo: string, hash: string) => {
   const name = `${owner}-${repo}-commit-${hash}`;
@@ -350,9 +303,7 @@ const getCommitPulls = async (owner: string, repo: string, hash: string) => {
       data
     };
   };
-  let ret = await checkCache(name, () =>
-    runRetryable(retryableFunc, MAX_FAIL_COUNT)
-  );
+  let ret = await checkCache(name, () => runRetryable(retryableFunc, MAX_FAIL_COUNT));
 
   // only merged pulls belong in release notes
   if (ret && ret.data) {
@@ -379,8 +330,7 @@ const getCommitPulls = async (owner: string, repo: string, hash: string) => {
 const getPullRequest = async (ghKey: GHKey) => {
   const { number, owner, repo } = ghKey;
   const name = getPullCacheFilename(ghKey);
-  const retryableFunc = () =>
-    octokit.pulls.get({ pull_number: number, owner, repo });
+  const retryableFunc = () => octokit.pulls.get({ pull_number: number, owner, repo });
   return checkCache(name, () => runRetryable(retryableFunc, MAX_FAIL_COUNT));
 };
 
@@ -403,12 +353,7 @@ type LocalRepo = {
   dir: string;
 };
 
-const addRepoToPool = async (
-  pool: Pool,
-  repo: LocalRepo,
-  from: string,
-  to: string
-) => {
+const addRepoToPool = async (pool: Pool, repo: LocalRepo, from: string, to: string) => {
   const commonAncestor = await getCommonAncestor(repo.dir, from, to);
 
   // mark the old branch's commits as old news
@@ -449,18 +394,14 @@ type MinimalComment = {
 // @return Map<string,GHKey>
 //   where the key is a branch name (e.g. '7-1-x' or '8-x-y')
 //   and the value is a GHKey to the PR
-async function getMergedTrops (commit: Commit, pool: Pool) {
+async function getMergedTrops(commit: Commit, pool: Pool) {
   const branches = new Map();
 
   for (const prKey of commit.prKeys.values()) {
     const pull = pool.pulls[prKey.number];
     const mergedBranches = new Set(
       (pull && pull && pull.labels ? pull.labels : [])
-        .map((label) =>
-          (label && label.name ? label.name : '').match(
-            /merged\/([0-9]+-[x0-9]-[xy0-9])/
-          )
-        )
+        .map((label) => (label && label.name ? label.name : '').match(/merged\/([0-9]+-[x0-9]-[xy0-9])/))
         .filter((match) => !!match)
         .map((match) => match[1])
     );
@@ -470,15 +411,10 @@ async function getMergedTrops (commit: Commit, pool: Pool) {
         comment && comment.user && comment.user.login === TROP_LOGIN;
 
       const ghKey = GHKey.NewFromPull(pull);
-      const backportRegex =
-        /backported this PR to "(.*)",\s+please check out #(\d+)/;
+      const backportRegex = /backported this PR to "(.*)",\s+please check out #(\d+)/;
       const getBranchNameAndPullKey = (comment: MinimalComment) => {
-        const match = (comment && comment.body ? comment.body : '').match(
-          backportRegex
-        );
-        return match
-          ? <const>[match[1], new GHKey(ghKey.owner, ghKey.repo, parseInt(match[2]))]
-          : null;
+        const match = (comment && comment.body ? comment.body : '').match(backportRegex);
+        return match ? <const>[match[1], new GHKey(ghKey.owner, ghKey.repo, parseInt(match[2]))] : null;
       };
 
       const comments = await getComments(ghKey);
@@ -496,15 +432,8 @@ async function getMergedTrops (commit: Commit, pool: Pool) {
 
 // @return the shorthand name of the branch that `ref` is on,
 //   e.g. a ref of '10.0.0-beta.1' will return '10-x-y'
-async function getBranchNameOfRef (ref: string, dir: string) {
-  const result = await runGit(dir, [
-    'branch',
-    '--all',
-    '--contains',
-    ref,
-    '--sort',
-    'version:refname'
-  ]);
+async function getBranchNameOfRef(ref: string, dir: string) {
+  const result = await runGit(dir, ['branch', '--all', '--contains', ref, '--sort', 'version:refname']);
   return result
     .split(/\r?\n/) // split into lines
     .shift()! // we sorted by refname and want the first result
@@ -535,9 +464,7 @@ const getNotes = async (fromRef: string, toRef: string, newVersion: string) => {
   await addRepoToPool(pool, electron, fromRef, toRef);
 
   // remove any old commits
-  pool.commits = pool.commits.filter(
-    (commit) => !pool.processedHashes.has(commit.hash)
-  );
+  pool.commits = pool.commits.filter((commit) => !pool.processedHashes.has(commit.hash));
 
   // if a commit _and_ revert occurred in the unprocessed set, skip them both
   for (const commit of pool.commits) {
@@ -563,7 +490,7 @@ const getNotes = async (fromRef: string, toRef: string, newVersion: string) => {
       if (commit.note) {
         break;
       }
-      commit.note = await getNoteFromClerk(prKey) || null;
+      commit.note = (await getNoteFromClerk(prKey)) || null;
     }
   }
 
@@ -638,48 +565,40 @@ const removeSupercededStackUpdates = (commits: Commit[]) => {
  ***/
 
 // @return the pull request's GitHub URL
-const buildPullURL = (ghKey: GHKey) =>
-  `https://github.com/${ghKey.owner}/${ghKey.repo}/pull/${ghKey.number}`;
+const buildPullURL = (ghKey: GHKey) => `https://github.com/${ghKey.owner}/${ghKey.repo}/pull/${ghKey.number}`;
 
-const renderPull = (ghKey: GHKey) =>
-  `[#${ghKey.number}](${buildPullURL(ghKey)})`;
+const renderPull = (ghKey: GHKey) => `[#${ghKey.number}](${buildPullURL(ghKey)})`;
 
 // @return the commit's GitHub URL
-const buildCommitURL = (commit: Commit) =>
-  `https://github.com/${commit.owner}/${commit.repo}/commit/${commit.hash}`;
+const buildCommitURL = (commit: Commit) => `https://github.com/${commit.owner}/${commit.repo}/commit/${commit.hash}`;
 
-const renderCommit = (commit: Commit) =>
-  `[${commit.hash.slice(0, 8)}](${buildCommitURL(commit)})`;
+const renderCommit = (commit: Commit) => `[${commit.hash.slice(0, 8)}](${buildCommitURL(commit)})`;
 
 // @return a markdown link to the PR if available; otherwise, the git commit
-function renderLink (commit: Commit) {
+function renderLink(commit: Commit) {
   const maybePull = commit.prKeys.values().next();
   return maybePull.value ? renderPull(maybePull.value) : renderCommit(commit);
 }
 
 // @return a terser branch name,
 //   e.g. '7-2-x' -> '7.2' and '8-x-y' -> '8'
-const renderBranchName = (name: string) =>
-  name.replace(/-[a-zA-Z]/g, '').replace('-', '.');
+const renderBranchName = (name: string) => name.replace(/-[a-zA-Z]/g, '').replace('-', '.');
 
-const renderTrop = (branch: string, ghKey: GHKey) =>
-  `[${renderBranchName(branch)}](${buildPullURL(ghKey)})`;
+const renderTrop = (branch: string, ghKey: GHKey) => `[${renderBranchName(branch)}](${buildPullURL(ghKey)})`;
 
 // @return markdown-formatted links to other branches' trops,
 //   e.g. "(Also in 7.2, 8, 9)"
-function renderTrops (commit: Commit, excludeBranch: string) {
+function renderTrops(commit: Commit, excludeBranch: string) {
   const body = [...commit.trops.entries()]
     .filter(([branch]) => branch !== excludeBranch)
     .sort(([branchA], [branchB]) => parseInt(branchA) - parseInt(branchB)) // sort by semver major
     .map(([branch, key]) => renderTrop(branch, key))
     .join(', ');
-  return body
-    ? `<sup>(Also in ${body})</sup>`
-    : body;
+  return body ? `<sup>(Also in ${body})</sup>` : body;
 }
 
 // @return a slightly cleaned-up human-readable change description
-function renderDescription (commit: Commit) {
+function renderDescription(commit: Commit) {
   let note = commit.note || commit.subject || '';
   note = note.trim();
 
@@ -732,10 +651,7 @@ function renderDescription (commit: Commit) {
 // @return markdown-formatted release note line item,
 //   e.g. '* Fixed a foo. #12345 (Also in 7.2, 8, 9)'
 const renderNote = (commit: Commit, excludeBranch: string) =>
-  `* ${renderDescription(commit)} ${renderLink(commit)} ${renderTrops(
-    commit,
-    excludeBranch
-  )}\n`;
+  `* ${renderDescription(commit)} ${renderLink(commit)} ${renderTrops(commit, excludeBranch)}\n`;
 
 const renderNotes = (notes: Awaited<ReturnType<typeof getNotes>>, unique = false) => {
   const rendered = [`# Release Notes for ${notes.name}\n\n`];
@@ -743,15 +659,10 @@ const renderNotes = (notes: Awaited<ReturnType<typeof getNotes>>, unique = false
   const renderSection = (title: string, commits: Commit[], unique: boolean) => {
     if (unique) {
       // omit changes that also landed in other branches
-      commits = commits.filter(
-        (commit) => renderTrops(commit, notes.toBranch).length === 0
-      );
+      commits = commits.filter((commit) => renderTrops(commit, notes.toBranch).length === 0);
     }
     if (commits.length > 0) {
-      rendered.push(
-        `## ${title}\n\n`,
-        ...commits.map((commit) => renderNote(commit, notes.toBranch)).sort()
-      );
+      rendered.push(`## ${title}\n\n`, ...commits.map((commit) => renderNote(commit, notes.toBranch)).sort());
     }
   };
 
@@ -762,11 +673,7 @@ const renderNotes = (notes: Awaited<ReturnType<typeof getNotes>>, unique = false
 
   if (notes.docs.length) {
     const docs = notes.docs.map((commit) => renderLink(commit)).sort();
-    rendered.push(
-      '## Documentation\n\n',
-      ` * Documentation changes: ${docs.join(', ')}\n`,
-      '\n'
-    );
+    rendered.push('## Documentation\n\n', ` * Documentation changes: ${docs.join(', ')}\n`, '\n');
   }
 
   renderSection('Unknown', notes.unknown, unique);

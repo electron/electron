@@ -38,7 +38,10 @@ describe('WebContentsView', () => {
     });
 
     expect(webContentsView.webContents).to.eq(wc);
-    expect(webContents.getAllWebContents().length).to.equal(currentWebContentsCount + 1, 'expected only single webcontents to be created');
+    expect(webContents.getAllWebContents().length).to.equal(
+      currentWebContentsCount + 1,
+      'expected only single webcontents to be created'
+    );
   });
 
   it('should throw error when created with already attached webContents to BrowserWindow', () => {
@@ -51,9 +54,12 @@ describe('WebContentsView', () => {
     browserWindow.contentView.addChildView(webContentsView);
     defer(() => browserWindow.contentView.removeChildView(webContentsView));
 
-    expect(() => new WebContentsView({
-      webContents: webContentsView.webContents
-    })).to.throw('options.webContents is already attached to a window');
+    expect(
+      () =>
+        new WebContentsView({
+          webContents: webContentsView.webContents
+        })
+    ).to.throw('options.webContents is already attached to a window');
   });
 
   it('should throw an error when adding a destroyed child view to the parent view', async () => {
@@ -67,7 +73,7 @@ describe('WebContentsView', () => {
     const destroyed = once(wc, 'destroyed');
     await destroyed;
     expect(() => browserWindow.contentView.addChildView(webContentsView)).to.throw(
-      'Can\'t add a destroyed child view to a parent view'
+      "Can't add a destroyed child view to a parent view"
     );
   });
 
@@ -78,9 +84,12 @@ describe('WebContentsView', () => {
     defer(() => webContentsView.webContents.destroy());
     webContentsView.webContents.loadURL('about:blank');
 
-    expect(() => new WebContentsView({
-      webContents: browserWindow.webContents
-    })).to.throw('options.webContents is already attached to a window');
+    expect(
+      () =>
+        new WebContentsView({
+          webContents: browserWindow.webContents
+        })
+    ).to.throw('options.webContents is already attached to a window');
   });
 
   it('can be used as content view', () => {
@@ -146,7 +155,7 @@ describe('WebContentsView', () => {
     expect(w.contentView.children).to.deep.equal([wcv2, wcv1]);
   });
 
-  function triggerGCByAllocation () {
+  function triggerGCByAllocation() {
     const arr = [];
     for (let i = 0; i < 1000000; i++) {
       arr.push([]);
@@ -154,7 +163,7 @@ describe('WebContentsView', () => {
     return arr;
   }
 
-  it('doesn\'t crash when GCed during allocation', (done) => {
+  it("doesn't crash when GCed during allocation", (done) => {
     // eslint-disable-next-line no-new
     new WebContentsView();
     setTimeout(() => {
@@ -218,7 +227,7 @@ describe('WebContentsView', () => {
   });
 
   describe('visibilityState', () => {
-    async function haveVisibilityState (view: WebContentsView, state: string) {
+    async function haveVisibilityState(view: WebContentsView, state: string) {
       const docVisState = await view.webContents.executeJavaScript('document.visibilityState');
       return docVisState === state;
     }
@@ -233,7 +242,9 @@ describe('WebContentsView', () => {
       const v = new WebContentsView();
       await v.webContents.loadURL('about:blank');
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
-      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      const p = v.webContents.executeJavaScript(
+        'new Promise(resolve => document.addEventListener("visibilitychange", resolve))'
+      );
       // Ensure that the above listener has been registered before we add the
       // view to the window, or else the visibilitychange event might be
       // dispatched before the listener is registered.
@@ -260,7 +271,9 @@ describe('WebContentsView', () => {
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
       await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
-      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      const p = v.webContents.executeJavaScript(
+        'new Promise(resolve => document.addEventListener("visibilitychange", resolve))'
+      );
       // We have to wait until the listener above is fully registered before hiding the window.
       // On Windows, the executeJavaScript and the visibilitychange can happen out of order
       // without this.
@@ -276,7 +289,9 @@ describe('WebContentsView', () => {
       w.setContentView(v);
       await v.webContents.loadURL('about:blank');
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
-      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      const p = v.webContents.executeJavaScript(
+        'new Promise(resolve => document.addEventListener("visibilitychange", resolve))'
+      );
       // We have to wait until the listener above is fully registered before hiding the window.
       // On Windows, the executeJavaScript and the visibilitychange can happen out of order
       // without this.
@@ -293,7 +308,9 @@ describe('WebContentsView', () => {
       await v.webContents.loadURL('about:blank');
       await expect(waitUntil(async () => await haveVisibilityState(v, 'visible'))).to.eventually.be.fulfilled();
 
-      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))');
+      const p = v.webContents.executeJavaScript(
+        'new Promise(resolve => document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))'
+      );
       // Ensure the listener has been registered.
       await v.webContents.executeJavaScript('undefined');
       const w2 = new BaseWindow();
@@ -306,7 +323,9 @@ describe('WebContentsView', () => {
       // until the visibility state settles as "visible".
       let visibilityState = await p;
       for (let attempts = 0; visibilityState !== 'visible' && attempts < 10; attempts++) {
-        visibilityState = await v.webContents.executeJavaScript('new Promise(resolve => document.visibilityState === "visible" ? resolve("visible") : document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))');
+        visibilityState = await v.webContents.executeJavaScript(
+          'new Promise(resolve => document.visibilityState === "visible" ? resolve("visible") : document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))'
+        );
       }
       expect(visibilityState).to.equal('visible');
     });
@@ -435,7 +454,10 @@ describe('WebContentsView', () => {
         corners = [
           { x: display.workArea.x + inset, y: display.workArea.y + inset + platformInset }, // top-left
           { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + inset + platformInset }, // top-right
-          { x: display.workArea.x + display.workArea.width - inset, y: display.workArea.y + display.workArea.height - inset }, // bottom-right
+          {
+            x: display.workArea.x + display.workArea.width - inset,
+            y: display.workArea.y + display.workArea.height - inset
+          }, // bottom-right
           { x: display.workArea.x + inset, y: display.workArea.y + display.workArea.height - inset } // bottom-left
         ];
 

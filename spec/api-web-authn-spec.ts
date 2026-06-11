@@ -30,6 +30,39 @@ ifdescribe(process.platform === 'darwin')('app.configureWebAuthn', () => {
       })
     ).to.not.throw();
   });
+
+  it('throws when touchID.promptReason is empty', () => {
+    expect(() =>
+      configureWebAuthn({
+        touchID: {
+          keychainAccessGroup: 'TESTTEAMID.org.electron.spec.webauthn',
+          promptReason: ''
+        }
+      })
+    ).to.throw(/promptReason/);
+  });
+
+  it('accepts a touchID.promptReason with a $1 placeholder', () => {
+    expect(() =>
+      configureWebAuthn({
+        touchID: {
+          keychainAccessGroup: 'TESTTEAMID.org.electron.spec.webauthn',
+          promptReason: 'sign in to $1'
+        }
+      })
+    ).to.not.throw();
+  });
+
+  it('accepts a touchID.promptReason without a placeholder', () => {
+    expect(() =>
+      configureWebAuthn({
+        touchID: {
+          keychainAccessGroup: 'TESTTEAMID.org.electron.spec.webauthn',
+          promptReason: 'sign in'
+        }
+      })
+    ).to.not.throw();
+  });
 });
 
 describe("session 'select-webauthn-account' event", () => {
@@ -78,7 +111,7 @@ describe("session 'select-webauthn-account' event", () => {
     await closeAllWindows();
   });
 
-  async function addCredential (opts: { id: string; userHandle: string; name: string; displayName: string }) {
+  async function addCredential(opts: { id: string; userHandle: string; name: string; displayName: string }) {
     const privateKey = await w.webContents.executeJavaScript(`
       (async () => {
         const k = await crypto.subtle.generateKey(
@@ -102,7 +135,7 @@ describe("session 'select-webauthn-account' event", () => {
     });
   }
 
-  function getAssertion () {
+  function getAssertion() {
     return w.webContents.executeJavaScript(`
       navigator.credentials.get({
         publicKey: {

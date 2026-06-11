@@ -13,8 +13,12 @@ const isCI = !!process.env.CI;
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 // FIXME: The tests are skipped on linux arm/arm64
-ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== 'linux'))('contentTracing', () => {
-  const record = async (options: TraceConfig | TraceCategoriesAndOptions, outputFilePath: string | undefined, recordTimeInMilliseconds = 1e1) => {
+ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'linux')('contentTracing', () => {
+  const record = async (
+    options: TraceConfig | TraceCategoriesAndOptions,
+    outputFilePath: string | undefined,
+    recordTimeInMilliseconds = 1e1
+  ) => {
     await app.whenReady();
 
     await contentTracing.startRecording(options);
@@ -53,8 +57,7 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
 
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      expect(fileSizeInKiloBytes).to.be.above(0,
-        `the trace output file is empty, check "${outputFilePath}"`);
+      expect(fileSizeInKiloBytes).to.be.above(0, `the trace output file is empty, check "${outputFilePath}"`);
     });
 
     it('accepts a trace config', async () => {
@@ -87,11 +90,12 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
       const expectedMaximumFileSize = 60; // Depends on a platform.
 
-      expect(fileSizeInKiloBytes).to.be.above(0,
-        `the trace output file is empty, check "${outputFilePath}"`);
-      expect(fileSizeInKiloBytes).to.be.below(expectedMaximumFileSize,
+      expect(fileSizeInKiloBytes).to.be.above(0, `the trace output file is empty, check "${outputFilePath}"`);
+      expect(fileSizeInKiloBytes).to.be.below(
+        expectedMaximumFileSize,
         `the trace output file is suspiciously large (${fileSizeInKiloBytes}KB),
-        check "${outputFilePath}"`);
+        check "${outputFilePath}"`
+      );
     });
   });
 
@@ -432,7 +436,11 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
       const path = await contentTracing.stopRecording();
       const data = fs.readFileSync(path, 'utf8');
       const parsed = JSON.parse(data);
-      expect(parsed.traceEvents.some((x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk')).to.be.true();
+      expect(
+        parsed.traceEvents.some(
+          (x: any) => x.cat === 'disabled-by-default-v8.cpu_profiler' && x.name === 'ProfileChunk'
+        )
+      ).to.be.true();
     });
   });
 

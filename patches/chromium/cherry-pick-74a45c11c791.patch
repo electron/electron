@@ -1,0 +1,77 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Sun, 31 May 2026 20:55:50 -0700
+Subject: [M148] bluetooth: Fix potential UAF in Bluetooth Classic channel
+ delegates on macOS
+
+Original change's description:
+> bluetooth: Fix potential UAF in Bluetooth Classic channel delegates on macOS
+>
+> Clears the native channel's delegate and extends the delegate's lifetime
+> across one run-loop turn during channel destruction.
+>
+> On macOS, the classic Bluetooth channel delegates only self-retain on
+> successful open. On connection failure or timeout, destroying the C++
+> wrapper deallocates the delegate while the OS still holds an unsafe
+> reference, causing a UAF during subsequent async callbacks.
+>
+> Bug: 516963272
+> Change-Id: Ice878214b875039e6eff06b0b4101a7c4ea433f6
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7884206
+> Commit-Queue: Alvin Ji <alvinji@chromium.org>
+> Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1638776}
+
+(cherry picked from commit 3da0d899cbbe299ec3ba36bb842b0b6215915b63)
+
+Bug: 518123692,516963272
+Change-Id: Ice878214b875039e6eff06b0b4101a7c4ea433f6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7884252
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4123}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/device/bluetooth/bluetooth_l2cap_channel_mac.mm b/device/bluetooth/bluetooth_l2cap_channel_mac.mm
+index 5bcbde969ab86151f013999b7d13c8b82c9b6eca..66db9baae58b4d6d05570c11323c5256d9ca035b 100644
+--- a/device/bluetooth/bluetooth_l2cap_channel_mac.mm
++++ b/device/bluetooth/bluetooth_l2cap_channel_mac.mm
+@@ -110,7 +110,16 @@ - (void)resetOwner {
+   // delegate's reference to this object so the delegate will not notify us
+   // for events that occur after our destruction.
+   [delegate_ resetOwner];
++  [channel_ setDelegate:nil];
+   [channel_ closeChannel];
++  // `delegate_`'s self-retain (`_strongSelf`) is only armed after a successful
++  // open. If we are destroyed during a pending or failed open, keep the
++  // delegate alive across one main-run-loop turn so any already-enqueued
++  // IOBluetooth callbacks hit a live receiver. See FB13705522.
++  BluetoothL2capChannelDelegate* __strong delegate = delegate_;
++  dispatch_async(dispatch_get_main_queue(), ^{
++    (void)delegate;
++  });
+ }
+ 
+ // static
+diff --git a/device/bluetooth/bluetooth_rfcomm_channel_mac.mm b/device/bluetooth/bluetooth_rfcomm_channel_mac.mm
+index ebc668426afd4cdb6641f0fc2169bf5c0255ec6d..fd75d89437ffa394e4b86b25cc5013c5c438c6cf 100644
+--- a/device/bluetooth/bluetooth_rfcomm_channel_mac.mm
++++ b/device/bluetooth/bluetooth_rfcomm_channel_mac.mm
+@@ -117,7 +117,16 @@ - (void)setRfcommChannel:(IOBluetoothRFCOMMChannel*)rfcommChannel {
+   // delegate's reference to this object so the delegate will not notify us
+   // for events that occur after our destruction.
+   [delegate_ resetOwner];
++  [channel_ setDelegate:nil];
+   [channel_ closeChannel];
++  // `delegate_`'s self-retain (`_strongSelf`) is only armed after a successful
++  // open. If we are destroyed during a pending or failed open, keep the
++  // delegate alive across one main-run-loop turn so any already-enqueued
++  // IOBluetooth callbacks hit a live receiver. See FB13705522.
++  BluetoothRfcommChannelDelegate* __strong delegate = delegate_;
++  dispatch_async(dispatch_get_main_queue(), ^{
++    (void)delegate;
++  });
+ }
+ 
+ // static
