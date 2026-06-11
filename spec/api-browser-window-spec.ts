@@ -4665,6 +4665,128 @@ describe('BrowserWindow module', () => {
         const [, id] = await webviewDomReady;
         expect(webContents.id).to.equal(id);
       });
+
+      describe('initial empty document', () => {
+        // The ElectronFrameStartup startup data is pushed at frame creation
+        // and again ahead of every committed navigation, so even a script
+        // context forced onto a frame's initial empty document — before the
+        // first navigation commits, or after it was cancelled by a
+        // main-process navigation guard (will-redirect + preventDefault) —
+        // observes preload scripts. Regression test for
+        // "TypeError: Cannot destructure property 'preloadScripts' of
+        // 'binding.startupData' as it is null". A standalone repro lives in
+        // spec/fixtures/apps/sandbox-stranded-document.
+        let redirectServer: http.Server;
+        let redirectServerUrl: string;
+        let releaseHeldResponse: (() => void) | null = null;
+
+        before(async () => {
+          redirectServer = http.createServer((request, response) => {
+            if (request.url === '/redirect') {
+              response.writeHead(302, { Location: '/target' });
+              response.end();
+            } else if (request.url === '/hold') {
+              // Hold the response so the navigation stays pending until the
+              // test releases it.
+              releaseHeldResponse = () => {
+                response.setHeader('Content-Type', 'text/html');
+                response.end('<html><body>held</body></html>');
+              };
+            } else {
+              response.setHeader('Content-Type', 'text/html');
+              response.end('<html><body>target</body></html>');
+            }
+          });
+          redirectServerUrl = (await listen(redirectServer)).url;
+        });
+
+        afterEach(() => {
+          releaseHeldResponse = null;
+        });
+
+        after(() => {
+          redirectServer.close();
+        });
+
+        it('runs preloads on a context forced after a cancelled first navigation', async () => {
+          const strandedPreload = path.join(fixtures, 'module', 'preload-stranded.js');
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: { sandbox: true, contextIsolation: true, preload: strandedPreload }
+          });
+          const messages: { level: string, message: string }[] = [];
+          w.webContents.on('console-message', (event) => {
+            messages.push({ level: event.level, message: event.message });
+          });
+          const preloadUrls: string[] = [];
+          ipcMain.on('stranded-document-preload', (_event, url: string) => { preloadUrls.push(url); });
+          defer(() => ipcMain.removeAllListeners('stranded-document-preload'));
+
+          w.webContents.once('will-redirect', (event) => event.preventDefault());
+          await expect(w.loadURL(`${redirectServerUrl}/redirect`)).to.eventually.be.rejectedWith(/ERR_FAILED/);
+          expect(preloadUrls).to.be.empty('no context yet, no preload');
+
+          // Force a script context onto the stranded initial empty document.
+          w.webContents.debugger.attach('1.3');
+          await w.webContents.debugger.sendCommand('Runtime.enable');
+          await waitUntil(() => preloadUrls.length > 0);
+          w.webContents.debugger.detach();
+
+          expect(preloadUrls).to.deep.equal(['about:blank']);
+          expect(messages.some(m => m.message.includes('TypeError'))).to.be.false('sandbox bundle threw a TypeError');
+          expect(messages.some(m => m.message.includes('failed to run'))).to.be.false('sandbox bundle failed to run');
+          expect(messages.some(m => m.message.includes('no startup data'))).to.be.false('startup data was missing');
+
+          // A committed navigation runs the preload again for its document.
+          await w.loadURL(`${redirectServerUrl}/target`);
+          await waitUntil(() => preloadUrls.length > 1);
+          expect(preloadUrls[1]).to.equal(`${redirectServerUrl}/target`);
+        });
+
+        it('runs preloads on a context forced before the first navigation commits', async () => {
+          // A script context can be forced onto the frame's initial empty
+          // document while the first navigation is still pending — e.g.
+          // webFrameMain.executeJavaScript or a CDP client attaching at
+          // startup, racing a slow server. The frame-creation push must
+          // already have landed by then.
+          const strandedPreload = path.join(fixtures, 'module', 'preload-stranded.js');
+          const w = new BrowserWindow({
+            show: false,
+            webPreferences: { sandbox: true, contextIsolation: true, preload: strandedPreload }
+          });
+          const messages: { level: string, message: string }[] = [];
+          w.webContents.on('console-message', (event) => {
+            messages.push({ level: event.level, message: event.message });
+          });
+          const preloadUrls: string[] = [];
+          ipcMain.on('stranded-document-preload', (_event, url: string) => { preloadUrls.push(url); });
+          defer(() => ipcMain.removeAllListeners('stranded-document-preload'));
+
+          const navStarted = once(w.webContents, 'did-start-navigation');
+          const loaded = w.loadURL(`${redirectServerUrl}/hold`);
+          await navStarted;
+
+          // Force a context on the initial empty document while the
+          // navigation is pending. The frame may not be live on the very
+          // first attempt, so retry until the preload reports in.
+          await waitUntil(() => {
+            w.webContents.mainFrame.executeJavaScript('void 0').catch(() => {});
+            return preloadUrls.length > 0;
+          });
+
+          expect(preloadUrls).to.deep.equal(['about:blank']);
+          expect(messages.some(m => m.message.includes('TypeError'))).to.be.false('sandbox bundle threw a TypeError');
+          expect(messages.some(m => m.message.includes('failed to run'))).to.be.false('sandbox bundle failed to run');
+          expect(messages.some(m => m.message.includes('no startup data'))).to.be.false('startup data was missing');
+
+          // Release the held response; the navigation commits and the
+          // committed document runs the preload again.
+          releaseHeldResponse!();
+          await loaded;
+          await waitUntil(() => preloadUrls.length > 1);
+          expect(preloadUrls[1]).to.equal(`${redirectServerUrl}/hold`);
+        });
+      });
     });
 
     describe('child windows', () => {

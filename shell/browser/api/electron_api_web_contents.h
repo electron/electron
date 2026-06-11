@@ -638,11 +638,16 @@ class WebContents final : public ExclusiveAccessContext,
       content::NavigationHandle* navigation_handle) override;
   void ReadyToCommitNavigation(
       content::NavigationHandle* navigation_handle) override;
-  // Pushes preload script contents + process info to a sandboxed renderer over
-  // the navigation's associated mojo channel, ahead of CommitNavigation.
-  // Replaces the BROWSER_SANDBOX_LOAD sync IPC for the common path.
+  // Pushes preload script contents + process info to a sandboxed renderer
+  // over the frame's associated mojo channel. Replaces the
+  // BROWSER_SANDBOX_LOAD sync IPC. The NavigationHandle variant runs ahead of
+  // CommitNavigation for every committed navigation; the RenderFrameHost
+  // variant runs at frame creation so the initial empty document has startup
+  // data before any script context can be created on it.
   void MaybeSendRendererStartupData(
       content::NavigationHandle* navigation_handle);
+  void MaybeSendRendererStartupData(content::RenderFrameHost* rfh);
+  void SendRendererStartupData(content::RenderFrameHost* rfh);
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   void WebContentsDestroyed() override;

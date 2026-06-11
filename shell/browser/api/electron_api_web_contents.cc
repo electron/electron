@@ -1951,6 +1951,13 @@ void WebContents::HandleNewRenderFrame(
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
   if (web_frame)
     web_frame->MaybeSetupMojoConnection();
+
+  // Push renderer startup data as soon as the frame exists so that a script
+  // context forced onto the frame's initial empty document — before the
+  // first navigation commits, or after it was cancelled — observes preload
+  // scripts + process info instead of null. ReadyToCommitNavigation pushes a
+  // fresh copy for every committed navigation.
+  MaybeSendRendererStartupData(render_frame_host);
 }
 
 void WebContents::OnBackgroundColorChanged() {
@@ -2265,7 +2272,12 @@ void WebContents::DidRedirectNavigation(
 }
 
 // Pushes preload contents + process.env + helperExecPath over an associated
-// channel ordered before CommitNavigation, so the renderer never has to ask.
+// channel, so the renderer never has to ask. Called from two places:
+// HandleNewRenderFrame (so the frame's initial empty document has startup
+// data before any script context can be created on it) and
+// ReadyToCommitNavigation (ordered before CommitNavigation, so every
+// committed document observes a fresh copy — including preload scripts
+// registered after the frame was created).
 void WebContents::MaybeSendRendererStartupData(
     content::NavigationHandle* navigation_handle) {
   if (!WebContentsPreferences::ShouldUseSandbox(web_contents()))
@@ -2286,9 +2298,26 @@ void WebContents::MaybeSendRendererStartupData(
   if (!main_frame && !allow_subframes && !is_devtools_like)
     return;
 
-  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
+  SendRendererStartupData(navigation_handle->GetRenderFrameHost());
+}
+
+void WebContents::MaybeSendRendererStartupData(content::RenderFrameHost* rfh) {
+  if (!WebContentsPreferences::ShouldUseSandbox(web_contents()))
+    return;
+  auto* web_prefs = WebContentsPreferences::From(web_contents());
+  bool allow_subframes =
+      web_prefs && web_prefs->AllowsNodeIntegrationInSubFrames();
+  if (rfh->GetParent() && !allow_subframes)
+    return;
+
+  SendRendererStartupData(rfh);
+}
+
+void WebContents::SendRendererStartupData(content::RenderFrameHost* rfh) {
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
+
+  auto* web_prefs = WebContentsPreferences::From(web_contents());
 
   // Build the ordered preload list: session-registered preloads of type
   // 'frame' first (in registration order), then the per-WebContents
@@ -2327,11 +2356,13 @@ void WebContents::MaybeSendRendererStartupData(
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as
-  // content.mojom.Frame (the navigation channel), so this message is ordered
-  // before the CommitNavigation that the browser sends right after
-  // ReadyToCommitNavigation returns. The renderer's ElectronApiServiceImpl —
-  // created in RenderFrameCreated, before any navigation — will have cached it
-  // by the time DidCreateScriptContext fires.
+  // content.mojom.Frame (the navigation channel), so a push from
+  // ReadyToCommitNavigation is ordered before the CommitNavigation that the
+  // browser sends right after it returns, and a push from
+  // HandleNewRenderFrame is ordered before everything else on the frame. The
+  // renderer's ElectronApiServiceImpl — created in RenderFrameCreated, before
+  // any navigation — will have cached it by the time DidCreateScriptContext
+  // fires.
   mojo::AssociatedRemote<mojom::ElectronFrameStartup> frame_startup;
   rfh->GetRemoteAssociatedInterfaces()->GetInterface(&frame_startup);
   frame_startup->SetStartupData(std::move(data));

@@ -12,15 +12,24 @@ declare const binding: {
   createPreloadScript: (scriptId: string, paramNames: string[]) => Function | null;
   // Delivered by the browser via the service worker's EmbeddedWorkerStartParams
   // (ContentBrowserClient::GetServiceWorkerStartupData), marshalled onto the
-  // worker thread with the rest of the start params — always present when this
-  // bundle runs.
+  // worker thread with the rest of the start params. Null if the start params
+  // carried no preload data or it failed to deserialize.
   startupData: {
     preloadScripts: ElectronInternal.PreloadScript[];
     process: NodeJS.Process;
-  };
+  } | null;
 };
 
-const { preloadScripts, process: processProps } = binding.startupData;
+if (!binding.startupData) {
+  console.warn(
+    'Electron: no startup data for this preload realm; preload scripts will not run.'
+  );
+}
+
+const { preloadScripts, process: processProps } = binding.startupData ?? {
+  preloadScripts: [],
+  process: {} as NodeJS.Process
+};
 
 const electron = require('electron');
 

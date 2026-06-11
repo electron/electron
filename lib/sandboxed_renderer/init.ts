@@ -10,16 +10,27 @@ import { setImmediate, clearImmediate } from 'timers';
 declare const binding: {
   process: NodeJS.Process;
   createPreloadScript: (scriptId: string, paramNames: string[]) => Function | null;
-  // Pushed by the browser via mojom.ElectronFrameStartup, ordered ahead of
-  // the CommitNavigation that triggered DidCreateScriptContext — always
-  // present for documents that reach this bundle.
+  // Pushed by the browser via mojom.ElectronFrameStartup at frame creation
+  // and again ahead of every CommitNavigation, so it should always be present
+  // by the time this bundle runs. The null fallback below is defensive: an
+  // unexpected edge case is degraded to a preload-less init with a warning
+  // instead of a TypeError that would abort the whole bundle.
   startupData: {
     preloadScripts: ElectronInternal.PreloadScript[];
     process: NodeJS.Process;
-  };
+  } | null;
 };
 
-const { preloadScripts, process: processProps } = binding.startupData;
+if (!binding.startupData) {
+  console.warn(
+    `Electron: no startup data for document "${globalThis.location?.href}"; preload scripts will not run in this context.`
+  );
+}
+
+const { preloadScripts, process: processProps } = binding.startupData ?? {
+  preloadScripts: [],
+  process: {} as NodeJS.Process
+};
 
 const electron = require('electron');
 
