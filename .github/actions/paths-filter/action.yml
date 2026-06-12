@@ -34,17 +34,21 @@ runs:
               ;;
             push)
               if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
-                git fetch origin "$BEFORE_SHA"
+                # Redirect to stderr so fetch output won't pollute the captured file list
+                git fetch origin "$BEFORE_SHA" >&2
                 git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA"
+              else
+                # New branch push (no usable before SHA): treat every tracked file as changed.
+                git ls-files
               fi
+              ;;
+            *)
+              # Any other event (e.g. workflow_dispatch, schedule): treat every tracked file as changed.
+              git ls-files
               ;;
           esac
         }
 
-        ALL_CHANGED=false
-        if [[ "$EVENT_NAME" == "push" && ( -z "$BEFORE_SHA" || "$BEFORE_SHA" == "0000000000000000000000000000000000000000" ) ]] || [[ "$EVENT_NAME" != "pull_request" && "$EVENT_NAME" != "push" ]]; then
-          ALL_CHANGED=true
-        fi
         CHANGED_FILES=$(get_changed_files | sort -u)
 
         # Convert a glob pattern to an ERE regex
@@ -79,9 +83,7 @@ runs:
 
             regex="^$(glob_to_regex "$pattern")$"
 
-            if [[ "$ALL_CHANGED" == true ]]; then
-              matched=true
-            elif [[ -z "$CHANGED_FILES" ]]; then
+            if [[ -z "$CHANGED_FILES" ]]; then
               matched=false # No files changed, so no pattern (negated or not) can match.
             elif [[ "$negated" == true ]]; then
               grep -qvE "$regex" <<< "$CHANGED_FILES" && matched=true
