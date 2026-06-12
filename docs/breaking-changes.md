@@ -12,6 +12,15 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (44.0)
+
+### Removed: macOS 12 support
+
+macOS 12 (Monterey) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/7907086).
+
+Older versions of Electron will continue to run on Monterey, but macOS 13 (Ventura)
+or later will be required to run Electron v44.0.0 and higher.
+
 ## Planned Breaking API Changes (43.0)
 
 ### Removed: Unity desktop environment support on Linux
