@@ -1,0 +1,53 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Devlin Cronin <rdevlin.cronin@chromium.org>
+Date: Fri, 5 Jun 2026 15:53:30 -0700
+Subject: [Extensions] Check error pages in ExtensionFunctionDispatcher
+
+ExtensionFunctionDispatcher initializes ExtensionFunction instances,
+which are then used to determine if a call to a particular function is
+allowed. It should be using trusted data when setting up these
+functions.
+
+Check if a RenderFrameHost hosts an error document -- if it does, don't
+allow the extension function call. Error documents commit in the process
+of their parent and have a misleading last-committed URL (it's the URL
+of the target page, rather than chrome-error).
+
+Drop all requests from error pages. We could theoretically instead set
+the URL to something else, but there's (currently) no valid reason for
+error pages to be calling extension APIs, so we can just ignore the
+requests.
+
+Bug: 516797143
+Change-Id: I298f947629ea61856633729b93101d5c0f0698a9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7904593
+Auto-Submit: Devlin Cronin <rdevlin.cronin@chromium.org>
+Commit-Queue: Devlin Cronin <rdevlin.cronin@chromium.org>
+Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1642655}
+
+diff --git a/extensions/browser/extension_function_dispatcher.cc b/extensions/browser/extension_function_dispatcher.cc
+index f0085381b1b7ba7c0ed0f136d61d80370dbb8f25..7c7e7293e49207951e3365035adf9c21cec0c7ef 100644
+--- a/extensions/browser/extension_function_dispatcher.cc
++++ b/extensions/browser/extension_function_dispatcher.cc
+@@ -285,6 +285,20 @@ void ExtensionFunctionDispatcher::DispatchWithCallbackInternal(
+ 
+   const GURL* render_frame_host_url = nullptr;
+   if (render_frame_host) {
++    // Error pages commit with the target URL and in their parents' process, but
++    // aren't actually on the page indicated by the committed URL.
++    // Bail out in this case. Error pages don't use extension APIs.
++    // If we had perfect timing and no race conditions, this could be a sign of
++    // a bad message; however, it's possible a page commits to an error page
++    // after a legitimate message is sent.
++    if (render_frame_host->IsErrorDocument()) {
++      constexpr char kCannotUseExtensionAPIsInErrorPages[] =
++          "Cannot call extension APIs from error pages.";
++      ResponseCallbackOnError(std::move(callback),
++                              ExtensionFunction::ResponseType::kFailed,
++                              kCannotUseExtensionAPIsInErrorPages);
++      return;
++    }
+     render_frame_host_url = &render_frame_host->GetLastCommittedURL();
+     DCHECK_EQ(render_process_id,
+               render_frame_host->GetProcess()->GetDeprecatedID());
