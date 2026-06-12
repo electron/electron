@@ -2,4 +2,3 @@ chore_allow_customizing_microtask_policy_per_context.patch
 build_warn_instead_of_abort_on_builtin_pgo_profile_mismatch.patch
 cppgc_support_stackstartmarker_on_msvc.patch
 fastapi_store_v8_cfunction_pointer_directly_in.patch
-cherry-pick-c6bfbe7c4e84.patch
