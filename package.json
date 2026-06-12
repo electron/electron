@@ -32,7 +32,7 @@
     "lint-staged": "^16.1.0",
     "markdownlint-cli2": "^0.18.0",
     "minimist": "^1.2.8",
-    "node-gyp": "^11.4.2",
+    "node-gyp": "^12.3.0",
     "null-loader": "^4.0.1",
     "oxfmt": "^0.42.0",
     "oxlint": "^1.57.0",
