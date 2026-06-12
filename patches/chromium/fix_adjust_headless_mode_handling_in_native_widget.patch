@@ -23,7 +23,7 @@ additional headless changes from breaking macOS window behavior.
 https://chromium-review.googlesource.com/c/chromium/src/+/7487666
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index ba077ed1ff89cdf8e602135330698553d1d765a6..ab0e20aff212fd8f9d74d5b424c72e308924304a 100644
+index ccff9b38717fc59563f75aea8ea502a942717c42..1209f74f28b5d6c642e207c08fd03b00680b0652 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -241,6 +241,7 @@ @implementation NativeWidgetMacNSWindow {
@@ -67,7 +67,7 @@ index ba077ed1ff89cdf8e602135330698553d1d765a6..ab0e20aff212fd8f9d74d5b424c72e30
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 9e4d80f999db6a7e98cc9ade0da27e834afabf53..3c3ae8a4526c10fce2d78f87a21b54b41dd231c8 100644
+index ad1023aef057be560e8c0dd45122ef6f7df49a0d..9bf86e5e5a27da63e3538327d0d919c488da4483 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -570,7 +570,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
