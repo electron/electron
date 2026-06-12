@@ -94,10 +94,10 @@ index a41254c1f31654c1326b4bf1f29237bdf44bbe5a..8ca5673a225b69b5630383ed9673653b
    StateRestorationData? state_restoration_data;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index a7aa661f94df2a435de6727ca89b69e686b92887..16e6c4b02aca7f1c4f2e80340898262be3b23f87 100644
+index 23a238cd16fa3255980e1f8ad735a6e45c6e5ebb..817fb094dfa9b257c4992157defa7e7bca03f932 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-@@ -567,6 +567,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -572,6 +572,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    bool is_miniaturized_ = false;
    bool is_window_key_ = false;
    bool is_mouse_capture_active_ = false;
@@ -106,7 +106,7 @@ index a7aa661f94df2a435de6727ca89b69e686b92887..16e6c4b02aca7f1c4f2e80340898262b
    bool is_visible_on_all_workspaces_ = false;
    gfx::Rect window_bounds_before_fullscreen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index e9df540bdecfbdab4d74b4c483dd0593695a2ef8..b92006768fd41c1df6cbb4244e53ee86a3ea4895 100644
+index 806d9789435412fbe5b7f98a6fda134ab86a7862..5e3bf587c5bee8ea33c6cd3137c7c92620cb8bbe 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -485,6 +485,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,

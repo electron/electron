@@ -100,10 +100,10 @@ index b07da3a191cd0424fe76ee762de091a9ec24d5a4..49ecd470ce29078418ccb490caa8cfde
  ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
                                               const char* type_name,
 diff --git a/gin/per_isolate_data.cc b/gin/per_isolate_data.cc
-index 884990426f13a6abca22a60dd8cc0685f8435b23..addef14ce7801a38bdbe25af6b3bbb968074f6bf 100644
+index ee5a798d22be4f471437f3c1ffb2a140c6d84a5f..9c0beb9b0a3b37699bcb3a1555bee3892b51b79c 100644
 --- a/gin/per_isolate_data.cc
 +++ b/gin/per_isolate_data.cc
-@@ -68,12 +68,39 @@ PerIsolateData* PerIsolateData::From(Isolate* isolate) {
+@@ -75,12 +75,39 @@ PerIsolateData* PerIsolateData::From(Isolate* isolate) {
    return static_cast<PerIsolateData*>(isolate->GetData(kEmbedderNativeGin));
  }
  
@@ -143,7 +143,7 @@ index 884990426f13a6abca22a60dd8cc0685f8435b23..addef14ce7801a38bdbe25af6b3bbb96
  v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
      const WrapperInfo* info) {
    ObjectTemplateMap::iterator it = object_templates_.find(info);
-@@ -83,6 +110,25 @@ v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
+@@ -90,6 +117,25 @@ v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
    return it->second.Get(isolate_);
  }
  
@@ -169,7 +169,7 @@ index 884990426f13a6abca22a60dd8cc0685f8435b23..addef14ce7801a38bdbe25af6b3bbb96
  void PerIsolateData::AddDisposeObserver(DisposeObserver* observer) {
    dispose_observers_.AddObserver(observer);
  }
-@@ -97,6 +143,12 @@ void PerIsolateData::NotifyBeforeDispose() {
+@@ -104,6 +150,12 @@ void PerIsolateData::NotifyBeforeDispose() {
    }
  }
  
@@ -260,7 +260,7 @@ index d2b2ce62dc6244b969283c983032c1922ef83e79..3b961ac57bccd14a2284e01a3b800d5f
    std::shared_ptr<V8ForegroundTaskRunnerBase> task_runner_;
    std::shared_ptr<V8ForegroundTaskRunnerBase> user_visible_task_runner_;
 diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
-index f32f7ce79f5a1f25bfb89b901d75968d1e55697d..523d156de44c6e297855571699ec7a389a82a8b8 100644
+index 6409d04497fe237e6fb0d57c582b9020d003d382..7af83f96cfd6287507472956359564454db71aef 100644
 --- a/gin/public/gin_embedders.h
 +++ b/gin/public/gin_embedders.h
 @@ -25,9 +25,13 @@ enum GinEmbedder : uint16_t {
@@ -614,7 +614,7 @@ index 0cdc51cbe448a0027f2fa4404323ccd36199606e..913752216e8ce77e074a8bf91dca307d
      return nullptr;
    }
 diff --git a/third_party/blink/renderer/platform/bindings/wrapper_type_info.h b/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
-index 0cd60fe33e87dd3200a7041b42ddb3ce76997d73..5a01c6ad7fa7aece5c3129721e524a548574bd23 100644
+index e2d9ae67fcd873f676761134948af78ad2ed04e2..2c2b2dde5112648033edee4e12a0db30962f5a9e 100644
 --- a/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
 +++ b/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
 @@ -188,6 +188,15 @@ struct PLATFORM_EXPORT WrapperTypeInfo final

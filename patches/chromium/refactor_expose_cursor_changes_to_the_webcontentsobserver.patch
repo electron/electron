@@ -8,7 +8,7 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index 50d23f017c3caf5eafcc2ff97583905e1dafb900..10dd78280fde8262212493cc49268825433d052e 100644
+index 19776b8613b24c12b15034dca687fd3b2fa4dc58..d33e1caee7acb00050f07518927a6cd5a37798bb 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
 @@ -26,6 +26,7 @@
@@ -30,7 +30,7 @@ index 50d23f017c3caf5eafcc2ff97583905e1dafb900..10dd78280fde8262212493cc49268825
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 80cead56c3bb1f1b6a8f83e3775a2949e5b49aef..8fdcb1c65b0f78b22a640b6936fab1539378bfa1 100644
+index f8cbc050d8172cf077192f1850050a8dfa78c01a..9ddacf05b9fe053708485b076dbd21ae8bd413a1 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -2102,6 +2102,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
@@ -44,10 +44,10 @@ index 80cead56c3bb1f1b6a8f83e3775a2949e5b49aef..8fdcb1c65b0f78b22a640b6936fab153
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 9afc740c32abe3883cf1ca6b1d51c31572efe1cc..89e29f3d8b6055753426c22b565d4d364ecf939f 100644
+index 85b678da609d062df2a3dde1ab28556018136f1a..26bbdb5bbedbeb7428ab9b97e86964722a03f0cc 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -6423,6 +6423,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -6440,6 +6440,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,10 +60,10 @@ index 9afc740c32abe3883cf1ca6b1d51c31572efe1cc..89e29f3d8b6055753426c22b565d4d36
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 42ca723d75cd787eb90a99cb98d8f2eabb16ccb0..d1598844ab3322998a231e6b6185fe53ce46b715 100644
+index 3291f86733a4ba574e185058c20d68400cd159fc..d5d04d048748aaf7445a26d67be68874ad14d9bb 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1221,6 +1221,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1223,6 +1223,7 @@ class CONTENT_EXPORT WebContentsImpl
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
