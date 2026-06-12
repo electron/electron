@@ -1296,7 +1296,9 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(
                            item->expiration.InMillisecondsF());
                   dict.Set("lastUsedTime", item->last_used_time);
                   dict.Set("size", item->size);
-                  dict.Set("hash", net::HashValue(item->hash).ToString());
+                  dict.Set("hash",
+                           net::HashValue(net::HASH_VALUE_SHA256, item->hash)
+                               .ToString());
 
                   result.push_back(dict);
                 }

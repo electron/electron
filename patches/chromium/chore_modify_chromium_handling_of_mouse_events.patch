@@ -34,10 +34,10 @@ index cc3f9bc9383f8272a5cd95b1f2ac56529d86e493..5ca29b84cdaf42ef516ef819ae32b230
  
  class ScrollEvent;
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 5359723b497b60356de14b9cf609f3a84be522b1..2ec269f3617cb5e5049b1623c316c638114cde3f 100644
+index 9565fe90c0e0c90a2ffd510d5328c42d4aeb2e56..16237d29c8fb1ac0c7ea8a8db5f5b619cd463b30 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1446,6 +1446,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
+@@ -1454,6 +1454,10 @@ HBRUSH DesktopWindowTreeHostWin::GetBackgroundPaintBrush() {
    return background_paint_brush_;
  }
  
@@ -49,10 +49,10 @@ index 5359723b497b60356de14b9cf609f3a84be522b1..2ec269f3617cb5e5049b1623c316c638
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 29a4f2923ef83fa51e9c87202042a9825440b37b..0bd3b00c03a32f0e9c5c71798e6278b6781a5332 100644
+index 829f6c98a99eee40e9158c2c1ba406608ba62494..bf2d643342c9185452cac05ad6451843b586d5c2 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -278,6 +278,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -281,6 +281,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void HandleWindowScaleFactorChanged(float window_scale_factor) override;
    void HandleHeadlessWindowBoundsChanged(const gfx::Rect& bounds) override;
    HBRUSH GetBackgroundPaintBrush() override;
@@ -61,10 +61,10 @@ index 29a4f2923ef83fa51e9c87202042a9825440b37b..0bd3b00c03a32f0e9c5c71798e6278b6
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 0c6aefad06bae1caebb708ef0f0a9b598a54dc46..cf45b1cd03358491dbd44fe310595ee3ce280b95 100644
+index ca92ed72ef0a89fce490d29dc490d765ce9a014c..c8bd37d3793e9a05dc8694a7cae686cd7277cda7 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3277,15 +3277,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3286,15 +3286,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      }
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.
@@ -86,7 +86,7 @@ index 0c6aefad06bae1caebb708ef0f0a9b598a54dc46..cf45b1cd03358491dbd44fe310595ee3
        return 0;
      }
    }
-@@ -3308,6 +3312,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3317,6 +3321,7 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
      // handle alt-space, or in the frame itself.
      is_right_mouse_pressed_on_caption_ = false;
      ::ReleaseCapture();
@@ -94,7 +94,7 @@ index 0c6aefad06bae1caebb708ef0f0a9b598a54dc46..cf45b1cd03358491dbd44fe310595ee3
      // |point| is in window coordinates, but WM_NCHITTEST and TrackPopupMenu()
      // expect screen coordinates.
      POINT screen_point = CR_POINT_INITIALIZER_FROM_LPARAM(l_param);
-@@ -3316,7 +3321,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3325,7 +3330,17 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
          hwnd(), WM_NCHITTEST, 0, MAKELPARAM(screen_point.x, screen_point.y)));
      if (w_param == HTCAPTION || w_param == HTSYSMENU) {
        if (delegate_->UsesNativeSystemMenu()) {

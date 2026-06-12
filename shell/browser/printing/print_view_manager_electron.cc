@@ -111,6 +111,17 @@ void PrintViewManagerElectron::ScriptedPrint(
 }
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+void PrintViewManagerElectron::GetPrintPreviewParams(
+    GetPrintPreviewParamsCallback callback) {
+  std::move(callback).Run(nullptr);
+}
+
+void PrintViewManagerElectron::UpdatePrintSettings(
+    base::DictValue job_settings,
+    UpdatePrintSettingsCallback callback) {
+  std::move(callback).Run(nullptr);
+}
+
 void PrintViewManagerElectron::SetupScriptedPrintPreview(
     SetupScriptedPrintPreviewCallback callback) {
   mojo::ReportBadMessage(kInvalidSetupScriptedPrintPreviewCall);

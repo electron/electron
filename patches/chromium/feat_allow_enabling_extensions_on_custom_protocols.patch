@@ -30,7 +30,7 @@ index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..a0e361cf2d2960de4f429a9d37459e26
    URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
    if (result != URLPattern::ParseResult::kSuccess) {
 diff --git a/extensions/browser/api/web_request/extension_web_request_event_router.h b/extensions/browser/api/web_request/extension_web_request_event_router.h
-index 1230aedc8a3d5ec016914f8494e3e1ac718b05ce..6e769a9386529d11b01a86c2b9f5cd16d35d6807 100644
+index 8f2500bf5c9e82278211ec245804498d809c148d..22571d5fb01dad7d2659335e59958f42c514b597 100644
 --- a/extensions/browser/api/web_request/extension_web_request_event_router.h
 +++ b/extensions/browser/api/web_request/extension_web_request_event_router.h
 @@ -55,7 +55,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
@@ -44,7 +44,7 @@ index 1230aedc8a3d5ec016914f8494e3e1ac718b05ce..6e769a9386529d11b01a86c2b9f5cd16
  class WebRequestEventRouter : public KeyedService {
   public:
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
-index b98a85280fb8abef06b2f7420115a48b37727377..0da1f574a01bf32702cc1d8068a440b117809d38 100644
+index 921ca8867e95272fa16122afe3a808154670be43..1c4924130f7c29af7c44cb37c8ee12c5aa34dab2 100644
 --- a/extensions/common/extension.cc
 +++ b/extensions/common/extension.cc
 @@ -225,7 +225,8 @@ const int Extension::kValidHostPermissionSchemes =

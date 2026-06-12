@@ -4121,11 +4121,9 @@ void WebContents::SetEmbedder(const WebContents* embedder) {
     if (owner_window)
       SetOwnerWindow(owner_window);
 
-    content::RenderWidgetHostView* rwhv =
-        web_contents()->GetRenderWidgetHostView();
-    if (rwhv) {
-      rwhv->Hide();
-      rwhv->Show();
+    if (web_contents()->GetRenderWidgetHostView()) {
+      web_contents()->WasHidden();
+      web_contents()->WasShown();
     }
   }
 }
