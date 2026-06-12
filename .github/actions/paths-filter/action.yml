@@ -33,12 +33,13 @@ runs:
               gh api "repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files" --paginate --jq '.[]? | .filename, (.previous_filename // empty)'
               ;;
             push)
-              if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
-                # Redirect to stderr so fetch output won't pollute the captured file list
-                git fetch origin --depth=1 "$BEFORE_SHA" >&2
+              # Redirect git fetch to stderr so its output won't pollute the captured file list
+              if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]] &&
+                  git fetch origin --depth=1 "$BEFORE_SHA" >&2; then
                 git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA"
               else
-                # New branch push (no usable before SHA): treat every tracked file as changed.
+                # New branch push (no usable before SHA) or the before SHA is no longer
+                # fetchable: treat every tracked file as changed.
                 git ls-files
               fi
               ;;
@@ -69,6 +70,13 @@ runs:
 
         # Parse filters YAML to JSON
         FILTERS_JSON=$(echo "$FILTERS" | yq -o=json '.')
+
+        # Validate the shape up front
+        if ! jq -e 'type == "object" and all(.[]; type == "array" and all(.[]; type == "string"))' <<< "$FILTERS_JSON" > /dev/null; then
+          echo "Invalid filters input: each filter must be a list of pattern strings" >&2
+          exit 1
+        fi
+
         results="{}"
 
         for filter in $(echo "$FILTERS_JSON" | jq -r 'keys[]'); do
