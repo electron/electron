@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, isTestingBindingAvailable, itremote, startRemoteControlApp } from './lib/spec-helpers';
 
 describe('cpp heap', () => {
   describe('app module', () => {
@@ -888,6 +888,30 @@ describe('cpp heap', () => {
 
       expect(result.afterGC).to.be.at.least(result.beforeGC, 'held PromiseHandle must survive GC');
       expect(result.afterClear).to.be.lessThan(result.afterGC, 'clearing should release the PromiseHandle');
+    });
+  });
+
+  describe('webFrame module', () => {
+    itremote('does not leak WebFrameRenderer wrappers', async () => {
+      const { webFrame } = require('electron');
+      const { expect } = require('chai');
+      const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+      const refs: WeakRef<object>[] = (() => {
+        const out: WeakRef<object>[] = [];
+        for (let i = 0; i < 50; i++) {
+          out.push(new WeakRef(webFrame.top as unknown as object));
+        }
+        return out;
+      })();
+
+      for (let i = 0; i < 10; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        v8Util.requestGarbageCollectionForTesting();
+      }
+
+      const survivors = refs.filter((ref) => ref.deref() !== undefined).length;
+      expect(survivors).to.equal(0);
     });
   });
 });
