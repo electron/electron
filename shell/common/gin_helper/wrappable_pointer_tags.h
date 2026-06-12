@@ -14,6 +14,7 @@ namespace electron {
 enum ElectronWrappablePointerTag : uint16_t {
   kElectronApp = gin::kLastPointerTag + 1,  // electron::api::App
   kElectronAutoUpdater,                     // electron::api::AutoUpdater
+  kElectronChunkedDataPipeReadableStream,   // ChunkedDataPipeReadableStream
   kElectronCookies,                         // electron::api::Cookies
   kElectronDataPipeHolder,                  // electron::api::DataPipeHolder
   kElectronDebugger,                        // electron::api::Debugger
@@ -23,21 +24,23 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronExtensions,                      // electron::api::Extensions
   kElectronIPCRenderFrame,                  // (anonymous) IPCRenderFrame
   kElectronIPCServiceWorker,                // (anonymous) IPCServiceWorker
+  kElectronJSChunkedDataPipeGetter,         // JSChunkedDataPipeGetter
   kElectronMenu,                            // electron::api::Menu
   kElectronNativeImage,                     // electron::api::NativeImage
   kElectronNetLog,                          // electron::api::NetLog
   kElectronPowerMonitor,                    // electron::api::PowerMonitor
   kElectronPowerSaveBlocker,                // electron::api::PowerSaveBlocker
   kElectronProtocol,                        // electron::api::Protocol
-  kElectronReplyChannel,          // gin_helper::internal::ReplyChannel
-  kElectronScreen,                // electron::api::Screen
-  kElectronServiceWorkerContext,  // electron::api::ServiceWorkerContext
-  kElectronSession,               // electron::api::Session
-  kElectronTray,                  // electron::api::Tray
-  kElectronUtilityProcess,        // electron::api::UtilityProcessWrapper
-  kElectronWebFrameRenderer,      // (anonymous) WebFrameRenderer
-  kElectronWebRequest,            // electron::api::WebRequest
-  kElectronWebSocket,             // electron::api::WebSocketWrapper
+  kElectronReplyChannel,            // gin_helper::internal::ReplyChannel
+  kElectronScreen,                  // electron::api::Screen
+  kElectronServiceWorkerContext,    // electron::api::ServiceWorkerContext
+  kElectronSession,                 // electron::api::Session
+  kElectronSimpleURLLoaderWrapper,  // electron::api::SimpleURLLoaderWrapper
+  kElectronTray,                    // electron::api::Tray
+  kElectronUtilityProcess,          // electron::api::UtilityProcessWrapper
+  kElectronWebFrameRenderer,        // (anonymous) WebFrameRenderer
+  kElectronWebRequest,              // electron::api::WebRequest
+  kElectronWebSocket,               // electron::api::WebSocketWrapper
   kLastElectronPointerTag = kElectronWebSocket,
 };
 

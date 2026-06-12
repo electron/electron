@@ -383,6 +383,199 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('url loader module', () => {
+    it('should not leak when performing chunked (streaming) uploads', async () => {
+      const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await rc.remotely(async () => {
+        const { net, app } = require('electron');
+        const http = require('node:http');
+        const { getCppHeapStatistics } = require('node:v8');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+        const server = http.createServer((req: any, res: any) => {
+          req.on('data', () => {});
+          req.on('end', () => res.end('ok'));
+        });
+        await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+        const { port } = server.address();
+
+        function uploadOnce() {
+          return new Promise<void>((resolve, reject) => {
+            const request = net.request({
+              method: 'POST',
+              url: `http://127.0.0.1:${port}`
+            });
+            request.chunkedEncoding = true;
+            request.on('response', (response: any) => {
+              response.on('data', () => {});
+              response.on('end', () => resolve());
+            });
+            request.on('error', reject);
+            for (let i = 0; i < 4; i++) {
+              request.write(Buffer.alloc(256));
+            }
+            request.end();
+          });
+        }
+
+        async function measure(n: number) {
+          for (let i = 0; i < n; i++) {
+            await uploadOnce();
+          }
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          return getCppHeapStatistics('brief').used_size_bytes;
+        }
+
+        await measure(5);
+        const after1 = await measure(5);
+        const after2 = await measure(5);
+        server.close();
+        setTimeout(() => app.quit());
+        return { after1, after2 };
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+
+      const growth = result.after2 - result.after1;
+      expect(growth).to.be.at.most(
+        result.after1 * 0.1,
+        `C++ heap grew by ${growth} bytes between two identical rounds of chunked uploads — likely a leak`
+      );
+    });
+
+    it('keeps a ChunkedDataPipeReadableStream alive while a read is pending and releases it after', async () => {
+      const rc = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await rc.remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { protocol, net, app } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const { setTimeout: delay } = require('node:timers/promises');
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+          const withTimeout = <T>(p: Promise<T>, ms: number, label: string) => {
+            const ac = new AbortController();
+            return Promise.race([
+              p.finally(() => ac.abort()),
+              delay(ms, undefined, { signal: ac.signal }).then(() => {
+                throw new Error(`timeout waiting for ${label}`);
+              })
+            ]);
+          };
+
+          const gc = async () => {
+            for (let i = 0; i < 10; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+            }
+          };
+
+          let streamWeakRef: WeakRef<any> | undefined;
+          let pendingRead: Promise<number> | undefined;
+          let resolveReached: () => void;
+          let rejectReached: (err: Error) => void;
+          const reached = new Promise<void>((resolve, reject) => {
+            resolveReached = resolve;
+            rejectReached = reject;
+          });
+
+          protocol.interceptStreamProtocol('http', (request: any, callback: any) => {
+            (async () => {
+              try {
+                const elements = request.uploadData || [];
+                const streamElement = elements.find((e: any) => e.type === 'stream');
+                if (!streamElement) {
+                  callback({ statusCode: 400, data: null });
+                  rejectReached(new Error('request had no stream upload element'));
+                  return;
+                }
+                let body: any = streamElement.body;
+                streamWeakRef = new WeakRef(body);
+                // Drain whatever data is immediately available, then keep a read
+                // that parks in net::ERR_IO_PENDING.
+                const firstRead = body.read(new Uint8Array(1024));
+                const drained = await Promise.race([
+                  firstRead.then(
+                    () => true,
+                    () => true
+                  ),
+                  new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 500))
+                ]);
+                pendingRead = drained ? body.read(new Uint8Array(1024)) : firstRead;
+                // Drop the only JS reference to the stream while the read is in
+                // flight.
+                body = null;
+                resolveReached();
+              } catch (err) {
+                rejectReached(err as Error);
+              }
+            })();
+          });
+
+          const request = net.request({
+            method: 'POST',
+            url: 'http://pending-read-host'
+          });
+          request.chunkedEncoding = true;
+          request.on('error', () => {});
+          // Write one chunk to start streaming the body, but never end the
+          // request so a subsequent read has no data and stays pending.
+          request.write(Buffer.from('hello'));
+
+          try {
+            await withTimeout(reached, 5000, 'stream upload handler');
+
+            await gc();
+            const state = recordState();
+            const aliveWhilePending = containsRetainingPath(state.snapshot, [
+              'C++ Persistent roots',
+              'Electron / ChunkedDataPipeReadableStream'
+            ]);
+            const refAliveWhilePending = streamWeakRef!.deref() !== undefined;
+            // Settle the pending read by ending the request body.
+            request.end();
+            await withTimeout(
+              pendingRead!.catch(() => {}),
+              5000,
+              'pending read to settle'
+            );
+
+            await gc();
+            const released = streamWeakRef!.deref() === undefined;
+
+            // The handler never produced a response; abort to clean up.
+            request.abort();
+            return { ok: true, aliveWhilePending, refAliveWhilePending, released };
+          } catch (err) {
+            request.abort();
+            return { ok: false, error: String(err) };
+          } finally {
+            protocol.uninterceptProtocol('http');
+            setTimeout(() => app.quit());
+          }
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+
+      expect(result.ok, `test setup failed: ${result.error}`).to.equal(true);
+      expect(result.refAliveWhilePending).to.equal(true, 'stream should still be alive while a read is pending');
+      expect(result.aliveWhilePending).to.equal(
+        true,
+        'ChunkedDataPipeReadableStream should be rooted while a read is pending'
+      );
+      expect(result.released).to.equal(
+        true,
+        'ChunkedDataPipeReadableStream should be released after the pending read settles'
+      );
+    });
+  });
+
   ifdescribe(isTestingBindingAvailable())('SafeV8Function callback conversion', () => {
     const gcTestArgv = ['--js-flags=--expose-gc'];
 
