@@ -35,7 +35,7 @@ runs:
             push)
               if [[ -n "$BEFORE_SHA" && "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]]; then
                 # Redirect to stderr so fetch output won't pollute the captured file list
-                git fetch origin "$BEFORE_SHA" >&2
+                git fetch origin --depth=1 "$BEFORE_SHA" >&2
                 git diff --name-only "$BEFORE_SHA" "$CURRENT_SHA"
               else
                 # New branch push (no usable before SHA): treat every tracked file as changed.
