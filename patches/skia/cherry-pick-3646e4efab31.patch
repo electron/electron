@@ -162,3 +162,22 @@ index 58d41c906c03c4f0869000bcb577cd78655190d5..88c167f0ce3c6b537a3c2c2ced0893fd
      }
      gatherer->writeHalf(pixelGeometryDelta);
  
+diff --git a/src/text/gpu/VertexFiller.h b/src/text/gpu/VertexFiller.h
+index 802cd4ab6b59f644797f941749f54e597c635f0f..15829f4efef37caf7f418a9bf6a5eaa0b0c02339 100644
+--- a/src/text/gpu/VertexFiller.h
++++ b/src/text/gpu/VertexFiller.h
+@@ -105,12 +105,12 @@ public:
+ 
+     int count() const { return SkCount(fLeftTop); }
+ 
++    SkMatrix viewDifference(const SkMatrix &positionMatrix) const;
++
+ private:
+     static std::tuple<bool, SkVector> CanUseDirect(const SkMatrix& creationMatrix,
+                                                    const SkMatrix& positionMatrix);
+ 
+-    SkMatrix viewDifference(const SkMatrix &positionMatrix) const;
+-
+     const skgpu::MaskFormat fMaskType;
+     const bool fCanDrawDirect;
+     const SkMatrix fCreationMatrix;
