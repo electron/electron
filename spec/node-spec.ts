@@ -8,6 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { EventEmitter } from 'node:stream';
 import * as tty from 'node:tty';
+import { pathToFileURL } from 'node:url';
 import * as util from 'node:util';
 
 import {
@@ -956,6 +957,21 @@ describe('node feature', () => {
         ...process.env,
         ELECTRON_FORCE_IS_PACKAGED: 'true',
         NODE_OPTIONS: `--require=${path.join(fixtures, 'module', 'fail.js')}`
+      };
+      // App should exit with code 0.
+      const child = childProcess.spawn(process.execPath, [appPath], { env });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('does not throw --import hook in non-packaged apps', async () => {
+      const appPath = path.join(fixtures, 'module', 'noop.js');
+      // Since this is the import path - we should always use backward slashes
+      // regardless of the `path.sep` value.
+      const hookUrl = pathToFileURL(path.join(fixtures, 'module', 'hook.mjs'));
+      const env = {
+        ...process.env,
+        NODE_OPTIONS: `--import=${hookUrl}`
       };
       // App should exit with code 0.
       const child = childProcess.spawn(process.execPath, [appPath], { env });
