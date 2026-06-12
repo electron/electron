@@ -160,6 +160,12 @@ bool ElectronExtensionsBrowserClient::IsExtensionIncognitoEnabled(
   return false;
 }
 
+bool ElectronExtensionsBrowserClient::IsExtensionIncognitoEnabled(
+    const extensions::Extension* extension,
+    content::BrowserContext* context) const {
+  return false;
+}
+
 bool ElectronExtensionsBrowserClient::CanExtensionCrossIncognito(
     const extensions::Extension* extension,
     content::BrowserContext* context) const {

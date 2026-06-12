@@ -1,4 +1,5 @@
 build_gn.patch
+build_resolve_pgo_profiles_from_electron_state_files.patch
 accelerator.patch
 blink_local_frame.patch
 can_create_window.patch
@@ -156,3 +157,4 @@ feat_carry_embedder_startup_data_in_createnewwindowreply.patch
 feat_deliver_service_worker_preload_data_via_embeddedworkerstartparams.patch
 build_allow_resource_allowlist_generation_for_linux_and_macos.patch
 build_fix_profile_runtime_resolution_for_pgo_instrumented_builds.patch
+build_disable_llvm_unroll-add-parallel-reductions_on_apple_targets.patch

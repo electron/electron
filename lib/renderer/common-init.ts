@@ -14,8 +14,6 @@ require('@electron/internal/renderer/ipc-native-setup');
 
 switch (window.location.protocol) {
   case 'devtools:': {
-    // Override some inspector APIs.
-    require('@electron/internal/renderer/inspector');
     break;
   }
   case 'chrome-extension:': {

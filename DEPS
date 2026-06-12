@@ -2,9 +2,9 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '150.0.7863.0',
+    '151.0.7873.0',
   'node_version':
-    'v24.15.0',
+    'v24.16.0',
   'nan_version':
     '675cefebca42410733da8a454c8d9391fcebfbc2',
   'squirrel.mac_version':
@@ -40,7 +40,11 @@ vars = {
   'checkout_chromium': True,
   'checkout_node': True,
   'checkout_nan': True,
-  'checkout_pgo_profiles': True,
+  # Chrome's published PGO profiles are not consumed - Electron release
+  # builds use Electron-generated profiles (see build/pgo_profiles/). Set to
+  # True (and set the pgo_data_path GN arg) to build against Chrome's
+  # profiles instead.
+  'checkout_pgo_profiles': False,
 
   # It's only needed to parse the native tests configurations.
   'checkout_pyyaml': False,
@@ -202,6 +206,38 @@ hooks = [
     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
                '--sysroots-json-path=' + Var('sysroots_json_path'),
                '--arch=x64'],
+  },
+  # Electron-collected PGO profiles, consumed by official builds in place of
+  # Chrome's published profiles (which cannot cover Electron's code). The
+  # state files in src/electron/build/pgo_profiles name the profile to use;
+  # these hooks download them.
+  {
+    'name': 'electron_pgo_profiles_linux',
+    'pattern': 'src/electron/build/pgo_profiles',
+    'condition': 'checkout_linux and process_deps',
+    'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
+               '--targets', 'linux-x64,linux-arm,linux-arm64'],
+  },
+  {
+    'name': 'electron_pgo_profiles_win',
+    'pattern': 'src/electron/build/pgo_profiles',
+    'condition': 'checkout_win and process_deps',
+    'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
+               '--targets', 'win-x64,win-x86,win-arm64'],
+  },
+  {
+    'name': 'electron_pgo_profiles_mac',
+    'pattern': 'src/electron/build/pgo_profiles',
+    'condition': 'checkout_mac and process_deps',
+    'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
+               '--targets', 'macos-x64,macos-arm64'],
+  },
+  {
+    'name': 'electron_pgo_profiles_v8_builtins',
+    'pattern': 'src/electron/build/pgo_profiles',
+    'condition': 'process_deps',
+    'action': ['python3', 'src/electron/script/pgo/download-profiles.py',
+               '--targets', 'v8-builtins'],
   },
 ]
 

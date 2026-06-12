@@ -172,6 +172,10 @@ runs:
           SEDOPTION="-i ''"
         fi
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+        # The Electron builtins profile path is a bare value on the line after
+        # --turbo-profiling-input; both lines must go or mksnapshot treats the
+        # leftover path as a script to execute.
+        sed $SEDOPTION '/.*pgo_profiles/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--reorder-builtins/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--warn-about-builtin-profile-data/d' out/Default/mksnapshot_args
@@ -276,6 +280,39 @@ runs:
       run: |
         cd src/electron
         node script/yarn.js create-typescript-definitions
+    - name: Log Disk Space to Datadog (macOS)
+      if: ${{ runner.os == 'macOS' && env.DD_API_KEY != '' }}
+      shell: bash
+      env:
+        IS_RELEASE: ${{ inputs.is-release }}
+      run: |
+        TIMESTAMP=$(date +%s)
+
+        echo "Disk space after build:"
+        df -h /
+        FREE_SPACE_AFTER=$(df -k / | tail -1 | awk '{print $4}')
+        FREE_AFTER_GB=$(echo "scale=2; $FREE_SPACE_AFTER / 1024 / 1024" | bc)
+
+        echo "Free space after: ${FREE_AFTER_GB}GB"
+
+        curl -s -X POST "https://api.datadoghq.com/api/v2/series" \
+          -H "Content-Type: application/json" \
+          -H "DD-API-KEY: ${DD_API_KEY}" \
+          -d @- << EOF
+        {
+          "series": [
+            {
+              "metric": "electron.macos.disk.free_space_after_build_gb",
+              "points": [{"timestamp": ${TIMESTAMP}, "value": ${FREE_AFTER_GB}}],
+              "type": 3,
+              "unit": "gigabyte",
+              "tags": ["runner:${RUNNER_LABEL}", "platform:macos", "is-release:${IS_RELEASE}"]
+            }
+          ]
+        }
+        EOF
+
+        echo "Disk space metrics logged to Datadog"
     - name: Publish Electron Dist ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash

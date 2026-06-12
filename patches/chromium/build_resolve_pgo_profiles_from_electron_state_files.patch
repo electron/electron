@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Attard <sattard@anthropic.com>
+Date: Mon, 1 Jun 2026 05:48:08 +0000
+Subject: build: resolve PGO profiles from Electron state files
+
+Electron generates its own PGO profiles because Chrome's published
+profiles cannot cover code that differs in Electron (Node.js, patched
+Chromium files, V8 built with Node's flags, the Electron shell). This
+resolves the profile for the standard chrome_pgo_phase = 2 optimization
+flow from Electron's per-platform/arch state files - including per-arch
+Linux profiles, which upstream does not have - so every flag upstream
+adds to its PGO configuration applies to Electron's profiles unchanged.
+
+An explicitly set pgo_data_path still takes precedence, preserving the
+existing override behavior.
+
+diff --git a/build/config/compiler/pgo/BUILD.gn b/build/config/compiler/pgo/BUILD.gn
+index 37251f8e9ba3848b4f8bd1fc487b54d5905fb705..7a412483528f4342517c51ba5e07a56c68fea946 100644
+--- a/build/config/compiler/pgo/BUILD.gn
++++ b/build/config/compiler/pgo/BUILD.gn
+@@ -117,6 +117,46 @@ config("pgo_optimization_flags") {
+       inputs = [ "//chrome/build/android-desktop-x64.pgo.txt" ]
+     }
+ 
++    # Electron generates and consumes its own PGO profiles. They are named per
++    # platform/arch - including per-arch Linux profiles, which Chrome does not
++    # have - and resolved through state files in Electron's tree, downloaded
++    # by Electron's gclient hooks. Resolution is skipped when pgo_data_path is
++    # set explicitly, preserving that arg as an override.
++    # See //electron/build/pgo_profiles/README.md.
++    if (is_electron_build && pgo_data_path == "") {
++      _electron_pgo_target = ""
++      if (is_win) {
++        if (target_cpu == "arm64") {
++          _electron_pgo_target = "win-arm64"
++        } else if (target_cpu == "x64") {
++          _electron_pgo_target = "win-x64"
++        } else {
++          _electron_pgo_target = "win-x86"
++        }
++      } else if (is_mac) {
++        if (target_cpu == "arm64") {
++          _electron_pgo_target = "macos-arm64"
++        } else {
++          _electron_pgo_target = "macos-x64"
++        }
++      } else if (is_linux) {
++        if (target_cpu == "arm64") {
++          _electron_pgo_target = "linux-arm64"
++        } else if (target_cpu == "arm") {
++          _electron_pgo_target = "linux-arm"
++        } else {
++          _electron_pgo_target = "linux-x64"
++        }
++      }
++      if (_electron_pgo_target != "") {
++        _electron_state_file =
++            "//electron/build/pgo_profiles/${_electron_pgo_target}.pgo.txt"
++        inputs += [ _electron_state_file ]
++        pgo_data_path = "//electron/build/pgo_profiles/" +
++                        read_file(_electron_state_file, "trim string")
++      }
++    }
++
+     if (_pgo_target != "" && pgo_data_path == "") {
+       common_args = [
+         "--target",

@@ -2058,11 +2058,24 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::PrimaryMainFrameRenderProcessGone(
     base::TerminationStatus status) {
+  // This fires while RenderProcessHostImpl is still notifying observers of
+  // the process death. Emit asynchronously so app code (e.g. a synchronous
+  // reload() in the handler) can't re-launch the renderer from inside that
+  // loop, which trips a CHECK in extensions::RendererStartupHelper. The exit
+  // code is captured now because a navigation in the interim could reset it.
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&WebContents::EmitRenderProcessGone,
+                                weak_factory_.GetWeakPtr(), status,
+                                web_contents()->GetCrashedErrorCode()));
+}
+
+void WebContents::EmitRenderProcessGone(base::TerminationStatus status,
+                                        int exit_code) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
-  details.Set("exitCode", web_contents()->GetCrashedErrorCode());
+  details.Set("exitCode", exit_code);
   Emit("render-process-gone", details);
 }
 
@@ -2295,12 +2308,13 @@ void WebContents::MaybeSendRendererStartupData(
       preload = web_prefs->GetPreloadPath();
     if (preload && preload->IsAbsolute()) {
       auto ps = mojom::PreloadScriptData::New();
-      ps->id = "preload-" + preload->AsUTF8Unsafe();
+      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
       ps->file_path = preload->AsUTF8Unsafe();
       std::string contents;
       if (asar::ReadFileToString(*preload, &contents)) {
         ps->contents.assign(contents.begin(), contents.end());
-        std::vector<uint8_t> cache = preload_code_cache::Get(ps->id);
+        std::vector<uint8_t> cache =
+            preload_code_cache::Get(ps->id, ps->contents);
         if (!cache.empty())
           ps->code_cache = std::move(cache);
       } else {
@@ -4180,11 +4194,9 @@ void WebContents::SetEmbedder(const WebContents* embedder) {
     if (owner_window)
       SetOwnerWindow(owner_window);
 
-    content::RenderWidgetHostView* rwhv =
-        web_contents()->GetRenderWidgetHostView();
-    if (rwhv) {
-      rwhv->Hide();
-      rwhv->Show();
+    if (web_contents()->GetRenderWidgetHostView()) {
+      web_contents()->WasHidden();
+      web_contents()->WasShown();
     }
   }
 }

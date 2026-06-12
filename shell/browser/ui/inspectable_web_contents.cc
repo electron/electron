@@ -32,6 +32,7 @@
 #include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -54,6 +55,7 @@
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/browser/ui/message_box.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/platform_util.h"
@@ -1081,6 +1083,73 @@ void InspectableWebContents::EnumerateDirectory(
   if (delegate)
     delegate->EnumerateDirectory(source, std::move(listener), path);
 }
+
+bool InspectableWebContents::HandleContextMenu(
+    content::RenderFrameHost& render_frame_host,
+    const content::ContextMenuParams& params) {
+  // Context menu requests from the DevTools frontend
+  // (InspectorFrontendHost.showContextMenuAtPoint) arrive here with the menu
+  // items in |params.custom_items|. Show them as a native menu anchored to
+  // whichever window hosts the DevTools view.
+  if (view_)
+    view_->ShowDevToolsContextMenu(params);
+  return true;
+}
+
+content::JavaScriptDialogManager*
+InspectableWebContents::GetJavaScriptDialogManager(
+    content::WebContents* source) {
+  return this;
+}
+
+void InspectableWebContents::RunJavaScriptDialog(
+    content::WebContents* web_contents,
+    content::RenderFrameHost* rfh,
+    content::JavaScriptDialogType dialog_type,
+    const std::u16string& message_text,
+    const std::u16string& default_prompt_text,
+    DialogClosedCallback callback,
+    bool* did_suppress_message) {
+  // The DevTools frontend uses window.confirm() for destructive actions
+  // (e.g. deleting all breakpoints) and window.alert() for notices. Prompts
+  // are not used; suppress them.
+  if (dialog_type == content::JAVASCRIPT_DIALOG_TYPE_PROMPT) {
+    *did_suppress_message = true;
+    return;
+  }
+
+  const bool is_confirm =
+      dialog_type == content::JAVASCRIPT_DIALOG_TYPE_CONFIRM;
+
+  MessageBoxSettings settings;
+  settings.message = base::UTF16ToUTF8(message_text);
+  settings.buttons = {"OK"};
+  settings.default_id = 0;
+  settings.cancel_id = 0;
+  if (is_confirm) {
+    settings.buttons.push_back("Cancel");
+    settings.cancel_id = 1;
+  }
+
+  ShowMessageBox(settings,
+                 base::BindOnce(
+                     [](DialogClosedCallback callback, int code, bool) {
+                       std::move(callback).Run(code == 0, std::u16string());
+                     },
+                     std::move(callback)));
+}
+
+void InspectableWebContents::RunBeforeUnloadDialog(
+    content::WebContents* web_contents,
+    content::RenderFrameHost* rfh,
+    bool is_reload,
+    DialogClosedCallback callback) {
+  // The DevTools frontend doesn't use beforeunload handlers; always proceed.
+  std::move(callback).Run(true, std::u16string());
+}
+
+void InspectableWebContents::CancelDialogs(content::WebContents* web_contents,
+                                           bool reset_state) {}
 
 void InspectableWebContents::OnWebContentsFocused(
     content::RenderWidgetHost* render_widget_host) {

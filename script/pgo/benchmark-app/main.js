@@ -55,6 +55,10 @@ const RESULTS_FILE = process.env.PGO_RESULTS_FILE || path.join(app.getPath('temp
 //   startExpr  - (optional) expression that starts the benchmark; it must
 //                return false (without side effects) until the page is ready
 //                to start, and true once the benchmark has been started.
+//   startFailExpr - (optional) expression that evaluates to true once the
+//                page can never become startable (e.g. the driver flagged a
+//                load error); fails the attempt immediately instead of
+//                waiting out the full start-polling window.
 //   doneExpr   - expression that evaluates to true when the run has ended
 //                (successfully or not).
 //   successExpr- (optional) evaluated after doneExpr fires; distinguishes a
@@ -90,6 +94,20 @@ const WORKLOADS = [
     timeoutMin: 30
   },
   {
+    name: 'speedometer3-run4',
+    url: `${BASE_URL}/speedometer/?startAutomatically=true&iterationCount=10`,
+    doneExpr: SPEEDOMETER_DONE,
+    successExpr: SPEEDOMETER_SUCCESS,
+    timeoutMin: 30
+  },
+  {
+    name: 'speedometer3-run5',
+    url: `${BASE_URL}/speedometer/?startAutomatically=true&iterationCount=10`,
+    doneExpr: SPEEDOMETER_DONE,
+    successExpr: SPEEDOMETER_SUCCESS,
+    timeoutMin: 30
+  },
+  {
     name: 'jetstream2',
     url: `${BASE_URL}/jetstream/index.html`,
     // The JetStream driver is ready once its async initialize() has run
@@ -97,6 +115,10 @@ const WORKLOADS = [
     // "Start Test" button. Calling start() before that point does nothing
     // useful, so gate on the button existing.
     startExpr: '!!document.querySelector("#status a.button") && (JetStream.start(), true)',
+    // The driver sets allIsGood = false (via window.onerror / a failed
+    // resource preload) and then refuses to run a partial suite, so the
+    // Start button will never appear.
+    startFailExpr: 'typeof allIsGood !== "undefined" && allIsGood === false',
     // On completion the driver adds the "done" class to #result-summary
     // (JetStreamDriver.js); there is no JetStream.done property.
     doneExpr: '!!document.querySelector("#result-summary.done")',
@@ -108,7 +130,12 @@ const WORKLOADS = [
     startExpr: 'typeof benchmarkController !== "undefined" && (benchmarkController.startBenchmark(), true)',
     // MotionMark shows the results section when the run completes.
     doneExpr: '!!document.querySelector("section#results.selected")',
-    timeoutMin: 45
+    timeoutMin: 45,
+    // MotionMark's full ramp runs 5+ minutes and over-weights canvas/Skia
+    // paths in the merged profile (9-15% of hot mass vs ~4% in Chrome's
+    // corpus). The counters accumulated up to the cap are kept; the rest of
+    // the ramp adds mass to already-hot paths without improving coverage.
+    softCapMs: 120 * 1000
   }
 ];
 
@@ -119,6 +146,35 @@ function log(...args) {
 
 async function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// loadURL can hang forever: a wedged network service (observed on instrumented
+// builds - socket pool exhausted by stale keep-alive sockets that are never
+// reaped) leaves the navigation queued indefinitely, and the per-workload
+// timeout only starts counting AFTER the load resolves. Without this guard a
+// single wedged navigation hangs collection until the CI job timeout instead
+// of failing one workload and moving on.
+const NAVIGATION_TIMEOUT_MS = 2 * 60 * 1000;
+
+async function loadURLWithTimeout(win, url) {
+  const load = win.loadURL(url);
+  // If the timeout wins the race the eventual loadURL rejection has no
+  // listener; swallow it so it does not surface as an unhandled rejection.
+  load.catch(() => {});
+  let timer;
+  try {
+    await Promise.race([
+      load,
+      new Promise((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`navigation to ${url.slice(0, 80)} timed out after ${NAVIGATION_TIMEOUT_MS / 1000}s`)),
+          NAVIGATION_TIMEOUT_MS
+        );
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -225,7 +281,12 @@ async function runWorkload(win, workload, diag) {
   log(`starting workload: ${workload.name}`);
   if (diag) diag.reset();
   const startTime = Date.now();
-  await win.loadURL(workload.url);
+  try {
+    await loadURLWithTimeout(win, workload.url);
+  } catch (err) {
+    if (diag) await reportWorkloadFailure(win, workload.name, diag);
+    throw err;
+  }
 
   // Install page-side error capture for failure diagnostics. Benchmark
   // drivers swallow uncaught exceptions (window.onerror) silently; recording
@@ -273,6 +334,15 @@ async function runWorkload(win, workload, diag) {
       } catch {
         /* page busy - retry */
       }
+      if (!started && workload.startFailExpr) {
+        let unstartable = false;
+        try {
+          unstartable = await win.webContents.executeJavaScript(workload.startFailExpr, true);
+        } catch {
+          /* page busy - keep polling */
+        }
+        if (unstartable) break;
+      }
     }
     if (!started) {
       if (diag) await reportWorkloadFailure(win, workload.name, diag);
@@ -284,6 +354,14 @@ async function runWorkload(win, workload, diag) {
   const deadline = Date.now() + workload.timeoutMin * 60 * 1000;
   while (Date.now() < deadline) {
     await sleep(5000);
+    // Soft cap: treat a long-running benchmark as complete. Profile counters
+    // accumulate continuously, so everything up to this point is kept.
+    if (workload.softCapMs && Date.now() - startTime > workload.softCapMs) {
+      log(
+        `workload ${workload.name} reached soft cap after ${Math.round((Date.now() - startTime) / 1000)}s; keeping counters collected so far`
+      );
+      return { name: workload.name, ok: true, seconds: Math.round((Date.now() - startTime) / 1000) };
+    }
     let done = false;
     try {
       done = await win.webContents.executeJavaScript(workload.doneExpr, true);
@@ -323,7 +401,7 @@ async function runWorkload(win, workload, diag) {
 // the event loop stays responsive.
 // ---------------------------------------------------------------------------
 
-async function runMainProcessWorkload(durationMs) {
+async function runMainProcessWorkload(durationMs, maxIterations) {
   log('starting workload: main-process');
   const startTime = Date.now();
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pgo-main-workload-'));
@@ -344,7 +422,7 @@ async function runMainProcessWorkload(durationMs) {
 
   const deadline = Date.now() + durationMs;
   let iterations = 0;
-  while (Date.now() < deadline) {
+  while (Date.now() < deadline && iterations < maxIterations) {
     for (let i = 0; i < 50; i++) {
       // Buffer operations: concat, slice, compare, base64/hex encode + decode.
       const joined = Buffer.concat([bufA, bufB]);
@@ -414,6 +492,54 @@ async function runMainProcessWorkload(durationMs) {
 // afterwards; over-weighting them in the profile takes optimization away
 // from the runtime-hot paths.
 // ---------------------------------------------------------------------------
+
+// Trains the per-async-operation machinery: AsyncHooks scopes, AsyncWrap,
+// BaseObject refcounts, StreamBase. Every async op in every app runs these,
+// but they only see a handful of counts per operation, so the heavyweight
+// workloads (whose op counts are deliberately capped) leave them below the
+// hot threshold. Each op here is intentionally tiny - the counts land in the
+// async plumbing rather than in payload processing, so volume is cheap.
+async function runAsyncChurnWorkload(maxOps) {
+  log('starting workload: async-churn');
+  const startTime = Date.now();
+  const net = require('node:net');
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pgo-async-'));
+  const probeFile = path.join(tmp, 'probe');
+  fs.writeFileSync(probeFile, 'x');
+
+  // In-process TCP echo server: socket roundtrips exercise StreamBase and
+  // LibuvStreamWrap without depending on the benchmark HTTP server.
+  const echoServer = net.createServer((sock) => sock.on('data', (d) => sock.write(d)));
+  await new Promise((resolve) => echoServer.listen(0, '127.0.0.1', resolve));
+  const sock = net.connect(echoServer.address().port, '127.0.0.1');
+  await new Promise((resolve) => sock.once('connect', resolve));
+
+  let ops = 0;
+  while (ops < maxOps) {
+    const batch = [];
+    for (let i = 0; i < 100; i++) {
+      batch.push(fs.promises.stat(probeFile));
+      batch.push(new Promise((resolve) => setImmediate(resolve)));
+      batch.push(new Promise((resolve) => process.nextTick(resolve)));
+    }
+    // Socket roundtrip: one small write, await the echo.
+    batch.push(
+      new Promise((resolve) => {
+        sock.once('data', resolve);
+        sock.write('ping');
+      })
+    );
+    await Promise.all(batch);
+    ops += 301;
+  }
+
+  sock.destroy();
+  echoServer.close();
+  fs.rmSync(tmp, { recursive: true, force: true });
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+  log(`finished workload: async-churn in ${elapsed}s (${ops} async ops)`);
+  return { name: 'async-churn', ok: true, seconds: Number(elapsed) };
+}
 
 async function runPackagedAppWorkload() {
   log('starting workload: packaged-app');
@@ -492,7 +618,7 @@ async function runPackagedAppWorkload() {
 // configured the way real apps are configured (contextIsolation + preload).
 // ---------------------------------------------------------------------------
 
-async function runIpcBridgeWorkload(durationMs) {
+async function runIpcBridgeWorkload(durationMs, maxCalls) {
   log('starting workload: ipc-contextbridge');
   const startTime = Date.now();
 
@@ -508,13 +634,18 @@ async function runIpcBridgeWorkload(durationMs) {
       nodeIntegration: false
     }
   });
-  await win.loadURL('data:text/html,<html><body>pgo ipc workload</body></html>');
+  // This window spawns a fresh renderer; attach diagnostics so a crash during
+  // load reports its render-process-gone details instead of a bare ERR_FAILED.
+  const diag = attachDiagnostics(win);
+  let result;
+  try {
+    await loadURLWithTimeout(win, 'data:text/html,<html><body>pgo ipc workload</body></html>');
 
-  // The driver runs in the main world and calls across the bridge. Payload
-  // sizes cover the spectrum apps use: small control messages, medium JSON
-  // payloads, and large binary transfers.
-  const result = await win.webContents.executeJavaScript(
-    `(async () => {
+    // The driver runs in the main world and calls across the bridge. Payload
+    // sizes cover the spectrum apps use: small control messages, medium JSON
+    // payloads, and large binary transfers.
+    result = await win.webContents.executeJavaScript(
+      `(async () => {
     const small = { id: 1, type: 'msg', body: 'hello world' };
     const medium = { rows: Array.from({ length: 200 }, (_, i) => ({ i, name: 'row-' + i, values: [i, i * 2, i * 3] })) };
     const arr = Array.from({ length: 500 }, (_, i) => ({ i, label: 'item-' + i }));
@@ -522,9 +653,10 @@ async function runIpcBridgeWorkload(durationMs) {
     const big = new Uint8Array(${5 * 1024 * 1024}).fill(7);
 
     const deadline = Date.now() + ${durationMs};
+    const maxCalls = ${maxCalls};
     let bridgeCalls = 0;
     let ipcCalls = 0;
-    while (Date.now() < deadline) {
+    while (Date.now() < deadline && bridgeCalls < maxCalls) {
       // Pure bridge marshaling (no IPC): primitives, objects, arrays, typed arrays.
       for (let i = 0; i < 200; i++) {
         window.pgoBridge.echo(42);
@@ -545,11 +677,15 @@ async function runIpcBridgeWorkload(durationMs) {
     }
     return { bridgeCalls, ipcCalls };
   })()`,
-    true
-  );
-
-  win.destroy();
-  ipcMain.removeHandler('pgo-ping');
+      true
+    );
+  } catch (err) {
+    await reportWorkloadFailure(win, 'ipc-contextbridge', diag);
+    throw err;
+  } finally {
+    win.destroy();
+    ipcMain.removeHandler('pgo-ping');
+  }
 
   const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
   log(
@@ -573,7 +709,7 @@ async function runIpcBridgeWorkload(durationMs) {
 // to point at the collection CA (set by collect-profile.js).
 // ---------------------------------------------------------------------------
 
-async function runNetworkWorkload(win, durationMs) {
+async function runNetworkWorkload(win, durationMs, maxRequests) {
   log('starting workload: network');
   const startTime = Date.now();
   const isTls = BASE_URL.startsWith('https:');
@@ -582,17 +718,18 @@ async function runNetworkWorkload(win, durationMs) {
   // Renderer: parallel fetches + WebSocket echo. Runs for the first half of
   // the budget; the Node-side loop runs for the second half.
   const rendererBudget = Math.floor(durationMs / 2);
-  await win.loadURL(`${BASE_URL}/speedometer/`);
+  await loadURLWithTimeout(win, `${BASE_URL}/speedometer/`);
   const rendererResult = await win.webContents.executeJavaScript(
     `(async () => {
     const deadline = Date.now() + ${rendererBudget};
+    const maxRequests = ${maxRequests};
     let requests = 0;
     let wsMessages = 0;
 
     // Fetch loops: parallel requests at varied sizes plus POST echoes, plus
     // Content-Encoding responses so the network service's decompression
     // streams (gzip / brotli / zstd) are trained.
-    while (Date.now() < deadline) {
+    while (Date.now() < deadline && requests < maxRequests) {
       await Promise.all([
         fetch('/__pgo/data?bytes=1024').then(r => r.arrayBuffer()),
         fetch('/__pgo/data?bytes=65536').then(r => r.arrayBuffer()),
@@ -614,8 +751,9 @@ async function runNetworkWorkload(win, durationMs) {
         ws.onerror = () => reject(new Error('websocket failed to connect'));
       });
       const wsDeadline = Date.now() + 10000;
+      const wsMaxMessages = 30000; // cap: time-boxed loops run away on fast hosts
       const payload = 'pgo-websocket-payload-'.repeat(50);
-      while (Date.now() < wsDeadline) {
+      while (Date.now() < wsDeadline && wsMessages < wsMaxMessages) {
         await new Promise((resolve) => {
           ws.onmessage = resolve;
           ws.send(payload);
@@ -637,7 +775,7 @@ async function runNetworkWorkload(win, durationMs) {
   let nodeRequests = 0;
   const nodeDeadline = Date.now() + Math.floor(durationMs / 2);
   const dataUrl = `${BASE_URL}/__pgo/data?bytes=65536`;
-  while (Date.now() < nodeDeadline) {
+  while (Date.now() < nodeDeadline && nodeRequests < maxRequests) {
     // node:https / node:http via the classic API.
     await new Promise((resolve, reject) => {
       const mod = isTls ? https : require('node:http');
@@ -670,12 +808,25 @@ async function runNetworkWorkload(win, durationMs) {
 // Orchestration
 // ---------------------------------------------------------------------------
 
-// Durations for the non-browser phases. Long enough for meaningful counter
-// volume on instrumented builds (which run at roughly half speed), short
-// relative to the 30-50 minute browser benchmark phase.
-const MAIN_PROCESS_WORKLOAD_MS = 75 * 1000;
-const IPC_BRIDGE_WORKLOAD_MS = 75 * 1000;
-const NETWORK_WORKLOAD_MS = 90 * 1000;
+// The non-browser phases are capped by ITERATIONS, not duration. PGO hotness
+// is a threshold (a path is hot once it clears ~10^5-10^6 counts), so a few
+// thousand iterations mark every exercised path hot. Letting these tight
+// synthetic loops run for a fixed wall time instead generated billions of
+// counts (the top 2 blocks held ~10% of the entire profile), which inflated
+// the global hot threshold and crowded Blink out of the hot set. The
+// duration constants remain only as backstops for pathologically slow hosts.
+// Cap calibration: per-async-op overhead paths (AsyncHooks scopes, BaseObject
+// refcounts, StreamBase) see a handful of counts per operation, so they need
+// tens of thousands of operations to clear the hot threshold (~10^5 counts).
+// These values put them at 2-3x the threshold while keeping the hottest
+// serialization loops 4+ orders of magnitude below the old runaway counts.
+const MAIN_PROCESS_MAX_ITERATIONS = 25000;
+const MAIN_PROCESS_TIMEOUT_MS = 75 * 1000;
+const IPC_BRIDGE_MAX_CALLS = 50000;
+const IPC_BRIDGE_TIMEOUT_MS = 75 * 1000;
+const NETWORK_MAX_REQUESTS = 8000; // per side (renderer fetches / node requests)
+const ASYNC_CHURN_MAX_OPS = 250000;
+const NETWORK_TIMEOUT_MS = 90 * 1000;
 
 app.whenReady().then(async () => {
   const win = new BrowserWindow({
@@ -692,12 +843,20 @@ app.whenReady().then(async () => {
 
   let phases = [
     ...WORKLOADS.map((workload) => () => runWorkload(win, workload, diag)),
-    () => runMainProcessWorkload(MAIN_PROCESS_WORKLOAD_MS),
+    () => runMainProcessWorkload(MAIN_PROCESS_TIMEOUT_MS, MAIN_PROCESS_MAX_ITERATIONS),
+    () => runAsyncChurnWorkload(ASYNC_CHURN_MAX_OPS),
     () => runPackagedAppWorkload(),
-    () => runIpcBridgeWorkload(IPC_BRIDGE_WORKLOAD_MS),
-    () => runNetworkWorkload(win, NETWORK_WORKLOAD_MS)
+    () => runIpcBridgeWorkload(IPC_BRIDGE_TIMEOUT_MS, IPC_BRIDGE_MAX_CALLS),
+    () => runNetworkWorkload(win, NETWORK_TIMEOUT_MS, NETWORK_MAX_REQUESTS)
   ];
-  let phaseNames = [...WORKLOADS.map((w) => w.name), 'main-process', 'packaged-app', 'ipc-contextbridge', 'network'];
+  let phaseNames = [
+    ...WORKLOADS.map((w) => w.name),
+    'main-process',
+    'async-churn',
+    'packaged-app',
+    'ipc-contextbridge',
+    'network'
+  ];
 
   if (process.env.PGO_WORKLOAD_FILTER) {
     const allowed = process.env.PGO_WORKLOAD_FILTER.split(',').map((s) => s.trim());
@@ -706,15 +865,27 @@ app.whenReady().then(async () => {
     log(`workload filter active: ${phaseNames.join(', ')}`);
   }
 
+  // No in-app retry: a failed attempt's counters cannot be excised from
+  // already-running processes (continuous-mode counters in particular are
+  // app-lifetime cumulative), so retrying in-process would leave the failed
+  // attempt's mass in the profile. Failures are instead retried by
+  // collect-profile.js, which wipes the profraw dir and relaunches the whole
+  // app. When the orchestrator signals a relaunch is coming
+  // (PGO_ABORT_ON_FAILURE), bail on the first failure - finishing the
+  // remaining workloads is wasted work. On the final attempt the variable is
+  // unset and the run continues past failures so the partial profile keeps
+  // as much coverage as possible.
   for (let i = 0; i < phases.length; i++) {
     try {
       results.push(await phases[i]());
     } catch (err) {
       log(`ERROR: ${err.message}`);
       results.push({ name: phaseNames[i], ok: false, error: err.message });
-      // A failed workload reduces profile coverage but the data collected so
-      // far is still valid - keep going and report partial failure.
       exitCode = 1;
+      if (process.env.PGO_ABORT_ON_FAILURE) {
+        log('aborting remaining workloads; the orchestrator will wipe profiles and relaunch');
+        break;
+      }
     }
   }
 

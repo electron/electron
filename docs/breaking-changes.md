@@ -84,6 +84,13 @@ if (!result.canceled && result.filePaths.length > 0) {
 }
 ```
 
+### Removed: `showHiddenFiles` in Dialogs on Linux
+
+The `showHiddenFiles` property is no longer supported on Linux.
+It continues to work on macOS and Windows. GTK intends for this feature
+to be a user choice rather than an app choice, and has removed the API
+to do this programmatically.
+
 ## Planned Breaking API Changes (42.0)
 
 ### Behavior Changed: macOS notifications now use `UNNotification` API

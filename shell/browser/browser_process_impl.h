@@ -77,7 +77,6 @@ class BrowserProcessImpl : public BrowserProcess {
   GlobalFeatures* GetFeatures() override;
   void CreateGlobalFeaturesForTesting() {}
   void EndSession() override {}
-  void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;
   ui::UnownedUserDataHost& GetUnownedUserDataHost() override;
   const ui::UnownedUserDataHost& GetUnownedUserDataHost() const override;

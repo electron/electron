@@ -1404,6 +1404,42 @@ describe('webContents module', () => {
     );
   });
 
+  describe('DevTools native integration', () => {
+    afterEach(closeAllWindows);
+
+    async function openDevTools(w: BrowserWindow) {
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      await waitUntil(() => w.webContents.devToolsWebContents!.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+    }
+
+    it('uses the native showContextMenuAtPoint implementation', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      // The DevTools frontend should route context menus through the native
+      // DevToolsHost binding rather than a JS override injected by Electron.
+      const usesNativeContextMenu = await w.webContents.devToolsWebContents!.executeJavaScript(
+        'typeof DevToolsHost !== "undefined" && InspectorFrontendHost.showContextMenuAtPoint.toString().includes("DevToolsHost")'
+      );
+      expect(usesNativeContextMenu).to.be.true();
+    });
+
+    it('uses the native window.confirm implementation', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      // window.confirm should be the platform implementation (backed by the
+      // DevTools JavaScript dialog manager), not a JS override.
+      const confirmIsNative = await w.webContents.devToolsWebContents!.executeJavaScript(
+        'window.confirm.toString().includes("[native code]")'
+      );
+      expect(confirmIsNative).to.be.true();
+    });
+  });
+
   describe('before-mouse-event event', () => {
     afterEach(closeAllWindows);
     it('can prevent document mouse events', async () => {
@@ -3216,6 +3252,22 @@ describe('webContents module', () => {
         expect(w.webContents.isCrashed()).to.equal(false);
         w.webContents.forcefullyCrashRenderer();
         w.webContents.reload();
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
+
+      it('survives a synchronous reload() from the render-process-gone handler', async () => {
+        // Regression test: a synchronous reload() from 'render-process-gone'
+        // used to re-enter renderer process launch mid-teardown and
+        // CHECK-crash the browser process. See
+        // WebContents::PrimaryMainFrameRenderProcessGone.
+        const crashEvent = once(w.webContents, 'render-process-gone');
+        w.webContents.once('render-process-gone', () => {
+          // Deliberately synchronous.
+          w.webContents.reload();
+        });
+        w.webContents.forcefullyCrashRenderer();
+        await crashEvent;
+        await once(w.webContents, 'did-finish-load');
         expect(w.webContents.isCrashed()).to.equal(false);
       });
     });

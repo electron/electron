@@ -349,33 +349,9 @@ declare module NodeJS {
   }
 }
 
-interface ContextMenuItem {
-  id: number;
-  label: string;
-  type: 'normal' | 'separator' | 'subMenu' | 'checkbox' | 'header' | 'palette';
-  checked: boolean;
-  enabled: boolean;
-  subItems: ContextMenuItem[];
-}
-
 declare interface Window {
   ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean;
   ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean;
-  InspectorFrontendHost?: {
-    showContextMenuAtPoint: (x: number, y: number, items: ContextMenuItem[]) => void;
-  };
-  DevToolsAPI?: {
-    contextMenuItemSelected: (id: number) => void;
-    contextMenuCleared: () => void;
-  };
-  UI?: {
-    createFileSelectorElement: (callback: () => void) => HTMLSpanElement;
-  };
-  Persistence?: {
-    FileSystemWorkspaceBinding: {
-      completeURL: (project: string, path: string) => string;
-    };
-  };
   WebView: typeof ElectronInternal.WebViewElement;
   trustedTypes: TrustedTypePolicyFactory;
 }
