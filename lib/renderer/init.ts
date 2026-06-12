@@ -12,7 +12,9 @@ const Module = require('module') as NodeJS.ModuleInternal;
 const originalModuleLoad = Module._load;
 Module._load = function (request: string) {
   if (request === 'vm') {
-    console.warn('The vm module of Node.js is unsupported in Electron\'s renderer process due to incompatibilities with the Blink rendering engine. Crashes are likely and avoiding the module is highly recommended. This module may be removed in a future release.');
+    console.warn(
+      "The vm module of Node.js is unsupported in Electron's renderer process due to incompatibilities with the Blink rendering engine. Crashes are likely and avoiding the module is highly recommended. This module may be removed in a future release."
+    );
   }
   return originalModuleLoad.apply(this, arguments as any);
 };
@@ -33,9 +35,9 @@ Module._load = function (request: string) {
 // variables to this wrapper please ensure to update that plugin as well.
 Module.wrapper = [
   '(function (exports, require, module, __filename, __dirname, process, global, Buffer) { ' +
-  // By running the code in a new closure, it would be possible for the module
-  // code to override "process" and "Buffer" with local variables.
-  'return function (exports, require, module, __filename, __dirname) { ',
+    // By running the code in a new closure, it would be possible for the module
+    // code to override "process" and "Buffer" with local variables.
+    'return function (exports, require, module, __filename, __dirname) { ',
   '\n}.call(this, exports, require, module, __filename, __dirname); });'
 ];
 
@@ -46,8 +48,10 @@ process.argv.splice(1, 1);
 // Import common settings.
 require('@electron/internal/common/init');
 
-const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
-const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
+const { ipcRendererInternal } =
+  require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
+const ipcRendererUtils =
+  require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
 
 process.getProcessMemoryInfo = () => {
   return ipcRendererInternal.invoke<Electron.ProcessMemoryInfo>(IPC_MESSAGES.BROWSER_GET_PROCESS_MEMORY_INFO);
@@ -65,7 +69,9 @@ require('@electron/internal/renderer/common-init');
 
 if (nodeIntegration) {
   // Export node bindings to global.
-  const { makeRequireFunction } = __non_webpack_require__('internal/modules/helpers') as typeof import('@node/lib/internal/modules/helpers');
+  const { makeRequireFunction } = __non_webpack_require__(
+    'internal/modules/helpers'
+  ) as typeof import('@node/lib/internal/modules/helpers');
   global.module = new Module('electron/js2c/renderer_init');
   global.require = makeRequireFunction(global.module) as NodeRequire;
 
@@ -134,8 +140,8 @@ const { appCodeLoaded } = process;
 delete process.appCodeLoaded;
 
 const { preloadPaths } = ipcRendererUtils.invokeSync<{ preloadPaths: string[] }>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
-const cjsPreloads = preloadPaths.filter(p => path.extname(p) !== '.mjs');
-const esmPreloads = preloadPaths.filter(p => path.extname(p) === '.mjs');
+const cjsPreloads = preloadPaths.filter((p) => path.extname(p) !== '.mjs');
+const esmPreloads = preloadPaths.filter((p) => path.extname(p) === '.mjs');
 if (cjsPreloads.length) {
   // Load the preload scripts.
   for (const preloadScript of cjsPreloads) {
@@ -150,17 +156,21 @@ if (cjsPreloads.length) {
   }
 }
 if (esmPreloads.length) {
-  const { runEntryPointWithESMLoader } = __non_webpack_require__('internal/modules/run_main') as typeof import('@node/lib/internal/modules/run_main');
+  const { runEntryPointWithESMLoader } = __non_webpack_require__(
+    'internal/modules/run_main'
+  ) as typeof import('@node/lib/internal/modules/run_main');
 
   runEntryPointWithESMLoader(async (cascadedLoader: any) => {
     // Load the preload scripts.
     for (const preloadScript of esmPreloads) {
-      await cascadedLoader.import(pathToFileURL(preloadScript).toString(), undefined, Object.create(null)).catch((err: Error) => {
-        console.error(`Unable to load preload script: ${preloadScript}`);
-        console.error(err);
+      await cascadedLoader
+        .import(pathToFileURL(preloadScript).toString(), undefined, Object.create(null))
+        .catch((err: Error) => {
+          console.error(`Unable to load preload script: ${preloadScript}`);
+          console.error(err);
 
-        ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
-      });
+          ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
+        });
     }
   }).finally(() => appCodeLoaded!());
 } else {

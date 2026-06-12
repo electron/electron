@@ -1,0 +1,149 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Thu, 26 Mar 2026 11:46:35 -0700
+Subject: cross-doc VT: double check the origin before sending view transitons
+
+This patch ensures that we double check our origin before sending view
+transition state to the new rfh. The origin may have switched in a
+pre-render situation. See the referenced bug for details.
+
+R=alexmos@chromium.org
+
+Bug: 495890000
+Change-Id: I7b94b5320858926dc914c9e7896856520a238e8a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7704912
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Vladimir Levin <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1605690}
+
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index 23db0d047187a95cb401629a42fa3baaaf0feb12..113e50f2d75052c88d72516a28a335d182bc1a52 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -6888,6 +6888,18 @@ void NavigationRequest::CommitNavigation() {
+   SendDeferredConsoleMessages();
+ }
+ 
++void NavigationRequest::UpdateViewTransitionStateForDestinationOrigin(
++    const url::Origin& origin) {
++  if (!commit_params().view_transition_state && !view_transition_resources_) {
++    return;
++  }
++  // Disallow cross origin view transitions.
++  if (!view_transition_source_origin_.IsSameOriginWith(origin)) {
++    commit_params_->view_transition_state.reset();
++    view_transition_resources_.reset();
++  }
++}
++
+ void NavigationRequest::CommitPageActivation() {
+   TRACE_EVENT("navigation", "NavigationRequest::CommitPageActivation",
+               perfetto::Flow::FromPointer(this));
+@@ -6969,6 +6981,11 @@ void NavigationRequest::CommitPageActivation() {
+     // ReadyToCommitNavigation call).
+     page_activation_commit_time_ = base::TimeTicks::Now();
+ 
++    // Make sure to update the view transition state before passing the state to
++    // `activated_entry`. This may need to clear the state if the origin
++    // changed.
++    UpdateViewTransitionStateForDestinationOrigin(GetOriginToCommit().value());
++
+     // Use std::exchange instead of move, so that we clear out the optional on
+     // the commit_params.
+     activated_entry->SetViewTransitionState(
+@@ -7016,6 +7033,11 @@ void NavigationRequest::CommitPageActivation() {
+     // ReadyToCommitNavigation call).
+     page_activation_commit_time_ = base::TimeTicks::Now();
+ 
++    // Make sure to update the view transition state before passing the state to
++    // `stored_page`. This may need to clear the state if the origin
++    // changed.
++    UpdateViewTransitionStateForDestinationOrigin(GetOriginToCommit().value());
++
+     // Use std::exchange instead of move, so that we clear out the optional on
+     // the commit_params.
+     stored_page->SetViewTransitionState(
+@@ -11133,11 +11155,13 @@ NavigationRequest::GetJavaNavigationHandle() {
+ #endif
+ 
+ void NavigationRequest::SetViewTransitionState(
++    const url::Origin& source_origin,
+     std::unique_ptr<ScopedViewTransitionResources> resources,
+     blink::ViewTransitionState view_transition_state) {
+   commit_params_->view_transition_state = std::move(view_transition_state);
+   CHECK(resources);
+   view_transition_resources_ = std::move(resources);
++  view_transition_source_origin_ = source_origin;
+ }
+ 
+ void NavigationRequest::ResetViewTransitionState() {
+diff --git a/content/browser/renderer_host/navigation_request.h b/content/browser/renderer_host/navigation_request.h
+index ba3959a35fa4ba9b23094cd86f7adc04a738a3d1..e84e39a6145afa314807bd7b4139e73b844e5fd7 100644
+--- a/content/browser/renderer_host/navigation_request.h
++++ b/content/browser/renderer_host/navigation_request.h
+@@ -1244,6 +1244,7 @@ class CONTENT_EXPORT NavigationRequest
+   // Initializes state which is passed from the old Document to the new Document
+   // for a ViewTransition.
+   void SetViewTransitionState(
++      const url::Origin& source_origin,
+       std::unique_ptr<ScopedViewTransitionResources> resources,
+       blink::ViewTransitionState view_transition_state);
+ 
+@@ -2459,6 +2460,12 @@ class CONTENT_EXPORT NavigationRequest
+   // eventually be replaced with the navigation timeline metrics.
+   bool ShouldRecordNavigationTimelineUkm() const;
+ 
++  // Given the known destination origin, this updates the view transition state
++  // and resources. Namely, it clears it if the view transition state and
++  // resources were generated from a different origin with the given origin.
++  // This is because we disallow cross origin view transitions.
++  void UpdateViewTransitionStateForDestinationOrigin(const url::Origin& origin);
++
+   // Used for short-lived NavigationRequest created at DidCommit time for the
+   // purpose of committing navigation that were not driven by the browser
+   // process. This is used in only two cases:
+@@ -3358,6 +3365,14 @@ class CONTENT_EXPORT NavigationRequest
+   // committing, the resources are destroyed with this request.
+   std::unique_ptr<ScopedViewTransitionResources> view_transition_resources_;
+ 
++  // An origin that generated the view transition state
++  // (`view_transition_resources_` and `commit_params_->view_transition_state`.
++  // This is used to ensure that at the time of commit, if the origin changed
++  // because this was a pre-render activation, we don't try and initiate a view
++  // transition since that can (unintentionally) leak view transition state
++  // across origins.
++  url::Origin view_transition_source_origin_;
++
+   // If true, this means that this navigation request was initiated by an
+   // animated transition.
+   bool was_initiated_by_animated_transition_ = false;
+diff --git a/content/browser/renderer_host/view_transition_commit_deferring_condition.cc b/content/browser/renderer_host/view_transition_commit_deferring_condition.cc
+index d914637b77c609d71bc83fe8a4f3cf8d6a8659b6..d6c915c16e7a8c48b67d716af999ed18deeecab9 100644
+--- a/content/browser/renderer_host/view_transition_commit_deferring_condition.cc
++++ b/content/browser/renderer_host/view_transition_commit_deferring_condition.cc
+@@ -198,11 +198,11 @@ void ViewTransitionCommitDeferringCondition::OnSnapshotAckFromRenderer(
+ 
+   base::ScopedClosureRunner runner(std::move(resume_navigation_));
+ 
+-  if (view_transition_state.HasSubframeSnapshot()) {
+-    if (!old_rfh_) {
+-      return;
+-    }
++  if (!old_rfh_) {
++    return;
++  }
+ 
++  if (view_transition_state.HasSubframeSnapshot()) {
+     // The subframe snapshot is only used for in-process iframes which don't own
+     // a widget.
+     if (old_rfh_->is_local_root()) {
+@@ -224,7 +224,8 @@ void ViewTransitionCommitDeferringCondition::OnSnapshotAckFromRenderer(
+ 
+   if (view_transition_state.IsValid()) {
+     NavigationRequest::From(&GetNavigationHandle())
+-        ->SetViewTransitionState(std::move(resources_),
++        ->SetViewTransitionState(old_rfh_->GetLastCommittedOrigin(),
++                                 std::move(resources_),
+                                  std::move(view_transition_state));
+   }
+ }

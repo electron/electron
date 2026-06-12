@@ -15,7 +15,7 @@ const stopLogging: typeof session.defaultSession.netLog.stopLogging = async () =
 export default {
   startLogging,
   stopLogging,
-  get currentlyLogging (): boolean {
+  get currentlyLogging(): boolean {
     if (!app.isReady()) return false;
     return session.defaultSession.netLog.currentlyLogging;
   }

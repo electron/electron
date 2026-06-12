@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommy Steimel <steimel@chromium.org>
+Date: Tue, 24 Mar 2026 11:57:15 -0700
+Subject: [SMTC] Use weak ptr in SystemMediaControlsWin callback
+
+We currently capture a raw `this` pointer in a SystemMediaControlsWin
+callback for writing image data. This could be problematic as it's
+possible the SystemMediaControlsWin doesn't outlive the operation.
+This CL updates the callback to capture and use a weak pointer instead.
+
+Bug: 495108488
+Change-Id: I8698af5cf5d828ee5064793d35a6c33b6072ce53
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7694234
+Commit-Queue: Tommy Steimel <steimel@chromium.org>
+Reviewed-by: Frank Liberato <liberato@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1604285}
+
+diff --git a/components/system_media_controls/win/system_media_controls_win.cc b/components/system_media_controls/win/system_media_controls_win.cc
+index 41607de460eac92c95db16a7d45c0d8082cd0eff..a883ed458b0a6f3837d45d274667b5c6dc1f6000 100644
+--- a/components/system_media_controls/win/system_media_controls_win.cc
++++ b/components/system_media_controls/win/system_media_controls_win.cc
+@@ -308,10 +308,16 @@ void SystemMediaControlsWin::SetThumbnail(const SkBitmap& bitmap) {
+ 
+   // Make a callback that gives the icon to the SMTC once the bits make it into
+   // |icon_stream_|
++  auto weak_ptr = weak_factory_.GetWeakPtr();
+   auto store_async_callback = Microsoft::WRL::Callback<
+       ABI::Windows::Foundation::IAsyncOperationCompletedHandler<unsigned int>>(
+-      [this](ABI::Windows::Foundation::IAsyncOperation<unsigned int>* async_op,
+-             ABI::Windows::Foundation::AsyncStatus status) mutable {
++      [weak_ptr](
++          ABI::Windows::Foundation::IAsyncOperation<unsigned int>* async_op,
++          ABI::Windows::Foundation::AsyncStatus status) mutable {
++        if (!weak_ptr) {
++          return S_OK;
++        }
++
+         // Check the async operation completed successfully.
+         ABI::Windows::Foundation::IAsyncInfo* async_info;
+         HRESULT hr = async_op->QueryInterface(
+@@ -328,15 +334,15 @@ void SystemMediaControlsWin::SetThumbnail(const SkBitmap& bitmap) {
+               &reference_statics);
+           DCHECK(SUCCEEDED(result));
+ 
+-          result = reference_statics->CreateFromStream(icon_stream_.Get(),
+-                                                       &icon_stream_reference_);
++          result = reference_statics->CreateFromStream(
++              weak_ptr->icon_stream_.Get(), &weak_ptr->icon_stream_reference_);
+           DCHECK(SUCCEEDED(result));
+ 
+-          result =
+-              display_updater_->put_Thumbnail(icon_stream_reference_.Get());
++          result = weak_ptr->display_updater_->put_Thumbnail(
++              weak_ptr->icon_stream_reference_.Get());
+           DCHECK(SUCCEEDED(result));
+ 
+-          result = display_updater_->Update();
++          result = weak_ptr->display_updater_->Update();
+           DCHECK(SUCCEEDED(result));
+         }
+         return hr;

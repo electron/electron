@@ -3,11 +3,11 @@ import { flipFuses, FuseV1Config, FuseV1Options, FuseVersion } from '@electron/f
 import { resedit } from '@electron/packager/dist/resedit';
 
 import { expect } from 'chai';
-import * as originalFs from 'node:original-fs';
 
 import * as cp from 'node:child_process';
 import * as nodeCrypto from 'node:crypto';
 import * as fs from 'node:fs';
+import * as originalFs from 'node:original-fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -28,8 +28,8 @@ const bufferReplace = (haystack: Buffer, needle: string, replacement: string, th
   return Buffer.concat([before, Buffer.from(replacement), after], len);
 };
 
-type SpawnResult = { code: number | null, out: string, signal: NodeJS.Signals | null };
-function spawn (cmd: string, args: string[], opts: any = {}) {
+type SpawnResult = { code: number | null; out: string; signal: NodeJS.Signals | null };
+function spawn(cmd: string, args: string[], opts: any = {}) {
   let out = '';
   const child = cp.spawn(cmd, args, opts);
   child.stdout.on('data', (chunk: Buffer) => {
@@ -47,7 +47,7 @@ function spawn (cmd: string, args: string[], opts: any = {}) {
       });
     });
   });
-};
+}
 
 const expectToHaveCrashed = (res: SpawnResult) => {
   if (process.platform === 'win32') {
@@ -73,7 +73,9 @@ describe('fuses', function () {
     return spawn(appPath, args);
   };
 
-  const ensureFusesBeforeEach = (fuses: Omit<FuseV1Config<boolean>, 'version' | 'strictlyRequireAllFuses' | 'resetAdhocDarwinSignature'>) => {
+  const ensureFusesBeforeEach = (
+    fuses: Omit<FuseV1Config<boolean>, 'version' | 'strictlyRequireAllFuses' | 'resetAdhocDarwinSignature'>
+  ) => {
     beforeEach(async () => {
       await flipFuses(appPath, {
         version: FuseVersion.V1,
@@ -99,93 +101,105 @@ describe('fuses', function () {
     }
   });
 
-  ifdescribe((process.platform === 'win32' && process.arch !== 'arm64') || process.platform === 'darwin')('ASAR Integrity', () => {
-    let pathToAsar: string;
+  ifdescribe((process.platform === 'win32' && process.arch !== 'arm64') || process.platform === 'darwin')(
+    'ASAR Integrity',
+    () => {
+      let pathToAsar: string;
 
-    beforeEach(async () => {
-      if (process.platform === 'darwin') {
-        pathToAsar = path.resolve(appPath, 'Contents', 'Resources', 'default_app.asar');
-      } else {
-        pathToAsar = path.resolve(path.dirname(appPath), 'resources', 'default_app.asar');
-      }
+      beforeEach(async () => {
+        if (process.platform === 'darwin') {
+          pathToAsar = path.resolve(appPath, 'Contents', 'Resources', 'default_app.asar');
+        } else {
+          pathToAsar = path.resolve(path.dirname(appPath), 'resources', 'default_app.asar');
+        }
 
-      if (process.platform === 'win32') {
-        await resedit(appPath, {
-          asarIntegrity: {
-            'resources\\default_app.asar': {
-              algorithm: 'SHA256',
-              hash: nodeCrypto.createHash('sha256').update(getRawHeader(pathToAsar).headerString).digest('hex')
+        if (process.platform === 'win32') {
+          await resedit(appPath, {
+            asarIntegrity: {
+              'resources\\default_app.asar': {
+                algorithm: 'SHA256',
+                hash: nodeCrypto.createHash('sha256').update(getRawHeader(pathToAsar).headerString).digest('hex')
+              }
             }
-          }
+          });
+        }
+      });
+
+      describe('when enabled', () => {
+        ensureFusesBeforeEach({
+          [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true
         });
-      }
-    });
 
-    describe('when enabled', () => {
-      ensureFusesBeforeEach({
-        [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true
+        it('opens normally when unmodified', async () => {
+          const res = await launchApp([path.resolve(__dirname, 'fixtures/apps/hello/hello.js')]);
+          expect(res.code).to.equal(0);
+          expect(res.signal).to.equal(null);
+          expect(res.out).to.include('alive');
+        });
+
+        it('fatals if the integrity header does not match', async () => {
+          const asar = await originalFs.promises.readFile(pathToAsar);
+          // Ensure that the header still starts with the same thing, if build system
+          // things result in the header changing we should update this test
+          expect(asar.toString()).to.contain('{"files":{"default_app.js"');
+          await originalFs.promises.writeFile(
+            pathToAsar,
+            bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"')
+          );
+
+          const res = await launchApp(['--version']);
+          expectToHaveCrashed(res);
+          expect(res.out).to.include('Integrity check failed for asar archive');
+        });
+
+        it('fatals if a loaded main process JS file does not match', async () => {
+          const asar = await originalFs.promises.readFile(pathToAsar);
+          // Ensure that the header still starts with the same thing, if build system
+          // things result in the header changing we should update this test
+          expect(asar.toString()).to.contain('Invalid Usage');
+          await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, 'Invalid Usage', 'VVValid Usage'));
+
+          const res = await launchApp(['--version']);
+          expect(res.code).to.equal(1);
+          expect(res.signal).to.equal(null);
+          expect(res.out).to.include('ASAR Integrity Violation: got a hash mismatch');
+        });
+
+        it('fatals if a renderer content file does not match', async () => {
+          const asar = await originalFs.promises.readFile(pathToAsar);
+          // Ensure that the header still starts with the same thing, if build system
+          // things result in the header changing we should update this test
+          expect(asar.toString()).to.contain('require-trusted-types-for');
+          await originalFs.promises.writeFile(
+            pathToAsar,
+            bufferReplace(asar, 'require-trusted-types-for', 'require-trusted-types-not')
+          );
+
+          const res = await launchApp();
+          expectToHaveCrashed(res);
+          expect(res.out).to.include('Failed to validate block while ending ASAR file stream');
+        });
       });
 
-      it('opens normally when unmodified', async () => {
-        const res = await launchApp([path.resolve(__dirname, 'fixtures/apps/hello/hello.js')]);
-        expect(res.code).to.equal(0);
-        expect(res.signal).to.equal(null);
-        expect(res.out).to.include('alive');
+      describe('when disabled', () => {
+        ensureFusesBeforeEach({
+          [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: false
+        });
+
+        it('does nothing if the integrity header does not match', async () => {
+          const asar = await originalFs.promises.readFile(pathToAsar);
+          // Ensure that the header still starts with the same thing, if build system
+          // things result in the header changing we should update this test
+          expect(asar.toString()).to.contain('{"files":{"default_app.js"');
+          await originalFs.promises.writeFile(
+            pathToAsar,
+            bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"')
+          );
+
+          const res = await launchApp(['--version']);
+          expect(res.code).to.equal(0);
+        });
       });
-
-      it('fatals if the integrity header does not match', async () => {
-        const asar = await originalFs.promises.readFile(pathToAsar);
-        // Ensure that the header still starts with the same thing, if build system
-        // things result in the header changing we should update this test
-        expect(asar.toString()).to.contain('{"files":{"default_app.js"');
-        await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"'));
-
-        const res = await launchApp(['--version']);
-        expectToHaveCrashed(res);
-        expect(res.out).to.include('Integrity check failed for asar archive');
-      });
-
-      it('fatals if a loaded main process JS file does not match', async () => {
-        const asar = await originalFs.promises.readFile(pathToAsar);
-        // Ensure that the header still starts with the same thing, if build system
-        // things result in the header changing we should update this test
-        expect(asar.toString()).to.contain('Invalid Usage');
-        await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, 'Invalid Usage', 'VVValid Usage'));
-
-        const res = await launchApp(['--version']);
-        expect(res.code).to.equal(1);
-        expect(res.signal).to.equal(null);
-        expect(res.out).to.include('ASAR Integrity Violation: got a hash mismatch');
-      });
-
-      it('fatals if a renderer content file does not match', async () => {
-        const asar = await originalFs.promises.readFile(pathToAsar);
-        // Ensure that the header still starts with the same thing, if build system
-        // things result in the header changing we should update this test
-        expect(asar.toString()).to.contain('require-trusted-types-for');
-        await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, 'require-trusted-types-for', 'require-trusted-types-not'));
-
-        const res = await launchApp();
-        expectToHaveCrashed(res);
-        expect(res.out).to.include('Failed to validate block while ending ASAR file stream');
-      });
-    });
-
-    describe('when disabled', () => {
-      ensureFusesBeforeEach({
-        [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: false
-      });
-
-      it('does nothing if the integrity header does not match', async () => {
-        const asar = await originalFs.promises.readFile(pathToAsar);
-        // Ensure that the header still starts with the same thing, if build system
-        // things result in the header changing we should update this test
-        expect(asar.toString()).to.contain('{"files":{"default_app.js"');
-        await originalFs.promises.writeFile(pathToAsar, bufferReplace(asar, '{"files":{"default_app.js"', '{"files":{"default_oop.js"'));
-
-        const res = await launchApp(['--version']);
-        expect(res.code).to.equal(0);
-      });
-    });
-  });
+    }
+  );
 });

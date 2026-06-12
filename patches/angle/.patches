@@ -1,3 +1,11 @@
 optionally_validate_gl_max_uniform_blocks_at_compile_time.patch
 cherry-pick-cl-7708753.patch
 cherry-pick-6d8b704e2a.patch
+cherry-pick-7695232.patch
+cherry-pick-7712217.patch
+cherry-pick-7722080.patch
+cherry-pick-c0c3b52cec94.patch
+cherry-pick-06e6c6b59454.patch
+cherry-pick-a4bd261b3496.patch
+cherry-pick-86d64be7672e.patch
+cherry-pick-0323970550b9.patch

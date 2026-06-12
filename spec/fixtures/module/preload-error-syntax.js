@@ -1,2 +1,2 @@
 // eslint-disable-next-line
-foobar
+foobar;

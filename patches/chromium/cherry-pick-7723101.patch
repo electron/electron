@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shunya Shishido <sisidovski@chromium.org>
+Date: Thu, 2 Apr 2026 08:23:44 -0700
+Subject: Report bad message on reuse of
+ ForwardedRaceNetworkRequestURLLoaderFactory
+
+The ForwardedRaceNetworkRequestURLLoaderFactory is intended for a single
+use. If CreateLoaderAndStart is called after the data pipe has already
+been fused, it indicates an unexpected state, so report a bad message
+instead of falling back.
+
+Bug: 497437113
+Change-Id: I2867a9359a6764065fe95e0b1f7d68fc80cf0d05
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7723101
+Commit-Queue: Shunya Shishido <sisidovski@chromium.org>
+Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1609228}
+
+diff --git a/content/common/service_worker/forwarded_race_network_request_url_loader_factory.cc b/content/common/service_worker/forwarded_race_network_request_url_loader_factory.cc
+index a64f9b5fe98dd925cbc5396cac5a0a8699d5d97b..cfd03bec7e2f13b934d87337344ebbcf755d8400 100644
+--- a/content/common/service_worker/forwarded_race_network_request_url_loader_factory.cc
++++ b/content/common/service_worker/forwarded_race_network_request_url_loader_factory.cc
+@@ -4,8 +4,16 @@
+ 
+ #include "content/common/service_worker/forwarded_race_network_request_url_loader_factory.h"
+ 
++#include "base/feature_list.h"
++
+ namespace content {
+ 
++namespace {
++// Kill switch for multiple CreateLoaderAndStart calls.
++BASE_FEATURE(kKillSwitchForRaceNetworkRequestMultipleCreateLoaderAndStartCalls,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++}  // namespace
++
+ ServiceWorkerForwardedRaceNetworkRequestURLLoaderFactory::
+     ServiceWorkerForwardedRaceNetworkRequestURLLoaderFactory(
+         mojo::PendingReceiver<network::mojom::URLLoaderClient> client_receiver,
+@@ -34,10 +42,14 @@ void ServiceWorkerForwardedRaceNetworkRequestURLLoaderFactory::
+     CHECK(result) << resource_request.url;
+     is_data_pipe_fused_ = true;
+   } else {
+-    // If already fused, create a new URLLoader and start the new request.
+-    fallback_factory_->CreateLoaderAndStart(
+-        std::move(receiver), request_id, options, resource_request,
+-        std::move(client), traffic_annotation);
++    // A legitimate renderer will never hit this branch.
++    // If we are here, the renderer is compromised or severely buggy.
++    if (base::FeatureList::IsEnabled(
++            kKillSwitchForRaceNetworkRequestMultipleCreateLoaderAndStartCalls)) {
++      receiver_.ReportBadMessage(
++          "ServiceWorkerForwardedRaceNetworkRequestURLLoaderFactory: "
++          "CreateLoaderAndStart called multiple times.");
++    }
+   }
+ }
+ 

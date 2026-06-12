@@ -1,0 +1,135 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matthias Liedtke <mliedtke@chromium.org>
+Date: Tue, 14 Apr 2026 16:31:35 +0200
+Subject: [wasm] 32 bit platforms: Fix int64 lowering for 'invalid' offsets
+
+The logic for the case !LoadOp::OffsetIsValid() was not correct.
+
+Fixed: 502030575
+Change-Id: I81692e2bb7cc15f85911c0110b84ae3a66189d53
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7758773
+Auto-Submit: Matthias Liedtke <mliedtke@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106481}
+
+diff --git a/src/compiler/turboshaft/int64-lowering-reducer.h b/src/compiler/turboshaft/int64-lowering-reducer.h
+index 52c1c7c3077522499044dc8e86cb9c0039141608..e73258fbbf72376b64b103c8c53bfaa907b5e549 100644
+--- a/src/compiler/turboshaft/int64-lowering-reducer.h
++++ b/src/compiler/turboshaft/int64-lowering-reducer.h
+@@ -295,10 +295,10 @@ class Int64LoweringReducer : public Next {
+     FATAL("%s", str.str().c_str());
+   }
+ 
+-  std::pair<OptionalV<Word32>, int32_t> IncreaseOffset(OptionalV<Word32> index,
+-                                                       int32_t offset,
+-                                                       int32_t add_offset,
+-                                                       bool tagged_base) {
++  std::pair<OptionalV<Word32>, int32_t> IncreaseOffset(
++      OptionalV<Word32> index, int32_t offset, int32_t add_offset,
++      uint8_t element_size_log2, bool tagged_base) {
++    uint32_t element_size = 1 << element_size_log2;
+     // Note that the offset will just wrap around. Still, we need to always
+     // use an offset that is not std::numeric_limits<int32_t>::min() on tagged
+     // loads.
+@@ -308,13 +308,17 @@ class Int64LoweringReducer : public Next {
+         static_cast<uint32_t>(offset) + static_cast<uint32_t>(add_offset);
+     OptionalV<Word32> new_index = index;
+     if (!LoadOp::OffsetIsValid(new_offset, tagged_base)) {
+-      // We cannot encode the new offset so we use the old offset
+-      // instead and use the Index to represent the extra offset.
+-      new_offset = offset;
++      // We cannot encode the new offset because it has the one invalid value.
++      // We can choose any other value and the only requirement is that we end
++      // up at the same final location after calculating
++      // |  index * element_size + offset
++      // So we'll just subtract "one element" and increase the index by one.
++      // We could do this for almost any arbitrary value larger than 0.
++      new_offset -= element_size;
+       if (index.has_value()) {
+-        new_index = __ Word32Add(new_index.value(), add_offset);
++        new_index = __ Word32Add(new_index.value(), 1);
+       } else {
+-        new_index = __ Word32Constant(sizeof(int32_t));
++        new_index = __ Word32Constant(1);
+       }
+     }
+     return {new_index, new_offset};
+@@ -347,8 +351,8 @@ class Int64LoweringReducer : public Next {
+     }
+     if (loaded_rep == MemoryRepresentation::Int64() ||
+         loaded_rep == MemoryRepresentation::Uint64()) {
+-      auto [high_index, high_offset] =
+-          IncreaseOffset(index, offset, sizeof(int32_t), kind.tagged_base);
++      auto [high_index, high_offset] = IncreaseOffset(
++          index, offset, sizeof(int32_t), element_scale, kind.tagged_base);
+       return __ MakeTuple(
+           Next::ReduceLoad(base, index, kind, MemoryRepresentation::Int32(),
+                            RegisterRepresentation::Word32(), offset,
+@@ -388,8 +392,8 @@ class Int64LoweringReducer : public Next {
+                         maybe_initializing_or_transitioning,
+                         maybe_indirect_pointer_tag);
+       // high store
+-      auto [high_index, high_offset] =
+-          IncreaseOffset(index, offset, sizeof(int32_t), kind.tagged_base);
++      auto [high_index, high_offset] = IncreaseOffset(
++          index, offset, sizeof(int32_t), element_size_log2, kind.tagged_base);
+       Next::ReduceStore(
+           base, high_index, high, kind, MemoryRepresentation::Int32(),
+           write_barrier, high_offset, element_size_log2,
+diff --git a/test/mjsunit/regress/wasm/regress-502030575.js b/test/mjsunit/regress/wasm/regress-502030575.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f0fd90b7e3ce96332243f2746c043d727b314376
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-502030575.js
+@@ -0,0 +1,50 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++d8.file.execute("test/mjsunit/wasm/wasm-module-builder.js");
++
++let builder = new WasmModuleBuilder();
++let array_type = builder.addArray(kWasmI64);
++
++// For 32 bit platforms:
++// Choose a big constant offset, so that when adding the constant wasm array
++// header offset and the extra offset for the 2nd i32 load we end up with a
++// value that exactly equals INT32_MIN (which is the singular value that
++// returns false for LoadOp::OffsetIsValid()).
++const BIG_CONST = 0xFFFFFFE;
++const WASM_ARRAY_HEADER = 12; // map + hash + array size (subject to change)
++const SECOND_LOAD_OFFSET = 4
++const INT32_MIN = 1 << 31;
++assertEquals(
++  (BIG_CONST * 8 + WASM_ARRAY_HEADER + SECOND_LOAD_OFFSET) | 0,
++  INT32_MIN);
++let testValue = 0x1234_5678_90ab_cdefn;
++
++builder.addFunction("test", makeSig([kWasmI32], [kWasmI64]))
++  .addLocals(wasmRefNullType(array_type), 1)
++  .addBody([
++    // Create an array with a single value
++    ...wasmI32Const(1),
++    kGCPrefix, kExprArrayNewDefault, array_type,
++    kExprLocalTee, 1,
++    // Write a value at offset 0.
++    kExprI32Const, 0,
++    ...wasmI64Const(testValue),
++    kGCPrefix, kExprArraySet, array_type,
++    // Read the value at offset 0 by having the index calculation
++    // (BIG_CONST - BIG_CONST). The i32.const in the code will be folded into
++    // the offset of the load.
++    kExprLocalGet, 1,
++    kExprLocalGet, 0,
++    ...wasmI32Const(BIG_CONST),
++    kExprI32Add,
++    kGCPrefix, kExprArrayGet, array_type,
++  ])
++  .exportFunc();
++
++let instance = builder.instantiate();
++let result = instance.exports.test(-BIG_CONST);
++assertEquals(testValue, result);

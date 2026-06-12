@@ -8,40 +8,40 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
   updateAvailable: boolean = false;
   updateURL: string | null = null;
 
-  quitAndInstall () {
+  quitAndInstall() {
     if (!this.updateAvailable) {
-      return this.emitError(new Error('No update available, can\'t quit and install'));
+      return this.emitError(new Error("No update available, can't quit and install"));
     }
     squirrelUpdate.processStart();
     app.quit();
   }
 
-  getFeedURL () {
+  getFeedURL() {
     return this.updateURL ?? '';
   }
 
-  getPackageInfo () {
+  getPackageInfo() {
     // Squirrel-based Windows apps don't have MSIX package information
     return undefined;
   }
 
-  setFeedURL (options: { url: string } | string) {
+  setFeedURL(options: { url: string } | string) {
     let updateURL: string;
     if (typeof options === 'object') {
       if (typeof options.url === 'string') {
         updateURL = options.url;
       } else {
-        throw new TypeError('Expected options object to contain a \'url\' string property in setFeedUrl call');
+        throw new TypeError("Expected options object to contain a 'url' string property in setFeedUrl call");
       }
     } else if (typeof options === 'string') {
       updateURL = options;
     } else {
-      throw new TypeError('Expected an options object with a \'url\' property to be provided');
+      throw new TypeError("Expected an options object with a 'url' property to be provided");
     }
     this.updateURL = updateURL;
   }
 
-  async checkForUpdates () {
+  async checkForUpdates() {
     const url = this.updateURL;
     if (!url) {
       return this.emitError(new Error('Update URL is not set'));
@@ -72,7 +72,7 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
 
   // Private: Emit both error object and message, this is to keep compatibility
   // with Old APIs.
-  emitError (error: Error) {
+  emitError(error: Error) {
     this.emit('error', error, error.message);
   }
 }

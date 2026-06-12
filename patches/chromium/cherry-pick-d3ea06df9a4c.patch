@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mikt <mikt@google.com>
+Date: Fri, 27 Mar 2026 00:56:47 -0700
+Subject: Use index-based for in Element::CloneAttributesFrom
+
+We should not use range-based on if the vector can be updated in the
+loop.
+
+Bug: 496280532
+Change-Id: I0ff0b8d2039c184d7b40f4024dacb518834bd09f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7702091
+Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
+Commit-Queue: Stephen Nusko <nuskos@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1606009}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 5ec94dee53c53005803404dfab13b2641ef6a4a8..09fce9bb340492d48bb5a621665563a38314b0a0 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -11172,7 +11172,8 @@ void Element::CloneAttributesFrom(const Element& other) {
+     // Two or more children left; we don't consider it worth it
+     // to try to reset the filter fully.
+   }
+-  for (const Attribute& attr : element_data_->Attributes()) {
++  for (wtf_size_t i = 0; i < element_data_->Attributes().size(); ++i) {
++    const Attribute& attr = element_data_->Attributes().at(i);
+     attribute_or_class_bloom_ |= FilterForAttribute(attr.GetName());
+     AttributeChanged(
+         AttributeModificationParams(attr.GetName(), g_null_atom, attr.Value(),

@@ -1,12 +1,12 @@
 /* global chrome */
 
-function evalInMainWorld (fn) {
+function evalInMainWorld(fn) {
   const script = document.createElement('script');
   script.textContent = `((${fn})())`;
   document.documentElement.appendChild(script);
 }
 
-async function exec (name) {
+async function exec(name) {
   let result;
   switch (name) {
     case 'getManifest':
@@ -19,7 +19,7 @@ async function exec (name) {
       result = chrome.runtime.getURL('main.js');
       break;
     case 'getPlatformInfo': {
-      result = await new Promise(resolve => {
+      result = await new Promise((resolve) => {
         chrome.runtime.sendMessage(name, resolve);
       });
       break;
@@ -30,10 +30,10 @@ async function exec (name) {
   evalInMainWorld(funcStr);
 }
 
-window.addEventListener('message', event => {
+window.addEventListener('message', (event) => {
   exec(event.data.name);
 });
 
 evalInMainWorld(() => {
-  window.exec = name => window.postMessage({ name });
+  window.exec = (name) => window.postMessage({ name });
 });

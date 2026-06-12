@@ -3,7 +3,7 @@ const { app, ipcMain, BrowserWindow } = require('electron');
 const http = require('node:http');
 const path = require('node:path');
 
-function createWindow () {
+function createWindow() {
   const mainWindow = new BrowserWindow({
     webPreferences: {
       webSecurity: false,
@@ -17,9 +17,11 @@ function createWindow () {
   });
 }
 
-const server = http.createServer((_req, res) => {
-  res.end('<title>hello</title>');
-}).listen(7001, '127.0.0.1');
+const server = http
+  .createServer((_req, res) => {
+    res.end('<title>hello</title>');
+  })
+  .listen(7001, '127.0.0.1');
 
 app.whenReady().then(() => {
   createWindow();

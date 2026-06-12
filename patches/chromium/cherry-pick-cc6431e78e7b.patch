@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keishi Hattori <keishi@google.com>
+Date: Sun, 29 Mar 2026 21:49:40 -0700
+Subject: [aura] Mitigate Use-After-Free in
+ WindowTreeHostPlatform::OnStateUpdate
+
+WindowTreeHostPlatform::OnStateUpdate calls OnBoundsChanged, which can
+trigger observer notifications that synchronously destroy the host.
+While OnBoundsChanged safely handles this internally, it returns control
+to OnStateUpdate, which continues executing with a dangling `this` pointer. Past report is crbug.com/1185482.
+
+Bug: 495948109
+Change-Id: Ic0eac7b9d91005f0275035b8393f67af43a19d32
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7699933
+Commit-Queue: Keishi Hattori <keishi@chromium.org>
+Reviewed-by: Mitsuru Oshima <oshima@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1606889}
+
+diff --git a/ui/aura/window_tree_host_platform.cc b/ui/aura/window_tree_host_platform.cc
+index 0cdea9a4e0846a622f1d0aaecab536165fb584a6..49c79a100bda7aabcd022aa51d93e25fb303d8cc 100644
+--- a/ui/aura/window_tree_host_platform.cc
++++ b/ui/aura/window_tree_host_platform.cc
+@@ -373,7 +373,12 @@ int64_t WindowTreeHostPlatform::OnStateUpdate(
+   if (old.bounds_dip != latest.bounds_dip || old.size_px != latest.size_px ||
+       old.window_scale != latest.window_scale) {
+     bool origin_changed = old.bounds_dip.origin() != latest.bounds_dip.origin();
++    auto weak_ref = GetWeakPtr();
+     OnBoundsChanged({origin_changed});
++    // Notifying observers of the bounds change may delete this.
++    if (!weak_ref) {
++      return -1;
++    }
+   }
+ 
+   bool needs_frame = latest.WillProduceFrameOnUpdateFrom(old);
+diff --git a/ui/aura/window_tree_host_platform_unittest.cc b/ui/aura/window_tree_host_platform_unittest.cc
+index a4eddc7d6b455a7339b6da613469cd59e3e43ca6..1a9802348c8060062c7b75091eb2c37da21f2f82 100644
+--- a/ui/aura/window_tree_host_platform_unittest.cc
++++ b/ui/aura/window_tree_host_platform_unittest.cc
+@@ -49,6 +49,12 @@ class TestWindowTreeHost : public WindowTreeHostPlatform {
+   ui::PlatformWindow* platform_window() {
+     return WindowTreeHostPlatform::platform_window();
+   }
++
++  int64_t OnStateUpdate(
++      const ui::PlatformWindowDelegate::State& old,
++      const ui::PlatformWindowDelegate::State& latest) override {
++    return WindowTreeHostPlatform::OnStateUpdate(old, latest);
++  }
+ };
+ 
+ // WindowTreeHostObserver that tracks calls to
+@@ -155,5 +161,21 @@ TEST_F(WindowTreeHostPlatformTest, DeleteHostFromOnHostMovedInPixels) {
+   EXPECT_EQ(nullptr, observer.host());
+ }
+ 
++// Verifies WindowTreeHostPlatform can be safely deleted during OnStateUpdate.
++TEST_F(WindowTreeHostPlatformTest, DeleteHostFromOnStateUpdate) {
++  std::unique_ptr<TestWindowTreeHost> host =
++      std::make_unique<TestWindowTreeHost>();
++  TestWindowTreeHost* host_ptr = host.get();
++  DeleteHostWindowTreeHostObserver observer(std::move(host));
++
++  ui::PlatformWindowDelegate::State old_state;
++  ui::PlatformWindowDelegate::State new_state;
++  new_state.bounds_dip = gfx::Rect(1, 2, 3, 4);
++
++  // This should not crash.
++  EXPECT_EQ(-1, host_ptr->OnStateUpdate(old_state, new_state));
++  EXPECT_EQ(nullptr, observer.host());
++}
++
+ }  // namespace
+ }  // namespace aura

@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shrek Shao <shrekshao@google.com>
+Date: Fri, 3 Apr 2026 15:00:47 -0700
+Subject: [GPU] Fix UAF by clearing buffer mapping on OOM during glBufferData.
+
+Per ES 3.0 spec, glBufferData implicitly unmaps any mapped range before
+deleting the data store, even if the subsequent allocation fails.
+Previously, the validating decoder did not clear its internal mapping
+state on OOM, leading to a stale pointer that could be used in a
+subsequent glUnmapBuffer call.
+
+This CL adds Buffer::ClearMapping() to centralize clearing of mapping
+and readback state, and calls it in the OOM path of DoBufferData.
+It also updates the buffer size to 0 on OOM to match driver state.
+
+Additionally, it fixes a stale mock expectation in the unit test base
+class that was breaking tests on Linux.
+
+Bug: 498715368
+Test: gpu_unittests --gtest_filter=Service/GLES3DecoderTest.BufferDataOOMOnMappedBufferLeavesStaleMappedRange/0 with ASAN
+Change-Id: Id1b4ebc06a4aabb68dbe635825e2ecbddd099093
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7727794
+Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Shrek Shao <shrekshao@google.com>
+Auto-Submit: Shrek Shao <shrekshao@google.com>
+Cr-Commit-Position: refs/heads/main@{#1609981}
+
+diff --git a/gpu/command_buffer/service/buffer_manager.cc b/gpu/command_buffer/service/buffer_manager.cc
+index 9620813c928b306401903d1594e369dce9b81cc9..be54109745fab44657565419b60c99c06c699d65 100644
+--- a/gpu/command_buffer/service/buffer_manager.cc
++++ b/gpu/command_buffer/service/buffer_manager.cc
+@@ -199,9 +199,7 @@ void Buffer::SetInfo(GLsizeiptr size,
+   DCHECK_EQ(shadow_.size(), static_cast<size_t>(use_shadow ? size : 0u));
+   size_ = size;
+ 
+-  mapped_range_.reset(nullptr);
+-  readback_shm_ = nullptr;
+-  readback_shm_offset_ = 0;
++  ClearMapping();
+ }
+ 
+ bool Buffer::CheckRange(GLintptr offset, GLsizeiptr size) const {
+@@ -361,6 +359,12 @@ void Buffer::RemoveMappedRange() {
+   mapped_range_.reset(nullptr);
+ }
+ 
++void Buffer::ClearMapping() {
++  mapped_range_.reset(nullptr);
++  readback_shm_ = nullptr;
++  readback_shm_offset_ = 0;
++}
++
+ void Buffer::SetReadbackShadowAllocation(scoped_refptr<gpu::Buffer> shm,
+                                          uint32_t shm_offset) {
+   DCHECK(shm);
+@@ -504,10 +508,20 @@ void BufferManager::DoBufferData(
+   GLenum error = ERRORSTATE_PEEK_GL_ERROR(error_state, "glBufferData");
+   if (error != GL_NO_ERROR) {
+     DCHECK_EQ(static_cast<GLenum>(GL_OUT_OF_MEMORY), error);
+-    size = 0;
+     // TODO(zmo): This doesn't seem correct. There might be shadow data from
+     // a previous successful BufferData() call.
+     buffer->StageShadow(false, 0, nullptr);  // Also clear the shadow.
++    // SECURITY: Per ES 3.0.6 spec section 2.10.3.1, "Buffers are implicitly
++    // unmapped as a side effect of deletion or reinitialization (i.e. calling
++    // DeleteBuffers or BufferData)." The pointer in mapped_range_ is now
++    // stale, even if the subsequent allocation fails. Clear it here so that
++    // UnmapBufferHelper does not memcpy renderer-controlled SHM into freed
++    // driver memory. The success path below clears it via SetInfo().
++    buffer->ClearMapping();
++
++    // Since the driver deleted the existing data store, we must update our
++    // internal state to match.
++    buffer->size_ = 0;
+     return;
+   }
+ 
+diff --git a/gpu/command_buffer/service/buffer_manager.h b/gpu/command_buffer/service/buffer_manager.h
+index 5df5ea449635b9e776781595c1b85914c8a09095..46862d1520f31159427a7c6fd2eb3473e7bacab2 100644
+--- a/gpu/command_buffer/service/buffer_manager.h
++++ b/gpu/command_buffer/service/buffer_manager.h
+@@ -102,6 +102,7 @@ class GPU_GLES2_EXPORT Buffer : public base::RefCounted<Buffer> {
+                       void* pointer, scoped_refptr<gpu::Buffer> shm,
+                       unsigned int shm_offset);
+   void RemoveMappedRange();
++  void ClearMapping();
+   const MappedRange* GetMappedRange() const {
+     return mapped_range_.get();
+   }
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc
+index 66778d5e5b8b8438d8e4f45f742c7cde5e690c11..97faf2485df375423a90cad2d9385aea26915ac5 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.cc
+@@ -404,22 +404,20 @@ ContextResult GLES2DecoderTestBase::MaybeInitDecoderWithWorkarounds(
+       .Times(1)
+       .RetiresOnSaturation();
+ 
+-  // TODO(boliu): Remove OS_ANDROID once crbug.com/259023 is fixed and the
+-  // workaround has been reverted.
+-#if !BUILDFLAG(IS_ANDROID)
+-  if (normalized_init.has_alpha && !normalized_init.request_alpha) {
+-    EXPECT_CALL(*gl_, ClearColor(0, 0, 0, 1)).Times(1).RetiresOnSaturation();
+-  }
++  if (surface_->GetHandle()) {
++    if (normalized_init.has_alpha && !normalized_init.request_alpha) {
++      EXPECT_CALL(*gl_, ClearColor(0, 0, 0, 1)).Times(1).RetiresOnSaturation();
++    }
+ 
+-  EXPECT_CALL(*gl_, Clear(
+-      GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT))
+-      .Times(1)
+-      .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT |
++                            GL_STENCIL_BUFFER_BIT))
++        .Times(1)
++        .RetiresOnSaturation();
+ 
+-  if (normalized_init.has_alpha && !normalized_init.request_alpha) {
+-    EXPECT_CALL(*gl_, ClearColor(0, 0, 0, 0)).Times(1).RetiresOnSaturation();
++    if (normalized_init.has_alpha && !normalized_init.request_alpha) {
++      EXPECT_CALL(*gl_, ClearColor(0, 0, 0, 0)).Times(1).RetiresOnSaturation();
++    }
+   }
+-#endif
+ 
+   if (init.context_type == CONTEXT_TYPE_WEBGL2 &&
+       group_->feature_info()->gl_version_info().is_es3) {
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_buffers.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_buffers.cc
+index f7dd0c0c25acdadae9064ce13f74daa72711eed9..711d7be890443080bbafa2dc7c0a11d56e9e05ff 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_buffers.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_buffers.cc
+@@ -722,5 +722,64 @@ TEST_P(GLES3DecoderTest, CopyBufferSubDataValidArgs) {
+   }
+ }
+ 
++TEST_P(GLES3DecoderTest, BufferDataOOMOnMappedBufferLeavesStaleMappedRange) {
++  const GLenum kTarget = GL_ARRAY_BUFFER;
++  const GLsizeiptr kSize = 64;
++
++  DoBindBuffer(kTarget, client_buffer_id_, kServiceBufferId);
++  DoBufferData(kTarget, kSize);
++
++  // 1. MapBufferRange
++  const GLbitfield kAccess = GL_MAP_WRITE_BIT;
++  uint32_t result_shm_id = shared_memory_id_;
++  uint32_t result_shm_offset = kSharedMemoryOffset;
++  uint32_t data_shm_id = shared_memory_id_;
++  uint32_t data_shm_offset = kSharedMemoryOffset + sizeof(uint32_t);
++
++  auto driver_mapped_mem = std::make_unique<int8_t[]>(kSize);
++
++  EXPECT_CALL(*gl_,
++              MapBufferRange(kTarget, 0, kSize, kAccess | GL_MAP_READ_BIT))
++      .WillOnce(Return(driver_mapped_mem.get()));
++
++  cmds::MapBufferRange cmd;
++  cmd.Init(kTarget, 0, kSize, kAccess, data_shm_id, data_shm_offset,
++           result_shm_id, result_shm_offset);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(cmd));
++  EXPECT_EQ(GL_NO_ERROR, GetGLError());
++
++  Buffer* buffer = GetBuffer(client_buffer_id_);
++  ASSERT_NE(buffer, nullptr);
++  ASSERT_NE(buffer->GetMappedRange(), nullptr);
++
++  // 2. BufferData while mapped triggers OOM
++  // Per ES 3.0 spec, the driver implicitly unmaps the buffer.
++  EXPECT_CALL(*gl_, BufferData(kTarget, kSize, _, GL_STREAM_DRAW))
++      .WillOnce(testing::InvokeWithoutArgs([&driver_mapped_mem]() {
++        // Driver unmaps.
++        driver_mapped_mem.reset();
++      }));
++  EXPECT_CALL(*gl_, GetError())
++      .WillOnce(Return(static_cast<GLenum>(GL_OUT_OF_MEMORY)))
++      .WillRepeatedly(Return(static_cast<GLenum>(GL_NO_ERROR)));
++
++  cmds::BufferData buffer_data_cmd;
++  buffer_data_cmd.Init(kTarget, kSize, 0, 0, GL_STREAM_DRAW);
++  EXPECT_EQ(error::kNoError, ExecuteCmd(buffer_data_cmd));
++  EXPECT_EQ(static_cast<GLint>(GL_OUT_OF_MEMORY), GetGLError());
++
++  // 3. UnmapBuffer
++  // SECURITY: If fixed, buffer->GetMappedRange() should be null now.
++  // If not fixed, the following will trigger ASAN UAF in UnmapBufferHelper
++  // when it tries to memcpy into driver_mapped_mem.get().
++  EXPECT_EQ(buffer->GetMappedRange(), nullptr);
++  if (buffer->GetMappedRange() != nullptr) {
++    EXPECT_CALL(*gl_, UnmapBuffer(kTarget)).WillOnce(Return(GL_TRUE));
++    cmds::UnmapBuffer unmap_cmd;
++    unmap_cmd.Init(kTarget);
++    EXPECT_EQ(error::kNoError, ExecuteCmd(unmap_cmd));
++  }
++}
++
+ }  // namespace gles2
+ }  // namespace gpu

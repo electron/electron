@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Thu, 9 Apr 2026 12:12:20 -0700
+Subject: views: Guard against UAF in DWTHP::OnActivationChanged
+
+HandleActivationChanged() notifications can cause the widget to be
+synchronously closed. On Linux/Ozone, this can result in the destruction
+of the DesktopWindowTreeHostPlatform instance.
+
+This change adds a base::WeakPtr guard around HandleActivationChanged()
+to ensure 'this' is still valid before calling ScheduleRelayout().
+This mirrors an analogous fix previously applied to the Windows
+implementation in hwnd_message_handler.cc.
+
+Fixed: 497543810
+Change-Id: I58fcddf8542bc1aa30d0ad5508d16849fd56e3ac
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7737952
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1612417}
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
+index 4e54b0408c6af8c9bd9c8639c358dc67e546c597..211bb5a1927b7e7d333eef37d687824b1c8e6a50 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.cc
+@@ -1022,7 +1022,15 @@ void DesktopWindowTreeHostPlatform::OnActivationChanged(bool active) {
+   }
+   is_active_ = active;
+   aura::WindowTreeHostPlatform::OnActivationChanged(active);
++
++  // HandleActivationChanged() notifications can cause the widget to be
++  // synchronously closed.
++  auto weak_this = weak_factory_.GetWeakPtr();
+   desktop_native_widget_aura_->HandleActivationChanged(active);
++  if (!weak_this) {
++    return;
++  }
++
+   ScheduleRelayout();
+ }
+ 
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h
+index 2e4802edb4e2b9d59f269d0722bcbc4d94ed8db5..1a8605b9c13af3ccc849ee3253a79687a9353576 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform.h
+@@ -264,6 +264,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostPlatform
+ 
+   base::WeakPtrFactory<DesktopWindowTreeHostPlatform> close_widget_factory_{
+       this};
++  base::WeakPtrFactory<DesktopWindowTreeHostPlatform> weak_factory_{this};
+ };
+ 
+ }  // namespace views
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform_unittest.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform_unittest.cc
+index 1236cb1e53736cf56f4257760312b97100bae86b..950938b5ed8362519e3cd154f18383b0010884cc 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_platform_unittest.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_platform_unittest.cc
+@@ -137,6 +137,22 @@ std::unique_ptr<Widget> CreateWidgetWithNativeWidget() {
+   return CreateWidgetWithNativeWidgetWithParams(std::move(params));
+ }
+ 
++class CloseOnActivationWidgetObserver : public WidgetObserver {
++ public:
++  explicit CloseOnActivationWidgetObserver(Widget* widget) {
++    observation_.Observe(widget);
++  }
++  ~CloseOnActivationWidgetObserver() override = default;
++
++  void OnWidgetActivationChanged(Widget* widget, bool active) override {
++    observation_.Reset();
++    widget->CloseNow();
++  }
++
++ private:
++  base::ScopedObservation<Widget, WidgetObserver> observation_{this};
++};
++
+ }  // namespace
+ 
+ class DesktopWindowTreeHostPlatformTest : public ViewsTestBase {
+@@ -606,6 +622,22 @@ TEST_F(DesktopWindowTreeHostPlatformTest, FocusParentWindowWillActivate) {
+   EXPECT_TRUE(host_platform->IsActive());
+ }
+ 
++TEST_F(DesktopWindowTreeHostPlatformTest,
++       OnActivationChangedSurvivesSynchronousClose) {
++  std::unique_ptr<Widget> widget = CreateWidgetWithNativeWidget();
++  widget->Show();
++
++  auto* host_platform = DesktopWindowTreeHostPlatform::GetHostForWidget(
++      widget->GetNativeWindow()->GetHost()->GetAcceleratedWidget());
++  ASSERT_TRUE(host_platform);
++
++  CloseOnActivationWidgetObserver observer(widget.get());
++
++  // This should not crash.
++  static_cast<ui::PlatformWindowDelegate*>(host_platform)
++      ->OnActivationChanged(false);
++}
++
+ #endif  // !BUILDFLAG(IS_FUCHSIA)
+ 
+ class VisibilityObserver : public aura::WindowObserver {

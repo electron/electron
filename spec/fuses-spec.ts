@@ -21,7 +21,9 @@ describe('fuses', () => {
   });
 
   it('disables --inspect flag when node_cli_inspect is 0', () => {
-    const { status, stderr } = spawnSync(process.execPath, ['--set-fuse-node_cli_inspect=0', '--inspect', '-v'], { encoding: 'utf-8' });
+    const { status, stderr } = spawnSync(process.execPath, ['--set-fuse-node_cli_inspect=0', '--inspect', '-v'], {
+      encoding: 'utf-8'
+    });
     expect(stderr).to.not.include('Debugger listening on ws://');
     // Should print the version and exit with 0
     expect(status).to.equal(0);
@@ -29,10 +31,15 @@ describe('fuses', () => {
 
   it('disables fetching file:// URLs when grant_file_protocol_extra_privileges is 0', async () => {
     const rc = await startRemoteControlApp(['--set-fuse-grant_file_protocol_extra_privileges=0']);
-    await expect(rc.remotely(async (fixture: string) => {
-      const bw = new BrowserWindow({ show: false });
-      await bw.loadFile(fixture);
-      return await bw.webContents.executeJavaScript("ajax('file:///etc/passwd')");
-    }, path.join(__dirname, 'fixtures', 'pages', 'fetch.html'))).to.eventually.be.rejectedWith('Failed to fetch');
+    await expect(
+      rc.remotely(
+        async (fixture: string) => {
+          const bw = new BrowserWindow({ show: false });
+          await bw.loadFile(fixture);
+          return await bw.webContents.executeJavaScript("ajax('file:///etc/passwd')");
+        },
+        path.join(__dirname, 'fixtures', 'pages', 'fetch.html')
+      )
+    ).to.eventually.be.rejectedWith('Failed to fetch');
   });
 });

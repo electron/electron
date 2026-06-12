@@ -36,10 +36,10 @@ index 93fca64b215fb2f9170fcf5883cfed29ec3f5f69..cc95dab3bb5d4afebddb83154c47f200
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-index 5e025cfae4ac056791fab1b7016b5f7da3204239..ac428cffba7854c28c5e71fefa67c51bbeb34248 100644
+index 5e025cfae4ac056791fab1b7016b5f7da3204239..e7d37d43f884a0ca71c8fc7e3c5fba7c8acc8a9b 100644
 --- a/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
 +++ b/media/video/renderable_gpu_memory_buffer_video_frame_pool.cc
-@@ -209,6 +209,23 @@ bool FrameResources::Initialize(VideoPixelFormat format,
+@@ -209,6 +209,24 @@ bool FrameResources::Initialize(VideoPixelFormat format,
    const gfx::Size coded_size =
        GetCodedSizeForVideoPixelFormat(format, visible_size_);
  
@@ -49,7 +49,8 @@ index 5e025cfae4ac056791fab1b7016b5f7da3204239..ac428cffba7854c28c5e71fefa67c51b
 +  // once the GMB is returned from CopyRequest. So there will be no race
 +  // condition on that texture. We can request a GMB without a keyed mutex to
 +  // accelerate and probably prevent some driver deadlock.
-+  if (format == PIXEL_FORMAT_ARGB || format == PIXEL_FORMAT_ABGR) {
++  if (format == PIXEL_FORMAT_ARGB || format == PIXEL_FORMAT_ABGR ||
++      format == PIXEL_FORMAT_RGBAF16) {
 +    // This value is 'borrowed', SCANOUT_VEA_CPU_READ is probably invalid
 +    // cause there's no real SCANOUT on Windows. We simply use this enum as a
 +    // flag to disable mutex in the GMBFactoryDXGI because this enum is also

@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Erik=20Spr=C3=A5ng?= <sprang@webrtc.org>
+Date: Tue, 21 Apr 2026 13:50:05 +0200
+Subject: Call Release in SimulcastEncoderAdapter destructor if inited.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This check should be superflous once
+https://webrtc-review.git.corp.google.com/c/src/+/465582 has landed,
+but just to be safe make sure we always call Release() in the destructor
+if it hasn't already been called.
+
+Bug: chromium:504620824
+Change-Id: I70323b1a71fd9830f0d7af62ebeced05dd833d54
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/465600
+Auto-Submit: Erik Språng <sprang@webrtc.org>
+Commit-Queue: Sergey Silkin <ssilkin@webrtc.org>
+Reviewed-by: Sergey Silkin <ssilkin@webrtc.org>
+Commit-Queue: Erik Språng <sprang@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#47496}
+
+diff --git a/media/engine/simulcast_encoder_adapter.cc b/media/engine/simulcast_encoder_adapter.cc
+index 584bfbacde6ce7c49e8f6cb5229092ce4fe82823..5bbeb585ec563b58a9d36a262fed7a4b3dcc80cd 100644
+--- a/media/engine/simulcast_encoder_adapter.cc
++++ b/media/engine/simulcast_encoder_adapter.cc
+@@ -283,7 +283,9 @@ SimulcastEncoderAdapter::SimulcastEncoderAdapter(
+ 
+ SimulcastEncoderAdapter::~SimulcastEncoderAdapter() {
+   RTC_DCHECK_RUN_ON(&encoder_queue_);
+-  RTC_DCHECK(!Initialized());
++  if (Initialized()) {
++    Release();
++  }
+   DestroyStoredEncoders();
+ }
+ 
+diff --git a/media/engine/simulcast_encoder_adapter_unittest.cc b/media/engine/simulcast_encoder_adapter_unittest.cc
+index 867bd7e7e25979835827f660024720d70284284d..9caaf373e299c9fbb46bce4001be3041aad383df 100644
+--- a/media/engine/simulcast_encoder_adapter_unittest.cc
++++ b/media/engine/simulcast_encoder_adapter_unittest.cc
+@@ -706,6 +706,18 @@ TEST_F(TestSimulcastEncoderAdapterFake, ReleaseWithoutInitEncode) {
+   EXPECT_EQ(0, adapter_->Release());
+ }
+ 
++TEST_F(TestSimulcastEncoderAdapterFake, DestructorCallsReleaseIfInitialized) {
++  SetupCodec();
++  std::vector<MockVideoEncoder*> encoders = helper_->factory()->encoders();
++  ASSERT_EQ(3u, encoders.size());
++
++  for (auto* encoder : encoders) {
++    EXPECT_CALL(*encoder, ReleaseMock()).WillOnce(testing::Return(0));
++  }
++
++  adapter_.reset();
++}
++
+ TEST_F(TestSimulcastEncoderAdapterFake, Reinit) {
+   SetupCodec();
+   EXPECT_EQ(0, adapter_->Release());

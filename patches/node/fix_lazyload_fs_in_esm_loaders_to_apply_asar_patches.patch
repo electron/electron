@@ -28,7 +28,7 @@ index 5f1921d15bc1d3a68c35990f85e36a0e8a5b3ec4..99c6ce57c04768d125dd0a1c6bd62bca
      const result = dataURLProcessor(url);
      if (result === 'failure') {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index edf347102fedbb28bce221defa99c37b5834024b..81799fc159cf20344aac64cd7129240deb9a4fe8 100644
+index 008160b7d5e8efde13c7907e2b7212974a04d3f2..b01eafd3c476c065a16701317aca2a1def559376 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -25,7 +25,7 @@ const {
@@ -40,7 +40,7 @@ index edf347102fedbb28bce221defa99c37b5834024b..81799fc159cf20344aac64cd7129240d
  const { getOptionValue } = require('internal/options');
  // Do not eagerly grab .manifest, it may be in TDZ
  const { sep, posix: { relative: relativePosixPath }, resolve } = require('path');
-@@ -277,7 +277,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -273,7 +273,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
@@ -50,7 +50,7 @@ index edf347102fedbb28bce221defa99c37b5834024b..81799fc159cf20344aac64cd7129240d
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index ec76d7ffa45f49721d395e8e33be79114daa0369..a6fbcb6fd3c2413df96273d93b7339cad3f25f7a 100644
+index 12d90864129b20ac29eddc0545e6ae629d99049e..a048d887c4717b2c187e162d8b559285cf540a10 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -23,7 +23,7 @@ const {
@@ -62,7 +62,7 @@ index ec76d7ffa45f49721d395e8e33be79114daa0369..a6fbcb6fd3c2413df96273d93b7339ca
  const { dirname, extname } = require('path');
  const {
    assertBufferSource,
-@@ -350,7 +350,7 @@ translators.set('commonjs', function commonjsStrategy(url, translateContext, par
+@@ -348,7 +348,7 @@ translators.set('commonjs', function commonjsStrategy(url, translateContext, par
  
    try {
      // We still need to read the FS to detect the exports.

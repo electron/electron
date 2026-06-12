@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Baron <dbaron@chromium.org>
+Date: Tue, 12 May 2026 10:27:24 -0700
+Subject: Add EventDispatchForbiddenScope for batch attribute notification.
+
+Bug: 496280532
+Change-Id: Ia8b477a5508490377b21bed6bbb8a78f8c2762bb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7812905
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: David Baron <dbaron@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1629435}
+
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index a2245f6ba0f92e64fe6077767285edd90ce41d9b..2445e75110eca5d46143bc6e83cd412cad44877a 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -3917,6 +3917,7 @@ void Element::ParserSetAttributes(
+   DCHECK(!element_data_);
+   DCHECK(!HasChildren());
+   DCHECK_EQ(attribute_or_class_bloom_, 0u);
++  EventDispatchForbiddenScope assert_no_event_dispatch;
+ 
+   if (!attribute_vector.empty()) {
+     if (ElementDataCache* cache = GetDocument().GetElementDataCache()) {
+@@ -11108,6 +11109,7 @@ void Element::CloneAttributesFrom(const Element& other) {
+   CHECK_EQ(attribute_or_class_bloom_, 0u);
+   CHECK(!hasAttributes());
+   CHECK(!GetAttrNodeList());
++  EventDispatchForbiddenScope assert_no_event_dispatch;
+ 
+   other.SynchronizeAllAttributes();
+   if (!other.element_data_) {
+diff --git a/third_party/blink/renderer/core/html/forms/html_select_element.cc b/third_party/blink/renderer/core/html/forms/html_select_element.cc
+index 770afcb9085d61199facdf770843881a25c86aba..30ce6a35c89891bca0decd933ea64a0e7d31b4c4 100644
+--- a/third_party/blink/renderer/core/html/forms/html_select_element.cc
++++ b/third_party/blink/renderer/core/html/forms/html_select_element.cc
+@@ -400,7 +400,11 @@ void HTMLSelectElement::ParseAttribute(
+       ChangeRendering();
+       UpdateUserAgentShadowTree(*UserAgentShadowRoot());
+       UpdateMutationObserver();
+-      ResetToDefaultSelection();
++      // The selection can't change if there are no children; this is a
++      // common case during parsing.
++      if (hasChildren()) {
++        ResetToDefaultSelection();
++      }
+       select_type_->UpdateTextStyleAndContent();
+       select_type_->SaveListboxActiveSelection();
+     }

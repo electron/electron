@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mikt <mikt@google.com>
+Date: Wed, 25 Mar 2026 22:08:44 -0700
+Subject: Add AMSC macro to PendingHidTransfer
+
+Bug: 495999127
+Change-Id: Ice2c459c94064181328c03a4beb86963c8ab96f4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7699518
+Commit-Queue: Mikihito Matsuura <mikt@google.com>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1605269}
+
+diff --git a/services/device/hid/hid_connection_win.cc b/services/device/hid/hid_connection_win.cc
+index 901f99f1fdb484436d0dc466f1f2f21a9dab37a0..89fb8c0dc970bc4c5f41c75dd41d15d0c20f9a83 100644
+--- a/services/device/hid/hid_connection_win.cc
++++ b/services/device/hid/hid_connection_win.cc
+@@ -13,6 +13,7 @@
+ #include "base/feature_list.h"
+ #include "base/files/file.h"
+ #include "base/functional/bind.h"
++#include "base/memory/advanced_memory_safety_checks.h"
+ #include "base/memory/ref_counted_memory.h"
+ #include "base/numerics/safe_conversions.h"
+ #include "base/win/object_watcher.h"
+@@ -51,6 +52,9 @@ HidConnectionWin::HidDeviceEntry::HidDeviceEntry(
+ HidConnectionWin::HidDeviceEntry::~HidDeviceEntry() = default;
+ 
+ class PendingHidTransfer : public base::win::ObjectWatcher::Delegate {
++  // TODO(https://crbug.com/495999127): Remove this macro.
++  ADVANCED_MEMORY_SAFETY_CHECKS();
++
+  public:
+   typedef base::OnceCallback<void(PendingHidTransfer*, bool)> Callback;
+ 

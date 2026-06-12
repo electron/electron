@@ -7,7 +7,7 @@ if (process.isMainFrame) {
     if (!frame) {
       throw new Error(`Can't find frame for frame token ${frameToken}`);
     }
-    frame.executeJavaScript(code, false).then(result => {
+    frame.executeJavaScript(code, false).then((result) => {
       event.sender.send(`executeJavaScriptInFrame_${responseId}`, result);
     });
   });

@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takashi Sakamoto <tasak@google.com>
+Date: Mon, 30 Mar 2026 19:03:37 -0700
+Subject: Block PrepareScript() while a document state is
+ preserving-atomic-move-in-progress.
+
+Bug: 496292089
+Change-Id: I1b357a0dc34874e5e3795ea54d9dd1da2b584ac7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7701234
+Reviewed-by: Dominic Farolino <dom@chromium.org>
+Commit-Queue: Takashi Sakamoto <tasak@google.com>
+Cr-Commit-Position: refs/heads/main@{#1607555}
+
+diff --git a/third_party/blink/renderer/core/html/html_script_element.cc b/third_party/blink/renderer/core/html/html_script_element.cc
+index 3c47f19e459b1ec15a5e66e1dffec3d857e3e4fe..769510b94651577490056fe4380761ca1073e78c 100644
+--- a/third_party/blink/renderer/core/html/html_script_element.cc
++++ b/third_party/blink/renderer/core/html/html_script_element.cc
+@@ -85,7 +85,10 @@ bool HTMLScriptElement::HasLegalLinkAttribute(const QualifiedName& name) const {
+ 
+ void HTMLScriptElement::ChildrenChanged(const ChildrenChange& change) {
+   HTMLElement::ChildrenChanged(change);
+-  loader_->ChildrenChanged(change);
++
++  if (!GetDocument().StatePreservingAtomicMoveInProgress()) {
++    loader_->ChildrenChanged(change);
++  }
+ 
+   // We'll record whether the script element children were ever changed by
+   // the API (as opposed to the parser).

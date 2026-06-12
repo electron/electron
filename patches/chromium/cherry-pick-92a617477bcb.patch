@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Wed, 1 Apr 2026 06:59:51 -0700
+Subject: Guard against ResourceId collisions
+
+Have DisplayResourceProvider check for ResourceId collisions. In theory
+a collision is possible after ResourceIdGenerator wraps at the max
+value.
+
+Fixed: 497486030
+Change-Id: Id652aeea7211dceba7557235658e9b5c0b788e17
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7719378
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1608494}
+
+diff --git a/components/viz/service/display/display_resource_provider.cc b/components/viz/service/display/display_resource_provider.cc
+index f3cde149708fd39083bb2a6e6d19669c379e41af..1d2213221d5255b1ff51031700f20378008a11e7 100644
+--- a/components/viz/service/display/display_resource_provider.cc
++++ b/components/viz/service/display/display_resource_provider.cc
+@@ -262,8 +262,13 @@ void DisplayResourceProvider::ReceiveFromChild(
+     }
+ 
+     ResourceId local_id = resource_id_generator_.GenerateNextId();
+-    resources_.emplace(local_id,
+-                       ChildResource(child_id, transferable_resource));
++    bool inserted =
++        resources_
++            .emplace(local_id, ChildResource(child_id, transferable_resource))
++            .second;
++    // Verify there wasn't a ResourceId collision. A collision is only possible
++    // after `resource_id_generator_` hit the max ID and wrapped around.
++    CHECK(inserted);
+     child_info.child_to_parent_map[transferable_resource.id] = local_id;
+   }
+ }

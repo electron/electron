@@ -8,12 +8,7 @@ import path = require('node:path');
 import { createArtifact } from './lib/artifacts';
 import { closeAllWindows } from './lib/window-helpers';
 
-const FIXTURE_PATH = path.resolve(
-  __dirname,
-  'fixtures',
-  'api',
-  'corner-smoothing'
-);
+const FIXTURE_PATH = path.resolve(__dirname, 'fixtures', 'api', 'corner-smoothing');
 
 /**
  * Rendered images may "match" but slightly differ due to rendering artifacts
@@ -38,7 +33,7 @@ const COMPARISON_TOLERANCE = 2.5;
  * The cutoff for matching/not-matching is defined by the `COMPARISON_TOLERANCE`
  * constant.
  */
-function compareImages (img1: NativeImage, img2: NativeImage): boolean {
+function compareImages(img1: NativeImage, img2: NativeImage): boolean {
   expect(img1.getSize()).to.deep.equal(
     img2.getSize(),
     'Cannot compare images with different sizes. Run tests with --force-device-scale-factor=1'
@@ -55,10 +50,7 @@ function compareImages (img1: NativeImage, img2: NativeImage): boolean {
       const index = (x + y * width) * 4;
       const pixel1 = bitmap1.subarray(index, index + 4);
       const pixel2 = bitmap2.subarray(index, index + 4);
-      const diff =
-        Math.abs(pixel1[0] - pixel2[0]) +
-        Math.abs(pixel1[1] - pixel2[1]) +
-        Math.abs(pixel1[2] - pixel2[2]);
+      const diff = Math.abs(pixel1[0] - pixel2[0]) + Math.abs(pixel1[1] - pixel2[1]) + Math.abs(pixel1[2] - pixel2[2]);
       totalDiff += diff;
     }
   }
@@ -73,7 +65,7 @@ function compareImages (img1: NativeImage, img2: NativeImage): boolean {
  * The page is rendered, captured as an image, then compared to an expected
  * result image.
  */
-async function pageCaptureTestRecipe (
+async function pageCaptureTestRecipe(
   pagePath: string,
   expectedImgPath: string,
   artifactName: string,
@@ -92,17 +84,13 @@ async function pageCaptureTestRecipe (
   w.show();
 
   // Wait for a render frame to prepare the page.
-  await w.webContents.executeJavaScript(
-    'new Promise((resolve) => { requestAnimationFrame(() => resolve()); })'
-  );
+  await w.webContents.executeJavaScript('new Promise((resolve) => { requestAnimationFrame(() => resolve()); })');
 
   const actualImg = await w.webContents.capturePage();
   expect(actualImg.isEmpty()).to.be.false('Failed to capture page image');
 
   const expectedImg = nativeImage.createFromPath(expectedImgPath);
-  expect(expectedImg.isEmpty()).to.be.false(
-    'Failed to read expected reference image'
-  );
+  expect(expectedImg.isEmpty()).to.be.false('Failed to read expected reference image');
 
   const matches = compareImages(actualImg, expectedImg);
   if (!matches) {
@@ -141,11 +129,7 @@ describe('-electron-corner-smoothing', () => {
     it(`matches the reference for platform = ${platform}`, async () => {
       await pageCaptureTestRecipe(
         path.join(FIXTURE_PATH, 'system-ui-keyword', 'test.html'),
-        path.join(
-          FIXTURE_PATH,
-          'system-ui-keyword',
-          `expected-${platform}.png`
-        ),
+        path.join(FIXTURE_PATH, 'system-ui-keyword', `expected-${platform}.png`),
         `system-ui-${platform}`
       );
     });

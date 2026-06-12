@@ -1,0 +1,121 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jordan Bayles <jophba@chromium.org>
+Date: Tue, 28 Apr 2026 15:03:05 -0700
+Subject: [M146] Fix Use-After-Free in
+ WebContentsImpl::ForSecurityDropFullscreen
+
+Original change's description:
+> Fix Use-After-Free in WebContentsImpl::ForSecurityDropFullscreen
+>
+> When `ForSecurityDropFullscreen` drops the fullscreen state of upstream
+> openers, it iterates over a set of `raw_ptr<WebContentsImpl>` instances.
+> Calling `ExitFullscreen()` on these openers can spin a nested message
+> loop (e.g., when waiting for the OS window transition to finish).
+> During this nested message loop, other `WebContentsImpl` instances in
+> the iteration set can be destroyed via IPCs (such as `window.close()`).
+>
+> Previously, the loop continued to process the dangling `raw_ptr`s in
+> the local copy of the set, leading to a Use-After-Free when attempting
+> to query their fullscreen state via `is_fullscreen()`.
+>
+> This CL mitigates the UAF by first caching the target WebContentsImpl
+> instances as a `std::vector<base::WeakPtr<WebContentsImpl>>`. During the
+> actual iteration where `ExitFullscreen()` is called, the validity of
+> each `WeakPtr` is checked before dereferencing, ensuring that destroyed
+> WebContents are safely ignored even if reentrancy occurs.
+>
+> Bug: 497436531
+> Change-Id: I190490caeab24daa9508fa27caf8dace613e9172
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7747694
+> Reviewed-by: Avi Drissman <avi@chromium.org>
+> Commit-Queue: Jordan Bayles <jophba@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1613095}
+
+(cherry picked from commit 899e77f0d448f44b5c9065911721d6f608a675c9)
+
+Bug: 502439888,497436531
+Change-Id: I190490caeab24daa9508fa27caf8dace613e9172
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7779792
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: Jordan Bayles <jophba@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7680@{#4020}
+Cr-Branched-From: 76b7d80e5cda23fe6537eed26d68c92e995c7f39-refs/heads/main@{#1582197}
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 364c749aa7ef82f9050a9e94655712b6d8b36ede..047426b5503113e46775bab9b7d4b796faec349e 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -7206,10 +7206,20 @@ base::ScopedClosureRunner WebContentsImpl::ForSecurityDropFullscreen(
+   // upstream contents. Drop that WebContents out of fullscreen if it does. This
+   // is theoretically quadratic-ish (fullscreen contentses x each one's opener
+   // length) but neither of those is expected to ever be a large number.
+-  auto fullscreen_set_copy = *FullscreenContentsSet(GetBrowserContext());
+-  for (WebContentsImpl* fullscreen_contents : fullscreen_set_copy) {
+-    if (is_fullscreen(fullscreen_contents, display_id)) {
+-      auto opener_contentses = GetAllOpeningWebContents(fullscreen_contents);
++  std::vector<base::WeakPtr<WebContentsImpl>> fullscreen_contents_list;
++  for (WebContentsImpl* fullscreen_contents :
++       *FullscreenContentsSet(GetBrowserContext())) {
++    fullscreen_contents_list.push_back(
++        fullscreen_contents->weak_factory_.GetWeakPtr());
++  }
++
++  for (auto& fullscreen_contents : fullscreen_contents_list) {
++    if (!fullscreen_contents) {
++      continue;
++    }
++    if (is_fullscreen(fullscreen_contents.get(), display_id)) {
++      auto opener_contentses =
++          GetAllOpeningWebContents(fullscreen_contents.get());
+       if (opener_contentses.count(this)) {
+         fullscreen_contents->ExitFullscreen(true);
+       }
+@@ -7223,29 +7233,41 @@ base::ScopedClosureRunner WebContentsImpl::ForSecurityDropFullscreen(
+   // any request to enter fullscreen will have the upstream of the WebContents
+   // checked. (See CanEnterFullscreenMode().)
+ 
+-  std::vector<base::WeakPtr<WebContentsImpl>> blocked_contentses;
++  std::vector<base::WeakPtr<WebContentsImpl>> blocked_contents_list;
++  std::vector<base::WeakPtr<WebContentsImpl>> openers;
++  for (WebContentsImpl* opener : GetAllOpeningWebContents(this)) {
++    openers.push_back(opener->weak_factory_.GetWeakPtr());
++  }
+ 
+-  for (auto* opener : GetAllOpeningWebContents(this)) {
+-    if (is_fullscreen(opener, display_id)) {
++  for (auto& opener : openers) {
++    if (!opener) {
++      continue;
++    }
++
++    if (is_fullscreen(opener.get(), display_id)) {
+       opener->ExitFullscreen(true);
+     }
+ 
++    if (!opener) {
++      continue;
++    }
++
+     // ...block the WebContents from entering fullscreen until further notice.
+     ++opener->fullscreen_blocker_count_;
+-    blocked_contentses.push_back(opener->weak_factory_.GetWeakPtr());
++    blocked_contents_list.push_back(opener);
+   }
+ 
+   return base::ScopedClosureRunner(base::BindOnce(
+-      [](std::vector<base::WeakPtr<WebContentsImpl>> blocked_contentses) {
++      [](std::vector<base::WeakPtr<WebContentsImpl>> blocked_contents_list) {
+         for (base::WeakPtr<WebContentsImpl>& web_contents :
+-             blocked_contentses) {
++             blocked_contents_list) {
+           if (web_contents) {
+             DCHECK_GT(web_contents->fullscreen_blocker_count_, 0);
+             --web_contents->fullscreen_blocker_count_;
+           }
+         }
+       },
+-      std::move(blocked_contentses)));
++      std::move(blocked_contents_list)));
+ }
+ 
+ void WebContentsImpl::ResumeLoadingCreatedWebContents() {

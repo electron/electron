@@ -11,14 +11,7 @@ import * as path from 'node:path';
 import { chunkFilenames, findMatchingFiles, getDepotToolsEnv } from './lib/utils';
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
-const LLVM_BIN = path.resolve(
-  SOURCE_ROOT,
-  '..',
-  'third_party',
-  'llvm-build',
-  'Release+Asserts',
-  'bin'
-);
+const LLVM_BIN = path.resolve(SOURCE_ROOT, '..', 'third_party', 'llvm-build', 'Release+Asserts', 'bin');
 
 type SpawnAsyncResult = {
   stdout: string;
@@ -29,13 +22,13 @@ type SpawnAsyncResult = {
 class ErrorWithExitCode extends Error {
   exitCode: number;
 
-  constructor (message: string, exitCode: number) {
+  constructor(message: string, exitCode: number) {
     super(message);
     this.exitCode = exitCode;
   }
 }
 
-async function spawnAsync (
+async function spawnAsync(
   command: string,
   args: string[],
   options?: childProcess.SpawnOptionsWithoutStdio | undefined
@@ -61,7 +54,7 @@ async function spawnAsync (
   });
 }
 
-async function runClangTidy (
+async function runClangTidy(
   outDir: string,
   filenames: string[],
   checks: string = '',
@@ -101,16 +94,13 @@ async function runClangTidy (
   // clang-tidy can figure out the file from a short relative filename, so
   // to get the most bang for the buck on the command line, let's trim the
   // filenames to the minimum so that we can fit more per invocation
-  filenames = (await filterCompilationDatabase()).map((filename) =>
-    path.relative(SOURCE_ROOT, filename)
-  );
+  filenames = (await filterCompilationDatabase()).map((filename) => path.relative(SOURCE_ROOT, filename));
 
   if (filenames.length === 0) {
     throw new Error('No filenames to run');
   }
 
-  const commandLength =
-    cmd.length + args.reduce((length, arg) => length + arg.length, 0);
+  const commandLength = cmd.length + args.reduce((length, arg) => length + arg.length, 0);
 
   const results: boolean[] = [];
   const asyncWorkers = [];
@@ -119,9 +109,7 @@ async function runClangTidy (
   const filesPerWorker = Math.ceil(filenames.length / jobs);
 
   for (let i = 0; i < jobs; i++) {
-    chunkedFilenames.push(
-      ...chunkFilenames(filenames.splice(0, filesPerWorker), commandLength)
-    );
+    chunkedFilenames.push(...chunkFilenames(filenames.splice(0, filesPerWorker), commandLength));
   }
 
   const worker = async () => {
@@ -158,12 +146,11 @@ async function runClangTidy (
   }
 }
 
-function parseCommandLine () {
-  const showUsage = (arg?: string) : boolean => {
+function parseCommandLine() {
+  const showUsage = (arg?: string): boolean => {
     if (!arg || arg.startsWith('-')) {
       console.log(
-        'Usage: script/run-clang-tidy.ts [-h|--help] [--jobs|-j] ' +
-          '[--fix] [--checks] --out-dir OUTDIR [file1 file2]'
+        'Usage: script/run-clang-tidy.ts [-h|--help] [--jobs|-j] ' + '[--fix] [--checks] --out-dir OUTDIR [file1 file2]'
       );
       process.exit(0);
     }
@@ -190,7 +177,7 @@ function parseCommandLine () {
   return opts;
 }
 
-async function main (): Promise<boolean> {
+async function main(): Promise<boolean> {
   const opts = parseCommandLine();
   const outDir = path.resolve(opts['out-dir']);
 
@@ -200,11 +187,11 @@ async function main (): Promise<boolean> {
     // Make sure the compile_commands.json file is up-to-date
     const env = getDepotToolsEnv();
 
-    const result = childProcess.spawnSync(
-      'gn',
-      ['gen', '.', '--export-compile-commands'],
-      { cwd: outDir, env, shell: true }
-    );
+    const result = childProcess.spawnSync('gn', ['gen', '.', '--export-compile-commands'], {
+      cwd: outDir,
+      env,
+      shell: true
+    });
 
     if (result.status !== 0) {
       if (result.error) {
@@ -214,8 +201,7 @@ async function main (): Promise<boolean> {
       }
 
       throw new ErrorWithExitCode(
-        'Failed to automatically generate compile_commands.json for ' +
-          'output directory',
+        'Failed to automatically generate compile_commands.json for ' + 'output directory',
         2
       );
     }
@@ -225,17 +211,14 @@ async function main (): Promise<boolean> {
 
   if (opts._.length > 0) {
     if (opts._.some((filename) => filename.endsWith('.h'))) {
-      throw new ErrorWithExitCode(
-        'Filenames must be for translation units, not headers', 3
-      );
+      throw new ErrorWithExitCode('Filenames must be for translation units, not headers', 3);
     }
 
     filenames.push(...opts._.map((filename) => path.resolve(filename)));
   } else {
     filenames.push(
-      ...(await findMatchingFiles(
-        path.resolve(SOURCE_ROOT, 'shell'),
-        (filename: string) => /.*\.(?:cc|mm)$/.test(filename)
+      ...(await findMatchingFiles(path.resolve(SOURCE_ROOT, 'shell'), (filename: string) =>
+        /.*\.(?:cc|mm)$/.test(filename)
       ))
     );
   }

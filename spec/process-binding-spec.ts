@@ -27,20 +27,21 @@ describe('process._linkedBinding', () => {
     it('cannot access electron_browser bindings', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
-      await expect(w.webContents.executeJavaScript('void process._linkedBinding(\'electron_browser_app\')'))
-        .to.eventually.be.rejectedWith(/Script failed to execute/);
+      await expect(
+        w.webContents.executeJavaScript("void process._linkedBinding('electron_browser_app')")
+      ).to.eventually.be.rejectedWith(/Script failed to execute/);
     });
 
     it('can access electron_common bindings', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
-      await w.webContents.executeJavaScript('void process._linkedBinding(\'electron_common_v8_util\')');
+      await w.webContents.executeJavaScript("void process._linkedBinding('electron_common_v8_util')");
     });
 
     it('can access electron_renderer bindings', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
-      await w.webContents.executeJavaScript('void process._linkedBinding(\'electron_renderer_ipc\')');
+      await w.webContents.executeJavaScript("void process._linkedBinding('electron_renderer_ipc')");
     });
   });
 });

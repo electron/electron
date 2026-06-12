@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Tue, 31 Mar 2026 15:53:34 -0700
+Subject: media: Validate reference buffer indices in D3D12 encoding
+
+This change ensures all manual reference and update buffer indices
+fall within supported bounds before proceeding with encoding.
+
+Bug: 497821764
+Change-Id: I0f269b50b7518830e1b3fa7dba43ce97f3ca2fd2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7712138
+Reviewed-by: Qiu, Jianlin <jianlin.qiu@intel.com>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1608151}
+
+diff --git a/media/gpu/windows/d3d12_video_encode_av1_delegate.cc b/media/gpu/windows/d3d12_video_encode_av1_delegate.cc
+index b2cb11ac4e13c2cdcd1cdf86e6d7f493a7f8524c..a1c398fb87692edc426be9645f0b373b76f58110 100644
+--- a/media/gpu/windows/d3d12_video_encode_av1_delegate.cc
++++ b/media/gpu/windows/d3d12_video_encode_av1_delegate.cc
+@@ -1024,6 +1024,20 @@ EncoderStatus D3D12VideoEncodeAV1Delegate::EncodeImpl(
+     UINT input_frame_subresource,
+     const VideoEncoder::EncodeOptions& options,
+     const gfx::ColorSpace& input_color_space) {
++  for (uint8_t ref_idx : options.reference_buffers) {
++    if (ref_idx >= GetMaxNumOfManualRefBuffers()) {
++      return {EncoderStatus::Codes::kBadReferenceBuffer,
++              "Manual reference buffer index exceeds that is supported by "
++              "encoder"};
++    }
++  }
++
++  if (options.update_buffer.has_value() &&
++      options.update_buffer.value() >= GetMaxNumOfManualRefBuffers()) {
++    return {EncoderStatus::Codes::kBadReferenceBuffer,
++            "Update buffer index exceeds that is supported by encoder"};
++  }
++
+   input_arguments_.SequenceControlDesc.Flags =
+       D3D12_VIDEO_ENCODER_SEQUENCE_CONTROL_FLAG_NONE;
+   input_arguments_.SequenceControlDesc.RateControl =
+diff --git a/media/gpu/windows/d3d12_video_encode_h264_delegate.cc b/media/gpu/windows/d3d12_video_encode_h264_delegate.cc
+index a3834f655c01b88ca5f3926a1f1ec16ab60284de..b4214a831ef783258fe631cf3481e3172e67618b 100644
+--- a/media/gpu/windows/d3d12_video_encode_h264_delegate.cc
++++ b/media/gpu/windows/d3d12_video_encode_h264_delegate.cc
+@@ -395,6 +395,18 @@ EncoderStatus D3D12VideoEncodeH264Delegate::EncodeImpl(
+       destroy_buffer = 1;
+     }
+   } else {
++    for (uint8_t ref_idx : options.reference_buffers) {
++      if (ref_idx >= GetMaxNumOfManualRefBuffers()) {
++        return {EncoderStatus::Codes::kBadReferenceBuffer,
++                "Manual reference buffer index exceeds that is supported by "
++                "encoder"};
++      }
++    }
++    if (options.reference_buffers.size() > list0_reference_frames_.size()) {
++      return {EncoderStatus::Codes::kBadReferenceBuffer,
++              "Number of manual reference buffers exceeds that is supported by "
++              "encoder"};
++    }
+     reference_buffers = options.reference_buffers;
+     update_buffer = options.update_buffer;
+   }
+diff --git a/media/gpu/windows/d3d12_video_encode_h265_delegate.cc b/media/gpu/windows/d3d12_video_encode_h265_delegate.cc
+index f2d3ddeac3c94c2c5b3e9a1000004ade79c7a779..a07fab736f8dc7cde2d1998bf9290192c0ddefd6 100644
+--- a/media/gpu/windows/d3d12_video_encode_h265_delegate.cc
++++ b/media/gpu/windows/d3d12_video_encode_h265_delegate.cc
+@@ -318,6 +318,18 @@ EncoderStatus D3D12VideoEncodeH265Delegate::EncodeImpl(
+       destroy_buffer = 1;
+     }
+   } else {
++    for (uint8_t ref_idx : options.reference_buffers) {
++      if (ref_idx >= GetMaxNumOfManualRefBuffers()) {
++        return {EncoderStatus::Codes::kBadReferenceBuffer,
++                "Manual reference buffer index exceeds that is supported by "
++                "encoder"};
++      }
++    }
++    if (options.reference_buffers.size() > list0_reference_frames_.size()) {
++      return {EncoderStatus::Codes::kBadReferenceBuffer,
++              "Number of manual reference buffers exceeds that is supported by "
++              "encoder"};
++    }
+     reference_buffers = options.reference_buffers;
+     update_buffer = options.update_buffer;
+   }
+@@ -375,7 +387,6 @@ EncoderStatus D3D12VideoEncodeH265Delegate::EncodeImpl(
+     pic_params_.pList0ReferenceFrames = nullptr;
+   } else {
+     pic_params_.FrameType = D3D12_VIDEO_ENCODER_FRAME_TYPE_HEVC_P_FRAME;
+-    CHECK_LE(reference_buffers.size(), list0_reference_frames_.size());
+     for (size_t i = 0; i < reference_buffers.size(); i++) {
+       std::optional<uint32_t> descriptor_index =
+           reference_frame_manager_.GetReferenceFrameId(reference_buffers[i]);

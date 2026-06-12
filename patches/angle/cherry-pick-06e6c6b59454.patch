@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Mon, 23 Mar 2026 12:30:56 -0400
+Subject: D3D11: Fix buffer state tracking in TransformFeedback11.
+
+TransformFeedback11::getSOBuffers would only update the elements of
+mBuffers if the GL buffer binding was non-null. This could lead to
+setting a previously-deleted buffer on the DeviceContext later.
+
+Update the state tracking in TransformFeedback11 to null out entries in
+mBuffers every time a new buffer is bound and add a null check when
+synchronizing mBuffers.
+
+Bug: angleproject:489791425
+Change-Id: Ic80e36c1511d5e14d41a13c56f5055c55f36bc20
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7689826
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/TransformFeedback11.cpp b/src/libANGLE/renderer/d3d/d3d11/TransformFeedback11.cpp
+index 4620f67310a6489dcc7f0ecafdd5cd31b6f78aa7..3560fee47b140c794ee765edab9c67c52554a89f 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/TransformFeedback11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/TransformFeedback11.cpp
+@@ -77,6 +77,7 @@ angle::Result TransformFeedback11::bindIndexedBuffer(
+ {
+     mIsDirty              = true;
+     mBufferOffsets[index] = static_cast<UINT>(binding.getOffset());
++    mBuffers[index]       = nullptr;
+     mRenderer->getStateManager()->invalidateTransformFeedback();
+     return angle::Result::Continue;
+ }
+@@ -114,6 +115,10 @@ angle::Result TransformFeedback11::getSOBuffers(const gl::Context *context,
+                                          &mBuffers[bindingIdx], &feedback));
+             binding.get()->applyImplFeedback(context, feedback);
+         }
++        else
++        {
++            mBuffers[bindingIdx] = nullptr;
++        }
+     }
+ 
+     *buffersOut = &mBuffers;
+diff --git a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/TransformFeedbackTest.cpp
+index ed019b18b671f911dd6e2bfed13b598f2fb687a7..d52d3b377c37084944990172d26ff8de71387481 100644
+--- a/src/tests/gl_tests/TransformFeedbackTest.cpp
++++ b/src/tests/gl_tests/TransformFeedbackTest.cpp
+@@ -4736,6 +4736,43 @@ TEST_P(WebGLTransformFeedbackTest, TooSmallBuffers)
+     glEndTransformFeedback();
+ }
+ 
++// Test that deleting a buffer bound to a transform feedback slot that is not used by the current
++// program.
++TEST_P(TransformFeedbackTest, StaleBufferBinding)
++{
++    std::vector<std::string> tfVaryings = {"gl_Position"};
++    mProgram                            = CompileProgramWithTransformFeedback(
++        essl3_shaders::vs::Simple(), essl3_shaders::fs::Red(), tfVaryings, GL_INTERLEAVED_ATTRIBS);
++    ASSERT_NE(0u, mProgram);
++    glUseProgram(mProgram);
++
++    GLBuffer buf0, buf1;
++    glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf0);
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 1024, nullptr, GL_DYNAMIC_COPY);
++    glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf1);
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 1024, nullptr, GL_DYNAMIC_COPY);
++
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf0);
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 1, buf1);
++
++    // Draw once with the buffers, syncs initial state.
++    glBeginTransformFeedback(GL_POINTS);
++    glDrawArrays(GL_POINTS, 0, 1);
++    glEndTransformFeedback();
++
++    // Regular draw while TF inactive, syncs null transform feedback buffers.
++    glDrawArrays(GL_POINTS, 0, 1);
++
++    buf1.reset();
++
++    // Draw with TF after the buffer has been deleted. It should not be referenced.
++    glBeginTransformFeedback(GL_POINTS);
++    glDrawArrays(GL_POINTS, 0, 1);
++    glEndTransformFeedback();
++
++    ASSERT_GL_NO_ERROR();
++}
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TransformFeedbackTest);
+ ANGLE_INSTANTIATE_TEST_ES3_AND(TransformFeedbackTest,
+                                ES3_VULKAN().disable(Feature::SupportsTransformFeedbackExtension),

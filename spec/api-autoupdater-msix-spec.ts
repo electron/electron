@@ -90,7 +90,7 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
 
     afterEach(async () => {
       if (httpServer) {
-        await new Promise<void>(resolve => {
+        await new Promise<void>((resolve) => {
           httpServer.close(() => {
             httpServer = null as any;
             server = null as any;
@@ -106,7 +106,11 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         res.status(204).send();
       });
 
-      const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [MAIN_JS_PATH, '--checkUpdate', `http://localhost:${port}/update-check`]);
+      const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [
+        MAIN_JS_PATH,
+        '--checkUpdate',
+        `http://localhost:${port}/update-check`
+      ]);
       logOnError(launchResult, () => {
         expect(launchResult.code).to.equal(0);
         expect(requests.length).to.be.greaterThan(0);
@@ -188,7 +192,11 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         res.download(MSIX_V2);
       });
 
-      const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [MAIN_JS_PATH, '--checkUpdate', `http://localhost:${port}/update-check`]);
+      const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [
+        MAIN_JS_PATH,
+        '--checkUpdate',
+        `http://localhost:${port}/update-check`
+      ]);
       logOnError(launchResult, () => {
         expect(launchResult.code).to.equal(0);
         expect(requests.length).to.be.greaterThan(0);
@@ -245,7 +253,11 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         res.download(MSIX_V2);
       });
 
-      const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [MAIN_JS_PATH, '--checkUpdate', `http://localhost:${port}/update-check`]);
+      const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [
+        MAIN_JS_PATH,
+        '--checkUpdate',
+        `http://localhost:${port}/update-check`
+      ]);
 
       logOnError(launchResult, () => {
         expect(launchResult.code).to.equal(0);
@@ -284,7 +296,11 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         });
       });
 
-      const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [MAIN_JS_PATH, '--checkUpdate', `http://localhost:${port}/update-check`]);
+      const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [
+        MAIN_JS_PATH,
+        '--checkUpdate',
+        `http://localhost:${port}/update-check`
+      ]);
 
       logOnError(launchResult, () => {
         expect(launchResult.code).to.equal(0);
@@ -315,7 +331,12 @@ ifdescribe(shouldRunMsixTests)('autoUpdater MSIX behavior', function () {
         res.download(MSIX_V1);
       });
 
-      const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [MAIN_JS_PATH, '--checkUpdate', `http://localhost:${port}/update-check`, '--allowAnyVersion']);
+      const launchResult = await launchApp(ELECTRON_MSIX_ALIAS, [
+        MAIN_JS_PATH,
+        '--checkUpdate',
+        `http://localhost:${port}/update-check`,
+        '--allowAnyVersion'
+      ]);
 
       logOnError(launchResult, () => {
         expect(launchResult.code).to.equal(0);

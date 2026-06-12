@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrew Paseltiner <apaseltiner@chromium.org>
+Date: Wed, 6 May 2026 10:40:45 -0700
+Subject: Prevent UAF in LegacyRenderWidgetHostHWND::UpdateParent
+
+Synchronous Win32 and COM calls (::SetParent,
+CreateDirectManipulationHelper) can pump the message loop, leading to
+the destruction of the object. This patch adds base::WeakPtr guards to
+detect when |this| has been freed mid-method.
+
+Fixed: 497066659
+Change-Id: Ieaaf17bb587912a5091d45b65d84463e0ddcbbcb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7822519
+Commit-Queue: Andrew Paseltiner <apaseltiner@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1626308}
+
+diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+index 1a7ce67dc418119b0a2b432f41ccc3b672a8da96..8635f2858413ea6f94caa91fcbe41c66e16b58e5 100644
+--- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
++++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
+@@ -104,10 +104,26 @@ void LegacyRenderWidgetHostHWND::UpdateParent(HWND new_parent) {
+   // call altogether.
+   const HWND current_parent = GetParent();
+   if (current_parent != new_parent) {
++    // ::SetParent and CreateDirectManipulationHelper (CoCreateInstance /
++    // IDirectManipulationManager::Activate / Enable) can synchronously dispatch
++    // window messages. Re-entrant dispatch may reach
++    // RenderWidgetHostViewAura::OnWindowDestroying ->
++    // LegacyRenderWidgetHostHWND::Destroy() -> ::DestroyWindow() ->
++    // WM_NCDESTROY -> OnNCDestroy -> delete this. Guard against |this| being
++    // freed mid-method, matching the pattern used in OnKeyboardRange et al.
++    base::WeakPtr<LegacyRenderWidgetHostHWND> ref(
++        msg_handler_weak_factory_.GetWeakPtr());
++
+     ::SetParent(hwnd(), new_parent);
++    if (!ref) {
++      return;
++    }
+ 
+     if (!only_update_direct_manipulation_helper) {
+       CreateDirectManipulationHelper();
++      if (!ref) {
++        return;
++      }
+     }
+ 
+     // Reset tooltips when parent changed; otherwise tooltips could stay open as
+@@ -131,7 +147,12 @@ void LegacyRenderWidgetHostHWND::UpdateParent(HWND new_parent) {
+     // subsequently changes.
+     if (!only_update_direct_manipulation_helper &&
+         !direct_manipulation_helper_) {
++      base::WeakPtr<LegacyRenderWidgetHostHWND> ref(
++          msg_handler_weak_factory_.GetWeakPtr());
+       CreateDirectManipulationHelper();
++      if (!ref) {
++        return;
++      }
+     }
+   }
+ 

@@ -22,7 +22,7 @@ app.whenReady().then(() => {
       win.webContents.executeJavaScript('closeBtn.click()');
     });
 
-    contents.on('will-prevent-unload', event => {
+    contents.on('will-prevent-unload', (event) => {
       event.preventDefault();
     });
   });

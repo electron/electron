@@ -135,7 +135,7 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
   allowAnyVersion: boolean = false;
 
   // Private: Validate that the URL points to an MSIX file (following redirects)
-  private async validateMsixUrl (url: string): Promise<void> {
+  private async validateMsixUrl(url: string): Promise<void> {
     try {
       // Make a HEAD request to follow redirects and get the final URL
       const response = await net.fetch(url, {
@@ -153,7 +153,9 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
       const hasMsixExtension = pathname.endsWith('.msix') || pathname.endsWith('.msixbundle');
 
       if (!hasMsixExtension) {
-        throw new Error(`Update URL does not point to an MSIX file. Expected .msix or .msixbundle extension, got final URL: ${finalUrl}`);
+        throw new Error(
+          `Update URL does not point to an MSIX file. Expected .msix or .msixbundle extension, got final URL: ${finalUrl}`
+        );
       }
     } catch (error) {
       if (error instanceof TypeError) {
@@ -164,7 +166,7 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
   }
 
   // Private: Check if URL is a direct MSIX file (following redirects)
-  private async isDirectMsixUrl (url: string, emitError: boolean = false): Promise<boolean> {
+  private async isDirectMsixUrl(url: string, emitError: boolean = false): Promise<boolean> {
     try {
       await this.validateMsixUrl(url);
       return true;
@@ -178,12 +180,12 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
 
   // Supports both  versioning (x.y.z) and Windows version format (x.y.z.a)
   // Returns: 1 if v1 > v2, -1 if v1 < v2, 0 if v1 === v2
-  private compareVersions (v1: string, v2: string): number {
-    const parts1 = v1.split('.').map(part => {
+  private compareVersions(v1: string, v2: string): number {
+    const parts1 = v1.split('.').map((part) => {
       const parsed = parseInt(part, 10);
       return isNaN(parsed) ? 0 : parsed;
     });
-    const parts2 = v2.split('.').map(part => {
+    const parts2 = v2.split('.').map((part) => {
       const parsed = parseInt(part, 10);
       return isNaN(parsed) ? 0 : parsed;
     });
@@ -203,9 +205,12 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
 
   // Private: Parse the static releases array format
   // This is a static JSON file containing all releases
-  private parseStaticReleasFile (json: any, currentVersion: string): { ok: boolean; available: boolean; url?: string; name?: string; notes?: string; pub_date?: string } {
+  private parseStaticReleasFile(
+    json: any,
+    currentVersion: string
+  ): { ok: boolean; available: boolean; url?: string; name?: string; notes?: string; pub_date?: string } {
     if (!Array.isArray(json.releases) || !json.currentRelease || typeof json.currentRelease !== 'string') {
-      this.emitError(new Error('Invalid releases format. Expected \'releases\' array and \'currentRelease\' string.'));
+      this.emitError(new Error("Invalid releases format. Expected 'releases' array and 'currentRelease' string."));
       return { ok: false, available: false };
     }
 
@@ -234,14 +239,18 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
     const releaseEntry = json.releases.find((r: any) => r.version === currentReleaseVersion);
 
     if (!releaseEntry || !releaseEntry.updateTo) {
-      this.emitError(new Error(`Release entry for version '${currentReleaseVersion}' not found or missing 'updateTo' property.`));
+      this.emitError(
+        new Error(`Release entry for version '${currentReleaseVersion}' not found or missing 'updateTo' property.`)
+      );
       return { ok: false, available: false };
     }
 
     const updateTo = releaseEntry.updateTo;
 
     if (!updateTo.url) {
-      this.emitError(new Error(`Invalid release entry. 'updateTo.url' is missing for version ${currentReleaseVersion}.`));
+      this.emitError(
+        new Error(`Invalid release entry. 'updateTo.url' is missing for version ${currentReleaseVersion}.`)
+      );
       return { ok: false, available: false };
     }
 
@@ -255,15 +264,22 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
     };
   }
 
-  private parseDynamicReleasFile (json: any): { ok: boolean; available: boolean; url?: string; name?: string; notes?: string; pub_date?: string } {
+  private parseDynamicReleasFile(json: any): {
+    ok: boolean;
+    available: boolean;
+    url?: string;
+    name?: string;
+    notes?: string;
+    pub_date?: string;
+  } {
     if (!json.url) {
-      this.emitError(new Error('Invalid releases format. Expected \'url\' string property.'));
+      this.emitError(new Error("Invalid releases format. Expected 'url' string property."));
       return { ok: false, available: false };
     }
     return { ok: true, available: true, url: json.url, name: json.name, notes: json.notes, pub_date: json.pub_date };
   }
 
-  private async fetchSquirrelJson (url: string) {
+  private async fetchSquirrelJson(url: string) {
     const headers: Record<string, string> = {
       ...this.updateHeaders,
       Accept: 'application/json' // Always set Accept header, overriding any user-provided Accept
@@ -299,8 +315,8 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
     }
   }
 
-  private async getUpdateInfo (url: string): Promise<UpdateInfo> {
-    if (url && await this.isDirectMsixUrl(url)) {
+  private async getUpdateInfo(url: string): Promise<UpdateInfo> {
+    if (url && (await this.isDirectMsixUrl(url))) {
       return { ok: true, available: true, updateUrl: url, releaseDate: new Date() };
     } else {
       const updateJson = await this.fetchSquirrelJson(url);
@@ -321,7 +337,7 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
         const releaseName = updateJson.name ?? '';
         releaseDate = releaseDate ?? new Date();
 
-        if (!await this.isDirectMsixUrl(updateUrl, true)) {
+        if (!(await this.isDirectMsixUrl(updateUrl, true))) {
           return { ok: false };
         } else {
           return {
@@ -337,11 +353,11 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
     }
   }
 
-  getFeedURL () {
+  getFeedURL() {
     return this.updateURL ?? '';
   }
 
-  setFeedURL (options: { url: string; headers?: Record<string, string>; allowAnyVersion?: boolean } | string) {
+  setFeedURL(options: { url: string; headers?: Record<string, string>; allowAnyVersion?: boolean } | string) {
     let updateURL: string;
     let headers: Record<string, string> | undefined;
     let allowAnyVersion: boolean | undefined;
@@ -351,23 +367,23 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
         headers = options.headers;
         allowAnyVersion = options.allowAnyVersion;
       } else {
-        throw new TypeError('Expected options object to contain a \'url\' string property in setFeedUrl call');
+        throw new TypeError("Expected options object to contain a 'url' string property in setFeedUrl call");
       }
     } else if (typeof options === 'string') {
       updateURL = options;
     } else {
-      throw new TypeError('Expected an options object with a \'url\' property to be provided');
+      throw new TypeError("Expected an options object with a 'url' property to be provided");
     }
     this.updateURL = updateURL;
     this.updateHeaders = headers ?? null;
     this.allowAnyVersion = allowAnyVersion ?? false;
   }
 
-  getPackageInfo (): MSIXPackageInfo {
+  getPackageInfo(): MSIXPackageInfo {
     return msixUpdate.getPackageInfo() as MSIXPackageInfo;
   }
 
-  async checkForUpdates () {
+  async checkForUpdates() {
     const url = this.updateURL;
     if (!url) {
       return this.emitError(new Error('Update URL is not set'));
@@ -382,7 +398,11 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
     // If appInstallerUri is set, Windows App Installer manages updates automatically
     // Prevent updates here to avoid conflicts
     if (packageInfo.appInstallerUri) {
-      return this.emitError(new Error('Auto-updates are managed by Windows App Installer. Updates are not allowed when installed via Application Manifest.'));
+      return this.emitError(
+        new Error(
+          'Auto-updates are managed by Windows App Installer. Updates are not allowed when installed via Application Manifest.'
+        )
+      );
     }
 
     this.emit('checking-for-update');
@@ -405,18 +425,26 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
           forceUpdateFromAnyVersion: this.allowAnyVersion
         } as UpdateMsixOptions);
 
-        this.emit('update-downloaded', {}, msixUrlInfo.releaseNotes, msixUrlInfo.releaseName, msixUrlInfo.releaseDate, msixUrlInfo.updateUrl, () => {
-          this.quitAndInstall();
-        });
+        this.emit(
+          'update-downloaded',
+          {},
+          msixUrlInfo.releaseNotes,
+          msixUrlInfo.releaseName,
+          msixUrlInfo.releaseDate,
+          msixUrlInfo.updateUrl,
+          () => {
+            this.quitAndInstall();
+          }
+        );
       }
     } catch (error) {
       this.emitError(error as Error);
     }
   }
 
-  async quitAndInstall () {
+  async quitAndInstall() {
     if (!this.updateAvailable) {
-      this.emitError(new Error('No update available, can\'t quit and install'));
+      this.emitError(new Error("No update available, can't quit and install"));
       app.quit();
       return;
     }
@@ -441,7 +469,7 @@ class AutoUpdater extends EventEmitter implements Electron.AutoUpdater {
 
   // Private: Emit both error object and message, this is to keep compatibility
   // with Old APIs.
-  emitError (error: Error) {
+  emitError(error: Error) {
     this.emit('error', error, error.message);
   }
 }

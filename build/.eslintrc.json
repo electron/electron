@@ -1,8 +1,0 @@
-{
-  "plugins": [
-    "import"
-  ],
-  "rules": {
-    "import/enforce-node-protocol-usage": ["error", "always"]
-  }
-}

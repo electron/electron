@@ -1,0 +1,74 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Cheng <dcheng@chromium.org>
+Date: Wed, 13 May 2026 13:42:33 -0700
+Subject: Avoid unsafe buffers in StringView(view, offset, length) constructor.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Use the subspan() method which will perform these bounds checks
+under the covers before extracting a data() pointer.
+
+This is a simpler way to get part of the benefit of the CL at
+https://crrev.com/c/7667267 but without the performance impact
+of making all the other methods touched in that CL safe.
+
+-- Do the same for StringView::Set().
+
+Bug: 492350406
+Change-Id: If2741f7241204862d28f3b662d897f9cba3e0b1c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7695218
+Reviewed-by: Dominik Röttsches <drott@chromium.org>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1602363}
+
+diff --git a/third_party/blink/renderer/platform/wtf/text/string_view.h b/third_party/blink/renderer/platform/wtf/text/string_view.h
+index 66d1303b7b24c6baf30930f4de1ac8696d801d22..ce05aaaa797ca9265848477baa28aac67b9915a6 100644
+--- a/third_party/blink/renderer/platform/wtf/text/string_view.h
++++ b/third_party/blink/renderer/platform/wtf/text/string_view.h
+@@ -311,16 +311,11 @@ inline StringView::StringView(const StringView& view,
+                               unsigned offset,
+                               unsigned length)
+     : impl_(view.impl_), length_(length) {
+-  SECURITY_DCHECK(offset <= view.length());
+-  SECURITY_DCHECK(length <= view.length() - offset);
+-  // SAFETY: Invariants are checked last two line.
+-  UNSAFE_BUFFERS({
+-    if (Is8Bit()) {
+-      bytes_ = view.Span8().data() + offset;
+-    } else {
+-      bytes_ = view.Span16().data() + offset;
+-    }
+-  });
++  if (Is8Bit()) {
++    bytes_ = view.Span8().subspan(offset, length).data();
++  } else {
++    bytes_ = view.Span16().subspan(offset, length).data();
++  }
+ }
+ 
+ inline StringView::StringView(const StringImpl* impl) {
+@@ -362,18 +357,13 @@ inline void StringView::Clear() {
+ inline void StringView::Set(const StringImpl& impl,
+                             unsigned offset,
+                             unsigned length) {
+-  SECURITY_DCHECK(offset <= impl.length());
+-  SECURITY_DCHECK(length <= impl.length() - offset);
+   length_ = length;
+   impl_ = const_cast<StringImpl*>(&impl);
+-  // SAFETY: Invariants are checked at beginning of this method.
+-  UNSAFE_BUFFERS({
+-    if (impl.Is8Bit()) {
+-      bytes_ = impl.Characters8() + offset;
+-    } else {
+-      bytes_ = impl.Characters16() + offset;
+-    }
+-  });
++  if (impl.Is8Bit()) {
++    bytes_ = impl.Span8().subspan(offset, length).data();
++  } else {
++    bytes_ = impl.Span16().subspan(offset, length).data();
++  }
+ }
+ 
+ // Unicode aware case insensitive string matching. Non-ASCII characters might

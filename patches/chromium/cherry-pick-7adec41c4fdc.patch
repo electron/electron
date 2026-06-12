@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Tue, 7 Apr 2026 11:21:13 -0700
+Subject: Remove GPU observer in XRRuntimeManager destructor
+
+Ensures that the XRRuntimeManager is removed as a GpuDataManager
+observer in the XRRuntimeManager destructor if it was ever registered as
+one. Normally it is removed when the GPU process restarts, but this is a
+safety precaution to prevent errors if the XRRuntimeManager is destroyed
+while the process is still restarting.
+
+Bug: 498702233
+Change-Id: Iaf27dee1eaad2e228e69c98d9434a2d4fe85a308
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7729684
+Reviewed-by: Brian Sheedy <bsheedy@chromium.org>
+Commit-Queue: Brandon Jones <bajones@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1610896}
+
+diff --git a/content/browser/xr/service/xr_runtime_manager_impl.cc b/content/browser/xr/service/xr_runtime_manager_impl.cc
+index caabfea55b309f86ce9db16d1752b19f01e76f57..e9da901867c0c6674241e0f60913e3824d26bd41 100644
+--- a/content/browser/xr/service/xr_runtime_manager_impl.cc
++++ b/content/browser/xr/service/xr_runtime_manager_impl.cc
+@@ -520,6 +520,11 @@ XRRuntimeManagerImpl::~XRRuntimeManagerImpl() {
+     base::CommandLine::ForCurrentProcess()->RemoveSwitch(
+         switches::kUseAdapterLuid);
+ 
++    // Ensure this object is no longer registered as a GpuDataManager observer,
++    // which may happen if MakeXrCompatible is called and the page is navigated
++    // before the GPU process restarts.
++    content::GpuDataManager::GetInstance()->RemoveObserver(this);
++
+ #if BUILDFLAG(IS_WIN)
+     // If we changed the GPU, revert it back to the default GPU. This is
+     // separate from xr_compatible_restarted_gpu_ because the GPU process may

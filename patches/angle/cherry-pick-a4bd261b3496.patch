@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Wed, 11 Mar 2026 16:30:52 -0400
+Subject: [M144-LTS] Metal: Round up all buffer sizes to 16 bytes.
+
+Uniform buffers used to be rounded up to 16 bytes but it's possible to
+bind other buffer types as uniform buffers later. Do the rounding on all
+buffer types.
+
+Bug: angleproject:42266052, chromium:489585044
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7657186
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit 92108f0e6867f8e45fe124abb962b8eb87dace76)
+
+Change-Id: Ia1683f1236b3450039e8baa058231a24986da88c
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7808513
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Tiago Vignatti (xWF) <vignatti@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/metal/BufferMtl.mm b/src/libANGLE/renderer/metal/BufferMtl.mm
+index 6ffe10c8a32092fc878bc54c2dfa57dca48a831a..3afbb45aff8654025d66f3a224847f902ad4ff2f 100644
+--- a/src/libANGLE/renderer/metal/BufferMtl.mm
++++ b/src/libANGLE/renderer/metal/BufferMtl.mm
+@@ -564,13 +564,8 @@ bool isOffsetAndSizeMetalBlitCompatible(size_t offset, size_t size)
+     size_t adjustedSize = std::max<size_t>(1, intendedSize);
+ 
+     // Ensures no validation layer issues in std140 with data types like vec3 being 12 bytes vs 16
+-    // in MSL.
+-    if (target == gl::BufferBinding::Uniform)
+-    {
+-        // This doesn't work! A buffer can be allocated on ARRAY_BUFFER and used in UNIFORM_BUFFER
+-        // TODO(anglebug.com/42266052)
+-        adjustedSize = roundUpPow2(adjustedSize, (size_t)16);
+-    }
++    // in MSL. Many buffer types can be bound as a uniform buffer, so align all buffer sizes.
++    adjustedSize = roundUpPow2(adjustedSize, (size_t)16);
+ 
+     // Re-create the buffer
+     auto storageMode = mtl::Buffer::getStorageModeForUsage(contextMtl, usage);
+diff --git a/src/tests/gl_tests/UniformBufferTest.cpp b/src/tests/gl_tests/UniformBufferTest.cpp
+index d6ceb0aa496596876e2153795da4924933094282..4ac16f4e8c766fd28589b2d6257f985e7a3c46d9 100644
+--- a/src/tests/gl_tests/UniformBufferTest.cpp
++++ b/src/tests/gl_tests/UniformBufferTest.cpp
+@@ -4775,9 +4775,53 @@ TEST_P(WebGL2UniformBufferTest, LargeArrayOfStructs)
+     ANGLE_GL_PROGRAM(program, vs.c_str(), kFragmentShader);
+ }
+ 
++class UniformBufferShadowBufferTest : public UniformBufferTest
++{
++  protected:
++    UniformBufferShadowBufferTest() {}
++};
++
++// Test that using an array buffer as a uniform buffer works correctly, especially
++// when the buffer size is not a multiple of the uniform block size, and the backend
++// expects padded buffers (e.g. Metal with shadow buffers).
++TEST_P(UniformBufferShadowBufferTest, ArrayBufferBoundAsUniformBufferWithBool)
++{
++    constexpr char kFS[] =
++        R"(#version 300 es
++        precision highp float;
++        layout(std140) uniform U { bool b; };
++        out vec4 my_FragColor;
++        void main()
++        {
++            my_FragColor = b ? vec4(0.0, 1.0, 0.0, 1.0) : vec4(1.0, 0.0, 0.0, 1.0);
++        })";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++
++    GLuint buffer;
++    glGenBuffers(1, &buffer);
++    glBindBuffer(GL_ARRAY_BUFFER, buffer);
++    // Create a buffer of 5 bytes (not a multiple of std140 block size or 16).
++    constexpr uint8_t data[5] = {1, 0, 0, 0, 0};
++    glBufferData(GL_ARRAY_BUFFER, 5, data, GL_STATIC_DRAW);
++
++    GLuint blockIndex = glGetUniformBlockIndex(program, "U");
++    glUniformBlockBinding(program, blockIndex, 0);
++    glBindBufferBase(GL_UNIFORM_BUFFER, 0, buffer);
++
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(UniformBufferTest);
+ ANGLE_INSTANTIATE_TEST_ES3(UniformBufferTest);
+ 
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(UniformBufferShadowBufferTest);
++ANGLE_INSTANTIATE_TEST_ES3_AND(UniformBufferShadowBufferTest,
++                               ES3_METAL().enable(Feature::UseShadowBuffersWhenAppropriate));
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(UniformBlockWithOneLargeArrayMemberTest);
+ ANGLE_INSTANTIATE_TEST_ES3(UniformBlockWithOneLargeArrayMemberTest);
+ 

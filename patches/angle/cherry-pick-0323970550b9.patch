@@ -1,0 +1,125 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kenneth Russell <kbr@chromium.org>
+Date: Mon, 30 Mar 2026 18:13:36 -0700
+Subject: Metal: Fix pitch computation for compressed textures in PBOs.
+
+Correctly detect block formats and adjust the row and depth pitch
+computation. Inspiration taken from ANGLE's Vulkan backend.
+
+Authored with gemini-cli, with guidance from domain experts.
+
+Fixed: angleproject:489579953
+Change-Id: I5656b02bc235bbe068191a0fb2049afcea9a094e
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7699417
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+
+diff --git a/src/libANGLE/renderer/metal/TextureMtl.mm b/src/libANGLE/renderer/metal/TextureMtl.mm
+index 0dcbddd41f22928d1eafab3f6274b2b176899917..66118af260ce8262a3b5419fe25939dee0e1eadd 100644
+--- a/src/libANGLE/renderer/metal/TextureMtl.mm
++++ b/src/libANGLE/renderer/metal/TextureMtl.mm
+@@ -2471,7 +2471,29 @@ uint32_t height(GLuint glLevel) const
+                                                      ? imageFormat.textureLoadFunctions(type)
+                                                      : LoadImageFunctionInfo();
+         const angle::Format &dstFormat         = angle::Format::Get(imageFormat.actualFormatId);
+-        const size_t dstRowPitch               = dstFormat.pixelBytes * mtlArea.size.width;
++        size_t dstRowPitch;
++        size_t dstDepthPitch;
++        if (dstFormat.isBlock)
++        {
++            const gl::InternalFormat &dstFormatInfo =
++                gl::GetSizedInternalFormatInfo(dstFormat.glInternalFormat);
++            GLuint rowPitch;
++            ANGLE_CHECK_GL_MATH(contextMtl,
++                                dstFormatInfo.computeCompressedImageRowPitch(
++                                    static_cast<GLsizei>(mtlArea.size.width), &rowPitch));
++            dstRowPitch = rowPitch;
++
++            GLuint depthPitch;
++            ANGLE_CHECK_GL_MATH(contextMtl, dstFormatInfo.computeCompressedImageDepthPitch(
++                                                static_cast<GLsizei>(mtlArea.size.height),
++                                                static_cast<GLuint>(dstRowPitch), &depthPitch));
++            dstDepthPitch = depthPitch;
++        }
++        else
++        {
++            dstRowPitch   = dstFormat.pixelBytes * mtlArea.size.width;
++            dstDepthPitch = dstRowPitch * mtlArea.size.height;
++        }
+ 
+         // It is very important to avoid allocating a new buffer for each row during these
+         // uploads.
+@@ -2485,7 +2507,6 @@ uint32_t height(GLuint glLevel) const
+                 ASSERT(loadFunctionInfo.loadFunction);
+ 
+                 // Need to create a buffer to hold entire decompressed image.
+-                const size_t dstDepthPitch = dstRowPitch * mtlArea.size.height;
+                 angle::MemoryBuffer decompressBuf;
+                 ANGLE_CHECK_GL_ALLOC(contextMtl,
+                                      decompressBuf.resize(dstDepthPitch * mtlArea.size.depth));
+@@ -2509,7 +2530,6 @@ uint32_t height(GLuint glLevel) const
+                        static_cast<unsigned int>(imageDef.image->sizeAt0().width));
+                 ASSERT(mtlArea.size.height ==
+                        static_cast<unsigned int>(imageDef.image->sizeAt0().height));
+-                const size_t dstDepthPitch = dstRowPitch * mtlArea.size.height;
+                 ANGLE_TRY(UploadTextureContents(
+                     context, dstFormat, mtlArea, mtl::kZeroNativeMipLevel, slice, pixels,
+                     dstRowPitch, dstDepthPitch, kAvoidStagingBuffers, imageDef.image));
+diff --git a/src/tests/gl_tests/ETCTextureTest.cpp b/src/tests/gl_tests/ETCTextureTest.cpp
+index 319eb1c9ffe7a86b98a5cb98f98e1775bb9b0683..0d2f732676a47515693ad1e0255546f777b5e19d 100644
+--- a/src/tests/gl_tests/ETCTextureTest.cpp
++++ b/src/tests/gl_tests/ETCTextureTest.cpp
+@@ -12,6 +12,7 @@
+ #endif
+ 
+ #include "test_utils/ANGLETest.h"
++#include "test_utils/gl_raii.h"
+ 
+ #include "media/etc2bc_srgb8_alpha8.inc"
+ 
+@@ -309,6 +310,45 @@ TEST_P(ETCTextureTest, ETC2SRGB8A1Validation)
+     }
+ }
+ 
++// Tests that uploading compressed texture from a PBO with a misaligned offset doesn't crash.
++TEST_P(ETCTextureTest, PBOWithMisalignedOffset)
++{
++    // Need ES 3.0 for PBOs.
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3);
++
++    // Check if ETC2 is supported. Not supported, for example, on ANGLE/OpenGL on macOS.
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_ANGLE_lossy_etc_decode") &&
++                       !IsGLExtensionEnabled("GL_OES_compressed_ETC2_RGB8_texture") &&
++                       !IsGLExtensionEnabled("GL_ANGLE_compressed_texture_etc"));
++
++    constexpr GLsizei kWidth  = 512;
++    constexpr GLsizei kHeight = 512;
++    constexpr GLsizei kBPB    = 8;  // 8 bytes per block
++    constexpr GLsizei kBW     = 4;
++    constexpr GLsizei kBH     = 4;
++
++    GLsizei blocksX        = kWidth / kBW;
++    GLsizei blocksY        = kHeight / kBH;
++    GLsizei compressedSize = blocksX * blocksY * kBPB;
++
++    glBindTexture(GL_TEXTURE_2D, mTexture);
++    // Use GL_COMPRESSED_RGB8_ETC2 which is core in ES 3.0
++    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RGB8_ETC2, kWidth, kHeight, 0,
++                           compressedSize, nullptr);
++
++    // Misaligned offset to trigger the fallback path in Metal backend
++    constexpr GLsizei kPBOOffset = 1;
++
++    GLBuffer pbo;
++    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
++    glBufferData(GL_PIXEL_UNPACK_BUFFER, kPBOOffset + compressedSize, nullptr, GL_STATIC_DRAW);
++    ASSERT_GL_NO_ERROR();
++
++    glCompressedTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, kWidth, kHeight, GL_COMPRESSED_RGB8_ETC2,
++                              compressedSize, reinterpret_cast<void *>(kPBOOffset));
++    EXPECT_GL_NO_ERROR();
++}
++
+ class ETCToBCTextureTest : public ANGLETest<>
+ {
+   protected:

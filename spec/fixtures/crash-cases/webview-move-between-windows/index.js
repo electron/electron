@@ -1,6 +1,6 @@
 const { app, BrowserWindow, WebContentsView } = require('electron');
 
-function createWindow () {
+function createWindow() {
   // Create the browser window.
   const mainWindow = new BrowserWindow();
   const secondaryWindow = new BrowserWindow();

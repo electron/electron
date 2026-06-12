@@ -1,0 +1,160 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrew Paseltiner <apaseltiner@chromium.org>
+Date: Fri, 3 Apr 2026 13:21:20 -0700
+Subject: Fix iterator invalidation in aura::Window and Ash ID clash
+
+This CL addresses two related issues that could lead to memory safety
+vulnerabilities:
+
+1. Update aura::Window notification loops to use WindowTracker.
+   NotifyRemovingFromRootWindow, NotifyAddedToRootWindow, and
+   NotifyWindowHierarchyChangeDown now safely handle potential hierarchy
+   mutations during child iteration.
+
+2. Upgrade ID validation in MoveAllTransientChildrenToNewRoot.
+   Upgraded the ID validation from DCHECK_GE to CHECK_GE to ensure that
+   container_id is non-negative in all builds. This prevents incorrect
+   reparenting to the Wallpaper Window (which often has an ID of -1)
+   and subsequent iterator invalidation.
+
+Fixed: 498832921
+Change-Id: Ie38a4f864ffdc0baa6c59d83c3f4e59babbe2528
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7726886
+Reviewed-by: Mitsuru Oshima <oshima@chromium.org>
+Commit-Queue: Andrew Paseltiner <apaseltiner@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1609938}
+
+diff --git a/ash/wm/window_state.cc b/ash/wm/window_state.cc
+index 086bebc6d52772a62b17f1ca0fff033dad996ece..451beb23bde2ae00b693e285ac744a5557e281f4 100644
+--- a/ash/wm/window_state.cc
++++ b/ash/wm/window_state.cc
+@@ -40,6 +40,7 @@
+ #include "ash/wm/wm_event.h"
+ #include "ash/wm/wm_metrics.h"
+ #include "base/check_is_test.h"
++#include "base/check_op.h"
+ #include "base/containers/adapters.h"
+ #include "base/containers/fixed_flat_map.h"
+ #include "base/debug/crash_logging.h"
+@@ -266,7 +267,7 @@ void MoveAllTransientChildrenToNewRoot(aura::Window* window) {
+     if (!transient_child->parent())
+       continue;
+     const int container_id = transient_child->parent()->GetId();
+-    DCHECK_GE(container_id, 0);
++    CHECK_GE(container_id, 0);
+     aura::Window* container = dst_root->GetChildById(container_id);
+     if (container->Contains(transient_child))
+       continue;
+diff --git a/ui/aura/window.cc b/ui/aura/window.cc
+index 2444fa5747d82bbb47cf9343d46f6a5ee87f13d9..e1f3485a478d407efd22e605f679e7bacec98914 100644
+--- a/ui/aura/window.cc
++++ b/ui/aura/window.cc
+@@ -1233,9 +1233,10 @@ void Window::NotifyRemovingFromRootWindow(Window* new_root) {
+     UnregisterFrameSinkId();
+   for (WindowObserver& observer : observers_)
+     observer.OnWindowRemovingFromRootWindow(this, new_root);
+-  for (Window::Windows::const_iterator it = children_.begin();
+-       it != children_.end(); ++it) {
+-    (*it)->NotifyRemovingFromRootWindow(new_root);
++
++  WindowTracker tracker(children_);
++  while (!tracker.windows().empty()) {
++    tracker.Pop()->NotifyRemovingFromRootWindow(new_root);
+   }
+ }
+ 
+@@ -1244,9 +1245,10 @@ void Window::NotifyAddedToRootWindow() {
+     RegisterFrameSinkId();
+   for (WindowObserver& observer : observers_)
+     observer.OnWindowAddedToRootWindow(this);
+-  for (Window::Windows::const_iterator it = children_.begin();
+-       it != children_.end(); ++it) {
+-    (*it)->NotifyAddedToRootWindow();
++
++  WindowTracker tracker(children_);
++  while (!tracker.windows().empty()) {
++    tracker.Pop()->NotifyAddedToRootWindow();
+   }
+ }
+ 
+@@ -1268,9 +1270,9 @@ void Window::NotifyWindowHierarchyChange(
+ void Window::NotifyWindowHierarchyChangeDown(
+     const WindowObserver::HierarchyChangeParams& params) {
+   NotifyWindowHierarchyChangeAtReceiver(params);
+-  for (Window::Windows::const_iterator it = children_.begin();
+-       it != children_.end(); ++it) {
+-    (*it)->NotifyWindowHierarchyChangeDown(params);
++  WindowTracker tracker(children_);
++  while (!tracker.windows().empty()) {
++    tracker.Pop()->NotifyWindowHierarchyChangeDown(params);
+   }
+ }
+ 
+diff --git a/ui/aura/window_unittest.cc b/ui/aura/window_unittest.cc
+index 8af5d68baff728b8787016d4c26eefcf6ced6145..4f67b0d34fb200cbf3902d1d34cca0ea91ebee30 100644
+--- a/ui/aura/window_unittest.cc
++++ b/ui/aura/window_unittest.cc
+@@ -13,6 +13,7 @@
+ 
+ #include "base/compiler_specific.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/scoped_observation.h"
+ #include "base/strings/string_number_conversions.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/stringprintf.h"
+@@ -3592,6 +3593,55 @@ TEST_F(WindowTest, OnWindowHierarchyChange) {
+   }
+ }
+ 
++namespace {
++
++class HierarchyMutatingObserver : public WindowObserver {
++ public:
++  explicit HierarchyMutatingObserver(Window* window_to_remove)
++      : window_to_remove_(window_to_remove) {}
++
++  HierarchyMutatingObserver(const HierarchyMutatingObserver&) = delete;
++  HierarchyMutatingObserver& operator=(const HierarchyMutatingObserver&) =
++      delete;
++
++  void OnWindowAddedToRootWindow(Window* window) override {
++    if (window_to_remove_) {
++      window_to_remove_->parent()->RemoveChild(window_to_remove_);
++      window_to_remove_ = nullptr;
++    }
++  }
++
++ private:
++  raw_ptr<Window> window_to_remove_;
++};
++
++}  // namespace
++
++// Tests that modifying the hierarchy during NotifyAddedToRootWindow doesn't
++// cause a crash.
++TEST_F(WindowTest, MutateHierarchyDuringNotifyAddedToRootWindow) {
++  std::unique_ptr<Window> parent_window(CreateTestWindow({.window_id = 0}));
++  std::unique_ptr<Window> w1(CreateTestWindow({.window_id = 1}));
++  std::unique_ptr<Window> w2(CreateTestWindow({.window_id = 2}));
++  std::unique_ptr<Window> w3(CreateTestWindow({.window_id = 3}));
++
++  parent_window->AddChild(w1.get());
++  parent_window->AddChild(w2.get());
++  parent_window->AddChild(w3.get());
++
++  // Add an observer to w2 that removes w1.
++  // When parent_window is added to the root, it will notify its children: w1,
++  // w2, w3.
++  // 1. Notify w1.
++  // 2. Notify w2. w2's observer removes w1.
++  // 3. Notify w3.
++  HierarchyMutatingObserver observer(w1.get());
++  base::ScopedObservation<Window, WindowObserver> observation(&observer);
++  observation.Observe(w2.get());
++
++  root_window()->AddChild(parent_window.get());
++}
++
+ class TestLayerAnimationObserver : public ui::LayerAnimationObserver {
+  public:
+   TestLayerAnimationObserver()

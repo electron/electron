@@ -2,11 +2,8 @@ import { expect } from 'chai';
 
 type ExpectedWarningMessage = RegExp | string;
 
-async function expectWarnings (
-  func: () => any,
-  expected: { name: string, message: ExpectedWarningMessage }[]
-) {
-  const messages: { name: string, message: string }[] = [];
+async function expectWarnings(func: () => any, expected: { name: string; message: ExpectedWarningMessage }[]) {
+  const messages: { name: string; message: string }[] = [];
 
   const originalWarn = console.warn;
   console.warn = (message) => {
@@ -38,23 +35,25 @@ async function expectWarnings (
   }
 }
 
-export async function expectWarningMessages (
+export async function expectWarningMessages(
   func: () => any,
-  ...expected: ({ name: string, message: ExpectedWarningMessage } | ExpectedWarningMessage)[]
-) {
-  return expectWarnings(func, expected.map((message) => {
-    if (typeof message === 'string' || message instanceof RegExp) {
-      return { name: 'Warning', message };
-    } else {
-      return message;
-    }
-  }));
-}
-
-export async function expectDeprecationMessages (
-  func: () => any, ...expected: ExpectedWarningMessage[]
+  ...expected: ({ name: string; message: ExpectedWarningMessage } | ExpectedWarningMessage)[]
 ) {
   return expectWarnings(
-    func, expected.map((message) => ({ name: 'DeprecationWarning', message }))
+    func,
+    expected.map((message) => {
+      if (typeof message === 'string' || message instanceof RegExp) {
+        return { name: 'Warning', message };
+      } else {
+        return message;
+      }
+    })
+  );
+}
+
+export async function expectDeprecationMessages(func: () => any, ...expected: ExpectedWarningMessage[]) {
+  return expectWarnings(
+    func,
+    expected.map((message) => ({ name: 'DeprecationWarning', message }))
   );
 }

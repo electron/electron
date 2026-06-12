@@ -12,7 +12,7 @@ app.whenReady().then(async () => {
 
   // Wait a second for glitch to load, it sometimes takes a while
   // if the glitch app is booting up (did-finish-load will fire too soon)
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   try {
     let result;

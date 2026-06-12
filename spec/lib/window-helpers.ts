@@ -4,7 +4,7 @@ import { expect } from 'chai';
 
 import { once } from 'node:events';
 
-async function ensureWindowIsClosed (window: BaseWindow | null) {
+async function ensureWindowIsClosed(window: BaseWindow | null) {
   if (window && !window.isDestroyed()) {
     if (window instanceof BrowserWindow && window.webContents && !window.webContents.isDestroyed()) {
       // If a window isn't destroyed already, and it has non-destroyed WebContents,
@@ -48,7 +48,7 @@ export const closeWindow = async (
   }
 };
 
-export async function closeAllWindows (assertNotWindows = false) {
+export async function closeAllWindows(assertNotWindows = false) {
   let windowsClosed = 0;
   for (const w of BaseWindow.getAllWindows()) {
     await closeWindow(w, { assertNotWindows });
@@ -57,7 +57,7 @@ export async function closeAllWindows (assertNotWindows = false) {
   return windowsClosed;
 }
 
-export async function cleanupWebContents () {
+export async function cleanupWebContents() {
   let webContentsDestroyed = 0;
   const existingWCS = webContents.getAllWebContents();
   for (const contents of existingWCS) {

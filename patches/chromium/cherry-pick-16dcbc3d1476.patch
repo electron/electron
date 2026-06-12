@@ -1,0 +1,114 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Bienvenu <davidbienvenu@chromium.org>
+Date: Wed, 13 May 2026 07:44:42 -0700
+Subject: win: Use static to keep track of in progress drags.
+
+Prevent multiple drags from different windows.
+
+Bug: 503551154
+Change-Id: I7bb052b88a7eb4fe06a827a55bbb05db2391e8f2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7841115
+Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+Commit-Queue: David Bienvenu <davidbienvenu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1629961}
+
+diff --git a/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.cc b/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.cc
+index 19d18f27670febcb795deec24202eb22a2a1ad3a..a990686e7ce809b22111f13c06ad8c34b07a44ea 100644
+--- a/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.cc
+@@ -6,6 +6,7 @@
+ 
+ #include <memory>
+ 
++#include "base/auto_reset.h"
+ #include "base/metrics/histogram_macros.h"
+ #include "base/notimplemented.h"
+ #include "base/scoped_observation.h"
+@@ -48,19 +49,21 @@ class SourceWindowObserver : public aura::WindowObserver {
+       scoped_observation_;
+ };
+ 
++bool g_is_dragging = false;
++
+ }  // namespace
+ 
+ DesktopDragDropClientWin::DesktopDragDropClientWin(
+     aura::Window* root_window,
+     HWND window,
+     DesktopWindowTreeHostWin* desktop_host)
+-    : drag_drop_in_progress_(false), desktop_host_(desktop_host) {
++    : desktop_host_(desktop_host) {
+   drop_target_ = new DesktopDropTargetWin(root_window);
+   drop_target_->Init(window);
+ }
+ 
+ DesktopDragDropClientWin::~DesktopDragDropClientWin() {
+-  if (drag_drop_in_progress_) {
++  if (g_is_dragging) {
+     DragCancel();
+   }
+ }
+@@ -72,6 +75,7 @@ ui::mojom::DragOperation DesktopDragDropClientWin::StartDragAndDrop(
+     const gfx::Point& screen_location,
+     int allowed_operations,
+     ui::mojom::DragEventSource source) {
++  CHECK(!g_is_dragging);
+   gfx::Point touch_screen_point;
+   if (source == ui::mojom::DragEventSource::kTouch) {
+     source_window->GetHost()->ConvertDIPToPixels(&touch_screen_point);
+@@ -97,7 +101,6 @@ ui::mojom::DragOperation DesktopDragDropClientWin::StartDragAndDrop(
+   SourceWindowObserver source_window_observer(source_window);
+   base::WeakPtr<DesktopDragDropClientWin> alive(weak_factory_.GetWeakPtr());
+ 
+-  drag_drop_in_progress_ = true;
+   drag_source_ = ui::DragSourceWin::Create();
+   Microsoft::WRL::ComPtr<ui::DragSourceWin> drag_source_copy = drag_source_;
+   drag_source_copy->set_data(data.get());
+@@ -105,6 +108,7 @@ ui::mojom::DragOperation DesktopDragDropClientWin::StartDragAndDrop(
+       true);
+ 
+   DWORD effect;
++  base::AutoReset<bool> drag_scoper(&g_is_dragging, true);
+ 
+   // Never consider the current scope as hung. The hang watching deadline (if
+   // any) is not valid since the user can take unbounded time to complete the
+@@ -128,10 +132,6 @@ ui::mojom::DragOperation DesktopDragDropClientWin::StartDragAndDrop(
+   }
+   drag_source_copy->set_data(nullptr);
+ 
+-  if (alive) {
+-    drag_drop_in_progress_ = false;
+-  }
+-
+   if (result != DRAGDROP_S_DROP) {
+     effect = DROPEFFECT_NONE;
+   }
+@@ -141,11 +141,13 @@ ui::mojom::DragOperation DesktopDragDropClientWin::StartDragAndDrop(
+ }
+ 
+ void DesktopDragDropClientWin::DragCancel() {
+-  drag_source_->CancelDrag();
++  if (drag_source_) {
++    drag_source_->CancelDrag();
++  }
+ }
+ 
+ bool DesktopDragDropClientWin::IsDragDropInProgress() {
+-  return drag_drop_in_progress_;
++  return g_is_dragging;
+ }
+ 
+ void DesktopDragDropClientWin::AddObserver(
+diff --git a/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.h b/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.h
+index 69bf4e0c30488893e6e4aa2245399b89958e62d0..374f7ba5a498cdc7094536728ab2c6849ef74928 100644
+--- a/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.h
++++ b/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.h
+@@ -61,8 +61,6 @@ class VIEWS_EXPORT DesktopDragDropClientWin
+   }
+ 
+  private:
+-  bool drag_drop_in_progress_;
+-
+   Microsoft::WRL::ComPtr<ui::DragSourceWin> drag_source_;
+ 
+   scoped_refptr<DesktopDropTargetWin> drop_target_;

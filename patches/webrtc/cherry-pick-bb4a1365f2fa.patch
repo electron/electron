@@ -1,0 +1,173 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Fri, 15 May 2026 02:17:04 +0000
+Subject: [M144-LTS] Check vector sizes when crossfading from CNG/expand to
+ normal.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This fixes a potential out-of-bounds write.
+
+No-Try: True
+Bug: chromium:502661101
+Change-Id: Ib12645f0206290034f0828dbbf0764d6cfe41662
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/464500
+Commit-Queue: Jakob Ivarsson‎ <jakobi@webrtc.org>
+Reviewed-by: Henrik Lundin <henrik.lundin@webrtc.org>
+Cr-Original-Commit-Position: refs/heads/main@{#47447}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/472541
+Reviewed-by: Jakob Ivarsson‎ <jakobi@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/7559@{#7}
+Cr-Branched-From: f680c1893f3b166b370439da52ae82d02f54969c-refs/heads/main@{#46356}
+
+diff --git a/modules/audio_coding/neteq/normal.cc b/modules/audio_coding/neteq/normal.cc
+index 909e955684dda7ca3d154cf0aa9b60766bc47535..34f279e6560ece89deebe6686afa1c5aeee3be2e 100644
+--- a/modules/audio_coding/neteq/normal.cc
++++ b/modules/audio_coding/neteq/normal.cc
+@@ -22,12 +22,32 @@
+ #include "common_audio/signal_processing/include/spl_inl.h"
+ #include "modules/audio_coding/codecs/cng/webrtc_cng.h"
+ #include "modules/audio_coding/neteq/audio_multi_vector.h"
++#include "modules/audio_coding/neteq/audio_vector.h"
+ #include "modules/audio_coding/neteq/background_noise.h"
+ #include "modules/audio_coding/neteq/decoder_database.h"
+ #include "modules/audio_coding/neteq/expand.h"
+ #include "rtc_base/checks.h"
+ 
+ namespace webrtc {
++namespace {
++
++void Crossfade(const AudioVector& from, AudioVector& to, size_t win_length) {
++  const size_t win_length_clamped =
++      std::min({win_length, from.Size(), to.Size()});
++  if (win_length_clamped == 0) {
++    return;
++  }
++  int16_t win_slope_Q14 = (1 << 14) / static_cast<int16_t>(win_length_clamped);
++  int16_t win_up_Q14 = 0;
++  for (size_t i = 0; i < win_length_clamped; i++) {
++    win_up_Q14 += win_slope_Q14;
++    to[i] =
++        (win_up_Q14 * to[i] + ((1 << 14) - win_up_Q14) * from[i] + (1 << 13)) >>
++        14;
++  }
++}
++
++}  // namespace
+ 
+ int Normal::Process(const int16_t* input,
+                     size_t length,
+@@ -138,23 +158,7 @@ int Normal::Process(const int16_t* input,
+ 
+       // Interpolate the expanded data into the new vector.
+       // (NB/WB/SWB32/SWB48 8/16/32/48 samples.)
+-      size_t win_length = samples_per_ms_;
+-      int16_t win_slope_Q14 = default_win_slope_Q14_;
+-      RTC_DCHECK_LT(channel_ix, output->Channels());
+-      if (win_length > output->Size()) {
+-        win_length = output->Size();
+-        win_slope_Q14 = (1 << 14) / static_cast<int16_t>(win_length);
+-      }
+-      int16_t win_up_Q14 = 0;
+-      for (size_t i = 0; i < win_length; i++) {
+-        win_up_Q14 += win_slope_Q14;
+-        (*output)[channel_ix][i] =
+-            (win_up_Q14 * (*output)[channel_ix][i] +
+-             ((1 << 14) - win_up_Q14) * expanded[channel_ix][i] + (1 << 13)) >>
+-            14;
+-      }
+-      RTC_DCHECK_GT(win_up_Q14,
+-                    (1 << 14) - 32);  // Worst case rouding is a length of 34
++      Crossfade(expanded[channel_ix], (*output)[channel_ix], samples_per_ms_);
+     }
+   } else if (last_mode == NetEq::Mode::kRfc3389Cng) {
+     RTC_DCHECK_EQ(output->Channels(), 1);  // Not adapted for multi-channel yet.
+@@ -176,22 +180,9 @@ int Normal::Process(const int16_t* input,
+     }
+     // Interpolate the CNG into the new vector.
+     // (NB/WB/SWB32/SWB48 8/16/32/48 samples.)
+-    size_t win_length = samples_per_ms_;
+-    int16_t win_slope_Q14 = default_win_slope_Q14_;
+-    if (win_length > kCngLength) {
+-      win_length = kCngLength;
+-      win_slope_Q14 = (1 << 14) / static_cast<int16_t>(win_length);
+-    }
+-    int16_t win_up_Q14 = 0;
+-    for (size_t i = 0; i < win_length; i++) {
+-      win_up_Q14 += win_slope_Q14;
+-      (*output)[0][i] =
+-          (win_up_Q14 * (*output)[0][i] +
+-           ((1 << 14) - win_up_Q14) * cng_output[i] + (1 << 13)) >>
+-          14;
+-    }
+-    RTC_DCHECK_GT(win_up_Q14,
+-                  (1 << 14) - 32);  // Worst case rouding is a length of 34
++    AudioVector temp_vector(kCngLength);
++    temp_vector.OverwriteAt(cng_output, kCngLength, 0);
++    Crossfade(temp_vector, (*output)[0], samples_per_ms_);
+   }
+ 
+   return static_cast<int>(length);
+diff --git a/modules/audio_coding/neteq/normal.h b/modules/audio_coding/neteq/normal.h
+index e6c918764fe13055221ebf94642047b0a6c39d56..d0dfc2f6cbb3058f72c219ff05f6a82a4d9a1dc4 100644
+--- a/modules/audio_coding/neteq/normal.h
++++ b/modules/audio_coding/neteq/normal.h
+@@ -17,7 +17,6 @@
+ #include "api/neteq/neteq.h"
+ #include "modules/audio_coding/neteq/statistics_calculator.h"
+ #include "rtc_base/checks.h"
+-#include "rtc_base/numerics/safe_conversions.h"
+ 
+ namespace webrtc {
+ 
+@@ -42,8 +41,6 @@ class Normal {
+         background_noise_(background_noise),
+         expand_(expand),
+         samples_per_ms_(CheckedDivExact(fs_hz_, 1000)),
+-        default_win_slope_Q14_(
+-            dchecked_cast<uint16_t>((1 << 14) / samples_per_ms_)),
+         statistics_(statistics) {}
+ 
+   virtual ~Normal() {}
+@@ -68,7 +65,6 @@ class Normal {
+   const BackgroundNoise& background_noise_;
+   Expand* expand_;
+   const size_t samples_per_ms_;
+-  const int16_t default_win_slope_Q14_;
+   StatisticsCalculator* const statistics_;
+ };
+ 
+diff --git a/modules/audio_coding/neteq/normal_unittest.cc b/modules/audio_coding/neteq/normal_unittest.cc
+index 272869d701b94bdb536cd9e50d8a3c82dadef31a..c29a2c3314a5496644a9c2577a0ccf97fb52f1d4 100644
+--- a/modules/audio_coding/neteq/normal_unittest.cc
++++ b/modules/audio_coding/neteq/normal_unittest.cc
+@@ -14,6 +14,7 @@
+ 
+ #include <cstddef>
+ #include <cstdint>
++#include <vector>
+ 
+ #include "api/neteq/neteq.h"
+ #include "api/neteq/tick_timer.h"
+@@ -147,6 +148,20 @@ TEST(Normal, LastModeExpand120msPacket) {
+   EXPECT_CALL(expand, Die());  // Called when `expand` goes out of scope.
+ }
+ 
++TEST(Normal, LastModeRfc3389CngSmallInput) {
++  constexpr size_t kChannels = 1;
++  constexpr size_t kInputFrames = 10;
++  MockDecoderDatabase db;
++  Normal normal(/*fs_hz=*/48000, /*decoder_database=*/&db,
++                /*background_noise=*/BackgroundNoise(kChannels),
++                /*expand=*/nullptr, /*statistics=*/nullptr);
++  AudioMultiVector output(kChannels);
++  std::vector<int16_t> input(kChannels * kInputFrames, 0);
++  EXPECT_EQ(normal.Process(input.data(), input.size(), NetEq::Mode::kRfc3389Cng,
++                           &output),
++            static_cast<int>(input.size()));
++}
++
+ // TODO(hlundin): Write more tests.
+ 
+ }  // namespace webrtc

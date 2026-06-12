@@ -76,7 +76,6 @@ jobs:
     - name: Add problem matchers
       shell: bash
       run: |
-        echo "::add-matcher::src/electron/.github/problem-matchers/eslint-stylish.json"
         echo "::add-matcher::src/electron/.github/problem-matchers/markdownlint.json"
     - name: Run Lint
       shell: bash

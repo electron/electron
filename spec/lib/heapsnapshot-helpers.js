@@ -1,6 +1,5 @@
-export function containsRetainingPath (snapshot, retainingPath, options) {
-  let root = snapshot.filter(
-    (node) => node.name === retainingPath[0] && node.type !== 'string');
+export function containsRetainingPath(snapshot, retainingPath, options) {
+  let root = snapshot.filter((node) => node.name === retainingPath[0] && node.type !== 'string');
   for (let i = 1; i < retainingPath.length; i++) {
     const needle = retainingPath[i];
     const newRoot = [];
@@ -19,7 +18,5 @@ export function containsRetainingPath (snapshot, retainingPath, options) {
     }
     root = newRoot;
   }
-  return options?.occurrances
-    ? root.length === options.occurrances
-    : true;
+  return options?.occurrances ? root.length === options.occurrances : true;
 }

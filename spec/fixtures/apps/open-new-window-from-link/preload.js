@@ -1,3 +1,3 @@
-window.addEventListener('click', e => {
+window.addEventListener('click', (e) => {
   console.log('click', e);
 });

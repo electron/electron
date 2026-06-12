@@ -6,7 +6,7 @@ import type * as webViewElementModule from '@electron/internal/renderer/web-view
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_frame');
 
-function handleFocusBlur () {
+function handleFocusBlur() {
   // Note that while Chromium content APIs have observer for focus/blur, they
   // unfortunately do not work for webview.
 
@@ -19,18 +19,20 @@ function handleFocusBlur () {
   });
 }
 
-export function webViewInit (webviewTag: boolean, isWebView: boolean) {
+export function webViewInit(webviewTag: boolean, isWebView: boolean) {
   // Don't allow recursive `<webview>`.
   if (webviewTag && !isWebView) {
-    const guestViewInternal = require('@electron/internal/renderer/web-view/guest-view-internal') as typeof guestViewInternalModule;
+    const guestViewInternal =
+      require('@electron/internal/renderer/web-view/guest-view-internal') as typeof guestViewInternalModule;
     if (process.contextIsolated) {
       v8Util.setHiddenValue(window, 'guestViewInternal', guestViewInternal);
     } else {
-      const { setupWebView } = require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElementModule;
+      const { setupWebView } =
+        require('@electron/internal/renderer/web-view/web-view-element') as typeof webViewElementModule;
       setupWebView({
         guestViewInternal,
         allowGuestViewElementDefinition: webFrame.allowGuestViewElementDefinition,
-        setIsWebView: iframe => v8Util.setHiddenValue(iframe, 'isWebView', true)
+        setIsWebView: (iframe) => v8Util.setHiddenValue(iframe, 'isWebView', true)
       });
     }
   }

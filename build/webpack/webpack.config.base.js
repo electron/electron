@@ -8,10 +8,13 @@ const path = require('node:path');
 const electronRoot = path.resolve(__dirname, '../..');
 
 class AccessDependenciesPlugin {
-  apply (compiler) {
-    compiler.hooks.compilation.tap('AccessDependenciesPlugin', compilation => {
-      compilation.hooks.finishModules.tap('AccessDependenciesPlugin', modules => {
-        const filePaths = modules.map(m => m.resource).filter(p => p).map(p => path.relative(electronRoot, p));
+  apply(compiler) {
+    compiler.hooks.compilation.tap('AccessDependenciesPlugin', (compilation) => {
+      compilation.hooks.finishModules.tap('AccessDependenciesPlugin', (modules) => {
+        const filePaths = modules
+          .map((m) => m.resource)
+          .filter((p) => p)
+          .map((p) => path.relative(electronRoot, p));
         console.info(JSON.stringify(filePaths));
       });
     });
@@ -31,7 +34,14 @@ module.exports = ({
     entry = path.resolve(electronRoot, 'lib', target, 'init.js');
   }
 
-  const electronAPIFile = path.resolve(electronRoot, 'lib', loadElectronFromAlternateTarget || target, 'api', 'exports', 'electron.ts');
+  const electronAPIFile = path.resolve(
+    electronRoot,
+    'lib',
+    loadElectronFromAlternateTarget || target,
+    'api',
+    'exports',
+    'electron.ts'
+  );
 
   return (env = {}, argv = {}) => {
     const onlyPrintingGraph = !!env.PRINT_WEBPACK_GRAPH;
@@ -61,49 +71,59 @@ module.exports = ({
     }
 
     if (targetDeletesNodeGlobals) {
-      plugins.push(new webpack.ProvidePlugin({
-        Buffer: ['@electron/internal/common/webpack-provider', 'Buffer'],
-        global: ['@electron/internal/common/webpack-provider', '_global'],
-        process: ['@electron/internal/common/webpack-provider', 'process']
-      }));
+      plugins.push(
+        new webpack.ProvidePlugin({
+          Buffer: ['@electron/internal/common/webpack-provider', 'Buffer'],
+          global: ['@electron/internal/common/webpack-provider', '_global'],
+          process: ['@electron/internal/common/webpack-provider', 'process']
+        })
+      );
     }
 
     // Webpack 5 no longer polyfills process or Buffer.
     if (!alwaysHasNode) {
-      plugins.push(new webpack.ProvidePlugin({
-        Buffer: ['buffer', 'Buffer'],
-        process: 'process/browser'
-      }));
+      plugins.push(
+        new webpack.ProvidePlugin({
+          Buffer: ['buffer', 'Buffer'],
+          process: 'process/browser'
+        })
+      );
     }
 
-    plugins.push(new webpack.ProvidePlugin({
-      Promise: ['@electron/internal/common/webpack-globals-provider', 'Promise']
-    }));
+    plugins.push(
+      new webpack.ProvidePlugin({
+        Promise: ['@electron/internal/common/webpack-globals-provider', 'Promise']
+      })
+    );
 
     plugins.push(new webpack.DefinePlugin(defines));
 
     if (wrapInitWithProfilingTimeout) {
-      plugins.push(new WrapperPlugin({
-        header: 'function ___electron_webpack_init__() {',
-        footer: `
+      plugins.push(
+        new WrapperPlugin({
+          header: 'function ___electron_webpack_init__() {',
+          footer: `
 };
 if ((globalThis.process || binding.process).argv.includes("--profile-electron-init")) {
   setTimeout(___electron_webpack_init__, 0);
 } else {
   ___electron_webpack_init__();
 }`
-      }));
+        })
+      );
     }
 
     if (wrapInitWithTryCatch) {
-      plugins.push(new WrapperPlugin({
-        header: 'try {',
-        footer: `
+      plugins.push(
+        new WrapperPlugin({
+          header: 'try {',
+          footer: `
 } catch (err) {
   console.error('Electron ${outputFilename} script failed to run');
   console.error(err);
 }`
-      }));
+        })
+      );
     }
 
     return {
@@ -133,23 +153,26 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
         }
       },
       module: {
-        rules: [{
-          test: (moduleName) => !onlyPrintingGraph && ignoredModules.includes(moduleName),
-          loader: 'null-loader'
-        }, {
-          test: /\.ts$/,
-          loader: 'ts-loader',
-          options: {
-            configFile: path.resolve(electronRoot, 'tsconfig.electron.json'),
-            transpileOnly: onlyPrintingGraph,
-            ignoreDiagnostics: [
-              // File '{0}' is not under 'rootDir' '{1}'.
-              6059,
-              // Private field '{0}' must be declared in an enclosing class.
-              1111
-            ]
+        rules: [
+          {
+            test: (moduleName) => !onlyPrintingGraph && ignoredModules.includes(moduleName),
+            loader: 'null-loader'
+          },
+          {
+            test: /\.ts$/,
+            loader: 'ts-loader',
+            options: {
+              configFile: path.resolve(electronRoot, 'tsconfig.electron.json'),
+              transpileOnly: onlyPrintingGraph,
+              ignoreDiagnostics: [
+                // File '{0}' is not under 'rootDir' '{1}'.
+                6059,
+                // Private field '{0}' must be declared in an enclosing class.
+                1111
+              ]
+            }
           }
-        }]
+        ]
       },
       node: {
         __dirname: false,

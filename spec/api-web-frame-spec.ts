@@ -56,22 +56,21 @@ describe('webFrame module', () => {
     w.focus();
     await w.webContents.executeJavaScript('document.querySelector("input").focus()', true);
 
-    const spellCheckerFeedback =
-      new Promise<[string[], boolean]>(resolve => {
-        ipcMain.on('spec-spell-check', (e, words, callbackDefined) => {
-          if (words.length === 5) {
-            // The API calls the provider after every completed word.
-            // The promise is resolved only after this event is received with all words.
-            resolve([words, callbackDefined]);
-          }
-        });
+    const spellCheckerFeedback = new Promise<[string[], boolean]>((resolve) => {
+      ipcMain.on('spec-spell-check', (e, words, callbackDefined) => {
+        if (words.length === 5) {
+          // The API calls the provider after every completed word.
+          // The promise is resolved only after this event is received with all words.
+          resolve([words, callbackDefined]);
+        }
       });
-    const inputText = 'spleling test you\'re ';
+    });
+    const inputText = "spleling test you're ";
     for (const keyCode of inputText) {
       w.webContents.sendInputEvent({ type: 'char', keyCode });
     }
     const [words, callbackDefined] = await spellCheckerFeedback;
-    expect(words.sort()).to.deep.equal(['spleling', 'test', 'you\'re', 'you', 're'].sort());
+    expect(words.sort()).to.deep.equal(['spleling', 'test', "you're", 'you', 're'].sort());
     expect(callbackDefined).to.be.true();
   });
 
@@ -169,7 +168,9 @@ describe('webFrame module', () => {
       });
 
       it('returns the webFrame when found', async () => {
-        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.findFrameByToken(childFrame.frameToken), childFrame)');
+        const equal = await w.executeJavaScript(
+          'isSameWebFrame(webFrame.findFrameByToken(childFrame.frameToken), childFrame)'
+        );
         expect(equal).to.be.true();
       });
     });
@@ -262,8 +263,10 @@ describe('webFrame module', () => {
       });
 
       it('executeJavaScript(InIsolatedWorld) can be used without a callback', async () => {
-        expect(await w.executeJavaScript('webFrame.executeJavaScript(\'1 + 1\')')).to.equal(2);
-        expect(await w.executeJavaScript('webFrame.executeJavaScriptInIsolatedWorld(999, [{code: \'1 + 1\'}])')).to.equal(2);
+        expect(await w.executeJavaScript("webFrame.executeJavaScript('1 + 1')")).to.equal(2);
+        expect(await w.executeJavaScript("webFrame.executeJavaScriptInIsolatedWorld(999, [{code: '1 + 1'}])")).to.equal(
+          2
+        );
       });
     });
   });

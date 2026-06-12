@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Baron <dbaron@chromium.org>
+Date: Thu, 7 May 2026 09:40:50 -0700
+Subject: Avoid setting attribute in SliderThumbElement constructor.
+
+This moves the setting of the id attribute for the SliderThumbElement to
+CreateShadowSubtree, which is the normal pattern.  This avoids this
+attribute setting getting in the way of having better CHECK()s in
+CloneAttributesFrom.
+
+Fixed: 510011627
+Bug: 496280532
+Change-Id: I8d08ef039a49d7ad3d070a673aec68cefe43d045
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7822939
+Commit-Queue: David Baron <dbaron@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1627001}
+
+diff --git a/third_party/blink/renderer/core/html/forms/range_input_type.cc b/third_party/blink/renderer/core/html/forms/range_input_type.cc
+index 6c786601769618954f0720726ba0e11db3894fff..6c257ddefb10463ccd3b4f03df7913f79157c1ad 100644
+--- a/third_party/blink/renderer/core/html/forms/range_input_type.cc
++++ b/third_party/blink/renderer/core/html/forms/range_input_type.cc
+@@ -276,7 +276,10 @@ void RangeInputType::CreateShadowSubtree() {
+   track->SetShadowPseudoId(shadow_element_names::kPseudoSliderTrack);
+   track->setAttribute(html_names::kIdAttr,
+                       shadow_element_names::kIdSliderTrack);
+-  track->AppendChild(MakeGarbageCollected<SliderThumbElement>(document));
++  auto* thumb = MakeGarbageCollected<SliderThumbElement>(document);
++  thumb->setAttribute(html_names::kIdAttr,
++                      shadow_element_names::kIdSliderThumb);
++  track->AppendChild(thumb);
+   auto* container = MakeGarbageCollected<SliderContainerElement>(document);
+   container->AppendChild(track);
+   GetElement().UserAgentShadowRoot()->AppendChild(container);
+diff --git a/third_party/blink/renderer/core/html/forms/slider_thumb_element.cc b/third_party/blink/renderer/core/html/forms/slider_thumb_element.cc
+index 083ef4d35b1f566628fc8ba84cba96fdc04c6fbd..dc36b2b26d23f6d43a2ef1b0797166b374bf022f 100644
+--- a/third_party/blink/renderer/core/html/forms/slider_thumb_element.cc
++++ b/third_party/blink/renderer/core/html/forms/slider_thumb_element.cc
+@@ -53,7 +53,6 @@ namespace blink {
+ SliderThumbElement::SliderThumbElement(Document& document)
+     : HTMLDivElement(document), in_drag_mode_(false) {
+   SetHasCustomStyleCallbacks();
+-  setAttribute(html_names::kIdAttr, shadow_element_names::kIdSliderThumb);
+ }
+ 
+ void SliderThumbElement::SetPositionFromValue() {
+diff --git a/third_party/blink/web_tests/wpt_internal/html/semantics/forms/the-input-element/crashtests/range-clone-node.html b/third_party/blink/web_tests/wpt_internal/html/semantics/forms/the-input-element/crashtests/range-clone-node.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..49d6fab6725548eeb6c53db2924794ad62c667c9
+--- /dev/null
++++ b/third_party/blink/web_tests/wpt_internal/html/semantics/forms/the-input-element/crashtests/range-clone-node.html
+@@ -0,0 +1,5 @@
++<!DOCTYPE HTML>
++<input type=range id=e>
++<script>
++internals.shadowRoot(document.getElementById("e")).getElementById("thumb").cloneNode(false)
++</script>

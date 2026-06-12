@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Thu, 16 Apr 2026 14:56:51 +0200
+Subject: [builtins] Fix Array.p.slice bailout threshold on arguments objects
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixed: 502830119
+Change-Id: Ia5b299cd9c33cabfe2a0647ff6a54e1942d6cd3f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7766691
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#106550}
+
+diff --git a/src/builtins/array-slice.tq b/src/builtins/array-slice.tq
+index 067262a9362f6076bc736883a3c7faa3a4a27dd5..0557958bfd3eba30de860c6d8fd6256747b650a9 100644
+--- a/src/builtins/array-slice.tq
++++ b/src/builtins/array-slice.tq
+@@ -3,12 +3,21 @@
+ // found in the LICENSE file.
+ 
+ namespace array {
++
++const kJSArrayHeaderSizeSlots:
++    constexpr int31 generates 'JSArray::kHeaderSize / kTaggedSize';
++
+ macro HandleSimpleArgumentsSlice(
+     context: NativeContext, args: JSArgumentsObjectWithLength, start: Smi,
+     count: Smi): JSArray
+     labels Bailout {
+   // If the resulting array doesn't fit in new space, use the slow path.
+-  if (count >= kMaxNewSpaceFixedArrayElements) goto Bailout;
++  // We subtract the JSArray header size to ensure the JSArray and elements
++  // allocation can be safely folded together into a single object.
++  if (count >= kMaxNewSpaceFixedArrayElements - kJSArrayHeaderSizeSlots) {
++    goto Bailout;
++  }
++
+ 
+   const end: Smi = start + count;
+   const sourceElements: FixedArray =
+@@ -32,7 +41,11 @@ macro HandleFastAliasedSloppyArgumentsSlice(
+     count: Smi): JSArray
+     labels Bailout {
+   // If the resulting array doesn't fit in new space, use the slow path.
+-  if (count >= kMaxNewSpaceFixedArrayElements) goto Bailout;
++  // We subtract the JSArray header size to ensure the JSArray and elements
++  // allocation can be safely folded together into a single object.
++  if (count >= kMaxNewSpaceFixedArrayElements - kJSArrayHeaderSizeSlots) {
++    goto Bailout;
++  }
+ 
+   const sloppyElements: SloppyArgumentsElements =
+       Cast<SloppyArgumentsElements>(args.elements) otherwise Bailout;

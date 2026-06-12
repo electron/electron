@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shunya Shishido <sisidovski@chromium.org>
+Date: Thu, 2 Apr 2026 22:18:24 -0700
+Subject: Restore `fallback_factory_` CreateLoaderAndStart call
+
+This was previously removed by crrev.com/c/7723101, but we would keep
+previous behavior with the killswitch.
+
+Bug: 497437113
+Change-Id: I409e66e0abc78c0aa5687bd8dc4378a5b0823b01
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7727919
+Reviewed-by: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Commit-Queue: Shunya Shishido <sisidovski@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1609669}
+
+diff --git a/content/common/service_worker/forwarded_race_network_request_url_loader_factory.cc b/content/common/service_worker/forwarded_race_network_request_url_loader_factory.cc
+index cfd03bec7e2f13b934d87337344ebbcf755d8400..83073ad98ccaae7c926a24c1904e3d14142eab6c 100644
+--- a/content/common/service_worker/forwarded_race_network_request_url_loader_factory.cc
++++ b/content/common/service_worker/forwarded_race_network_request_url_loader_factory.cc
+@@ -49,6 +49,12 @@ void ServiceWorkerForwardedRaceNetworkRequestURLLoaderFactory::
+       receiver_.ReportBadMessage(
+           "ServiceWorkerForwardedRaceNetworkRequestURLLoaderFactory: "
+           "CreateLoaderAndStart called multiple times.");
++    } else {
++      // If already fused, create a new URLLoader and start the new request.
++      // TODO(crbug.com/497437113): Remove this once the kill switch is removed.
++      fallback_factory_->CreateLoaderAndStart(
++          std::move(receiver), request_id, options, resource_request,
++          std::move(client), traffic_annotation);
+     }
+   }
+ }

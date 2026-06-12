@@ -2,8 +2,11 @@ import * as fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-async function main () {
-  const { positionals: [filename], values: { 'upload-stats': uploadStats } } = parseArgs({
+async function main() {
+  const {
+    positionals: [filename],
+    values: { 'upload-stats': uploadStats }
+  } = parseArgs({
     allowPositionals: true,
     options: {
       'upload-stats': {
@@ -26,10 +29,12 @@ async function main () {
     throw new Error('could not find stats=build.Stats in log');
   }
 
-  const stats = Object.fromEntries(match[1].split(',').map(part => {
-    const [key, value] = part.trim().split(':');
-    return [key, parseInt(value)];
-  }));
+  const stats = Object.fromEntries(
+    match[1].split(',').map((part) => {
+      const [key, value] = part.trim().split(':');
+      return [key, parseInt(value)];
+    })
+  );
   const hitRate = stats.CacheHit / (stats.Remote + stats.CacheHit + stats.LocalFallback);
 
   const messagePrefix = process.env.GITHUB_ACTIONS ? '::notice title=Build Stats::' : '';

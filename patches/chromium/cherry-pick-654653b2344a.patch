@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kalvin Lee <kdlee@chromium.org>
+Date: Tue, 31 Mar 2026 00:18:01 -0700
+Subject: Terracotta-Phase-1: Check size of `FILE_NOTIFY_INFORMATION`
+
+This CL is speculative. Please see the linked bug for details.
+
+Bug: 497095799
+Change-Id: Id78dc5298433994f834c20e30dd89c2278bb6689
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7711592
+Auto-Submit: Kalvin Lee <kdlee@chromium.org>
+Reviewed-by: Mingyu Lei <leimy@chromium.org>
+Commit-Queue: Mingyu Lei <leimy@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1607683}
+
+diff --git a/content/browser/file_system_access/file_path_watcher/file_path_watcher_win.cc b/content/browser/file_system_access/file_path_watcher/file_path_watcher_win.cc
+index a9c672a8eb67434a323b76f7ec937cfdee35acb5..f8c81660547dae115f20b10d336b231462381a05 100644
+--- a/content/browser/file_system_access/file_path_watcher/file_path_watcher_win.cc
++++ b/content/browser/file_system_access/file_path_watcher/file_path_watcher_win.cc
+@@ -8,6 +8,7 @@
+ 
+ #include <winnt.h>
+ 
++#include <cstddef>
+ #include <cstdint>
+ #include <map>
+ #include <memory>
+@@ -648,6 +649,17 @@ void FilePathWatcherImpl::ProcessNotificationBatch(
+     const auto& file_notify_info =
+         *reinterpret_cast<FILE_NOTIFY_INFORMATION*>(sub_span.data());
+ 
++    // `FILE_NOTIFY_INFORMATION` is a variable-length struct. Make note
++    // of the size of the current `file_notify_info` to ensure that
++    // we're not running off the end of `sub_span`.
++    const size_t file_name_bytes =
++        file_notify_info.FileNameLength / sizeof(wchar_t);
++    if (file_name_bytes + offsetof(FILE_NOTIFY_INFORMATION, FileNameLength) >
++        sub_span.size_bytes()) {
++      // Malformed info.
++      break;
++    }
++
+     has_next_entry = file_notify_info.NextEntryOffset != 0;
+     if (has_next_entry) {
+       sub_span = sub_span.subspan(file_notify_info.NextEntryOffset);

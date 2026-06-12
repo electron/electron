@@ -8,13 +8,14 @@ import { webFrame } from 'electron/renderer';
 const { contextIsolationEnabled } = internalContextBridge;
 
 /* Corrects for some Inspector adaptations needed in Electron.
-* 1) Use menu API to show context menu.
-*/
+ * 1) Use menu API to show context menu.
+ */
 window.onload = function () {
   if (contextIsolationEnabled) {
-    internalContextBridge.tryOverrideGlobalValueFromIsolatedWorld([
-      'InspectorFrontendHost', 'showContextMenuAtPoint'
-    ], createMenu);
+    internalContextBridge.tryOverrideGlobalValueFromIsolatedWorld(
+      ['InspectorFrontendHost', 'showContextMenuAtPoint'],
+      createMenu
+    );
   } else {
     window.InspectorFrontendHost!.showContextMenuAtPoint = createMenu;
   }
@@ -26,16 +27,19 @@ window.confirm = function (message?: string, title?: string) {
 };
 
 const useEditMenuItems = function (x: number, y: number, items: ContextMenuItem[]) {
-  return items.length === 0 && document.elementsFromPoint(x, y).some(element => {
-    return element.nodeName === 'INPUT' ||
-      element.nodeName === 'TEXTAREA' ||
-      (element as HTMLElement).isContentEditable;
-  });
+  return (
+    items.length === 0 &&
+    document.elementsFromPoint(x, y).some((element) => {
+      return (
+        element.nodeName === 'INPUT' || element.nodeName === 'TEXTAREA' || (element as HTMLElement).isContentEditable
+      );
+    })
+  );
 };
 
 const createMenu = function (x: number, y: number, items: ContextMenuItem[]) {
   const isEditMenu = useEditMenuItems(x, y, items);
-  ipcRendererInternal.invoke<number>(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, items, isEditMenu).then(id => {
+  ipcRendererInternal.invoke<number>(IPC_MESSAGES.INSPECTOR_CONTEXT_MENU, items, isEditMenu).then((id) => {
     if (typeof id === 'number') {
       webFrame.executeJavaScript(`window.DevToolsAPI.contextMenuItemSelected(${JSON.stringify(id)})`);
     }

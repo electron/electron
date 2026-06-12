@@ -1,8 +1,7 @@
 self.addEventListener('fetch', async function (event) {
   const requestUrl = new URL(event.request.url);
   let responseTxt;
-  if (requestUrl.pathname === '/echo' &&
-    event.request.headers.has('X-Mock-Response')) {
+  if (requestUrl.pathname === '/echo' && event.request.headers.has('X-Mock-Response')) {
     if (requestUrl.search === '?setBadge') {
       if (navigator.setAppBadge()) {
         try {

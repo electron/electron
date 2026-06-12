@@ -1,8 +1,8 @@
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 
-type IPCHandler = (event: Electron.IpcRendererEvent, ...args: any[]) => any
+type IPCHandler = (event: Electron.IpcRendererEvent, ...args: any[]) => any;
 
-export const handle = function <T extends IPCHandler> (channel: string, handler: T) {
+export const handle = function <T extends IPCHandler>(channel: string, handler: T) {
   ipcRendererInternal.on(channel, async (event, requestId, ...args) => {
     const replyChannel = `${channel}_RESPONSE_${requestId}`;
     try {
@@ -13,7 +13,7 @@ export const handle = function <T extends IPCHandler> (channel: string, handler:
   });
 };
 
-export function invokeSync<T> (command: string, ...args: any[]): T {
+export function invokeSync<T>(command: string, ...args: any[]): T {
   const [error, result] = ipcRendererInternal.sendSync(command, ...args);
 
   if (error) {

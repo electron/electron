@@ -40,10 +40,14 @@ BrowserWindow.prototype._init = function (this: BWT) {
   let unresponsiveEvent: NodeJS.Timeout | null = null;
   const emitUnresponsiveEvent = () => {
     unresponsiveEvent = null;
-    if (!this.isDestroyed() && this.isEnabled()) { this.emit('unresponsive'); }
+    if (!this.isDestroyed() && this.isEnabled()) {
+      this.emit('unresponsive');
+    }
   };
   this.webContents.on('unresponsive', () => {
-    if (!unresponsiveEvent) { unresponsiveEvent = setTimeout(emitUnresponsiveEvent, 50); }
+    if (!unresponsiveEvent) {
+      unresponsiveEvent = setTimeout(emitUnresponsiveEvent, 50);
+    }
   });
   this.webContents.on('responsive', () => {
     if (unresponsiveEvent) {
@@ -83,16 +87,16 @@ BrowserWindow.prototype._init = function (this: BWT) {
   this._browserViews = [];
 
   this.on('closed', () => {
-    this._browserViews.forEach(b => b.webContents?.close({ waitForBeforeUnload: true }));
+    this._browserViews.forEach((b) => b.webContents?.close({ waitForBeforeUnload: true }));
   });
 
   // Notify the creation of the window.
-  app.emit('browser-window-created', { preventDefault () {} }, this);
+  app.emit('browser-window-created', { preventDefault() {} }, this);
 
   Object.defineProperty(this, 'devToolsWebContents', {
     enumerable: true,
     configurable: false,
-    get () {
+    get() {
       return this.webContents.devToolsWebContents;
     }
   });
@@ -104,7 +108,7 @@ const isBrowserWindow = (win: any) => {
 
 BrowserWindow.fromId = (id: number) => {
   const win = BaseWindow.fromId(id);
-  return isBrowserWindow(win) ? win as any as BWT : null;
+  return isBrowserWindow(win) ? (win as any as BWT) : null;
 };
 
 BrowserWindow.getAllWindows = () => {
@@ -214,10 +218,12 @@ BrowserWindow.prototype.addBrowserView = function (browserView: BrowserView) {
 };
 
 BrowserWindow.prototype.setBrowserView = function (browserView: BrowserView) {
-  this._browserViews.forEach(bv => {
+  this._browserViews.forEach((bv) => {
     this.removeBrowserView(bv);
   });
-  if (browserView) { this.addBrowserView(browserView); }
+  if (browserView) {
+    this.addBrowserView(browserView);
+  }
 };
 
 BrowserWindow.prototype.removeBrowserView = function (browserView: BrowserView) {

@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yuki Shiino <yukishiino@chromium.org>
+Date: Tue, 24 Mar 2026 17:12:26 -0700
+Subject: Harden error check in GLTextureHolder::UploadFromMemory
+
+Promotes a DCHECK to CHECK because we may possibly hit this case
+in runtime. It's maybe possible to hit integer overflow in
+gles2::GLES2Util::ComputeImageDataSizes.
+
+Bug: 495314407
+Change-Id: I937bef8584294154dbb1badf8dcc100f8c3e8b53
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7695370
+Auto-Submit: Yuki Shiino <yukishiino@chromium.org>
+Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1604490}
+
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+index 19517b12fb5903398089e32c747697c8715c28d1..36bd1119721ac6214d7caa617b3fa595af68f591 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
++++ b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+@@ -282,7 +282,7 @@ bool GLTextureHolder::UploadFromMemory(const SkPixmap& pixmap) {
+   bool result = gles2::GLES2Util::ComputeImageDataSizes(
+       size_.width(), size_.height(), /*depth=*/1, gl_format, gl_type,
+       gl_unpack_alignment, &expected_total_bytes, nullptr, &expected_stride);
+-  DCHECK(result);
++  CHECK(result);
+   DCHECK_GE(src_total_bytes, expected_total_bytes);
+   DCHECK_GE(src_stride, expected_stride);
+ 
+@@ -391,7 +391,7 @@ bool GLTextureHolder::ReadbackToMemory(const SkPixmap& pixmap) {
+   bool result = gles2::GLES2Util::ComputeImageDataSizes(
+       size_.width(), size_.height(), /*depth=*/1, gl_format, gl_type,
+       gl_pack_alignment, &expected_total_bytes, nullptr, &expected_stride);
+-  DCHECK(result);
++  CHECK(result);
+   DCHECK_GE(pixmap.computeByteSize(), expected_total_bytes);
+   DCHECK_GE(dst_stride, expected_stride);
+ 

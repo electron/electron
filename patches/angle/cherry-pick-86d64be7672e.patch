@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 23 Mar 2026 13:38:34 -0400
+Subject: Translator: Fix codegen of switch with empty last case
+
+... which is not actually allowed, except may be introduced to the AST
+by transformations that remove dead code.  The parser in this change
+makes sure the switch ends in some branch just in case.
+
+To pass the unit tests, PruneEmptyCases is improved to consider cases
+whose only code is "break" as empty.
+
+Bug: angleproject:488064108
+Change-Id: I728ee897b82a9a15d4c778839480969f3f743ace
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7694532
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index e04d27fe695caba55bb29f94c7425d4ecc3d2344..8f66b124df97af651444914e080a015883ea19e8 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -7981,6 +7981,19 @@ TIntermSwitch *TParseContext::addSwitch(TIntermTyped *init,
+         return nullptr;
+     }
+ 
++    // In case the last statement isn't already a branch, add |break| automatically.  Some AST
++    // transformations may dead-code-eliminate the contents of the last |case| and leave the switch
++    // statements ending in a case (which is what the check above forbids).  Most generators do not
++    // handle this unexpected situation.
++    //
++    // Note that a branch may be present inside a nested block, but that's ok, the extra branch
++    // added here gets eliminated in |PruneNoOps|.
++    if (statementCount > 0 &&
++        statementList->getChildNode(statementCount - 1)->getAsBranchNode() == nullptr)
++    {
++        statementList->appendStatement(new TIntermBranch(EOpBreak, nullptr));
++    }
++
+     mIRBuilder.endSwitch();
+ 
+     markStaticUseIfSymbol(init);
+diff --git a/src/compiler/translator/tree_ops/PruneEmptyCases.cpp b/src/compiler/translator/tree_ops/PruneEmptyCases.cpp
+index 276c8c98ed6d0312de096a1c5ec01eaf98fb9403..374438c0e4eaed7ef2f85e89e43f4896e913b13e 100644
+--- a/src/compiler/translator/tree_ops/PruneEmptyCases.cpp
++++ b/src/compiler/translator/tree_ops/PruneEmptyCases.cpp
+@@ -79,10 +79,18 @@ bool PruneEmptyCasesTraverser::visitSwitch(Visit visit, TIntermSwitch *node)
+     // blocks are marked for pruning.
+     size_t i                       = statements->size();
+     size_t lastNoOpInStatementList = i;
++
+     while (i > 0)
+     {
+         --i;
+         TIntermNode *statement = statements->at(i);
++
++        // Ignore the last |break| for the purposes of this pruning
++        if (i + 1 == statements->size() && statement->getAsBranchNode() != nullptr &&
++            statement->getAsBranchNode()->getFlowOp() == EOpBreak)
++        {
++            continue;
++        }
+         if (statement->getAsCaseNode() || IsEmptyBlock(statement))
+         {
+             lastNoOpInStatementList = i;
+@@ -111,7 +119,24 @@ bool PruneEmptyCasesTraverser::visitSwitch(Visit visit, TIntermSwitch *node)
+     }
+     if (lastNoOpInStatementList < statements->size())
+     {
+-        statements->erase(statements->begin() + lastNoOpInStatementList, statements->end());
++        // The extra cases can only be removed if there is no |default|, otherwise dropping them
++        // changes the cases that land in |default|.
++        bool hasDefault = false;
++        for (i = 0; i < lastNoOpInStatementList; ++i)
++        {
++            TIntermNode *statement = statements->at(i);
++            if (statement->getAsCaseNode() != nullptr &&
++                !statement->getAsCaseNode()->hasCondition())
++            {
++                hasDefault = true;
++                break;
++            }
++        }
++
++        if (!hasDefault)
++        {
++            statements->erase(statements->begin() + lastNoOpInStatementList, statements->end());
++        }
+     }
+ 
+     return true;
+diff --git a/src/tests/compiler_tests/PrunePureLiteralStatements_test.cpp b/src/tests/compiler_tests/PrunePureLiteralStatements_test.cpp
+index 910ccc519fa7a0f8673a3fdb18edb8f9eb344e53..a97651499ad9e8d162d6307f3e1d92382954b7ba 100644
+--- a/src/tests/compiler_tests/PrunePureLiteralStatements_test.cpp
++++ b/src/tests/compiler_tests/PrunePureLiteralStatements_test.cpp
+@@ -143,9 +143,10 @@ TEST_F(PrunePureLiteralStatementsTest, SwitchLiteralExpressionOnlyLastCase)
+         "    }\n"
+         "}\n";
+     compile(shaderString);
+-    ASSERT_TRUE(foundInCode("default"));
+-    ASSERT_TRUE(foundInCode("case"));
++    ASSERT_TRUE(notFoundInCode("default"));
++    ASSERT_TRUE(notFoundInCode("case"));
+     ASSERT_TRUE(notFoundInCode("42"));
++    ASSERT_TRUE(notFoundInCode("switch"));
+ }
+ 
+ // Test that the pruning correctly handles the pruning inside switch statements - pruning isn't

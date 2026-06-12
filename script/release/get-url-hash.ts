@@ -5,7 +5,7 @@ import * as url from 'node:url';
 const HASHER_FUNCTION_HOST = 'electron-hasher.azurewebsites.net';
 const HASHER_FUNCTION_ROUTE = '/api/hashRemoteAsset';
 
-export async function getUrlHash (targetUrl: string, algorithm = 'sha256', attempts = 3) {
+export async function getUrlHash(targetUrl: string, algorithm = 'sha256', attempts = 3) {
   const options = {
     code: process.env.ELECTRON_HASHER_FUNCTION_KEY!,
     targetUrl,
@@ -46,4 +46,4 @@ export async function getUrlHash (targetUrl: string, algorithm = 'sha256', attem
     }
     throw err;
   }
-};
+}

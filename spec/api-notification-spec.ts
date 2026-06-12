@@ -75,7 +75,8 @@ describe('Notification module', () => {
         {
           type: 'button',
           text: '1'
-        }, {
+        },
+        {
           type: 'button',
           text: '2'
         }
@@ -92,7 +93,8 @@ describe('Notification module', () => {
       {
         type: 'button',
         text: '3'
-      }, {
+      },
+      {
         type: 'button',
         text: '4'
       }

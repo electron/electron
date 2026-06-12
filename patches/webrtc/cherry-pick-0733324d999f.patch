@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gyuyoung Kim <qkim@google.com>
+Date: Mon, 27 Apr 2026 06:46:14 +0000
+Subject: [M144-LTS][Pipewire] Fix mouse cursor data race.
+
+This addresses a potential data race when the mouse cursor is updated
+on the Pipewire thread and read by the capture thread.
+
+No-try: true
+Bug: chromium:504551032
+Change-Id: I50f417bab454d009801ad30c760a009d50ec5a6f
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/465440
+Reviewed-by: Tomas Gunnarsson <tommi@webrtc.org>
+Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+Auto-Submit: Mark Foltz <mfoltz@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#47502}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/467620
+Reviewed-by: Mark Foltz <mfoltz@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7559@{#5}
+Cr-Branched-From: f680c1893f3b166b370439da52ae82d02f54969c-refs/heads/main@{#46356}
+
+diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+index 070257f072b4772e930fac554ba9d6b8ada29dc9..9cd19cbe993958f4a56bf805fb97388daccd4e0c 100644
+--- a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
++++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+@@ -123,8 +123,9 @@ class SharedScreenCastStreamPrivate {
+   Mutex latest_frame_lock_ RTC_ACQUIRED_AFTER(queue_lock_);
+   SharedDesktopFrame* latest_available_frame_
+       RTC_GUARDED_BY(&latest_frame_lock_) = nullptr;
+-  std::unique_ptr<MouseCursor> mouse_cursor_;
+-  DesktopVector mouse_cursor_position_ = DesktopVector(-1, -1);
++  std::unique_ptr<MouseCursor> mouse_cursor_ RTC_GUARDED_BY(&latest_frame_lock_);
++  DesktopVector mouse_cursor_position_ RTC_GUARDED_BY(&latest_frame_lock_) =
++      DesktopVector(-1, -1);
+ 
+   int64_t modifier_;
+   std::unique_ptr<EglDmaBuf> egl_dmabuf_;
+@@ -691,6 +692,7 @@ SharedScreenCastStreamPrivate::CaptureFrame() {
+ }
+ 
+ std::unique_ptr<MouseCursor> SharedScreenCastStreamPrivate::CaptureCursor() {
++  MutexLock latest_frame_lock(&latest_frame_lock_);
+   if (!mouse_cursor_) {
+     return nullptr;
+   }
+@@ -699,6 +701,7 @@ std::unique_ptr<MouseCursor> SharedScreenCastStreamPrivate::CaptureCursor() {
+ }
+ 
+ DesktopVector SharedScreenCastStreamPrivate::CaptureCursorPosition() {
++  MutexLock latest_frame_lock(&latest_frame_lock_);
+   return mouse_cursor_position_;
+ }
+ 
+@@ -770,20 +773,28 @@ void SharedScreenCastStreamPrivate::ProcessBuffer(pw_buffer* buffer) {
+           mouse_frame->CopyPixelsFrom(
+               bitmap_data, bitmap->stride,
+               DesktopRect::MakeWH(bitmap->size.width, bitmap->size.height));
+-          mouse_cursor_ = std::make_unique<MouseCursor>(
+-              mouse_frame, DesktopVector(cursor->hotspot.x, cursor->hotspot.y));
++          {
++            MutexLock latest_frame_lock(&latest_frame_lock_);
++            mouse_cursor_ = std::make_unique<MouseCursor>(
++                mouse_frame,
++                DesktopVector(cursor->hotspot.x, cursor->hotspot.y));
++          }
+ 
+           if (observer_) {
+             observer_->OnCursorShapeChanged();
+           }
+         }
+-        mouse_cursor_position_.set(cursor->position.x, cursor->position.y);
++        {
++          MutexLock latest_frame_lock(&latest_frame_lock_);
++          mouse_cursor_position_.set(cursor->position.x, cursor->position.y);
++        }
+ 
+         if (observer_) {
+           observer_->OnCursorPositionChanged();
+         }
+       } else {
+         // Indicate an invalid cursor
++        MutexLock latest_frame_lock(&latest_frame_lock_);
+         mouse_cursor_position_.set(-1, -1);
+       }
+     }

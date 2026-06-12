@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kent Tamura <tkent@chromium.org>
+Date: Tue, 21 Apr 2026 19:56:16 -0700
+Subject: Workaround of a ubidi_getLogicalRun() issue
+
+A crash can occur within ICU's `ubidi_getLogicalRun()` function when
+processing strings where `text.length() * N` exceeds the maximum value
+of `int32_t`, where `N` represents the size of an internal ICU struct
+(approximately 12 bytes, derived from `sizeof(int32_t) * 3`).
+
+This CL adds `CHECK_LE` assertions in `BidiParagraph::SetParagraph` and
+`BiDiLineIterator::Open` to limit the input string length. This ensures
+that the string length, when multiplied by the ICU internal factor, does
+not cause an integer overflow.
+
+This is a temporary workaround until the underlying issue in ICU is
+fixed and the updated library is rolled out.
+
+No dedicated tests are included in this CL, as reproducing the overflow
+requires constructing extremely large strings, which is impractical for
+standard unit tests.
+
+Fixed: 504629701
+Change-Id: Ica350078f0f3809012e957afb37c5985d9765d5c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7781344
+Reviewed-by: Nico Weber <thakis@chromium.org>
+Auto-Submit: Kent Tamura <tkent@chromium.org>
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1618626}
+
+diff --git a/third_party/blink/renderer/platform/text/bidi_paragraph.cc b/third_party/blink/renderer/platform/text/bidi_paragraph.cc
+index 93b1e0a3d0c00875d86f2f90cdcf30f7e624a335..8f7e8dc293e34592fff5024a058c2b45bfb0a705 100644
+--- a/third_party/blink/renderer/platform/text/bidi_paragraph.cc
++++ b/third_party/blink/renderer/platform/text/bidi_paragraph.cc
+@@ -13,6 +13,12 @@ namespace blink {
+ 
+ bool BidiParagraph::SetParagraph(const String& text,
+                                  std::optional<TextDirection> base_direction) {
++  // A workaround for integer overflow in ICU. See crbug.com/504629701.
++  // We can remove this after fixing the ICU issue, and rolling out the ICU
++  // update.
++  constexpr size_t kIcuRunSize = sizeof(int32_t) * 3;
++  CHECK_LE(text.length(), std::numeric_limits<int32_t>::max() / kIcuRunSize);
++
+   DCHECK(!text.IsNull());
+   if (!ubidi_) {
+     ubidi_ = UBidiPtr(ubidi_open());
+diff --git a/ui/gfx/bidi_line_iterator.cc b/ui/gfx/bidi_line_iterator.cc
+index 2fc1f285aa907bd979ccd3a90e4ddbe5f513474f..fc0b0a2d78829448d30496b412e01d67134cd2fd 100644
+--- a/ui/gfx/bidi_line_iterator.cc
++++ b/ui/gfx/bidi_line_iterator.cc
+@@ -5,6 +5,7 @@
+ #include "ui/gfx/bidi_line_iterator.h"
+ 
+ #include "base/check.h"
++#include "base/check_op.h"
+ #include "base/notreached.h"
+ 
+ namespace ui {
+@@ -32,6 +33,12 @@ BiDiLineIterator::~BiDiLineIterator() = default;
+ 
+ bool BiDiLineIterator::Open(std::u16string_view text,
+                             base::i18n::TextDirection direction) {
++  // A workaround for integer overflow in ICU. See crbug.com/504629701.
++  // We can remove this after fixing the ICU issue, and rolling out the ICU
++  // update.
++  constexpr size_t kIcuRunSize = sizeof(int32_t) * 3;
++  CHECK_LE(text.length(), std::numeric_limits<int32_t>::max() / kIcuRunSize);
++
+   DCHECK(!bidi_);
+   UErrorCode error = U_ZERO_ERROR;
+   bidi_.reset(ubidi_openSized(static_cast<int>(text.length()), 0, &error));

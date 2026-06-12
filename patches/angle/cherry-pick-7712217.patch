@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charlie Lao <cclao@google.com>
+Date: Mon, 30 Mar 2026 12:01:45 -0700
+Subject: Vulkan: Fix heap-buffer-overflow in convertVertexBufferCPU
+
+There was a bug in vulkan backend
+VertexArrayVk::convertVertexBufferCPU() that it streams more data than
+buffer it allocates. A test has been added to expose the
+heap-buffer-overflow bug. The bug is also fixed in the CL.
+
+Bug: b/496503799
+Change-Id: I79f8619699a9c82ea7d35e4849edfb91866c3623
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7712217
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Charlie Lao <cclao@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+index dc3b832ac0d4d0a2a530ca7fe28e1066648ccaf3..e96a7db8ee87a6d361c12e3439a98020f5a17d49 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+@@ -719,17 +719,21 @@ angle::Result VertexArrayVk::convertVertexBufferCPU(ContextVk *contextVk,
+                 continue;
+             }
+ 
++            // Use numVertices instead of maxNumVertices to calculate bytesToCopy to avoid buffer
++            // overrun.
+             uint32_t srcOffset, dstOffset, numVertices;
+             CalculateOffsetAndVertexCountForDirtyRange(srcBuffer, conversion, srcFormat, dstFormat,
+                                                        dirtyRange, &srcOffset, &dstOffset,
+                                                        &numVertices);
++            ASSERT(numVertices <= maxNumVertices);
+ 
+             if (numVertices > 0)
+             {
+                 const uint8_t *srcBytes = src + srcOffset;
+-                size_t bytesToCopy      = maxNumVertices * dstFormat.pixelBytes;
++
++                size_t bytesToCopy = numVertices * dstFormat.pixelBytes;
+                 ANGLE_TRY(StreamVertexData(contextVk, conversion->getBuffer(), srcBytes,
+-                                           bytesToCopy, dstOffset, maxNumVertices, srcStride,
++                                           bytesToCopy, dstOffset, numVertices, srcStride,
+                                            vertexLoadFunction));
+             }
+         }
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 6659512c2e33e5296a8a814f426f0fc09a1f0cd0..f616328d5fe7a71aec5755653cf468b788b342a7 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -2152,6 +2152,8 @@
+ 
+ // WebGPU does not support BGRA
+ 42267264 WGPU : ClearTest.*BGRA* = SKIP
++// WebGPU error BufferOffset (5242862) is not a multiple of 4.
++496503799 WGPU : BufferDataTest.UnalignedVertexAttribPointer/* = SKIP
+ 
+ // Fails on Mac & OpenGL & NVIDIA
+ 406807990 MAC NVIDIA OPENGL : TextureUploadFormatTest_ES3.AllWithPBO/* = SKIP
+diff --git a/src/tests/gl_tests/BufferDataTest.cpp b/src/tests/gl_tests/BufferDataTest.cpp
+index f9960a42077b54557e7e4ad4de16d3d8bd9287b1..fc4e76c18c64b69bf6af2e556f092217a6e6e72e 100644
+--- a/src/tests/gl_tests/BufferDataTest.cpp
++++ b/src/tests/gl_tests/BufferDataTest.cpp
+@@ -1376,6 +1376,67 @@ void main()
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::cyan);
+ }
+ 
++// Tests unaligned vertex attribute pointer, which should get to convertVertexBufferCPU in vulkan
++// backend.
++TEST_P(BufferDataTest, UnalignedVertexAttribPointer)
++{
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), essl1_shaders::fs::UniformColor());
++    glUseProgram(program);
++
++    GLint positionLocation = glGetAttribLocation(program, essl1_shaders::PositionAttrib());
++    ASSERT_NE(positionLocation, -1);
++    glEnableVertexAttribArray(positionLocation);
++
++    GLint colorUniformLocation =
++        glGetUniformLocation(program, angle::essl1_shaders::ColorUniform());
++    ASSERT_NE(colorUniformLocation, -1);
++
++    // Allocate 8MB buffer to force non sub-allocation path
++    constexpr GLsizeiptr kBufferSize = 8 * 1024 * 1024;
++    std::vector<uint8_t> initialData(kBufferSize, 0);
++
++    GLBuffer positionBuffer;
++    glBindBuffer(GL_ARRAY_BUFFER, positionBuffer);
++    glBufferData(GL_ARRAY_BUFFER, kBufferSize, initialData.data(), GL_DYNAMIC_DRAW);
++
++    // Trigger CPU downgrade conversion with unaligned stride/offset
++    const GLsizei stride      = 13;
++    const GLintptr offset     = 1;
++    const GLint components    = 3;
++    const GLsizei typeSize    = sizeof(GLfloat);
++    const GLsizei elementSize = components * typeSize;  // 12
++
++    // Calculate vertexCount equivalent to Math.floor in JS
++    GLsizei vertexCount     = (kBufferSize - offset - elementSize) / stride + 1;
++    GLsizei quadVertexCount = (vertexCount / 6) * 6;
++    GLsizei firstVertex     = vertexCount - quadVertexCount;
++
++    glVertexAttribPointer(positionLocation, components, GL_FLOAT, GL_FALSE, stride,
++                          reinterpret_cast<const void *>(offset));
++
++    // First draw: establishes the conversion buffer
++    glDrawArrays(GL_TRIANGLES, firstVertex, quadVertexCount);
++    // CRITICAL: glFinish() forces GPU pipeline flush, preventing buffer reallocation
++    glFinish();
++
++    // SubData near the end - must be >= 12 bytes to break ANGLE's dirty-range short-circuit
++    const std::array<Vector3, 6> &quadVertices = GetQuadVertices();
++    std::vector<uint8_t> updateData(stride * 6);
++    for (int vertexIndex = 0; vertexIndex < 6; vertexIndex++)
++    {
++        memcpy(updateData.data() + stride * vertexIndex, quadVertices[vertexIndex].data(),
++               quadVertices[vertexIndex].size() * sizeof(float));
++    }
++    GLintptr lastQuadVertexStartPtr = offset + (vertexCount - 6) * stride;
++    glBufferSubData(GL_ARRAY_BUFFER, lastQuadVertexStartPtr, updateData.size(), updateData.data());
++
++    // Draw green quad. This should trigger partial update but should not access out of bounds
++    glClear(GL_COLOR_BUFFER_BIT);
++    glUniform4fv(colorUniformLocation, 1, &kFloatGreen.R);
++    glDrawArrays(GL_TRIANGLES, firstVertex, quadVertexCount);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::green);
++}
++
+ // Verify that previous draws are not affected when a buffer is respecified with null data
+ // and updated by calling map.
+ TEST_P(BufferDataTestES3, BufferDataWithNullFollowedByMap)

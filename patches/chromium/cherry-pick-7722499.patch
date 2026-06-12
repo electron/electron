@@ -1,0 +1,120 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jacques Newman <janewman@microsoft.com>
+Date: Thu, 2 Apr 2026 08:57:32 -0700
+Subject: [a11y] Fix type confusion in get_hyperlink
+
+Replace unchecked static_cast with COM QueryInterface in
+get_hyperlink(). The old code cast an AXPlatformNode* from the
+process-wide UniqueIdMap directly to BrowserAccessibilityComWin*
+without verifying the type. If a stale unique ID was reassigned
+to a different node type, this produced an invalid pointer.
+
+QueryInterface for IAccessibleHyperlink returns E_NOINTERFACE
+for nodes that don't implement it, preventing the bad cast.
+
+Also invalidate the parent iframe's hypertext cache when a child
+frame's BrowserAccessibilityManager detaches. Without this, the
+parent retains stale unique IDs in its hyperlinks array.
+
+Fixed: 498401609
+Change-Id: I859b2aafa9383a6fbbce73d76226ef9f95fedca5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7722499
+Reviewed-by: Benjamin Beaudry <benjamin.beaudry@microsoft.com>
+Commit-Queue: Jacques Newman <janewman@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1609259}
+
+diff --git a/ui/accessibility/platform/browser_accessibility_com_win.cc b/ui/accessibility/platform/browser_accessibility_com_win.cc
+index 880b148f6641308999264a8463303ba2582d5943..ad38a0716e10c8c3dde6582db6e32fd5251b8c38 100644
+--- a/ui/accessibility/platform/browser_accessibility_com_win.cc
++++ b/ui/accessibility/platform/browser_accessibility_com_win.cc
+@@ -563,11 +563,13 @@ IFACEMETHODIMP BrowserAccessibilityComWin::get_hyperlink(
+                << "\nroot=" << manager->GetRootManager()->GetRoot();
+     return E_FAIL;
+   }
+-  auto* link = static_cast<BrowserAccessibilityComWin*>(node);
+-  if (!link)
++  Microsoft::WRL::ComPtr<IAccessibleHyperlink> hyperlink_result;
++  if (FAILED(node->GetNativeViewAccessible()->QueryInterface(
++          IID_PPV_ARGS(&hyperlink_result)))) {
+     return E_FAIL;
++  }
+ 
+-  *hyperlink = static_cast<IAccessibleHyperlink*>(link->NewReference());
++  *hyperlink = hyperlink_result.Detach();
+   return S_OK;
+ }
+ 
+diff --git a/ui/accessibility/platform/browser_accessibility_manager.cc b/ui/accessibility/platform/browser_accessibility_manager.cc
+index ecb5de88fcd490881df98dcc265f45853d889673..82f3ffa9530d2ecc0142da04a07cd52d528fca23 100644
+--- a/ui/accessibility/platform/browser_accessibility_manager.cc
++++ b/ui/accessibility/platform/browser_accessibility_manager.cc
+@@ -1899,6 +1899,13 @@ BrowserAccessibility* BrowserAccessibilityManager::ApproximateHitTest(
+ }
+ 
+ void BrowserAccessibilityManager::DetachFromParentManager() {
++  // Notify the parent to invalidate its hypertext cache before disconnecting,
++  // otherwise stale hyperlink IDs can cause type confusion after reassignment.
++  if (connected_to_parent_tree_node_) {
++    if (AXNode* parent = GetParentNodeFromParentTree()) {
++      UpdateAttributesOnParent(parent);
++    }
++  }
+   connected_to_parent_tree_node_ = false;
+ }
+ 
+diff --git a/ui/accessibility/platform/browser_accessibility_win_unittest.cc b/ui/accessibility/platform/browser_accessibility_win_unittest.cc
+index 3f863afa8eee270c3caeda831f19e72dca000383..8f6753b750f6de0b9bc0dc2720e179e92f9c008d 100644
+--- a/ui/accessibility/platform/browser_accessibility_win_unittest.cc
++++ b/ui/accessibility/platform/browser_accessibility_win_unittest.cc
+@@ -3775,4 +3775,51 @@ TEST_F(BrowserAccessibilityWinTest, OnExtendedPropertiesUsedAfterDestruction) {
+   text_field_node->SetDelegateForTesting(pre_delegate);
+ }
+ 
++// Regression test for type confusion fix: verify get_hyperlink uses
++// QueryInterface and returns correct results for valid hyperlinks.
++TEST_F(BrowserAccessibilityWinTest, TestHyperlinkSafeTypeCheck) {
++  AXNodeData root;
++  root.id = 1;
++  root.role = ax::mojom::Role::kRootWebArea;
++  root.AddState(ax::mojom::State::kFocusable);
++
++  AXNodeData text;
++  text.id = 2;
++  text.role = ax::mojom::Role::kStaticText;
++  text.SetName("Hello ");
++
++  AXNodeData link;
++  link.id = 3;
++  link.role = ax::mojom::Role::kLink;
++  link.AddState(ax::mojom::State::kFocusable);
++  link.AddState(ax::mojom::State::kLinked);
++  link.SetName("world");
++  link.SetNameFrom(ax::mojom::NameFrom::kContents);
++
++  root.child_ids = {text.id, link.id};
++
++  std::unique_ptr<BrowserAccessibilityManager> manager(
++      BrowserAccessibilityManager::Create(
++          MakeAXTreeUpdateForTesting(root, text, link), node_id_delegate_,
++          test_browser_accessibility_delegate_.get()));
++
++  BrowserAccessibilityComWin* root_obj =
++      ToBrowserAccessibilityWin(manager->GetBrowserAccessibilityRoot())
++          ->GetCOM();
++
++  LONG hyperlink_count = -1;
++  EXPECT_EQ(S_OK, root_obj->get_nHyperlinks(&hyperlink_count));
++  EXPECT_EQ(1, hyperlink_count);
++
++  Microsoft::WRL::ComPtr<IAccessibleHyperlink> hyperlink;
++  EXPECT_EQ(S_OK, root_obj->get_hyperlink(0, &hyperlink));
++  EXPECT_NE(nullptr, hyperlink.Get());
++  hyperlink.Reset();
++
++  EXPECT_EQ(E_INVALIDARG, root_obj->get_hyperlink(1, &hyperlink));
++  EXPECT_EQ(E_INVALIDARG, root_obj->get_hyperlink(-1, &hyperlink));
++
++  manager.reset();
++}
++
+ }  // namespace ui

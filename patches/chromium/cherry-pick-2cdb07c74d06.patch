@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisto Yanagisawa <yyanagisawa@chromium.org>
+Date: Tue, 12 May 2026 09:17:51 -0700
+Subject: Enable ServiceWorkerStaticRouterCORPCheck and OpaqueCheck by default
+
+This CL enables kServiceWorkerStaticRouterCORPCheck and
+kServiceWorkerStaticRouterOpaqueCheck by default. We have confirmed
+that no significant issues occurred during the trial period.
+
+Bug: 495999481, 497436273
+Change-Id: I804191da030e03d67a846b781213d38e4ea8af9e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7838959
+Auto-Submit: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Commit-Queue: Charlie Reis <creis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1629375}
+
+diff --git a/content/common/features.cc b/content/common/features.cc
+index 64918087f210f5657cecf3ab55ad5537fd3d3ae1..878f5c799b9add287ad78cc175df3935c459058d 100644
+--- a/content/common/features.cc
++++ b/content/common/features.cc
+@@ -643,13 +643,13 @@ BASE_FEATURE(kServiceWorkerStaticRouterRaceRequestFix2,
+ 
+ // Enforce CORP check for Service Worker Static Router's cache source.
+ BASE_FEATURE(kServiceWorkerStaticRouterCORPCheck,
+-             base::FEATURE_DISABLED_BY_DEFAULT);
++             base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+ // crbug.com/495999481: When this is enabled, the navigation request should be
+ // blocked when it receives an opaque response from the service worker static
+ // router.
+ BASE_FEATURE(kServiceWorkerStaticRouterOpaqueCheck,
+-             base::FEATURE_DISABLED_BY_DEFAULT);
++             base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+ // (crbug.com/1371756): When enabled, the static routing API starts
+ // ServiceWorker when the routing result of a main resource request was network

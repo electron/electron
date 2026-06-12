@@ -14,9 +14,7 @@ const tests = {
   },
   testEvaluate: (testName, args) => {
     const func = evalTests[testName];
-    const result = args
-      ? contextBridge.executeInMainWorld({ func, args })
-      : contextBridge.executeInMainWorld({ func });
+    const result = args ? contextBridge.executeInMainWorld({ func, args }) : contextBridge.executeInMainWorld({ func });
     return result;
   },
   testPrototypeLeak: () => {
