@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index c97a981aeec0465c6c80f30d3e3d8fe1a814c410..165afa5a8421e57613983dbefc28e819de7e5264 100644
+index 26b5e579ce8e64c9ee1fc42d3b93e7af8c671963..18f20ab01fe9907ffcb34357a7e0a4db55e0a6bd 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2665,6 +2665,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2685,6 +2685,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,7 +33,7 @@ index c97a981aeec0465c6c80f30d3e3d8fe1a814c410..165afa5a8421e57613983dbefc28e819
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 9f31bab965cf69cc2b77f8670307c25e696159e2..9edc236d56fb523095ca4ca0978d5137f651f624 100644
+index ab3f005767ca8445a6e1bcb8681dd5cb7ba4c580..82bb7e6d9e00e4b4f32ac342a32e0cb5855aac42 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -886,6 +886,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
@@ -51,10 +51,10 @@ index 9f31bab965cf69cc2b77f8670307c25e696159e2..9edc236d56fb523095ca4ca0978d5137
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index af9365807d450d82dd980928fa25cee7cbd7a980..2f425bfce9bc1909ce3910d71cec0c56271c5622 100644
+index ce07502e24e0b0f688e50c00b27e84da057e6869..4a680bdb9b9e0b663b1afe5577cefe01a7db8f5b 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1458,6 +1458,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1459,6 +1459,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  

@@ -1760,8 +1760,7 @@ std::unique_ptr<views::FrameView> NativeWindowMac::CreateFrameView(
   return frame_view;
 }
 
-std::optional<int> NativeWindowMac::FrameViewNonClientHitTest(
-    const gfx::Point& point) {
+int NativeWindowMac::FrameViewNonClientHitTest(const gfx::Point& point) {
   if (widget()->IsFullscreen()) {
     return HTCLIENT;
   }

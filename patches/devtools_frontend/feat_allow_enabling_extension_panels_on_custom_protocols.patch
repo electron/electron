@@ -7,10 +7,10 @@ This allows us to show Chrome extension panels on pages served over
 custom protocols.
 
 diff --git a/front_end/core/root/Runtime.ts b/front_end/core/root/Runtime.ts
-index ad726245c4cd4f0b128c763ca74074a691e5dfa2..22372dfb64779c2823ab47a60877bc7230eb2408 100644
+index d14ec89b685350dd43b930c54b122169b6d94e41..b1cc1409c4661b225e368b3249a762096791d20c 100644
 --- a/front_end/core/root/Runtime.ts
 +++ b/front_end/core/root/Runtime.ts
-@@ -673,6 +673,7 @@ export type HostConfig = Platform.TypeScriptUtilities.RecursivePartial<{
+@@ -678,6 +678,7 @@ export type HostConfig = Platform.TypeScriptUtilities.RecursivePartial<{
     * or guest mode, rather than a "normal" profile.
     */
    isOffTheRecord: boolean,
