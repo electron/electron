@@ -1,0 +1,181 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Bienvenu <davidbienvenu@chromium.org>
+Date: Sun, 7 Jun 2026 17:07:37 -0700
+Subject: [M148] win: Add detection for native move loops
+
+Original change's description:
+> win: Add detection for native move loops
+>
+> Prevent drag drop while Chrome windows are in a move loop.
+>
+> Bug: 518045638
+> Change-Id: Iccac41409b278a6f7b34c77a2c3ab7cd8045bda7
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7890725
+> Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+> Commit-Queue: David Bienvenu <davidbienvenu@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1641925}
+
+(cherry picked from commit d26312c5926277b2086bd2db5ef5a7dcc1818b51)
+
+Bug: 520652005,518045638
+Change-Id: Iccac41409b278a6f7b34c77a2c3ab7cd8045bda7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7906064
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4261}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.cc b/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.cc
+index 6d31bee73db08cd075d8d377b503926fe2bfc739..05194173df2a1d65cf5ae4c2771eace7f5738d4c 100644
+--- a/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_drag_drop_client_win.cc
+@@ -75,6 +75,10 @@ ui::mojom::DragOperation DesktopDragDropClientWin::StartDragAndDrop(
+     int allowed_operations,
+     ui::mojom::DragEventSource source) {
+   CHECK(!g_is_dragging);
++  if (desktop_host_->IsInNativeMoveResizeLoop()) {
++    return ui::PreferredDragOperation(
++        ui::DragDropTypes::DropEffectToDragOperation(DROPEFFECT_NONE));
++  }
+   gfx::Point touch_screen_point;
+   if (source == ui::mojom::DragEventSource::kTouch) {
+     source_window->GetHost()->ConvertDIPToPixels(&touch_screen_point);
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index 3a5833fcc018f32e86c0a95a42937fb9ac6c5a40..09ffa6ee4d35af628e7122100950f597388ee170 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -171,6 +171,10 @@ void DesktopWindowTreeHostWin::SetIsTranslucent(bool is_translucent) {
+   message_handler_->set_is_translucent(is_translucent);
+ }
+ 
++bool DesktopWindowTreeHostWin::IsInNativeMoveResizeLoop() const {
++  return message_handler_ && message_handler_->IsInNativeMoveResizeLoop();
++}
++
+ // DesktopWindowTreeHostWin, DesktopWindowTreeHost implementation:
+ 
+ void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+index b8d1fa863fd05ebc3ab8ac5ef8c4d81361ce45fe..f1fe88a5cf088ca6e2f813477f96d2f21b6461a5 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+@@ -95,6 +95,9 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+ 
+   void SetIsTranslucent(bool is_translucent);
+ 
++  // Returns true if any window is in a move/resize loop.
++  bool IsInNativeMoveResizeLoop() const;
++
+  protected:
+   // Overridden from DesktopWindowTreeHost:
+   void Init(const Widget::InitParams& params) override;
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
+index be9e6d07a0d934cf85deb2d4f2f691841bd141d0..6e94a81d121611ec748f6c3f357a37657e8cf32d 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win_unittest.cc
+@@ -199,5 +199,17 @@ TEST_F(DesktopWindowTreeHostWinAccessibilityObjectTest, UiaRootDoesNotLeak) {
+   EXPECT_EQ(test_node_->m_dwRef, 1);
+ }
+ 
++TEST_F(DesktopWindowTreeHostWinTest, IsInNativeMoveResizeLoop) {
++  Widget widget;
++  Widget::InitParams params = CreateParams(
++      Widget::InitParams::CLIENT_OWNS_WIDGET, Widget::InitParams::TYPE_WINDOW);
++  widget.Init(std::move(params));
++  widget.Show();
++
++  DesktopWindowTreeHostWin* host = static_cast<DesktopWindowTreeHostWin*>(
++      widget.GetNativeWindow()->GetHost());
++  EXPECT_FALSE(host->IsInNativeMoveResizeLoop());
++}
++
+ }  // namespace test
+ }  // namespace views
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 3d4c14d5c8dba4272113994160b7ba42d9c53cbe..eb697638b9c4f209499332d10ba9c8b12bfbf8f3 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -895,6 +895,11 @@ void HWNDMessageHandler::EndMoveLoop() {
+   ::SendMessage(hwnd(), WM_CANCELMODE, 0, 0);
+ }
+ 
++// static
++bool HWNDMessageHandler::IsInNativeMoveResizeLoop() {
++  return UserResizeMoveDetector::InMoveResizeLoop();
++}
++
+ void HWNDMessageHandler::SendFrameChanged() {
+   ::SetWindowPos(hwnd(), nullptr, 0, 0, 0, 0,
+                  SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_NOCOPYBITS |
+diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
+index 65f178e9e38ef4a4b17e2d9e61dbef631fa389f7..4fa64ccbc8d3430f4598f91fa35534d857b1d543 100644
+--- a/ui/views/win/hwnd_message_handler.h
++++ b/ui/views/win/hwnd_message_handler.h
+@@ -167,6 +167,9 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+                            bool hide_on_escape);
+   virtual void EndMoveLoop();
+ 
++  // Returns true if any HWndMessageHandler is in a native move/resize loop.
++  static bool IsInNativeMoveResizeLoop();
++
+   // Tells the HWND its client area has changed.
+   virtual void SendFrameChanged();
+ 
+diff --git a/ui/views/win/user_resize_move_detector.cc b/ui/views/win/user_resize_move_detector.cc
+index 936cc49b3737414e3812a525a8ad445bc6efdd82..7f76fe48cc22ac33a9c2344883af4146e07ed567 100644
+--- a/ui/views/win/user_resize_move_detector.cc
++++ b/ui/views/win/user_resize_move_detector.cc
+@@ -10,6 +10,8 @@
+ 
+ namespace views {
+ 
++static bool g_in_move_resize_loop = false;
++
+ UserResizeMoveDetector::UserResizeMoveDetector(
+     HWNDMessageHandlerDelegate* hwnd_delegate)
+     : hwnd_delegate_(hwnd_delegate) {}
+@@ -22,6 +24,7 @@ void UserResizeMoveDetector::OnEnterSizeMove() {
+ 
+ void UserResizeMoveDetector::OnSizing() {
+   if (state_ == State::kInSizeMove) {
++    g_in_move_resize_loop = true;
+     state_ = State::kInSizing;
+     hwnd_delegate_->HandleBeginUserResize();
+   }
+@@ -29,6 +32,7 @@ void UserResizeMoveDetector::OnSizing() {
+ 
+ void UserResizeMoveDetector::OnMoving() {
+   if (state_ == State::kInSizeMove) {
++    g_in_move_resize_loop = true;
+     state_ = State::kInMoving;
+     hwnd_delegate_->HandleBeginUserDrag();
+   }
+@@ -40,7 +44,13 @@ void UserResizeMoveDetector::OnExitSizeMove() {
+   } else if (state_ == State::kInMoving) {
+     hwnd_delegate_->HandleEndUserDrag();
+   }
++  g_in_move_resize_loop = false;
+   state_ = State::kNotResizing;
+ }
+ 
++// static
++bool UserResizeMoveDetector::InMoveResizeLoop() {
++  return g_in_move_resize_loop;
++}
++
+ }  // namespace views
+diff --git a/ui/views/win/user_resize_move_detector.h b/ui/views/win/user_resize_move_detector.h
+index 049e5470bedf5c03b3518998fe375808924a5565..450a0b3d9983c4b0cca8959298bb76e688459272 100644
+--- a/ui/views/win/user_resize_move_detector.h
++++ b/ui/views/win/user_resize_move_detector.h
+@@ -29,6 +29,9 @@ class UserResizeMoveDetector {
+   // Called on WM_EXITSIZEMOVE.
+   void OnExitSizeMove();
+ 
++  // Returns true if any window is being resized or moved..
++  static bool InMoveResizeLoop();
++
+  private:
+   enum class State {
+     // Start with not resizing.

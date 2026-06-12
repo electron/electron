@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Bienvenu <davidbienvenu@chromium.org>
+Date: Sun, 7 Jun 2026 17:13:13 -0700
+Subject: [M148] win: Handle window closing during move
+
+Original change's description:
+> win: Handle window closing during move
+>
+> Use weak refs to handle window closing during monitor change.
+>
+> Bug: 520210566
+> Change-Id: I7f9f218f88ef8e22e3dcffc9afa9d290a6af3fb9
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7905269
+> Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+> Commit-Queue: David Bienvenu <davidbienvenu@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1642376}
+
+(cherry picked from commit 4dd1788994966b0c0f8a72ea5f150680f4b447bf)
+
+Bug: 520652702,520210566
+Change-Id: I7f9f218f88ef8e22e3dcffc9afa9d290a6af3fb9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7902767
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4262}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index 09ffa6ee4d35af628e7122100950f597388ee170..a47b0cad9dce42ee64193be0e4320126a4986ac1 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -1170,7 +1170,11 @@ void DesktopWindowTreeHostWin::HandleMove() {
+   // Adding/removing a monitor, or changing the primary monitor can cause a
+   // WM_MOVE message before `OnDisplayChanged()`. Without this call, we would
+   // DCHECK due to stale `DisplayInfo`s. See https:://crbug.com/1413940.
++  auto weak_ptr = GetWeakPtr();
+   display::win::GetScreenWin()->UpdateDisplayInfosIfNeeded();
++  if (!weak_ptr) {
++    return;
++  }
+   CheckForMonitorChange();
+   OnHostMovedInPixels();
+ }
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index eb697638b9c4f209499332d10ba9c8b12bfbf8f3..a40c2cb8989bf77904692a2a379d4a5ff8eabd6d 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -2424,7 +2424,11 @@ LRESULT HWNDMessageHandler::OnInputEvent(UINT message,
+ }
+ 
+ void HWNDMessageHandler::OnMove(const gfx::Point& point) {
++  auto ref = msg_handler_weak_factory_.GetWeakPtr();
+   delegate_->HandleMove();
++  if (!ref) {
++    return;
++  }
+   SetMsgHandled(FALSE);
+ }
+ 

@@ -1,0 +1,78 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Wed, 27 May 2026 22:39:15 -0700
+Subject: media: Sync copy queue before D3D12 VEA teardown
+
+Ensure that in-flight COPY-engine operations complete before releasing
+underlying D3D12 resources. Destructors of D3D12VideoEncodeAccelerator
+will now CPU-wait on the copy command queue wrapper's fence to avoid
+GPU-side use-after-free issues under early validation error paths.
+
+Bug: 516997135
+Change-Id: I45d5e6731044b1e6760edd2453043c9ce5fe84a6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7880870
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Reviewed-by: Qiu, Jianlin <jianlin.qiu@intel.com>
+Cr-Commit-Position: refs/heads/main@{#1637481}
+
+diff --git a/media/gpu/windows/d3d12_copy_command_list_wrapper.cc b/media/gpu/windows/d3d12_copy_command_list_wrapper.cc
+index f412f0552d01e06f67eb2839b9712ad5f0e0ab77..09fde46b040af2e086091a96bab39b1d8d523d21 100644
+--- a/media/gpu/windows/d3d12_copy_command_list_wrapper.cc
++++ b/media/gpu/windows/d3d12_copy_command_list_wrapper.cc
+@@ -60,7 +60,9 @@ D3D12CopyCommandQueueWrapper::D3D12CopyCommandQueueWrapper(
+       command_list_(std::move(command_list)),
+       fence_(base::MakeRefCounted<D3D12Fence>(fence)) {}
+ 
+-D3D12CopyCommandQueueWrapper::~D3D12CopyCommandQueueWrapper() = default;
++D3D12CopyCommandQueueWrapper::~D3D12CopyCommandQueueWrapper() {
++  WaitSync();
++}
+ 
+ bool D3D12CopyCommandQueueWrapper::CopyTextureRegion(
+     const D3D12_TEXTURE_COPY_LOCATION& dst_location,
+@@ -146,6 +148,14 @@ D3D12FenceAndValue D3D12CopyCommandQueueWrapper::Execute() {
+   return {fence_->Get(), std::move(value_or_error).value()};
+ }
+ 
++void D3D12CopyCommandQueueWrapper::WaitSync() {
++  // If we have successfully queued any GPU work, wait on the CPU for it to
++  // complete.
++  if (fence_->Value() > 0) {
++    fence_->WaitCPU(fence_->Value());
++  }
++}
++
+ bool D3D12CopyCommandQueueWrapper::Reset() {
+   HRESULT hr;
+   // Resetting command allocator is only valid after the GPU has finished
+diff --git a/media/gpu/windows/d3d12_copy_command_list_wrapper.h b/media/gpu/windows/d3d12_copy_command_list_wrapper.h
+index 78fe8228cd3f3b855a90a67502763b5730b9f521..e87bbf1ebc621dc72ff86d69850860bfd355b9b0 100644
+--- a/media/gpu/windows/d3d12_copy_command_list_wrapper.h
++++ b/media/gpu/windows/d3d12_copy_command_list_wrapper.h
+@@ -44,6 +44,7 @@ class D3D12CopyCommandQueueWrapper {
+                                uint32_t uv_stride);
+ 
+   D3D12FenceAndValue Execute();
++  void WaitSync();
+ 
+  private:
+   // This will be automatically called before CopyTextureRegion().
+diff --git a/media/gpu/windows/d3d12_fence.cc b/media/gpu/windows/d3d12_fence.cc
+index 7bd9acd4c2613585c5868b9926880e27aa593649..661072c3006e9c29481fd00e3625c2f5dfb71592 100644
+--- a/media/gpu/windows/d3d12_fence.cc
++++ b/media/gpu/windows/d3d12_fence.cc
+@@ -44,11 +44,13 @@ uint64_t D3D12Fence::GetCompletedValue() const {
+ 
+ D3D11Status::Or<uint64_t> D3D12Fence::Signal(
+     ID3D12CommandQueue& command_queue) {
+-  HRESULT hr = command_queue.Signal(fence_.Get(), ++fence_value_);
++  uint64_t next_value = fence_value_ + 1;
++  HRESULT hr = command_queue.Signal(fence_.Get(), next_value);
+   if (FAILED(hr)) {
+     return D3D11Status{D3D11StatusCode::kFenceSignalFailed,
+                        "ID3D12CommandQueue failed to signal fence", hr};
+   }
++  fence_value_ = next_value;
+   return fence_value_;
+ }
+ 
