@@ -124,8 +124,9 @@
 
   NSRect cbounds = titleBarContainer.frame;
   cbounds.size.height = button_height + 2 * margin_.y();
-  // Custom height must be larger than the button height to use
-  if ([self useCustomHeight]) {
+  // Custom height is used for default overlay layout. Explicit button
+  // positions should keep the same coordinate space as non-overlay windows.
+  if ([self useCustomHeight] && !has_custom_margin_) {
     cbounds.size.height = height_;
   }
   cbounds.origin.y = NSHeight(window_.frame) - NSHeight(cbounds);
@@ -207,13 +208,8 @@
   NSView* left = [self leftButton];
   NSView* right = [self rightButton];
 
-  if (height_ != 0) {
+  if (height_ != 0 && !has_custom_margin_) {
     result.set_y((height_ - NSHeight(left.frame)) / 2);
-
-    // Do not center buttons if height and button position specified
-    if (has_custom_margin_)
-      result.set_y(height_ - NSHeight(left.frame) - margin_.y());
-
   } else {
     result.set_y((NSHeight(titleBarContainer.frame) - NSHeight(left.frame)) /
                  2);
