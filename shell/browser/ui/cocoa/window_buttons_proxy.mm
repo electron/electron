@@ -35,6 +35,7 @@
 
   // Remember the default margin.
   margin_ = default_margin_ = [self getCurrentMargin];
+  has_custom_margin_ = NO;
   // Custom height will be used if set larger than default
   height_ = 0;
 
@@ -79,6 +80,7 @@
 }
 
 - (void)setMargin:(const std::optional<gfx::Point>&)margin {
+  has_custom_margin_ = margin.has_value();
   if (margin)
     margin_ = *margin;
   else
@@ -209,7 +211,7 @@
     result.set_y((height_ - NSHeight(left.frame)) / 2);
 
     // Do not center buttons if height and button position specified
-    if (margin_.y() != default_margin_.y())
+    if (has_custom_margin_)
       result.set_y(height_ - NSHeight(left.frame) - margin_.y());
 
   } else {
