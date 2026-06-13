@@ -5,7 +5,9 @@
 
 #include "shell/browser/ui/views/electron_frame_view_linux.h"
 
+#include "base/i18n/rtl.h"
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/views/caption_button_placeholder_container.h"
 #include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
 #include "ui/base/hit_test.h"
@@ -48,6 +50,13 @@ void ElectronFrameViewLinux::CreateCaptionButtons() {
       AddChildView(std::make_unique<CaptionButtonPlaceholderContainer>());
   trailing_button_container_ =
       AddChildView(std::make_unique<CaptionButtonPlaceholderContainer>());
+
+  // Allow containers to be clipped for rounded corners.
+  for (auto* container :
+       {leading_button_container_.get(), trailing_button_container_.get()}) {
+    container->layer()->SetFillsBoundsOpaquely(false);
+    container->layer()->SetIsFastRoundedCorner(true);
+  }
 
   FrameViewLinux::CreateCaptionButtons();
 
@@ -114,6 +123,9 @@ int ElectronFrameViewLinux::NonClientHitTest(const gfx::Point& point) {
 void ElectronFrameViewLinux::Layout(PassKey) {
   LayoutSuperclass<FrameViewLinux>(this);
 
+  if (auto* iwcv = window_->primary_web_contents_view())
+    iwcv->SetCornerRadii(GetCornerRadii());
+
   if (!window_->IsWindowControlsOverlayEnabled())
     return;
 
@@ -130,6 +142,16 @@ void ElectronFrameViewLinux::Layout(PassKey) {
       efv_layout()->GetLeadingButtonRect());
   trailing_button_container_->SetBoundsRect(
       efv_layout()->GetTrailingButtonRect());
+
+  // Apply the frame's corner radius to the button containers.
+  const float radius = GetCornerRadii().upper_left();
+  const bool rtl = base::i18n::IsRTL();
+  leading_button_container_->layer()->SetRoundedCornerRadius(
+      rtl ? gfx::RoundedCornersF(0, radius, 0, 0)
+          : gfx::RoundedCornersF(radius, 0, 0, 0));
+  trailing_button_container_->layer()->SetRoundedCornerRadius(
+      rtl ? gfx::RoundedCornersF(radius, 0, 0, 0)
+          : gfx::RoundedCornersF(0, radius, 0, 0));
 
   UpdateCaptionButtonPlaceholderContainerBackground();
   LayoutWindowControlsOverlay();
