@@ -522,7 +522,7 @@ index 4f9e8946fa02d859e92a6896beba82721914f868..78486eaa993ee7ffd5188b31503de7dd
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 9905cbb1697e9dd09dda8dfbb2754d668bef1412..6eb1d2e86eb4a518e34a2f4ef6e7559698ed0807 100644
+index 581ae22656400c5236e626c0ac4a326ca35e6ce2..783b40fd2b5a13b8c1d8a0a14396b5b6254c3f68 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -585,10 +585,10 @@ index fc8778282e3ad2087fdbf88283f7cd02157dbf38..3c07ea56491c5ecbfb7c07e3d0c17ca9
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index 1d630c22dbba7051391933afbd076b7b54f6c80d..a1cbb5c050cca2f6296eb3ebd0261e5b02a50a4a 100644
+index 8d943f9733af969906382e0f8e0988a50356dade..1219bb98872c01852687d5f4b96aa08e7fc09a09 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -133,7 +133,6 @@ interface DisplayClient {
+@@ -129,7 +129,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
@@ -620,7 +620,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index ddb10e4f155a9f0063e749d3e9b4f2ba5f99f8bf..a1083cb66127b689d68e18a47345d4e6a8e74984 100644
+index 5efa58baff8224d372a1acafc308a9a1d5e90527..b2fb10c9ae4d6b98eb4f7ad0732fb84a04b907da 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -89,6 +89,7 @@ class DisplayPrivate;
@@ -657,7 +657,7 @@ index ddb10e4f155a9f0063e749d3e9b4f2ba5f99f8bf..a1083cb66127b689d68e18a47345d4e6
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -633,6 +646,8 @@ class COMPOSITOR_EXPORT Compositor
+@@ -631,6 +644,8 @@ class COMPOSITOR_EXPORT Compositor
        simple_begin_frame_observers_;
    std::unique_ptr<ui::HostBeginFrameObserver> host_begin_frame_observer_;
  

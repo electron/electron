@@ -58,10 +58,10 @@ index 6aec2886efc7f65e71534b8e28db805029aa43f5..eddd91c6ac90ca18e4c2e64e114bffb5
  //
  // Extension
 diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
-index c87bf379e53cc7bf7820ac650d7cd3277716551e..9b735022c0e59ace6b5ed41ebbf40b7f8c4859b6 100644
+index 1f733c4298e5812c98f900f1f070fbcea5334a94..d6e8002590c48584379d6b28f125583c218f0fd4 100644
 --- a/extensions/common/url_pattern.cc
 +++ b/extensions/common/url_pattern.cc
-@@ -140,6 +140,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
+@@ -137,6 +137,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
        return true;
      }
    }
@@ -73,7 +73,7 @@ index c87bf379e53cc7bf7820ac650d7cd3277716551e..9b735022c0e59ace6b5ed41ebbf40b7f
    return false;
  }
  
-@@ -401,6 +406,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
+@@ -398,6 +403,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
      }
    }
  
