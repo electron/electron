@@ -671,6 +671,17 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
       args.push_back(option);
   }
 
+  // Node's setupEventsource() in lib/internal/process/pre_execution.js
+  // deletes globalThis.EventSource when --experimental-eventsource is not
+  // set, and unlike its sibling setup functions it does not check
+  // noBrowserGlobals. Pass the flag so Blink's EventSource is left alone;
+  // Node's own undici EventSource is never installed under
+  // kNoBrowserGlobals so there is no conflict.
+  if (browser_env_ == BrowserEnvironment::kRenderer ||
+      browser_env_ == BrowserEnvironment::kWorker) {
+    args.push_back("--experimental-eventsource");
+  }
+
   return args;
 }
 
