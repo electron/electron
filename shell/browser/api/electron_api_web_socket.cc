@@ -12,6 +12,7 @@
 #include "base/functional/callback_helpers.h"
 #include "base/strings/strcat.h"
 #include "base/task/sequenced_task_runner.h"
+#include "base/unguessable_token.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
@@ -202,7 +203,11 @@ void WebSocketWrapper::Start() {
       /*auth_handler=*/mojo::NullRemote(),
       /*header_client=*/mojo::NullRemote(),
       /*throttling_profile_id=*/std::nullopt,
-      /*network_restrictions_id=*/std::nullopt);
+      // Browser-initiated WebSocket with no associated document, so no
+      // Connection-Allowlist network restrictions apply. An empty token is
+      // never present in the network service's restriction map, so the
+      // allowlist check treats it as unrestricted.
+      /*network_restrictions_id=*/base::UnguessableToken());
 }
 
 void WebSocketWrapper::OnMojoDisconnect() {
