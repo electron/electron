@@ -149,8 +149,21 @@ void ElectronRendererClient::DidCreateScriptContext(
   gin_helper::Dictionary process_dict(env->isolate(), env->process_object());
   BindProcess(env->isolate(), &process_dict, render_frame);
 
+  // Node's pre-execution unconditionally deletes globalThis.EventSource when
+  // --experimental-eventsource is not set (unlike its sibling setup functions
+  // it does not check noBrowserGlobals). Save Blink's binding and restore it
+  // after Node has finished bootstrapping.
+  v8::Local<v8::Object> global = renderer_context->Global();
+  v8::Local<v8::String> event_source_key =
+      gin::StringToV8(isolate, "EventSource");
+  v8::Local<v8::Value> event_source =
+      global->Get(renderer_context, event_source_key).ToLocalChecked();
+
   // Load everything.
   node_bindings_->LoadEnvironment(env.get());
+
+  if (!event_source->IsUndefined())
+    global->Set(renderer_context, event_source_key, event_source).Check();
 
   if (node_bindings_->uv_env() == nullptr) {
     // Make uv loop being wrapped by window context.
