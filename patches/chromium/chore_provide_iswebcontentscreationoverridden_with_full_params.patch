@@ -158,6 +158,34 @@ index bb71e8cb4d09cd53c0377ed34f8a94f979ee5804..9650bd7c7f587d0f57b3c4fc1f131f7d
      return true;
    }
    content::WebContents* CreateCustomWebContents(
+diff --git a/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc b/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
+index 802fb433d6b9170b4b207c91f8ee0771acb30824..3bdb730d97841e441a8cc6ef43c68d39c0d075a5 100644
+--- a/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
++++ b/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
+@@ -376,8 +376,7 @@ bool DocumentPipHost::IsWebContentsCreationOverridden(
+     content::SiteInstance* source_site_instance,
+     content::mojom::WindowContainerType window_container_type,
+     const GURL& opener_url,
+-    const std::string& frame_name,
+-    const GURL& target_url) {
++    const content::mojom::CreateNewWindowParams& params) {
+   // Allow WebContents creation - popups are forwarded to the opener
+   // in AddNewContents().
+   return false;
+diff --git a/chrome/browser/ui/views/picture_in_picture/document_pip_host.h b/chrome/browser/ui/views/picture_in_picture/document_pip_host.h
+index bbd707e3d3ee2f6f3f852255988656f2f7926530..366328d4be9e0af0b03b2ba87fd131bb43af5557 100644
+--- a/chrome/browser/ui/views/picture_in_picture/document_pip_host.h
++++ b/chrome/browser/ui/views/picture_in_picture/document_pip_host.h
+@@ -135,8 +135,7 @@ class DocumentPipHost : public content::WebContentsUserData<DocumentPipHost>,
+       content::SiteInstance* source_site_instance,
+       content::mojom::WindowContainerType window_container_type,
+       const GURL& opener_url,
+-      const std::string& frame_name,
+-      const GURL& target_url) override;
++      const content::mojom::CreateNewWindowParams& params) override;
+   void WebContentsCreated(content::WebContents* source_contents,
+                           int opener_render_process_id,
+                           int opener_render_frame_id,
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 index c58152b67d28b8b229e0ad648997fb1a416ee7be..f19b827daa03ed9d2680d7a087f6931f91926e3a 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
