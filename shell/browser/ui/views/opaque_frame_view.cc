@@ -168,7 +168,23 @@ void OpaqueFrameView::ResetWindowControls() {
 
 views::View* OpaqueFrameView::TargetForRect(views::View* root,
                                             const gfx::Rect& rect) {
-  return views::FrameView::TargetForRect(root, rect);
+  // Presses that hit-test to a resize border must be targeted at the frame
+  // view itself: for frameless windows the client (web contents) view covers
+  // the same pixels, and if it becomes the event target the interactive
+  // resize never starts. Everything else keeps the existing routing.
+  switch (NonClientHitTest(rect.origin())) {
+    case HTLEFT:
+    case HTRIGHT:
+    case HTTOP:
+    case HTBOTTOM:
+    case HTTOPLEFT:
+    case HTTOPRIGHT:
+    case HTBOTTOMLEFT:
+    case HTBOTTOMRIGHT:
+      return this;
+    default:
+      return views::FrameView::TargetForRect(root, rect);
+  }
 }
 
 void OpaqueFrameView::Layout(PassKey) {
