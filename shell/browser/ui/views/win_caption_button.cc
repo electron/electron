@@ -68,7 +68,8 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
   // Paint the background of the button (the semi-transparent rectangle that
   // appears when you hover or press the button).
 
-  const SkColor bg_color = frame_view_->window()->overlay_button_color();
+  const SkColor bg_color =
+      frame_view_->window()->overlay_button_color().value_or(SkColor());
   const SkAlpha theme_alpha = SkColorGetA(bg_color);
 
   gfx::Rect bounds = GetContentsBounds();
@@ -159,7 +160,8 @@ int WinCaptionButton::GetButtonDisplayOrderIndex() const {
 }
 
 void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
-  SkColor symbol_color = frame_view_->window()->overlay_symbol_color();
+  SkColor symbol_color =
+      frame_view_->window()->overlay_symbol_color().value_or(SkColor());
 
   if (button_type_ == VIEW_ID_CLOSE_BUTTON &&
       hover_animation().is_animating()) {
