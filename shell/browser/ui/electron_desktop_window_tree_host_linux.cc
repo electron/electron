@@ -218,6 +218,15 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
     if (!layout)
       return;
 
+    // The layout caches CheckClientFrameShadowSupport() in its constructor,
+    // which runs during widget init before the platform window can answer —
+    // a stale `false` permanently zeroes the CSD resize band and the
+    // decoration insets reported via CalculateInsetsInDIP(), leaving
+    // frameless windows impossible to resize by their edges on Wayland.
+    // Refresh it from the live capability whenever the frame hints update.
+    layout->set_host_supports_client_frame_shadow(
+        SupportsClientFrameShadow() && !native_window_view_->IsTranslucent());
+
     ui::PlatformWindow* window = platform_window();
     auto window_state = window->GetPlatformWindowState();
     float scale = device_scale_factor();

@@ -53,8 +53,13 @@ std::unique_ptr<LinuxFrameLayout> LinuxFrameLayout::Create(
 }
 
 gfx::Insets LinuxFrameLayout::GetResizeBorderInsets() const {
-  gfx::Insets insets = RestoredFrameBorderInsets();
-  return insets.IsEmpty() ? GetInputInsets() : insets;
+  const gfx::Insets insets = RestoredFrameBorderInsets();
+  if (insets.IsEmpty())
+    return GetInputInsets();
+  // The frame border (shadow) band sits entirely outside the window geometry
+  // and Wayland compositors don't reliably deliver pointer events there, so
+  // also hit-test a band just inside the visible edge.
+  return insets + gfx::Insets(kResizeInsideBoundsSize);
 }
 
 SkRRect LinuxFrameLayout::GetRoundedWindowBounds() const {

@@ -55,6 +55,9 @@ class LinuxFrameLayout {
 
   bool IsShowingShadow() const;
   bool SupportsClientFrameShadow() const;
+  void set_host_supports_client_frame_shadow(bool supports) {
+    host_supports_client_frame_shadow_ = supports;
+  }
 
   bool tiled() const;
   void set_tiled(bool tiled);
