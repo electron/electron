@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 09214ef7fdadde0addf76a5a3271cac1b58546c5..b67ab4bab82d7633e3735b82a11c6c5722bda212 100644
+index 1bcc08d03858d8585930510c303596dc9be3c015..304f35e2d666f9d8ba9b3ee832af070a7e3eaab7 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10529,7 +10529,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10534,7 +10534,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,

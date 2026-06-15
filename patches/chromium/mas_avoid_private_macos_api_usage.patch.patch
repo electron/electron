@@ -974,7 +974,7 @@ index d2fd2e964ca74885887c6f1e4afb36aae150dc12..67cb415dd0b82f7a90553cdb00e612ab
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 0c449b7d1c01afc90bb5e5ba506c50b94027c3df..0dcfa1992ad2e0e278a229074916543ef1681a61 100644
+index 3e7ab42e63a9d6b8e905de8341a39df23704036c..37c7f6f1d70a9ea613057bec4e0dce158020d472 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -370,6 +370,7 @@ source_set("browser") {
@@ -1801,10 +1801,10 @@ index 5ca7ed4283e7873c80afdd6f14c902d0166e0a6d..1d61abd65f3c19ce9beb7c52924ed208
  
    if (is_mac) {
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index 7da6843e7dd13d2969767f7ba2f57fbf4d22008c..9e3bc642c8e247d004c87931248de664ec47ec3b 100644
+index e4386ae816f65a25512204916028df8f6272c48d..054c9b51d41d3a405847b0f4ea4685934a4fd0a8 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
-@@ -376,10 +376,14 @@ blink_core_sources_editing = [
+@@ -378,10 +378,14 @@ blink_core_sources_editing = [
  if (is_mac) {
    blink_core_sources_editing += [
      "commands/smart_replace_cf.cc",
