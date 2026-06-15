@@ -3108,8 +3108,11 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
     return;
 
   std::string state;
-  if (type_ == Type::kWebView || type_ == Type::kBackgroundPage ||
-      !owner_window()) {
+  const bool inherently_detached =
+      type_ == Type::kWebView || type_ == Type::kBackgroundPage;
+  const bool windowed_type =
+      type_ == Type::kBrowserWindow || type_ == Type::kBrowserView;
+  if (inherently_detached || (!owner_window() && !windowed_type)) {
     state = "detach";
   }
 
