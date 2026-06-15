@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Wallez <cwallez@chromium.org>
+Date: Mon, 1 Jun 2026 03:12:03 -0700
+Subject: [M148] [dawn][common] Signal the CondVar before unlocking the mutex.
+
+Original change's description:
+> [dawn][common] Signal the CondVar before unlocking the mutex.
+>
+> MutexCondVarProtected's guard unlocks the mutex before signaling the
+> condition variable. This means that usage of the condition variable
+> itself is not always protected by the mutex, in particular an other
+> thread could free the memory between mutex.unlock() and cv.signal().
+>
+> Reorder the members of CondVarGuard to first notify the condition
+> variable and then unlock the mutex.
+>
+> Adds a test that tries to catch the incorrect behavior when running
+> under TSan. Without the fix it reports a warning.
+>
+> Fixed: 517303276
+> Change-Id: I373bdc4224d90b999199c58c5de0be1ba5f04c47
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/311897
+> Reviewed-by: Loko Kung <lokokung@google.com>
+> Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+
+(cherry picked from commit a2cff62294d3d3bfc9aaaab047dff2ef0f06c9e9)
+
+Bug: 518354070,517303276
+Change-Id: I373bdc4224d90b999199c58c5de0be1ba5f04c47
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/312715
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/dawn/common/MutexProtected.h b/src/dawn/common/MutexProtected.h
+index 48e22e693a111d602e6e23102923b84eed5a5132..be96e563d36b2b11e139177fd9056a958249656c 100644
+--- a/src/dawn/common/MutexProtected.h
++++ b/src/dawn/common/MutexProtected.h
+@@ -174,7 +174,7 @@ class CondVarGuard : public NonMovable, StackAllocated {
+                  typename Traits::MutexType& mutex,
+                  class Defer* defer = nullptr,
+                  std::condition_variable* cv = nullptr)
+-        : mNotifyScope(cv), mGuard(obj, mutex, defer) {}
++        : mGuard(obj, mutex, defer), mNotifyScope(cv) {}
+ 
+     auto* Get() const { return mGuard.Get(); }
+ 
+@@ -193,8 +193,11 @@ class CondVarGuard : public NonMovable, StackAllocated {
+ 
+         raw_ptr<std::condition_variable> cv = nullptr;
+     };
+-    NotifyScope mNotifyScope;
++    // Note that the Guard must be before the NotifyScope so that the C++ member destruction order
++    // signals the condition variable before unlocking the mutex. This keeps all uses of the
++    // condition variable guarded by the mutex.
+     Guard<T, Traits> mGuard;
++    NotifyScope mNotifyScope;
+ };
+ 
+ template <typename T, typename Traits, template <typename, typename> class Guard = detail::Guard>

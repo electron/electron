@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kenichi Ishibashi <bashi@chromium.org>
+Date: Thu, 4 Jun 2026 17:42:11 -0700
+Subject: [M148] Improve temporary file creation and error handling in
+ SimpleURLLoader
+
+Original change's description:
+> Improve temporary file creation and error handling in SimpleURLLoader
+>
+> This CL updates SimpleURLLoader to use
+> base::CreateAndOpenTemporaryFileInDir() when downloading to a temporary
+> file. This atomically creates and opens the file, retaining the file
+> descriptor directly and avoiding the previous pattern of closing and
+> re-opening the file by path.
+>
+> Additionally, it improves error reporting on initialization failure by
+> explicitly mapping base::File::error_details() to a net::Error via
+> net::FileErrorToNetError().
+>
+> Bug: 516979551
+> Change-Id: I353bac993212cbee76cb8a1c3c086e73ff4e6369
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7885361
+> Reviewed-by: mmenke <mmenke@chromium.org>
+> Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1640681}
+
+(cherry picked from commit 037c5ddb3336e88e3215f9e2cb903282d032b653)
+
+Bug: 519857795,516979551
+Change-Id: I353bac993212cbee76cb8a1c3c086e73ff4e6369
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7902751
+Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4242}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/services/network/public/cpp/simple_url_loader.cc b/services/network/public/cpp/simple_url_loader.cc
+index bfb83e26e2d83371acceacf0c615fcdebe42d21d..2fecdfbc87c79370828d6d8219f4545905b70c8d 100644
+--- a/services/network/public/cpp/simple_url_loader.cc
++++ b/services/network/public/cpp/simple_url_loader.cc
+@@ -1035,28 +1035,28 @@ class SaveToFileBodyHandler : public BodyHandler {
+       DCHECK(!file_.IsValid());
+       DCHECK(!body_reader_);
+ 
+-      bool have_path = !create_temp_file_;
+-      if (!have_path) {
+-        DCHECK(create_temp_file_);
+-        have_path = base::CreateTemporaryFile(&path_);
+-        // CreateTemporaryFile() creates an empty file.
+-        if (have_path)
+-          owns_file_ = true;
+-      }
+-
+-      if (have_path) {
+-        // Try to initialize |file_|, creating the file if needed.
++      if (create_temp_file_) {
++        base::FilePath temp_dir;
++        if (base::GetTempDir(&temp_dir)) {
++          file_ = base::CreateAndOpenTemporaryFileInDir(temp_dir, &path_);
++        }
++      } else {
+         file_.Initialize(
+             path_, base::File::FLAG_WRITE | base::File::FLAG_CREATE_ALWAYS);
+       }
+ 
+       // If CreateTemporaryFile() or File::Initialize() failed, report failure.
+       if (!file_.IsValid()) {
++        net::Error net_error = net::FileErrorToNetError(file_.error_details());
++        if (net_error == net::OK) {
++          net_error = net::MapSystemError(logging::GetLastSystemErrorCode());
++          if (net_error == net::OK) {
++            net_error = net::ERR_FILE_NOT_FOUND;
++          }
++        }
+         body_handler_task_runner_->PostTask(
+-            FROM_HERE, base::BindOnce(std::move(on_done_callback),
+-                                      net::MapSystemError(
+-                                          logging::GetLastSystemErrorCode()),
+-                                      0, base::FilePath()));
++            FROM_HERE, base::BindOnce(std::move(on_done_callback), net_error, 0,
++                                      base::FilePath()));
+         return;
+       }
+ 

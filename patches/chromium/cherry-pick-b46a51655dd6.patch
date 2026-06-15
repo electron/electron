@@ -1,0 +1,313 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Fredrik=20S=C3=B6derquist?= <fs@opera.com>
+Date: Wed, 3 Jun 2026 08:17:21 -0700
+Subject: [M148] Ensure the lifecycle is updated for external SVG resources
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> Ensure the lifecycle is updated for external SVG resources
+>
+> In some cases, the external SVG resource document can be invalidated,
+> and the elements referring would end up using potentially dirty layout
+> state.
+>
+> Add a UpdateContentLifecycleForUse() hook to SVGResource and call that
+> before each access to the target element. Implement
+> UpdateContentLifecycleForUse() for the different types of resources
+> (local, svg resource document content and image content).
+>
+> Fixed: 517309206
+> Change-Id: I341249b259de3d10d363039dc901054d10b07786
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7880227
+> Reviewed-by: Philip Rogers <pdr@chromium.org>
+> Commit-Queue: Fredrik Söderquist <fs@opera.com>
+> Cr-Commit-Position: refs/heads/main@{#1640064}
+
+(cherry picked from commit 7a5040845ca31241a97e5aff86df1000ac1c6c67)
+
+Bug: 519444575,517309206
+Change-Id: I341249b259de3d10d363039dc901054d10b07786
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7895707
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Fredrik Söderquist <fs@opera.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4223}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/third_party/blink/renderer/core/svg/graphics/svg_image.cc b/third_party/blink/renderer/core/svg/graphics/svg_image.cc
+index 94caec3eff9bb2051d5b5ab390aaadfab700cd11..836667f94ee57f81e6f38fc4cd4a0b08d7208fb2 100644
+--- a/third_party/blink/renderer/core/svg/graphics/svg_image.cc
++++ b/third_party/blink/renderer/core/svg/graphics/svg_image.cc
+@@ -654,13 +654,27 @@ void SVGImage::MaybeRecordSvgImageProcessingTime(const Document& document) {
+   }
+ }
+ 
+-Element* SVGImage::GetResourceElement(const AtomicString& id) const {
++Element* SVGImage::GetResourceElement(
++    base::PassKey<ExternalSVGResourceImageContent>,
++    const AtomicString& id) const {
+   if (!document_host_) {
+     return nullptr;
+   }
+   return GetFrame()->GetDocument()->getElementById(id);
+ }
+ 
++void SVGImage::UpdateLifecycleForUse(
++    base::PassKey<ExternalSVGResourceImageContent>) {
++  if (!document_host_) {
++    return;
++  }
++  // Temporarily disable change notifications triggered by the lifecycle
++  // update.
++  ImageObserverDisabler disable_image_observer(this);
++  GetFrame()->View()->UpdateAllLifecyclePhasesExceptPaint(
++      DocumentUpdateReason::kSVGImage);
++}
++
+ void SVGImage::NotifyAsyncLoadCompleted() {
+   if (GetImageObserver())
+     GetImageObserver()->AsyncLoadCompleted(this);
+diff --git a/third_party/blink/renderer/core/svg/graphics/svg_image.h b/third_party/blink/renderer/core/svg/graphics/svg_image.h
+index d922b9d77e8c6238e23582ee932bb4efb44585b4..1a7ccb9d0faae1946cc0b087fcd5540b46243001 100644
+--- a/third_party/blink/renderer/core/svg/graphics/svg_image.h
++++ b/third_party/blink/renderer/core/svg/graphics/svg_image.h
+@@ -31,6 +31,7 @@
+ 
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/weak_ptr.h"
++#include "base/types/pass_key.h"
+ #include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom-blink-forward.h"
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/platform/geometry/physical_size.h"
+@@ -48,6 +49,7 @@ namespace blink {
+ 
+ class Document;
+ class Element;
++class ExternalSVGResourceImageContent;
+ class IsolatedSVGDocumentHost;
+ class LayoutSVGRoot;
+ class LocalFrame;
+@@ -130,8 +132,10 @@ class CORE_EXPORT SVGImage final : public Image {
+   void SetPreferredColorScheme(
+       mojom::blink::PreferredColorScheme preferred_color_scheme);
+ 
+-  // Introspective service hatch for mask-image. Don't abuse for anything else.
+-  Element* GetResourceElement(const AtomicString& id) const;
++  // Specialized interface for mask-image (via ExternalSVGResourceImageContent).
++  Element* GetResourceElement(base::PassKey<ExternalSVGResourceImageContent>,
++                              const AtomicString& id) const;
++  void UpdateLifecycleForUse(base::PassKey<ExternalSVGResourceImageContent>);
+ 
+  protected:
+   // Whether or not size is available yet.
+diff --git a/third_party/blink/renderer/core/svg/svg_resource.cc b/third_party/blink/renderer/core/svg/svg_resource.cc
+index f07636a4e6efedccebe9cab9318ee12a85ba26b1..2a0ba4b3ea3e549a9de765db6184f2a7b1d2f628 100644
+--- a/third_party/blink/renderer/core/svg/svg_resource.cc
++++ b/third_party/blink/renderer/core/svg/svg_resource.cc
+@@ -120,10 +120,17 @@ void SVGResource::NotifyContentChanged() {
+     client->ResourceContentChanged(this);
+ }
+ 
++Element* SVGResource::Target() const {
++  UpdateContentLifecycleForUse();
++  return target_.Get();
++}
++
+ LayoutSVGResourceContainer* SVGResource::ResourceContainerNoCycleCheck() const {
+-  if (!target_)
++  Element* target = Target();
++  if (!target) {
+     return nullptr;
+-  return DynamicTo<LayoutSVGResourceContainer>(target_->GetLayoutObject());
++  }
++  return DynamicTo<LayoutSVGResourceContainer>(target->GetLayoutObject());
+ }
+ 
+ LayoutSVGResourceContainer* SVGResource::ResourceContainer(
+@@ -319,6 +326,13 @@ Element* ExternalSVGResourceDocumentContent::ResolveTarget() {
+   return external_document->getElementById(decoded_fragment);
+ }
+ 
++void ExternalSVGResourceDocumentContent::UpdateContentLifecycleForUse() const {
++  if (!document_content_) {
++    return;
++  }
++  document_content_->UpdateLifecycleForUse();
++}
++
+ void ExternalSVGResourceDocumentContent::Trace(Visitor* visitor) const {
+   visitor->Trace(document_content_);
+   SVGResource::Trace(visitor);
+@@ -353,7 +367,17 @@ Element* ExternalSVGResourceImageContent::ResolveTarget() {
+   }
+   AtomicString decoded_fragment(
+       DecodeURLEscapeSequences(fragment_, DecodeURLMode::kUTF8OrIsomorphic));
+-  return svg_image->GetResourceElement(decoded_fragment);
++  return svg_image->GetResourceElement(
++      base::PassKey<ExternalSVGResourceImageContent>(), decoded_fragment);
++}
++
++void ExternalSVGResourceImageContent::UpdateContentLifecycleForUse() const {
++  auto* svg_image = DynamicTo<SVGImage>(image_content_->GetImage());
++  if (!svg_image) {
++    return;
++  }
++  svg_image->UpdateLifecycleForUse(
++      base::PassKey<ExternalSVGResourceImageContent>());
+ }
+ 
+ void ExternalSVGResourceImageContent::ImageNotifyFinished(
+diff --git a/third_party/blink/renderer/core/svg/svg_resource.h b/third_party/blink/renderer/core/svg/svg_resource.h
+index 83944ac51b2d8454adea6e0c8ea8c9d40790c310..dfb322b1bf78305b9296d52491f3a21d1a16764f 100644
+--- a/third_party/blink/renderer/core/svg/svg_resource.h
++++ b/third_party/blink/renderer/core/svg/svg_resource.h
+@@ -77,7 +77,7 @@ class SVGResource : public GarbageCollected<SVGResource> {
+ 
+   virtual bool IsLoading() const { return false; }
+ 
+-  Element* Target() const { return target_.Get(); }
++  Element* Target() const;
+   // Returns the target's LayoutObject (if target exists and is attached to the
+   // layout tree). Also perform cycle-checking, and may thus return nullptr if
+   // this SVGResourceClient -> SVGResource reference would start a cycle.
+@@ -103,6 +103,7 @@ class SVGResource : public GarbageCollected<SVGResource> {
+   SVGResource();
+ 
+   void InvalidateCycleCache();
++  virtual void UpdateContentLifecycleForUse() const = 0;
+   void NotifyContentChanged();
+ 
+   Member<Element> target_;
+@@ -141,6 +142,7 @@ class LocalSVGResource final : public SVGResource {
+   void Trace(Visitor*) const override;
+ 
+  private:
++  void UpdateContentLifecycleForUse() const override {}
+   void TargetChanged(const AtomicString& id);
+ 
+   Member<TreeScope> tree_scope_;
+@@ -163,6 +165,7 @@ class ExternalSVGResourceDocumentContent final
+  private:
+   bool IsLoading() const override;
+   Element* ResolveTarget();
++  void UpdateContentLifecycleForUse() const override;
+ 
+   // SVGResourceDocumentObserver:
+   void ResourceNotifyFinished(SVGResourceDocumentContent*) override;
+@@ -189,6 +192,7 @@ class ExternalSVGResourceImageContent final : public SVGResource,
+ 
+   bool IsLoading() const override;
+   Element* ResolveTarget();
++  void UpdateContentLifecycleForUse() const override;
+ 
+   // ImageResourceObserver overrides
+   void ImageNotifyFinished(ImageResourceContent*) override;
+diff --git a/third_party/blink/renderer/core/svg/svg_resource_document_content.cc b/third_party/blink/renderer/core/svg/svg_resource_document_content.cc
+index f0ebb2523d16e41cb34f4af9ec86f6d61b708298..f0937d3dd7e921c50428e70f830048a0459474e5 100644
+--- a/third_party/blink/renderer/core/svg/svg_resource_document_content.cc
++++ b/third_party/blink/renderer/core/svg/svg_resource_document_content.cc
+@@ -22,6 +22,7 @@
+ 
+ #include "third_party/blink/renderer/core/svg/svg_resource_document_content.h"
+ 
++#include "base/auto_reset.h"
+ #include "base/notreached.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "third_party/blink/renderer/core/frame/local_frame.h"
+@@ -156,9 +157,7 @@ SVGResourceDocumentContent::UpdateDocument(scoped_refptr<SharedBuffer> data,
+ }
+ 
+ void SVGResourceDocumentContent::LoadingFinished() {
+-  LocalFrame* frame = document_host_->GetFrame();
+-  frame->View()->UpdateAllLifecyclePhasesExceptPaint(
+-      DocumentUpdateReason::kSVGImage);
++  UpdateLifecycleForUse();
+   UpdateStatus(ResourceStatus::kCached);
+ }
+ 
+@@ -243,7 +242,22 @@ SVGResourceTarget* SVGResourceDocumentContent::GetResourceTarget(
+   return &svg_target->EnsureResourceTarget();
+ }
+ 
++void SVGResourceDocumentContent::UpdateLifecycleForUse() {
++  if (!document_host_) {
++    return;
++  }
++  // Temporarily disable content-changed notifications triggered by the
++  // lifecycle update.
++  base::AutoReset validate_scope(&inhibit_content_change_, true);
++  LocalFrame* frame = document_host_->GetFrame();
++  frame->View()->UpdateAllLifecyclePhasesExceptPaint(
++      DocumentUpdateReason::kSVGImage);
++}
++
+ void SVGResourceDocumentContent::ContentChanged() {
++  if (inhibit_content_change_) {
++    return;
++  }
+   for (auto& observer : observers_) {
+     observer->ResourceContentChanged(this);
+   }
+diff --git a/third_party/blink/renderer/core/svg/svg_resource_document_content.h b/third_party/blink/renderer/core/svg/svg_resource_document_content.h
+index 924b406d95d77c68ac4fa3b1b7a2f03f8ecb7977..7e86cb6655088eee7b9cd333df048641f21acc0c 100644
+--- a/third_party/blink/renderer/core/svg/svg_resource_document_content.h
++++ b/third_party/blink/renderer/core/svg/svg_resource_document_content.h
+@@ -100,6 +100,8 @@ class CORE_EXPORT SVGResourceDocumentContent final
+   void NotifyObservers();
+ 
+   SVGResourceTarget* GetResourceTarget(const AtomicString& element_id);
++  void UpdateLifecycleForUse();
++
+   void Trace(Visitor*) const;
+ 
+  private:
+@@ -116,6 +118,7 @@ class CORE_EXPORT SVGResourceDocumentContent final
+   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+   KURL url_;
+   ResourceStatus status_ = ResourceStatus::kNotStarted;
++  bool inhibit_content_change_ = false;
+   bool was_disposed_ = false;
+ };
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/svg/crashtests/chrome-bug-517309206.html b/third_party/blink/web_tests/external/wpt/svg/crashtests/chrome-bug-517309206.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..cd303e13557e018345c6d208f2a6e9c3e3c26b92
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/svg/crashtests/chrome-bug-517309206.html
+@@ -0,0 +1,19 @@
++<!DOCTYPE html>
++<html class="test-wait">
++<link rel="help" href="https://crbug.com/517309206">
++<p>This test should not crash.</p>
++<svg>
++  <rect width="100" height="100" fill="url(support/ext.svg#p)"/>
++</svg>
++<script>
++  let n = 0;
++  function bump() {
++    document.body.style.opacity = 1 - (n % 2) * 0.001;
++    if (++n < 60) {
++      requestAnimationFrame(bump);
++    } else {
++      document.documentElement.className = '';
++    }
++  }
++  requestAnimationFrame(bump);
++</script>
+diff --git a/third_party/blink/web_tests/external/wpt/svg/crashtests/support/ext.svg b/third_party/blink/web_tests/external/wpt/svg/crashtests/support/ext.svg
+new file mode 100644
+index 0000000000000000000000000000000000000000..8950531d832a77207c2b1f1bb34437ae862b6d90
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/svg/crashtests/support/ext.svg
+@@ -0,0 +1,9 @@
++<svg xmlns="http://www.w3.org/2000/svg">
++  <pattern id="p" patternUnits="userSpaceOnUse" width="100" height="100">
++    <filter id="fp">
++      <!-- An SVG with a nested (raster) image load. -->
++      <feImage href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MiIgaGVpZ2h0PSI1MiI+PGltYWdlIHg9IjAiIHk9IjAiIGhyZWY9ImRhdGE6aW1hZ2UvcG5nO2Jhc2U2NCxpVkJPUncwS0dnb0FBQUFOU1VoRVVnQUFBQUVBQUFBQkNBUUFBQUMxSEF3Q0FBQUFDMGxFUVZSNDJtUDgveDhBQXVzQjlRRHE2UUFBQUFCSlJVNUVya0pnZ2c9PSIvPjwvc3ZnPg=="/>
++    </filter>
++    <rect x="0" y="0" width="100" height="100" fill="orange" filter="url(#fp)"/>
++  </pattern>
++</svg>

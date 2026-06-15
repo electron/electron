@@ -1,0 +1,205 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sangbaek Park <sangbaekpark@google.com>
+Date: Wed, 3 Jun 2026 15:59:42 -0700
+Subject: [M148] media: Fix uninitialized GPU VRAM leak in MFVEA NV12 copy
+ paths
+
+Original change's description:
+> media: Fix uninitialized GPU VRAM leak in MFVEA NV12 copy paths
+>
+> When the Windows Media Foundation Video Encode Accelerator (MFVEA)
+> performs a zero-copy GPU encode, it may allocate intermediate D3D11
+> textures to copy NV12 video frames. Previously, these textures were
+> allocated using the `coded_size` of the video frame, but only the
+> `visible_rect` portion was copied over via `CopySubresourceRegion`.
+> This left the padding region between the visible rect and the coded
+> size uninitialized, potentially leaking stale GPU memory to the
+> compressed video stream.
+>
+> This CL updates the D3D11 texture allocation logic in the copy paths
+> (`CreateSampleFromTexture`, `GenerateResourceOnSyncTokenReleased`,
+> and `PerformD3DCopy`) to allocate the intermediate textures using the
+> exact dimensions of the `visible_rect`. This ensures that the texture
+> is completely filled by `CopySubresourceRegion`, eliminating any
+> uninitialized padding and preventing cross-origin information
+> disclosure.
+>
+> The newly added unit test (repro case) fails without this fix.
+>
+> Tests added: {
+> MFHelpersTest.CreateSampleFromTextureDoesNotLeakUninitializedMemory }
+>
+> Bug: 517993381
+> Change-Id: Ifffcc8df7fb735ebd96c030fa46f75831298c12b
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7886163
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Commit-Queue: Sangbaek Park <sangbaekpark@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1639808}
+
+(cherry picked from commit ebecb74997d7acdeeb3a808e8abc8ec37ced5444)
+
+Bug: 519444902,517993381
+Change-Id: Ifffcc8df7fb735ebd96c030fa46f75831298c12b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7898833
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4231}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/media/base/BUILD.gn b/media/base/BUILD.gn
+index 795e2dbb6c5b81f20409a955f04f3b47be4d3c1b..cae96119e67dc77099da9db3e7b364c642dbd688 100644
+--- a/media/base/BUILD.gn
++++ b/media/base/BUILD.gn
+@@ -708,6 +708,7 @@ source_set("unit_tests") {
+     sources += [
+       "win/dxgi_device_scope_handle_unittest.cc",
+       "win/media_foundation_package_locator_unittest.cc",
++      "win/mf_helpers_unittest.cc",
+     ]
+     deps += [
+       "//media",
+diff --git a/media/base/win/mf_helpers.cc b/media/base/win/mf_helpers.cc
+index 00dee585388279400443720f8e7fa5702f9bc8ac..7173dae5b3e4961953dc0f984ac64137ed971dbb 100644
+--- a/media/base/win/mf_helpers.cc
++++ b/media/base/win/mf_helpers.cc
+@@ -875,6 +875,8 @@ Microsoft::WRL::ComPtr<IMFSample> CreateSampleFromTexture(
+   if (need_perform_copy) {
+     D3D11_TEXTURE2D_DESC desc;
+     input_texture->GetDesc(&desc);
++    desc.Width = static_cast<UINT>(frame->visible_rect().width());
++    desc.Height = static_cast<UINT>(frame->visible_rect().height());
+     desc.Usage = D3D11_USAGE_DEFAULT;
+     desc.BindFlags = D3D11_BIND_VIDEO_ENCODER;
+     desc.ArraySize = 1;
+@@ -1106,6 +1108,8 @@ void GenerateResourceOnSyncTokenReleased(
+     texture_desc.CPUAccessFlags = 0;
+     texture_desc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_NTHANDLE |
+                              D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
++    texture_desc.Width = static_cast<UINT>(frame->visible_rect().width());
++    texture_desc.Height = static_cast<UINT>(frame->visible_rect().height());
+     Microsoft::WRL::ComPtr<ID3D11Texture2D> shared_texture;
+     hr = shared_d3d11_device->CreateTexture2D(&texture_desc, nullptr,
+                                               &shared_texture);
+diff --git a/media/base/win/mf_helpers_unittest.cc b/media/base/win/mf_helpers_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..d39e2bc5359d316723c50909cc80ed2679f0727e
+--- /dev/null
++++ b/media/base/win/mf_helpers_unittest.cc
+@@ -0,0 +1,84 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "media/base/win/mf_helpers.h"
++
++#include <d3d11.h>
++#include <mfapi.h>
++#include <wrl/client.h>
++
++#include "base/memory/scoped_refptr.h"
++#include "media/base/video_frame.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace media {
++namespace {
++
++TEST(MFHelpersTest, CreateSampleFromTextureDoesNotLeakUninitializedMemory) {
++  Microsoft::WRL::ComPtr<ID3D11Device> device;
++  Microsoft::WRL::ComPtr<ID3D11DeviceContext> context;
++  HRESULT hr =
++      D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, nullptr,
++                        0, D3D11_SDK_VERSION, &device, nullptr, &context);
++  if (FAILED(hr)) {
++    // Fallback to WARP if hardware is not available.
++    hr = D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, 0, nullptr,
++                           0, D3D11_SDK_VERSION, &device, nullptr, &context);
++    if (FAILED(hr)) {
++      GTEST_SKIP() << "D3D11 device creation failed";
++    }
++  }
++
++  // Create a texture with a larger coded size than the visible size.
++  D3D11_TEXTURE2D_DESC desc = {};
++  desc.Width = 1920;
++  desc.Height = 1088;
++  desc.MipLevels = 1;
++  desc.ArraySize = 1;
++  desc.Format = DXGI_FORMAT_NV12;
++  desc.SampleDesc.Count = 1;
++  desc.Usage = D3D11_USAGE_DEFAULT;
++  desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
++
++  Microsoft::WRL::ComPtr<ID3D11Texture2D> input_texture;
++  hr = device->CreateTexture2D(&desc, nullptr, &input_texture);
++  ASSERT_TRUE(SUCCEEDED(hr));
++
++  // Create a video frame with a smaller visible rect.
++  gfx::Size coded_size(1920, 1088);
++  gfx::Rect visible_rect(0, 0, 1920, 1080);
++  gfx::Size natural_size(1920, 1080);
++  scoped_refptr<VideoFrame> frame =
++      VideoFrame::CreateFrame(PIXEL_FORMAT_NV12, coded_size, visible_rect,
++                              natural_size, base::TimeDelta());
++
++  // Create the sample and perform the copy.
++  Microsoft::WRL::ComPtr<IMFSample> sample = CreateSampleFromTexture(
++      device, frame, input_texture, /*need_perform_copy=*/true);
++  ASSERT_TRUE(sample);
++
++  // Get the texture from the sample.
++  Microsoft::WRL::ComPtr<IMFMediaBuffer> buffer;
++  hr = sample->GetBufferByIndex(0, &buffer);
++  ASSERT_TRUE(SUCCEEDED(hr));
++
++  Microsoft::WRL::ComPtr<IMFDXGIBuffer> dxgi_buffer;
++  hr = buffer.As(&dxgi_buffer);
++  ASSERT_TRUE(SUCCEEDED(hr));
++
++  Microsoft::WRL::ComPtr<ID3D11Texture2D> output_texture;
++  hr = dxgi_buffer->GetResource(IID_PPV_ARGS(&output_texture));
++  ASSERT_TRUE(SUCCEEDED(hr));
++
++  D3D11_TEXTURE2D_DESC output_desc;
++  output_texture->GetDesc(&output_desc);
++
++  // The copied texture should exactly match the visible rect, not the coded
++  // size. This ensures no uninitialized padding is left.
++  EXPECT_EQ(output_desc.Width, static_cast<UINT>(visible_rect.width()));
++  EXPECT_EQ(output_desc.Height, static_cast<UINT>(visible_rect.height()));
++}
++
++}  // namespace
++}  // namespace media
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+index 1571472c24d070035d09ddcf1672e76045a42d44..a33889ce30e95eb7a53a0db6543fe4de1a03fce3 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+@@ -2865,23 +2865,21 @@ HRESULT MediaFoundationVideoEncodeAccelerator::PerformD3DScaling(
+ HRESULT MediaFoundationVideoEncodeAccelerator::InitializeD3DCopying(
+     ID3D11Texture2D* input_texture) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  D3D11_TEXTURE2D_DESC input_desc = {};
+-  input_texture->GetDesc(&input_desc);
+   // Return early if `copied_d3d11_texture_` is already the correct size,
+   // avoiding the overhead of creating a new destination texture.
+   if (copied_d3d11_texture_) {
+     D3D11_TEXTURE2D_DESC copy_desc = {};
+     copied_d3d11_texture_->GetDesc(&copy_desc);
+-    if (input_desc.Width == copy_desc.Width &&
+-        input_desc.Height == copy_desc.Height) {
++    if (static_cast<UINT>(input_visible_size_.width()) == copy_desc.Width &&
++        static_cast<UINT>(input_visible_size_.height()) == copy_desc.Height) {
+       return S_OK;
+     }
+   }
+   ComD3D11Device texture_device;
+   input_texture->GetDevice(&texture_device);
+   D3D11_TEXTURE2D_DESC copy_desc = {
+-      .Width = input_desc.Width,
+-      .Height = input_desc.Height,
++      .Width = static_cast<UINT>(input_visible_size_.width()),
++      .Height = static_cast<UINT>(input_visible_size_.height()),
+       .MipLevels = 1,
+       .ArraySize = 1,
+       .Format = DXGI_FORMAT_NV12,

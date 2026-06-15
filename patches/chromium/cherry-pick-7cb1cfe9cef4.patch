@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hirokazu Honda <hiroh@chromium.org>
+Date: Thu, 28 May 2026 17:00:38 -0700
+Subject: [M148] media/gpu: Change FrameResource::stride() to return size_t
+
+Original change's description:
+> media/gpu: Change FrameResource::stride() to return size_t
+>
+> This CL updates FrameResource::stride() and its implementations
+> (VideoFrameResource and NativePixmapFrameResource) to return size_t
+> instead of int. This aligns their signatures with
+> media::VideoFrame::stride() and prevents implicit truncations when
+> accessing strides.
+>
+> Bug: 515429352
+> Test: video.Play.*
+> Change-Id: Ib34c5728119a411be0d29c470493595f847500b7
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7873915
+> Reviewed-by: Nathan Hebert <nhebert@chromium.org>
+> Commit-Queue: Hirokazu Honda <hiroh@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1636632}
+
+(cherry picked from commit 40a953389e4d8dbbb2930e077bdee58a05fd800b)
+
+Bug: 517405700,515429352
+Change-Id: Ib34c5728119a411be0d29c470493595f847500b7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7883562
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#3931}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/media/gpu/chromeos/frame_resource.h b/media/gpu/chromeos/frame_resource.h
+index 7f9c74aeb4b4a2589d756365b6f9ba06f3025291..f8c0eec9a7ecff6b2361fc32db10930cee5e777a 100644
+--- a/media/gpu/chromeos/frame_resource.h
++++ b/media/gpu/chromeos/frame_resource.h
+@@ -105,9 +105,8 @@ class FrameResource : public base::RefCountedThreadSafe<FrameResource> {
+ 
+   virtual VideoPixelFormat format() const = 0;
+ 
+-  // Returns the stride in bytes of a plane. Note that stride can be negative if
+-  // the image layout is bottom-up.
+-  virtual int stride(size_t plane) const = 0;
++  // Returns the stride in bytes of a plane.
++  virtual size_t stride(size_t plane) const = 0;
+ 
+   virtual VideoFrame::StorageType storage_type() const = 0;
+ 
+diff --git a/media/gpu/chromeos/native_pixmap_frame_resource.cc b/media/gpu/chromeos/native_pixmap_frame_resource.cc
+index 0c8ae555b0c113a5ca1965b388a9a41387fb4e7a..a68848d8fed401f09d93f9b11101b382b8fc62ea 100644
+--- a/media/gpu/chromeos/native_pixmap_frame_resource.cc
++++ b/media/gpu/chromeos/native_pixmap_frame_resource.cc
+@@ -315,7 +315,7 @@ VideoPixelFormat NativePixmapFrameResource::format() const {
+   return layout_.format();
+ }
+ 
+-int NativePixmapFrameResource::stride(size_t plane) const {
++size_t NativePixmapFrameResource::stride(size_t plane) const {
+   CHECK_LT(plane, layout().num_planes());
+   return layout().planes()[plane].stride;
+ }
+diff --git a/media/gpu/chromeos/native_pixmap_frame_resource.h b/media/gpu/chromeos/native_pixmap_frame_resource.h
+index 95138c43b7de38af96a267e40f20bc4be2646c74..ac8ee056ea4f66718154f5a84316d8ebb7504174 100644
+--- a/media/gpu/chromeos/native_pixmap_frame_resource.h
++++ b/media/gpu/chromeos/native_pixmap_frame_resource.h
+@@ -97,7 +97,7 @@ class NativePixmapFrameResource : public FrameResource {
+       const override;
+   const VideoFrameLayout& layout() const override;
+   VideoPixelFormat format() const override;
+-  int stride(size_t plane) const override;
++  size_t stride(size_t plane) const override;
+   VideoFrame::StorageType storage_type() const override;
+   int row_bytes(size_t plane) const override;
+   const gfx::Size& coded_size() const override;
+diff --git a/media/gpu/chromeos/video_frame_resource.cc b/media/gpu/chromeos/video_frame_resource.cc
+index 0fac2c3ccaa0a56955481b88a861dc9d2a026bc4..6b07aba7e5e778f62b38de71b2181e6fede4a9f7 100644
+--- a/media/gpu/chromeos/video_frame_resource.cc
++++ b/media/gpu/chromeos/video_frame_resource.cc
+@@ -95,7 +95,7 @@ VideoPixelFormat VideoFrameResource::format() const {
+   return frame_->format();
+ }
+ 
+-int VideoFrameResource::stride(size_t plane) const {
++size_t VideoFrameResource::stride(size_t plane) const {
+   return frame_->stride(plane);
+ }
+ 
+diff --git a/media/gpu/chromeos/video_frame_resource.h b/media/gpu/chromeos/video_frame_resource.h
+index fe6e585e41fb2e0478eb6e94ed4413f87f8abf3b..bd91a32fdb3a8f9eae0318dbde0d2d990dafe961 100644
+--- a/media/gpu/chromeos/video_frame_resource.h
++++ b/media/gpu/chromeos/video_frame_resource.h
+@@ -45,7 +45,7 @@ class VideoFrameResource : public FrameResource {
+       const override;
+   const VideoFrameLayout& layout() const override;
+   VideoPixelFormat format() const override;
+-  int stride(size_t plane) const override;
++  size_t stride(size_t plane) const override;
+   VideoFrame::StorageType storage_type() const override;
+   int row_bytes(size_t plane) const override;
+   const gfx::Size& coded_size() const override;

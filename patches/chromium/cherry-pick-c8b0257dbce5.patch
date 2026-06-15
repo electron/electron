@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hirokazu Honda <hiroh@chromium.org>
+Date: Thu, 28 May 2026 18:01:16 -0700
+Subject: [M148] media/gpu: Validate strides fit in int in LibYUVImageProcessor
+
+Original change's description:
+> media/gpu: Validate strides fit in int in LibYUVImageProcessor
+>
+> This CL adds checks in LibYUVImageProcessorBackend::DoConversion to
+> ensure that the strides of both input and output frames fit in
+> positive int before calling LibYUV functions, preventing truncation
+> and potential out-of-bounds access.
+>
+> Bug: 515429352
+> Test: webrtc.RTCPeerConnection.*
+> Change-Id: I5761ea08dd69ec8f25b13a62122e1190d60b7cdd
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7874238
+> Reviewed-by: Nathan Hebert <nhebert@chromium.org>
+> Commit-Queue: Hirokazu Honda <hiroh@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1636634}
+
+(cherry picked from commit fba75fddc477ba753324b98a9ed1435f430d0679)
+
+Bug: 517405700,515429352
+Change-Id: I5761ea08dd69ec8f25b13a62122e1190d60b7cdd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7880089
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Hirokazu Honda <hiroh@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#3936}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/media/gpu/chromeos/libyuv_image_processor_backend.cc b/media/gpu/chromeos/libyuv_image_processor_backend.cc
+index 1e4268aa4b3a08b2f980f4c6788b669dab46e480..5196887c3359d6f25f585f609e7b7da7d00d9baf 100644
+--- a/media/gpu/chromeos/libyuv_image_processor_backend.cc
++++ b/media/gpu/chromeos/libyuv_image_processor_backend.cc
+@@ -361,6 +361,19 @@ int LibYUVImageProcessorBackend::DoConversion(const FrameResource* const input,
+                                               FrameResource* const output) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(backend_sequence_checker_);
+ 
++  for (size_t i = 0; i < input->layout().num_planes(); ++i) {
++    if (!base::IsValueInRangeForNumericType<int>(input->stride(i))) {
++      VLOGF(1) << "Input stride does not fit in int: " << input->stride(i);
++      return -1;
++    }
++  }
++  for (size_t i = 0; i < output->layout().num_planes(); ++i) {
++    if (!base::IsValueInRangeForNumericType<int>(output->stride(i))) {
++      VLOGF(1) << "Output stride does not fit in int: " << output->stride(i);
++      return -1;
++    }
++  }
++
+ #define Y_U_V_DATA(fr)                                                        \
+   fr->visible_data(VideoFrame::Plane::kY), fr->stride(VideoFrame::Plane::kY), \
+       fr->visible_data(VideoFrame::Plane::kU),                                \
