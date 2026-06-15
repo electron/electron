@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrea Orru <andreaorru@chromium.org>
+Date: Thu, 4 Jun 2026 08:19:47 -0700
+Subject: [M148] [Extensions] Fix Site Isolation bypass in WebRequest API via
+ EventRouter
+
+Original change's description:
+> [Extensions] Fix Site Isolation bypass in WebRequest API via EventRouter
+>
+> When kWebRequestPersistFilteredEventsViaEventRouter is enabled, active
+> webRequest listeners are registered via the mojom::EventRouter
+> interface. EventRouter::AddFilteredListenerForMainThread permits
+> registrations from renderers that have executed a content script for the
+> extension. However, WebRequestAPI::OnListenerAdded does not verify
+> whether the registering process was a privileged extension process
+> rather than a content script web process before establishing active
+> listeners that receive sensitive cross-origin network data.
+>
+> This change adds a process authorization check in
+> WebRequestAPI::OnListenerAdded using ProcessMap::Contains. If an
+> unauthorized process attempts to register a webRequest listener, the
+> registration is rejected and the renderer process is terminated with the
+> new bad message reason WRA_INVALID_EXTENSION_ID_FOR_PROCESS.
+>
+> Bug: 513321171
+> Change-Id: Iad4aca0a303cc64cec5f280bc12a21c3b03cc799
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7867503
+> Reviewed-by: Tim <tjudkins@chromium.org>
+> Reviewed-by: Kelvin Jiang <kelvinjiang@chromium.org>
+> Reviewed-by: Luc Nguyen <lucnguyen@google.com>
+> Commit-Queue: Andrea Orru <andreaorru@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1636336}
+
+(cherry picked from commit 572cfa5066cece423fd070de5d61395bf947630b)
+
+Bug: 517794297,513321171
+Change-Id: Iad4aca0a303cc64cec5f280bc12a21c3b03cc799
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7886775
+Reviewed-by: Devlin Cronin <rdevlin.cronin@chromium.org>
+Commit-Queue: Andrea Orru <andreaorru@chromium.org>
+Reviewed-by: Luc Nguyen <lucnguyen@google.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4238}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/extensions/browser/api/web_request/web_request_api.cc b/extensions/browser/api/web_request/web_request_api.cc
+index f7b0eedc193e3340e9bba305f9bca52613f73894..44d084a2b14b4e6b1a2814f654312f3feca3e8a4 100644
+--- a/extensions/browser/api/web_request/web_request_api.cc
++++ b/extensions/browser/api/web_request/web_request_api.cc
+@@ -40,6 +40,7 @@
+ #include "extensions/browser/api/web_request/web_request_proxying_url_loader_factory.h"
+ #include "extensions/browser/api/web_request/web_request_proxying_websocket.h"
+ #include "extensions/browser/api/web_request/web_request_proxying_webtransport.h"
++#include "extensions/browser/bad_message.h"
+ #include "extensions/browser/browser_frame_context_data.h"
+ #include "extensions/browser/browser_process_context_data.h"
+ #include "extensions/browser/event_router.h"
+@@ -465,6 +466,20 @@ void WebRequestAPI::OnListenerAdded(const EventListenerInfo& details) {
+   std::string sub_event_name = details.event_name;
+   auto* process = content::RenderProcessHost::FromID(details.render_process_id);
+ 
++  // Active webRequest listeners owned by an extension must only be registered
++  // by processes authorized to host that extension.
++  // `AddFilteredListenerForMainThread` also accepts registrations from web
++  // processes that have executed content or user scripts for the extension, so
++  // enforce the stronger `ProcessMap` check here. Lazy listeners are exempt
++  // since they are not bound to a specific process. See crbug.com/513321171.
++  if (extension && !details.is_lazy && process &&
++      !ProcessMap::Get(details.browser_context)
++           ->Contains(extension->id(), process->GetDeprecatedID())) {
++    bad_message::ReceivedBadMessage(
++        process, bad_message::WRA_INVALID_EXTENSION_ID_FOR_PROCESS);
++    return;
++  }
++
+   if (extra_info_spec & ExtraInfoSpec::SECURITY_INFO) {
+     // Security info should not be available in Chrome Apps and
+     // non-controlled frame, non-extension contexts.
+diff --git a/extensions/browser/bad_message.h b/extensions/browser/bad_message.h
+index cb78b91132fbf2e8572c9bb2eea8ea443d24d0f6..276ff421b5f5fd8a61f0b4f7789d047c66cd20e0 100644
+--- a/extensions/browser/bad_message.h
++++ b/extensions/browser/bad_message.h
+@@ -74,6 +74,9 @@ enum BadMessageReason {
+   SWH_BAD_WORKER_THREAD_ID = 34,
+   ER_INVALID_EXTENSION_ID_FOR_PROCESS = 35,
+   CEFH_INVALID_EXTENSION_ID_FOR_SCRIPT_INJECT_REQUEST = 36,
++  SWH_INVALID_SERVICE_WORKER_SCOPE = 37,
++  EMF_INVALID_MESSAGE_FROM_SANDBOXED_PROCESS = 38,
++  WRA_INVALID_EXTENSION_ID_FOR_PROCESS = 39,
+   // Please add new elements here. The naming convention is abbreviated class
+   // name (e.g. ExtensionHost becomes EH) plus a unique description of the
+   // reason. After making changes, you MUST update histograms.xml by running:
+diff --git a/tools/metrics/histograms/metadata/stability/enums.xml b/tools/metrics/histograms/metadata/stability/enums.xml
+index 4d0eb09da569d5ef41d95c1c9633b525af07f868..e1a13ca18c95bc6ae31aa330e79ff162959428c6 100644
+--- a/tools/metrics/histograms/metadata/stability/enums.xml
++++ b/tools/metrics/histograms/metadata/stability/enums.xml
+@@ -544,6 +544,9 @@ Called by update_bad_message_reasons.py.-->
+   <int value="34" label="SWH_BAD_WORKER_THREAD_ID"/>
+   <int value="35" label="ER_INVALID_EXTENSION_ID_FOR_PROCESS"/>
+   <int value="36" label="CEFH_INVALID_EXTENSION_ID_FOR_SCRIPT_INJECT_REQUEST"/>
++  <int value="37" label="SWH_INVALID_SERVICE_WORKER_SCOPE"/>
++  <int value="38" label="EMF_INVALID_MESSAGE_FROM_SANDBOXED_PROCESS"/>
++  <int value="39" label="WRA_INVALID_EXTENSION_ID_FOR_PROCESS"/>
+ </enum>
+ 
+ <enum name="BadMessageReasonGuestView">
