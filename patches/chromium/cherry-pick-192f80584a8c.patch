@@ -1,0 +1,142 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Fri, 29 May 2026 16:42:20 -0700
+Subject: [M148] Ozone: Add process-global drag-and-drop state guard
+
+Original change's description:
+> Ozone: Add process-global drag-and-drop state guard
+>
+> In Linux/Ozone platforms (e.g. Ozone/X11), the drag-and-drop
+> implementation previously lacked a process-global guard to prevent
+> concurrent or re-entrant drag-and-drop operations across different
+> top-level windows. Instead, it relied solely on instance-scoped DCHECKs.
+> This allowed a compromised renderer to asynchronously initiate a second
+> drag operation via IPC while a legitimate drag-and-drop was in flight,
+> stealing ownership of the global XdndSelection atom and hijacking the
+> event dispatcher.
+>
+> This CL implements a process-global drag guard `g_is_dragging` and a
+> `base::AutoReset<bool>` scope in `DesktopDragDropClientOzone::StartDragAndDrop`
+> to reject concurrent/re-entrant drag attempts with `DragOperation::kNone`.
+> This aligns the Ozone platform with the existing Windows implementation.
+>
+> Fixed: 517103584
+> Change-Id: I9673e57ec2aaae2f36cc20f4223d58240264098c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7879779
+> Commit-Queue: Allen Bauer <kylixrd@chromium.org>
+> Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+> Reviewed-by: Allen Bauer <kylixrd@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1637643}
+
+(cherry picked from commit a145ee4668e6ce091552fec304e5cad0f9606322)
+
+Bug: 517794085,517103584
+Change-Id: I9673e57ec2aaae2f36cc20f4223d58240264098c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7886777
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#3994}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone.cc b/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone.cc
+index 69257edfad9ad5345db2cc6de7692d7e63fde73c..c87fe0bcafefada4fadb78490d11f86380d8da64 100644
+--- a/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone.cc
++++ b/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone.cc
+@@ -7,6 +7,7 @@
+ #include <memory>
+ #include <utility>
+ 
++#include "base/auto_reset.h"
+ #include "base/functional/bind.h"
+ #include "base/functional/callback_helpers.h"
+ #include "base/scoped_observation.h"
+@@ -30,6 +31,13 @@ namespace {
+ 
+ using ::ui::mojom::DragOperation;
+ 
++// Process-global re-entrancy guard. DesktopDragDropClientOzone is per
++// top-level window, so the per-instance drag_context_ check below does not
++// catch a second window starting a drag while the first window's nested
++// RunMoveLoop is pumping tasks. On X11 that lets a compromised renderer steal
++// the global XdndSelection mid-drag. Mirrors desktop_drag_drop_client_win.cc.
++bool g_is_dragging = false;
++
+ // The minimum alpha required so we would treat the pixel as visible.
+ constexpr uint32_t kMinAlpha = 32;
+ 
+@@ -142,6 +150,13 @@ DragOperation DesktopDragDropClientOzone::StartDragAndDrop(
+     return DragOperation::kNone;
+   }
+ 
++  // A renderer can send LocalFrameHost::StartDragging at any time, so reject
++  // (rather than CHECK) re-entrant drags from a second top-level window.
++  if (g_is_dragging) {
++    return DragOperation::kNone;
++  }
++  base::AutoReset<bool> drag_scoper(&g_is_dragging, true);
++
+   DCHECK(!drag_context_);
+   drag_context_ = std::make_unique<DragContext>();
+ 
+diff --git a/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone_unittest.cc b/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone_unittest.cc
+index b7516bb77e7cf9837514f08fe7e4073f51f2f739..769cd0bb22e41b55be9013c4098548f3be25787d 100644
+--- a/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone_unittest.cc
++++ b/ui/views/widget/desktop_aura/desktop_drag_drop_client_ozone_unittest.cc
+@@ -166,6 +166,10 @@ class FakePlatformWindow : public ui::PlatformWindow, public ui::WmDragHandler {
+     drop_handler->OnDragLeave();
+   }
+ 
++  void set_callback_during_drag(base::RepeatingClosure callback) {
++    callback_during_drag_ = std::move(callback);
++  }
++
+   void CloseDrag(DragOperation operation) {
+     std::move(drag_finished_callback_).Run(operation);
+     drag_loop_quit_closure_.Run();
+@@ -174,6 +178,9 @@ class FakePlatformWindow : public ui::PlatformWindow, public ui::WmDragHandler {
+   void ProcessDrag(std::unique_ptr<OSExchangeData> data, int operation) {
+     std::move(drag_started_callback_).Run();
+     OnDragEnter(kStartDragLocation, std::move(data), operation);
++    if (callback_during_drag_) {
++      callback_during_drag_.Run();
++    }
+     int updated_operation = OnDragMotion(kStartDragLocation, operation);
+     OnDragDrop();
+     OnDragLeave();
+@@ -185,6 +192,7 @@ class FakePlatformWindow : public ui::PlatformWindow, public ui::WmDragHandler {
+   WmDragHandler::DragFinishedCallback drag_finished_callback_;
+   std::unique_ptr<ui::OSExchangeData> source_data_;
+   base::RepeatingClosure drag_loop_quit_closure_;
++  base::RepeatingClosure callback_during_drag_;
+   int modifiers_ = 0;
+ };
+ 
+@@ -560,4 +568,27 @@ TEST_F(DesktopDragDropClientOzoneTest, DataLeakPreventionBlockDrop) {
+   EXPECT_EQ(1, dragdrop_delegate_->num_exits());
+ }
+ 
++TEST_F(DesktopDragDropClientOzoneTest, RejectReentrantDrag) {
++  // Set up a callback to be run while the drag is active.
++  platform_window_->set_callback_during_drag(base::BindRepeating(
++      [](DesktopDragDropClientOzoneTest* test) {
++        // Attempt to start a second drag operation while the first is active.
++        DragOperation reentrant_operation =
++            test->StartDragAndDrop(ui::DragDropTypes::DRAG_COPY);
++        // The reentrant drag should be rejected and return kNone.
++        EXPECT_EQ(DragOperation::kNone, reentrant_operation);
++      },
++      base::Unretained(this)));
++
++  // Set the operation which the destination can accept.
++  dragdrop_delegate_->SetOperation(DragOperation::kCopy);
++
++  // Start the first drag and drop.
++  DragOperation operation = StartDragAndDrop(ui::DragDropTypes::DRAG_COPY |
++                                             ui::DragDropTypes::DRAG_MOVE);
++
++  // The first drag should succeed and complete as expected.
++  EXPECT_EQ(DragOperation::kCopy, operation);
++}
++
+ }  // namespace views

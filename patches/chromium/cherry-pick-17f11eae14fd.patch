@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Wed, 3 Jun 2026 14:29:13 -0700
+Subject: [M148] Fix UAF in BluetoothRfcommChannelMac and
+ BluetoothL2capChannelMac delegates on macOS
+
+Original change's description:
+> Fix UAF in BluetoothRfcommChannelMac and BluetoothL2capChannelMac delegates on macOS
+>
+> When a Bluetooth channel is closed, the C++ wrapper class synchronously
+> releases its strong reference to its Objective-C delegate class while
+> the delegate's own closed-callback method is still active on the call
+> stack. This results in the delegate being immediately deallocated,
+> causing UAF reads and writes upon method return.
+>
+> This CL fixes the issue by holding a strong local reference to the
+> delegate (self) at the beginning of rfcommChannelClosed: and l2capChannelClosed: to ensure it survives the callback execution.
+>
+> Bug: 518235412
+> Change-Id: Ie29e7a96cb36f3673a56d2a8d3834409c5007efb
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7892775
+> Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+> Commit-Queue: Alvin Ji <alvinji@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1640409}
+
+(cherry picked from commit 407929b2c76b20b7d2e291ffd5cdea7c2c383380)
+
+Bug: 519444377,518235412
+Change-Id: Ie29e7a96cb36f3673a56d2a8d3834409c5007efb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7899243
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4228}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/device/bluetooth/bluetooth_l2cap_channel_mac.mm b/device/bluetooth/bluetooth_l2cap_channel_mac.mm
+index 66db9baae58b4d6d05570c11323c5256d9ca035b..fc1fb7087e3a14ca534e08ae703ef26b5ecf675f 100644
+--- a/device/bluetooth/bluetooth_l2cap_channel_mac.mm
++++ b/device/bluetooth/bluetooth_l2cap_channel_mac.mm
+@@ -73,6 +73,13 @@ - (void)l2capChannelData:(IOBluetoothL2CAPChannel*)l2capChannel
+ - (void)l2capChannelClosed:(IOBluetoothL2CAPChannel*)l2capChannel {
+   [_l2capChannel setDelegate:nil];
+ 
++  // Maintain a strong local reference to ensure the delegate survives the
++  // callback. This is necessary for incoming connections or failed outgoing
++  // connections where `_strongSelf` is never armed, leaving `delegate_` in
++  // C++ as the only strong reference keeping this object alive.
++  [[maybe_unused]] NS_VALID_UNTIL_END_OF_SCOPE BluetoothL2capChannelDelegate*
++      keepAlive = self;
++
+   // If `_channel` still exists, notify it that the channel was closed so it
+   // can release its strong references to `l2capChannel` and the channel
+   // delegate (this object). In the typical case we expect `_channel` has
+diff --git a/device/bluetooth/bluetooth_rfcomm_channel_mac.mm b/device/bluetooth/bluetooth_rfcomm_channel_mac.mm
+index fd75d89437ffa394e4b86b25cc5013c5c438c6cf..f57c3c125140de1f4980c81fe00683e8606372fb 100644
+--- a/device/bluetooth/bluetooth_rfcomm_channel_mac.mm
++++ b/device/bluetooth/bluetooth_rfcomm_channel_mac.mm
+@@ -75,6 +75,13 @@ - (void)rfcommChannelData:(IOBluetoothRFCOMMChannel*)rfcommChannel
+ - (void)rfcommChannelClosed:(IOBluetoothRFCOMMChannel*)rfcommChannel {
+   [_rfcommChannel setDelegate:nil];
+ 
++  // Maintain a strong local reference to ensure the delegate survives the
++  // callback. This is necessary for incoming connections or failed outgoing
++  // connections where `_strongSelf` is never armed, leaving `delegate_` in
++  // C++ as the only strong reference keeping this object alive.
++  [[maybe_unused]] NS_VALID_UNTIL_END_OF_SCOPE BluetoothRfcommChannelDelegate*
++      keepAlive = self;
++
+   // If `_channel` still exists, notify it that the channel was closed so it
+   // can release its strong references to `rfcommChannel` and the channel
+   // delegate (this object). In the typical case we expect `_channel` has

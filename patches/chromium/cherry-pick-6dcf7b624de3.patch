@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Fri, 29 May 2026 09:05:59 -0700
+Subject: [M148] FLEDGE: Fix wrong timing of microtask checkpoint execution
+
+Original change's description:
+> FLEDGE: Fix wrong timing of microtask checkpoint execution
+>
+> Bug: 516902973
+> Change-Id: Ibac10bc5f07b40ca9cd984fe30e5950f7c12a7ff
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7877578
+> Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+> Reviewed-by: Russ Hamilton <behamilton@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1637121}
+
+(cherry picked from commit 5cfe401fdda609ebf3333c2733b78e3e585207fe)
+
+Bug: 517793347,516902973
+Change-Id: Ibac10bc5f07b40ca9cd984fe30e5950f7c12a7ff
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7880856
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#3974}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/content/services/auction_worklet/bidder_worklet_unittest.cc b/content/services/auction_worklet/bidder_worklet_unittest.cc
+index 358b57cf910dbaade746716592d5846d85f39555..34d84d0bffdd8ef8a33a5ef061f78a5e23b4a463 100644
+--- a/content/services/auction_worklet/bidder_worklet_unittest.cc
++++ b/content/services/auction_worklet/bidder_worklet_unittest.cc
+@@ -15134,6 +15134,41 @@ TEST_F(BidderWorkletTest, CrossOrigin) {
+       BidderWorklet::SignalsOriginRelation::kCrossOriginSignals, 5);
+ }
+ 
++TEST_F(BidderWorkletTest, MicroTaskTiming) {
++  const char kScript[] = R"(
++    function generateBid() {
++      Promise.resolve().then(() => {
++        /* If this runs at wrong time, the error will be top-level timeout,
++         * not generateBid one */
++        while(true) {}
++      });
++
++      while(true) {};
++    }
++  )";
++
++  mojo::Remote<mojom::BidderWorklet> bidder_worklet = CreateWorklet();
++  AddJavascriptResponse(&url_loader_factory_, interest_group_bidding_url_,
++                        kScript);
++  GenerateBid(bidder_worklet.get());
++  generate_bid_run_loop_ = std::make_unique<base::RunLoop>();
++  generate_bid_run_loop_->Run();
++  EXPECT_EQ(0u, bids_.size());
++  EXPECT_THAT(bid_errors_,
++              testing::ElementsAre(
++                  "https://url.test/ execution of `generateBid` timed out."));
++
++  // Second run should have the same behavior, not different one due to
++  // wrong timing of utask execution.
++  GenerateBid(bidder_worklet.get());
++  generate_bid_run_loop_ = std::make_unique<base::RunLoop>();
++  generate_bid_run_loop_->Run();
++  EXPECT_EQ(0u, bids_.size());
++  EXPECT_THAT(bid_errors_,
++              testing::ElementsAre(
++                  "https://url.test/ execution of `generateBid` timed out."));
++}
++
+ class BidderWorkletRealTimeReportingEnabledTest : public BidderWorkletTest {
+  public:
+   BidderWorkletRealTimeReportingEnabledTest() {
+diff --git a/content/services/auction_worklet/context_recycler.cc b/content/services/auction_worklet/context_recycler.cc
+index ba6617d0c45a06d7e6ce328e39df832a6493cb83..57d4275c9cc779d291962a90d4049ec9eabceea9 100644
+--- a/content/services/auction_worklet/context_recycler.cc
++++ b/content/services/auction_worklet/context_recycler.cc
+@@ -190,6 +190,12 @@ v8::Local<v8::Context> ContextRecycler::GetContext() {
+ }
+ 
+ void ContextRecycler::ResetForReuse() {
++  // Make sure that microtasks get flushed as they would not on timeout.
++  {
++    AuctionV8Helper::TimeLimitScope time_scope(v8_helper_->GetTimeLimit());
++    v8_helper_->isolate()->PerformMicrotaskCheckpoint();
++  }
++
+   for (Bindings* bindings : bindings_list_) {
+     bindings->Reset();
+   }
