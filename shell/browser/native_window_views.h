@@ -296,6 +296,11 @@ class NativeWindowViews : public NativeWindow,
   SkColor overlay_button_color_ = SkColor();
   SkColor overlay_symbol_color_ = SkColor();
 
+  // The last background color set via SetBackgroundColor(). Tracked because the
+  // root view does not always reflect it (e.g. it is transparent for CSD
+  // windows on Linux).
+  SkColor background_color_ = SK_ColorTRANSPARENT;
+
 #if BUILDFLAG(IS_WIN)
 
   ui::mojom::WindowShowState last_window_state_;
