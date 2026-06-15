@@ -222,6 +222,19 @@ void ElectronDesktopWindowTreeHostLinux::UpdateFrameHints() {
                              native_window_view_->GetOpacity() < 1.0;
 
   auto* fvl = native_window_view_->GetFrameViewLinux();
+  if (fvl) {
+    // Re-evaluate shadow support on every hints update instead of relying
+    // solely on the one-shot call in OnWidgetInitDone(): the platform
+    // window's capabilities are only meaningful once it exists, and a stale
+    // `false` permanently zeroes the CSD resize band and the decoration
+    // insets reported through CalculateInsetsInDIP(), leaving frameless
+    // windows impossible to resize by their edges on Wayland.
+    // BrowserDesktopWindowTreeHostLinux checks SupportsClientFrameShadow()
+    // live on every update for the same reason.
+    fvl->SetSupportsClientFrameShadow(SupportsClientFrameShadow() &&
+                                      !native_window_view_->IsTranslucent());
+  }
+
   if (!fvl || !fvl->ShouldDrawRestoredFrameShadow()) {
     platform_window()->SetInputRegion(std::nullopt);
     if (ui::OzonePlatform::GetInstance()->IsWindowCompositingSupported()) {

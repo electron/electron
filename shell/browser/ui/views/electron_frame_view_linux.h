@@ -31,6 +31,7 @@ class ElectronFrameViewLinux : public views::FrameViewLinux {
 
   // views::FrameViewLinux:
   bool HasWindowTitle() const override;
+  views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;
   int NonClientHitTest(const gfx::Point& point) override;
   void Layout(PassKey) override;
   gfx::Size GetMinimumSize() const override;

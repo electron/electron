@@ -5,14 +5,17 @@
 
 #include "shell/browser/ui/views/electron_frame_view_linux.h"
 
+#include "base/check_op.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/caption_button_placeholder_container.h"
 #include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
+#include "shell/browser/ui/views/frameless_view.h"
 #include "ui/base/hit_test.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/compositor/layer.h"
 #include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
+#include "ui/views/widget/widget_delegate.h"
 #include "ui/views/window/frame_caption_button.h"
 
 namespace electron {
@@ -66,10 +69,53 @@ bool ElectronFrameViewLinux::HasWindowTitle() const {
   return false;
 }
 
+views::View* ElectronFrameViewLinux::TargetForRect(views::View* root,
+                                                   const gfx::Rect& rect) {
+  CHECK_EQ(root, this);
+
+  // Events that hit-test to a resize border must be targeted at the frame
+  // view: for frameless windows the client (web contents) view covers the
+  // same pixels, and if it becomes the event target the interactive resize
+  // never starts. FramelessView and WinFrameView do the equivalent; this
+  // view lost that behaviour when it moved onto views::FrameViewLinux.
+  switch (NonClientHitTest(rect.origin())) {
+    case HTLEFT:
+    case HTRIGHT:
+    case HTTOP:
+    case HTBOTTOM:
+    case HTTOPLEFT:
+    case HTTOPRIGHT:
+    case HTBOTTOMLEFT:
+    case HTBOTTOMRIGHT:
+      return this;
+    default:
+      return FrameViewLinux::TargetForRect(root, rect);
+  }
+}
+
 int ElectronFrameViewLinux::NonClientHitTest(const gfx::Point& point) {
   int result = FrameViewLinux::NonClientHitTest(point);
   if (result != HTCLIENT)
     return result;
+
+  // FrameViewLinux's resize hit-test only sees GetFrameBorderInsets(), i.e.
+  // the (shadow-only on Wayland) outer border, and the client_view() check
+  // returns HTCLIENT before it even runs for inside-edge points. Re-test
+  // here with an additive inside-edge band so frameless/WCO windows have a
+  // draggable resize handle inside the visible window edge — the same band
+  // FramelessView uses, which NativeWindow::NonClientHitTest can't reach
+  // because this view is not a FramelessView.
+  if (GetWidget()->widget_delegate()->CanResize()) {
+    constexpr int kResizeAreaCornerSize = 16;  // matches FrameViewLinux
+    const gfx::Insets resize_border =
+        GetFrameBorderInsets() +
+        gfx::Insets(FramelessView::kResizeInsideBoundsSize);
+    int component =
+        GetHTComponentForFrame(point, resize_border, kResizeAreaCornerSize,
+                               kResizeAreaCornerSize, /*can_resize=*/true);
+    if (component != HTNOWHERE)
+      return component;
+  }
 
   // The base class returns HTCLIENT for the WCO titlebar area because the
   // client view overlaps it. Check buttons and the draggable overlay region.
