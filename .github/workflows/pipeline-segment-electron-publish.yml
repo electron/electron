@@ -46,6 +46,16 @@ on:
         required: true
         type: boolean
         default: false
+      generate-chromedriver:
+        description: Whether or not to build chromedriver
+        required: false
+        type: boolean
+        default: true
+      generate-test-artifacts:
+        description: Whether or not to generate artifacts only consumed by test jobs
+        required: false
+        type: boolean
+        default: true
       upload-to-storage:
         description: Whether or not to upload build artifacts to external storage
         required: true
@@ -85,6 +95,7 @@ env:
     '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True' }}
   ELECTRON_OUT_DIR: Default
   ACTIONS_STEP_DEBUG: ${{ secrets.ACTIONS_STEP_DEBUG }}
+  RUNNER_LABEL: ${{ inputs.build-runs-on }}
 jobs:
   build:
     defaults:
@@ -106,7 +117,7 @@ jobs:
         run: |
           mkdir src
       - name: Checkout Electron
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           path: src/electron
           fetch-depth: 0
@@ -146,9 +157,9 @@ jobs:
         run: >
           if [ "${{ inputs.target-arch  }}" = "arm" ]; then
             if [ "${{ inputs.is-release  }}" = true ]; then
-              GN_EXTRA_ARGS='target_cpu="arm" build_tflite_with_xnnpack=false symbol_level=1'
+              GN_EXTRA_ARGS='target_cpu="arm" build_tflite_with_xnnpack=false build_litert_with_xnnpack=false symbol_level=1'
             else
-              GN_EXTRA_ARGS='target_cpu="arm" build_tflite_with_xnnpack=false'
+              GN_EXTRA_ARGS='target_cpu="arm" build_tflite_with_xnnpack=false build_litert_with_xnnpack=false'
             fi
           elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
             GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
@@ -176,7 +187,7 @@ jobs:
         if: ${{ inputs.target-platform == 'linux' }}
         uses: ./src/electron/.github/actions/restore-cache-aks
       - name: Checkout Electron
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           path: src/electron
           fetch-depth: 0
@@ -196,6 +207,13 @@ jobs:
       - name: Run Electron Only Hooks
         run: |
           e d gclient runhooks --spec="solutions=[{'name':'src/electron','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':False},'managed':False}]"
+      - name: Download PGO Profiles
+        if: ${{ inputs.gn-build-type == 'release' }}
+        env:
+          PGO_TARGET: ${{ inputs.target-platform }}-${{ inputs.target-arch }}
+        run: >
+          python3 src/electron/script/pgo/download-profiles.py --targets
+          "$PGO_TARGET,v8-builtins"
       - name: Regenerate DEPS Hash
         run: >
           (cd src/electron && git checkout .) && node
@@ -232,6 +250,8 @@ jobs:
             inputs.target-platform }}
           is-release: ${{ inputs.is-release }}
           generate-symbols: ${{ inputs.generate-symbols }}
+          generate-chromedriver: ${{ inputs.generate-chromedriver }}
+          generate-test-artifacts: ${{ inputs.generate-test-artifacts }}
           upload-to-storage: ${{ inputs.upload-to-storage }}
           is-asan: ${{ inputs.is-asan }}
           upload-out-gen-artifacts: ${{ inputs.upload-out-gen-artifacts }}
@@ -252,5 +272,7 @@ jobs:
           artifact-platform: mas
           is-release: ${{ inputs.is-release }}
           generate-symbols: ${{ inputs.generate-symbols }}
+          generate-chromedriver: ${{ inputs.generate-chromedriver }}
+          generate-test-artifacts: ${{ inputs.generate-test-artifacts }}
           upload-to-storage: ${{ inputs.upload-to-storage }}
           step-suffix: (mas)

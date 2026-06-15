@@ -5,7 +5,7 @@ Subject: chore: modify chromium handling of mouse events
 
 This patch does the following:
 
-1. When Windows Control Overlay is enabled, it allows chromium to handle synthetic mouse events generated for touch
+1. When Window Control Overlay is enabled, it allows chromium to handle synthetic mouse events generated for touch
 actions in the non-client caption area.
 2. It calls HandleMouseEvent on the delegate earlier in HandleMouseEventInternal, so that Electron can selectively disable
 draggable regions to allow events to propagate to the underlying renderer.

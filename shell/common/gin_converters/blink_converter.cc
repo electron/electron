@@ -360,7 +360,8 @@ v8::Local<v8::Value> Converter<blink::WebKeyboardEvent>::ToV8(
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
   dict.Set("type", in.GetType());
-  dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.dom_key));
+  dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(
+                      static_cast<ui::DomKey>(in.dom_key)));
   dict.Set("code", ui::KeycodeConverter::DomCodeToCodeString(
                        static_cast<ui::DomCode>(in.dom_code)));
 

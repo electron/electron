@@ -59,7 +59,7 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index c856fbdc9b5303e4727af4d49596d1275fbec701..be3b6665d3a804068ef9a537727be46a7ca849c9 100644
+index 2f4ea6e210d3573a82d018f8e99522f1cc33d57a..c6ac28f4ae4d1c17b58c3224c6d4618cc8e62bdf 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -3201,6 +3201,7 @@ void LocalFrame::RequestExecuteScript(
@@ -92,10 +92,10 @@ index 372bf65c38f89efc1023fa458c30c75efa4cefcd..c410457305d69a97565bba51a34335ac
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 63a36b233c5d9a9e223160eee8454c96db4bb55f..647a5f6f790e7330a149b2e1dadd2022a21d5145 100644
+index 7dd9b834144baa59e10d1a90b9f0a04a25f495fa..59edd8443a366c724954ffd3a1dbb7bdb8c95bdf 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-@@ -974,6 +974,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
+@@ -976,6 +976,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
              std::move(callback).Run(value ? std::move(*value) : base::Value());
            },
            std::move(callback)),
@@ -211,7 +211,7 @@ index f2c94689450f0333a144ccf82cf147c194896e6b..1c2e9fe36c297f7d614d9ca290e4d13c
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index b983291f5cf3c14d60b7acf365cc546e2dc0763b..356c18399bd7fc9bed0274e1ff3f35fbf830f2d3 100644
+index def5347c2e05f07023775ac66525dd66bc4623ab..699f27b7f298217a5110e165300b5be1172b1496 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
 @@ -300,6 +300,7 @@ void ExecuteScriptsInMainWorld(

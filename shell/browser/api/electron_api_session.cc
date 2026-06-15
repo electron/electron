@@ -609,12 +609,15 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     return;
 
   v8::HandleScope handle_scope(isolate_);
-  auto handle = DownloadItem::FromOrCreate(isolate_, item);
+  auto* handle = DownloadItem::FromOrCreate(isolate_, item);
+  v8::Local<v8::Object> handle_object;
+  if (!handle->GetWrapper(isolate_).ToLocal(&handle_object))
+    return;
   if (item->GetState() == download::DownloadItem::INTERRUPTED)
     handle->SetSavePath(item->GetTargetFilePath());
   content::WebContents* web_contents =
       content::DownloadItemUtils::GetWebContents(item);
-  bool prevent_default = Emit("will-download", handle, web_contents);
+  bool prevent_default = Emit("will-download", handle_object, web_contents);
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
@@ -1293,7 +1296,9 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(
                            item->expiration.InMillisecondsF());
                   dict.Set("lastUsedTime", item->last_used_time);
                   dict.Set("size", item->size);
-                  dict.Set("hash", net::HashValue(item->hash).ToString());
+                  dict.Set("hash",
+                           net::HashValue(net::HASH_VALUE_SHA256, item->hash)
+                               .ToString());
 
                   result.push_back(dict);
                 }

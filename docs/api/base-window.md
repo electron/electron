@@ -208,6 +208,10 @@ Emitted when the window exits from a maximized state.
 
 Emitted when the window is minimized.
 
+> [!NOTE]
+> On Wayland, “minimized” is not currently a supported state. The minimize event will only fire when triggered by client-side decoration (e.g. clicking the minimize
+> button on a frameless window’s Window Control Overlay)
+
 #### Event: 'restore'
 
 Emitted when the window is restored from a minimized state.
@@ -944,9 +948,13 @@ Sets whether the window should show always on top of other windows. After
 setting this, the window is still a normal window, not a toolbox window which
 can not be focused on.
 
+Not supported on Wayland (Linux).
+
 #### `win.isAlwaysOnTop()`
 
 Returns `boolean` - Whether the window is always on top of other windows.
+
+Not supported on Wayland (Linux).
 
 #### `win.moveAbove(mediaSourceId)`
 

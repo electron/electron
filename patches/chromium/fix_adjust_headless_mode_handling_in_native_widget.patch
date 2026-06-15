@@ -23,10 +23,10 @@ additional headless changes from breaking macOS window behavior.
 https://chromium-review.googlesource.com/c/chromium/src/+/7487666
 
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 67e2719de154b7e48b43f9a908e7614d0499dc26..9a0518dd374b5e8760832e6463a004df42f07ea2 100644
+index ba077ed1ff89cdf8e602135330698553d1d765a6..ab0e20aff212fd8f9d74d5b424c72e308924304a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -238,6 +238,7 @@ @implementation NativeWidgetMacNSWindow {
+@@ -241,6 +241,7 @@ @implementation NativeWidgetMacNSWindow {
    BOOL _isEnforcingNeverMadeVisible;
    BOOL _activationIndependence;
    BOOL _isTooltip;
@@ -34,7 +34,7 @@ index 67e2719de154b7e48b43f9a908e7614d0499dc26..9a0518dd374b5e8760832e6463a004df
    BOOL _isShufflingForOrdering;
    BOOL _miniaturizationInProgress;
    std::unique_ptr<NativeWidgetMacNSWindowHeadlessInfo> _headless_info;
-@@ -245,6 +246,7 @@ @implementation NativeWidgetMacNSWindow {
+@@ -248,6 +249,7 @@ @implementation NativeWidgetMacNSWindow {
  @synthesize bridgedNativeWidgetId = _bridgedNativeWidgetId;
  @synthesize bridge = _bridge;
  @synthesize isTooltip = _isTooltip;
@@ -42,7 +42,7 @@ index 67e2719de154b7e48b43f9a908e7614d0499dc26..9a0518dd374b5e8760832e6463a004df
  @synthesize isShufflingForOrdering = _isShufflingForOrdering;
  @synthesize preventKeyWindow = _preventKeyWindow;
  @synthesize childWindowAddedHandler = _childWindowAddedHandler;
-@@ -266,23 +268,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
+@@ -269,23 +271,6 @@ - (instancetype)initWithContentRect:(NSRect)contentRect
    return self;
  }
  
@@ -67,7 +67,7 @@ index 67e2719de154b7e48b43f9a908e7614d0499dc26..9a0518dd374b5e8760832e6463a004df
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 0e15e181057be466221ff6dad3e20edbfb5881cd..6fbb8d56f36cba9165c35ee395a1057a6a02e110 100644
+index 9e4d80f999db6a7e98cc9ade0da27e834afabf53..3c3ae8a4526c10fce2d78f87a21b54b41dd231c8 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -570,7 +570,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -106,10 +106,10 @@ index a7aa661f94df2a435de6727ca89b69e686b92887..16e6c4b02aca7f1c4f2e80340898262b
    bool is_visible_on_all_workspaces_ = false;
    gfx::Rect window_bounds_before_fullscreen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 0abbfbc55033983a6a48b717528091d2ab4484ee..c6222bfe42b2cfa60415ab9e7cbc9a41ce607388 100644
+index e9df540bdecfbdab4d74b4c483dd0593695a2ef8..b92006768fd41c1df6cbb4244e53ee86a3ea4895 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -484,6 +484,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -485,6 +485,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (!is_tooltip) {
      tooltip_manager_ = std::make_unique<TooltipManagerMac>(GetNSWindowMojo());
    }
@@ -117,7 +117,7 @@ index 0abbfbc55033983a6a48b717528091d2ab4484ee..c6222bfe42b2cfa60415ab9e7cbc9a41
  
    if (params.workspace.length()) {
      if (std::optional<std::vector<uint8_t>> restoration_data =
-@@ -501,6 +502,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -502,6 +503,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
      window_params->modal_type = widget->widget_delegate()->GetModalType();
      window_params->is_translucent =
          params.opacity == Widget::InitParams::WindowOpacity::kTranslucent;
@@ -125,7 +125,7 @@ index 0abbfbc55033983a6a48b717528091d2ab4484ee..c6222bfe42b2cfa60415ab9e7cbc9a41
      window_params->is_tooltip = is_tooltip;
  
      // macOS likes to put shadows on most things. However, frameless windows
-@@ -690,9 +692,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -691,9 +693,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();
@@ -139,7 +139,7 @@ index 0abbfbc55033983a6a48b717528091d2ab4484ee..c6222bfe42b2cfa60415ab9e7cbc9a41
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 03b0c432a18fc6cdbac16efdf8cb13cebe1e8744..9fbd2f04cfa8c9afff1cac063f07cbd4e3b7d003 100644
+index a4e9aa6ca8d059a25723bdefd3898ea789b91783..2bef2e27a2d352ade1b6e6386dca8add928c4d37 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -239,6 +239,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {

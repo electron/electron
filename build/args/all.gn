@@ -2,7 +2,7 @@ is_electron_build = true
 root_extra_deps = [ "//electron" ]
 
 # Registry of NMVs --> https://github.com/nodejs/node/blob/main/doc/abi_version_registry.json
-node_module_version = 148
+node_module_version = 149
 
 v8_promise_internal_field_count = 1
 v8_embedder_string = "-electron.0"
@@ -69,3 +69,14 @@ enable_linux_installer = false
 
 # Disable "Save to Drive" feature in PDF viewer
 enable_pdf_save_to_drive = false
+
+# Track which grit resource IDs the linked binary actually references and
+# repack the locale .pak files with only those strings. Enabled for both
+# testing and release builds so that a reference to an unshipped resource
+# fails PR CI (see //electron:electron_resource_allowlist_check) rather than
+# the next release build.
+# TODO: extend the allowlist consumption to Windows (PDB-based extraction) and
+# macOS (needs Mach-O support in
+# tools/resources/generate_resource_allowlist.py); on those platforms this
+# only makes grit emit the (free) marker symbols today.
+enable_resource_allowlist_generation = true

@@ -11,6 +11,10 @@ Run `e sync --3` repeatedly, fixing patch conflicts as they arise, until it succ
 
 ## Success Criteria
 
+**Linter Requirements**:
+- Code/patch edits: Title must be exactly `{CL-Number}: {upstream CL original title}` with `Ref: {URL}` in the body.
+- Metadata-only patch updates (hashes/line numbers): Message must be exactly `chore: update patches` with no body.
+
 Phase One is complete when:
 - `e sync --3` exits with code 0 (no patch failures)
 - All changes are committed per the commit guidelines
@@ -97,6 +101,10 @@ Run `e build -k 999 -- --quiet` repeatedly, fixing build issues as they arise, u
 Run Phase Two immediately after Phase One is complete.
 
 ## Success Criteria
+
+**Linter Requirements**:
+- Code/patch edits: Title must be exactly `{CL-Number}: {upstream CL original title}` with `Ref: {URL}` in the body.
+- Metadata-only patch updates (hashes/line numbers): Message must be exactly `chore: update patches` with no body.
 
 Phase Two is complete when:
 - `e build -k 999 -- --quiet` exits with code 0 (no build failures)

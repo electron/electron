@@ -81,10 +81,10 @@ index 97a0f76571caf19e39d861bf188da9173fc2f8f6..e651e9b2f9a35265da00432cf2ffdc58
   private:
    const std::string service_interface_name_;
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index ad6f5d92fe0f72d2ba6c173282b218c2bc6b9a55..fb448c082f37c95a73502183f2ba83d523715c62 100644
+index b9e9000ba6a25649ba1b481010c256c2b2613dab..8131ad04fe9acffed489115172b6242b24bc209f 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -669,7 +669,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
+@@ -680,7 +680,7 @@ void UtilityProcessHost::OnProcessCrashed(int exit_code) {
                 : Client::CrashType::kPreIpcInitialization;
    }
  #endif  // BUILDFLAG(IS_WIN)
@@ -94,10 +94,10 @@ index ad6f5d92fe0f72d2ba6c173282b218c2bc6b9a55..fb448c082f37c95a73502183f2ba83d5
  
  std::optional<std::string> UtilityProcessHost::GetServiceName() {
 diff --git a/content/browser/service_host/utility_process_host.h b/content/browser/service_host/utility_process_host.h
-index 96c0cadf5caf5bf27f2a767c43f0f1da04298800..5a16fe5c01ae7777064168e8883ec8ec0b82a873 100644
+index 8999341cdabf92311d1ce0c15a905a3d54f4c356..fab41f265303db0e3411ac68c3c013b60ac26258 100644
 --- a/content/browser/service_host/utility_process_host.h
 +++ b/content/browser/service_host/utility_process_host.h
-@@ -87,7 +87,7 @@ class CONTENT_EXPORT UtilityProcessHost final
+@@ -88,7 +88,7 @@ class CONTENT_EXPORT UtilityProcessHost final
      virtual void OnProcessTerminatedNormally() {}
      // Called when the process has terminated due to a crash. The `type` field
      // indicates the type of crash. See above.

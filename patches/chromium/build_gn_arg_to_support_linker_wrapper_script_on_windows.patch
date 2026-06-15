@@ -11,7 +11,7 @@ wrapper to convert rsp file arguments to absolute paths.
 Should be removed when associated container bug is addressed.
 
 diff --git a/build/toolchain/win/toolchain.gni b/build/toolchain/win/toolchain.gni
-index 386ad2424e68d464877938ba9bebc65045e85b84..9220e88d2bcd729cdcf4a4500a0e4f388c81b989 100644
+index 5a8e5195d5314b1f99256ae5f157893b4b13fecb..9c449fac9398b2391fa0cc27e8d37a25d6ab1ca9 100644
 --- a/build/toolchain/win/toolchain.gni
 +++ b/build/toolchain/win/toolchain.gni
 @@ -14,6 +14,12 @@ import("//build/toolchain/win/win_toolchain_data.gni")

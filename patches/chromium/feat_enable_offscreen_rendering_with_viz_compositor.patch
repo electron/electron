@@ -90,10 +90,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index b4f2d6b658b7ed78433512a989971733657faace..a00798d7e933a9c7e7fab6c03e7d30040bbb01ec 100644
+index 70e268692d04596f943c2cc78d3de2d7a0cf8831..fb6d0a2eeb992a49d8aaa10a9c26c1837a6b29bb 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -178,6 +178,8 @@ viz_component("service") {
+@@ -180,6 +180,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_shared_image_interface.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
@@ -522,7 +522,7 @@ index 4f9e8946fa02d859e92a6896beba82721914f868..78486eaa993ee7ffd5188b31503de7dd
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index df45018e2aabde32f12a7097a2ebd96baf9ac1cc..3cfecccbe648834ce903d6d419740c4a39654221 100644
+index 9905cbb1697e9dd09dda8dfbb2754d668bef1412..6eb1d2e86eb4a518e34a2f4ef6e7559698ed0807 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -620,7 +620,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 13b231235e8cde33c61b982e9a000ddd28a6061b..10024f47afbedc163324e487b132ae4fa764d61e 100644
+index 1cd2152327be0ec8198586cfee109985de44d315..8526ec16b5da37345bc86729aa57735dd123ea5f 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -89,6 +89,7 @@ class DisplayPrivate;
@@ -657,7 +657,7 @@ index 13b231235e8cde33c61b982e9a000ddd28a6061b..10024f47afbedc163324e487b132ae4f
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -634,6 +647,8 @@ class COMPOSITOR_EXPORT Compositor
+@@ -631,6 +644,8 @@ class COMPOSITOR_EXPORT Compositor
        simple_begin_frame_observers_;
    std::unique_ptr<ui::HostBeginFrameObserver> host_begin_frame_observer_;
  
