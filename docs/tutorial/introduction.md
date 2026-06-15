@@ -27,10 +27,9 @@ Electron's maintainers. We highly recommend installing it as a learning tool to
 experiment with Electron's APIs or to prototype features during development.
 
 Fiddle also integrates nicely with our documentation. When browsing through examples
-in our tutorials, you'll frequently see an "Open in Electron Fiddle" button next to
-a code block. If you have Fiddle installed, this button will open a
-`fiddle.electronjs.org` link that will automatically load the example into Fiddle,
-no copy-pasting required.
+in our tutorials, you'll frequently see an "Open in Fiddle" button next to a code
+block. If you have Fiddle installed, this button will open a `fiddle.electronjs.org`
+link that will automatically load the example into Fiddle, no copy-pasting required.
 
 ```fiddle docs/fiddles/quick-start
 ```
