@@ -62,9 +62,10 @@ bar to reposition our app window!
 For more information around how to manage drag regions defined by your electron application,
 see the [Custom draggable regions][] section below.
 
-One more step: depending on the platform and user settings, the window may show a different
-number of controls, and they may be on the left or right side of the frame (or both). We can
-create a safe area so our own content and controls won't overlap.
+One more step: we should make sure our title bar content doesn't overlap with the native
+window controls. Buttons can appear on the right or left side of the frame (or both) depending
+on RTL and the user's settings. We can create a safe area using the CSS variables
+`env(titlebar-area-x, 0px)` and `env(titlebar-area-width, 100%)`.
 
 ```fiddle docs/fiddles/features/window-customization/custom-title-bar/safe-area
 

@@ -14,9 +14,9 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (43.0)
 
-### Behavior Changed: WCO respects user settings for the title bar layout on Linux
+### Behavior Changed: WCO respects the native title bar layout on Linux
 
-Frameless windows with Window Controls Overlay (WCO) now take into account user settings from the desktop environment on Linux. For example, on GNOME, there may be only a Close button by default. Controls may appear on the left or right side of the frame (or both). To account for all possibilities, use CSS variables to constrain your title bar content to the safe area. See the updated [custom title bar](./tutorial/custom-title-bar.md) guide for an example.
+Frameless windows with Window Controls Overlay (WCO) now adopt the native title bar layout and user settings on Linux. For example, controls will appear on the left side of the frame on RTL systems, and only the close button will be visible by default on GNOME. Depending on the user's desktop environment and configuration, buttons can appear on the left or right side of the frame (or both). To account for all possibilities, use the CSS variables `env(titlebar-area-x, 0px)` and `env(titlebar-area-width, 100%)` to constrain your app's title bar content to a safe area.
 
 ### Removed: Unity desktop environment support on Linux
 
