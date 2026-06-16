@@ -28,6 +28,9 @@ void DestroyFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
   if (Destroyable::IsDestroyed(holder))
     return;
 
+  if (holder->IsApiWrapper())
+    return;
+
   // TODO(zcbenz): gin_helper::Wrappable will be removed.
   delete static_cast<gin_helper::WrappableBase*>(
       holder->GetAlignedPointerFromInternalField(
@@ -45,6 +48,15 @@ void IsDestroyedFunc(const v8::FunctionCallbackInfo<v8::Value>& info) {
 
 // static
 bool Destroyable::IsDestroyed(v8::Local<v8::Object> object) {
+  // cppgc-managed objects are exposed to V8 as API wrappers (via
+  // v8::Object::Wrap) and deliberately leave the gin internal fields null, so
+  // the internal-field heuristic below does not apply to them. Their native
+  // object is kept alive by the unified heap for as long as the wrapper is
+  // reachable, so such an object is never considered destroyed through this
+  // mechanism.
+  if (object->IsApiWrapper())
+    return false;
+
   // An object is considered destroyed if it has no internal pointer or its
   // internal has been destroyed.
   return object->InternalFieldCount() == 0 ||
