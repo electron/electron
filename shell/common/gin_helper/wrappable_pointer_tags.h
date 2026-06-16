@@ -23,6 +23,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronExtensions,                      // electron::api::Extensions
   kElectronMenu,                            // electron::api::Menu
   kElectronNetLog,                          // electron::api::NetLog
+  kElectronParentPort,                      // electron::ParentPort
   kElectronPowerMonitor,                    // electron::api::PowerMonitor
   kElectronPowerSaveBlocker,                // electron::api::PowerSaveBlocker
   kElectronProtocol,                        // electron::api::Protocol
