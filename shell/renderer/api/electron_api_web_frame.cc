@@ -20,6 +20,7 @@
 #include "content/public/renderer/render_frame_visitor.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
@@ -30,10 +31,9 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
@@ -63,7 +63,9 @@
 #include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"  // nogncheck
 #include "ui/base/ime/ime_text_span.h"
 #include "url/url_util.h"
-
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/prefinalizer.h"
+#include "v8/include/v8-cppgc.h"
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "components/spellcheck/renderer/spellcheck.h"
 #include "components/spellcheck/renderer/spellcheck_provider.h"
@@ -341,9 +343,11 @@ class SpellCheckerHolder final : private content::RenderFrameObserver {
 };
 
 class WebFrameRenderer final
-    : public gin_helper::DeprecatedWrappable<WebFrameRenderer>,
+    : public gin::Wrappable<WebFrameRenderer>,
       public gin_helper::Constructible<WebFrameRenderer>,
       private content::RenderFrameObserver {
+  CPPGC_USING_PRE_FINALIZER(WebFrameRenderer, Dispose);
+
  public:
   // gin_helper::Constructible
   static void FillObjectTemplate(v8::Isolate* isolate,
@@ -391,17 +395,14 @@ class WebFrameRenderer final
         .Build();
   }
   static const char* GetClassName() { return "WebFrame"; }
-  static gin_helper::Handle<WebFrameRenderer> New(v8::Isolate* isolate) {
-    return {};
-  }
+  static WebFrameRenderer* New(v8::Isolate* isolate) { return nullptr; }
 
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  static gin::WrapperInfo kWrapperInfo;
 
-  static gin_helper::Handle<WebFrameRenderer> Create(
-      v8::Isolate* isolate,
-      content::RenderFrame* render_frame) {
-    return gin_helper::CreateHandle(isolate,
-                                    new WebFrameRenderer(render_frame));
+  static WebFrameRenderer* Create(v8::Isolate* isolate,
+                                  content::RenderFrame* render_frame) {
+    return cppgc::MakeGarbageCollected<WebFrameRenderer>(
+        isolate->GetCppHeap()->GetAllocationHandle(), render_frame);
   }
 
   explicit WebFrameRenderer(content::RenderFrame* render_frame)
@@ -409,9 +410,19 @@ class WebFrameRenderer final
     DCHECK(render_frame);
   }
 
-  const char* GetTypeName() override { return GetClassName(); }
+  // gin::Wrappable
+  const gin::WrapperInfo* wrapper_info() const override {
+    return &kWrapperInfo;
+  }
+  const char* GetHumanReadableName() const override {
+    return "Electron / WebFrameRenderer";
+  }
 
   void OnDestruct() override {}
+
+  // Deregister from the RenderFrame's observer list before cppgc reclaims this
+  // object.
+  void Dispose() { content::RenderFrameObserver::Dispose(); }
 
  private:
   bool MaybeGetRenderFrame(v8::Isolate* isolate,
@@ -443,7 +454,9 @@ class WebFrameRenderer final
     if (frame && frame->IsWebLocalFrame()) {
       auto* render_frame =
           content::RenderFrame::FromWebFrame(frame->ToWebLocalFrame());
-      return WebFrameRenderer::Create(isolate, render_frame).ToV8();
+      return WebFrameRenderer::Create(isolate, render_frame)
+          ->GetWrapper(isolate)
+          .ToLocalChecked();
     } else {
       return v8::Null(isolate);
     }
@@ -830,7 +843,9 @@ class WebFrameRenderer final
     content::RenderFrame* render_frame =
         content::RenderFrame::FromWebFrame(web_frame);
     if (render_frame)
-      return WebFrameRenderer::Create(isolate, render_frame).ToV8();
+      return WebFrameRenderer::Create(isolate, render_frame)
+          ->GetWrapper(isolate)
+          .ToLocalChecked();
     else
       return v8::Null(isolate);
   }
@@ -851,7 +866,9 @@ class WebFrameRenderer final
     DCHECK(parent_frame);
     DCHECK(parent_frame->IsWebLocalFrame());
 
-    return WebFrameRenderer::Create(isolate, render_frame).ToV8();
+    return WebFrameRenderer::Create(isolate, render_frame)
+        ->GetWrapper(isolate)
+        .ToLocalChecked();
   }
 
   std::string GetFrameToken(v8::Isolate* isolate) {
@@ -941,8 +958,8 @@ class WebFrameRenderer final
 };
 }  // namespace
 
-gin::DeprecatedWrapperInfo WebFrameRenderer::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo WebFrameRenderer::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronWebFrameRenderer);
 
 }  // namespace api
 
@@ -958,7 +975,8 @@ void Initialize(v8::Local<v8::Object> exports,
 
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.Set("WebFrame", WebFrameRenderer::GetConstructor(isolate, context));
+  dict.Set("WebFrame", WebFrameRenderer::GetConstructor(
+                           isolate, context, &WebFrameRenderer::kWrapperInfo));
   dict.Set("mainFrame",
            WebFrameRenderer::Create(
                isolate, electron::GetRenderFrame(isolate, exports)));
