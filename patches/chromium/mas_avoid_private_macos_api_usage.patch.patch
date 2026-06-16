@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 9f64431a1fc45835937e0dd68860c4b2543a6c7d..c209d277ff3febcdd010eabc2da555598bad6dbc 100644
+index 539782c0683e197194357296f5ba8eb86b0cfa65..022d5b08bb3684d94a8eb504a1e8e1c725a2ac1f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1125,6 +1125,7 @@ component("base") {
+@@ -1126,6 +1126,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -251,7 +251,7 @@ index 419a051968c58ae5a761708e4d942e8975c70852..a77032dd43f5fcbe29c54b622b34607f
  
  }  // namespace base::mac
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index b63d58da9837ba4d1e4aff8f24f2cd977c5ed02d..49b4c0b69731386ef5a4b7dfb782aa8f4ae09cdd 100644
+index 859d2a17205884cfba57214ff2668aff9552a82d..e9277b66060bbc22b77ddaf8dbc7a55fb99512b6 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -84,6 +84,10 @@ int posix_spawnattr_set_csm_np(const posix_spawnattr_t*, uint32_t)
@@ -277,7 +277,7 @@ index b63d58da9837ba4d1e4aff8f24f2cd977c5ed02d..49b4c0b69731386ef5a4b7dfb782aa8f
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs,
                                            int disclaim);
-@@ -171,13 +177,27 @@ class PosixSpawnFileActions {
+@@ -175,13 +181,27 @@ class PosixSpawnFileActions {
  
  #if !BUILDFLAG(IS_MAC)
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -305,7 +305,7 @@ index b63d58da9837ba4d1e4aff8f24f2cd977c5ed02d..49b4c0b69731386ef5a4b7dfb782aa8f
  }
  #endif
  
-@@ -301,16 +321,16 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -305,16 +325,16 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
@@ -974,7 +974,7 @@ index d2fd2e964ca74885887c6f1e4afb36aae150dc12..67cb415dd0b82f7a90553cdb00e612ab
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3e7ab42e63a9d6b8e905de8341a39df23704036c..37c7f6f1d70a9ea613057bec4e0dce158020d472 100644
+index 416bd4f1e978a5814fd3e9a87a6cb4bfc666f9de..25a4e47e7dee6e8ba306a60cc1ac2d364ff7a990 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -370,6 +370,7 @@ source_set("browser") {
@@ -986,7 +986,7 @@ index 3e7ab42e63a9d6b8e905de8341a39df23704036c..37c7f6f1d70a9ea613057bec4e0dce15
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index fcf8d7c6c3f48ec9a2f33e8faf91947b86cbac8b..55ace60c7967a4e88b0203b8bd1c68e0b9ff7994 100644
+index 705c84898a54571407467e76f2005e06093e3169..2d6481f6ef72c781a95fa7c4206dd1011047683a 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -26,6 +26,7 @@
@@ -1007,9 +1007,9 @@ index fcf8d7c6c3f48ec9a2f33e8faf91947b86cbac8b..55ace60c7967a4e88b0203b8bd1c68e0
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -723,9 +726,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
-   // EnsureSurfaceSynchronizedForWebTest().
-   uint32_t latest_capture_sequence_number_ = 0u;
+@@ -717,9 +720,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+   bool pointer_lock_unadjusted_movement_ = false;
+ 
  
 +#if !IS_MAS_BUILD()
    // Remote accessibility objects corresponding to the NSWindow that this is
@@ -1020,7 +1020,7 @@ index fcf8d7c6c3f48ec9a2f33e8faf91947b86cbac8b..55ace60c7967a4e88b0203b8bd1c68e0
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index fb27a6c3585219d506223a6d909eb92a208f9b36..9a728828da91d6211e10261b2c01f137e97479c8 100644
+index 12dfb997f5b9efcf8a88ce256090fef414587121..b1aaf1b29d00fd2292ff01cf32ac0ff848a2873e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -56,6 +56,7 @@
@@ -1042,7 +1042,7 @@ index fb27a6c3585219d506223a6d909eb92a208f9b36..9a728828da91d6211e10261b2c01f137
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1781,10 +1784,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1775,10 +1778,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1055,7 +1055,7 @@ index fb27a6c3585219d506223a6d909eb92a208f9b36..9a728828da91d6211e10261b2c01f137
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1855,9 +1860,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1849,9 +1854,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1067,7 +1067,7 @@ index fb27a6c3585219d506223a6d909eb92a208f9b36..9a728828da91d6211e10261b2c01f137
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2401,20 +2408,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2395,20 +2402,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1342,7 +1342,7 @@ index 3f240b2c9b50bbf67b9ea0e4c08f39e5443d064c..34290c5ab75613303c523c1c631237f1
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index 4d670253fa806152ad59b1085b06a26881856f2b..4ccbdd63638ec01007d85bee2fd6f66235bd96a2 100644
+index f058f084e5a524a5416777384bd4007f207877d5..6665ff6d159dd2c44adf2e5b5868073cc1f3630f 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -28,6 +28,7 @@
