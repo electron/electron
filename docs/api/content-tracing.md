@@ -167,6 +167,8 @@ async function recordTrace () {
 }
 ```
 
+## Viewing recorded heap dumps
+
 To view the recorded heap dumps:
 
 1. Download the breakpad symbols for your Electron version from the Electron GitHub
