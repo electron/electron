@@ -8,10 +8,10 @@ is updated correctly, instead of overriding GetScreenInfo which seems not
 working.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index d7d9bd2357ce90e850bfb308b310624f724e5d0b..eb1e6c9878ebddc319dc3157eee6ea1f3fabe421 100644
+index 993814c36ca18abb1af1ba554aa0edd2b01a8eb0..6e1c04b3f0fb7b7d59d514977b5247c8d896d0be 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
-@@ -739,7 +739,7 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
+@@ -738,7 +738,7 @@ class CONTENT_EXPORT RenderWidgetHostViewBase
  
    // Generates the most current set of ScreenInfos from the current set of
    // displays in the system for use in UpdateScreenInfo.
