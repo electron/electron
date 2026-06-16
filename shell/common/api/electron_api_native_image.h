@@ -12,7 +12,7 @@
 #include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "gin/wrappable.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia_rep.h"
 
@@ -39,13 +39,11 @@ class Arguments;
 namespace gin_helper {
 class Dictionary;
 class ErrorThrower;
-template <typename T>
-class Handle;
 }  // namespace gin_helper
 
 namespace electron::api {
 
-class NativeImage final : public gin_helper::DeprecatedWrappable<NativeImage> {
+class NativeImage final : public gin::Wrappable<NativeImage> {
  public:
   NativeImage(v8::Isolate* isolate, const gfx::Image& image);
 #if BUILDFLAG(IS_WIN)
@@ -57,33 +55,24 @@ class NativeImage final : public gin_helper::DeprecatedWrappable<NativeImage> {
   NativeImage(const NativeImage&) = delete;
   NativeImage& operator=(const NativeImage&) = delete;
 
-  static gin_helper::Handle<NativeImage> CreateEmpty(v8::Isolate* isolate);
-  static gin_helper::Handle<NativeImage> Create(v8::Isolate* isolate,
-                                                const gfx::Image& image);
-  static gin_helper::Handle<NativeImage> CreateFromPNG(
-      v8::Isolate* isolate,
-      base::span<const uint8_t> data);
-  static gin_helper::Handle<NativeImage> CreateFromJPEG(
-      v8::Isolate* isolate,
-      base::span<const uint8_t> data);
-  static gin_helper::Handle<NativeImage> CreateFromPath(
-      v8::Isolate* isolate,
-      const base::FilePath& path);
-  static gin_helper::Handle<NativeImage> CreateFromBitmap(
-      gin_helper::ErrorThrower thrower,
-      v8::Local<v8::Value> buffer,
-      const gin_helper::Dictionary& options);
-  static gin_helper::Handle<NativeImage> CreateFromBuffer(
-      gin_helper::ErrorThrower thrower,
-      v8::Local<v8::Value> buffer,
-      gin::Arguments* args);
-  static gin_helper::Handle<NativeImage> CreateFromDataURL(v8::Isolate* isolate,
-                                                           const GURL& url);
-  static gin_helper::Handle<NativeImage> CreateFromNamedImage(
-      gin::Arguments* args,
-      std::string name);
-  static gin_helper::Handle<NativeImage> CreateMenuSymbol(gin::Arguments* args,
-                                                          std::string name);
+  static NativeImage* CreateEmpty(v8::Isolate* isolate);
+  static NativeImage* Create(v8::Isolate* isolate, const gfx::Image& image);
+  static NativeImage* CreateFromPNG(v8::Isolate* isolate,
+                                    base::span<const uint8_t> data);
+  static NativeImage* CreateFromJPEG(v8::Isolate* isolate,
+                                     base::span<const uint8_t> data);
+  static NativeImage* CreateFromPath(v8::Isolate* isolate,
+                                     const base::FilePath& path);
+  static NativeImage* CreateFromBitmap(gin_helper::ErrorThrower thrower,
+                                       v8::Local<v8::Value> buffer,
+                                       const gin_helper::Dictionary& options);
+  static NativeImage* CreateFromBuffer(gin_helper::ErrorThrower thrower,
+                                       v8::Local<v8::Value> buffer,
+                                       gin::Arguments* args);
+  static NativeImage* CreateFromDataURL(v8::Isolate* isolate, const GURL& url);
+  static NativeImage* CreateFromNamedImage(gin::Arguments* args,
+                                           std::string name);
+  static NativeImage* CreateMenuSymbol(gin::Arguments* args, std::string name);
 #if !BUILDFLAG(IS_LINUX)
   static v8::Local<v8::Promise> CreateThumbnailFromPath(
       v8::Isolate* isolate,
@@ -99,11 +88,13 @@ class NativeImage final : public gin_helper::DeprecatedWrappable<NativeImage> {
       NativeImage** native_image,
       OnConvertError on_error = OnConvertError::kThrow);
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  static const char* GetClassName() { return "NativeImage"; }
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
 
 #if BUILDFLAG(IS_WIN)
   HICON GetHICON(int size);
@@ -118,10 +109,8 @@ class NativeImage final : public gin_helper::DeprecatedWrappable<NativeImage> {
   std::vector<float> GetScaleFactors();
   v8::Local<v8::Value> GetBitmap(gin::Arguments* args);
   v8::Local<v8::Value> GetNativeHandle(gin_helper::ErrorThrower thrower);
-  gin_helper::Handle<NativeImage> Resize(gin::Arguments* args,
-                                         base::DictValue options);
-  gin_helper::Handle<NativeImage> Crop(v8::Isolate* isolate,
-                                       const gfx::Rect& rect);
+  NativeImage* Resize(gin::Arguments* args, base::DictValue options);
+  NativeImage* Crop(v8::Isolate* isolate, const gfx::Rect& rect);
   std::string ToDataURL(gin::Arguments* args);
   bool IsEmpty();
   gfx::Size GetSize(const std::optional<float> scale_factor);

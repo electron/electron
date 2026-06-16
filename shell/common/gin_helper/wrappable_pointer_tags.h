@@ -24,6 +24,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronIPCRenderFrame,                  // (anonymous) IPCRenderFrame
   kElectronIPCServiceWorker,                // (anonymous) IPCServiceWorker
   kElectronMenu,                            // electron::api::Menu
+  kElectronNativeImage,                     // electron::api::NativeImage
   kElectronNetLog,                          // electron::api::NetLog
   kElectronPowerMonitor,                    // electron::api::PowerMonitor
   kElectronPowerSaveBlocker,                // electron::api::PowerSaveBlocker
