@@ -227,7 +227,7 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
       image_skia.AddRepresentation(gfx::ImageSkiaRep(bitmap, scale));
     }
     gfx::Image image(image_skia);
-    return new api::NativeImage(isolate, image);
+    return api::NativeImage::Create(isolate, image);
   }
 
   raw_ptr<v8::Isolate> isolate_;

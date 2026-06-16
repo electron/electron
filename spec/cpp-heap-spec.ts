@@ -335,6 +335,54 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('nativeImage module', () => {
+    it('should record as node in heap snapshot while a JS reference is held', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { nativeImage } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          (globalThis as any).nativeImageRef = nativeImage.createEmpty();
+          const state = recordState();
+          const present = containsRetainingPath(state.snapshot, ['Electron / NativeImage']);
+          const isPersistentRooted = containsRetainingPath(state.snapshot, [
+            'C++ Persistent roots',
+            'Electron / NativeImage'
+          ]);
+          return present && !isPersistentRooted;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+
+    it('should be released after GC when no JS references remain', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const released = await remotely(async () => {
+        const { nativeImage } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let image: any = nativeImage.createEmpty();
+        const weakRef = new WeakRef(image);
+        image = null;
+
+        return waitForGC(() => weakRef.deref() === undefined);
+      });
+      expect(released).to.equal(true, 'NativeImage should be released after GC when no JS references remain');
+    });
+  });
+
   ifdescribe(isTestingBindingAvailable())('SafeV8Function callback conversion', () => {
     const gcTestArgv = ['--js-flags=--expose-gc'];
 
