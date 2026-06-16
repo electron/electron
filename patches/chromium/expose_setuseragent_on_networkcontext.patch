@@ -63,7 +63,7 @@ index e0a77796a4d8404d22d4ff83c34c5fa62dfa2ab0..42b2a0a06c3051d70cf2ae9fdc28508c
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CT_SUPPORTED)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 5c899cf95c6488f19ac6098f31540415822007fc..597819b41620e4837b8ba5ad77463ecd2730a015 100644
+index 1f1a159b30ccce098c4e0660dabc35e2662b8561..8705f1f58702398743686dd3bcadba2c986eec53 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -1353,6 +1353,9 @@ interface NetworkContext {
