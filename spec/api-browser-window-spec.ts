@@ -4057,18 +4057,6 @@ describe('BrowserWindow module', () => {
         const cacheKey = crypto.createHash('sha256').update(`preload-${preload}`).digest('hex').toUpperCase();
         cacheFile = path.join(cacheDir, `${cacheKey}.cache`);
       });
-      afterEach(() => {
-        fs.rmSync(preload, { force: true });
-        fs.rmSync(cacheFile, { force: true });
-        return closeAllWindows();
-      });
-
-      const makeWindow = () =>
-        new BrowserWindow({
-          show: false,
-          webPreferences: { sandbox: true, contextIsolation: true, preload }
-        });
-
       const waitFor = async (predicate: () => boolean, what: string, timeoutMs = 5000) => {
         const start = Date.now();
         while (Date.now() - start < timeoutMs) {
@@ -4077,6 +4065,31 @@ describe('BrowserWindow module', () => {
         }
         throw new Error(`timed out waiting for ${what}`);
       };
+
+      const removeFile = async (filePath: string) => {
+        await waitFor(() => {
+          try {
+            fs.rmSync(filePath, { force: true });
+            return true;
+          } catch (error: any) {
+            if (error.code === 'ENOENT') return true;
+            if (error.code === 'EPERM' || error.code === 'EBUSY') return false;
+            throw error;
+          }
+        }, `remove ${filePath}`);
+      };
+
+      afterEach(async () => {
+        await closeAllWindows();
+        await removeFile(preload);
+        await removeFile(cacheFile);
+      });
+
+      const makeWindow = () =>
+        new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: true, contextIsolation: true, preload }
+        });
 
       it('produces and persists a code cache after the first compile', async () => {
         const w = makeWindow();
