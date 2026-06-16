@@ -1,0 +1,661 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hongchan Choi <hongchan@google.com>
+Date: Fri, 5 Jun 2026 15:58:42 -0700
+Subject: [M148] [WebMIDI] Resolve instance binding lifetime issue in
+ MidiManagerWinrt
+
+Original change's description:
+> [WebMIDI] Resolve instance binding lifetime issue in MidiManagerWinrt
+>
+> Address a lifetime issue in Chrome's WinRT-based MIDI manager
+> (`MidiManagerWinrt`) on Windows during rapid session re-binding.
+>
+> The issue occurred due to stale asynchronous WinRT callbacks firing from
+> a destroyed `MidiPortManager` instance. If a new `MidiManagerWinrt`
+> instance bound to `TaskService` before the old port managers' cleanup
+> tasks were completed, the stale callbacks would stamp their posted tasks
+> with the new active `InstanceId`, bypassing validation and executing on
+> the outdated object.
+>
+> Fix this by:
+> 1. Modifying `TaskService::BindInstance()` to return
+>    `std::optional<InstanceId>`, which is `nullopt` on failure. This
+>    avoids breaking otherplatform managers.
+> 2. Overloading `PostBoundTask` and `PostBoundDelayedTask` to accept an
+>    explicit `InstanceId`.
+> 3. Storing the construction-time `InstanceId` in `MidiPortManager`,
+>    capturing it by value in all WinRT callback lambdas, and using the
+>    explicit-ID overloads.
+>
+> Added unit tests in `media/midi/task_service_unittest.cc` to verify the
+> explicit-ID behavior.
+>
+> CONV=ef5ca2e2-c51f-4594-a8bb-6055af840666
+> TAG=agy
+>
+> Bug: 518108291
+> Change-Id: I16aa19425ea93afffec395697edfd7752c6db8fa
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7890706
+> Commit-Queue: Hongchan Choi <hongchan@chromium.org>
+> Reviewed-by: Michael Wilson <mjwilson@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1641483}
+
+(cherry picked from commit c5162675305c91532d60c33f6f860d093c445557)
+
+Bug: 520436408,518108291
+Change-Id: I16aa19425ea93afffec395697edfd7752c6db8fa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7902697
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4251}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/media/midi/midi_manager_winrt.cc b/media/midi/midi_manager_winrt.cc
+index d00d7b20f3b00b75cda86bd11d88fa41e36b63d9..1caad63cc9728c5405dcf2ca23264674a878adcb 100644
+--- a/media/midi/midi_manager_winrt.cc
++++ b/media/midi/midi_manager_winrt.cc
+@@ -30,6 +30,7 @@
+ 
+ #include <iomanip>
+ #include <memory>
++#include <optional>
+ 
+ #include "base/containers/heap_array.h"
+ #include "base/containers/span.h"
+@@ -222,11 +223,17 @@ template <typename InterfaceType,
+ class MidiManagerWinrt::MidiPortManager {
+  public:
+   // MidiPortManager instances should be constructed on the kComTaskRunner.
+-  MidiPortManager(MidiManagerWinrt* midi_manager)
+-      : midi_service_(midi_manager->service()), midi_manager_(midi_manager) {}
++  MidiPortManager(MidiManagerWinrt* midi_manager,
++                  TaskService::InstanceId instance_id)
++      : midi_service_(midi_manager->service()),
++        midi_manager_(midi_manager),
++        instance_id_(instance_id) {}
+ 
+   virtual ~MidiPortManager() {
+     DCHECK(midi_service_->task_service()->IsOnTaskRunner(kComTaskRunner));
++    for (auto* async_op : async_ops_) {
++      async_op->Release();
++    }
+   }
+ 
+   bool StartWatcher() {
+@@ -270,12 +277,13 @@ class MidiManagerWinrt::MidiPortManager {
+     // we can handle raw pointers safely in the following blocks.
+     MidiPortManager* port_manager = this;
+     TaskService* task_service = midi_service_->task_service();
++    const TaskService::InstanceId instance_id = instance_id_;
+ 
+     hr = watcher_->add_Added(
+         WRL::Callback<ITypedEventHandler<
+             DeviceWatcher*, Win::Devices::Enumeration::DeviceInformation*>>(
+-            [port_manager, task_service](IDeviceWatcher* watcher,
+-                                         IDeviceInformation* info) {
++            [port_manager, task_service, instance_id](
++                IDeviceWatcher* watcher, IDeviceInformation* info) {
+               if (!info) {
+                 VLOG(1) << "DeviceWatcher.Added callback provides null "
+                            "pointer, ignoring";
+@@ -287,13 +295,14 @@ class MidiManagerWinrt::MidiPortManager {
+               if (IsMicrosoftSynthesizer(info))
+                 return S_OK;
+ 
+-              std::string dev_id = GetIdString(info),
+-                          dev_name = GetNameString(info);
++              const std::string dev_id = GetIdString(info);
++              const std::string dev_name = GetNameString(info);
+ 
+               task_service->PostBoundTask(
+-                  kComTaskRunner, base::BindOnce(&MidiPortManager::OnAdded,
+-                                                 base::Unretained(port_manager),
+-                                                 dev_id, dev_name));
++                  instance_id, kComTaskRunner,
++                  base::BindOnce(&MidiPortManager::OnAdded,
++                                 base::Unretained(port_manager), dev_id,
++                                 dev_name));
+ 
+               return S_OK;
+             })
+@@ -306,10 +315,10 @@ class MidiManagerWinrt::MidiPortManager {
+ 
+     hr = watcher_->add_EnumerationCompleted(
+         WRL::Callback<ITypedEventHandler<DeviceWatcher*, IInspectable*>>(
+-            [port_manager, task_service](IDeviceWatcher* watcher,
+-                                         IInspectable* insp) {
++            [port_manager, task_service, instance_id](IDeviceWatcher* watcher,
++                                                      IInspectable* insp) {
+               task_service->PostBoundTask(
+-                  kComTaskRunner,
++                  instance_id, kComTaskRunner,
+                   base::BindOnce(&MidiPortManager::OnEnumerationCompleted,
+                                  base::Unretained(port_manager)));
+ 
+@@ -325,8 +334,8 @@ class MidiManagerWinrt::MidiPortManager {
+     hr = watcher_->add_Removed(
+         WRL::Callback<
+             ITypedEventHandler<DeviceWatcher*, DeviceInformationUpdate*>>(
+-            [port_manager, task_service](IDeviceWatcher* watcher,
+-                                         IDeviceInformationUpdate* update) {
++            [port_manager, task_service, instance_id](
++                IDeviceWatcher* watcher, IDeviceInformationUpdate* update) {
+               if (!update) {
+                 VLOG(1) << "DeviceWatcher.Removed callback provides null "
+                            "pointer, ignoring";
+@@ -336,7 +345,7 @@ class MidiManagerWinrt::MidiPortManager {
+               std::string dev_id = GetIdString(update);
+ 
+               task_service->PostBoundTask(
+-                  kComTaskRunner,
++                  instance_id, kComTaskRunner,
+                   base::BindOnce(&MidiPortManager::OnRemoved,
+                                  base::Unretained(port_manager), dev_id));
+ 
+@@ -454,6 +463,8 @@ class MidiManagerWinrt::MidiPortManager {
+   // from tasks that are invoked by TaskService.
+   raw_ptr<MidiManagerWinrt> midi_manager_;
+ 
++  const TaskService::InstanceId instance_id_;
++
+  private:
+   // DeviceWatcher callbacks:
+   void OnAdded(std::string dev_id, std::string dev_name) {
+@@ -477,16 +488,17 @@ class MidiManagerWinrt::MidiPortManager {
+ 
+     MidiPortManager* port_manager = this;
+     TaskService* task_service = midi_service_->task_service();
++    const TaskService::InstanceId instance_id = instance_id_;
+ 
+     hr = async_op->put_Completed(
+         WRL::Callback<
+             Win::Foundation::IAsyncOperationCompletedHandler<RuntimeType*>>(
+-            [port_manager, task_service](
++            [port_manager, task_service, instance_id](
+                 IAsyncOperation<RuntimeType*>* async_op, AsyncStatus status) {
+               // A reference to |async_op| is kept in |async_ops_|, safe to pass
+               // outside.
+               task_service->PostBoundTask(
+-                  kComTaskRunner,
++                  instance_id, kComTaskRunner,
+                   base::BindOnce(
+                       &MidiPortManager::OnCompletedGetPortFromIdAsync,
+                       base::Unretained(port_manager),
+@@ -643,8 +655,9 @@ class MidiManagerWinrt::MidiInPortManager final
+                              Win::Devices::Midi::IMidiInPortStatics,
+                              RuntimeClass_Windows_Devices_Midi_MidiInPort> {
+  public:
+-  MidiInPortManager(MidiManagerWinrt* midi_manager)
+-      : MidiPortManager(midi_manager) {}
++  MidiInPortManager(MidiManagerWinrt* midi_manager,
++                    TaskService::InstanceId instance_id)
++      : MidiPortManager(midi_manager, instance_id) {}
+ 
+   MidiInPortManager(const MidiInPortManager&) = delete;
+   MidiInPortManager& operator=(const MidiInPortManager&) = delete;
+@@ -657,17 +670,18 @@ class MidiManagerWinrt::MidiInPortManager final
+ 
+     MidiInPortManager* port_manager = this;
+     TaskService* task_service = midi_service_->task_service();
++    const TaskService::InstanceId instance_id = instance_id_;
+ 
+     HRESULT hr = handle->add_MessageReceived(
+         WRL::Callback<ITypedEventHandler<
+             Win::Devices::Midi::MidiInPort*,
+             Win::Devices::Midi::MidiMessageReceivedEventArgs*>>(
+-            [port_manager, task_service](
++            [port_manager, task_service, instance_id](
+                 Win::Devices::Midi::IMidiInPort* handle,
+                 Win::Devices::Midi::IMidiMessageReceivedEventArgs* args) {
+               const base::TimeTicks now = base::TimeTicks::Now();
+ 
+-              std::string dev_id = GetDeviceIdString(handle);
++              const std::string dev_id = GetDeviceIdString(handle);
+ 
+               WRL::ComPtr<Win::Devices::Midi::IMidiMessage> message;
+               HRESULT hr = args->get_Message(&message);
+@@ -691,7 +705,7 @@ class MidiManagerWinrt::MidiInPortManager final
+               std::vector<uint8_t> data(buffer_span.begin(), buffer_span.end());
+ 
+               task_service->PostBoundTask(
+-                  kComTaskRunner,
++                  instance_id, kComTaskRunner,
+                   base::BindOnce(&MidiInPortManager::OnMessageReceived,
+                                  base::Unretained(port_manager), dev_id, data,
+                                  now));
+@@ -747,8 +761,9 @@ class MidiManagerWinrt::MidiOutPortManager final
+                              Win::Devices::Midi::IMidiOutPortStatics,
+                              RuntimeClass_Windows_Devices_Midi_MidiOutPort> {
+  public:
+-  MidiOutPortManager(MidiManagerWinrt* midi_manager)
+-      : MidiPortManager(midi_manager) {}
++  MidiOutPortManager(MidiManagerWinrt* midi_manager,
++                     TaskService::InstanceId instance_id)
++      : MidiPortManager(midi_manager, instance_id) {}
+ 
+   MidiOutPortManager(const MidiOutPortManager&) = delete;
+   MidiOutPortManager& operator=(const MidiOutPortManager&) = delete;
+@@ -797,12 +812,16 @@ MidiManagerWinrt::~MidiManagerWinrt() {
+ }
+ 
+ void MidiManagerWinrt::StartInitialization() {
+-  if (!service()->task_service()->BindInstance())
++  std::optional<TaskService::InstanceId> instance_id =
++      service()->task_service()->BindInstance();
++  if (!instance_id) {
+     return CompleteInitialization(Result::INITIALIZATION_ERROR);
++  }
+ 
+   service()->task_service()->PostBoundTask(
+-      kComTaskRunner, base::BindOnce(&MidiManagerWinrt::InitializeOnComRunner,
+-                                     base::Unretained(this)));
++      *instance_id, kComTaskRunner,
++      base::BindOnce(&MidiManagerWinrt::InitializeOnComRunner,
++                     base::Unretained(this), *instance_id));
+ }
+ 
+ void MidiManagerWinrt::DispatchSendMidiData(MidiManagerClient* client,
+@@ -822,13 +841,14 @@ void MidiManagerWinrt::DispatchSendMidiData(MidiManagerClient* client,
+       delay);
+ }
+ 
+-void MidiManagerWinrt::InitializeOnComRunner() {
++void MidiManagerWinrt::InitializeOnComRunner(
++    TaskService::InstanceId instance_id) {
+   base::AutoLock auto_lock(lazy_init_member_lock_);
+ 
+   DCHECK(service()->task_service()->IsOnTaskRunner(kComTaskRunner));
+ 
+-  port_manager_in_ = std::make_unique<MidiInPortManager>(this);
+-  port_manager_out_ = std::make_unique<MidiOutPortManager>(this);
++  port_manager_in_ = std::make_unique<MidiInPortManager>(this, instance_id);
++  port_manager_out_ = std::make_unique<MidiOutPortManager>(this, instance_id);
+ 
+   if (!(port_manager_in_->StartWatcher() &&
+         port_manager_out_->StartWatcher())) {
+diff --git a/media/midi/midi_manager_winrt.h b/media/midi/midi_manager_winrt.h
+index 596bc662e601c32382753a422996f1bf417f6139..0e94601911cf7470e6868a67cd0283bb27babdf9 100644
+--- a/media/midi/midi_manager_winrt.h
++++ b/media/midi/midi_manager_winrt.h
+@@ -9,6 +9,7 @@
+ 
+ #include "base/thread_annotations.h"
+ #include "media/midi/midi_manager.h"
++#include "media/midi/task_service.h"
+ 
+ namespace midi {
+ 
+@@ -42,7 +43,7 @@ class MIDI_EXPORT MidiManagerWinrt final : public MidiManager {
+   class MidiPortManager;
+ 
+   // Callbacks on kComTaskRunner.
+-  void InitializeOnComRunner();
++  void InitializeOnComRunner(TaskService::InstanceId instance_id);
+   void SendOnComRunner(uint32_t port_index, const std::vector<uint8_t>& data);
+ 
+   // Callback from MidiPortManager::OnEnumerationComplete on kComTaskRunner.
+diff --git a/media/midi/task_service.cc b/media/midi/task_service.cc
+index f7162faa6d01ccb578f02cdbcdee898491bfa266..290806b397c5f8be12fd1ca31ee23a5759a29649 100644
+--- a/media/midi/task_service.cc
++++ b/media/midi/task_service.cc
+@@ -34,23 +34,23 @@ TaskService::~TaskService() {
+   threads.clear();
+ }
+ 
+-bool TaskService::BindInstance() {
++std::optional<TaskService::InstanceId> TaskService::BindInstance() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(instance_binding_sequence_checker_);
+   base::AutoLock lock(lock_);
+   if (bound_instance_id_ != kInvalidInstanceId)
+-    return false;
++    return std::nullopt;
+ 
+   // If the InstanceId reaches to the limit, just fail rather than doing
+   // something nicer for such impractical case.
+   if (std::numeric_limits<InstanceId>::max() == next_instance_id_)
+-    return false;
++    return std::nullopt;
+ 
+   bound_instance_id_ = ++next_instance_id_;
+ 
+   DCHECK(!default_task_runner_);
+   default_task_runner_ = base::SingleThreadTaskRunner::GetCurrentDefault();
+ 
+-  return true;
++  return bound_instance_id_;
+ }
+ 
+ bool TaskService::UnbindInstance() {
+@@ -80,11 +80,12 @@ bool TaskService::UnbindInstance() {
+ 
+ bool TaskService::IsOnTaskRunner(RunnerId runner_id) {
+   base::AutoLock lock(lock_);
+-  if (bound_instance_id_ == kInvalidInstanceId)
+-    return false;
+-
+-  if (runner_id == kDefaultRunnerId)
++  if (runner_id == kDefaultRunnerId) {
++    if (bound_instance_id_ == kInvalidInstanceId) {
++      return false;
++    }
+     return default_task_runner_->BelongsToCurrentThread();
++  }
+ 
+   size_t thread = runner_id - 1;
+   if (threads_.size() <= thread || !threads_[thread])
+@@ -98,28 +99,40 @@ void TaskService::PostStaticTask(RunnerId runner_id, base::OnceClosure task) {
+   GetTaskRunner(runner_id)->PostTask(FROM_HERE, std::move(task));
+ }
+ 
+-void TaskService::PostBoundTask(RunnerId runner_id, base::OnceClosure task) {
+-  InstanceId instance_id;
++void TaskService::PostBoundTask(InstanceId instance_id,
++                                RunnerId runner_id,
++                                base::OnceClosure task) {
++  if (instance_id == kInvalidInstanceId)
++    return;
+   {
+     base::AutoLock lock(lock_);
+-    if (bound_instance_id_ == kInvalidInstanceId)
++    if (instance_id != bound_instance_id_)
+       return;
+-    instance_id = bound_instance_id_;
+   }
+   GetTaskRunner(runner_id)->PostTask(
+       FROM_HERE, base::BindOnce(&TaskService::RunTask, base::Unretained(this),
+                                 instance_id, runner_id, std::move(task)));
+ }
+ 
+-void TaskService::PostBoundDelayedTask(RunnerId runner_id,
++void TaskService::PostBoundTask(RunnerId runner_id, base::OnceClosure task) {
++  InstanceId instance_id;
++  {
++    base::AutoLock lock(lock_);
++    instance_id = bound_instance_id_;
++  }
++  PostBoundTask(instance_id, runner_id, std::move(task));
++}
++
++void TaskService::PostBoundDelayedTask(InstanceId instance_id,
++                                       RunnerId runner_id,
+                                        base::OnceClosure task,
+                                        base::TimeDelta delay) {
+-  InstanceId instance_id;
++  if (instance_id == kInvalidInstanceId)
++    return;
+   {
+     base::AutoLock lock(lock_);
+-    if (bound_instance_id_ == kInvalidInstanceId)
++    if (instance_id != bound_instance_id_)
+       return;
+-    instance_id = bound_instance_id_;
+   }
+   GetTaskRunner(runner_id)->PostDelayedTask(
+       FROM_HERE,
+@@ -128,6 +141,17 @@ void TaskService::PostBoundDelayedTask(RunnerId runner_id,
+       delay);
+ }
+ 
++void TaskService::PostBoundDelayedTask(RunnerId runner_id,
++                                       base::OnceClosure task,
++                                       base::TimeDelta delay) {
++  InstanceId instance_id;
++  {
++    base::AutoLock lock(lock_);
++    instance_id = bound_instance_id_;
++  }
++  PostBoundDelayedTask(instance_id, runner_id, std::move(task), delay);
++}
++
+ void TaskService::OverflowInstanceIdForTesting() {
+   next_instance_id_ = std::numeric_limits<InstanceId>::max();
+ }
+diff --git a/media/midi/task_service.h b/media/midi/task_service.h
+index 74b4451da4f881e8ff4a2d9aba71e358c8e5184d..e321e7b4755166f43e6d945d5853f50bfc604592 100644
+--- a/media/midi/task_service.h
++++ b/media/midi/task_service.h
+@@ -6,6 +6,7 @@
+ #define MEDIA_MIDI_TASK_SERVICE_H_
+ 
+ #include <memory>
++#include <optional>
+ #include <vector>
+ 
+ #include "base/functional/callback_forward.h"
+@@ -29,6 +30,7 @@ class MIDI_EXPORT TaskService final {
+   using InstanceId = int64_t;
+ 
+   static constexpr RunnerId kDefaultRunnerId = 0;
++  static constexpr InstanceId kInvalidInstanceId = -1;
+ 
+   TaskService();
+ 
+@@ -41,11 +43,11 @@ class MIDI_EXPORT TaskService final {
+   // PostDelayedBoundTask() with the InstanceId. Once UnbindInstance() is
+   // called, tasks posted via these methods with unbind InstanceId won't be
+   // invoked any more.
+-  // Returns true if call is bound or unbound correctly. Otherwise returns
+-  // false, that happens when the BindInstance() is called twice without
+-  // unbinding the previous instance, or the UnbindInstance() is called without
+-  // any successful BindInstance() call.
+-  [[nodiscard]] bool BindInstance();
++  // BindInstance() returns the bound InstanceId, or nullopt if
++  // it fails (e.g., if another instance is already bound).
++  // UnbindInstance() returns true if unbound correctly, or false if there
++  // was no active binding.
++  [[nodiscard]] std::optional<InstanceId> BindInstance();
+   [[nodiscard]] bool UnbindInstance();
+ 
+   // Checks if the current thread belongs to the specified runner.
+@@ -61,7 +63,20 @@ class MIDI_EXPORT TaskService final {
+   // |runner_id| should be |kDefaultRunnerId| or a positive number. If
+   // |kDefaultRunnerId| is specified, the task runs on the thread on which
+   // BindInstance() was called.
+-  void PostBoundTask(RunnerId runner, base::OnceClosure task);
++  //
++  // The overloads taking |instance_id| will only run the task if the instance
++  // is still bound (i.e., UnbindInstance() has not been called for this
++  // instance) when the task is about to run.
++  // The overloads without |instance_id| will bind the task to the current
++  // bound instance at the time of posting.
++  void PostBoundTask(InstanceId instance_id,
++                     RunnerId runner_id,
++                     base::OnceClosure task);
++  void PostBoundTask(RunnerId runner_id, base::OnceClosure task);
++  void PostBoundDelayedTask(InstanceId instance_id,
++                            RunnerId runner_id,
++                            base::OnceClosure task,
++                            base::TimeDelta delay);
+   void PostBoundDelayedTask(RunnerId runner_id,
+                             base::OnceClosure task,
+                             base::TimeDelta delay);
+@@ -69,8 +84,6 @@ class MIDI_EXPORT TaskService final {
+   void OverflowInstanceIdForTesting();
+ 
+  private:
+-  static constexpr TaskService::InstanceId kInvalidInstanceId = -1;
+-
+   // Returns a SingleThreadTaskRunner reference. Each TaskRunner will be
+   // constructed on demand.
+   scoped_refptr<base::SingleThreadTaskRunner> GetTaskRunner(RunnerId runner_id);
+diff --git a/media/midi/task_service_unittest.cc b/media/midi/task_service_unittest.cc
+index cc5eac0f78270c91f710ac5cf7b7bdd09d3d0653..fe780ace547ba6746d4e228bcae048d05c07e71c 100644
+--- a/media/midi/task_service_unittest.cc
++++ b/media/midi/task_service_unittest.cc
+@@ -5,6 +5,7 @@
+ #include "media/midi/task_service.h"
+ 
+ #include <memory>
++#include <optional>
+ 
+ #include "base/functional/bind.h"
+ #include "base/functional/callback.h"
+@@ -61,9 +62,23 @@ class TaskServiceClient {
+   TaskServiceClient(const TaskServiceClient&) = delete;
+   TaskServiceClient& operator=(const TaskServiceClient&) = delete;
+ 
+-  bool Bind() { return task_service()->BindInstance(); }
++  bool Bind() {
++    std::optional<TaskService::InstanceId> instance_id =
++        task_service()->BindInstance();
++    if (instance_id) {
++      instance_id_ = *instance_id;
++      return true;
++    }
++    instance_id_ = TaskService::kInvalidInstanceId;
++    return false;
++  }
++
++  bool Unbind() {
++    instance_id_ = TaskService::kInvalidInstanceId;
++    return task_service()->UnbindInstance();
++  }
+ 
+-  bool Unbind() { return task_service()->UnbindInstance(); }
++  TaskService::InstanceId instance_id() const { return instance_id_; }
+ 
+   void PostBoundTask(TaskService::RunnerId runner_id) {
+     task_service()->PostBoundTask(
+@@ -71,6 +86,22 @@ class TaskServiceClient {
+                                   base::Unretained(this)));
+   }
+ 
++  void PostBoundTaskWithExplicitId(TaskService::InstanceId instance_id,
++                                   TaskService::RunnerId runner_id) {
++    task_service()->PostBoundTask(
++        instance_id, runner_id,
++        base::BindOnce(&TaskServiceClient::IncrementCount,
++                       base::Unretained(this)));
++  }
++
++  void PostBoundSignalTaskWithExplicitId(TaskService::InstanceId instance_id,
++                                         TaskService::RunnerId runner_id) {
++    task_service()->PostBoundTask(
++        instance_id, runner_id,
++        base::BindOnce(&TaskServiceClient::SignalEvent,
++                       base::Unretained(this)));
++  }
++
+   void PostBoundSignalTask(TaskService::RunnerId runner_id) {
+     task_service()->PostBoundTask(
+         runner_id, base::BindOnce(&TaskServiceClient::SignalEvent,
+@@ -91,6 +122,27 @@ class TaskServiceClient {
+         base::Milliseconds(100));
+   }
+ 
++  void PostBoundDelayedTaskWithExplicitId(TaskService::InstanceId instance_id,
++                                          TaskService::RunnerId runner_id,
++                                          base::TimeDelta delay) {
++    task_service()->PostBoundDelayedTask(
++        instance_id, runner_id,
++        base::BindOnce(&TaskServiceClient::IncrementCount,
++                       base::Unretained(this)),
++        delay);
++  }
++
++  void PostBoundDelayedSignalTaskWithExplicitId(
++      TaskService::InstanceId instance_id,
++      TaskService::RunnerId runner_id,
++      base::TimeDelta delay) {
++    task_service()->PostBoundDelayedTask(
++        instance_id, runner_id,
++        base::BindOnce(&TaskServiceClient::SignalEvent,
++                       base::Unretained(this)),
++        delay);
++  }
++
+   void WaitTask() { wait_task_event_->Wait(); }
+ 
+   size_t count() {
+@@ -121,6 +173,7 @@ class TaskServiceClient {
+   raw_ptr<TaskService> task_service_;
+   std::unique_ptr<base::WaitableEvent> wait_task_event_;
+   size_t count_;
++  TaskService::InstanceId instance_id_ = TaskService::kInvalidInstanceId;
+ };
+ 
+ class MidiTaskServiceTest : public ::testing::Test {
+@@ -310,6 +363,82 @@ TEST_F(MidiTaskServiceTest, RunBoundTaskOnDefaultRunner) {
+   EXPECT_TRUE(client->Unbind());
+ }
+ 
++// Tests if bound tasks with explicit InstanceId are handled correctly.
++TEST_F(MidiTaskServiceTest, RunBoundTaskWithExplicitInstanceId) {
++  std::unique_ptr<TaskServiceClient> client =
++      std::make_unique<TaskServiceClient>(task_service());
++
++  EXPECT_TRUE(client->Bind());
++  TaskService::InstanceId id1 = client->instance_id();
++  EXPECT_NE(TaskService::kInvalidInstanceId, id1);
++
++  // Task with correct ID should run.
++  EXPECT_EQ(0u, client->count());
++  client->PostBoundTaskWithExplicitId(id1, kFirstRunner);
++  client->PostBoundSignalTaskWithExplicitId(id1, kFirstRunner);
++  WaitEvent();
++  EXPECT_EQ(2u, client->count());
++
++  // Unbind.
++  EXPECT_TRUE(client->Unbind());
++
++  // Bind again to get a new ID.
++  ResetEvent();
++  EXPECT_TRUE(client->Bind());
++  TaskService::InstanceId id2 = client->instance_id();
++  EXPECT_NE(id1, id2);
++
++  // Task with old ID should be ignored.
++  client->PostBoundTaskWithExplicitId(id1, kFirstRunner);
++
++  // Task with new ID should run.
++  client->PostBoundSignalTaskWithExplicitId(id2, kFirstRunner);
++  WaitEvent();
++  // Count should only be incremented by the new task (2 -> 3).
++  EXPECT_EQ(3u, client->count());
++
++  EXPECT_TRUE(client->Unbind());
++}
++
++// Tests if bound delayed tasks with explicit InstanceId are handled correctly.
++TEST_F(MidiTaskServiceTest, RunBoundDelayedTaskWithExplicitInstanceId) {
++  std::unique_ptr<TaskServiceClient> client =
++      std::make_unique<TaskServiceClient>(task_service());
++
++  EXPECT_TRUE(client->Bind());
++  TaskService::InstanceId id1 = client->instance_id();
++  EXPECT_NE(TaskService::kInvalidInstanceId, id1);
++
++  // Task with correct ID should run.
++  EXPECT_EQ(0u, client->count());
++  client->PostBoundDelayedSignalTaskWithExplicitId(id1, kFirstRunner,
++                                                   base::Milliseconds(10));
++  WaitEvent();
++  EXPECT_EQ(1u, client->count());
++
++  // Unbind.
++  EXPECT_TRUE(client->Unbind());
++
++  // Bind again to get a new ID.
++  ResetEvent();
++  EXPECT_TRUE(client->Bind());
++  TaskService::InstanceId id2 = client->instance_id();
++  EXPECT_NE(id1, id2);
++
++  // Task with old ID should be ignored.
++  client->PostBoundDelayedTaskWithExplicitId(id1, kFirstRunner,
++                                             base::Milliseconds(10));
++
++  // Task with new ID should run.
++  client->PostBoundDelayedSignalTaskWithExplicitId(id2, kFirstRunner,
++                                                   base::Milliseconds(10));
++  WaitEvent();
++  // Count should only be incremented by the new task (1 -> 2).
++  EXPECT_EQ(2u, client->count());
++
++  EXPECT_TRUE(client->Unbind());
++}
++
+ }  // namespace
+ 
+ }  // namespace midi

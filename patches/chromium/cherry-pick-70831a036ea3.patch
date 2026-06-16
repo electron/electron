@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Tue, 9 Jun 2026 13:21:20 -0700
+Subject: [M148] Harden DevTools drag filtering
+
+Original change's description:
+> Harden DevTools drag filtering
+>
+> Ensure that drag events replayed via DevTools protocol (Input.dispatchDragEvent)
+> are properly sanitized by calling FilterDropData.
+> Also propagate FilterURL results back to the raw drag data in StartDragging
+> so that the intercepted event does not leak raw URLs.
+>
+> Bug: 516482138
+> Change-Id: I008adc110b216e4dbd48774247e76d20b109a2e9
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7905536
+> Commit-Queue: Jonathan Ross <jonross@chromium.org>
+> Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1643233}
+
+(cherry picked from commit 8c655d206d30a89ec85a3f4340a841f7e5a027e1)
+
+Bug: 521676730,516482138
+Change-Id: I008adc110b216e4dbd48774247e76d20b109a2e9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7915666
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4293}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/content/browser/devtools/protocol/input_handler.cc b/content/browser/devtools/protocol/input_handler.cc
+index 0e9590badb188c4b8866289f78affc9baaa0fc07..026c9b9caea1b9808ddbcbc46214f8d0449f27b6 100644
+--- a/content/browser/devtools/protocol/input_handler.cc
++++ b/content/browser/devtools/protocol/input_handler.cc
+@@ -1439,7 +1439,7 @@ void InputHandler::OnWidgetForDispatchDragEvent(
+       static_cast<blink::DragOperationsMask>(data->GetDragOperationsMask());
+   std::unique_ptr<DropData> drop_data =
+       std::make_unique<DropData>(ProtocolDragDataToDropData(std::move(data)));
+-  drop_data->view_id = widget_host->GetRoutingID();
++  widget_host->FilterDropData(drop_data.get());
+   int event_modifiers =
+       GetEventModifiers(modifiers.value_or(blink::WebInputEvent::kNoModifiers),
+                         false, false, 0, 0);
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/input/dispatch-drag-event-sanitize-expected.txt b/third_party/blink/web_tests/http/tests/inspector-protocol/input/dispatch-drag-event-sanitize-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..2549428cf04a9c100b18c8301c7085f43b87e4bb
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/input/dispatch-drag-event-sanitize-expected.txt
+@@ -0,0 +1,3 @@
++Tests that Input.dispatchDragEvent sanitizes URLs (FilterURL) when dropping onto a web page.
++Dropped URI: about:blank#blocked
++
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/input/dispatch-drag-event-sanitize.js b/third_party/blink/web_tests/http/tests/inspector-protocol/input/dispatch-drag-event-sanitize.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..bc6daf703311d080dc500d4941124e15eff4c3a6
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/input/dispatch-drag-event-sanitize.js
+@@ -0,0 +1,50 @@
++(async function(/** @type {import('test_runner').TestRunner} */ testRunner) {
++  const {page, session, dp} = await testRunner.startHTML(`
++    <div id="drop-target" style="width: 100px; height: 100px; background: blue"></div>
++    <script>
++      window.dropped_uri = null;
++      const div = document.getElementById('drop-target');
++      div.addEventListener('dragenter', e => e.preventDefault());
++      div.addEventListener('dragover', e => e.preventDefault());
++      div.addEventListener('drop', e => {
++        e.preventDefault();
++        window.dropped_uri = e.dataTransfer.getData('text/uri-list');
++      });
++    </script>
++  `, `Tests that Input.dispatchDragEvent sanitizes URLs (FilterURL) when dropping onto a web page.`);
++
++  const data = {
++    items: [
++      {
++        mimeType: 'text/uri-list',
++        data: 'file:///etc/passwd',
++      }
++    ],
++    dragOperationsMask: 1,
++  };
++
++  await dp.Input.dispatchDragEvent({
++    type: 'dragEnter',
++    data,
++    x: 50,
++    y: 50,
++  });
++
++  await dp.Input.dispatchDragEvent({
++    type: 'dragOver',
++    data,
++    x: 50,
++    y: 50,
++  });
++
++  await dp.Input.dispatchDragEvent({
++    type: 'drop',
++    data,
++    x: 50,
++    y: 50,
++  });
++
++  const droppedUri = await session.evaluate(`window.dropped_uri`);
++  testRunner.log('Dropped URI: ' + droppedUri);
++  testRunner.completeTest();
++})
