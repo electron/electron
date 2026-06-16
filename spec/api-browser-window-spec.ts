@@ -4080,7 +4080,9 @@ describe('BrowserWindow module', () => {
 
     describe('preload code cache', () => {
       // Sandboxed preload scripts are compiled with a persistent V8 code cache
-      // keyed by sha256(scriptId) under userData/Code Cache/electron-preload/.
+      // stored as `${sha256(scriptId)}-${sha256(site)}.cache` under
+      // userData/Code Cache/electron-preload/, where `site` is the consuming
+      // frame's site — entries are only served back to same-site documents.
       // The id for a webPreferences.preload is `preload-${absolutePath}`.
       //
       // The cache has an in-memory tier that lives for the browser process's
@@ -4096,7 +4098,7 @@ describe('BrowserWindow module', () => {
         preload = path.join(os.tmpdir(), `preload-code-cache-${crypto.randomUUID()}.js`);
         fs.copyFileSync(fixture, preload);
         const cacheKey = crypto.createHash('sha256').update(`preload-${preload}`).digest('hex').toUpperCase();
-        cacheFile = path.join(cacheDir, `${cacheKey}.cache`);
+        cacheFile = path.join(cacheDir, `${cacheKey}-${siteHash}.cache`);
       });
       const waitFor = async (predicate: () => boolean, what: string, timeoutMs = 5000) => {
         const start = Date.now();
@@ -4131,6 +4133,35 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: { sandbox: true, contextIsolation: true, preload }
         });
+
+      // The `${sha256(site)}` half of the filename is an implementation detail
+      // of the browser process (the consuming frame's SiteInstance site URL).
+      // Every test here loads file:// documents, so learn the suffix once by
+      // producing a probe entry and reading the name of the file it creates.
+      let siteHash: string;
+      before(async () => {
+        const probePreload = path.join(os.tmpdir(), `preload-code-cache-probe-${crypto.randomUUID()}.js`);
+        fs.copyFileSync(fixture, probePreload);
+        const probeKey = crypto.createHash('sha256').update(`preload-${probePreload}`).digest('hex').toUpperCase();
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: true, contextIsolation: true, preload: probePreload }
+        });
+        const ran = once(ipcMain, 'preload-code-cache-ran');
+        await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        await ran;
+        let probeFile: string | undefined;
+        await waitFor(() => {
+          probeFile = fs.existsSync(cacheDir)
+            ? fs.readdirSync(cacheDir).find(f => f.startsWith(`${probeKey}-`) && f.endsWith('.cache'))
+            : undefined;
+          return !!probeFile;
+        }, 'probe cache file to be written');
+        siteHash = probeFile!.slice(probeKey.length + 1, -'.cache'.length);
+        w.destroy();
+        fs.rmSync(probePreload, { force: true });
+        fs.rmSync(path.join(cacheDir, probeFile!), { force: true });
+      });
 
       it('produces and persists a code cache after the first compile', async () => {
         const w = makeWindow();
