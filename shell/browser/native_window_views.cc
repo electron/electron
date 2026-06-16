@@ -1255,15 +1255,14 @@ bool NativeWindowViews::IsTabletMode() const {
 }
 
 SkColor NativeWindowViews::GetBackgroundColor() const {
-  auto* background = root_view_.background();
-  if (!background)
-    return SK_ColorTRANSPARENT;
-  return background->color().ResolveToSkColor(root_view_.GetColorProvider());
+  return background_color_;
 }
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
-  // web views' background color.
-  root_view_.SetBackground(views::CreateSolidBackground(background_color));
+  SkColor compositor_color = background_color;
+  SkColor root_view_color = background_color;
+
+  background_color_ = background_color;
 
 #if BUILDFLAG(IS_WIN)
   // Set the background color of native window.
@@ -1275,15 +1274,23 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
     DeleteObject(reinterpret_cast<HBRUSH>(previous_brush));
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
-  SkColor compositor_color = background_color;
+
 #if BUILDFLAG(IS_LINUX)
-  // Widget background needs to stay transparent for CSD shadow regions.
+  // Widget and root view need to be transparent for CSD to draw shadow regions
+  // and custom edges and corners. The web contents view will still be
+  // painted with the true background color, which is cached in state.
   LinuxFrameLayout* frame_layout = GetLinuxFrameLayout();
   const bool uses_csd =
       frame_layout && frame_layout->SupportsClientFrameShadow();
-  if (transparent() || uses_csd)
+  if (transparent() || uses_csd) {
     compositor_color = SK_ColorTRANSPARENT;
+    root_view_color = SK_ColorTRANSPARENT;
+  }
 #endif
+
+  // Root view is painted behind the WebContents view.
+  root_view_.SetBackground(views::CreateSolidBackground(root_view_color));
+  // Widget background is painted behind everything.
   widget()->GetCompositor()->SetBackgroundColor(compositor_color);
 }
 
