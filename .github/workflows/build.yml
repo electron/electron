@@ -53,8 +53,8 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-        docs: ${{ steps.filter.outputs.docs }}
-        src: ${{ steps.filter.outputs.src }}
+        docs: ${{ fromJSON(steps.filter.outputs.results).docs }}
+        src: ${{ fromJSON(steps.filter.outputs.results).src }}
         build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
         pgo-only: ${{ steps.set-output.outputs.pgo-only }}
@@ -66,7 +66,7 @@ jobs:
     # exclusions must live inside a single negated brace pattern - a second
     # negated pattern would match (and re-include) every file the first one
     # excluded.
-    - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    - uses: ./.github/actions/paths-filter
       id: filter
       with:
         filters: |
@@ -80,7 +80,7 @@ jobs:
           pgo:
             - 'build/pgo_profiles/*.pgo.txt'
           src:
-            - '!{docs/**,.claude/**,build/pgo_profiles/*.pgo.txt}'
+            - '!{docs/**,.claude/**,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,README.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,build/pgo_profiles/*.pgo.txt}'
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
@@ -89,8 +89,8 @@ jobs:
     - name: Set Docs Only
       id: set-output
       run: |
-        echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
-        echo "pgo-only=${{ steps.filter.outputs.pgo == 'true' && steps.filter.outputs.src == 'false' && steps.filter.outputs.docs == 'false' }}" >> "$GITHUB_OUTPUT"
+        echo "docs-only=${{ fromJSON(steps.filter.outputs.results).docs == 'true' && fromJSON(steps.filter.outputs.results).src == 'false' }}" >> "$GITHUB_OUTPUT"
+        echo "pgo-only=${{ fromJSON(steps.filter.outputs.results).pgo == 'true' && fromJSON(steps.filter.outputs.results).src == 'false' && fromJSON(steps.filter.outputs.results).docs == 'false' }}" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
   # pgo-only changes skip lint too: the state files are machine-written
