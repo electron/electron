@@ -271,6 +271,15 @@ describe('node feature', () => {
       },
       [fixtures]
     );
+
+    itremote('uses Blink implementations when nodeIntegration is enabled in the renderer', () => {
+      // Node.js' undici-based fetch would return its JS source here; Blink's
+      // bindings are native. This guards against Node's bootstrap clobbering
+      // the renderer's Web Platform globals.
+      for (const ctor of [fetch, FormData, Headers, Request, Response]) {
+        expect(ctor.toString()).to.match(/\[native code\]/);
+      }
+    });
   });
 
   it('does not hang when using the fs module in the renderer process', async () => {
