@@ -50,7 +50,8 @@ base::FilePath GetHelperExecPath() {
 }  // namespace
 
 mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
-                                    PreloadScript::ScriptType type) {
+                                    PreloadScript::ScriptType type,
+                                    const GURL& consumer_site) {
   auto data = mojom::RendererStartupData::New();
 
   auto* session_prefs = SessionPreferences::FromBrowserContext(browser_context);
@@ -67,7 +68,7 @@ mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
       if (asar::ReadFileToString(script.file_path, &contents)) {
         ps->contents.assign(contents.begin(), contents.end());
         std::vector<uint8_t> cache =
-            preload_code_cache::Get(script.id, ps->contents);
+            preload_code_cache::Get(script.id, consumer_site, ps->contents);
         if (!cache.empty())
           ps->code_cache = std::move(cache);
       } else {

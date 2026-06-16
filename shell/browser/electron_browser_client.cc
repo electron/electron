@@ -753,11 +753,13 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
     return std::nullopt;
   auto* web_prefs = WebContentsPreferences::From(web_contents);
 
+  const GURL site = preload_code_cache::SiteForFrame(new_window_main_frame);
   mojom::RendererStartupDataPtr data;
   {
     ScopedAllowBlockingForElectron allow_blocking;
     data = renderer_startup_data::Build(web_contents->GetBrowserContext(),
-                                        PreloadScript::ScriptType::kWebFrame);
+                                        PreloadScript::ScriptType::kWebFrame,
+                                        site);
     std::optional<base::FilePath> preload;
     if (web_prefs)
       preload = web_prefs->GetPreloadPath();
@@ -769,7 +771,7 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
       if (asar::ReadFileToString(*preload, &contents)) {
         ps->contents.assign(contents.begin(), contents.end());
         std::vector<uint8_t> cache =
-            preload_code_cache::Get(ps->id, ps->contents);
+            preload_code_cache::Get(ps->id, site, ps->contents);
         if (!cache.empty())
           ps->code_cache = std::move(cache);
       } else {
@@ -780,6 +782,12 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
       data->preload_scripts.push_back(std::move(ps));
     }
   }
+  // Remember exactly what was served to this frame (id + sha256 of the
+  // bytes); SetPreloadCodeCache() only accepts cache writes that match this
+  // record, so the renderer never gets to pick the source a cache entry is
+  // validated against.
+  preload_code_cache::RecordServedPreloads(
+      new_window_main_frame->GetGlobalFrameToken(), data->preload_scripts);
   // Opaque blob — Chromium can't depend on Electron's mojom types.
   return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
 }
@@ -798,8 +806,10 @@ ElectronBrowserClient::GetServiceWorkerStartupData(
   mojom::RendererStartupDataPtr data;
   {
     ScopedAllowBlockingForElectron allow_blocking;
+    // Service-worker preload realms have no code-cache producer (and no
+    // frame/site to bind one to), so pass an empty consumer site.
     data = renderer_startup_data::Build(
-        browser_context, PreloadScript::ScriptType::kServiceWorker);
+        browser_context, PreloadScript::ScriptType::kServiceWorker, GURL());
   }
   return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
 }
