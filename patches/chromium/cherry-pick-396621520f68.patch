@@ -1,0 +1,381 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sunny Sachanandani <sunnyps@chromium.org>
+Date: Thu, 4 Jun 2026 16:28:01 -0700
+Subject: [gpu] Reject CopyTexImage from multisampled framebuffers
+
+Validate that the read framebuffer is not multisampled in
+DoCopyTexImage2D, DoCopyTexSubImage2D, and DoCopyTexSubImage3D.
+
+Attempting to copy from a multisampled framebuffer is prohibited by the
+OpenGL ES spec and generates a GL_INVALID_OPERATION error. Previously,
+in the clipped branch of DoCopyTexImage2D, the validating decoder would
+redefine the driver-side texture size using glTexImage2D (which
+succeeds), but then fail the subsequent copy with glCopyTexSubImage2D.
+The native error caused the decoder to skip updating its internal
+LevelInfo metadata. This resulted in a state desync where the decoder
+believed the texture was the original large size, but the driver had
+resized it to the smaller clipped size, enabling subsequent out-of-
+bounds writes.
+
+Rejecting multisampled read framebuffers early prevents the driver-side
+texture redefinition from occurring, keeping the decoder and driver
+states in sync.
+
+Bug: 517531647
+Test: `gl_tests --use-cmd-decoder=validating` with GN arg enable_validating_command_decoder = true
+Change-Id: Icf2772aacb013459de4a54082745fdec6a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7898041
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Auto-Submit: Sunny Sachanandani <sunnyps@chromium.org>
+Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1642016}
+
+diff --git a/gpu/command_buffer/service/framebuffer_manager.cc b/gpu/command_buffer/service/framebuffer_manager.cc
+index 89ccc818a1ecf1521882502d4dd5e8f72096e609..38e243ccc596d8b84deed9c9a10f1b2bf958858b 100644
+--- a/gpu/command_buffer/service/framebuffer_manager.cc
++++ b/gpu/command_buffer/service/framebuffer_manager.cc
+@@ -697,6 +697,13 @@ bool Framebuffer::GetReadBufferIsMultisampledTexture() const {
+              : false;
+ }
+ 
++bool Framebuffer::GetReadBufferIsMultisampledRenderbuffer() const {
++  const Attachment* attachment = GetReadBufferAttachment();
++  return attachment ? attachment->IsRenderbufferAttachment() &&
++                          attachment->samples() > 1
++                    : false;
++}
++
+ GLsizei Framebuffer::GetSamples() const {
+   // Assume the framebuffer is complete, so return any attachment's samples.
+   auto iter = attachments_.begin();
+diff --git a/gpu/command_buffer/service/framebuffer_manager.h b/gpu/command_buffer/service/framebuffer_manager.h
+index 294427479346360562b60ff4ea5c8ab4c4ba9c72..fb502d49b1261455d6f88a1133c08eb630bc7473 100644
+--- a/gpu/command_buffer/service/framebuffer_manager.h
++++ b/gpu/command_buffer/service/framebuffer_manager.h
+@@ -174,6 +174,7 @@ class GPU_GLES2_EXPORT Framebuffer : public base::RefCounted<Framebuffer> {
+   // returns 0.
+   GLenum GetReadBufferTextureType() const;
+   bool GetReadBufferIsMultisampledTexture() const;
++  bool GetReadBufferIsMultisampledRenderbuffer() const;
+ 
+   // Verify all the rules in OpenGL ES 2.0.25 4.4.5 are followed.
+   // Returns GL_FRAMEBUFFER_COMPLETE if there are no reasons we know we can't
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 179dcddaf1d6ded2e1e95729b1587adb0b8bcfa3..47d5ef756f17dedbe203ea7bb548e81d78717982 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -933,6 +933,7 @@ class GLES2DecoderImpl : public GLES2Decoder,
+   // If the color image is a renderbuffer, returns 0 for type.
+   GLenum GetBoundReadFramebufferTextureType();
+   GLenum GetBoundReadFramebufferInternalFormat();
++  bool IsBoundReadFramebufferMultisampledRenderbuffer();
+ 
+   // Get the i-th draw buffer's internal format/type from the bound framebuffer.
+   // If no framebuffer is bound, or no image is attached, or the DrawBuffers
+@@ -4234,6 +4235,18 @@ GLenum GLES2DecoderImpl::GetBoundReadFramebufferInternalFormat() {
+   }
+ }
+ 
++bool GLES2DecoderImpl::IsBoundReadFramebufferMultisampledRenderbuffer() {
++  Framebuffer* read_framebuffer = GetBoundReadFramebuffer();
++  // We check if the read framebuffer is a multisampled renderbuffer.
++  // We explicitly do NOT block multisampled texture attachments (with target
++  // GL_TEXTURE_2D, etc.) because they are implicit resolve textures (allocated
++  // via FramebufferTexture2DMultisampleEXT) and are safe to copy from (they are
++  // resolved on the fly). True multisampled textures
++  // (GL_TEXTURE_2D_MULTISAMPLE) are not supported by the validating decoder.
++  return read_framebuffer &&
++         read_framebuffer->GetReadBufferIsMultisampledRenderbuffer();
++}
++
+ GLenum GLES2DecoderImpl::GetBoundColorDrawBufferType(GLint drawbuffer_i) {
+   DCHECK(drawbuffer_i >= 0 &&
+          drawbuffer_i < static_cast<GLint>(group_->max_draw_buffers()));
+@@ -13471,6 +13484,12 @@ void GLES2DecoderImpl::DoCopyTexImage2D(
+     return;
+   }
+ 
++  if (IsBoundReadFramebufferMultisampledRenderbuffer()) {
++    LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, func_name,
++                       "cannot copy from a multisampled framebuffer");
++    return;
++  }
++
+   GLenum read_format = GetBoundReadFramebufferInternalFormat();
+   GLenum read_type = GetBoundReadFramebufferTextureType();
+   if (!ValidateCopyTexFormat(func_name, internal_format,
+@@ -13723,6 +13742,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage2D(
+     return;
+   }
+ 
++  if (IsBoundReadFramebufferMultisampledRenderbuffer()) {
++    LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, func_name,
++                       "cannot copy from a multisampled framebuffer");
++    return;
++  }
++
+   GLenum read_format = GetBoundReadFramebufferInternalFormat();
+   GLenum read_type = GetBoundReadFramebufferTextureType();
+   if (!ValidateCopyTexFormat(func_name, internal_format,
+@@ -13854,6 +13879,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage3D(
+     return;
+   }
+ 
++  if (IsBoundReadFramebufferMultisampledRenderbuffer()) {
++    LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, func_name,
++                       "cannot copy from a multisampled framebuffer");
++    return;
++  }
++
+   GLenum read_format = GetBoundReadFramebufferInternalFormat();
+   GLenum read_type = GetBoundReadFramebufferTextureType();
+   if (!ValidateCopyTexFormat(func_name, internal_format,
+diff --git a/gpu/command_buffer/tests/gl_unittest.cc b/gpu/command_buffer/tests/gl_unittest.cc
+index ffcf252581cb4f01f2f95500bffad796710a2a3d..2a3003a16a7dffd5e68e656a3452e2eab94d0ace 100644
+--- a/gpu/command_buffer/tests/gl_unittest.cc
++++ b/gpu/command_buffer/tests/gl_unittest.cc
+@@ -4,6 +4,7 @@
+ 
+ #include <GLES2/gl2.h>
+ #include <GLES2/gl2ext.h>
++#include <GLES2/gl2extchromium.h>
+ #include <GLES3/gl3.h>
+ #include <stdint.h>
+ 
+@@ -131,11 +132,7 @@ TEST_F(GLTest, GetString) {
+       reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
+ }
+ 
+-// TODO(crbug.com/513543143): Goldfish GLES emulator driver on 32-bit x86
+-// Android bots has a known driver bug where it incorrectly rejects
+-// glCopyTexImage2D on cubemaps with GL_INVALID_ENUM.
+-#if BUILDFLAG(ENABLE_VALIDATING_COMMAND_DECODER) && \
+-    !(BUILDFLAG(IS_ANDROID) && defined(ARCH_CPU_X86))
++#if BUILDFLAG(ENABLE_VALIDATING_COMMAND_DECODER)
+ class GL3Test : public GLTest {
+  protected:
+   void SetUp() override {
+@@ -155,7 +152,12 @@ class GL3Test : public GLTest {
+ // instead of the specific face target (e.g., GL_TEXTURE_CUBE_MAP_POSITIVE_X)
+ // which would cause driver-side GL_INVALID_ENUM errors and result in a state
+ // desynchronization between the decoder and the GPU driver.
+-TEST_F(GL3Test, CopyTexImage2DWorkaroundStateDesync) {
++//
++// TODO(crbug.com/513543143): Goldfish GLES emulator driver on 32-bit x86
++// Android bots has a known driver bug where it incorrectly rejects
++// glCopyTexImage2D on cubemaps with GL_INVALID_ENUM.
++#if !(BUILDFLAG(IS_ANDROID) && defined(ARCH_CPU_X86))
++TEST_F(GL3Test, CopyTexImage2DCubeMapStateDesync) {
+   GLuint tex = 0;
+   glGenTextures(1, &tex);
+   glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
+@@ -202,6 +204,208 @@ TEST_F(GL3Test, CopyTexImage2DWorkaroundStateDesync) {
+   glDeleteFramebuffers(1, &fbo);
+   glDeleteTextures(1, &tex);
+ }
+-#endif
++#endif  // !(BUILDFLAG(IS_ANDROID) && defined(ARCH_CPU_X86))
++
++class GL3MultisampleCopyTexImageTest : public GL3Test {
++ protected:
++  void SetUp() override { GL3Test::SetUp(); }
++
++  void TearDown() override {
++    if (sample_fbo_) {
++      glDeleteFramebuffers(1, &sample_fbo_);
++    }
++    if (sample_tex_) {
++      glDeleteTextures(1, &sample_tex_);
++    }
++    if (sample_rb_) {
++      glDeleteRenderbuffers(1, &sample_rb_);
++    }
++    if (dest_tex_) {
++      glDeleteTextures(1, &dest_tex_);
++    }
++    GL3Test::TearDown();
++  }
++
++  void SetUpImplicitResolveTextureFBO() {
++    glGenTextures(1, &sample_tex_);
++    glBindTexture(GL_TEXTURE_2D, sample_tex_);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 16, 16, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    glGenFramebuffers(1, &sample_fbo_);
++    glBindFramebuffer(GL_FRAMEBUFFER, sample_fbo_);
++    glFramebufferTexture2DMultisampleEXT(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                                         GL_TEXTURE_2D, sample_tex_, 0, 4);
++    EXPECT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++              glCheckFramebufferStatus(GL_FRAMEBUFFER));
++    GLTestHelper::CheckGLError("SetUpImplicitResolveTextureFBO", __LINE__);
++  }
++
++  void SetUpMultisampleRenderbufferFBO() {
++    glGenRenderbuffers(1, &sample_rb_);
++    glBindRenderbuffer(GL_RENDERBUFFER, sample_rb_);
++    glRenderbufferStorageMultisampleCHROMIUM(GL_RENDERBUFFER, 4, GL_RGBA8, 16,
++                                             16);
++    glGenFramebuffers(1, &sample_fbo_);
++    glBindFramebuffer(GL_FRAMEBUFFER, sample_fbo_);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                              GL_RENDERBUFFER, sample_rb_);
++    EXPECT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++              glCheckFramebufferStatus(GL_FRAMEBUFFER));
++    GLTestHelper::CheckGLError("SetUpMultisampleRenderbufferFBO", __LINE__);
++  }
++
++  void SetUpImplicitResolveRenderbufferFBO() {
++    glGenRenderbuffers(1, &sample_rb_);
++    glBindRenderbuffer(GL_RENDERBUFFER, sample_rb_);
++    glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER, 4, GL_RGBA8, 16, 16);
++    glGenFramebuffers(1, &sample_fbo_);
++    glBindFramebuffer(GL_FRAMEBUFFER, sample_fbo_);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                              GL_RENDERBUFFER, sample_rb_);
++    EXPECT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++              glCheckFramebufferStatus(GL_FRAMEBUFFER));
++    GLTestHelper::CheckGLError("SetUpImplicitResolveRenderbufferFBO", __LINE__);
++  }
++
++  void SetUpDestTexture2D() {
++    glGenTextures(1, &dest_tex_);
++    glBindTexture(GL_TEXTURE_2D, dest_tex_);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 16, 16, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    GLTestHelper::CheckGLError("SetUpDestTexture2D", __LINE__);
++  }
++
++  void SetUpDestTexture3D() {
++    glGenTextures(1, &dest_tex_);
++    glBindTexture(GL_TEXTURE_3D, dest_tex_);
++    glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA8, 16, 16, 16, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++    GLTestHelper::CheckGLError("SetUpDestTexture3D", __LINE__);
++  }
++
++  void VerifyCopySucceeded(GLenum dest_target,
++                           int expected_width,
++                           int expected_height) {
++    EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++    VerifyTextureSize(dest_target, expected_width, expected_height);
++  }
++
++  void VerifyCopyBlocked(GLenum dest_target) {
++    EXPECT_EQ(static_cast<GLenum>(GL_INVALID_OPERATION), glGetError());
++    VerifyTextureSize(dest_target, 16, 16);
++  }
++
++  void VerifyTextureSize(GLenum target,
++                         int expected_width,
++                         int expected_height) {
++    int tracked_width = 0;
++    int tracked_height = 0;
++    bool defined = InspectTextureLevelSize(&gl_, dest_tex_, target, 0,
++                                           &tracked_width, &tracked_height);
++    EXPECT_TRUE(defined);
++    EXPECT_EQ(expected_width, tracked_width);
++    EXPECT_EQ(expected_height, tracked_height);
++  }
++
++  GLuint sample_fbo_ = 0;
++  GLuint sample_tex_ = 0;
++  GLuint sample_rb_ = 0;
++  GLuint dest_tex_ = 0;
++};
++
++// Implicit Resolve Texture
++TEST_F(GL3MultisampleCopyTexImageTest, CopyTexImage2DImplicitResolveTexture) {
++  if (!GLTestHelper::HasExtension("GL_EXT_multisample_render_to_texture")) {
++    GTEST_SKIP() << "GL_EXT_multisample_render_to_texture not supported";
++  }
++  SetUpImplicitResolveTextureFBO();
++  SetUpDestTexture2D();
++  glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0, 2, 2, 0);
++  VerifyCopySucceeded(GL_TEXTURE_2D, 2, 2);
++}
++TEST_F(GL3MultisampleCopyTexImageTest,
++       CopyTexSubImage2DImplicitResolveTexture) {
++  if (!GLTestHelper::HasExtension("GL_EXT_multisample_render_to_texture")) {
++    GTEST_SKIP() << "GL_EXT_multisample_render_to_texture not supported";
++  }
++  SetUpImplicitResolveTextureFBO();
++  SetUpDestTexture2D();
++  glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 2, 2);
++  VerifyCopySucceeded(GL_TEXTURE_2D, 16, 16);
++}
++TEST_F(GL3MultisampleCopyTexImageTest,
++       CopyTexSubImage3DImplicitResolveTexture) {
++  if (!GLTestHelper::HasExtension("GL_EXT_multisample_render_to_texture")) {
++    GTEST_SKIP() << "GL_EXT_multisample_render_to_texture not supported";
++  }
++  SetUpImplicitResolveTextureFBO();
++  SetUpDestTexture3D();
++  glCopyTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 0, 0, 2, 2);
++  VerifyCopySucceeded(GL_TEXTURE_3D, 16, 16);
++}
++
++// Multisample Renderbuffer
++TEST_F(GL3MultisampleCopyTexImageTest, CopyTexImage2DMultisampleRenderbuffer) {
++  if (!GLTestHelper::HasExtension("GL_CHROMIUM_framebuffer_multisample")) {
++    GTEST_SKIP() << "GL_CHROMIUM_framebuffer_multisample not supported";
++  }
++  SetUpMultisampleRenderbufferFBO();
++  SetUpDestTexture2D();
++  glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0, 2, 2, 0);
++  VerifyCopyBlocked(GL_TEXTURE_2D);
++}
++TEST_F(GL3MultisampleCopyTexImageTest,
++       CopyTexSubImage2DMultisampleRenderbuffer) {
++  if (!GLTestHelper::HasExtension("GL_CHROMIUM_framebuffer_multisample")) {
++    GTEST_SKIP() << "GL_CHROMIUM_framebuffer_multisample not supported";
++  }
++  SetUpMultisampleRenderbufferFBO();
++  SetUpDestTexture2D();
++  glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 2, 2);
++  VerifyCopyBlocked(GL_TEXTURE_2D);
++}
++TEST_F(GL3MultisampleCopyTexImageTest,
++       CopyTexSubImage3DMultisampleRenderbuffer) {
++  if (!GLTestHelper::HasExtension("GL_CHROMIUM_framebuffer_multisample")) {
++    GTEST_SKIP() << "GL_CHROMIUM_framebuffer_multisample not supported";
++  }
++  SetUpMultisampleRenderbufferFBO();
++  SetUpDestTexture3D();
++  glCopyTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 0, 0, 2, 2);
++  VerifyCopyBlocked(GL_TEXTURE_3D);
++}
++
++// Implicit Resolve Renderbuffer
++TEST_F(GL3MultisampleCopyTexImageTest,
++       CopyTexImage2DImplicitResolveRenderbuffer) {
++  if (!GLTestHelper::HasExtension("GL_EXT_multisample_render_to_texture")) {
++    GTEST_SKIP() << "GL_EXT_multisample_render_to_texture not supported";
++  }
++  SetUpImplicitResolveRenderbufferFBO();
++  SetUpDestTexture2D();
++  glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 0, 0, 2, 2, 0);
++  VerifyCopyBlocked(GL_TEXTURE_2D);
++}
++TEST_F(GL3MultisampleCopyTexImageTest,
++       CopyTexSubImage2DImplicitResolveRenderbuffer) {
++  if (!GLTestHelper::HasExtension("GL_EXT_multisample_render_to_texture")) {
++    GTEST_SKIP() << "GL_EXT_multisample_render_to_texture not supported";
++  }
++  SetUpImplicitResolveRenderbufferFBO();
++  SetUpDestTexture2D();
++  glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, 2, 2);
++  VerifyCopyBlocked(GL_TEXTURE_2D);
++}
++TEST_F(GL3MultisampleCopyTexImageTest,
++       CopyTexSubImage3DImplicitResolveRenderbuffer) {
++  if (!GLTestHelper::HasExtension("GL_EXT_multisample_render_to_texture")) {
++    GTEST_SKIP() << "GL_EXT_multisample_render_to_texture not supported";
++  }
++  SetUpImplicitResolveRenderbufferFBO();
++  SetUpDestTexture3D();
++  glCopyTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, 0, 0, 2, 2);
++  VerifyCopyBlocked(GL_TEXTURE_3D);
++}
++#endif  // BUILDFLAG(ENABLE_VALIDATING_COMMAND_DECODER)
+ 
+ }  // namespace gpu
