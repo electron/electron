@@ -2062,9 +2062,11 @@ ui::mojom::WindowShowState NativeWindowViews::GetRestoredState() {
 void NativeWindowViews::MoveBehindTaskBarIfNeeded() {
 #if BUILDFLAG(IS_WIN)
   if (behind_task_bar_) {
-    const HWND task_bar_hwnd = ::FindWindow(kUniqueTaskBarClassName, nullptr);
-    ::SetWindowPos(GetAcceleratedWidget(), task_bar_hwnd, 0, 0, 0, 0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    if (const HWND task_bar_hwnd =
+            ::FindWindow(kUniqueTaskBarClassName, nullptr)) {
+      ::SetWindowPos(GetAcceleratedWidget(), task_bar_hwnd, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
   }
 #endif
   // TODO(julien.isorce): Implement X11 case.
