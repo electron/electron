@@ -950,14 +950,19 @@ extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
     return *content_size_constraints_;
   if (!size_constraints_)
     return extensions::SizeConstraints();
+  // Inflate Electron's logical window size constraints by frame insets to get
+  // the full HWND size for WindowSizeToContentSizeBuggy.
+  const gfx::Size inset_size = GetRestoredFrameBorderInsets().size();
   extensions::SizeConstraints constraints;
   if (size_constraints_->HasMaximumSize()) {
     constraints.set_maximum_size(WindowSizeToContentSizeBuggy(
-        GetAcceleratedWidget(), size_constraints_->GetMaximumSize()));
+        GetAcceleratedWidget(),
+        size_constraints_->GetMaximumSize() + inset_size));
   }
   if (size_constraints_->HasMinimumSize()) {
     constraints.set_minimum_size(WindowSizeToContentSizeBuggy(
-        GetAcceleratedWidget(), size_constraints_->GetMinimumSize()));
+        GetAcceleratedWidget(),
+        size_constraints_->GetMinimumSize() + inset_size));
   }
   return constraints;
 }
@@ -1269,15 +1274,14 @@ bool NativeWindowViews::IsTabletMode() const {
 }
 
 SkColor NativeWindowViews::GetBackgroundColor() const {
-  auto* background = root_view_.background();
-  if (!background)
-    return SK_ColorTRANSPARENT;
-  return background->color().ResolveToSkColor(root_view_.GetColorProvider());
+  return background_color_;
 }
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
-  // web views' background color.
-  root_view_.SetBackground(views::CreateSolidBackground(background_color));
+  SkColor compositor_color = background_color;
+  SkColor root_view_color = background_color;
+
+  background_color_ = background_color;
 
 #if BUILDFLAG(IS_WIN)
   // Set the background color of native window.
@@ -1289,14 +1293,22 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
     DeleteObject(reinterpret_cast<HBRUSH>(previous_brush));
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
-  SkColor compositor_color = background_color;
+
 #if BUILDFLAG(IS_LINUX)
-  // Widget background needs to stay transparent for CSD shadow regions.
+  // Widget and root view need to be transparent for CSD to draw shadow regions
+  // and custom edges and corners. The web contents view will still be
+  // painted with the true background color, which is cached in state.
   auto* fvl = GetFrameViewLinux();
   const bool uses_csd = fvl && fvl->ShouldDrawRestoredFrameShadow();
-  if (transparent() || uses_csd)
+  if (transparent() || uses_csd) {
     compositor_color = SK_ColorTRANSPARENT;
+    root_view_color = SK_ColorTRANSPARENT;
+  }
 #endif
+
+  // Root view is painted behind the WebContents view.
+  root_view_.SetBackground(views::CreateSolidBackground(root_view_color));
+  // Widget background is painted behind everything.
   widget()->GetCompositor()->SetBackgroundColor(compositor_color);
 }
 
