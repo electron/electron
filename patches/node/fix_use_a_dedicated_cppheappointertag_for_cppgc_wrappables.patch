@@ -13,8 +13,11 @@ Upstream Node.js builds with the sandbox disabled and still compiles
 against kDefaultTag; Electron enables the sandbox, so define a
 Node-specific tag. Node.js never unwraps through v8::Object::Unwrap
 (it unwraps via internal fields), so a single tag suffices. The value
-0x5000 sits outside the tag ranges used by Blink (< 2101) and gin
-(>= 2101), which share isolates with Node.js in renderer processes.
+(0x5000) is provided by the EMBEDDER_CPPHEAP_POINTER_TAG define on the
+libnode GN target so that consumers such as Electron can static_assert
+at compile time that their own tags stay below it; it sits outside the
+tag ranges used by Blink and gin, which share isolates with Node.js in
+renderer processes.
 
 diff --git a/src/cppgc_helpers-inl.h b/src/cppgc_helpers-inl.h
 index 0e52bf5a6f4837d0f4bfed83987c6903796fda55..68c70153b96cc3e62db1b5dc74ac4026fa306271 100644
@@ -30,7 +33,7 @@ index 0e52bf5a6f4837d0f4bfed83987c6903796fda55..68c70153b96cc3e62db1b5dc74ac4026
    obj->SetAlignedPointerInInternalField(
        kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc(), 0);
 diff --git a/src/cppgc_helpers.h b/src/cppgc_helpers.h
-index fe6300a5d5d2d6602a84cbd33736c2133041d1b0..87fdb67c1da99c06f09a27997efb4857ce4707f3 100644
+index fe6300a5d5d2d6602a84cbd33736c2133041d1b0..b9153306b6cbc34d076c0eb5b32ecce3c5de98de 100644
 --- a/src/cppgc_helpers.h
 +++ b/src/cppgc_helpers.h
 @@ -19,6 +19,25 @@ class Environment;
@@ -42,15 +45,15 @@ index fe6300a5d5d2d6602a84cbd33736c2133041d1b0..87fdb67c1da99c06f09a27997efb4857
 +// (https://chromium-review.googlesource.com/c/v8/v8/+/7907082): embedders
 +// that enable the sandbox must tag each wrapped type. Node.js never unwraps
 +// through v8::Object::Unwrap (it unwraps via internal fields), so a single tag
-+// suffices. The value is the first slot of the region gin reserves for layered
-+// embedders -- gin::kFirstReservedEmbedderCppHeapPointerTag in
-+// gin/public/wrappable_pointer_tags.h -- which sits above the tags used by
-+// Blink and gin (and Electron, which extends gin) and below V8's internal tag
-+// range; all of those share isolates with Node.js in Electron's renderers.
-+// Node.js cannot include gin headers, so the value is mirrored here; the
-+// static_assert below pins the upper bound and gin pins the lower bound.
++// suffices. The value comes from the EMBEDDER_CPPHEAP_POINTER_TAG define on
++// the libnode GN target (see unofficial.gni); it sits above the tags used by
++// Blink, gin, and Electron (which extends gin and static_asserts against the
++// same define in shell/common/gin_helper/wrappable_pointer_tags.h) and below
++// V8's internal tag range; all of those share isolates with Node.js in
++// Electron's renderers. The static_assert below pins the upper bound and
++// Electron's static_assert pins the lower bound.
 +constexpr v8::CppHeapPointerTag kNodeCppHeapPointerTag =
-+    static_cast<v8::CppHeapPointerTag>(0x5000);
++    static_cast<v8::CppHeapPointerTag>(EMBEDDER_CPPHEAP_POINTER_TAG);
 +static_assert(
 +    static_cast<uint16_t>(kNodeCppHeapPointerTag) <
 +        static_cast<uint16_t>(v8::CppHeapPointerTag::kFirstV8InternalTag),
@@ -73,3 +76,20 @@ index 10266fd1233d9b117eefbbbb4f455289b002785a..ce6dd5b7394c63e50cbc250a7eca7048
  }
  
  void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
+diff --git a/unofficial.gni b/unofficial.gni
+index fe2c6786a10f94fc0a15d4b6a0d3bfffb79f2e33..86a1dfe983aaf83162b851b12da936798191c64f 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -63,6 +63,12 @@ template("node_gn_build") {
+     defines = [
+       "NODE_WANT_INTERNALS=1",
+       "NODE_EMBEDDER_MODULE_VERSION=$node_module_version",
++
++      # CppHeapPointerTag value used for Node.js cppgc wrappables (see
++      # src/cppgc_helpers.h). Exposed to libnode consumers so embedders that
++      # define their own tags (e.g. Electron) can static_assert against it at
++      # compile time.
++      "EMBEDDER_CPPHEAP_POINTER_TAG=0x5000",
+     ]
+     configs = [
+       ":node_features",
