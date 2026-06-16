@@ -160,13 +160,15 @@ void ElectronFrameViewLinux::UpdateButtonColors() {
 
   // Apply custom WCO overlay colors if set.
   const bool active = ShouldPaintAsActive();
-  const SkColor symbol_color = window_->overlay_symbol_color();
-  const SkColor background_color = window_->overlay_button_color();
-  SkColor frame_color =
-      background_color == SkColor()
-          ? GetColorProvider()->GetColor(active ? ui::kColorFrameActive
-                                                : ui::kColorFrameInactive)
-          : background_color;
+  const SkColor symbol_color =
+      window_->overlay_symbol_color().value_or(SkColor());
+  const std::optional<SkColor> background_color =
+      window_->overlay_button_color();
+  // Frame color is used for blending, force it to be opaque
+  SkColor frame_color = SkColorSetA(
+      background_color.value_or(GetColorProvider()->GetColor(
+          active ? ui::kColorFrameActive : ui::kColorFrameInactive)),
+      SK_AlphaOPAQUE);
 
   for (views::Button* button : {minimize_button(), maximize_button(),
                                 restore_button(), close_button()}) {
@@ -182,9 +184,9 @@ void ElectronFrameViewLinux::UpdateButtonColors() {
 
 void ElectronFrameViewLinux::
     UpdateCaptionButtonPlaceholderContainerBackground() {
-  const SkColor obc = window_->overlay_button_color();
+  const std::optional<SkColor> obc = window_->overlay_button_color();
   SkColor bg_color;
-  if (obc == SkColor()) {
+  if (!obc.has_value()) {
     const auto* color_provider = GetColorProvider();
     if (!color_provider)
       return;
@@ -192,7 +194,7 @@ void ElectronFrameViewLinux::
                                             ? ui::kColorFrameActive
                                             : ui::kColorFrameInactive);
   } else {
-    bg_color = obc;
+    bg_color = *obc;
   }
   leading_button_container_->SetBackground(
       views::CreateSolidBackground(bg_color));
