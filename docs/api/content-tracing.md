@@ -167,6 +167,8 @@ async function recordTrace () {
 }
 ```
 
+## Viewing recorded heap dumps
+
 To view the recorded heap dumps:
 
 1. Download the breakpad symbols for your Electron version from the Electron GitHub
@@ -183,6 +185,6 @@ To view the recorded heap dumps:
 5. Click on one of the `M` symbols
 6. Click on a `☰` triple bar icon (e.g., in the `malloc` column)
 
-<img src="../images/viewing-heap-dumps.png" alt="Screenshot showing how to view a heapdump in Chromium's tracing view" />
+![Screenshot showing how to view a heapdump in Chromium's tracing view](../images/viewing-heap-dumps.png)
 
 [trace viewer]: https://chromium.googlesource.com/catapult/+/HEAD/tracing/README.md
