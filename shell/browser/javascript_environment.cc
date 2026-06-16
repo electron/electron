@@ -89,9 +89,9 @@ std::unique_ptr<gin::IsolateHolder> CreateIsolateHolder(
 
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
                                              bool setup_wasm_streaming)
-    : isolate_holder_{CreateIsolateHolder(
-          Initialize(event_loop, setup_wasm_streaming),
-          &max_young_generation_size_)},
+    : isolate_holder_{
+          CreateIsolateHolder(Initialize(event_loop, setup_wasm_streaming),
+                              &max_young_generation_size_)},
       locker_{std::in_place, isolate()} {
   v8::Isolate* const isolate = this->isolate();
   isolate->Enter();
