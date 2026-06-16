@@ -112,7 +112,6 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
-#include "shell/browser/preload_code_cache.h"
 #include "shell/browser/preload_script.h"
 #include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
@@ -128,7 +127,6 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/api/electron_bindings.h"
-#include "shell/common/asar/asar_util.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/base_converter.h"
@@ -2009,11 +2007,6 @@ void WebContents::RenderFrameDeleted(
       web_frame->MarkRenderFrameDisposed();
     }
   }
-
-  // Drop the served-preload bookkeeping used to validate
-  // SetPreloadCodeCache() writes from this frame.
-  preload_code_cache::OnRenderFrameDeleted(
-      render_frame_host->GetGlobalFrameToken());
 }
 
 void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
@@ -2295,11 +2288,6 @@ void WebContents::MaybeSendRendererStartupData(
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
-  // Build the ordered preload list: session-registered preloads of type
-  // 'frame' first (in registration order), then the per-WebContents
-  // webPreferences.preload last — same order as the legacy
-  // BROWSER_SANDBOX_LOAD handler's getPreloadScriptsFromEvent().
-  const GURL site = preload_code_cache::SiteForFrame(rfh);
   mojom::RendererStartupDataPtr data;
   {
     // We're on the UI thread. The asar is mmap'd and offset-indexed so warm
@@ -2307,37 +2295,8 @@ void WebContents::MaybeSendRendererStartupData(
     // parked waiting on us here — we haven't sent CommitNavigation yet — so
     // unlike the old sync IPC handler this can't amplify under contention.
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::Build(
-        rfh->GetBrowserContext(), PreloadScript::ScriptType::kWebFrame, site);
-    std::optional<base::FilePath> preload;
-    if (web_prefs)
-      preload = web_prefs->GetPreloadPath();
-    if (preload && preload->IsAbsolute()) {
-      auto ps = mojom::PreloadScriptData::New();
-      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
-      ps->file_path = preload->AsUTF8Unsafe();
-      std::string contents;
-      if (asar::ReadFileToString(*preload, &contents)) {
-        ps->contents.assign(contents.begin(), contents.end());
-        std::vector<uint8_t> cache =
-            preload_code_cache::Get(ps->id, site, ps->contents);
-        if (!cache.empty())
-          ps->code_cache = std::move(cache);
-      } else {
-        ps->contents.clear();
-        ps->error =
-            "ENOENT: no such file or directory, open '" + ps->file_path + "'";
-      }
-      data->preload_scripts.push_back(std::move(ps));
-    }
+    data = renderer_startup_data::BuildForFrame(rfh);
   }
-
-  // Remember exactly what was served to this frame (id + sha256 of the
-  // bytes); SetPreloadCodeCache() only accepts cache writes that match this
-  // record, so the renderer never gets to pick the source a cache entry is
-  // validated against.
-  preload_code_cache::RecordServedPreloads(rfh->GetGlobalFrameToken(),
-                                           data->preload_scripts);
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as
   // content.mojom.Frame (the navigation channel), so this message is ordered

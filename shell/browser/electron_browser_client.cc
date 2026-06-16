@@ -108,7 +108,6 @@
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
-#include "shell/browser/preload_code_cache.h"
 #include "shell/browser/preload_script.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/renderer_startup_data.h"
@@ -124,7 +123,6 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
-#include "shell/common/asar/asar_util.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
@@ -751,43 +749,12 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
     return std::nullopt;
   if (!WebContentsPreferences::ShouldUseSandbox(web_contents))
     return std::nullopt;
-  auto* web_prefs = WebContentsPreferences::From(web_contents);
 
-  const GURL site = preload_code_cache::SiteForFrame(new_window_main_frame);
   mojom::RendererStartupDataPtr data;
   {
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::Build(web_contents->GetBrowserContext(),
-                                        PreloadScript::ScriptType::kWebFrame,
-                                        site);
-    std::optional<base::FilePath> preload;
-    if (web_prefs)
-      preload = web_prefs->GetPreloadPath();
-    if (preload && preload->IsAbsolute()) {
-      auto ps = mojom::PreloadScriptData::New();
-      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
-      ps->file_path = preload->AsUTF8Unsafe();
-      std::string contents;
-      if (asar::ReadFileToString(*preload, &contents)) {
-        ps->contents.assign(contents.begin(), contents.end());
-        std::vector<uint8_t> cache =
-            preload_code_cache::Get(ps->id, site, ps->contents);
-        if (!cache.empty())
-          ps->code_cache = std::move(cache);
-      } else {
-        ps->contents.clear();
-        ps->error =
-            "ENOENT: no such file or directory, open '" + ps->file_path + "'";
-      }
-      data->preload_scripts.push_back(std::move(ps));
-    }
+    data = renderer_startup_data::BuildForFrame(new_window_main_frame);
   }
-  // Remember exactly what was served to this frame (id + sha256 of the
-  // bytes); SetPreloadCodeCache() only accepts cache writes that match this
-  // record, so the renderer never gets to pick the source a cache entry is
-  // validated against.
-  preload_code_cache::RecordServedPreloads(
-      new_window_main_frame->GetGlobalFrameToken(), data->preload_scripts);
   // Opaque blob — Chromium can't depend on Electron's mojom types.
   return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
 }
@@ -806,10 +773,8 @@ ElectronBrowserClient::GetServiceWorkerStartupData(
   mojom::RendererStartupDataPtr data;
   {
     ScopedAllowBlockingForElectron allow_blocking;
-    // Service-worker preload realms have no code-cache producer (and no
-    // frame/site to bind one to), so pass an empty consumer site.
     data = renderer_startup_data::Build(
-        browser_context, PreloadScript::ScriptType::kServiceWorker, GURL());
+        browser_context, PreloadScript::ScriptType::kServiceWorker);
   }
   return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
 }
