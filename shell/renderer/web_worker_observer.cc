@@ -114,21 +114,8 @@ void WebWorkerObserver::InitializeNewEnvironment(
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());
 
-  // Node's pre-execution unconditionally deletes globalThis.EventSource when
-  // --experimental-eventsource is not set (unlike its sibling setup functions
-  // it does not check noBrowserGlobals). Save Blink's binding and restore it
-  // after Node has finished bootstrapping.
-  v8::Local<v8::Object> global = worker_context->Global();
-  v8::Local<v8::String> event_source_key =
-      gin::StringToV8(isolate, "EventSource");
-  v8::Local<v8::Value> event_source =
-      global->Get(worker_context, event_source_key).ToLocalChecked();
-
   // Load everything.
   node_bindings_->LoadEnvironment(env.get());
-
-  if (!event_source->IsUndefined())
-    global->Set(worker_context, event_source_key, event_source).Check();
 
   // Make uv loop being wrapped by window context.
   node_bindings_->set_uv_env(env.get());
