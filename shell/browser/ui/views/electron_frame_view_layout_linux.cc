@@ -56,7 +56,21 @@ gfx::ShadowValues ElectronFrameViewLayoutLinux::GetShadowValues(
     bool active) const {
   if (!window_->HasShadow())
     return gfx::ShadowValues();
-  return FrameViewLayoutLinux::GetShadowValues(active);
+  // FrameViewLayoutLinux::GetShadowValues() returns {} when
+  // widget->IsMaximized()/IsFullscreen(), which makes
+  // GetRestoredFrameBorderInsets() — and so CalculateInsetsInDIP() — depend
+  // on the optimistic applied_state set by TriggerStateChanges.
+  // On compositors that decline set_maximized (e.g.
+  // sway floating) the two CalculateInsetsInDIP calls per configure then
+  // disagree and the window shrinks by ~30x41px per maximize().
+  if (tiled())
+    return gfx::ShadowValues();
+  auto* provider = views::LayoutProvider::Get();
+  if (!provider)
+    return gfx::ShadowValues();
+  return gfx::ShadowValue::MakeMdShadowValues(
+      provider->GetShadowElevationMetric(active ? views::Emphasis::kMaximum
+                                                : views::Emphasis::kMedium));
 }
 
 gfx::RoundedCornersF ElectronFrameViewLayoutLinux::GetCornerRadii() const {
