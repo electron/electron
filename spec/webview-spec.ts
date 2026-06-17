@@ -1,6 +1,6 @@
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 
-import * as auth from 'basic-auth';
+import auth from 'basic-auth';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
