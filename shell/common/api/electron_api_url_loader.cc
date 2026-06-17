@@ -407,14 +407,17 @@ void SimpleURLLoaderWrapper::Start() {
     loader_->SetRequestID(
         content::GlobalRequestID::MakeBrowserInitiated().request_id);
   }
-  loader_->SetOnResponseStartedCallback(base::BindOnce(
-      &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
-  loader_->SetOnRedirectCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnRedirect, base::Unretained(this)));
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  auto weak_cell = gin::WrapPersistent(
+      weak_factory_.GetWeakCell(isolate->GetCppHeap()->GetAllocationHandle()));
+  loader_->SetOnResponseStartedCallback(
+      base::BindOnce(&SimpleURLLoaderWrapper::OnResponseStarted, weak_cell));
+  loader_->SetOnRedirectCallback(
+      base::BindRepeating(&SimpleURLLoaderWrapper::OnRedirect, weak_cell));
   loader_->SetOnUploadProgressCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnUploadProgress, base::Unretained(this)));
+      &SimpleURLLoaderWrapper::OnUploadProgress, weak_cell));
   loader_->SetOnDownloadProgressCallback(base::BindRepeating(
-      &SimpleURLLoaderWrapper::OnDownloadProgress, base::Unretained(this)));
+      &SimpleURLLoaderWrapper::OnDownloadProgress, weak_cell));
 
   url_loader_factory_ = GetURLLoaderFactoryForURL(request_ref->url);
   loader_->DownloadAsStream(url_loader_factory_.get(), this);

@@ -446,6 +446,72 @@ describe('cpp heap', () => {
       );
     });
 
+    it('completes request after JS drops reference but listeners are registered', async () => {
+      const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await rc.remotely(async () => {
+        const { net, app } = require('electron');
+        const http = require('node:http');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const server = http.createServer((req: any, res: any) => {
+          res.writeHead(200);
+          res.end('ok');
+        });
+        await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+        const { port } = server.address();
+
+        let completed = false;
+        let errorOccurred: string | null = null;
+        let requestWeakRef: WeakRef<any>;
+
+        const done = new Promise<void>((resolve) => {
+          let request: any = net.request({ url: `http://127.0.0.1:${port}` });
+          requestWeakRef = new WeakRef(request);
+
+          request.on('response', (response: any) => {
+            response.on('data', () => {});
+            response.on('end', () => {
+              completed = true;
+              resolve();
+            });
+          });
+          request.on('error', (err: Error) => {
+            errorOccurred = err.message;
+            resolve();
+          });
+          request.end();
+
+          // Drop the JS reference immediately after registering listeners.
+          request = null;
+        });
+
+        // Force GC while request is in flight.
+        for (let i = 0; i < 5; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+
+        await done;
+        server.close();
+
+        for (let i = 0; i < 10; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+        const released = requestWeakRef!.deref() === undefined;
+
+        setTimeout(() => app.quit());
+        return { completed, errorOccurred, released };
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+
+      expect(result.errorOccurred).to.equal(null, `request errored: ${result.errorOccurred}`);
+      expect(result.completed).to.equal(true, 'request should complete even after JS drops reference');
+      expect(result.released).to.equal(true, 'request should be released after completion');
+    });
+
     it('keeps a ChunkedDataPipeReadableStream alive while a read is pending and releases it after', async () => {
       const rc = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
       const result = await rc.remotely(
