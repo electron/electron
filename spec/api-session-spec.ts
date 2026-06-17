@@ -1,8 +1,8 @@
 import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
 
-import * as auth from 'basic-auth';
+import auth from 'basic-auth';
 import { expect } from 'chai';
-import * as send from 'send';
+import send from 'send';
 
 import * as ChildProcess from 'node:child_process';
 import { once } from 'node:events';
