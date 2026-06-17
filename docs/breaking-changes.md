@@ -37,6 +37,10 @@ libraries on those platforms.
 
 ## Planned Breaking API Changes (43.0)
 
+### Behavior Changed: WCO respects the native title bar layout on Linux
+
+Frameless windows with Window Controls Overlay (WCO) now adopt the native title bar layout and user settings on Linux. For example, controls will appear on the left side of the frame on RTL systems, and only the close button will be visible by default on GNOME. Depending on the user's desktop environment and configuration, buttons can appear on the left or right side of the frame (or both). To account for all possibilities, use the CSS variables `env(titlebar-area-x, 0px)` and `env(titlebar-area-width, 100%)` to constrain your app's title bar content to a safe area.
+
 ### Removed: Unity desktop environment support on Linux
 
 Unity has not been the default desktop environment in Ubuntu LTS since version 16.04, which is not supported by current versions of Electron. The deprecation does not
