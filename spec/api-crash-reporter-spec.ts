@@ -1,6 +1,6 @@
 import { app } from 'electron/main';
 
-import * as Busboy from 'busboy';
+import Busboy from 'busboy';
 import { expect } from 'chai';
 import * as uuid from 'uuid';
 

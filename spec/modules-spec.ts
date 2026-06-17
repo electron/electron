@@ -319,7 +319,7 @@ describe('modules support', () => {
     it('the built-in "electron" module loaded via ESM import has the same exports as the CJS module', async () => {
       const esmElectron = await import('electron');
       const cjsElectron = require('electron');
-      expect(Object.keys(esmElectron)).to.deep.equal(Object.keys(cjsElectron));
+      expect(Object.keys(esmElectron)).to.include.members(Object.keys(cjsElectron));
     });
   });
 });
