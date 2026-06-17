@@ -53,15 +53,15 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-        docs: ${{ steps.filter.outputs.docs }}
-        src: ${{ steps.filter.outputs.src }}
+        docs: ${{ fromJSON(steps.filter.outputs.results).docs }}
+        src: ${{ fromJSON(steps.filter.outputs.results).src }}
         build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
       with:
         ref: ${{ github.event.pull_request.head.sha }}
-    - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4.0.1
+    - uses: ./.github/actions/paths-filter
       id: filter
       with:
         filters: |
@@ -72,7 +72,7 @@ jobs:
             - CONTRIBUTING.md
             - CODE_OF_CONDUCT.md
           src:
-            - '!docs/**'
+            - '!{docs/**,.claude/**,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,README.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md}'
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
@@ -81,7 +81,7 @@ jobs:
     - name: Set Docs Only
       id: set-output
       run: |
-        echo "docs-only=${{ steps.filter.outputs.docs == 'true' && steps.filter.outputs.src == 'false' }}" >> "$GITHUB_OUTPUT"
+        echo "docs-only=${{ fromJSON(steps.filter.outputs.results).docs == 'true' && fromJSON(steps.filter.outputs.results).src == 'false' }}" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
   lint:
