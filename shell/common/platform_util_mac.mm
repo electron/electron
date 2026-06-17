@@ -249,7 +249,13 @@ bool SetLoginItemEnabled(const std::string& type,
     // as a LoginItem via the old API before re-enabling with the new API.
     if (GetLoginItemEnabledDeprecated() && enabled) {
       NSString* identifier = GetLoginHelperBundleIdentifier();
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+      // SMLoginItemSetEnabled is deprecated as of macOS 13, but it is used
+      // here intentionally to unregister login items registered by the old
+      // API before re-registering them with SMAppService.
       SMLoginItemSetEnabled((__bridge CFStringRef)identifier, false);
+#pragma clang diagnostic pop
     }
 #endif
     SMAppService* service = GetServiceForType(type, service_name);
@@ -262,7 +268,13 @@ bool SetLoginItemEnabled(const std::string& type,
     return result;
   } else {
     NSString* identifier = GetLoginHelperBundleIdentifier();
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    // SMLoginItemSetEnabled is deprecated as of macOS 13; this branch is
+    // unreachable now that macOS 13 is the minimum supported version, but
+    // the @available check above still compiles it.
     return SMLoginItemSetEnabled((__bridge CFStringRef)identifier, enabled);
+#pragma clang diagnostic pop
   }
 }
 

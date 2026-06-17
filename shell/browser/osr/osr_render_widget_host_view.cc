@@ -352,11 +352,6 @@ bool OffScreenRenderWidgetHostView::IsShowing() {
   return is_showing_;
 }
 
-void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForWebTest() {
-  ++latest_capture_sequence_number_;
-  SynchronizeVisualProperties();
-}
-
 gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() {
   if (IsPopupWidget())
     return popup_position_;
@@ -477,10 +472,6 @@ void OffScreenRenderWidgetHostView::Destroy() {
   }
 
   delete this;
-}
-
-uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
-  return latest_capture_sequence_number_;
 }
 
 void OffScreenRenderWidgetHostView::CopyFromSurface(

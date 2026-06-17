@@ -12,6 +12,29 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (44.0)
+
+### Removed: macOS 12 support
+
+macOS 12 (Monterey) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/7907086).
+
+Older versions of Electron will continue to run on Monterey, but macOS 13 (Ventura)
+or later will be required to run Electron v44.0.0 and higher.
+
+### Behavior Changed: ANGLE is statically linked on Linux
+
+ANGLE is now [statically linked](https://chromium-review.googlesource.com/c/chromium/src/+/7932888)
+into the Electron binary on Linux, matching upstream Chromium. The `libEGL.so` and
+`libGLESv2.so` libraries are no longer shipped in the Linux distribution.
+
+Apps that replaced or managed their own ANGLE versions by swapping out these
+libraries can no longer do so on Linux. Additionally, because ANGLE is now part
+of the Electron binary, it is loaded into every process rather than only the GPU
+process, which may surface regressions in unusual configurations.
+
+Windows and macOS are unaffected; ANGLE continues to be shipped as separate
+libraries on those platforms.
+
 ## Planned Breaking API Changes (43.0)
 
 ### Removed: Unity desktop environment support on Linux

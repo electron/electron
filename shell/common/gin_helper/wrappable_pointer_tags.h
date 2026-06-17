@@ -59,6 +59,17 @@ static_assert(
     "Reduce the number of tags or adjust gin::kFirstPointerTag so that "
     "all values fit.");
 
+// Electron's tags extend gin's range (they start at gin::kLastPointerTag + 1),
+// so the combined gin + Electron tag range must stay below the tag Node.js
+// uses for its cppgc wrappables. That value is provided by the
+// EMBEDDER_CPPHEAP_POINTER_TAG define on the libnode GN target (see
+// third_party/electron_node/unofficial.gni and src/cppgc_helpers.h). If this
+// fires, the gin + Electron tag range has grown into Node's tag.
+static_assert(static_cast<uint16_t>(kLastElectronPointerTag) <
+                  EMBEDDER_CPPHEAP_POINTER_TAG,
+              "gin + Electron tags must stay below the CppHeapPointerTag "
+              "used by Node.js for cppgc wrappables.");
+
 }  // namespace electron
 
 #endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_POINTER_TAGS_H_

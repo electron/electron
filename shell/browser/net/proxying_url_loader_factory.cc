@@ -40,7 +40,8 @@ class NoOpHeaderClient final : public network::mojom::TrustedHeaderClient {
   NoOpHeaderClient& operator=(const NoOpHeaderClient&) = delete;
   ~NoOpHeaderClient() override = default;
 
-  void OnBeforeSendHeaders(const net::HttpRequestHeaders& headers,
+  void OnBeforeSendHeaders(const GURL& request_url,
+                           const net::HttpRequestHeaders& headers,
                            OnBeforeSendHeadersCallback callback) override {
     std::move(callback).Run(net::OK, std::nullopt);
   }
@@ -362,6 +363,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnLoaderCreated(
 }
 
 void ProxyingURLLoaderFactory::InProgressRequest::OnBeforeSendHeaders(
+    const GURL& request_url,
     const net::HttpRequestHeaders& headers,
     OnBeforeSendHeadersCallback callback) {
   if (!current_request_uses_header_client_) {
