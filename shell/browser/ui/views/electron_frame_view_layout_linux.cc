@@ -5,6 +5,7 @@
 #include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
 
 #include "shell/browser/native_window_views.h"
+#include "ui/views/layout/layout_provider.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/caption_button_layout_constants.h"
 #include "ui/views/window/frame_view_linux.h"
