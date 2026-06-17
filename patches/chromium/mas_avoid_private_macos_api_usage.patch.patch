@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 24f26b9acdfad071b6f45c1cd50b3b96a1c60d5d..522375283dce1b2e7abb4c3546f706bcbd2aa69e 100644
+index 94aaa3396b101e81954b8c160cd3257f45a09859..a343523ea2de0d6fc952022c3c5a73b9ec52f26a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -703,6 +703,7 @@ static_library("test_support") {
@@ -1209,7 +1209,7 @@ index 24f26b9acdfad071b6f45c1cd50b3b96a1c60d5d..522375283dce1b2e7abb4c3546f706bc
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2090,6 +2093,7 @@ test("content_browsertests") {
+@@ -2089,6 +2092,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index 24f26b9acdfad071b6f45c1cd50b3b96a1c60d5d..522375283dce1b2e7abb4c3546f706bc
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3488,6 +3492,7 @@ test("content_unittests") {
+@@ -3487,6 +3491,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2338,7 +2338,7 @@ index f669a4be5809ab0c8bfea92a0ae32a52d3e20f6b..dc5f929f4b82b747fcbf4a5b772fec43
    if (is_ios) {
      sources += [
 diff --git a/ui/gfx/platform_font_mac.mm b/ui/gfx/platform_font_mac.mm
-index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c5013ef678a 100644
+index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c5acc6408 100644
 --- a/ui/gfx/platform_font_mac.mm
 +++ b/ui/gfx/platform_font_mac.mm
 @@ -19,6 +19,7 @@
@@ -2376,7 +2376,7 @@ index bbe355cf69f160866188216cc274d75bd35603db..06ee100d7ea2e892dbf3c0b1adc96c50
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index f11a4b5ba3db3ae5a8fb5c6eba5fb5f5e3a795c2..bd41c791fffb5a425cfc95eb1711bac6983e4e7b 100644
+index c44d4794519ac01bd3d467365221be28aa6f122d..7cec1b1ef2b1db370540474f341d6b77aa707b3f 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -780,6 +780,8 @@ component("views") {
@@ -2388,7 +2388,7 @@ index f11a4b5ba3db3ae5a8fb5c6eba5fb5f5e3a795c2..bd41c791fffb5a425cfc95eb1711bac6
    }
  
    if (is_win) {
-@@ -1196,6 +1198,8 @@ source_set("test_support") {
+@@ -1198,6 +1200,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
