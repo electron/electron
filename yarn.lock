@@ -565,16 +565,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron/fuses@npm:^1.8.0":
-  version: 1.8.0
-  resolution: "@electron/fuses@npm:1.8.0"
-  dependencies:
-    chalk: "npm:^4.1.1"
-    fs-extra: "npm:^9.0.1"
-    minimist: "npm:^1.2.5"
+"@electron/fuses@npm:^2.1.2":
+  version: 2.1.2
+  resolution: "@electron/fuses@npm:2.1.2"
   bin:
     electron-fuses: dist/bin.js
-  checksum: 10c0/7a2eff2a700a0dc9997346a2cbef83a852ec4a743b047ef89ce8dddfb182377c3a71e340c0cd3dc729d843cccb524253f9a9b96f37271d431f4409f3d897a200
+  checksum: 10c0/a7f1f355a0f94b357032f3edecc735e443431f3faacf25b19d286ab9ca4619e85f29b9471b966d60e9b3c3f1b01ee1c148ba82b93e27551e8d806484acafc0a9
   languageName: node
   linkType: hard
 
@@ -3241,7 +3237,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chalk@npm:^4.1.0, chalk@npm:^4.1.1":
+"chalk@npm:^4.1.0":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
   dependencies:
@@ -3975,7 +3971,7 @@ __metadata:
     "@electron-ci/is-valid-window": "npm:*"
     "@electron-ci/osr-gpu": "npm:*"
     "@electron-ci/uv-dlopen": "npm:*"
-    "@electron/fuses": "npm:^1.8.0"
+    "@electron/fuses": "npm:^2.1.2"
     "@electron/packager": "npm:^18.3.2"
     "@types/basic-auth": "npm:^1.1.8"
     "@types/busboy": "npm:^1.5.4"
