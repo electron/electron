@@ -560,7 +560,7 @@ __metadata:
     "@azure/storage-blob": "npm:^12.28.0"
     "@datadog/datadog-ci": "npm:^4.1.2"
     "@electron/asar": "npm:^4.0.1"
-    "@electron/docs-parser": "npm:^2.0.0"
+    "@electron/docs-parser": "npm:^3.0.1"
     "@electron/fiddle-core": "npm:^1.3.4"
     "@electron/github-app-auth": "npm:^3.2.0"
     "@electron/lint-roller": "npm:^3.2.0"
@@ -697,9 +697,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron/docs-parser@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "@electron/docs-parser@npm:2.0.0"
+"@electron/docs-parser@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "@electron/docs-parser@npm:3.0.1"
   dependencies:
     "@types/markdown-it": "npm:^14.1.2"
     chai: "npm:^5.1.1"
@@ -711,7 +711,7 @@ __metadata:
   bin:
     electron-docs-linter: dist/bin.js
     electron-docs-parser: dist/bin.js
-  checksum: 10c0/71c48085047b1b69eefe971848035950d949ee53d3cb76d0323937c454250547e296e5e00c47d6ac6ed0c58ff9cf4b793ad234da8a528e9cf3c420755f7e901a
+  checksum: 10c0/2ea17a8da29e4f3bf3b0ff22a969456a32918b4c6c5cb044210be04de0b97a43d57d90f97a76469e3a9d967522fe30745cea9d2c47d038e48a4fd45009b7af28
   languageName: node
   linkType: hard
 
