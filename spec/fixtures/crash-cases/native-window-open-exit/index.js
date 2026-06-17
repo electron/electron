@@ -3,7 +3,7 @@ const { app, ipcMain, BrowserWindow } = require('electron');
 const http = require('node:http');
 const path = require('node:path');
 
-function createWindow() {
+async function createWindow() {
   const mainWindow = new BrowserWindow({
     webPreferences: {
       webSecurity: false,
@@ -11,10 +11,11 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile('index.html');
   mainWindow.webContents.on('render-process-gone', () => {
     process.exit(1);
   });
+
+  await mainWindow.loadFile('index.html');
 }
 
 const server = http
@@ -23,18 +24,12 @@ const server = http
   })
   .listen(7001, '127.0.0.1');
 
-app.whenReady().then(() => {
-  createWindow();
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
+app
+  .whenReady()
+  .then(createWindow)
+  .catch(() => process.exit(1));
 
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit();
-});
+app.on('window-all-closed', app.quit);
 
 ipcMain.on('test-done', () => {
   console.log('test passed');

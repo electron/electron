@@ -2,22 +2,17 @@ const { app, BrowserWindow, utilityProcess } = require('electron');
 
 const path = require('node:path');
 
-function createWindow() {
+async function createWindow() {
   const mainWindow = new BrowserWindow();
-  mainWindow.loadFile('about:blank');
+  await mainWindow.loadFile('about:blank');
 }
 
-app.whenReady().then(() => {
-  createWindow();
+app
+  .whenReady()
+  .then(createWindow)
+  .catch(() => process.exit(1));
 
-  app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
-});
-
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit();
-});
+app.on('window-all-closed', app.quit);
 
 try {
   utilityProcess.fork(path.join(__dirname, 'utility.js'));
