@@ -1,8 +1,8 @@
 import { autoUpdater, systemPreferences } from 'electron';
 
 import { expect } from 'chai';
-import * as express from 'express';
-import * as psList from 'ps-list';
+import express from 'express';
+import psList from 'ps-list';
 import * as uuid from 'uuid';
 
 import * as cp from 'node:child_process';
