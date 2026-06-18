@@ -1,102 +1,173 @@
-[![Electron Logo](https://electronjs.org/images/electron-logo.svg)](https://electronjs.org)
+<div align="center">
+
+<img src="https://electronjs.org/images/electron-logo.svg" alt="Electron Logo" width="150" />
+
+# Electron
+
+### Build cross-platform desktop apps with JavaScript, HTML, and CSS
 
 [![GitHub Actions Build Status](https://github.com/electron/electron/actions/workflows/build.yml/badge.svg)](https://github.com/electron/electron/actions/workflows/build.yml)
 [![Electron Discord Invite](https://img.shields.io/discord/745037351163527189?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://discord.gg/electronjs)
+[![npm version](https://img.shields.io/npm/v/electron?color=%2347A3F3&logo=npm&logoColor=white)](https://www.npmjs.com/package/electron)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/electron/electron/blob/main/LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/electron/electron?style=social)](https://github.com/electron/electron)
 
-:memo: Available Translations: 🇨🇳 🇧🇷 🇪🇸 🇯🇵 🇷🇺 🇫🇷 🇺🇸 🇩🇪.
-View these docs in other languages on our [Crowdin](https://crowdin.com/project/electron) project.
+<br />
 
-The Electron framework lets you write cross-platform desktop applications
-using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
-[Chromium](https://www.chromium.org) and is used by the
-[Visual Studio Code](https://github.com/Microsoft/vscode/) and many other [apps](https://electronjs.org/apps).
+**Electron** is a battle-tested framework for building powerful cross-platform desktop applications using web technologies — the same stack powering [Visual Studio Code](https://github.com/Microsoft/vscode/), [Slack](https://slack.com/), and [many more](https://electronjs.org/apps).
 
-Follow [@electronjs](https://twitter.com/electronjs) on Twitter for important
-announcements.
+[📖 Documentation](https://electronjs.org/docs) · [🚀 Quick Start](https://electronjs.org/docs/tutorial/quick-start) · [💬 Community](https://www.electronjs.org/community) · [🐛 Report a Bug](https://github.com/electron/electron/issues/new/choose)
 
-This project adheres to the Contributor Covenant
-[code of conduct](https://github.com/electron/electron/tree/main/CODE_OF_CONDUCT.md).
-By participating, you are expected to uphold this code. Please report unacceptable
-behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
+</div>
 
-## Installation
+---
 
-To install prebuilt Electron binaries, use [`npm`](https://docs.npmjs.com/).
-The preferred method is to install Electron as a development dependency in your
-app:
+## ✨ Why Electron?
+
+- **One codebase, three platforms** — Ship to macOS, Windows, and Linux from a single JavaScript codebase.
+- **Powered by Chromium + Node.js** — Access the full Web platform and native OS APIs side-by-side.
+- **Proven at scale** — Trusted by millions of users through apps like VS Code, Figma, Twitch, and Discord.
+- **Rich ecosystem** — Leverage the entire npm ecosystem and Electron's own suite of tooling.
+- **Active community** — Backed by the [OpenJS Foundation](https://openjsf.org/) with thousands of contributors worldwide.
+
+---
+
+## 🚀 Getting Started
+
+### Installation
+
+Install Electron as a development dependency in your project:
 
 ```sh
 npm install electron --save-dev
 ```
 
-For more installation options and troubleshooting tips, see
-[installation](docs/tutorial/installation.md). For info on how to manage Electron versions in your apps, see
-[Electron versioning](docs/tutorial/electron-versioning.md).
+Or with Yarn:
 
-## Platform support
+```sh
+yarn add electron --dev
+```
 
-Each Electron release provides binaries for macOS, Windows, and Linux.
+> For advanced installation options, mirrors, and troubleshooting tips, see the [Installation Guide](docs/tutorial/installation.md).
+> To manage Electron versions across your apps, see [Electron Versioning](docs/tutorial/electron-versioning.md).
 
-* macOS (Monterey and up): Electron provides 64-bit Intel and Apple Silicon / ARM binaries for macOS.
-* Windows (Windows 10 and up): Electron provides `ia32` (`x86`), `x64` (`amd64`), and `arm64` binaries for Windows. Windows on ARM support was added in Electron 5.0.8. Support for Windows 7, 8 and 8.1 was [removed in Electron 23, in line with Chromium's Windows deprecation policy](https://www.electronjs.org/blog/windows-7-to-8-1-deprecation-notice).
-* Linux: The prebuilt binaries of Electron are built on Ubuntu 22.04. They have also been verified to work on:
-  * Ubuntu 18.04 and newer
-  * Fedora 32 and newer
-  * Debian 10 and newer
+### Hello World
 
-## Electron Fiddle
+```javascript
+// main.js
+const { app, BrowserWindow } = require('electron')
 
-Use [`Electron Fiddle`](https://github.com/electron/fiddle)
-to build, run, and package small Electron experiments, to see code examples for all of Electron's APIs, and
-to try out different versions of Electron. It's designed to make the start of your journey with
-Electron easier.
+function createWindow () {
+  const win = new BrowserWindow({ width: 800, height: 600 })
+  win.loadFile('index.html')
+}
 
-## Resources for learning Electron
+app.whenReady().then(createWindow)
+```
 
-* [electronjs.org/docs](https://electronjs.org/docs) - All of Electron's documentation
-* [electron/fiddle](https://github.com/electron/fiddle) - A tool to build, run, and package small Electron experiments
-* [electronjs.org/community#boilerplates](https://electronjs.org/community#boilerplates) - Sample starter apps created by the community
+Pair it with an `index.html` and you have a desktop app. It's that simple.
 
-## Programmatic usage
+---
 
-Most people use Electron from the command line, but if you require `electron` inside
-your **Node app** (not your Electron app) it will return the file path to the
-binary. Use this to spawn Electron from Node scripts:
+## 💻 Platform Support
+
+Electron releases pre-built binaries for all major operating systems:
+
+| Platform | Architectures | Minimum Version |
+|----------|--------------|-----------------|
+| **macOS** | Intel (x64), Apple Silicon (arm64) | macOS Monterey (12) |
+| **Windows** | x86, x64, arm64 | Windows 10 |
+| **Linux** | x64, arm64, armv7l | Ubuntu 18.04 / Fedora 32 / Debian 10 |
+
+> Windows 7, 8, and 8.1 support was removed in Electron 23, in line with [Chromium's deprecation policy](https://www.electronjs.org/blog/windows-7-to-8-1-deprecation-notice).
+
+---
+
+## 🛠️ Programmatic Usage
+
+You can also spawn Electron processes programmatically from a Node.js script:
 
 ```javascript
 const electron = require('electron')
-const proc = require('node:child_process')
+const { spawn } = require('node:child_process')
 
-// will print something similar to /Users/maf/.../Electron
-console.log(electron)
+// Returns the path to the Electron binary
+console.log(electron) // e.g. /Users/you/.../Electron
 
-// spawn Electron
-const child = proc.spawn(electron)
+// Spawn an Electron process
+const child = spawn(electron, ['path/to/your/app'])
 ```
 
-### Mirrors
+---
 
-* [China](https://npmmirror.com/mirrors/electron/)
+## 🔬 Electron Fiddle
 
-See the [Advanced Installation Instructions](https://www.electronjs.org/docs/latest/tutorial/installation#mirror) to learn how to use a custom mirror.
+Try Electron instantly — no setup required. [**Electron Fiddle**](https://github.com/electron/fiddle) lets you:
 
-## Documentation translations
+- Build, run, and package small Electron experiments
+- Browse live, runnable API examples
+- Switch between Electron versions with one click
 
-We crowdsource translations for our documentation via [Crowdin](https://crowdin.com/project/electron).
-We currently accept translations for Chinese (Simplified), French, German, Japanese, Portuguese,
-Russian, and Spanish.
+[→ Download Electron Fiddle](https://www.electronjs.org/fiddle)
 
-## Contributing
+---
 
-If you are interested in reporting/fixing issues and contributing directly to the code base, please see [CONTRIBUTING.md](CONTRIBUTING.md) for more information on what we're looking for and how to get started.
+## 📚 Resources
 
-## Community
+| Resource | Description |
+|----------|-------------|
+| [Official Docs](https://electronjs.org/docs) | Complete API reference and tutorials |
+| [Electron Fiddle](https://github.com/electron/fiddle) | Interactive sandbox for experiments |
+| [Community Boilerplates](https://electronjs.org/community#boilerplates) | Starter templates from the community |
+| [Blog](https://electronjs.org/blog) | Release notes and in-depth articles |
+| [Community Page](https://www.electronjs.org/community) | Forums, tools, and third-party resources |
 
-Info on reporting bugs, getting help, finding third-party tools and sample apps,
-and more can be found on the [Community page](https://www.electronjs.org/community).
+---
 
-## License
+## 🌍 Internationalization
 
-[MIT](https://github.com/electron/electron/blob/main/LICENSE)
+Electron's documentation is available in multiple languages via [Crowdin](https://crowdin.com/project/electron):
 
-When using Electron logos, make sure to follow [OpenJS Foundation Trademark Policy](https://trademark-policy.openjsf.org/).
+🇨🇳 Chinese (Simplified) · 🇧🇷 Portuguese · 🇪🇸 Spanish · 🇯🇵 Japanese · 🇷🇺 Russian · 🇫🇷 French · 🇩🇪 German
+
+We welcome translation contributions! Visit our [Crowdin project](https://crowdin.com/project/electron) to get started.
+
+---
+
+## 🤝 Contributing
+
+We love contributions from the community! Here's how you can get involved:
+
+1. **Report bugs** — Open an issue on [GitHub](https://github.com/electron/electron/issues/new/choose).
+2. **Fix bugs / add features** — Read [CONTRIBUTING.md](CONTRIBUTING.md) for our development workflow.
+3. **Improve docs** — Help us make the documentation clearer and more complete.
+4. **Translate** — Contribute translations on [Crowdin](https://crowdin.com/project/electron).
+
+> This project follows the Contributor Covenant [Code of Conduct](CODE_OF_CONDUCT.md).
+> Please report unacceptable behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
+
+---
+
+## 🔒 Security
+
+Found a vulnerability? Please **do not** open a public issue. Instead, follow our [Security Policy](SECURITY.md) for responsible disclosure. We take security seriously and will respond promptly.
+
+---
+
+## 📜 License
+
+[MIT](https://github.com/electron/electron/blob/main/LICENSE) © [Electron Community](https://electronjs.org)
+
+When using Electron logos, please follow the [OpenJS Foundation Trademark Policy](https://trademark-policy.openjsf.org/).
+
+---
+
+<div align="center">
+
+Follow [@electronjs](https://twitter.com/electronjs) on Twitter/X for announcements and updates.
+
+<br />
+
+⭐ **Star this repo if Electron powers your app!** ⭐
+
+</div>
