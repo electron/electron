@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sunny Sachanandani <sunnyps@chromium.org>
+Date: Thu, 4 Jun 2026 16:28:01 -0700
+Subject: [gpu] Reject CopyTexImage from multisampled framebuffers
+
+Validate that the read framebuffer is not multisampled in
+DoCopyTexImage2D, DoCopyTexSubImage2D, and DoCopyTexSubImage3D.
+
+Attempting to copy from a multisampled framebuffer is prohibited by the
+OpenGL ES spec and generates a GL_INVALID_OPERATION error. Previously,
+in the clipped branch of DoCopyTexImage2D, the validating decoder would
+redefine the driver-side texture size using glTexImage2D (which
+succeeds), but then fail the subsequent copy with glCopyTexSubImage2D.
+The native error caused the decoder to skip updating its internal
+LevelInfo metadata. This resulted in a state desync where the decoder
+believed the texture was the original large size, but the driver had
+resized it to the smaller clipped size, enabling subsequent out-of-
+bounds writes.
+
+Rejecting multisampled read framebuffers early prevents the driver-side
+texture redefinition from occurring, keeping the decoder and driver
+states in sync.
+
+Bug: 517531647
+Test: `gl_tests --use-cmd-decoder=validating` with GN arg enable_validating_command_decoder = true
+Change-Id: Icf2772aacb013459de4a54082745fdec6a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7898041
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Auto-Submit: Sunny Sachanandani <sunnyps@chromium.org>
+Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1642016}
+
+diff --git a/gpu/command_buffer/service/framebuffer_manager.cc b/gpu/command_buffer/service/framebuffer_manager.cc
+index e8dff5d694e5174566145fa29f315ed49492468e..f1f2154a5d39569d8b6c62c7a988bb3e24277229 100644
+--- a/gpu/command_buffer/service/framebuffer_manager.cc
++++ b/gpu/command_buffer/service/framebuffer_manager.cc
+@@ -665,6 +665,13 @@ bool Framebuffer::GetReadBufferIsMultisampledTexture() const {
+              : false;
+ }
+ 
++bool Framebuffer::GetReadBufferIsMultisampledRenderbuffer() const {
++  const Attachment* attachment = GetReadBufferAttachment();
++  return attachment ? attachment->IsRenderbufferAttachment() &&
++                          attachment->samples() > 1
++                    : false;
++}
++
+ GLsizei Framebuffer::GetSamples() const {
+   // Assume the framebuffer is complete, so return any attachment's samples.
+   auto iter = attachments_.begin();
+diff --git a/gpu/command_buffer/service/framebuffer_manager.h b/gpu/command_buffer/service/framebuffer_manager.h
+index 3bcc14c39744cf5baf976d2dee286371a25ed989..7517a3302dc0acdae96148e23d1d68081f6e6f7a 100644
+--- a/gpu/command_buffer/service/framebuffer_manager.h
++++ b/gpu/command_buffer/service/framebuffer_manager.h
+@@ -170,6 +170,7 @@ class GPU_GLES2_EXPORT Framebuffer : public base::RefCounted<Framebuffer> {
+   // returns 0.
+   GLenum GetReadBufferTextureType() const;
+   bool GetReadBufferIsMultisampledTexture() const;
++  bool GetReadBufferIsMultisampledRenderbuffer() const;
+ 
+   // Verify all the rules in OpenGL ES 2.0.25 4.4.5 are followed.
+   // Returns GL_FRAMEBUFFER_COMPLETE if there are no reasons we know we can't
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 3616c360b8cfb1aac50ac80572cb69586fc4ac0e..94de198c00fa78f6a569b2e051cb94f8fd5d5246 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -927,6 +927,7 @@ class GLES2DecoderImpl : public GLES2Decoder,
+   // If the color image is a renderbuffer, returns 0 for type.
+   GLenum GetBoundReadFramebufferTextureType();
+   GLenum GetBoundReadFramebufferInternalFormat();
++  bool IsBoundReadFramebufferMultisampledRenderbuffer();
+ 
+   // Get the i-th draw buffer's internal format/type from the bound framebuffer.
+   // If no framebuffer is bound, or no image is attached, or the DrawBuffers
+@@ -4240,6 +4241,18 @@ GLenum GLES2DecoderImpl::GetBoundReadFramebufferInternalFormat() {
+   }
+ }
+ 
++bool GLES2DecoderImpl::IsBoundReadFramebufferMultisampledRenderbuffer() {
++  Framebuffer* read_framebuffer = GetBoundReadFramebuffer();
++  // We check if the read framebuffer is a multisampled renderbuffer.
++  // We explicitly do NOT block multisampled texture attachments (with target
++  // GL_TEXTURE_2D, etc.) because they are implicit resolve textures (allocated
++  // via FramebufferTexture2DMultisampleEXT) and are safe to copy from (they are
++  // resolved on the fly). True multisampled textures
++  // (GL_TEXTURE_2D_MULTISAMPLE) are not supported by the validating decoder.
++  return read_framebuffer &&
++         read_framebuffer->GetReadBufferIsMultisampledRenderbuffer();
++}
++
+ GLenum GLES2DecoderImpl::GetBoundColorDrawBufferType(GLint drawbuffer_i) {
+   DCHECK(drawbuffer_i >= 0 &&
+          drawbuffer_i < static_cast<GLint>(group_->max_draw_buffers()));
+@@ -13365,6 +13378,12 @@ void GLES2DecoderImpl::DoCopyTexImage2D(
+     return;
+   }
+ 
++  if (IsBoundReadFramebufferMultisampledRenderbuffer()) {
++    LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, func_name,
++                       "cannot copy from a multisampled framebuffer");
++    return;
++  }
++
+   GLenum read_format = GetBoundReadFramebufferInternalFormat();
+   GLenum read_type = GetBoundReadFramebufferTextureType();
+   if (!ValidateCopyTexFormat(func_name, internal_format,
+@@ -13617,6 +13636,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage2D(
+     return;
+   }
+ 
++  if (IsBoundReadFramebufferMultisampledRenderbuffer()) {
++    LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, func_name,
++                       "cannot copy from a multisampled framebuffer");
++    return;
++  }
++
+   GLenum read_format = GetBoundReadFramebufferInternalFormat();
+   GLenum read_type = GetBoundReadFramebufferTextureType();
+   if (!ValidateCopyTexFormat(func_name, internal_format,
+@@ -13731,6 +13756,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage3D(
+     return;
+   }
+ 
++  if (IsBoundReadFramebufferMultisampledRenderbuffer()) {
++    LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, func_name,
++                       "cannot copy from a multisampled framebuffer");
++    return;
++  }
++
+   GLenum read_format = GetBoundReadFramebufferInternalFormat();
+   GLenum read_type = GetBoundReadFramebufferTextureType();
+   if (!ValidateCopyTexFormat(func_name, internal_format,
