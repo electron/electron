@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import * as express from 'express';
+import express from 'express';
 
 import * as http from 'node:http';
 import { AddressInfo } from 'node:net';
