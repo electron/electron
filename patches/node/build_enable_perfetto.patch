@@ -33,7 +33,7 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index 54f1121eb712c089dfced2a0aaa49aa875341f3c..fdc87033f5cd9865c3477e9dc3796b26a13fcc39 100644
+index 116d699f505a4f53ec816ccb83b634cccdf2a67c..6459b3bdbc91b5cc988e5dce2b3b7d9e795d3447 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
 @@ -11,8 +11,8 @@ const {
