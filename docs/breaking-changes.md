@@ -39,7 +39,7 @@ libraries on those platforms.
 
 ### Behavior Changed: Rounded corners on Linux
 
-Frameless windows default to rounded corners on Linux if the desktop environment supports client-side decorations. This can be configured using the existing `roundedCorners: boolean` option on `BrowserWindow`,
+Frameless windows default to rounded corners on Linux if the desktop environment supports client-side decorations. This can be configured using the existing `roundedCorners` option on `BrowserWindow`,
 which is now supported on Linux and defaults to `true` on all platforms.
 
 ### Behavior Changed: WCO respects the native title bar layout on Linux
