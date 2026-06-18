@@ -67,10 +67,10 @@ index ccff9b38717fc59563f75aea8ea502a942717c42..1209f74f28b5d6c642e207c08fd03b00
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index ad1023aef057be560e8c0dd45122ef6f7df49a0d..9bf86e5e5a27da63e3538327d0d919c488da4483 100644
+index f5e4462ba3bb594bc61fbe3b61fa32587878547d..b9830d1f04dcb76725f9b6bc7b9cb681071e6d5d 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -570,7 +570,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -573,7 +573,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    is_translucent_window_ = params->is_translucent;
    pending_restoration_data_ = params->state_restoration_data.Clone();
  

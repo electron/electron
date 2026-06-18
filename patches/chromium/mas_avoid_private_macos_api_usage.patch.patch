@@ -811,7 +811,7 @@ index e06ce3d69556a63cb8086f501e5c126dcf356afe..ccff9b38717fc59563f75aea8ea502a9
  
  - (NSWindow*)rootWindow {
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 9056ab431ba3053f7cf00ca0520b282dea65134b..ad1023aef057be560e8c0dd45122ef6f7df49a0d 100644
+index 476351851eac81816057ff0dfa6fed6322c68e3d..f5e4462ba3bb594bc61fbe3b61fa32587878547d 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -42,6 +42,7 @@
@@ -836,7 +836,7 @@ index 9056ab431ba3053f7cf00ca0520b282dea65134b..ad1023aef057be560e8c0dd45122ef6f
  
  namespace {
  constexpr auto kUIPaintTimeout = base::Milliseconds(500);
-@@ -779,10 +783,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -782,10 +786,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -849,7 +849,7 @@ index 9056ab431ba3053f7cf00ca0520b282dea65134b..ad1023aef057be560e8c0dd45122ef6f
  
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // https://crrev.com/c/1236675. The ordering of unassociated layers relative
-@@ -1279,6 +1285,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1282,6 +1288,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
  }
  
  void NativeWidgetNSWindowBridge::SetAllowScreenshots(bool allow) {
@@ -857,7 +857,7 @@ index 9056ab431ba3053f7cf00ca0520b282dea65134b..ad1023aef057be560e8c0dd45122ef6f
    CGSConnectionID connection_id = CGSMainConnectionID();
    CGSWindowID window_id = ns_window().windowNumber;
    CGRect frame = ns_window().frame;
-@@ -1288,6 +1295,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -1291,6 +1298,10 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
      region.reset(CGRegionCreateWithRect(frame));
    }
    CGSSetWindowCaptureExcludeShape(connection_id, window_id, region.get());

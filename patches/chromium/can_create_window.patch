@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 2cd0fa377599358ec82a7fa6c91f093cf0035bed..4bc4182be86245231ead297e4543f3b26abae368 100644
+index ec356e15eb7238b00fbcdaf10f322e2808caeffa..d835b20e0cef73c86879046af98ea13e195f85ba 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -10344,6 +10344,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -170,10 +170,10 @@ index 2571e8b493c662f44a1066aa53903f2691e644c9..b38700c81715903e76aee79af0d32eae
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index c440ffee83cc82e2726a91aa5583bec08e8f5b34..cb40265519fa30358a9b5fdc7f31bf09b4694d67 100644
+index 6c873793268b3a2125ceda7b7983b1ea04a79bc3..87c82475b9c6a451b1372cd11e17a30e4006869d 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6960,6 +6960,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6961,6 +6961,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
    params->started_by_ad =
        GetWebFrame()->IsAdFrame() || GetWebFrame()->IsAdScriptInStack();
  

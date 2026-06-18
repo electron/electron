@@ -413,10 +413,10 @@ index 756d4192271d6a65cfe8e1511737c565b543cb1f..5688f6f745056565c3c01947f741c4d1
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index ae616fa9c352413e23fb509b3e12e0e4fab5a094..0efa65f7d4346cfe78d2f27ba55a0526202315ff 100644
+index 945b9de409e738064403406f8c83ec779c2e760c..3f6b4445166e2b2e020b1d5a570f4833e5d87a31 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
-@@ -232,8 +232,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
+@@ -243,8 +243,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
