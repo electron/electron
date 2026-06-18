@@ -13,6 +13,7 @@
 #include "ui/compositor/layer.h"
 #include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
+#include "ui/views/window/frame_background.h"
 #include "ui/views/window/frame_caption_button.h"
 
 namespace electron {
@@ -138,6 +139,11 @@ void ElectronFrameViewLinux::Layout(PassKey) {
 void ElectronFrameViewLinux::PaintRestoredFrameBorder(gfx::Canvas* canvas) {
   if (!WantsFrame())
     return;
+
+  // Prevent the default system titlebar background from being drawn at the top
+  // of frameless windows. Does not affect WCO which draws its own top area.
+  frame_background()->set_top_area_height(0);
+
   FrameViewLinux::PaintRestoredFrameBorder(canvas);
 }
 
