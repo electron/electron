@@ -159,10 +159,10 @@ index bb71e8cb4d09cd53c0377ed34f8a94f979ee5804..9650bd7c7f587d0f57b3c4fc1f131f7d
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc b/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
-index 802fb433d6b9170b4b207c91f8ee0771acb30824..3bdb730d97841e441a8cc6ef43c68d39c0d075a5 100644
+index 42b10844d2fc10640a78a2e96aa0902c8f68af62..ee3b982d7d51ca1872c17ccf3888a42f65e0a48f 100644
 --- a/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
 +++ b/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
-@@ -376,8 +376,7 @@ bool DocumentPipHost::IsWebContentsCreationOverridden(
+@@ -391,8 +391,7 @@ bool DocumentPipHost::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -187,10 +187,10 @@ index bbd707e3d3ee2f6f3f852255988656f2f7926530..366328d4be9e0af0b03b2ba87fd131bb
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index c58152b67d28b8b229e0ad648997fb1a416ee7be..f19b827daa03ed9d2680d7a087f6931f91926e3a 100644
+index 0ffe33bbdee8a91140a7a5295d27f6a594dc65ef..38eaa0053548e2659cd06417b4105f5eb8bff605 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-@@ -214,15 +214,14 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
+@@ -219,15 +219,14 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -209,7 +209,7 @@ index c58152b67d28b8b229e0ad648997fb1a416ee7be..f19b827daa03ed9d2680d7a087f6931f
                                                                    java_gurl);
  }
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.h b/components/embedder_support/android/delegate/web_contents_delegate_android.h
-index 26fc4972d7dea68658e7e575f77f280749afc069..86fbe6cba424e0e1c4c980d4f6e4dc7108f80abf 100644
+index 723b5aff1093a4bc9e0d8b4327cb56e0198a8b8f..bb53a3e3f2e15efd21bbf1fac0d27b0cee338f1d 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.h
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.h
 @@ -84,8 +84,7 @@ class WebContentsDelegateAndroid : public content::WebContentsDelegate {
@@ -251,10 +251,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8f2704af26b9a5feede280a4de50fd808cc13434..7bc971013224b74f59598469d4017e34caa1e138 100644
+index 80ddc253455c5ed943421b8d4b9d9b3c8c23801d..abf009ed479923d0a517325764c996f1f22c1469 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5529,8 +5529,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5524,8 +5524,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,

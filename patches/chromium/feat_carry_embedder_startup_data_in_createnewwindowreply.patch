@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index a778c43e489d525c30b5509d87d6881290c84286..07a5cf58e5bb8e7ce4df14378ba5a459eaa01279 100644
+index b34e8ec0d8036768a896ae6ce12e73390a94344f..25e487a659ab7ba78db752694fd310f9c4ecb644 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10534,7 +10534,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10537,7 +10537,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -89,7 +89,7 @@ index 37a6320baf22d9a432a1acec40a5f40a0c016c72..ea7f82b6bf90031757eb19e2ff86aba8
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index c5277279db44aa1287badb80ce12b13c776f54ec..7a905faa1f886a59fb75c984756b61f7a04be080 100644
+index e881066a03026acc6d6b1e70993639e7fbbe2cd3..c4180074da6f3047471917ed69d68fd3939141f9 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -64,6 +64,7 @@
@@ -148,10 +148,10 @@ index 72c4d2f042afd428f2bf945bf54de873f256ca21..492694475e63e441a09a264cbbb2fc4f
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 7e1ed312519d367ca007ea54d90c86e388310ea5..6bc781c9a3104d948b31be23d81eb52da7af6923 100644
+index 83dcf85dfab9f28d91369b8d4143854a63c5aad3..6d2be47f3d9cf9aba5d967a424776350cdceeda5 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7017,6 +7017,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7016,6 +7016,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  

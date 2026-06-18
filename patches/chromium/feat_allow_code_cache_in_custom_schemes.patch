@@ -400,10 +400,10 @@ index 225e017909b8869231b870eaaf161a0b5e93e2a0..846a5251429630b8528a84a3d67ed56c
    if (schemes.allow_non_standard_schemes_in_origins)
      url::EnableNonStandardSchemesForAndroidWebView();
 diff --git a/content/public/common/content_client.h b/content/public/common/content_client.h
-index 21c48c9036df0ef79ce8bcd1de009dc35cb1f7e8..5729782fe857acf747ae711501a6034c7a7f3767 100644
+index 106ff5af920b1159f7b82883e7d27ee9040157f6..80c1b04589fa720b7bc347a5c6dd33da7713a9e7 100644
 --- a/content/public/common/content_client.h
 +++ b/content/public/common/content_client.h
-@@ -139,6 +139,9 @@ class CONTENT_EXPORT ContentClient {
+@@ -140,6 +140,9 @@ class CONTENT_EXPORT ContentClient {
      // Registers a URL scheme as strictly empty documents, allowing them to
      // commit synchronously.
      std::vector<std::string> empty_document_schemes;
