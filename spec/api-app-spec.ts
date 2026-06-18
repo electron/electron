@@ -1930,13 +1930,33 @@ describe('app module', () => {
       expect(device).to.be.an('object').and.to.have.property('deviceId').that.is.a('number').not.lessThan(0);
     };
 
-    it('succeeds with basic GPUInfo', async () => {
-      const gpuInfo = await getGPUInfo('basic');
+    // On a headless runner with no usable GPU
+    // (e.g. CI, where ANGLE is statically linked on Linux), the GPU process
+    // fails to initialize and GPU access is disabled. Treat that as a skip
+    // rather than a failure.
+    const isGpuUnavailable = (error: Error) =>
+      /GPU access (?:not allowed|is disabled)/i.test(error.message) ||
+      /Exiting GPU process due to errors during initialization/i.test(error.message);
+
+    it('succeeds with basic GPUInfo', async function () {
+      let gpuInfo;
+      try {
+        gpuInfo = await getGPUInfo('basic');
+      } catch (error) {
+        if (isGpuUnavailable(error as Error)) return this.skip();
+        throw error;
+      }
       await verifyBasicGPUInfo(gpuInfo);
     });
 
-    it('succeeds with complete GPUInfo', async () => {
-      const completeInfo = await getGPUInfo('complete');
+    it('succeeds with complete GPUInfo', async function () {
+      let completeInfo;
+      try {
+        completeInfo = await getGPUInfo('complete');
+      } catch (error) {
+        if (isGpuUnavailable(error as Error)) return this.skip();
+        throw error;
+      }
       if (process.platform === 'linux') {
         // For linux and macOS complete info is same as basic info
         await verifyBasicGPUInfo(completeInfo);
