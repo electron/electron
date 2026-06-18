@@ -12,6 +12,33 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (44.0)
+
+### Removed: Windows 32-bit (ia32) and Linux 32-bit ARM (armv7l) support
+
+Electron no longer publishes prebuilt binaries for 32-bit platforms: Windows x86
+(`win32-ia32`) and Linux ARM (`linux-armv7l`). All related release artifacts
+(`chromedriver`, `mksnapshot`, `ffmpeg`, and the Windows x86 `node.lib` on the
+Electron headers CDN) are no longer published either.
+
+Older versions of Electron will continue to support these platforms, but Electron
+v44.0.0 and higher will only be published for 64-bit platforms.
+
+Once the v44 series reaches end of life in January 2027, Electron will no longer
+support these platforms completely.
+
+### Removed: `clipboard` module is no longer available in the renderer process
+
+The `clipboard` module is no longer exposed to renderer processes. It was
+[previously deprecated](#deprecated-clipboard-api-access-from-renderer-processes)
+and is now removed in line with
+[RFC&nbsp;0019](https://github.com/electron/rfcs/blob/main/text/0019-clipboard-rearchitecture.md#removing-the-clipboard-api-from-the-renderer)
+to close the security risk of granting non-sandboxed renderers direct clipboard access.
+
+Renderers should use the [`navigator.clipboard` API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard_API) to safely work with the system clipboard. If more advanced usage is necessary, expose the necessary helpers from a
+preload script using the [`contextBridge` API](api/context-bridge.md).
+When using `contextBridge` care must be taken to ensure that the [`clipboard API` is not exposed to untrusted content](https://www.electronjs.org/docs/latest/tutorial/security#20-do-not-expose-electron-apis-to-untrusted-web-content).
+
 ## Planned Breaking API Changes (43.0)
 
 ### Behavior Changed: `NativeImage.toBitmap()` now normalizes color space
