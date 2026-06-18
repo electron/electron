@@ -17,5 +17,5 @@ app.whenReady().then(() => {
       }
     );
   });
-  w.loadURL('data:text/html;<canvas></canvas>');
+  w.loadURL('data:text/html,<canvas></canvas>');
 });
