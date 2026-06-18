@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/memory/self_deleting.h"
 #include "shell/browser/net/asar/asar_url_loader.h"
 
 namespace electron {
@@ -17,14 +18,16 @@ AsarURLLoaderFactory::Create() {
 
   // The AsarURLLoaderFactory will delete itself when there are no more
   // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
-  new AsarURLLoaderFactory(pending_remote.InitWithNewPipeAndPassReceiver());
+  base::MakeSelfDeleting<AsarURLLoaderFactory>(
+      pending_remote.InitWithNewPipeAndPassReceiver());
 
   return pending_remote;
 }
 
 AsarURLLoaderFactory::AsarURLLoaderFactory(
-    mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-    : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)) {}
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver,
+    base::SelfDeletingPassKey key)
+    : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver), key) {}
 AsarURLLoaderFactory::~AsarURLLoaderFactory() = default;
 
 void AsarURLLoaderFactory::CreateLoaderAndStart(
