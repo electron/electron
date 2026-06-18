@@ -174,26 +174,6 @@ jobs:
       upload-to-storage: '0'
     secrets: inherit
 
-  build-linux-arm:
-    permissions:
-      contents: read
-      issues: read
-      pull-requests: read
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-linux, build-siso]
-    with:
-      build-runs-on: electron-arc-centralus-linux-amd64-32core
-      build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      target-platform: linux
-      target-arch: arm
-      is-release: false
-      gn-build-type: pgo-instrument
-      generate-symbols: false
-      generate-chromedriver: false
-      generate-test-artifacts: false
-      upload-to-storage: '0'
-    secrets: inherit
-
   build-linux-arm64:
     permissions:
       contents: read
@@ -265,25 +245,6 @@ jobs:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       target-platform: win
       target-arch: x64
-      is-release: false
-      gn-build-type: pgo-instrument
-      generate-symbols: false
-      generate-chromedriver: false
-      generate-test-artifacts: false
-      upload-to-storage: '0'
-    secrets: inherit
-
-  build-windows-x86:
-    permissions:
-      contents: read
-      issues: read
-      pull-requests: read
-    uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-windows, build-siso]
-    with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
-      target-platform: win
-      target-arch: x86
       is-release: false
       gn-build-type: pgo-instrument
       generate-symbols: false
@@ -429,19 +390,6 @@ jobs:
       collect-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init"}'
     secrets: inherit
 
-  collect-linux-arm:
-    permissions:
-      contents: read
-    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
-    needs: [checkout-linux, build-linux-arm]
-    with:
-      target-platform: linux
-      target-arch: arm
-      artifact-key: linux_arm
-      collect-runs-on: electron-arc-centralus-linux-arm64-4core
-      collect-container: '{"image":"ghcr.io/electron/test:arm32v7-${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root --privileged --init --memory=12g","volumes":["/home/runner/externals:/mnt/runner-externals"]}'
-    secrets: inherit
-
   collect-linux-arm64:
     permissions:
       contents: read
@@ -492,18 +440,6 @@ jobs:
       collect-runs-on: windows-latest
     secrets: inherit
 
-  collect-windows-x86:
-    permissions:
-      contents: read
-    uses: ./.github/workflows/pipeline-segment-pgo-collect.yml
-    needs: build-windows-x86
-    with:
-      target-platform: win
-      target-arch: x86
-      artifact-key: win_x86
-      collect-runs-on: windows-latest
-    secrets: inherit
-
   collect-windows-arm64:
     permissions:
       contents: read
@@ -523,7 +459,7 @@ jobs:
   merge-profiles:
     name: Merge Profiles
     # checkout-linux provides the container image SHA and the src cache.
-    needs: [checkout-linux, collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64]
+    needs: [checkout-linux, collect-linux-x64, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-arm64]
     # Merge whatever was collected; repo guard because !cancelled() runs in forks.
     if: ${{ !cancelled() && github.repository == 'electron/electron' }}
     runs-on: electron-arc-centralus-linux-amd64-4core
@@ -611,7 +547,7 @@ jobs:
     # published: a partial profile set must never reach the CDN or the state
     # files. Skipped jobs (the skip-* inputs) are allowed - intentionally
     # regenerating a subset of platforms is fine; failures are not.
-    needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64, generate-v8-builtins-profiles, merge-profiles]
+    needs: [collect-linux-x64, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-arm64, generate-v8-builtins-profiles, merge-profiles]
     if: ${{ !cancelled() && github.repository == 'electron/electron' && needs.merge-profiles.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') && inputs.upload-to-storage }}
     runs-on: ubuntu-latest
     # Holds the Azure OIDC credentials; restricted to protected branches.
@@ -734,7 +670,7 @@ jobs:
 
   # Aggregate gate so a single status reflects the whole run.
   pgo-done:
-    needs: [collect-linux-x64, collect-linux-arm, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-x86, collect-windows-arm64, generate-v8-builtins-profiles, merge-profiles, upload-profiles]
+    needs: [collect-linux-x64, collect-linux-arm64, collect-macos-x64, collect-macos-arm64, collect-windows-x64, collect-windows-arm64, generate-v8-builtins-profiles, merge-profiles, upload-profiles]
     if: always() && !cancelled() && github.repository == 'electron/electron'
     runs-on: ubuntu-latest
     permissions: {}
