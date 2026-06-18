@@ -93,8 +93,8 @@ bool URLLoaderBundle::ShouldUseNetworkObserverfromURLLoaderFactory() const {
 
 NodeService::NodeService(
     mojo::PendingReceiver<node::mojom::NodeService> receiver)
-    : node_bindings_{NodeBindings::Create(
-          NodeBindings::BrowserEnvironment::kUtility)},
+    : node_bindings_{
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kUtility)},
       electron_bindings_{
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {
   if (receiver.is_valid())

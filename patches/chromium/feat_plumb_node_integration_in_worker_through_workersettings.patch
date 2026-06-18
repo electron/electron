@@ -10,7 +10,7 @@ relying on a process-wide command line switch. The value is also
 propagated to nested workers via WorkerSettings::Copy.
 
 diff --git a/third_party/blink/renderer/core/workers/dedicated_worker.cc b/third_party/blink/renderer/core/workers/dedicated_worker.cc
-index 7ea6daec53a497bf867d799e041bf6ae7191ef7b..15940624940d5c629c40319f45c59282713bec17 100644
+index bc8726d68af801c093bc4baf266c7d3271638df8..519530ba218afa6be4654e1ff7d0d623b9a4429e 100644
 --- a/third_party/blink/renderer/core/workers/dedicated_worker.cc
 +++ b/third_party/blink/renderer/core/workers/dedicated_worker.cc
 @@ -37,6 +37,7 @@
@@ -21,7 +21,7 @@ index 7ea6daec53a497bf867d799e041bf6ae7191ef7b..15940624940d5c629c40319f45c59282
  #include "third_party/blink/renderer/core/inspector/inspector_trace_events.h"
  #include "third_party/blink/renderer/core/inspector/main_thread_debugger.h"
  #include "third_party/blink/renderer/core/loader/document_loader.h"
-@@ -572,6 +573,12 @@ DedicatedWorker::CreateGlobalScopeCreationParams(
+@@ -530,6 +531,12 @@ DedicatedWorker::CreateGlobalScopeCreationParams(
      auto* frame = window->GetFrame();
      parent_devtools_token = frame->GetDevToolsFrameToken();
      settings = std::make_unique<WorkerSettings>(frame->GetSettings());

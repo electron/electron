@@ -16,10 +16,10 @@ It also:
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index adf2a5491699639d4547015278c69e96e911d602..9eaec5331bde260824ffa73cf044783fef274233 100644
+index 9e3390fd0cff2b2c13bb82b8f49d5eb7da8bfa53..80596323da3ffc8779bd9b9ac3bd05dabb47aaa2 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
-@@ -272,8 +272,12 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
+@@ -275,8 +275,12 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
      case SELECT_EXISTING_FOLDER:
        dialog = CreateSelectFolderDialog(type, title_string, default_path,
                                          owning_window);
@@ -34,7 +34,7 @@ index adf2a5491699639d4547015278c69e96e911d602..9eaec5331bde260824ffa73cf044783f
        break;
      case SELECT_OPEN_FILE:
        dialog = CreateFileOpenDialog(title_string, default_path, owning_window);
-@@ -420,9 +424,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
+@@ -423,9 +427,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
      const std::string& title,
      const base::FilePath& default_path,
      gfx::NativeWindow parent) {
@@ -47,7 +47,7 @@ index adf2a5491699639d4547015278c69e96e911d602..9eaec5331bde260824ffa73cf044783f
    SetGtkTransientForAura(dialog, parent, platform_);
    AddFilters(GTK_FILE_CHOOSER(dialog));
  
-@@ -438,6 +444,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
+@@ -441,6 +447,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
      GtkFileChooserSetCurrentFolder(GTK_FILE_CHOOSER(dialog),
                                     *last_opened_path());
    }
@@ -55,7 +55,7 @@ index adf2a5491699639d4547015278c69e96e911d602..9eaec5331bde260824ffa73cf044783f
    return dialog;
  }
  
-@@ -453,11 +460,15 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -456,11 +463,15 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
              ? l10n_util::GetStringUTF8(IDS_SELECT_UPLOAD_FOLDER_DIALOG_TITLE)
              : l10n_util::GetStringUTF8(IDS_SELECT_FOLDER_DIALOG_TITLE);
    }
@@ -76,7 +76,7 @@ index adf2a5491699639d4547015278c69e96e911d602..9eaec5331bde260824ffa73cf044783f
  
    GtkWidget* dialog = GtkFileChooserDialogNew(
        title_string.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-@@ -479,7 +490,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -482,7 +493,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
    gtk_file_filter_add_mime_type(only_folders, "inode/directory");
    gtk_file_filter_add_mime_type(only_folders, "text/directory");
    gtk_file_chooser_add_filter(chooser, only_folders);
@@ -86,7 +86,7 @@ index adf2a5491699639d4547015278c69e96e911d602..9eaec5331bde260824ffa73cf044783f
    return dialog;
  }
  
-@@ -516,10 +528,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -519,10 +531,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    std::string title_string =
        !title.empty() ? title
                       : l10n_util::GetStringUTF8(IDS_SAVE_AS_DIALOG_TITLE);
@@ -100,7 +100,7 @@ index adf2a5491699639d4547015278c69e96e911d602..9eaec5331bde260824ffa73cf044783f
        kResponseTypeAccept);
    SetGtkTransientForAura(dialog, parent, platform_);
  
-@@ -545,9 +558,10 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -548,9 +561,10 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
    // Overwrite confirmation is always enabled in GTK4.
    if (!GtkCheckVersion(4)) {
@@ -113,7 +113,7 @@ index adf2a5491699639d4547015278c69e96e911d602..9eaec5331bde260824ffa73cf044783f
    return dialog;
  }
  
-@@ -603,15 +617,29 @@ void SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse(
+@@ -606,15 +620,29 @@ void SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse(
  void SelectFileDialogLinuxGtk::OnSelectMultiFileDialogResponse(
      GtkWidget* dialog,
      int response_id) {

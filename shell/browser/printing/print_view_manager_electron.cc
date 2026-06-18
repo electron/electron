@@ -15,6 +15,7 @@
 #include "third_party/abseil-cpp/absl/types/variant.h"
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+#include "components/printing/browser/print_composite_client.h"
 #include "mojo/public/cpp/bindings/message.h"
 #endif
 
@@ -111,6 +112,16 @@ void PrintViewManagerElectron::ScriptedPrint(
 }
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+void PrintViewManagerElectron::SetAccessibilityTree(
+    int32_t cookie,
+    const ui::AXTreeUpdate& accessibility_tree) {
+  auto* client =
+      printing::PrintCompositeClient::FromWebContents(web_contents());
+  if (client) {
+    client->SetAccessibilityTree(cookie, accessibility_tree);
+  }
+}
+
 void PrintViewManagerElectron::GetPrintPreviewParams(
     GetPrintPreviewParamsCallback callback) {
   std::move(callback).Run(nullptr);

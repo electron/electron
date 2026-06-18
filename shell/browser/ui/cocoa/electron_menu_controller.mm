@@ -300,7 +300,15 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     return MakeEmptySubmenu();
   NSMenu* menu = [[NSMenu alloc] init];
   menu.autoenablesItems = NO;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  // +[NSSharingService sharingServicesForItems:] is deprecated in macOS 13,
+  // but the replacement is not adequate for our usage. It creates a menu item
+  // that shows a picker that we're not in control of, and conflicts with
+  // existing menu items. See https://crbug.com/40846334 for the investigation
+  // into the replacement API and why it can't be used.
   NSArray* services = [NSSharingService sharingServicesForItems:items];
+#pragma clang diagnostic pop
   for (NSSharingService* service in services)
     [menu addItem:[self menuItemForService:service withItems:items]];
   menu.delegate = self;

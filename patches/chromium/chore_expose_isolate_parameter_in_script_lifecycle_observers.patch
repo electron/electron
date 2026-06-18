@@ -34,10 +34,10 @@ index 1b8541bfa56a7e53c8396c29ea45a0b5af89ef81..28ffec368e5d6bc1744605e9dda7fc68
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 66f2012d78a44889b993c8153cb7aa3cf9284f44..1bf6dd81ef8e85cbd7c5d70f503c64c4d89c7527 100644
+index 0a3cca0c2e4e7c9c3fa930dc369cc47acaf149c2..d87986257de25e310efa9444ad634c3bd4703a6f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4821,10 +4821,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4839,10 +4839,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -181,10 +181,10 @@ index 6f1563df1918444894aa4e1ae529011652e251be..82787ee86e857345507329d3e89c3cd5
  
    // Geometry notifications ----------------------------------------------
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 2f0b9418ccd9f5b4b12391bfece498a1e821b564..f26059e6f6277de7374c662d01f25703cdd30b59 100644
+index 5fe1d03901d0f56daee4717bee738337db60114b..9221cb9909b0b0ee736e03f04839e653f6b3c7fd 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -182,11 +182,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
+@@ -185,11 +185,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
  
    ScriptState::Scope scope(script_state_);
    v8::Local<v8::Context> context = script_state_->GetContext();
@@ -245,10 +245,10 @@ index 36e88fc0d657f054e8176aebbd3196d83d83831b..49ee4331844380adaa119c24343b9fda
  
    // Returns true if we should allow register V8 extensions to be added.
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 5e24623f7bd048184fafd0db86ab6a939c3b1f12..b0fd0938498ee2943d4bc21c7f184778154e1b7b 100644
+index a5c4f488653b26034ddf0c7a01a88dffabe641b0..d370a8745fdfabb526e849203c941b7ea2573d2e 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -428,7 +428,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -427,7 +427,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
                                int32_t world_id) override {}
    void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                       int32_t world_id) override {}
