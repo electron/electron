@@ -21,7 +21,10 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronEvent,                           // gin_helper::internal::Event
   kElectronGlobalShortcut,                  // electron::api::GlobalShortcut
   kElectronExtensions,                      // electron::api::Extensions
+  kElectronIPCRenderFrame,                  // (anonymous) IPCRenderFrame
+  kElectronIPCServiceWorker,                // (anonymous) IPCServiceWorker
   kElectronMenu,                            // electron::api::Menu
+  kElectronNativeImage,                     // electron::api::NativeImage
   kElectronNetLog,                          // electron::api::NetLog
   kElectronPowerMonitor,                    // electron::api::PowerMonitor
   kElectronPowerSaveBlocker,                // electron::api::PowerSaveBlocker
@@ -32,6 +35,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronSession,               // electron::api::Session
   kElectronTray,                  // electron::api::Tray
   kElectronUtilityProcess,        // electron::api::UtilityProcessWrapper
+  kElectronWebFrameRenderer,      // (anonymous) WebFrameRenderer
   kElectronWebRequest,            // electron::api::WebRequest
   kLastElectronPointerTag = kElectronWebRequest,
 };
