@@ -57,6 +57,11 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::LocalVector<v8::String>* parameters,
     v8::LocalVector<v8::Value>* arguments);
 
+// Feeds the build-time js2c code cache to the Environment's BuiltinLoader
+// so the *_init bundles are consumed. Call once, after CreateEnvironment and
+// before LoadEnvironment.
+void FeedEnvironmentCodeCache(node::Environment* env);
+
 // Wrapper for node::CreateEnvironment that logs failure
 node::Environment* CreateEnvironment(v8::Isolate* isolate,
                                      node::IsolateData* isolate_data,

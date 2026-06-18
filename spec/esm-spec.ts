@@ -256,6 +256,55 @@ describe('esm', () => {
       });
     });
 
+    describe('without nodeIntegration and contextIsolation', () => {
+      it('exposes Node globals to an ESM preload script', async () => {
+        const [webContents] = await loadWindowWithPreload(
+          `globalThis.preloadNodeGlobals = {
+            processType: typeof process,
+            bufferType: typeof Buffer,
+            setImmediateType: typeof setImmediate,
+            globalType: typeof global
+          };`,
+          {
+            nodeIntegration: false,
+            sandbox: false,
+            contextIsolation: false
+          }
+        );
+
+        const globals = await webContents.executeJavaScript('globalThis.preloadNodeGlobals');
+        expect(globals).to.deep.equal({
+          processType: 'object',
+          bufferType: 'function',
+          setImmediateType: 'function',
+          globalType: 'object'
+        });
+      });
+
+      it('removes Node globals from the renderer main world after the preload runs', async () => {
+        const [webContents] = await loadWindowWithPreload('globalThis.preloadFinished = true;', {
+          nodeIntegration: false,
+          sandbox: false,
+          contextIsolation: false
+        });
+
+        const pageGlobals = await webContents.executeJavaScript(`({
+          preloadFinished: globalThis.preloadFinished,
+          processType: typeof process,
+          bufferType: typeof Buffer,
+          setImmediateType: typeof setImmediate,
+          globalType: typeof global
+        })`);
+        expect(pageGlobals).to.deep.equal({
+          preloadFinished: true,
+          processType: 'undefined',
+          bufferType: 'undefined',
+          setImmediateType: 'undefined',
+          globalType: 'undefined'
+        });
+      });
+    });
+
     describe('electron modules', () => {
       it("import 'electron/lol' should throw", async () => {
         const [, error] = await loadWindowWithPreload('import { ipcRenderer } from "electron/lol";', {

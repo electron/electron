@@ -117,4 +117,8 @@ if [ -n "$SISO_REPORT_PATH" ]; then
   cp_if_exist "$SISO_REPORT_PATH"
 fi
 
-move_src_dirs_if_exist
+# Test jobs are the only consumers of src_artifacts - skip the (expensive)
+# copy and tar when the caller declares no test job will run.
+if [ "${GENERATE_TEST_ARTIFACTS:-true}" != "false" ]; then
+  move_src_dirs_if_exist
+fi

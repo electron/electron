@@ -42,6 +42,7 @@
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
 #include "ui/base/hit_test.h"
 #include "ui/display/screen.h"
+#include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
@@ -116,36 +117,42 @@ struct Converter<electron::NativeWindowMac::VisualEffectState> {
 
 namespace {
 
-// A ViewTargeterDelegate installed on content_view_ to make it event-
-// transparent when no children cover the target point.
+// A ViewTargeterDelegate installed on content_view_ that makes it
+// hit-test-transparent except where one of its descendants covers the
+// target rect.
 //
-// In BrowserWindow, the WebContentsView is added as a sibling of content_view_
-// at a lower Z-order (behind it) so that user-added child views paint above
-// the web content. However, views::ViewTargeterDelegate::TargetForRect
-// iterates children front-to-back and returns the first child whose
-// HitTestRect() is true. content_view_ covers the full window area, so the
-// WebContentsView (and its NativeViewHost) is never reached.
+// In BrowserWindow, the WebContentsView is added as a sibling of
+// content_view_ at a lower z-order so that user-added child views paint
+// above web content. content_view_ itself covers the full window, so the
+// default DoesIntersectRect (a bounds check) would always return true and
+// the parent targeter would stop there, never reaching the WebContentsView
+// behind it. By only intersecting where a child actually does, the parent's
+// default TargetForRect loop skips content_view_ and falls through to the
+// sibling, ultimately resolving to the WebContentsView's NativeViewHost so
+// BridgedContentView::hitTest: routes the event to RenderWidgetHostViewCocoa.
 //
-// Chromium's BridgedContentView::hitTest: uses GetHitTestResult() to classify
-// the result: NativeViewHost → kSubView (routes to RenderWidgetHostViewCocoa);
-// anything else non-null → kRootView (BridgedContentView absorbs the event,
-// breaking all web content interaction with loadURL); null → kOther (falls
-// through to [super hitTest:] which finds RenderWidgetHostViewCocoa directly).
-//
-// By returning nullptr instead of root when no children cover the target rect,
-// GetEventHandlerForPoint propagates null up the chain → GetHitTestResult
-// returns kOther → hitTest: falls through to [super hitTest:] → NSView walk
-// finds RenderWidgetHostViewCocoa → web content interaction works correctly.
+// This must never affect TargetForRect's contract — it only narrows
+// HitTestRect, which the default loop already handles by skipping the child.
+// Returning nullptr from TargetForRect (the previous approach) violated the
+// contract and crashed RootView::UpdateCursor (see #51576).
 class ContentViewTargeterDelegate : public views::ViewTargeterDelegate {
  public:
-  views::View* TargetForRect(views::View* root,
-                             const gfx::Rect& rect) override {
-    views::View* result =
-        views::ViewTargeterDelegate::TargetForRect(root, rect);
-    // The default TargetForRect returns |root| when no children cover |rect|.
-    // Return nullptr instead so event routing falls through to the sibling
-    // WebContentsView and finds RenderWidgetHostViewCocoa.
-    return result == root ? nullptr : result;
+  bool DoesIntersectRect(const views::View* target,
+                         const gfx::Rect& rect) const override {
+    if (!views::ViewTargeterDelegate::DoesIntersectRect(target, rect)) {
+      return false;
+    }
+    for (const views::View* child : target->children()) {
+      if (!child->GetVisible() || !child->GetCanProcessEventsWithinSubtree()) {
+        continue;
+      }
+      gfx::RectF rect_in_child(rect);
+      views::View::ConvertRectToTarget(target, child, &rect_in_child);
+      if (child->HitTestRect(gfx::ToEnclosingRect(rect_in_child))) {
+        return true;
+      }
+    }
+    return false;
   }
 };
 
@@ -369,13 +376,8 @@ void NativeWindowMac::SetContentView(views::View* view) {
 
   set_content_view(view);
 
-  // Install event-transparent targeting on content_view_. In BrowserWindow,
-  // content_view_ sits in front of the sibling WebContentsView (higher Z-order)
-  // so user-added child views paint above web content. This targeter makes
-  // content_view_ event-transparent when no children cover the target point,
-  // returning nullptr instead of itself so GetHitTestResult produces kOther
-  // and BridgedContentView::hitTest: falls through to [super hitTest:] which
-  // finds RenderWidgetHostViewCocoa for web content mouse events.
+  // Make content_view_ hit-test-transparent where it has no covering child
+  // so events fall through to the sibling WebContentsView in BrowserWindow.
   view->SetEventTargeter(std::make_unique<views::ViewTargeter>(
       std::make_unique<ContentViewTargeterDelegate>()));
 
@@ -1754,8 +1756,7 @@ std::unique_ptr<views::FrameView> NativeWindowMac::CreateFrameView(
   return frame_view;
 }
 
-std::optional<int> NativeWindowMac::FrameViewNonClientHitTest(
-    const gfx::Point& point) {
+int NativeWindowMac::FrameViewNonClientHitTest(const gfx::Point& point) {
   if (widget()->IsFullscreen()) {
     return HTCLIENT;
   }

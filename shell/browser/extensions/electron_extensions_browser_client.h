@@ -77,6 +77,9 @@ class ElectronExtensionsBrowserClient
   bool IsExtensionIncognitoEnabled(
       const std::string& extension_id,
       content::BrowserContext* context) const override;
+  bool IsExtensionIncognitoEnabled(
+      const extensions::Extension* extension,
+      content::BrowserContext* context) const override;
   bool CanExtensionCrossIncognito(
       const extensions::Extension* extension,
       content::BrowserContext* context) const override;
@@ -95,7 +98,7 @@ class ElectronExtensionsBrowserClient
       const network::ResourceRequest& request,
       network::mojom::RequestDestination destination,
       ui::PageTransition page_transition,
-      int child_id,
+      content::ChildProcessId child_id,
       bool is_incognito,
       const extensions::Extension* extension,
       const extensions::ExtensionSet& extensions,

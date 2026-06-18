@@ -23,6 +23,7 @@
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_global_scope.h"  // nogncheck
@@ -32,8 +33,8 @@
 namespace electron {
 
 ElectronRendererClient::ElectronRendererClient()
-    : node_bindings_{NodeBindings::Create(
-          NodeBindings::BrowserEnvironment::kRenderer)},
+    : node_bindings_{
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)},
       electron_bindings_{
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {}
 
@@ -138,25 +139,12 @@ void ElectronRendererClient::DidCreateScriptContext(
       base::BindRepeating(&ElectronRendererClient::UndeferLoad,
                           base::Unretained(this), render_frame));
 
-  // We need to use the Blink implementation of fetch in the renderer process
-  // Node.js deletes the global fetch function when their fetch implementation
-  // is disabled, so we need to save and re-add it after the Node.js environment
-  // is loaded. See corresponding change in node/init.ts.
-  v8::Local<v8::Object> global = renderer_context->Global();
-
-  std::vector<std::string> keys = {"fetch",   "Response", "FormData",
-                                   "Request", "Headers",  "EventSource"};
-  for (const auto& key : keys) {
-    v8::MaybeLocal<v8::Value> value =
-        global->Get(renderer_context, gin::StringToV8(isolate, key));
-    if (!value.IsEmpty()) {
-      std::string blink_key = "blink" + key;
-      global
-          ->Set(renderer_context, gin::StringToV8(isolate, blink_key),
-                value.ToLocalChecked())
-          .Check();
-    }
-  }
+  // CreateEnvironment calls SetIsolateUpForNode which unconditionally
+  // registers Node's WebAssembly streaming callback. With kNoBrowserGlobals
+  // the JS side of that callback is never installed, so it would crash on
+  // use; restore Blink's implementation so WebAssembly.compileStreaming
+  // keeps working with Blink's fetch.
+  blink::WasmResponseExtensions::Initialize(isolate);
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module.

@@ -42,6 +42,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/models/image_model.h"
 #include "v8/include/cppgc/persistent.h"
 
@@ -95,7 +96,6 @@ class Cursor;
 }
 
 class DevToolsEyeDropper;
-class SkRegion;
 
 namespace electron {
 
@@ -638,6 +638,11 @@ class WebContents final : public ExclusiveAccessContext,
       content::NavigationHandle* navigation_handle) override;
   void ReadyToCommitNavigation(
       content::NavigationHandle* navigation_handle) override;
+  // Pushes preload script contents + process info to a sandboxed renderer over
+  // the navigation's associated mojo channel, ahead of CommitNavigation.
+  // Replaces the BROWSER_SANDBOX_LOAD sync IPC for the common path.
+  void MaybeSendRendererStartupData(
+      content::NavigationHandle* navigation_handle);
   void DidFinishNavigation(
       content::NavigationHandle* navigation_handle) override;
   void WebContentsDestroyed() override;
@@ -680,6 +685,9 @@ class WebContents final : public ExclusiveAccessContext,
   ElectronBrowserContext* GetBrowserContext() const;
 
   void OnElectronBrowserConnectionError();
+
+  // Posted from PrimaryMainFrameRenderProcessGone(); see the comment there.
+  void EmitRenderProcessGone(base::TerminationStatus status, int exit_code);
 
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
@@ -895,7 +903,7 @@ class WebContents final : public ExclusiveAccessContext,
   // Stores the frame that's currently in fullscreen, nullptr if there is none.
   raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
-  std::unique_ptr<SkRegion> draggable_region_;
+  std::optional<SkRegion> draggable_region_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };

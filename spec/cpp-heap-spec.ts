@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import { once } from 'node:events';
 import * as path from 'node:path';
 
-import { ifdescribe, isTestingBindingAvailable, startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe, isTestingBindingAvailable, itremote, startRemoteControlApp } from './lib/spec-helpers';
 
 describe('cpp heap', () => {
   describe('app module', () => {
@@ -162,6 +162,483 @@ describe('cpp heap', () => {
         path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
       );
       expect(result).to.equal(true, 'Cookies should survive GC when traced from Session');
+    });
+  });
+
+  describe('downloadItem module', () => {
+    it('should survive GC while a download is in progress', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { session } = require('electron');
+          const http = require('node:http');
+          const os = require('node:os');
+          const path = require('node:path');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          // Server that sends headers + part of the body, then holds the
+          // connection open so the download stays in the IN_PROGRESS state.
+          let releaseBody: () => void = () => {};
+          const bodyHeld = new Promise<void>((resolve) => {
+            releaseBody = resolve;
+          });
+          const server = http.createServer(async (_req: any, res: any) => {
+            res.writeHead(200, {
+              'Content-Length': 1024,
+              'Content-Type': 'application/octet-stream',
+              'Content-Disposition': 'attachment; filename="inflight.bin"'
+            });
+            res.write(Buffer.alloc(512));
+            await bodyHeld;
+            res.end(Buffer.alloc(512));
+          });
+          await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+          const { port } = server.address();
+
+          const ses = session.fromPartition('cppheap-download-inflight');
+          let item: any = await new Promise((resolve) => {
+            ses.once('will-download', (_e: any, downloadItem: any) => resolve(downloadItem));
+            ses.downloadURL(`http://127.0.0.1:${port}`);
+          });
+          item.savePath = path.join(os.tmpdir(), 'cppheap-download-inflight.bin');
+
+          // Drop the only JS reference while the download is still running.
+          item = null;
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const stillAlive = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / DownloadItem']);
+
+          releaseBody();
+          server.close();
+          return stillAlive;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'DownloadItem should survive GC while the download is in progress');
+    });
+
+    it('should be released after the download completes', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { session } = require('electron');
+          const http = require('node:http');
+          const os = require('node:os');
+          const path = require('node:path');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          const payload = Buffer.alloc(1024);
+          const server = http.createServer((_req: any, res: any) => {
+            res.writeHead(200, {
+              'Content-Length': payload.length,
+              'Content-Type': 'application/octet-stream',
+              'Content-Disposition': 'attachment; filename="done.bin"'
+            });
+            res.end(payload);
+          });
+          await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+          const { port } = server.address();
+
+          const ses = session.fromPartition('cppheap-download-done');
+          await new Promise<void>((resolve) => {
+            ses.once('will-download', (_e: any, item: any) => {
+              item.savePath = path.join(os.tmpdir(), 'cppheap-download-done.bin');
+              item.once('done', () => resolve());
+            });
+            ses.downloadURL(`http://127.0.0.1:${port}`);
+          });
+          server.close();
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const found = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / DownloadItem']);
+          return !found;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'DownloadItem should be released after the download completes and GC runs');
+    });
+
+    it('should not leak when performing multiple downloads', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await remotely(async () => {
+        const { session } = require('electron');
+        const http = require('node:http');
+        const os = require('node:os');
+        const path = require('node:path');
+        const { getCppHeapStatistics } = require('node:v8');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const payload = Buffer.alloc(1024);
+        const server = http.createServer((_req: any, res: any) => {
+          res.writeHead(200, {
+            'Content-Length': payload.length,
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': 'attachment; filename="leak.bin"'
+          });
+          res.end(payload);
+        });
+        await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+        const { port } = server.address();
+
+        const ses = session.fromPartition('cppheap-download-leak');
+        const savePath = path.join(os.tmpdir(), 'cppheap-download-leak.bin');
+
+        async function downloadOnce() {
+          await new Promise<void>((resolve) => {
+            ses.once('will-download', (_e: any, item: any) => {
+              item.savePath = savePath;
+              item.once('done', () => resolve());
+            });
+            ses.downloadURL(`http://127.0.0.1:${port}`);
+          });
+        }
+
+        async function measure(n: number) {
+          for (let i = 0; i < n; i++) {
+            await downloadOnce();
+          }
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          return getCppHeapStatistics('brief').used_size_bytes;
+        }
+
+        await measure(5);
+        const after1 = await measure(10);
+        const after2 = await measure(10);
+        server.close();
+        return { after1, after2 };
+      });
+
+      const growth = result.after2 - result.after1;
+      expect(growth).to.be.at.most(
+        result.after1 * 0.1,
+        `C++ heap grew by ${growth} bytes between two identical rounds of downloads — likely a leak`
+      );
+    });
+  });
+
+  describe('nativeImage module', () => {
+    it('should record as node in heap snapshot while a JS reference is held', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { nativeImage } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          (globalThis as any).nativeImageRef = nativeImage.createEmpty();
+          const state = recordState();
+          const present = containsRetainingPath(state.snapshot, ['Electron / NativeImage']);
+          const isPersistentRooted = containsRetainingPath(state.snapshot, [
+            'C++ Persistent roots',
+            'Electron / NativeImage'
+          ]);
+          return present && !isPersistentRooted;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true);
+    });
+
+    it('should be released after GC when no JS references remain', async () => {
+      const { remotely } = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const released = await remotely(async () => {
+        const { nativeImage } = require('electron');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const waitForGC = async (fn: () => boolean) => {
+          for (let i = 0; i < 30; ++i) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+            if (fn()) return true;
+          }
+          return false;
+        };
+
+        let image: any = nativeImage.createEmpty();
+        const weakRef = new WeakRef(image);
+        image = null;
+
+        return waitForGC(() => weakRef.deref() === undefined);
+      });
+      expect(released).to.equal(true, 'NativeImage should be released after GC when no JS references remain');
+    });
+  });
+
+  describe('url loader module', () => {
+    it('should not leak when performing chunked (streaming) uploads', async () => {
+      const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await rc.remotely(async () => {
+        const { net, app } = require('electron');
+        const http = require('node:http');
+        const { getCppHeapStatistics } = require('node:v8');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+        const server = http.createServer((req: any, res: any) => {
+          req.on('data', () => {});
+          req.on('end', () => res.end('ok'));
+        });
+        await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+        const { port } = server.address();
+
+        function uploadOnce() {
+          return new Promise<void>((resolve, reject) => {
+            const request = net.request({
+              method: 'POST',
+              url: `http://127.0.0.1:${port}`
+            });
+            request.chunkedEncoding = true;
+            request.on('response', (response: any) => {
+              response.on('data', () => {});
+              response.on('end', () => resolve());
+            });
+            request.on('error', reject);
+            for (let i = 0; i < 4; i++) {
+              request.write(Buffer.alloc(256));
+            }
+            request.end();
+          });
+        }
+
+        async function measure(n: number) {
+          for (let i = 0; i < n; i++) {
+            await uploadOnce();
+          }
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+          return getCppHeapStatistics('brief').used_size_bytes;
+        }
+
+        await measure(5);
+        const after1 = await measure(5);
+        const after2 = await measure(5);
+        server.close();
+        setTimeout(() => app.quit());
+        return { after1, after2 };
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+
+      const growth = result.after2 - result.after1;
+      expect(growth).to.be.at.most(
+        result.after1 * 0.1,
+        `C++ heap grew by ${growth} bytes between two identical rounds of chunked uploads — likely a leak`
+      );
+    });
+
+    it('completes request after JS drops reference but listeners are registered', async () => {
+      const rc = await startRemoteControlApp(['--js-flags=--expose-gc']);
+      const result = await rc.remotely(async () => {
+        const { net, app } = require('electron');
+        const http = require('node:http');
+        const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+        const server = http.createServer((req: any, res: any) => {
+          res.writeHead(200);
+          res.end('ok');
+        });
+        await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+        const { port } = server.address();
+
+        let completed = false;
+        let errorOccurred: string | null = null;
+        let requestWeakRef: WeakRef<any>;
+
+        const done = new Promise<void>((resolve) => {
+          let request: any = net.request({ url: `http://127.0.0.1:${port}` });
+          requestWeakRef = new WeakRef(request);
+
+          request.on('response', (response: any) => {
+            response.on('data', () => {});
+            response.on('end', () => {
+              completed = true;
+              resolve();
+            });
+          });
+          request.on('error', (err: Error) => {
+            errorOccurred = err.message;
+            resolve();
+          });
+          request.end();
+
+          // Drop the JS reference immediately after registering listeners.
+          request = null;
+        });
+
+        // Force GC while request is in flight.
+        for (let i = 0; i < 5; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+
+        await done;
+        server.close();
+
+        for (let i = 0; i < 10; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 0));
+          v8Util.requestGarbageCollectionForTesting();
+        }
+        const released = requestWeakRef!.deref() === undefined;
+
+        setTimeout(() => app.quit());
+        return { completed, errorOccurred, released };
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+
+      expect(result.errorOccurred).to.equal(null, `request errored: ${result.errorOccurred}`);
+      expect(result.completed).to.equal(true, 'request should complete even after JS drops reference');
+      expect(result.released).to.equal(true, 'request should be released after completion');
+    });
+
+    it('keeps a ChunkedDataPipeReadableStream alive while a read is pending and releases it after', async () => {
+      const rc = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await rc.remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { protocol, net, app } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const { setTimeout: delay } = require('node:timers/promises');
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+          const withTimeout = <T>(p: Promise<T>, ms: number, label: string) => {
+            const ac = new AbortController();
+            return Promise.race([
+              p.finally(() => ac.abort()),
+              delay(ms, undefined, { signal: ac.signal }).then(() => {
+                throw new Error(`timeout waiting for ${label}`);
+              })
+            ]);
+          };
+
+          const gc = async () => {
+            for (let i = 0; i < 10; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+            }
+          };
+
+          let streamWeakRef: WeakRef<any> | undefined;
+          let pendingRead: Promise<number> | undefined;
+          let resolveReached: () => void;
+          let rejectReached: (err: Error) => void;
+          const reached = new Promise<void>((resolve, reject) => {
+            resolveReached = resolve;
+            rejectReached = reject;
+          });
+
+          protocol.interceptStreamProtocol('http', (request: any, callback: any) => {
+            (async () => {
+              try {
+                const elements = request.uploadData || [];
+                const streamElement = elements.find((e: any) => e.type === 'stream');
+                if (!streamElement) {
+                  callback({ statusCode: 400, data: null });
+                  rejectReached(new Error('request had no stream upload element'));
+                  return;
+                }
+                let body: any = streamElement.body;
+                streamWeakRef = new WeakRef(body);
+                // Drain whatever data is immediately available, then keep a read
+                // that parks in net::ERR_IO_PENDING.
+                const firstRead = body.read(new Uint8Array(1024));
+                const drained = await Promise.race([
+                  firstRead.then(
+                    () => true,
+                    () => true
+                  ),
+                  new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 500))
+                ]);
+                pendingRead = drained ? body.read(new Uint8Array(1024)) : firstRead;
+                // Drop the only JS reference to the stream while the read is in
+                // flight.
+                body = null;
+                resolveReached();
+              } catch (err) {
+                rejectReached(err as Error);
+              }
+            })();
+          });
+
+          const request = net.request({
+            method: 'POST',
+            url: 'http://pending-read-host'
+          });
+          request.chunkedEncoding = true;
+          request.on('error', () => {});
+          // Write one chunk to start streaming the body, but never end the
+          // request so a subsequent read has no data and stays pending.
+          request.write(Buffer.from('hello'));
+
+          try {
+            await withTimeout(reached, 5000, 'stream upload handler');
+
+            await gc();
+            const state = recordState();
+            const aliveWhilePending = containsRetainingPath(state.snapshot, [
+              'C++ Persistent roots',
+              'Electron / ChunkedDataPipeReadableStream'
+            ]);
+            const refAliveWhilePending = streamWeakRef!.deref() !== undefined;
+            // Settle the pending read by ending the request body.
+            request.end();
+            await withTimeout(
+              pendingRead!.catch(() => {}),
+              5000,
+              'pending read to settle'
+            );
+
+            await gc();
+            const released = streamWeakRef!.deref() === undefined;
+
+            // The handler never produced a response; abort to clean up.
+            request.abort();
+            return { ok: true, aliveWhilePending, refAliveWhilePending, released };
+          } catch (err) {
+            request.abort();
+            return { ok: false, error: String(err) };
+          } finally {
+            protocol.uninterceptProtocol('http');
+            setTimeout(() => app.quit());
+          }
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+
+      expect(result.ok, `test setup failed: ${result.error}`).to.equal(true);
+      expect(result.refAliveWhilePending).to.equal(true, 'stream should still be alive while a read is pending');
+      expect(result.aliveWhilePending).to.equal(
+        true,
+        'ChunkedDataPipeReadableStream should be rooted while a read is pending'
+      );
+      expect(result.released).to.equal(
+        true,
+        'ChunkedDataPipeReadableStream should be released after the pending read settles'
+      );
     });
   });
 
@@ -718,6 +1195,30 @@ describe('cpp heap', () => {
 
       expect(result.afterGC).to.be.at.least(result.beforeGC, 'held PromiseHandle must survive GC');
       expect(result.afterClear).to.be.lessThan(result.afterGC, 'clearing should release the PromiseHandle');
+    });
+  });
+
+  describe('webFrame module', () => {
+    itremote('does not leak WebFrameRenderer wrappers', async () => {
+      const { webFrame } = require('electron');
+      const { expect } = require('chai');
+      const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+      const refs: WeakRef<object>[] = (() => {
+        const out: WeakRef<object>[] = [];
+        for (let i = 0; i < 50; i++) {
+          out.push(new WeakRef(webFrame.top as unknown as object));
+        }
+        return out;
+      })();
+
+      for (let i = 0; i < 10; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        v8Util.requestGarbageCollectionForTesting();
+      }
+
+      const survivors = refs.filter((ref) => ref.deref() !== undefined).length;
+      expect(survivors).to.equal(0);
     });
   });
 });

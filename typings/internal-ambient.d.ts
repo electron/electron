@@ -4,9 +4,14 @@ declare const BUILDFLAG: (flag: boolean) => boolean;
 
 declare namespace NodeJS {
   interface ModuleInternal extends NodeJS.Module {
-    new(id: string, parent?: NodeJS.Module | null): NodeJS.Module;
+    new (id: string, parent?: NodeJS.Module | null): NodeJS.Module;
     _load(request: string, parent?: NodeJS.Module | null, isMain?: boolean): any;
-    _resolveFilename(request: string, parent?: NodeJS.Module | null, isMain?: boolean, options?: { paths: string[] }): string;
+    _resolveFilename(
+      request: string,
+      parent?: NodeJS.Module | null,
+      isMain?: boolean,
+      options?: { paths: string[] }
+    ): string;
     _preloadModules(requests: string[]): void;
     _nodeModulePaths(from: string): string[];
     _extensions: Record<string, (module: NodeJS.Module, filename: string) => any>;
@@ -27,7 +32,7 @@ declare namespace NodeJS {
     send(internal: boolean, channel: string, args: any[]): void;
     sendSync(internal: boolean, channel: string, args: any[]): any;
     sendToHost(channel: string, args: any[]): void;
-    invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string, result: T }>;
+    invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string; result: T }>;
     postMessage(channel: string, message: any, transferables: MessagePort[]): void;
   }
 
@@ -45,15 +50,17 @@ declare namespace NodeJS {
   }
 
   type CrashReporterBinding = Omit<Electron.CrashReporter, 'start'> & {
-    start(submitUrl: string,
+    start(
+      submitUrl: string,
       uploadToServer: boolean,
       ignoreSystemCrashHandler: boolean,
       rateLimit: boolean,
       compress: boolean,
       globalExtra: Record<string, string>,
       extra: Record<string, string>,
-      isNodeProcess: boolean): void;
-  }
+      isNodeProcess: boolean
+    ): void;
+  };
 
   interface EnvironmentBinding {
     getVar(name: string): string | null;
@@ -68,14 +75,14 @@ declare namespace NodeJS {
     integrity?: {
       algorithm: 'SHA256';
       hash: string;
-    }
+    };
   };
 
   type AsarFileStat = {
     size: number;
     offset: number;
     type: number;
-  }
+  };
 
   interface AsarArchive {
     getFileInfo(path: string): AsarFileInfo | false;
@@ -87,14 +94,16 @@ declare namespace NodeJS {
   }
 
   interface AsarBinding {
-    Archive: { new(path: string): AsarArchive };
-    splitPath(path: string): {
-      isAsar: false;
-    } | {
-      isAsar: true;
-      asarPath: string;
-      filePath: string;
-    };
+    Archive: { new (path: string): AsarArchive };
+    splitPath(path: string):
+      | {
+          isAsar: false;
+        }
+      | {
+          isAsar: true;
+          asarPath: string;
+          filePath: string;
+        };
   }
 
   interface NetBinding {
@@ -105,7 +114,29 @@ declare namespace NodeJS {
     Net: any;
     net: any;
     createURLLoader(options: CreateURLLoaderOptions): URLLoader;
+    createWebSocket(options: CreateWebSocketOptions): WebSocketWrapper;
     resolveHost(host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost>;
+  }
+
+  type CreateWebSocketOptions = {
+    url: string;
+    protocols?: string[];
+    headers?: Record<string, string>;
+    origin?: string;
+    useSessionCookies?: boolean;
+    session?: Electron.Session;
+    partition?: string;
+  };
+
+  interface WebSocketWrapper extends EventEmitter {
+    send(isText: boolean, data: Uint8Array): void;
+    close(code?: number, reason?: string): void;
+    getBufferedAmount(): number;
+    on(eventName: 'open', listener: (event: any, protocol: string, extensions: string) => void): this;
+    on(eventName: 'message', listener: (event: any, isText: boolean, data: Buffer) => void): this;
+    on(eventName: 'closing', listener: (event: any) => void): this;
+    on(eventName: 'close', listener: (event: any, wasClean: boolean, code: number, reason: string) => void): this;
+    on(eventName: 'error', listener: (event: any) => void): this;
   }
 
   interface ActivationArgumentsInternal {
@@ -119,6 +150,9 @@ declare namespace NodeJS {
   interface NotificationBinding {
     isSupported(): boolean;
     getHistory(): Promise<Electron.Notification[]>;
+    remove(id: string | string[]): void;
+    removeAll(): void;
+    removeGroup(groupId: string): void;
     Notification: typeof Electron.Notification;
     // Windows-only callback for cold-start notification activation
     handleActivation?: (callback: (details: ActivationArgumentsInternal) => void) => void;
@@ -134,13 +168,18 @@ declare namespace NodeJS {
   }
 
   interface SessionBinding {
-    fromPartition: typeof Electron.Session.fromPartition,
-    fromPath: typeof Electron.Session.fromPath,
-    Session: typeof Electron.Session
+    fromPartition: typeof Electron.Session.fromPartition;
+    fromPath: typeof Electron.Session.fromPath;
+    Session: typeof Electron.Session;
   }
 
   interface WebViewManagerBinding {
-    addGuest(guestInstanceId: number, embedder: Electron.WebContents, guest: Electron.WebContents, webPreferences: Electron.WebPreferences): void;
+    addGuest(
+      guestInstanceId: number,
+      embedder: Electron.WebContents,
+      guest: Electron.WebContents,
+      webPreferences: Electron.WebPreferences
+    ): void;
     removeGuest(embedder: Electron.WebContents, guestInstanceId: number): void;
   }
 
@@ -198,8 +237,8 @@ declare namespace NodeJS {
   type ResponseHead = {
     statusCode: number;
     statusMessage: string;
-    httpVersion: { major: number, minor: number };
-    rawHeaders: { key: string, value: string }[];
+    httpVersion: { major: number; minor: number };
+    rawHeaders: { key: string; value: string }[];
     headers: Record<string, string[]>;
   };
 
@@ -211,16 +250,29 @@ declare namespace NodeJS {
     newReferrer: string;
     insecureSchemeWasUpgraded: boolean;
     isSignedExchangeFallbackRedirect: boolean;
-  }
+  };
 
   interface URLLoader extends EventEmitter {
     cancel(): void;
     on(eventName: 'data', listener: (event: any, data: ArrayBuffer, resume: () => void) => void): this;
-    on(eventName: 'response-started', listener: (event: any, finalUrl: string, responseHead: ResponseHead) => void): this;
+    on(
+      eventName: 'response-started',
+      listener: (event: any, finalUrl: string, responseHead: ResponseHead) => void
+    ): this;
     on(eventName: 'complete', listener: (event: any) => void): this;
     on(eventName: 'error', listener: (event: any, netErrorString: string) => void): this;
-    on(eventName: 'login', listener: (event: any, authInfo: Electron.AuthInfo, callback: (username?: string, password?: string) => void) => void): this;
-    on(eventName: 'redirect', listener: (event: any, redirectInfo: RedirectInfo, headers: Record<string, string>) => void): this;
+    on(
+      eventName: 'login',
+      listener: (
+        event: any,
+        authInfo: Electron.AuthInfo,
+        callback: (username?: string, password?: string) => void
+      ) => void
+    ): this;
+    on(
+      eventName: 'redirect',
+      listener: (event: any, redirectInfo: RedirectInfo, headers: Record<string, string>) => void
+    ): this;
     on(eventName: 'upload-progress', listener: (event: any, position: number, total: number) => void): this;
     on(eventName: 'download-progress', listener: (event: any, current: number) => void): this;
   }
@@ -238,15 +290,20 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_common_net'): NetBinding;
     _linkedBinding(name: 'electron_common_shell'): Electron.Shell;
     _linkedBinding(name: 'electron_common_v8_util'): V8UtilBinding;
-    _linkedBinding(name: 'electron_browser_app'): { app: Electron.App, App: Function };
+    _linkedBinding(name: 'electron_browser_app'): { app: Electron.App; App: Function };
     _linkedBinding(name: 'electron_browser_auto_updater'): { autoUpdater: Electron.AutoUpdater };
     _linkedBinding(name: 'electron_browser_crash_reporter'): CrashReporterBinding;
-    _linkedBinding(name: 'electron_browser_desktop_capturer'): { createDesktopCapturer(): ElectronInternal.DesktopCapturer; isDisplayMediaSystemPickerAvailable(): boolean; };
-    _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void; };
+    _linkedBinding(name: 'electron_browser_desktop_capturer'): {
+      createDesktopCapturer(): ElectronInternal.DesktopCapturer;
+      isDisplayMediaSystemPickerAvailable(): boolean;
+    };
+    _linkedBinding(name: 'electron_browser_event_emitter'): { setEventEmitterPrototype(prototype: Object): void };
     _linkedBinding(name: 'electron_browser_global_shortcut'): { createGlobalShortcut(): Electron.GlobalShortcut };
     _linkedBinding(name: 'electron_browser_image_view'): { ImageView: any };
     _linkedBinding(name: 'electron_browser_in_app_purchase'): { inAppPurchase: Electron.InAppPurchase };
-    _linkedBinding(name: 'electron_browser_message_port'): { createPair(): { port1: Electron.MessagePortMain, port2: Electron.MessagePortMain }; };
+    _linkedBinding(name: 'electron_browser_message_port'): {
+      createPair(): { port1: Electron.MessagePortMain; port2: Electron.MessagePortMain };
+    };
     _linkedBinding(name: 'electron_browser_native_theme'): { nativeTheme: Electron.NativeTheme };
     _linkedBinding(name: 'electron_browser_notification'): NotificationBinding;
     _linkedBinding(name: 'electron_browser_power_monitor'): PowerMonitorBinding;
@@ -292,33 +349,9 @@ declare module NodeJS {
   }
 }
 
-interface ContextMenuItem {
-  id: number;
-  label: string;
-  type: 'normal' | 'separator' | 'subMenu' | 'checkbox' | 'header' | 'palette';
-  checked: boolean;
-  enabled: boolean;
-  subItems: ContextMenuItem[];
-}
-
 declare interface Window {
   ELECTRON_DISABLE_SECURITY_WARNINGS?: boolean;
   ELECTRON_ENABLE_SECURITY_WARNINGS?: boolean;
-  InspectorFrontendHost?: {
-    showContextMenuAtPoint: (x: number, y: number, items: ContextMenuItem[]) => void
-  };
-  DevToolsAPI?: {
-    contextMenuItemSelected: (id: number) => void;
-    contextMenuCleared: () => void
-  };
-  UI?: {
-    createFileSelectorElement: (callback: () => void) => HTMLSpanElement
-  };
-  Persistence?: {
-    FileSystemWorkspaceBinding: {
-      completeURL: (project: string, path: string) => string;
-    }
-  };
   WebView: typeof ElectronInternal.WebViewElement;
   trustedTypes: TrustedTypePolicyFactory;
 }
@@ -356,7 +389,7 @@ interface TrustedTypePolicyOptions {
 // https://w3c.github.io/webappsec-trusted-types/dist/spec/#typedef-trustedtypepolicyfactory
 
 interface TrustedTypePolicyFactory {
-  createPolicy(policyName: string, policyOptions: TrustedTypePolicyOptions): TrustedTypePolicy
+  createPolicy(policyName: string, policyOptions: TrustedTypePolicyOptions): TrustedTypePolicy;
   isHTML(value: any): boolean;
   isScript(value: any): boolean;
   isScriptURL(value: any): boolean;

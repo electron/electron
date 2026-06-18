@@ -18,7 +18,7 @@ namespace gin {
 template <>
 struct Converter<electron::LaunchItem> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::LaunchItem val);
+                                   const electron::LaunchItem& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::LaunchItem* out);
@@ -28,7 +28,7 @@ struct Converter<electron::LaunchItem> {
 template <>
 struct Converter<electron::LoginItemSettings> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::LoginItemSettings val);
+                                   const electron::LoginItemSettings& val);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::LoginItemSettings* out);

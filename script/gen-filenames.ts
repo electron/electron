@@ -142,9 +142,7 @@ const main = async () => {
     })
   );
 
-  fs.writeFileSync(
-    gniPath,
-    `# THIS FILE IS AUTO-GENERATED, PLEASE DO NOT EDIT BY HAND
+  const generated = `# THIS FILE IS AUTO-GENERATED, PLEASE DO NOT EDIT BY HAND
 auto_filenames = {
   api_docs = [
 ${allDocs.map((doc) => `    "${doc}",`).join('\n')}
@@ -162,8 +160,19 @@ ${target.dependencies.map((dep) => `    "${dep}",`).join('\n')}
   )
   .join('\n\n')}
 }
-`
-  );
+`;
+
+  if (process.argv.includes('--check')) {
+    const existing = fs.existsSync(gniPath) ? fs.readFileSync(gniPath, 'utf8') : '';
+    if (existing !== generated) {
+      console.error(
+        `${path.relative(rootPath, gniPath)} is out of date. Run 'node script/gen-filenames.ts' to regenerate.`
+      );
+      process.exit(1);
+    }
+  } else {
+    fs.writeFileSync(gniPath, generated);
+  }
 };
 
 if (require.main === module) {

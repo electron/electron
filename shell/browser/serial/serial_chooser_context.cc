@@ -264,7 +264,12 @@ void SerialChooserContext::SetUpPortManagerConnection(
                      base::Unretained(this)));
 
   port_manager_->SetClient(client_receiver_.BindNewPipeAndPassRemote());
-  port_manager_->GetDevices(base::BindOnce(&SerialChooserContext::OnGetDevices,
+  // Pass false for `allow_bluetooth_system_prompt` to avoid triggering the
+  // macOS Bluetooth permission prompt during background initialization. Any
+  // explicit user request to find devices (e.g. via `requestPort`) will use
+  // true for the `GetDevices` call.
+  port_manager_->GetDevices(/*allow_bluetooth_system_prompt=*/false,
+                            base::BindOnce(&SerialChooserContext::OnGetDevices,
                                            weak_factory_.GetWeakPtr()));
 }
 

@@ -194,8 +194,23 @@ function getDepotToolsEnv() {
     throw new Error("Couldn't find depot_tools, ensure it's on your PATH");
   }
 
-  if (!('CHROMIUM_BUILDTOOLS_PATH' in depotToolsEnv)) {
-    throw new Error('CHROMIUM_BUILDTOOLS_PATH environment variable must be set');
+  const result = childProcess.spawnSync(
+    'python3',
+    [
+      '-c',
+      '\'from lib.util import get_chromium_buildtools_path_value; print(get_chromium_buildtools_path_value() or "")\''
+    ],
+    { env: depotToolsEnv, shell: true, encoding: 'utf8', cwd: path.join(ELECTRON_DIR, 'script') }
+  );
+  if (result.status !== 0) {
+    throw new Error(result.stderr);
+  }
+
+  const chromiumBuildtoolsPathValue = result.status === 0 ? result.stdout.trim() : null;
+
+  // Only set CHROMIUM_BUILDTOOLS_PATH if we're on an older version of depot_tools which requires it
+  if (chromiumBuildtoolsPathValue) {
+    depotToolsEnv.CHROMIUM_BUILDTOOLS_PATH = chromiumBuildtoolsPathValue;
   }
 
   return depotToolsEnv;

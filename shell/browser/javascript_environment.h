@@ -6,8 +6,10 @@
 #define ELECTRON_SHELL_BROWSER_JAVASCRIPT_ENVIRONMENT_H_
 
 #include <memory>
+#include <optional>
 
 #include "uv.h"  // NOLINT(build/include_directory)
+#include "v8/include/v8-locker.h"
 
 namespace gin {
 class IsolateHolder;
@@ -20,7 +22,6 @@ class MultiIsolatePlatform;
 
 namespace v8 {
 class Isolate;
-class Locker;
 }  // namespace v8
 
 namespace electron {
@@ -57,7 +58,7 @@ class JavascriptEnvironment {
   std::unique_ptr<gin::IsolateHolder> isolate_holder_;
 
   // depends-on: isolate_holder_'s isolate
-  std::unique_ptr<v8::Locker> locker_;
+  std::optional<v8::Locker> locker_;
 
   std::unique_ptr<MicrotasksRunner> microtasks_runner_;
 };

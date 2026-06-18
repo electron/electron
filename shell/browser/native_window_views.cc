@@ -61,16 +61,15 @@
 #if BUILDFLAG(IS_LINUX)
 #include "base/notimplemented.h"
 #include "shell/browser/browser.h"
-#include "shell/browser/linux/unity_service.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
-#include "shell/browser/ui/views/linux_frame_layout.h"
+#include "shell/browser/ui/views/electron_frame_view_linux.h"
 #include "shell/browser/ui/views/native_frame_view.h"
 #include "shell/browser/ui/views/native_frame_view_linux.h"
-#include "shell/browser/ui/views/opaque_frame_view.h"
 #include "shell/common/platform_util.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/linux_ui_factory.h"
+#include "ui/linux/window_frame_provider.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/frame_view_linux.h"
 #include "ui/views/window/native_frame_view.h"
@@ -94,7 +93,6 @@
 #include "shell/common/color_util.h"
 #include "skia/ext/skia_utils_win.h"
 #include "ui/display/win/screen_win.h"
-#include "ui/gfx/win/hwnd_util.h"
 #include "ui/gfx/win/msg_util.h"
 #endif
 
@@ -239,12 +237,20 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
 
   if (gin_helper::Dictionary od; options.Get(options::ktitleBarOverlay, &od)) {
     if (std::string val; od.Get(options::kOverlayButtonColor, &val)) {
-      bool success = content::ParseCssColorString(val, &overlay_button_color_);
+      SkColor overlay_button_color;
+      bool success = content::ParseCssColorString(val, &overlay_button_color);
       DCHECK(success);
+      if (success) {
+        overlay_button_color_ = overlay_button_color;
+      }
     }
     if (std::string val; od.Get(options::kOverlaySymbolColor, &val)) {
-      bool success = content::ParseCssColorString(val, &overlay_symbol_color_);
+      SkColor overlay_symbol_color;
+      bool success = content::ParseCssColorString(val, &overlay_symbol_color);
       DCHECK(success);
+      if (success) {
+        overlay_symbol_color_ = overlay_symbol_color;
+      }
     }
   }
 
@@ -281,6 +287,11 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   // If a client frame, we need to draw our own shadows.
   if (transparent() || has_client_frame())
     params.opacity = InitParams::WindowOpacity::kTranslucent;
+#if BUILDFLAG(IS_LINUX)
+  // Resize handles and shadows on frameless windows need translucent insets.
+  if (!has_frame())
+    params.opacity = InitParams::WindowOpacity::kTranslucent;
+#endif
 
   // The given window is most likely not rectangular since it is translucent and
   // has no standard frame, don't show a shadow for it.
@@ -431,7 +442,10 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   if ((has_frame() || has_client_frame()) && use_content_size_)
     size = ContentBoundsToWindowBounds(gfx::Rect(size)).size();
 
-  widget()->CenterWindow(size);
+  // Bounds need to be re-applied before centering to account for frame
+  // insets, which weren't available on init.
+  SetSize(size);
+  Center();
 
 #if BUILDFLAG(IS_WIN)
   // Save initial window state.
@@ -445,13 +459,6 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   aura::Window* window = GetNativeWindow();
   if (window)
     window->AddPreTargetHandler(this);
-
-#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
-  // The initial params.bounds was applied before the frame view existed, so
-  // non-client insets weren't accounted for and bounds need to be set again.
-  if (!GetRestoredFrameBorderInsets().IsEmpty())
-    SetBounds(gfx::Rect(GetPosition(), size), false);
-#endif
 }
 
 NativeWindowViews::~NativeWindowViews() {
@@ -517,6 +524,11 @@ void NativeWindowViews::SetTitleBarOverlay(
     auto* fv = widget()->non_client_view()->frame_view();
     if (auto* frameless = views::AsViewClass<FramelessView>(fv)) {
       frameless->InvalidateCaptionButtons();
+#if BUILDFLAG(IS_LINUX)
+    } else if (auto* fvl = views::AsViewClass<views::FrameViewLinux>(fv)) {
+      fvl->InvalidateLayout();
+      fvl->SchedulePaint();
+#endif
     }
   }
 }
@@ -945,14 +957,19 @@ extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
     return *content_size_constraints_;
   if (!size_constraints_)
     return extensions::SizeConstraints();
+  // Inflate Electron's logical window size constraints by frame insets to get
+  // the full HWND size for WindowSizeToContentSizeBuggy.
+  const gfx::Size inset_size = GetRestoredFrameBorderInsets().size();
   extensions::SizeConstraints constraints;
   if (size_constraints_->HasMaximumSize()) {
     constraints.set_maximum_size(WindowSizeToContentSizeBuggy(
-        GetAcceleratedWidget(), size_constraints_->GetMaximumSize()));
+        GetAcceleratedWidget(),
+        size_constraints_->GetMaximumSize() + inset_size));
   }
   if (size_constraints_->HasMinimumSize()) {
     constraints.set_minimum_size(WindowSizeToContentSizeBuggy(
-        GetAcceleratedWidget(), size_constraints_->GetMinimumSize()));
+        GetAcceleratedWidget(),
+        size_constraints_->GetMinimumSize() + inset_size));
   }
   return constraints;
 }
@@ -1178,24 +1195,21 @@ ui::ZOrderLevel NativeWindowViews::GetZOrderLevel() const {
   return widget()->GetZOrderLevel();
 }
 
-// We previous called widget()->CenterWindow() here, but in
-// Chromium CL 4916277 behavior was changed to center relative to the
-// parent window if there is one. We want to keep the old behavior
-// for now to avoid breaking API contract, but should consider the long
-// term plan for this aligning with upstream.
 void NativeWindowViews::Center() {
-#if BUILDFLAG(IS_LINUX)
+  // On Windows we previously called gfx::CenterAndSizeWindow on the HWND.
+  // That had the problem of placing windows slightly too high if they have
+  // insets, since top/bottom insets are asymmetric. It also introduces
+  // DIP/pixel conversion errors at fractional scales. We also avoid
+  // widget()->CenterWindow(), since in addition to those issues it centers
+  // relative to the parent window when one exists as of Chromium CL 4916277.
+  //
+  // Centering the logical rect (size without insets) avoids all of the above
+  // and works on Windows and Linux.
   auto display =
       display::Screen::Get()->GetDisplayNearestWindow(GetNativeWindow());
-  gfx::Rect window_bounds_in_screen = display.work_area();
-  window_bounds_in_screen.ClampToCenteredSize(GetSize());
-  widget()->SetBounds(window_bounds_in_screen);
-#else
-  HWND hwnd = GetAcceleratedWidget();
-  gfx::Size size =
-      display::win::GetScreenWin()->DIPToScreenSize(hwnd, GetSize());
-  gfx::CenterAndSizeWindow(nullptr, hwnd, size);
-#endif
+  gfx::Rect bounds = display.work_area();
+  bounds.ClampToCenteredSize(GetSize());
+  SetBounds(bounds, false);
 }
 
 void NativeWindowViews::Invalidate() {
@@ -1267,15 +1281,14 @@ bool NativeWindowViews::IsTabletMode() const {
 }
 
 SkColor NativeWindowViews::GetBackgroundColor() const {
-  auto* background = root_view_.background();
-  if (!background)
-    return SK_ColorTRANSPARENT;
-  return background->color().ResolveToSkColor(root_view_.GetColorProvider());
+  return background_color_;
 }
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
-  // web views' background color.
-  root_view_.SetBackground(views::CreateSolidBackground(background_color));
+  SkColor compositor_color = background_color;
+  SkColor root_view_color = background_color;
+
+  background_color_ = background_color;
 
 #if BUILDFLAG(IS_WIN)
   // Set the background color of native window.
@@ -1287,25 +1300,51 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
     DeleteObject(reinterpret_cast<HBRUSH>(previous_brush));
   InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
-  SkColor compositor_color = background_color;
+
 #if BUILDFLAG(IS_LINUX)
-  // Widget background needs to stay transparent for CSD shadow regions.
+  // Widget and root view need to be transparent for CSD to draw shadow regions
+  // and custom edges and corners. The web contents view will still be
+  // painted with the true background color, which is cached in state.
   auto* fvl = GetFrameViewLinux();
-  LinuxFrameLayout* frame_layout = GetLinuxFrameLayout();
-  const bool uses_csd =
-      (fvl && fvl->ShouldDrawRestoredFrameShadow()) ||
-      (frame_layout && frame_layout->SupportsClientFrameShadow());
-  if (transparent() || uses_csd)
+  const bool uses_csd = fvl && fvl->ShouldDrawRestoredFrameShadow();
+  if (transparent() || uses_csd) {
     compositor_color = SK_ColorTRANSPARENT;
+    root_view_color = SK_ColorTRANSPARENT;
+  }
 #endif
+
+  // Root view is painted behind the WebContents view.
+  root_view_.SetBackground(views::CreateSolidBackground(root_view_color));
+  // Widget background is painted behind everything.
   widget()->GetCompositor()->SetBackgroundColor(compositor_color);
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
+#if BUILDFLAG(IS_LINUX)
+  auto* efvl = views::AsViewClass<ElectronFrameViewLinux>(
+      widget()->non_client_view()->frame_view());
+  gfx::Rect visible_bounds;
+  if (efvl) {
+    // Shrink by the old frame border insets to isolate the visible area.
+    visible_bounds = widget()->GetWindowBoundsInScreen();
+    visible_bounds.Inset(GetRestoredFrameBorderInsets());
+  }
+#endif
+
   has_shadow_ = has_shadow;
   wm::SetShadowElevation(GetNativeWindow(),
                          has_shadow ? wm::kShadowElevationInactiveWindow
                                     : wm::kShadowElevationNone);
+
+#if BUILDFLAG(IS_LINUX)
+  if (efvl) {
+    efvl->SetWantsFrame(!IsTranslucent() &&
+                        (has_shadow || IsWindowControlsOverlayEnabled()));
+    // Grow by the new frame border insets to preserve the visible area.
+    visible_bounds.Inset(-GetRestoredFrameBorderInsets());
+    widget()->SetBounds(visible_bounds);
+  }
+#endif
 }
 
 bool NativeWindowViews::HasShadow() const {
@@ -1313,14 +1352,15 @@ bool NativeWindowViews::HasShadow() const {
 }
 
 void NativeWindowViews::SetOpacity(const double opacity) {
+  const double bounded_opacity =
+      std::isnan(opacity) ? 1.0 : std::clamp(opacity, 0.0, 1.0);
+  opacity_ = bounded_opacity;
 #if BUILDFLAG(IS_WIN)
-  const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
   HWND hwnd = GetAcceleratedWidget();
   SetLayered();
-  ::SetLayeredWindowAttributes(hwnd, 0, boundedOpacity * 255, LWA_ALPHA);
-  opacity_ = boundedOpacity;
-#else
-  opacity_ = 1.0;  // setOpacity unsupported on Linux
+  ::SetLayeredWindowAttributes(hwnd, 0, bounded_opacity * 255, LWA_ALPHA);
+#elif BUILDFLAG(IS_LINUX)
+  widget()->SetOpacity(static_cast<float>(bounded_opacity));
 #endif
 }
 
@@ -1373,13 +1413,14 @@ void NativeWindowViews::SetIgnoreMouseEvents(bool ignore, bool forward) {
 
 void NativeWindowViews::SetContentProtection(const bool enable) {
 #if BUILDFLAG(IS_WIN)
-  widget()->SetAllowScreenshots(!enable);
+  content_protected_ = enable;
+  widget()->SetExcludeFromScreenCapture(enable);
 #endif
 }
 
 bool NativeWindowViews::IsContentProtected() const {
 #if BUILDFLAG(IS_WIN)
-  return !widget()->AreScreenshotsAllowed();
+  return content_protected_;
 #else  // Not implemented on Linux
   return false;
 #endif
@@ -1534,10 +1575,6 @@ void NativeWindowViews::SetProgressBar(double progress,
                                        NativeWindow::ProgressState state) {
 #if BUILDFLAG(IS_WIN)
   taskbar_host_.SetProgressBar(GetAcceleratedWidget(), progress, state);
-#elif BUILDFLAG(IS_LINUX)
-  if (unity::IsRunning()) {
-    unity::SetProgressFraction(progress);
-  }
 #endif
 }
 
@@ -1936,7 +1973,7 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
   return std::make_unique<WinFrameView>(this, widget);
 #else
   if (!has_frame())
-    return std::make_unique<OpaqueFrameView>(this, widget);
+    return std::make_unique<ElectronFrameViewLinux>(this, widget);
 
   if (has_client_frame()) {
     auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
@@ -1959,14 +1996,6 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 }
 
 #if BUILDFLAG(IS_LINUX)
-LinuxFrameLayout* NativeWindowViews::GetLinuxFrameLayout() {
-  auto* ncv = widget()->non_client_view();
-  if (!ncv)
-    return nullptr;
-  auto* view = views::AsViewClass<FramelessView>(ncv->frame_view());
-  return view ? view->GetLinuxFrameLayout() : nullptr;
-}
-
 views::FrameViewLinux* NativeWindowViews::GetFrameViewLinux() const {
   auto* ncv = widget()->non_client_view();
   if (!ncv)
@@ -2033,9 +2062,11 @@ ui::mojom::WindowShowState NativeWindowViews::GetRestoredState() {
 void NativeWindowViews::MoveBehindTaskBarIfNeeded() {
 #if BUILDFLAG(IS_WIN)
   if (behind_task_bar_) {
-    const HWND task_bar_hwnd = ::FindWindow(kUniqueTaskBarClassName, nullptr);
-    ::SetWindowPos(GetAcceleratedWidget(), task_bar_hwnd, 0, 0, 0, 0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    if (const HWND task_bar_hwnd =
+            ::FindWindow(kUniqueTaskBarClassName, nullptr)) {
+      ::SetWindowPos(GetAcceleratedWidget(), task_bar_hwnd, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
   }
 #endif
   // TODO(julien.isorce): Implement X11 case.

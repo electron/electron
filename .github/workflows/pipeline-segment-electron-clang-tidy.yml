@@ -47,7 +47,7 @@ jobs:
       ARTIFACT_KEY: ${{ inputs.target-platform == 'macos' && 'darwin' || inputs.target-platform }}_${{ inputs.target-arch }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
       with:
         path: src/electron
         fetch-depth: 0
@@ -111,10 +111,8 @@ jobs:
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
         echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
-    - name: Add CHROMIUM_BUILDTOOLS_PATH to env
-      run: echo "CHROMIUM_BUILDTOOLS_PATH=$(pwd)/src/buildtools" >> $GITHUB_ENV
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
       with:
         path: src/electron
         fetch-depth: 0
@@ -134,6 +132,9 @@ jobs:
       shell: bash
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Run Clang-Tidy
+      env:
+        # macOS runners have fewer CPU cores, so use fewer jobs for better results
+        CLANG_TIDY_JOBS: ${{ case(inputs.target-platform == 'macos', 5, 8) }}
       run: |
         e init -f --root=$(pwd) --out=${ELECTRON_OUT_DIR} testing --target-cpu ${TARGET_ARCH} --remote-build none
 
@@ -164,7 +165,7 @@ jobs:
         fi
 
         cd src/electron
-        node script/yarn.js lint:clang-tidy --jobs 8 --out-dir ../out/${ELECTRON_OUT_DIR}
+        node script/yarn.js lint:clang-tidy --jobs ${CLANG_TIDY_JOBS} --out-dir ../out/${ELECTRON_OUT_DIR}
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"

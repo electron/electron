@@ -22,7 +22,9 @@
 #include "shell/browser/microtasks_runner.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 #include "third_party/blink/public/common/switches.h"
+#include "third_party/electron_node/src/node_snapshot_builder.h"
 #include "third_party/electron_node/src/node_wasm_web_api.h"
 #include "v8/include/v8-isolate.h"
 #include "v8/include/v8-locker.h"
@@ -35,6 +37,26 @@ namespace electron {
 
 namespace {
 
+// The Node startup snapshot a JavascriptEnvironment's isolate is created
+// from, when one is embedded and this process is allowed to consume it.
+// The snapshot was built by extending the same snapshot_blob.bin the rest
+// of the process's V8 uses, so the read-only heap is shared (V8's
+// shared-RO-heap requirement). Browser-process-only: the renderer's isolate
+// must use the blink v8_context_snapshot, and the utility-process node
+// service does its own thing.
+const node::SnapshotData* NodeSnapshotForThisProcess() {
+  if (!electron::IsBrowserProcess())
+    return nullptr;
+  // The ELECTRON_RUN_AS_NODE entry point (shell/app/node_main.cc) runs without
+  // a process type, so IsBrowserProcess() is true for it too -- but it boots
+  // Node directly and builds its IsolateData without snapshot_data, so handing
+  // it a snapshot-backed isolate would trip node::CreateEnvironment's
+  // snapshot_data CHECK. It isn't the app-start path this targets; skip it.
+  if (electron::IsRunningAsNode())
+    return nullptr;
+  return node::SnapshotBuilder::GetEmbeddedSnapshotData();
+}
+
 std::unique_ptr<gin::IsolateHolder> CreateIsolateHolder(
     v8::Isolate* isolate,
     size_t* max_young_generation_size) {
@@ -45,6 +67,12 @@ std::unique_ptr<gin::IsolateHolder> CreateIsolateHolder(
   // --heapsnapshot-near-heap-limit=max_count.
   *max_young_generation_size =
       create_params->constraints.max_young_generation_size_in_bytes();
+  // Electron: create the browser-process isolate from the embedded Node
+  // startup snapshot when one is present, so the Node bootstrap is
+  // deserialized instead of recompiled at app start.
+  if (const node::SnapshotData* sd = NodeSnapshotForThisProcess()) {
+    node::SnapshotBuilder::InitializeIsolateParams(sd, create_params.get());
+  }
   // Align behavior with V8 Isolate default for Node.js.
   // This is necessary for important aspects of Node.js
   // including heap and cpu profilers to function properly.
@@ -61,12 +89,19 @@ std::unique_ptr<gin::IsolateHolder> CreateIsolateHolder(
 
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
                                              bool setup_wasm_streaming)
-    : isolate_holder_{CreateIsolateHolder(
-          Initialize(event_loop, setup_wasm_streaming),
-          &max_young_generation_size_)},
-      locker_{std::make_unique<v8::Locker>(isolate())} {
+    : isolate_holder_{
+          CreateIsolateHolder(Initialize(event_loop, setup_wasm_streaming),
+                              &max_young_generation_size_)},
+      locker_{std::in_place, isolate()} {
   v8::Isolate* const isolate = this->isolate();
   isolate->Enter();
+
+  // Electron: when consuming the embedded Node startup snapshot, the main
+  // context is materialized from the snapshot inside node::CreateEnvironment
+  // (Context::FromSnapshot) and entered in electron_browser_main_parts.cc
+  // after that. Creating a fresh node::NewContext here would be wasted work.
+  if (NodeSnapshotForThisProcess() != nullptr)
+    return;
 
   v8::HandleScope scope{isolate};
   auto context = node::NewContext(isolate);

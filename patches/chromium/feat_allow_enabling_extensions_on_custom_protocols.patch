@@ -30,7 +30,7 @@ index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..a0e361cf2d2960de4f429a9d37459e26
    URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
    if (result != URLPattern::ParseResult::kSuccess) {
 diff --git a/extensions/browser/api/web_request/extension_web_request_event_router.h b/extensions/browser/api/web_request/extension_web_request_event_router.h
-index 32116daf768b52021b795afd6b0d5b96b5d0cf46..90ab5d50e7efbd3212e074514c41caf419e47f5e 100644
+index 36e4bde8208a2db7a8fe0d71c2a3ee42417ac50e..d7de3f06b9de8c8cb449594ce9f797eaf96a3b0c 100644
 --- a/extensions/browser/api/web_request/extension_web_request_event_router.h
 +++ b/extensions/browser/api/web_request/extension_web_request_event_router.h
 @@ -55,7 +55,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
@@ -44,10 +44,10 @@ index 32116daf768b52021b795afd6b0d5b96b5d0cf46..90ab5d50e7efbd3212e074514c41caf4
  class WebRequestEventRouter : public KeyedService {
   public:
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
-index 8a8ab0a0e2c6e4f599651a3691d2d4749914d0f0..9ac2eda61dbab1aa489d7b5d3882f81be87e5563 100644
+index 7e3abea6cb2d53165cb6d1457e9a331690e1497b..4aad9ee0cb31be9f9137864c0dcd4e12c20006c2 100644
 --- a/extensions/common/extension.cc
 +++ b/extensions/common/extension.cc
-@@ -225,7 +225,8 @@ const int Extension::kValidHostPermissionSchemes =
+@@ -221,7 +221,8 @@ const int Extension::kValidHostPermissionSchemes =
      URLPattern::SCHEME_CHROMEUI | URLPattern::SCHEME_HTTP |
      URLPattern::SCHEME_HTTPS | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_WS | URLPattern::SCHEME_WSS |
@@ -58,10 +58,10 @@ index 8a8ab0a0e2c6e4f599651a3691d2d4749914d0f0..9ac2eda61dbab1aa489d7b5d3882f81b
  //
  // Extension
 diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
-index d4328ca22fdeefd3dca88bfe959dfb849705b109..ba24e788d4a2e467d24f6369e2d93ea3b4a0c9d7 100644
+index 1f733c4298e5812c98f900f1f070fbcea5334a94..d6e8002590c48584379d6b28f125583c218f0fd4 100644
 --- a/extensions/common/url_pattern.cc
 +++ b/extensions/common/url_pattern.cc
-@@ -140,6 +140,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
+@@ -137,6 +137,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
        return true;
      }
    }
@@ -73,7 +73,7 @@ index d4328ca22fdeefd3dca88bfe959dfb849705b109..ba24e788d4a2e467d24f6369e2d93ea3
    return false;
  }
  
-@@ -401,6 +406,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
+@@ -398,6 +403,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
      }
    }
  

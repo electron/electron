@@ -121,8 +121,7 @@ void ToDictionary(gin_helper::Dictionary* details,
                  HttpResponseHeadersToV8(info->response_headers.get()));
   }
 
-  auto* render_frame_host = content::RenderFrameHost::FromID(
-      info->render_process_id, info->frame_routing_id);
+  auto* render_frame_host = content::RenderFrameHost::FromID(info->global_id);
   if (render_frame_host) {
     details->SetGetter("frame", render_frame_host);
     auto* web_contents =
@@ -611,8 +610,8 @@ WebRequest::AuthRequiredResponse WebRequest::OnAuthRequired(
     const net::AuthChallengeInfo& auth_info,
     WebRequest::AuthCallback callback,
     net::AuthCredentials* credentials) {
-  content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
-      request_info->render_process_id, request_info->frame_routing_id);
+  content::RenderFrameHost* rfh =
+      content::RenderFrameHost::FromID(request_info->global_id);
   content::WebContents* web_contents = nullptr;
   if (rfh)
     web_contents = content::WebContents::FromRenderFrameHost(rfh);
@@ -630,7 +629,8 @@ WebRequest::AuthRequiredResponse WebRequest::OnAuthRequired(
   blocked_requests_[request_info->id].login_handler =
       std::make_unique<LoginHandler>(
           auth_info, web_contents,
-          static_cast<base::ProcessId>(request_info->render_process_id),
+          static_cast<base::ProcessId>(
+              request_info->global_id.child_id.GetUnsafeValue()),
           request_info->url, response_headers, std::move(login_callback));
 
   return AuthRequiredResponse::AUTH_REQUIRED_RESPONSE_IO_PENDING;

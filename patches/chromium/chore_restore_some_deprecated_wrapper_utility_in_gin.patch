@@ -8,6 +8,58 @@ Restores part of https://chromium-review.googlesource.com/c/chromium/src/+/67991
 Patch can be removed once cppgc migration is complete
 https://github.com/electron/electron/issues/47922
 
+diff --git a/content/services/auction_worklet/shared_storage_bindings.cc b/content/services/auction_worklet/shared_storage_bindings.cc
+index 222ea405c238032e332b14a27ad868d0664c14e5..3df51bf482070455614b0c4dec96c6258480b758 100644
+--- a/content/services/auction_worklet/shared_storage_bindings.cc
++++ b/content/services/auction_worklet/shared_storage_bindings.cc
+@@ -412,6 +412,8 @@ void SharedStorageBindings::AttachToContext(v8::Local<v8::Context> context) {
+         v8::FunctionTemplate::New(v8_helper_->isolate(),
+                                   &SharedStorageBindings::SetMethodConstructor,
+                                   v8_this);
++    set_method_ctor_template->InstanceTemplate()->SetInternalFieldCount(
++        gin::kNumberOfInternalFields);
+     set_method_ctor_template->Inherit(base_modifier_method_template);
+     set_method_ctor_template->SetClassName(
+         v8_helper_->CreateStringFromLiteral(kSharedStorageSetMethodName));
+@@ -427,6 +429,8 @@ void SharedStorageBindings::AttachToContext(v8::Local<v8::Context> context) {
+         v8::FunctionTemplate::New(
+             v8_helper_->isolate(),
+             &SharedStorageBindings::AppendMethodConstructor, v8_this);
++    append_method_ctor_template->InstanceTemplate()->SetInternalFieldCount(
++        gin::kNumberOfInternalFields);
+     append_method_ctor_template->Inherit(base_modifier_method_template);
+     append_method_ctor_template->SetClassName(
+         v8_helper_->CreateStringFromLiteral(kSharedStorageAppendMethodName));
+@@ -443,6 +447,8 @@ void SharedStorageBindings::AttachToContext(v8::Local<v8::Context> context) {
+         v8::FunctionTemplate::New(
+             v8_helper_->isolate(),
+             &SharedStorageBindings::DeleteMethodConstructor, v8_this);
++    delete_method_ctor_template->InstanceTemplate()->SetInternalFieldCount(
++        gin::kNumberOfInternalFields);
+     delete_method_ctor_template->Inherit(base_modifier_method_template);
+     delete_method_ctor_template->SetClassName(
+         v8_helper_->CreateStringFromLiteral(kSharedStorageDeleteMethodName));
+@@ -459,6 +465,8 @@ void SharedStorageBindings::AttachToContext(v8::Local<v8::Context> context) {
+         v8::FunctionTemplate::New(
+             v8_helper_->isolate(),
+             &SharedStorageBindings::ClearMethodConstructor, v8_this);
++    clear_method_ctor_template->InstanceTemplate()->SetInternalFieldCount(
++        gin::kNumberOfInternalFields);
+     clear_method_ctor_template->Inherit(base_modifier_method_template);
+     clear_method_ctor_template->SetClassName(
+         v8_helper_->CreateStringFromLiteral(kSharedStorageClearMethodName));
+diff --git a/gin/BUILD.gn b/gin/BUILD.gn
+index ed562a2d424f2c0eed81aa6300644f146b5cb17f..44f8c84563692364346afbd5041aaf4287d78bba 100644
+--- a/gin/BUILD.gn
++++ b/gin/BUILD.gn
+@@ -79,6 +79,7 @@ component("gin") {
+     "weak_cell.h",
+     "wrappable.cc",
+     "wrappable.h",
++    "wrapper_info.cc",
+   ]
+ 
+   if (use_partition_alloc) {
 diff --git a/gin/function_template.h b/gin/function_template.h
 index 8b649c04abccf1e6ade18e315095a3960d407e7b..70c882dfa6f0493164f8706090fb215139b7f258 100644
 --- a/gin/function_template.h
@@ -21,10 +73,10 @@ index 8b649c04abccf1e6ade18e315095a3960d407e7b..70c882dfa6f0493164f8706090fb2151
  
     private:
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 7c640559dc7a09730f0053be8798d10bc8ac1a1c..24127c579e149345cc9b937b17dbfe630b0d3c35 100644
+index 9f49bb0b6873eb2a6218f4fad1429d25a7c54f91..9e56b056202cc4e8bfd5391521fab0f0d3f61d0d 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -225,6 +225,7 @@ void IsolateHolder::WillCreateMicrotasksRunner() {
+@@ -226,6 +226,7 @@ void IsolateHolder::WillCreateMicrotasksRunner() {
  
  void IsolateHolder::WillDestroyMicrotasksRunner() {
    DCHECK(g_initialized_microtasks_runner);
@@ -32,33 +84,71 @@ index 7c640559dc7a09730f0053be8798d10bc8ac1a1c..24127c579e149345cc9b937b17dbfe63
    g_destroyed_microtasks_runner = true;
  }
  
+diff --git a/gin/object_template_builder.cc b/gin/object_template_builder.cc
+index b07da3a191cd0424fe76ee762de091a9ec24d5a4..49ecd470ce29078418ccb490caa8cfde17a6944e 100644
+--- a/gin/object_template_builder.cc
++++ b/gin/object_template_builder.cc
+@@ -141,7 +141,9 @@ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
+                                   " cannot be created using the constructor."})
+                   : "Objects of this type cannot be created using the "
+                     "constructor"))),
+-      template_(constructor_template_->InstanceTemplate()) {}
++      template_(constructor_template_->InstanceTemplate()) {
++  template_->SetInternalFieldCount(kNumberOfInternalFields);
++}
+ 
+ ObjectTemplateBuilder::ObjectTemplateBuilder(v8::Isolate* isolate,
+                                              const char* type_name,
 diff --git a/gin/per_isolate_data.cc b/gin/per_isolate_data.cc
-index 9670f9f904c6c864e82409617ac4c7698c6fc3ef..d1014af4b63da244820ff865a8e824ddf68433a9 100644
+index ee5a798d22be4f471437f3c1ffb2a140c6d84a5f..9c0beb9b0a3b37699bcb3a1555bee3892b51b79c 100644
 --- a/gin/per_isolate_data.cc
 +++ b/gin/per_isolate_data.cc
-@@ -79,8 +79,13 @@ void PerIsolateData::SetObjectTemplate(
+@@ -75,12 +75,39 @@ PerIsolateData* PerIsolateData::From(Isolate* isolate) {
+   return static_cast<PerIsolateData*>(isolate->GetData(kEmbedderNativeGin));
+ }
+ 
++void PerIsolateData::DeprecatedSetObjectTemplate(DeprecatedWrapperInfo* info,
++                                                 Local<ObjectTemplate> templ) {
++  deprecated_object_templates_[info] = Eternal<ObjectTemplate>(isolate_, templ);
++}
++
+ void PerIsolateData::SetObjectTemplate(
+     const WrapperInfo* info,
+     Local<ObjectTemplate> templ) {
    object_templates_[info] = Eternal<ObjectTemplate>(isolate_, templ);
  }
  
--void PerIsolateData::SetFunctionTemplate(DeprecatedWrapperInfo* info,
--                                         Local<FunctionTemplate> templ) {
 +void PerIsolateData::DeprecatedSetFunctionTemplate(
-+    DeprecatedWrapperInfo* info, Local<FunctionTemplate> templ) {
-+  deprecated_function_templates_[info] = Eternal<FunctionTemplate>(isolate_, templ);
++    DeprecatedWrapperInfo* info,
++    Local<FunctionTemplate> templ) {
++  deprecated_function_templates_[info] =
++      Eternal<FunctionTemplate>(isolate_, templ);
 +}
 +
-+void PerIsolateData::SetFunctionTemplate(
-+    const WrapperInfo* info, Local<FunctionTemplate> templ) {
-   function_templates_[info] = Eternal<FunctionTemplate>(isolate_, templ);
- }
- 
-@@ -103,11 +108,22 @@ v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
++void PerIsolateData::SetFunctionTemplate(const WrapperInfo* info,
++                                         Local<FunctionTemplate> templ) {
++  function_templates_[info] = Eternal<FunctionTemplate>(isolate_, templ);
++}
++
++v8::Local<v8::ObjectTemplate> PerIsolateData::DeprecatedGetObjectTemplate(
++    DeprecatedWrapperInfo* info) {
++  DeprecatedObjectTemplateMap::iterator it =
++      deprecated_object_templates_.find(info);
++  if (it == deprecated_object_templates_.end()) {
++    return v8::Local<v8::ObjectTemplate>();
++  }
++  return it->second.Get(isolate_);
++}
++
+ v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
+     const WrapperInfo* info) {
+   ObjectTemplateMap::iterator it = object_templates_.find(info);
+@@ -90,6 +117,25 @@ v8::Local<v8::ObjectTemplate> PerIsolateData::GetObjectTemplate(
    return it->second.Get(isolate_);
  }
  
--v8::Local<v8::FunctionTemplate> PerIsolateData::GetFunctionTemplate(
 +v8::Local<v8::FunctionTemplate> PerIsolateData::DeprecatedGetFunctionTemplate(
-     DeprecatedWrapperInfo* info) {
++    DeprecatedWrapperInfo* info) {
 +  DeprecatedFunctionTemplateMap::iterator it =
 +      deprecated_function_templates_.find(info);
 +  if (it == deprecated_function_templates_.end()) {
@@ -69,15 +159,17 @@ index 9670f9f904c6c864e82409617ac4c7698c6fc3ef..d1014af4b63da244820ff865a8e824dd
 +
 +v8::Local<v8::FunctionTemplate> PerIsolateData::GetFunctionTemplate(
 +    const WrapperInfo* info) {
-   FunctionTemplateMap::iterator it = function_templates_.find(info);
--  if (it == function_templates_.end())
++  FunctionTemplateMap::iterator it = function_templates_.find(info);
 +  if (it == function_templates_.end()) {
-     return v8::Local<v8::FunctionTemplate>();
++    return v8::Local<v8::FunctionTemplate>();
 +  }
-   return it->second.Get(isolate_);
++  return it->second.Get(isolate_);
++}
++
+ void PerIsolateData::AddDisposeObserver(DisposeObserver* observer) {
+   dispose_observers_.AddObserver(observer);
  }
- 
-@@ -125,6 +141,12 @@ void PerIsolateData::NotifyBeforeDispose() {
+@@ -104,6 +150,12 @@ void PerIsolateData::NotifyBeforeDispose() {
    }
  }
  
@@ -91,7 +183,7 @@ index 9670f9f904c6c864e82409617ac4c7698c6fc3ef..d1014af4b63da244820ff865a8e824dd
    for (auto& observer : dispose_observers_) {
      observer.OnDisposed();
 diff --git a/gin/per_isolate_data.h b/gin/per_isolate_data.h
-index 9146df7ec5e65401771f452ed44c63369be1d31f..5ae71c795cc98a885090553177f57deccb8bc546 100644
+index d2b2ce62dc6244b969283c983032c1922ef83e79..3b961ac57bccd14a2284e01a3b800d5fc958f4a4 100644
 --- a/gin/per_isolate_data.h
 +++ b/gin/per_isolate_data.h
 @@ -34,6 +34,10 @@ class GIN_EXPORT PerIsolateData {
@@ -105,35 +197,36 @@ index 9146df7ec5e65401771f452ed44c63369be1d31f..5ae71c795cc98a885090553177f57dec
      // Called just after the isolate has been disposed.
      virtual void OnDisposed() = 0;
    };
-@@ -61,24 +65,29 @@ class GIN_EXPORT PerIsolateData {
+@@ -51,14 +55,37 @@ class GIN_EXPORT PerIsolateData {
+ 
+   static PerIsolateData* From(v8::Isolate* isolate);
+ 
++  // Each isolate is associated with a collection of v8::ObjectTemplates and
++  // v8::FunctionTemplates. Typically these template objects are created
++  // lazily.
++  void DeprecatedSetObjectTemplate(
++      DeprecatedWrapperInfo* info,
++      v8::Local<v8::ObjectTemplate> object_template);
++
    void SetObjectTemplate(const WrapperInfo* info,
                           v8::Local<v8::ObjectTemplate> object_template);
  
--  void SetFunctionTemplate(DeprecatedWrapperInfo* info,
--                           v8::Local<v8::FunctionTemplate> function_template);
 +  void DeprecatedSetFunctionTemplate(
 +      DeprecatedWrapperInfo* info,
 +      v8::Local<v8::FunctionTemplate> function_template);
 +
-+  void SetFunctionTemplate(
-+      const WrapperInfo* info,
-+      v8::Local<v8::FunctionTemplate> function_template);
- 
--  // These are low-level functions for retrieving object or function templates
--  // stored in this object. Because these templates are often created lazily,
--  // most clients should call higher-level functions that know how to populate
--  // these templates if they haven't already been created.
-   v8::Local<v8::ObjectTemplate> DeprecatedGetObjectTemplate(
-       DeprecatedWrapperInfo* info);
- 
++  void SetFunctionTemplate(const WrapperInfo* info,
++                           v8::Local<v8::FunctionTemplate> function_template);
++
++  v8::Local<v8::ObjectTemplate> DeprecatedGetObjectTemplate(
++      DeprecatedWrapperInfo* info);
++
    v8::Local<v8::ObjectTemplate> GetObjectTemplate(const WrapperInfo* info);
  
--  v8::Local<v8::FunctionTemplate> GetFunctionTemplate(
 +  v8::Local<v8::FunctionTemplate> DeprecatedGetFunctionTemplate(
-       DeprecatedWrapperInfo* info);
- 
-+  v8::Local<v8::FunctionTemplate> GetFunctionTemplate(
-+      const WrapperInfo* info);
++      DeprecatedWrapperInfo* info);
++
++  v8::Local<v8::FunctionTemplate> GetFunctionTemplate(const WrapperInfo* info);
 +
    void AddDisposeObserver(DisposeObserver* observer);
    void RemoveDisposeObserver(DisposeObserver* observer);
@@ -142,20 +235,401 @@ index 9146df7ec5e65401771f452ed44c63369be1d31f..5ae71c795cc98a885090553177f57dec
    void NotifyDisposed();
  
    void EnableIdleTasks(std::unique_ptr<V8IdleTaskRunner> idle_task_runner);
-@@ -99,6 +108,8 @@ class GIN_EXPORT PerIsolateData {
+@@ -74,14 +101,23 @@ class GIN_EXPORT PerIsolateData {
+   }
+ 
+  private:
++  typedef std::map<DeprecatedWrapperInfo*, v8::Eternal<v8::ObjectTemplate>>
++      DeprecatedObjectTemplateMap;
    typedef std::map<const WrapperInfo*, v8::Eternal<v8::ObjectTemplate>>
        ObjectTemplateMap;
-   typedef std::map<DeprecatedWrapperInfo*, v8::Eternal<v8::FunctionTemplate>>
++  typedef std::map<DeprecatedWrapperInfo*, v8::Eternal<v8::FunctionTemplate>>
 +      DeprecatedFunctionTemplateMap;
 +  typedef std::map<const WrapperInfo*, v8::Eternal<v8::FunctionTemplate>>
-       FunctionTemplateMap;
++      FunctionTemplateMap;
  
    // PerIsolateData doesn't actually own |isolate_|. Instead, the isolate is
-@@ -107,6 +118,7 @@ class GIN_EXPORT PerIsolateData {
+   // owned by the IsolateHolder, which also owns the PerIsolateData.
+   raw_ptr<v8::Isolate, AcrossTasksDanglingUntriaged> isolate_;
    raw_ptr<v8::ArrayBuffer::Allocator, DanglingUntriaged> allocator_;
-   DeprecatedObjectTemplateMap deprecated_object_templates_;
++  DeprecatedObjectTemplateMap deprecated_object_templates_;
    ObjectTemplateMap object_templates_;
 +  DeprecatedFunctionTemplateMap deprecated_function_templates_;
-   FunctionTemplateMap function_templates_;
++  FunctionTemplateMap function_templates_;
    base::ObserverList<DisposeObserver> dispose_observers_;
    std::shared_ptr<V8ForegroundTaskRunnerBase> task_runner_;
+   std::shared_ptr<V8ForegroundTaskRunnerBase> user_visible_task_runner_;
+diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
+index 6409d04497fe237e6fb0d57c582b9020d003d382..7af83f96cfd6287507472956359564454db71aef 100644
+--- a/gin/public/gin_embedders.h
++++ b/gin/public/gin_embedders.h
+@@ -25,9 +25,13 @@ enum GinEmbedder : uint16_t {
+ };
+ 
+ enum EmbedderDataTag : uint16_t {
++  // kDeprecatedData is used for data that is already not used anymore but still
++  // exists for legacy reasons, e.g. in the implementation of
++  // gin::DeprecatedWrappable.
++  kDeprecatedData,
+   // kDefaultTag can be used by embedders that don't use V8 type tagging, e.g.
+   // because they have their own type tagging system, like PDFium.
+-  kDefaultEmbedderDataTag,
++  kDefaultEmbedderDataTag = kDeprecatedData,
+   kBlinkScriptState,
+   kGinPerContextData,
+ };
+diff --git a/gin/public/wrapper_info.h b/gin/public/wrapper_info.h
+index 34b5f1c30c05152122f23708a1df62f00296fcd6..d80cec1b5f6d045638039aac907811a296b897ba 100644
+--- a/gin/public/wrapper_info.h
++++ b/gin/public/wrapper_info.h
+@@ -13,6 +13,22 @@
+ 
+ namespace gin {
+ 
++// Gin embedder that use their own WrapperInfo-like structs must ensure that
++// the first field is of type GinEmbedderId and has the correct id set. They
++// also should use kWrapperInfoIndex to start their WrapperInfo-like struct
++// and ensure that all objects have kNumberOfInternalFields internal fields.
++
++enum InternalFields {
++  kWrapperInfoIndex,
++  kEncodedValueIndex,
++  kNumberOfInternalFields,
++};
++
++struct GIN_EXPORT DeprecatedWrapperInfo {
++  static DeprecatedWrapperInfo* From(v8::Local<v8::Object> object);
++  const GinEmbedder embedder;
++};
++
+ struct GIN_EXPORT WrapperInfo : v8::Object::WrapperTypeInfo {
+   const WrappablePointerTag pointer_tag;
+ };
+diff --git a/gin/wrappable.cc b/gin/wrappable.cc
+index 4baa19667e9002a2917094ebed587f884f4f457a..6a975025bc1ba6e97892032a9f57471f675a99ff 100644
+--- a/gin/wrappable.cc
++++ b/gin/wrappable.cc
+@@ -52,6 +52,7 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
+     CHECK(!templ.IsEmpty());
+     data->SetObjectTemplate(info, templ);
+   }
++  CHECK_EQ(kNumberOfInternalFields, templ->InternalFieldCount());
+   v8::Local<v8::Object> wrapper;
+   // |wrapper| may be empty in some extreme cases, e.g., when
+   // Object.prototype.constructor is overwritten.
+@@ -59,6 +60,12 @@ v8::MaybeLocal<v8::Object> WrappableBase::GetWrapper(v8::Isolate* isolate) {
+     return {};
+   }
+ 
++  // TODO(345640553): Delete the internal fields once DeprecatedWrappable does
++  // not exist anymore.
++  wrapper->SetAlignedPointerInInternalField(kWrapperInfoIndex, nullptr,
++                                            kDeprecatedData);
++  wrapper->SetAlignedPointerInInternalField(kEncodedValueIndex, nullptr,
++                                            kDeprecatedData);
+ 
+   AssociateWithWrapper(isolate, wrapper);
+   return wrapper;
+@@ -70,4 +77,102 @@ void WrappableBase::SetWrapper(v8::Isolate* isolate,
+   AssociateWithWrapper(isolate, wrapper);
+ }
+ 
++DeprecatedWrappableBase::DeprecatedWrappableBase() = default;
++
++DeprecatedWrappableBase::~DeprecatedWrappableBase() {
++  wrapper_.Reset();
++}
++
++ObjectTemplateBuilder DeprecatedWrappableBase::GetObjectTemplateBuilder(
++    v8::Isolate* isolate) {
++  return ObjectTemplateBuilder(isolate, GetTypeName());
++}
++
++const char* DeprecatedWrappableBase::GetTypeName() {
++  return nullptr;
++}
++
++void DeprecatedWrappableBase::FirstWeakCallback(
++    const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
++  DeprecatedWrappableBase* wrappable = data.GetParameter();
++  wrappable->dead_ = true;
++  wrappable->wrapper_.Reset();
++  data.SetSecondPassCallback(SecondWeakCallback);
++}
++
++void DeprecatedWrappableBase::SecondWeakCallback(
++    const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data) {
++  DeprecatedWrappableBase* wrappable = data.GetParameter();
++  delete wrappable;
++}
++
++v8::MaybeLocal<v8::Object> DeprecatedWrappableBase::GetWrapperImpl(
++    v8::Isolate* isolate,
++    DeprecatedWrapperInfo* info) {
++  if (!wrapper_.IsEmpty()) {
++    return v8::MaybeLocal<v8::Object>(
++        v8::Local<v8::Object>::New(isolate, wrapper_));
++  }
++
++  if (dead_) {
++    return v8::MaybeLocal<v8::Object>();
++  }
++
++  PerIsolateData* data = PerIsolateData::From(isolate);
++  v8::Local<v8::ObjectTemplate> templ = data->DeprecatedGetObjectTemplate(info);
++  if (templ.IsEmpty()) {
++    templ = GetObjectTemplateBuilder(isolate).Build();
++    CHECK(!templ.IsEmpty());
++    data->DeprecatedSetObjectTemplate(info, templ);
++  }
++  CHECK_EQ(kNumberOfInternalFields, templ->InternalFieldCount());
++  v8::Local<v8::Object> wrapper;
++  // |wrapper| may be empty in some extreme cases, e.g., when
++  // Object.prototype.constructor is overwritten.
++  if (!templ->NewInstance(isolate->GetCurrentContext()).ToLocal(&wrapper)) {
++    // The current wrappable object will be no longer managed by V8. Delete this
++    // now.
++    delete this;
++    return v8::MaybeLocal<v8::Object>(wrapper);
++  }
++
++  wrapper->SetAlignedPointerInInternalField(kWrapperInfoIndex, info,
++                                            kDeprecatedData);
++  wrapper->SetAlignedPointerInInternalField(kEncodedValueIndex, this,
++                                            kDeprecatedData);
++  wrapper_.Reset(isolate, wrapper);
++  wrapper_.SetWeak(this, FirstWeakCallback, v8::WeakCallbackType::kParameter);
++  return v8::MaybeLocal<v8::Object>(wrapper);
++}
++
++namespace internal {
++
++void* FromV8Impl(v8::Isolate* isolate,
++                 v8::Local<v8::Value> val,
++                 DeprecatedWrapperInfo* wrapper_info) {
++  if (!val->IsObject()) {
++    return nullptr;
++  }
++  v8::Local<v8::Object> obj = v8::Local<v8::Object>::Cast(val);
++  DeprecatedWrapperInfo* info = DeprecatedWrapperInfo::From(obj);
++
++  // If this fails, the object is not managed by Gin. It is either a normal JS
++  // object that's not wrapping any external C++ object, or it is wrapping some
++  // C++ object, but that object isn't managed by Gin (maybe Blink).
++  if (!info) {
++    return nullptr;
++  }
++
++  // If this fails, the object is managed by Gin, but it's not wrapping an
++  // instance of the C++ class associated with wrapper_info.
++  if (info != wrapper_info) {
++    return nullptr;
++  }
++
++  return obj->GetAlignedPointerFromInternalField(kEncodedValueIndex,
++                                                 kDeprecatedData);
++}
++
++}  // namespace internal
++
+ }  // namespace gin
+diff --git a/gin/wrappable.h b/gin/wrappable.h
+index d6e34c5155434e8d6330fe6a3912aaebf7c15955..9b93715ec88ebbd3dd58eb253468f5b8dd8aff51 100644
+--- a/gin/wrappable.h
++++ b/gin/wrappable.h
+@@ -63,6 +63,9 @@ static_assert(sizeof(v8::CppHeapPointerTag) == sizeof(WrappablePointerTag),
+               "which is used for subclasses of gin::Wrappable. They should "
+               "therefore have the same underlying type.");
+ 
++GIN_EXPORT void* FromV8Impl(v8::Isolate* isolate,
++                            v8::Local<v8::Value> val,
++                            DeprecatedWrapperInfo* info);
+ 
+ }  // namespace internal
+ 
+@@ -162,6 +165,75 @@ struct Converter<T*> {
+   }
+ };
+ 
++// Non-template base class to share code between templates instances.
++class GIN_EXPORT DeprecatedWrappableBase {
++ public:
++  DeprecatedWrappableBase(const DeprecatedWrappableBase&) = delete;
++  DeprecatedWrappableBase& operator=(const DeprecatedWrappableBase&) = delete;
++
++ protected:
++  DeprecatedWrappableBase();
++  virtual ~DeprecatedWrappableBase();
++
++  // Overrides of this method should be declared final and not overridden again.
++  virtual ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate);
++
++  // Returns a readable type name that will be used in surfacing errors. The
++  // default implementation returns nullptr, which results in a generic error.
++  virtual const char* GetTypeName();
++
++  v8::MaybeLocal<v8::Object> GetWrapperImpl(
++      v8::Isolate* isolate,
++      DeprecatedWrapperInfo* wrapper_info);
++
++ private:
++  static void FirstWeakCallback(
++      const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data);
++  static void SecondWeakCallback(
++      const v8::WeakCallbackInfo<DeprecatedWrappableBase>& data);
++
++  bool dead_ = false;
++  v8::Global<v8::Object> wrapper_;  // Weak
++};
++
++template <typename T>
++class DeprecatedWrappable : public DeprecatedWrappableBase {
++ public:
++  DeprecatedWrappable(const DeprecatedWrappable&) = delete;
++  DeprecatedWrappable& operator=(const DeprecatedWrappable&) = delete;
++
++  // Retrieve (or create) the v8 wrapper object corresponding to this object.
++  v8::MaybeLocal<v8::Object> GetWrapper(v8::Isolate* isolate) {
++    return GetWrapperImpl(isolate, &T::kWrapperInfo);
++  }
++
++ protected:
++  DeprecatedWrappable() = default;
++  ~DeprecatedWrappable() override = default;
++};
++
++// This converter handles any subclass of DeprecatedWrappable.
++template <typename T>
++  requires(std::is_convertible_v<T*, DeprecatedWrappableBase*>)
++struct Converter<T*> {
++  static v8::MaybeLocal<v8::Value> ToV8(v8::Isolate* isolate, T* val) {
++    if (val == nullptr) {
++      return v8::Null(isolate);
++    }
++    v8::Local<v8::Object> wrapper;
++    if (!val->GetWrapper(isolate).ToLocal(&wrapper)) {
++      return v8::MaybeLocal<v8::Value>();
++    }
++    return v8::MaybeLocal<v8::Value>(wrapper);
++  }
++
++  static bool FromV8(v8::Isolate* isolate, v8::Local<v8::Value> val, T** out) {
++    *out = static_cast<T*>(static_cast<DeprecatedWrappableBase*>(
++        internal::FromV8Impl(isolate, val, &T::kWrapperInfo)));
++    return *out != NULL;
++  }
++};
++
+ }  // namespace gin
+ 
+ #endif  // GIN_WRAPPABLE_H_
+diff --git a/gin/wrapper_info.cc b/gin/wrapper_info.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..a0203babac98a3182a2aa71e287a0c907194ad59
+--- /dev/null
++++ b/gin/wrapper_info.cc
+@@ -0,0 +1,20 @@
++// Copyright 2013 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "gin/public/wrapper_info.h"
++#include "v8/include/v8-object.h"
++
++namespace gin {
++
++DeprecatedWrapperInfo* DeprecatedWrapperInfo::From(
++    v8::Local<v8::Object> object) {
++  if (object->InternalFieldCount() != kNumberOfInternalFields)
++    return NULL;
++  DeprecatedWrapperInfo* info = static_cast<DeprecatedWrapperInfo*>(
++      object->GetAlignedPointerFromInternalField(kWrapperInfoIndex,
++                                                 kDeprecatedData));
++  return info->embedder == kEmbedderNativeGin ? info : NULL;
++}
++
++}  // namespace gin
+diff --git a/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.cc b/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.cc
+index dd47a7a65ed147411e06617ed04b9c47c8335129..50f4a01cfaeca29c29f3edf773c3c4297a0f51c4 100644
+--- a/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.cc
++++ b/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.cc
+@@ -74,6 +74,13 @@ bool V8DOMWrapper::IsWrapper(v8::Isolate* isolate,
+     return false;
+   }
+ 
++  // TODO(b/328117814): this works as long as other embedders within the
++  // renderer process are not using new wrappers. We will need to come up
++  // with a friend-or-foe identification when we switch gin to new wrappers.
++  if (WrapperTypeInfo::HasLegacyInternalFieldsSet(object)) {
++    return false;
++  }
++
+   const WrapperTypeInfo* untrusted_wrapper_type_info =
+       ToWrapperTypeInfo(object);
+   V8PerIsolateData* per_isolate_data = V8PerIsolateData::From(isolate);
+diff --git a/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h b/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h
+index f67162deea7f852c59e90fa47a24de454686ed5d..405a88ce9b7d761792b6e6344ae8310fec05dc43 100644
+--- a/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h
++++ b/third_party/blink/renderer/platform/bindings/v8_dom_wrapper.h
+@@ -105,6 +105,7 @@ inline void V8DOMWrapper::SetNativeInfo(
+     v8::Local<v8::Object> wrapper,
+     ScriptWrappable* wrappable) {
+   DCHECK(wrappable);
++  DCHECK(!WrapperTypeInfo::HasLegacyInternalFieldsSet(wrapper));
+   v8::Object::Wrap(isolate, wrapper, wrappable,
+                    ToWrapperTypeInfo(wrappable)->this_tag);
+ }
+@@ -121,6 +122,7 @@ inline void V8DOMWrapper::SetNativeInfoForGlobal(v8::Isolate* isolate,
+                                                  v8::Local<v8::Object> wrapper,
+                                                  ScriptWrappable* wrappable) {
+   DCHECK(wrappable);
++  DCHECK(!WrapperTypeInfo::HasLegacyInternalFieldsSet(wrapper));
+   const WrapperTypeInfo* wrapper_type_info = ToWrapperTypeInfo(wrappable);
+   v8::Object::WrapGlobal(isolate, wrapper, wrappable,
+                          wrapper_type_info->this_tag);
+diff --git a/third_party/blink/renderer/platform/bindings/wrapper_type_info.cc b/third_party/blink/renderer/platform/bindings/wrapper_type_info.cc
+index 0cdc51cbe448a0027f2fa4404323ccd36199606e..913752216e8ce77e074a8bf91dca307d0bd77a4c 100644
+--- a/third_party/blink/renderer/platform/bindings/wrapper_type_info.cc
++++ b/third_party/blink/renderer/platform/bindings/wrapper_type_info.cc
+@@ -12,9 +12,9 @@
+ namespace blink {
+ 
+ static_assert(offsetof(struct WrapperTypeInfo, type_id) ==
+-                  offsetof(struct gin::WrapperInfo, type_id),
+-              "offset of WrapperTypeInfo.type_id must be the same as "
+-              "gin::WrapperInfo.type_id");
++                  offsetof(struct gin::DeprecatedWrapperInfo, embedder),
++              "offset of WrapperTypeInfo.ginEmbedder must be the same as "
++              "gin::DeprecatedWrapperInfo.embedder");
+ 
+ v8::Local<v8::Template> WrapperTypeInfo::GetV8ClassTemplate(
+     v8::Isolate* isolate,
+@@ -54,6 +54,8 @@ const WrapperTypeInfo* ToWrapperTypeInfo(const ScriptWrappable* wrappable) {
+ const WrapperTypeInfo* ToWrapperTypeInfo(v8::Local<v8::Object> wrapper) {
+   const v8::Object::Wrappable* wrappable =
+       ToAnyWrappable(v8::Isolate::GetCurrent(), wrapper);
++  // It's either us or legacy embedders
++  DCHECK(!wrappable || !WrapperTypeInfo::HasLegacyInternalFieldsSet(wrapper));
+   if (!wrappable) {
+     return nullptr;
+   }
+diff --git a/third_party/blink/renderer/platform/bindings/wrapper_type_info.h b/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
+index e2d9ae67fcd873f676761134948af78ad2ed04e2..2c2b2dde5112648033edee4e12a0db30962f5a9e 100644
+--- a/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
++++ b/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
+@@ -188,6 +188,15 @@ struct PLATFORM_EXPORT WrapperTypeInfo final
+         interface_template, bindings::V8InterfaceBridgeBase::FeatureSelector());
+   }
+ 
++  static bool HasLegacyInternalFieldsSet(v8::Local<v8::Object> object) {
++    for (int i = 0, n = object->InternalFieldCount(); i < n; ++i) {
++      if (object->GetAlignedPointerFromInternalField(i, gin::kDeprecatedData)) {
++        return true;
++      }
++    }
++    return false;
++  }
++
+   bindings::V8InterfaceBridgeBase::InstallInterfaceTemplateFuncType
+       install_interface_template_func;
+   bindings::V8InterfaceBridgeBase::InstallContextDependentPropertiesFuncType

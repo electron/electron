@@ -13,7 +13,7 @@
 #include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gfx/x/xproto.h"
 
-// Advertises our menu bars to Unity.
+// Advertises our menu bars to desktops that consume the AppMenu D-Bus service.
 //
 // GlobalMenuBarX11 is responsible for managing the DbusmenuServer for each
 // x11::Window. We need a separate object to own the dbus channel to

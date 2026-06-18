@@ -145,23 +145,16 @@ void ServiceWorkerMain::Send(v8::Isolate* isolate,
 }
 
 void ServiceWorkerMain::InvalidateVersionInfo() {
-  if (version_info_ != nullptr) {
-    version_info_.reset();
-  }
+  version_info_.reset();
 
   if (version_destroyed_)
     return;
 
-  auto version_info = GetLiveVersionInfo(service_worker_context_, version_id_);
-  if (version_info) {
-    version_info_ =
-        std::make_unique<content::ServiceWorkerVersionBaseInfo>(*version_info);
-  } else {
-    // When ServiceWorkerContextCore::RemoveLiveVersion is called, it posts a
-    // task to notify that the service worker has stopped. At this point, the
-    // live version will no longer exist.
+  version_info_ = GetLiveVersionInfo(service_worker_context_, version_id_);
+
+  // if there's no version info, mark the version as destroyed
+  if (!version_info_)
     Destroy();
-  }
 }
 
 void ServiceWorkerMain::OnRunningStatusChanged(

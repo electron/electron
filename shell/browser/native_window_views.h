@@ -41,7 +41,6 @@ namespace electron {
 #if BUILDFLAG(IS_LINUX)
 class NativeFrameViewLinux;
 class GlobalMenuBarX11;
-class LinuxFrameLayout;
 #endif
 
 #if BUILDFLAG(SUPPORTS_OZONE_X11)
@@ -203,19 +202,22 @@ class NativeWindowViews : public NativeWindow,
   bool has_thick_frame() const { return thick_frame_; }
 #endif
 
-  SkColor overlay_button_color() const { return overlay_button_color_; }
-  SkColor overlay_symbol_color() const { return overlay_symbol_color_; }
+  std::optional<SkColor> overlay_button_color() const {
+    return overlay_button_color_;
+  }
+  std::optional<SkColor> overlay_symbol_color() const {
+    return overlay_symbol_color_;
+  }
 
 #if BUILDFLAG(IS_LINUX)
-  LinuxFrameLayout* GetLinuxFrameLayout();
   views::FrameViewLinux* GetFrameViewLinux() const;
 #endif
 
  private:
-  void set_overlay_button_color(SkColor color) {
+  void set_overlay_button_color(std::optional<SkColor> color) {
     overlay_button_color_ = color;
   }
-  void set_overlay_symbol_color(SkColor color) {
+  void set_overlay_symbol_color(std::optional<SkColor> color) {
     overlay_symbol_color_ = color;
   }
 
@@ -295,8 +297,13 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // The color to use as the theme and symbol colors respectively for WCO.
-  SkColor overlay_button_color_ = SkColor();
-  SkColor overlay_symbol_color_ = SkColor();
+  std::optional<SkColor> overlay_button_color_;
+  std::optional<SkColor> overlay_symbol_color_;
+
+  // The last background color set via SetBackgroundColor(). Tracked because the
+  // root view does not always reflect it (e.g. it is transparent for CSD
+  // windows on Linux).
+  SkColor background_color_ = SK_ColorTRANSPARENT;
 
 #if BUILDFLAG(IS_WIN)
 
@@ -312,6 +319,8 @@ class NativeWindowViews : public NativeWindow,
 
   // Whether to show the WS_THICKFRAME style.
   bool thick_frame_ = true;
+
+  bool content_protected_ = false;
 
   // The bounds of window before maximize/fullscreen.
   gfx::Rect restore_bounds_;

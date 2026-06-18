@@ -16,7 +16,6 @@ namespace electron {
 
 namespace {
 
-const int kResizeInsideBoundsSize = 5;
 const int kResizeAreaCornerSize = 16;
 
 }  // namespace
@@ -118,12 +117,6 @@ gfx::Size FramelessView::GetMaximumSize() const {
     return gfx::Size();
   return window_->GetMaximumSize();
 }
-
-#if BUILDFLAG(IS_LINUX)
-LinuxFrameLayout* FramelessView::GetLinuxFrameLayout() const {
-  return nullptr;
-}
-#endif
 
 BEGIN_METADATA(FramelessView)
 END_METADATA

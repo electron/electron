@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 #define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 
+#include <optional>
+
 #include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
@@ -160,7 +162,7 @@ class WebContentsZoomController
   int old_process_id_ = -1;
   int old_view_id_ = -1;
 
-  std::unique_ptr<ZoomChangedEventData> event_data_;
+  std::optional<ZoomChangedEventData> event_data_;
 
   raw_ptr<WebContentsZoomController> embedder_zoom_controller_ = nullptr;
 

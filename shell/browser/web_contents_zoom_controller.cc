@@ -98,8 +98,8 @@ bool WebContentsZoomController::SetZoomLevel(double level) {
       content::HostZoomMap::GetForWebContents(web_contents());
   DCHECK(zoom_map);
   DCHECK(!event_data_);
-  event_data_ = std::make_unique<ZoomChangedEventData>(
-      web_contents(), GetZoomLevel(), level, false /* temporary */, zoom_mode_);
+  event_data_.emplace(web_contents(), GetZoomLevel(), level,
+                      false /* temporary */, zoom_mode_);
 
   content::GlobalRenderFrameHostId rfh_id =
       web_contents()->GetPrimaryMainFrame()->GetGlobalId();
@@ -170,9 +170,8 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
   double original_zoom_level = GetZoomLevel();
 
   DCHECK(!event_data_);
-  event_data_ = std::make_unique<ZoomChangedEventData>(
-      web_contents(), original_zoom_level, original_zoom_level,
-      false /* temporary */, new_mode);
+  event_data_.emplace(web_contents(), original_zoom_level, original_zoom_level,
+                      false /* temporary */, new_mode);
 
   switch (new_mode) {
     case ZOOM_MODE_DEFAULT: {
@@ -274,8 +273,8 @@ void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
   double new_zoom_level = zoom_map->GetZoomLevelForHostAndScheme(
       url.GetScheme(), net::GetHostOrSpecFromURL(url));
 
-  event_data_ = std::make_unique<ZoomChangedEventData>(
-      web_contents(), old_zoom_level, new_zoom_level, false, ZOOM_MODE_DEFAULT);
+  event_data_.emplace(web_contents(), old_zoom_level, new_zoom_level, false,
+                      ZOOM_MODE_DEFAULT);
 
   // The call to ClearTemporaryZoomLevel() doesn't generate any events from
   // HostZoomMap, but the call to UpdateState() at the end of

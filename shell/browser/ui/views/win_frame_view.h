@@ -36,6 +36,7 @@ class WinFrameView : public FramelessView {
   gfx::Size GetMaximumSize() const override;
 
   // views::FramelessView:
+  int ResizingBorderHitTest(const gfx::Point& point) override;
   gfx::Insets RestoredFrameBorderInsets() const override;
 
   WinCaptionButtonContainer* caption_button_container() {

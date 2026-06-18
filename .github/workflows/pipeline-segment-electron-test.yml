@@ -122,6 +122,11 @@ jobs:
     - name: Turn off the unexpectedly quit dialog on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       run: defaults write com.apple.CrashReporter DialogType server
+
+    - name: Turn off the analytics setup assistant prompts on macOS
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: sudo su root -c "killall 'Setup Assistant'" || true
+
     - name: Turn off the reopen windows prompt on macOS
       if: ${{ inputs.target-platform == 'macos' }}
       # Tests spawn Electron child apps and SIGINT them; after enough abnormal
@@ -135,7 +140,7 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       run: sudo xcode-select --switch /Applications/Xcode_16.4.app
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
       with:
         path: src/electron
         fetch-depth: 0

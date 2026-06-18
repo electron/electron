@@ -38,6 +38,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/js2c_bundle_ids.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -51,6 +52,7 @@
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
 #include "third_party/electron_node/src/module_wrap.h"
+#include "third_party/electron_node/src/node_snapshot_builder.h"
 #include "v8/include/v8-statistics.h"
 
 #if !IS_MAS_BUILD()
@@ -669,11 +671,15 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
       args.push_back(option);
   }
 
-  // We need to disable Node.js' fetch implementation to prevent
-  // conflict with Blink's in renderer and worker processes.
+  // Node's setupEventsource() in lib/internal/process/pre_execution.js
+  // deletes globalThis.EventSource when --experimental-eventsource is not
+  // set, and unlike its sibling setup functions it does not check
+  // noBrowserGlobals. Pass the flag so Blink's EventSource is left alone;
+  // Node's own undici EventSource is never installed under
+  // kNoBrowserGlobals so there is no conflict.
   if (browser_env_ == BrowserEnvironment::kRenderer ||
       browser_env_ == BrowserEnvironment::kWorker) {
-    args.push_back("--no-experimental-fetch");
+    args.push_back("--experimental-eventsource");
   }
 
   return args;
@@ -752,8 +758,13 @@ void NodeBindings::Initialize(v8::Isolate* const isolate,
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
-  gin_helper::internal::Event::GetConstructor(
-      isolate, context, &gin_helper::internal::Event::kWrapperInfo);
+  // When consuming the embedded Node startup snapshot, the context is empty
+  // here (it comes from Context::FromSnapshot inside CreateEnvironment); the
+  // Event constructor cache is populated lazily on first use in that path.
+  if (!context.IsEmpty()) {
+    gin_helper::internal::Event::GetConstructor(
+        isolate, context, &gin_helper::internal::Event::kWrapperInfo);
+  }
 
   g_is_initialized = true;
 }
@@ -783,39 +794,59 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       break;
   }
 
-  gin_helper::Dictionary global(isolate, context->Global());
+  // Electron: when consuming the embedded Node startup snapshot, the caller
+  // passed an empty context -- the main context is materialized by
+  // node::CreateEnvironment from the snapshot and read back here.
+  const bool from_snapshot = context.IsEmpty();
 
-  if (browser_env_ == BrowserEnvironment::kBrowser) {
-    const std::vector<std::string> search_paths = {"app.asar", "app",
-                                                   "default_app.asar"};
-    const std::vector<std::string> app_asar_search_paths = {"app.asar"};
-    context->Global()->SetPrivate(
-        context,
-        v8::Private::ForApi(
-            isolate,
-            gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
-        gin::ConvertToV8(isolate,
-                         electron::fuses::IsOnlyLoadAppFromAsarEnabled()
-                             ? app_asar_search_paths
-                             : search_paths));
-    context->Global()->SetPrivate(
-        context,
-        v8::Private::ForApi(
-            isolate, gin::ConvertToV8(isolate, "appSearchPathsOnlyLoadASAR")
-                         .As<v8::String>()),
-        gin::ConvertToV8(isolate,
-                         electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
-  }
+  // Context-dependent setup that must wait until the snapshot main context
+  // exists when from_snapshot is true.
+  auto set_up_context = [&](v8::Local<v8::Context> ctx,
+                            node::IsolateData* iso_data) {
+    if (browser_env_ == BrowserEnvironment::kBrowser) {
+      const std::vector<std::string> search_paths = {"app.asar", "app",
+                                                     "default_app.asar"};
+      const std::vector<std::string> app_asar_search_paths = {"app.asar"};
+      ctx->Global()->SetPrivate(
+          ctx,
+          v8::Private::ForApi(
+              isolate,
+              gin::ConvertToV8(isolate, "appSearchPaths").As<v8::String>()),
+          gin::ConvertToV8(isolate,
+                           electron::fuses::IsOnlyLoadAppFromAsarEnabled()
+                               ? app_asar_search_paths
+                               : search_paths));
+      ctx->Global()->SetPrivate(
+          ctx,
+          v8::Private::ForApi(
+              isolate, gin::ConvertToV8(isolate, "appSearchPathsOnlyLoadASAR")
+                           .As<v8::String>()),
+          gin::ConvertToV8(isolate,
+                           electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
+    }
+    ctx->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
+                                         static_cast<void*>(iso_data),
+                                         v8::kEmbedderDataTypeTagDefault);
+  };
 
   std::string init_script = "electron/js2c/" + process_type + "_init";
 
   args.insert(args.begin() + 1, init_script);
 
-  auto* isolate_data = node::CreateIsolateData(isolate, uv_loop_, platform);
+  // The Node startup snapshot's per-isolate data (templates, primordials)
+  // is fed to CreateIsolateData so the bootstrap is deserialized.
+  auto snapshot_wrapper = from_snapshot
+                              ? node::SnapshotBuilder::GetEmbeddedSnapshotData()
+                                    ->AsEmbedderWrapper()
+                              : node::EmbedderSnapshotData::Pointer{};
+  auto* isolate_data =
+      node::CreateIsolateData(isolate, uv_loop_, platform,
+                              /*allocator=*/nullptr, snapshot_wrapper.get());
   isolate_data->max_young_gen_size = max_young_generation_size;
-  context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
-                                           static_cast<void*>(isolate_data),
-                                           v8::kEmbedderDataTypeTagDefault);
+
+  if (!from_snapshot) {
+    set_up_context(context, isolate_data);
+  }
 
   uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                        node::EnvironmentFlags::kHideConsoleWindows |
@@ -828,10 +859,11 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
     // We also avoid overriding globals like setImmediate, clearImmediate
-    // queueMicrotask etc during the bootstrap phase of Node.js
-    // for processes that already have these defined by DOM.
-    // Check //third_party/electron_node/lib/internal/bootstrap/node.js
-    // for the list of overrides on globalThis.
+    // queueMicrotask, fetch, Request, Response etc during the bootstrap phase
+    // of Node.js for processes that already have these defined by DOM.
+    // Check //third_party/electron_node/lib/internal/bootstrap/node.js and
+    // //third_party/electron_node/lib/internal/bootstrap/web/* for the list
+    // of overrides on globalThis.
     env_flags |= node::EnvironmentFlags::kNoBrowserGlobals |
                  node::EnvironmentFlags::kNoCreateInspector;
   }
@@ -847,6 +879,26 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
       exec_args, static_cast<node::EnvironmentFlags::Flags>(env_flags),
       process_type);
   DCHECK(env);
+
+  // When consuming the snapshot, the main context was deserialized inside
+  // node::CreateEnvironment and was not entered yet -- enter it for the
+  // rest of this function (process-object setup needs a current context).
+  // The persistent context Enter() happens in electron_browser_main_parts.cc
+  // after this returns.
+  std::optional<v8::Context::Scope> snapshot_context_scope;
+  if (from_snapshot) {
+    context = env->context();
+    DCHECK(!context.IsEmpty());
+    snapshot_context_scope.emplace(context);
+    set_up_context(context, isolate_data);
+    // The eager Event-constructor cache warm-up in Initialize() was skipped in
+    // the snapshot path because no context existed yet. Do it now that the
+    // snapshot's main context is available -- the Event ObjectTemplate (which
+    // carries preventDefault/defaultPrevented) is only ever populated by
+    // GetConstructor, so without this every native gin event is missing them.
+    gin_helper::internal::Event::GetConstructor(
+        isolate, context, &gin_helper::internal::Event::kWrapperInfo);
+  }
 
   node::IsolateSettings is;
 
@@ -911,6 +963,18 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
         node::IsolateSettingsFlags::SHOULD_NOT_SET_PREPARE_STACK_TRACE_CALLBACK;
   }
 
+  if (from_snapshot) {
+    // node::CreateEnvironment already registered the per-isolate message
+    // listener while deserializing the snapshot (SetIsolateErrorHandlers in
+    // node's src/api/environment.cc, taken only on the snapshot path).
+    // Message listeners are additive, so letting SetIsolateUpForNode add it
+    // again would deliver every uncaught error -- and the resulting
+    // uncaughtException -- twice. Keep the snapshot's listener and skip the
+    // duplicate; the custom fatal/OOM handlers above are setters and still
+    // take effect.
+    is.flags &= ~node::IsolateSettingsFlags::MESSAGE_LISTENER_WITH_ERROR_LEVEL;
+  }
+
   node::SetIsolateUpForNode(isolate, is);
   isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
   isolate->SetHostImportModuleWithPhaseDynamicallyCallback(
@@ -963,6 +1027,13 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {
+  // Feed Electron's build-time js2c cache for the electron/js2c/* framework
+  // bundles (browser_init etc.). When booting from the Node startup snapshot
+  // these ids may already be present (Environment::Deserialize loads the
+  // caches node_mksnapshot embedded for the same bundles); RefreshCodeCache
+  // uses insert_or_assign, so the build-time entries supersede them while the
+  // node-internal entries are kept. Harmless when bootstrapped from scratch.
+  electron::util::FeedEnvironmentCodeCache(env);
   node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "loaded");
 }
@@ -1131,12 +1202,11 @@ void OnNodePreload(node::Environment* env,
   }
 
   // Execute lib/node/init.ts.
-  v8::LocalVector<v8::String> bundle_params(
-      env->isolate(), {node::FIXED_ONE_BYTE_STRING(env->isolate(), "process"),
-                       node::FIXED_ONE_BYTE_STRING(env->isolate(), "require")});
+  v8::LocalVector<v8::String> bundle_params =
+      js2c::MakeBundleParams(env->isolate(), js2c::kNodeInitParams);
   v8::LocalVector<v8::Value> bundle_args(env->isolate(), {process, require});
   electron::util::CompileAndCall(env->isolate(), env->context(),
-                                 "electron/js2c/node_init", &bundle_params,
+                                 js2c::kNodeInitId, &bundle_params,
                                  &bundle_args);
 }
 

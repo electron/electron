@@ -15,7 +15,7 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 75f21bf61e8d5cfed2f897088f1f8c50dca313fc..d29b5e2ca76d4eb973c36468ad4877ea78eec8c8 100644
+index 58cc571ea3ff50eacff60688bc13226ad80815be..3de3d0f8f08d6fd9fd15006ff73b2a2e529f96ff 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
 @@ -58,7 +58,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
@@ -37,7 +37,7 @@ index 75f21bf61e8d5cfed2f897088f1f8c50dca313fc..d29b5e2ca76d4eb973c36468ad4877ea
    content::PermissionController* permission_controller =
        web_contents->GetBrowserContext()->GetPermissionController();
  
-@@ -178,19 +179,31 @@ void MediaStreamDevicesController::RequestPermissions(
+@@ -179,19 +180,31 @@ void MediaStreamDevicesController::RequestPermissions(
        requested_audio_capture_device_ids;
    permission_request_description.requested_video_capture_device_ids =
        requested_video_capture_device_ids;
@@ -77,7 +77,7 @@ index 75f21bf61e8d5cfed2f897088f1f8c50dca313fc..d29b5e2ca76d4eb973c36468ad4877ea
  }
  
  MediaStreamDevicesController::~MediaStreamDevicesController() {
-@@ -441,6 +454,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -443,6 +456,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      return false;
    }
  
@@ -85,7 +85,7 @@ index 75f21bf61e8d5cfed2f897088f1f8c50dca313fc..d29b5e2ca76d4eb973c36468ad4877ea
    // TODO(raymes): This function wouldn't be needed if
    // PermissionManager::RequestPermissions returned a denial reason.
    content::PermissionResult result =
-@@ -454,6 +468,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -456,6 +470,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      DCHECK_EQ(blink::mojom::PermissionStatus::DENIED, result.status);
      return true;
    }

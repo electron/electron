@@ -15,6 +15,7 @@
 #include <vector>
 
 #include "base/base64.h"
+#include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/flat_set.h"
 #include "base/containers/id_map.h"
@@ -83,6 +84,7 @@
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "media/base/mime_util.h"
+#include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -110,6 +112,9 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
+#include "shell/browser/preload_code_cache.h"
+#include "shell/browser/preload_script.h"
+#include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -123,6 +128,7 @@
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/api/electron_bindings.h"
+#include "shell/common/asar/asar_util.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/base_converter.h"
@@ -2052,11 +2058,24 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::PrimaryMainFrameRenderProcessGone(
     base::TerminationStatus status) {
+  // This fires while RenderProcessHostImpl is still notifying observers of
+  // the process death. Emit asynchronously so app code (e.g. a synchronous
+  // reload() in the handler) can't re-launch the renderer from inside that
+  // loop, which trips a CHECK in extensions::RendererStartupHelper. The exit
+  // code is captured now because a navigation in the interim could reset it.
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&WebContents::EmitRenderProcessGone,
+                                weak_factory_.GetWeakPtr(), status,
+                                web_contents()->GetCrashedErrorCode()));
+}
+
+void WebContents::EmitRenderProcessGone(base::TerminationStatus status,
+                                        int exit_code) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
-  details.Set("exitCode", web_contents()->GetCrashedErrorCode());
+  details.Set("exitCode", exit_code);
   Emit("render-process-gone", details);
 }
 
@@ -2211,7 +2230,7 @@ void WebContents::DraggableRegionsChanged(
     return;
   }
 
-  draggable_region_ = DraggableRegionsToSkRegion(regions);
+  draggable_region_.emplace(DraggableRegionsToSkRegion(regions));
 }
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -2228,7 +2247,9 @@ void WebContents::PrintCrossProcessSubframe(
 #endif
 
 SkRegion* WebContents::draggable_region() {
-  return g_disable_draggable_regions ? nullptr : draggable_region_.get();
+  return g_disable_draggable_regions || !draggable_region_
+             ? nullptr
+             : &*draggable_region_;
 }
 
 void WebContents::DidStartNavigation(
@@ -2243,10 +2264,85 @@ void WebContents::DidRedirectNavigation(
   EmitNavigationEvent("did-redirect-navigation", navigation_handle);
 }
 
+// Pushes preload contents + process.env + helperExecPath over an associated
+// channel ordered before CommitNavigation, so the renderer never has to ask.
+void WebContents::MaybeSendRendererStartupData(
+    content::NavigationHandle* navigation_handle) {
+  if (!WebContentsPreferences::ShouldUseSandbox(web_contents()))
+    return;
+  // May be null for a WebContents that never went through a
+  // BrowserWindow/webContents constructor (extension pages, devtools); such a
+  // WebContents has no per-WC preload but still gets session preloads + env.
+  auto* web_prefs = WebContentsPreferences::From(web_contents());
+
+  // Match RendererClientBase::ShouldLoadPreload() — only push for documents
+  // that will actually compile the sandbox bundle.
+  const GURL& url = navigation_handle->GetURL();
+  bool main_frame = navigation_handle->IsInMainFrame();
+  bool allow_subframes =
+      web_prefs && web_prefs->AllowsNodeIntegrationInSubFrames();
+  bool is_devtools_like =
+      url.SchemeIs("devtools") || url.SchemeIs("chrome-extension");
+  if (!main_frame && !allow_subframes && !is_devtools_like)
+    return;
+
+  content::RenderFrameHost* rfh = navigation_handle->GetRenderFrameHost();
+  if (!rfh || !rfh->IsRenderFrameLive())
+    return;
+
+  // Build the ordered preload list: session-registered preloads of type
+  // 'frame' first (in registration order), then the per-WebContents
+  // webPreferences.preload last — same order as the legacy
+  // BROWSER_SANDBOX_LOAD handler's getPreloadScriptsFromEvent().
+  mojom::RendererStartupDataPtr data;
+  {
+    // We're on the UI thread. The asar is mmap'd and offset-indexed so warm
+    // reads are fast; cold reads block briefly. Crucially the renderer is NOT
+    // parked waiting on us here — we haven't sent CommitNavigation yet — so
+    // unlike the old sync IPC handler this can't amplify under contention.
+    ScopedAllowBlockingForElectron allow_blocking;
+    data = renderer_startup_data::Build(rfh->GetBrowserContext(),
+                                        PreloadScript::ScriptType::kWebFrame);
+    std::optional<base::FilePath> preload;
+    if (web_prefs)
+      preload = web_prefs->GetPreloadPath();
+    if (preload && preload->IsAbsolute()) {
+      auto ps = mojom::PreloadScriptData::New();
+      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
+      ps->file_path = preload->AsUTF8Unsafe();
+      std::string contents;
+      if (asar::ReadFileToString(*preload, &contents)) {
+        ps->contents.assign(contents.begin(), contents.end());
+        std::vector<uint8_t> cache =
+            preload_code_cache::Get(ps->id, ps->contents);
+        if (!cache.empty())
+          ps->code_cache = std::move(cache);
+      } else {
+        ps->contents.clear();
+        ps->error =
+            "ENOENT: no such file or directory, open '" + ps->file_path + "'";
+      }
+      data->preload_scripts.push_back(std::move(ps));
+    }
+  }
+
+  // GetRemoteAssociatedInterfaces() routes over the same channel as
+  // content.mojom.Frame (the navigation channel), so this message is ordered
+  // before the CommitNavigation that the browser sends right after
+  // ReadyToCommitNavigation returns. The renderer's ElectronApiServiceImpl —
+  // created in RenderFrameCreated, before any navigation — will have cached it
+  // by the time DidCreateScriptContext fires.
+  mojo::AssociatedRemote<mojom::ElectronFrameStartup> frame_startup;
+  rfh->GetRemoteAssociatedInterfaces()->GetInterface(&frame_startup);
+  frame_startup->SetStartupData(std::move(data));
+}
+
 void WebContents::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
   base::AutoReset<bool> resetter(&is_safe_to_delete_, false);
   EmitNavigationEvent("-ready-to-commit-navigation", navigation_handle);
+
+  MaybeSendRendererStartupData(navigation_handle);
 
   // Don't focus content in an inactive window.
   if (!owner_window())
@@ -4098,11 +4194,9 @@ void WebContents::SetEmbedder(const WebContents* embedder) {
     if (owner_window)
       SetOwnerWindow(owner_window);
 
-    content::RenderWidgetHostView* rwhv =
-        web_contents()->GetRenderWidgetHostView();
-    if (rwhv) {
-      rwhv->Hide();
-      rwhv->Show();
+    if (web_contents()->GetRenderWidgetHostView()) {
+      web_contents()->WasHidden();
+      web_contents()->WasShown();
     }
   }
 }
@@ -4245,12 +4339,11 @@ v8::Local<v8::Promise> WebContents::GetProcessMemoryInfo(v8::Isolate* isolate) {
   }
 
   auto pid = frame_host->GetProcess()->GetProcess().Pid();
-  v8::Global<v8::Context> context(isolate, isolate->GetCurrentContext());
   memory_instrumentation::MemoryInstrumentation::GetInstance()
       ->RequestGlobalDumpForPid(
           pid, std::vector<std::string>(),
           base::BindOnce(&ElectronBindings::DidReceiveMemoryDump,
-                         std::move(context), std::move(promise), pid));
+                         std::move(promise), pid));
   return handle;
 }
 

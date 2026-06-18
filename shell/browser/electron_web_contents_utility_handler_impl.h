@@ -44,6 +44,9 @@ class ElectronWebContentsUtilityHandlerImpl
       mojom::PermissionName name,
       const blink::LocalFrameToken& frame_token,
       CanAccessClipboardDeprecatedCallback callback) override;
+  void SetPreloadCodeCache(const std::string& id,
+                           const std::vector<uint8_t>& source_hash,
+                           mojo_base::BigBuffer cache) override;
 
   base::WeakPtr<ElectronWebContentsUtilityHandlerImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

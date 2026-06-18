@@ -241,7 +241,7 @@ v8::Local<v8::Value> Converter<gfx::ColorSpace>::ToV8(
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
   // Convert primaries to string
-  std::string primaries;
+  std::string_view primaries;
   switch (val.GetPrimaryID()) {
     case gfx::ColorSpace::PrimaryID::BT709:
       primaries = "bt709";
@@ -297,7 +297,7 @@ v8::Local<v8::Value> Converter<gfx::ColorSpace>::ToV8(
   }
 
   // Convert transfer function to string
-  std::string transfer;
+  std::string_view transfer;
   switch (val.GetTransferID()) {
     case gfx::ColorSpace::TransferID::BT709:
       transfer = "bt709";
@@ -377,7 +377,7 @@ v8::Local<v8::Value> Converter<gfx::ColorSpace>::ToV8(
   }
 
   // Convert matrix to string
-  std::string matrix;
+  std::string_view matrix;
   switch (val.GetMatrixID()) {
     case gfx::ColorSpace::MatrixID::RGB:
       matrix = "rgb";
@@ -415,7 +415,7 @@ v8::Local<v8::Value> Converter<gfx::ColorSpace>::ToV8(
   }
 
   // Convert range to string
-  std::string range;
+  std::string_view range;
   switch (val.GetRangeID()) {
     case gfx::ColorSpace::RangeID::LIMITED:
       range = "limited";

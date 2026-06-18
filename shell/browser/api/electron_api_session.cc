@@ -34,6 +34,7 @@
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "components/proxy_config/proxy_prefs.h"
 #include "content/browser/code_cache/generated_code_cache_context.h"  // nogncheck
+#include "content/browser/storage_partition_impl.h"  // nogncheck
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/browsing_data_filter_builder.h"
@@ -43,6 +44,7 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/preconnect_request.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
@@ -607,12 +609,15 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     return;
 
   v8::HandleScope handle_scope(isolate_);
-  auto handle = DownloadItem::FromOrCreate(isolate_, item);
+  auto* handle = DownloadItem::FromOrCreate(isolate_, item);
+  v8::Local<v8::Object> handle_object;
+  if (!handle->GetWrapper(isolate_).ToLocal(&handle_object))
+    return;
   if (item->GetState() == download::DownloadItem::INTERRUPTED)
     handle->SetSavePath(item->GetTargetFilePath());
   content::WebContents* web_contents =
       content::DownloadItemUtils::GetWebContents(item);
-  bool prevent_default = Emit("will-download", handle, web_contents);
+  bool prevent_default = Emit("will-download", handle_object, web_contents);
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
@@ -1133,6 +1138,9 @@ std::string Session::RegisterPreloadScript(
   }
 
   preload_scripts.push_back(new_preload_script);
+  // A service worker that starts after this point picks up the new preload
+  // automatically — GetServiceWorkerStartupData() rebuilds from
+  // SessionPreferences on every StartWorker.
   return new_preload_script.id;
 }
 
@@ -1288,7 +1296,9 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(
                            item->expiration.InMillisecondsF());
                   dict.Set("lastUsedTime", item->last_used_time);
                   dict.Set("size", item->size);
-                  dict.Set("hash", net::HashValue(item->hash).ToString());
+                  dict.Set("hash",
+                           net::HashValue(net::HASH_VALUE_SHA256, item->hash)
+                               .ToString());
 
                   result.push_back(dict);
                 }
@@ -1439,17 +1449,14 @@ v8::Local<v8::Value> Session::GetPath(v8::Isolate* isolate) {
 
 void Session::SetCodeCachePath(gin::Arguments* args) {
   base::FilePath code_cache_path;
-  auto* storage_partition = browser_context_->GetDefaultStoragePartition();
-  auto* code_cache_context = storage_partition->GetGeneratedCodeCacheContext();
-  if (code_cache_context) {
-    if (!args->GetNext(&code_cache_path) || !code_cache_path.IsAbsolute()) {
-      args->ThrowTypeError(
-          "Absolute path must be provided to store code cache.");
-      return;
-    }
-    code_cache_context->Initialize(
-        code_cache_path, 0 /* allows disk_cache to choose the size */);
+  if (!args->GetNext(&code_cache_path) || !code_cache_path.IsAbsolute()) {
+    args->ThrowTypeError("Absolute path must be provided to store code cache.");
+    return;
   }
+  auto* storage_partition = browser_context_->GetDefaultStoragePartition();
+  static_cast<content::StoragePartitionImpl*>(storage_partition)
+      ->ReinitializeGeneratedCodeCacheContext(
+          code_cache_path, 0 /* allows disk_cache to choose the size */);
 }
 
 v8::Local<v8::Promise> Session::ClearCodeCaches(

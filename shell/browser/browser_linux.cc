@@ -37,10 +37,6 @@
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
 
-#if BUILDFLAG(IS_LINUX)
-#include "shell/browser/linux/unity_service.h"
-#endif
-
 namespace electron {
 
 namespace {
@@ -257,13 +253,7 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
 }
 
 bool Browser::SetBadgeCount(std::optional<int> count) {
-  if (IsUnityRunning() && count.has_value()) {
-    unity::SetDownloadCount(count.value());
-    badge_count_ = count.value();
-    return true;
-  } else {
-    return false;
-  }
+  return false;
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {}
@@ -280,10 +270,6 @@ std::string Browser::GetExecutableFileVersion() const {
 
 std::string Browser::GetExecutableFileProductName() const {
   return GetApplicationName();
-}
-
-bool Browser::IsUnityRunning() {
-  return unity::IsRunning();
 }
 
 bool Browser::IsEmojiPanelSupported() {

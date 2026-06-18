@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_SERVICES_NODE_NODE_SERVICE_H_
 
 #include <memory>
+#include <optional>
 
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -15,6 +16,7 @@
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
 
 namespace node {
@@ -26,7 +28,6 @@ class Environment;
 namespace electron {
 
 class ElectronBindings;
-class JavascriptEnvironment;
 class NodeBindings;
 
 class URLLoaderBundle {
@@ -83,7 +84,7 @@ class NodeService : public node::mojom::NodeService {
   const std::unique_ptr<ElectronBindings> electron_bindings_;
 
   // depends-on: node_bindings_'s uv_loop
-  std::unique_ptr<JavascriptEnvironment> js_env_;
+  std::optional<JavascriptEnvironment> js_env_;
 
   // depends-on: js_env_'s isolate
   std::shared_ptr<node::Environment> node_env_;

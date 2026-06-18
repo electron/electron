@@ -181,3 +181,21 @@ won't be able to connect to remote sites. However, a return value of
 `true` is inconclusive; even if some link is up, it is uncertain
 whether a particular connection attempt to a particular remote site
 will be successful.
+
+### `net.WebSocket`
+
+> [!NOTE]
+> This property is only available in the [main process](../glossary.md#main-process).
+
+A [`typeof WebSocket`](./web-socket.md) reference to the [`WebSocket`](./web-socket.md)
+class, which can be used to create [WHATWG-compatible](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
+WebSocket connections through Chromium's network stack from the main process.
+
+```js
+const { app, net } = require('electron')
+
+app.whenReady().then(() => {
+  const ws = new net.WebSocket('wss://echo.websocket.events')
+  ws.onmessage = (event) => console.log(event.data)
+})
+```

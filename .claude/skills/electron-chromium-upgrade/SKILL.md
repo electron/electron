@@ -11,6 +11,10 @@ Run `e sync --3` repeatedly, fixing patch conflicts as they arise, until it succ
 
 ## Success Criteria
 
+**Linter Requirements**:
+- Code/patch edits: Title must be exactly `{CL-Number}: {upstream CL original title}` with `Ref: {URL}` in the body.
+- Metadata-only patch updates (hashes/line numbers): Message must be exactly `chore: update patches` with no body.
+
 Phase One is complete when:
 - `e sync --3` exits with code 0 (no patch failures)
 - All changes are committed per the commit guidelines
@@ -98,6 +102,10 @@ Run Phase Two immediately after Phase One is complete.
 
 ## Success Criteria
 
+**Linter Requirements**:
+- Code/patch edits: Title must be exactly `{CL-Number}: {upstream CL original title}` with `Ref: {URL}` in the body.
+- Metadata-only patch updates (hashes/line numbers): Message must be exactly `chore: update patches` with no body.
+
 Phase Two is complete when:
 - `e build -k 999 -- --quiet` exits with code 0 (no build failures)
 - `e start --version` has been run to check Electron launches
@@ -128,7 +136,7 @@ The `roller/chromium/main` branch is created by automation to update Electron's 
 4. **CRITICAL**: After ANY commit (especially patch commits), immediately run `git status` in the electron repo
     - Look for other modified `.patch` files that only have index/hunk header changes
     - These are dependent patches affected by your fix
-    - Commit them immediately with: `git commit -am "chore: update patches (trivial only)"`
+    - Commit them immediately with: `git commit -am "chore: update patches"`
 5. Return to step 1
 6. When `e build` succeeds, run `e start --version`
 7. Check if you have any pending changes in the Chromium repo by running `git status`

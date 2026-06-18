@@ -78,6 +78,40 @@ See the [Mac App Store Guide][].
 
 ## Signing Windows builds
 
+### Using Azure Artifact Signing
+
+[Azure Artifact Signing][] (formerly known as Azure Trusted Signing) is Microsoft's modern cloud-based signing service.
+It is the cheapest option for code signing on Windows, and it gets rid of SmartScreen warnings.
+
+Azure Artifact Signing is currently limited to developers in certain countries. Please refer to the
+[Artifact Signing documentation](https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart#prerequisites)
+to see if Artifact Signing is available in your country.
+
+#### Using `jsign` for Azure Artifact Signing
+
+For developers on Linux or macOS, [`jsign`](https://ebourg.github.io/jsign/) can be used to sign Windows apps via Azure Artifact Signing. Example usage:
+
+```bash
+jsign --storetype TRUSTEDSIGNING \
+      --keystore https://eus.codesigning.azure.net/ \
+      --storepass $AZURE_ACCESS_TOKEN \
+      --alias trusted-sign-acct/AppName \
+      --tsaurl http://timestamp.acs.microsoft.com/ \
+      --tsmode RFC3161 \
+      --replace <file>
+```
+
+#### Using Electron Forge
+
+Electron Forge is the recommended way to sign your app as well as your `Squirrel.Windows`
+and `WiX MSI` installers. Instructions for Azure Artifact Signing can be found
+[here][forge-trusted-signing].
+
+#### Using Electron Builder
+
+The Electron Builder documentation for Azure Artifact Signing can be found
+[here][builder-trusted-signing].
+
 ### Using traditional certificates
 
 Before you can code sign your application, you need to acquire a code signing
@@ -86,13 +120,10 @@ certificates on the open market. They are usually sold by the same companies
 also offering HTTPS certificates. Prices vary, so it may be worth your time to
 shop around. Popular resellers include:
 
-- [Certum EV code signing certificate](https://shop.certum.eu/data-safety/code-signing-certificates/certum-ev-code-sigining.html)
 - [DigiCert EV code signing certificate](https://www.digicert.com/signing/code-signing-certificates)
-- [Entrust EV code signing certificate](https://www.entrustdatacard.com/products/digital-signing-certificates/code-signing-certificates)
 - [GlobalSign EV code signing certificate](https://www.globalsign.com/en/code-signing-certificate/ev-code-signing-certificates)
-- [IdenTrust EV code signing certificate](https://www.identrust.com/digital-certificates/trustid-ev-code-signing)
-- [Sectigo (formerly Comodo) EV code signing certificate](https://sectigo.com/ssl-certificates-tls/code-signing)
-- [SSL.com EV code signing certificate](https://www.ssl.com/certificates/ev-code-signing/)
+- [Sectigo EV code signing certificate](https://sectigo.com/ssl-certificates-tls/code-signing)
+- [SSL.com EV code signing certificate](https://www.ssl.com/products/software-integrity/code-signing/ev/)
 
 It is important to call out that since June 2023, Microsoft requires software to
 be signed with an "extended validation" certificate, also called an "EV code signing
@@ -228,41 +259,6 @@ For full configuration options, check out the [`electron-wix-msi`][] repository!
 Electron Builder comes with a custom solution for signing your application. You
 can find [its documentation here](https://www.electron.build/code-signing).
 
-### Using Azure Trusted Signing
-
-[Azure Trusted Signing][] is Microsoft's modern cloud-based alternative to EV certificates.
-It is the cheapest option for code signing on Windows, and it gets rid of SmartScreen warnings.
-
-As of October 2025, Azure Trusted Signing is available to US and Canada-based organizations
-with 3+ years of verifiable business history and to individual developers in the US and Canada.
-Microsoft is looking to make the program more widely available. If you're reading this at a
-later point, it could make sense to check if the eligibility criteria have changed.
-
-#### Using `jsign` for Azure Trusted Signing
-
-For developers on Linux or macOS, [`jsign`](https://ebourg.github.io/jsign/) can be used to sign Windows apps via Azure Trusted Signing. Example usage:
-
-```bash
-jsign --storetype TRUSTEDSIGNING \
-      --keystore https://eus.codesigning.azure.net/ \
-      --storepass $AZURE_ACCESS_TOKEN \
-      --alias trusted-sign-acct/AppName \
-      --tsaurl http://timestamp.acs.microsoft.com/ \
-      --tsmode RFC3161 \
-      --replace <file>
-```
-
-#### Using Electron Forge
-
-Electron Forge is the recommended way to sign your app as well as your `Squirrel.Windows`
-and `WiX MSI` installers. Instructions for Azure Trusted Signing can be found
-[here][forge-trusted-signing].
-
-#### Using Electron Builder
-
-The Electron Builder documentation for Azure Trusted Signing can be found
-[here][builder-trusted-signing].
-
 ### Signing Windows Store applications
 
 See the [Windows Store Guide][].
@@ -280,6 +276,6 @@ See the [Windows Store Guide][].
 [windows store guide]: ./windows-store-guide.md
 [maker-squirrel]: https://www.electronforge.io/config/makers/squirrel.windows
 [maker-msi]: https://www.electronforge.io/config/makers/wix-msi
-[azure trusted signing]: https://azure.microsoft.com/en-us/products/trusted-signing
+[azure artifact signing]: https://azure.microsoft.com/en-us/products/trusted-signing
 [forge-trusted-signing]: https://www.electronforge.io/guides/code-signing/code-signing-windows#using-azure-trusted-signing
 [builder-trusted-signing]: https://www.electron.build/code-signing-win#using-azure-trusted-signing-beta

@@ -545,24 +545,21 @@ describe('webContents module', () => {
       }
     });
 
-    it('fails if loadURL is called inside did-start-loading', (done) => {
-      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
-        expect(validatedURL).to.contain('blank.html');
-        done();
-      });
+    it('fails if loadURL is called inside did-start-loading', async () => {
+      const result = Promise.all([once(w.webContents, 'did-fail-load'), once(w.webContents, 'did-stop-loading')]);
 
       w.webContents.once('did-start-loading', () => {
         w.loadURL(`file://${fixturesPath}/pages/blank.html`);
       });
 
       w.loadURL('data:text/html,<h1>HELLO</h1>');
+
+      const [[, , , validatedURL]] = await result;
+      expect(validatedURL).to.contain('blank.html');
     });
 
-    it('fails if loadurl is called after the navigation is ready to commit', (done) => {
-      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
-        expect(validatedURL).to.contain('blank.html');
-        done();
-      });
+    it('fails if loadurl is called after the navigation is ready to commit', async () => {
+      const result = Promise.all([once(w.webContents, 'did-fail-load'), once(w.webContents, 'did-stop-loading')]);
 
       // @ts-expect-error internal-only event.
       w.webContents.once('-ready-to-commit-navigation', () => {
@@ -570,9 +567,12 @@ describe('webContents module', () => {
       });
 
       w.loadURL('data:text/html,<h1>HELLO</h1>');
+
+      const [[, , , validatedURL]] = await result;
+      expect(validatedURL).to.contain('blank.html');
     });
 
-    it('fails if loadURL is called inside did-redirect-navigation', (done) => {
+    it('fails if loadURL is called inside did-redirect-navigation', async () => {
       const server = http.createServer((req, res) => {
         if (req.url === '/302') {
           res.statusCode = 302;
@@ -585,23 +585,18 @@ describe('webContents module', () => {
         }
       });
 
-      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
-        expect(validatedURL).to.contain('blank.html');
-        server.close();
-        done();
-      });
+      const { url } = await listen(server);
 
-      listen(server)
-        .then(({ url }) => {
-          w.webContents.once('did-redirect-navigation', () => {
-            w.loadURL(`file://${fixturesPath}/pages/blank.html`);
-          });
-          w.loadURL(`${url}/302`);
-        })
-        .catch((e) => {
-          server.close();
-          done(e);
-        });
+      const result = Promise.all([once(w.webContents, 'did-fail-load'), once(w.webContents, 'did-stop-loading')]);
+
+      w.webContents.once('did-redirect-navigation', () => {
+        w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      });
+      w.loadURL(`${url}/302`);
+
+      const [[, , , validatedURL]] = await result;
+      server.close();
+      expect(validatedURL).to.contain('blank.html');
     });
 
     it('sets appropriate error information on rejection', async () => {
@@ -1407,6 +1402,42 @@ describe('webContents module', () => {
         expect(alive).to.be.true();
       }
     );
+  });
+
+  describe('DevTools native integration', () => {
+    afterEach(closeAllWindows);
+
+    async function openDevTools(w: BrowserWindow) {
+      await w.loadURL('about:blank');
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      await waitUntil(() => w.webContents.devToolsWebContents!.executeJavaScript('typeof DevToolsAPI !== "undefined"'));
+    }
+
+    it('uses the native showContextMenuAtPoint implementation', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      // The DevTools frontend should route context menus through the native
+      // DevToolsHost binding rather than a JS override injected by Electron.
+      const usesNativeContextMenu = await w.webContents.devToolsWebContents!.executeJavaScript(
+        'typeof DevToolsHost !== "undefined" && InspectorFrontendHost.showContextMenuAtPoint.toString().includes("DevToolsHost")'
+      );
+      expect(usesNativeContextMenu).to.be.true();
+    });
+
+    it('uses the native window.confirm implementation', async () => {
+      const w = new BrowserWindow({ show: false });
+      await openDevTools(w);
+
+      // window.confirm should be the platform implementation (backed by the
+      // DevTools JavaScript dialog manager), not a JS override.
+      const confirmIsNative = await w.webContents.devToolsWebContents!.executeJavaScript(
+        'window.confirm.toString().includes("[native code]")'
+      );
+      expect(confirmIsNative).to.be.true();
+    });
   });
 
   describe('before-mouse-event event', () => {
@@ -3221,6 +3252,22 @@ describe('webContents module', () => {
         expect(w.webContents.isCrashed()).to.equal(false);
         w.webContents.forcefullyCrashRenderer();
         w.webContents.reload();
+        expect(w.webContents.isCrashed()).to.equal(false);
+      });
+
+      it('survives a synchronous reload() from the render-process-gone handler', async () => {
+        // Regression test: a synchronous reload() from 'render-process-gone'
+        // used to re-enter renderer process launch mid-teardown and
+        // CHECK-crash the browser process. See
+        // WebContents::PrimaryMainFrameRenderProcessGone.
+        const crashEvent = once(w.webContents, 'render-process-gone');
+        w.webContents.once('render-process-gone', () => {
+          // Deliberately synchronous.
+          w.webContents.reload();
+        });
+        w.webContents.forcefullyCrashRenderer();
+        await crashEvent;
+        await once(w.webContents, 'did-finish-load');
         expect(w.webContents.isCrashed()).to.equal(false);
       });
     });

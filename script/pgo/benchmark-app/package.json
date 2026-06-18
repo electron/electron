@@ -1,0 +1,6 @@
+{
+  "name": "electron-pgo-benchmark-runner",
+  "version": "1.0.0",
+  "main": "main.js",
+  "description": "Drives browser benchmarks against an instrumented Electron build to collect PGO profile data"
+}

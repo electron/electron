@@ -1,4 +1,5 @@
 import("//build/config/locales.gni")
+import("//device/vr/buildflags/buildflags.gni")
 import("//electron/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//tools/grit/repack.gni")
@@ -38,6 +39,23 @@ template("electron_repack_percent") {
       deps += [ "//ui/views/resources" ]
     }
 
+    # Referenced from the electron binary (via the grit-generated resource
+    # maps that //chrome umbrella targets link in), so ship them rather than
+    # carrying resource-allowlist-check suppressions.
+    sources += [
+      "$root_gen_dir/chrome/renderer_resources_${percent}_percent.pak",
+      "$root_gen_dir/chrome/theme_resources_${percent}_percent.pak",
+    ]
+    deps += [
+      "//chrome/app/theme:theme_resources",
+      "//chrome/renderer:resources",
+    ]
+
+    if (enable_electron_extensions) {
+      sources += [ "$root_gen_dir/extensions/extensions_browser_resources_${percent}_percent.pak" ]
+      deps += [ "//extensions:extensions_browser_resources" ]
+    }
+
     output = "${invoker.output_dir}/chrome_${percent}_percent.pak"
   }
 }
@@ -63,6 +81,7 @@ template("electron_extra_paks") {
       "$root_gen_dir/content/gpu_resources.pak",
       "$root_gen_dir/mojo/public/js/mojo_bindings_resources.pak",
       "$root_gen_dir/net/net_resources.pak",
+      "$root_gen_dir/services/device/public/cpp/usb/usb_ids_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/blink_resources.pak",
       "$root_gen_dir/third_party/blink/public/resources/inspector_overlay_resources.pak",
       "$root_gen_dir/third_party/blink/public/strings/permission_element_generated_strings.pak",
@@ -82,6 +101,7 @@ template("electron_extra_paks") {
       "//electron:resources",
       "//mojo/public/js:resources",
       "//net:net_resources",
+      "//services/device/public/cpp/usb:usb_ids_resources",
       "//third_party/blink/public:devtools_inspector_resources",
       "//third_party/blink/public:resources",
       "//third_party/blink/public/strings:permission_element_generated_strings",
@@ -96,11 +116,52 @@ template("electron_extra_paks") {
 
     # New paks should be added here by default.
     sources += [
+      "$root_gen_dir/base/tracing/protos/tracing_proto_resources.pak",
+      "$root_gen_dir/components/autofill/core/browser/geo/autofill_address_rewriter_resources.pak",
+      "$root_gen_dir/components/autofill/core/browser/geo/autofill_alternative_state_name_map_resources.pak",
+      "$root_gen_dir/components/autofill_and_password_manager_internals_resources.pak",
+      "$root_gen_dir/components/chrome_urls_resources.pak",
+      "$root_gen_dir/components/crashes_resources.pak",
+      "$root_gen_dir/components/flags_ui_resources.pak",
+      "$root_gen_dir/components/gcm_internals_resources.pak",
+      "$root_gen_dir/components/internal_debug_pages_disabled_resources.pak",
+      "$root_gen_dir/components/net_export_resources.pak",
+      "$root_gen_dir/components/ntp_tiles_internals_resources.pak",
+      "$root_gen_dir/components/regional_capabilities_internals_resources.pak",
+      "$root_gen_dir/components/safe_browsing_resources.pak",
+      "$root_gen_dir/components/signin_internals_resources.pak",
+      "$root_gen_dir/components/translate_internals_resources.pak",
+      "$root_gen_dir/components/ukm_resources.pak",
+      "$root_gen_dir/components/user_actions_ui_resources.pak",
+      "$root_gen_dir/components/version_ui_resources.pak",
+      "$root_gen_dir/content/attribution_internals_resources.pak",
       "$root_gen_dir/content/browser/devtools/devtools_resources.pak",
+      "$root_gen_dir/content/histograms_resources.pak",
+      "$root_gen_dir/content/indexed_db_resources.pak",
+      "$root_gen_dir/content/network_errors_resources.pak",
+      "$root_gen_dir/content/private_aggregation_internals_resources.pak",
       "$root_gen_dir/content/process_resources.pak",
+      "$root_gen_dir/content/quota_internals_resources.pak",
+      "$root_gen_dir/content/service_worker_resources.pak",
+      "$root_gen_dir/content/traces_internals_resources.pak",
+      "$root_gen_dir/ui/resources/ui_lottie_resources.pak",
       "$root_gen_dir/ui/webui/resources/webui_resources.pak",
     ]
-    deps += [ "//content/browser/devtools:devtools_resources" ]
+    if (enable_vr) {
+      # webxr_internals resources are only generated when VR support is
+      # enabled (see //content/browser/resources/BUILD.gn).
+      sources += [ "$root_gen_dir/content/webxr_internals_resources.pak" ]
+    }
+    deps += [
+      "//base/tracing/protos:chrome_track_event_resources",
+      "//components/autofill/core/browser:autofill_address_rewriter_resources",
+      "//components/autofill/core/browser:autofill_alternative_state_name_map_resources",
+      "//components/ntp_tiles/webui/resources",
+      "//components/ukm/debug:resources",
+      "//content/browser/devtools:devtools_resources",
+      "//content/browser/resources",
+      "//ui/resources:ui_lottie_resources_grd",
+    ]
     if (enable_pdf_viewer) {
       sources += [ "$root_gen_dir/chrome/pdf_resources.pak" ]
       deps += [ "//chrome/browser/resources/pdf:resources" ]
@@ -112,6 +173,7 @@ template("electron_extra_paks") {
     if (enable_electron_extensions) {
       sources += [
         "$root_gen_dir/chrome/component_extension_resources.pak",
+        "$root_gen_dir/extensions/extensions_renderer_generated_resources.pak",
         "$root_gen_dir/extensions/extensions_renderer_resources.pak",
         "$root_gen_dir/extensions/extensions_resources.pak",
       ]
@@ -168,13 +230,12 @@ template("electron_paks") {
     forward_variables_from(invoker,
                            [
                              "copy_data_to_bundle",
-                             "deps",
                              "visibility",
                            ])
-    if (defined(invoker.locale_whitelist)) {
-      repack_whitelist = invoker.locale_whitelist
-    } else if (defined(invoker.repack_whitelist)) {
-      repack_whitelist = invoker.repack_whitelist
+    if (defined(invoker.locale_allowlist)) {
+      repack_allowlist = invoker.locale_allowlist
+    } else if (defined(invoker.repack_allowlist)) {
+      repack_allowlist = invoker.repack_allowlist
     }
 
     source_patterns = [
@@ -182,14 +243,17 @@ template("electron_paks") {
       "${root_gen_dir}/chrome/locale_settings_",
       "${root_gen_dir}/chrome/platform_locale_settings_",
       "${root_gen_dir}/chrome/generated_resources_",
+      "${root_gen_dir}/components/strings/components_branded_strings_",
       "${root_gen_dir}/components/strings/components_locale_settings_",
       "${root_gen_dir}/components/strings/components_strings_",
       "${root_gen_dir}/device/bluetooth/strings/bluetooth_strings_",
+      "${root_gen_dir}/device/fido/strings/fido_strings_",
       "${root_gen_dir}/electron/electron_strings_",
       "${root_gen_dir}/extensions/strings/extensions_strings_",
       "${root_gen_dir}/services/strings/services_strings_",
       "${root_gen_dir}/third_party/blink/public/strings/blink_strings_",
       "${root_gen_dir}/third_party/blink/public/strings/permission_element_strings_",
+      "${root_gen_dir}/third_party/libaddressinput/address_input_strings_",
       "${root_gen_dir}/ui/strings/app_locale_settings_",
       "${root_gen_dir}/ui/strings/auto_image_annotation_strings_",
       "${root_gen_dir}/ui/strings/ax_strings_",
@@ -200,19 +264,25 @@ template("electron_paks") {
       "//chrome/app:generated_resources",
       "//chrome/app/resources:locale_settings",
       "//chrome/app/resources:platform_locale_settings",
+      "//components/strings:components_branded_strings",
       "//components/strings:components_locale_settings",
       "//components/strings:components_strings",
       "//device/bluetooth/strings",
+      "//device/fido/strings",
       "//electron:resources",
       "//extensions/strings",
       "//services/strings",
       "//third_party/blink/public/strings",
       "//third_party/blink/public/strings:permission_element_strings",
+      "//third_party/libaddressinput:strings",
       "//ui/strings:app_locale_settings",
       "//ui/strings:auto_image_annotation_strings",
       "//ui/strings:ax_strings",
       "//ui/strings:ui_strings",
     ]
+    if (defined(invoker.deps)) {
+      deps += invoker.deps
+    }
 
     input_locales = platform_pak_locales
     output_dir = "${invoker.output_dir}/locales"

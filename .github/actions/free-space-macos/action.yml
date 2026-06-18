@@ -51,6 +51,9 @@ runs:
         tmpify $(xcode-select -p)/Platforms/WatchSimulator.platform
         tmpify $(xcode-select -p)/Platforms/AppleTVSimulator.platform
         tmpify $(xcode-select -p)/Platforms/iPhoneSimulator.platform
+        tmpify $(xcode-select -p)/Platforms/XROS.platform
+        tmpify $(xcode-select -p)/Platforms/XRSimulator.platform
+        tmpify $(xcode-select -p)/Platforms/DriverKit.platform
         tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/metal/ios
         tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift
         tmpify $(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0
@@ -60,15 +63,30 @@ runs:
 
         sudo rm -rf $TMPDIR/del-target
 
+        # Remove every Xcode install except the one currently selected.
+        # The image ships many versions (16.0-26.x) and each is tens of GB.
+        active_xcode=$(xcode-select -p 2>/dev/null | sed -E 's#(/Applications/Xcode[^/]*\.app)/.*#\1#')
+        if [[ "$active_xcode" == /Applications/Xcode*.app ]]; then
+          for app in /Applications/Xcode*.app; do
+            if [ "$app" != "$active_xcode" ]; then
+              sudo rm -rf "$app"
+            fi
+          done
+        fi
+
+        # Simulator runtime images (iOS/xrOS/watchOS/tvOS) staged as MobileAssets.
+        # tmpify of /Library/Developer/CoreSimulator above only removes the mount
+        # points; the backing images here are ~113GB that Electron never uses.
+        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_iOSSimulatorRuntime
+        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_xrOSSimulatorRuntime
+        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_watchOSSimulatorRuntime
+        sudo rm -rf /System/Library/AssetsV2/com_apple_MobileAsset_appleTVOSSimulatorRuntime
+
         sudo rm -rf /Applications/Safari.app
-        sudo rm -rf /Applications/Xcode_16.1.app
-        sudo rm -rf /Applications/Xcode_16.2.app
-        sudo rm -rf /Applications/Xcode_16.3.app
-        sudo rm -rf /Applications/Xcode_26*
-        sudo rm -rf /Applications/Google Chrome.app
-        sudo rm -rf /Applications/Google Chrome for Testing.app
+        sudo rm -rf "/Applications/Google Chrome.app"
+        sudo rm -rf "/Applications/Google Chrome for Testing.app"
         sudo rm -rf /Applications/Firefox.app
-        sudo rm -rf /Applications/Microsoft Edge.app
+        sudo rm -rf "/Applications/Microsoft Edge.app"
         sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
         sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
         sudo rm -rf /Users/runner/Library/Android
@@ -78,10 +96,15 @@ runs:
         sudo rm -rf $JAVA_HOME_25_arm64
         sudo rm -rf /Users/runner/.dotnet/
         sudo rm -rf /Users/runner/.rustup
+        # CodeQL bundle and unused cached runtimes in the hosted toolcache
+        sudo rm -rf /Users/runner/hostedtoolcache/CodeQL
+        sudo rm -rf /Users/runner/hostedtoolcache/go
+        sudo rm -rf /Users/runner/hostedtoolcache/Ruby
+        sudo rm -rf /Users/runner/hostedtoolcache/PyPy
 
         # remove homebrew packages we don't need
         if command -v brew &> /dev/null; then
-          brew uninstall -f --zap aws-sam-cli session-manager-plugin gcc gcc@13 gcc@14 llvm@18 gradle maven ant azure-cli
+          brew uninstall -f --zap aws-sam-cli session-manager-plugin gcc gcc@13 gcc@14 gcc@15 llvm@18 gradle maven ant azure-cli bazel
           brew autoremove
         fi
 

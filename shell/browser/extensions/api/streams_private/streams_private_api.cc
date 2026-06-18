@@ -14,6 +14,7 @@
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_stream_manager.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
+#include "extensions/browser/mime_handler/mime_handler_body_cache.h"  // nogncheck
 #include "extensions/browser/mime_handler/stream_container.h"  // nogncheck
 #include "extensions/common/manifest_handlers/mime_types_handler.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -36,7 +37,8 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
     blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
     const GURL& original_url,
     const std::string& internal_id,
-    const std::string& mime_type) {
+    const std::string& mime_type,
+    scoped_refptr<MimeHandlerBodyCache> body_cache) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
   content::WebContents* web_contents =
@@ -53,7 +55,7 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
   if (!extension)
     return;
 
-  MimeTypesHandler* handler = MimeTypesHandler::GetHandler(extension);
+  const MimeTypesHandler* handler = MimeTypesHandler::Get(*extension);
   if (!handler->HasPlugin())
     return;
 
@@ -71,6 +73,8 @@ void StreamsPrivateAPI::SendExecuteMimeTypeHandlerEvent(
   auto stream_container = std::make_unique<extensions::StreamContainer>(
       tab_id, embedded, handler_url, extension_id,
       std::move(transferrable_loader), original_url);
+  if (body_cache)
+    stream_container->SetBodyCache(std::move(body_cache));
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   if (chrome_pdf::features::IsOopifPdfEnabled() &&

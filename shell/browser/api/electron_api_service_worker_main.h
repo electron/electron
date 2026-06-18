@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SERVICE_WORKER_MAIN_H_
 
 #include <compare>
+#include <optional>
 #include <string>
 
 #include "base/memory/raw_ptr.h"
@@ -115,7 +116,7 @@ class ServiceWorkerMain final
 
   void InvalidateVersionInfo();
   const content::ServiceWorkerVersionBaseInfo* version_info() const {
-    return version_info_.get();
+    return version_info_ ? &*version_info_ : nullptr;
   }
 
   bool IsDestroyed() const;
@@ -138,7 +139,7 @@ class ServiceWorkerMain final
   bool redundant_ = false;
 
   // Store copy of version info so it's accessible when not running.
-  std::unique_ptr<content::ServiceWorkerVersionBaseInfo> version_info_;
+  std::optional<content::ServiceWorkerVersionBaseInfo> version_info_;
 
   raw_ptr<content::ServiceWorkerContext> service_worker_context_;
   mojo::AssociatedRemote<mojom::ElectronRenderer> remote_;

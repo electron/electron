@@ -29,6 +29,14 @@ inputs:
   upload-out-gen-artifacts:
     description: 'Whether to upload the out/${dir}/gen artifacts'
     required: false
+  generate-chromedriver:
+    description: 'Build and upload chromedriver'
+    required: false
+    default: 'true'
+  generate-test-artifacts:
+    description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots, mksnapshot fixup). Only disable when no test job consumes this build.'
+    required: false
+    default: 'true'
 runs:
   using: "composite"
   steps:
@@ -80,10 +88,14 @@ runs:
           sudo launchctl limit maxfiles 65536 200000
         fi
 
+        export NINJA_SUMMARIZE_BUILD=1
+        export NO_COLOR=1
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+
         if [ "${{ inputs.is-release }}" = "true" ]; then
-          NINJA_SUMMARIZE_BUILD=1 e build --target electron:release_build
+          e build --target electron:release_build
         else
-          NINJA_SUMMARIZE_BUILD=1 e build --target electron:testing_build
+          e build --target electron:testing_build $QUIET_FLAG
         fi
         cp out/Default/.ninja_log out/electron_ninja_log
         node electron/script/check-symlinks.js
@@ -108,10 +120,12 @@ runs:
         cd ..
 
         $env:NINJA_SUMMARIZE_BUILD = 1
+        $env:NO_COLOR = 1
+        $quietFlag = if ($env:ACTIONS_STEP_DEBUG -eq "true" -or "${{ inputs.is-release }}" -eq "true") { @() } else { @("-quiet") }
         if ("${{ inputs.is-release }}" -eq "true") {          
           e build --target electron:release_build
         } else {
-          e build --target electron:testing_build
+          e build --target electron:testing_build $quietFlag
         }
         if ($LASTEXITCODE -ne 0) {
           Write-Host "e build failed with exit code $LASTEXITCODE"
@@ -148,6 +162,7 @@ runs:
         fi
     - name: Fixup Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
+      if: ${{ inputs.generate-test-artifacts == 'true' }}
       run: |
         cd src
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
@@ -157,6 +172,10 @@ runs:
           SEDOPTION="-i ''"
         fi
         sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+        # The Electron builtins profile path is a bare value on the line after
+        # --turbo-profiling-input; both lines must go or mksnapshot treats the
+        # leftover path as a script to execute.
+        sed $SEDOPTION '/.*pgo_profiles/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--reorder-builtins/d' out/Default/mksnapshot_args
         sed $SEDOPTION '/--warn-about-builtin-profile-data/d' out/Default/mksnapshot_args
@@ -173,7 +192,7 @@ runs:
         fi
     - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' }}
+      if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' && inputs.generate-test-artifacts == 'true' }}
       run: |
         cd src
         if [ "${{ inputs.target-arch }}" = "arm" ]; then
@@ -193,10 +212,11 @@ runs:
         rm -f out/Default/libffmpeg.so
     - name: Build Chromedriver ${{ inputs.step-suffix }}
       shell: bash
+      if: ${{ inputs.generate-chromedriver == 'true' }}
       run: |
         cd src
-        e build --target electron:electron_chromedriver_zip
-
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+        e build --target electron:electron_chromedriver_zip $QUIET_FLAG
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
@@ -249,7 +269,8 @@ runs:
           MAC_SDK_ARG=$(sed -n 's|^\(mac_sdk_path = "//out/\)Default/|\1ffmpeg/|p' out/Default/args.gn)
         fi
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $MAC_SDK_ARG $GN_EXTRA_ARGS"
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg $QUIET_FLAG
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
@@ -259,6 +280,39 @@ runs:
       run: |
         cd src/electron
         node script/yarn.js create-typescript-definitions
+    - name: Log Disk Space to Datadog (macOS)
+      if: ${{ runner.os == 'macOS' && env.DD_API_KEY != '' }}
+      shell: bash
+      env:
+        IS_RELEASE: ${{ inputs.is-release }}
+      run: |
+        TIMESTAMP=$(date +%s)
+
+        echo "Disk space after build:"
+        df -h /
+        FREE_SPACE_AFTER=$(df -k / | tail -1 | awk '{print $4}')
+        FREE_AFTER_GB=$(echo "scale=2; $FREE_SPACE_AFTER / 1024 / 1024" | bc)
+
+        echo "Free space after: ${FREE_AFTER_GB}GB"
+
+        curl -s -X POST "https://api.datadoghq.com/api/v2/series" \
+          -H "Content-Type: application/json" \
+          -H "DD-API-KEY: ${DD_API_KEY}" \
+          -d @- << EOF
+        {
+          "series": [
+            {
+              "metric": "electron.macos.disk.free_space_after_build_gb",
+              "points": [{"timestamp": ${TIMESTAMP}, "value": ${FREE_AFTER_GB}}],
+              "type": 3,
+              "unit": "gigabyte",
+              "tags": ["runner:${RUNNER_LABEL}", "platform:macos", "is-release:${IS_RELEASE}"]
+            }
+          ]
+        }
+        EOF
+
+        echo "Disk space metrics logged to Datadog"
     - name: Publish Electron Dist ${{ inputs.step-suffix }}
       if: ${{ inputs.is-release == 'true' }}
       shell: bash
@@ -314,6 +368,8 @@ runs:
     - name: Move all Generated Artifacts to Upload Folder ${{ inputs.step-suffix }}
       if: always() && !cancelled()
       shell: bash
+      env:
+        GENERATE_TEST_ARTIFACTS: ${{ inputs.generate-test-artifacts }}
       run: ./src/electron/script/actions/move-artifacts.sh
     - name: Upload Generated Artifacts ${{ inputs.step-suffix }}
       if: always() && !cancelled()
@@ -322,6 +378,7 @@ runs:
         name: generated_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./generated_artifacts_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
     - name: Upload Src Artifacts ${{ inputs.step-suffix }}
+      if: ${{ inputs.generate-test-artifacts == 'true' }}
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
       with:
         name: src_artifacts_${{ env.ARTIFACT_KEY }}

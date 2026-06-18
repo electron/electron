@@ -19,7 +19,11 @@ namespace gin_helper {
 
 namespace internal {
 
-v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
+// Allocates handles in (and escapes the result through) the caller's |scope|,
+// so a caller that forgets to open one is a compile error rather than a slow
+// per-call handle leak.
+v8::Local<v8::Value> CallMethodWithArgs(v8::EscapableHandleScope& scope,
+                                        v8::Isolate* isolate,
                                         v8::Local<v8::Object> obj,
                                         std::string_view method,
                                         base::span<v8::Local<v8::Value>> args);
@@ -35,11 +39,11 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
                                Args&&... args) {
   v8::EscapableHandleScope scope{isolate};
   std::array<v8::Local<v8::Value>, 1U + sizeof...(args)> converted_args = {
-      gin::StringToV8(isolate, name),
+      gin::StringToSymbol(isolate, name),
       gin::ConvertToV8(isolate, std::forward<Args>(args))...,
   };
-  return scope.Escape(
-      internal::CallMethodWithArgs(isolate, obj, "emit", converted_args));
+  return internal::CallMethodWithArgs(scope, isolate, obj, "emit",
+                                      converted_args);
 }
 
 // obj.custom_emit(args...)
@@ -52,8 +56,8 @@ v8::Local<v8::Value> CustomEmit(v8::Isolate* isolate,
   std::array<v8::Local<v8::Value>, sizeof...(args)> converted_args = {
       gin::ConvertToV8(isolate, std::forward<Args>(args))...,
   };
-  return scope.Escape(internal::CallMethodWithArgs(isolate, object, custom_emit,
-                                                   converted_args));
+  return internal::CallMethodWithArgs(scope, isolate, object, custom_emit,
+                                      converted_args);
 }
 
 template <typename T, typename... Args>

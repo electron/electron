@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 7 May 2026 11:00:06 -0400
+Subject: fix: add ReinitializeGeneratedCodeCacheContext to
+ StoragePartitionImpl
+
+Allow embedders to reinitialize the generated code cache context with a
+new path after initial setup. Previously, GeneratedCodeCacheContext::Initialize()
+could be called multiple times, but a recent Chromium change
+(https://chromium-review.googlesource.com/c/chromium/src/+/7812618)
+added CHECK to prevent double initialization.
+
+This new method properly shuts down the existing context and creates a
+fresh one, allowing Electron session.setCodeCachePath() to work correctly.
+
+diff --git a/content/browser/storage_partition_impl.cc b/content/browser/storage_partition_impl.cc
+index 6bbcc19604383f15a0fade6bf22008343fa32a9c..90bb189e8b8ea666b2da25d7c4299f5ca8fac7a1 100644
+--- a/content/browser/storage_partition_impl.cc
++++ b/content/browser/storage_partition_impl.cc
+@@ -1825,6 +1825,22 @@ StoragePartitionImpl::GetGeneratedCodeCacheContext() {
+   return generated_code_cache_context_.get();
+ }
+ 
++void StoragePartitionImpl::ReinitializeGeneratedCodeCacheContext(
++    const base::FilePath& path,
++    int max_bytes) {
++  DCHECK_CURRENTLY_ON(BrowserThread::UI);
++  // Do not create code cache for in-memory partitions.
++  if (is_in_memory()) {
++    return;
++  }
++  if (generated_code_cache_context_) {
++    generated_code_cache_context_->Shutdown();
++  }
++  generated_code_cache_context_ =
++      base::MakeRefCounted<GeneratedCodeCacheContext>();
++  generated_code_cache_context_->Initialize(path, max_bytes);
++}
++
+ DevToolsBackgroundServicesContext*
+ StoragePartitionImpl::GetDevToolsBackgroundServicesContext() {
+   DCHECK(initialized_);
+diff --git a/content/browser/storage_partition_impl.h b/content/browser/storage_partition_impl.h
+index 64f0bfed741322d102a2d987913ccd89b604abe4..a478beb6baddcc2683b6b05d640f489706782d49 100644
+--- a/content/browser/storage_partition_impl.h
++++ b/content/browser/storage_partition_impl.h
+@@ -213,6 +213,8 @@ class CONTENT_EXPORT StoragePartitionImpl
+   DedicatedWorkerServiceImpl* GetDedicatedWorkerService() override;
+   SharedWorkerService* GetSharedWorkerService() override;
+   GeneratedCodeCacheContext* GetGeneratedCodeCacheContext() override;
++  void ReinitializeGeneratedCodeCacheContext(const base::FilePath& path,
++                                             int max_bytes);
+   DevToolsBackgroundServicesContext* GetDevToolsBackgroundServicesContext()
+       override;
+   ContentIndexContextImpl* GetContentIndexContext() override;

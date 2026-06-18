@@ -1,0 +1,285 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@anthropic.com>
+Date: Mon, 18 May 2026 10:52:13 +0100
+Subject: feat: deliver service worker preload data via
+ EmbeddedWorkerStartParams
+
+Adds an opaque BigBuffer field to EmbeddedWorkerStartParams plus a
+ContentBrowserClient::GetServiceWorkerStartupData() hook to populate it.
+The blob rides the existing browser->renderer-main->worker-thread
+marshalling that StartWorker already performs (GlobalScopeCreationParams
+moved across the thread boundary by WorkerThread::Start), so embedder
+service-worker startup data arrives on the worker thread ordered with
+worker creation, with no renderer-side cross-thread global, lock, or
+blocking wait. Exposed to the embedder on the worker thread via a new
+WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
+WorkerGlobalScope.
+
+diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
+index a0d355e51e17ff095e1fe97bcfebcdf1a0936f66..8cbbaaa30220608f4143232e06890296128441ae 100644
+--- a/content/browser/service_worker/service_worker_version.cc
++++ b/content/browser/service_worker/service_worker_version.cc
+@@ -2710,6 +2710,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+   params->ukm_source_id = ukm_source_id_;
+   params->storage_key = key_;
+ 
++  if (BrowserContext* browser_context =
++          context_->wrapper()->browser_context()) {
++    params->electron_preload_data =
++        browser_client->GetServiceWorkerStartupData(browser_context, scope_);
++  }
++
+   // policy_container_host could be null for registration restored from old DB
+   if (policy_container_host_) {
+     params->policy_container =
+diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
+index ea7f82b6bf90031757eb19e2ff86aba8dda65b9d..2eab8750c96ee160a347e388eb6cf054b5b72c8e 100644
+--- a/content/public/browser/content_browser_client.cc
++++ b/content/public/browser/content_browser_client.cc
+@@ -888,6 +888,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+   return std::nullopt;
+ }
+ 
++std::optional<mojo_base::BigBuffer>
++ContentBrowserClient::GetServiceWorkerStartupData(
++    BrowserContext* browser_context,
++    const GURL& scope) {
++  return std::nullopt;
++}
++
+ SpeechRecognitionManagerDelegate*
+ ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
+   return nullptr;
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index 7a905faa1f886a59fb75c984756b61f7a04be080..8f0293c4ad865f22a0abad364562ab035ae93cbc 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -1462,6 +1462,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+       RenderFrameHost* new_window_main_frame,
+       const GURL& target_url);
+ 
++  // Lets the embedder attach an opaque blob of startup data to a service
++  // worker's EmbeddedWorkerStartParams. It travels with StartWorker and is
++  // marshalled to the worker thread with the rest of the start params, so the
++  // embedder can deliver per-worker startup data (e.g. preload scripts) that
++  // is ordered with worker creation, without a renderer-side cross-thread
++  // global. Called on the UI thread when a service worker is starting.
++  // Returns nullopt for no data.
++  virtual std::optional<mojo_base::BigBuffer> GetServiceWorkerStartupData(
++      BrowserContext* browser_context,
++      const GURL& scope);
++
+   // Allows the embedder to return a delegate for the SpeechRecognitionManager.
+   // The delegate will be owned by the manager. It's valid to return nullptr.
+   virtual SpeechRecognitionManagerDelegate*
+diff --git a/content/renderer/service_worker/embedded_worker_instance_client_impl.cc b/content/renderer/service_worker/embedded_worker_instance_client_impl.cc
+index 5a85ad9a264b8498a220bfc0e87ff618478b917a..2b6971342cf2aeed469e9326eca0464a44b0adbe 100644
+--- a/content/renderer/service_worker/embedded_worker_instance_client_impl.cc
++++ b/content/renderer/service_worker/embedded_worker_instance_client_impl.cc
+@@ -97,6 +97,7 @@ void EmbeddedWorkerInstanceClientImpl::StartWorker(
+       ToWebPolicyContainer(std::move(params->policy_container));
+ 
+   start_data->is_cross_origin_isolated = params->cross_origin_isolated;
++  start_data->electron_preload_data = std::move(params->electron_preload_data);
+ 
+   // `cache_storage` may be null if COEP is not enabled, we cannot bind
+   // eagerly in that case.
+diff --git a/third_party/blink/public/mojom/service_worker/embedded_worker.mojom b/third_party/blink/public/mojom/service_worker/embedded_worker.mojom
+index a863f8280663bf5ca2e2972da07037a1c22b059e..7737a102d10a242070f5646ff1f7b171eff7f43c 100644
+--- a/third_party/blink/public/mojom/service_worker/embedded_worker.mojom
++++ b/third_party/blink/public/mojom/service_worker/embedded_worker.mojom
+@@ -4,6 +4,7 @@
+ 
+ module blink.mojom;
+ 
++import "mojo/public/mojom/base/big_buffer.mojom";
+ import "mojo/public/mojom/base/string16.mojom";
+ import "mojo/public/mojom/base/time.mojom";
+ import "mojo/public/mojom/base/unguessable_token.mojom";
+@@ -163,6 +164,14 @@ struct EmbeddedWorkerStartParams {
+   // Used to check whether the ServiceWorker has access to cross-origin
+   // isolated APIs or not.
+   bool cross_origin_isolated;
++
++  // Added by Electron. Opaque embedder blob (a serialized
++  // electron.mojom.RendererStartupData) carrying the service-worker preload
++  // set + process info, populated by
++  // ContentBrowserClient::GetServiceWorkerStartupData(). Travels with
++  // StartWorker so it reaches the worker thread ordered with worker creation,
++  // without a cross-thread global on the renderer.
++  mojo_base.mojom.BigBuffer? electron_preload_data;
+ };
+ 
+ // Holds timing information about the start worker sequence for UMA.
+diff --git a/third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h b/third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h
+index 4c43b0efbe41b274d9ab56f3f71e5abd091dc103..acfe6f15da7870b35c24a41cb555026f9a532866 100644
+--- a/third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h
++++ b/third_party/blink/public/web/modules/service_worker/web_service_worker_context_proxy.h
+@@ -32,6 +32,7 @@
+ #define THIRD_PARTY_BLINK_PUBLIC_WEB_MODULES_SERVICE_WORKER_WEB_SERVICE_WORKER_CONTEXT_PROXY_H_
+ 
+ #include "base/time/time.h"
++#include "mojo/public/cpp/base/big_buffer.h"
+ #include "mojo/public/cpp/system/data_pipe.h"
+ #include "third_party/blink/public/mojom/service_worker/controller_service_worker.mojom-shared.h"
+ #include "third_party/blink/public/mojom/service_worker/service_worker.mojom-shared.h"
+@@ -40,6 +41,7 @@
+ #include "third_party/blink/public/platform/web_string.h"
+ 
+ #include <memory>
++#include <optional>
+ 
+ namespace blink {
+ 
+@@ -81,6 +83,10 @@ class WebServiceWorkerContextProxy {
+   virtual bool HasHidEventHandlers() = 0;
+   virtual bool HasUsbEventHandlers() = 0;
+ 
++  // Added by Electron. The opaque embedder preload blob delivered with this
++  // worker's start params, read on the worker thread.
++  virtual const std::optional<mojo_base::BigBuffer>& ElectronPreloadData() = 0;
++
+   // Passes an associated endpoint handle to the remote end to be bound to a
+   // Channel-associated interface named |name|.
+   virtual void GetRemoteAssociatedInterface(
+diff --git a/third_party/blink/public/web/web_embedded_worker_start_data.h b/third_party/blink/public/web/web_embedded_worker_start_data.h
+index a3bfdd9c15d3cfc5053c2a36767ea7964f2740fd..d9d608ea5b01cff08654b11e455fd7af3fb71521 100644
+--- a/third_party/blink/public/web/web_embedded_worker_start_data.h
++++ b/third_party/blink/public/web/web_embedded_worker_start_data.h
+@@ -31,7 +31,10 @@
+ #ifndef THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_EMBEDDED_WORKER_START_DATA_H_
+ #define THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_EMBEDDED_WORKER_START_DATA_H_
+ 
++#include <optional>
++
+ #include "base/unguessable_token.h"
++#include "mojo/public/cpp/base/big_buffer.h"
+ #include "services/metrics/public/cpp/ukm_source_id.h"
+ #include "third_party/blink/public/common/fingerprinting_protection/noise_token.h"
+ #include "third_party/blink/public/common/loader/worker_main_script_load_parameters.h"
+@@ -75,6 +78,10 @@ struct WebEmbeddedWorkerStartData {
+ 
+   std::unique_ptr<WebPolicyContainer> policy_container;
+ 
++  // Added by Electron. Opaque embedder preload blob carried from the browser
++  // via EmbeddedWorkerStartParams; read on the service worker thread.
++  std::optional<mojo_base::BigBuffer> electron_preload_data;
++
+   explicit WebEmbeddedWorkerStartData(
+       WebFetchClientSettingsObject outside_fetch_client_settings_object)
+       : wait_for_debugger_mode(kDontWaitForDebugger),
+diff --git a/third_party/blink/renderer/core/workers/global_scope_creation_params.h b/third_party/blink/renderer/core/workers/global_scope_creation_params.h
+index f7f92a38ff6e4fac76dec40b62131af36c3675f4..74f49dd992caa27d2dd751fd21389d50c151ffa4 100644
+--- a/third_party/blink/renderer/core/workers/global_scope_creation_params.h
++++ b/third_party/blink/renderer/core/workers/global_scope_creation_params.h
+@@ -10,6 +10,7 @@
+ 
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/unguessable_token.h"
++#include "mojo/public/cpp/base/big_buffer.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "net/storage_access_api/status.h"
+ #include "services/metrics/public/cpp/ukm_source_id.h"
+@@ -261,6 +262,11 @@ struct CORE_EXPORT GlobalScopeCreationParams final {
+   // i.e. when DedicatedWorkerStart() was called.
+   std::optional<base::TimeTicks> dedicated_worker_start_time;
+ 
++  // Added by Electron. Opaque embedder preload blob, moved onto the worker
++  // global scope on the worker thread. Settable post-construction (like
++  // dedicated_worker_start_time) to avoid touching the ~35-arg ctor.
++  std::optional<mojo_base::BigBuffer> electron_preload_data;
++
+   // The parent ExecutionContext's Storage Access API status.
+   const net::StorageAccessApiStatus parent_storage_access_api_status;
+ 
+diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+index d7453149e4ac065f481f4197df6a25a8178e84a7..1287c42db21f02b30e4ecdc81427269f9caef599 100644
+--- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
++++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
+@@ -730,6 +730,9 @@ WorkerGlobalScope::WorkerGlobalScope(
+           std::move(creation_params->top_level_frame_security_origin)) {
+   // Workers should always maintain the default world of an isolate.
+   CHECK(creation_params->is_default_world_of_isolate);
++  // Added by Electron: stash the embedder preload blob before creation_params
++  // is consumed, so the service worker thread can read it later.
++  electron_preload_data_ = std::move(creation_params->electron_preload_data);
+   TRACE_EVENT("blink.worker", "WorkerGlobalScope::WorkerGlobalScope");
+   TRACE_EVENT_BEGIN("blink.worker", "WorkerGlobalScope setup",
+                     perfetto::Track::FromPointer(this));
+diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.h b/third_party/blink/renderer/core/workers/worker_global_scope.h
+index 563dc0d5478b54a63675d792280cfd43d2d9aa23..8cabdf2d3a3d798274568cf554ce268b8f92f759 100644
+--- a/third_party/blink/renderer/core/workers/worker_global_scope.h
++++ b/third_party/blink/renderer/core/workers/worker_global_scope.h
+@@ -31,6 +31,7 @@
+ 
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/time/time.h"
++#include "mojo/public/cpp/base/big_buffer.h"
+ #include "services/network/public/mojom/fetch_api.mojom-blink-forward.h"
+ #include "third_party/blink/public/common/permissions_policy/document_policy.h"
+ #include "third_party/blink/public/common/tokens/tokens.h"
+@@ -275,6 +276,12 @@ class CORE_EXPORT WorkerGlobalScope
+     return top_level_frame_security_origin_.get();
+   }
+ 
++  // Added by Electron. Opaque embedder preload blob delivered via
++  // EmbeddedWorkerStartParams; read on the worker thread.
++  const std::optional<mojo_base::BigBuffer>& ElectronPreloadData() const {
++    return electron_preload_data_;
++  }
++
+  protected:
+   WorkerGlobalScope(std::unique_ptr<GlobalScopeCreationParams>,
+                     WorkerThread*,
+@@ -387,6 +394,9 @@ class CORE_EXPORT WorkerGlobalScope
+ 
+   const ukm::SourceId ukm_source_id_;
+ 
++  // Added by Electron. See ElectronPreloadData().
++  std::optional<mojo_base::BigBuffer> electron_preload_data_;
++
+   // Pauses virtual time from the time the thread has initialized (including
+   // DevTools agents being configured while waiting for debugger) till the main
+   // script has completed loading. This is so that VT does not run while script
+diff --git a/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc b/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
+index 060741bf1b44e277e1d8849039787d41cdd72a9f..84b5fa8000bd6df4b59c8f2615b1719c52144669 100644
+--- a/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
++++ b/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
+@@ -253,6 +253,9 @@ void WebEmbeddedWorkerImpl::StartWorkerThread(
+       /*origin_to_use=*/nullptr, std::move(coep_reporting_observer),
+       std::move(dip_reporting_observer));
+ 
++  global_scope_creation_params->electron_preload_data =
++      std::move(worker_start_data->electron_preload_data);
++
+   worker_thread_ = std::make_unique<ServiceWorkerThread>(
+       std::make_unique<ServiceWorkerGlobalScopeProxy>(
+           *this, *worker_context_client_, initiator_thread_task_runner),
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
+index fe6d9ac879e8bfe3e0887ea4c2068f64954dcc9d..d6f1b42b62e9e145329f5b565916652ab292163d 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
+@@ -326,6 +326,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
+   return WorkerGlobalScope()->HasUsbEventHandlers();
+ }
+ 
++const std::optional<mojo_base::BigBuffer>&
++ServiceWorkerGlobalScopeProxy::ElectronPreloadData() {
++  return WorkerGlobalScope()->ElectronPreloadData();
++}
++
+ void ServiceWorkerGlobalScopeProxy::GetRemoteAssociatedInterface(
+     const WebString& name,
+     mojo::ScopedInterfaceEndpointHandle handle) {
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
+index 0abeafb3b651f7e3b01e297d5c14ee55bff4abcc..f60bb46ffccc750fa5685983b7c9ebbf97e7150e 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.h
+@@ -114,6 +114,7 @@ class ServiceWorkerGlobalScopeProxy final : public WebServiceWorkerContextProxy,
+   mojom::blink::ServiceWorkerFetchHandlerType FetchHandlerType() override;
+   bool HasHidEventHandlers() override;
+   bool HasUsbEventHandlers() override;
++  const std::optional<mojo_base::BigBuffer>& ElectronPreloadData() override;
+   void GetRemoteAssociatedInterface(
+       const WebString& name,
+       mojo::ScopedInterfaceEndpointHandle handle) override;

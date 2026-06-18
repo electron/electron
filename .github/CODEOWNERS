@@ -20,7 +20,3 @@ DEPS                                    @electron/wg-upgrades
 
 # Infra WG
 /.claude/                               @electron/wg-infra
-/.github/actions/                       @electron/wg-infra
-/.github/workflows/*-publish.yml        @electron/wg-infra
-/.github/workflows/build.yml            @electron/wg-infra
-/.github/workflows/pipeline-*.yml       @electron/wg-infra

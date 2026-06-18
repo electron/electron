@@ -39,6 +39,17 @@ class ServiceWorkerData : public mojom::ElectronRenderer {
 
   blink::WebServiceWorkerContextProxy* proxy() const { return proxy_; }
 
+  // The startup data the browser pushed for this renderer process at
+  // RenderProcessReady(), captured once when the preload realm is created
+  // so its preload contents and code caches can be looked up from C++ without
+  // marshaling them through V8.
+  void SetWorkerStartupData(mojom::RendererStartupDataPtr data) {
+    worker_startup_data_ = std::move(data);
+  }
+  const mojom::RendererStartupDataPtr& worker_startup_data() const {
+    return worker_startup_data_;
+  }
+
   // mojom::ElectronRenderer
   void Message(bool internal,
                const std::string& channel,
@@ -60,6 +71,8 @@ class ServiceWorkerData : public mojom::ElectronRenderer {
   v8::Global<v8::Context> v8_context_;
 
   mojo::AssociatedReceiver<mojom::ElectronRenderer> receiver_{this};
+
+  mojom::RendererStartupDataPtr worker_startup_data_;
 
   base::WeakPtrFactory<ServiceWorkerData> weak_ptr_factory_{this};
 };

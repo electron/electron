@@ -14,6 +14,7 @@ import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
 import("//tools/grit/repack.gni")
+import("//tools/resources/generate_resource_allowlist.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
 import("build/asar.gni")
@@ -31,6 +32,18 @@ import("filenames.hunspell.gni")
 import("filenames.libcxx.gni")
 import("filenames.libcxxabi.gni")
 
+declare_args() {
+  # Emit a build-time V8 code cache for the electron/js2c/* bundles. When
+  # false an empty stub is compiled and bundles compile from source.
+  #
+  # Cross-arch is supported: the generator is built in v8_snapshot_toolchain
+  # (V8_TARGET_ARCH set to the target) and reads the target's snapshot blob,
+  # so the cache it emits is keyed to the target's read-only checksum -- the
+  # same mechanism that makes V8's mksnapshot cross-arch correct. Cross-OS is
+  # untested and stays off.
+  electron_generate_js2c_code_cache = host_os == target_os
+}
+
 if (is_mac) {
   import("//build/config/mac/rules.gni")
   import("//third_party/icu/config.gni")
@@ -38,7 +51,7 @@ if (is_mac) {
   import("build/rules.gni")
 
   assert(
-      mac_deployment_target == "12.0",
+      mac_deployment_target == "13.0",
       "Chromium has updated the mac_deployment_target, please update this assert and flag this as a breaking change (docs/breaking-changes.md)")
 }
 
@@ -530,6 +543,7 @@ source_set("electron_lib") {
     "//device/bluetooth",
     "//device/bluetooth/public/cpp",
     "//device/fido",
+    "//device/fido/strings",
     "//gin",
     "//gpu/ipc/client",
     "//media/capture/mojom:video_capture",
@@ -553,6 +567,11 @@ source_set("electron_lib") {
     "//third_party/blink/public/platform/media",
     "//third_party/boringssl",
     "//third_party/electron_node:libnode",
+
+    # Provides the strong SnapshotBuilder::GetEmbeddedSnapshotData() (the
+    # embedded Node startup snapshot) that overrides libnode's weak no-snapshot
+    # stub. Lets the browser process boot Node from a snapshot.
+    "//third_party/electron_node:node_snapshot",
     "//third_party/highway:libhwy",
     "//third_party/inspector_protocol:crdtp",
     "//third_party/leveldatabase",
@@ -573,7 +592,8 @@ source_set("electron_lib") {
     "//v8:v8_libplatform",
   ]
 
-  if (v8_use_external_startup_data && use_v8_context_snapshot) {
+  if (v8_use_external_startup_data && use_v8_context_snapshot &&
+      current_toolchain == default_toolchain) {
     deps += [ ":mksnapshot_checksum_gen" ]
   }
 
@@ -627,6 +647,19 @@ source_set("electron_lib") {
   }
   if (!is_mac) {
     sources += filenames.lib_sources_views
+  }
+
+  if (electron_generate_js2c_code_cache) {
+    sources += [
+      "$root_gen_dir/electron_natives_code_cache_browser.cc",
+      "$root_gen_dir/electron_natives_code_cache_renderer.cc",
+      "$root_gen_dir/electron_natives_code_cache_sandbox.cc",
+      "$root_gen_dir/electron_natives_code_cache_utility.cc",
+      "$root_gen_dir/electron_natives_code_cache_worker.cc",
+    ]
+    deps += [ ":run_electron_natives_codecache" ]
+  } else {
+    sources += [ "shell/common/node_natives_code_cache_stub.cc" ]
   }
 
   if (is_component_build) {
@@ -848,16 +881,204 @@ source_set("electron_lib") {
   }
 }
 
-action("mksnapshot_checksum_gen") {
-  script = "build/checksum_header.py"
+# Build-time host tool emitting V8 code caches for the electron/js2c/* framework
+# bundles. Built in v8_snapshot_toolchain (like node_mksnapshot) so it links V8
+# with V8_TARGET_ARCH set to the target and reads the target's snapshot blob --
+# the cache it emits is keyed to the target's read-only checksum and flag hash.
+# Cross-OS stays off; see electron_generate_js2c_code_cache.
+if (electron_generate_js2c_code_cache) {
+  if (current_toolchain == v8_snapshot_toolchain) {
+    executable("electron_natives_codecache") {
+      # Host build tool, not shipped Chromium code.
+      configs += [ "//build/config/compiler:no_chromium_code" ]
+      configs -= [ "//build/config/compiler:chromium_code" ]
+      include_dirs = [
+        ".",
+        "//",
+      ]
+      sources = [ "shell/common/electron_natives_codecache_main.cc" ]
 
-  outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
-  inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
-  args = rebase_path(inputs)
+      # node's zstd binding also needs the compression symbols.
+      deps = [
+        "//third_party/electron_node:libnode",
 
-  args += rebase_path(outputs)
+        # libnode no longer carries the GetEmbeddedSnapshotData stub; this
+        # (non-browser-flavor) tool builds caches against the v8 context
+        # snapshot, not the embedded Node snapshot, so it links the stub.
+        "//third_party/electron_node:node_snapshot_stub",
+        "//third_party/zstd:compress",
+      ]
+    }
 
-  deps = [ "//tools/v8_context_snapshot" ]
+    # The browser process boots from the embedded Node startup snapshot, whose
+    # read-only heap (and thus the code-cache read-only checksum) is owned
+    # uniquely by the SnapshotCreator-produced blob -- matching no standalone
+    # snapshot file. This variant links the real node_snapshot so it builds the
+    # browser bundles' cache against that exact snapshot's isolate (via
+    # GetEmbeddedSnapshotData + InitializeIsolateParams in the tool), the only
+    # isolate whose read-only checksum matches the runtime browser process.
+    if (node_use_node_snapshot) {
+      executable("electron_natives_codecache_snapshot") {
+        # Host build tool, not shipped Chromium code.
+        configs += [ "//build/config/compiler:no_chromium_code" ]
+        configs -= [ "//build/config/compiler:chromium_code" ]
+        include_dirs = [
+          ".",
+          "//",
+        ]
+        sources = [ "shell/common/electron_natives_codecache_main.cc" ]
+        deps = [
+          "//third_party/electron_node:libnode",
+          "//third_party/electron_node:node_snapshot",
+          "//third_party/zstd:compress",
+        ]
+      }
+    }
+  }
+
+  # One generated cache per process flavor: V8's code-cache key includes
+  # FlagList::Hash() over non-default flags, which differs per process type.
+  # The flag deltas below were captured from live processes.
+  _js2c_cc_flavors = [
+    {
+      name = "sandbox"  # sandboxed renderer (no Node env)
+      flags = "--enable-sharedarraybuffer-per-context"
+    },
+    {
+      name = "renderer"
+      flags = "--enable-sharedarraybuffer-per-context --rehash-snapshot " +
+              "--no-freeze-flags-after-init"
+    },
+    {
+      name = "utility"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+    },
+    {
+      name = "worker"
+      flags = "--rehash-snapshot --no-freeze-flags-after-init"
+    },
+  ]
+
+  # The browser flavor is special-cased below when a Node startup snapshot is
+  # embedded: its isolate (and so its code-cache read-only checksum) comes from
+  # that snapshot, not the v8 context snapshot. Without a snapshot it boots from
+  # the v8 context snapshot like the rest.
+  if (!node_use_node_snapshot) {
+    _js2c_cc_flavors += [
+      {
+        name = "browser"
+        flags = "--rehash-snapshot --no-freeze-flags-after-init"
+      },
+    ]
+  }
+
+  foreach(_f, _js2c_cc_flavors) {
+    action("run_electron_natives_codecache_" + _f.name) {
+      deps = [
+        ":electron_natives_codecache($v8_snapshot_toolchain)",
+        "//tools/v8_context_snapshot",
+        "//v8:run_mksnapshot_default",
+      ]
+      script = "//v8/tools/run.py"
+      _gen_dir =
+          get_label_info(":electron_natives_codecache($v8_snapshot_toolchain)",
+                         "root_out_dir")
+      _out = "$root_gen_dir/electron_natives_code_cache_" + _f.name + ".cc"
+      outputs = [ _out ]
+      args = [
+        "./" + rebase_path(_gen_dir + "/electron_natives_codecache",
+                           root_build_dir),
+        rebase_path(_out, root_build_dir),
+        rebase_path("$root_out_dir/$v8_context_snapshot_filename",
+                    root_build_dir),
+        _f.name,
+        _f.flags,
+      ]
+    }
+  }
+
+  # Browser flavor, built against the embedded Node startup snapshot so its
+  # code-cache read-only checksum matches the runtime browser isolate.
+  if (node_use_node_snapshot) {
+    action("run_electron_natives_codecache_browser") {
+      deps = [
+        ":electron_natives_codecache_snapshot($v8_snapshot_toolchain)",
+        "//v8:run_mksnapshot_default",
+      ]
+      script = "//v8/tools/run.py"
+      _gen_dir = get_label_info(
+              ":electron_natives_codecache_snapshot($v8_snapshot_toolchain)",
+              "root_out_dir")
+      _out = "$root_gen_dir/electron_natives_code_cache_browser.cc"
+      outputs = [ _out ]
+      args = [
+        "./" + rebase_path(_gen_dir + "/electron_natives_codecache_snapshot",
+                           root_build_dir),
+        rebase_path(_out, root_build_dir),
+
+        # Base blob for V8's global init; the isolate itself is created from the
+        # embedded snapshot, which overrides this (the tool ignores it when the
+        # real node_snapshot is linked).
+        rebase_path("$root_out_dir/snapshot_blob.bin", root_build_dir),
+        "browser",
+        "--rehash-snapshot --no-freeze-flags-after-init",
+      ]
+    }
+  }
+
+  group("run_electron_natives_codecache") {
+    public_deps = []
+    foreach(_f, _js2c_cc_flavors) {
+      public_deps += [ ":run_electron_natives_codecache_" + _f.name ]
+    }
+    if (node_use_node_snapshot) {
+      public_deps += [ ":run_electron_natives_codecache_browser" ]
+    }
+  }
+}
+
+# tools/v8_context_snapshot writes its output to $root_build_dir regardless
+# of toolchain, so this is only well-formed in the default toolchain (where
+# $root_out_dir == $root_build_dir). It is also only needed there -- only the
+# shipped framework reads snapshot_checksum.h.
+if (current_toolchain == default_toolchain) {
+  action("mksnapshot_checksum_gen") {
+    script = "build/checksum_header.py"
+
+    outputs = [ "$target_gen_dir/snapshot_checksum.h" ]
+    inputs = [ "$root_out_dir/$v8_context_snapshot_filename" ]
+    args = rebase_path(inputs)
+
+    args += rebase_path(outputs)
+
+    deps = [ "//tools/v8_context_snapshot" ]
+  }
+}
+
+# Resource allowlisting (slimmed locale paks + the completeness check) is only
+# wired up for Linux so far: Windows needs PDB-based extraction and macOS needs
+# Mach-O support in tools/resources/generate_resource_allowlist.py.
+electron_use_resource_allowlist =
+    enable_resource_allowlist_generation && is_linux
+
+if (electron_use_resource_allowlist) {
+  # The list of grit resource IDs actually referenced by the electron
+  # executable's link inputs, extracted from the ui::AllowlistedResource<id>
+  # markers that --allowlist-support plants at every resource-macro use. Used
+  # to repack only reachable strings into the locale .pak files.
+  electron_resource_allowlist_file =
+      "$target_gen_dir/electron_resource_allowlist.txt"
+
+  # TODO: on Windows this should extract from electron.exe.pdb instead of the
+  # inputs pseudo-link (and the executable must then stop depending on
+  # :packed_resources to avoid a dependency cycle).
+  generate_resource_allowlist("electron_resource_allowlist") {
+    deps = [ ":electron_resource_allowlist_inputs" ]
+    inputs = [
+      "$root_out_dir/libelectron_resource_allowlist_inputs$shlib_extension",
+    ]
+    output = electron_resource_allowlist_file
+  }
 }
 
 electron_paks("packed_resources") {
@@ -866,6 +1087,55 @@ electron_paks("packed_resources") {
     copy_data_to_bundle = true
   } else {
     output_dir = root_out_dir
+  }
+  if (electron_use_resource_allowlist) {
+    locale_allowlist = electron_resource_allowlist_file
+    deps = [ ":electron_resource_allowlist" ]
+  }
+}
+
+if (electron_use_resource_allowlist) {
+  # Asserts that every grit resource the binary can request is present in one
+  # of the shipped .pak files, so a missing string/.grd fails the build
+  # instead of rendering as an empty string at runtime.
+  action("electron_resource_allowlist_check") {
+    script = "build/check_resource_allowlist.py"
+    deps = [
+      ":electron_resource_allowlist",
+      ":packed_resources",
+    ]
+    _shipped_paks = [
+      "$root_out_dir/resources.pak",
+      "$root_out_dir/chrome_100_percent.pak",
+      "$root_out_dir/locales/en-US.pak",
+    ]
+    if (enable_hidpi) {
+      _shipped_paks += [ "$root_out_dir/chrome_200_percent.pak" ]
+    }
+    inputs = [
+               electron_resource_allowlist_file,
+               "build/resource_allowlist_check_suppressions.txt",
+             ] + _shipped_paks
+    outputs = [ "$target_gen_dir/electron_resource_allowlist_check.stamp" ]
+    args = [
+      "--allowlist",
+      rebase_path(electron_resource_allowlist_file, root_build_dir),
+      "--gen-dir",
+      rebase_path(root_gen_dir, root_build_dir),
+      "--grit-dir",
+      rebase_path("//tools/grit", root_build_dir),
+      "--suppressions",
+      rebase_path("build/resource_allowlist_check_suppressions.txt",
+                  root_build_dir),
+      "--stamp",
+      rebase_path(outputs[0], root_build_dir),
+    ]
+    foreach(pak, _shipped_paks) {
+      args += [
+        "--pak",
+        rebase_path(pak, root_build_dir),
+      ]
+    }
   }
 }
 
@@ -956,6 +1226,15 @@ if (is_mac) {
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
+
+    # Perform full ThinLTO optimization in the link step for the framework
+    # (where all of Chromium/Electron's code lives on macOS), matching what
+    # Chrome does for its framework. The default thinlto_optimize_default
+    # config links with --lto-O0, which skips link-time optimization entirely
+    # and gives up most of the benefit of ThinLTO and PGO.
+    configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
+    configs += [ "//build/config/compiler:thinlto_optimize_max" ]
+
     framework_contents = [
       "Resources",
       "Libraries",
@@ -1286,8 +1565,47 @@ if (is_mac) {
     ]
   }
 
+  # Deps that determine the native code linked into the electron executable.
+  # Shared with :electron_resource_allowlist_inputs below so the resource
+  # allowlist is computed from exactly the same link inputs as the shipped
+  # binary.
+  electron_app_link_deps = [
+    ":default_app_asar",
+    ":electron_app_manifest",
+    ":electron_lib",
+    ":electron_win32_resources",
+    "//components/crash/core/app",
+    "//content:sandbox_helper_win",
+    "//electron/buildflags",
+    "//third_party/electron_node:libnode",
+    "//ui/strings",
+  ]
+
+  if (electron_use_resource_allowlist) {
+    # Pseudo-link sharing the executable's link inputs: --collect-inputs-only
+    # makes gcc_solink_wrapper.py skip the real link and write the list of
+    # link inputs instead. generate_resource_allowlist greps those inputs for
+    # ui::AllowlistedResource<id> markers, which is the supported way to
+    # extract the referenced-resource set on ELF (the markers are dropped from
+    # the linked binary by --gc-sections and the debug strings live in .dwo
+    # files with use_debug_fission).
+    shared_library("electron_resource_allowlist_inputs") {
+      ldflags = [ "--collect-inputs-only" ]
+      deps = electron_app_link_deps
+    }
+  }
+
   executable("electron_app") {
     output_name = electron_project_name
+
+    # Perform full ThinLTO optimization in the link step for the main binary,
+    # matching what Chrome does for its main executable. The default
+    # thinlto_optimize_default config links with --lto-O0, which skips
+    # link-time optimization entirely and gives up most of the benefit of
+    # ThinLTO and PGO.
+    configs -= [ "//build/config/compiler:thinlto_optimize_default" ]
+    configs += [ "//build/config/compiler:thinlto_optimize_max" ]
+
     if (is_win) {
       sources = [ "shell/app/electron_main_win.cc" ]
     } else if (is_linux) {
@@ -1298,18 +1616,7 @@ if (is_mac) {
       ]
     }
     include_dirs = [ "." ]
-    deps = [
-      ":default_app_asar",
-      ":electron_app_manifest",
-      ":electron_lib",
-      ":electron_win32_resources",
-      ":packed_resources",
-      "//components/crash/core/app",
-      "//content:sandbox_helper_win",
-      "//electron/buildflags",
-      "//third_party/electron_node:libnode",
-      "//ui/strings",
-    ]
+    deps = electron_app_link_deps + [ ":packed_resources" ]
 
     data = []
     data_deps = []
@@ -1512,8 +1819,6 @@ dist_zip("electron_dist_zip") {
         ":strip_chrome_crashpad_handler",
         ":strip_chrome_sandbox",
         ":strip_electron_binary",
-        ":strip_libEGL_shlib",
-        ":strip_libGLESv2_shlib",
         ":strip_libffmpeg_shlib",
         ":strip_libvk_swiftshader_shlib",
       ]
@@ -1522,6 +1827,12 @@ dist_zip("electron_dist_zip") {
     data_deps += [ "//sandbox/linux:chrome_sandbox" ]
   }
   deps = data_deps
+  if (electron_use_resource_allowlist) {
+    # Build-order dep only (not data_deps): the check must pass before the
+    # dist zip is created, but its stamp output must not be packed into the
+    # zip's runtime deps.
+    deps += [ ":electron_resource_allowlist_check" ]
+  }
   outputs = [ "$root_build_dir/dist.zip" ]
 }
 
@@ -1566,8 +1877,6 @@ dist_zip("electron_mksnapshot_zip") {
   data_deps = mksnapshot_deps
   if (is_linux && is_official_build) {
     data_deps += [
-      ":strip_libEGL_shlib",
-      ":strip_libGLESv2_shlib",
       ":strip_libffmpeg_shlib",
       ":strip_libvk_swiftshader_shlib",
       ":strip_mksnapshot_binary",
@@ -1744,20 +2053,6 @@ if (is_linux && is_official_build) {
     symbol_output = "$root_out_dir/debug/chrome-sandbox.debug"
     compress_debug_sections = true
     deps = [ "//sandbox/linux:chrome_sandbox" ]
-  }
-
-  strip_binary("strip_libEGL_shlib") {
-    binary_input = "$root_out_dir/libEGL.so"
-    symbol_output = "$root_out_dir/debug/libEGL.so.debug"
-    compress_debug_sections = true
-    deps = [ "//third_party/angle:libEGL" ]
-  }
-
-  strip_binary("strip_libGLESv2_shlib") {
-    binary_input = "$root_out_dir/libGLESv2.so"
-    symbol_output = "$root_out_dir/debug/libGLESv2.so.debug"
-    compress_debug_sections = true
-    deps = [ "//third_party/angle:libGLESv2" ]
   }
 
   strip_binary("strip_libffmpeg_shlib") {

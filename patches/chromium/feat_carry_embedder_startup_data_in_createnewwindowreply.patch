@@ -1,0 +1,168 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@anthropic.com>
+Date: Wed, 13 May 2026 11:54:44 -0700
+Subject: feat: carry embedder startup data in CreateNewWindowReply
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When a renderer calls window.open() with no URL, the new window's
+RenderFrame, its synchronous about:blank document, and its embedder
+preload scripts are all created inside the renderer's window.open()
+call stack — between the CreateNewWindow sync IPC returning and the
+call returning to page script. There is no other browser-to-renderer
+transport that can reach the new frame before its DidCreateScriptContext
+fires, so the embedder cannot deliver per-window startup data (preload
+scripts, environment, code caches) that the embedder may have customized
+for the new window during CreateNewWindow.
+
+Add an opaque BigBuffer field to CreateNewWindowReply, populated via a
+new ContentBrowserClient::GetExtraCreateNewWindowReplyData() hook (called
+unconditionally; the embedder decides whether to return data — Electron
+returns it only for windows that stay on about:blank, since a window
+that navigates gets the data through the normal navigation flow), and
+consumed via a new ContentRendererClient::SetPendingCreateNewWindowStartupData()
+hook called before the new RenderFrame is created so it can be picked up
+by RenderFrameCreated() on the same call stack.
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 36ac6dd080de9205fcc1e08829e598fd754fc455..47d2cc2456b18d285c470f3f0e4d4d6e2e4339d3 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -10534,7 +10534,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+       new_main_rfh->GetSiteInstance()->browsing_instance_token(),
+       delegate_->GetColorProviderColorMaps(),
+       /*widget_screen_rect=*/std::nullopt,
+-      /*window_screen_rect=*/std::nullopt);
++      /*window_screen_rect=*/std::nullopt,
++      /*electron_startup_data=*/std::nullopt);
++
++  reply->electron_startup_data =
++      GetContentClient()->browser()->GetExtraCreateNewWindowReplyData(
++          new_main_rfh, params->target_url);
+ 
+   new_main_rfh->render_view_host()->RenderViewCreated(new_main_rfh);
+ 
+diff --git a/content/common/frame.mojom b/content/common/frame.mojom
+index b75d4837787a3acb8ded9c9942a6de4ba0ec48b4..8e084e3114927efeb7b5b01f5a847b8fb6cf6258 100644
+--- a/content/common/frame.mojom
++++ b/content/common/frame.mojom
+@@ -13,6 +13,7 @@ import "content/public/common/window_container_type.mojom";
+ import "ipc/constants.mojom";
+ import "mojo/public/mojom/base/file_path.mojom";
+ import "mojo/public/mojom/base/time.mojom";
++import "mojo/public/mojom/base/big_buffer.mojom";
+ import "mojo/public/mojom/base/unguessable_token.mojom";
+ import "skia/public/mojom/skcolor.mojom";
+ import "services/network/public/mojom/attribution.mojom";
+@@ -701,6 +702,14 @@ struct CreateNewWindowReply {
+   // Initial window geometry.
+   gfx.mojom.Rect? widget_screen_rect;
+   gfx.mojom.Rect? window_screen_rect;
++
++  // Extra field added by Electron. Carries the new window's preload startup
++  // data (an opaque embedder blob) so its synchronous about:blank document can
++  // run the preload that the embedder may have overridden — the about:blank's
++  // DidCreateScriptContext fires entirely renderer-side before any other
++  // browser-to-renderer transport can reach the new frame. Populated by
++  // ContentBrowserClient::GetExtraCreateNewWindowReplyData; may be null.
++  mojo_base.mojom.BigBuffer? electron_startup_data;
+ };
+ 
+ // A per-navigation interface passed along with the BeginNavigation call, used
+diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
+index 37a6320baf22d9a432a1acec40a5f40a0c016c72..ea7f82b6bf90031757eb19e2ff86aba8dda65b9d 100644
+--- a/content/public/browser/content_browser_client.cc
++++ b/content/public/browser/content_browser_client.cc
+@@ -881,6 +881,13 @@ bool ContentBrowserClient::CanCreateWindow(
+   return true;
+ }
+ 
++std::optional<mojo_base::BigBuffer>
++ContentBrowserClient::GetExtraCreateNewWindowReplyData(
++    RenderFrameHost* new_window_main_frame,
++    const GURL& target_url) {
++  return std::nullopt;
++}
++
+ SpeechRecognitionManagerDelegate*
+ ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
+   return nullptr;
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index c5277279db44aa1287badb80ce12b13c776f54ec..7a905faa1f886a59fb75c984756b61f7a04be080 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -64,6 +64,7 @@
+ #include "media/mojo/mojom/speech_recognizer.mojom-forward.h"
+ #include "mojo/public/cpp/bindings/generic_pending_receiver.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
++#include "mojo/public/cpp/base/big_buffer.h"
+ #include "mojo/public/cpp/bindings/pending_remote.h"
+ #include "mojo/public/cpp/bindings/remote.h"
+ #include "mojo/public/cpp/system/message_pipe.h"
+@@ -1450,6 +1451,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+       bool opener_suppressed,
+       bool* no_javascript_access);
+ 
++  // Lets the embedder attach an opaque blob of startup data to the
++  // CreateNewWindowReply for a window.open() child window. The new window's
++  // synchronous about:blank document is created — and runs its embedder
++  // preload scripts — entirely inside the renderer's window.open() call, so
++  // there is no other browser-to-renderer transport that can reach it before
++  // it needs the data. |target_url| is the URL the new window will navigate
++  // to, if any (empty or about:blank otherwise). Returns nullopt for no data.
++  virtual std::optional<mojo_base::BigBuffer> GetExtraCreateNewWindowReplyData(
++      RenderFrameHost* new_window_main_frame,
++      const GURL& target_url);
++
+   // Allows the embedder to return a delegate for the SpeechRecognitionManager.
+   // The delegate will be owned by the manager. It's valid to return nullptr.
+   virtual SpeechRecognitionManagerDelegate*
+diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
+index 72c4d2f042afd428f2bf945bf54de873f256ca21..492694475e63e441a09a264cbbb2fc4fd585c3f1 100644
+--- a/content/public/renderer/content_renderer_client.h
++++ b/content/public/renderer/content_renderer_client.h
+@@ -24,6 +24,7 @@
+ #include "content/public/common/alternative_error_page_override_info.mojom.h"
+ #include "content/public/common/content_client.h"
+ #include "media/base/audio_parameters.h"
++#include "mojo/public/cpp/base/big_buffer.h"
+ #include "media/base/key_system_info.h"
+ #include "media/base/key_systems_support_registration.h"
+ #include "media/base/supported_types.h"
+@@ -113,6 +114,16 @@ class CONTENT_EXPORT ContentRendererClient {
+   // Notifies that a new RenderFrame has been created.
+   virtual void RenderFrameCreated(RenderFrame* render_frame) {}
+ 
++  // Called from RenderFrameImpl::CreateNewWindow() with the embedder startup
++  // data attached to the CreateNewWindowReply (see
++  // ContentBrowserClient::GetExtraCreateNewWindowReplyData), before the new
++  // window's RenderFrame is created. The new RenderFrame and its synchronous
++  // about:blank document are built on the same call stack, so the embedder can
++  // stash this data somewhere process-global and consume it from
++  // RenderFrameCreated() for the new frame.
++  virtual void SetPendingCreateNewWindowStartupData(mojo_base::BigBuffer data) {
++  }
++
+   // Notifies that a new WebView has been created.
+   // `outermost_origin` is only set if it is an extension scheme, otherwise
+   // it will be null. It is null to avoid leaking unnecessary information into
+diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
+index d87986257de25e310efa9444ad634c3bd4703a6f..0f9260651a1ded27ce1cdc1071135662bce3dcd4 100644
+--- a/content/renderer/render_frame_impl.cc
++++ b/content/renderer/render_frame_impl.cc
+@@ -7016,6 +7016,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+     return nullptr;
+   }
+ 
++  // Hand the embedder its startup data for the new window before the new
++  // RenderFrame is created — it will be consumed by RenderFrameCreated() on
++  // the same synchronous call stack. |reply| is null for kBlocked/kIgnore.
++  if (reply && reply->electron_startup_data) {
++    GetContentClient()->renderer()->SetPendingCreateNewWindowStartupData(
++        std::move(*reply->electron_startup_data));
++  }
++
+   // If creation of the window was blocked (e.g. because this frame doesn't
+   // have user activation), return before consuming user activation. A frame
+   // that isn't allowed to open a window  shouldn't be able to consume the

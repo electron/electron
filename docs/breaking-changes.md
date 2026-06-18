@@ -12,7 +12,67 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (44.0)
+
+### Removed: macOS 12 support
+
+macOS 12 (Monterey) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/7907086).
+
+Older versions of Electron will continue to run on Monterey, but macOS 13 (Ventura)
+or later will be required to run Electron v44.0.0 and higher.
+
+### Behavior Changed: ANGLE is statically linked on Linux
+
+ANGLE is now [statically linked](https://chromium-review.googlesource.com/c/chromium/src/+/7932888)
+into the Electron binary on Linux, matching upstream Chromium. The `libEGL.so` and
+`libGLESv2.so` libraries are no longer shipped in the Linux distribution.
+
+Apps that replaced or managed their own ANGLE versions by swapping out these
+libraries can no longer do so on Linux. Additionally, because ANGLE is now part
+of the Electron binary, it is loaded into every process rather than only the GPU
+process, which may surface regressions in unusual configurations.
+
+Windows and macOS are unaffected; ANGLE continues to be shipped as separate
+libraries on those platforms.
+
 ## Planned Breaking API Changes (43.0)
+
+### Behavior Changed: WCO respects the native title bar layout on Linux
+
+Frameless windows with Window Controls Overlay (WCO) now adopt the native title bar layout and user settings on Linux. For example, controls will appear on the left side of the frame on RTL systems, and only the close button will be visible by default on GNOME. Depending on the user's desktop environment and configuration, buttons can appear on the left or right side of the frame (or both). To account for all possibilities, use the CSS variables `env(titlebar-area-x, 0px)` and `env(titlebar-area-width, 100%)` to constrain your app's title bar content to a safe area.
+
+### Removed: Unity desktop environment support on Linux
+
+Unity has not been the default desktop environment in Ubuntu LTS since version 16.04, which is not supported by current versions of Electron. The deprecation does not
+prevent Electron from running on Unity if it is installed in a newer distribution, but it will no longer offer unique functionality. In general, Electron supports
+modern [Freedesktop](https://specifications.freedesktop.org/) standards on Linux rather than APIs which only work in specific environments.
+
+One API has been removed: `app.isUnityRunning()`. Some Unity-specific APIs no longer function on Linux, but remain supported on other platforms:
+
+* `app.setBadgeCount(count)` and `app.badgeCount` _macOS_
+* `BaseWindow.setProgressBar(progress)` and `BrowserWindow.setProgressBar(progress)` _Windows_ _macOS_.
+
+### Behavior Changed: `NativeImage.toBitmap()` now normalizes color space
+
+`NativeImage.toBitmap()` (and its deprecated alias `NativeImage.getBitmap()`) now normalizes pixel data to sRGB by default. Previously, raw pixel data was returned without color space conversion, which meant pixel values from images with different embedded color profiles (e.g., Display P3 on macOS) could differ for the same visual color.
+
+To preserve the previous behavior, pass the image's original color space in the `colorSpace`
+option. You can also pass `colorSpace` to convert to any other specific color space:
+
+```js
+const image = nativeImage.createFromPath('photo.png')
+// New default: normalized to sRGB
+const srgbBitmap = image.toBitmap()
+// Convert to Display P3
+const p3Bitmap = image.toBitmap({
+  colorSpace: {
+    primaries: 'p3',
+    transfer: 'srgb',
+    matrix: 'rgb',
+    range: 'full'
+  }
+})
+```
 
 ### Behavior Changed: `chrome.scripting` CSS injection matches more fallback frames
 
@@ -50,6 +110,13 @@ if (!result.canceled && result.filePaths.length > 0) {
   lastUsedPath = path.dirname(result.filePaths[0])
 }
 ```
+
+### Removed: `showHiddenFiles` in Dialogs on Linux
+
+The `showHiddenFiles` property is no longer supported on Linux.
+It continues to work on macOS and Windows. GTK intends for this feature
+to be a user choice rather than an app choice, and has removed the API
+to do this programmatically.
 
 ## Planned Breaking API Changes (42.0)
 
@@ -150,7 +217,7 @@ When the value of the cookie being set remains unchanged but some of its attribu
 ### Deprecated: `showHiddenFiles` in Dialogs on Linux
 
 This property will still be honored on macOS and Windows, but support on Linux
-will be removed in Electron 42. GTK intends for this to be a user choice rather
+will be removed in a future version of Electron. GTK intends for this to be a user choice rather
 than an app choice and has removed the API to do this programmatically.
 
 ## Planned Breaking API Changes (40.0)

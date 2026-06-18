@@ -395,6 +395,33 @@ describe('ServiceWorkerMain module', () => {
     });
   });
 
+  describe('process object', () => {
+    beforeEach(() => {
+      registerPreload('preload-tests.js');
+    });
+
+    it('exposes process props from the worker startup data push', async () => {
+      // The service-worker preload realm receives its preload set + process
+      // info via the per-process ElectronWorkerStartup mojo push at
+      // RenderProcessReady — there is no sync IPC fallback. This verifies the
+      // push delivered the same shape the preload realm needs.
+      loadWorkerScript();
+      const serviceWorker = await waitForServiceWorker('running');
+      const result: any = await runTest(serviceWorker, { name: 'testProcess', args: [] });
+      expect(result.type).to.equal('service-worker');
+      expect(result.sandboxed).to.be.true();
+      expect(result.contextIsolated).to.be.true();
+      expect(result.arch).to.equal(process.arch);
+      expect(result.platform).to.equal(process.platform);
+      expect(result.version).to.equal(process.version);
+      expect(result.electronVersion).to.equal(process.versions.electron);
+      expect(result.chromeVersion).to.equal(process.versions.chrome);
+      expect(result.nodeVersion).to.equal(process.versions.node);
+      expect(result.hasEnv).to.be.true('preload realm should have process.env');
+      expect(result.hasExecPath).to.be.true('preload realm should have process.execPath');
+    });
+  });
+
   describe('contextBridge', () => {
     beforeEach(() => {
       registerPreload('preload-tests.js');

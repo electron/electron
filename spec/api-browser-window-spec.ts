@@ -19,6 +19,7 @@ import {
 import { expect } from 'chai';
 
 import * as childProcess from 'node:child_process';
+import * as crypto from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -63,6 +64,17 @@ const expectBoundsEqual = (actual: any, expected: any) => {
   }
 };
 
+// Is the window centered at the given size?
+const expectCenteredBounds = (win: BrowserWindow, width: number, height: number) => {
+  const { workArea } = screen.getDisplayMatching(win.getBounds());
+  expectBoundsEqual(win.getBounds(), {
+    x: workArea.x + Math.floor((workArea.width - width) / 2),
+    y: workArea.y + Math.floor((workArea.height - height) / 2),
+    width,
+    height
+  });
+};
+
 const isBeforeUnload = (event: Event, level: number, message: string) => {
   return message === 'beforeunload';
 };
@@ -102,6 +114,14 @@ describe('BrowserWindow module', () => {
         w.destroy();
       }).not.to.throw();
     });
+
+    for (const frame of [true, false]) {
+      ifit(process.platform !== 'darwin')(`creates a window centered at the requested size (frame: ${frame})`, () => {
+        const w = new BrowserWindow({ show: false, frame, width: 600, height: 400 });
+        expectCenteredBounds(w, 600, 400);
+        w.destroy();
+      });
+    }
   });
 
   describe('garbage collection', () => {
@@ -1902,6 +1922,20 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform !== 'darwin')('BrowserWindow.center()', () => {
+      for (const frame of [true, false]) {
+        it(`moves a window to the center and preserves its size (frame: ${frame})`, () => {
+          const w = new BrowserWindow({ show: false, frame, width: 600, height: 400 });
+
+          const { workArea } = screen.getDisplayMatching(w.getBounds());
+          w.setPosition(workArea.x, workArea.y);
+          w.center();
+          expectCenteredBounds(w, 600, 400);
+          w.destroy();
+        });
+      }
+    });
+
     describe('BrowserWindow.setContentSize(width, height)', () => {
       it('sets the content size', async () => {
         // NB. The CI server has a very small screen. Attempting to size the window
@@ -3364,40 +3398,28 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.setOpacity(opacity)', () => {
     afterEach(closeAllWindows);
 
-    ifdescribe(process.platform !== 'linux')('Windows and Mac', () => {
-      it('make window with initial opacity', () => {
-        const w = new BrowserWindow({ show: false, opacity: 0.5 });
-        expect(w.getOpacity()).to.equal(0.5);
-      });
-      it('allows setting the opacity', () => {
-        const w = new BrowserWindow({ show: false });
-        expect(() => {
-          w.setOpacity(0.0);
-          expect(w.getOpacity()).to.equal(0.0);
-          w.setOpacity(0.5);
-          expect(w.getOpacity()).to.equal(0.5);
-          w.setOpacity(1.0);
-          expect(w.getOpacity()).to.equal(1.0);
-        }).to.not.throw();
-      });
-
-      it('clamps opacity to [0.0...1.0]', () => {
-        const w = new BrowserWindow({ show: false, opacity: 0.5 });
-        w.setOpacity(100);
-        expect(w.getOpacity()).to.equal(1.0);
-        w.setOpacity(-100);
+    it('make window with initial opacity', () => {
+      const w = new BrowserWindow({ show: false, opacity: 0.5 });
+      expect(w.getOpacity()).to.equal(0.5);
+    });
+    it('allows setting the opacity', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => {
+        w.setOpacity(0.0);
         expect(w.getOpacity()).to.equal(0.0);
-      });
+        w.setOpacity(0.5);
+        expect(w.getOpacity()).to.equal(0.5);
+        w.setOpacity(1.0);
+        expect(w.getOpacity()).to.equal(1.0);
+      }).to.not.throw();
     });
 
-    ifdescribe(process.platform === 'linux')('Linux', () => {
-      it('sets 1 regardless of parameter', () => {
-        const w = new BrowserWindow({ show: false });
-        w.setOpacity(0);
-        expect(w.getOpacity()).to.equal(1.0);
-        w.setOpacity(0.5);
-        expect(w.getOpacity()).to.equal(1.0);
-      });
+    it('clamps opacity to [0.0...1.0]', () => {
+      const w = new BrowserWindow({ show: false, opacity: 0.5 });
+      w.setOpacity(100);
+      expect(w.getOpacity()).to.equal(1.0);
+      w.setOpacity(-100);
+      expect(w.getOpacity()).to.equal(0.0);
     });
   });
 
@@ -4001,6 +4023,236 @@ describe('BrowserWindow module', () => {
         const [, argv] = await once(ipcMain, 'answer');
         expect(argv).to.include('--my-magic-arg=foo');
       });
+    });
+
+    describe('preload code cache', () => {
+      // Sandboxed preload scripts are compiled with a persistent V8 code cache
+      // keyed by sha256(scriptId) under userData/Code Cache/electron-preload/.
+      // The id for a webPreferences.preload is `preload-${absolutePath}`.
+      //
+      // The cache has an in-memory tier that lives for the browser process's
+      // lifetime and shadows the disk tier, so each test gets a fresh preload
+      // *path* (a unique temp copy of the fixture) → fresh cache key → no
+      // cross-test in-memory contamination.
+      const fixture = path.join(fixtures, 'module', 'preload-code-cache.js');
+      const cacheDir = path.join(app.getPath('userData'), 'Code Cache', 'electron-preload');
+
+      let preload: string;
+      let cacheFile: string;
+      beforeEach(() => {
+        preload = path.join(os.tmpdir(), `preload-code-cache-${crypto.randomUUID()}.js`);
+        fs.copyFileSync(fixture, preload);
+        const cacheKey = crypto.createHash('sha256').update(`preload-${preload}`).digest('hex').toUpperCase();
+        cacheFile = path.join(cacheDir, `${cacheKey}.cache`);
+      });
+      const waitFor = async (predicate: () => boolean, what: string, timeoutMs = 5000) => {
+        const start = Date.now();
+        while (Date.now() - start < timeoutMs) {
+          if (predicate()) return;
+          await setTimeout(50);
+        }
+        throw new Error(`timed out waiting for ${what}`);
+      };
+
+      const removeFile = async (filePath: string) => {
+        await waitFor(() => {
+          try {
+            fs.rmSync(filePath, { force: true });
+            return true;
+          } catch (error: any) {
+            if (error.code === 'ENOENT') return true;
+            if (error.code === 'EPERM' || error.code === 'EBUSY') return false;
+            throw error;
+          }
+        }, `remove ${filePath}`);
+      };
+
+      afterEach(async () => {
+        await closeAllWindows();
+        await removeFile(preload);
+        await removeFile(cacheFile);
+      });
+
+      const makeWindow = () =>
+        new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: true, contextIsolation: true, preload }
+        });
+
+      it('produces and persists a code cache after the first compile', async () => {
+        const w = makeWindow();
+        const ran = once(ipcMain, 'preload-code-cache-ran');
+        await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        const [, result] = await ran;
+        expect(result.hasEnv).to.be.true('preload should have process.env');
+        expect(result.electronVersion).to.equal(process.versions.electron);
+        // The cache write is async (thread pool, fire-and-forget); wait for it.
+        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile);
+        expect(fs.statSync(cacheFile).size).to.be.greaterThan(0);
+      });
+
+      it('runs the preload identically when consuming the cache', async () => {
+        // First navigation: produces the cache.
+        const w1 = makeWindow();
+        const ran1 = once(ipcMain, 'preload-code-cache-ran');
+        await w1.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        const [, result1] = await ran1;
+        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile);
+        w1.destroy();
+
+        // Second navigation: same preload, fresh renderer, should consume the
+        // (now in-memory + on-disk) cache. The preload must produce identical
+        // observable state — V8's CachedData validation guarantees the cached
+        // bytecode is for this exact source + V8 version + flag set.
+        const w2 = makeWindow();
+        const ran2 = once(ipcMain, 'preload-code-cache-ran');
+        await w2.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        const [, result2] = await ran2;
+        expect(result2.electronVersion).to.equal(result1.electronVersion);
+        expect(result2.chromeVersion).to.equal(result1.chromeVersion);
+        expect(result2.nodeVersion).to.equal(result1.nodeVersion);
+        expect(result2.arch).to.equal(result1.arch);
+        expect(result2.platform).to.equal(result1.platform);
+        expect(result2.hasEnv).to.be.true('preload should have process.env');
+        expect(result2.hasExecPath).to.be.true('preload should have process.execPath');
+      });
+
+      it('rejects and re-produces a corrupt disk cache without breaking the preload', async () => {
+        // Plant a garbage blob; the renderer's V8 CachedData validation
+        // should reject it (magic number / hash check), the preload should
+        // compile from source, and a fresh blob should overwrite the corrupt
+        // one. (This is also what happens after an Electron upgrade — the V8
+        // version hash mismatch triggers the same self-heal.)
+        fs.mkdirSync(cacheDir, { recursive: true });
+        fs.writeFileSync(cacheFile, Buffer.from('not a v8 code cache'));
+        const w = makeWindow();
+        const ran = once(ipcMain, 'preload-code-cache-ran');
+        await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        const [, result] = await ran;
+        expect(result.electronVersion).to.equal(process.versions.electron);
+        // Wait for the corrupt blob to be overwritten by a real one — V8 cache
+        // blobs are several hundred bytes minimum.
+        await waitFor(() => fs.statSync(cacheFile).size > 100, 'cache file to be overwritten');
+        expect(fs.statSync(cacheFile).size).to.be.greaterThan(100);
+      });
+
+      it('does not consume a cache produced from different source of the same length', async () => {
+        // V8's CachedData source check hashes only the source length, so the
+        // browser must invalidate by content.
+        const preloadSource = (marker: string) =>
+          `require('electron').ipcRenderer.send('preload-code-cache-marker', '${marker}');\n`;
+
+        fs.writeFileSync(preload, preloadSource('first-'));
+        const w1 = makeWindow();
+        const marker1 = once(ipcMain, 'preload-code-cache-marker');
+        await w1.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        expect((await marker1)[1]).to.equal('first-');
+        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile);
+        w1.destroy();
+
+        const second = preloadSource('second');
+        expect(second.length).to.equal(preloadSource('first-').length);
+        fs.writeFileSync(preload, second);
+
+        const w2 = makeWindow();
+        const marker2 = once(ipcMain, 'preload-code-cache-marker');
+        await w2.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        expect((await marker2)[1]).to.equal('second');
+      });
+    });
+
+    describe('window.open() popup preload', () => {
+      // A window.open() popup's synchronous about:blank document is created —
+      // and DidCreateScriptContext fires for it — entirely renderer-side,
+      // before the browser can push ElectronFrameStartup.SetStartupData(). The
+      // popup's preload set is delivered through CreateNewWindowReply instead
+      // (see GetExtraCreateNewWindowReplyData), which the browser builds after
+      // setWindowOpenHandler runs and sees any overrideBrowserWindowOptions.
+      const preloadA = path.join(fixtures, 'module', 'preload-window-open-a.js');
+      const preloadB = path.join(fixtures, 'module', 'preload-window-open-b.js');
+
+      afterEach(closeAllWindows);
+
+      const openPopupAndCollectPreloads = async (override?: Electron.BrowserWindowConstructorOptions) => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: true, contextIsolation: true, preload: preloadA }
+        });
+        if (override) {
+          w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: override }));
+        }
+        const reports: Array<{ which: string; href: string }> = [];
+        const handler = (_e: any, which: string, href: string) => reports.push({ which, href });
+        ipcMain.on('preload-ran', handler);
+        try {
+          // Load a file:// URL so the parent's report (href === file://...) is
+          // distinguishable from the popup's about:blank.
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          await w.webContents.executeJavaScript('void window.open()');
+          // Wait for the popup's about:blank preload to report in.
+          const start = Date.now();
+          while (Date.now() - start < 2000) {
+            if (reports.some((r) => r.href === 'about:blank')) break;
+            await setTimeout(50);
+          }
+        } finally {
+          ipcMain.removeListener('preload-ran', handler);
+        }
+        return reports;
+      };
+
+      it('runs the overridden preload on the popup about:blank document', async () => {
+        const reports = await openPopupAndCollectPreloads({
+          webPreferences: { sandbox: true, contextIsolation: true, preload: preloadB }
+        });
+        const popupReport = reports.find((r) => r.href === 'about:blank');
+        expect(popupReport).to.not.be.undefined('popup about:blank preload should have run');
+        // The about:blank document must run preload B (the override), NOT
+        // preload A (the opener's). This is what setWindowOpenHandler is for.
+        expect(popupReport!.which).to.equal('b');
+      });
+
+      it('runs no preload on the popup about:blank when only security prefs are inherited', async () => {
+        // Without a setWindowOpenHandler that sets webPreferences.preload, the
+        // popup inherits the opener's *security* prefs (sandbox,
+        // contextIsolation, ...) but not its preload. The about:blank document
+        // therefore runs no preload — matching legacy Electron behavior.
+        const reports = await openPopupAndCollectPreloads();
+        const popupReport = reports.find((r) => r.href === 'about:blank');
+        expect(popupReport).to.be.undefined();
+      });
+
+      it('runs the opener preload when explicitly carried through the override', async () => {
+        // Apps that want the popup to use the opener's preload pass it
+        // explicitly through overrideBrowserWindowOptions.
+        const reports = await openPopupAndCollectPreloads({
+          webPreferences: { sandbox: true, contextIsolation: true, preload: preloadA }
+        });
+        const popupReport = reports.find((r) => r.href === 'about:blank');
+        expect(popupReport).to.not.be.undefined('popup about:blank preload should have run');
+        expect(popupReport!.which).to.equal('a');
+      });
+    });
+
+    describe('preload script stack traces', () => {
+      afterEach(closeAllWindows);
+      // Preloads are compiled via ScriptCompiler::CompileFunction(), which
+      // takes the bare body as the function body — there is no string-templated
+      // wrapper offsetting line numbers. An error thrown on line N of the
+      // preload file should report line N in the stack trace.
+      for (const sandbox of [true, false]) {
+        it(`reports correct line numbers in preload errors (sandbox: ${sandbox})`, async () => {
+          const preload = path.join(fixtures, 'module', 'preload-stack-trace.js');
+          const w = new BrowserWindow({ show: false, webPreferences: { sandbox, preload } });
+          const ran = once(ipcMain, 'preload-stack-trace');
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          const [, { message, stack }] = await ran;
+          expect(message).to.equal('preload-stack-trace-marker');
+          // The throw is on line 9 of preload-stack-trace.js (see the marker
+          // comment in that fixture).
+          expect(stack).to.match(/preload-stack-trace\.js:9:\d+/, `stack should reference line 9, got:\n${stack}`);
+        });
+      }
     });
 
     describe('"node-integration" option', () => {
@@ -5778,65 +6030,53 @@ describe('BrowserWindow module', () => {
         expect(w.maximizable).to.be.true('maximizable');
       });
 
-      it('does not change window size when disabled and enabled', () => {
-        const w = new BrowserWindow({
-          show: false,
-          width: 400,
-          height: 300,
-          frame: true
+      for (const frame of [true, false]) {
+        describe(`bounds stability for resizable state changes (frame: ${frame})`, () => {
+          it('does not change window size when disabled and enabled', () => {
+            const w = new BrowserWindow({
+              show: false,
+              width: 400,
+              height: 300,
+              frame
+            });
+
+            w.setResizable(false);
+            expectBoundsEqual(w.getSize(), [400, 300]);
+            w.setResizable(true);
+            expectBoundsEqual(w.getSize(), [400, 300]);
+          });
+
+          it('does not shrink window after setResizable(false) when bounds are reapplied', () => {
+            const w = new BrowserWindow({
+              show: false,
+              frame,
+              width: 400,
+              height: 300
+            });
+
+            w.setResizable(false);
+            const bounds = w.getBounds();
+            w.setBounds(bounds);
+            expectBoundsEqual(w.getSize(), [400, 300]);
+          });
+
+          ifit(process.platform === 'win32')('does not change window bounds when maximized', () => {
+            const w = new BrowserWindow({
+              show: true,
+              frame,
+              thickFrame: true
+            });
+            expect(w.isResizable()).to.be.true('resizable');
+            w.maximize();
+            expect(w.isMaximized()).to.be.true('maximized');
+            const bounds = w.getBounds();
+            w.setResizable(false);
+            expectBoundsEqual(w.getBounds(), bounds);
+            w.setResizable(true);
+            expectBoundsEqual(w.getBounds(), bounds);
+          });
         });
-
-        w.setResizable(false);
-        expectBoundsEqual(w.getSize(), [400, 300]);
-        w.setResizable(true);
-        expectBoundsEqual(w.getSize(), [400, 300]);
-      });
-
-      it('does not change window size when disabled and enabled for frameless window', () => {
-        const w = new BrowserWindow({
-          show: false,
-          width: 400,
-          height: 300,
-          frame: false
-        });
-
-        w.setResizable(false);
-        expectBoundsEqual(w.getSize(), [400, 300]);
-        w.setResizable(true);
-        expectBoundsEqual(w.getSize(), [400, 300]);
-      });
-
-      ifit(process.platform === 'win32')('do not change window with frame bounds when maximized', () => {
-        const w = new BrowserWindow({
-          show: true,
-          frame: true,
-          thickFrame: true
-        });
-        expect(w.isResizable()).to.be.true('resizable');
-        w.maximize();
-        expect(w.isMaximized()).to.be.true('maximized');
-        const bounds = w.getBounds();
-        w.setResizable(false);
-        expectBoundsEqual(w.getBounds(), bounds);
-        w.setResizable(true);
-        expectBoundsEqual(w.getBounds(), bounds);
-      });
-
-      ifit(process.platform === 'win32')('do not change window without frame bounds when maximized', () => {
-        const w = new BrowserWindow({
-          show: true,
-          frame: false,
-          thickFrame: true
-        });
-        expect(w.isResizable()).to.be.true('resizable');
-        w.maximize();
-        expect(w.isMaximized()).to.be.true('maximized');
-        const bounds = w.getBounds();
-        w.setResizable(false);
-        expectBoundsEqual(w.getBounds(), bounds);
-        w.setResizable(true);
-        expectBoundsEqual(w.getBounds(), bounds);
-      });
+      }
 
       ifit(process.platform === 'win32')('do not change window transparent without frame bounds when maximized', () => {
         const w = new BrowserWindow({

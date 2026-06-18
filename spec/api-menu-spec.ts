@@ -7,7 +7,6 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
-import { sortMenuItems } from '../lib/browser/api/menu-utils';
 import { singleModifierCombinations } from './lib/accelerator-helpers';
 import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
@@ -102,7 +101,7 @@ describe('Menu module', function () {
     describe('Menu sorting and building', () => {
       describe('sorts groups', () => {
         it('does a simple sort', () => {
-          const items: Electron.MenuItemConstructorOptions[] = [
+          const menu = Menu.buildFromTemplate([
             {
               label: 'two',
               id: '2',
@@ -113,22 +112,27 @@ describe('Menu module', function () {
               id: '1',
               label: 'one'
             }
-          ];
+          ]);
 
-          const expected = [
+          const expected: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
-              label: 'one'
+              label: 'one',
+              type: 'normal'
             },
-            { type: 'separator' },
+            {
+              id: undefined,
+              label: '',
+              type: 'separator'
+            },
             {
               id: '2',
               label: 'two',
-              afterGroupContaining: ['1']
+              type: 'normal'
             }
           ];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items.map(({ id, label, type }) => ({ id, label, type }))).to.deep.equal(expected);
         });
 
         it('does a simple sort with MenuItems', () => {
@@ -140,14 +144,14 @@ describe('Menu module', function () {
           });
           const sep = new MenuItem({ type: 'separator' });
 
-          const items = [secondItem, sep, firstItem];
+          const menu = Menu.buildFromTemplate([secondItem, sep, firstItem]);
           const expected = [firstItem, sep, secondItem];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items).to.deep.equal(expected);
         });
 
         it('resolves cycles by ignoring things that conflict', () => {
-          const items: Electron.MenuItemConstructorOptions[] = [
+          const menu = Menu.buildFromTemplate([
             {
               id: '2',
               label: 'two',
@@ -159,27 +163,31 @@ describe('Menu module', function () {
               label: 'one',
               afterGroupContaining: ['2']
             }
-          ];
+          ]);
 
-          const expected = [
+          const expected: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one',
-              afterGroupContaining: ['2']
+              type: 'normal'
             },
-            { type: 'separator' },
+            {
+              id: undefined,
+              label: '',
+              type: 'separator'
+            },
             {
               id: '2',
               label: 'two',
-              afterGroupContaining: ['1']
+              type: 'normal'
             }
           ];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items.map(({ id, label, type }) => ({ id, label, type }))).to.deep.equal(expected);
         });
 
         it('ignores references to commands that do not exist', () => {
-          const items: Electron.MenuItemConstructorOptions[] = [
+          const menu = Menu.buildFromTemplate([
             {
               id: '1',
               label: 'one'
@@ -190,26 +198,31 @@ describe('Menu module', function () {
               label: 'two',
               afterGroupContaining: ['does-not-exist']
             }
-          ];
+          ]);
 
-          const expected = [
+          const expected: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
-              label: 'one'
+              label: 'one',
+              type: 'normal'
             },
-            { type: 'separator' },
+            {
+              id: undefined,
+              label: '',
+              type: 'separator'
+            },
             {
               id: '2',
               label: 'two',
-              afterGroupContaining: ['does-not-exist']
+              type: 'normal'
             }
           ];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items.map(({ id, label, type }) => ({ id, label, type }))).to.deep.equal(expected);
         });
 
         it('only respects the first matching [before|after]GroupContaining rule in a given group', () => {
-          const items: Electron.MenuItemConstructorOptions[] = [
+          const menu = Menu.buildFromTemplate([
             {
               id: '1',
               label: 'one'
@@ -230,38 +243,48 @@ describe('Menu module', function () {
               id: '2',
               label: 'two'
             }
-          ];
+          ]);
 
-          const expected = [
+          const expected: Electron.MenuItemConstructorOptions[] = [
             {
               id: '3',
               label: 'three',
-              beforeGroupContaining: ['1']
+              type: 'normal'
             },
             {
               id: '4',
               label: 'four',
-              afterGroupContaining: ['2']
+              type: 'normal'
             },
-            { type: 'separator' },
+            {
+              id: undefined,
+              label: '',
+              type: 'separator'
+            },
             {
               id: '1',
-              label: 'one'
+              label: 'one',
+              type: 'normal'
             },
-            { type: 'separator' },
+            {
+              id: undefined,
+              label: '',
+              type: 'separator'
+            },
             {
               id: '2',
-              label: 'two'
+              label: 'two',
+              type: 'normal'
             }
           ];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items.map(({ id, label, type }) => ({ id, label, type }))).to.deep.equal(expected);
         });
       });
 
       describe('moves an item to a different group by merging groups', () => {
         it('can move a group of one item', () => {
-          const items: Electron.MenuItemConstructorOptions[] = [
+          const menu = Menu.buildFromTemplate([
             {
               id: '1',
               label: 'one'
@@ -278,30 +301,36 @@ describe('Menu module', function () {
               after: ['1']
             },
             { type: 'separator' }
-          ];
+          ]);
 
-          const expected = [
+          const expected: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
-              label: 'one'
+              label: 'one',
+              type: 'normal'
             },
             {
               id: '3',
               label: 'three',
-              after: ['1']
+              type: 'normal'
             },
-            { type: 'separator' },
+            {
+              id: undefined,
+              label: '',
+              type: 'separator'
+            },
             {
               id: '2',
-              label: 'two'
+              label: 'two',
+              type: 'normal'
             }
           ];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items.map(({ id, label, type }) => ({ id, label, type }))).to.deep.equal(expected);
         });
 
         it("moves all items in the moving item's group", () => {
-          const items: Electron.MenuItemConstructorOptions[] = [
+          const menu = Menu.buildFromTemplate([
             {
               id: '1',
               label: 'one'
@@ -322,34 +351,41 @@ describe('Menu module', function () {
               label: 'four'
             },
             { type: 'separator' }
-          ];
+          ]);
 
-          const expected = [
+          const expected: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
-              label: 'one'
+              label: 'one',
+              type: 'normal'
             },
             {
               id: '3',
               label: 'three',
-              after: ['1']
+              type: 'normal'
             },
             {
               id: '4',
-              label: 'four'
+              label: 'four',
+              type: 'normal'
             },
-            { type: 'separator' },
+            {
+              id: undefined,
+              label: '',
+              type: 'separator'
+            },
             {
               id: '2',
-              label: 'two'
+              label: 'two',
+              type: 'normal'
             }
           ];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items.map(({ id, label, type }) => ({ id, label, type }))).to.deep.equal(expected);
         });
 
         it("ignores positions relative to commands that don't exist", () => {
-          const items: Electron.MenuItemConstructorOptions[] = [
+          const menu = Menu.buildFromTemplate([
             {
               id: '1',
               label: 'one'
@@ -371,35 +407,41 @@ describe('Menu module', function () {
               after: ['1']
             },
             { type: 'separator' }
-          ];
+          ]);
 
-          const expected = [
+          const expected: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
-              label: 'one'
+              label: 'one',
+              type: 'normal'
             },
             {
               id: '3',
               label: 'three',
-              after: ['does-not-exist']
+              type: 'normal'
             },
             {
               id: '4',
               label: 'four',
-              after: ['1']
+              type: 'normal'
             },
-            { type: 'separator' },
+            {
+              id: undefined,
+              label: '',
+              type: 'separator'
+            },
             {
               id: '2',
-              label: 'two'
+              label: 'two',
+              type: 'normal'
             }
           ];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items.map(({ id, label, type }) => ({ id, label, type }))).to.deep.equal(expected);
         });
 
         it('can handle recursive group merging', () => {
-          const items = [
+          const menu = Menu.buildFromTemplate([
             {
               id: '1',
               label: 'one',
@@ -414,30 +456,28 @@ describe('Menu module', function () {
               id: '3',
               label: 'three'
             }
-          ];
+          ]);
 
-          const expected = [
+          const expected: Electron.MenuItemConstructorOptions[] = [
             {
               id: '3',
               label: 'three'
             },
             {
               id: '2',
-              label: 'two',
-              before: ['1']
+              label: 'two'
             },
             {
               id: '1',
-              label: 'one',
-              after: ['3']
+              label: 'one'
             }
           ];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items.map(({ id, label }) => ({ id, label }))).to.deep.equal(expected);
         });
 
         it('can merge multiple groups when given a list of before/after commands', () => {
-          const items: Electron.MenuItemConstructorOptions[] = [
+          const menu = Menu.buildFromTemplate([
             {
               id: '1',
               label: 'one'
@@ -453,9 +493,9 @@ describe('Menu module', function () {
               label: 'three',
               after: ['1', '2']
             }
-          ];
+          ]);
 
-          const expected = [
+          const expected: Electron.MenuItemConstructorOptions[] = [
             {
               id: '2',
               label: 'two'
@@ -466,16 +506,15 @@ describe('Menu module', function () {
             },
             {
               id: '3',
-              label: 'three',
-              after: ['1', '2']
+              label: 'three'
             }
           ];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items.map(({ id, label }) => ({ id, label }))).to.deep.equal(expected);
         });
 
         it('can merge multiple groups based on both before/after commands', () => {
-          const items: Electron.MenuItemConstructorOptions[] = [
+          const menu = Menu.buildFromTemplate([
             {
               id: '1',
               label: 'one'
@@ -492,18 +531,16 @@ describe('Menu module', function () {
               after: ['1'],
               before: ['2']
             }
-          ];
+          ]);
 
-          const expected = [
+          const expected: Electron.MenuItemConstructorOptions[] = [
             {
               id: '1',
               label: 'one'
             },
             {
               id: '3',
-              label: 'three',
-              after: ['1'],
-              before: ['2']
+              label: 'three'
             },
             {
               id: '2',
@@ -511,7 +548,7 @@ describe('Menu module', function () {
             }
           ];
 
-          expect(sortMenuItems(items)).to.deep.equal(expected);
+          expect(menu.items.map(({ id, label }) => ({ id, label }))).to.deep.equal(expected);
         });
       });
 

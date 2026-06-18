@@ -19,10 +19,10 @@ index 2c95ac99be70b0750372e9c858753bf519498e3d..5ab30502fd232196739ca2b450e35cc9
    Local<Module> module = obj->module_.Get(isolate);
    if (module->GetStatus() < Module::kInstantiated) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 1561e5096f5d8274001429000aa26731bca1b34e..2655cc5604205b7e16fbc14c9beefb2d30b86a28 100644
+index c69ff16bd85427d3c26d8b42029c8ebb618dea41..17d820b567f395eaf6479404236b650bbfe233df 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -452,7 +452,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
+@@ -453,7 +453,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
    // args.GetIsolate()->GetCurrentContext() and take the pointer at
    // ContextEmbedderIndex::kContextifyContext, as V8 is supposed to
    // push the creation context before invoking these callbacks.
@@ -31,7 +31,7 @@ index 1561e5096f5d8274001429000aa26731bca1b34e..2655cc5604205b7e16fbc14c9beefb2d
  }
  
  ContextifyContext* ContextifyContext::Get(Local<Object> object) {
-@@ -585,10 +585,21 @@ Intercepted ContextifyContext::PropertySetterCallback(
+@@ -598,10 +598,21 @@ Intercepted ContextifyContext::PropertySetterCallback(
      return Intercepted::kNo;
    }
  
@@ -53,7 +53,7 @@ index 1561e5096f5d8274001429000aa26731bca1b34e..2655cc5604205b7e16fbc14c9beefb2d
    bool is_contextual_store = ctx->global_proxy() != args.This();
  
    // Indicator to not return before setting (undeclared) function declarations
-@@ -605,7 +616,7 @@ Intercepted ContextifyContext::PropertySetterCallback(
+@@ -618,7 +629,7 @@ Intercepted ContextifyContext::PropertySetterCallback(
        !is_function) {
      return Intercepted::kNo;
    }
@@ -63,10 +63,10 @@ index 1561e5096f5d8274001429000aa26731bca1b34e..2655cc5604205b7e16fbc14c9beefb2d
      return Intercepted::kNo;
    }
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index b925434940baeeb6b06882242ca947736866d175..d067b47e7e30a95740fe0275c70445707dec426b 100644
+index 20338324dfaaf3de977027ab7f9028aba0925050..541c1580f7b29cb2bdd4bbdc5e056b46bba08dbb 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -682,7 +682,7 @@ static void PathHelpersLazyGetter(Local<v8::Name> name,
+@@ -690,7 +690,7 @@ static void PathHelpersLazyGetter(Local<v8::Name> name,
    // When this getter is invoked in a vm context, the `Realm::GetCurrent(info)`
    // returns a nullptr and retrieve the creation context via `this` object and
    // get the creation Realm.
@@ -76,10 +76,10 @@ index b925434940baeeb6b06882242ca947736866d175..d067b47e7e30a95740fe0275c7044570
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 91b80b4fb44c26e95503556064e7429b8cbf4639..1a468abbf42161ffdebe2176bd2c7a8c9e119532 100644
+index 4d1a35d753230a806c3619232ff6f9270cda5563..d9f979c36b3ce564224a5a93c0dc617c0b381263 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -729,7 +729,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
+@@ -748,7 +748,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
    }
  
    DatabaseSyncLimits* limits;
@@ -88,7 +88,7 @@ index 91b80b4fb44c26e95503556064e7429b8cbf4639..1a468abbf42161ffdebe2176bd2c7a8c
  
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
-@@ -761,7 +761,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
+@@ -780,7 +780,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
    }
  
    DatabaseSyncLimits* limits;
@@ -111,10 +111,10 @@ index fbfda9c1551e071132e35b90fc3676a9b493abee..065ed602b314f367c2e7dec94019521f
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index 0a169a8dcf27eeb5b5b0c1b00ac8b79ed43d551b..a4a86f2f5ada6481a89e0682d2c7a5de056d51e8 100644
+index e5b3d2be2144ab23e7630f6713bbaf407a7a54e8..8e3b6cea9501334376aaafd895acfac6acbe38d6 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
-@@ -532,7 +532,7 @@ template <typename T>
+@@ -564,7 +564,7 @@ template <typename T>
  static bool ShouldIntercept(Local<Name> property,
                              const PropertyCallbackInfo<T>& info) {
    Environment* env = Environment::GetCurrent(info);
@@ -123,7 +123,7 @@ index 0a169a8dcf27eeb5b5b0c1b00ac8b79ed43d551b..a4a86f2f5ada6481a89e0682d2c7a5de
  
    if (proto->IsObject()) {
      bool has_prop;
-@@ -556,7 +556,7 @@ static Intercepted StorageGetter(Local<Name> property,
+@@ -588,7 +588,7 @@ static Intercepted StorageGetter(Local<Name> property,
    }
  
    Storage* storage;
@@ -132,7 +132,7 @@ index 0a169a8dcf27eeb5b5b0c1b00ac8b79ed43d551b..a4a86f2f5ada6481a89e0682d2c7a5de
    Local<Value> result;
  
    if (storage->Load(property).ToLocal(&result) && !result->IsNull()) {
-@@ -570,7 +570,7 @@ static Intercepted StorageSetter(Local<Name> property,
+@@ -602,7 +602,7 @@ static Intercepted StorageSetter(Local<Name> property,
                                   Local<Value> value,
                                   const PropertyCallbackInfo<void>& info) {
    Storage* storage;
@@ -141,7 +141,7 @@ index 0a169a8dcf27eeb5b5b0c1b00ac8b79ed43d551b..a4a86f2f5ada6481a89e0682d2c7a5de
  
    if (storage->Store(property, value).IsNothing()) {
      info.GetReturnValue().SetFalse();
-@@ -586,7 +586,7 @@ static Intercepted StorageQuery(Local<Name> property,
+@@ -618,7 +618,7 @@ static Intercepted StorageQuery(Local<Name> property,
    }
  
    Storage* storage;
@@ -150,7 +150,7 @@ index 0a169a8dcf27eeb5b5b0c1b00ac8b79ed43d551b..a4a86f2f5ada6481a89e0682d2c7a5de
    Local<Value> result;
    if (!storage->Load(property).ToLocal(&result) || result->IsNull()) {
      return Intercepted::kNo;
-@@ -599,7 +599,7 @@ static Intercepted StorageQuery(Local<Name> property,
+@@ -631,7 +631,7 @@ static Intercepted StorageQuery(Local<Name> property,
  static Intercepted StorageDeleter(Local<Name> property,
                                    const PropertyCallbackInfo<Boolean>& info) {
    Storage* storage;
@@ -159,7 +159,7 @@ index 0a169a8dcf27eeb5b5b0c1b00ac8b79ed43d551b..a4a86f2f5ada6481a89e0682d2c7a5de
  
    info.GetReturnValue().Set(storage->Remove(property).IsJust());
  
-@@ -608,7 +608,7 @@ static Intercepted StorageDeleter(Local<Name> property,
+@@ -640,7 +640,7 @@ static Intercepted StorageDeleter(Local<Name> property,
  
  static void StorageEnumerator(const PropertyCallbackInfo<Array>& info) {
    Storage* storage;
@@ -168,7 +168,7 @@ index 0a169a8dcf27eeb5b5b0c1b00ac8b79ed43d551b..a4a86f2f5ada6481a89e0682d2c7a5de
    Local<Array> result;
    if (!storage->Enumerate().ToLocal(&result)) {
      return;
-@@ -620,7 +620,7 @@ static Intercepted StorageDefiner(Local<Name> property,
+@@ -652,7 +652,7 @@ static Intercepted StorageDefiner(Local<Name> property,
                                    const PropertyDescriptor& desc,
                                    const PropertyCallbackInfo<void>& info) {
    Storage* storage;

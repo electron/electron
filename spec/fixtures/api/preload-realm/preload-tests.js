@@ -5,6 +5,19 @@ const evalTests = {
 };
 
 const tests = {
+  testProcess: () => ({
+    type: process.type,
+    sandboxed: process.sandboxed,
+    contextIsolated: process.contextIsolated,
+    arch: process.arch,
+    platform: process.platform,
+    version: process.version,
+    electronVersion: process.versions.electron,
+    chromeVersion: process.versions.chrome,
+    nodeVersion: process.versions.node,
+    hasEnv: typeof process.env === 'object' && Object.keys(process.env).length > 0,
+    hasExecPath: typeof process.execPath === 'string' && process.execPath.length > 0
+  }),
   testSend: (name, ...args) => {
     ipcRenderer.send(name, ...args);
   },
