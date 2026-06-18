@@ -2387,6 +2387,14 @@ void WebContents::DidFinishNavigation(
     if (is_same_document) {
       Emit("did-navigate-in-page", url, is_main_frame, frame_process_id,
            frame_routing_id);
+      if (is_main_frame) {
+        content::NavigationEntry* entry =
+            navigation_handle->GetNavigationEntry();
+        if (entry &&
+            (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK)) {
+          WebContents::TitleWasSet(entry);
+        }
+      }
     } else {
       const net::HttpResponseHeaders* http_response =
           navigation_handle->GetResponseHeaders();

@@ -4585,6 +4585,25 @@ describe('BrowserWindow module', () => {
           waitUntil(() => w.title === newTitle);
         });
 
+        it('updates title on same-document history navigation', async () => {
+          const newTitle = 'Second Title';
+          const pageTitleUpdated = once(w, 'page-title-updated');
+          await w.loadURL('data:text/html,<html><head><title>First Title</title></head><body></body></html>');
+          expect(w.title).to.equal('First Title');
+
+          await w.webContents.executeJavaScript(`
+            history.pushState({}, '', '/second');
+            document.title = '${newTitle}';
+          `);
+          await pageTitleUpdated;
+          await waitUntil(() => w.title === newTitle);
+
+          const backTitleUpdated = once(w, 'page-title-updated');
+          w.webContents.goBack();
+          await backTitleUpdated;
+          await waitUntil(() => w.title === 'First Title');
+        });
+
         it('works for stop events', async () => {
           const done = Promise.all(
             ['did-navigate', 'did-fail-load', 'did-stop-loading'].map((name) => once(w.webContents, name))
