@@ -36,6 +36,8 @@ jobs:
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
+    - name: Install Build Tools
+      uses: ./src/electron/.github/actions/install-build-tools
     - name: Download GN Binary
       shell: bash
       run: |
