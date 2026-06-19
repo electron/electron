@@ -53,7 +53,8 @@ jobs:
       env:
         chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
       run: |
-        gn_version="$(curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/DEPS" | grep gn_version | head -n1 | cut -d\' -f4)"
+        curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/DEPS" > src/DEPS
+        gn_version=$(e depot-tools gclient getdep --deps-file=src/DEPS --var=gn_version | tail -1)
 
         e d cipd ensure -ensure-file - -root . <<-CIPD
         \$ServiceURL https://chrome-infra-packages.appspot.com/
