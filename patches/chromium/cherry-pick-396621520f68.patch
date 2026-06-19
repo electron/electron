@@ -31,10 +31,10 @@ Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1642016}
 
 diff --git a/gpu/command_buffer/service/framebuffer_manager.cc b/gpu/command_buffer/service/framebuffer_manager.cc
-index 89ccc818a1ecf1521882502d4dd5e8f72096e609..38e243ccc596d8b84deed9c9a10f1b2bf958858b 100644
+index a8fee38c4255ccda10516530a576fef0e5a4f03a..bb4f07d3ba289a6cc2b9de8a2931e56ded120dc2 100644
 --- a/gpu/command_buffer/service/framebuffer_manager.cc
 +++ b/gpu/command_buffer/service/framebuffer_manager.cc
-@@ -697,6 +697,13 @@ bool Framebuffer::GetReadBufferIsMultisampledTexture() const {
+@@ -700,6 +700,13 @@ bool Framebuffer::GetReadBufferIsMultisampledTexture() const {
               : false;
  }
  
@@ -49,7 +49,7 @@ index 89ccc818a1ecf1521882502d4dd5e8f72096e609..38e243ccc596d8b84deed9c9a10f1b2b
    // Assume the framebuffer is complete, so return any attachment's samples.
    auto iter = attachments_.begin();
 diff --git a/gpu/command_buffer/service/framebuffer_manager.h b/gpu/command_buffer/service/framebuffer_manager.h
-index 294427479346360562b60ff4ea5c8ab4c4ba9c72..fb502d49b1261455d6f88a1133c08eb630bc7473 100644
+index 1c2f377ef983c0b21ebf7497466b074e4094e362..ec55d5ab0649d32fe5d9566c01faabdd215f8037 100644
 --- a/gpu/command_buffer/service/framebuffer_manager.h
 +++ b/gpu/command_buffer/service/framebuffer_manager.h
 @@ -174,6 +174,7 @@ class GPU_GLES2_EXPORT Framebuffer : public base::RefCounted<Framebuffer> {
@@ -61,7 +61,7 @@ index 294427479346360562b60ff4ea5c8ab4c4ba9c72..fb502d49b1261455d6f88a1133c08eb6
    // Verify all the rules in OpenGL ES 2.0.25 4.4.5 are followed.
    // Returns GL_FRAMEBUFFER_COMPLETE if there are no reasons we know we can't
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index 179dcddaf1d6ded2e1e95729b1587adb0b8bcfa3..47d5ef756f17dedbe203ea7bb548e81d78717982 100644
+index ded091f70df018e0ec3edf716f018ba1c06bb18f..d39a1632e3c23fa1367d22ecb3932e160f06fe8d 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
 @@ -933,6 +933,7 @@ class GLES2DecoderImpl : public GLES2Decoder,
@@ -72,7 +72,7 @@ index 179dcddaf1d6ded2e1e95729b1587adb0b8bcfa3..47d5ef756f17dedbe203ea7bb548e81d
  
    // Get the i-th draw buffer's internal format/type from the bound framebuffer.
    // If no framebuffer is bound, or no image is attached, or the DrawBuffers
-@@ -4234,6 +4235,18 @@ GLenum GLES2DecoderImpl::GetBoundReadFramebufferInternalFormat() {
+@@ -4236,6 +4237,18 @@ GLenum GLES2DecoderImpl::GetBoundReadFramebufferInternalFormat() {
    }
  }
  
@@ -91,7 +91,7 @@ index 179dcddaf1d6ded2e1e95729b1587adb0b8bcfa3..47d5ef756f17dedbe203ea7bb548e81d
  GLenum GLES2DecoderImpl::GetBoundColorDrawBufferType(GLint drawbuffer_i) {
    DCHECK(drawbuffer_i >= 0 &&
           drawbuffer_i < static_cast<GLint>(group_->max_draw_buffers()));
-@@ -13471,6 +13484,12 @@ void GLES2DecoderImpl::DoCopyTexImage2D(
+@@ -13478,6 +13491,12 @@ void GLES2DecoderImpl::DoCopyTexImage2D(
      return;
    }
  
@@ -104,7 +104,7 @@ index 179dcddaf1d6ded2e1e95729b1587adb0b8bcfa3..47d5ef756f17dedbe203ea7bb548e81d
    GLenum read_format = GetBoundReadFramebufferInternalFormat();
    GLenum read_type = GetBoundReadFramebufferTextureType();
    if (!ValidateCopyTexFormat(func_name, internal_format,
-@@ -13723,6 +13742,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage2D(
+@@ -13730,6 +13749,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage2D(
      return;
    }
  
@@ -117,7 +117,7 @@ index 179dcddaf1d6ded2e1e95729b1587adb0b8bcfa3..47d5ef756f17dedbe203ea7bb548e81d
    GLenum read_format = GetBoundReadFramebufferInternalFormat();
    GLenum read_type = GetBoundReadFramebufferTextureType();
    if (!ValidateCopyTexFormat(func_name, internal_format,
-@@ -13854,6 +13879,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage3D(
+@@ -13861,6 +13886,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage3D(
      return;
    }
  
