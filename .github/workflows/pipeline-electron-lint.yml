@@ -46,7 +46,7 @@ jobs:
         fi
         gn_version="$(curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/DEPS" | grep gn_version | head -n1 | cut -d\' -f4)"
 
-        cipd ensure -ensure-file - -root . <<-CIPD
+        e d cipd ensure -ensure-file - -root . <<-CIPD
         \$ServiceURL https://chrome-infra-packages.appspot.com/
         @Subdir src/buildtools/linux64
         gn/gn/linux-amd64 $gn_version
@@ -63,7 +63,7 @@ jobs:
         mkdir -p src/buildtools
         curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/buildtools/DEPS" > src/buildtools/DEPS
 
-        gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
+        e d gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
     - name: Add problem matchers
       shell: bash
       run: |
