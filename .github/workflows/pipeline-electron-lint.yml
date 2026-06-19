@@ -38,14 +38,21 @@ jobs:
       uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
       uses: ./src/electron/.github/actions/install-build-tools
-    - name: Download GN Binary
+    - name: Get Chromium revision
+      id: get-chromium-revision
       shell: bash
       run: |
-        chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
+        chromium_revision=$(e depot-tools gclient getdep --deps-file=src/electron/DEPS --revision=src | tail -1)
         if [[ ! "$chromium_revision" =~ ^[a-zA-Z0-9._-]+$ ]]; then
           echo "::error::Invalid chromium_revision: $chromium_revision"
           exit 1
         fi
+        echo "revision=$chromium_revision" >> "$GITHUB_OUTPUT"
+    - name: Download GN Binary
+      shell: bash
+      env:
+        chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
+      run: |
         gn_version="$(curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/DEPS" | grep gn_version | head -n1 | cut -d\' -f4)"
 
         e d cipd ensure -ensure-file - -root . <<-CIPD
@@ -55,13 +62,9 @@ jobs:
         CIPD
     - name: Download clang-format Binary
       shell: bash
+      env:
+        chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
       run: |
-        chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
-        if [[ ! "$chromium_revision" =~ ^[a-zA-Z0-9._-]+$ ]]; then
-          echo "::error::Invalid chromium_revision: $chromium_revision"
-          exit 1
-        fi
-
         mkdir -p src/buildtools
         curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/buildtools/DEPS" > src/buildtools/DEPS
 
