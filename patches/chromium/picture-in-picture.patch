@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index 530b1451ed46392053d4e7306c9e29bcb8eaaec2..821d1d87e6eeac65859a44c89ab71ec405d87131 100644
+index 101b14222cfbb9146eff756b620b5c32c304fb0f..dc11cd4a7bcf2fd6f4387b92684e8847ecdd8361 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
 @@ -4,9 +4,12 @@
@@ -33,7 +33,7 @@ index 530b1451ed46392053d4e7306c9e29bcb8eaaec2..821d1d87e6eeac65859a44c89ab71ec4
 +  auto* icon = &views::kIcCloseOldIcon;
 +#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
 +  icon = &(features::IsRoundedIconsEnabled()
-                      ? vector_icons::kCloseSmallIcon
+                      ? vector_icons::kCloseIcon
                       : vector_icons::kCloseChromeRefreshOldIcon);
 +#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
    SetImageModel(views::Button::STATE_NORMAL,
