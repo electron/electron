@@ -303,6 +303,9 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
 #endif
   }
   EmitWithoutEvent("exit", exit_code);
+
+  // Stop observing before clearing the self-keep-alive
+  content::ServiceProcessHost::RemoveObserver(this);
   keep_alive_.Clear();
 }
 
