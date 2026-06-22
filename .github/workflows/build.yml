@@ -59,7 +59,7 @@ jobs:
         docs-only: ${{ steps.set-output.outputs.docs-only }}
         pgo-only: ${{ steps.set-output.outputs.pgo-only }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         ref: ${{ github.event.pull_request.head.sha }}
     # The filters are evaluated per-pattern and OR'd together, so the src
@@ -141,7 +141,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -176,7 +176,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -208,7 +208,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0

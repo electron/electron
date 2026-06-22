@@ -49,7 +49,7 @@ jobs:
     outputs:
       build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
     - name: Get Build Image SHA
       id: set-output
       uses: ./.github/actions/build-image-sha
@@ -76,7 +76,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -102,7 +102,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -132,7 +132,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -336,7 +336,7 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -355,7 +355,7 @@ jobs:
     - name: Restore src cache via AKS
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron (after cache restore)
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -539,7 +539,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -552,7 +552,7 @@ jobs:
     - name: Restore src cache via AKS
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron (after cache restore)
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
