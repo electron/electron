@@ -2423,6 +2423,50 @@ describe('webContents module', () => {
         expect(zoomLevel).to.equal(0);
       });
     });
+
+    it('programmatic zoom reset overrides persisted per-host zoom', async () => {
+      const partition = 'persist:zoom-reset-test';
+      const server = http.createServer((req, res) => {
+        res.end('<html><body>zoom test</body></html>');
+      });
+      const { url: serverUrl } = await listen(server);
+      defer(() => server.close());
+
+      const w1 = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+      await w1.loadURL(serverUrl);
+      w1.webContents.setZoomFactor(0.25);
+      w1.close();
+
+      const w2 = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition,
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      w2.webContents.setZoomLevel(0);
+      w2.webContents.setZoomFactor(1.0);
+      await w2.loadURL(serverUrl);
+      w2.webContents.setZoomFactor(1.0);
+      w2.webContents.setZoomLevel(0);
+
+      expect(w2.webContents.getZoomFactor()).to.be.closeTo(1.0, 0.05);
+
+      const rendererZoomFactor = await w2.webContents.executeJavaScript(
+        'require("electron").webFrame.getZoomFactor()');
+      expect(rendererZoomFactor).to.be.closeTo(1.0, 0.05);
+
+      w2.webContents.setZoomLevel(0);
+    });
   });
 
   describe('zoom mode', () => {
@@ -2802,6 +2846,35 @@ describe('webContents module', () => {
 
       expect(w.webContents.getZoomMode()).to.equal('isolated');
       expect(w.webContents.getZoomLevel()).to.equal(2.0);
+    });
+
+    it('webPreferences zoomFactor overrides persisted per-host zoom', async () => {
+      const partition = 'persist:zoom-factor-pref-test';
+      const server = http.createServer((req, res) => {
+        res.end('<html><body>zoom test</body></html>');
+      });
+      const { url: serverUrl } = await listen(server);
+      defer(() => server.close());
+
+      const w1 = new BrowserWindow({
+        show: false,
+        webPreferences: { partition }
+      });
+      await w1.loadURL(serverUrl);
+      w1.webContents.setZoomFactor(0.25);
+      w1.close();
+
+      const w2 = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition,
+          zoomFactor: 1.5
+        }
+      });
+      await w2.loadURL(serverUrl);
+
+      expect(w2.webContents.getZoomFactor()).to.be.closeTo(1.5, 0.05);
+      w2.webContents.setZoomLevel(0);
     });
 
     it('webPreferences zoomFactor is applied as initial zoom in isolated mode', async () => {

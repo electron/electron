@@ -9,6 +9,7 @@
 
 #include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -134,6 +135,9 @@ class WebContentsZoomController
 
   void ResetZoomModeOnNavigationIfNeeded(const GURL& url);
   void SetZoomFactorOnNavigationIfNeeded(const GURL& url);
+  bool ApplyZoomLevel(double level, bool refresh_renderer);
+  void ApplyExplicitZoomIfNeeded();
+  void ScheduleExplicitZoomReapply();
   void OnZoomLevelChanged(const content::HostZoomMap::ZoomLevelChange& change);
 
   // Updates the zoom icon and zoom percentage based on current values and
@@ -159,6 +163,15 @@ class WebContentsZoomController
   // The current default zoom factor.
   double default_zoom_factor_;
 
+  // Zoom level explicitly requested via setZoomLevel/setZoomFactor. Takes
+  // precedence over persisted per-host zoom levels restored from preferences.
+  bool has_explicit_zoom_level_ = false;
+  std::optional<double> explicit_zoom_level_;
+
+  // True while ProcessNavigationZoom is running. Prevents persisted zoom
+  // restoration from clearing an explicit zoom override mid-navigation.
+  bool processing_navigation_zoom_ = false;
+
   int old_process_id_ = -1;
   int old_view_id_ = -1;
 
@@ -173,6 +186,8 @@ class WebContentsZoomController
   raw_ptr<content::HostZoomMap> host_zoom_map_;
 
   base::CallbackListSubscription zoom_subscription_;
+
+  base::WeakPtrFactory<WebContentsZoomController> weak_ptr_factory_{this};
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 };

@@ -6,6 +6,8 @@
 
 #include <string>
 
+#include "base/functional/bind.h"
+#include "base/auto_reset.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
@@ -70,6 +72,17 @@ void WebContentsZoomController::SetEmbedderZoomController(
 
 bool WebContentsZoomController::SetZoomLevel(double level) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  has_explicit_zoom_level_ = true;
+  explicit_zoom_level_ = level;
+  return ApplyZoomLevel(level, false);
+}
+
+bool WebContentsZoomController::ApplyZoomLevel(double level,
+                                             bool refresh_renderer) {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (zoom_mode_ != ZOOM_MODE_MANUAL)
+    zoom_level_ = level;
+
   // Cannot zoom in disabled mode. Also, don't allow changing zoom level on
   // a crashed tab, an error page or an interstitial page.
   if (zoom_mode_ == ZOOM_MODE_DISABLED ||
@@ -93,6 +106,9 @@ bool WebContentsZoomController::SetZoomLevel(double level) {
 
     return true;
   }
+
+  if (!refresh_renderer && blink::ZoomValuesEqual(level, GetZoomLevel()))
+    return true;
 
   content::HostZoomMap* zoom_map =
       content::HostZoomMap::GetForWebContents(web_contents());
@@ -122,6 +138,9 @@ bool WebContentsZoomController::SetZoomLevel(double level) {
     std::string host = net::GetHostOrSpecFromURL(url);
     zoom_map->SetZoomLevelForHost(host, level);
   }
+
+  if (refresh_renderer)
+    content::HostZoomMap::SendErrorPageZoomLevelRefresh(web_contents());
 
   DCHECK(!event_data_);
   return true;
@@ -294,6 +313,9 @@ void WebContentsZoomController::ProcessNavigationZoom(
     return;
   last_processed_navigation_id_ = navigation_handle->GetNavigationId();
 
+  base::AutoReset<bool> processing_navigation_zoom(&processing_navigation_zoom_,
+                                                   true);
+
   if (!navigation_handle->IsInPrimaryMainFrame() ||
       !navigation_handle->HasCommitted()) {
     return;
@@ -305,10 +327,13 @@ void WebContentsZoomController::ProcessNavigationZoom(
   if (!navigation_handle->IsSameDocument()) {
     ResetZoomModeOnNavigationIfNeeded(navigation_handle->GetURL());
     SetZoomFactorOnNavigationIfNeeded(navigation_handle->GetURL());
+    ApplyExplicitZoomIfNeeded();
 
     // If the main frame's content has changed, the new page may have a
     // different zoom level from the old one.
     UpdateState(std::string());
+
+    ScheduleExplicitZoomReapply();
   }
 
   DCHECK(!event_data_);
@@ -342,6 +367,8 @@ void WebContentsZoomController::RenderFrameHostChanged(
   zoom_subscription_ = host_zoom_map_->AddZoomLevelChangedCallback(
       base::BindRepeating(&WebContentsZoomController::OnZoomLevelChanged,
                           base::Unretained(this)));
+  ApplyExplicitZoomIfNeeded();
+  ScheduleExplicitZoomReapply();
 }
 
 void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
@@ -370,21 +397,30 @@ void WebContentsZoomController::SetZoomFactorOnNavigationIfNeeded(
     return;
   }
 
-  // When kZoomFactor is available, it takes precedence over
-  // pref store values but if the host has zoom factor set explicitly
-  // then it takes precedence.
+  // When kZoomFactor is available, it takes precedence over pref store values.
   // pref store < kZoomFactor < setZoomLevel
-  std::string host = net::GetHostOrSpecFromURL(url);
-  std::string scheme = url.GetScheme();
-  double zoom_factor = default_zoom_factor();
-  double zoom_level = blink::ZoomFactorToZoomLevel(zoom_factor);
-  if (host_zoom_map_->HasZoomLevel(scheme, host)) {
-    zoom_level = host_zoom_map_->GetZoomLevelForHostAndScheme(scheme, host);
-  }
-  if (blink::ZoomValuesEqual(zoom_level, GetZoomLevel()))
+  double zoom_level =
+      blink::ZoomFactorToZoomLevel(default_zoom_factor());
+  ApplyZoomLevel(zoom_level, false);
+}
+
+void WebContentsZoomController::ApplyExplicitZoomIfNeeded() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (!has_explicit_zoom_level_ || !explicit_zoom_level_.has_value())
     return;
 
-  SetZoomLevel(zoom_level);
+  ApplyZoomLevel(explicit_zoom_level_.value(), true);
+}
+
+void WebContentsZoomController::ScheduleExplicitZoomReapply() {
+  DCHECK_CURRENTLY_ON(BrowserThread::UI);
+  if (!has_explicit_zoom_level_)
+    return;
+
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(&WebContentsZoomController::ApplyExplicitZoomIfNeeded,
+                     weak_ptr_factory_.GetWeakPtr()));
 }
 
 void WebContentsZoomController::OnZoomLevelChanged(
@@ -416,6 +452,15 @@ void WebContentsZoomController::UpdateState(const std::string& host) {
     observers_.Notify(&WebContentsZoomObserver::OnZoomChanged,
                       zoom_change_data);
   } else {
+    // Zoom changed externally (e.g. user Ctrl+scroll). Clear any pending
+    // explicit override so later navigations don't revert the user's choice.
+    if (!processing_navigation_zoom_) {
+      has_explicit_zoom_level_ = false;
+      explicit_zoom_level_ = std::nullopt;
+    }
+    if (zoom_mode_ != ZOOM_MODE_MANUAL)
+      zoom_level_ = GetZoomLevel();
+
     double zoom_level = GetZoomLevel();
     ZoomChangedEventData zoom_change_data(web_contents(), zoom_level,
                                           zoom_level, false, zoom_mode_);
