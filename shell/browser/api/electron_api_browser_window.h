@@ -48,7 +48,8 @@ class BrowserWindow : public BaseWindow,
   void OnSetContentBounds(const gfx::Rect& rect) override;
   void OnActivateContents() override;
   void OnPageTitleUpdated(const std::u16string& title,
-                          bool explicit_set) override;
+                          bool explicit_set,
+                          bool from_same_document_history_navigation) override;
 
   // NativeWindowObserver:
   void RequestPreferredWidth(int* width) override;
