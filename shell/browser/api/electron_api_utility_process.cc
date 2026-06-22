@@ -283,6 +283,7 @@ void UtilityProcessWrapper::HandleTermination(uint32_t exit_code) {
     GetAllUtilityProcessWrappers().Remove(pid_);
 
   pid_ = base::kNullProcessId;
+  content::ServiceProcessHost::RemoveObserver(this);
   CloseConnectorPort();
   if (killed_) {
 #if BUILDFLAG(IS_POSIX)
