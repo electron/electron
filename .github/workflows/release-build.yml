@@ -1,0 +1,208 @@
+name: Release Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build-image-sha:
+        type: string
+        description: 'SHA for electron/build image'
+        default: ''
+        required: false
+      skip-macos:
+        type: boolean
+        description: 'Skip macOS release builds'
+        default: false
+        required: false
+      skip-linux:
+        type: boolean
+        description: 'Skip Linux release builds'
+        default: false
+        required: false
+      skip-windows:
+        type: boolean
+        description: 'Skip Windows release builds'
+        default: false
+        required: false
+
+permissions: {}
+
+jobs:
+  setup:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
+    steps:
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+      with:
+        override: ${{ inputs.build-image-sha }}
+
+  # Checkout Jobs
+  checkout-macos:
+    needs: setup
+    if: ${{ !inputs.skip-macos }}
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        generate-sas-token: 'true'
+        target-platform: macos
+
+  checkout-linux:
+    needs: setup
+    if: ${{ !inputs.skip-linux }}
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root
+      volumes:
+        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+
+  checkout-windows:
+    needs: setup
+    if: ${{ !inputs.skip-windows }}
+    runs-on: electron-arc-centralus-linux-amd64-32core
+    permissions:
+      contents: read
+    container:
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
+      options: --user root --device /dev/fuse --cap-add SYS_ADMIN
+      volumes:
+        - /mnt/win-cache:/mnt/win-cache
+        - /var/run/sas:/var/run/sas
+    env:
+      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
+      TARGET_OS: 'win'
+      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      with:
+        path: src/electron
+        fetch-depth: 0
+    - name: Checkout & Sync & Save
+      uses: ./src/electron/.github/actions/checkout
+      with:
+        generate-sas-token: 'true'
+        target-platform: win
+
+  # Build a patched siso binary for Windows in parallel with checkout-windows;
+  # the windows build jobs consume it via SISO_PATH.
+  build-siso-windows:
+    needs: setup
+    if: ${{ !inputs.skip-windows }}
+    uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
+    permissions:
+      contents: read
+
+  macos:
+    name: macos-${{ matrix.target-arch }}-${{ matrix.target-variant }}
+    needs: checkout-macos
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target-arch: x64
+            target-variant: darwin
+          - target-arch: x64
+            target-variant: mas
+          - target-arch: arm64
+            target-variant: darwin
+          - target-arch: arm64
+            target-variant: mas
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    with:
+      build-runs-on: macos-15-xlarge
+      target-platform: macos
+      target-arch: ${{ matrix.target-arch }}
+      target-variant: ${{ matrix.target-variant }}
+      is-release: true
+      gn-build-type: release
+      generate-symbols: true
+      upload-to-storage: '0'
+    secrets: inherit
+
+  linux:
+    name: linux-${{ matrix.target-arch }}
+    needs: [setup, checkout-linux]
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target-arch: x64
+          - target-arch: arm
+          - target-arch: arm64
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    with:
+      build-runs-on: electron-arc-centralus-linux-amd64-32core
+      build-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
+      target-platform: linux
+      target-arch: ${{ matrix.target-arch }}
+      is-release: true
+      gn-build-type: release
+      generate-symbols: true
+      upload-to-storage: '0'
+    secrets: inherit
+
+  windows:
+    name: windows-${{ matrix.target-arch }}
+    needs: [checkout-windows, build-siso-windows]
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target-arch: x64
+          - target-arch: arm64
+          - target-arch: x86
+    uses: ./.github/workflows/pipeline-segment-electron-build.yml
+    with:
+      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      target-platform: win
+      target-arch: ${{ matrix.target-arch }}
+      is-release: true
+      gn-build-type: release
+      generate-symbols: true
+      upload-to-storage: '0'
+    secrets: inherit

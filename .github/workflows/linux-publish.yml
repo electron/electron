@@ -74,6 +74,7 @@ jobs:
       target-platform: linux
       target-arch: x64
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -94,6 +95,7 @@ jobs:
       target-platform: linux
       target-arch: arm
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -114,6 +116,7 @@ jobs:
       target-platform: linux
       target-arch: arm64
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
