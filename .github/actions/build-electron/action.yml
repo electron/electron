@@ -256,6 +256,11 @@ runs:
     - name: Generate FFMpeg ${{ inputs.step-suffix }}
       shell: bash
       if: ${{ inputs.is-release == 'true' }}
+      env:
+        # `e build` injects `-C out/$ELECTRON_OUT_DIR` after any caller-supplied
+        # `-C`, and ninja honors the last `-C`. Point it at out/ffmpeg so the
+        # ffmpeg target builds into the directory `gn gen out/ffmpeg` created.
+        ELECTRON_OUT_DIR: ffmpeg
       run: |
         cd src
         # Reuse the hermetic mac_sdk_path that `e build` wrote for out/Default so
@@ -270,7 +275,7 @@ runs:
         fi
         gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $MAC_SDK_ARG $GN_EXTRA_ARGS"
         QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg $QUIET_FLAG
+        e build --target electron:electron_ffmpeg_zip $QUIET_FLAG
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
