@@ -681,7 +681,7 @@ app.whenReady().then(() => {
 <!--
 ```YAML history
 added:
-  - pr-url: https://github.com/electron/electron/pull/51563
+  - pr-url: https://github.com/electron/electron/pull/51255
 ```
 -->
 
@@ -701,10 +701,15 @@ discoverable WebAuthn credentials and the user must choose one. `callback`
 should be called with the `credentialId` of the selected account; passing no
 arguments — or a `credentialId` that does not match one of the provided
 accounts — will cancel the request and the page will receive a
-`NotAllowedError`. If no listener is registered for this event, the request is
-cancelled with the same error. The credential request remains pending until
-the listener invokes the callback, so always invoke it exactly once — typically
-from a `try { … } finally { callback(…) }` block.
+`NotAllowedError`. The credential request remains pending until the listener
+invokes the callback, so always invoke it exactly once — typically from a
+`try { … } finally { callback(…) }` block.
+
+> [!NOTE]
+> If no listener is registered for this event, `navigator.credentials.get()`
+> calls that resolve multiple discoverable credentials are cancelled with a
+> `NotAllowedError`. Register a listener if your app supports
+> discoverable-credential (passkey) sign-in.
 
 On macOS, the Touch ID platform authenticator surfaces accounts via this event
 once it has been configured with
