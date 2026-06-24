@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: electron <electron@electron.org>
+Date: Sun, 21 Jun 2026 12:00:00 +0000
+Subject: fix: wayland fractional scaling at scale < 1.0
+
+When using wp_fractional_scale_v1 with scale factors less than 1.0 (e.g.
+0.75 on 2560x1440 displays), floating-point precision in the inverse
+scale computation (1.f / scale) causes 1-pixel errors in viewport
+destination rounding and wl_region coordinate computation.
+
+Fix 1: Use ScaleToRoundedSize instead of ScaleToFlooredSize for the
+DIP conversion in the fractional scale adjustment in ApplyPendingState.
+ScaleToFlooredSize(1920, 1/0.75) = floor(2559.999877...) = 2559, losing
+1 pixel. Rounding to nearest gives 2560, preserving round-trip accuracy.
+
+Fix 2: Use ScaleToEnclosingRect instead of ScaleToEnclosedRect in
+CreateAndAddRegion. When scale < 1.0, 1/scale > 1.0, the enclosed rect
+rounds down, causing opaque/input regions to be 1 pixel too short on
+the right and bottom edges.
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_surface.cc b/ui/ozone/platform/wayland/host/wayland_surface.cc
+index 0000000000000000000000000000000000000000..0000000000000000000000000000000000000000 100644
+--- a/ui/ozone/platform/wayland/host/wayland_surface.cc
++++ b/ui/ozone/platform/wayland/host/wayland_surface.cc
+@@ -388,7 +388,7 @@ wl::Object<wl_region> WaylandSurface::CreateAndAddRegion(
+       wl_compositor_create_region(connection_->compositor()));
+ 
+   for (const auto& rect_px : region_px) {
+-    gfx::Rect rect = gfx::ScaleToEnclosedRect(rect_px, 1.f / buffer_scale);
++    gfx::Rect rect = gfx::ScaleToEnclosingRect(rect_px, 1.f / buffer_scale);
+     wl_region_add(region.get(), rect.x(), rect.y(), rect.width(),
+                   rect.height());
+   }
+@@ -459,7 +459,7 @@ std::optional<bool> WaylandSurface::ApplyPendingState() {
+                       .size());
+     }
+-    gfx::Size new_size_dip = gfx::ScaleToFlooredSize(
+-        old_size_px, 1.f / pending_state_.buffer_scale_float);
++    gfx::Size new_size_dip = gfx::ScaleToRoundedSize(
++        old_size_px, 1.f / pending_state_.buffer_scale_float);
+     gfx::Size new_size_px = gfx::ScaleToRoundedSize(
+         new_size_dip, pending_state_.buffer_scale_float);
+     if (new_size_px != old_size_px) {
