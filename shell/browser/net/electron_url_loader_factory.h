@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/weak_ptr.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -36,6 +37,8 @@ class PendingReceiver;
 }  // namespace mojo
 
 namespace electron {
+
+class ElectronBrowserContext;
 
 // Old Protocol API can only serve one type of response for one scheme.
 enum class ProtocolType {
@@ -105,7 +108,8 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
 
   static mojo::PendingRemote<network::mojom::URLLoaderFactory> Create(
       ProtocolType type,
-      const ProtocolHandler& handler);
+      const ProtocolHandler& handler,
+      base::WeakPtr<ElectronBrowserContext> browser_context);
 
   // network::mojom::URLLoaderFactory:
   void CreateLoaderAndStart(
@@ -126,6 +130,7 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory,
       ProtocolType type,
+      base::WeakPtr<ElectronBrowserContext> browser_context,
       gin::Arguments* args);
 
   // disable copy
@@ -136,6 +141,7 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   ElectronURLLoaderFactory(
       ProtocolType type,
       const ProtocolHandler& handler,
+      base::WeakPtr<ElectronBrowserContext> browser_context,
       mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver);
   ~ElectronURLLoaderFactory() override;
 
@@ -160,6 +166,7 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
       const network::ResourceRequest& original_request,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+      base::WeakPtr<ElectronBrowserContext> browser_context,
       const gin_helper::Dictionary& dict);
   static void StartLoadingStream(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
@@ -175,6 +182,7 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
 
   ProtocolType type_;
   ProtocolHandler handler_;
+  base::WeakPtr<ElectronBrowserContext> browser_context_;
 };
 
 }  // namespace electron

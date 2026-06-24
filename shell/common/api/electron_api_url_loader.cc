@@ -528,8 +528,9 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
       return browser_context_->InterceptURLLoaderFactory(
           network::SharedURLLoaderFactory::Create(
               std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-                  ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                                   protocol_handler->second))));
+                  ElectronURLLoaderFactory::Create(
+                      protocol_handler->first, protocol_handler->second,
+                      browser_context_->GetWeakPtr()))));
     }
   }
 
