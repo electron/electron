@@ -170,8 +170,8 @@ ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticato
   });
 
   it('does not interfere with assertion when both touchID and platformPasskeys are configured', async () => {
-    // First create a credential
-    await w.webContents.executeJavaScript(`
+    // First create a credential, keeping its id for the allow list below.
+    const credentialId = await w.webContents.executeJavaScript(`
       navigator.credentials.create({
         publicKey: {
           rp: { id: 'localhost', name: 'Electron Spec' },
@@ -188,15 +188,23 @@ ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticato
             userVerification: 'required'
           }
         }
-      })
+      }).then(c => c.id)
     `);
 
-    // Now get an assertion — should work without the event firing
+    // Get an assertion with a non-empty allowCredentials so the request
+    // resolves to a single credential directly. An empty allow list would be a
+    // discoverable-credential request, which routes through 'select-webauthn-
+    // account' (covered separately) rather than exercising authenticator
+    // selection.
     const result = await w.webContents.executeJavaScript(`
       navigator.credentials.get({
         publicKey: {
           challenge: new Uint8Array(32),
           rpId: 'localhost',
+          allowCredentials: [{
+            type: 'public-key',
+            id: Uint8Array.fromBase64(${JSON.stringify(credentialId)}, { alphabet: 'base64url' })
+          }],
           userVerification: 'required'
         }
       }).then(
@@ -206,7 +214,7 @@ ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticato
     `);
 
     expect(result.ok).to.be.true();
-    expect(result.id).to.be.a('string').and.not.be.empty();
+    expect(result.id).to.equal(credentialId);
   });
 });
 
