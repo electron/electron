@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Fri, 19 Jun 2026 10:34:54 -0700
+Subject: [M148] Fix Use-After-Free in BluetoothSocketMac::ReleaseChannel
+
+Original change's description:
+> Fix Use-After-Free in BluetoothSocketMac::ReleaseChannel
+>
+> Prevent synchronous destruction of BluetoothSocketMac when releasing the
+> channel by moving connect and receive callbacks to local variables. This
+> ensures the socket remains alive until ReleaseChannel finishes
+> execution, avoiding use-after-free when accessing other member
+> variables.
+>
+> Change-Id: I872d682b6a4d0887b8f93e118db54e51f57321f5
+> Bug: 523704570
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7948137
+> Commit-Queue: Alvin Ji <alvinji@chromium.org>
+> Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1648713}
+
+(cherry picked from commit 30838188f5ff65357672bcd00dfaff982ca7ca25)
+
+Bug: 525660690,523704570
+Change-Id: I872d682b6a4d0887b8f93e118db54e51f57321f5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7966147
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4392}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/device/bluetooth/bluetooth_socket_mac.mm b/device/bluetooth/bluetooth_socket_mac.mm
+index e5901d22e80d6b3992935ef88662056d43fe672f..19ef880eaa359646e833537e6ca5f9924bbbeed1 100644
+--- a/device/bluetooth/bluetooth_socket_mac.mm
++++ b/device/bluetooth/bluetooth_socket_mac.mm
+@@ -931,9 +931,12 @@ bool VerifyL2capService(const std::optional<int>& requested_psm,
+   DCHECK(thread_checker_.CalledOnValidThread());
+   channel_.reset();
+ 
+-  // Closing the channel above prevents the callback delegate from being called
+-  // so it is now safe to release all callback state.
+-  connect_callbacks_.reset();
++  // Move connect_callbacks_ to a local variable to prevent synchronous
++  // destruction of 'this' if it holds the last reference to the socket.
++  // This keeps 'this' alive until the end of this method.
++  std::unique_ptr<ConnectCallbacks> temp_connect =
++      std::move(connect_callbacks_);
++
+   receive_callbacks_.reset();
+   empty_queue(receive_queue_);
+   empty_queue(send_queue_);

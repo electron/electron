@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Wed, 17 Jun 2026 03:07:03 -0700
+Subject: [M148] Only kill renderer on DidCommit while BFCached if ACKed, evict
+ otherwise
+
+Original change's description:
+> Only kill renderer on DidCommit while BFCached if ACKed, evict otherwise
+>
+> The previous approach of killing the renderer on all DidCommits might
+> be killing legitimate DidCommit calls that were sent from the renderer
+> from before the document is actually BFCached. This CL makes it so that
+> we kill only calls coming from the renderers that already ACKed the
+> BFCaching. For renderers that haven't we simply just evict the RFH from
+> BFCache. In both cases we return early and don't continue processing
+> the DidCommit.
+>
+> Bug: 520443189, 517148260
+> Change-Id: I4e3f1518e0d86c506127ee19a709aa5a28bc347c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7901822
+> Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+> Reviewed-by: Fergal Daly <fergal@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1643048}
+
+(cherry picked from commit 80366988eaf9e38a0bf32220fa757e66ff95e8e2)
+
+Bug: 520435989,520443189,517148260
+Change-Id: I4e3f1518e0d86c506127ee19a709aa5a28bc347c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7921672
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4372}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 76b72173831ba2f573d03c8283104cc5a9c23538..2c4ab147b6431efb6cfaa87cf4972d1ac223d0db 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -16673,8 +16673,18 @@ void RenderFrameHostImpl::DidCommitNavigation(
+   // kInBackForwardCache state. Trigger a renderer kill if we receive an
+   // unexpected DidCommit message.
+   if (IsInBackForwardCache()) {
+-    bad_message::ReceivedBadMessage(
+-        GetProcess(), bad_message::RFH_DID_COMMIT_NAVIGATION_WHILE_BFCACHED);
++    if (render_view_host()->DidReceiveBackForwardCacheAck()) {
++      bad_message::ReceivedBadMessage(
++          GetProcess(), bad_message::RFH_DID_COMMIT_NAVIGATION_WHILE_BFCACHED);
++    } else {
++      // The renderer might not have realized that it's in BFCache when it sent
++      // the DidCommitNavigation call, since we haven't received the BFCache
++      // ACK. In this case, just evict from BFCache instead of killing the
++      // renderer.
++      IsInactiveAndDisallowActivation(
++          DisallowActivationReasonId::kDidCommitNavigation);
++    }
++    // Return early in any case.
+     return;
+   }
+ 
+diff --git a/content/public/browser/disallow_activation_reason.h b/content/public/browser/disallow_activation_reason.h
+index 27d10cf7128391e377f9c9d5b5ccaf0bcad1e1bc..0f19be93af34ae13572c6d6a264c7e9804591b69 100644
+--- a/content/public/browser/disallow_activation_reason.h
++++ b/content/public/browser/disallow_activation_reason.h
+@@ -64,6 +64,7 @@ enum DisallowActivationReasonId : uint64_t {
+   kIndexedDBTransactionIsStartingWhileBlockingOthers = 40,
+   kIndexedDBTransactionIsOngoingAndBlockingOthers = 41,
+   kBrowserInitiatedErrorPage = 42,
++  kDidCommitNavigation = 44,
+   // New entries go above here. New entries should be added to
+   // tools/metrics/histograms/enums.xml .
+   kMinEmbedderDisallowActivationReason = 2 << 16,

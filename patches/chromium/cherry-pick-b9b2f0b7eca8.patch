@@ -1,0 +1,197 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jan=20Wilken=20D=C3=B6rrie?= <jdoerrie@chromium.org>
+Date: Fri, 19 Jun 2026 01:38:37 -0700
+Subject: [M148] [dbsc] Use final URL for registration validation checks
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [dbsc] Use final URL for registration validation checks
+>
+> This change updates the registration fetcher to use the final URL after
+> redirects for registration validation checks.
+>
+> Bug: 511776603
+> Change-Id: Ibacb0c22deddd9a1b6104690a70d7dd06a6a6964
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7852498
+> Commit-Queue: Jan Wilken Dörrie <jdoerrie@chromium.org>
+> Reviewed-by: Alex Ilin <alexilin@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1633609}
+
+(cherry picked from commit 159631e99b1d8828210daff47f6afe5a67a0fca5)
+
+Bug: 519051209,511776603
+Change-Id: Ibacb0c22deddd9a1b6104690a70d7dd06a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7953464
+Reviewed-by: Alex Ilin <alexilin@chromium.org>
+Commit-Queue: Jan Wilken Dörrie <jdoerrie@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4390}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/net/device_bound_sessions/registration_fetcher.cc b/net/device_bound_sessions/registration_fetcher.cc
+index 0567a53e4ab95cd6c54e1ad0b8a40c38badb6996..34d0e4480fab80e95efd5cace3b5a3d358e8a911 100644
+--- a/net/device_bound_sessions/registration_fetcher.cc
++++ b/net/device_bound_sessions/registration_fetcher.cc
+@@ -375,6 +375,8 @@ class RegistrationFetcherImpl : public RegistrationFetcher {
+       return SessionError::kSessionProviderWellKnownHasProviderOrigin;
+     }
+ 
++    // TODO(crbug.com/511776603): Evaluate whether to use the final redirect URL
++    // instead of the original URL here in a follow-up.
+     std::string target_origin =
+         url::Origin::Create(fetcher_endpoint_).Serialize();
+     if (!maybe_params->relying_origins.has_value() ||
+@@ -430,6 +432,8 @@ class RegistrationFetcherImpl : public RegistrationFetcher {
+       return SessionError::kRelyingPartyWellKnownHasRelyingOrigins;
+     }
+ 
++    // TODO(crbug.com/511776603): Evaluate whether to use the final redirect URL
++    // instead of the original URL here in a follow-up.
+     if (!maybe_params->provider_origin.has_value() ||
+         url::Origin::Create(provider_url_).Serialize() !=
+             *maybe_params->provider_origin) {
+@@ -640,11 +644,15 @@ class RegistrationFetcherImpl : public RegistrationFetcher {
+       return;
+     }
+ 
++    // Use the final URL after redirects for validation checks to ensure we
++    // validate the origin that actually served the response.
++    GURL final_registration_url = url_fetcher_->request().url();
++
+     // Re-process challenge headers now that a session exists so that cached
+     // challenges work for the registration case as well.
+     auto challenge_params =
+         device_bound_sessions::SessionChallengeParam::CreateIfValid(
+-            fetcher_endpoint_, headers);
++            final_registration_url, headers);
+     for (const SessionChallengeParam& challenge_param : challenge_params) {
+       if (challenge_param.session_id() == *(*session_or_error)->id()) {
+         (*session_or_error)->set_cached_challenge(challenge_param.challenge());
+@@ -671,7 +679,7 @@ class RegistrationFetcherImpl : public RegistrationFetcher {
+         // Skip all validations if the fetcher endpoint is not a subdomain but
+         // rather the top-level site (which matches the origin when including
+         // the site).
+-        fetcher_endpoint_.GetHost() != (*session_or_error)->origin().host()) {
++        final_registration_url.host() != (*session_or_error)->origin().host()) {
+       GURL::Replacements replacements;
+       replacements.SetPathStr("/.well-known/device-bound-sessions");
+       replacements.SetHostStr((*session_or_error)->origin().host());
+@@ -688,7 +696,8 @@ class RegistrationFetcherImpl : public RegistrationFetcher {
+       url_fetcher_->Start(
+           base::BindOnce(&RegistrationFetcherImpl::
+                              OnSubdomainRegistrationWellKnownRequestComplete,
+-                         GetWeakPtr(), std::move(*session_or_error)));
++                         GetWeakPtr(), std::move(final_registration_url),
++                         std::move(*session_or_error)));
+       return;
+     }
+ 
+@@ -697,13 +706,15 @@ class RegistrationFetcherImpl : public RegistrationFetcher {
+   }
+ 
+   void OnSubdomainRegistrationWellKnownRequestComplete(
++      GURL final_registration_url,
+       std::unique_ptr<Session> session) {
+     RunCallback(OnSubdomainRegistrationWellKnownRequestCompleteInternal(
+-        std::move(session)));
++        std::move(final_registration_url), std::move(session)));
+     // `this` may be deleted.
+   }
+ 
+   RegistrationResult OnSubdomainRegistrationWellKnownRequestCompleteInternal(
++      GURL final_registration_url,
+       std::unique_ptr<Session> session) {
+     HttpResponseHeaders* headers = url_fetcher_->request().response_headers();
+     const int response_code = headers ? headers->response_code() : 0;
+@@ -730,7 +741,7 @@ class RegistrationFetcherImpl : public RegistrationFetcher {
+ 
+     if (!maybe_params->registering_origins.has_value() ||
+         !base::Contains(*maybe_params->registering_origins,
+-                        url::Origin::Create(fetcher_endpoint_).Serialize())) {
++                        url::Origin::Create(final_registration_url).Serialize())) {
+       return RegistrationResult(
+           SessionError{SessionError::kSubdomainRegistrationUnauthorized});
+     }
+diff --git a/net/device_bound_sessions/registration_fetcher_unittest.cc b/net/device_bound_sessions/registration_fetcher_unittest.cc
+index 02811966e0aab48e284a44f8a628ee4dc24fb9f7..65ea240d296fc12f1253bf517e8c1a71953f0fdc 100644
+--- a/net/device_bound_sessions/registration_fetcher_unittest.cc
++++ b/net/device_bound_sessions/registration_fetcher_unittest.cc
+@@ -15,6 +15,7 @@
+ #include "base/json/json_writer.h"
+ #include "base/run_loop.h"
+ #include "base/strings/string_util.h"
++#include "base/test/bind.h"
+ #include "base/test/gmock_callback_support.h"
+ #include "base/test/metrics/histogram_tester.h"
+ #include "base/test/scoped_feature_list.h"
+@@ -2578,6 +2579,68 @@ TEST_F(RegistrationTest, RegistrationBySubdomain_MultipleAllowed) {
+   }
+ }
+ 
++TEST_F(RegistrationTest, RegistrationRedirectToSubdomain) {
++  crypto::ScopedFakeUnexportableKeyProvider scoped_fake_key_provider;
++  bool well_known_fetched = false;
++
++  // 1. Redirect request
++  server_.RegisterRequestHandler(base::BindLambdaForTesting(
++      [&](const test_server::HttpRequest& request)
++          -> std::unique_ptr<test_server::HttpResponse> {
++        if (request.relative_url != "/") {
++          return nullptr;
++        }
++        auto response = std::make_unique<test_server::BasicHttpResponse>();
++        response->set_code(HTTP_FOUND);
++        response->AddCustomHeader(
++            "Location", server_.GetURL("subdomain.a.test", "/dbsc").spec());
++        return response;
++      }));
++
++  // 2. Return config
++  server_.RegisterRequestHandler(base::BindLambdaForTesting(
++      [&](const test_server::HttpRequest& request)
++          -> std::unique_ptr<test_server::HttpResponse> {
++        if (request.relative_url != "/dbsc") {
++          return nullptr;
++        }
++        return ReturnResponse(HTTP_OK, kBasicValidJson, request);
++      }));
++
++  // 3. Monitor well-known requests
++  server_.RegisterRequestHandler(base::BindLambdaForTesting(
++      [&](const test_server::HttpRequest& request)
++          -> std::unique_ptr<test_server::HttpResponse> {
++        if (request.relative_url != "/.well-known/device-bound-sessions") {
++          return nullptr;
++        }
++        well_known_fetched = true;
++        return ReturnResponse(HTTP_NOT_FOUND, "", request);
++      }));
++
++  ASSERT_TRUE(server_.Start());
++
++  GURL registration_url = server_.GetURL("a.test", "/");
++  RecordingNetLogObserver net_log_observer;
++  TestRegistrationCallback callback;
++
++  auto param = GetBasicParam(registration_url);
++  std::unique_ptr<RegistrationFetcher> fetcher =
++      RegistrationFetcher::CreateFetcher(
++          param, session_service(), unexportable_key_service(), context_.get(),
++          IsolationInfo::CreateTransient(/*nonce=*/std::nullopt),
++          /*net_log_source=*/std::nullopt,
++          /*original_request_initiator=*/std::nullopt);
++  fetcher->StartCreateTokenAndFetch(param, CreateAlgArray(),
++                                    callback.callback());
++  callback.WaitForCall();
++
++  // Verify well-known check is triggered and registration fails.
++  EXPECT_TRUE(well_known_fetched);
++  EXPECT_EQ(callback.outcome().SessionErrorForTesting()->type,
++            SessionError::kSubdomainRegistrationWellKnownUnavailable);
++}
++
+ TEST_F(RegistrationTest, FederatedSuccess) {
+   crypto::ScopedFakeUnexportableKeyProvider scoped_fake_key_provider;
+ 
