@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Wed, 17 Jun 2026 12:04:07 -0700
+Subject: [M150] Copy devtools messages from renderer when backed by shmem
+
+Original change's description:
+> Copy devtools messages from renderer when backed by shmem
+>
+> Fixed: 518043569
+> Change-Id: I9910fd3801de94f6e142d85d9e2c59ca098ddb49
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7935128
+> Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+> Reviewed-by: Peter Kvitek <kvitekp@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1646948}
+
+(cherry picked from commit 59621765eb49f2895805f256243ddb1f30297e55)
+
+Bug: 524508475,518043569
+Change-Id: I9910fd3801de94f6e142d85d9e2c59ca098ddb49
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7957921
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#1472}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/content/browser/devtools/devtools_session.cc b/content/browser/devtools/devtools_session.cc
+index e8cb680f169ff23327fa280e56d6923a7dae8609..221784dfd178d86fc6670aa005240311e78871f6 100644
+--- a/content/browser/devtools/devtools_session.cc
++++ b/content/browser/devtools/devtools_session.cc
+@@ -572,8 +572,26 @@ void DevToolsSession::DispatchProtocolResponseOrNotification(
+     blink::mojom::DevToolsMessagePtr message,
+     const std::string& session_id,
+     const bool& is_notification) {
+-  base::span<const uint8_t> message_span = message->data;
+-  if (!ValidateMessage(session_id, /*expected_has_id=*/!is_notification,
++  // If BigBuffer is backed by shared memory, make a copy so that a compromised
++  // renderer wouldn't be able to mess with the message as we validate it.
++  std::vector<uint8_t> message_bytes;
++  base::span<const uint8_t> message_span;
++  switch (message->data.storage_type()) {
++    case mojo_base::BigBuffer::StorageType::kBytes:
++      message_span = message->data.byte_span();
++      break;
++    case mojo_base::BigBuffer::StorageType::kSharedMemory:
++      message_bytes.assign(message->data.begin(), message->data.end());
++      message_span = message_bytes;
++      break;
++    default:
++      // just keep span empty, this will cause renderer killed for invalid
++      // message below.
++      break;
++  }
++
++  if (message_span.empty() ||
++      !ValidateMessage(session_id, /*expected_has_id=*/!is_notification,
+                        message_span)) {
+     if (RenderProcessHost* process_host = agent_host->GetProcessHost()) {
+       bad_message::ReceivedBadMessage(

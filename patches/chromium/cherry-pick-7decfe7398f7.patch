@@ -1,0 +1,376 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Fergal Daly <fergal@chromium.org>
+Date: Mon, 22 Jun 2026 02:24:38 -0700
+Subject: [M150] Fix data race on SandboxFileSystemBackendDelegate observers
+
+Original change's description:
+> Fix data race on SandboxFileSystemBackendDelegate observers
+>
+> FileSystemAccessBucketPathWatcher::Initialize was registering observers
+> on the UI thread, while concurrent file operations on the IO thread were
+> reading them, causing a data race.
+>
+> The `io_thread_checker_` was actually bound to the UI thread (by all 3
+> Add* methods) and none of the reader methods were ever checking the
+> thread. `AddFileChangeObserver` was the only writer that is called
+> post-open.
+>
+> All calls to `Initialize` originate in `DoFileOperation` and the chain
+> of calls are all tail-calls so it's safe to change `Initialize` to call
+> `on_source_initialized` asynchronously.
+>
+> This CL fixes the issue by:
+> 1. Posting the observer registration to the IO thread in
+> FileSystemAccessBucketPathWatcher::Initialize.
+> 2. Using PostTaskAndReply to ensure the on_source_initialized callback
+> runs on the UI thread after registration is complete.
+> 3. Adding thread checks (DCHECKs) to the reader methods in
+> SandboxFileSystemBackendDelegate.
+>
+> Adding the new DCHECKs caused existing tests to uncovere a threading
+> issue in `FileSystemAccessFileModificationHostImpl::OnContentsModified`
+> which has a similar fix.
+>
+> A flaky test also uncovered that `ApplyPendingUsageUpdate` needed to
+> look at `is_disabled_` before proceeding.
+>
+> This adds a new unittest. If the fix is reverted, this tests triggers
+> the newly added DCHECKs in the readers.
+>
+> TAG=agy
+> CONV=c63ee629-91da-4fcb-a6cb-d27497e0fcb7
+>
+> Fixed: 520543781
+> Change-Id: I6c185b37f1c8a7c1e83f163af177fb8f4086d3c1
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7901886
+> Reviewed-by: Ming-Ying Chung <mych@chromium.org>
+> Commit-Queue: Fergal Daly <fergal@chromium.org>
+> Auto-Submit: Fergal Daly <fergal@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1648080}
+
+(cherry picked from commit 9e5f886aa8383d6db96bceee30ebda5641ae0bfe)
+
+Bug: 525281153,520543781
+Change-Id: I6c185b37f1c8a7c1e83f163af177fb8f4086d3c1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7977078
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#1856}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/content/browser/file_system_access/file_system_access_bucket_path_watcher.cc b/content/browser/file_system_access/file_system_access_bucket_path_watcher.cc
+index b5a837f7be066058a145175cbd3dcd06e6a4df1e..33b31268e9d6248362f755bfedbaa944da12a773 100644
+--- a/content/browser/file_system_access/file_system_access_bucket_path_watcher.cc
++++ b/content/browser/file_system_access/file_system_access_bucket_path_watcher.cc
+@@ -13,6 +13,7 @@
+ #include "base/threading/sequence_bound.h"
+ #include "content/browser/file_system_access/file_system_access_error.h"
+ #include "content/browser/file_system_access/file_system_access_watcher_manager.h"
++#include "content/public/browser/browser_thread.h"
+ #include "storage/browser/file_system/file_observers.h"
+ #include "storage/browser/file_system/file_system_url.h"
+ #include "storage/browser/file_system/sandbox_file_system_backend_delegate.h"
+@@ -65,11 +66,20 @@ void FileSystemAccessBucketPathWatcher::Initialize(
+     return;
+   }
+ 
+-  sandbox_delegate->AddFileChangeObserver(
+-      storage::FileSystemType::kFileSystemTypeTemporary, this,
+-      base::SequencedTaskRunner::GetCurrentDefault().get());
+-
+-  std::move(on_source_initialized).Run(file_system_access_error::Ok());
++  // Observer registration must happen on the IO thread to avoid a data race
++  // with concurrent file operations reading the observer list.
++  // The callback `on_source_initialized` is run as a reply on the UI thread
++  // once registration is complete.
++  content::GetIOThreadTaskRunner({})->PostTaskAndReply(
++      FROM_HERE,
++      base::BindOnce(
++          &storage::SandboxFileSystemBackendDelegate::AddFileChangeObserver,
++          base::Unretained(sandbox_delegate),
++          storage::FileSystemType::kFileSystemTypeTemporary,
++          base::WrapRefCounted(this),
++          base::RetainedRef(base::SequencedTaskRunner::GetCurrentDefault())),
++      base::BindOnce(std::move(on_source_initialized),
++                     file_system_access_error::Ok()));
+ }
+ 
+ void FileSystemAccessBucketPathWatcher::OnCreateFile(
+diff --git a/content/browser/file_system_access/file_system_access_file_modification_host_impl.cc b/content/browser/file_system_access/file_system_access_file_modification_host_impl.cc
+index 007d0927b9d1dc82262f25cd0aaee11db4fbc5fa..aca794c49a35f33cb0d32e1c89227fcde09ff244 100644
+--- a/content/browser/file_system_access/file_system_access_file_modification_host_impl.cc
++++ b/content/browser/file_system_access/file_system_access_file_modification_host_impl.cc
+@@ -8,6 +8,8 @@
+ #include "base/task/sequenced_task_runner.h"
+ #include "base/time/time.h"
+ #include "base/types/pass_key.h"
++#include "content/public/browser/browser_task_traits.h"
++#include "content/public/browser/browser_thread.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "storage/browser/file_system/file_observers.h"
+ #include "storage/browser/file_system/task_runner_bound_observer_list.h"
+@@ -123,10 +125,19 @@ void FileSystemAccessFileModificationHostImpl::DidGetUsageAndQuota(
+ void FileSystemAccessFileModificationHostImpl::OnContentsModified() {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+-  if (const storage::ChangeObserverList* change_observers =
+-          manager_->context()->GetChangeObservers(url_.type())) {
+-    change_observers->Notify(&storage::FileChangeObserver::OnModifyFile, url_);
+-  }
++  scoped_refptr<storage::FileSystemContext> context =
++      base::WrapRefCounted(manager_->context());
++  GetIOThreadTaskRunner({})->PostTask(
++      FROM_HERE, base::BindOnce(
++                     [](scoped_refptr<storage::FileSystemContext> context,
++                        storage::FileSystemURL url) {
++                       if (const storage::ChangeObserverList* change_observers =
++                               context->GetChangeObservers(url.type())) {
++                         change_observers->Notify(
++                             &storage::FileChangeObserver::OnModifyFile, url);
++                       }
++                     },
++                     std::move(context), url_));
+ }
+ 
+ }  // namespace content
+diff --git a/content/browser/file_system_access/file_system_access_watcher_manager_unittest.cc b/content/browser/file_system_access/file_system_access_watcher_manager_unittest.cc
+index f3fcbea84cfd299b91543a404d22fb06d5a43c65..dbf7eb9a388a6b7a253070e1f6efff66394d3788 100644
+--- a/content/browser/file_system_access/file_system_access_watcher_manager_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_watcher_manager_unittest.cc
+@@ -25,12 +25,14 @@
+ #include "content/browser/file_system_access/file_system_access_observation_group.h"
+ #include "content/browser/file_system_access/file_system_access_observer_quota_manager.h"
+ #include "content/browser/file_system_access/file_system_access_watch_scope.h"
++#include "content/public/browser/browser_thread.h"
+ #include "content/public/browser/web_contents.h"
+ #include "content/public/test/browser_task_environment.h"
+ #include "content/public/test/test_browser_context.h"
+ #include "content/public/test/test_web_contents_factory.h"
+ #include "content/test/test_web_contents.h"
+ #include "storage/browser/file_system/external_mount_points.h"
++#include "storage/browser/file_system/file_system_backend.h"
+ #include "storage/browser/file_system/file_system_context.h"
+ #include "storage/browser/file_system/file_system_url.h"
+ #include "storage/browser/quota/quota_manager_proxy.h"
+@@ -258,10 +260,12 @@ class FakeChangeSource : public FileSystemAccessChangeSource {
+ 
+ }  // namespace
+ 
+-class FileSystemAccessWatcherManagerTest : public testing::Test {
++class FileSystemAccessWatcherManagerTestBase : public testing::Test {
+  public:
+-  FileSystemAccessWatcherManagerTest()
+-      : task_environment_(base::test::TaskEnvironment::MainThreadType::IO) {}
++  template <typename... TaskEnvironmentTraits>
++  explicit FileSystemAccessWatcherManagerTestBase(
++      TaskEnvironmentTraits&&... traits)
++      : task_environment_(std::forward<TaskEnvironmentTraits>(traits)...) {}
+ 
+   void SetUp() override {
+ #if BUILDFLAG(IS_WIN)
+@@ -287,23 +291,32 @@ class FileSystemAccessWatcherManagerTest : public testing::Test {
+     static_cast<TestWebContents*>(web_contents_)->NavigateAndCommit(kTestUrl);
+ 
+     quota_manager_ = base::MakeRefCounted<storage::MockQuotaManager>(
+-        /*is_incognito=*/false, dir_.GetPath(),
+-        base::SingleThreadTaskRunner::GetCurrentDefault(),
++        /*is_incognito=*/false, dir_.GetPath(), io_task_runner(),
+         special_storage_policy_);
+     quota_manager_proxy_ = base::MakeRefCounted<storage::MockQuotaManagerProxy>(
+-        quota_manager_.get(),
+-        base::SingleThreadTaskRunner::GetCurrentDefault().get());
++        quota_manager_.get(), io_task_runner());
+ 
+-    file_system_context_ = storage::CreateFileSystemContextForTesting(
+-        quota_manager_proxy_.get(), dir_.GetPath());
++    file_system_context_ =
++        storage::CreateFileSystemContextWithAdditionalProvidersForTesting(
++            io_task_runner(),
++            base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}),
++            quota_manager_proxy_.get(),
++            std::vector<std::unique_ptr<storage::FileSystemBackend>>(),
++            dir_.GetPath());
+ 
+     storage::ExternalMountPoints::GetSystemInstance()->RegisterFileSystem(
+         kTestMountPoint, storage::kFileSystemTypeLocal,
+         storage::FileSystemMountOption(), dir_.GetPath());
+ 
+     chrome_blob_context_ = base::MakeRefCounted<ChromeBlobStorageContext>();
+-    chrome_blob_context_->InitializeOnIOThread(base::FilePath(),
+-                                               base::FilePath(), nullptr);
++    base::RunLoop run_loop;
++    io_task_runner()->PostTaskAndReply(
++        FROM_HERE,
++        base::BindOnce(&ChromeBlobStorageContext::InitializeOnIOThread,
++                       chrome_blob_context_, base::FilePath(), base::FilePath(),
++                       nullptr),
++        run_loop.QuitClosure());
++    run_loop.Run();
+ 
+     manager_ = base::MakeRefCounted<FileSystemAccessManagerImpl>(
+         file_system_context_, chrome_blob_context_,
+@@ -325,7 +338,7 @@ class FileSystemAccessWatcherManagerTest : public testing::Test {
+     manager_.reset();
+     file_system_context_.reset();
+     chrome_blob_context_.reset();
+-    task_environment_.RunUntilIdle();
++    RunUntilIdle();
+     // On Windows, a synchronous delete of the directory can fail.
+     GetDeleteFileCallback(dir_.GetPath()).Run();
+   }
+@@ -466,8 +479,10 @@ class FileSystemAccessWatcherManagerTest : public testing::Test {
+   FileSystemAccessManagerImpl::BindingContext binding_context_ = {
+       kTestStorageKey, kTestUrl, GlobalRenderFrameHostId()};
+ 
+-  BrowserTaskEnvironment task_environment_;
++  virtual scoped_refptr<base::SingleThreadTaskRunner> io_task_runner() = 0;
++  virtual void RunUntilIdle() = 0;
+ 
++  BrowserTaskEnvironment task_environment_;
+   base::ScopedTempDir dir_;
+ 
+   TestBrowserContext browser_context_;
+@@ -485,6 +500,37 @@ class FileSystemAccessWatcherManagerTest : public testing::Test {
+   raw_ptr<WebContents> web_contents_ = nullptr;
+ };
+ 
++class FileSystemAccessWatcherManagerTest
++    : public FileSystemAccessWatcherManagerTestBase {
++ public:
++  FileSystemAccessWatcherManagerTest()
++      : FileSystemAccessWatcherManagerTestBase(
++            base::test::TaskEnvironment::MainThreadType::IO) {}
++
++ protected:
++  scoped_refptr<base::SingleThreadTaskRunner> io_task_runner() override {
++    return base::SingleThreadTaskRunner::GetCurrentDefault();
++  }
++  void RunUntilIdle() override { task_environment_.RunUntilIdle(); }
++};
++
++class FileSystemAccessWatcherManagerRealIOTest
++    : public FileSystemAccessWatcherManagerTestBase {
++ public:
++  FileSystemAccessWatcherManagerRealIOTest()
++      : FileSystemAccessWatcherManagerTestBase(
++            BrowserTaskEnvironment::REAL_IO_THREAD) {}
++
++ protected:
++  scoped_refptr<base::SingleThreadTaskRunner> io_task_runner() override {
++    return GetIOThreadTaskRunner({});
++  }
++  void RunUntilIdle() override {
++    task_environment_.RunUntilIdle();
++    task_environment_.RunIOThreadUntilIdle();
++  }
++};
++
+ // Watching the local file system is not supported on Android or Fuchsia.
+ #if !BUILDFLAG(IS_ANDROID) && !BUILDFLAG(IS_FUCHSIA) && !BUILDFLAG(IS_IOS)
+ TEST_F(FileSystemAccessWatcherManagerTest, BasicRegistration) {
+@@ -719,6 +765,42 @@ TEST_F(FileSystemAccessWatcherManagerTest, ObserveBucketFS) {
+   }));
+ }
+ 
++// See https://crbug.com/520543781. Ensure that we are correctly respecting
++// threading for file change observers.
++TEST_F(FileSystemAccessWatcherManagerRealIOTest, ObserveBucketFS) {
++  ASSERT_OK_AND_ASSIGN(auto default_bucket,
++                       CreateSandboxFileSystemAndGetDefaultBucket());
++  auto test_file_url = file_system_context_->CreateCrackedFileSystemURL(
++      kTestStorageKey, storage::kFileSystemTypeTemporary,
++      base::FilePath::FromUTF8Unsafe("test/foo/bar"));
++  test_file_url.SetBucket(default_bucket);
++
++#if BUILDFLAG(IS_MAC)
++  // Flush setup events before observation begins.
++  SpinEventLoopForABit();
++#endif
++
++  // Attempting to observe the given file will succeed.
++  ChangeAccumulator accumulator(ObserveFile(test_file_url));
++
++  base::test::TestFuture<base::File::Error> create_file_future;
++  manager_->DoFileSystemOperation(
++      FROM_HERE, &storage::FileSystemOperationRunner::CreateDirectory,
++      create_file_future.GetCallback(), test_file_url,
++      /*exclusive=*/false, /*recursive=*/true);
++  ASSERT_EQ(create_file_future.Get(), base::File::Error::FILE_OK);
++
++  // TODO(crbug.com/40283118): Expect changes for recursively-created
++  // intermediate directories.
++  ChangeInfo change_info(FilePathType::kDirectory, ChangeType::kCreated,
++                         test_file_url.path());
++  Change expected_change{test_file_url, change_info};
++  EXPECT_TRUE(base::test::RunUntil([&]() {
++    return testing::Matches(testing::Contains(expected_change))(
++        accumulator.changes());
++  }));
++}
++
+ TEST_F(FileSystemAccessWatcherManagerTest, UnsupportedScope) {
+   // TODO(crbug.com/321980129): External backends are not yet supported.
+   base::FilePath test_external_path =
+diff --git a/storage/browser/file_system/sandbox_file_system_backend_delegate.cc b/storage/browser/file_system/sandbox_file_system_backend_delegate.cc
+index 77d28908d96d0a9411289ec1d98204ea0c08b189..6a641f68b370065bff653c34d7480731e4008cd6 100644
+--- a/storage/browser/file_system/sandbox_file_system_backend_delegate.cc
++++ b/storage/browser/file_system/sandbox_file_system_backend_delegate.cc
+@@ -458,6 +458,9 @@ void SandboxFileSystemBackendDelegate::AddFileAccessObserver(
+ 
+ const UpdateObserverList* SandboxFileSystemBackendDelegate::GetUpdateObservers(
+     FileSystemType type) const {
++#if DCHECK_IS_ON()
++  DCHECK(!is_filesystem_opened_ || io_thread_checker_.CalledOnValidThread());
++#endif
+   auto iter = update_observers_.find(type);
+   if (iter == update_observers_.end())
+     return nullptr;
+@@ -466,6 +469,9 @@ const UpdateObserverList* SandboxFileSystemBackendDelegate::GetUpdateObservers(
+ 
+ const ChangeObserverList* SandboxFileSystemBackendDelegate::GetChangeObservers(
+     FileSystemType type) const {
++#if DCHECK_IS_ON()
++  DCHECK(!is_filesystem_opened_ || io_thread_checker_.CalledOnValidThread());
++#endif
+   auto iter = change_observers_.find(type);
+   if (iter == change_observers_.end())
+     return nullptr;
+@@ -474,6 +480,9 @@ const ChangeObserverList* SandboxFileSystemBackendDelegate::GetChangeObservers(
+ 
+ const AccessObserverList* SandboxFileSystemBackendDelegate::GetAccessObservers(
+     FileSystemType type) const {
++#if DCHECK_IS_ON()
++  DCHECK(!is_filesystem_opened_ || io_thread_checker_.CalledOnValidThread());
++#endif
+   auto iter = access_observers_.find(type);
+   if (iter == access_observers_.end())
+     return nullptr;
+diff --git a/storage/browser/file_system/sandbox_quota_observer.cc b/storage/browser/file_system/sandbox_quota_observer.cc
+index c1d98a978c6239962a7a38f95e771ec2345e428e..a9df2d1db71678ca2df9c76455ca5022e6130263 100644
+--- a/storage/browser/file_system/sandbox_quota_observer.cc
++++ b/storage/browser/file_system/sandbox_quota_observer.cc
+@@ -148,6 +148,10 @@ base::FileErrorOr<base::FilePath> SandboxQuotaObserver::GetUsageCachePath(
+ }
+ 
+ void SandboxQuotaObserver::ApplyPendingUsageUpdate() {
++  base::AutoLock lock(is_disabled_lock_);
++  if (is_disabled_) {
++    return;
++  }
+   delayed_cache_update_helper_.Stop();
+   for (const auto& path_delta_pair : pending_update_notification_)
+     UpdateUsageCacheFile(path_delta_pair.first, path_delta_pair.second);
+diff --git a/storage/browser/file_system/sandbox_quota_observer.h b/storage/browser/file_system/sandbox_quota_observer.h
+index 07af63f39ea4689f5cac209879356fd1b88640ec..ec9cdffb9e3760d41c104e15178bf05902b141ce 100644
+--- a/storage/browser/file_system/sandbox_quota_observer.h
++++ b/storage/browser/file_system/sandbox_quota_observer.h
+@@ -79,7 +79,7 @@ class SandboxQuotaObserver
+   bool is_disabled_ GUARDED_BY(is_disabled_lock_) = false;
+   ~SandboxQuotaObserver() override;
+ 
+-  void ApplyPendingUsageUpdate() EXCLUSIVE_LOCKS_REQUIRED(is_disabled_lock_);
++  void ApplyPendingUsageUpdate();
+   void UpdateUsageCacheFile(const base::FilePath& usage_file_path,
+                             int64_t delta)
+       EXCLUSIVE_LOCKS_REQUIRED(is_disabled_lock_);
