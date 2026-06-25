@@ -77,6 +77,7 @@ jobs:
       target-arch: x64
       target-variant: darwin
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -97,6 +98,7 @@ jobs:
       target-arch: x64
       target-variant: mas
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -117,6 +119,7 @@ jobs:
       target-arch: arm64
       target-variant: darwin
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -137,6 +140,7 @@ jobs:
       target-arch: arm64
       target-variant: mas
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}

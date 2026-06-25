@@ -37,9 +37,20 @@ inputs:
     description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots, mksnapshot fixup). Only disable when no test job consumes this build.'
     required: false
     default: 'true'
+  publish:
+    description: 'Whether to publish a release'
+    required: false
+    default: 'false'
 runs:
   using: "composite"
   steps:
+    - name: Validate inputs
+      shell: bash
+      run: |
+        if [ "${{ inputs.publish }}" = "true" ] && [ "${{ inputs.is-release }}" != "true" ]; then
+          echo "Can only publish release builds"
+          exit 1
+        fi
     - name: Set GN_EXTRA_ARGS for MacOS x64 Builds
       shell: bash
       if: ${{ inputs.target-arch == 'x64' && inputs.target-platform == 'macos' }}
@@ -90,10 +101,10 @@ runs:
 
         export NINJA_SUMMARIZE_BUILD=1
         export NO_COLOR=1
-        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.publish }}" = "true" ] || echo -quiet)
 
         if [ "${{ inputs.is-release }}" = "true" ]; then
-          e build --target electron:release_build
+          e build --target electron:release_build $QUIET_FLAG
         else
           e build --target electron:testing_build $QUIET_FLAG
         fi
@@ -215,7 +226,7 @@ runs:
       if: ${{ inputs.generate-chromedriver == 'true' }}
       run: |
         cd src
-        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.publish }}" = "true" ] || echo -quiet)
         e build --target electron:electron_chromedriver_zip $QUIET_FLAG
         if [ "${{ inputs.is-asan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
@@ -258,7 +269,7 @@ runs:
       if: ${{ inputs.is-release == 'true' }}
       run: |
         e init -f --root=$(pwd) --out=ffmpeg fmmpeg --import ffmpeg --target-cpu ${{ inputs.target-arch }} --remote-build siso
-        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
+        QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.publish }}" = "true" ] || echo -quiet)
         e build --target electron:electron_ffmpeg_zip $QUIET_FLAG
     - name: Remove Clang problem matcher
       shell: bash
@@ -303,7 +314,7 @@ runs:
 
         echo "Disk space metrics logged to Datadog"
     - name: Publish Electron Dist ${{ inputs.step-suffix }}
-      if: ${{ inputs.is-release == 'true' }}
+      if: ${{ inputs.publish == 'true' }}
       shell: bash
       id: github-upload
       run: |
@@ -317,7 +328,7 @@ runs:
           script/release/uploaders/upload.py --verbose
         fi
     - name: Generate artifact attestation
-      if: ${{ inputs.is-release == 'true' }}
+      if: ${{ inputs.publish == 'true' }}
       uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # v3.2.0
       with:
         subject-path: ${{ steps.github-upload.outputs.UPLOADED_PATHS }}
