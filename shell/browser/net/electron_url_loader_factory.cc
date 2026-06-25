@@ -396,13 +396,15 @@ void ElectronURLLoaderFactory::RedirectedRequest::DeleteThis() {
 
 // static
 mojo::PendingRemote<network::mojom::URLLoaderFactory>
-ElectronURLLoaderFactory::Create(ProtocolType type,
-                                 const ProtocolHandler& handler) {
+ElectronURLLoaderFactory::Create(
+    ProtocolType type,
+    const ProtocolHandler& handler,
+    base::WeakPtr<ElectronBrowserContext> browser_context) {
   mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
   // The ElectronURLLoaderFactory will delete itself when there are no more
   // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
-  new ElectronURLLoaderFactory(type, handler,
+  new ElectronURLLoaderFactory(type, handler, std::move(browser_context),
                                pending_remote.InitWithNewPipeAndPassReceiver());
 
   return pending_remote;
@@ -411,10 +413,12 @@ ElectronURLLoaderFactory::Create(ProtocolType type,
 ElectronURLLoaderFactory::ElectronURLLoaderFactory(
     ProtocolType type,
     const ProtocolHandler& handler,
+    base::WeakPtr<ElectronBrowserContext> browser_context,
     mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
     : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)),
       type_(type),
-      handler_(handler) {}
+      handler_(handler),
+      browser_context_(std::move(browser_context)) {}
 
 ElectronURLLoaderFactory::~ElectronURLLoaderFactory() = default;
 
@@ -457,7 +461,8 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
       request,
       base::BindOnce(&ElectronURLLoaderFactory::StartLoading, std::move(loader),
                      request_id, options, request, std::move(client),
-                     traffic_annotation, std::move(target_factory), type_));
+                     traffic_annotation, std::move(target_factory), type_,
+                     browser_context_));
 }
 
 // static
@@ -482,6 +487,7 @@ void ElectronURLLoaderFactory::StartLoading(
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory,
     ProtocolType type,
+    base::WeakPtr<ElectronBrowserContext> browser_context,
     gin::Arguments* args) {
   // Send network error when there is no argument passed.
   //
@@ -608,7 +614,7 @@ void ElectronURLLoaderFactory::StartLoading(
     case ProtocolType::kHttp:
       if (GURL url; !dict.IsEmpty() && dict.Get("url", &url) && url.is_valid())
         StartLoadingHttp(std::move(client), std::move(loader), request,
-                         traffic_annotation, dict);
+                         traffic_annotation, std::move(browser_context), dict);
       else
         OnComplete(std::move(client), request_id,
                    network::URLLoaderCompletionStatus(net::ERR_FAILED));
@@ -641,7 +647,8 @@ void ElectronURLLoaderFactory::StartLoading(
         // |response.path|.
         if (GURL url; dict.Get("url", &url))
           StartLoadingHttp(std::move(client), std::move(loader), request,
-                           traffic_annotation, dict);
+                           traffic_annotation, std::move(browser_context),
+                           dict);
         else if (base::FilePath path; dict.Get("path", &path))
           StartLoadingFile(std::move(client), std::move(loader),
                            std::move(head), request, path, dict);
@@ -695,6 +702,7 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     const network::ResourceRequest& original_request,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+    base::WeakPtr<ElectronBrowserContext> serving_browser_context,
     const gin_helper::Dictionary& dict) {
   auto request = std::make_unique<network::ResourceRequest>();
   request->headers = original_request.headers;
@@ -710,11 +718,19 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
       request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
 
+  // Default to the session this protocol handler was registered on when one
+  // isn't specified in the response.
   api::Session* session = nullptr;
-  auto* browser_context =
-      dict.Get("session", &session) && session
-          ? session->browser_context()
-          : ElectronBrowserContext::GetDefaultBrowserContext();
+  ElectronBrowserContext* browser_context =
+      dict.Get("session", &session) && session ? session->browser_context()
+                                               : serving_browser_context.get();
+  if (!browser_context) {
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    return;
+  }
 
   new URLPipeLoader(
       browser_context->GetURLLoaderFactory(), std::move(request),
