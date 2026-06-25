@@ -257,20 +257,9 @@ runs:
       shell: bash
       if: ${{ inputs.is-release == 'true' }}
       run: |
-        cd src
-        # Reuse the hermetic mac_sdk_path that `e build` wrote for out/Default so
-        # out/ffmpeg builds against the same SDK instead of the runner's system Xcode.
-        # The path has to live under root_build_dir, so copy the symlink tree and
-        # rewrite Default -> ffmpeg.
-        MAC_SDK_ARG=""
-        if [ "$(uname)" = "Darwin" ]; then
-          mkdir -p out/ffmpeg
-          cp -a out/Default/xcode_links out/ffmpeg/
-          MAC_SDK_ARG=$(sed -n 's|^\(mac_sdk_path = "//out/\)Default/|\1ffmpeg/|p' out/Default/args.gn)
-        fi
-        gn gen out/ffmpeg --args="import(\"//electron/build/args/ffmpeg.gn\") use_remoteexec=true use_siso=true $MAC_SDK_ARG $GN_EXTRA_ARGS"
+        e init -f --root=$(pwd) --out=ffmpeg fmmpeg --import ffmpeg --target-cpu ${{ inputs.target-arch }} --remote-build siso
         QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.is-release }}" = "true" ] || echo -quiet)
-        e build --target electron:electron_ffmpeg_zip -C ../../out/ffmpeg $QUIET_FLAG
+        e build --target electron:electron_ffmpeg_zip $QUIET_FLAG
     - name: Remove Clang problem matcher
       shell: bash
       run: echo "::remove-matcher owner=clang::"
