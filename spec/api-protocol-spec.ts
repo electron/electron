@@ -380,6 +380,45 @@ describe('protocol module', () => {
     });
   }
 
+  describe('ProtocolResponse.url', () => {
+    it('uses the handling session for the upstream request when session is not specified', async () => {
+      const server = http.createServer((req, res) => {
+        res.setHeader('content-type', 'text/html');
+        res.end(text);
+      });
+      defer(() => server.close());
+      const { url } = await listen(server);
+
+      const ses = session.fromPartition(`protocol-response-url-session-${v4()}`);
+      let upstreamSeenByHandlingSession = false;
+      let upstreamSeenByDefaultSession = false;
+      ses.webRequest.onBeforeRequest((details, callback) => {
+        if (details.url.startsWith(url)) upstreamSeenByHandlingSession = true;
+        callback({});
+      });
+      session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+        if (details.url.startsWith(url)) upstreamSeenByDefaultSession = true;
+        callback({});
+      });
+      defer(() => {
+        ses.webRequest.onBeforeRequest(null);
+        session.defaultSession.webRequest.onBeforeRequest(null);
+      });
+
+      ses.protocol.registerHttpProtocol(protocolName, (request, callback) => callback({ url }));
+      defer(() => ses.protocol.unregisterProtocol(protocolName));
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses, sandbox: true } });
+      defer(() => w.destroy());
+      await w.webContents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+      const r = await w.webContents.executeJavaScript(`ajax("${protocolName}://fake-host", {})`);
+      expect(r.data).to.equal(text);
+
+      expect(upstreamSeenByHandlingSession).to.be.true('upstream request did not go through the handling session');
+      expect(upstreamSeenByDefaultSession).to.be.false('upstream request went through the default session');
+    });
+  });
+
   for (const [registerStreamProtocol, name] of [
     [protocol.registerStreamProtocol, 'protocol.registerStreamProtocol'] as const,
     [(protocol as any).registerProtocol as typeof protocol.registerStreamProtocol, 'protocol.registerProtocol'] as const

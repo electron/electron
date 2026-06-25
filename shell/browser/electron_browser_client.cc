@@ -1420,6 +1420,7 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
       ProtocolRegistry::FromBrowserContext(browser_context);
   new ProxyingURLLoaderFactory(
       web_request.get(), protocol_registry->intercept_handlers(),
+      static_cast<ElectronBrowserContext*>(browser_context)->GetWeakPtr(),
       render_process_id,
       frame_host ? frame_host->GetRoutingID() : IPC::mojom::kRoutingIdNone,
       &next_id_, std::move(navigation_ui_data), std::move(navigation_id),
