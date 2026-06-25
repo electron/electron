@@ -64,11 +64,11 @@ jobs:
         generate-sas-token: 'true'
         target-platform: win
 
-  # Build the patched siso binary in parallel with checkout-windows; the
-  # publish-*-win jobs consume it via SISO_PATH.
-  build-siso-windows:
+  # Build the patched siso binaries in parallel with checkout-windows; the
+  # publish-*-win jobs consume the windows-amd64 artifact via SISO_PATH.
+  build-siso:
     needs: setup
-    uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
 
@@ -79,7 +79,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -99,7 +99,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -119,7 +119,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-windows-amd64-16core
