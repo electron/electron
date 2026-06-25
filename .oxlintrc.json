@@ -319,7 +319,23 @@
       }
     },
     {
-      "files": ["**/*.d.ts"],
+      "files": [
+        "spec/**/api-*.ts",
+        "spec/**/api-*.js",
+        "spec/**/api-*.mjs"
+      ],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [{
+            "regex": "^\\.\\./"
+          }]
+        }]
+      }
+    },
+    {
+      "files": [
+        "**/*.d.ts"
+      ],
       "rules": {
         "no-useless-constructor": "off",
         "no-unused-vars": "off"
