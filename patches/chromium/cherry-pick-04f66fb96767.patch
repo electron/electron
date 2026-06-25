@@ -1,0 +1,248 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Mon, 22 Jun 2026 20:35:29 -0700
+Subject: [M149] Rebind original FBO earlier in ClearLevelUsingGL.
+
+Original change's description:
+> Rebind original FBO earlier in ClearLevelUsingGL.
+>
+> Avoid triggering problems on some drivers when deleting an in-use FBO.
+>
+> Co-authored with jetski-cli.
+>
+> Fixed: 523591974
+> Change-Id: I17239a547a16d8d2b2a754c9141f37b7f0012956
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7953879
+> Reviewed-by: Brandon Jones <bajones@chromium.org>
+> Commit-Queue: Kenneth Russell <kbr@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1648728}
+
+(cherry picked from commit feb103bc1c01d1a1e62383f906346d23bb725fb1)
+
+Bug: 525661769,523591974
+Change-Id: I17239a547a16d8d2b2a754c9141f37b7f0012956
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7975811
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7827@{#3693}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 8e4749feabbfc09e6d64e549608c4892ad8f28f3..827d3e6cf6cba404a931d5d43460f8ce7aa9f1b8 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -12301,11 +12301,16 @@ bool GLES2DecoderImpl::ClearLevelUsingGL(Texture* texture,
+     result = true;
+   }
+   RestoreClearState();
+-  api()->glDeleteFramebuffersEXTFn(1, &fb);
++  // Restore the previous framebuffer binding *before* deleting the temporary
++  // FBO. Some Imagination/PowerVR drivers retain an internal reference to the
++  // previously-bound FBO across bind transitions; deleting it while bound and
++  // then rebinding can dereference freed driver state. See the
++  // ensure_previous_framebuffer_not_deleted workaround.
+   Framebuffer* framebuffer = GetFramebufferInfoForTarget(fb_target);
+   GLuint fb_service_id =
+       framebuffer ? framebuffer->service_id() : GetBackbufferServiceId();
+   BindFramebuffer(fb_target, fb_service_id);
++  api()->glDeleteFramebuffersEXTFn(1, &fb);
+   return result;
+ }
+ 
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.h b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.h
+index 874098118b2ddf4e02218818ce28e4b71b030484..9e4d6e3bf3c6788ad3984dd46bcdb1d2b7ec3866 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.h
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_base.h
+@@ -543,6 +543,7 @@ class GLES2DecoderTestBase : public ::testing::TestWithParam<bool>,
+   }
+ 
+  protected:
++  virtual void SetupMockGLBehaviors();
+   static const int kBackBufferWidth = 128;
+   static const int kBackBufferHeight = 64;
+ 
+@@ -787,7 +788,6 @@ class GLES2DecoderTestBase : public ::testing::TestWithParam<bool>,
+     GLuint bound_vertex_array_object_;
+   };  // class MockGLStates
+ 
+-  void SetupMockGLBehaviors();
+ 
+   GpuPreferences gpu_preferences_;
+   ShaderTranslatorCache shader_translator_cache_;
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+index 6c63c9d323e2ac3a449224b585a586069afb997b..6835fab59acecb64881781bc9281d83b956488bc 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_unittest_textures.cc
+@@ -3171,6 +3171,171 @@ TEST_P(GLES2DecoderManualInitTest, GenerateMipmapDepthTexture) {
+   EXPECT_EQ(GL_INVALID_OPERATION, GetGLError());
+ }
+ 
++class GLES2DecoderEnsurePrevFboWorkaroundTest
++    : public GLES2DecoderManualInitTest {
++ public:
++  GLES2DecoderEnsurePrevFboWorkaroundTest() = default;
++
++  void SetupMockGLBehaviors() override {
++    GLES2DecoderManualInitTest::SetupMockGLBehaviors();
++    if (enable_workaround_expectations_) {
++      EXPECT_CALL(*gl_, GenTextures(1, _))
++          .WillOnce(SetArgPointee<1>(kCompleteFboTextureId))
++          .RetiresOnSaturation();
++      EXPECT_CALL(*gl_, BindTexture(GL_TEXTURE_2D, kCompleteFboTextureId))
++          .Times(1)
++          .RetiresOnSaturation();
++      EXPECT_CALL(*gl_, TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA,
++                                   GL_UNSIGNED_BYTE, nullptr))
++          .Times(1)
++          .RetiresOnSaturation();
++      EXPECT_CALL(*gl_, GenFramebuffersEXT(1, _))
++          .WillOnce(SetArgPointee<1>(kCompleteFboId))
++          .RetiresOnSaturation();
++      EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kCompleteFboId))
++          .Times(3)
++          .RetiresOnSaturation();
++      EXPECT_CALL(*gl_, FramebufferTexture2DEXT(
++                            GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                            kCompleteFboTextureId, 0))
++          .Times(1)
++          .RetiresOnSaturation();
++      EXPECT_CALL(*gl_, CheckFramebufferStatusEXT(GL_FRAMEBUFFER))
++          .WillOnce(Return(GL_FRAMEBUFFER_COMPLETE))
++          .RetiresOnSaturation();
++      EXPECT_CALL(*gl_, DeleteTextures(1, Pointee(kCompleteFboTextureId)))
++          .Times(1)
++          .RetiresOnSaturation();
++    }
++  }
++
++ protected:
++  bool enable_workaround_expectations_ = false;
++  static constexpr GLuint kCompleteFboTextureId = 999;
++  static constexpr GLuint kCompleteFboId = 998;
++};
++
++// The test uses a depth texture to force GLES2DecoderImpl::ClearLevel to use
++// the ClearLevelUsingGL path, which is required to trigger the FBO restoration
++// workaround logic. For color textures, ClearLevel may fallback to the
++// TexSubImage2D clear path which does not use a temporary FBO.
++TEST_P(GLES2DecoderEnsurePrevFboWorkaroundTest, ClearLevelUsingGLOrder) {
++  enable_workaround_expectations_ = true;
++  gpu::GpuDriverBugWorkarounds workarounds;
++  workarounds.ensure_previous_framebuffer_not_deleted = true;
++  InitState init;
++  init.extensions = "GL_ANGLE_depth_texture";
++  init.gl_version = "OpenGL ES 2.0";
++  init.has_depth = true;
++  init.request_depth = true;
++  InitDecoderWithWorkarounds(init, workarounds);
++
++  // Set up texture
++  DoBindTexture(GL_TEXTURE_2D, client_texture_id_, kServiceTextureId);
++  DoTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 1, 1, 0,
++               GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, 0, 0);
++
++  TextureRef* texture_ref =
++      group().texture_manager()->GetTexture(client_texture_id_);
++  ASSERT_TRUE(texture_ref != nullptr);
++  Texture* texture = texture_ref->texture();
++
++  // Expectations for ClearLevel
++  const GLuint kTempFboId = 777;
++  InSequence seq;
++
++  // 1. Gen temp FBO
++  EXPECT_CALL(*gl_, GenFramebuffersEXT(1, _))
++      .WillOnce(SetArgPointee<1>(kTempFboId))
++      .RetiresOnSaturation();
++
++  // 2. Bind temp FBO (wrapper triggers complete_fbo bind first)
++  EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kCompleteFboId))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kTempFboId))
++      .Times(1)
++      .RetiresOnSaturation();
++
++  // 3. Attach texture
++  EXPECT_CALL(*gl_,
++              FramebufferTexture2DEXT(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
++                                      GL_TEXTURE_2D, kServiceTextureId, 0))
++      .Times(1)
++      .RetiresOnSaturation();
++
++  // 4. Check status
++  EXPECT_CALL(*gl_, CheckFramebufferStatusEXT(GL_FRAMEBUFFER))
++      .WillOnce(Return(GL_FRAMEBUFFER_COMPLETE))
++      .RetiresOnSaturation();
++
++  // 5. Clear calls
++  if (GetParam()) {
++    EXPECT_CALL(*gl_, ColorMask(true, true, true, true))
++        .Times(1)
++        .RetiresOnSaturation();
++  }
++  EXPECT_CALL(*gl_, ClearColor(0.0f, 0.0f, 0.0f, 0.0f))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, ClearStencil(0)).Times(1).RetiresOnSaturation();
++  if (GetParam()) {
++    EXPECT_CALL(*gl_, StencilMaskSeparate(GL_FRONT, 0xFFFFFFFF))
++        .Times(1)
++        .RetiresOnSaturation();
++    EXPECT_CALL(*gl_, StencilMaskSeparate(GL_BACK, 0xFFFFFFFF))
++        .Times(1)
++        .RetiresOnSaturation();
++  }
++  EXPECT_CALL(*gl_, ClearDepth(1.0f)).Times(1).RetiresOnSaturation();
++  if (GetParam()) {
++    EXPECT_CALL(*gl_, DepthMask(true)).Times(1).RetiresOnSaturation();
++  }
++  EXPECT_CALL(*gl_, Enable(GL_SCISSOR_TEST)).Times(1).RetiresOnSaturation();
++  EXPECT_CALL(*gl_, Scissor(0, 0, 1, 1)).Times(1).RetiresOnSaturation();
++  EXPECT_CALL(*gl_, Clear(GL_DEPTH_BUFFER_BIT)).Times(1).RetiresOnSaturation();
++
++  // 6. Restore state
++  EXPECT_CALL(*gl_, ClearColor(0.0f, 0.0f, 0.0f, 0.0f))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, ClearStencil(0)).Times(1).RetiresOnSaturation();
++  EXPECT_CALL(*gl_, ClearDepth(1.0f)).Times(1).RetiresOnSaturation();
++  EXPECT_CALL(*gl_, Disable(GL_SCISSOR_TEST)).Times(1).RetiresOnSaturation();
++  EXPECT_CALL(*gl_,
++              Scissor(0, 0, 128, 64))  // 128x64 is the default backbuffer size
++      .Times(1)
++      .RetiresOnSaturation();
++
++  // 7. Restore FBO binding (CRITICAL: Must happen BEFORE delete)
++  // Wrapper triggers complete_fbo bind first
++  EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, kCompleteFboId))
++      .Times(1)
++      .RetiresOnSaturation();
++  EXPECT_CALL(*gl_, BindFramebufferEXT(GL_FRAMEBUFFER, 0))
++      .Times(1)
++      .RetiresOnSaturation();
++
++  // 8. Delete temp FBO
++  EXPECT_CALL(*gl_, DeleteFramebuffersEXT(1, Pointee(kTempFboId)))
++      .Times(1)
++      .RetiresOnSaturation();
++
++  // Call ClearLevel
++  EXPECT_TRUE(decoder_->ClearLevel(texture, GL_TEXTURE_2D, 0,
++                                   GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, 0, 0, 1,
++                                   1));
++
++  DoDeleteTexture(client_texture_id_, kServiceTextureId);
++}
++
++// The boolean parameter controls whether ignore_cached_state_for_test is
++// enabled in the base fixture GLES2DecoderTestBase. This forces GL state
++// restoration and helps test state-dirtying paths.
++INSTANTIATE_TEST_SUITE_P(Service,
++                         GLES2DecoderEnsurePrevFboWorkaroundTest,
++                         ::testing::Bool());
++
+ TEST_P(GLES2DecoderManualInitTest, DrawWithGLImageExternal) {
+   InitState init;
+   init.extensions = "GL_OES_EGL_image_external";
