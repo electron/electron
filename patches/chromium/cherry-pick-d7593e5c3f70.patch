@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Tue, 16 Jun 2026 23:38:04 -0700
+Subject: [M148] Kill renderer if we receive DidCommitNavigation from BFCached
+ RFH
+
+Original change's description:
+> Kill renderer if we receive DidCommitNavigation from BFCached RFH
+>
+> We don't allow bfcaching pages with pending commit navigations, so
+> kill the renderer if it claims it committed one.
+>
+> Fixed: 517148260
+> Change-Id: Idd69d28c908c55911dc72dde4fd6237d173dda0e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7893390
+> Reviewed-by: Mark Pearson <mpearson@chromium.org>
+> Reviewed-by: Fergal Daly <fergal@chromium.org>
+> Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1641477}
+
+(cherry picked from commit ee35b8de30bc2ba497ebc165d1e878af53865b75)
+
+Bug: 520435989,517148260
+Change-Id: Idd69d28c908c55911dc72dde4fd6237d173dda0e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7921359
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Reviewed-by: Fergal Daly <fergal@chromium.org>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Owners-Override: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4370}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/content/browser/bad_message.h b/content/browser/bad_message.h
+index 4099468139f162746424d62d26668d73047d50bb..c3740d390a390748b8e68c655fa4f34ab2d48323 100644
+--- a/content/browser/bad_message.h
++++ b/content/browser/bad_message.h
+@@ -359,6 +359,7 @@ enum BadMessageReason {
+   RFH_CRASH_REPORT_STORAGE_ALREADY_INITIALIZED = 331,
+   RFH_INVALID_DOCUMENT_SEQUENCE_NUMBER = 332,
+   RFH_NEW_ISOLATED_WEB_APP_PERMISSION_POLICIES = 333,
++  RFH_DID_COMMIT_NAVIGATION_WHILE_BFCACHED = 354,
+ 
+   // Please add new elements here. The naming convention is abbreviated class
+   // name (e.g. RenderFrameHost becomes RFH) plus a unique description of the
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index aca7d60e2e98448f3fd31f4e81c2acee57616c99..9b318e2cfa3da1a0a06755878aa9ae59973f2eca 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -16928,8 +16928,13 @@ void RenderFrameHostImpl::DidCommitNavigation(
+   // BackForwardCache (see the check IsInactiveAndDisallowActivation in
+   // RFH::DidCommitSameDocumentNavigation() and RFH::BeginNavigation()) so it
+   // isn't possible to get a DidCommitNavigation IPC from the renderer in
+-  // kInBackForwardCache state.
+-  DCHECK(!IsInBackForwardCache());
++  // kInBackForwardCache state. Trigger a renderer kill if we receive an
++  // unexpected DidCommit message.
++  if (IsInBackForwardCache()) {
++    bad_message::ReceivedBadMessage(
++        GetProcess(), bad_message::RFH_DID_COMMIT_NAVIGATION_WHILE_BFCACHED);
++    return;
++  }
+ 
+   // TODO(https://crbug.com/445585641): Make this enforceable on Android.
+ #if !BUILDFLAG(IS_ANDROID)
+diff --git a/tools/metrics/histograms/metadata/stability/enums.xml b/tools/metrics/histograms/metadata/stability/enums.xml
+index e1a13ca18c95bc6ae31aa330e79ff162959428c6..574b1bf49141b9cd9a59550ed45c0261aa5ef8b9 100644
+--- a/tools/metrics/histograms/metadata/stability/enums.xml
++++ b/tools/metrics/histograms/metadata/stability/enums.xml
+@@ -499,6 +499,7 @@ Called by update_bad_message_reasons.py.-->
+   <int value="331" label="RFH_CRASH_REPORT_STORAGE_ALREADY_INITIALIZED"/>
+   <int value="332" label="RFH_INVALID_DOCUMENT_SEQUENCE_NUMBER"/>
+   <int value="333" label="RFH_NEW_ISOLATED_WEB_APP_PERMISSION_POLICIES"/>
++  <int value="354" label="RFH_DID_COMMIT_NAVIGATION_WHILE_BFCACHED"/>
+ </enum>
+ 
+ <enum name="BadMessageReasonExtensions">
