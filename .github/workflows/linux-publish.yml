@@ -59,6 +59,14 @@ jobs:
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
 
+  # Build the patched siso binaries in parallel with checkout-linux; the
+  # publish jobs consume the linux-amd64 artifact via SISO_PATH.
+  build-siso:
+    needs: setup
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+
   publish-x64:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
@@ -66,7 +74,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [setup, checkout-linux]
+    needs: [setup, checkout-linux, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -87,7 +95,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [setup, checkout-linux]
+    needs: [setup, checkout-linux, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -108,7 +116,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [setup, checkout-linux]
+    needs: [setup, checkout-linux, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-linux-amd64-32core
