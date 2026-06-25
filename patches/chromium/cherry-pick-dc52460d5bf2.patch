@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Przemek Perkowski <perkowski@google.com>
+Date: Thu, 18 Jun 2026 03:46:59 -0700
+Subject: [M150] Fix the state desynchronization bug in autofill manager.
+
+Original change's description:
+> Fix the state desynchronization bug in autofill manager.
+>
+> As explained in the attached bug, the current implementation leads to
+> the popup not being hidden correctly.
+>
+> Bug: 516734537
+> Change-Id: If0370f3370240ef3904cbf7fbdc868766a6a6964
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7894738
+> Reviewed-by: Christoph Schwering <schwering@google.com>
+> Reviewed-by: Atalyk Akash <atalyk@google.com>
+> Commit-Queue: Przemek Perkowski <perkowski@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1640851}
+
+(cherry picked from commit 6e1a3c5dbaa5c8bc19a9d0ff07e7d416a70d7441)
+
+Bug: 524890166,516734537
+Change-Id: If0370f3370240ef3904cbf7fbdc868766a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7958499
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: Josef Raska <josefraska@google.com>
+Reviewed-by: Christoph Schwering <schwering@google.com>
+Commit-Queue: Josef Raska <josefraska@google.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#1572}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/components/autofill/core/browser/foundations/browser_autofill_manager.cc b/components/autofill/core/browser/foundations/browser_autofill_manager.cc
+index eb9bb298cce97a1583cd88dfe6cac1bac62aeb7d..24a899d266460c4b59570f374f3fc7c5e848d95c 100644
+--- a/components/autofill/core/browser/foundations/browser_autofill_manager.cc
++++ b/components/autofill/core/browser/foundations/browser_autofill_manager.cc
+@@ -1188,17 +1188,20 @@ void BrowserAutofillManager::OnAskForValuesToFillImpl(
+     return;
+   }
+ 
++  // TODO(crbug.com/519061643): Rely on central atMemory eligibility logic
++  // instead.
++  if (IsAtMemoryTriggerSource(trigger_source) &&
++      client().GetPersonalContextEnablementState() ==
++          personal_context::PersonalContextEnablementState::
++              kDisabledNotEligible) {
++    return;
++  }
++
+   const FormFieldData& field = CHECK_DEREF(form.FindFieldByGlobalId(field_id));
+   external_delegate_->OnQuery(form, field, caret_bounds, trigger_source,
+                               /*update_datalist=*/true);
+ 
+   if (IsAtMemoryTriggerSource(trigger_source)) {
+-    // Do not show the pop up at all for non eligible profiles.
+-    if (client().GetPersonalContextEnablementState() ==
+-        personal_context::PersonalContextEnablementState::
+-            kDisabledNotEligible) {
+-      return;
+-    }
+     std::vector<Suggestion> suggestions;
+     GetAtMemoryManager().MaybeAppendPersonalContextNotice(suggestions);
+ 

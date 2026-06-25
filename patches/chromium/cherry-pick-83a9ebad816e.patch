@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Wed, 17 Jun 2026 09:11:37 -0700
+Subject: [M150] Prevent use-after-free in WidgetBase::UpdateSurfaceAndScreen.
+
+Original change's description:
+> Prevent use-after-free in WidgetBase::UpdateSurfaceAndScreen.
+>
+> Add a weak pointer check after calling client_->OrientationChanged() because this call can cause the WidgetBase object to be destroyed.
+>
+> Bug: 523308824, 523711130
+> Change-Id: If70c28a4a616b4909dade238d8c39b001956fd05
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7930273
+> Reviewed-by: Vladimir Levin <vmpstr@chromium.org>
+> Commit-Queue: Vladimir Levin <vmpstr@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1646821}
+
+(cherry picked from commit 6b6931e5c44fc5fe912a04d4c67503a770b07e3d)
+
+Bug: 524508630,523308824,523711130
+Change-Id: If70c28a4a616b4909dade238d8c39b001956fd05
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7957957
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#1461}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/platform/widget/widget_base.cc b/third_party/blink/renderer/platform/widget/widget_base.cc
+index 00e308a0113a909f3ddb598c8fa12c4afbffa79f..66b33ab159f42ade4b63802ccfea06f4f774f83e 100644
+--- a/third_party/blink/renderer/platform/widget/widget_base.cc
++++ b/third_party/blink/renderer/platform/widget/widget_base.cc
+@@ -1087,7 +1087,11 @@ void WidgetBase::UpdateVisualState() {
+       ShouldRecordBeginMainFrameMetrics()
+           ? DocumentUpdateReason::kBeginMainFrame
+           : DocumentUpdateReason::kTest;
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   client_->UpdateLifecycle(WebLifecycleUpdate::kAll, lifecycle_reason);
++  if (!weak_this) {
++    return;
++  }
+   client_->SetSuppressFrameRequestsWorkaroundFor704763Only(false);
+ }
+ 
+@@ -1790,8 +1794,13 @@ void WidgetBase::UpdateSurfaceAndScreenInfo(
+         screen_infos_.current().display_color_spaces);
+   }
+ 
+-  if (orientation_changed)
++  if (orientation_changed) {
++    auto weak_this = weak_ptr_factory_.GetWeakPtr();
+     client_->OrientationChanged();
++    if (!weak_this) {
++      return;
++    }
++  }
+ 
+   client_->DidUpdateSurfaceAndScreen(previous_original_screen_infos);
+ }
