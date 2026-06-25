@@ -73,6 +73,11 @@ on:
         required: false
         type: boolean
         default: false
+      run-include-analysis:
+        description: 'Run analyze_includes.py and upload include-analysis.html as an artifact'
+        required: false
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -244,6 +249,7 @@ jobs:
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
         upload-out-gen-artifacts: '${{ inputs.upload-out-gen-artifacts }}'
+        run-include-analysis: '${{ inputs.run-include-analysis }}'
     - name: Set GN_EXTRA_ARGS for MAS Build
       if: ${{ inputs.target-platform == 'macos' && (inputs.target-variant == 'all' || inputs.target-variant == 'mas') }}
       run: |
