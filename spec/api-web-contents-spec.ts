@@ -1057,6 +1057,93 @@ describe('webContents module', () => {
       });
     });
 
+    describe('navigationHistory.restore() bypassCache option', () => {
+      let server: http.Server;
+      let serverUrl: string;
+      let requestCount = 0;
+
+      before(async () => {
+        server = http.createServer((req, res) => {
+          // Only the top-level document navigation is relevant for these
+          // assertions. Ignore any other request (e.g. /favicon.ico) so the
+          // request counts stay deterministic.
+          if (req.url !== '/') {
+            res.statusCode = 404;
+            res.end();
+            return;
+          }
+          requestCount++;
+          res.setHeader('Content-Type', 'text/html');
+          res.setHeader('Cache-Control', 'max-age=3600');
+          res.end(
+            '<html><head><title>Cacheable</title></head><body>cacheable</body></html>'
+          );
+        });
+        serverUrl = (await listen(server)).url;
+      });
+
+      after(async () => {
+        if (server) await new Promise<void>((resolve) => server.close(() => resolve()));
+        server = null as any;
+      });
+
+      beforeEach(() => {
+        requestCount = 0;
+      });
+
+      // Primes the cache by loading the page once, then restores the captured
+      // entries in a fresh window that shares the same on-disk cache. Returns
+      // whether the restored main-frame navigation was served from the cache
+      // along with the number of server hits the restore triggered.
+      const restoreAndObserveCache = async (partition: string, bypassCache: boolean) => {
+        const ses = session.fromPartition(partition);
+
+        const primer = new BrowserWindow({ show: false, webPreferences: { partition } });
+        await primer.loadURL(serverUrl);
+        const entries = primer.webContents.navigationHistory.getAllEntries();
+        primer.destroy();
+
+        const countAfterInitialLoad = requestCount;
+        expect(countAfterInitialLoad, 'initial load should hit the server once').to.equal(1);
+
+        let mainFrameFromCache: boolean | undefined;
+        ses.webRequest.onResponseStarted((details) => {
+          if (details.resourceType === 'mainFrame') {
+            mainFrameFromCache = details.fromCache;
+          }
+        });
+
+        const restored = new BrowserWindow({ show: false, webPreferences: { partition } });
+        try {
+          await restored.webContents.navigationHistory.restore({ index: 0, entries, bypassCache });
+        } finally {
+          ses.webRequest.onResponseStarted(null);
+        }
+
+        return { mainFrameFromCache, restoreRequests: requestCount - countAfterInitialLoad };
+      };
+
+      it('serves the restored entry from the cache by default', async () => {
+        const partition = `restore-bypasscache-default-${Date.now()}`;
+        const { mainFrameFromCache, restoreRequests } = await restoreAndObserveCache(partition, false);
+
+        // The response is cacheable, so restoring without bypassCache is served
+        // from the cache and must not contact the server again.
+        expect(mainFrameFromCache, 'restore should be served from cache').to.equal(true);
+        expect(restoreRequests, 'restore should not hit the server').to.equal(0);
+      });
+
+      it('loads the restored entry from the network when bypassCache is true', async () => {
+        const partition = `restore-bypasscache-network-${Date.now()}`;
+        const { mainFrameFromCache, restoreRequests } = await restoreAndObserveCache(partition, true);
+
+        // bypassCache forces a fresh network request even though the response is
+        // cacheable.
+        expect(mainFrameFromCache, 'restore should bypass the cache').to.equal(false);
+        expect(restoreRequests, 'restore should hit the server once').to.equal(1);
+      });
+    });
+
     it('should restore an overridden user agent', async () => {
       const partition = 'persist:wcvtest';
       const testUA = 'MyCustomUA';
