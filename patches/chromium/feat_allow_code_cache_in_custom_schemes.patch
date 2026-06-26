@@ -143,11 +143,11 @@ index a01f0d96ef33ce9460a851b072b7ceed5227dee3..f7e39b28cc0ba2251123925c01083a79
  
      // JavaScript from chrome and chrome-untrusted pages. The resource URLs are
 diff --git a/content/browser/code_cache/generated_code_cache_browsertest.cc b/content/browser/code_cache/generated_code_cache_browsertest.cc
-index 68a3095a49caf472c83b93b5cef66e5549a2d7cc..aa371ba5576f9fbaf5558e39704f7eb87ec7511e 100644
+index 34aaa303261a4094a98667e48ad341ac4c989e7c..64c71028add8e951fbe9d2591c92f79cc4f9522d 100644
 --- a/content/browser/code_cache/generated_code_cache_browsertest.cc
 +++ b/content/browser/code_cache/generated_code_cache_browsertest.cc
-@@ -16,17 +16,22 @@
- #include "base/time/time.h"
+@@ -17,17 +17,22 @@
+ #include "build/build_config.h"
  #include "content/browser/code_cache/generated_code_cache_context.h"
  #include "content/browser/renderer_host/code_cache_host_impl.h"
 +#include "content/browser/storage_partition_impl.h"
@@ -169,7 +169,7 @@ index 68a3095a49caf472c83b93b5cef66e5549a2d7cc..aa371ba5576f9fbaf5558e39704f7eb8
  #include "net/base/features.h"
  #include "net/dns/mock_host_resolver.h"
  #include "third_party/blink/public/common/features.h"
-@@ -38,6 +43,8 @@ namespace content {
+@@ -39,6 +44,8 @@ namespace content {
  
  namespace {
  
@@ -178,9 +178,9 @@ index 68a3095a49caf472c83b93b5cef66e5549a2d7cc..aa371ba5576f9fbaf5558e39704f7eb8
  bool SupportsSharedWorker() {
    return base::FeatureList::IsEnabled(blink::features::kSharedWorker);
  }
-@@ -1063,4 +1070,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
-   }
+@@ -1086,4 +1093,82 @@ IN_PROC_BROWSER_TEST_F(LocalCompileHintsBrowserTest, LocalCompileHints) {
  }
+ #endif  // !BUILDFLAG(IS_FUCHSIA) || !defined(__OPTIMIZE_SIZE__)
  
 +class CodeCacheInCustomSchemeBrowserTest : public ContentBrowserTest,
 +                                           public TestContentClient {
@@ -262,7 +262,7 @@ index 68a3095a49caf472c83b93b5cef66e5549a2d7cc..aa371ba5576f9fbaf5558e39704f7eb8
 +
  }  // namespace content
 diff --git a/content/browser/renderer_host/code_cache_host_impl.cc b/content/browser/renderer_host/code_cache_host_impl.cc
-index a3c5e2ccc611dbab868099b377b05d28422055fe..eb0412e5ebf43b7ce7558d629cb27db967bb86ec 100644
+index 154c1e7e8a9e9702f6a0051d35cc071a20e08f59..75d24640d043322cd4846b83587dc24bc27b722c 100644
 --- a/content/browser/renderer_host/code_cache_host_impl.cc
 +++ b/content/browser/renderer_host/code_cache_host_impl.cc
 @@ -4,6 +4,7 @@
@@ -273,13 +273,13 @@ index a3c5e2ccc611dbab868099b377b05d28422055fe..eb0412e5ebf43b7ce7558d629cb27db9
  #include <stdint.h>
  
  #include <optional>
-@@ -51,6 +52,7 @@
+@@ -53,6 +54,7 @@
  #include "third_party/perfetto/include/perfetto/tracing/track_event_args.h"
  #include "url/gurl.h"
  #include "url/origin.h"
 +#include "url/url_util.h"
  
- using blink::mojom::CacheStorageError;
+ namespace content {
  
 @@ -65,6 +67,10 @@ enum class Operation {
    kWrite,

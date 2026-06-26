@@ -51,6 +51,7 @@ namespace electron {
 
 class ElectronMenuModel;
 class BackgroundThrottlingSource;
+class InspectableWebContentsView;
 
 #if BUILDFLAG(IS_MAC)
 using NativeWindowHandle = gfx::NativeView;
@@ -413,6 +414,13 @@ class NativeWindow : public views::WidgetDelegate {
 
   [[nodiscard]] constexpr int32_t window_id() const { return window_id_; }
 
+  InspectableWebContentsView* primary_web_contents_view() const {
+    return primary_web_contents_view_;
+  }
+  void set_primary_web_contents_view(InspectableWebContentsView* view) {
+    primary_web_contents_view_ = view;
+  }
+
   void add_child_window(NativeWindow* child) {
     child_windows_.push_back(child);
   }
@@ -618,6 +626,8 @@ class NativeWindow : public views::WidgetDelegate {
   const int kMinVisibleHeight = 100;
   // Minimum width of the visible part of a window.
   const int kMinVisibleWidth = 100;
+
+  raw_ptr<InspectableWebContentsView> primary_web_contents_view_ = nullptr;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };

@@ -14,6 +14,7 @@ namespace electron {
 enum ElectronWrappablePointerTag : uint16_t {
   kElectronApp = gin::kLastPointerTag + 1,  // electron::api::App
   kElectronAutoUpdater,                     // electron::api::AutoUpdater
+  kElectronChunkedDataPipeReadableStream,   // ChunkedDataPipeReadableStream
   kElectronCookies,                         // electron::api::Cookies
   kElectronDataPipeHolder,                  // electron::api::DataPipeHolder
   kElectronDebugger,                        // electron::api::Debugger
@@ -21,19 +22,25 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronEvent,                           // gin_helper::internal::Event
   kElectronGlobalShortcut,                  // electron::api::GlobalShortcut
   kElectronExtensions,                      // electron::api::Extensions
+  kElectronIPCRenderFrame,                  // (anonymous) IPCRenderFrame
+  kElectronIPCServiceWorker,                // (anonymous) IPCServiceWorker
+  kElectronJSChunkedDataPipeGetter,         // JSChunkedDataPipeGetter
   kElectronMenu,                            // electron::api::Menu
+  kElectronNativeImage,                     // electron::api::NativeImage
   kElectronNetLog,                          // electron::api::NetLog
   kElectronPowerMonitor,                    // electron::api::PowerMonitor
   kElectronPowerSaveBlocker,                // electron::api::PowerSaveBlocker
   kElectronProtocol,                        // electron::api::Protocol
-  kElectronReplyChannel,          // gin_helper::internal::ReplyChannel
-  kElectronScreen,                // electron::api::Screen
-  kElectronServiceWorkerContext,  // electron::api::ServiceWorkerContext
-  kElectronSession,               // electron::api::Session
-  kElectronTray,                  // electron::api::Tray
-  kElectronUtilityProcess,        // electron::api::UtilityProcessWrapper
-  kElectronWebRequest,            // electron::api::WebRequest
-  kElectronWebSocket,             // electron::api::WebSocketWrapper
+  kElectronReplyChannel,            // gin_helper::internal::ReplyChannel
+  kElectronScreen,                  // electron::api::Screen
+  kElectronServiceWorkerContext,    // electron::api::ServiceWorkerContext
+  kElectronSession,                 // electron::api::Session
+  kElectronSimpleURLLoaderWrapper,  // electron::api::SimpleURLLoaderWrapper
+  kElectronTray,                    // electron::api::Tray
+  kElectronUtilityProcess,          // electron::api::UtilityProcessWrapper
+  kElectronWebFrameRenderer,        // (anonymous) WebFrameRenderer
+  kElectronWebRequest,              // electron::api::WebRequest
+  kElectronWebSocket,               // electron::api::WebSocketWrapper
   kLastElectronPointerTag = kElectronWebSocket,
 };
 
@@ -54,6 +61,17 @@ static_assert(
     "The defined Electron type tags exceed the range of allowed tags. "
     "Reduce the number of tags or adjust gin::kFirstPointerTag so that "
     "all values fit.");
+
+// Electron's tags extend gin's range (they start at gin::kLastPointerTag + 1),
+// so the combined gin + Electron tag range must stay below the tag Node.js
+// uses for its cppgc wrappables. That value is provided by the
+// EMBEDDER_CPPHEAP_POINTER_TAG define on the libnode GN target (see
+// third_party/electron_node/unofficial.gni and src/cppgc_helpers.h). If this
+// fires, the gin + Electron tag range has grown into Node's tag.
+static_assert(static_cast<uint16_t>(kLastElectronPointerTag) <
+                  EMBEDDER_CPPHEAP_POINTER_TAG,
+              "gin + Electron tags must stay below the CppHeapPointerTag "
+              "used by Node.js for cppgc wrappables.");
 
 }  // namespace electron
 

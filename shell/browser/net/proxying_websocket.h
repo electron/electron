@@ -77,7 +77,8 @@ class ProxyingWebSocket : public network::mojom::WebSocketHandshakeClient,
                       OnAuthRequiredCallback callback) override;
 
   // network::mojom::TrustedHeaderClient methods:
-  void OnBeforeSendHeaders(const net::HttpRequestHeaders& headers,
+  void OnBeforeSendHeaders(const GURL& request_url,
+                           const net::HttpRequestHeaders& headers,
                            OnBeforeSendHeadersCallback callback) override;
   void OnHeadersReceived(const std::string& headers,
                          const net::IPEndPoint& endpoint,

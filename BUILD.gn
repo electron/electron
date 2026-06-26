@@ -51,7 +51,7 @@ if (is_mac) {
   import("build/rules.gni")
 
   assert(
-      mac_deployment_target == "12.0",
+      mac_deployment_target == "13.0",
       "Chromium has updated the mac_deployment_target, please update this assert and flag this as a breaking change (docs/breaking-changes.md)")
 }
 
@@ -1724,24 +1724,29 @@ if (is_mac) {
       deps = [ ":electron_app" ]
     }
 
-    extract_symbols("egl_symbols") {
-      binary = "$root_out_dir/libEGL$_target_shared_library_suffix"
-      symbol_dir = "$root_out_dir/breakpad_symbols"
-      deps = [ "//third_party/angle:libEGL" ]
-    }
+    if (!is_linux) {
+      extract_symbols("egl_symbols") {
+        binary = "$root_out_dir/libEGL$_target_shared_library_suffix"
+        symbol_dir = "$root_out_dir/breakpad_symbols"
+        deps = [ "//third_party/angle:libEGL" ]
+      }
 
-    extract_symbols("gles_symbols") {
-      binary = "$root_out_dir/libGLESv2$_target_shared_library_suffix"
-      symbol_dir = "$root_out_dir/breakpad_symbols"
-      deps = [ "//third_party/angle:libGLESv2" ]
+      extract_symbols("gles_symbols") {
+        binary = "$root_out_dir/libGLESv2$_target_shared_library_suffix"
+        symbol_dir = "$root_out_dir/breakpad_symbols"
+        deps = [ "//third_party/angle:libGLESv2" ]
+      }
     }
 
     group("electron_symbols") {
-      deps = [
-        ":egl_symbols",
-        ":electron_app_symbols",
-        ":gles_symbols",
-      ]
+      deps = [ ":electron_app_symbols" ]
+
+      if (!is_linux) {
+        deps += [
+          ":egl_symbols",
+          ":gles_symbols",
+        ]
+      }
     }
   }
 }
@@ -1817,8 +1822,6 @@ dist_zip("electron_dist_zip") {
         ":strip_chrome_crashpad_handler",
         ":strip_chrome_sandbox",
         ":strip_electron_binary",
-        ":strip_libEGL_shlib",
-        ":strip_libGLESv2_shlib",
         ":strip_libffmpeg_shlib",
         ":strip_libvk_swiftshader_shlib",
       ]
@@ -1877,8 +1880,6 @@ dist_zip("electron_mksnapshot_zip") {
   data_deps = mksnapshot_deps
   if (is_linux && is_official_build) {
     data_deps += [
-      ":strip_libEGL_shlib",
-      ":strip_libGLESv2_shlib",
       ":strip_libffmpeg_shlib",
       ":strip_libvk_swiftshader_shlib",
       ":strip_mksnapshot_binary",
@@ -2055,20 +2056,6 @@ if (is_linux && is_official_build) {
     symbol_output = "$root_out_dir/debug/chrome-sandbox.debug"
     compress_debug_sections = true
     deps = [ "//sandbox/linux:chrome_sandbox" ]
-  }
-
-  strip_binary("strip_libEGL_shlib") {
-    binary_input = "$root_out_dir/libEGL.so"
-    symbol_output = "$root_out_dir/debug/libEGL.so.debug"
-    compress_debug_sections = true
-    deps = [ "//third_party/angle:libEGL" ]
-  }
-
-  strip_binary("strip_libGLESv2_shlib") {
-    binary_input = "$root_out_dir/libGLESv2.so"
-    symbol_output = "$root_out_dir/debug/libGLESv2.so.debug"
-    compress_debug_sections = true
-    deps = [ "//third_party/angle:libGLESv2" ]
   }
 
   strip_binary("strip_libffmpeg_shlib") {

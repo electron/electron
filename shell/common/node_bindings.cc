@@ -671,11 +671,15 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
       args.push_back(option);
   }
 
-  // We need to disable Node.js' fetch implementation to prevent
-  // conflict with Blink's in renderer and worker processes.
+  // Node's setupEventsource() in lib/internal/process/pre_execution.js
+  // deletes globalThis.EventSource when --experimental-eventsource is not
+  // set, and unlike its sibling setup functions it does not check
+  // noBrowserGlobals. Pass the flag so Blink's EventSource is left alone;
+  // Node's own undici EventSource is never installed under
+  // kNoBrowserGlobals so there is no conflict.
   if (browser_env_ == BrowserEnvironment::kRenderer ||
       browser_env_ == BrowserEnvironment::kWorker) {
-    args.push_back("--no-experimental-fetch");
+    args.push_back("--experimental-eventsource");
   }
 
   return args;
@@ -855,10 +859,11 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     // in renderer processes this should be blink. We need to tell Node.js
     // not to register its handler (overriding blinks) in non-browser processes.
     // We also avoid overriding globals like setImmediate, clearImmediate
-    // queueMicrotask etc during the bootstrap phase of Node.js
-    // for processes that already have these defined by DOM.
-    // Check //third_party/electron_node/lib/internal/bootstrap/node.js
-    // for the list of overrides on globalThis.
+    // queueMicrotask, fetch, Request, Response etc during the bootstrap phase
+    // of Node.js for processes that already have these defined by DOM.
+    // Check //third_party/electron_node/lib/internal/bootstrap/node.js and
+    // //third_party/electron_node/lib/internal/bootstrap/web/* for the list
+    // of overrides on globalThis.
     env_flags |= node::EnvironmentFlags::kNoBrowserGlobals |
                  node::EnvironmentFlags::kNoCreateInspector;
   }

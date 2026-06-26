@@ -20,6 +20,7 @@
 #include "net/http/http_util.h"
 #include "net/storage_access_api/status.h"
 #include "net/traffic_annotation/network_traffic_annotation.h"
+#include "services/network/public/cpp/constants.h"
 #include "services/network/public/cpp/originating_process_id.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
@@ -202,7 +203,9 @@ void WebSocketWrapper::Start() {
       /*auth_handler=*/mojo::NullRemote(),
       /*header_client=*/mojo::NullRemote(),
       /*throttling_profile_id=*/std::nullopt,
-      /*network_restrictions_id=*/std::nullopt);
+      // Browser-initiated WebSocket with no associated document, so no
+      // Connection-Allowlist network restrictions apply.
+      /*network_restrictions_id=*/network::GetNoOpNetworkRestrictionsId());
 }
 
 void WebSocketWrapper::OnMojoDisconnect() {
