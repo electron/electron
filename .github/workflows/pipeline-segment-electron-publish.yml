@@ -228,9 +228,6 @@ jobs:
       - name: Free up space (macOS)
         if: ${{ inputs.target-platform == 'macos' }}
         uses: ./src/electron/.github/actions/free-space-macos
-      # siso runs on the build host, not the target, so the artifact is chosen by
-      # build-host os/arch: win -> windows-amd64, linux (any target arch) ->
-      # linux-amd64, macOS (x64 or arm64, both built on arm64 hosts) -> darwin-arm64.
       - name: Download custom siso binary (Windows)
         if: ${{ inputs.target-platform == 'win' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
@@ -281,8 +278,8 @@ jobs:
           fi
           # download-artifact does not preserve the executable bit.
           chmod +x "$SISO_BIN"
-          # The binary is unsigned; clear the Gatekeeper quarantine and ad-hoc sign
-          # it so it can exec on the macOS build host.
+          # The binary is unsigned; clear the Gatekeeper quarantine and
+          # ad-hoc sign it so it can exec on the macOS build host.
           xattr -d com.apple.quarantine "$SISO_BIN" || true
           codesign -s - "$SISO_BIN" || true
           echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"

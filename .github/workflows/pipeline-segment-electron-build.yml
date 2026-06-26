@@ -272,8 +272,8 @@ jobs:
         fi
         # download-artifact does not preserve the executable bit.
         chmod +x "$SISO_BIN"
-        # The binary is unsigned; clear the Gatekeeper quarantine and ad-hoc sign
-        # it so it can exec on the macOS build host.
+        # The binary is unsigned; clear the Gatekeeper quarantine and
+        # ad-hoc sign it so it can exec on the macOS build host.
         xattr -d com.apple.quarantine "$SISO_BIN" || true
         codesign -s - "$SISO_BIN" || true
         echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"
