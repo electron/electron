@@ -1,7 +1,8 @@
-From 804392d5fd11ec739755fd5e21cba6dd0b06afac Mon Sep 17 00:00:00 2001
+From f11989aa1e7af7cc8b3cfc079034e9117a76eaa8 Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sam@electronjs.org>
-Date: Thu, 25 Jun 2026 15:27:05 -0700
-Subject: [PATCH] siso: do not let background subtree upload poison the cached subtree
+Date: Fri, 26 Jun 2026 03:08:26 +0000
+Subject: [PATCH] siso: do not let background subtree upload poison the cached
+ subtree
 
 subtree.init spawns a background fullUpload when the subtree root digest
 is already present in CAS. That goroutine wrote st.err on failure, so a
@@ -20,12 +21,18 @@ FailedPrecondition naming the missing blob, which is the truthful error.
 
 Also adds reapitest.Fake.UnaryInterceptor so tests can inject CAS RPC
 failures, plus a regression test that fails on the previous code.
+---
+ siso/build/tree_input.go          |  22 +++--
+ siso/build/tree_input_test.go     | 146 ++++++++++++++++++++++++++++++
+ siso/reapi/reapitest/reapitest.go |  12 ++-
+ 3 files changed, 169 insertions(+), 11 deletions(-)
+ create mode 100644 siso/build/tree_input_test.go
 
 diff --git a/siso/build/tree_input.go b/siso/build/tree_input.go
-index be2aa11..8b8bd72 100644
+index 0f6051f..6541934 100644
 --- a/siso/build/tree_input.go
 +++ b/siso/build/tree_input.go
-@@ -182,35 +182,37 @@
+@@ -174,35 +174,37 @@ func (st *subtree) init(ctx context.Context, b *Builder, dir string, files []str
  		rootDS.Set(data)
  		ds.Delete(st.d)
  		missings, err := b.reapiclient.Missing(ctx, []digest.Digest{st.d})
@@ -75,7 +82,7 @@ index be2aa11..8b8bd72 100644
  	defer st.mu.Unlock()
 diff --git a/siso/build/tree_input_test.go b/siso/build/tree_input_test.go
 new file mode 100644
-index 0000000..bb610d7
+index 0000000..2cc9728
 --- /dev/null
 +++ b/siso/build/tree_input_test.go
 @@ -0,0 +1,146 @@
@@ -94,7 +101,7 @@ index 0000000..bb610d7
 +	"testing"
 +	"time"
 +
-+	rpb "go.chromium.org/build/remote-apis/build/bazel/remote/execution/v2"
++	rpb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
 +	"google.golang.org/grpc"
 +	"google.golang.org/grpc/codes"
 +	"google.golang.org/grpc/status"
@@ -226,10 +233,10 @@ index 0000000..bb610d7
 +	}
 +}
 diff --git a/siso/reapi/reapitest/reapitest.go b/siso/reapi/reapitest/reapitest.go
-index 130a388..c617519 100644
+index 104d6dc..296d402 100644
 --- a/siso/reapi/reapitest/reapitest.go
 +++ b/siso/reapi/reapitest/reapitest.go
-@@ -40,6 +40,12 @@
+@@ -38,6 +38,12 @@ type Fake struct {
  	CAS *blobstore.ContentAddressableStorage
  
  	ExecuteFunc func(*Fake, *rpb.Action) (*rpb.ActionResult, error)
@@ -242,7 +249,7 @@ index 130a388..c617519 100644
  }
  
  // Execute runs command on fake reapi.
-@@ -73,7 +79,11 @@
+@@ -77,7 +83,11 @@ func newServer(ctx context.Context, t *testing.T, fake *Fake) *server {
  	t.Logf("fake reapi at %s", s.addr)
  
  	dir := t.TempDir()
@@ -252,6 +259,8 @@ index 130a388..c617519 100644
 +		sopts = append(sopts, grpc.UnaryInterceptor(fake.UnaryInterceptor))
 +	}
 +	serv := grpc.NewServer(sopts...)
- 	s.cleanups = append(s.cleanups, func() {
- 		serv.Stop()
- 	})
+ 	capabilities.Register(serv)
+ 
+ 	casDir := filepath.Join(dir, "cas")
+-- 
+2.43.0
