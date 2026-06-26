@@ -29,7 +29,7 @@ jobs:
     outputs:
       build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
@@ -52,12 +52,20 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
+
+  # Build the patched siso binaries in parallel with checkout-linux; the
+  # publish jobs consume the linux-amd64 artifact via SISO_PATH.
+  build-siso:
+    needs: setup
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
 
   publish-x64:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
@@ -66,7 +74,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [setup, checkout-linux]
+    needs: [setup, checkout-linux, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -74,6 +82,7 @@ jobs:
       target-platform: linux
       target-arch: x64
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -86,7 +95,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [setup, checkout-linux]
+    needs: [setup, checkout-linux, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -94,6 +103,7 @@ jobs:
       target-platform: linux
       target-arch: arm
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -106,7 +116,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [setup, checkout-linux]
+    needs: [setup, checkout-linux, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -114,6 +124,7 @@ jobs:
       target-platform: linux
       target-arch: arm64
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}

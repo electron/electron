@@ -46,7 +46,7 @@ index e2771b7b281274cdcb601a5bc78a948ad592087b..48d116823a28213e50775f378e6ce04c
    // OnStop is called by StopAndDeAllocate.
    virtual void OnStop() = 0;
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71fe939fa7 100644
+index 4df67f6a7cb9d044d5865f53551471a53077a5eb..cd61d54472317b435b24c3638a8b3981f0ac18f8 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -31,6 +31,61 @@
@@ -110,8 +110,8 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
 +@end
  
  namespace {
- API_AVAILABLE(macos(12.3))
-@@ -161,18 +216,22 @@ @interface ScreenCaptureKitDeviceHelper
+ std::tuple<std::optional<gfx::Rect>,
+@@ -158,18 +213,22 @@ @interface ScreenCaptureKitDeviceHelper
      : NSObject <SCStreamDelegate, SCStreamOutput>
  
  - (instancetype)initWithSampleCallback:(SampleCallback)sampleCallback
@@ -134,7 +134,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
      _errorCallback = errorCallback;
    }
    return self;
-@@ -264,14 +323,12 @@ class API_AVAILABLE(macos(12.3)) ScreenCaptureKitDeviceMac
+@@ -261,14 +320,12 @@ + (SCStreamConfiguration*)streamConfigurationWithFrameSize:(gfx::Size)frameSize
  
    explicit ScreenCaptureKitDeviceMac(
        const DesktopMediaID& source,
@@ -151,7 +151,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
          stream_created_callback_(std::move(stream_created_callback)),
          device_task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()),
          pip_screen_capture_coordinator_proxy_(
-@@ -280,21 +337,43 @@ explicit ScreenCaptureKitDeviceMac(
+@@ -277,21 +334,43 @@ explicit ScreenCaptureKitDeviceMac(
          device_task_runner_,
          base::BindRepeating(&ScreenCaptureKitDeviceMac::OnStreamSample,
                              weak_factory_.GetWeakPtr()));
@@ -195,7 +195,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
      if (pip_screen_capture_coordinator_proxy_) {
        pip_screen_capture_coordinator_proxy_->RemoveObserver(this);
-@@ -385,7 +464,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -382,7 +461,7 @@ void CreateStream(SCContentFilter* filter) {
        return;
      }
  
@@ -204,7 +204,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
        // Update the content size. This step is neccessary when used together
        // with SCContentSharingPicker. If the Chrome picker is used, it will
        // change to retina resolution if applicable.
-@@ -394,6 +473,9 @@ void CreateStream(SCContentFilter* filter) {
+@@ -391,6 +470,9 @@ void CreateStream(SCContentFilter* filter) {
                      filter.contentRect.size.height * filter.pointPixelScale);
      }
  
@@ -214,7 +214,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
      gfx::RectF dest_rect_in_frame;
      actual_capture_format_ = capture_params().requested_format;
      actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
-@@ -407,6 +489,7 @@ void CreateStream(SCContentFilter* filter) {
+@@ -404,6 +486,7 @@ void CreateStream(SCContentFilter* filter) {
      stream_ = [[SCStream alloc] initWithFilter:filter
                                   configuration:config
                                        delegate:helper_];
@@ -222,7 +222,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
      {
        NSError* error = nil;
        bool add_stream_output_result =
-@@ -566,7 +649,7 @@ void OnStreamError(NSError* _Nullable error) {
+@@ -563,7 +646,7 @@ void OnStreamError(NSError* _Nullable error) {
        if (fullscreen_module_) {
          fullscreen_module_->Reset();
        }
@@ -231,7 +231,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
      } else {
        std::string error_string =
            base::StrCat({"Stream delegate called didStopWithError: ",
-@@ -656,32 +739,41 @@ void OnStateChanged(
+@@ -653,32 +736,41 @@ void OnStateChanged(
    }
  
    // IOSurfaceCaptureDeviceBase:
@@ -295,7 +295,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
    }
    void OnStop() override {
      DCHECK(device_task_runner_->RunsTasksInCurrentSequence());
-@@ -740,8 +832,7 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -737,8 +829,7 @@ void ResetStreamTo(SCWindow* window) override {
  
   private:
    const DesktopMediaID source_;
@@ -305,7 +305,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
    StreamCallback stream_created_callback_;
    const scoped_refptr<base::SingleThreadTaskRunner> device_task_runner_;
  
-@@ -758,6 +849,10 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -755,6 +846,10 @@ void ResetStreamTo(SCWindow* window) override {
    // Helper class that acts as output and delegate for `stream_`.
    ScreenCaptureKitDeviceHelper* __strong helper_;
  
@@ -316,7 +316,7 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
    // This is used to detect when a captured presentation enters fullscreen mode.
    // If this happens, the module will call the ResetStreamTo function.
    std::unique_ptr<ScreenCaptureKitFullscreenModule> fullscreen_module_;
-@@ -772,6 +867,8 @@ void ResetStreamTo(SCWindow* window) override {
+@@ -769,6 +864,8 @@ void ResetStreamTo(SCWindow* window) override {
    base::WeakPtrFactory<ScreenCaptureKitDeviceMac> weak_factory_{this};
  };
  
@@ -326,10 +326,10 @@ index 64ffc2642c003c8fb7f133ee43ba3e20d48ea543..92846d1b45c04c324014474ec6c02e71
  
  // Although ScreenCaptureKit is available in 12.3 there were some bugs that
 diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-index e822eb0f051f477a0fb74e4f83ce8d9d710239ec..9624cd92e31e98cb186611fc68c4f010e2ffdc51 100644
+index ae8fef5b0b3557480771783dabcc6dfa57deefeb..b7fbac21200c5d9120a28b7353a6c23381b91793 100644
 --- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
 +++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
-@@ -321,8 +321,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -322,8 +322,16 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
          break;
        }
  
@@ -347,7 +347,7 @@ index e822eb0f051f477a0fb74e4f83ce8d9d710239ec..9624cd92e31e98cb186611fc68c4f010
          // For the other capturers, when a bug reports the type of capture it's
          // easy enough to determine which capturer was used, but it's a little
          // fuzzier with window capture.
-@@ -338,13 +346,15 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
+@@ -339,6 +347,8 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        }
  #endif  // defined(USE_AURA) || BUILDFLAG(IS_MAC)
  
@@ -356,14 +356,15 @@ index e822eb0f051f477a0fb74e4f83ce8d9d710239ec..9624cd92e31e98cb186611fc68c4f010
        // All cases other than tab capture or Aura desktop/window capture.
        TRACE_EVENT_INSTANT(TRACE_DISABLED_BY_DEFAULT("video_and_image_capture"),
                            "UsingDesktopCapturer");
+@@ -361,7 +371,7 @@ void InProcessVideoCaptureDeviceLauncher::LaunchDeviceAsync(
        start_capture_closure = base::BindOnce(
            &InProcessVideoCaptureDeviceLauncher::
                DoStartDesktopCaptureOnDeviceThread,
 -          base::Unretained(this), desktop_id, params,
 +          base::Unretained(this), desktop_id, updated_params,
-           CreateDeviceClient(media::VideoCaptureBufferType::kSharedMemory,
-                              kMaxNumberOfBuffers, std::move(receiver),
+           CreateDeviceClient(buffer_type, max_buffer_count, std::move(receiver),
                               std::move(receiver_on_io_thread)),
+           std::move(after_start_capture_callback));
 diff --git a/content/public/browser/desktop_media_id.h b/content/public/browser/desktop_media_id.h
 index 1b9ddbef4bac9a53659d20bd774207e1e88c6fbe..2286d92825752fe88e08b2fe7410e42d8b55d85d 100644
 --- a/content/public/browser/desktop_media_id.h
@@ -378,10 +379,10 @@ index 1b9ddbef4bac9a53659d20bd774207e1e88c6fbe..2286d92825752fe88e08b2fe7410e42d
  #if defined(USE_AURA) || BUILDFLAG(IS_MAC)
    // Assigns integer identifier to the |window| and returns its DesktopMediaID.
 diff --git a/media/capture/video_capture_types.h b/media/capture/video_capture_types.h
-index 188b5bb9185021425e0a106d2c6b344cc401fb9b..f106166ed3d8b018a599a0f3baf8446e0f401540 100644
+index 53cf800e669c3b754036a681d3084fc35a4b1207..7527048c487af5840608cf23f6ab4103655c46e6 100644
 --- a/media/capture/video_capture_types.h
 +++ b/media/capture/video_capture_types.h
-@@ -375,6 +375,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
+@@ -376,6 +376,8 @@ struct CAPTURE_EXPORT VideoCaptureParams {
  
    // The request type of the capture source.
    CaptureSourceRequestType request_type = CaptureSourceRequestType::kUnknown;

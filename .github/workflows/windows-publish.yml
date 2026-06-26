@@ -29,7 +29,7 @@ jobs:
     outputs:
       build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
@@ -54,7 +54,7 @@ jobs:
       ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -64,11 +64,11 @@ jobs:
         generate-sas-token: 'true'
         target-platform: win
 
-  # Build the patched siso binary in parallel with checkout-windows; the
-  # publish-*-win jobs consume it via SISO_PATH.
-  build-siso-windows:
+  # Build the patched siso binaries in parallel with checkout-windows; the
+  # publish-*-win jobs consume the windows-amd64 artifact via SISO_PATH.
+  build-siso:
     needs: setup
-    uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
 
@@ -79,13 +79,14 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       target-platform: win
       target-arch: x64
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -98,13 +99,14 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       target-platform: win
       target-arch: arm64
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -117,13 +119,14 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     with:
       environment: production-release
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       target-platform: win
       target-arch: x86
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}

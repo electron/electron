@@ -8,7 +8,7 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index efc859c36d4b2b03df60277fdc9bfcfff363e2d2..3567819477129d0d08c7bb1713dd19fdfad048f0 100644
+index a967e05372c98c73625eccf3e50262e3c05fc7fc..e49a400e74f9cc45d1f7b19599bf50e8db056c7a 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -150,6 +150,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,

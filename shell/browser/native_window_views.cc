@@ -237,12 +237,20 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
 
   if (gin_helper::Dictionary od; options.Get(options::ktitleBarOverlay, &od)) {
     if (std::string val; od.Get(options::kOverlayButtonColor, &val)) {
-      bool success = content::ParseCssColorString(val, &overlay_button_color_);
+      SkColor overlay_button_color;
+      bool success = content::ParseCssColorString(val, &overlay_button_color);
       DCHECK(success);
+      if (success) {
+        overlay_button_color_ = overlay_button_color;
+      }
     }
     if (std::string val; od.Get(options::kOverlaySymbolColor, &val)) {
-      bool success = content::ParseCssColorString(val, &overlay_symbol_color_);
+      SkColor overlay_symbol_color;
+      bool success = content::ParseCssColorString(val, &overlay_symbol_color);
       DCHECK(success);
+      if (success) {
+        overlay_symbol_color_ = overlay_symbol_color;
+      }
     }
   }
 
@@ -398,6 +406,10 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   if (window_type == "toolbar")
     ex_style |= WS_EX_TOOLWINDOW;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+  options.Get(options::kRoundedCorners, &rounded_corner_);
 #endif
 
   if (has_frame() && !has_client_frame()) {
@@ -2054,9 +2066,11 @@ ui::mojom::WindowShowState NativeWindowViews::GetRestoredState() {
 void NativeWindowViews::MoveBehindTaskBarIfNeeded() {
 #if BUILDFLAG(IS_WIN)
   if (behind_task_bar_) {
-    const HWND task_bar_hwnd = ::FindWindow(kUniqueTaskBarClassName, nullptr);
-    ::SetWindowPos(GetAcceleratedWidget(), task_bar_hwnd, 0, 0, 0, 0,
-                   SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    if (const HWND task_bar_hwnd =
+            ::FindWindow(kUniqueTaskBarClassName, nullptr)) {
+      ::SetWindowPos(GetAcceleratedWidget(), task_bar_hwnd, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
   }
 #endif
   // TODO(julien.isorce): Implement X11 case.

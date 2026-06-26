@@ -106,9 +106,8 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   return handle;
 }
 
-gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
-    gin::Arguments* args,
-    std::string name) {
+NativeImage* NativeImage::CreateMenuSymbol(gin::Arguments* args,
+                                           std::string name) {
   @autoreleasepool {
     NSImage* image =
         [NSImage imageWithSystemSymbolName:base::SysUTF8ToNSString(name)
@@ -131,7 +130,7 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
       return CreateEmpty(args->isolate());
     }
 
-    gin_helper::Handle<NativeImage> handle =
+    NativeImage* handle =
         CreateFromPNG(args->isolate(), electron::util::as_byte_span(png_data));
 
     gfx::Size size = handle->GetSize(1.0);
@@ -148,7 +147,7 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
       new_width = static_cast<int>(15 * aspect_ratio);
     }
 
-    gin_helper::Handle<NativeImage> sized = handle->Resize(
+    NativeImage* sized = handle->Resize(
         args,
         base::DictValue().Set("width", new_width).Set("height", new_height));
 
@@ -158,9 +157,8 @@ gin_helper::Handle<NativeImage> NativeImage::CreateMenuSymbol(
   }
 }
 
-gin_helper::Handle<NativeImage> NativeImage::CreateFromNamedImage(
-    gin::Arguments* args,
-    std::string name) {
+NativeImage* NativeImage::CreateFromNamedImage(gin::Arguments* args,
+                                               std::string name) {
   @autoreleasepool {
     static bool deprecated_warning_issued = false;
 
