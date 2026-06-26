@@ -31,14 +31,17 @@ jobs:
             goarch: amd64
             artifact: siso-windows-amd64
             binary: siso.exe
+            goexperiment: ''
           - goos: linux
             goarch: amd64
             artifact: siso-linux-amd64
             binary: siso
+            goexperiment: ''
           - goos: darwin
             goarch: arm64
             artifact: siso-darwin-arm64
             binary: siso
+            goexperiment: nogreenteagc
     steps:
     - name: Checkout Electron
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -73,7 +76,7 @@ jobs:
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: siso-out/${{ matrix.binary }}
-        key: siso-${{ matrix.goos }}-${{ matrix.goarch }}-${{ steps.resolve.outputs.siso-sha }}-${{ steps.resolve.outputs.patches-hash }}
+        key: siso-${{ matrix.goos }}-${{ matrix.goarch }}-${{ steps.resolve.outputs.siso-sha }}-${{ steps.resolve.outputs.patches-hash }}-go${{ matrix.goexperiment }}
     - name: Shallow clone chromium build repo at pinned revision
       if: steps.cache-siso.outputs.cache-hit != 'true'
       env:
@@ -112,6 +115,7 @@ jobs:
         CGO_ENABLED: '0'
         GOOS: ${{ matrix.goos }}
         GOARCH: ${{ matrix.goarch }}
+        GOEXPERIMENT: ${{ matrix.goexperiment }}
       run: |
         mkdir -p "${GITHUB_WORKSPACE}/siso-out"
         go build -trimpath -o "${GITHUB_WORKSPACE}/siso-out/${{ matrix.binary }}" .
