@@ -68,12 +68,14 @@ describe('crash cases', () => {
     // never emit 'exit'. Attach the exit listener first, then force-kill with
     // SIGKILL, and await each child's real 'exit' rather than polling the
     // shared `children` array (whose length only drops via that same handler).
-    await Promise.all(children.map((child) => {
-      if (child.exitCode !== null || child.signalCode !== null) return null;
-      const exited = once(child, 'exit');
-      child.kill('SIGKILL');
-      return exited;
-    }));
+    await Promise.all(
+      children.map((child) => {
+        if (child.exitCode !== null || child.signalCode !== null) return null;
+        const exited = once(child, 'exit');
+        child.kill('SIGKILL');
+        return exited;
+      })
+    );
     children.length = 0;
   });
   const cases = fs.readdirSync(fixturePath);
