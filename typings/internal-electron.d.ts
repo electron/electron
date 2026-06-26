@@ -113,7 +113,7 @@ declare namespace Electron {
     _goToIndex(index: number): void;
     _removeNavigationEntryAtIndex(index: number): boolean;
     _getHistory(): Electron.NavigationEntry[];
-    _restoreHistory(index: number, entries: Electron.NavigationEntry[]): Promise<void>;
+    _restoreHistory(index: number, entries: Electron.NavigationEntry[], bypassCache: boolean): Promise<void>;
     _clearHistory(): void;
     destroy(): void;
     // <webview>
