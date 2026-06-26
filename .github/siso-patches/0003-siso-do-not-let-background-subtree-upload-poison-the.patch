@@ -1,6 +1,6 @@
-From 804392d5fd11ec739755fd5e21cba6dd0b06afac Mon Sep 17 00:00:00 2001
+From fddc432906379a9aae3a0e18e3bb97069a1b150c Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sam@electronjs.org>
-Date: Thu, 25 Jun 2026 15:27:05 -0700
+Date: Fri, 26 Jun 2026 03:09:56 +0000
 Subject: [PATCH] siso: do not let background subtree upload poison the cached subtree
 
 subtree.init spawns a background fullUpload when the subtree root digest
@@ -20,12 +20,11 @@ FailedPrecondition naming the missing blob, which is the truthful error.
 
 Also adds reapitest.Fake.UnaryInterceptor so tests can inject CAS RPC
 failures, plus a regression test that fails on the previous code.
-
 diff --git a/siso/build/tree_input.go b/siso/build/tree_input.go
-index be2aa11..8b8bd72 100644
+index 0f6051f..6541934 100644
 --- a/siso/build/tree_input.go
 +++ b/siso/build/tree_input.go
-@@ -182,35 +182,37 @@
+@@ -174,35 +174,37 @@ func (st *subtree) init(ctx context.Context, b *Builder, dir string, files []str
  		rootDS.Set(data)
  		ds.Delete(st.d)
  		missings, err := b.reapiclient.Missing(ctx, []digest.Digest{st.d})
@@ -75,7 +74,7 @@ index be2aa11..8b8bd72 100644
  	defer st.mu.Unlock()
 diff --git a/siso/build/tree_input_test.go b/siso/build/tree_input_test.go
 new file mode 100644
-index 0000000..bb610d7
+index 0000000..2cc9728
 --- /dev/null
 +++ b/siso/build/tree_input_test.go
 @@ -0,0 +1,146 @@
@@ -94,7 +93,7 @@ index 0000000..bb610d7
 +	"testing"
 +	"time"
 +
-+	rpb "go.chromium.org/build/remote-apis/build/bazel/remote/execution/v2"
++	rpb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
 +	"google.golang.org/grpc"
 +	"google.golang.org/grpc/codes"
 +	"google.golang.org/grpc/status"
@@ -226,10 +225,10 @@ index 0000000..bb610d7
 +	}
 +}
 diff --git a/siso/reapi/reapitest/reapitest.go b/siso/reapi/reapitest/reapitest.go
-index 130a388..c617519 100644
+index 79acc39..ad65db8 100644
 --- a/siso/reapi/reapitest/reapitest.go
 +++ b/siso/reapi/reapitest/reapitest.go
-@@ -40,6 +40,12 @@
+@@ -38,6 +38,12 @@ type Fake struct {
  	CAS *blobstore.ContentAddressableStorage
  
  	ExecuteFunc func(*Fake, *rpb.Action) (*rpb.ActionResult, error)
@@ -242,7 +241,7 @@ index 130a388..c617519 100644
  }
  
  // Execute runs command on fake reapi.
-@@ -73,7 +79,11 @@
+@@ -77,7 +83,11 @@ func newServer(t *testing.T, fake *Fake) *server {
  	t.Logf("fake reapi at %s", s.addr)
  
  	dir := t.TempDir()
@@ -252,6 +251,6 @@ index 130a388..c617519 100644
 +		sopts = append(sopts, grpc.UnaryInterceptor(fake.UnaryInterceptor))
 +	}
 +	serv := grpc.NewServer(sopts...)
- 	s.cleanups = append(s.cleanups, func() {
- 		serv.Stop()
- 	})
+ 	capabilities.Register(serv)
+ 
+ 	casDir := filepath.Join(dir, "cas")
