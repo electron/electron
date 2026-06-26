@@ -673,17 +673,19 @@ describe('command line switches', () => {
         if (m) {
           appProcess!.stderr.removeAllListeners('data');
           const port = m[1];
-          http.get(`http://127.0.0.1:${port}`, (res) => {
-            try {
-              expect(res.statusCode).to.eql(200);
-              expect(parseInt(res.headers['content-length']!)).to.be.greaterThan(0);
-              done();
-            } catch (e) {
-              done(e);
-            } finally {
-              res.destroy();
-            }
-          });
+          http
+            .get(`http://127.0.0.1:${port}`, (res) => {
+              try {
+                expect(res.statusCode).to.eql(200);
+                expect(parseInt(res.headers['content-length']!)).to.be.greaterThan(0);
+                done();
+              } catch (e) {
+                done(e);
+              } finally {
+                res.destroy();
+              }
+            })
+            .on('error', done);
         }
       });
     });
