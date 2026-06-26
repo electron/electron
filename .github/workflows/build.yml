@@ -200,12 +200,13 @@ jobs:
         generate-sas-token: 'true'
         target-platform: win
 
-  # Build a patched siso binary for Windows CI in parallel with checkout-windows.
-  # The Windows build jobs download the resulting artifact and use it via SISO_PATH.
-  build-siso-windows:
+  # Build patched siso binaries for every CI build host (windows-amd64,
+  # linux-amd64, darwin-arm64) in parallel with the checkout jobs. The build
+  # jobs download the host-matching artifact and use it via SISO_PATH.
+  build-siso:
     needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
-    uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
+    if: ${{ needs.setup.outputs.src == 'true' }}
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
 
@@ -256,7 +257,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-macos
+    needs: [checkout-macos, build-siso]
     with:
       build-runs-on: macos-15-xlarge
       test-runs-on: macos-15-large
@@ -275,7 +276,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-macos
+    needs: [checkout-macos, build-siso]
     with:
       build-runs-on: macos-15-xlarge
       test-runs-on: macos-15
@@ -294,7 +295,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
-    needs: checkout-linux
+    needs: [checkout-linux, build-siso]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -315,7 +316,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-linux
+    needs: [checkout-linux, build-siso]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -337,7 +338,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-linux
+    needs: [checkout-linux, build-siso]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -358,7 +359,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: checkout-linux
+    needs: [checkout-linux, build-siso]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -379,7 +380,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -398,7 +399,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -417,7 +418,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -435,7 +436,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, build-siso-windows, windows-x64, windows-x86, windows-arm64]
+    needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, build-siso, windows-x64, windows-x86, windows-arm64]
     if: always() && !contains(needs.*.result, 'failure')
     steps:
     - name: GitHub Actions Jobs Done
