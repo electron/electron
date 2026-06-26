@@ -122,18 +122,18 @@ jobs:
         generate-sas-token: 'true'
         target-platform: win
 
-  # Build a patched siso binary for Windows in parallel with checkout-windows;
-  # the windows build jobs consume it via SISO_PATH.
-  build-siso-windows:
+  # Build patched siso binaries for every CI build host (windows-amd64,
+  # linux-amd64, darwin-arm64) in parallel with the checkout jobs; the build
+  # jobs consume the host-matching artifact via SISO_PATH.
+  build-siso:
     needs: setup
-    if: ${{ !inputs.skip-windows }}
-    uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
 
   macos:
     name: macos-${{ matrix.target-arch }}-${{ matrix.target-variant }}
-    needs: checkout-macos
+    needs: [checkout-macos, build-siso]
     permissions:
       contents: read
     strategy:
@@ -162,7 +162,7 @@ jobs:
 
   linux:
     name: linux-${{ matrix.target-arch }}
-    needs: [setup, checkout-linux]
+    needs: [setup, checkout-linux, build-siso]
     permissions:
       contents: read
     strategy:
@@ -186,7 +186,7 @@ jobs:
 
   windows:
     name: windows-${{ matrix.target-arch }}
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     permissions:
       contents: read
     strategy:

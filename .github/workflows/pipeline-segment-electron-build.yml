@@ -219,11 +219,26 @@ jobs:
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
+    # siso runs on the build host, not the target, so the artifact is chosen by
+    # build-host os/arch: win -> windows-amd64, linux (any target arch) ->
+    # linux-amd64, macOS (x64 or arm64, both built on arm64 hosts) -> darwin-arm64.
     - name: Download custom siso binary (Windows)
       if: ${{ inputs.target-platform == 'win' }}
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         name: siso-windows-amd64
+        path: ${{ runner.temp }}/siso
+    - name: Download custom siso binary (Linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: siso-linux-amd64
+        path: ${{ runner.temp }}/siso
+    - name: Download custom siso binary (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: siso-darwin-arm64
         path: ${{ runner.temp }}/siso
     - name: Set SISO_PATH (Windows)
       if: ${{ inputs.target-platform == 'win' }}
@@ -233,6 +248,34 @@ jobs:
           echo "error: expected siso binary at $SISO_BIN" >&2
           exit 1
         fi
+        echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"
+        echo "Using custom siso binary at $SISO_BIN"
+    - name: Set SISO_PATH (Linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      run: |
+        SISO_BIN="${RUNNER_TEMP}/siso/siso"
+        if [ ! -f "$SISO_BIN" ]; then
+          echo "error: expected siso binary at $SISO_BIN" >&2
+          exit 1
+        fi
+        # download-artifact does not preserve the executable bit.
+        chmod +x "$SISO_BIN"
+        echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"
+        echo "Using custom siso binary at $SISO_BIN"
+    - name: Set SISO_PATH (macOS)
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        SISO_BIN="${RUNNER_TEMP}/siso/siso"
+        if [ ! -f "$SISO_BIN" ]; then
+          echo "error: expected siso binary at $SISO_BIN" >&2
+          exit 1
+        fi
+        # download-artifact does not preserve the executable bit.
+        chmod +x "$SISO_BIN"
+        # The binary is unsigned; clear the Gatekeeper quarantine and
+        # ad-hoc sign it so it can exec on the macOS build host.
+        xattr -d com.apple.quarantine "$SISO_BIN" || true
+        codesign -s - "$SISO_BIN" || true
         echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"
         echo "Using custom siso binary at $SISO_BIN"
     - name: Build Electron
