@@ -35,7 +35,7 @@
     "coffeescript": "^2.4.1",
     "dbus-native": "^0.4.0",
     "dirty-chai": "^2.0.1",
-    "express": "^4.20.0",
+    "express": "^5.2.1",
     "graceful-fs": "^4.1.15",
     "mkdirp": "^0.5.1",
     "mocha": "^10.0.0",
