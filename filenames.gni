@@ -449,6 +449,8 @@ filenames = {
     "shell/browser/net/asar/asar_url_loader_factory.h",
     "shell/browser/net/cert_verifier_client.cc",
     "shell/browser/net/cert_verifier_client.h",
+    "shell/browser/net/client_certificate_responder_delegate.cc",
+    "shell/browser/net/client_certificate_responder_delegate.h",
     "shell/browser/net/electron_url_loader_factory.cc",
     "shell/browser/net/electron_url_loader_factory.h",
     "shell/browser/net/network_context_service.cc",

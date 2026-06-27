@@ -41,6 +41,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/net/client_certificate_responder_delegate.h"
 #include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
@@ -459,6 +460,23 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
       },
       std::move(auth_responder));
   Emit("login", auth_info, std::move(cb));
+}
+
+void SimpleURLLoaderWrapper::OnCertificateRequested(
+    const std::optional<base::UnguessableToken>& window_id,
+    const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
+    mojo::PendingRemote<network::mojom::ClientCertificateResponder>
+        client_cert_responder) {
+  // In the utility process this observer is only bound when the host did not
+  // provide one; routing to the app event requires the browser process.
+  if (!electron::IsBrowserProcess()) {
+    mojo::Remote<network::mojom::ClientCertificateResponder> responder(
+        std::move(client_cert_responder));
+    responder->ContinueWithoutCertificate();
+    return;
+  }
+  SelectClientCertificateForResponder(browser_context_, cert_info,
+                                      std::move(client_cert_responder));
 }
 
 void SimpleURLLoaderWrapper::OnSSLCertificateError(
