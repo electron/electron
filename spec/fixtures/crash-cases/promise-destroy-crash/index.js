@@ -13,25 +13,33 @@ function createWindow() {
     }
   });
 
+  win.on('closed', () => console.log('[pdc] window closed'));
+
   win.loadURL('data:text/html,<h1>repro</h1>');
 }
 
 async function createPromiseAndQuit() {
   const url = `unknownscheme-${Date.now()}://test`;
   const p = shell.openExternal(url, { activate: false });
+  console.log('[pdc] openExternal returned, promise pending');
 
   setTimeout(() => {
+    console.log('[pdc] calling app.quit()');
     app.quit();
   }, 0);
 
   p.then(() => {
-    console.log('promise resolved.');
+    console.log('[pdc] promise resolved.');
   }).catch(() => {
-    console.log('promise rejected.');
+    console.log('[pdc] promise rejected.');
   });
 }
 
 app.whenReady().then(() => {
+  app.on('before-quit', () => console.log('[pdc] before-quit'));
+  app.on('will-quit', () => console.log('[pdc] will-quit'));
+  app.on('quit', () => console.log('[pdc] quit'));
+
   createWindow();
 
   setTimeout(() => {
