@@ -1,12 +1,27 @@
-const { app, BrowserWindow, shell } = require('electron');
 const fs = require('node:fs');
+const t0 = Date.now();
+const log = (m) => {
+  try {
+    fs.writeSync(2, `[pdc] +${Date.now() - t0}ms ${m}\n`);
+  } catch {}
+};
+log('script start');
 
-fs.writeSync(2, '[pdc] fixture loaded\n');
+const { app, BrowserWindow, shell } = require('electron');
+log('electron required');
+
+// Heartbeat to show event-loop liveness + timing during startup. unref() so it
+// never keeps the process alive (the fixture must still exit via app.quit()).
+const heartbeat = setInterval(() => log('heartbeat'), 1000);
+heartbeat.unref();
+
+process.on('uncaughtException', (e) => log(`uncaughtException: ${e && e.stack ? e.stack : e}`));
+process.on('unhandledRejection', (e) => log(`unhandledRejection: ${e}`));
 
 let win = null;
 
 function createWindow() {
-  fs.writeSync(2, '[pdc] createWindow\n');
+  log('createWindow');
   win = new BrowserWindow({
     width: 800,
     height: 600,
@@ -17,7 +32,7 @@ function createWindow() {
     }
   });
 
-  win.on('closed', () => fs.writeSync(2, '[pdc] window closed\n'));
+  win.on('closed', () => log('window closed'));
 
   win.loadURL('data:text/html,<h1>repro</h1>');
 }
@@ -25,25 +40,26 @@ function createWindow() {
 async function createPromiseAndQuit() {
   const url = `unknownscheme-${Date.now()}://test`;
   const p = shell.openExternal(url, { activate: false });
-  fs.writeSync(2, '[pdc] openExternal returned, promise pending\n');
+  log('openExternal returned, promise pending');
 
   setTimeout(() => {
-    fs.writeSync(2, '[pdc] calling app.quit()\n');
+    log('calling app.quit()');
     app.quit();
   }, 0);
 
   p.then(() => {
-    fs.writeSync(2, '[pdc] promise resolved.\n');
+    log('promise resolved.');
   }).catch(() => {
-    fs.writeSync(2, '[pdc] promise rejected.\n');
+    log('promise rejected.');
   });
 }
 
+log('registering whenReady');
 app.whenReady().then(() => {
-  fs.writeSync(2, '[pdc] app ready\n');
-  app.on('before-quit', () => fs.writeSync(2, '[pdc] before-quit\n'));
-  app.on('will-quit', () => fs.writeSync(2, '[pdc] will-quit\n'));
-  app.on('quit', () => fs.writeSync(2, '[pdc] quit\n'));
+  log('app ready');
+  app.on('before-quit', () => log('before-quit'));
+  app.on('will-quit', () => log('will-quit'));
+  app.on('quit', () => log('quit'));
 
   createWindow();
 
