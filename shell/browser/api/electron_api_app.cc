@@ -469,14 +469,8 @@ void OnClientCertificateSelected(
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     std::shared_ptr<net::ClientCertIdentityList> identities,
     gin::Arguments* const args) {
-  if (args->Length() == 2) {
-    delegate->ContinueWithCertificate(nullptr, nullptr);
-    return;
-  }
-
   v8::Local<v8::Value> val;
-  args->GetNext(&val);
-  if (val->IsNull()) {
+  if (!args->GetNext(&val) || val.IsEmpty() || val->IsNullOrUndefined()) {
     delegate->ContinueWithCertificate(nullptr, nullptr);
     return;
   }
