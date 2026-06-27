@@ -1,8 +1,11 @@
 const { app, BrowserWindow, shell } = require('electron');
 
+console.error('[pdc] fixture loaded');
+
 let win = null;
 
 function createWindow() {
+  console.error('[pdc] createWindow');
   win = new BrowserWindow({
     width: 800,
     height: 600,
@@ -13,7 +16,7 @@ function createWindow() {
     }
   });
 
-  win.on('closed', () => console.log('[pdc] window closed'));
+  win.on('closed', () => console.error('[pdc] window closed'));
 
   win.loadURL('data:text/html,<h1>repro</h1>');
 }
@@ -21,24 +24,25 @@ function createWindow() {
 async function createPromiseAndQuit() {
   const url = `unknownscheme-${Date.now()}://test`;
   const p = shell.openExternal(url, { activate: false });
-  console.log('[pdc] openExternal returned, promise pending');
+  console.error('[pdc] openExternal returned, promise pending');
 
   setTimeout(() => {
-    console.log('[pdc] calling app.quit()');
+    console.error('[pdc] calling app.quit()');
     app.quit();
   }, 0);
 
   p.then(() => {
-    console.log('[pdc] promise resolved.');
+    console.error('[pdc] promise resolved.');
   }).catch(() => {
-    console.log('[pdc] promise rejected.');
+    console.error('[pdc] promise rejected.');
   });
 }
 
 app.whenReady().then(() => {
-  app.on('before-quit', () => console.log('[pdc] before-quit'));
-  app.on('will-quit', () => console.log('[pdc] will-quit'));
-  app.on('quit', () => console.log('[pdc] quit'));
+  console.error('[pdc] app ready');
+  app.on('before-quit', () => console.error('[pdc] before-quit'));
+  app.on('will-quit', () => console.error('[pdc] will-quit'));
+  app.on('quit', () => console.error('[pdc] quit'));
 
   createWindow();
 
