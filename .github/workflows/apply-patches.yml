@@ -91,6 +91,6 @@ jobs:
   build-siso:
     needs: setup
     if: ${{ needs.setup.outputs.has-siso-patches == 'true' }}
-    uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
