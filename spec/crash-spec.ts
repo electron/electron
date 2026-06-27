@@ -27,12 +27,30 @@ const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.Pr
     out += chunk.toString();
   });
 
+  // Diagnostic-only: if the child wedges, mocha's 30s timeout would fire
+  // *without* ever printing the buffered `out`, leaving us with an opaque
+  // failure. Use a shorter internal timeout so the captured child output is
+  // surfaced in the rejection message instead.
+  const DIAGNOSTIC_TIMEOUT = 25000;
+  let diagnosticTimer: NodeJS.Timeout | undefined;
+
   type CodeAndSignal = { code: number | null; signal: NodeJS.Signals | null };
-  const { code, signal } = await new Promise<CodeAndSignal>((resolve) => {
+  const exited = new Promise<CodeAndSignal>((resolve, reject) => {
     child.on('exit', (code, signal) => {
       resolve({ code, signal });
     });
+    diagnosticTimer = setTimeout(() => {
+      reject(new Error(`[crash-spec] fixture did not exit within ${DIAGNOSTIC_TIMEOUT}ms. Captured child output:\n${out}`));
+    }, DIAGNOSTIC_TIMEOUT);
   });
+
+  let codeAndSignal: CodeAndSignal;
+  try {
+    codeAndSignal = await exited;
+  } finally {
+    if (diagnosticTimer) clearTimeout(diagnosticTimer);
+  }
+  const { code, signal } = codeAndSignal;
   if (code !== 0 || signal !== null) {
     console.error(out);
   }
