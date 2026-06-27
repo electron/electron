@@ -326,7 +326,7 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](web-contents.md)
+* `webContents` [WebContents](web-contents.md) | null
 * `url` URL
 * `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
@@ -338,6 +338,10 @@ The `url` corresponds to the navigation entry requesting the client certificate
 and `callback` can be called with an entry filtered from the list. Using
 `event.preventDefault()` prevents the application from using the first
 certificate from the store.
+
+`webContents` is `null` when the request does not originate from a renderer
+process, for example when using [`net.request`](net.md#netrequestoptions),
+[`net.fetch`](net.md#netfetchinput-init), or a [utility process](utility-process.md).
 
 ```js
 const { app } = require('electron')
