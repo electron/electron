@@ -19,10 +19,8 @@ class SSLCertRequestInfo;
 
 namespace electron {
 
-// Handles a client-certificate request that arrived over the network-service
-// observer mojo pipe (i.e. from a non-WebContents URLLoader such as net.fetch
-// or a utilityProcess request). Fetches matching identities from the platform
-// store and routes the selection through ElectronBrowserClient so the
+// Handles a client-certificate request from a non-WebContents URLLoader
+// (net.fetch / utilityProcess): routes through ElectronBrowserClient so the
 // `select-client-certificate` app event fires with a null WebContents.
 void SelectClientCertificateForResponder(
     content::BrowserContext* browser_context,
