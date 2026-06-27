@@ -460,6 +460,18 @@ void SimpleURLLoaderWrapper::OnAuthRequired(
   Emit("login", auth_info, std::move(cb));
 }
 
+void SimpleURLLoaderWrapper::OnCertificateRequested(
+    const std::optional<base::UnguessableToken>& window_id,
+    const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
+    mojo::PendingRemote<network::mojom::ClientCertificateResponder>
+        client_cert_responder) {
+  // Proceed without a client certificate. Selection for net-module requests is
+  // not currently exposed; see https://github.com/electron/electron/issues/29984.
+  mojo::Remote<network::mojom::ClientCertificateResponder> responder(
+      std::move(client_cert_responder));
+  responder->ContinueWithoutCertificate();
+}
+
 void SimpleURLLoaderWrapper::OnSSLCertificateError(
     const GURL& url,
     int net_error,
