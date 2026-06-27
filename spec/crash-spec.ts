@@ -40,7 +40,9 @@ const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.Pr
       resolve({ code, signal });
     });
     diagnosticTimer = setTimeout(() => {
-      reject(new Error(`[crash-spec] fixture did not exit within ${DIAGNOSTIC_TIMEOUT}ms. Captured child output:\n${out}`));
+      reject(
+        new Error(`[crash-spec] fixture did not exit within ${DIAGNOSTIC_TIMEOUT}ms. Captured child output:\n${out}`)
+      );
     }, DIAGNOSTIC_TIMEOUT);
   });
 
