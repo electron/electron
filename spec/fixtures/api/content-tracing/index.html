@@ -6,5 +6,15 @@
   </head>
   <body>
     <h1>Hello World!</h1>
+    <script>
+      // Continuously allocate after load so the sampling heap profiler always
+      // has non-trivial allocations to capture. Without this the renderer is
+      // idle and its periodic heap dump is often present-but-empty, which makes
+      // the heap-dump assertions flake. Mirrors spec/fixtures/api/content-tracing/utility.js.
+      let retained = null;
+      setInterval(() => {
+        retained = new Array(1000000).fill(0);
+      }, 100);
+    </script>
   </body>
 </html>

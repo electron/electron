@@ -210,14 +210,6 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
 
           if (options !== false) await contentTracing.enableHeapProfiling(options);
 
-          await contentTracing.startRecording({
-            included_categories: ['disabled-by-default-memory-infra'],
-            excluded_categories: ['*'],
-            memory_dump_config: {
-              triggers: [{ mode: 'detailed', periodic_interval_ms: 1000 }]
-            }
-          });
-
           // Launch a renderer process
           const window = new BrowserWindow({ show: false });
           await window.webContents.loadFile(htmlPath);
@@ -226,18 +218,45 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
           const utility = utilityProcess.fork(utilityProcessPath);
           await once(utility, 'spawn');
 
-          // Collect heap dumps
-          // - We wait for a long time because sometimes processes take a few seconds to start sending heap dumps.
-          // - CI machines are slower, so we wait longer there than when running locally.
-          await setTimeout(isCI ? 10000 : 4000);
+          // Collect heap dumps.
+          // - Sometimes processes take a few seconds to start sending heap dumps,
+          //   so instead of guessing a fixed wall-clock wait we record in bounded
+          //   iterations and OR-in any qualifying dumps found in each pass.
+          // - We break early once every process we expect a dump from has one, and
+          //   cap the total iterations so the test can't hang. The worst-case total
+          //   wait stays similar to the previous fixed wait (~10s on CI).
+          let hasBrowserProcessHeapDump = false;
+          let hasRendererProcessHeapDump = false;
+          let hasUtilityProcessHeapDump = false;
 
-          const path = await contentTracing.stopRecording();
-          const data = fs.readFileSync(path, 'utf8');
-          const parsed = JSON.parse(data);
+          const recordTimeInMilliseconds = 2000;
+          const maxIterations = isCI ? 5 : 2;
 
-          const hasBrowserProcessHeapDump = hasNonEmptyHeapDumpForProcess(parsed, process.pid);
-          const hasRendererProcessHeapDump = hasNonEmptyHeapDumpForProcess(parsed, window.webContents.getOSProcessId());
-          const hasUtilityProcessHeapDump = hasNonEmptyHeapDumpForProcess(parsed, utility.pid);
+          for (let i = 0; i < maxIterations; i++) {
+            await contentTracing.startRecording({
+              included_categories: ['disabled-by-default-memory-infra'],
+              excluded_categories: ['*'],
+              memory_dump_config: {
+                triggers: [{ mode: 'detailed', periodic_interval_ms: 1000 }]
+              }
+            });
+
+            await setTimeout(recordTimeInMilliseconds);
+
+            const path = await contentTracing.stopRecording();
+            const data = fs.readFileSync(path, 'utf8');
+            const parsed = JSON.parse(data);
+
+            const rendererPid = window.webContents.getOSProcessId();
+            if (hasNonEmptyHeapDumpForProcess(parsed, process.pid)) hasBrowserProcessHeapDump = true;
+            if (hasNonEmptyHeapDumpForProcess(parsed, rendererPid)) hasRendererProcessHeapDump = true;
+            if (hasNonEmptyHeapDumpForProcess(parsed, utility.pid)) hasUtilityProcessHeapDump = true;
+
+            // Stop as soon as every process that should produce a dump has one.
+            // When heap profiling is disabled no dumps are expected, so a single
+            // pass is enough to confirm their absence.
+            if (hasBrowserProcessHeapDump && hasRendererProcessHeapDump && hasUtilityProcessHeapDump) break;
+          }
 
           global.setTimeout(() => require('electron').app.quit());
 
