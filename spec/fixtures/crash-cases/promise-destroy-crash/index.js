@@ -7,11 +7,15 @@ const log = (m) => {
 };
 log('script start');
 
-const { app, BrowserWindow, shell } = require('electron');
-log('electron required');
+log('before require electron');
+const electron = require('electron');
+log('after require electron');
+const { app, BrowserWindow } = electron;
+log('after destructure app/BrowserWindow');
+const shell = electron.shell;
+log('after shell access');
 
-// Heartbeat to show event-loop liveness + timing during startup. unref() so it
-// never keeps the process alive (the fixture must still exit via app.quit()).
+// Heartbeat to show event-loop liveness; unref() so it never keeps the process alive.
 const heartbeat = setInterval(() => log('heartbeat'), 1000);
 heartbeat.unref();
 
