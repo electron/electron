@@ -67,10 +67,16 @@ jobs:
       matrix:
         build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
         shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
+        # DEBUG: notification flake repro - fan out the macOS x64 test job into 5
+        # independent attempts to reliably reproduce the ~26%/run flake. Each
+        # attempt is a full copy of the existing build-type/shard matrix.
+        attempt: [1, 2, 3, 4, 5]
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
+      # DEBUG: notification flake repro - enable extra macOS Notification lifecycle logging
+      ELECTRON_DEBUG_NOTIFICATIONS: '1'
     steps:
     - name: Fix node20 on arm32 runners
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
@@ -331,7 +337,7 @@ jobs:
       if: always()
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
       with:
-        name: ${{ inputs.target-platform == 'linux' && format('test_artifacts_{0}_{1}_{2}', env.ARTIFACT_KEY, inputs.display-server, matrix.shard) || format('test_artifacts_{0}_{1}', env.ARTIFACT_KEY, matrix.shard) }}
+        name: ${{ inputs.target-platform == 'linux' && format('test_artifacts_{0}_{1}_{2}_attempt{3}', env.ARTIFACT_KEY, inputs.display-server, matrix.shard, matrix.attempt) || format('test_artifacts_{0}_{1}_attempt{2}', env.ARTIFACT_KEY, matrix.shard, matrix.attempt) }}
         path: src/electron/spec/artifacts
         if-no-files-found: ignore
     - name: Wait for active SSH sessions

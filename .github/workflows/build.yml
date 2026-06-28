@@ -37,6 +37,7 @@ on:
     branches:
       - main
       - '[1-9][0-9]-x-y'
+      - 'claude/**'
   pull_request:
 
 defaults:
@@ -86,7 +87,7 @@ jobs:
   # Lint Jobs
   lint:
     needs: setup
-    if: ${{ !inputs.skip-lint }}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     uses: ./.github/workflows/pipeline-electron-lint.yml
     permissions:
       contents: read
@@ -138,7 +139,7 @@ jobs:
 
   checkout-linux:
     needs: setup
-    if: ${{ !inputs.skip-linux}}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -169,7 +170,7 @@ jobs:
 
   checkout-windows:
     needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -212,6 +213,7 @@ jobs:
 
   # GN Check Jobs
   macos-gn-check:
+    if: false # DEBUG: notification flake repro - macOS x64 only
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
     permissions:
       contents: read
@@ -228,7 +230,7 @@ jobs:
     permissions:
       contents: read
     needs: checkout-linux
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     with:
       target-platform: linux
       target-archs: x64 arm arm64
@@ -238,6 +240,7 @@ jobs:
     secrets: inherit
 
   windows-gn-check:
+    if: false # DEBUG: notification flake repro - macOS x64 only
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
     permissions:
       contents: read
@@ -271,6 +274,7 @@ jobs:
     secrets: inherit
   
   macos-arm64:
+    if: false # DEBUG: notification flake repro - macOS x64 only
     permissions:
       contents: read
       issues: read
@@ -296,7 +300,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test-and-nan.yml
     needs: [checkout-linux, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       clang-tidy-runs-on: electron-arc-centralus-linux-amd64-8core
@@ -319,7 +323,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-amd64-4core
@@ -341,7 +345,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-arm64-4core
@@ -362,7 +366,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: ubuntu-22.04-arm
@@ -377,6 +381,7 @@ jobs:
     secrets: inherit
     
   test-linux-arm64-64k:
+    if: false # DEBUG: notification flake repro - macOS x64 only
     uses: ./.github/workflows/pipeline-segment-electron-test-64k.yml
     permissions:
       contents: read
@@ -395,7 +400,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-windows, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       test-runs-on: windows-latest
@@ -414,7 +419,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-windows, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       test-runs-on: windows-latest
@@ -433,7 +438,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-windows, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    if: false # DEBUG: notification flake repro - macOS x64 only
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       test-runs-on: windows-11-arm
