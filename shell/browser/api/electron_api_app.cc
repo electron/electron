@@ -787,8 +787,9 @@ base::OnceClosure App::SelectClientCertificate(
            base::BindOnce(&OnClientCertificateSelected, isolate,
                           shared_delegate, shared_identities));
 
-  // Default to first certificate from the platform store.
-  if (!prevent_default) {
+  // Default to first certificate from the platform store. The JS callback may
+  // have already run synchronously and moved the identity out, so guard for it.
+  if (!prevent_default && (*shared_identities)[0]) {
     scoped_refptr<net::X509Certificate> cert =
         (*shared_identities)[0]->certificate();
     net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
