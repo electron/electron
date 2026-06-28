@@ -1,8 +1,10 @@
 const fs = require('node:fs');
 const t0 = Date.now();
+const markerLog = process.env.CRASH_CASE_MARKER_LOG;
 const log = (m) => {
+  if (!markerLog) return;
   try {
-    fs.writeSync(2, `[pdc] +${Date.now() - t0}ms ${m}\n`);
+    fs.appendFileSync(markerLog, `[pdc] +${Date.now() - t0}ms ${m}\n`);
   } catch {}
 };
 log('script start');
@@ -15,7 +17,6 @@ log('after destructure app/BrowserWindow');
 const shell = electron.shell;
 log('after shell access');
 
-// Heartbeat to show event-loop liveness; unref() so it never keeps the process alive.
 const heartbeat = setInterval(() => log('heartbeat'), 1000);
 heartbeat.unref();
 
