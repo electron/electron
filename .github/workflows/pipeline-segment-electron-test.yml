@@ -65,7 +65,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
+        # DEBUG: notification flake repro - drop the mas test jobs, run darwin only.
+        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
         shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
         # DEBUG: notification flake repro - fan out the macOS x64 test job into 5
         # independent attempts to reliably reproduce the ~26%/run flake. Each
@@ -233,6 +234,83 @@ jobs:
         if [ -n "$identity" ]; then
           codesign -s "$identity" --deep --force src/out/Default/Electron.app
         fi
+
+    # DEBUG: notification flake repro - Fix A (high confidence): deterministically
+    # register the signed bundle with LaunchServices so notification authorization
+    # resolves against a stable bundle identifier.
+    - name: Register Electron.app with LaunchServices (notification auth debug)
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        APP=src/out/Default/Electron.app
+        /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$APP"
+        echo "CFBundleIdentifier: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist" 2>/dev/null || defaults read "$PWD/$APP/Contents/Info" CFBundleIdentifier)"
+        /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -dump | grep -A3 -i electron | head -40 || true
+
+    # DEBUG: notification flake repro - Fix B (unverified, best-effort): install a
+    # notificationsettings configuration profile for the app's bundle id. This step
+    # is intentionally non-fatal (continue-on-error + || true) so a failure here does
+    # not fail the job; Fix A above must still be exercised regardless.
+    - name: Install notifications profile for Electron.app (notification auth debug)
+      if: ${{ inputs.target-platform == 'macos' }}
+      continue-on-error: true
+      run: |
+        APP=src/out/Default/Electron.app
+        BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist" 2>/dev/null || defaults read "$PWD/$APP/Contents/Info" CFBundleIdentifier || echo "com.github.Electron")
+        echo "Using BundleIdentifier: $BUNDLE_ID"
+        cat > notifications.mobileconfig <<EOF || true
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+          <key>PayloadType</key>
+          <string>Configuration</string>
+          <key>PayloadIdentifier</key>
+          <string>com.electron.notification-debug</string>
+          <key>PayloadUUID</key>
+          <string>11111111-1111-1111-1111-111111111111</string>
+          <key>PayloadVersion</key>
+          <integer>1</integer>
+          <key>PayloadDisplayName</key>
+          <string>Electron Notification Debug</string>
+          <key>PayloadContent</key>
+          <array>
+            <dict>
+              <key>PayloadType</key>
+              <string>com.apple.notificationsettings</string>
+              <key>PayloadIdentifier</key>
+              <string>com.electron.notification-debug.payload</string>
+              <key>PayloadUUID</key>
+              <string>22222222-2222-2222-2222-222222222222</string>
+              <key>PayloadVersion</key>
+              <integer>1</integer>
+              <key>PayloadEnabled</key>
+              <true/>
+              <key>NotificationSettings</key>
+              <array>
+                <dict>
+                  <key>BundleIdentifier</key>
+                  <string>$BUNDLE_ID</string>
+                  <key>NotificationsEnabled</key>
+                  <true/>
+                  <key>AlertType</key>
+                  <integer>1</integer>
+                  <key>BadgesEnabled</key>
+                  <true/>
+                  <key>SoundsEnabled</key>
+                  <true/>
+                  <key>ShowInNotificationCenter</key>
+                  <true/>
+                  <key>ShowInLockScreen</key>
+                  <true/>
+                </dict>
+              </array>
+            </dict>
+          </array>
+        </dict>
+        </plist>
+        EOF
+        sudo profiles install -path notifications.mobileconfig || sudo profiles -I -F notifications.mobileconfig || true
+        sudo profiles list || sudo profiles show || true
 
     - name: Run Electron Tests
       shell: bash
