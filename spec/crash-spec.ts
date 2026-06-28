@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { ifit } from './lib/spec-helpers';
@@ -13,10 +14,17 @@ let children: cp.ChildProcessWithoutNullStreams[] = [];
 
 const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.ProcessEnv) => {
   let out = '';
+  // Durable marker log: fixtures append diagnostic markers here via
+  // fs.appendFileSync. Unlike writeSync(2, …) to the child's stderr pipe,
+  // file appends survive the Windows non-blocking-pipe EAGAIN problem (where
+  // only the first of several rapid writes ever surfaces), so we can recover
+  // the full marker trail on a diagnostic timeout below.
+  const markerLog = path.join(os.tmpdir(), `crash-markers-${process.pid}-${Date.now()}.log`);
   const child = cp.spawn(process.execPath, args, {
     env: {
       ...process.env,
-      ...customEnv
+      ...customEnv,
+      CRASH_CASE_MARKER_LOG: markerLog
     }
   });
   children.push(child);
@@ -40,8 +48,10 @@ const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.Pr
       resolve({ code, signal });
     });
     diagnosticTimer = setTimeout(() => {
+      let markers = '';
+      try { markers = fs.readFileSync(markerLog, 'utf8'); } catch {}
       reject(
-        new Error(`[crash-spec] fixture did not exit within ${DIAGNOSTIC_TIMEOUT}ms. Captured child output:\n${out}`)
+        new Error(`[crash-spec] fixture did not exit within ${DIAGNOSTIC_TIMEOUT}ms.\nMarker log:\n${markers}\n--- stdio ---\n${out}`)
       );
     }, DIAGNOSTIC_TIMEOUT);
   });
