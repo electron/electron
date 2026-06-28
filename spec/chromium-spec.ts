@@ -545,6 +545,54 @@ describe('web security', () => {
         }
       });
     }
+
+    it('does not apply page csp to isolated preload scripts', async () => {
+      const tmpDir = await fs.promises.mkdtemp(path.join(app.getPath('temp'), 'electron-preload-csp-'));
+      defer(() => fs.promises.rm(tmpDir, { recursive: true, force: true }));
+
+      const channel = `preload-csp-${path.basename(tmpDir)}`;
+      const preloadPath = path.join(tmpDir, 'preload.js');
+      await fs.promises.writeFile(
+        preloadPath,
+        `
+          const { ipcRenderer } = require('electron');
+          const results = [];
+          const checkCodeGeneration = (phase) => {
+            try {
+              new Function('return true')();
+              results.push([phase, 'allowed']);
+            } catch (error) {
+              results.push([phase, error.name]);
+            }
+          };
+          checkCodeGeneration('initial');
+          window.addEventListener('DOMContentLoaded', () => {
+            checkCodeGeneration('domcontentloaded');
+            ipcRenderer.send(${JSON.stringify(channel)}, results);
+          });
+        `
+      );
+
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: preloadPath,
+          sandbox: false,
+          contextIsolation: true
+        }
+      });
+
+      const cspResults = once(ipcMain, channel);
+      await w.loadURL(`data:text/html,
+        <!DOCTYPE html>
+        <meta http-equiv="Content-Security-Policy" content="script-src 'self'">
+      `);
+      const [, results] = await cspResults;
+      expect(results).to.deep.equal([
+        ['initial', 'allowed'],
+        ['domcontentloaded', 'allowed']
+      ]);
+    });
   });
 
   it('does not crash when multiple WebContent are created with web security disabled', () => {

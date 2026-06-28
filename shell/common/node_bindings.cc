@@ -364,6 +364,12 @@ void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
                                                             meta);
 }
 
+bool IsElectronIsolatedWorld(v8::Local<v8::Context> context) {
+  blink::WebLocalFrame* frame = blink::WebLocalFrame::FrameForContext(context);
+  return frame && frame->GetScriptContextWorldId(context) ==
+                      electron::WorldIDs::ISOLATED_WORLD_ID;
+}
+
 v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
     v8::Local<v8::Context> context,
     v8::Local<v8::Value> source,
@@ -386,6 +392,13 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
   // If we're in the renderer with contextIsolation disabled, ask blink first
   // (for CSP), and iff that allows codegen, delegate to node.
   if (electron::IsRendererProcess()) {
+    // Electron preload scripts run in the isolated world when contextIsolation
+    // is enabled, so page CSP should not make their code generation change as
+    // the document parses.
+    if (IsElectronIsolatedWorld(context))
+      return node::ModifyCodeGenerationFromStrings(context, source,
+                                                   is_code_like);
+
     v8::ModifyCodeGenerationFromStringsResult result =
         blink::V8Initializer::CodeGenerationCheckCallbackInMainThread(
             context, source, is_code_like);
