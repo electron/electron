@@ -243,6 +243,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
       : capturer_{capturer},
         list_{list},
         list_type_{list->GetMediaListType()},
+        is_delegated_{list->IsSourceListDelegated()},
         need_thumbnails_{need_thumbnails} {}
   ~ListObserver() override = default;
 
@@ -253,7 +254,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
     if (!need_thumbnails_)
       return true;
 
-    // are all the tumbnails ready?
+    // are all the thumbnails ready?
     for (int i = 0; i < list_->GetSourceCount(); ++i) {
       if (list_->GetSource(i).thumbnail.isNull())
         return false;
@@ -275,7 +276,9 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
 
   // DesktopMediaListObserver:
   void OnSourceAdded(int index) override {
-    has_sources_ = true;
+    // Rely on OnDelegatedSourceListSelection for delegated source lists.
+    if (!is_delegated_)
+      has_sources_ = true;
     MaybeNotifyReady();
   }
   void OnSourceRemoved(int index) override { MaybeNotifyReady(); }
@@ -298,6 +301,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
   raw_ptr<DesktopCapturer> capturer_;
   raw_ptr<DesktopMediaList> list_;
   DesktopMediaList::Type list_type_;
+  bool is_delegated_ = false;
   bool need_thumbnails_ = false;
   bool has_sources_ = false;
   bool notified_ = false;
@@ -409,9 +413,14 @@ void DesktopCapturer::StartHandling(bool capture_window,
     return;
   }
 
-  deadline_.Start(FROM_HERE, kDesktopCapturerReadyTimeout,
-                  base::BindOnce(&DesktopCapturer::OnReadyTimeout,
-                                 weak_ptr_factory_.GetWeakPtr()));
+  const bool any_delegated =
+      (window_capturer_ && window_capturer_->IsSourceListDelegated()) ||
+      (screen_capturer_ && screen_capturer_->IsSourceListDelegated());
+  if (!any_delegated) {
+    deadline_.Start(FROM_HERE, kDesktopCapturerReadyTimeout,
+                    base::BindOnce(&DesktopCapturer::OnReadyTimeout,
+                                   weak_ptr_factory_.GetWeakPtr()));
+  }
 }
 
 void DesktopCapturer::OnListReady(const DesktopMediaList::Type type) {
