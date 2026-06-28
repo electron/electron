@@ -16,7 +16,8 @@ ProtocolRegistry* ProtocolRegistry::FromBrowserContext(
   return static_cast<ElectronBrowserContext*>(context)->protocol_registry();
 }
 
-ProtocolRegistry::ProtocolRegistry() = default;
+ProtocolRegistry::ProtocolRegistry(ElectronBrowserContext* browser_context)
+    : browser_context_(browser_context) {}
 
 ProtocolRegistry::~ProtocolRegistry() = default;
 
@@ -42,7 +43,8 @@ void ProtocolRegistry::RegisterURLLoaderFactories(
 
   for (const auto& it : handlers_) {
     factories->emplace(it.first, ElectronURLLoaderFactory::Create(
-                                     it.second.first, it.second.second));
+                                     it.second.first, it.second.second,
+                                     browser_context_->GetWeakPtr()));
   }
 }
 
@@ -57,7 +59,8 @@ ProtocolRegistry::CreateNonNetworkNavigationURLLoaderFactory(
     auto handler = handlers_.find(scheme);
     if (handler != handlers_.end()) {
       return ElectronURLLoaderFactory::Create(handler->second.first,
-                                              handler->second.second);
+                                              handler->second.second,
+                                              browser_context_->GetWeakPtr());
     }
   }
   return {};
