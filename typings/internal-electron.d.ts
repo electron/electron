@@ -142,6 +142,7 @@ declare namespace Electron {
   interface WebPreferences {
     disablePopups?: boolean;
     embedder?: Electron.WebContents;
+    openerSandboxFlags?: number;
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
@@ -238,7 +239,7 @@ declare namespace Electron {
 
   interface WebContents {
     on(event: '-new-window', listener: (event: Electron.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
-      rawFeatures: string, referrer: Electron.Referrer, postData: LoadURLOptions['postData']) => void): this;
+      rawFeatures: string, referrer: Electron.Referrer, postData: LoadURLOptions['postData'], inheritedSandboxFlags: number) => void): this;
     on(event: '-add-new-contents', listener: (event: Event, webContents: Electron.WebContents, disposition: string,
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: LoadURLOptions['postData']) => void): this;
