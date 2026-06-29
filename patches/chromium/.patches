@@ -157,13 +157,3 @@ feat_carry_embedder_startup_data_in_createnewwindowreply.patch
 feat_deliver_service_worker_preload_data_via_embeddedworkerstartparams.patch
 build_fix_profile_runtime_resolution_for_pgo_instrumented_builds.patch
 build_disable_llvm_unroll-add-parallel-reductions_on_apple_targets.patch
-cherry-pick-c3f3e076d61a.patch
-cherry-pick-045d3557e2ad.patch
-cherry-pick-dc52460d5bf2.patch
-cherry-pick-851acf8f74cf.patch
-cherry-pick-05b31a349539.patch
-cherry-pick-7decfe7398f7.patch
-cherry-pick-83a9ebad816e.patch
-cherry-pick-5822dea3c6e8.patch
-cherry-pick-3e497ff45cf2.patch
-cherry-pick-fddae77bdfc0.patch
