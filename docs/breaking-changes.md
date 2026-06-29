@@ -56,8 +56,8 @@ Electron headers CDN) are no longer published either.
 Older versions of Electron will continue to support these platforms, but Electron
 v44.0.0 and higher will only be published for 64-bit platforms.
 
-Once the v44 series reaches end of life in January 2027, Electron will no longer
-support these platforms completely.
+Once the v43 series reaches end of life in January 2027, these 32-bit platforms
+will no longer be supported.
 
 ## Planned Breaking API Changes (43.0)
 
