@@ -142,6 +142,7 @@ declare namespace Electron {
     setEmbedder(embedder: Electron.WebContents): void;
     viewInstanceId: number;
     _setOwnerWindow(w: BaseWindow | null): void;
+    _setVisualZoomLevelLimits(minLevel: number, maxLevel: number): void;
   }
 
   interface WebFrameMain {

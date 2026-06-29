@@ -152,11 +152,10 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
 };
 
 // Following methods are mapped to webFrame.
-const webFrameMethods = ['insertCSS', 'insertText', 'removeInsertedCSS', 'setVisualZoomLevelLimits'] as (
+const webFrameMethods = ['insertCSS', 'insertText', 'removeInsertedCSS'] as (
   | 'insertCSS'
   | 'insertText'
   | 'removeInsertedCSS'
-  | 'setVisualZoomLevelLimits'
 )[];
 
 for (const method of webFrameMethods) {
@@ -164,6 +163,20 @@ for (const method of webFrameMethods) {
     return ipcMainUtils.invokeInWebContents(this, IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD, method, ...args);
   };
 }
+
+// setVisualZoomLevelLimits persists the limits in WebContentsPreferences so
+// they survive cross-navigation preference resets, then forwards to the
+// renderer for immediate effect on the current page.
+WebContents.prototype.setVisualZoomLevelLimits = function (minimumLevel: number, maximumLevel: number): Promise<void> {
+  this._setVisualZoomLevelLimits(minimumLevel, maximumLevel);
+  return ipcMainUtils.invokeInWebContents(
+    this,
+    IPC_MESSAGES.RENDERER_WEB_FRAME_METHOD,
+    'setVisualZoomLevelLimits',
+    minimumLevel,
+    maximumLevel
+  );
+};
 
 const waitTillCanExecuteJavaScript = async (webContents: Electron.WebContents) => {
   if (webContents.getURL() && !webContents.isLoadingMainFrame()) return;
