@@ -120,8 +120,6 @@ void NodeService::Initialize(
   GetRemote().Bind(std::move(client_pending_remote));
   GetRemote().reset_on_disconnect();
 
-  ParentPort::GetInstance()->Initialize(std::move(params->port));
-
   if (params->url_loader_factory_params) {
     UpdateURLLoaderFactory(std::move(params->url_loader_factory_params));
   }
@@ -142,6 +140,13 @@ void NodeService::Initialize(
   v8::HandleScope scope{isolate};
 
   node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
+
+  // ParentPort is a cppgc-managed wrappable, so it must be created after the
+  // V8 isolate (and its cppgc heap) exists. The connector is created paused and
+  // is not resumed until the entry script calls parentPort.start() during
+  // LoadEnvironment below, so binding the port here changes no observable
+  // behavior.
+  ParentPort::GetInstance()->Initialize(std::move(params->port));
 
   network_change_notifier_ = net::NetworkChangeNotifier::CreateIfNeeded(
       net::NetworkChangeNotifier::CONNECTION_UNKNOWN,
