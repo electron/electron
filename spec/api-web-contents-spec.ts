@@ -1225,10 +1225,7 @@ describe('webContents module', () => {
 
     // Classify the dock side by which viewport axis shrank vs a devtools-closed
     // baseline. Scale-independent because it compares the same page to itself.
-    function classifyDock (
-        baseline: { width: number, height: number },
-        open: { width: number, height: number }
-    ) {
+    function classifyDock(baseline: { width: number; height: number }, open: { width: number; height: number }) {
       const widthShrank = open.width < baseline.width - 50;
       const heightShrank = open.height < baseline.height - 50;
       if (widthShrank && !heightShrank) return 'right'; // docked left/right
@@ -1237,7 +1234,7 @@ describe('webContents module', () => {
       return 'both';
     }
 
-    async function primeLastUsedDockState (w: BrowserWindow) {
+    async function primeLastUsedDockState(w: BrowserWindow) {
       const baseline = await getViewportSize(w);
       const opened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools({ mode: 'bottom', activate: false });
@@ -1383,7 +1380,7 @@ describe('webContents module', () => {
       await opened;
 
       await expect(
-          waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom')
+        waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom')
       ).to.eventually.be.fulfilled();
     });
 
@@ -1402,7 +1399,7 @@ describe('webContents module', () => {
       await opened;
 
       await expect(
-          waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom')
+        waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom')
       ).to.eventually.be.fulfilled();
     });
 
@@ -1418,7 +1415,7 @@ describe('webContents module', () => {
       await opened;
 
       await expect(
-          waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'right')
+        waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'right')
       ).to.eventually.be.fulfilled();
     });
   });
