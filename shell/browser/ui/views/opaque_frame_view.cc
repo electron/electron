@@ -225,7 +225,9 @@ void OpaqueFrameView::OnPaint(gfx::Canvas* canvas) {
   frame_background_->set_frame_color(GetFrameColor());
   frame_background_->set_use_custom_frame(true);
   frame_background_->set_is_active(active);
-  frame_background_->set_top_area_height(GetTopAreaHeight());
+  // Prevent the default system titlebar background from being drawn at the top
+  // of frameless windows. Does not affect WCO which draws its own top area.
+  frame_background_->set_top_area_height(0);
 
   const bool draw_shadow = showing_shadow && !linux_frame_layout_->tiled();
   auto shadow_values =
