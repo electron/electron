@@ -1,4 +1,4 @@
-// Copyright (c) 2026 GitHub, Inc.
+// Copyright (c) 2026 Anthropic, PBC.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
@@ -43,15 +43,15 @@ class SSLPrivateKeyImpl : public network::mojom::SSLPrivateKey {
     // `ssl_private_key_` may abandon the callback (https://crbug.com/40651689).
     callback = mojo::WrapCallbackWithDefaultInvokeIfNotRun(
         std::move(callback), int32_t{net::ERR_FAILED}, std::vector<uint8_t>());
-    ssl_private_key_->Sign(
-        algorithm, input,
-        base::BindOnce(
-            [](SignCallback callback, net::Error net_error,
-               const std::vector<uint8_t>& signature) {
-              std::move(callback).Run(static_cast<int32_t>(net_error),
-                                      signature);
-            },
-            std::move(callback)));
+    ssl_private_key_->Sign(algorithm, input,
+                           base::BindOnce(
+                               [](SignCallback callback, net::Error net_error,
+                                  const std::vector<uint8_t>& signature) {
+                                 std::move(callback).Run(
+                                     static_cast<int32_t>(net_error),
+                                     signature);
+                               },
+                               std::move(callback)));
   }
 
  private:
@@ -66,9 +66,9 @@ class ClientCertificateResponderDelegate
   explicit ClientCertificateResponderDelegate(
       mojo::PendingRemote<network::mojom::ClientCertificateResponder> responder)
       : responder_(std::move(responder)) {
-    responder_.set_disconnect_handler(base::BindOnce(
-        &ClientCertificateResponderDelegate::OnDisconnect,
-        base::Unretained(this)));
+    responder_.set_disconnect_handler(
+        base::BindOnce(&ClientCertificateResponderDelegate::OnDisconnect,
+                       base::Unretained(this)));
   }
 
   ~ClientCertificateResponderDelegate() override {
