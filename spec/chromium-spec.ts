@@ -5032,11 +5032,11 @@ describe('iframe sandbox popups', () => {
   let serverUrl: string;
   let w: BrowserWindow;
 
-  const childHtml = `
+  const makeChildHtml = (href: string) => `
     <script>
       addEventListener('DOMContentLoaded', () => {
         const a = document.createElement('a');
-        a.href = 'https://example.com/sandbox-bypassed';
+        a.href = ${JSON.stringify(href)};
         document.body.appendChild(a);
         a.dispatchEvent(new MouseEvent('click', {
           ctrlKey: true, metaKey: true, bubbles: true, cancelable: true, view: window
@@ -5048,10 +5048,16 @@ describe('iframe sandbox popups', () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       if (req.url === '/child') {
-        res.end(childHtml);
+        res.end(makeChildHtml('https://example.com/sandbox-bypassed'));
+      } else if (req.url === '/child-local-popup') {
+        res.end(makeChildHtml('/popup'));
+      } else if (req.url === '/popup') {
+        res.end('<title>popup</title>');
       } else {
-        const sandbox = new URL(req.url!, serverUrl).searchParams.get('sandbox') ?? '';
-        res.end(`<iframe sandbox="${sandbox}" src="/child"></iframe>`);
+        const params = new URL(req.url!, serverUrl).searchParams;
+        const sandbox = params.get('sandbox') ?? '';
+        const child = params.get('child') ?? '/child';
+        res.end(`<iframe sandbox="${sandbox}" src="${child}"></iframe>`);
       }
     });
     serverUrl = (await listen(server)).url;
@@ -5097,5 +5103,39 @@ describe('iframe sandbox popups', () => {
     await w.loadURL(`${serverUrl}/?sandbox=${encodeURIComponent('allow-scripts allow-popups')}`);
     await setTimeout(200);
     expect(handlerCalls).to.equal(1);
+  });
+
+  async function openPopupFromSandboxedIframe(sandbox: string) {
+    const didCreateWindow = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow]>;
+    await w.loadURL(
+      `${serverUrl}/?child=${encodeURIComponent('/child-local-popup')}&sandbox=${encodeURIComponent(sandbox)}`
+    );
+    const [popup] = await didCreateWindow;
+    if (popup.webContents.isLoading()) {
+      await once(popup.webContents, 'did-finish-load');
+    }
+    return popup.webContents.executeJavaScript(
+      `(() => {
+      const result = { origin: String(self.origin) };
+      try { localStorage.setItem('k', 'v'); result.localStorage = 'allowed'; } catch (e) { result.localStorage = e.name; }
+      try { document.cookie = 'k=v'; result.cookie = 'allowed'; } catch (e) { result.cookie = e.name; }
+      return result;
+    })()`,
+      true
+    );
+  }
+
+  it('popups from a sandboxed iframe without allow-popups-to-escape-sandbox inherit the sandbox', async () => {
+    const result = await openPopupFromSandboxedIframe('allow-scripts allow-popups');
+    expect(result.origin).to.equal('null');
+    expect(result.localStorage).to.equal('SecurityError');
+    expect(result.cookie).to.equal('SecurityError');
+  });
+
+  it('popups from a sandboxed iframe with allow-popups-to-escape-sandbox escape the sandbox', async () => {
+    const result = await openPopupFromSandboxedIframe('allow-scripts allow-popups allow-popups-to-escape-sandbox');
+    expect(result.origin).to.equal(new URL(serverUrl).origin);
+    expect(result.localStorage).to.equal('allowed');
+    expect(result.cookie).to.equal('allowed');
   });
 });
