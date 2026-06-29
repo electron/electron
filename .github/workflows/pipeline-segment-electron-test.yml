@@ -228,6 +228,12 @@ jobs:
           codesign -s "$identity" --deep --force src/out/Default/Electron.app
         fi
 
+    - name: Register Electron.app with LaunchServices
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+          -f src/out/Default/Electron.app
+
     - name: Run Electron Tests
       shell: bash
       timeout-minutes: 60
