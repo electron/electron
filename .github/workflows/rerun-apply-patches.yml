@@ -8,6 +8,7 @@ on:
     paths:
       - 'DEPS'
       - 'patches/**'
+      - '.github/siso-patches/**'
 
 permissions: {}
 
@@ -55,6 +56,17 @@ jobs:
 
             if [ -z "$RUN_ID" ]; then
               echo "  Could not extract run ID from link: ${LINK}"
+              continue
+            fi
+
+            # Skip runs older than 25 days (GitHub does not allow rerunning after ~1 month)
+            # Use the first attempt's creation date: createdAt reflects the most recent
+            # rerun, so it would reset the age on every rerun and never trip this check
+            RUN_CREATED=$(gh api "repos/${GH_REPO}/actions/runs/${RUN_ID}/attempts/1" --jq '.created_at')
+            RUN_AGE_DAYS=$(( ($(date +%s) - $(date -d "$RUN_CREATED" +%s 2>/dev/null || date -jf "%Y-%m-%dT%H:%M:%SZ" "$RUN_CREATED" +%s)) / 86400 ))
+
+            if [ "$RUN_AGE_DAYS" -gt 25 ]; then
+              echo "  Skipping run ${RUN_ID} for PR #${PR_NUMBER}: run is ${RUN_AGE_DAYS} days old (max 25)"
               continue
             fi
 
