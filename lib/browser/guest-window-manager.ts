@@ -30,7 +30,8 @@ export function openGuestWindow({
   overrideBrowserWindowOptions,
   windowOpenArgs,
   outlivesOpener,
-  createWindow
+  createWindow,
+  inheritedSandboxFlags
 }: {
   embedder: WebContents;
   guest?: WebContents;
@@ -41,6 +42,7 @@ export function openGuestWindow({
   windowOpenArgs: WindowOpenArgs;
   outlivesOpener: boolean;
   createWindow?: Electron.CreateWindowFunction;
+  inheritedSandboxFlags?: number;
 }): void {
   const { url, frameName, features } = windowOpenArgs;
   const { options: parsedOptions } = parseFeatures(features);
@@ -51,6 +53,18 @@ export function openGuestWindow({
     ...parsedOptions,
     ...overrideBrowserWindowOptions
   };
+
+  // When the opening frame is sandboxed without
+  // 'allow-popups-to-escape-sandbox', the new window must inherit the
+  // opener's sandbox restrictions. They are applied when the window's
+  // WebContents is created; sandbox flags can only be added this way, never
+  // cleared.
+  if (inheritedSandboxFlags) {
+    browserWindowOptions.webPreferences = {
+      ...browserWindowOptions.webPreferences,
+      openerSandboxFlags: inheritedSandboxFlags
+    };
+  }
 
   if (createWindow) {
     const webContents = createWindow({
