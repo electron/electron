@@ -1567,7 +1567,9 @@ describe('webContents module', () => {
         await openCustomDevTools(w, devtools);
 
         let emittedContextMenu = false;
-        devtools.webContents.once('context-menu', () => { emittedContextMenu = true; });
+        devtools.webContents.once('context-menu', () => {
+          emittedContextMenu = true;
+        });
 
         const roundTripped = await devToolsMenuRequestRoundTrips(devtools.webContents);
         expect(roundTripped).to.be.true();
