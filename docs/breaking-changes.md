@@ -14,6 +14,13 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (44.0)
 
+### Removed: macOS 12 support
+
+macOS 12 (Monterey) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/7907086).
+
+Older versions of Electron will continue to run on Monterey, but macOS 13 (Ventura)
+or later will be required to run Electron v44.0.0 and higher.
+
 ### Removed: Windows 32-bit (ia32) and Linux 32-bit ARM (armv7l) support
 
 Electron no longer publishes prebuilt binaries for 32-bit platforms: Windows x86
