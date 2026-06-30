@@ -6,6 +6,8 @@ chrome_200_percent.pak
 chrome_crashpad_handler
 electron
 icudtl.dat
+libEGL.so
+libGLESv2.so
 libffmpeg.so
 libvk_swiftshader.so
 libvulkan.so.1
