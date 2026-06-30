@@ -76,10 +76,15 @@ function log(...args) {
 function installTrustedCA(caCertPath) {
   try {
     if (process.platform === 'linux') {
-      const nssDb = path.join(os.homedir(), '.pki', 'nssdb');
+      const xdgData = process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share');
+      const nssDb = fs.existsSync(path.join(xdgData, 'pki', 'nssdb'))
+        ? path.join(xdgData, 'pki', 'nssdb')
+        : path.join(os.homedir(), '.pki', 'nssdb');
       if (!fs.existsSync(nssDb)) {
         fs.mkdirSync(nssDb, { recursive: true });
-        execFileSync('certutil', ['-d', `sql:${nssDb}`, '-N', '--empty-password'], { stdio: 'pipe' });
+        execFileSync('certutil', ['-d', `sql:${nssDb}`, '-N', '--empty-password'], {
+          stdio: 'pipe',
+        });
       }
       execFileSync(
         'certutil',
