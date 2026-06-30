@@ -14,6 +14,7 @@ v8_enable_snapshot_native_code_counters = false
 v8_enable_javascript_promise_hooks = true
 
 enable_cdm_host_verification = false
+enable_widevine = true
 ffmpeg_branding = "Chrome"
 proprietary_codecs = true
 

@@ -2725,6 +2725,47 @@ describe('chromium features', () => {
     });
   });
 
+  describe('Encrypted Media Extensions', () => {
+    afterEach(closeAllWindows);
+
+    it('does not expose Widevine without a configured CDM', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const result = await w.webContents.executeJavaScript(
+        `
+        (async () => {
+          const config = [{
+            initDataTypes: ['cenc'],
+            videoCapabilities: [{
+              contentType: 'video/webm; codecs="vp8"'
+            }],
+            audioCapabilities: [{
+              contentType: 'audio/webm; codecs="opus"'
+            }]
+          }];
+          try {
+            await navigator.requestMediaKeySystemAccess(
+              'com.widevine.alpha',
+              config
+            );
+            return { ok: true };
+          } catch (error) {
+            return {
+              ok: false,
+              name: error.name,
+              message: error.message
+            };
+          }
+        })()
+      `,
+        true
+      );
+
+      expect(result.ok).to.be.false();
+      expect(result.name).to.equal('NotSupportedError');
+    });
+  });
+
   describe('navigator.mediaDevices', () => {
     afterEach(closeAllWindows);
     afterEach(() => {
