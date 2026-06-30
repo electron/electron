@@ -31,7 +31,7 @@ can be created from, eliminating the Node bootstrap recompile.
   drop env var, plumb the base blob to the SnapshotCreator.
 
 diff --git a/node.gni b/node.gni
-index 8239967653fee7791800ee3292e77b91bffaaef9..c71d66df5d78b8e86ef5cf405ca7c9c8d7e716ee 100644
+index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..fb7462cc0c7c2e267847c54e7e1ff4db1559b338 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -64,11 +64,10 @@ declare_args() {
