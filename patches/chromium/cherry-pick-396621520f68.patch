@@ -31,10 +31,10 @@ Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1642016}
 
 diff --git a/gpu/command_buffer/service/framebuffer_manager.cc b/gpu/command_buffer/service/framebuffer_manager.cc
-index a8fee38c4255ccda10516530a576fef0e5a4f03a..bb4f07d3ba289a6cc2b9de8a2931e56ded120dc2 100644
+index 7e30582465512c9baee12361add3df1a65a472a4..4b77e1b0f7898e77a9c2468ca6a54c00322b46f4 100644
 --- a/gpu/command_buffer/service/framebuffer_manager.cc
 +++ b/gpu/command_buffer/service/framebuffer_manager.cc
-@@ -700,6 +700,13 @@ bool Framebuffer::GetReadBufferIsMultisampledTexture() const {
+@@ -704,6 +704,13 @@ bool Framebuffer::GetReadBufferIsMultisampledTexture() const {
               : false;
  }
  
@@ -49,10 +49,10 @@ index a8fee38c4255ccda10516530a576fef0e5a4f03a..bb4f07d3ba289a6cc2b9de8a2931e56d
    // Assume the framebuffer is complete, so return any attachment's samples.
    auto iter = attachments_.begin();
 diff --git a/gpu/command_buffer/service/framebuffer_manager.h b/gpu/command_buffer/service/framebuffer_manager.h
-index 1c2f377ef983c0b21ebf7497466b074e4094e362..ec55d5ab0649d32fe5d9566c01faabdd215f8037 100644
+index 8639fdad5c5883e9b1c6474379048f9b7922a37f..097ea1172fdd729550701b7a7bb8cafec3d71a8a 100644
 --- a/gpu/command_buffer/service/framebuffer_manager.h
 +++ b/gpu/command_buffer/service/framebuffer_manager.h
-@@ -174,6 +174,7 @@ class GPU_GLES2_EXPORT Framebuffer : public base::RefCounted<Framebuffer> {
+@@ -175,6 +175,7 @@ class GPU_GLES2_EXPORT Framebuffer : public base::RefCounted<Framebuffer> {
    // returns 0.
    GLenum GetReadBufferTextureType() const;
    bool GetReadBufferIsMultisampledTexture() const;
@@ -61,10 +61,10 @@ index 1c2f377ef983c0b21ebf7497466b074e4094e362..ec55d5ab0649d32fe5d9566c01faabdd
    // Verify all the rules in OpenGL ES 2.0.25 4.4.5 are followed.
    // Returns GL_FRAMEBUFFER_COMPLETE if there are no reasons we know we can't
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index ded091f70df018e0ec3edf716f018ba1c06bb18f..d39a1632e3c23fa1367d22ecb3932e160f06fe8d 100644
+index 3979037a1b0636ae98ee6f79ff7cf2cdef7dceaa..7f8c1cf4869ec31185b6ff5c64b09d93ad2a3140 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-@@ -933,6 +933,7 @@ class GLES2DecoderImpl : public GLES2Decoder,
+@@ -934,6 +934,7 @@ class GLES2DecoderImpl : public GLES2Decoder,
    // If the color image is a renderbuffer, returns 0 for type.
    GLenum GetBoundReadFramebufferTextureType();
    GLenum GetBoundReadFramebufferInternalFormat();
@@ -72,7 +72,7 @@ index ded091f70df018e0ec3edf716f018ba1c06bb18f..d39a1632e3c23fa1367d22ecb3932e16
  
    // Get the i-th draw buffer's internal format/type from the bound framebuffer.
    // If no framebuffer is bound, or no image is attached, or the DrawBuffers
-@@ -4236,6 +4237,18 @@ GLenum GLES2DecoderImpl::GetBoundReadFramebufferInternalFormat() {
+@@ -4388,6 +4389,18 @@ GLenum GLES2DecoderImpl::GetBoundReadFramebufferInternalFormat() {
    }
  }
  
@@ -91,7 +91,7 @@ index ded091f70df018e0ec3edf716f018ba1c06bb18f..d39a1632e3c23fa1367d22ecb3932e16
  GLenum GLES2DecoderImpl::GetBoundColorDrawBufferType(GLint drawbuffer_i) {
    DCHECK(drawbuffer_i >= 0 &&
           drawbuffer_i < static_cast<GLint>(group_->max_draw_buffers()));
-@@ -13478,6 +13491,12 @@ void GLES2DecoderImpl::DoCopyTexImage2D(
+@@ -13639,6 +13652,12 @@ void GLES2DecoderImpl::DoCopyTexImage2D(
      return;
    }
  
@@ -104,7 +104,7 @@ index ded091f70df018e0ec3edf716f018ba1c06bb18f..d39a1632e3c23fa1367d22ecb3932e16
    GLenum read_format = GetBoundReadFramebufferInternalFormat();
    GLenum read_type = GetBoundReadFramebufferTextureType();
    if (!ValidateCopyTexFormat(func_name, internal_format,
-@@ -13730,6 +13749,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage2D(
+@@ -13891,6 +13910,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage2D(
      return;
    }
  
@@ -117,7 +117,7 @@ index ded091f70df018e0ec3edf716f018ba1c06bb18f..d39a1632e3c23fa1367d22ecb3932e16
    GLenum read_format = GetBoundReadFramebufferInternalFormat();
    GLenum read_type = GetBoundReadFramebufferTextureType();
    if (!ValidateCopyTexFormat(func_name, internal_format,
-@@ -13861,6 +13886,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage3D(
+@@ -14022,6 +14047,12 @@ void GLES2DecoderImpl::DoCopyTexSubImage3D(
      return;
    }
  

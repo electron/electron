@@ -29,10 +29,10 @@ Cr-Commit-Position: refs/branch-heads/7827@{#3693}
 Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
 
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index d39a1632e3c23fa1367d22ecb3932e160f06fe8d..a2f75be5ef8abfac071289bcf59d7337486e8d3c 100644
+index 7f8c1cf4869ec31185b6ff5c64b09d93ad2a3140..4e411474542dc846942fe630b1dca64d014ae8c7 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-@@ -12269,11 +12269,16 @@ bool GLES2DecoderImpl::ClearLevelUsingGL(Texture* texture,
+@@ -12423,11 +12423,16 @@ bool GLES2DecoderImpl::ClearLevelUsingGL(Texture* texture,
      result = true;
    }
    RestoreClearState();
