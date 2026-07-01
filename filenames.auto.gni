@@ -176,6 +176,7 @@ auto_filenames = {
     "docs/api/structures/webauthn-account.md",
     "docs/api/structures/window-open-handler-response.md",
     "docs/api/structures/window-session-end-event.md",
+    "docs/api/structures/window-state-persistence.md",
   ]
 
   node_header_sources = [

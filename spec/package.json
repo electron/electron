@@ -13,6 +13,7 @@
     "@electron-ci/is-valid-window": "*",
     "@electron-ci/osr-gpu": "*",
     "@electron-ci/uv-dlopen": "*",
+    "@electron-ci/virtual-display": "*",
     "@electron/fuses": "^2.1.2",
     "@electron/packager": "^18.3.2",
     "@types/basic-auth": "^1.1.8",

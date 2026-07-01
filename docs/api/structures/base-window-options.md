@@ -42,6 +42,8 @@
   Default is `false`.
 * `hiddenInMissionControl` boolean (optional) _macOS_ - Whether window should be hidden when the user toggles into mission control.
 * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
+* `name` string (optional) - A unique identifier for the window, used internally by Electron to enable features such as state persistence. Each window must have a distinct name. It can only be reused after the corresponding window has been destroyed. An error is thrown if the name is already in use. This is not the visible title shown to users on the title bar.
+* `windowStatePersistence` ([WindowStatePersistence](window-state-persistence.md) | boolean) (optional) - Configures or enables the persistence of window state (position, size, maximized state, etc.) across application restarts. Has no effect if window `name` is not provided. Automatically disabled when there is no available display. _Experimental_
 * `title` string (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
 * `icon` ([NativeImage](../native-image.md) | string) (optional) - The window icon. On Windows it is
   recommended to use `ICO` icons to get best visual effects, you can also
@@ -94,7 +96,7 @@
     title bar and a full size content window, the traffic light buttons will
     display when being hovered over in the top left of the window.
     **Note:** This option is currently experimental.
-* `titleBarOverlay` Object | Boolean (optional) -  When using a frameless window in conjunction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Specifying `true` will result in an overlay with default system colors. Default is `false`.
+* `titleBarOverlay` Object | boolean (optional) -  When using a frameless window in conjunction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Specifying `true` will result in an overlay with default system colors. Default is `false`.
   * `color` String (optional) _Windows_ _Linux_ - The CSS color of the Window Controls Overlay when enabled. Default is the system color.
   * `symbolColor` String (optional) _Windows_ _Linux_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
   * `height` Integer (optional) - The height of the title bar and Window Controls Overlay in pixels. Default is system height.

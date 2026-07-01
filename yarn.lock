@@ -468,6 +468,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@electron-ci/virtual-display@npm:*, @electron-ci/virtual-display@workspace:spec/fixtures/native-addon/virtual-display":
+  version: 0.0.0-use.local
+  resolution: "@electron-ci/virtual-display@workspace:spec/fixtures/native-addon/virtual-display"
+  dependencies:
+    node-addon-api: "npm:^8.3.0"
+  languageName: unknown
+  linkType: soft
+
 "@electron/asar@npm:^3.2.13":
   version: 3.2.13
   resolution: "@electron/asar@npm:3.2.13"
@@ -3966,6 +3974,7 @@ __metadata:
     "@electron-ci/is-valid-window": "npm:*"
     "@electron-ci/osr-gpu": "npm:*"
     "@electron-ci/uv-dlopen": "npm:*"
+    "@electron-ci/virtual-display": "npm:*"
     "@electron/fuses": "npm:^2.1.2"
     "@electron/packager": "npm:^18.3.2"
     "@types/basic-auth": "npm:^1.1.8"
@@ -7738,6 +7747,15 @@ __metadata:
   dependencies:
     node-gyp: "npm:latest"
   checksum: 10c0/20eb231362cc07c62d9839164473744d985be5d82685214f3750d990d9f61ef366e0ba112a766c925d640ed29b2a500b83568e895dc2444dcd5db01e615aac2b
+  languageName: node
+  linkType: hard
+
+"node-addon-api@npm:^8.3.0":
+  version: 8.7.0
+  resolution: "node-addon-api@npm:8.7.0"
+  dependencies:
+    node-gyp: "npm:latest"
+  checksum: 10c0/31a03b00f6b0753ab08360952fdf80a1abb619dcf8125fa1ab07e3a414da050963440c3a86c77a0334c0be7a71acb5e242dc468b79201ee6151c7b943afe946d
   languageName: node
   linkType: hard
 
