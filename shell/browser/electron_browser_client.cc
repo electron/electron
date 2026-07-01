@@ -1623,9 +1623,25 @@ void ElectronBrowserClient::
       content::WebContents::FromRenderFrameHost(&render_frame_host);
   if (contents) {
     auto* prefs = WebContentsPreferences::From(contents);
+    // DevTools frontends and the DevTools pages of extensions run in
+    // subframes but still need the ipcRenderer bridge to bootstrap (they
+    // fetch their preload paths over it). Mirror the same policy as
+    // RendererClientBase::ShouldLoadPreload() and
+    // WebContents::MaybeSendRendererStartupData(), which already treat
+    // devtools:// and chrome-extension:// documents like main frames.
+    // GetLastCommittedURL() is empty at this point (the frame has not
+    // navigated yet), so key off the SiteInstance's site URL instead.
+    const GURL& site = render_frame_host.GetSiteInstance()
+                           ->GetSecurityPrincipal()
+                           .GetDeprecatedSiteURL();
+    bool is_devtools_like = site.SchemeIs(content::kChromeDevToolsScheme);
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+    is_devtools_like |= site.SchemeIs(extensions::kExtensionScheme);
+#endif
     if (render_frame_host.GetFrameTreeNodeId() ==
             contents->GetPrimaryMainFrame()->GetFrameTreeNodeId() ||
-        (prefs && prefs->AllowsNodeIntegrationInSubFrames())) {
+        (prefs && prefs->AllowsNodeIntegrationInSubFrames()) ||
+        is_devtools_like) {
       associated_registry.AddInterface<mojom::ElectronApiIPC>(
           base::BindRepeating(
               [](content::RenderFrameHost* render_frame_host,
