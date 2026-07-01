@@ -156,6 +156,10 @@ class WebContentsZoomController
   // The current zoom level.
   double zoom_level_;
 
+  // A zoom level requested before the current frame had a navigated URL.
+  // It is applied once the first navigation commits and a host is available.
+  std::optional<double> pending_zoom_level_;
+
   // The current default zoom factor.
   double default_zoom_factor_;
 

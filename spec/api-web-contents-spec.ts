@@ -2258,6 +2258,21 @@ describe('webContents module', () => {
       }
     });
 
+    it('applies zoom before the first navigation commits', async () => {
+      const server = http.createServer((req, res) => {
+        res.end('<html><body>hello</body></html>');
+      });
+      const { url: serverUrl } = await listen(server);
+      defer(() => server.close());
+
+      const w = new BrowserWindow({ show: false });
+      w.webContents.setZoomFactor(1.5);
+
+      await w.loadURL(serverUrl);
+
+      expect(w.webContents.getZoomFactor()).to.be.closeTo(1.5, 0.05);
+    });
+
     it('can persist zoom level across navigation', (done) => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       let finalNavigation = false;

@@ -114,10 +114,11 @@ bool WebContentsZoomController::SetZoomLevel(double level) {
   } else {
     const GURL url = content::HostZoomMap::GetURLForRenderFrameHost(rfh_id);
     if (url.is_empty()) {
-      // If we exit without triggering an update, we should clear event_data_,
-      // else we may later trigger a DCHECK(event_data_).
+      // If the page has not navigated to a concrete URL yet, remember the
+      // requested zoom level and apply it once the first navigation commits.
+      pending_zoom_level_ = level;
       event_data_.reset();
-      return false;
+      return true;
     }
     std::string host = net::GetHostOrSpecFromURL(url);
     zoom_map->SetZoomLevelForHost(host, level);
@@ -305,6 +306,12 @@ void WebContentsZoomController::ProcessNavigationZoom(
   if (!navigation_handle->IsSameDocument()) {
     ResetZoomModeOnNavigationIfNeeded(navigation_handle->GetURL());
     SetZoomFactorOnNavigationIfNeeded(navigation_handle->GetURL());
+
+    if (pending_zoom_level_) {
+      const double level = *pending_zoom_level_;
+      pending_zoom_level_.reset();
+      SetZoomLevel(level);
+    }
 
     // If the main frame's content has changed, the new page may have a
     // different zoom level from the old one.
