@@ -2427,18 +2427,20 @@ void WebContents::DidFinishNavigation(
           zc->ProcessNavigationZoom(navigation_handle);
         Emit("did-navigate", url, http_response_code, http_status_text);
       }
-
-      content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
-
-      // This check is needed due to an issue in Chromium
-      // Upstream is open to patching:
-      // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
-      // If a history entry has been made and the forward/back call has been
-      // made, proceed with setting the new title
-      if (entry &&
-          (entry->GetTransitionType() & ui::PAGE_TRANSITION_FORWARD_BACK))
-        WebContents::TitleWasSet(entry);
     }
+
+    content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
+
+    // This check is needed due to an issue in Chromium
+    // Upstream is open to patching:
+    // https://bugs.chromium.org/p/chromium/issues/detail?id=1178663
+    // If a history entry has been made and the forward/back call has been
+    // made, proceed with setting the new title
+    if (is_main_frame && entry &&
+        (navigation_handle->GetPageTransition() &
+         ui::PAGE_TRANSITION_FORWARD_BACK))
+      NotifyPageTitleUpdated(entry, is_same_document);
+
     if (is_guest())
       Emit("load-commit", url, is_main_frame);
   } else {
@@ -2460,7 +2462,9 @@ void WebContents::DidFinishNavigation(
   }
 }
 
-void WebContents::TitleWasSet(content::NavigationEntry* entry) {
+void WebContents::NotifyPageTitleUpdated(
+    content::NavigationEntry* entry,
+    bool from_same_document_history_navigation) {
   std::u16string final_title;
   bool explicit_set = true;
   if (entry) {
@@ -2476,8 +2480,13 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
     final_title = web_contents()->GetTitle();
   }
   observers_.Notify(&ExtendedWebContentsObserver::OnPageTitleUpdated,
-                    final_title, explicit_set);
+                    final_title, explicit_set,
+                    from_same_document_history_navigation);
   Emit("page-title-updated", final_title, explicit_set);
+}
+
+void WebContents::TitleWasSet(content::NavigationEntry* entry) {
+  NotifyPageTitleUpdated(entry, false);
 }
 
 void WebContents::DidUpdateFaviconURL(
