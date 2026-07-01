@@ -168,10 +168,10 @@ index 06a4f8a239855571dcc67cd81e7da7a255a9ebfd..1fa9e314ad796cdf74f718f0eb2a1553
      }
  
 diff --git a/node.gyp b/node.gyp
-index 27402b3061afba6112a77f31d1b4c7c0d2526ba0..6719cd91d48676ed551b748b1ff3ec2f21d08e86 100644
+index 6387b945506278085dff461aeff51e5d20f457e6..679941992c86ca02070d3df55e194d6904bda646 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -185,9 +185,9 @@
+@@ -186,9 +186,9 @@
        'src/timers.cc',
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
@@ -182,7 +182,7 @@ index 27402b3061afba6112a77f31d1b4c7c0d2526ba0..6719cd91d48676ed551b748b1ff3ec2f
        'src/tracing/traced_value.cc',
        'src/tty_wrap.cc',
        'src/udp_wrap.cc',
-@@ -320,9 +320,9 @@
+@@ -322,9 +322,9 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',
