@@ -9,7 +9,7 @@ on:
         required: true
       target-arch:
         type: string
-        description: 'Arch to build for, can be x64, arm64 or arm'
+        description: 'Arch to build for, can be x64 or arm64'
         required: true
       test-runs-on:
         type: string

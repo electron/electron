@@ -49,7 +49,7 @@ jobs:
         - /var/run/sas:/var/run/sas
     env:
       CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
@@ -81,27 +81,6 @@ jobs:
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       target-platform: linux
       target-arch: x64
-      is-release: true
-      publish: true
-      gn-build-type: release
-      generate-symbols: true
-      upload-to-storage: ${{ inputs.upload-to-storage }}
-    secrets: inherit
-
-  publish-arm:
-    uses: ./.github/workflows/pipeline-segment-electron-publish.yml
-    permissions:
-      artifact-metadata: write
-      attestations: write
-      contents: read
-      id-token: write
-    needs: [setup, checkout-linux, build-siso]
-    with:
-      environment: production-release
-      build-runs-on: electron-arc-centralus-linux-amd64-32core
-      build-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
-      target-platform: linux
-      target-arch: arm
       is-release: true
       publish: true
       gn-build-type: release
