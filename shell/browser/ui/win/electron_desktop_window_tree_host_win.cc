@@ -127,7 +127,17 @@ bool ElectronDesktopWindowTreeHostWin::GetClientAreaInsets(
       // windows with standard frames. Non-resizable windows still get input
       // insets for stable bounds and so they can be dragged from outer edges,
       // also like in windows with standard frames.
-      *insets = gfx::Insets::TLBR(0, frame_thickness, frame_thickness,
+      //
+      // On Windows 11, DWM draws a 1px system border on all 4 sides of the
+      // window, overlapping 1px of client content on each edge. The
+      // left/right/bottom are already covered by frame_thickness insets above.
+      // Add a matching 1px top inset on Win11 so the top edge of web content
+      // is not clipped by the DWM border. Windows 10 is unaffected: its system
+      // border only overlaps edges that have non-zero insets.
+      const auto* os_info = base::win::OSInfo::GetInstance();
+      const int top_inset =
+          os_info->version() >= base::win::Version::WIN11 ? 1 : 0;
+      *insets = gfx::Insets::TLBR(top_inset, frame_thickness, frame_thickness,
                                   frame_thickness);
       return true;
     }

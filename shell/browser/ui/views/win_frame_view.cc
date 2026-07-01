@@ -12,6 +12,8 @@
 #include <dwmapi.h>
 #include <memory>
 
+#include "base/win/windows_version.h"
+
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_caption_button_container.h"
 #include "ui/base/metadata/metadata_impl_macros.h"
@@ -302,8 +304,14 @@ gfx::Insets WinFrameView::RestoredFrameBorderInsets() const {
   // TODO(mitchchn): despite the name, this method gives the correct
   // DPI-adjusted insets for the sides, not the top, when restored.
   const int thickness = FrameTopBorderThickness(/*restored=*/true);
-  // Inverse of ResizingBorderHitTest: resize insets go on sides but not top.
-  return gfx::Insets::TLBR(0, thickness, thickness, thickness);
+  // On Windows 11, DWM draws a 1px system border overlapping all 4 sides of
+  // the client area, so include a 1px top inset to match the left/right/bottom
+  // behavior and correctly account for the DWM border in Views layout.
+  // On Windows 10 the top is left at 0 (unchanged behavior).
+  const auto* os_info = base::win::OSInfo::GetInstance();
+  const int top_inset =
+      os_info->version() >= base::win::Version::WIN11 ? 1 : 0;
+  return gfx::Insets::TLBR(top_inset, thickness, thickness, thickness);
 }
 
 BEGIN_METADATA(WinFrameView)
