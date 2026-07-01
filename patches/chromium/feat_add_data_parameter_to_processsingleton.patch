@@ -65,7 +65,7 @@ index f076d0f783e2c0f6b5444002f756001adf2729bd..a03d99f929e2d354cdba969567d78156
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c643a39611e 100644
+index 55f935f38bf05586650e7a83a689347bb41a45a4..b1d84a3c235cb4688b46e3bf36ec3cc0df993b22 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -621,6 +621,7 @@ class ProcessSingleton::LinuxWatcher
@@ -106,6 +106,15 @@ index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c64
    const size_t kMinMessageLength = kStartToken.length() + 4;
    if (bytes_read_ < kMinMessageLength) {
      buf_[bytes_read_] = 0;
+@@ -729,7 +735,7 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
+       base::as_string_view(base::span(buf_).first(bytes_read_));
+   std::vector<std::string> tokens =
+       base::SplitString(str, std::string(1, kTokenDelimiter),
+-                        base::TRIM_WHITESPACE, base::SPLIT_WANT_ALL);
++                        base::KEEP_WHITESPACE, base::SPLIT_WANT_ALL);
+ 
+   if (tokens.size() < 3 || tokens[0] != kStartToken) {
+     LOG(ERROR) << "Wrong message format: " << str;
 @@ -747,10 +753,45 @@ void ProcessSingleton::LinuxWatcher::SocketReader::
    tokens.erase(tokens.begin());
    tokens.erase(tokens.begin());
