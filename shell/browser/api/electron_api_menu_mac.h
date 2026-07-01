@@ -36,7 +36,7 @@ class MenuMac : public Menu {
                ui::mojom::MenuSourceType source_type,
                base::OnceClosure callback) override;
   void PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
-                 const base::WeakPtr<WebFrameMain>& frame,
+                 cppgc::WeakPersistent<WebFrameMain> frame,
                  int32_t window_id,
                  int x,
                  int y,

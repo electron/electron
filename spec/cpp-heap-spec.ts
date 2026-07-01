@@ -879,6 +879,102 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('webFrameMain module', () => {
+    it('does not crash on exit with live frame wrappers', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, BrowserWindow } = require('electron');
+
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL('about:blank');
+
+        (globalThis as any).frameRefs = [w.webContents.mainFrame, ...w.webContents.mainFrame.framesInSubtree];
+
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should be rooted while the frame is live', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { BrowserWindow } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL('about:blank');
+
+          console.log(w.webContents.mainFrame.url);
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const rooted = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / WebFrameMain']);
+
+          w.destroy();
+          return rooted;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'WebFrameMain should stay rooted via SelfKeepAlive while the frame is live');
+    });
+
+    it('should be released after the frame is destroyed', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string) => {
+          const { app, BrowserWindow } = require('electron');
+          const { recordState } = require(heap);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          // Keep the app alive when the window closes so we can snapshot.
+          app.on('window-all-closed', () => {});
+
+          const collectGarbage = async () => {
+            for (let i = 0; i < 10; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+            }
+          };
+
+          const countFrames = (snapshot: any[]) =>
+            snapshot.filter((node) => node.name === 'Electron / WebFrameMain' && node.type !== 'string').length;
+
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL('data:text/html,<iframe src="about:blank"></iframe>');
+
+          const mainFrame = w.webContents.mainFrame;
+          console.log('subframes:', mainFrame.frames.length);
+
+          await collectGarbage();
+          const before = countFrames(recordState().snapshot);
+
+          await w.loadURL('about:blank');
+          await collectGarbage();
+          const after = countFrames(recordState().snapshot);
+
+          w.destroy();
+          return { before, after };
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+      );
+      expect(result.before).to.equal(2, 'main frame and subframe wrappers should both be live before navigation');
+      expect(result.after).to.equal(
+        1,
+        'subframe WebFrameMain should be released after its frame is destroyed by navigation'
+      );
+    });
+  });
+
   describe('internal event', () => {
     it('should record as node in heap snapshot', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals']);
