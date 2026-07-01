@@ -2375,6 +2375,19 @@ describe('BrowserWindow module', () => {
             expect(w.fullScreen).to.be.true();
           });
 
+          it('fills the display when fullscreen and non-resizable', () => {
+            const display = screen.getPrimaryDisplay();
+            const w = new BrowserWindow({
+              frame: false,
+              resizable: false,
+              fullscreen: true,
+              width: 0
+            });
+
+            expect(w.fullScreen).to.be.true();
+            expectBoundsEqual(w.getBounds(), display.bounds);
+          });
+
           it('can be changed', () => {
             w.fullScreen = false;
             expect(w.fullScreen).to.be.false();
