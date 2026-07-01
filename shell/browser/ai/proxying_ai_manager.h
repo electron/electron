@@ -58,37 +58,46 @@ class ProxyingAIManager : public base::SupportsUserData::Data,
   void CreateLanguageModel(
       mojo::PendingRemote<blink::mojom::AIManagerCreateLanguageModelClient>
           client,
-      blink::mojom::AILanguageModelCreateOptionsPtr options) override;
+      blink::mojom::AILanguageModelCreateOptionsPtr options,
+      mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
+      override;
   void CanCreateSummarizer(blink::mojom::AISummarizerCreateOptionsPtr options,
                            CanCreateSummarizerCallback callback) override;
   void CreateSummarizer(
       mojo::PendingRemote<blink::mojom::AIManagerCreateSummarizerClient> client,
-      blink::mojom::AISummarizerCreateOptionsPtr options) override;
+      blink::mojom::AISummarizerCreateOptionsPtr options,
+      mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
+      override;
   void GetLanguageModelParams(GetLanguageModelParamsCallback callback) override;
   void CanCreateWriter(blink::mojom::AIWriterCreateOptionsPtr options,
                        CanCreateWriterCallback callback) override;
   void CreateWriter(
       mojo::PendingRemote<blink::mojom::AIManagerCreateWriterClient> client,
-      blink::mojom::AIWriterCreateOptionsPtr options) override;
+      blink::mojom::AIWriterCreateOptionsPtr options,
+      mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
+      override;
   void CanCreateRewriter(blink::mojom::AIRewriterCreateOptionsPtr options,
                          CanCreateRewriterCallback callback) override;
   void CreateRewriter(
       mojo::PendingRemote<blink::mojom::AIManagerCreateRewriterClient> client,
-      blink::mojom::AIRewriterCreateOptionsPtr options) override;
+      blink::mojom::AIRewriterCreateOptionsPtr options,
+      mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
+      override;
   void CanCreateProofreader(blink::mojom::AIProofreaderCreateOptionsPtr options,
                             CanCreateProofreaderCallback callback) override;
   void CreateProofreader(
       mojo::PendingRemote<blink::mojom::AIManagerCreateProofreaderClient>
           client,
-      blink::mojom::AIProofreaderCreateOptionsPtr options) override;
+      blink::mojom::AIProofreaderCreateOptionsPtr options,
+      mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
+      override;
   void CanCreateClassifier(blink::mojom::AIClassifierCreateOptionsPtr options,
                            CanCreateClassifierCallback callback) override;
   void CreateClassifier(
       mojo::PendingRemote<blink::mojom::AIManagerCreateClassifierClient> client,
-      blink::mojom::AIClassifierCreateOptionsPtr options) override;
-  void AddModelDownloadProgressObserver(
-      mojo::PendingRemote<on_device_model::mojom::DownloadObserver>
-          observer_remote) override;
+      blink::mojom::AIClassifierCreateOptionsPtr options,
+      mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
+      override;
 
   mojo::ReceiverSet<blink::mojom::AIManager> receivers_;
 

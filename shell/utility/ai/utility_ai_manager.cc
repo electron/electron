@@ -368,7 +368,8 @@ void UtilityAIManager::CanCreateLanguageModel(
 void UtilityAIManager::CreateLanguageModel(
     mojo::PendingRemote<blink::mojom::AIManagerCreateLanguageModelClient>
         client,
-    blink::mojom::AILanguageModelCreateOptionsPtr options) {
+    blink::mojom::AILanguageModelCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   v8::Global<v8::Object>& language_model_class = GetLanguageModelClass();
 
   // Can't create language model if there's no language model class
@@ -488,7 +489,8 @@ void UtilityAIManager::CanCreateSummarizer(
 
 void UtilityAIManager::CreateSummarizer(
     mojo::PendingRemote<blink::mojom::AIManagerCreateSummarizerClient> client,
-    blink::mojom::AISummarizerCreateOptionsPtr options) {
+    blink::mojom::AISummarizerCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 
@@ -506,7 +508,8 @@ void UtilityAIManager::CanCreateWriter(
 
 void UtilityAIManager::CreateWriter(
     mojo::PendingRemote<blink::mojom::AIManagerCreateWriterClient> client,
-    blink::mojom::AIWriterCreateOptionsPtr options) {
+    blink::mojom::AIWriterCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 
@@ -519,7 +522,8 @@ void UtilityAIManager::CanCreateRewriter(
 
 void UtilityAIManager::CreateRewriter(
     mojo::PendingRemote<blink::mojom::AIManagerCreateRewriterClient> client,
-    blink::mojom::AIRewriterCreateOptionsPtr options) {
+    blink::mojom::AIRewriterCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 
@@ -532,7 +536,8 @@ void UtilityAIManager::CanCreateProofreader(
 
 void UtilityAIManager::CreateProofreader(
     mojo::PendingRemote<blink::mojom::AIManagerCreateProofreaderClient> client,
-    blink::mojom::AIProofreaderCreateOptionsPtr options) {
+    blink::mojom::AIProofreaderCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 
@@ -545,13 +550,8 @@ void UtilityAIManager::CanCreateClassifier(
 
 void UtilityAIManager::CreateClassifier(
     mojo::PendingRemote<blink::mojom::AIManagerCreateClassifierClient> client,
-    blink::mojom::AIClassifierCreateOptionsPtr options) {
-  NOTIMPLEMENTED();
-}
-
-void UtilityAIManager::AddModelDownloadProgressObserver(
-    mojo::PendingRemote<on_device_model::mojom::DownloadObserver>
-        observer_remote) {
+    blink::mojom::AIClassifierCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 

@@ -102,7 +102,8 @@ void ProxyingAIManager::CanCreateLanguageModel(
 void ProxyingAIManager::CreateLanguageModel(
     mojo::PendingRemote<blink::mojom::AIManagerCreateLanguageModelClient>
         client,
-    blink::mojom::AILanguageModelCreateOptionsPtr options) {
+    blink::mojom::AILanguageModelCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   // Proxy the call through to the utility process
   auto& ai_manager = GetAIManagerRemote();
 
@@ -115,7 +116,8 @@ void ProxyingAIManager::CreateLanguageModel(
     return;
   }
 
-  ai_manager->CreateLanguageModel(std::move(client), std::move(options));
+  ai_manager->CreateLanguageModel(std::move(client), std::move(options),
+                                  std::move(monitor));
 }
 
 void ProxyingAIManager::CanCreateSummarizer(
@@ -127,7 +129,8 @@ void ProxyingAIManager::CanCreateSummarizer(
 
 void ProxyingAIManager::CreateSummarizer(
     mojo::PendingRemote<blink::mojom::AIManagerCreateSummarizerClient> client,
-    blink::mojom::AISummarizerCreateOptionsPtr options) {
+    blink::mojom::AISummarizerCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 
@@ -145,7 +148,8 @@ void ProxyingAIManager::CanCreateWriter(
 
 void ProxyingAIManager::CreateWriter(
     mojo::PendingRemote<blink::mojom::AIManagerCreateWriterClient> client,
-    blink::mojom::AIWriterCreateOptionsPtr options) {
+    blink::mojom::AIWriterCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 
@@ -158,7 +162,8 @@ void ProxyingAIManager::CanCreateRewriter(
 
 void ProxyingAIManager::CreateRewriter(
     mojo::PendingRemote<blink::mojom::AIManagerCreateRewriterClient> client,
-    blink::mojom::AIRewriterCreateOptionsPtr options) {
+    blink::mojom::AIRewriterCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 
@@ -171,7 +176,8 @@ void ProxyingAIManager::CanCreateProofreader(
 
 void ProxyingAIManager::CreateProofreader(
     mojo::PendingRemote<blink::mojom::AIManagerCreateProofreaderClient> client,
-    blink::mojom::AIProofreaderCreateOptionsPtr options) {
+    blink::mojom::AIProofreaderCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 
@@ -184,13 +190,8 @@ void ProxyingAIManager::CanCreateClassifier(
 
 void ProxyingAIManager::CreateClassifier(
     mojo::PendingRemote<blink::mojom::AIManagerCreateClassifierClient> client,
-    blink::mojom::AIClassifierCreateOptionsPtr options) {
-  NOTIMPLEMENTED();
-}
-
-void ProxyingAIManager::AddModelDownloadProgressObserver(
-    mojo::PendingRemote<on_device_model::mojom::DownloadObserver>
-        observer_remote) {
+    blink::mojom::AIClassifierCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 
