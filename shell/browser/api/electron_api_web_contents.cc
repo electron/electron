@@ -219,6 +219,14 @@
 #include "chrome/browser/hang_monitor/hang_crash_dump.h"  // nogncheck
 #endif
 
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+#include "chrome/browser/spellchecker/spellcheck_factory.h"
+#include "chrome/browser/spellchecker/spellcheck_service.h"
+#include "components/spellcheck/browser/spellcheck_platform.h"
+#include "components/spellcheck/common/spellcheck_common.h"
+#include "components/spellcheck/common/spellcheck_features.h"
+#endif
+
 namespace gin {
 
 #if BUILDFLAG(ENABLE_PRINTING)
@@ -1777,6 +1785,21 @@ void WebContents::OnReadAvailableTypes(
     return;
   }
 
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+  if (!params.misspelled_word.empty() && spellcheck::UseBrowserSpellChecker()) {
+    SpellcheckService* spellcheck_service =
+        SpellcheckServiceFactory::GetForContext(GetBrowserContext());
+    if (spellcheck_service) {
+      spellcheck_platform::GetPerLanguageSuggestions(
+          spellcheck_service->platform_spell_checker(), params.misspelled_word,
+          base::BindOnce(&WebContents::OnGetPlatformSuggestionsComplete,
+                         GetWeakPtr(), params, render_frame_host_id,
+                         std::move(types)));
+      return;
+    }
+  }
+#endif
+
   ContextMenuParamsWithRenderFrameHost event_data{
       params,
       render_frame_host,
@@ -1784,6 +1807,38 @@ void WebContents::OnReadAvailableTypes(
   };
   Emit("context-menu", event_data);
 }
+
+#if BUILDFLAG(IS_WIN) && BUILDFLAG(USE_BROWSER_SPELLCHECKER)
+void WebContents::OnGetPlatformSuggestionsComplete(
+    content::ContextMenuParams params,
+    content::GlobalRenderFrameHostId render_frame_host_id,
+    std::vector<std::u16string> types,
+    const spellcheck::PerLanguageSuggestions&
+        platform_per_language_suggestions) {
+  content::RenderFrameHost* render_frame_host =
+      content::RenderFrameHost::FromID(render_frame_host_id);
+  if (!render_frame_host) {
+    return;
+  }
+
+  // Mirror SpellingMenuObserver: platform results first, then Hunspell as one
+  // language, then round-robin-merge them via FillSuggestions.
+  spellcheck::PerLanguageSuggestions per_language_suggestions =
+      platform_per_language_suggestions;
+  per_language_suggestions.push_back(params.dictionary_suggestions);
+
+  std::vector<std::u16string> combined;
+  spellcheck::FillSuggestions(per_language_suggestions, &combined);
+  params.dictionary_suggestions = std::move(combined);
+
+  ContextMenuParamsWithRenderFrameHost event_data{
+      params,
+      render_frame_host,
+      !types.empty(),
+  };
+  Emit("context-menu", event_data);
+}
+#endif
 
 void WebContents::FindReply(content::WebContents* web_contents,
                             int request_id,
