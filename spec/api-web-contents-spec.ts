@@ -1709,6 +1709,7 @@ describe('webContents module', () => {
     });
 
     it('can correctly convert accelerators to key codes', async () => {
+      await w.webContents.executeJavaScript('document.getElementById("input").focus()');
       const keyup = once(ipcMain, 'keyup');
       w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
       w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
