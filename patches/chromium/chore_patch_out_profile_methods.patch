@@ -122,7 +122,7 @@ index bc0bad82ebcdceadc505e912ff27202b452fefab..6b77c57fccc4619a1df3b4ed661d2bdd
  
  ProfileSelection ProfileSelections::GetProfileSelection(
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 50011dcf2b2b6f5d99fd59556ef8f9bbafb84c4e..bd513db441d7408d5f521602dd999a7e3949b885 100644
+index 50011dcf2b2b6f5d99fd59556ef8f9bbafb84c4e..bd300c10ca5f8af391df313d59387654a6995351 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -21,8 +21,10 @@
@@ -147,6 +147,18 @@ index 50011dcf2b2b6f5d99fd59556ef8f9bbafb84c4e..bd513db441d7408d5f521602dd999a7e
  }
  
  }  // namespace
+@@ -403,9 +408,11 @@ void SpellcheckService::InitForRenderer(content::RenderProcessHost* host) {
+     }
+   }
+   if (base::FeatureList::IsEnabled(features::kInitialWebUIWithoutSpellCheckForNtp)) {
++#if 0
+     if (host->GetUserData(search::kIsNTPProcessKey)) {
+       return;
+     }
++#endif
+   }
+ 
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 diff --git a/chrome/browser/win/titlebar_config.cc b/chrome/browser/win/titlebar_config.cc
 index 7898ea88ca529660e52c1f9e2517d6f016b740a5..114046912999f4ca9d21f7d5859d14ecaaab9f56 100644
 --- a/chrome/browser/win/titlebar_config.cc
