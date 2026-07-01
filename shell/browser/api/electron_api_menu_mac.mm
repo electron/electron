@@ -74,9 +74,9 @@ void MenuMac::PopupAt(BaseWindow* window,
   if (!native_window)
     return;
 
-  base::WeakPtr<WebFrameMain> weak_frame;
+  cppgc::WeakPersistent<WebFrameMain> weak_frame;
   if (frame && frame.value()) {
-    weak_frame = frame.value()->GetWeakPtr();
+    weak_frame = frame.value();
   }
 
   // Make sure the Menu object would not be garbage-collected until the callback
@@ -88,8 +88,8 @@ void MenuMac::PopupAt(BaseWindow* window,
       &MenuMac::PopupOnUI,
       gin::WrapPersistent(weak_cell_factory_.GetWeakCell(
           isolate->GetCppHeap()->GetAllocationHandle())),
-      native_window->GetWeakPtr(), weak_frame, window->weak_map_id(), x, y,
-      positioning_item, std::move(callback_with_ref));
+      native_window->GetWeakPtr(), std::move(weak_frame), window->weak_map_id(),
+      x, y, positioning_item, std::move(callback_with_ref));
   base::SequencedTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
                                                            std::move(popup));
 }
@@ -120,7 +120,7 @@ v8::Local<v8::Value> Menu::GetUserAcceleratorAt(int command_id) const {
 }
 
 void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
-                        const base::WeakPtr<WebFrameMain>& frame,
+                        cppgc::WeakPersistent<WebFrameMain> frame,
                         int32_t window_id,
                         int x,
                         int y,
@@ -176,28 +176,31 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   [popup_controllers_[window_id]
       setPopupCloseCallback:std::move(close_callback)];
 
-  if (frame && frame->render_frame_host()) {
-    auto* rfh = frame->render_frame_host()->GetOutermostMainFrameOrEmbedder();
-    if (rfh && rfh->IsRenderFrameLive()) {
-      auto* rwhvm =
-          static_cast<content::RenderWidgetHostViewMac*>(rfh->GetView());
-      RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
-      view = cocoa_view;
+  if (WebFrameMain* frame_ptr = frame.Get()) {
+    if (frame_ptr->render_frame_host()) {
+      auto* rfh =
+          frame_ptr->render_frame_host()->GetOutermostMainFrameOrEmbedder();
+      if (rfh && rfh->IsRenderFrameLive()) {
+        auto* rwhvm =
+            static_cast<content::RenderWidgetHostViewMac*>(rfh->GetView());
+        RenderWidgetHostViewCocoa* cocoa_view = rwhvm->GetInProcessNSView();
+        view = cocoa_view;
 
-      // TODO: ui::ShowContextMenu does not dispatch the event correctly
-      // if no frame is found. Fix this to remove if/else condition.
-      NSEvent* dummy_event =
-          [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
-                             location:position
-                        modifierFlags:0
-                            timestamp:0
-                         windowNumber:nswindow.windowNumber
-                              context:nil
-                          eventNumber:0
-                           clickCount:1
-                             pressure:0];
-      ui::ShowContextMenu(menu, dummy_event, view, true);
-      return;
+        // TODO: ui::ShowContextMenu does not dispatch the event correctly
+        // if no frame is found. Fix this to remove if/else condition.
+        NSEvent* dummy_event =
+            [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
+                               location:position
+                          modifierFlags:0
+                              timestamp:0
+                           windowNumber:nswindow.windowNumber
+                                context:nil
+                            eventNumber:0
+                             clickCount:1
+                               pressure:0];
+        ui::ShowContextMenu(menu, dummy_event, view, true);
+        return;
+      }
     }
   }
 
