@@ -190,6 +190,7 @@ cherry-pick-d141d62357df.patch
 cherry-pick-848cf5567223.patch
 cherry-pick-cve-2026-6920.patch
 fix_make_macos_text_replacement_work_on_contenteditable.patch
+frameloader_startnavigation_should_not_allow_emulated_ctrl_click.patch
 cherry-pick-7695218.patch
 cherry-pick-7695435.patch
 cherry-pick-7701234.patch
