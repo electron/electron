@@ -14,10 +14,12 @@
 #include "base/containers/flat_map.h"
 #include "base/containers/flat_set.h"
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_process_host_observer.h"
+#include "content/public/browser/site_instance.h"
 #include "content/public/browser/web_contents.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
@@ -364,12 +366,26 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       content::RenderFrameHost* rfh) const;
 
   bool IsRendererSubFrame(content::ChildProcessId process_id) const;
+  void RegisterPendingProcess(content::ChildProcessId process_id,
+                              content::WebContents* web_contents,
+                              bool is_subframe);
+  void PruneDeadDeferredProcessRegistrations();
 
   // pending_render_process => web contents.
   base::flat_map<content::ChildProcessId, content::WebContents*>
       pending_processes_;
 
   base::flat_set<content::ChildProcessId> renderer_is_subframe_;
+
+  // Registrations from RegisterPendingSiteInstance() for site instances that
+  // did not yet have a process. Drained in SiteInstanceGotProcessAndSite()
+  // before the renderer command line is built.
+  struct DeferredProcessRegistration {
+    base::WeakPtr<content::WebContents> web_contents;
+    bool is_subframe;
+  };
+  base::flat_map<content::SiteInstanceId, DeferredProcessRegistration>
+      deferred_process_registrations_;
 
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;
