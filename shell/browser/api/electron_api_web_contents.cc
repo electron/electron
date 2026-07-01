@@ -2912,7 +2912,8 @@ void WebContents::RestoreHistory(
     v8::Isolate* isolate,
     gin_helper::ErrorThrower thrower,
     int index,
-    const std::vector<v8::Local<v8::Value>>& entries) {
+    const std::vector<v8::Local<v8::Value>>& entries,
+    bool bypass_cache) {
   if (!web_contents()
            ->GetController()
            .GetLastCommittedEntry()
@@ -2952,7 +2953,19 @@ void WebContents::RestoreHistory(
     web_contents()->SetUserAgentOverride(ua_override, false);
     web_contents()->GetController().Restore(
         index, content::RestoreType::kRestored, &navigation_entries);
-    web_contents()->GetController().LoadIfNecessary();
+    if (bypass_cache) {
+      // Load the restored entry directly from the network instead of the
+      // cache. A cached navigation is served without contacting the server, so
+      // any condition that depends on a live network request is not
+      // re-evaluated. Bypassing the cache forces a fresh load so errors such as
+      // an invalid TLS certificate (for example one that expired or changed
+      // since the page was cached) or other network failures surface through
+      // their corresponding events (for example "certificate-error").
+      web_contents()->GetController().Reload(
+          content::ReloadType::BYPASSING_CACHE, /*check_for_repost=*/false);
+    } else {
+      web_contents()->GetController().LoadIfNecessary();
+    }
   }
 }
 
