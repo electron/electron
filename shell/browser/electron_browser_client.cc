@@ -18,6 +18,7 @@
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/memory/self_deleting.h"
 #include "base/no_destructor.h"
 #include "base/notreached.h"
 #include "base/path_service.h"
@@ -1248,8 +1249,8 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
 
     // The FileURLLoaderFactory will delete itself when there are no more
     // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
-    new FileURLLoaderFactory(child_id,
-                             pending_remote.InitWithNewPipeAndPassReceiver());
+    base::MakeSelfDeleting<FileURLLoaderFactory>(
+        child_id, pending_remote.InitWithNewPipeAndPassReceiver());
 
     return pending_remote;
   }
@@ -1258,12 +1259,14 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   FileURLLoaderFactory(const FileURLLoaderFactory&) = delete;
   FileURLLoaderFactory& operator=(const FileURLLoaderFactory&) = delete;
 
- private:
-  explicit FileURLLoaderFactory(
+  FileURLLoaderFactory(
       int child_id,
-      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-      : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)),
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver,
+      base::SelfDeletingPassKey key)
+      : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver), key),
         child_id_(child_id) {}
+
+ private:
   ~FileURLLoaderFactory() override = default;
 
   // network::mojom::URLLoaderFactory:

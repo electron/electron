@@ -25,7 +25,7 @@ or later will be required to run Electron v44.0.0 and higher.
 
 ANGLE is now [statically linked](https://chromium-review.googlesource.com/c/chromium/src/+/7932888)
 into the Electron binary on Linux, matching upstream Chromium. The `libEGL.so` and
-`libGLESv2.so` libraries are no longer shipped in the Linux distribution.
+`libGLESv2.so` libraries shipped in the Linux distribution are dummy files.
 
 Apps that replaced or managed their own ANGLE versions by swapping out these
 libraries can no longer do so on Linux. Additionally, because ANGLE is now part

@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/self_deleting.h"
 #include "base/memory/weak_ptr.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
@@ -137,12 +138,14 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   ElectronURLLoaderFactory(const ElectronURLLoaderFactory&) = delete;
   ElectronURLLoaderFactory& operator=(const ElectronURLLoaderFactory&) = delete;
 
- private:
   ElectronURLLoaderFactory(
       ProtocolType type,
       const ProtocolHandler& handler,
       base::WeakPtr<ElectronBrowserContext> browser_context,
-      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver);
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver,
+      base::SelfDeletingPassKey key);
+
+ private:
   ~ElectronURLLoaderFactory() override;
 
   static void OnComplete(

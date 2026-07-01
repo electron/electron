@@ -2482,7 +2482,8 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
 
 void WebContents::DidUpdateFaviconURL(
     content::RenderFrameHost* render_frame_host,
-    const std::vector<blink::mojom::FaviconURLPtr>& urls) {
+    const std::vector<blink::mojom::FaviconURLPtr>& urls,
+    blink::mojom::FaviconUpdateReason reason) {
   base::flat_set<GURL> unique_urls;
   unique_urls.reserve(std::size(urls));
   for (const auto& iter : urls) {

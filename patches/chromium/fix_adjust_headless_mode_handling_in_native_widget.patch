@@ -67,10 +67,10 @@ index ccff9b38717fc59563f75aea8ea502a942717c42..1209f74f28b5d6c642e207c08fd03b00
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index ad1023aef057be560e8c0dd45122ef6f7df49a0d..9bf86e5e5a27da63e3538327d0d919c488da4483 100644
+index dda3095ffb5a98357a7c8fa2749a6114b98b3602..fab74ca42bb7c08c71b5f59a02fade71b0c9fe64 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -570,7 +570,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -573,7 +573,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    is_translucent_window_ = params->is_translucent;
    pending_restoration_data_ = params->state_restoration_data.Clone();
  
@@ -94,7 +94,7 @@ index a41254c1f31654c1326b4bf1f29237bdf44bbe5a..8ca5673a225b69b5630383ed9673653b
    StateRestorationData? state_restoration_data;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 23a238cd16fa3255980e1f8ad735a6e45c6e5ebb..817fb094dfa9b257c4992157defa7e7bca03f932 100644
+index 9f2bc6393ad91af7c442e6d2f59dcd6929a0476e..c3d5a8cc3257817ac9a5db6c15a98fb5f8a8d5aa 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -572,6 +572,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
@@ -106,10 +106,10 @@ index 23a238cd16fa3255980e1f8ad735a6e45c6e5ebb..817fb094dfa9b257c4992157defa7e7b
    bool is_visible_on_all_workspaces_ = false;
    gfx::Rect window_bounds_before_fullscreen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 666bf4f7b26b77c54840e03b3f792fdbc9ec0163..c613e34ba127b1aa1e003479ad052993b2c84a90 100644
+index 245c62832f4da50e8951470a3297670faa3991be..e0a9418397398f8a8483fabd933be3ead64f2497 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -485,6 +485,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -486,6 +486,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    if (!is_tooltip) {
      tooltip_manager_ = std::make_unique<TooltipManagerMac>(GetNSWindowMojo());
    }
@@ -117,7 +117,7 @@ index 666bf4f7b26b77c54840e03b3f792fdbc9ec0163..c613e34ba127b1aa1e003479ad052993
  
    if (params.workspace.length()) {
      if (std::optional<std::vector<uint8_t>> restoration_data =
-@@ -502,6 +503,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -503,6 +504,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
      window_params->modal_type = widget->widget_delegate()->GetModalType();
      window_params->is_translucent =
          params.opacity == Widget::InitParams::WindowOpacity::kTranslucent;
@@ -125,7 +125,7 @@ index 666bf4f7b26b77c54840e03b3f792fdbc9ec0163..c613e34ba127b1aa1e003479ad052993
      window_params->is_tooltip = is_tooltip;
  
      // macOS likes to put shadows on most things. However, frameless windows
-@@ -691,9 +693,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -694,9 +696,10 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
    // case it will never become visible but we want its compositor to produce
    // frames for screenshooting and screencasting.
    UpdateCompositorProperties();
@@ -139,7 +139,7 @@ index 666bf4f7b26b77c54840e03b3f792fdbc9ec0163..c613e34ba127b1aa1e003479ad052993
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index a4e9aa6ca8d059a25723bdefd3898ea789b91783..2bef2e27a2d352ade1b6e6386dca8add928c4d37 100644
+index 0585e8669d9523b963ea53159846cf010d06d6cd..048dafbff51d32645ca0dc22cb2910668f367aff 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
 @@ -239,6 +239,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
@@ -161,7 +161,7 @@ index a4e9aa6ca8d059a25723bdefd3898ea789b91783..2bef2e27a2d352ade1b6e6386dca8add
  void Widget::InitParams::SetParent(Widget* parent_widget) {
    SetParent(parent_widget->GetNativeView());
  }
-@@ -495,6 +507,7 @@ void Widget::Init(InitParams params) {
+@@ -502,6 +514,7 @@ void Widget::Init(InitParams params) {
  
    params.child |= (params.type == InitParams::TYPE_CONTROL);
    is_top_level_ = !params.child;
@@ -170,7 +170,7 @@ index a4e9aa6ca8d059a25723bdefd3898ea789b91783..2bef2e27a2d352ade1b6e6386dca8add
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 84be24eab26ddd996f9fd031a13487384ac94c86..83a5b89f3433d7e1057d0d2c112cd354a0a32bf9 100644
+index 3755baa09592a17390872731d07b2e3da07147d3..621f701225a6a9a948930d9f3f5ed8775b5ae34a 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -327,6 +327,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -207,7 +207,7 @@ index 84be24eab26ddd996f9fd031a13487384ac94c86..83a5b89f3433d7e1057d0d2c112cd354
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1746,6 +1759,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1749,6 +1762,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  
