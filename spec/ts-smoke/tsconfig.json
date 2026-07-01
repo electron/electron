@@ -6,9 +6,7 @@
           "dom"
       ],
       "typeRoots" : ["../../node_modules/@types"],
-      "noImplicitAny": true,
-      "noImplicitThis": true,
-      "strictNullChecks": false,
+      "strict": true,
       "noEmit": true,
       "forceConsistentCasingInFileNames": true
   },

@@ -12,7 +12,28 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
-## Planned Breaking API Changes (43.0)
+## Planned Breaking API Changes (44.0)
+
+### Removed: macOS 12 support
+
+macOS 12 (Monterey) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/7907086).
+
+Older versions of Electron will continue to run on Monterey, but macOS 13 (Ventura)
+or later will be required to run Electron v44.0.0 and higher.
+
+### Behavior Changed: ANGLE is statically linked on Linux
+
+ANGLE is now [statically linked](https://chromium-review.googlesource.com/c/chromium/src/+/7932888)
+into the Electron binary on Linux, matching upstream Chromium. The `libEGL.so` and
+`libGLESv2.so` libraries are no longer shipped in the Linux distribution.
+
+Apps that replaced or managed their own ANGLE versions by swapping out these
+libraries can no longer do so on Linux. Additionally, because ANGLE is now part
+of the Electron binary, it is loaded into every process rather than only the GPU
+process, which may surface regressions in unusual configurations.
+
+Windows and macOS are unaffected; ANGLE continues to be shipped as separate
+libraries on those platforms.
 
 ### Removed: Unity desktop environment support on Linux
 
@@ -24,6 +45,17 @@ One API has been removed: `app.isUnityRunning()`. Some Unity-specific APIs no lo
 
 * `app.setBadgeCount(count)` and `app.badgeCount` _macOS_
 * `BaseWindow.setProgressBar(progress)` and `BrowserWindow.setProgressBar(progress)` _Windows_ _macOS_.
+
+## Planned Breaking API Changes (43.0)
+
+### Behavior Changed: Rounded corners on Linux
+
+Frameless windows default to rounded corners on Linux if the desktop environment supports client-side decorations. This can be configured using the existing `roundedCorners` option on `BrowserWindow`,
+which is now supported on Linux and defaults to `true` on all platforms.
+
+### Behavior Changed: WCO respects the native title bar layout on Linux
+
+Frameless windows with Window Controls Overlay (WCO) now adopt the native title bar layout and user settings on Linux. For example, controls will appear on the left side of the frame on RTL systems, and only the close button will be visible by default on GNOME. Depending on the user's desktop environment and configuration, buttons can appear on the left or right side of the frame (or both). To account for all possibilities, use the CSS variables `env(titlebar-area-x, 0px)` and `env(titlebar-area-width, 100%)` to constrain your app's title bar content to a safe area.
 
 ### Behavior Changed: `NativeImage.toBitmap()` now normalizes color space
 

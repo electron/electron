@@ -4,9 +4,11 @@
 
 #include "shell/renderer/preload_utils.h"
 
+#include <array>
 #include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "base/containers/span.h"
 #include "base/no_destructor.h"
@@ -15,6 +17,7 @@
 #include "base/strings/strcat.h"
 #include "chrome/common/chrome_version.h"
 #include "content/public/renderer/render_frame.h"
+#include "crypto/hash.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/electron_version.h"
 #include "mojo/public/cpp/base/big_buffer.h"
@@ -175,10 +178,15 @@ v8::Local<v8::Value> CreatePreloadScript(
     if (produced && produced->length > 0) {
       mojo::AssociatedRemote<mojom::ElectronWebContentsUtility> remote;
       render_frame->GetRemoteAssociatedInterfaces()->GetInterface(&remote);
+      // Hash of the exact source compiled — the browser only serves the
+      // blob back for matching contents.
+      std::array<uint8_t, crypto::hash::kSha256Size> source_hash =
+          crypto::hash::Sha256(contents);
       // SAFETY: produced->data points to produced->length contiguous bytes
       // owned by the CachedData.
       remote->SetPreloadCodeCache(
           script_id,
+          std::vector<uint8_t>(source_hash.begin(), source_hash.end()),
           mojo_base::BigBuffer(UNSAFE_BUFFERS(base::span(
               produced->data, base::checked_cast<size_t>(produced->length)))));
     }

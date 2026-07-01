@@ -198,6 +198,7 @@ void ProxyingWebSocket::OnAuthRequired(
 }
 
 void ProxyingWebSocket::OnBeforeSendHeaders(
+    const GURL& request_url,
     const net::HttpRequestHeaders& headers,
     OnBeforeSendHeadersCallback callback) {
   DCHECK(receiver_as_header_client_.is_bound());

@@ -54,24 +54,25 @@ index de56c9b94f92e9abf69b1d4894e5d386cad6d3cd..f8955ef7cc43b1854b29841ed65260a1
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index 353e02cdc530f0bbfd51e79d6659bda52048468d..7a0cd45f5b846903764fad2b07ab73a6f5fee3cc 100644
+index 3017f61205d6261e98671087c34f43daa37830ea..b02d1b8c3fd672083d11361aba9c5b0b53f8a05f 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-@@ -216,9 +216,13 @@ content::DesktopMediaID::Id GetUpdatedWindowId(
+@@ -216,10 +216,14 @@ content::DesktopMediaID::Id GetUpdatedWindowId(
      }
    }
  #elif BUILDFLAG(IS_MAC)
 +#if 0
 +  // Should be re-enabled when addressing
 +  // https://github.com/electron/electron/issues/30682
-   if (remote_cocoa::ScopedCGWindowID::Get(desktop_media_id.id)) {
+   if (!is_source_list_delegated &&
+       remote_cocoa::ScopedCGWindowID::Get(desktop_media_id.id)) {
      window_id = desktop_media_id.id;
    }
 +#endif
  #endif
  
    return window_id;
-@@ -1024,6 +1028,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
+@@ -1025,6 +1029,11 @@ void NativeDesktopMediaList::RefreshForVizFrameSinkWindows(
          FROM_HERE, base::BindOnce(&Worker::RefreshThumbnails,
                                    base::Unretained(worker_.get()),
                                    std::move(native_ids), thumbnail_size_));

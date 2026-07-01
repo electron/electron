@@ -19,7 +19,7 @@ ipcRenderer.addListener('test', () => {});
 ipcRenderer.removeListener('test', () => {});
 ipcRenderer.removeAllListeners('test');
 
-ipcRenderer.on('asynchronous-reply', (event, arg: any) => {
+ipcRenderer.on('asynchronous-reply', (event, arg: string) => {
   console.log(arg); // prints "pong"
   event.sender.send('another-message', 'Hello World!');
 });
@@ -119,7 +119,7 @@ function getSources(options: Electron.SourcesOptions) {
 }
 
 function gotStream(stream: any) {
-  (document.querySelector('video') as HTMLVideoElement).src = URL.createObjectURL(stream);
+  document.querySelector('video')!.src = URL.createObjectURL(stream);
 }
 
 function getUserMediaError(error: Error) {

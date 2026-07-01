@@ -1,7 +1,5 @@
 const { app, BrowserWindow } = require('electron');
 
-app.commandLine.appendSwitch('--disable-software-rasterizer');
-
 app.whenReady().then(() => {
   const infoType = process.argv.pop();
   const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } });
@@ -17,5 +15,5 @@ app.whenReady().then(() => {
       }
     );
   });
-  w.loadURL('data:text/html;<canvas></canvas>');
+  w.loadURL('data:text/html,<canvas></canvas>');
 });

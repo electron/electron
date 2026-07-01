@@ -7,6 +7,11 @@ on:
         required: true
         description: 'Container to run lint in'
         type: string
+      skip:
+        required: false
+        description: 'Skip the actual lint work but still report the lint / Lint check as skipped'
+        type: boolean
+        default: false
 
 permissions: {}
 
@@ -20,6 +25,7 @@ env:
 jobs:
   lint:
     name: Lint
+    if: ${{ !inputs.skip }}
     runs-on: electron-arc-centralus-linux-amd64-4core
     permissions:
       contents: read
@@ -27,7 +33,7 @@ jobs:
     container: ${{ fromJSON(inputs.container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -36,40 +42,40 @@ jobs:
       uses: ./src/electron/.github/actions/install-dependencies
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
-    - name: Setup third_party Depot Tools
+    - name: Install Build Tools
+      uses: ./src/electron/.github/actions/install-build-tools
+    - name: Get Chromium revision
+      id: get-chromium-revision
       shell: bash
       run: |
-        # "depot_tools" has to be checkout into "//third_party/depot_tools" so pylint.py can a "pylintrc" file.
-        git clone --filter=tree:0 https://chromium.googlesource.com/chromium/tools/depot_tools.git src/third_party/depot_tools
-        echo "$(pwd)/src/third_party/depot_tools" >> $GITHUB_PATH
-    - name: Download GN Binary
-      shell: bash
-      run: |
-        chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
+        chromium_revision=$(e depot-tools gclient getdep --deps-file=src/electron/DEPS --revision=src | tail -1)
         if [[ ! "$chromium_revision" =~ ^[a-zA-Z0-9._-]+$ ]]; then
           echo "::error::Invalid chromium_revision: $chromium_revision"
           exit 1
         fi
-        gn_version="$(curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/DEPS" | grep gn_version | head -n1 | cut -d\' -f4)"
+        echo "revision=$chromium_revision" >> "$GITHUB_OUTPUT"
+    - name: Download GN Binary
+      shell: bash
+      env:
+        chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
+      run: |
+        curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/DEPS" > src/DEPS
+        gn_version=$(e depot-tools gclient getdep --deps-file=src/DEPS --var=gn_version | tail -1)
 
-        cipd ensure -ensure-file - -root . <<-CIPD
+        e d cipd ensure -ensure-file - -root . <<-CIPD
         \$ServiceURL https://chrome-infra-packages.appspot.com/
         @Subdir src/buildtools/linux64
         gn/gn/linux-amd64 $gn_version
         CIPD
     - name: Download clang-format Binary
       shell: bash
+      env:
+        chromium_revision: ${{ steps.get-chromium-revision.outputs.revision }}
       run: |
-        chromium_revision="$(grep -A1 chromium_version src/electron/DEPS | tr -d '\n' | cut -d\' -f4)"
-        if [[ ! "$chromium_revision" =~ ^[a-zA-Z0-9._-]+$ ]]; then
-          echo "::error::Invalid chromium_revision: $chromium_revision"
-          exit 1
-        fi
-
         mkdir -p src/buildtools
         curl -sL "https://raw.githubusercontent.com/chromium/chromium/refs/tags/${chromium_revision}/buildtools/DEPS" > src/buildtools/DEPS
 
-        gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
+        e d gclient sync --spec="solutions=[{'name':'src/buildtools','url':None,'deps_file':'DEPS','custom_vars':{'process_deps':True},'managed':False}]"
     - name: Add problem matchers
       shell: bash
       run: |

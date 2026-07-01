@@ -10,25 +10,33 @@
 
 #include "base/containers/span.h"
 
+namespace base {
+class FilePath;
+}
+
 namespace electron::preload_code_cache {
 
-// Returns the V8 code cache blob for the preload with the given |id|, or
-// empty if no cache exists. Checks an in-memory tier first, then disk
-// (userData/Code Cache/electron-preload/). Disk I/O is synchronous (call
-// behind a ScopedAllowBlocking) and happens at most once per id per session
-// — once read from (or absent on) disk, the result is cached in memory.
-//
-// Stale or corrupt blobs are not detected here. V8's CachedData validation
-// rejects blobs from a different V8 version, flag set, or source — the
-// renderer falls back to a normal compile and ships a fresh blob, which
-// overwrites the stale one.
-std::vector<uint8_t> Get(const std::string& id);
+// Cache id for a webPreferences.preload script (stable across launches).
+std::string IdForWebPreferencesPreload(const base::FilePath& path);
 
-// Stores a V8 code cache blob for the preload with the given |id|. The
-// in-memory tier is written immediately; the disk write is posted to the
-// thread pool (fire-and-forget — a lost write just means the next launch
-// pays one cold compile).
-void Set(const std::string& id, base::span<const uint8_t> blob);
+// Returns the V8 code cache blob recorded for |id| and these exact
+// |contents|, or empty. Checks an in-memory tier first, then disk
+// (userData/Code Cache/electron-preload/). Disk I/O is synchronous (call
+// behind a ScopedAllowBlocking) and happens at most once per id per session.
+//
+// Entries are bound to sha256(contents): V8's own CachedData source check
+// hashes only the source *length*, so without this a same-length source
+// change would execute stale bytecode. V8 still validates version/flags at
+// consume time.
+std::vector<uint8_t> Get(const std::string& id,
+                         base::span<const uint8_t> contents);
+
+// Stores a blob compiled from source whose sha256 is |source_hash| (32
+// bytes; other sizes are ignored). The in-memory tier is written
+// immediately; the disk write is fire-and-forget on the thread pool.
+void Set(const std::string& id,
+         base::span<const uint8_t> source_hash,
+         base::span<const uint8_t> blob);
 
 }  // namespace electron::preload_code_cache
 

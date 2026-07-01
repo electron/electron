@@ -5,7 +5,9 @@
 
 #include "shell/browser/ui/views/electron_frame_view_linux.h"
 
+#include "base/i18n/rtl.h"
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/views/caption_button_placeholder_container.h"
 #include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
 #include "ui/base/hit_test.h"
@@ -13,6 +15,7 @@
 #include "ui/compositor/layer.h"
 #include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
+#include "ui/views/window/frame_background.h"
 #include "ui/views/window/frame_caption_button.h"
 
 namespace electron {
@@ -48,6 +51,13 @@ void ElectronFrameViewLinux::CreateCaptionButtons() {
       AddChildView(std::make_unique<CaptionButtonPlaceholderContainer>());
   trailing_button_container_ =
       AddChildView(std::make_unique<CaptionButtonPlaceholderContainer>());
+
+  // Allow containers to be clipped for rounded corners.
+  for (auto* container :
+       {leading_button_container_.get(), trailing_button_container_.get()}) {
+    container->layer()->SetFillsBoundsOpaquely(false);
+    container->layer()->SetIsFastRoundedCorner(true);
+  }
 
   FrameViewLinux::CreateCaptionButtons();
 
@@ -114,6 +124,9 @@ int ElectronFrameViewLinux::NonClientHitTest(const gfx::Point& point) {
 void ElectronFrameViewLinux::Layout(PassKey) {
   LayoutSuperclass<FrameViewLinux>(this);
 
+  if (auto* iwcv = window_->primary_web_contents_view())
+    iwcv->SetCornerRadii(GetCornerRadii());
+
   if (!window_->IsWindowControlsOverlayEnabled())
     return;
 
@@ -131,6 +144,16 @@ void ElectronFrameViewLinux::Layout(PassKey) {
   trailing_button_container_->SetBoundsRect(
       efv_layout()->GetTrailingButtonRect());
 
+  // Apply the frame's corner radius to the button containers.
+  const float radius = GetCornerRadii().upper_left();
+  const bool rtl = base::i18n::IsRTL();
+  leading_button_container_->layer()->SetRoundedCornerRadius(
+      rtl ? gfx::RoundedCornersF(0, radius, 0, 0)
+          : gfx::RoundedCornersF(radius, 0, 0, 0));
+  trailing_button_container_->layer()->SetRoundedCornerRadius(
+      rtl ? gfx::RoundedCornersF(radius, 0, 0, 0)
+          : gfx::RoundedCornersF(0, radius, 0, 0));
+
   UpdateCaptionButtonPlaceholderContainerBackground();
   LayoutWindowControlsOverlay();
 }
@@ -138,6 +161,11 @@ void ElectronFrameViewLinux::Layout(PassKey) {
 void ElectronFrameViewLinux::PaintRestoredFrameBorder(gfx::Canvas* canvas) {
   if (!WantsFrame())
     return;
+
+  // Prevent the default system titlebar background from being drawn at the top
+  // of frameless windows. Does not affect WCO which draws its own top area.
+  frame_background()->set_top_area_height(0);
+
   FrameViewLinux::PaintRestoredFrameBorder(canvas);
 }
 
@@ -160,13 +188,15 @@ void ElectronFrameViewLinux::UpdateButtonColors() {
 
   // Apply custom WCO overlay colors if set.
   const bool active = ShouldPaintAsActive();
-  const SkColor symbol_color = window_->overlay_symbol_color();
-  const SkColor background_color = window_->overlay_button_color();
-  SkColor frame_color =
-      background_color == SkColor()
-          ? GetColorProvider()->GetColor(active ? ui::kColorFrameActive
-                                                : ui::kColorFrameInactive)
-          : background_color;
+  const SkColor symbol_color =
+      window_->overlay_symbol_color().value_or(SkColor());
+  const std::optional<SkColor> background_color =
+      window_->overlay_button_color();
+  // Frame color is used for blending, force it to be opaque
+  SkColor frame_color = SkColorSetA(
+      background_color.value_or(GetColorProvider()->GetColor(
+          active ? ui::kColorFrameActive : ui::kColorFrameInactive)),
+      SK_AlphaOPAQUE);
 
   for (views::Button* button : {minimize_button(), maximize_button(),
                                 restore_button(), close_button()}) {
@@ -182,9 +212,9 @@ void ElectronFrameViewLinux::UpdateButtonColors() {
 
 void ElectronFrameViewLinux::
     UpdateCaptionButtonPlaceholderContainerBackground() {
-  const SkColor obc = window_->overlay_button_color();
+  const std::optional<SkColor> obc = window_->overlay_button_color();
   SkColor bg_color;
-  if (obc == SkColor()) {
+  if (!obc.has_value()) {
     const auto* color_provider = GetColorProvider();
     if (!color_provider)
       return;
@@ -192,7 +222,7 @@ void ElectronFrameViewLinux::
                                             ? ui::kColorFrameActive
                                             : ui::kColorFrameInactive);
   } else {
-    bg_color = obc;
+    bg_color = *obc;
   }
   leading_button_container_->SetBackground(
       views::CreateSolidBackground(bg_color));

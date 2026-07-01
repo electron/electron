@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index c97a981aeec0465c6c80f30d3e3d8fe1a814c410..165afa5a8421e57613983dbefc28e819de7e5264 100644
+index a0d355e51e17ff095e1fe97bcfebcdf1a0936f66..8cbbaaa30220608f4143232e06890296128441ae 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2665,6 +2665,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2710,6 +2710,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,10 +33,10 @@ index c97a981aeec0465c6c80f30d3e3d8fe1a814c410..165afa5a8421e57613983dbefc28e819
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 9f31bab965cf69cc2b77f8670307c25e696159e2..9edc236d56fb523095ca4ca0978d5137f651f624 100644
+index ea7f82b6bf90031757eb19e2ff86aba8dda65b9d..2eab8750c96ee160a347e388eb6cf054b5b72c8e 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -886,6 +886,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -888,6 +888,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,10 +51,10 @@ index 9f31bab965cf69cc2b77f8670307c25e696159e2..9edc236d56fb523095ca4ca0978d5137
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index af9365807d450d82dd980928fa25cee7cbd7a980..2f425bfce9bc1909ce3910d71cec0c56271c5622 100644
+index 7a905faa1f886a59fb75c984756b61f7a04be080..8f0293c4ad865f22a0abad364562ab035ae93cbc 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1458,6 +1458,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1462,6 +1462,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  
@@ -169,7 +169,7 @@ index a3bfdd9c15d3cfc5053c2a36767ea7964f2740fd..d9d608ea5b01cff08654b11e455fd7af
        WebFetchClientSettingsObject outside_fetch_client_settings_object)
        : wait_for_debugger_mode(kDontWaitForDebugger),
 diff --git a/third_party/blink/renderer/core/workers/global_scope_creation_params.h b/third_party/blink/renderer/core/workers/global_scope_creation_params.h
-index b9901c1df106b25535ac86ed8c12185453bf475d..f01a6c0c5e9a712ffbf15b71bfa9f2a7f554326e 100644
+index f7f92a38ff6e4fac76dec40b62131af36c3675f4..74f49dd992caa27d2dd751fd21389d50c151ffa4 100644
 --- a/third_party/blink/renderer/core/workers/global_scope_creation_params.h
 +++ b/third_party/blink/renderer/core/workers/global_scope_creation_params.h
 @@ -10,6 +10,7 @@
@@ -180,7 +180,7 @@ index b9901c1df106b25535ac86ed8c12185453bf475d..f01a6c0c5e9a712ffbf15b71bfa9f2a7
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "net/storage_access_api/status.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
-@@ -251,6 +252,11 @@ struct CORE_EXPORT GlobalScopeCreationParams final {
+@@ -261,6 +262,11 @@ struct CORE_EXPORT GlobalScopeCreationParams final {
    // i.e. when DedicatedWorkerStart() was called.
    std::optional<base::TimeTicks> dedicated_worker_start_time;
  
@@ -242,10 +242,10 @@ index 563dc0d5478b54a63675d792280cfd43d2d9aa23..8cabdf2d3a3d798274568cf554ce268b
    // DevTools agents being configured while waiting for debugger) till the main
    // script has completed loading. This is so that VT does not run while script
 diff --git a/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc b/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
-index 5c0ec7ee2de0527a4f5bae468a301ab085c34ec9..fcf30c3eccf15cf14b07ce1c0c0d294cd7242bb0 100644
+index 060741bf1b44e277e1d8849039787d41cdd72a9f..84b5fa8000bd6df4b59c8f2615b1719c52144669 100644
 --- a/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
 +++ b/third_party/blink/renderer/modules/exported/web_embedded_worker_impl.cc
-@@ -245,6 +245,9 @@ void WebEmbeddedWorkerImpl::StartWorkerThread(
+@@ -253,6 +253,9 @@ void WebEmbeddedWorkerImpl::StartWorkerThread(
        /*origin_to_use=*/nullptr, std::move(coep_reporting_observer),
        std::move(dip_reporting_observer));
  

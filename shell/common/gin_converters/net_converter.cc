@@ -18,6 +18,7 @@
 #include "gin/data_object_builder.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
+#include "gin/wrappable.h"
 #include "net/cert/x509_certificate.h"
 #include "net/cert/x509_util.h"
 #include "net/http/http_response_headers.h"
@@ -31,15 +32,19 @@
 #include "services/network/public/mojom/fetch_api.mojom.h"
 #include "services/network/public/mojom/url_request.mojom.h"
 #include "shell/browser/api/electron_api_data_pipe_holder.h"
+#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/common/v8_util.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
+#include "v8/include/v8-traced-handle.h"
 
 namespace gin {
 
@@ -94,7 +99,8 @@ v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
       .Set("validStart", val->valid_start().InSecondsFSinceUnixEpoch())
       .Set("validExpiry", val->valid_expiry().InSecondsFSinceUnixEpoch())
       .Set("fingerprint",
-           net::HashValue(val->CalculateFingerprint256(val->cert_buffer()))
+           net::HashValue(net::HASH_VALUE_SHA256,
+                          val->CalculateFingerprint256(val->cert_buffer()))
                .ToString());
 
   const auto& intermediate_buffers = val->intermediate_buffers();
@@ -293,30 +299,38 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
 namespace {
 
 class ChunkedDataPipeReadableStream final
-    : public gin_helper::DeprecatedWrappable<ChunkedDataPipeReadableStream> {
+    : public gin::Wrappable<ChunkedDataPipeReadableStream> {
  public:
-  static gin_helper::Handle<ChunkedDataPipeReadableStream> Create(
+  static ChunkedDataPipeReadableStream* Create(
       v8::Isolate* isolate,
       network::ResourceRequestBody* request,
       network::DataElementChunkedDataPipe* data_element) {
-    return gin_helper::CreateHandle(
-        isolate,
-        new ChunkedDataPipeReadableStream(isolate, request, data_element));
+    return cppgc::MakeGarbageCollected<ChunkedDataPipeReadableStream>(
+        isolate->GetCppHeap()->GetAllocationHandle(), isolate, request,
+        data_element);
   }
 
-  // gin_helper::Wrappable
+  // gin::Wrappable
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin_helper::DeprecatedWrappable<
+    return gin::Wrappable<
                ChunkedDataPipeReadableStream>::GetObjectTemplateBuilder(isolate)
         .SetMethod("read", &ChunkedDataPipeReadableStream::Read);
   }
 
-  const char* GetTypeName() override { return "ChunkedDataPipeReadableStream"; }
+  const gin::WrapperInfo* wrapper_info() const override {
+    return &kWrapperInfo;
+  }
+  const char* GetHumanReadableName() const override {
+    return "Electron / ChunkedDataPipeReadableStream";
+  }
+  void Trace(cppgc::Visitor* visitor) const override {
+    gin::Wrappable<ChunkedDataPipeReadableStream>::Trace(visitor);
+    visitor->Trace(buf_);
+  }
 
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  static const gin::WrapperInfo kWrapperInfo;
 
- private:
   ChunkedDataPipeReadableStream(
       v8::Isolate* isolate,
       network::ResourceRequestBody* request,
@@ -326,10 +340,16 @@ class ChunkedDataPipeReadableStream final
         data_element_(data_element),
         handle_watcher_(FROM_HERE,
                         mojo::SimpleWatcher::ArmingPolicy::MANUAL,
-                        base::SequencedTaskRunner::GetCurrentDefault()) {}
+                        base::SequencedTaskRunner::GetCurrentDefault()) {
+    // SelfKeepAlive roots from construction, but this stream is normally owned
+    // by JS (it is exposed as the upload body's `body`). We only want to root
+    // ourselves while a read is actually in flight, so start out unrooted.
+    keep_alive_.Clear();
+  }
 
   ~ChunkedDataPipeReadableStream() override = default;
 
+ private:
   int Init() {
     chunked_data_pipe_getter_.Bind(
         data_element_->ReleaseChunkedDataPipeGetter());
@@ -367,6 +387,9 @@ class ChunkedDataPipeReadableStream final
 
     if (status == net::ERR_IO_PENDING) {
       promise_ = std::move(promise);
+      // Keep ourselves alive until the read settles, even if JS drops its
+      // reference to the body mid-read. Cleared in OnReadCompleted().
+      keep_alive_ = this;
     } else {
       if (status < 0)
         std::move(promise).RejectWithErrorMessage(net::ErrorToString(status));
@@ -508,6 +531,7 @@ class ChunkedDataPipeReadableStream final
       std::move(promise_).RejectWithErrorMessage(net::ErrorToString(result));
     else
       std::move(promise_).Resolve(result);
+    keep_alive_.Clear();
   }
 
   void OnDataPipeGetterClosed() {
@@ -522,18 +546,20 @@ class ChunkedDataPipeReadableStream final
   int status_ = net::OK;
   scoped_refptr<network::ResourceRequestBody> resource_request_body_;
   raw_ptr<network::DataElementChunkedDataPipe> data_element_;
+  GC_PLUGIN_IGNORE("Context tracking of remote is not needed.")
   mojo::Remote<network::mojom::ChunkedDataPipeGetter> chunked_data_pipe_getter_;
   mojo::ScopedDataPipeConsumerHandle data_pipe_;
   mojo::SimpleWatcher handle_watcher_;
   std::optional<uint64_t> size_;
   uint64_t bytes_read_ = 0;
   bool is_eof_ = false;
-  v8::Global<v8::ArrayBufferView> buf_;
+  v8::TracedReference<v8::ArrayBufferView> buf_;
   gin_helper::Promise<int> promise_;
+  gin_helper::SelfKeepAlive<ChunkedDataPipeReadableStream> keep_alive_{this};
 };
 
-gin::DeprecatedWrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+const gin::WrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronChunkedDataPipeReadableStream);
 
 }  // namespace
 

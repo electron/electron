@@ -4045,18 +4045,6 @@ describe('BrowserWindow module', () => {
         const cacheKey = crypto.createHash('sha256').update(`preload-${preload}`).digest('hex').toUpperCase();
         cacheFile = path.join(cacheDir, `${cacheKey}.cache`);
       });
-      afterEach(() => {
-        fs.rmSync(preload, { force: true });
-        fs.rmSync(cacheFile, { force: true });
-        return closeAllWindows();
-      });
-
-      const makeWindow = () =>
-        new BrowserWindow({
-          show: false,
-          webPreferences: { sandbox: true, contextIsolation: true, preload }
-        });
-
       const waitFor = async (predicate: () => boolean, what: string, timeoutMs = 5000) => {
         const start = Date.now();
         while (Date.now() - start < timeoutMs) {
@@ -4065,6 +4053,31 @@ describe('BrowserWindow module', () => {
         }
         throw new Error(`timed out waiting for ${what}`);
       };
+
+      const removeFile = async (filePath: string) => {
+        await waitFor(() => {
+          try {
+            fs.rmSync(filePath, { force: true });
+            return true;
+          } catch (error: any) {
+            if (error.code === 'ENOENT') return true;
+            if (error.code === 'EPERM' || error.code === 'EBUSY') return false;
+            throw error;
+          }
+        }, `remove ${filePath}`);
+      };
+
+      afterEach(async () => {
+        await closeAllWindows();
+        await removeFile(preload);
+        await removeFile(cacheFile);
+      });
+
+      const makeWindow = () =>
+        new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: true, contextIsolation: true, preload }
+        });
 
       it('produces and persists a code cache after the first compile', async () => {
         const w = makeWindow();
@@ -4121,6 +4134,30 @@ describe('BrowserWindow module', () => {
         // blobs are several hundred bytes minimum.
         await waitFor(() => fs.statSync(cacheFile).size > 100, 'cache file to be overwritten');
         expect(fs.statSync(cacheFile).size).to.be.greaterThan(100);
+      });
+
+      it('does not consume a cache produced from different source of the same length', async () => {
+        // V8's CachedData source check hashes only the source length, so the
+        // browser must invalidate by content.
+        const preloadSource = (marker: string) =>
+          `require('electron').ipcRenderer.send('preload-code-cache-marker', '${marker}');\n`;
+
+        fs.writeFileSync(preload, preloadSource('first-'));
+        const w1 = makeWindow();
+        const marker1 = once(ipcMain, 'preload-code-cache-marker');
+        await w1.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        expect((await marker1)[1]).to.equal('first-');
+        await waitFor(() => fs.existsSync(cacheFile) && fs.statSync(cacheFile).size > 0, cacheFile);
+        w1.destroy();
+
+        const second = preloadSource('second');
+        expect(second.length).to.equal(preloadSource('first-').length);
+        fs.writeFileSync(preload, second);
+
+        const w2 = makeWindow();
+        const marker2 = once(ipcMain, 'preload-code-cache-marker');
+        await w2.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        expect((await marker2)[1]).to.equal('second');
       });
     });
 

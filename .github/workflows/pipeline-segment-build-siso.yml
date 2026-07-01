@@ -1,13 +1,17 @@
-name: Pipeline Segment - Build Siso (Windows)
+name: Pipeline Segment - Build Siso
 
-# Builds a patched siso binary for Windows CI. Reads the siso revision from
-# the Chromium DEPS file at the pinned chromium_version, shallow-clones
+# Builds a patched siso binary for every CI build host. Reads the siso revision
+# from the Chromium DEPS file at the pinned chromium_version, shallow-clones
 # chromium.googlesource.com/build at that revision, applies the patches under
-# .github/siso-patches/, cross-compiles siso.exe for windows/amd64, and
-# publishes it as the `siso-windows-amd64` artifact. The Windows build jobs
-# download it and use it via SISO_PATH. The built binary is cached keyed on
-# the siso revision + sha256 of the patch contents, so subsequent runs just
-# restore it.
+# .github/siso-patches/, and cross-compiles siso for each build host:
+# windows/amd64, linux/amd64 and darwin/arm64. siso runs on the build host (not
+# the target), so these three host arches cover every build job: Windows targets
+# use siso-windows-amd64, Linux targets (any arch) use siso-linux-amd64, and
+# macOS targets (x64 or arm64) use siso-darwin-arm64 because the macOS build
+# hosts are arm64. Each binary is published as a distinct artifact that the build
+# and publish jobs download and use via SISO_PATH. The built binary is cached
+# keyed on the siso revision + sha256 of the patch contents, so subsequent runs
+# just restore it.
 
 on:
   workflow_call: {}
@@ -19,9 +23,25 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: windows
+            goarch: amd64
+            artifact: siso-windows-amd64
+            binary: siso.exe
+          - goos: linux
+            goarch: amd64
+            artifact: siso-linux-amd64
+            binary: siso
+          - goos: darwin
+            goarch: arm64
+            artifact: siso-darwin-arm64
+            binary: siso
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         fetch-depth: 1
         ref: ${{ github.event.pull_request.head.sha }}
@@ -52,8 +72,8 @@ jobs:
       id: cache-siso
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
-        path: siso-out/siso.exe
-        key: siso-windows-amd64-${{ steps.resolve.outputs.siso-sha }}-${{ steps.resolve.outputs.patches-hash }}
+        path: siso-out/${{ matrix.binary }}
+        key: siso-${{ matrix.goos }}-${{ matrix.goarch }}-${{ steps.resolve.outputs.siso-sha }}-${{ steps.resolve.outputs.patches-hash }}
     - name: Shallow clone chromium build repo at pinned revision
       if: steps.cache-siso.outputs.cache-hit != 'true'
       env:
@@ -85,20 +105,20 @@ jobs:
       with:
         go-version-file: chromium-build/siso/go.mod
         cache: false
-    - name: Build siso (windows/amd64)
+    - name: Build siso (${{ matrix.goos }}/${{ matrix.goarch }})
       if: steps.cache-siso.outputs.cache-hit != 'true'
       working-directory: chromium-build/siso
       env:
         CGO_ENABLED: '0'
-        GOOS: windows
-        GOARCH: amd64
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
       run: |
         mkdir -p "${GITHUB_WORKSPACE}/siso-out"
-        go build -trimpath -o "${GITHUB_WORKSPACE}/siso-out/siso.exe" .
+        go build -trimpath -o "${GITHUB_WORKSPACE}/siso-out/${{ matrix.binary }}" .
     - name: Upload siso artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: siso-windows-amd64
-        path: siso-out/siso.exe
+        name: ${{ matrix.artifact }}
+        path: siso-out/${{ matrix.binary }}
         if-no-files-found: error
         retention-days: 1

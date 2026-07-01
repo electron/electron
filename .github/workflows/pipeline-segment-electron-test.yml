@@ -140,7 +140,7 @@ jobs:
       if: ${{ inputs.target-platform == 'macos' }}
       run: sudo xcode-select --switch /Applications/Xcode_16.4.app
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -227,6 +227,12 @@ jobs:
         if [ -n "$identity" ]; then
           codesign -s "$identity" --deep --force src/out/Default/Electron.app
         fi
+
+    - name: Register Electron.app with LaunchServices
+      if: ${{ inputs.target-platform == 'macos' }}
+      run: |
+        /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
+          -f src/out/Default/Electron.app
 
     - name: Run Electron Tests
       shell: bash

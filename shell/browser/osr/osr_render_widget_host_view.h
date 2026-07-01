@@ -96,11 +96,9 @@ class OffScreenRenderWidgetHostView
   ui::TextInputClient* GetTextInputClient() override;
   void Focus() override {}
   bool HasFocus() override;
-  uint32_t GetCaptureSequenceNumber() const override;
   bool IsSurfaceAvailableForCopy() override;
   void Hide() override;
   bool IsShowing() override;
-  void EnsureSurfaceSynchronizedForWebTest() override;
   gfx::Rect GetViewBounds() override;
   gfx::Size GetVisibleViewportSize() override;
   void SetInsets(const gfx::Insets&) override {}
@@ -338,11 +336,6 @@ class OffScreenRenderWidgetHostView
   std::unique_ptr<OffScreenVideoConsumer> video_consumer_;
 
   content::MouseWheelPhaseHandler mouse_wheel_phase_handler_;
-
-  // Latest capture sequence number which is incremented when the caller
-  // requests surfaces be synchronized via
-  // EnsureSurfaceSynchronizedForWebTest().
-  uint32_t latest_capture_sequence_number_ = 0u;
 
   SkColor background_color_ = SkColor();
 

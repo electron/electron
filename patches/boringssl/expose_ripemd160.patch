@@ -10,7 +10,7 @@ this patch is required to provide ripemd160 support in the nodejs crypto
 module.
 
 diff --git a/crypto/digest/digest_extra.cc b/crypto/digest/digest_extra.cc
-index d38e0c1132da60ec96c3a5c2416ff07589f03b80..cd60baaf22a8d5dc20544d861d36b7d74d986e7b 100644
+index 070ab36ea3b118a69b1b3c1d771412f991e7051e..1ce2fbaeeec7a7c8b6edf0565331cf8bfd890ce1 100644
 --- a/crypto/digest/digest_extra.cc
 +++ b/crypto/digest/digest_extra.cc
 @@ -48,6 +48,7 @@ static const struct nid_to_digest nid_to_digest_mapping[] = {
@@ -18,7 +18,7 @@ index d38e0c1132da60ec96c3a5c2416ff07589f03b80..cd60baaf22a8d5dc20544d861d36b7d7
      {NID_sha512_256, EVP_sha512_256, SN_sha512_256, LN_sha512_256},
      {NID_md5_sha1, EVP_md5_sha1, SN_md5_sha1, LN_md5_sha1},
 +    {NID_ripemd160, EVP_ripemd160, SN_ripemd160, LN_ripemd160},
-     // As a remnant of signing |EVP_MD|s, OpenSSL returned the corresponding
+     // As a remnant of signing `EVP_MD`s, OpenSSL returned the corresponding
      // hash function when given a signature OID. To avoid unintended lax parsing
      // of hash OIDs, this is no longer supported for lookup by OID or NID.
 diff --git a/crypto/fipsmodule/digest/digests.cc.inc b/crypto/fipsmodule/digest/digests.cc.inc
@@ -82,7 +82,7 @@ index 584b1390a841cc1b1dcb69e16d8242a88e4bb9cb..637aeccb8de8d793eabc38e32bef6834
  
  void EVP_MD_do_all(void (*callback)(const EVP_MD *md, const char *name,
 diff --git a/include/openssl/digest.h b/include/openssl/digest.h
-index 62ad57368cb3059ee25df08bb07876fef499de2e..322daef194b3c7b73011419bb74bccb311eb03a5 100644
+index a81c2a415831c043d784985a947db548dbc5b0d7..d700a3b56ab18dd2d6032fda9f0d783510468cf6 100644
 --- a/include/openssl/digest.h
 +++ b/include/openssl/digest.h
 @@ -48,6 +48,9 @@ OPENSSL_EXPORT const EVP_MD *EVP_blake2b256(void);
@@ -92,6 +92,6 @@ index 62ad57368cb3059ee25df08bb07876fef499de2e..322daef194b3c7b73011419bb74bccb3
 +// EVP_ripemd160 is in decrepit and not available by default.
 +OPENSSL_EXPORT const EVP_MD *EVP_ripemd160(void);
 +
- // EVP_get_digestbynid returns an |EVP_MD| for the given NID, or NULL if no
+ // EVP_get_digestbynid returns an `EVP_MD` for the given NID, or NULL if no
  // such digest is known.
  OPENSSL_EXPORT const EVP_MD *EVP_get_digestbynid(int nid);

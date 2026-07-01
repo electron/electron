@@ -49,7 +49,7 @@ jobs:
     outputs:
       build-image-sha: ${{ steps.set-output.outputs.build-image-sha }}
     steps:
-    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
     - name: Get Build Image SHA
       id: set-output
       uses: ./.github/actions/build-image-sha
@@ -76,7 +76,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -102,7 +102,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -132,7 +132,7 @@ jobs:
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -142,13 +142,13 @@ jobs:
         generate-sas-token: 'true'
         target-platform: win
 
-  # Windows builds need the patched siso binary (same as build.yml).
-  build-siso-windows:
+  # All builds need the patched siso binary (same as build.yml); the matrix
+  # produces windows-amd64, linux-amd64 and darwin-arm64 artifacts.
+  build-siso:
     needs: setup
-    if: ${{ !inputs.skip-windows }}
     permissions:
       contents: read
-    uses: ./.github/workflows/pipeline-segment-build-siso-windows.yml
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
 
   # ---------------------------------------------------------------------------
   # Instrumented builds (gn-build-type: pgo-instrument -> build/args/pgo-instrument.gn)
@@ -160,7 +160,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: checkout-linux
+    needs: [checkout-linux, build-siso]
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
@@ -180,7 +180,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: checkout-linux
+    needs: [checkout-linux, build-siso]
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
@@ -200,7 +200,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: checkout-linux
+    needs: [checkout-linux, build-siso]
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
@@ -220,7 +220,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: checkout-macos
+    needs: [checkout-macos, build-siso]
     with:
       build-runs-on: macos-15-xlarge
       target-platform: macos
@@ -240,7 +240,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: checkout-macos
+    needs: [checkout-macos, build-siso]
     with:
       build-runs-on: macos-15-xlarge
       target-platform: macos
@@ -260,7 +260,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       target-platform: win
@@ -279,7 +279,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       target-platform: win
@@ -298,7 +298,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
-    needs: [checkout-windows, build-siso-windows]
+    needs: [checkout-windows, build-siso]
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       target-platform: win
@@ -336,7 +336,7 @@ jobs:
       ELECTRON_RBE_JWT: ${{ secrets.ELECTRON_RBE_JWT }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -355,7 +355,7 @@ jobs:
     - name: Restore src cache via AKS
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron (after cache restore)
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -539,7 +539,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
@@ -552,7 +552,7 @@ jobs:
     - name: Restore src cache via AKS
       uses: ./src/electron/.github/actions/restore-cache-aks
     - name: Checkout Electron (after cache restore)
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
         path: src/electron
         fetch-depth: 0
