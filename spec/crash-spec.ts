@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 
 import * as cp from 'node:child_process';
-import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
@@ -62,6 +61,22 @@ const shouldRunCase = (crashCase: string) => {
   }
 };
 
+const waitForChildExit = (child: cp.ChildProcessWithoutNullStreams) => {
+  if (child.exitCode !== null || child.signalCode !== null) {
+    return Promise.resolve();
+  }
+
+  return new Promise<void>((resolve) => {
+    child.once('exit', () => {
+      resolve();
+    });
+
+    if (child.exitCode !== null || child.signalCode !== null) {
+      resolve();
+    }
+  });
+};
+
 describe('crash cases', () => {
   afterEach(async () => {
     // A wedged crash-case fixture child can ignore the default SIGTERM and
@@ -70,8 +85,7 @@ describe('crash cases', () => {
     // shared `children` array (whose length only drops via that same handler).
     await Promise.all(
       children.map((child) => {
-        if (child.exitCode !== null || child.signalCode !== null) return null;
-        const exited = once(child, 'exit');
+        const exited = waitForChildExit(child);
         child.kill('SIGKILL');
         return exited;
       })

@@ -194,11 +194,25 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   options.Get(options::kFullScreenable, &fullscreenable);
   SetFullScreenable(fullscreenable);
 
+  bool resizable = true;
+  const bool has_resizable = options.Get(options::kResizable, &resizable);
+
+#if BUILDFLAG(IS_WIN)
+  if (fullscreen && has_resizable && !resizable)
+    SetResizable(resizable);
+#endif
+
   if (fullscreen)
     SetFullScreen(true);
 
-  if (bool val; options.Get(options::kResizable, &val))
-    SetResizable(val);
+  if (has_resizable) {
+#if !BUILDFLAG(IS_WIN)
+    SetResizable(resizable);
+#else
+    if (!fullscreen || resizable)
+      SetResizable(resizable);
+#endif
+  }
 
   if (bool val; options.Get(options::kSkipTaskbar, &val))
     SetSkipTaskbar(val);
