@@ -1,8 +1,32 @@
-const { app, BrowserWindow, shell } = require('electron');
+const fs = require('node:fs');
+const t0 = Date.now();
+const markerLog = process.env.CRASH_CASE_MARKER_LOG;
+const log = (m) => {
+  if (!markerLog) return;
+  try {
+    fs.appendFileSync(markerLog, `[pdc] +${Date.now() - t0}ms ${m}\n`);
+  } catch {}
+};
+log('script start');
+
+log('before require electron');
+const electron = require('electron');
+log('after require electron');
+const { app, BrowserWindow } = electron;
+log('after destructure app/BrowserWindow');
+const shell = electron.shell;
+log('after shell access');
+
+const heartbeat = setInterval(() => log('heartbeat'), 1000);
+heartbeat.unref();
+
+process.on('uncaughtException', (e) => log(`uncaughtException: ${e && e.stack ? e.stack : e}`));
+process.on('unhandledRejection', (e) => log(`unhandledRejection: ${e}`));
 
 let win = null;
 
 function createWindow() {
+  log('createWindow');
   win = new BrowserWindow({
     width: 800,
     height: 600,
@@ -13,25 +37,35 @@ function createWindow() {
     }
   });
 
+  win.on('closed', () => log('window closed'));
+
   win.loadURL('data:text/html,<h1>repro</h1>');
 }
 
 async function createPromiseAndQuit() {
   const url = `unknownscheme-${Date.now()}://test`;
   const p = shell.openExternal(url, { activate: false });
+  log('openExternal returned, promise pending');
 
   setTimeout(() => {
+    log('calling app.quit()');
     app.quit();
   }, 0);
 
   p.then(() => {
-    console.log('promise resolved.');
+    log('promise resolved.');
   }).catch(() => {
-    console.log('promise rejected.');
+    log('promise rejected.');
   });
 }
 
+log('registering whenReady');
 app.whenReady().then(() => {
+  log('app ready');
+  app.on('before-quit', () => log('before-quit'));
+  app.on('will-quit', () => log('will-quit'));
+  app.on('quit', () => log('quit'));
+
   createWindow();
 
   setTimeout(() => {
