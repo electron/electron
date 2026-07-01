@@ -93,18 +93,20 @@ jobs:
         echo "pgo-only=${{ fromJSON(steps.filter.outputs.results).pgo == 'true' && fromJSON(steps.filter.outputs.results).src == 'false' && fromJSON(steps.filter.outputs.results).docs == 'false' }}" >> "$GITHUB_OUTPUT"
 
   # Lint Jobs
-  # pgo-only changes skip lint too: the state files are machine-written
-  # single-line text files no linter covers, and skipping reports the
-  # required "lint / Lint" check as skipped, which branch protection treats
-  # as satisfied.
+  # pgo-only changes skip the actual lint work: the state files are
+  # machine-written single-line text files no linter covers. The skip is
+  # passed into the reusable workflow (rather than gating this caller) so the
+  # reusable workflow still runs and the required "lint / Lint" check is still
+  # reported as skipped, which branch protection treats as satisfied.
   lint:
     needs: setup
-    if: ${{ !inputs.skip-lint && needs.setup.outputs.pgo-only != 'true' }}
+    if: ${{ !inputs.skip-lint }}
     uses: ./.github/workflows/pipeline-electron-lint.yml
     permissions:
       contents: read
     with:
       container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root"}'
+      skip: ${{ needs.setup.outputs.pgo-only == 'true' }}
     secrets: inherit
 
   # Docs Only Jobs
