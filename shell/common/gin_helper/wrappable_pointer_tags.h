@@ -41,6 +41,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronSimpleURLLoaderWrapper,  // electron::api::SimpleURLLoaderWrapper
   kElectronTray,                    // electron::api::Tray
   kElectronUtilityProcess,          // electron::api::UtilityProcessWrapper
+  kElectronWebFrameMain,            // electron::api::WebFrameMain
   kElectronWebFrameRenderer,        // (anonymous) WebFrameRenderer
   kElectronWebRequest,              // electron::api::WebRequest
   kElectronWebSocket,               // electron::api::WebSocketWrapper
