@@ -153,10 +153,8 @@ v8::Local<v8::Function> GetPrivateBoolean(v8::Isolate* const isolate,
   auto global_object = context->Global();
   auto value =
       global_object->GetPrivate(context, private_binding_key).ToLocalChecked();
-  if (value.IsEmpty() || !value->IsFunction()) {
-    LOG(FATAL) << "Attempted to get the '" << key
-               << "' value but it was missing";
-  }
+  CHECK(!value.IsEmpty() && value->IsFunction(),
+        "Attempted to get the '" << key << "' value but it was missing");
   return value.As<v8::Function>();
 }
 
@@ -650,6 +648,10 @@ void UtilityAILanguageModel::Destroy() {
 void UtilityAILanguageModel::MeasureInputUsage(
     std::vector<blink::mojom::AILanguageModelPromptPtr> input,
     MeasureInputUsageCallback callback) {
+  if (is_destroyed_) {
+    return;
+  }
+
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope{isolate};
 
