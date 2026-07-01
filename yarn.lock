@@ -387,7 +387,7 @@ __metadata:
     "@types/temp": "npm:^0.9.4"
     "@xmldom/xmldom": "npm:^0.8.13"
     buffer: "npm:^6.0.3"
-    chalk: "npm:^4.1.0"
+    chalk: "npm:^5.6.2"
     check-for-leaks: "npm:^1.2.1"
     events: "npm:^3.2.0"
     folder-hash: "npm:^4.1.2"
@@ -3255,6 +3255,13 @@ __metadata:
   version: 5.3.0
   resolution: "chalk@npm:5.3.0"
   checksum: 10c0/8297d436b2c0f95801103ff2ef67268d362021b8210daf8ddbe349695333eb3610a71122172ff3b0272f1ef2cf7cc2c41fdaa4715f52e49ffe04c56340feed09
+  languageName: node
+  linkType: hard
+
+"chalk@npm:^5.6.2":
+  version: 5.6.2
+  resolution: "chalk@npm:5.6.2"
+  checksum: 10c0/99a4b0f0e7991796b1e7e3f52dceb9137cae2a9dfc8fc0784a550dc4c558e15ab32ed70b14b21b52beb2679b4892b41a0aa44249bcb996f01e125d58477c6976
   languageName: node
   linkType: hard
 
