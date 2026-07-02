@@ -4,418 +4,393 @@
 
 #include "shell/common/api/electron_api_clipboard.h"
 
-#include <map>
+#include <algorithm>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 #include "base/containers/flat_set.h"
+#include "base/containers/span.h"
 #include "base/containers/to_vector.h"
-#include "base/run_loop.h"
+#include "base/functional/bind.h"
+#include "base/logging.h"
+#include "base/no_destructor.h"
+#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "shell/browser/browser.h"
-#include "shell/common/gin_converters/image_converter.h"
+#include "gin/function_template.h"
+#include "shell/common/api/electron_api_clipboard_item.h"
+#include "shell/common/gin_converters/clipboard_item_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/node_util.h"
-#include "shell/common/process_util.h"
+#include "shell/common/skia_util.h"
+#include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/skia/include/core/SkBitmap.h"
+#include "ui/base/clipboard/clipboard_constants.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/clipboard_url_info.h"
 #include "ui/base/clipboard/file_info.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
-#include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/image/image.h"
+#include "ui/gfx/image/image_skia.h"
 #include "url/gurl.h"
 
 namespace {
 
-[[nodiscard]] ui::ClipboardBuffer GetClipboardBuffer(gin::Arguments* args) {
-  std::string type;
-  return args->GetNext(&type) && type == "selection"
-             ? ui::ClipboardBuffer::kSelection
-             : ui::ClipboardBuffer::kCopyPaste;
+// `ClipboardFormatType`s that `ReadAvailableStandardAndCustomFormatNames`
+// already surfaces under a MIME name. The union below covers every
+// standard format chromium's per-platform `GetStandardFormats` impl
+// checks for:
+//   * macOS (`clipboard_mac.mm`)  — PlainText, Html, Svg, Rtf, Filenames,
+//                                    Png (via NSImage detection)
+//   * Windows (`clipboard_win.cc`) — PlainTextA, Html, Svg, Rtf,
+//                                    CF_DIB→Png, CFHDrop→Filenames
+//   * Linux/Ozone (`clipboard_ozone.cc`, via `GetStandardFormatsFromMime-
+//                                    Types`) — PlainText, Html, Svg, Rtf,
+//                                    Bitmap, Filenames
+// When merging the raw platform-format names reported by
+// `GetAllAvailableFormats` into the `clipboard.read()` `types` list,
+// these are skipped so we don't surface, e.g., `text/plain` *and*
+// `electron application/osclipboard;format="public.utf8-plain-text"` for
+// the same content.
+bool IsStandardClipboardFormat(const ui::ClipboardFormatType& fmt) {
+  static const base::NoDestructor<base::flat_set<ui::ClipboardFormatType>>
+      kStandardFormats({
+          ui::ClipboardFormatType::PlainTextType(),
+          ui::ClipboardFormatType::HtmlType(),
+          ui::ClipboardFormatType::SvgType(),
+          ui::ClipboardFormatType::RtfType(),
+          ui::ClipboardFormatType::PngType(),
+          ui::ClipboardFormatType::BitmapType(),
+          ui::ClipboardFormatType::FilenamesType(),
+#if BUILDFLAG(IS_WIN)
+          ui::ClipboardFormatType::PlainTextAType(),
+          ui::ClipboardFormatType::CFHDropType(),
+#endif
+      });
+  return kStandardFormats->contains(fmt);
 }
 
-bool IsFormatAvailable(ui::Clipboard* clipboard,
-                       const ui::ClipboardFormatType& format,
-                       ui::ClipboardBuffer buffer) {
-  base::flat_set<ui::ClipboardFormatType> formats;
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  clipboard->GetAllAvailableFormats(
-      buffer, /* data_dst = */ std::nullopt,
-      base::BindOnce(
-          [](base::flat_set<ui::ClipboardFormatType>* out,
-             base::OnceClosure quit,
-             base::flat_set<ui::ClipboardFormatType> result) {
-            *out = std::move(result);
-            std::move(quit).Run();
-          },
-          &formats, run_loop.QuitClosure()));
-  run_loop.Run();
-  return formats.contains(format);
+// Build `electron application/osclipboard;format="<name>"` from a raw
+// platform clipboard format name — the inverse of
+// `clipboard_util::ParseOSClipboardFormat`.
+std::string BuildOSClipboardFormat(const std::string& name) {
+  return absl::StrFormat("%s;format=\"%s\"",
+                         electron::api::clipboard_util::kOSClipboardMimePrefix,
+                         name);
+}
+
+using TypesCallback = base::OnceCallback<void(std::vector<std::string>)>;
+
+// Async pipeline that aggregates the full list of MIME types currently
+// available on `buffer`, then invokes `on_done` with the merged list.
+// Used by both `Clipboard::Read` (to construct a `ClipboardItem`) and
+// `Clipboard::Has` (to test membership) so the two stay consistent. The
+// list is assembled from three chromium calls, in chronological order:
+//
+//   * `ReadAvailableStandardAndCustomFormatNames` — standard MIME types
+//     *and* `web `-prefixed W3C custom formats (chromium internally calls
+//     `GetStandardFormats` + `ExtractCustomPlatformNames` and merges).
+//   * `GetAllAvailableFormats` — every other raw platform clipboard
+//     format. Standard formats are filtered via `IsStandardClipboardFormat`
+//     (they were already surfaced under a MIME above); the remainder is
+//     wrapped as `electron application/osclipboard;format="..."`. The
+//     macOS find pasteboard pseudo-MIME is decorated here.
+//   * `ReadURL` (non-Linux, copy/paste buffer only) — adds
+//     `electron application/bookmark` if a bookmark is present.
+//
+// The callbacks are built bottom-up because each step takes the next one
+// as a bound argument, so the construction order below is the reverse of
+// the execution order above.
+void EnumerateAvailableTypes(ui::ClipboardBuffer buffer,
+                             TypesCallback on_done) {
+  // Bookmarks aren't reported by the format enumeration, so probe
+  // `ReadURL` (non-Linux only — Linux has no bookmark concept on the
+  // clipboard) to discover them before finalizing.
+  TypesCallback add_bookmark = base::BindOnce(
+      [](TypesCallback finalize, std::vector<std::string> types) {
+#if !BUILDFLAG(IS_LINUX)
+        ui::Clipboard::GetForCurrentThread()->ReadURL(
+            /* data_dst = */ std::nullopt,
+            base::BindOnce(
+                [](TypesCallback finalize, std::vector<std::string> types,
+                   ui::ClipboardUrlInfo url_info) {
+                  if (!url_info.title.empty() || !url_info.url.is_empty()) {
+                    types.emplace_back(
+                        electron::api::clipboard_util::kBookmarkMime);
+                  }
+                  std::move(finalize).Run(std::move(types));
+                },
+                std::move(finalize), std::move(types)));
+#else
+        std::move(finalize).Run(std::move(types));
+#endif
+      },
+      std::move(on_done));
+
+  // Merge the remaining raw platform clipboard formats from
+  // `GetAllAvailableFormats`. Standards (`IsStandardClipboardFormat`) are
+  // filtered out since they were already surfaced under a MIME by
+  // `ReadAvailableStandardAndCustomFormatNames`; everything else is
+  // wrapped in the `osclipboard` MIME. The web-custom-format plumbing
+  // slots (`org.w3.web-custom-format.map` / `type-N`) end up exposed too,
+  // alongside their `web `-prefixed MIME twins — the platform names vary
+  // by OS and surfacing them is harmless.
+  TypesCallback merge_raw_formats = base::BindOnce(
+      [](TypesCallback next, ui::ClipboardBuffer buf,
+         std::vector<std::string> types) {
+#if BUILDFLAG(IS_MAC)
+        if (!electron::api::Clipboard::ReadFindText().empty()) {
+          types.emplace_back(electron::api::clipboard_util::kFindTextMime);
+        }
+#endif
+        ui::Clipboard::GetForCurrentThread()->GetAllAvailableFormats(
+            buf, /* data_dst = */ std::nullopt,
+            base::BindOnce(
+                [](TypesCallback next, std::vector<std::string> types,
+                   base::flat_set<ui::ClipboardFormatType> formats) {
+                  for (const auto& fmt : formats) {
+                    // Skip standards — already emitted as MIMEs above.
+                    if (IsStandardClipboardFormat(fmt))
+                      continue;
+                    // On Windows `GetName()` yields the numeric registered-
+                    // format id; resolve it back to the registered string
+                    // name so the MIME round-trips on write and read.
+                    const std::string name = electron::api::clipboard_util::
+                        ResolvePlatformFormatName(fmt);
+                    if (name.empty())
+                      continue;
+                    // A `web `-prefixed platform name (defensive — not
+                    // normally produced) is exposed verbatim; everything
+                    // else is wrapped in the osclipboard MIME.
+                    std::string mime =
+                        name.starts_with(ui::kWebClipboardFormatPrefix)
+                            ? name
+                            : BuildOSClipboardFormat(name);
+                    if (std::find(types.begin(), types.end(), mime) ==
+                        types.end()) {
+                      types.push_back(std::move(mime));
+                    }
+                  }
+                  std::move(next).Run(std::move(types));
+                },
+                std::move(next), std::move(types)));
+      },
+      std::move(add_bookmark), buffer);
+
+  // Kick the chain off with `ReadAvailableStandardAndCustomFormatNames`,
+  // which returns standard MIMEs and `web `-prefixed W3C custom formats.
+  // Chromium hands us a `vector<u16string>`; UTF-8 conversion happens once
+  // here so the rest of the pipeline runs on `std::string`.
+  ui::Clipboard::GetForCurrentThread()
+      ->ReadAvailableStandardAndCustomFormatNames(
+          buffer, /* data_dst = */ std::nullopt,
+          base::BindOnce(
+              [](TypesCallback next, std::vector<std::u16string> u16_types) {
+                std::vector<std::string> types;
+                types.reserve(u16_types.size());
+                for (const auto& u16 : u16_types)
+                  types.emplace_back(base::UTF16ToUTF8(u16));
+                std::move(next).Run(std::move(types));
+              },
+              std::move(merge_raw_formats)));
 }
 
 }  // namespace
 
 namespace electron::api {
 
-std::vector<std::u16string> Clipboard::AvailableFormats(
-    gin::Arguments* const args) {
-  std::vector<std::u16string> format_types;
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+namespace clipboard_util {
 
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  clipboard->ReadAvailableTypes(
-      GetClipboardBuffer(args),
-      /* data_dst = */ std::nullopt,
-      base::BindOnce(
-          [](std::vector<std::u16string>* out, base::OnceClosure quit,
-             std::vector<std::u16string> result) {
-            *out = std::move(result);
-            std::move(quit).Run();
-          },
-          &format_types, run_loop.QuitClosure()));
-  run_loop.Run();
-
-  return format_types;
+std::optional<std::string> ParseOSClipboardFormat(const std::string& mime) {
+  // Expecting `<kOSClipboardMimePrefix>;format="<name>"`. Peel the prefix
+  // and the trailing quote with `base::Remove{Prefix,Suffix}`; if anything
+  // doesn't line up, return nullopt.
+  auto after_prefix = base::RemovePrefix(mime, kOSClipboardMimePrefix);
+  if (!after_prefix)
+    return std::nullopt;
+  auto after_eq = base::RemovePrefix(*after_prefix, ";format=\"");
+  if (!after_eq)
+    return std::nullopt;
+  auto name = base::RemoveSuffix(*after_eq, "\"");
+  if (!name)
+    return std::nullopt;
+  return std::string{*name};
 }
 
-bool Clipboard::Has(const std::string& format_string,
-                    gin::Arguments* const args) {
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  ui::ClipboardFormatType format =
-      ui::ClipboardFormatType::CustomPlatformType(format_string);
-  if (format.GetName().empty())
-    format = ui::ClipboardFormatType::CustomPlatformType(format_string);
-  return IsFormatAvailable(clipboard, format, GetClipboardBuffer(args));
+#if !BUILDFLAG(IS_WIN)
+// Windows needs a `GetClipboardFormatName` lookup — see
+// `electron_api_clipboard_win.cc`. Everywhere else `GetName()` already
+// returns the format's string name.
+std::string ResolvePlatformFormatName(const ui::ClipboardFormatType& fmt) {
+  return fmt.GetName();
 }
-
-std::string Clipboard::Read(const std::string& format_string) {
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  // Prefer raw platform format names
-  ui::ClipboardFormatType rawFormat(
-      ui::ClipboardFormatType::CustomPlatformType(format_string));
-  bool rawFormatAvailable =
-      IsFormatAvailable(clipboard, rawFormat, ui::ClipboardBuffer::kCopyPaste);
-#if BUILDFLAG(IS_LINUX)
-  if (!rawFormatAvailable) {
-    rawFormatAvailable = IsFormatAvailable(clipboard, rawFormat,
-                                           ui::ClipboardBuffer::kSelection);
-  }
-#endif
-  if (rawFormatAvailable) {
-    std::string data;
-
-    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-    clipboard->ReadData(
-        rawFormat,
-        /* data_dst = */ std::nullopt,
-        base::BindOnce(
-            [](std::string* out, base::OnceClosure quit, std::string result) {
-              *out = std::move(result);
-              std::move(quit).Run();
-            },
-            &data, run_loop.QuitClosure()));
-    run_loop.Run();
-
-    return data;
-  }
-  // Otherwise, resolve custom format names
-  std::map<std::string, std::string> custom_format_names;
-  {
-    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-    clipboard->ExtractCustomPlatformNames(
-        ui::ClipboardBuffer::kCopyPaste, /* data_dst = */ std::nullopt,
-        base::BindOnce(
-            [](std::map<std::string, std::string>* out, base::OnceClosure quit,
-               std::map<std::string, std::string> result) {
-              *out = std::move(result);
-              std::move(quit).Run();
-            },
-            &custom_format_names, run_loop.QuitClosure()));
-    run_loop.Run();
-  }
-#if BUILDFLAG(IS_LINUX)
-  if (!custom_format_names.contains(format_string)) {
-    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-    clipboard->ExtractCustomPlatformNames(
-        ui::ClipboardBuffer::kSelection, /* data_dst = */ std::nullopt,
-        base::BindOnce(
-            [](std::map<std::string, std::string>* out, base::OnceClosure quit,
-               std::map<std::string, std::string> result) {
-              *out = std::move(result);
-              std::move(quit).Run();
-            },
-            &custom_format_names, run_loop.QuitClosure()));
-    run_loop.Run();
-  }
 #endif
 
-  ui::ClipboardFormatType format;
-  if (custom_format_names.contains(format_string)) {
-    format =
-        ui::ClipboardFormatType(ui::ClipboardFormatType::CustomPlatformType(
-            custom_format_names[format_string]));
-  } else {
-    format = ui::ClipboardFormatType(
-        ui::ClipboardFormatType::CustomPlatformType(format_string));
-  }
-  std::string data;
+}  // namespace clipboard_util
 
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  clipboard->ReadData(
-      format,
-      /* data_dst = */ std::nullopt,
+// Resolves `true` iff `format_string` appears in the same aggregated MIME
+// list `clipboard.read()` exposes. This means `has` is consistent with
+// `read` for every MIME the API surfaces: standard types, `web `-prefixed
+// W3C custom formats, `electron application/osclipboard;format="..."`
+// raw formats, `electron application/bookmark`, and the macOS find
+// pasteboard pseudo-MIME.
+v8::Local<v8::Promise> Clipboard::Has(ui::ClipboardBuffer buffer,
+                                      const std::string& format_string,
+                                      v8::Isolate* const isolate) {
+  gin_helper::Promise<bool> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  EnumerateAvailableTypes(
+      buffer, base::BindOnce(
+                  [](gin_helper::Promise<bool> promise, std::string needle,
+                     std::vector<std::string> types) {
+                    promise.Resolve(std::find(types.begin(), types.end(),
+                                              needle) != types.end());
+                  },
+                  std::move(promise), format_string));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> Clipboard::ReadText(ui::ClipboardBuffer buffer,
+                                           v8::Isolate* const isolate) {
+  gin_helper::Promise<std::u16string> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  ui::Clipboard::GetForCurrentThread()->ReadText(
+      buffer, /* data_dst = */ std::nullopt,
       base::BindOnce(
-          [](std::string* out, base::OnceClosure quit, std::string result) {
-            *out = std::move(result);
-            std::move(quit).Run();
-          },
-          &data, run_loop.QuitClosure()));
-  run_loop.Run();
-
-  return data;
-}
-
-v8::Local<v8::Value> Clipboard::ReadBuffer(v8::Isolate* const isolate,
-                                           const std::string& format_string) {
-  std::string data = Read(format_string);
-  return electron::Buffer::Copy(isolate, data).ToLocalChecked();
-}
-
-void Clipboard::WriteBuffer(const std::string& format,
-                            const v8::Local<v8::Value> buffer,
-                            gin::Arguments* const args) {
-  if (!node::Buffer::HasInstance(buffer)) {
-    args->ThrowTypeError("buffer must be a node Buffer");
-    return;
-  }
-
-  CHECK(buffer->IsArrayBufferView());
-  v8::Local<v8::ArrayBufferView> buffer_view = buffer.As<v8::ArrayBufferView>();
-  const size_t n_bytes = buffer_view->ByteLength();
-  mojo_base::BigBuffer big_buffer{n_bytes};
-  [[maybe_unused]] const size_t n_got =
-      buffer_view->CopyContents(big_buffer.data(), n_bytes);
-  DCHECK_EQ(n_got, n_bytes);
-
-  ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  writer.WriteUnsafeRawData(base::UTF8ToUTF16(format), std::move(big_buffer));
-}
-
-void Clipboard::Write(const gin_helper::Dictionary& data,
-                      gin::Arguments* const args) {
-  ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  std::u16string text, html, bookmark;
-  gfx::Image image;
-
-  if (data.Get("text", &text)) {
-    writer.WriteText(text);
-
-    if (data.Get("bookmark", &bookmark))
-      writer.WriteURL(
-          ui::ClipboardUrlInfo{.url = GURL(text), .title = bookmark});
-  }
-
-  if (data.Get("rtf", &text)) {
-    std::string rtf = base::UTF16ToUTF8(text);
-    writer.WriteRTF(rtf);
-  }
-
-  if (data.Get("html", &html))
-    writer.WriteHTML(html, std::string());
-
-  if (data.Get("image", &image))
-    writer.WriteImage(image.AsBitmap());
-}
-
-std::u16string Clipboard::ReadText(gin::Arguments* const args) {
-  std::u16string data;
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  auto type = GetClipboardBuffer(args);
-  if (IsFormatAvailable(clipboard, ui::ClipboardFormatType::PlainTextType(),
-                        type)) {
-    base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-    clipboard->ReadText(type,
-                        /* data_dst = */ std::nullopt,
-                        base::BindOnce(
-                            [](std::u16string* out, base::OnceClosure quit,
-                               std::u16string result) {
-                              *out = std::move(result);
-                              std::move(quit).Run();
-                            },
-                            &data, run_loop.QuitClosure()));
-    run_loop.Run();
-  } else {
+          [](gin_helper::Promise<std::u16string> promise,
+             ui::ClipboardBuffer buf, std::u16string result) {
 #if BUILDFLAG(IS_WIN)
-    if (IsFormatAvailable(clipboard, ui::ClipboardFormatType::PlainTextAType(),
-                          type)) {
-      std::string result;
-      base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-      clipboard->ReadAsciiText(
-          type,
-          /* data_dst = */ std::nullopt,
-          base::BindOnce(
-              [](std::string* out, base::OnceClosure quit, std::string value) {
-                *out = std::move(value);
-                std::move(quit).Run();
-              },
-              &result, run_loop.QuitClosure()));
-      run_loop.Run();
-      data = base::ASCIIToUTF16(result);
-    }
-#endif
-  }
-  return data;
-}
-
-void Clipboard::WriteText(const std::u16string& text,
-                          gin::Arguments* const args) {
-  ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  writer.WriteText(text);
-}
-
-std::u16string Clipboard::ReadRTF(gin::Arguments* const args) {
-  std::string data;
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  clipboard->ReadRTF(
-      GetClipboardBuffer(args),
-      /* data_dst = */ std::nullopt,
-      base::BindOnce(
-          [](std::string* out, base::OnceClosure quit, std::string result) {
-            *out = std::move(result);
-            std::move(quit).Run();
-          },
-          &data, run_loop.QuitClosure()));
-  run_loop.Run();
-
-  return base::UTF8ToUTF16(data);
-}
-
-void Clipboard::WriteRTF(const std::string& text, gin::Arguments* const args) {
-  ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  writer.WriteRTF(text);
-}
-
-std::u16string Clipboard::ReadHTML(gin::Arguments* const args) {
-  std::u16string html;
-  uint32_t start = 0;
-  uint32_t end = 0;
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  clipboard->ReadHTML(
-      GetClipboardBuffer(args),
-      /* data_dst = */ std::nullopt,
-      base::BindOnce(
-          [](std::u16string* out_html, uint32_t* out_start, uint32_t* out_end,
-             base::OnceClosure quit, std::u16string markup, GURL src_url,
-             uint32_t fragment_start, uint32_t fragment_end) {
-            *out_html = std::move(markup);
-            *out_start = fragment_start;
-            *out_end = fragment_end;
-            std::move(quit).Run();
-          },
-          &html, &start, &end, run_loop.QuitClosure()));
-  run_loop.Run();
-
-  return html.substr(start, end - start);
-}
-
-void Clipboard::WriteHTML(const std::u16string& html,
-                          gin::Arguments* const args) {
-  ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  writer.WriteHTML(html, std::string());
-}
-
-v8::Local<v8::Value> Clipboard::ReadBookmark(v8::Isolate* const isolate) {
-  std::u16string title;
-  GURL url;
-  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  clipboard->ReadURL(
-      /* data_dst = */ std::nullopt,
-      base::BindOnce(
-          [](std::u16string* out_title, GURL* out_url, base::OnceClosure quit,
-             ui::ClipboardUrlInfo url_info) {
-            *out_title = std::move(url_info.title);
-            *out_url = std::move(url_info.url);
-            std::move(quit).Run();
-          },
-          &title, &url, run_loop.QuitClosure()));
-  run_loop.Run();
-
-  dict.Set("title", title);
-  dict.Set("url", url.spec());
-  return dict.GetHandle();
-}
-
-void Clipboard::WriteBookmark(const std::u16string& title,
-                              const std::string& url,
-                              gin::Arguments* const args) {
-  ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  writer.WriteURL(ui::ClipboardUrlInfo{.url = GURL(url), .title = title});
-}
-
-gfx::Image Clipboard::ReadImage(gin::Arguments* const args) {
-  // The ReadPng uses thread pool which requires app ready.
-  if (IsBrowserProcess() && !Browser::Get()->is_ready()) {
-    gin_helper::ErrorThrower{args->isolate()}.ThrowError(
-        "clipboard.readImage is available only after app ready in the main "
-        "process");
-    return {};
-  }
-
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  std::optional<gfx::Image> image;
-
-  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
-  base::RepeatingClosure callback = run_loop.QuitClosure();
-  clipboard->ReadPng(
-      GetClipboardBuffer(args),
-      /* data_dst = */ std::nullopt,
-      base::BindOnce(
-          [](std::optional<gfx::Image>* image, base::RepeatingClosure cb,
-             const std::vector<uint8_t>& result) {
-            SkBitmap bitmap = gfx::PNGCodec::Decode(result);
-            if (bitmap.isNull()) {
-              image->emplace();
-            } else {
-              image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
+            if (result.empty()) {
+              ui::Clipboard::GetForCurrentThread()->ReadAsciiText(
+                  buf, /* data_dst = */ std::nullopt,
+                  base::BindOnce(
+                      [](gin_helper::Promise<std::u16string> p,
+                         std::string ascii) {
+                        p.Resolve(base::ASCIIToUTF16(ascii));
+                      },
+                      std::move(promise)));
+              return;
             }
-            std::move(cb).Run();
+#endif
+            promise.Resolve(std::move(result));
           },
-          &image, std::move(callback)));
-  run_loop.Run();
+          std::move(promise), buffer));
 
-  DCHECK(image.has_value());
-  return image.value();
+  return handle;
 }
 
-void Clipboard::WriteImage(const gfx::Image& image,
-                           gin::Arguments* const args) {
-  ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  SkBitmap orig = image.AsBitmap();
-  SkBitmap bmp;
+// Async W3C `clipboard.read()` — resolves to a one-element
+// `ClipboardItem[]` whose `types` array is the full aggregated MIME list
+// from `EnumerateAvailableTypes`. The `ClipboardItem`'s `getType(mime)`
+// talks to `ui::Clipboard` on demand — no v8 closures are captured at
+// `clipboard.read()` time.
+v8::Local<v8::Promise> Clipboard::Read(ui::ClipboardBuffer buffer,
+                                       v8::Isolate* const isolate) {
+  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  if (bmp.tryAllocPixels(orig.info()) &&
-      orig.readPixels(bmp.info(), bmp.getPixels(), bmp.rowBytes(), 0, 0)) {
-    writer.WriteImage(bmp);
+  EnumerateAvailableTypes(
+      buffer, base::BindOnce(
+                  [](gin_helper::Promise<v8::Local<v8::Value>> promise,
+                     ui::ClipboardBuffer buf, std::vector<std::string> types) {
+                    v8::Isolate* iso = promise.isolate();
+                    v8::HandleScope scope{iso};
+                    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+
+                    ClipboardItem* item = ClipboardItem::CreateForRead(
+                        iso, buf, std::move(types));
+                    v8::Local<v8::Value> wrapper;
+                    if (!gin::TryConvertToV8(iso, item, &wrapper)) {
+                      promise.RejectWithErrorMessage(
+                          "Failed to create ClipboardItem wrapper");
+                      return;
+                    }
+                    v8::Local<v8::Array> array = v8::Array::New(iso, 1);
+                    array->Set(ctx, 0, wrapper).Check();
+                    promise.Resolve(array);
+                  },
+                  std::move(promise), buffer));
+
+  return handle;
+}
+
+// Atomic write of every MIME-keyed entry across the supplied
+// `ClipboardItem`s. gin's vector converter (delegating to
+// `Converter<cppgc::Persistent<ClipboardItem>>`) handles the
+// array-of-`ClipboardItem` conversion automatically — non-array inputs
+// and arrays containing non-`ClipboardItem` values are rejected by gin
+// before this function runs, and per-MIME payload validation already
+// happened in the `ClipboardItem` constructor. All `Write` has to do is
+// reject read-side items and dispatch each item's `WriteTo` against a
+// single `ScopedClipboardWriter`.
+v8::Local<v8::Promise> Clipboard::Write(
+    ui::ClipboardBuffer buffer,
+    const std::vector<cppgc::Persistent<ClipboardItem>>& items,
+    v8::Isolate* const isolate) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  // ClipboardItems returned by `clipboard.read()` don't carry the user's
+  // payload object — they're lightweight readers bound to a buffer and
+  // can't be passed back to `write()`.
+  for (const auto& item : items) {
+    if (item->is_read_side()) {
+      promise.Reject(v8::Exception::TypeError(gin::StringToV8(
+          isolate,
+          "clipboard.write cannot accept a ClipboardItem returned from "
+          "clipboard.read() — construct a new ClipboardItem to write.")));
+      return handle;
+    }
   }
+
+  // `ClipboardItem::WriteTo` dispatches each MIME to the right writer
+  // method; the macOS find-pasteboard pseudo-MIME is committed directly
+  // to its separate NSPasteboard from within `WriteTo`.
+  {
+    ui::ScopedClipboardWriter writer{buffer};
+    for (const auto& item : items)
+      item->WriteTo(writer);
+    // `ScopedClipboardWriter`'s destructor runs here, committing every
+    // accumulated entry to the system clipboard atomically.
+  }
+
+  promise.Resolve();
+  return handle;
+}
+
+v8::Local<v8::Promise> Clipboard::WriteText(ui::ClipboardBuffer buffer,
+                                            const std::u16string& text,
+                                            v8::Isolate* const isolate) {
+  gin_helper::Promise<void> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  {
+    ui::ScopedClipboardWriter writer{buffer};
+    writer.WriteText(text);
+  }
+
+  promise.Resolve();
+  return handle;
+}
+
+void Clipboard::Clear(ui::ClipboardBuffer buffer) {
+  ui::Clipboard::GetForCurrentThread()->Clear(buffer);
 }
 
 #if !BUILDFLAG(IS_MAC)
+// Mac impls live in `electron_api_clipboard_mac.mm`.
 void Clipboard::WriteFindText(const std::u16string& text) {}
 std::u16string Clipboard::ReadFindText() {
   return {};
 }
 #endif
-
-void Clipboard::Clear(gin::Arguments* const args) {
-  ui::Clipboard::GetForCurrentThread()->Clear(GetClipboardBuffer(args));
-}
 
 // This exists for testing purposes ONLY.
 void Clipboard::WriteFilesForTesting(const std::vector<base::FilePath>& files) {
@@ -429,36 +404,55 @@ void Clipboard::WriteFilesForTesting(const std::vector<base::FilePath>& files) {
 
 namespace {
 
+// Bake `buffer` into each method and attach the resulting v8 functions to
+// `target` so the JS-facing object has the public `Electron.Clipboard`
+// shape (clear, has, read, readText, write, writeText). On Linux,
+// `Initialize` calls this twice — once for the main copy/paste clipboard
+// and once for the selection clipboard.
+void PopulateClipboardObject(v8::Isolate* isolate,
+                             v8::Local<v8::Context> context,
+                             v8::Local<v8::Object> target,
+                             ui::ClipboardBuffer buffer) {
+  using electron::api::Clipboard;
+
+  auto set = [&](std::string_view name, auto callback) {
+    auto tmpl = gin::CreateFunctionTemplate(isolate, std::move(callback));
+    target
+        ->Set(context, gin::StringToV8(isolate, name),
+              tmpl->GetFunction(context).ToLocalChecked())
+        .Check();
+  };
+
+  set("clear", base::BindRepeating(&Clipboard::Clear, buffer));
+  set("has", base::BindRepeating(&Clipboard::Has, buffer));
+  set("read", base::BindRepeating(&Clipboard::Read, buffer));
+  set("readText", base::BindRepeating(&Clipboard::ReadText, buffer));
+  set("write", base::BindRepeating(&Clipboard::Write, buffer));
+  set("writeText", base::BindRepeating(&Clipboard::WriteText, buffer));
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
                 void* priv) {
   v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+
+  PopulateClipboardObject(isolate, context, exports,
+                          ui::ClipboardBuffer::kCopyPaste);
+
+#if BUILDFLAG(IS_LINUX)
+  auto selection = v8::Object::New(isolate);
+  PopulateClipboardObject(isolate, context, selection,
+                          ui::ClipboardBuffer::kSelection);
+  exports->Set(context, gin::StringToV8(isolate, "selection"), selection)
+      .Check();
+#endif
+
   gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("availableFormats",
-                 &electron::api::Clipboard::AvailableFormats);
-  dict.SetMethod("has", &electron::api::Clipboard::Has);
-  dict.SetMethod("read", &electron::api::Clipboard::Read);
-  dict.SetMethod("write", &electron::api::Clipboard::Write);
-  dict.SetMethod("readText", &electron::api::Clipboard::ReadText);
-  dict.SetMethod("writeText", &electron::api::Clipboard::WriteText);
-  dict.SetMethod("readRTF", &electron::api::Clipboard::ReadRTF);
-  dict.SetMethod("writeRTF", &electron::api::Clipboard::WriteRTF);
-  dict.SetMethod("readHTML", &electron::api::Clipboard::ReadHTML);
-  dict.SetMethod("writeHTML", &electron::api::Clipboard::WriteHTML);
-  dict.SetMethod("readBookmark", &electron::api::Clipboard::ReadBookmark);
-  dict.SetMethod("writeBookmark", &electron::api::Clipboard::WriteBookmark);
-  dict.SetMethod("readImage", &electron::api::Clipboard::ReadImage);
-  dict.SetMethod("writeImage", &electron::api::Clipboard::WriteImage);
-  dict.SetMethod("readFindText", &electron::api::Clipboard::ReadFindText);
-  dict.SetMethod("writeFindText", &electron::api::Clipboard::WriteFindText);
-  dict.SetMethod("readBuffer", &electron::api::Clipboard::ReadBuffer);
-  dict.SetMethod("writeBuffer", &electron::api::Clipboard::WriteBuffer);
   dict.SetMethod("_writeFilesForTesting",
                  &electron::api::Clipboard::WriteFilesForTesting);
-  dict.SetMethod("clear", &electron::api::Clipboard::Clear);
 }
 
 }  // namespace
 
-NODE_LINKED_BINDING_CONTEXT_AWARE(electron_common_clipboard, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_clipboard, Initialize)
