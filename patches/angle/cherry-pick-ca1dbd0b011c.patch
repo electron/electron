@@ -20,15 +20,15 @@ Reviewed-by: Kenneth Russell <kbr@chromium.org>
 Commit-Queue: Quyen Le <lehoangquyen@google.com>
 
 diff --git a/src/libANGLE/renderer/metal/ContextMtl.mm b/src/libANGLE/renderer/metal/ContextMtl.mm
-index 910ea050f8539778a9c97209661fe300fa7fc573..b1a6ec8f85732b2cd892a900e5604f281f59a7ab 100644
+index bc0cd2b41c8bfe01ecd8e6113b7d4f2c9e768863..9f5a66d4795918b24c8181888c687b7c95d1bb55 100644
 --- a/src/libANGLE/renderer/metal/ContextMtl.mm
 +++ b/src/libANGLE/renderer/metal/ContextMtl.mm
-@@ -814,7 +814,7 @@ GLint GetOwnershipIdentity(const egl::AttributeMap &attribs)
+@@ -813,7 +813,7 @@ GLint GetOwnershipIdentity(const egl::AttributeMap &attribs)
      // as drawIdxBuffer.
      const std::vector<DrawCommandRange> drawCommands =
          mVertexArray->getDrawIndices(context, type, convertedType, originalMode, mode, idxBuffer,
--                                     (uint32_t)count, convertedOffset);
-+                                     (uint32_t)count, indices, convertedOffset);
+-                                     convertedCounti32, convertedOffset);
++                                     convertedCounti32, indices, convertedOffset);
  
      bool isNoOp = false;
      ANGLE_TRY(setupDraw(context, mode, 0, count, instances, type, indices, false, &isNoOp));
