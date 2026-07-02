@@ -15,10 +15,10 @@ was missing gypi_values.node_pdl_files from its inputs, causing Ninja to skip
 regeneration when PDL domain files changed. Should be upstreamed.
 
 diff --git a/configure.py b/configure.py
-index e05c11611052373bd74cf2f4fb1fdb7b1cf24e77..8f101999c20ef9d59d96d507b403f13cf9f23ae8 100755
+index 9c426b3f8f9cbf2ce086fce2fe1ee7c7bd636f89..bdf0d19292bf32e3e5621d7af2c93618c85dc6a4 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1897,7 +1897,7 @@ def configure_v8(o, configs):
+@@ -1947,7 +1947,7 @@ def configure_v8(o, configs):
    # Until we manage to get rid of all those, v8_enable_sandbox cannot be used.
    # Note that enabling pointer compression without enabling sandbox is unsupported by V8,
    # so this can be broken at any time.

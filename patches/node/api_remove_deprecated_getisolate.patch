@@ -6,10 +6,10 @@ Subject: Remove deprecated `GetIsolate`
 https://chromium-review.googlesource.com/c/v8/v8/+/6905244
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 4293231c0b13eff12ef76e5fa61466c034671b15..dd0100693afdabaf8d7bae25dccee237b3c0a5c2 100644
+index 4dea08fafee4379066a7d8af66fb07c7e7a3490c..ea8ba25085c12f6180c879f19e543a8151e3792d 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -791,7 +791,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
+@@ -792,7 +792,7 @@ std::unique_ptr<MultiIsolatePlatform> MultiIsolatePlatform::Create(
  
  MaybeLocal<Object> GetPerContextExports(Local<Context> context,
                                          IsolateData* isolate_data) {
@@ -18,7 +18,7 @@ index 4293231c0b13eff12ef76e5fa61466c034671b15..dd0100693afdabaf8d7bae25dccee237
    EscapableHandleScope handle_scope(isolate);
  
    Local<Object> global = context->Global();
-@@ -837,7 +837,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
+@@ -838,7 +838,7 @@ void ProtoThrower(const FunctionCallbackInfo<Value>& info) {
  // This runs at runtime, regardless of whether the context
  // is created from a snapshot.
  Maybe<void> InitializeContextRuntime(Local<Context> context) {
@@ -27,7 +27,7 @@ index 4293231c0b13eff12ef76e5fa61466c034671b15..dd0100693afdabaf8d7bae25dccee237
    HandleScope handle_scope(isolate);
  
    // When `IsCodeGenerationFromStringsAllowed` is true, V8 takes the fast path
-@@ -916,7 +916,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
+@@ -917,7 +917,7 @@ Maybe<void> InitializeContextRuntime(Local<Context> context) {
  }
  
  Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
@@ -36,7 +36,7 @@ index 4293231c0b13eff12ef76e5fa61466c034671b15..dd0100693afdabaf8d7bae25dccee237
    HandleScope handle_scope(isolate);
  
    // Delete `Intl.v8BreakIterator`
-@@ -941,7 +941,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
+@@ -942,7 +942,7 @@ Maybe<void> InitializeBaseContextForSnapshot(Local<Context> context) {
  }
  
  Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
@@ -45,7 +45,7 @@ index 4293231c0b13eff12ef76e5fa61466c034671b15..dd0100693afdabaf8d7bae25dccee237
    HandleScope handle_scope(isolate);
  
    // Initialize the default values.
-@@ -959,7 +959,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
+@@ -960,7 +960,7 @@ Maybe<void> InitializeMainContextForSnapshot(Local<Context> context) {
  MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
                                              IsolateData* isolate_data) {
    CHECK(isolate_data);
@@ -54,7 +54,7 @@ index 4293231c0b13eff12ef76e5fa61466c034671b15..dd0100693afdabaf8d7bae25dccee237
    EscapableHandleScope scope(isolate);
    Context::Scope context_scope(context);
  
-@@ -983,7 +983,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+@@ -984,7 +984,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
  MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
                                                 IsolateData* isolate_data) {
    CHECK(isolate_data);
@@ -63,7 +63,7 @@ index 4293231c0b13eff12ef76e5fa61466c034671b15..dd0100693afdabaf8d7bae25dccee237
    EscapableHandleScope scope(isolate);
    Context::Scope context_scope(context);
  
-@@ -1009,7 +1009,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+@@ -1010,7 +1010,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
  Maybe<void> InitializePrimordials(Local<Context> context,
                                    IsolateData* isolate_data) {
    // Run per-context JS files.
@@ -85,10 +85,10 @@ index cc60ddddb037e0279615bbe24821eb20fd8da677..37d83e41b618a07aca98118260abe961
  
    return handle;
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 67bde0803fc47982e41327be3aa3fc7eaafda2d2..bd90f26a961e60e8efe3cc0ba1f13d5af146bcc4 100644
+index 078efcf5716d6ff617bef047d78903f9011e225f..af01ce3c22c30968326e1fb2baf39663de2113f4 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -1045,7 +1045,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
+@@ -1104,7 +1104,7 @@ bool ArrayOfStringsToX509s(Local<Context> context,
                             Local<Array> cert_array,
                             std::vector<X509*>* certs) {
    ClearErrorOnReturn clear_error_on_return;
@@ -120,7 +120,7 @@ index 6b7e4211a8969351168fc982fe3466a2096bed3a..76c84dd516719849a44e7d67f42ea16d
                             NewStringType::kNormal,
                             mem->length)
 diff --git a/src/encoding_binding.cc b/src/encoding_binding.cc
-index 6fe4f0492dc1f3eaf576c8ff7866080a54cb81c1..41e8e052ff81df78ece87163b0499966cc2ed1b9 100644
+index 31277621e92b4d3583a67140f4ab8a74a9c6df3b..caa109871b71926f3355491767b8064b50cb7e19 100644
 --- a/src/encoding_binding.cc
 +++ b/src/encoding_binding.cc
 @@ -76,7 +76,7 @@ void BindingData::Deserialize(Local<Context> context,
@@ -283,10 +283,10 @@ index 52483740bb377a2bc2a16af701615d9a4e448eae..84d17a46efe146c1794a43963c41a446
    CHECK(!env->temporary_required_module_facade_original.IsEmpty());
    return env->temporary_required_module_facade_original.Get(isolate);
 diff --git a/src/node.h b/src/node.h
-index 8aac774805a002f5af9e9aca62abc56e8f986bab..da87773ba7f0d38f04a7b3851d8a1a6df0eca489 100644
+index 4fab58689aa360a34d8b51d13f72c162701195f3..cf776248b9deef41e34eae8bdf000c66d9606172 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -1144,7 +1144,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+@@ -1158,7 +1158,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
  
  #define NODE_DEFINE_CONSTANT(target, constant)                                 \
    do {                                                                         \
@@ -295,7 +295,7 @@ index 8aac774805a002f5af9e9aca62abc56e8f986bab..da87773ba7f0d38f04a7b3851d8a1a6d
      v8::Local<v8::Context> context = isolate->GetCurrentContext();             \
      v8::Local<v8::String> constant_name = v8::String::NewFromUtf8Literal(      \
          isolate, #constant, v8::NewStringType::kInternalized);                 \
-@@ -1160,7 +1160,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
+@@ -1174,7 +1174,7 @@ NODE_DEPRECATED("Use v8::Date::ValueOf() directly",
  
  #define NODE_DEFINE_HIDDEN_CONSTANT(target, constant)                          \
    do {                                                                         \
@@ -432,7 +432,7 @@ index 5550a4bee3ce9ec8759d216335a9b2b96e20c96e..b38c2f75a92f2d6c1b9c6e7b7aca9246
    Local<Array> keys;
    if (!entries->GetOwnPropertyNames(context).ToLocal(&keys))
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 9a69e79bc0d8056454c556077ac9f5e47a87a463..a1cbd296ec184a0a3c2ceca5718b1e731ce31cef 100644
+index dc55d1c0d9fcbbbb99d6f459280e09e2d37cb04b..a222e7078b3a92ff21bd009ab00361fc78364172 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
 @@ -627,7 +627,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
@@ -453,7 +453,7 @@ index 9a69e79bc0d8056454c556077ac9f5e47a87a463..a1cbd296ec184a0a3c2ceca5718b1e73
    switch (message->ErrorLevel()) {
      case Isolate::MessageErrorLevel::kMessageWarning: {
        Environment* env = Environment::GetCurrent(isolate);
-@@ -1193,7 +1193,7 @@ void Initialize(Local<Object> target,
+@@ -1198,7 +1198,7 @@ void Initialize(Local<Object> target,
    SetMethod(
        context, target, "getErrorSourcePositions", GetErrorSourcePositions);
  
@@ -590,10 +590,10 @@ index 41b0773f4c37a016cfa55aff6bb03baf50905b32..c3e995adf437413fe956e45c2ccc704d
    // Recreate the buffer in the constructor.
    InternalFieldInfo* casted_info = static_cast<InternalFieldInfo*>(info);
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 6965d0a3fa97a55e90160e86d317a31fed6276f0..4d1a35d753230a806c3619232ff6f9270cda5563 100644
+index 5ca5165a255edbcc2dd374c089e264aab44483d8..dd101708c1dd08ca3770bc78319b04c19fcd3f2b 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -2590,7 +2590,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
+@@ -2596,7 +2596,7 @@ bool StatementSync::BindParams(const FunctionCallbackInfo<Value>& args) {
  
    if (args[0]->IsObject() && !args[0]->IsArrayBufferView()) {
      Local<Object> obj = args[0].As<Object>();
@@ -629,10 +629,10 @@ index 5f5241f6c6741218024452202c4a17c7d0239e6b..75aaf468f508f2888daea2f77e98c728
    BindingData* binding = realm->AddBindingData<BindingData>(holder);
    CHECK_NOT_NULL(binding);
 diff --git a/src/node_v8.cc b/src/node_v8.cc
-index 4ee452d5bc6b67da52e91d98531ac35a7af155c7..b226d6fe60f4fdf5a237c336b9101c5a974ce837 100644
+index fbbf75acf50edceaf0cfb57d9c76d926b834ae30..1b86a8a08ba178ebd2f25d44f427c59676f05489 100644
 --- a/src/node_v8.cc
 +++ b/src/node_v8.cc
-@@ -163,7 +163,7 @@ void BindingData::Deserialize(Local<Context> context,
+@@ -164,7 +164,7 @@ void BindingData::Deserialize(Local<Context> context,
                                int index,
                                InternalFieldInfoBase* info) {
    DCHECK_IS_SNAPSHOT_SLOT(index);
@@ -688,10 +688,10 @@ index d8078241e81310eb838d3b7fd63d1c7ceada9e52..e5b3d2be2144ab23e7630f6713bbaf40
    Storage* storage;
    ASSIGN_OR_RETURN_UNWRAP(&storage, info.This());
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index a2631a96371becb0f4ea4f47a52313f4f02477da..4866c7ff589825d41fe84786ed8f9b3fccd3d1b7 100644
+index ed3aa30caac3f47691c4a7262e671589c3bace7b..3d6e0bdaaec133e89e947971b37cf0d8bdc08e38 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
-@@ -1465,8 +1465,6 @@ void GetEnvMessagePort(const FunctionCallbackInfo<Value>& args) {
+@@ -1466,8 +1466,6 @@ void GetEnvMessagePort(const FunctionCallbackInfo<Value>& args) {
    Local<Object> port = env->message_port();
    CHECK_IMPLIES(!env->is_main_thread(), !port.IsEmpty());
    if (!port.IsEmpty()) {
@@ -865,7 +865,7 @@ index 660cfff6b8a0c583be843e555e7a06cd09e0d279..c4b39450c5b7f91c46f7027db367c30d
        context, that, OneByteString(isolate, name), tmpl, flag);
  }
 diff --git a/src/util.h b/src/util.h
-index ac9fc698e608e58ed2f96327d6e4e100121341a0..a9e15c55f519beb52b73555082ca62e415ae75fd 100644
+index c9d787f68dfd90b9ea6cc58b9709c2d95a9bfc08..dc81d8f06e5deb5283285f9cfc446f7f40a2215d 100644
 --- a/src/util.h
 +++ b/src/util.h
 @@ -765,7 +765,7 @@ inline v8::MaybeLocal<v8::Value> ToV8Value(
