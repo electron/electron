@@ -335,6 +335,155 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('serviceWorkerMain module', () => {
+    const setupWorkerSource = `async function setupWorker(fixturesDir) {
+      const { app, session, BrowserWindow } = require('electron');
+      const http = require('node:http');
+      const fs = require('node:fs');
+      const path = require('node:path');
+      const crypto = require('node:crypto');
+
+      app.on('window-all-closed', () => {});
+
+      const uuid = crypto.randomUUID();
+      const server = http.createServer((req, res) => {
+        const url = new URL(req.url, 'http://' + req.headers.host);
+        const file = url.pathname.split('/')[2];
+        if (file.endsWith('.js')) res.setHeader('Content-Type', 'application/javascript');
+        res.end(fs.readFileSync(path.resolve(fixturesDir, file)));
+      });
+      await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+      const { port } = server.address();
+      const baseUrl = 'http://localhost:' + port + '/' + uuid;
+
+      const ses = session.fromPartition('cppheap-sw-' + uuid);
+      const serviceWorkers = ses.serviceWorkers;
+      const win = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+
+      const versionId = await new Promise((resolve) => {
+        const onChange = (event) => {
+          serviceWorkers.off('running-status-changed', onChange);
+          resolve(event.versionId);
+        };
+        serviceWorkers.on('running-status-changed', onChange);
+        win.webContents.loadURL(baseUrl + '/index.html');
+      });
+
+      return { win, server, ses, serviceWorkers, versionId };
+    }`;
+
+    it('does not crash on exit with a live service worker wrapper', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(
+        async (fixturesDir: string, setupWorker: string) => {
+          const { app } = require('electron');
+          // eslint-disable-next-line no-eval
+          const setup = eval('(' + setupWorker + ')');
+          const ctx = await setup(fixturesDir);
+
+          (globalThis as any).swRef = ctx.serviceWorkers.getWorkerFromVersionID(ctx.versionId);
+
+          setTimeout(() => app.quit());
+        },
+        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        setupWorkerSource
+      );
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should be rooted while the service worker is live', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (fixturesDir: string, setupWorker: string, heap: string, snapshotHelper: string) => {
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+          // eslint-disable-next-line no-eval
+          const setup = eval('(' + setupWorker + ')');
+          const ctx = await setup(fixturesDir);
+
+          ctx.serviceWorkers.getWorkerFromVersionID(ctx.versionId);
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const rooted = containsRetainingPath(state.snapshot, [
+            'C++ Persistent roots',
+            'Electron / ServiceWorkerMain'
+          ]);
+
+          ctx.win.destroy();
+          ctx.server.close();
+          return rooted;
+        },
+        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        setupWorkerSource,
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'ServiceWorkerMain should be rooted via SelfKeepAlive while the version is live');
+    });
+
+    it('should be released after the service worker is unregistered', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (fixturesDir: string, setupWorker: string, heap: string, snapshotHelper: string) => {
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+          // eslint-disable-next-line no-eval
+          const setup = eval('(' + setupWorker + ')');
+          const ctx = await setup(fixturesDir);
+
+          let worker: any = ctx.serviceWorkers.getWorkerFromVersionID(ctx.versionId);
+          const { versionId } = ctx;
+
+          await ctx.win.webContents.executeJavaScript(
+            '(async () => { const rs = await navigator.serviceWorker.getRegistrations(); for (const r of rs) await r.unregister(); })()'
+          );
+
+          // Wait until the wrapper has been destroyed.
+          for (let i = 0; i < 100; i++) {
+            if (worker && worker.isDestroyed()) break;
+            await new Promise((resolve) => setTimeout(resolve, 50));
+          }
+
+          // Drop the JS reference and GC. Neither the SelfKeepAlive root nor a
+          // JS wrapper should keep it alive anymore.
+          worker = null;
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const rooted = containsRetainingPath(state.snapshot, [
+            'C++ Persistent roots',
+            'Electron / ServiceWorkerMain'
+          ]);
+          const stillExists = ctx.serviceWorkers._getWorkerFromVersionIDIfExists(versionId) != null;
+
+          ctx.win.destroy();
+          ctx.server.close();
+          return !rooted && !stillExists;
+        },
+        path.join(__dirname, 'fixtures', 'api', 'service-workers'),
+        setupWorkerSource,
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(
+        true,
+        'ServiceWorkerMain should be released after the service worker is unregistered and GC runs'
+      );
+    });
+  });
+
   describe('nativeImage module', () => {
     it('should record as node in heap snapshot while a JS reference is held', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals']);

@@ -19,8 +19,6 @@
 
 namespace gin_helper {
 template <typename T>
-class Handle;
-template <typename T>
 class Promise;
 }  // namespace gin_helper
 
@@ -47,9 +45,8 @@ class ServiceWorkerContext final
                                         int64_t version_id);
   v8::Local<v8::Value> GetWorkerFromVersionID(v8::Isolate* isolate,
                                               int64_t version_id);
-  gin_helper::Handle<ServiceWorkerMain> GetWorkerFromVersionIDIfExists(
-      v8::Isolate* isolate,
-      int64_t version_id);
+  v8::Local<v8::Value> GetWorkerFromVersionIDIfExists(v8::Isolate* isolate,
+                                                      int64_t version_id);
   v8::Local<v8::Promise> StartWorkerForScope(v8::Isolate* isolate, GURL scope);
   void DidStartWorkerForScope(
       std::shared_ptr<gin_helper::Promise<v8::Local<v8::Value>>> shared_promise,
