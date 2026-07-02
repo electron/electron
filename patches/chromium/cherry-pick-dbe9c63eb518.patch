@@ -1,0 +1,473 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Thu, 14 May 2026 19:43:34 -0700
+Subject: [html-in-canvas] Prevent drawing elements into different canvases
+
+For pixel-perfect rendering, there is a connection between an
+ElementImage and the canvas it comes from. This patch throws an
+exception when drawing an ElementImage into a canvas it did not come
+from. For consistency, Elements are also restricted to only being
+drawn into the canvas they come from.
+
+This has a side benefit for performance/security as well. When a
+snapshot, stored inside an ElementImage, can be drawn on multiple
+threads, there is a risk of race conditions (think: fonts, videos,
+etc). Copies are always an option, but that comes with performance
+implications. Note that canvases cannot be transferred offscreen unless
+the context is unset[1] which means that there is no risk of drawing an
+ElementImage onto a canvas and later moving the canvas to a different
+thread.
+
+[1] https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-transfercontroltooffscreen-dev
+
+Fixed: 500074335, 513142445
+Change-Id: Iec0eda1b883180e920891e7ee7fb54a748503cc3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7797621
+Commit-Queue: Stefan Zager <szager@chromium.org>
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1631016}
+
+diff --git a/third_party/blink/renderer/core/html/canvas/canvas_rendering_context.cc b/third_party/blink/renderer/core/html/canvas/canvas_rendering_context.cc
+index 0687b2f7e6225103697d27d0c6a8912edb748849..275241336648fbf1a89fc6361c356c49c730432d 100644
+--- a/third_party/blink/renderer/core/html/canvas/canvas_rendering_context.cc
++++ b/third_party/blink/renderer/core/html/canvas/canvas_rendering_context.cc
+@@ -143,6 +143,43 @@ bool CanvasRenderingContext::IsDrawElementImageEligible(
+                                                            exception_state);
+ }
+ 
++bool CanvasRenderingContext::IsDrawElementImageEligible(
++    const V8UnionElementOrElementImage* element_or_image,
++    const String& func_name,
++    ExceptionState& exception_state) {
++  if (element_or_image->IsElement()) {
++    return IsDrawElementImageEligible(element_or_image->GetAsElement(),
++                                      func_name, exception_state);
++  }
++
++  const auto& record = element_or_image->GetAsElementImage()->PaintRecord();
++  if (!record) {
++    exception_state.ThrowDOMException(DOMExceptionCode::kInvalidStateError,
++                                      "The ElementImage has been closed.");
++    return false;
++  }
++
++  DOMNodeId current_canvas_node_id = kInvalidDOMNodeId;
++  if (Host()) {
++    if (!Host()->IsOffscreenCanvas()) {
++      current_canvas_node_id =
++          static_cast<HTMLCanvasElement*>(Host())->GetDomNodeId();
++    } else {
++      current_canvas_node_id =
++          static_cast<OffscreenCanvas*>(Host())->PlaceholderCanvasId();
++    }
++  }
++
++  if (current_canvas_node_id == kInvalidDOMNodeId ||
++      record->paint_state.canvas_node_id != current_canvas_node_id) {
++    exception_state.ThrowDOMException(
++        DOMExceptionCode::kInvalidStateError,
++        "The source was captured from a different canvas.");
++    return false;
++  }
++  return true;
++}
++
+ std::optional<CanvasChildPaintRecord>
+ CanvasRenderingContext::GetChildPaintRecord(Element* element) {
+   return Host()->GetCanvasChildPaintRecord(element->GetDomNodeId());
+@@ -159,13 +196,13 @@ scoped_refptr<StaticBitmapImage> CanvasRenderingContext::GetElementImage(
+     gpu::SharedImageUsageSet usage,
+     const String& func_name,
+     ExceptionState& exception_state) {
++  if (!IsDrawElementImageEligible(element, func_name, exception_state)) {
++    return nullptr;
++  }
++
+   std::optional<CanvasChildPaintRecord> child_paint_record;
+   if (element->IsElement()) {
+-    Element* dom_element = element->GetAsElement();
+-    if (!IsDrawElementImageEligible(dom_element, func_name, exception_state)) {
+-      return nullptr;
+-    }
+-    child_paint_record = GetChildPaintRecord(dom_element);
++    child_paint_record = GetChildPaintRecord(element->GetAsElement());
+   } else {
+     if (const auto& record = element->GetAsElementImage()->PaintRecord()) {
+       child_paint_record = *record;
+diff --git a/third_party/blink/renderer/core/html/canvas/canvas_rendering_context.h b/third_party/blink/renderer/core/html/canvas/canvas_rendering_context.h
+index 8799964e17ef6308688253a1054f601ebc2a541b..4723f39a52ac8af32763d373e978c0210ce5b3a0 100644
+--- a/third_party/blink/renderer/core/html/canvas/canvas_rendering_context.h
++++ b/third_party/blink/renderer/core/html/canvas/canvas_rendering_context.h
+@@ -345,6 +345,10 @@ class CORE_EXPORT CanvasRenderingContext
+                                   const String& func_name,
+                                   ExceptionState& exception_state);
+ 
++  bool IsDrawElementImageEligible(const V8UnionElementOrElementImage* element,
++                                  const String& func_name,
++                                  ExceptionState& exception_state);
++
+   std::optional<CanvasChildPaintRecord> GetChildPaintRecord(Element* element);
+ 
+   std::optional<cc::PaintRecord> empty_recording_;
+diff --git a/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc b/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc
+index 6a7419e4a1f1acdd9b1b7561d3fbf62de1853b36..44f7580654d5e1d660f8ade9ef4b16a204fc8779 100644
+--- a/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc
++++ b/third_party/blink/renderer/core/html/canvas/html_canvas_element.cc
+@@ -947,18 +947,9 @@ DOMMatrix* HTMLCanvasElement::getElementTransform(
+     const V8UnionElementOrElementImage* element_or_image,
+     DOMMatrix* draw_transform,
+     ExceptionState& exception_state) {
+-  if (element_or_image->IsElement()) {
+-    if (!VerifyDrawElementImageEligibility(element_or_image->GetAsElement(),
+-                                           "getElementTransform",
+-                                           exception_state)) {
+-      return nullptr;
+-    }
+-  } else if (element_or_image->IsElementImage()) {
+-    if (!element_or_image->GetAsElementImage()->PaintRecord()) {
+-      exception_state.ThrowDOMException(DOMExceptionCode::kInvalidStateError,
+-                                        "The ElementImage has been closed.");
+-      return nullptr;
+-    }
++  if (!VerifyDrawElementImageEligibility(
++          element_or_image, "getElementTransform", exception_state)) {
++    return nullptr;
+   }
+ 
+   const auto* paint_state = GetCanvasChildPaintState(element_or_image);
+@@ -977,9 +968,10 @@ bool HTMLCanvasElement::VerifyDrawElementImageEligibility(
+     const String& func_name,
+     ExceptionState& exception_state) const {
+   if (element->parentElement() != this) {
+-    exception_state.ThrowTypeError(
++    exception_state.ThrowDOMException(
++        DOMExceptionCode::kInvalidStateError,
+         "Only immediate children of the <canvas> element can be passed to " +
+-        func_name + ".");
++            func_name + ".");
+     return false;
+   }
+   if (!layoutSubtree()) {
+@@ -992,6 +984,33 @@ bool HTMLCanvasElement::VerifyDrawElementImageEligibility(
+   return true;
+ }
+ 
++bool HTMLCanvasElement::VerifyDrawElementImageEligibility(
++    const V8UnionElementOrElementImage* element_or_image,
++    const String& func_name,
++    ExceptionState& exception_state) const {
++  if (element_or_image->IsElement()) {
++    return VerifyDrawElementImageEligibility(element_or_image->GetAsElement(),
++                                             func_name, exception_state);
++  }
++
++  const auto& record = element_or_image->GetAsElementImage()->PaintRecord();
++  if (!record) {
++    exception_state.ThrowDOMException(DOMExceptionCode::kInvalidStateError,
++                                      "The ElementImage has been closed.");
++    return false;
++  }
++
++  if (record->paint_state.canvas_node_id == kInvalidDOMNodeId ||
++      record->paint_state.canvas_node_id !=
++          const_cast<HTMLCanvasElement*>(this)->GetDomNodeId()) {
++    exception_state.ThrowDOMException(
++        DOMExceptionCode::kInvalidStateError,
++        "The source was captured from a different canvas.");
++    return false;
++  }
++  return true;
++}
++
+ ElementImage* HTMLCanvasElement::captureElementImage(
+     Element* element,
+     ExceptionState& exception_state) {
+diff --git a/third_party/blink/renderer/core/html/canvas/html_canvas_element.h b/third_party/blink/renderer/core/html/canvas/html_canvas_element.h
+index 0fade3f45655352c8df21f9a3de43d9874ea2d4d..d54e529e4fdbbd0411c9a9dba34a10ae431ba60e 100644
+--- a/third_party/blink/renderer/core/html/canvas/html_canvas_element.h
++++ b/third_party/blink/renderer/core/html/canvas/html_canvas_element.h
+@@ -357,6 +357,11 @@ class CORE_EXPORT HTMLCanvasElement final
+                                          const String& func_name,
+                                          ExceptionState& exception_state) const;
+ 
++  bool VerifyDrawElementImageEligibility(
++      const V8UnionElementOrElementImage* element,
++      const String& func_name,
++      ExceptionState& exception_state) const;
++
+   ElementImage* captureElementImage(Element* element, ExceptionState&);
+ 
+  protected:
+diff --git a/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc b/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc
+index 3307c21537cbb8dabbdaf37fec6dcdf96e623a4f..b5ab0fca5030fdeb2cd8edc5065e69b85a7930ba 100644
+--- a/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc
++++ b/third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.cc
+@@ -365,6 +365,13 @@ DOMMatrix* OffscreenCanvas::getElementTransform(
+                                         "The ElementImage has been closed.");
+       return nullptr;
+     }
++    if (paint_record->paint_state.canvas_node_id == kInvalidDOMNodeId ||
++        paint_record->paint_state.canvas_node_id != PlaceholderCanvasId()) {
++      exception_state.ThrowDOMException(
++          DOMExceptionCode::kInvalidStateError,
++          "The ElementImage was captured from a different canvas.");
++      return nullptr;
++    }
+     return MakeGarbageCollected<DOMMatrix>(GetElementTransform(
+         paint_record->paint_state, Size(), draw_transform->Matrix()));
+   }
+diff --git a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+index 381f92b90579f94851bd2bde205a68b7846848fc..be5fa54793edc1f71d1464e91f8e1dd486137b66 100644
+--- a/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
++++ b/third_party/blink/renderer/modules/canvas/canvas2d/base_rendering_context_2d.cc
+@@ -59,6 +59,7 @@
+ #include "third_party/blink/renderer/core/html/canvas/text_metrics.h"
+ #include "third_party/blink/renderer/core/html/canvas/unique_font_selector.h"
+ #include "third_party/blink/renderer/core/inspector/console_message.h"
++#include "third_party/blink/renderer/core/offscreencanvas/offscreen_canvas.h"
+ #include "third_party/blink/renderer/core/style/computed_style.h"
+ #include "third_party/blink/renderer/modules/canvas/canvas2d/canvas_2d_recorder_context.h"
+ #include "third_party/blink/renderer/modules/canvas/canvas2d/canvas_rendering_context_2d_state.h"
+@@ -1637,14 +1638,14 @@ DOMMatrix* BaseRenderingContext2D::DrawElementInternal(
+     return DOMMatrix::Create();
+   }
+ 
++  if (!IsDrawElementImageEligible(element, "DrawElementImage",
++                                  exception_state)) {
++    return nullptr;
++  }
++
+   std::optional<CanvasChildPaintRecord> child_paint_record;
+   if (element->IsElement()) {
+-    Element* dom_element = element->GetAsElement();
+-    if (!IsDrawElementImageEligible(dom_element, "DrawElementImage",
+-                                    exception_state)) {
+-      return nullptr;
+-    }
+-    child_paint_record = GetChildPaintRecord(dom_element);
++    child_paint_record = GetChildPaintRecord(element->GetAsElement());
+   } else if (element->IsElementImage()) {
+     if (const auto& record = element->GetAsElementImage()->PaintRecord()) {
+       child_paint_record = *record;
+diff --git a/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/draw-element-different-canvas.html b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/draw-element-different-canvas.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..90edf30999864fe0507910b8ba075ec7bae174ed
+--- /dev/null
++++ b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/draw-element-different-canvas.html
+@@ -0,0 +1,46 @@
++<!DOCTYPE HTML>
++<title>Prevent drawing Elements into different canvases</title>
++<script src='/resources/testharness.js'></script>
++<script src='/resources/testharnessreport.js'></script>
++<script src="/wpt_internal/resources/canvas-draw-element/waitForCanvasPaint.js"></script>
++<style>
++  #child1, #child2 {
++    width: 100px;
++    height: 100px;
++    background: green;
++  }
++</style>
++<canvas id="canvas1" width="200" height="200" layoutsubtree>
++  <div id="child1"></div>
++</canvas>
++<canvas id="canvas2" width="200" height="200" layoutsubtree>
++  <div id="child2"></div>
++</canvas>
++
++<script>
++  'use strict';
++
++  promise_test(async t => {
++    await waitForCanvasPaint(canvas1);
++
++    const ctx2 = canvas2.getContext('2d');
++
++    assert_throws_dom('InvalidStateError', () => {
++      ctx2.drawElementImage(child1, 0, 0);
++    }, 'Drawing an Element from a different canvas must throw InvalidStateError');
++
++    assert_throws_dom('InvalidStateError', () => {
++      canvas2.getElementTransform(child1, new DOMMatrix());
++    }, 'Getting transform for an Element from a different canvas must throw InvalidStateError');
++
++    assert_throws_dom('InvalidStateError', () => {
++      let standaloneCtx = new OffscreenCanvas(200, 200).getContext('2d');
++      standaloneCtx.drawElementImage(child1, 0, 0);
++    }, 'Drawing an Element into a standalone OffscreenCanvas must throw InvalidStateError');
++
++    assert_throws_dom('InvalidStateError', () => {
++      let standalone = new OffscreenCanvas(200, 200);
++      standalone.getElementTransform(child1, new DOMMatrix());
++    }, 'Getting transform for an Element from a standalone OffscreenCanvas must throw InvalidStateError');
++  }, 'Prevent drawing Element into a different canvas');
++</script>
+diff --git a/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/draw-element-image-different-canvas.html b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/draw-element-image-different-canvas.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e33c1abd166705942ce4c609d636d526d8a57760
+--- /dev/null
++++ b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/draw-element-image-different-canvas.html
+@@ -0,0 +1,124 @@
++<!DOCTYPE HTML>
++<title>Prevent drawing ElementImages into different canvases</title>
++<script src='/resources/testharness.js'></script>
++<script src='/resources/testharnessreport.js'></script>
++<script src="/wpt_internal/resources/canvas-draw-element/waitForCanvasPaint.js"></script>
++<style>
++  #child1, #child2 {
++    width: 100px;
++    height: 100px;
++    background: green;
++  }
++</style>
++<canvas id="canvas1" width="200" height="200" layoutsubtree>
++  <div id="child1"></div>
++</canvas>
++<canvas id="canvas2" width="200" height="200" layoutsubtree>
++  <div id="child2"></div>
++</canvas>
++<canvas id="canvas3" width="200" height="200" layoutsubtree></canvas>
++
++<script>
++  'use strict';
++
++  promise_test(async t => {
++    await waitForCanvasPaint(canvas1);
++
++    const elementImage1 = canvas1.captureElementImage(child1);
++    const ctx2 = canvas2.getContext('2d');
++
++    assert_throws_dom('InvalidStateError', () => {
++      ctx2.drawElementImage(elementImage1, 0, 0);
++    }, 'Drawing an ElementImage into a different canvas must throw InvalidStateError');
++
++    assert_throws_dom('InvalidStateError', () => {
++      canvas2.getElementTransform(elementImage1, new DOMMatrix());
++    }, 'Getting transform for an ElementImage from a different canvas must throw InvalidStateError');
++
++    assert_throws_dom('InvalidStateError', () => {
++      let standaloneCtx = new OffscreenCanvas(200, 200).getContext('2d');
++      standaloneCtx.drawElementImage(elementImage1, 0, 0);
++    }, 'Drawing an ElementImage into a standalone OffscreenCanvas must throw InvalidStateError');
++
++    assert_throws_dom('InvalidStateError', () => {
++      let standalone = new OffscreenCanvas(200, 200);
++      standalone.getElementTransform(elementImage1, new DOMMatrix());
++    }, 'Getting transform for an ElementImage from a standalone OffscreenCanvas must throw InvalidStateError');
++  }, 'Prevent drawing ElementImage into a different canvas on main thread');
++
++  const workerCode = `
++    let canvas2, ctx1, ctx2;
++    self.onmessage = function(e) {
++      if (e.data.canvas1) {
++        ctx1 = e.data.canvas1.getContext('2d');
++      }
++      if (e.data.canvas2) {
++        canvas2 = e.data.canvas2;
++        ctx2 = canvas2.getContext('2d');
++      }
++      if (e.data.elementImage1) {
++        let results = {};
++
++        try {
++          ctx2.drawElementImage(e.data.elementImage1, 0, 0);
++          results.drawError = 'success';
++        } catch (e) {
++          results.drawError = e.name;
++        }
++
++        try {
++          canvas2.getElementTransform(e.data.elementImage1, new DOMMatrix());
++          results.transformError = 'success';
++        } catch (e) {
++          results.transformError = e.name;
++        }
++
++        try {
++          let standaloneCtx = new OffscreenCanvas(200, 200).getContext('2d');
++          standaloneCtx.drawElementImage(e.data.elementImage1, 0, 0);
++          results.standaloneDrawError = 'success';
++        } catch (e) {
++          results.standaloneDrawError = e.name;
++        }
++
++        try {
++          let standalone = new OffscreenCanvas(200, 200);
++          standalone.getElementTransform(e.data.elementImage1, new DOMMatrix());
++          results.standaloneTransformError = 'success';
++        } catch (e) {
++          results.standaloneTransformError = e.name;
++        }
++
++        self.postMessage(results);
++      }
++    };
++  `;
++
++  promise_test(async t => {
++    await waitForCanvasPaint(canvas1);
++
++    const blob = new Blob([workerCode], { type: 'application/javascript' });
++    const worker = new Worker(URL.createObjectURL(blob));
++
++    const offscreen1 = canvas1.transferControlToOffscreen();
++    const offscreen2 = canvas3.transferControlToOffscreen();
++
++    worker.postMessage({ canvas1: offscreen1 }, [offscreen1]);
++    worker.postMessage({ canvas2: offscreen2 }, [offscreen2]);
++
++    const response_promise = new Promise(resolve => {
++      worker.onmessage = t.step_func(msg => {
++        resolve(msg.data);
++      });
++    });
++
++    const elementImage1 = canvas1.captureElementImage(child1);
++    worker.postMessage({ elementImage1: elementImage1 }, [elementImage1]);
++
++    const result = await response_promise;
++    assert_equals(result.drawError, 'InvalidStateError', 'Drawing an ElementImage into a different canvas must throw InvalidStateError');
++    assert_equals(result.transformError, 'InvalidStateError', 'Getting the transform for an ElementImage from a different canvas must throw InvalidStateError');
++    assert_equals(result.standaloneDrawError, 'InvalidStateError', 'Drawing an ElementImage into a standalone OffscreenCanvas must throw InvalidStateError');
++    assert_equals(result.standaloneTransformError, 'InvalidStateError', 'Getting the transform for an ElementImage from a standalone OffscreenCanvas must throw InvalidStateError');
++  }, 'Prevent drawing ElementImage into a different canvas in a worker thread');
++</script>
+diff --git a/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/error-conditions.html b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/error-conditions.html
+index e7b45d8fed28c4d3a3e8469e41064978e6fbc76f..766b4e1d8fec454e883366bb2191d14744c9fc5f 100644
+--- a/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/error-conditions.html
++++ b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/error-conditions.html
+@@ -32,7 +32,7 @@ promise_test(async () => {
+   await new Promise(requestAnimationFrame);
+   await new Promise(setTimeout);
+ 
+-  assert_throws_js(TypeError,
++  assert_throws_dom("InvalidStateError",
+     () => canvas.getContext("2d").drawElementImage(grandchild, 20, 30),
+     "Can't draw non-direct children.");
+ 
+@@ -68,10 +68,10 @@ promise_test(async () => {
+     "Can't get element transform if layoutsubtree is not specified.");
+ 
+   // Also test wrong children exceptions
+-  assert_throws_js(TypeError,
++  assert_throws_dom("InvalidStateError",
+     () => canvas.captureElementImage(grandchild),
+     "Can't capture non-direct children.");
+-  assert_throws_js(TypeError,
++  assert_throws_dom("InvalidStateError",
+     () => canvas.getElementTransform(grandchild, new DOMMatrix()),
+     "Can't get transform for non-direct children.");
+ });
+diff --git a/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/offscreenCanvas-drawElementImage.html b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/offscreenCanvas-drawElementImage.html
+index 1a31c2b8889cd9b6578bd1f0ef8283792505b48e..eece7a89eceddb8e9bf8e6481536e26bd28ff2de 100644
+--- a/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/offscreenCanvas-drawElementImage.html
++++ b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/offscreenCanvas-drawElementImage.html
+@@ -29,7 +29,7 @@ promise_test(async t => {
+   assert_equals(elementImage.width, 100);
+   assert_equals(elementImage.height, 100);
+ 
+-  const offscreen = new OffscreenCanvas(200, 200);
++  const offscreen = canvas.transferControlToOffscreen();
+   const offscreenContext = offscreen.getContext('2d');
+   let draw_transform = offscreenContext.drawElementImage(elementImage, 0, 0);
+   assert_array_equals(
