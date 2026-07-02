@@ -676,15 +676,17 @@ describe('net module', () => {
         await collectStreamBody(await getResponse(urlRequest));
       });
 
+      // Note: 'document', 'frame', 'iframe' and 'fencedframe' are intentionally
+      // omitted. Chromium's kRestrictFrameDestinationsToNavigate feature (enabled
+      // by default) rejects any non-navigation request that claims one of these
+      // frame-type destinations, terminating the network service. Since net
+      // requests are never navigations, these destinations cannot be set.
       for (const dest of [
         'empty',
         'audio',
         'audioworklet',
-        'document',
         'embed',
         'font',
-        'frame',
-        'iframe',
         'image',
         'manifest',
         'object',
