@@ -132,6 +132,11 @@ namespace {
 #if BUILDFLAG(IS_WIN)
 const LPCWSTR kUniqueTaskBarClassName = L"Shell_TrayWnd";
 
+// Upper bound for Windows' synthetic maximum window dimensions when
+// enableLargerThanScreen is used without an explicit max size. This covers an
+// 8K display with headroom and keeps frame/menu arithmetic safely inside int.
+constexpr int kDefaultLargerThanScreenMaxDimension = 16384;
+
 void FlipWindowStyle(HWND handle, bool on, DWORD flag) {
   DWORD style = ::GetWindowLong(handle, GWL_STYLE);
   if (on)
@@ -260,13 +265,18 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   taskbar_created_message_ = RegisterWindowMessage(TEXT("TaskbarCreated"));
 #endif
 
-  if (enable_larger_than_screen())
+#if BUILDFLAG(IS_WIN)
+  if (enable_larger_than_screen()) {
     // We need to set a default maximum window size here otherwise Windows
-    // will not allow us to resize the window larger than scree.
-    // Setting directly to INT_MAX somehow doesn't work, so we just divide
-    // by 10, which should still be large enough.
+    // will not allow us to resize the window larger than screen.
+    // Without an explicit max, Windows clamps interactive resize to the
+    // working area. Set a non-empty max so the user can drag beyond the
+    // screen; kDefaultLargerThanScreenMaxDimension keeps a sane upper bound.
     SetContentSizeConstraints(extensions::SizeConstraints(
-        gfx::Size(), gfx::Size(INT_MAX / 10, INT_MAX / 10)));
+        gfx::Size(), gfx::Size(kDefaultLargerThanScreenMaxDimension,
+                               kDefaultLargerThanScreenMaxDimension)));
+  }
+#endif
 
   const int width = options.ValueOrDefault(options::kWidth, 800);
   const int height = options.ValueOrDefault(options::kHeight, 600);
