@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/deps/ncrypto/ncrypto.cc b/deps/ncrypto/ncrypto.cc
-index 38378b730aca66cf3acde0158eaaa7f4fd9617bc..03b507e4f850712bc53a8eb38c10d6bc263ddadf 100644
+index 38378b730aca66cf3acde0158eaaa7f4fd9617bc..671643797f64cac9cc636be4550816cd989c323e 100644
 --- a/deps/ncrypto/ncrypto.cc
 +++ b/deps/ncrypto/ncrypto.cc
 @@ -16,6 +16,7 @@
@@ -28,6 +28,69 @@ index 38378b730aca66cf3acde0158eaaa7f4fd9617bc..03b507e4f850712bc53a8eb38c10d6bc
  #if OPENSSL_VERSION_MAJOR >= 3
  #include <openssl/core_names.h>
  #include <openssl/params.h>
+@@ -4458,7 +4459,7 @@ std::optional<EVP_PKEY_CTX*> EVPMDCtxPointer::signInitWithContext(
+     const EVPKeyPointer& key,
+     const Digest& digest,
+     const Buffer<const unsigned char>& context_string) {
+-#ifdef OPENSSL_IS_BORINGSSL
++#if defined(OPENSSL_IS_BORINGSSL) && BORINGSSL_API_VERSION >= 40
+   EVP_PKEY_CTX* ctx = nullptr;
+   if (!EVP_DigestSignInit(ctx_.get(), &ctx, digest, nullptr, key.get())) {
+     return std::nullopt;
+@@ -4513,7 +4514,7 @@ std::optional<EVP_PKEY_CTX*> EVPMDCtxPointer::verifyInitWithContext(
+     const EVPKeyPointer& key,
+     const Digest& digest,
+     const Buffer<const unsigned char>& context_string) {
+-#ifdef OPENSSL_IS_BORINGSSL
++#if defined(OPENSSL_IS_BORINGSSL) && BORINGSSL_API_VERSION >= 40
+   EVP_PKEY_CTX* ctx = nullptr;
+   if (!EVP_DigestVerifyInit(ctx_.get(), &ctx, digest, nullptr, key.get())) {
+     return std::nullopt;
+diff --git a/deps/ncrypto/ncrypto.h b/deps/ncrypto/ncrypto.h
+index b27e2e76c3dcfc0b9be3701a0cf422a4012c63f1..9818f3c11fa51b4268238b0b770fa8a886726278 100644
+--- a/deps/ncrypto/ncrypto.h
++++ b/deps/ncrypto/ncrypto.h
+@@ -58,7 +58,8 @@
+ #define OPENSSL_WITH_ARGON2 0
+ #endif
+ 
+-#if OPENSSL_VERSION_PREREQ(3, 0) || defined(OPENSSL_IS_BORINGSSL)
++#if OPENSSL_VERSION_PREREQ(3, 0) ||                                           \
++    (defined(OPENSSL_IS_BORINGSSL) && BORINGSSL_API_VERSION >= 40)
+ #define OPENSSL_WITH_KEM 1
+ #else
+ #define OPENSSL_WITH_KEM 0
+@@ -70,7 +71,8 @@
+ #define OPENSSL_WITH_KMAC 0
+ #endif
+ 
+-#if defined(OPENSSL_IS_BORINGSSL) || OPENSSL_VERSION_PREREQ(3, 2)
++#if (defined(OPENSSL_IS_BORINGSSL) && BORINGSSL_API_VERSION >= 40) ||         \
++    (!defined(OPENSSL_IS_BORINGSSL) && OPENSSL_VERSION_PREREQ(3, 2))
+ #define OPENSSL_WITH_SIGNATURE_CONTEXT_STRING 1
+ #else
+ #define OPENSSL_WITH_SIGNATURE_CONTEXT_STRING 0
+@@ -98,10 +100,20 @@
+ #endif
+ 
+ #ifdef OPENSSL_IS_BORINGSSL
++// BoringSSL's post-quantum surface has grown incrementally. The ML-KEM
++// EVP_PKEY_ALG accessors (EVP_pkey_ml_kem_*), the ML-KEM encapsulate/
++// decapsulate APIs, and EVP_PKEY_CTX_set1_signature_context_string only
++// became available at BORINGSSL_API_VERSION 40. Older BoringSSL (e.g. the
++// one shipped with Chromium 146, API version 39) exposes the ML-DSA/ML-KEM
++// NIDs but not that operation surface, so PQC cannot be enabled there.
++#if BORINGSSL_API_VERSION >= 40
+ #define OPENSSL_WITH_BORINGSSL_PQC 1
+ #else
+ #define OPENSSL_WITH_BORINGSSL_PQC 0
+ #endif
++#else
++#define OPENSSL_WITH_BORINGSSL_PQC 0
++#endif
+ 
+ #define OPENSSL_WITH_PQC                                                       \
+   (OPENSSL_WITH_OPENSSL_PQC || OPENSSL_WITH_BORINGSSL_PQC)
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
 index d005bf0ffb93445fa6611a1beb1b465764271ede..01770687bd191c61af02e76d7de24bbac5c47b8f 100644
 --- a/src/crypto/crypto_common.cc
