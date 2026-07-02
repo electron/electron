@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 1 Jul 2026 18:54:36 +0000
+Subject: fix: bind new GlobalShortcuts portal commands when session is
+ already up to date
+
+When ListShortcuts reveals that every bound command is already registered
+with the portal, OnListShortcuts returns without calling BindShortcuts and
+bind_state_ stays kNotBound. A later OnCommandsChanged() with a live
+session then matches neither the kBindCalled nor the kBound branch, so
+newly added commands are silently never bound - registration appears to
+succeed but the shortcuts never fire. Mark the session as bound in that
+case so the next commands change re-creates the session and runs the bind
+pass.
+
+Upstreamable as a standalone fix; this affects any consumer registering a
+command after startup when all previous commands were already approved.
+
+diff --git a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
+index 59150acea1fa6c9558c2f7e155a5bf9c9b195df2..dd53a82cd8d2e9a938373953eb6f0a9e43b59556 100644
+--- a/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
++++ b/ui/base/accelerators/global_accelerator_listener/global_accelerator_listener_linux.cc
+@@ -294,6 +294,12 @@ void GlobalAcceleratorListenerLinux::OnListShortcuts(
+       return;
+     }
+   }
++
++  // All commands are already registered with the portal. Mark the session as
++  // bound so that a later OnCommandsChanged() with new commands re-creates
++  // the session and runs the bind pass; otherwise the state machine has no
++  // branch that would ever bind them.
++  bind_state_ = BindState::kBound;
+ }
+ 
+ void GlobalAcceleratorListenerLinux::BindShortcuts(DbusShortcuts old_shortcuts,

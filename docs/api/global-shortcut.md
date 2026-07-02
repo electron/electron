@@ -125,6 +125,54 @@ When the accelerator is already taken by other applications, this call will
 still return `false`. This behavior is intended by operating systems, since they
 don't want applications to fight for global shortcuts.
 
+### `globalShortcut.listShortcuts()` _Linux_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52239
+```
+-->
+
+Returns `Promise<GlobalShortcutInfo[]>` - Resolves with an array of
+[`GlobalShortcutInfo`](structures/global-shortcut-info.md) objects for the
+shortcuts that are currently registered with the
+[GlobalShortcuts desktop portal][gs-portal] for this application, including
+shortcuts approved during previous application sessions.
+
+When shortcut registration is handled by the desktop portal (e.g. when running
+in a Wayland session with the `GlobalShortcutsPortal` feature enabled), calling
+`globalShortcut.register` for a shortcut that has not yet been approved may
+require user approval — depending on the compositor, this can show a dialog
+or open the system's shortcut settings. This method lets an application check
+whether a shortcut has already been approved — and therefore can be
+re-registered without prompting — before registering it:
+
+```js
+const { app, globalShortcut } = require('electron')
+
+app.commandLine.appendSwitch('enable-features', 'GlobalShortcutsPortal')
+
+app.whenReady().then(async () => {
+  const shortcuts = await globalShortcut.listShortcuts()
+
+  // 'CommandOrControl+X' is normalized to 'Ctrl+X' on Linux.
+  const approved = shortcuts.some((shortcut) => shortcut.accelerator === 'Ctrl+X')
+  console.log(`Ctrl+X is ${approved ? 'already approved' : 'not yet approved'}`)
+})
+```
+
+The returned promise is rejected when shortcut registration is not handled by
+the desktop portal, e.g. on Windows and macOS, in an X11 session, or when the
+portal service is unavailable.
+
+Approvals are managed by the compositor and persist across restarts;
+`globalShortcut.unregister` and `globalShortcut.unregisterAll` do not revoke
+them. Results may briefly lag behind registrations made in the same
+session.
+
+[gs-portal]: https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.GlobalShortcuts.html
+
 ### `globalShortcut.unregister(accelerator)`
 
 <!--
