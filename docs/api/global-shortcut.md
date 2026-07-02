@@ -127,6 +127,13 @@ don't want applications to fight for global shortcuts.
 
 ### `globalShortcut.listShortcuts()` _Linux_
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52239
+```
+-->
+
 Returns `Promise<GlobalShortcutInfo[]>` - Resolves with an array of
 [`GlobalShortcutInfo`](structures/global-shortcut-info.md) objects for the
 shortcuts that are currently registered with the
