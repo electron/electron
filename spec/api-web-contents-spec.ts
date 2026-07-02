@@ -978,6 +978,79 @@ describe('webContents module', () => {
       });
     });
 
+    describe('NavigationEntry.shouldSkipOnBackForwardUI', () => {
+      let server: http.Server;
+      let serverUrl: string;
+
+      before(async () => {
+        server = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          res.end(`<html><head><title>${req.url}</title></head><body></body></html>`);
+        });
+        serverUrl = (await listen(server)).url;
+      });
+
+      after(async () => {
+        if (server) await new Promise((resolve) => server.close(resolve));
+        server = null as any;
+      });
+
+      // Builds a [A, R, B] history stack where R is marked skippable by
+      // Chromium's history manipulation intervention: the document at R
+      // navigates away without ever receiving a user gesture.
+      async function buildStackWithSkippableEntry() {
+        const urlA = `${serverUrl}/a`;
+        const urlR = `${serverUrl}/r`;
+        const urlB = `${serverUrl}/b`;
+
+        await w.loadURL(urlA);
+        await w.loadURL(urlR);
+
+        const didNavigate = once(w.webContents, 'did-navigate');
+        await w.webContents.executeJavaScript(`location.assign(${JSON.stringify(urlB)})`, false);
+        await didNavigate;
+
+        return { urlA, urlR, urlB };
+      }
+
+      it('is false for regular navigation entries', async () => {
+        await w.loadURL(`${serverUrl}/1`);
+        await w.loadURL(`${serverUrl}/2`);
+
+        const entries = w.webContents.navigationHistory.getAllEntries();
+        expect(entries.map((entry) => entry.shouldSkipOnBackForwardUI)).to.deep.equal([false, false]);
+      });
+
+      it('is true for entries skipped by the history manipulation intervention', async () => {
+        const { urlA, urlR, urlB } = await buildStackWithSkippableEntry();
+
+        const entries = w.webContents.navigationHistory.getAllEntries();
+        expect(entries.map((entry) => entry.url)).to.deep.equal([urlA, urlR, urlB]);
+        expect(entries.map((entry) => entry.shouldSkipOnBackForwardUI)).to.deep.equal([false, true, false]);
+
+        const activeIndex = w.webContents.navigationHistory.getActiveIndex();
+        expect(w.webContents.navigationHistory.getEntryAtIndex(activeIndex).shouldSkipOnBackForwardUI).to.be.false();
+        expect(w.webContents.navigationHistory.getEntryAtIndex(activeIndex - 1).shouldSkipOnBackForwardUI).to.be.true();
+      });
+
+      it('is honored by goBack but not by index-based access', async () => {
+        const { urlA, urlR } = await buildStackWithSkippableEntry();
+
+        // Index-based access still returns the skippable entry...
+        const activeIndex = w.webContents.navigationHistory.getActiveIndex();
+        expect(activeIndex).to.equal(2);
+        expect(w.webContents.navigationHistory.getEntryAtIndex(activeIndex - 1).url).to.equal(urlR);
+
+        // ...while goBack skips over it and commits A.
+        const didNavigate = once(w.webContents, 'did-navigate');
+        w.webContents.navigationHistory.goBack();
+        await didNavigate;
+
+        expect(w.webContents.getURL()).to.equal(urlA);
+        expect(w.webContents.navigationHistory.getActiveIndex()).to.equal(0);
+      });
+    });
+
     describe('navigationHistory.restore({ index, entries }) API', () => {
       let server: http.Server;
       let serverUrl: string;
