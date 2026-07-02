@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Allen Bauer <kylixrd@chromium.org>
+Date: Fri, 15 May 2026 07:14:06 -0700
+Subject: Check for MenuController(this) deletion after ShowAt() call.
+
+It is possible that the ShowAt() above can synchronously re-enter and
+destroy `this` and the entire MenuItemView tree. We do a CHECK() here
+instead of a early return. There are still other things up the stack
+that would require additional guarding. It is also unknown what state
+things would be left in should it be allowed to continue.
+
+Change-Id: Ie49260fcd60e68b828a081041611392649bf29a8
+Bug: 501623322
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7849124
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Commit-Queue: Allen Bauer <kylixrd@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1631254}
+
+diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
+index 11f2ae7a2ac17356c423bd5d29720f8b877e8ec1..d533db921b91ca436d287ae441663e4af9300e52 100644
+--- a/ui/views/controls/menu/menu_controller.cc
++++ b/ui/views/controls/menu/menu_controller.cc
+@@ -2539,7 +2539,14 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+     } else {
+       params.context = owner_;
+     }
++    auto weak_this = AsWeakPtr();
+     item->GetSubmenu()->ShowAt(params);
++    // It is possible that the ShowAt() above can synchronously re-enter and
++    // destroy `this` and the entire MenuItemView tree. We do a CHECK() here
++    // instead of a early return. There are still other things up the stack that
++    // would require additional guarding. It is also unknown what state things
++    // would be left in should it be allowed to continue.
++    CHECK(weak_this);
+ 
+     // Remember the mouse location so we can ignore the first mouse move
+     // event(s) with that location. We do this after `ShowAt` because

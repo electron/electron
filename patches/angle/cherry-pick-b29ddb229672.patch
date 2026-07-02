@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Mon, 25 May 2026 12:30:39 -0400
+Subject: Validate unique framebuffer attachments for hardened contexts.
+
+This behaviour was already done for WebGL and some backends.
+
+Fixed: chromium:513920834
+Change-Id: Ifedf64a9b9be2265fa0f42af4f05586dd45611cd
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7870307
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp
+index 3092e7baa1ec92f96835369b7a12291572a3cd76..e373a1f13bbaa13509067f5a88f012ef31e927bc 100644
+--- a/src/libANGLE/Framebuffer.cpp
++++ b/src/libANGLE/Framebuffer.cpp
+@@ -1628,7 +1628,7 @@ FramebufferStatus Framebuffer::checkStatusWithGLFrontEnd(const Context *context)
+     // The WebGL conformance tests implicitly define that all framebuffer
+     // attachments must be unique. For example, the same level of a texture can
+     // not be attached to two different color attachments.
+-    if (state.getExtensions().webglCompatibilityANGLE)
++    if (context->isWebGL() || context->isHardenedContext())
+     {
+         if (!mState.colorAttachmentsAreUniqueImages())
+         {
+diff --git a/src/libANGLE/renderer/d3d/FramebufferD3D.cpp b/src/libANGLE/renderer/d3d/FramebufferD3D.cpp
+index e7366aaa2a8549333e334a2fe7bd647605ea8143..329b2b8f4132a5b8b0bcec1fc42764e4ae45760e 100644
+--- a/src/libANGLE/renderer/d3d/FramebufferD3D.cpp
++++ b/src/libANGLE/renderer/d3d/FramebufferD3D.cpp
+@@ -266,9 +266,9 @@ gl::FramebufferStatus FramebufferD3D::checkStatus(const gl::Context *context) co
+     }
+ 
+     // D3D11 does not allow for overlapping RenderTargetViews.
+-    // If WebGL compatibility is enabled, this has already been checked at a higher level.
+-    ASSERT(!context->isWebGL() || mState.colorAttachmentsAreUniqueImages());
+-    if (!context->isWebGL())
++    // If WebGL compatibility (or hardened context) is enabled, this has already been checked at a
++    // higher level.
++    if (!context->isWebGL() && !context->isHardenedContext())
+     {
+         if (!mState.colorAttachmentsAreUniqueImages())
+         {
+@@ -277,6 +277,7 @@ gl::FramebufferStatus FramebufferD3D::checkStatus(const gl::Context *context) co
+                 gl::err::kFramebufferIncompleteUnsupportedNonUniqueAttachments);
+         }
+     }
++    ASSERT(mState.colorAttachmentsAreUniqueImages());
+ 
+     // D3D requires all render targets to have the same dimensions.
+     if (!mState.attachmentsHaveSameDimensions())
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index 8469ed1707566431aadb52475e1f511c0ae596a7..fc11d49bc179fdc0465389fe8d160314c51f622f 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -4206,6 +4206,36 @@ void main() {
+     drawBuffersFeedbackLoop(program, {{GL_COLOR_ATTACHMENT0, GL_NONE}}, GL_INVALID_OPERATION);
+ }
+ 
++// WebGL requires that all framebuffer attachments are unique
++TEST_P(WebGL2CompatibilityTest, UniqueFramebufferAttachments)
++{
++    GLTexture tex0;
++    FillTexture2D(tex0, 8, 8, GLColor::red, 0, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex0, 0);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tex0, 0);
++    EXPECT_GLENUM_EQ(GL_FRAMEBUFFER_UNSUPPORTED, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++}
++
++// Hardened contexts also require that all framebuffer color attachments are unique
++TEST_P(HardenedContextTest, UniqueFramebufferAttachments)
++{
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3);
++
++    GLTexture tex0;
++    FillTexture2D(tex0, 8, 8, GLColor::red, 0, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex0, 0);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tex0, 0);
++    EXPECT_GLENUM_EQ(GL_FRAMEBUFFER_UNSUPPORTED, glCheckFramebufferStatus(GL_FRAMEBUFFER));
++}
++
+ // This tests that texture base level for immutable textures is clamped to the valid range, unlike
+ // for non-immutable textures, for purposes of validation. Related to WebGL test
+ // conformance2/textures/misc/immutable-tex-render-feedback.html

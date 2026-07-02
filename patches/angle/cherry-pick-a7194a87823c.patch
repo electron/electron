@@ -1,0 +1,622 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tzarial <zork@google.com>
+Date: Mon, 4 May 2026 18:43:18 +0000
+Subject: [ANGLE][Metal] Fix GPU memory disclosure in index rewriting
+
+When rewriting index buffers for provoking vertex workarounds, the
+Metal backend could leave portions of the allocated output buffer
+uninitialized. Because these buffers are recycled from a BufferPool
+without being cleared, unwritten slots retained stale indices from
+previous operations.
+
+This caused a GPU memory disclosure vulnerability because:
+1. The `fixIndexBuffer` compute kernel returned early upon encountering
+   a primitive restart, skipping writes to reserved output slots.
+2. The `ContextMtl::drawElementsImpl` logic sliced the draw commands
+   based on the original index buffer's restart points, but failed to
+   transform the slice `count` and `offset` to account for the buffer
+   expansion (e.g., TriangleStrip to Triangles).
+
+This CL fixes the issue by:
+- Updating `outputPrimitive` in `rewrite_indices.metal` to explicitly
+  write the correct `restartIndex` (either 0xFFFF or 0xFFFFFFFF) into
+  all output slots whenever a thread returns early or skips indices.
+- Transforming the `DrawCommandRange` slices in `ContextMtl.mm` when
+  the index buffer has been expanded, ensuring subsequent indexed
+  draw calls correctly index into the expanded buffer layout.
+- Adding a regression test.
+
+Fixed: b/499047960
+Change-Id: I2034492e2016c91064025f2b0705767d1da21783
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7814681
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/scripts/code_generation_hashes/Metal_default_shaders.json b/scripts/code_generation_hashes/Metal_default_shaders.json
+index 504c6e90c97de4d7a41aaaa8c480246abdab8f9f..79e6c2a0b40e01a58950bab29ecd3d3835b75e20 100644
+--- a/scripts/code_generation_hashes/Metal_default_shaders.json
++++ b/scripts/code_generation_hashes/Metal_default_shaders.json
+@@ -22,11 +22,11 @@
+   "src/libANGLE/renderer/metal/shaders/gen_mtl_internal_shaders.py":
+     "368cb14cf2005e682edc4d4afce8d7b9",
+   "src/libANGLE/renderer/metal/shaders/mtl_internal_shaders_autogen.metal":
+-    "9056c1be9b9afffe12fe0f0bb3f1fce4",
++    "0b9c23d53bdc8739f660e492907bc494",
+   "src/libANGLE/renderer/metal/shaders/mtl_internal_shaders_src_autogen.h":
+-    "9aedbda4c5d3c6689f606f40c19e1fce",
++    "9c768791b9d0a599e86e48c25663f62c",
+   "src/libANGLE/renderer/metal/shaders/rewrite_indices.metal":
+-    "a29210b023ed3393e1342d94e338d449",
++    "94585ecc47d4baff8acb23e52fc85055",
+   "src/libANGLE/renderer/metal/shaders/visibility.metal":
+     "b82aa740cf4b0aed606aacef1024beea"
+ }
+diff --git a/src/libANGLE/renderer/metal/ContextMtl.mm b/src/libANGLE/renderer/metal/ContextMtl.mm
+index 47672f686974bac0b4f46103f15cd971e01bd67e..bc0cd2b41c8bfe01ecd8e6113b7d4f2c9e768863 100644
+--- a/src/libANGLE/renderer/metal/ContextMtl.mm
++++ b/src/libANGLE/renderer/metal/ContextMtl.mm
+@@ -790,6 +790,7 @@ GLint GetOwnershipIdentity(const egl::AttributeMap &attribs)
+ 
+     size_t provokingVertexAdditionalOffset = 0;
+ 
++    gl::PrimitiveMode originalMode = mode;
+     if (requiresIndexRewrite(context->getState(), mode))
+     {
+         size_t outIndexCount      = 0;
+@@ -799,7 +800,6 @@ GLint GetOwnershipIdentity(const egl::AttributeMap &attribs)
+             mState.isPrimitiveRestartEnabled(), mode, convertedType, outIndexCount,
+             provokingVertexAdditionalOffset, newMode, drawIdxBuffer));
+         // Line strips and triangle strips are rewritten to flat line arrays and tri arrays.
+-        convertedCounti32 = (uint32_t)outIndexCount;
+         mode              = newMode;
+     }
+     else
+@@ -811,8 +811,10 @@ GLint GetOwnershipIdentity(const egl::AttributeMap &attribs)
+     // indices.
+     // It's safe to use idxBuffer in this case, as it will contain the same count and restart ranges
+     // as drawIdxBuffer.
+-    const std::vector<DrawCommandRange> drawCommands = mVertexArray->getDrawIndices(
+-        context, type, convertedType, mode, idxBuffer, convertedCounti32, convertedOffset);
++    const std::vector<DrawCommandRange> drawCommands =
++        mVertexArray->getDrawIndices(context, type, convertedType, originalMode, mode, idxBuffer,
++                                     convertedCounti32, convertedOffset);
++
+     bool isNoOp = false;
+     ANGLE_TRY(setupDraw(context, mode, 0, count, instances, type, indices, false, &isNoOp));
+     if (!isNoOp)
+diff --git a/src/libANGLE/renderer/metal/VertexArrayMtl.h b/src/libANGLE/renderer/metal/VertexArrayMtl.h
+index b7981ba547b0c01c3a9ae2cc23f6999ceeaa6d0f..f08ff022a1cc58d618ec1ea6d62718be4713d371 100644
+--- a/src/libANGLE/renderer/metal/VertexArrayMtl.h
++++ b/src/libANGLE/renderer/metal/VertexArrayMtl.h
+@@ -65,7 +65,8 @@ class VertexArrayMtl : public VertexArrayImpl
+     std::vector<DrawCommandRange> getDrawIndices(const gl::Context *glContext,
+                                                  gl::DrawElementsType originalIndexType,
+                                                  gl::DrawElementsType indexType,
+-                                                 gl::PrimitiveMode primitiveMode,
++                                                 gl::PrimitiveMode originalMode,
++                                                 gl::PrimitiveMode mode,
+                                                  mtl::BufferRef idxBuffer,
+                                                  uint32_t indexCount,
+                                                  size_t offset);
+diff --git a/src/libANGLE/renderer/metal/VertexArrayMtl.mm b/src/libANGLE/renderer/metal/VertexArrayMtl.mm
+index 6cd57d3e34c108e30ee64c406a9abae194c203ca..b7a485aea103e456d68f01cb83e2f0381fedfc90 100644
+--- a/src/libANGLE/renderer/metal/VertexArrayMtl.mm
++++ b/src/libANGLE/renderer/metal/VertexArrayMtl.mm
+@@ -743,7 +743,8 @@ inline MTLVertexFormat GetCurrentAttribFormat(GLenum type)
+ std::vector<DrawCommandRange> VertexArrayMtl::getDrawIndices(const gl::Context *glContext,
+                                                              gl::DrawElementsType originalIndexType,
+                                                              gl::DrawElementsType indexType,
+-                                                             gl::PrimitiveMode primitiveMode,
++                                                             gl::PrimitiveMode originalMode,
++                                                             gl::PrimitiveMode mode,
+                                                              mtl::BufferRef clientBuffer,
+                                                              uint32_t indexCount,
+                                                              size_t offset)
+@@ -753,14 +754,15 @@ inline MTLVertexFormat GetCurrentAttribFormat(GLenum type)
+     // The indexed draw needs to be split to separate draw commands in case primitive restart is
+     // enabled and the drawn primitive supports primitive restart. Otherwise the whole indexed draw
+     // can be sent as one draw command.
+-    bool isSimpleType = primitiveMode == gl::PrimitiveMode::Points ||
+-                        primitiveMode == gl::PrimitiveMode::Lines ||
+-                        primitiveMode == gl::PrimitiveMode::Triangles;
+-    if (!isSimpleType || !glContext->getState().isPrimitiveRestartEnabled())
++    bool isSimpleType = mode == gl::PrimitiveMode::Points || mode == gl::PrimitiveMode::Lines ||
++                        mode == gl::PrimitiveMode::Triangles;
++    bool indicesRewritten = (originalMode != mode);
++    if ((!isSimpleType && !indicesRewritten) || !glContext->getState().isPrimitiveRestartEnabled())
+     {
+         drawCommands.push_back({indexCount, offset});
+         return drawCommands;
+     }
++
+     const std::vector<IndexRange> *restartIndices;
+     std::vector<IndexRange> clientIndexRange;
+     const gl::Buffer *glElementArrayBuffer = getElementArrayBuffer();
+@@ -775,27 +777,95 @@ inline MTLVertexFormat GetCurrentAttribFormat(GLenum type)
+             BufferMtl::getRestartIndicesFromClientData(contextMtl, indexType, clientBuffer);
+         restartIndices = &clientIndexRange;
+     }
+-    // Reminder, offset is in bytes, not elements.
+-    // Slice draw commands based off of indices.
++
+     uint32_t nIndicesPerPrimitive;
+-    switch (primitiveMode)
++    // If the indices were rewritten to fix the provoking vertex convention, the index buffer
++    // might have been expanded (e.g. from TriangleStrip to Triangles). The restart indices
++    // we found earlier are based on the original unexpanded buffer. We must transform the slices
++    // we find to match the layout of the expanded rewritten buffer.
++    uint32_t factor       = 1;
++    uint32_t stripExclude = 0;
++
++    if (indicesRewritten)
+     {
+-        case gl::PrimitiveMode::Points:
+-            nIndicesPerPrimitive = 1;
+-            break;
+-        case gl::PrimitiveMode::Lines:
+-            nIndicesPerPrimitive = 2;
+-            break;
+-        case gl::PrimitiveMode::Triangles:
+-            nIndicesPerPrimitive = 3;
+-            break;
+-        default:
+-            UNREACHABLE();
+-            return drawCommands;
++        switch (mode)
++        {
++            case gl::PrimitiveMode::Lines:
++                if (originalMode == gl::PrimitiveMode::LineStrip ||
++                    originalMode == gl::PrimitiveMode::LineLoop)
++                {
++                    nIndicesPerPrimitive = 1;
++                    // LineStrip/LineLoop to Lines expansion:
++                    // N indices produce max(N-1, 0) lines.
++                    // Rewritten buffer contains max(N-1, 0) * 2 indices.
++                    factor       = 2;
++                    stripExclude = 1;
++                }
++                else
++                {
++                    UNREACHABLE();
++                    return drawCommands;
++                }
++                break;
++            case gl::PrimitiveMode::Triangles:
++                if (originalMode == gl::PrimitiveMode::TriangleStrip ||
++                    originalMode == gl::PrimitiveMode::TriangleFan)
++                {
++                    nIndicesPerPrimitive = 1;
++                    // TriangleStrip/TriangleFan to Triangles expansion:
++                    // N indices produce max(N-2, 0) triangles.
++                    // Rewritten buffer contains max(N-2, 0) * 3 indices.
++                    factor       = 3;
++                    stripExclude = 2;
++                }
++                else
++                {
++                    UNREACHABLE();
++                    return drawCommands;
++                }
++                break;
++            default:
++                UNREACHABLE();
++                return drawCommands;
++        }
++    }
++    else
++    {
++        ASSERT(originalMode == mode);
++        switch (mode)
++        {
++            case gl::PrimitiveMode::Points:
++                nIndicesPerPrimitive = 1;
++                break;
++            case gl::PrimitiveMode::Lines:
++                nIndicesPerPrimitive = 2;
++                break;
++            case gl::PrimitiveMode::Triangles:
++                nIndicesPerPrimitive = 3;
++                break;
++            default:
++                UNREACHABLE();
++                return drawCommands;
++        }
+     }
++
+     const GLuint indexTypeBytes = gl::GetDrawElementsTypeSize(indexType);
+     uint32_t indicesLeft        = indexCount;
+     size_t currentIndexOffset   = offset / indexTypeBytes;
++    const size_t baseOffset     = currentIndexOffset;
++
++    auto addDrawCommand = [&](uint32_t count, size_t elementOffset) {
++        // Skip slices that don't contain enough indices to form a single primitive.
++        if (count > stripExclude)
++        {
++            // Scale the count to account for the expansion factor and stripped indices.
++            uint32_t transformedCount = (count - stripExclude) * factor;
++            // Scale the offset to account for the expansion factor.
++            size_t transformedOffset =
++                offset + (elementOffset - baseOffset) * (size_t)factor * indexTypeBytes;
++            drawCommands.push_back({transformedCount, transformedOffset});
++        }
++    };
+ 
+     for (auto &range : *restartIndices)
+     {
+@@ -808,8 +878,7 @@ inline MTLVertexFormat GetCurrentAttribFormat(GLenum type)
+             size_t restartSize = (range.restartEnd - range.restartBegin) + 1;
+             if (nIndicesInSlice >= nIndicesPerPrimitive)
+             {
+-                drawCommands.push_back(
+-                    {(uint32_t)nIndicesInSlice, currentIndexOffset * indexTypeBytes});
++                addDrawCommand((uint32_t)nIndicesInSlice, currentIndexOffset);
+             }
+             // Account for dropped indices due to incomplete primitives.
+             size_t indicesUsed = ((range.restartBegin + restartSize) - currentIndexOffset);
+@@ -840,7 +909,10 @@ inline MTLVertexFormat GetCurrentAttribFormat(GLenum type)
+         }
+     }
+     if (indicesLeft >= nIndicesPerPrimitive)
+-        drawCommands.push_back({indicesLeft, currentIndexOffset * indexTypeBytes});
++    {
++        addDrawCommand(indicesLeft, currentIndexOffset);
++    }
++
+     return drawCommands;
+ }
+ 
+diff --git a/src/libANGLE/renderer/metal/shaders/mtl_internal_shaders_autogen.metal b/src/libANGLE/renderer/metal/shaders/mtl_internal_shaders_autogen.metal
+index d00029360435d59f1ac47a77ac6ba8594dfa5d8c..c1b01286a6e9e599518f0b53dc0055e3d5ff2beb 100644
+--- a/src/libANGLE/renderer/metal/shaders/mtl_internal_shaders_autogen.metal
++++ b/src/libANGLE/renderer/metal/shaders/mtl_internal_shaders_autogen.metal
+@@ -2606,6 +2606,7 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
+                 return;
+             }
+             ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = tmpIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = tmpIndex; } onOutIndex++; });
+@@ -2618,9 +2619,16 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                return;
++            }
++            if((onIndex - baseIndex) & 1)
++            {
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
+                 return;
+             }
+-            if((onIndex - baseIndex) & 1) return;
+             if(fixIndexBufferKey & 0x00200U)
+             {
+                 ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = tmpIndex1; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = tmpIndex1; } onOutIndex++; });
+@@ -2640,6 +2648,8 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
+                 return;
+             }
+             if(fixIndexBufferKey & 0x00200U)
+@@ -2662,9 +2672,18 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                return;
++            }
++            if(((onIndex - baseIndex) % 3) != 0)
++            {
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
+                 return;
+             }
+-            if(((onIndex - baseIndex) % 3) != 0) return;
+             if(fixIndexBufferKey & 0x00200U)
+             {
+                 ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = tmpIndex2; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = tmpIndex2; } onOutIndex++; });
+@@ -2688,6 +2707,9 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
+                 return;
+             }
+             if(fixIndexBufferKey & 0x00200U)
+@@ -2726,10 +2748,10 @@ kernel void fixIndexBuffer(
+                            constant uint &primCount [[ buffer(3) ]],
+                            uint prim [[thread_position_in_grid]])
+ {
+-    constexpr uint restartIndex = 0xFFFFFFFF;
++    const uint restartIndex = indexBufferIsUint16 ? 0xFFFF : 0xFFFFFFFF;
+     uint baseIndex = 0;
+-    uint onIndex = onIndex;
+-    uint onOutIndex = onOutIndex;
++    uint onIndex = 0;
++    uint onOutIndex = 0;
+     if(prim < primCount)
+     {
+         switch(fixIndexBufferMode)
+@@ -2905,8 +2927,8 @@ kernel void genIndexBuffer(
+                            uint prim [[thread_position_in_grid]])
+ {
+     uint baseIndex = 0;
+-    uint onIndex = onIndex;
+-    uint onOutIndex = onOutIndex;
++    uint onIndex = 0;
++    uint onOutIndex = 0;
+     if(prim < primCount)
+     {
+         switch(fixIndexBufferMode)
+diff --git a/src/libANGLE/renderer/metal/shaders/mtl_internal_shaders_src_autogen.h b/src/libANGLE/renderer/metal/shaders/mtl_internal_shaders_src_autogen.h
+index ffd87b11dcaffc8dfad6d054ca8bf7e10911339a..3d708205b2f75e6feb4303aebfc080e3425aeae4 100644
+--- a/src/libANGLE/renderer/metal/shaders/mtl_internal_shaders_src_autogen.h
++++ b/src/libANGLE/renderer/metal/shaders/mtl_internal_shaders_src_autogen.h
+@@ -2607,6 +2607,7 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
+                 return;
+             }
+             ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = tmpIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = tmpIndex; } onOutIndex++; });
+@@ -2619,9 +2620,16 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                return;
++            }
++            if((onIndex - baseIndex) & 1)
++            {
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
+                 return;
+             }
+-            if((onIndex - baseIndex) & 1) return;
+             if(fixIndexBufferKey & 0x00200U)
+             {
+                 ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = tmpIndex1; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = tmpIndex1; } onOutIndex++; });
+@@ -2641,6 +2649,8 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
+                 return;
+             }
+             if(fixIndexBufferKey & 0x00200U)
+@@ -2663,9 +2673,18 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                return;
++            }
++            if(((onIndex - baseIndex) % 3) != 0)
++            {
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
+                 return;
+             }
+-            if(((onIndex - baseIndex) % 3) != 0) return;
+             if(fixIndexBufferKey & 0x00200U)
+             {
+                 ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = tmpIndex2; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = tmpIndex2; } onOutIndex++; });
+@@ -2689,6 +2708,9 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
++                ({ if(outIndexBufferIsUint16) { outIndexBufferUint16[(onOutIndex)] = restartIndex; } if(outIndexBufferIsUint32) { outIndexBufferUint32[(onOutIndex)] = restartIndex; } onOutIndex++; });
+                 return;
+             }
+             if(fixIndexBufferKey & 0x00200U)
+@@ -2727,10 +2749,10 @@ kernel void fixIndexBuffer(
+                            constant uint &primCount [[ buffer(3) ]],
+                            uint prim [[thread_position_in_grid]])
+ {
+-    constexpr uint restartIndex = 0xFFFFFFFF;
++    const uint restartIndex = indexBufferIsUint16 ? 0xFFFF : 0xFFFFFFFF;
+     uint baseIndex = 0;
+-    uint onIndex = onIndex;
+-    uint onOutIndex = onOutIndex;
++    uint onIndex = 0;
++    uint onOutIndex = 0;
+     if(prim < primCount)
+     {
+         switch(fixIndexBufferMode)
+@@ -2906,8 +2928,8 @@ kernel void genIndexBuffer(
+                            uint prim [[thread_position_in_grid]])
+ {
+     uint baseIndex = 0;
+-    uint onIndex = onIndex;
+-    uint onOutIndex = onOutIndex;
++    uint onIndex = 0;
++    uint onOutIndex = 0;
+     if(prim < primCount)
+     {
+         switch(fixIndexBufferMode)
+diff --git a/src/libANGLE/renderer/metal/shaders/rewrite_indices.metal b/src/libANGLE/renderer/metal/shaders/rewrite_indices.metal
+index 10f940566c1f049218486f2a60e785c34900f080..dd0e5dc5924b595ca6b6bab725e59e1f886ae091 100644
+--- a/src/libANGLE/renderer/metal/shaders/rewrite_indices.metal
++++ b/src/libANGLE/renderer/metal/shaders/rewrite_indices.metal
+@@ -91,6 +91,7 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                WRITE_IDX(onOutIndex, restartIndex);
+                 return;
+             }
+ 
+@@ -104,9 +105,16 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                WRITE_IDX(onOutIndex, restartIndex);
++                WRITE_IDX(onOutIndex, restartIndex);
++                return;
++            }
++            if((onIndex - baseIndex) & 1)
++            {
++                WRITE_IDX(onOutIndex, restartIndex);
++                WRITE_IDX(onOutIndex, restartIndex);
+                 return;
+             }
+-            if((onIndex - baseIndex) & 1) return; // skip this index...
+ 
+             if(fixIndexBufferKey & MtlFixIndexBufferKeyProvokingVertexLast)
+             {
+@@ -127,6 +135,8 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                WRITE_IDX(onOutIndex, restartIndex);
++                WRITE_IDX(onOutIndex, restartIndex);
+                 return;
+             }
+ 
+@@ -150,9 +160,18 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                WRITE_IDX(onOutIndex, restartIndex);
++                WRITE_IDX(onOutIndex, restartIndex);
++                WRITE_IDX(onOutIndex, restartIndex);
++                return;
++            }
++            if(((onIndex - baseIndex) % 3) != 0)
++            {
++                WRITE_IDX(onOutIndex, restartIndex);
++                WRITE_IDX(onOutIndex, restartIndex);
++                WRITE_IDX(onOutIndex, restartIndex);
+                 return;
+             }
+-            if(((onIndex - baseIndex) % 3) != 0) return; // skip this index...
+ 
+             if(fixIndexBufferKey & MtlFixIndexBufferKeyProvokingVertexLast)
+             {
+@@ -177,6 +196,9 @@ static inline void outputPrimitive(
+             if(foundRestart)
+             {
+                 baseIndex = indexThatRestartedFirst + 1;
++                WRITE_IDX(onOutIndex, restartIndex);
++                WRITE_IDX(onOutIndex, restartIndex);
++                WRITE_IDX(onOutIndex, restartIndex);
+                 return;
+             }
+ 
+@@ -222,10 +244,10 @@ kernel void fixIndexBuffer(
+                            constant uint &primCount [[ buffer(3) ]],
+                            uint prim [[thread_position_in_grid]])
+ {
+-    constexpr uint restartIndex = 0xFFFFFFFF; // unused
++    const uint restartIndex = indexBufferIsUint16 ? 0xFFFF : 0xFFFFFFFF;
+     uint baseIndex = 0;
+-    uint onIndex = onIndex;
+-    uint onOutIndex = onOutIndex;
++    uint onIndex = 0;
++    uint onOutIndex = 0;
+     if(prim < primCount)
+     {
+         switch(fixIndexBufferMode)
+@@ -423,8 +445,8 @@ kernel void genIndexBuffer(
+                            uint prim [[thread_position_in_grid]])
+ {
+     uint baseIndex = 0;
+-    uint onIndex = onIndex;
+-    uint onOutIndex = onOutIndex;
++    uint onIndex = 0;
++    uint onOutIndex = 0;
+     if(prim < primCount)
+     {
+         switch(fixIndexBufferMode)
+diff --git a/src/tests/gl_tests/ProvokingVertexTest.cpp b/src/tests/gl_tests/ProvokingVertexTest.cpp
+index 59b9128d1bb324e6ba2d134a02ee9e638210eff3..dc9e818d47e06effef47cbec47e8134b42632d63 100644
+--- a/src/tests/gl_tests/ProvokingVertexTest.cpp
++++ b/src/tests/gl_tests/ProvokingVertexTest.cpp
+@@ -745,6 +745,67 @@ TEST_P(ProvokingVertexBufferUpdateTest, DrawFlatWithPartialBufferSubUpdatesBetwe
+     checkFlatQuadColors(kWidth, kHeight, GLColor::red, GLColor::green);
+ }
+ 
++// Only run these tests on Metal. Other backends tend to time out the test suite but not crash.
++class ProvokingVertexTestMetal : public ProvokingVertexTest
++{};
++
++// Test that a very large draw call with flat shading doesn't cause an integer overflow in the Metal
++// backend.
++TEST_P(ProvokingVertexTestMetal, LargeDrawTriangleFan)
++{
++    GLsizei count = 1431655768;
++    glUseProgram(mProgram);
++    glDrawArrays(GL_TRIANGLE_FAN, 0, count);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++}
++
++// Test that a very large draw call with flat shading doesn't cause an integer overflow in the Metal
++// backend.
++TEST_P(ProvokingVertexTestMetal, LargeDrawTriangleStrip)
++{
++    GLsizei count = 1431655768;
++    glUseProgram(mProgram);
++    glDrawArrays(GL_TRIANGLE_STRIP, 0, count);
++}
++
++// Test that drawing TriangleStrip with primitive restart and flat shading doesn't read out of
++// bounds. Regression test for GPU memory disclosure vulnerability during index rewriting.
++TEST_P(ProvokingVertexTestMetal, PrimitiveRestartWithTriangleStrip)
++{
++    glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
++
++    GLfloat halfPixel = 1.0f / static_cast<GLfloat>(getWindowWidth());
++
++    // 3 vertices
++    GLint vertexData[]     = {1, 2, 3};
++    GLfloat positionData[] = {-1.0f + halfPixel, -1.0f, -1.0f + halfPixel, 1.0f,
++                              1.0f - halfPixel,  -1.0f};
++
++    glVertexAttribIPointer(mIntAttribLocation, 1, GL_INT, 0, vertexData);
++
++    GLint positionLocation = glGetAttribLocation(mProgram, "position");
++    glEnableVertexAttribArray(positionLocation);
++    glVertexAttribPointer(positionLocation, 2, GL_FLOAT, GL_FALSE, 0, positionData);
++
++    // [0, 1, 2, R, R, R, R] -> Triangle Strip with 10 indices
++    const GLuint R     = 0xFFFFFFFF;
++    GLuint indexData[] = {0, 1, 2, R, R, R, R, R, R, R};
++
++    GLBuffer indexBuffer;
++    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indexData), indexData, GL_STATIC_DRAW);
++
++    glUseProgram(mProgram);
++    glDrawElements(GL_TRIANGLE_STRIP, 10, GL_UNSIGNED_INT, 0);
++
++    ASSERT_GL_NO_ERROR();
++
++    // Verify it rendered the single triangle correctly
++    GLint pixelValue[4] = {0};
++    glReadPixels(0, 0, 1, 1, GL_RGBA_INTEGER, GL_INT, &pixelValue);
++    EXPECT_EQ(vertexData[2], pixelValue[0]);  // Flat shading with provoking vertex last (index 2)
++}
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(ProvokingVertexTest);
+ ANGLE_INSTANTIATE_TEST_ES3(ProvokingVertexTest);
+ 

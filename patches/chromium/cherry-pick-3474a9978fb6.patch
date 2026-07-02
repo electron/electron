@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Tue, 12 May 2026 13:03:34 -0700
+Subject: Add validity checks after frame_widget calls in IME methods.
+
+Introduce ImeEventGuard::IsValid() to check if the associated WidgetBase
+is still alive. Use this check in WidgetBase's SetComposition,
+CommitText, and FinishComposingText methods after calling the
+corresponding frame_widget methods. This prevents use-after-free issues
+if the frame_widget call causes the WidgetBase to be destroyed.
+
+BUG=506149253
+
+Change-Id: Ic17e5ee9e39334d8afe1429e1c755e57ed344bbc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7840643
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1629520}
+
+diff --git a/third_party/blink/renderer/platform/widget/input/ime_event_guard.cc b/third_party/blink/renderer/platform/widget/input/ime_event_guard.cc
+index 10bb43432c6acd0389684ee53d6c7240b482b350..98645b166d6d27db1d45cd6ebc5153cc41277b6d 100644
+--- a/third_party/blink/renderer/platform/widget/input/ime_event_guard.cc
++++ b/third_party/blink/renderer/platform/widget/input/ime_event_guard.cc
+@@ -17,6 +17,10 @@ ImeEventGuard::ImeEventGuard(base::WeakPtr<WidgetBase> widget)
+   widget_->OnImeEventGuardStart(this);
+ }
+ 
++bool ImeEventGuard::IsValid() const {
++  return !!widget_;
++}
++
+ ImeEventGuard::~ImeEventGuard() {
+   if (widget_)
+     widget_->OnImeEventGuardFinish(this);
+diff --git a/third_party/blink/renderer/platform/widget/input/ime_event_guard.h b/third_party/blink/renderer/platform/widget/input/ime_event_guard.h
+index 042e9c7a492fedb21b8e11663cef94ab5a3eab09..119085730ec3b5e0bffcc14cf59ce640cbfa117a 100644
+--- a/third_party/blink/renderer/platform/widget/input/ime_event_guard.h
++++ b/third_party/blink/renderer/platform/widget/input/ime_event_guard.h
+@@ -20,6 +20,9 @@ class ImeEventGuard {
+   explicit ImeEventGuard(base::WeakPtr<WidgetBase> widget);
+   ~ImeEventGuard();
+ 
++  // Returns true if the widget is still alive.
++  bool IsValid() const;
++
+   bool show_virtual_keyboard() const { return show_virtual_keyboard_; }
+   void set_show_virtual_keyboard(bool show) { show_virtual_keyboard_ = show; }
+ 
+diff --git a/third_party/blink/renderer/platform/widget/widget_base.cc b/third_party/blink/renderer/platform/widget/widget_base.cc
+index 4d014bd219f2ed2593a2fec4d2b510042fb8f73c..34a38a89cc3e39818fade9e229dc7d0f2245a021 100644
+--- a/third_party/blink/renderer/platform/widget/widget_base.cc
++++ b/third_party/blink/renderer/platform/widget/widget_base.cc
+@@ -1525,9 +1525,13 @@ void WidgetBase::ImeSetComposition(
+   }
+ 
+   ImeEventGuard guard(weak_ptr_factory_.GetWeakPtr());
+-  if (!frame_widget->SetComposition(text, ime_text_spans, replacement_range,
+-                                    selection_start, selection_end,
+-                                    ime_state)) {
++  bool success =
++      frame_widget->SetComposition(text, ime_text_spans, replacement_range,
++                                   selection_start, selection_end, ime_state);
++  if (!guard.IsValid()) {
++    return;
++  }
++  if (!success) {
+     // If we failed to set the composition text, then we need to let the browser
+     // process to cancel the input method's ongoing composition session, to make
+     // sure we are in a consistent state.
+@@ -1559,6 +1563,9 @@ void WidgetBase::ImeCommitText(const String& text,
+   input_handler_.set_handling_input_event(true);
+   frame_widget->CommitText(text, ime_text_spans, replacement_range,
+                            relative_cursor_pos);
++  if (!guard.IsValid()) {
++    return;
++  }
+   input_handler_.set_handling_input_event(false);
+   UpdateCompositionInfo(false /* not an immediate request */);
+ }
+@@ -1578,6 +1585,9 @@ void WidgetBase::ImeFinishComposingText(bool keep_selection) {
+   ImeEventGuard guard(weak_ptr_factory_.GetWeakPtr());
+   input_handler_.set_handling_input_event(true);
+   frame_widget->FinishComposingText(keep_selection);
++  if (!guard.IsValid()) {
++    return;
++  }
+   input_handler_.set_handling_input_event(false);
+   UpdateCompositionInfo(false /* not an immediate request */);
+ }

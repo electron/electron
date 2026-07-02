@@ -1,0 +1,134 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Fri, 22 May 2026 16:44:59 -0400
+Subject: [graphite] Ref count large gradient shaders in FloatStorageManager
+
+This also removes the unique ID from SkShaderBase as the FSM was the
+only system that relied on it.
+
+Fixed: 512986879
+Bug: 512986879
+Change-Id: Icd43c13a75a1cdd212eea2b9db03033d13be47f4
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1243937
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+
+diff --git a/src/gpu/graphite/PipelineData.h b/src/gpu/graphite/PipelineData.h
+index bc255428f7c78c920adae880d7603ce736c08a97..d528c86f117cd692fef3408987d08575d38cbdb3 100644
+--- a/src/gpu/graphite/PipelineData.h
++++ b/src/gpu/graphite/PipelineData.h
+@@ -480,9 +480,13 @@ class FloatStorageManager : public SkRefCnt {
+     static_assert(std::numeric_limits<uint32_t>::max() / sizeof(float)
+                         <= (uint32_t) std::numeric_limits<int>::max());
+ public:
+-    FloatStorageManager() = default;
++    FloatStorageManager() { this->reset(); }
+ 
+     void reset() {
++        // Remove the manually added refs on the keys in fGradientOffsetCache
++        for (auto [k, _] : fGradientOffsetCache) {
++            k->unref(); // k might be deleted at this point but we won't use it anymore
++        }
+         fGradientStorage.clear();
+         fGradientOffsetCache.reset();
+     }
+@@ -499,7 +503,7 @@ public:
+             return {nullptr, -1};
+         }
+ 
+-        int* existingOffset = fGradientOffsetCache.find(shader->uniqueID());
++        int* existingOffset = fGradientOffsetCache.find(shader);
+         if (existingOffset) {
+             return {nullptr, *existingOffset};
+         }
+@@ -508,7 +512,10 @@ public:
+         // Only cache the storage if it was allocated successfully.
+         if (ptr) {
+             SkASSERT(offset >= 0);
+-            fGradientOffsetCache.set(shader->uniqueID(), offset);
++            // Since FloatStorageManager is single threaded, adding a ref and then storing in the
++            // map should be fine.
++            shader->ref();
++            fGradientOffsetCache.set(shader, offset);
+         }
+ 
+         return {ptr, offset};
+@@ -555,8 +562,18 @@ private:
+     // storage buffer can be bound once and accessed at random.
+     SkTDArray<float> fGradientStorage;
+ 
+-    // We use the shader's unique ID as a key to de-duplicate gradient data.
+-    skia_private::THashMap<uint32_t, int> fGradientOffsetCache;
++    // We use the shader's address as a key to de-duplicate gradient data. Each key has a ref added
++    // when it's first put in the map. The map does not key off of sk_sp<SkGradientBaseShader> to as
++    // that is not compatible with SkGoodHash. These refs are dropped in reset(). While this extends
++    // the lifetime of the SkShaders, it only applies to large gradients. Hopefully clients are
++    // trying to reuse such shaders across frames already.
++    //
++    // If we didn't keep the shaders alive, we'd have to worry about cache collisions from
++    // re-allocations using the same address. Using a unique ID can wrap, leading to potential
++    // mismatches. Adding sufficient data to eliminate this risk (e.g. keying off the unique ID, the
++    // address, the number of color stops, AND a hash of the color data) is likely more expensive
++    // than taking a ref.
++    skia_private::THashMap<const SkGradientBaseShader*, int> fGradientOffsetCache;
+ 
+     std::optional<BindBufferInfo> fBufferInfo = std::nullopt;
+ };
+diff --git a/src/shaders/SkShaderBase.cpp b/src/shaders/SkShaderBase.cpp
+index 5d20ba49ea1bf8dc6f202bb7c96f931030d5f311..dfbc3e2b7329e0e950a3ace54e5a06fe0cae0969 100644
+--- a/src/shaders/SkShaderBase.cpp
++++ b/src/shaders/SkShaderBase.cpp
+@@ -20,22 +20,6 @@
+ 
+ class SkWriteBuffer;
+ 
+-namespace {
+-
+-// The 32-bit shader ID counter is not expected to wrap. In the unlikely event that it does, we
+-// assume that the associated shaders will be sufficiently temporally separated such that shaders
+-// with the same recycled IDs are no longer in use.
+-uint32_t next_unique_id() {
+-    static std::atomic<uint32_t> gNextUniqueID{SK_InvalidUniqueID + 1};
+-    uint32_t id = SK_InvalidUniqueID;
+-    do {
+-        id = gNextUniqueID.fetch_add(1, std::memory_order_relaxed);
+-    } while (id == SK_InvalidUniqueID);
+-    return id;
+-}
+-
+-} // anonymous namespace
+-
+ namespace SkShaders {
+ MatrixRec::MatrixRec(const SkMatrix& ctm) : fCTM(ctm) {}
+ 
+@@ -92,7 +76,7 @@ MatrixRec MatrixRec::concat(const SkMatrix& m) const {
+ 
+ ///////////////////////////////////////////////////////////////////////////////////////
+ 
+-SkShaderBase::SkShaderBase() : fUniqueID(next_unique_id()) {}
++SkShaderBase::SkShaderBase() {}
+ 
+ SkShaderBase::~SkShaderBase() = default;
+ 
+diff --git a/src/shaders/SkShaderBase.h b/src/shaders/SkShaderBase.h
+index ffcabaa9c6274f1b97446b49892d13ef65d788c6..24c6c50249bfd390f1fceaf3da29ff8996eae1be 100644
+--- a/src/shaders/SkShaderBase.h
++++ b/src/shaders/SkShaderBase.h
+@@ -186,8 +186,6 @@ class SkShaderBase : public SkShader {
+ public:
+     ~SkShaderBase() override;
+ 
+-    uint32_t uniqueID() const { return fUniqueID; }
+-
+     sk_sp<SkShader> makeInvertAlpha() const;
+     sk_sp<SkShader> makeWithCTM(const SkMatrix&) const;  // owns its own ctm
+ 
+@@ -409,8 +407,6 @@ protected:
+     }
+ 
+ private:
+-    const uint32_t fUniqueID;
+-
+     friend class SkShaders::MatrixRec;
+ };
+ inline SkShaderBase* as_SB(SkShader* shader) {

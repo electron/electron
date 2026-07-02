@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Wed, 3 Jun 2026 20:19:23 -0700
+Subject: [M148] [Ozone/Wayland] Fix Use-After-Free in SetBoundsInDIP
+
+> When window bounds are modified via SetBoundsInDIP(), the base-class
+> call WaylandWindow::SetBoundsInDIP can synchronously notify observers of
+> state updates. If an observer triggers window destruction, the
+> underlying platform window is synchronously deleted.
+>
+> This CL adds weak pointer liveness checks in WaylandPopup and
+> WaylandBubble immediately after the base class call to prevent
+> subsequent member access on a freed instance.
+>
+> Bug: 518007821
+> Test: WaylandWindowTest.WaylandPopupSetBoundsUaf, WaylandWindowTest.WaylandBubbleSetBoundsUaf
+> Change-Id: Iaea6741e49644c4fa06fe72185db4684365ed767
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7886516
+> Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+> Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+> Commit-Queue: Thomas Lukaszewicz <tluk@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1639722}
+
+Fixed: 519445479?
+R=tluk
+
+Change-Id: Icb825fad9bfee6a03a6cb215fdd26f10a9e14aeb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7900216
+Commit-Queue: Thomas Lukaszewicz <tluk@chromium.org>
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4235}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_bubble.cc b/ui/ozone/platform/wayland/host/wayland_bubble.cc
+index 5b1a967bc881cd451956905cc2a0f0131999065a..ef876a70515d7969f5966d076d59c519d84f6b02 100644
+--- a/ui/ozone/platform/wayland/host/wayland_bubble.cc
++++ b/ui/ozone/platform/wayland/host/wayland_bubble.cc
+@@ -61,7 +61,11 @@ void WaylandBubble::SetBoundsInDIP(const gfx::Rect& bounds_dip) {
+   // There is currently no guarantee that the 2 compositor frames arrive
+   // together atomically.
+   auto old_bounds_dip = GetBoundsInDIP();
++  auto weak_this = AsWeakPtr();
+   WaylandWindow::SetBoundsInDIP(bounds_dip);
++  if (!weak_this) {
++    return;
++  }
+ 
+   // TODO(crbug.com/329145822): Don't apply position immediately here, wait for
+   // ackconfigure, otherwise it might jitter if offset changes.
+diff --git a/ui/ozone/platform/wayland/host/wayland_popup.cc b/ui/ozone/platform/wayland/host/wayland_popup.cc
+index d6457bbe0b911159dcf1db4624da06f816bd0317..bb4e3d42da9276ecb25cd38c052f45f9f862c7ab 100644
+--- a/ui/ozone/platform/wayland/host/wayland_popup.cc
++++ b/ui/ozone/platform/wayland/host/wayland_popup.cc
+@@ -179,7 +179,11 @@ void WaylandPopup::SetBoundsInDIP(const gfx::Rect& bounds_dip) {
+   }
+ 
+   auto old_bounds_dip = GetBoundsInDIP();
++  auto weak_this = AsWeakPtr();
+   WaylandWindow::SetBoundsInDIP(bounds_dip);
++  if (!weak_this) {
++    return;
++  }
+ 
+   // The shell popup can be null if bounds are being fixed during
+   // the initialization. See WaylandPopup::CreateShellPopup.
+diff --git a/ui/ozone/platform/wayland/test/mock_wayland_platform_window_delegate.cc b/ui/ozone/platform/wayland/test/mock_wayland_platform_window_delegate.cc
+index 3a025086d09098eb7b2491781ef3edebad77bec1..2e700bfd6f18d5af42deb22b8d12bbf86ca3803e 100644
+--- a/ui/ozone/platform/wayland/test/mock_wayland_platform_window_delegate.cc
++++ b/ui/ozone/platform/wayland/test/mock_wayland_platform_window_delegate.cc
+@@ -10,21 +10,12 @@
+ 
+ namespace ui {
+ 
+-void MockWaylandPlatformWindowDelegate::OnWindowRemoved(WaylandWindow* window) {
+-  if (wayland_window_ == window) {
+-    wayland_window_ = nullptr;
+-  }
+-}
+-
+ MockWaylandPlatformWindowDelegate::MockWaylandPlatformWindowDelegate(
+     raw_ptr<WaylandConnection> connection)
+-    : connection_(connection) {
+-  connection_->window_manager()->AddObserver(this);
+-}
++    : connection_(connection) {}
+ 
+-MockWaylandPlatformWindowDelegate::~MockWaylandPlatformWindowDelegate() {
+-  connection_->window_manager()->RemoveObserver(this);
+-}
++MockWaylandPlatformWindowDelegate::~MockWaylandPlatformWindowDelegate() =
++    default;
+ 
+ gfx::Rect MockWaylandPlatformWindowDelegate::ConvertRectToPixels(
+     const gfx::Rect& rect_in_dp) const {
+@@ -45,7 +36,7 @@ MockWaylandPlatformWindowDelegate::CreateWaylandWindow(
+     WaylandConnection* connection,
+     PlatformWindowInitProperties properties) {
+   auto window = WaylandWindow::Create(this, connection, std::move(properties));
+-  wayland_window_ = window.get();
++  wayland_window_ = window->AsWeakPtr();
+   return window;
+ }
+ 
+@@ -60,10 +51,16 @@ int64_t MockWaylandPlatformWindowDelegate::OnStateUpdate(
+       old.window_scale != latest.window_scale) {
+     bool origin_changed = old.bounds_dip.origin() != latest.bounds_dip.origin();
+     OnBoundsChanged({origin_changed});
++    if (!wayland_window_) {
++      return -1;
++    }
+   }
+ 
+   if (!on_state_update_callback_.is_null()) {
+     on_state_update_callback_.Run();
++    if (!wayland_window_) {
++      return -1;
++    }
+   }
+ 
+   if (!latest.WillProduceFrameOnUpdateFrom(old)) {
+diff --git a/ui/ozone/platform/wayland/test/mock_wayland_platform_window_delegate.h b/ui/ozone/platform/wayland/test/mock_wayland_platform_window_delegate.h
+index e5ca83e256efda710b362b831734c9024ea75ccc..b7ed4c071d859cc1e700bf790cb874de56410b05 100644
+--- a/ui/ozone/platform/wayland/test/mock_wayland_platform_window_delegate.h
++++ b/ui/ozone/platform/wayland/test/mock_wayland_platform_window_delegate.h
+@@ -7,7 +7,6 @@
+ 
+ #include "base/functional/callback.h"
+ #include "base/memory/raw_ptr.h"
+-#include "ui/ozone/platform/wayland/host/wayland_window_observer.h"
+ #include "ui/ozone/test/mock_platform_window_delegate.h"
+ 
+ namespace ui {
+@@ -15,8 +14,7 @@ class WaylandConnection;
+ class WaylandWindow;
+ struct PlatformWindowInitProperties;
+ 
+-class MockWaylandPlatformWindowDelegate : public MockPlatformWindowDelegate,
+-                                          public WaylandWindowObserver {
++class MockWaylandPlatformWindowDelegate : public MockPlatformWindowDelegate {
+  public:
+   MockWaylandPlatformWindowDelegate(raw_ptr<WaylandConnection> connection);
+   MockWaylandPlatformWindowDelegate(const MockWaylandPlatformWindowDelegate&) =
+@@ -44,11 +42,9 @@ class MockWaylandPlatformWindowDelegate : public MockPlatformWindowDelegate,
+   }
+ 
+  private:
+-  // WaylandWindowObserver:
+-  void OnWindowRemoved(WaylandWindow* window) override;
+   raw_ptr<WaylandConnection> connection_ = nullptr;
+ 
+-  raw_ptr<WaylandWindow> wayland_window_ = nullptr;
++  base::WeakPtr<WaylandWindow> wayland_window_;
+ 
+   // |viz_seq_| is used to save an incrementing sequence point on each
+   // call to InsertSequencePoint. Test code can check this value to know

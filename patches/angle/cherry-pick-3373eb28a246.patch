@@ -1,0 +1,374 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Tue, 19 May 2026 16:08:55 -0400
+Subject: GL: Sync program state after transform feedback.
+
+If we are syncing a call to BeginTransformFeedback,
+PauseTransformFeedback, UseProgram all at once, the program will be
+bound and then changed to an incorrect program when the transform
+feedback active state is synced afterwards.
+
+Fixed: chromium:513919827
+Change-Id: I66562446d364d03f628f927b4f4e8f5d7113fe4b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7858018
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.cpp b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+index f1da30007ad91e13def75911da268005312c53b7..42f6de5fd5d1ad32346a2d476896bbd4d5b772b2 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.cpp
++++ b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+@@ -2320,14 +2320,8 @@ angle::Result StateManagerGL::syncState(const gl::Context *context,
+                 updateDispatchIndirectBufferBinding(context);
+                 break;
+             case gl::state::DIRTY_BIT_PROGRAM_BINDING:
+-            {
+-                gl::Program *program = state.getProgram();
+-                if (program != nullptr)
+-                {
+-                    useProgram(GetImplAs<ProgramGL>(program)->getProgramID());
+-                }
++                syncProgramState(context);
+                 break;
+-            }
+             case gl::state::DIRTY_BIT_PROGRAM_EXECUTABLE:
+             {
+                 const gl::ProgramExecutable *executable = state.getProgramExecutable();
+@@ -2901,6 +2895,18 @@ void StateManagerGL::syncTransformFeedbackState(const gl::Context *context)
+         bindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
+         mCurrentTransformFeedback = nullptr;
+     }
++
++    syncProgramState(context);
++}
++
++void StateManagerGL::syncProgramState(const gl::Context *context)
++{
++    gl::Program *program = context->getState().getProgram();
++    if (program != nullptr)
++    {
++        ProgramGL *programGL = GetImplAs<ProgramGL>(program);
++        useProgram(programGL->getProgramID());
++    }
+ }
+ 
+ GLuint StateManagerGL::getDefaultVAO() const
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.h b/src/libANGLE/renderer/gl/StateManagerGL.h
+index bad9aa5dfc406bb613d55b0c4752c0da13054558..fc44d63bde9c117c4586b0f86672132e7a52b25b 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.h
++++ b/src/libANGLE/renderer/gl/StateManagerGL.h
+@@ -373,6 +373,7 @@ class StateManagerGL final : angle::NonCopyable
+ 
+     void syncSamplersState(const gl::Context *context);
+     void syncTransformFeedbackState(const gl::Context *context);
++    void syncProgramState(const gl::Context *context);
+ 
+     void updateEmulatedClipDistanceState(const gl::ProgramExecutable *executable,
+                                          const gl::ClipDistanceEnableBits enables) const;
+diff --git a/src/libANGLE/renderer/gl/TransformFeedbackGL.cpp b/src/libANGLE/renderer/gl/TransformFeedbackGL.cpp
+index 4caf28b0019420008d8957961a42cb68cfb2e46e..77b028b0bbee4dd6301811212798d254690669f8 100644
+--- a/src/libANGLE/renderer/gl/TransformFeedbackGL.cpp
++++ b/src/libANGLE/renderer/gl/TransformFeedbackGL.cpp
+@@ -162,10 +162,16 @@ void TransformFeedbackGL::syncPausedState(bool paused) const
+         mStateManager->bindTransformFeedback(GL_TRANSFORM_FEEDBACK, mTransformFeedbackID);
+         if (mIsPaused)
+         {
++            // If we're transitioning from active to paused, the currently bound program must be the
++            // one associated with this transform feedback.
++            ASSERT(mStateManager->getProgramID() == mActiveProgram);
+             mFunctions->pauseTransformFeedback();
+         }
+         else
+         {
++            // When transitioning to resumed, make sure the program associated with this transform
++            // feedback is set
++            mStateManager->useProgram(mActiveProgram);
+             mFunctions->resumeTransformFeedback();
+         }
+     }
+diff --git a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/TransformFeedbackTest.cpp
+index f1cd531ee4ba4aff364ea46df8e8240868b3ccaf..e3f0ff0c1e1e213088e6fea52d41258924f8de8e 100644
+--- a/src/tests/gl_tests/TransformFeedbackTest.cpp
++++ b/src/tests/gl_tests/TransformFeedbackTest.cpp
+@@ -251,6 +251,281 @@ TEST_P(TransformFeedbackTest, QueryActiveNoXfbDrawThenXfbBeginEnd)
+     EXPECT_EQ(primitivesWritten, 0u);
+ }
+ 
++// Test that starting transform feedback with one program but pausing and drawing with another
++// program draws the expected results
++TEST_P(TransformFeedbackTest, DrawWithOtherProgramDuringPause)
++{
++    ANGLE_GL_PROGRAM(blueProgram, essl3_shaders::vs::Simple(), essl3_shaders::fs::Blue());
++
++    std::vector<std::string> tfVaryings;
++    tfVaryings.push_back("gl_Position");
++    compileDefaultProgram(tfVaryings, GL_INTERLEAVED_ATTRIBS);
++    glUseProgram(mProgram);
++
++    // Bind the buffer for transform feedback output and start transform feedback
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mTransformFeedbackBuffer);
++    glBeginTransformFeedback(GL_TRIANGLES);
++    glPauseTransformFeedback();
++    EXPECT_GL_NO_ERROR();
++
++    glUseProgram(blueProgram);
++    drawQuad(blueProgram, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_GL_NO_ERROR();
++
++    glUseProgram(mProgram);
++    glResumeTransformFeedback();
++    glEndTransformFeedback();
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++}
++
++// Test that resuming transform feedback with a different program results in validation error.
++TEST_P(TransformFeedbackTest, ProgramSwitchDuringPauseAndResume)
++{
++    constexpr char kVS1[] = R"(#version 300 es
++out float tfVarying10;
++out float tfVarying11;
++out float tfVarying12;
++out float tfVarying13;
++void main() {
++    tfVarying10 = 1.0;
++    tfVarying11 = 2.0;
++    tfVarying12 = 3.0;
++    tfVarying13 = 4.0;
++    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);
++})";
++    constexpr char kVS2[] = R"(#version 300 es
++out float tfVarying20;
++out float tfVarying21;
++void main() {
++    tfVarying20 = -1.0;
++    tfVarying21 = -2.0;
++    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);
++})";
++    constexpr char kFS[]  = R"(#version 300 es
++precision mediump float;
++out vec4 fragOut;
++void main() {
++    fragOut = vec4(1.0, 1.0, 1.0, 1.0);
++})";
++
++    std::vector<std::string> tfVaryings1 = {"tfVarying10", "tfVarying11", "tfVarying12",
++                                            "tfVarying13"};
++    std::vector<std::string> tfVaryings2 = {"tfVarying20", "tfVarying21"};
++    GLuint program1 =
++        CompileProgramWithTransformFeedback(kVS1, kFS, tfVaryings1, GL_SEPARATE_ATTRIBS);
++    ASSERT_NE(0u, program1);
++    GLuint program2 =
++        CompileProgramWithTransformFeedback(kVS2, kFS, tfVaryings2, GL_SEPARATE_ATTRIBS);
++    ASSERT_NE(0u, program2);
++
++    // XFB buffers
++    GLBuffer xfbBuffers[4];
++    constexpr GLsizei kInitSize = 4 * 1024;
++    for (int i = 0; i < 4; ++i)
++    {
++        glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, xfbBuffers[i]);
++        glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, kInitSize, nullptr, GL_DYNAMIC_DRAW);
++        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, i, xfbBuffers[i]);
++        ASSERT_GL_NO_ERROR();
++    }
++
++    // Use the first program which uses four buffers.
++    glUseProgram(program1);
++    glBeginTransformFeedback(GL_POINTS);
++    glDrawArrays(GL_POINTS, 0, 1);
++    glEndTransformFeedback();
++    ASSERT_GL_NO_ERROR();
++
++    // Validate the XFB values for the first program.
++    for (int i = 0; i < 4; ++i)
++    {
++        glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, xfbBuffers[i]);
++        const float *bufferData = reinterpret_cast<float *>(
++            glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(GLfloat), GL_MAP_READ_BIT));
++        ASSERT_NE(nullptr, bufferData);
++        EXPECT_EQ(*bufferData, 1.0f + static_cast<float>(i));
++        glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
++    }
++
++    // Use the second program which only uses the first two buffers.
++    glUseProgram(program2);
++    glBeginTransformFeedback(GL_POINTS);
++    glPauseTransformFeedback();
++    ASSERT_GL_NO_ERROR();
++
++    // Resuming transform feedback with another program should result in validation error.
++    glUseProgram(program1);
++    ASSERT_GL_NO_ERROR();
++    glResumeTransformFeedback();
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++    glDrawArrays(GL_POINTS, 0, 1);
++    ASSERT_GL_NO_ERROR();
++
++    // Resuming transform feedback with the same program from the beginning is OK.
++    glUseProgram(program2);
++    ASSERT_GL_NO_ERROR();
++    glResumeTransformFeedback();
++    ASSERT_GL_NO_ERROR();
++
++    glDrawArrays(GL_POINTS, 0, 1);
++    ASSERT_GL_NO_ERROR();
++
++    glEndTransformFeedback();
++    ASSERT_GL_NO_ERROR();
++
++    // Validate the XFB values for the second program.
++    for (int i = 0; i < 2; ++i)
++    {
++        glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, xfbBuffers[i]);
++        const float *bufferData = reinterpret_cast<float *>(
++            glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(GLfloat), GL_MAP_READ_BIT));
++        ASSERT_NE(nullptr, bufferData);
++        EXPECT_EQ(*bufferData, -(1.0f + static_cast<float>(i)));
++        glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
++    }
++
++    glDeleteProgram(program1);
++    glDeleteProgram(program2);
++}
++
++// Test that resuming transform feedback with a different program results in validation error, and
++// using the original program after updating the size of one of its buffers works.
++TEST_P(TransformFeedbackTest, ProgramSwitchDuringPauseAndResumeWithBufferChange)
++{
++    constexpr char kVS1[] = R"(#version 300 es
++out float tfVarying10;
++out float tfVarying11;
++out float tfVarying12;
++out float tfVarying13;
++void main() {
++    tfVarying10 = 1.0;
++    tfVarying11 = 2.0;
++    tfVarying12 = 3.0;
++    tfVarying13 = 4.0;
++    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);
++})";
++    constexpr char kVS2[] = R"(#version 300 es
++out float tfVarying20;
++out float tfVarying21;
++void main() {
++    tfVarying20 = -1.0;
++    tfVarying21 = -2.0;
++    gl_Position = vec4(0.0, 0.0, 0.0, 0.0);
++})";
++    constexpr char kFS[]  = R"(#version 300 es
++precision mediump float;
++out vec4 fragOut;
++void main() {
++    fragOut = vec4(1.0, 1.0, 1.0, 1.0);
++})";
++
++    std::vector<std::string> tfVaryings1 = {"tfVarying10", "tfVarying11", "tfVarying12",
++                                            "tfVarying13"};
++    std::vector<std::string> tfVaryings2 = {"tfVarying20", "tfVarying21"};
++    GLuint program1 =
++        CompileProgramWithTransformFeedback(kVS1, kFS, tfVaryings1, GL_SEPARATE_ATTRIBS);
++    ASSERT_NE(0u, program1);
++    GLuint program2 =
++        CompileProgramWithTransformFeedback(kVS2, kFS, tfVaryings2, GL_SEPARATE_ATTRIBS);
++    ASSERT_NE(0u, program2);
++
++    // XFB buffers
++    GLBuffer xfbBuffers[4];
++    constexpr GLsizei kInitSize = 4 * 1024;
++    for (int i = 0; i < 4; ++i)
++    {
++        glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, xfbBuffers[i]);
++        glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, kInitSize, nullptr, GL_DYNAMIC_DRAW);
++        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, i, xfbBuffers[i]);
++        ASSERT_GL_NO_ERROR();
++    }
++
++    // Use the first program which uses four buffers.
++    glUseProgram(program1);
++    glBeginTransformFeedback(GL_POINTS);
++    glDrawArrays(GL_POINTS, 0, 1);
++    glEndTransformFeedback();
++    ASSERT_GL_NO_ERROR();
++
++    // Validate the XFB values for the first program.
++    for (int i = 0; i < 4; ++i)
++    {
++        glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, xfbBuffers[i]);
++        const float *bufferData = reinterpret_cast<float *>(
++            glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(GLfloat), GL_MAP_READ_BIT));
++        ASSERT_NE(nullptr, bufferData);
++        EXPECT_EQ(*bufferData, 1.0f + static_cast<float>(i));
++        glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
++    }
++
++    // One of the buffers that will not be used in the second program is expanded.
++    constexpr GLsizei kLargeSize = 8 * 1024 * 1024;
++    glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, xfbBuffers[2]);
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, kLargeSize, nullptr, GL_DYNAMIC_DRAW);
++    ASSERT_GL_NO_ERROR();
++
++    // Use the second program which only uses the first two buffers.
++    glUseProgram(program2);
++    glBeginTransformFeedback(GL_POINTS);
++    glPauseTransformFeedback();
++    ASSERT_GL_NO_ERROR();
++
++    // Resuming transform feedback with another program should result in validation error.
++    glUseProgram(program1);
++    ASSERT_GL_NO_ERROR();
++    glResumeTransformFeedback();
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++    glDrawArrays(GL_POINTS, 0, 1);
++    ASSERT_GL_NO_ERROR();
++
++    // Resuming transform feedback with the same program from the beginning is OK.
++    glUseProgram(program2);
++    ASSERT_GL_NO_ERROR();
++    glResumeTransformFeedback();
++    ASSERT_GL_NO_ERROR();
++
++    glDrawArrays(GL_POINTS, 0, 1);
++    ASSERT_GL_NO_ERROR();
++
++    glEndTransformFeedback();
++    ASSERT_GL_NO_ERROR();
++
++    // Validate the XFB values for the second program.
++    for (int i = 0; i < 2; ++i)
++    {
++        glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, xfbBuffers[i]);
++        const float *bufferData = reinterpret_cast<float *>(
++            glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(GLfloat), GL_MAP_READ_BIT));
++        ASSERT_NE(nullptr, bufferData);
++        EXPECT_EQ(*bufferData, -(1.0f + static_cast<float>(i)));
++        glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
++    }
++
++    // Use the first program again with the updated buffer.
++    glUseProgram(program1);
++    glBeginTransformFeedback(GL_POINTS);
++    glDrawArrays(GL_POINTS, 0, 1);
++    glEndTransformFeedback();
++    ASSERT_GL_NO_ERROR();
++
++    // Validate the XFB values for the first program again.
++    for (int i = 0; i < 4; ++i)
++    {
++        glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, xfbBuffers[i]);
++        const float *bufferData = reinterpret_cast<float *>(
++            glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(GLfloat), GL_MAP_READ_BIT));
++        ASSERT_NE(nullptr, bufferData);
++        EXPECT_EQ(*bufferData, 1.0f + static_cast<float>(i));
++        glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
++    }
++
++    glDeleteProgram(program1);
++    glDeleteProgram(program2);
++}
++
+ // Test that rebinding a buffer with the same offset resets the offset (no longer appending from the
+ // old position)
+ TEST_P(TransformFeedbackTest, BufferRebinding)

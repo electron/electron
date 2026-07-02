@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charlie Lao <cclao@google.com>
+Date: Fri, 29 May 2026 15:23:19 -0700
+Subject: Vulkan: Fix stale RefCountedEventArrayWithAccessFlags::mAccessFlags
+
+When a BufferHelper is re-initialized or orphaned (e.g., via
+glBufferData), it calls initializeBarrierTracker(), which calls
+mCurrentReadEvents.release(renderer). This call resolves to the base
+class implementation, leaving the mAccessFlags map populated with stale
+data from the buffer's previous incarnation. This may cause other
+problems later on when this buffer gets used. This CL ensures we clear
+mAccessFlags on release() call.
+
+Bug: b/513922055
+Change-Id: I36f1d9588280001866b73c1b71c29fab0d318ef3
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7885808
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Charlie Lao <cclao@google.com>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/vk_ref_counted_event.h b/src/libANGLE/renderer/vulkan/vk_ref_counted_event.h
+index fdf6eec3349ac57fc7932ed86dd880653607d82f..49f2d1a206944cd07f955babc3dc13cd64d1b34f 100644
+--- a/src/libANGLE/renderer/vulkan/vk_ref_counted_event.h
++++ b/src/libANGLE/renderer/vulkan/vk_ref_counted_event.h
+@@ -296,6 +296,17 @@ class RefCountedEventArrayWithAccessFlags final : public RefCountedEventArray
+         ASSERT(mBitMask[eventStage]);
+         return mAccessFlags[eventStage];
+     }
++
++    void release(Renderer *renderer)
++    {
++        RefCountedEventArray::release(renderer);
++        mAccessFlags.fill(0);
++    }
++    void release(Context *context)
++    {
++        RefCountedEventArray::release(context);
++        mAccessFlags.fill(0);
++    }
+     void releaseToEventCollector(RefCountedEventCollector *eventCollector)
+     {
+         for (EventStage eventStage : mBitMask)
+@@ -319,8 +330,16 @@ class RefCountedEventWithAccessFlags final
+   public:
+     RefCountedEventWithAccessFlags() : mAccessFlags(0) {}
+ 
+-    void release(Renderer *renderer) { mEvent.release(renderer); }
+-    void release(Context *context) { mEvent.release(context); }
++    void release(Renderer *renderer)
++    {
++        mEvent.release(renderer);
++        mAccessFlags = 0;
++    }
++    void release(Context *context)
++    {
++        mEvent.release(context);
++        mAccessFlags = 0;
++    }
+     void releaseToEventCollector(RefCountedEventCollector *eventCollector)
+     {
+         eventCollector->emplace_back(std::move(mEvent));

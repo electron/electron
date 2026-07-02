@@ -1,0 +1,884 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Natalie Chouinard <chouinard@google.com>
+Date: Fri, 5 Jun 2026 19:31:12 -0700
+Subject: [M148][tint] Collapse nested subgroupMin/Max ops on AMD
+
+On some AMD GPUs on Windows, nested subgroupMin/Max operations can
+trigger a crash.
+
+This change collapses multiple nested subgroupMin/Max calls to a single
+call, the innermost subgroupMin/Max operation. This is safe because the
+result of a subgroupMin/Max call is necessarily subgroup uniform.
+
+This bug exists in both the Vulkan and D3D12 drivers on Windows, and on
+Mac. On Windows it is fixed in later versions, but because it's a
+harmless optimizing transform it's applied broadly to all versions on
+affected backend platforms.
+
+Bug: 508265321
+Fixed: 519444494
+Change-Id: I658d0ddece1887d9211ad9ea2eb07a96ada0e3ce
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/311521
+Commit-Queue: Natalie Chouinard <chouinard@google.com>
+Reviewed-by: dan sinclair <dsinclair@chromium.org>
+(cherry picked from commit 99622c4f7ef017a2f527e1e1d4afddcb93d04b35)
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/314215
+Reviewed-by: James Price <jrprice@google.com>
+
+diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
+index 8bd39277737537eaa154c4f438cb06af36667873..0ee4c12eea92aeb0331351cdee48494b4f101155 100644
+--- a/src/dawn/native/Toggles.cpp
++++ b/src/dawn/native/Toggles.cpp
+@@ -729,6 +729,11 @@ static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {{
+      {"decompose_uniform_buffers",
+       "Decompose uniform buffers into arrays of vec4<u32> on backends for Vulkan and OpenGL.",
+       "https://crbug.com/448452698", ToggleStage::Adapter}},
++    {Toggle::CollapseSubgroupMinMax,
++     {"collapse_subgroup_min_max",
++      "Collapse redundant subgroup min and max operations (e.g., subgroupMin(subgroupMin(x))) into "
++      "a single operation. This works around a driver crash on some AMD GPUs.",
++      "https://crbug.com/508265321", ToggleStage::Device}},
+     {Toggle::VulkanEnableF16OnNvidia,
+      {"vulkan_enable_f16_on_nvidia", "Enables F16 on Nvidia GPUs with Vulkan",
+       "https://crbug.com/42251215", ToggleStage::Adapter}},
+diff --git a/src/dawn/native/Toggles.h b/src/dawn/native/Toggles.h
+index cba66d36a95978dc9ac8b503e72005bf1d8aaa5e..5d1e6553c2992dfc753a2920c2774f0bfb5179a5 100644
+--- a/src/dawn/native/Toggles.h
++++ b/src/dawn/native/Toggles.h
+@@ -174,6 +174,7 @@ enum class Toggle {
+     EnableShaderPrint,
+     BlobCacheHashValidation,
+     DecomposeUniformBuffers,
++    CollapseSubgroupMinMax,
+     VulkanEnableF16OnNvidia,
+     EnableRenderDocProcessInjection,
+     VulkanUseDynamicRendering,
+diff --git a/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp b/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp
+index aca86f0bec091bb0608a01ad8b8325df0ccd11e7..0991e8f9183dec959d1dc3b729b4d4011ce0f860 100644
+--- a/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp
++++ b/src/dawn/native/d3d12/PhysicalDeviceD3D12.cpp
+@@ -836,6 +836,14 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+         deviceToggles->Default(Toggle::D3D12ForceClearCopyableDepthStencilTextureOnCreation, false);
+     }
+ 
++    // Collapse redundant subgroup min and max operations to workaround a driver crash on older AMD
++    // GPUs. Should only affect AMD Windows Driver versions < 31.0.22000.0, but because this is a
++    // harmless "optimizing" workaround go ahead enable for all versions. See:
++    // https://crbug.com/508265321.
++    if (gpu_info::IsAMD(vendorId)) {
++        deviceToggles->Default(Toggle::CollapseSubgroupMinMax, true);
++    }
++
+     // Currently this toggle is only needed on Intel Gen9 and Gen9.5 GPUs.
+     // See http://crbug.com/dawn/1579 for more information.
+     if (gpu_info::IsIntelGen9(vendorId, deviceId)) {
+diff --git a/src/dawn/native/d3d12/ShaderModuleD3D12.cpp b/src/dawn/native/d3d12/ShaderModuleD3D12.cpp
+index 0101f4a6c971c29ee7e200421e529ebd017d52de..bce84b606dad6b66803b6e054631f1cfec7ae414 100644
+--- a/src/dawn/native/d3d12/ShaderModuleD3D12.cpp
++++ b/src/dawn/native/d3d12/ShaderModuleD3D12.cpp
+@@ -305,6 +305,8 @@ ResultOrError<d3d::CompiledShader> ShaderModule::Compile(
+         device->IsToggleEnabled(Toggle::D3D12PolyfillReflectVec2F32);
+     req.hlsl.tintOptions.workarounds.polyfill_subgroup_broadcast_f16 =
+         device->IsToggleEnabled(Toggle::EnableSubgroupsIntelGen9);
++    req.hlsl.tintOptions.workarounds.collapse_subgroup_min_max =
++        device->IsToggleEnabled(Toggle::CollapseSubgroupMinMax);
+ 
+     req.hlsl.tintOptions.extensions.polyfill_dot_4x8_packed =
+         device->IsToggleEnabled(Toggle::PolyFillPacked4x8DotProduct);
+diff --git a/src/dawn/native/metal/PhysicalDeviceMTL.mm b/src/dawn/native/metal/PhysicalDeviceMTL.mm
+index e69b8bd6ac5b197b73773d7de97dc6d82cd1f534..09b671e7eb966632bfedccdf0f31765ceff58fce 100644
+--- a/src/dawn/native/metal/PhysicalDeviceMTL.mm
++++ b/src/dawn/native/metal/PhysicalDeviceMTL.mm
+@@ -471,6 +471,8 @@ bool IsGPUCounterSupported(id<MTLDevice> device,
+     // chromium:407109056: Floating point clamp is slightly inaccurate for subnormal values.
+     if (gpu_info::IsAMD(vendorId)) {
+         deviceToggles->Default(Toggle::MetalPolyfillClampFloat, true);
++        // crbug.com/508265321: Nested subgroupMin/Max operations cause a crash in the AMD driver.
++        deviceToggles->Default(Toggle::CollapseSubgroupMinMax, true);
+     }
+ 
+     // On some Intel GPUs vertex only render pipeline get wrong depth result if no fragment
+diff --git a/src/dawn/native/metal/ShaderModuleMTL.mm b/src/dawn/native/metal/ShaderModuleMTL.mm
+index 7e486ee6d7b3c2b5a119f648cabf73b9f495aa63..5c278511aa796d034eb560e99284b3c886ecdc93 100644
+--- a/src/dawn/native/metal/ShaderModuleMTL.mm
++++ b/src/dawn/native/metal/ShaderModuleMTL.mm
+@@ -341,6 +341,8 @@
+         device->IsToggleEnabled(Toggle::MetalPolyfillUnpack2x16snorm);
+     req.tintOptions.workarounds.polyfill_unpack_2x16_unorm =
+         device->IsToggleEnabled(Toggle::MetalPolyfillUnpack2x16unorm);
++    req.tintOptions.workarounds.collapse_subgroup_min_max =
++        device->IsToggleEnabled(Toggle::CollapseSubgroupMinMax);
+ 
+     req.tintOptions.extensions.disable_demote_to_helper =
+         device->IsToggleEnabled(Toggle::DisableDemoteToHelper);
+diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+index 94670832029809fc9ff09205207c054abf0c7250..f21b3d86b6d75758be638d5b3b15edc5b203f340 100644
+--- a/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
++++ b/src/dawn/native/vulkan/PhysicalDeviceVk.cpp
+@@ -1056,6 +1056,14 @@ void PhysicalDevice::SetupBackendDeviceToggles(dawn::platform::Platform* platfor
+         deviceToggles->Default(Toggle::IgnoreImportedAHardwareBufferVulkanImageSize, true);
+     }
+ 
++    // Collapse redundant subgroup min and max operations to workaround a driver crash on some AMD
++    // GPUs.  Should only affect AMD Windows Driver versions < 31.0.22000.0, but because this is a
++    // harmless "optimizing" workaround go ahead enable for all versions. See:
++    // https://crbug.com/508265321.
++    if (IsWindowsAMD()) {
++        deviceToggles->Default(Toggle::CollapseSubgroupMinMax, true);
++    }
++
+     if (IsSwiftshader()) {
+         // Swiftshader doesn't handle propagating decorations for descriptors through
+         // OpCompositeExtract which happens when a binding_array is indexed "by value" instead of
+@@ -1352,6 +1360,14 @@ bool PhysicalDevice::IsSwiftshader() const {
+     return gpu_info::IsGoogleSwiftshader(GetVendorId(), GetDeviceId());
+ }
+ 
++bool PhysicalDevice::IsWindowsAMD() const {
++#if DAWN_PLATFORM_IS(WINDOWS)
++    return gpu_info::IsAMD(GetVendorId());
++#else
++    return false;
++#endif
++}
++
+ std::optional<uint32_t> PhysicalDevice::FindDefaultComputeSubgroupSize() const {
+     if (!mDeviceInfo.HasExt(DeviceExt::SubgroupSizeControl)) {
+         return std::nullopt;
+diff --git a/src/dawn/native/vulkan/PhysicalDeviceVk.h b/src/dawn/native/vulkan/PhysicalDeviceVk.h
+index 582b9497c7ab5ec52ea2ebcb70794077fd0d98f2..9598dc31636f0cd26fe09d38258fe8714be4f075 100644
+--- a/src/dawn/native/vulkan/PhysicalDeviceVk.h
++++ b/src/dawn/native/vulkan/PhysicalDeviceVk.h
+@@ -66,6 +66,7 @@ class PhysicalDevice : public PhysicalDeviceBase {
+     bool IsAndroidSamsung() const;
+     bool IsAndroidImgTec() const;
+     bool IsPixel10() const;
++    bool IsWindowsAMD() const;
+     bool IsIntelMesa() const;
+     bool IsAmdMesa() const;
+     bool IsAndroidHuawei() const;
+diff --git a/src/dawn/native/vulkan/ShaderModuleVk.cpp b/src/dawn/native/vulkan/ShaderModuleVk.cpp
+index f8ffb65ee6e8e96b8da358e82f5b96e881897aaa..c535c5c4e2f2fb43a0e98190c6a081a5a13fc124 100644
+--- a/src/dawn/native/vulkan/ShaderModuleVk.cpp
++++ b/src/dawn/native/vulkan/ShaderModuleVk.cpp
+@@ -263,6 +263,8 @@ ResultOrError<ShaderModule::ModuleAndSpirv> ShaderModule::GetHandleAndSpirv(
+         GetDevice()->IsToggleEnabled(Toggle::VulkanDirectVariableAccessTransformHandle);
+     req.tintOptions.workarounds.polyfill_subgroup_broadcast_f16 =
+         GetDevice()->IsToggleEnabled(Toggle::EnableSubgroupsIntelGen9);
++    req.tintOptions.workarounds.collapse_subgroup_min_max =
++        GetDevice()->IsToggleEnabled(Toggle::CollapseSubgroupMinMax);
+ 
+     // Pass matrices to user functions by pointer on Qualcomm devices to workaround a known bug.
+     // See crbug.com/tint/2045.
+diff --git a/src/dawn/tests/end2end/SubgroupsTests.cpp b/src/dawn/tests/end2end/SubgroupsTests.cpp
+index 1a0d1fcca7eedc6b7faadbc2b173df4f099e0362..d5c046bb433e3a32d45b2097a15c5b30ba89efd9 100644
+--- a/src/dawn/tests/end2end/SubgroupsTests.cpp
++++ b/src/dawn/tests/end2end/SubgroupsTests.cpp
+@@ -279,6 +279,53 @@ TEST_P(SubgroupsShaderTests, ReadSubgroupSize) {
+     }
+ }
+ 
++// Regression test for a crash in the AMD driver when using nested subgroupMin/Max operations.
++// See crbug.com/508265321.
++TEST_P(SubgroupsShaderTests, NestedSubgroupMinMax) {
++    DAWN_TEST_UNSUPPORTED_IF(!IsSubgroupsEnabledInWGSL());
++
++    wgpu::ShaderModule module = utils::CreateShaderModule(device, R"(
++        enable subgroups;
++
++        @group(0) @binding(0) var<storage, read> in: i32;
++        @group(0) @binding(1) var<storage, read_write> out: i32;
++
++        @compute @workgroup_size(1)
++        fn main() {
++            let t = subgroupMax(in);
++            let r = t;
++            out = subgroupMin(r);
++        }
++    )");
++
++    wgpu::ComputePipelineDescriptor descriptor;
++    descriptor.layout = nullptr;
++    descriptor.compute.module = module;
++    descriptor.compute.entryPoint = "main";
++
++    wgpu::ComputePipeline pipeline = device.CreateComputePipeline(&descriptor);
++
++    wgpu::Buffer inputBuffer =
++        utils::CreateBufferFromData(device, wgpu::BufferUsage::Storage, {42});
++    wgpu::Buffer outputBuffer = utils::CreateBufferFromData(
++        device, wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc, {0});
++
++    wgpu::BindGroup bindGroup = utils::MakeBindGroup(device, pipeline.GetBindGroupLayout(0),
++                                                     {{0, inputBuffer}, {1, outputBuffer}});
++
++    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
++    wgpu::ComputePassEncoder pass = encoder.BeginComputePass();
++    pass.SetPipeline(pipeline);
++    pass.SetBindGroup(0, bindGroup);
++    pass.DispatchWorkgroups(1);
++    pass.End();
++
++    wgpu::CommandBuffer commands = encoder.Finish();
++    queue.Submit(1, &commands);
++
++    EXPECT_BUFFER_U32_EQ(42u, outputBuffer, 0);
++}
++
+ // DawnTestBase::CreateDeviceImpl always enables allow_unsafe_apis toggle.
+ DAWN_INSTANTIATE_TEST(SubgroupsShaderTests,
+                       D3D12Backend(),
+diff --git a/src/tint/lang/core/ir/transform/BUILD.bazel b/src/tint/lang/core/ir/transform/BUILD.bazel
+index 82786d5068fdd1daf18018fd4f131823251a5afa..2add7aa8ac76938707484a2c0be7b80ebf48e5fc 100644
+--- a/src/tint/lang/core/ir/transform/BUILD.bazel
++++ b/src/tint/lang/core/ir/transform/BUILD.bazel
+@@ -48,6 +48,7 @@ cc_library(
+     "builtin_polyfill.cc",
+     "builtin_scalarize.cc",
+     "change_immediate_to_uniform.cc",
++    "collapse_subgroup_min_max.cc",
+     "combine_access_instructions.cc",
+     "conversion_polyfill.cc",
+     "dead_code_elimination.cc",
+@@ -85,6 +86,7 @@ cc_library(
+     "builtin_polyfill.h",
+     "builtin_scalarize.h",
+     "change_immediate_to_uniform.h",
++    "collapse_subgroup_min_max.h",
+     "combine_access_instructions.h",
+     "conversion_polyfill.h",
+     "dead_code_elimination.h",
+@@ -150,6 +152,7 @@ cc_library(
+     "builtin_polyfill_test.cc",
+     "builtin_scalarize_test.cc",
+     "change_immediate_to_uniform_test.cc",
++    "collapse_subgroup_min_max_test.cc",
+     "combine_access_instructions_test.cc",
+     "conversion_polyfill_test.cc",
+     "dead_code_elimination_test.cc",
+diff --git a/src/tint/lang/core/ir/transform/BUILD.cmake b/src/tint/lang/core/ir/transform/BUILD.cmake
+index 0b1a29bdb7c0a4ee3c34f36e19aaae7c211e3ac5..db96cc828cb19a455cd0823ddbf47b67ad43f3cb 100644
+--- a/src/tint/lang/core/ir/transform/BUILD.cmake
++++ b/src/tint/lang/core/ir/transform/BUILD.cmake
+@@ -57,6 +57,8 @@ tint_add_target(tint_lang_core_ir_transform lib
+   lang/core/ir/transform/builtin_scalarize.h
+   lang/core/ir/transform/change_immediate_to_uniform.cc
+   lang/core/ir/transform/change_immediate_to_uniform.h
++  lang/core/ir/transform/collapse_subgroup_min_max.cc
++  lang/core/ir/transform/collapse_subgroup_min_max.h
+   lang/core/ir/transform/combine_access_instructions.cc
+   lang/core/ir/transform/combine_access_instructions.h
+   lang/core/ir/transform/conversion_polyfill.cc
+@@ -151,6 +153,7 @@ tint_add_target(tint_lang_core_ir_transform_test test
+   lang/core/ir/transform/builtin_polyfill_test.cc
+   lang/core/ir/transform/builtin_scalarize_test.cc
+   lang/core/ir/transform/change_immediate_to_uniform_test.cc
++  lang/core/ir/transform/collapse_subgroup_min_max_test.cc
+   lang/core/ir/transform/combine_access_instructions_test.cc
+   lang/core/ir/transform/conversion_polyfill_test.cc
+   lang/core/ir/transform/dead_code_elimination_test.cc
+diff --git a/src/tint/lang/core/ir/transform/BUILD.gn b/src/tint/lang/core/ir/transform/BUILD.gn
+index 33c2c99275a1697ae434b161b5d486d4de964ed0..466cdeb8a96e2305ece42c110915d54869dd8b91 100644
+--- a/src/tint/lang/core/ir/transform/BUILD.gn
++++ b/src/tint/lang/core/ir/transform/BUILD.gn
+@@ -63,6 +63,8 @@ libtint_source_set("transform") {
+     "builtin_scalarize.h",
+     "change_immediate_to_uniform.cc",
+     "change_immediate_to_uniform.h",
++    "collapse_subgroup_min_max.cc",
++    "collapse_subgroup_min_max.h",
+     "combine_access_instructions.cc",
+     "combine_access_instructions.h",
+     "conversion_polyfill.cc",
+@@ -151,6 +153,7 @@ if (tint_build_unittests) {
+       "builtin_polyfill_test.cc",
+       "builtin_scalarize_test.cc",
+       "change_immediate_to_uniform_test.cc",
++      "collapse_subgroup_min_max_test.cc",
+       "combine_access_instructions_test.cc",
+       "conversion_polyfill_test.cc",
+       "dead_code_elimination_test.cc",
+diff --git a/src/tint/lang/core/ir/transform/collapse_subgroup_min_max.cc b/src/tint/lang/core/ir/transform/collapse_subgroup_min_max.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..ac11d36eb6d82131ead5956c550e1206fc9d83d3
+--- /dev/null
++++ b/src/tint/lang/core/ir/transform/collapse_subgroup_min_max.cc
+@@ -0,0 +1,86 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#include "src/tint/lang/core/ir/transform/collapse_subgroup_min_max.h"
++
++#include "src/tint/lang/core/ir/builder.h"
++#include "src/tint/lang/core/ir/module.h"
++#include "src/tint/lang/core/ir/validator.h"
++
++namespace tint::core::ir::transform {
++
++namespace {
++
++bool IsCollapsibleSubgroupOp(core::BuiltinFn func) {
++    return (func == core::BuiltinFn::kSubgroupMin) || (func == core::BuiltinFn::kSubgroupMax);
++}
++
++// Helper to check if a value is the result of a collapsible subgroup operation,
++// possibly through "let" instructions.
++bool IsCollapsibleSubgroupValue(core::ir::Value* value) {
++    while (auto* res = value->As<core::ir::InstructionResult>()) {
++        auto* inst = res->Instruction();
++        if (auto* let = inst->As<core::ir::Let>()) {
++            value = let->Value();
++            continue;
++        }
++        if (auto* call = inst->As<core::ir::CoreBuiltinCall>()) {
++            return IsCollapsibleSubgroupOp(call->Func());
++        }
++        break;
++    }
++    return false;
++}
++
++void Process(Module& ir) {
++    // Add all nested subgroupMin/Max calls that can be collapsed to a worklist.
++    Vector<core::ir::CoreBuiltinCall*, 16> worklist;
++    for (auto* inst : ir.Instructions()) {
++        if (auto* call = inst->As<core::ir::CoreBuiltinCall>()) {
++            if (IsCollapsibleSubgroupOp(call->Func())) {
++                if (IsCollapsibleSubgroupValue(call->Args()[0])) {
++                    worklist.Push(call);
++                }
++            }
++        }
++    }
++
++    // Replace outer call with inner result.
++    for (auto* call : worklist) {
++        call->Result(0)->ReplaceAllUsesWith(call->Args()[0]);
++        call->Destroy();
++    }
++}
++
++}  // namespace
++
++Result<SuccessType> CollapseSubgroupMinMax(Module& ir) {
++    Process(ir);
++    return Success;
++}
++
++}  // namespace tint::core::ir::transform
+diff --git a/src/tint/lang/core/ir/transform/collapse_subgroup_min_max.h b/src/tint/lang/core/ir/transform/collapse_subgroup_min_max.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..352697db4bba58078897009507dc27a0dab66cf6
+--- /dev/null
++++ b/src/tint/lang/core/ir/transform/collapse_subgroup_min_max.h
+@@ -0,0 +1,49 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#ifndef SRC_TINT_LANG_CORE_IR_TRANSFORM_COLLAPSE_SUBGROUP_MIN_MAX_H_
++#define SRC_TINT_LANG_CORE_IR_TRANSFORM_COLLAPSE_SUBGROUP_MIN_MAX_H_
++
++#include "src/tint/utils/result.h"
++
++// Forward declarations.
++namespace tint::core::ir {
++class Module;
++}
++
++namespace tint::core::ir::transform {
++
++/// CollapseSubgroupMinMax is a transform that replaces calls to subgroupMin and
++/// subgroupMax builtins with their argument if that argument is also a subgroupMin/Max call which
++/// is then by definition subgroup uniform.
++/// @param module the module to transform
++/// @returns success or failure
++Result<SuccessType> CollapseSubgroupMinMax(Module& module);
++
++}  // namespace tint::core::ir::transform
++
++#endif  // SRC_TINT_LANG_CORE_IR_TRANSFORM_COLLAPSE_SUBGROUP_MIN_MAX_H_
+diff --git a/src/tint/lang/core/ir/transform/collapse_subgroup_min_max_test.cc b/src/tint/lang/core/ir/transform/collapse_subgroup_min_max_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..56dd24ca8709672ec06118ac09bc8424158bf4df
+--- /dev/null
++++ b/src/tint/lang/core/ir/transform/collapse_subgroup_min_max_test.cc
+@@ -0,0 +1,191 @@
++// Copyright 2026 The Dawn & Tint Authors
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++// 1. Redistributions of source code must retain the above copyright notice, this
++//    list of conditions and the following disclaimer.
++//
++// 2. Redistributions in binary form must reproduce the above copyright notice,
++//    this list of conditions and the following disclaimer in the documentation
++//    and/or other materials provided with the distribution.
++//
++// 3. Neither the name of the copyright holder nor the names of its
++//    contributors may be used to endorse or promote products derived from
++//    this software without specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++#include "src/tint/lang/core/ir/transform/collapse_subgroup_min_max.h"
++
++#include <utility>
++
++#include "src/tint/lang/core/ir/transform/helper_test.h"
++
++namespace tint::core::ir::transform {
++namespace {
++
++using namespace tint::core::fluent_types;     // NOLINT
++using namespace tint::core::number_suffixes;  // NOLINT
++
++class IR_CollapseSubgroupMinMaxTest : public TransformTest {
++  public:
++    IR_CollapseSubgroupMinMaxTest() {}
++};
++
++TEST_F(IR_CollapseSubgroupMinMaxTest, SubgroupMin_SubgroupMin) {
++    auto* u = b.FunctionParam("u", ty.i32());
++    auto* func = b.Function("foo", ty.i32());
++    func->SetParams({u});
++
++    b.Append(func->Block(), [&] {
++        auto* first = b.Call<i32>(core::BuiltinFn::kSubgroupMin, u);
++        auto* second = b.Call<i32>(core::BuiltinFn::kSubgroupMin, first);
++        b.Return(func, second);
++    });
++
++    auto* src = R"(
++%foo = func(%u:i32):i32 {
++  $B1: {
++    %3:i32 = subgroupMin %u
++    %4:i32 = subgroupMin %3
++    ret %4
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func(%u:i32):i32 {
++  $B1: {
++    %3:i32 = subgroupMin %u
++    ret %3
++  }
++}
++)";
++
++    Run(CollapseSubgroupMinMax);
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(IR_CollapseSubgroupMinMaxTest, SubgroupMin_SubgroupMax) {
++    auto* u = b.FunctionParam("u", ty.i32());
++    auto* func = b.Function("foo", ty.void_());
++    func->SetParams({u});
++
++    b.Append(func->Block(), [&] {
++        auto* first = b.Call<i32>(core::BuiltinFn::kSubgroupMax, u);
++        b.Call<i32>(core::BuiltinFn::kSubgroupMin, first);
++        b.Return(func);
++    });
++
++    auto* src = R"(
++%foo = func(%u:i32):void {
++  $B1: {
++    %3:i32 = subgroupMax %u
++    %4:i32 = subgroupMin %3
++    ret
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func(%u:i32):void {
++  $B1: {
++    %3:i32 = subgroupMax %u
++    ret
++  }
++}
++)";
++
++    Run(CollapseSubgroupMinMax);
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(IR_CollapseSubgroupMinMaxTest, SubgroupMax_SubgroupMin_SubgroupMax) {
++    auto* u = b.FunctionParam("u", ty.i32());
++    auto* func = b.Function("foo", ty.void_());
++    func->SetParams({u});
++
++    b.Append(func->Block(), [&] {
++        auto* first = b.Call<i32>(core::BuiltinFn::kSubgroupMax, u);
++        auto* second = b.Call<i32>(core::BuiltinFn::kSubgroupMin, first);
++        b.Call<i32>(core::BuiltinFn::kSubgroupMax, second);
++        b.Return(func);
++    });
++
++    auto* src = R"(
++%foo = func(%u:i32):void {
++  $B1: {
++    %3:i32 = subgroupMax %u
++    %4:i32 = subgroupMin %3
++    %5:i32 = subgroupMax %4
++    ret
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func(%u:i32):void {
++  $B1: {
++    %3:i32 = subgroupMax %u
++    ret
++  }
++}
++)";
++
++    Run(CollapseSubgroupMinMax);
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(IR_CollapseSubgroupMinMaxTest, SubgroupMin_Let) {
++    auto* u = b.FunctionParam("u", ty.i32());
++    auto* func = b.Function("foo", ty.void_());
++    func->SetParams({u});
++
++    b.Append(func->Block(), [&] {
++        auto* first = b.Call<i32>(core::BuiltinFn::kSubgroupMin, u);
++        auto* let = b.Let(first);
++        b.Call<i32>(core::BuiltinFn::kSubgroupMin, let);
++        b.Return(func);
++    });
++
++    auto* src = R"(
++%foo = func(%u:i32):void {
++  $B1: {
++    %3:i32 = subgroupMin %u
++    %4:i32 = let %3
++    %5:i32 = subgroupMin %4
++    ret
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func(%u:i32):void {
++  $B1: {
++    %3:i32 = subgroupMin %u
++    %4:i32 = let %3
++    ret
++  }
++}
++)";
++
++    Run(CollapseSubgroupMinMax);
++    EXPECT_EQ(expect, str());
++}
++
++}  // namespace
++}  // namespace tint::core::ir::transform
+diff --git a/src/tint/lang/hlsl/writer/common/options.h b/src/tint/lang/hlsl/writer/common/options.h
+index 87979f80265c9fa8e9e0d1b2fc35b455e7a11c83..2284b30f20c58e0f47fd5bac26aba5a4eb61d310 100644
+--- a/src/tint/lang/hlsl/writer/common/options.h
++++ b/src/tint/lang/hlsl/writer/common/options.h
+@@ -146,11 +146,15 @@ struct Options {
+         /// Set to `true` to generate polyfill for `subgroupBroadcast(f16)`
+         bool polyfill_subgroup_broadcast_f16 = false;
+ 
++        /// Set to `true` to collapse redundant subgroup min and max operations
++        bool collapse_subgroup_min_max = false;
++
+         TINT_REFLECT(Workarounds,
+                      scalarize_max_min_clamp,
+                      polyfill_reflect_vec2_f32,
+-                     polyfill_subgroup_broadcast_f16);
+-        TINT_REFLECT_EQUALS(Workarounds);
++                     polyfill_subgroup_broadcast_f16,
++                     collapse_subgroup_min_max);
++        bool operator==(const Workarounds&) const = default;
+     };
+ 
+     /// The set of options for things which are only available in certain shader models
+diff --git a/src/tint/lang/hlsl/writer/raise/raise.cc b/src/tint/lang/hlsl/writer/raise/raise.cc
+index f45747beec0ce16c7fd08c6aa0daf239148224ee..22039a8c1bff99175473bf1c2d341d99c44494ad 100644
+--- a/src/tint/lang/hlsl/writer/raise/raise.cc
++++ b/src/tint/lang/hlsl/writer/raise/raise.cc
+@@ -39,6 +39,7 @@
+ #include "src/tint/lang/core/ir/transform/builtin_polyfill.h"
+ #include "src/tint/lang/core/ir/transform/builtin_scalarize.h"
+ #include "src/tint/lang/core/ir/transform/change_immediate_to_uniform.h"
++#include "src/tint/lang/core/ir/transform/collapse_subgroup_min_max.h"
+ #include "src/tint/lang/core/ir/transform/conversion_polyfill.h"
+ #include "src/tint/lang/core/ir/transform/decompose_access.h"
+ #include "src/tint/lang/core/ir/transform/demote_to_helper.h"
+@@ -342,6 +343,10 @@ Result<SuccessType> Raise(core::ir::Module& module, const Options& options) {
+         TINT_CHECK_RESULT(raise::PixelLocal(module, config));
+     }
+ 
++    if (options.workarounds.collapse_subgroup_min_max) {
++        TINT_CHECK_RESULT(core::ir::transform::CollapseSubgroupMinMax(module));
++    }
++
+     TINT_CHECK_RESULT(raise::BinaryPolyfill(module));
+ 
+     // Avoid potential UB (aka signed overflow) by performing unsigned integer arithmetic.
+diff --git a/src/tint/lang/hlsl/writer/writer_fuzz.cc b/src/tint/lang/hlsl/writer/writer_fuzz.cc
+index 40b634984e6408da03423895e9aa2034ba3399ff..510d93b1b9f0542c7324409c3847fdf9e3450640 100644
+--- a/src/tint/lang/hlsl/writer/writer_fuzz.cc
++++ b/src/tint/lang/hlsl/writer/writer_fuzz.cc
+@@ -63,6 +63,7 @@ struct FuzzedOptions {
+     std::optional<uint32_t> num_workgroups_start_offset;
+     std::vector<BindingPoint> ignored_by_robustness_transform;
+     SubstituteOverridesConfig substitute_overrides_config;
++    bool collapse_subgroup_min_max;
+ 
+     /// Reflect the fields of this class so that it can be used by tint::ForeachField()
+     TINT_REFLECT(FuzzedOptions,
+@@ -83,7 +84,8 @@ struct FuzzedOptions {
+                  first_instance_offset,
+                  num_workgroups_start_offset,
+                  ignored_by_robustness_transform,
+-                 substitute_overrides_config);
++                 substitute_overrides_config,
++                 collapse_subgroup_min_max);
+ };
+ 
+ Result<SuccessType> IRFuzzer(core::ir::Module& module,
+@@ -123,6 +125,7 @@ Result<SuccessType> IRFuzzer(core::ir::Module& module,
+     options.workarounds.polyfill_reflect_vec2_f32 = fuzzed_options.polyfill_reflect_vec2_f32;
+     options.workarounds.polyfill_subgroup_broadcast_f16 =
+         fuzzed_options.polyfill_subgroup_broadcast_f16;
++    options.workarounds.collapse_subgroup_min_max = fuzzed_options.collapse_subgroup_min_max;
+     options.extensions.polyfill_dot_4x8_packed = fuzzed_options.polyfill_dot_4x8_packed;
+     options.extensions.polyfill_pack_unpack_4x8 = fuzzed_options.polyfill_pack_unpack_4x8;
+     options.compiler = fuzzed_options.compiler;
+diff --git a/src/tint/lang/msl/writer/common/options.h b/src/tint/lang/msl/writer/common/options.h
+index b7f3177b8430a58d40a1bc8834b444a2065998f9..40d5659ca412a7025e72280b8494e9d2008ad880 100644
+--- a/src/tint/lang/msl/writer/common/options.h
++++ b/src/tint/lang/msl/writer/common/options.h
+@@ -115,13 +115,17 @@ struct Options {
+         /// Set to `true` to polyfill `unpack2x16unorm()`.
+         bool polyfill_unpack_2x16_unorm = false;
+ 
++        /// Set to `true` to collapse nested subgroupMin and subgroupMax operations.
++        bool collapse_subgroup_min_max = false;
++
+         TINT_REFLECT(Workarounds,
+                      scalarize_max_min_clamp,
+                      disable_module_constant_f16,
+                      polyfill_subgroup_broadcast_f16,
+                      polyfill_clamp_float,
+                      polyfill_unpack_2x16_snorm,
+-                     polyfill_unpack_2x16_unorm);
++                     polyfill_unpack_2x16_unorm,
++                     collapse_subgroup_min_max);
+         TINT_REFLECT_EQUALS(Workarounds);
+         TINT_REFLECT_HASH_CODE(Workarounds);
+     };
+diff --git a/src/tint/lang/msl/writer/raise/raise.cc b/src/tint/lang/msl/writer/raise/raise.cc
+index 74f9a8324b51433af2e9b57d1f02baab0e0da2b2..ff83824e8b5f38ad15045bfdcdcbeb706096649e 100644
+--- a/src/tint/lang/msl/writer/raise/raise.cc
++++ b/src/tint/lang/msl/writer/raise/raise.cc
+@@ -39,6 +39,7 @@
+ #include "src/tint/lang/core/ir/transform/builtin_polyfill.h"
+ #include "src/tint/lang/core/ir/transform/builtin_scalarize.h"
+ #include "src/tint/lang/core/ir/transform/change_immediate_to_uniform.h"
++#include "src/tint/lang/core/ir/transform/collapse_subgroup_min_max.h"
+ #include "src/tint/lang/core/ir/transform/conversion_polyfill.h"
+ #include "src/tint/lang/core/ir/transform/demote_to_helper.h"
+ #include "src/tint/lang/core/ir/transform/multiplanar_external_texture.h"
+@@ -82,6 +83,10 @@ Result<RaiseResult> Raise(core::ir::Module& module, const Options& options) {
+ 
+     TINT_CHECK_RESULT(raise::ValidateSubgroupMatrix(module));
+ 
++    if (options.workarounds.collapse_subgroup_min_max) {
++        TINT_CHECK_RESULT(core::ir::transform::CollapseSubgroupMinMax(module));
++    }
++
+     RaiseResult raise_result;
+ 
+     // VertexPulling must come before BindingRemapper and Robustness.
+diff --git a/src/tint/lang/msl/writer/writer_fuzz.cc b/src/tint/lang/msl/writer/writer_fuzz.cc
+index 14b8d43c8c50796edc38513e489461c30e3c5fa3..093f65300ff3f8834ea1c20c179cc8bf1aea3482 100644
+--- a/src/tint/lang/msl/writer/writer_fuzz.cc
++++ b/src/tint/lang/msl/writer/writer_fuzz.cc
+@@ -60,6 +60,7 @@ struct FuzzedOptions {
+     std::optional<VertexPullingConfig> vertex_pulling_config;
+     std::unordered_map<uint32_t, ArgumentBufferInfo> group_to_argument_buffer_info;
+     SubstituteOverridesConfig substitute_overrides_config;
++    bool collapse_subgroup_min_max;
+ 
+     /// Reflect the fields of this class so that it can be used by tint::ForeachField()
+     TINT_REFLECT(FuzzedOptions,
+@@ -79,7 +80,8 @@ struct FuzzedOptions {
+                  pixel_local_attachments,
+                  vertex_pulling_config,
+                  group_to_argument_buffer_info,
+-                 substitute_overrides_config);
++                 substitute_overrides_config,
++                 collapse_subgroup_min_max);
+     TINT_REFLECT_HASH_CODE(FuzzedOptions);
+ };
+ 
+@@ -124,6 +126,7 @@ Result<SuccessType> IRFuzzer(core::ir::Module& module,
+     options.workarounds.polyfill_clamp_float = fuzzed_options.polyfill_clamp_float;
+     options.workarounds.polyfill_unpack_2x16_snorm = fuzzed_options.polyfill_unpack_2x16_snorm;
+     options.workarounds.polyfill_unpack_2x16_unorm = fuzzed_options.polyfill_unpack_2x16_unorm;
++    options.workarounds.collapse_subgroup_min_max = fuzzed_options.collapse_subgroup_min_max;
+     options.fixed_sample_mask = fuzzed_options.fixed_sample_mask;
+     options.pixel_local_attachments = fuzzed_options.pixel_local_attachments;
+     options.vertex_pulling_config = fuzzed_options.vertex_pulling_config;
+diff --git a/src/tint/lang/spirv/writer/common/options.h b/src/tint/lang/spirv/writer/common/options.h
+index 187a9f39a5243f22c2564958d29a901b91de8eb7..489eb0a8c24af473de19afb7921589c406b534e7 100644
+--- a/src/tint/lang/spirv/writer/common/options.h
++++ b/src/tint/lang/spirv/writer/common/options.h
+@@ -109,6 +109,9 @@ struct Options {
+         /// Set to `true` to generate polyfill for f16 saturate.
+         bool polyfill_saturate_as_min_max_f16 = false;
+ 
++        /// Set to `true` to collapse redundant subgroup min and max operations
++        bool collapse_subgroup_min_max = false;
++
+         TINT_REFLECT(Workarounds,
+                      polyfill_case_switch,
+                      scalarize_max_min_clamp,
+@@ -120,7 +123,8 @@ struct Options {
+                      pass_matrix_by_pointer,
+                      polyfill_unary_f32_negation,
+                      polyfill_f32_abs,
+-                     polyfill_saturate_as_min_max_f16);
++                     polyfill_saturate_as_min_max_f16,
++                     collapse_subgroup_min_max);
+     };
+ 
+     /// Any options which are controlled by the presence/absence of a vulkan extension.
+diff --git a/src/tint/lang/spirv/writer/raise/raise.cc b/src/tint/lang/spirv/writer/raise/raise.cc
+index 3d3e7976f18c27fb0b18a1e28527053a4a889fa7..23d390d798536782203e19fcda00eb3f442072ec 100644
+--- a/src/tint/lang/spirv/writer/raise/raise.cc
++++ b/src/tint/lang/spirv/writer/raise/raise.cc
+@@ -34,6 +34,7 @@
+ #include "src/tint/lang/core/ir/transform/block_decorated_structs.h"
+ #include "src/tint/lang/core/ir/transform/builtin_polyfill.h"
+ #include "src/tint/lang/core/ir/transform/builtin_scalarize.h"
++#include "src/tint/lang/core/ir/transform/collapse_subgroup_min_max.h"
+ #include "src/tint/lang/core/ir/transform/combine_access_instructions.h"
+ #include "src/tint/lang/core/ir/transform/conversion_polyfill.h"
+ #include "src/tint/lang/core/ir/transform/decompose_access.h"
+@@ -197,6 +198,10 @@ Result<SuccessType> Raise(core::ir::Module& module, const Options& options) {
+         TINT_CHECK_RESULT(core::ir::transform::DemoteToHelper(module));
+     }
+ 
++    if (options.workarounds.collapse_subgroup_min_max) {
++        TINT_CHECK_RESULT(core::ir::transform::CollapseSubgroupMinMax(module));
++    }
++
+     raise::PolyfillConfig config = {
+         .use_vulkan_memory_model = options.extensions.use_vulkan_memory_model,
+         .version = options.spirv_version,
+diff --git a/src/tint/lang/spirv/writer/writer_fuzz.cc b/src/tint/lang/spirv/writer/writer_fuzz.cc
+index 5394e85377d133c4c977c55bae894125547f3284..4691182b66f9595a86ac9576f902010f6be1cad0 100644
+--- a/src/tint/lang/spirv/writer/writer_fuzz.cc
++++ b/src/tint/lang/spirv/writer/writer_fuzz.cc
+@@ -80,6 +80,10 @@ struct FuzzedOptions {
+     SubstituteOverridesConfig substitute_overrides_config;
+     bool texture_sample_compare_depth_cube_array;
+     bool polyfill_saturate_as_min_max_f16;
++    bool multisampled_framebuffer_fetch;
++    bool polyfill_length_scalar_float;
++    bool polyfill_distance_scalar_float;
++    bool collapse_subgroup_min_max;
+ 
+     /// Reflect the fields of this class so that it can be used by tint::ForeachField()
+     TINT_REFLECT(FuzzedOptions,
+@@ -110,7 +114,11 @@ struct FuzzedOptions {
+                  spirv_version,
+                  substitute_overrides_config,
+                  texture_sample_compare_depth_cube_array,
+-                 polyfill_saturate_as_min_max_f16);
++                 polyfill_saturate_as_min_max_f16,
++                 multisampled_framebuffer_fetch,
++                 polyfill_length_scalar_float,
++                 polyfill_distance_scalar_float,
++                 collapse_subgroup_min_max);
+     TINT_REFLECT_HASH_CODE(FuzzedOptions);
+ };
+ 
+@@ -254,8 +262,11 @@ Result<SuccessType> IRFuzzer(core::ir::Module& module,
+         fuzzed_options.texture_sample_compare_depth_cube_array;
+     options.workarounds.polyfill_saturate_as_min_max_f16 =
+         fuzzed_options.polyfill_saturate_as_min_max_f16;
+-
+-    TINT_CHECK_RESULT(CanGenerate(module, options));
++    options.workarounds.polyfill_length_scalar_float = fuzzed_options.polyfill_length_scalar_float;
++    options.workarounds.polyfill_distance_scalar_float =
++        fuzzed_options.polyfill_distance_scalar_float;
++    options.workarounds.collapse_subgroup_min_max = fuzzed_options.collapse_subgroup_min_max;
++    options.multisampled_framebuffer_fetch = fuzzed_options.multisampled_framebuffer_fetch;
+ 
+     TINT_CHECK_RESULT_UNWRAP(output, Generate(module, options));
+ 

@@ -1,0 +1,184 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: pthier <pthier@chromium.org>
+Date: Fri, 12 Jun 2026 14:52:04 +0200
+Subject: Reland "[M148] Check early for separator overflow in
+ Array.prototype.join()"
+
+This is a reland of commit b43465d71335ab36c61dfa66aaadb631f8346263
+
+Original change's description:
+> [M148] Check early for separator overflow in Array.prototype.join()
+>
+> Original change's description:
+> > Check early for separator overflow in Array.prototype.join()
+> >
+> > Instead of checking if separators overflow the maximum string length
+> > each time we add a (or multiple) separator(s) to the buffer, we check
+> > once in the beginning (based on the separator- and array-length).
+> >
+> > Besides avoiding a division in the hot loop, this also fixes a potential
+> > nofSeparators overflow on 32-bit platforms.
+> >
+> > Fixed: 522126182
+> > Change-Id: Iab05848b9ec1960a925e56b11bb74569438ebafb
+> > Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7927166
+> > Reviewed-by: Igor Sheludko <ishell@chromium.org>
+> > Commit-Queue: Patrick Thier <pthier@chromium.org>
+> > Cr-Commit-Position: refs/heads/main@{#107953}
+>
+> (cherry picked from commit 7893ac23bc1e640904892810891d144e4894ccd0)
+>
+> Bug: 524507838,522126182
+> Change-Id: Iab05848b9ec1960a925e56b11bb74569438ebafb
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7958687
+> Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+> Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+> Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+> Cr-Commit-Position: refs/branch-heads/14.8@{#70}
+> Cr-Branched-From: f9659283a5f8d42b3c09228cf5df606fcaf47a3d-refs/heads/14.8.178@{#1}
+> Cr-Branched-From: 141232520dc4910401240c531db3af36910a0fd1-refs/heads/main@{#106240}
+
+Bug: 524507838,522126182
+Change-Id: I2760309f5d1e0a8360a7b198980115b404a153da
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7957108
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Patrick Thier <pthier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.8@{#76}
+Cr-Branched-From: f9659283a5f8d42b3c09228cf5df606fcaf47a3d-refs/heads/14.8.178@{#1}
+Cr-Branched-From: 141232520dc4910401240c531db3af36910a0fd1-refs/heads/main@{#106240}
+
+diff --git a/src/builtins/array-join.tq b/src/builtins/array-join.tq
+index 810dc17d78799c23849e73425fb4289027a6a245..fda1f30f7ee29cfcfbdc6ef7e2b58c7f4b56d055 100644
+--- a/src/builtins/array-join.tq
++++ b/src/builtins/array-join.tq
+@@ -206,11 +206,6 @@ struct Buffer {
+ 
+     const nofSeparatorsInt: intptr = nofSeparators;
+     const sepsLen: intptr = separatorLength * nofSeparatorsInt;
+-    // Detect integer overflow
+-    // TODO(turbofan): Replace with overflow-checked multiplication.
+-    if (sepsLen / separatorLength != nofSeparatorsInt) deferred {
+-        ThrowInvalidStringLength(context);
+-      }
+ 
+     this.totalStringLength = AddStringLength(this.totalStringLength, sepsLen);
+     if (write) deferred {
+@@ -357,11 +352,33 @@ macro BufferJoin(implicit context: Context)(buffer: Buffer,
+ transitioning macro FastArrayJoin(
+     implicit context: Context)(kind: constexpr ElementsKind,
+     array: FastJSArrayForRead, sep: String, lengthNumber: Number): String {
+-  const elements = array.elements;
+-
++  // Check early if the separators might overflow.
+   let len: uintptr = Convert<uintptr>(lengthNumber);
++  // Fast array length is guaranteed to fit in Smi.
++  dcheck(len <= Convert<uintptr>(kMaxFastArrayLength));
++  static_assert(Convert<uintptr>(kMaxFastArrayLength) < kSmiMaxValue);
++  // If separatorLength <= 1, fast arrays cannot overflow the separator counter
++  // or exceed kStringMaxLength from separators alone, because their maximum
++  // length is bounded by kMaxFastArrayLength (32MB) which is much smaller
++  // than kStringMaxLength (268MB/536MB). Thus we only need to perform checks
++  // if separatorLength > 1.
++  static_assert(
++      (Convert<uintptr>(kMaxFastArrayLength) - 1) <=
++      Convert<uintptr>(kStringMaxLength));
+ 
+   const separatorLength: intptr = sep.length_intptr;
++  if (separatorLength > 1 && len > 1) {
++    const lenInt: int32 = Convert<int32>(Signed(len));
++    const sepLenInt: int32 = Convert<int32>(separatorLength);
++    try {
++      const res = TryInt32Mul(lenInt - 1, sepLenInt) otherwise IfOverflow;
++      if (res > Convert<int32>(kStringMaxLength)) goto IfOverflow;
++    } label IfOverflow {
++      ThrowInvalidStringLength(context);
++    }
++  }
++
++  const elements = array.elements;
+   let nofSeparators: intptr = 0;
+   let buffer: Buffer = NewBuffer(len, sep);
+ 
+@@ -750,6 +767,38 @@ transitioning macro CycleProtectedArrayJoin<T: type>(
+     implicit context: Context)(useToLocaleString: constexpr bool,
+     o: JSReceiver, len: Number, sep: String, locales: JSAny,
+     options: JSAny): JSAny {
++  // Check early if the separators might overflow.
++  const separatorLength: intptr = sep.length_intptr;
++  if (separatorLength >= 1) {
++    typeswitch (len) {
++      case (lenSmi: Smi): {
++        const lenInt: int32 = Convert<int32>(lenSmi);
++        if (lenInt > 1) {
++          try {
++            // Optimization for the most common case of 1-character separators
++            // (e.g. ',').  In this case, the total separator length is simply
++            // `len - 1`. We can bypass the multiplication entirely and perform
++            // a direct comparison on `len`.
++            if (separatorLength == 1 && len - 1 > kStringMaxLength) {
++              goto IfOverflow;
++            }
++            const sepLenInt: int32 = Convert<int32>(separatorLength);
++            const res = TryInt32Mul(lenInt - 1, sepLenInt) otherwise IfOverflow;
++            if (res > Convert<int32>(kStringMaxLength)) goto IfOverflow;
++          } label IfOverflow {
++            ThrowInvalidStringLength(context);
++          }
++        }
++      }
++      case (HeapNumber): {
++        // If len is a HeapNumber (and positive), it must be > kSmiMaxValue.
++        // Since kSmiMaxValue > kStringMaxLength, any join with a non-empty
++        // separator will inevitably exceed the maximum string length.
++        static_assert(kSmiMaxValue > Convert<uintptr>(kStringMaxLength));
++        ThrowInvalidStringLength(context);
++      }
++    }
++  }
+   // If the receiver is not empty and not already being joined, continue with
+   // the normal join algorithm.
+   if (len > 0 && JoinStackPushInline(o)) {
+@@ -827,6 +876,7 @@ transitioning builtin ArrayPrototypeJoinImpl(
+   } label NotFastJSArray {
+     // Fall through.
+   }
++
+   // TODO(ishell): perform stack checks rarely.
+   PerformStackCheck(context);
+   return CycleProtectedArrayJoin<JSArray>(
+diff --git a/test/mjsunit/regress/regress-522126182.js b/test/mjsunit/regress/regress-522126182.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..777055feb6ca9ac05ee69b82a238aafb89e602da
+--- /dev/null
++++ b/test/mjsunit/regress/regress-522126182.js
+@@ -0,0 +1,17 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++(function TestLargeArrayJoinWithSeparator() {
++  let len = 0xfffffffc;
++  let a = new Array(len);
++  a[0] = "A".repeat(0x100000);  // Force slow path loop (dictionary elements)
++  assertThrows(() => a.join(","), RangeError);
++})();
++
++(function TestLargeArrayJoinEmptySeparator() {
++  let len = 0xfffffffc;
++  let a = new Array(len);
++  // Should not throw because separator is empty, and array has no elements.
++  assertEquals("", a.join(""));
++})();
+diff --git a/test/mjsunit/regress/regress-crbug-897404.js b/test/mjsunit/regress/regress-crbug-897404.js
+index 7e8b48de85ce8e3c1f7fa25a5d9b564b8816f8be..3b11208c85fc36f10c64db81d2836bb535a073f7 100644
+--- a/test/mjsunit/regress/regress-crbug-897404.js
++++ b/test/mjsunit/regress/regress-crbug-897404.js
+@@ -4,7 +4,7 @@
+ 
+ function TestError() {}
+ 
+-const a = new Array(2**32 - 1);
++const a = new Array(2**16 - 1);
+ 
+ // Force early exit to avoid an unreasonably long test.
+ a[0] = {
