@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Fri, 29 May 2026 19:49:52 -0700
+Subject: bluetooth: prevent use-after-free in SDPQueryListener during timeout
+
+Keep SDPQueryListener alive using a strong self-reference until the
+macOS IOBluetooth callback is delivered.
+
+On a watchdog timeout, the socket drops its strong reference to the
+listener. Because IOBluetooth stores its target unretained (FB13705522),
+this leads to an immediate deallocation and a subsequent Use-After-Free
+(UAF) when the late callback fires. Retaining self until the callback
+completes ensures the listener survives.
+
+BUG=517021684
+
+Change-Id: If7cfbd483ccf3339d6e06348ca9936b350fab9fa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7882486
+Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+Commit-Queue: Alvin Ji <alvinji@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1638924}
+
+diff --git a/device/bluetooth/bluetooth_socket_mac.mm b/device/bluetooth/bluetooth_socket_mac.mm
+index 19ef880eaa359646e833537e6ca5f9924bbbeed1..85a752648ac6c64cd3b4f21858637af0d3c56732 100644
+--- a/device/bluetooth/bluetooth_socket_mac.mm
++++ b/device/bluetooth/bluetooth_socket_mac.mm
+@@ -52,6 +52,12 @@ @interface SDPQueryListener : NSObject {
+ 
+   // The device being queried.
+   IOBluetoothDevice* __weak _device;
++
++  // While the SDP query is outstanding, the listener holds a strong reference
++  // to itself so that it outlives any late -sdpQueryComplete:status: dispatch
++  // from IOBluetooth, which stores the performSDPQuery: target unretained.
++  // This is a workaround for a macOS bug, see Apple Feedback report FB13705522.
++  SDPQueryListener* __strong _strongSelf;
+ }
+ 
+ - (instancetype)initWithSocket:(scoped_refptr<device::BluetoothSocketMac>)socket
+@@ -76,6 +82,8 @@ - (instancetype)initWithSocket:(scoped_refptr<device::BluetoothSocketMac>)socket
+     _device = device;
+     _success_callback = std::move(success_callback);
+     _error_callback = std::move(error_callback);
++    // Retain self until IOBluetooth delivers -sdpQueryComplete:status:.
++    _strongSelf = self;
+   }
+ 
+   return self;
+@@ -91,6 +99,10 @@ - (void)dealloc {
+ 
+ - (void)sdpQueryComplete:(IOBluetoothDevice*)device status:(IOReturn)status {
+   DCHECK_EQ(device, _device);
++  // IOBluetooth has called back; drop the self-retain. Keep |self| alive for
++  // the remainder of this method via a local strong reference.
++  NS_VALID_UNTIL_END_OF_SCOPE SDPQueryListener* strongSelf = _strongSelf;
++  _strongSelf = nil;
+   if (!_error_callback) {
+     // This can happen when the target is called after SDP query timeout.
+     return;

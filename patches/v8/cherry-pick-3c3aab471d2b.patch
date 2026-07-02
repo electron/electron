@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yulun Zeng <yulunz@chromium.org>
+Date: Thu, 4 Jun 2026 22:35:27 +0000
+Subject: Handle context destruction when adding binding within
+ V8InspectorImpl::contextCreated.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+CDP specifies that the bindings must persist across reloads, and thus in
+V8InspectorImpl::contextCreated(), bindings are added again when new
+contexts are created. The issue arises when context is destroyed when
+adding binding (as the regress test shows), but the context is still
+being processed down the code path.
+
+This change skips operations on the context if it has been destroyed
+during adding binding.
+
+There is the same check before addBindings() because operations on the
+context have to skipped too when it loops to other inspector sessions.
+
+Also, `contextRef` is a `std::shared_ptr` to keep it alive when looping
+through inspector sessions. This allows getting the context ID on the
+object for other addBinding() calls within addBindings().
+
+Bug: 517981277
+Change-Id: Ic1ee273c316040acc611f6c53349b734076f7f14
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7904365
+Reviewed-by: Simon Zünd <szuend@chromium.org>
+Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
+Commit-Queue: Yulun Zeng <yulunz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#107830}
+
+diff --git a/src/inspector/v8-inspector-impl.cc b/src/inspector/v8-inspector-impl.cc
+index b57097472e2d55128a3b116c6c613a3cefccfe56..0242e141b4270d2553156d1be7436bf26a094203 100644
+--- a/src/inspector/v8-inspector-impl.cc
++++ b/src/inspector/v8-inspector-impl.cc
+@@ -293,11 +293,15 @@ void V8InspectorImpl::contextCreated(const V8ContextInfo& info) {
+ 
+   DCHECK(contextById->find(contextId) == contextById->cend());
+   (*contextById)[contextId].reset(context);
+-  forEachSession(
+-      info.contextGroupId, [&context](V8InspectorSessionImpl* session) {
+-        session->runtimeAgent()->addBindings(context);
+-        session->runtimeAgent()->reportExecutionContextCreated(context);
+-      });
++  int contextGroupId = info.contextGroupId;
++  std::shared_ptr<InspectedContext> contextRef = (*contextById)[contextId];
++  forEachSession(contextGroupId, [this, contextGroupId, contextId,
++                                  contextRef](V8InspectorSessionImpl* session) {
++    if (!getContext(contextGroupId, contextId)) return;
++    session->runtimeAgent()->addBindings(contextRef.get());
++    if (!getContext(contextGroupId, contextId)) return;
++    session->runtimeAgent()->reportExecutionContextCreated(contextRef.get());
++  });
+ }
+ 
+ void V8InspectorImpl::contextDestroyed(v8::Local<v8::Context> context) {
+diff --git a/test/inspector/runtime/regress-517981277-expected.txt b/test/inspector/runtime/regress-517981277-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..d3928e770d2810facb3fcc99af3d31fdfcc86b6d
+--- /dev/null
++++ b/test/inspector/runtime/regress-517981277-expected.txt
+@@ -0,0 +1,3 @@
++Test that destroying context during addBinding does not cause UAF (regress-517981277).
++Triggering evaluate with prototype hijack and context creation...
++Finished evaluate call.
+diff --git a/test/inspector/runtime/regress-517981277.js b/test/inspector/runtime/regress-517981277.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..a3843841f70b26d9cc5736079066062715a7f4bc
+--- /dev/null
++++ b/test/inspector/runtime/regress-517981277.js
+@@ -0,0 +1,38 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++InspectorTest.log('Test that destroying context during addBinding does not cause UAF (regress-517981277).');
++
++(async function test() {
++  const contextGroup = new InspectorTest.ContextGroup();
++  const session = contextGroup.connect();
++
++  session.Protocol.Runtime.enable();
++
++  // Register binding 'x'
++  await session.Protocol.Runtime.addBinding({name: 'x'});
++
++  // Register second binding 'y' to test handling addBinding() again when the
++  // the previous addBinding() has already destroyed the context.
++  await session.Protocol.Runtime.addBinding({name: 'y'});
++
++  InspectorTest.log('Triggering evaluate with prototype hijack and context creation...');
++  await session.Protocol.Runtime.evaluate({
++    expression: `
++      delete globalThis.x;
++      Object.defineProperty(Object.prototype, 'x', {
++        configurable: true,
++        set: function(v) {
++          // Synchronously destroy the just-registered InspectedContext.
++          inspector.fireContextDestroyed();
++        }
++      });
++      // === TRIGGER ===
++      inspector.fireContextCreated();
++    `,
++  });
++
++  InspectorTest.log('Finished evaluate call.');
++  InspectorTest.completeTest();
++})();

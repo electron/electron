@@ -1,0 +1,277 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philip Rogers <pdr@chromium.org>
+Date: Wed, 13 May 2026 14:48:37 -0700
+Subject: [html-in-canvas] Fix cross-origin image leak in SVG masks
+
+This CL fixes a privacy leak where cross-origin images used inside
+<mask> elements were incorrectly rendered into <canvas>.
+
+Fixed: 510829679
+Bug: 512516331
+Change-Id: Ibaed202157c13fcf42cb01b71fa92140d872a1ed
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7841426
+Reviewed-by: Stefan Zager <szager@chromium.org>
+Commit-Queue: Philip Rogers <pdr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1630234}
+
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.cc b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.cc
+index d3a80148d79e4582f64067cc1b8566976023c579..4394fcb91cdbfa961e5a553af19c706a151b840e 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.cc
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.cc
+@@ -44,8 +44,12 @@ void LayoutSVGResourceMasker::RemoveAllClientsFromCache() {
+                                 kPaintInvalidation);
+ }
+ 
+-PaintRecord LayoutSVGResourceMasker::CreatePaintRecord() {
++PaintRecord LayoutSVGResourceMasker::CreatePaintRecord(PaintFlags paint_flags) {
+   NOT_DESTROYED();
++  if (cached_paint_record_ && cached_paint_flags_ != paint_flags) {
++    cached_paint_record_ = std::nullopt;
++  }
++
+   if (cached_paint_record_)
+     return *cached_paint_record_;
+ 
+@@ -59,10 +63,12 @@ PaintRecord LayoutSVGResourceMasker::CreatePaintRecord() {
+         layout_object->StyleRef().Display() == EDisplay::kNone)
+       continue;
+     SVGObjectPainter(*layout_object, nullptr)
+-        .PaintResourceSubtree(builder.Context(), PaintFlag::kPaintingSVGMask);
++        .PaintResourceSubtree(builder.Context(),
++                              PaintFlag::kPaintingSVGMask | paint_flags);
+   }
+ 
+   cached_paint_record_ = builder.EndRecording();
++  cached_paint_flags_ = paint_flags;
+   return *cached_paint_record_;
+ }
+ 
+diff --git a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.h b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.h
+index e100362c824263a7ecc242ec2b968886850ebc89..bc2a07bb44ec5269b3726feba1f7bded3af7e658 100644
+--- a/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.h
++++ b/third_party/blink/renderer/core/layout/svg/layout_svg_resource_masker.h
+@@ -23,6 +23,7 @@
+ #include <optional>
+ 
+ #include "third_party/blink/renderer/core/layout/svg/layout_svg_resource_container.h"
++#include "third_party/blink/renderer/core/paint/paint_flags.h"
+ #include "third_party/blink/renderer/core/svg/svg_unit_types.h"
+ #include "ui/gfx/geometry/rect_f.h"
+ 
+@@ -54,10 +55,11 @@ class LayoutSVGResourceMasker final : public LayoutSVGResourceContainer {
+     return kResourceType;
+   }
+ 
+-  PaintRecord CreatePaintRecord();
++  PaintRecord CreatePaintRecord(PaintFlags paint_flags);
+ 
+  private:
+   std::optional<PaintRecord> cached_paint_record_;
++  PaintFlags cached_paint_flags_ = PaintFlag::kNoFlag;
+ };
+ 
+ template <>
+diff --git a/third_party/blink/renderer/core/paint/box_painter_base.cc b/third_party/blink/renderer/core/paint/box_painter_base.cc
+index a4378c6e7d38a5c5f9ebfc54e4f3a88d210850d0..5d68dd6878b52274a3e3d09d9c86d96717095d53 100644
+--- a/third_party/blink/renderer/core/paint/box_painter_base.cc
++++ b/third_party/blink/renderer/core/paint/box_painter_base.cc
+@@ -1448,7 +1448,8 @@ void BoxPainterBase::PaintFillLayer(
+         SVGMaskPainter::PaintSVGMaskLayer(
+             context, *mask_source, bg_paint_context.ImageClient(),
+             reference_box, zoom, composite_op,
+-            bg_layer.MaskMode() == EFillMaskMode::kMatchSource);
++            bg_layer.MaskMode() == EFillMaskMode::kMatchSource,
++            paint_info.GetPaintFlags());
+         return;
+       }
+     }
+diff --git a/third_party/blink/renderer/core/paint/paint_layer_painter.cc b/third_party/blink/renderer/core/paint/paint_layer_painter.cc
+index 41307eddacbb4c1b121000ab236d45117b0814a6..b7d27de42e4dbceca10ee46224a3d38e0c640b1c 100644
+--- a/third_party/blink/renderer/core/paint/paint_layer_painter.cc
++++ b/third_party/blink/renderer/core/paint/paint_layer_painter.cc
+@@ -484,7 +484,7 @@ PaintResult PaintLayerPainter::Paint(GraphicsContext& context,
+     if (should_paint_content && !selection_drag_image_only) {
+       if (properties->Mask()) {
+         if (object.IsSVGForeignObject()) {
+-          SVGMaskPainter::Paint(context, object, object);
++          SVGMaskPainter::Paint(context, object, object, paint_flags);
+         } else {
+           PaintWithPhase(PaintPhase::kMask, context, paint_flags);
+         }
+diff --git a/third_party/blink/renderer/core/paint/scoped_svg_paint_state.cc b/third_party/blink/renderer/core/paint/scoped_svg_paint_state.cc
+index 1a25ea574f966c59d1096740de3bb2dfaf415c26..7d92df106896d648260c7e7401086d44c9ef633a 100644
+--- a/third_party/blink/renderer/core/paint/scoped_svg_paint_state.cc
++++ b/third_party/blink/renderer/core/paint/scoped_svg_paint_state.cc
+@@ -87,8 +87,10 @@ ScopedSVGPaintState::~ScopedSVGPaintState() {
+   // the node hierarchy), to ensure the clip-path mask will be applied to the
+   // mask to create an intersection of the masks, then the intersection will be
+   // applied to the masked content.
+-  if (should_paint_mask_)
+-    SVGMaskPainter::Paint(paint_info_.context, object_, display_item_client_);
++  if (should_paint_mask_) {
++    SVGMaskPainter::Paint(paint_info_.context, object_, display_item_client_,
++                          paint_info_.GetPaintFlags());
++  }
+ 
+   if (should_paint_clip_path_as_mask_image_) {
+     ClipPathClipper::PaintClipPathAsMaskImage(paint_info_.context, object_,
+diff --git a/third_party/blink/renderer/core/paint/svg_mask_painter.cc b/third_party/blink/renderer/core/paint/svg_mask_painter.cc
+index 7b16fc4f702ebf221ee4e909dcde54fe27e437fb..811c7919efa23e87b2f18b99c0184dd63c06453b 100644
+--- a/third_party/blink/renderer/core/paint/svg_mask_painter.cc
++++ b/third_party/blink/renderer/core/paint/svg_mask_painter.cc
+@@ -95,7 +95,8 @@ const StyleMaskSourceImage* ToMaskSourceIfSVGMask(
+ void PaintMaskLayer(const FillLayer& layer,
+                     const LayoutObject& object,
+                     const SVGBackgroundPaintContext& bg_paint_context,
+-                    GraphicsContext& context) {
++                    GraphicsContext& context,
++                    PaintFlags paint_flags) {
+   const StyleImage* style_image = layer.GetImage();
+   if (!style_image) {
+     return;
+@@ -131,7 +132,7 @@ void PaintMaskLayer(const FillLayer& layer,
+     saver.Save();
+     SVGMaskPainter::PaintSVGMaskLayer(
+         context, *mask_source, observer, reference_box, zoom, composite_op,
+-        layer.MaskMode() == EFillMaskMode::kMatchSource);
++        layer.MaskMode() == EFillMaskMode::kMatchSource, paint_flags);
+     return;
+   }
+ 
+@@ -235,7 +236,8 @@ void IterateFillLayersReveresed(const FillLayer* layer, Callback callback) {
+ 
+ void SVGMaskPainter::Paint(GraphicsContext& context,
+                            const LayoutObject& layout_object,
+-                           const DisplayItemClient& display_item_client) {
++                           const DisplayItemClient& display_item_client,
++                           PaintFlags paint_flags) {
+   const auto* properties = layout_object.FirstFragment().PaintProperties();
+   DCHECK(properties);
+   DCHECK(properties->Mask());
+@@ -257,11 +259,13 @@ void SVGMaskPainter::Paint(GraphicsContext& context,
+                            gfx::ToEnclosingRect(visual_rect));
+ 
+   const SVGBackgroundPaintContext bg_paint_context(layout_object);
+-  IterateFillLayersReveresed(
+-      &layout_object.StyleRef().MaskLayers(),
+-      [&layout_object, &bg_paint_context, &context](const FillLayer& layer) {
+-        PaintMaskLayer(layer, layout_object, bg_paint_context, context);
+-      });
++  IterateFillLayersReveresed(&layout_object.StyleRef().MaskLayers(),
++                             [&layout_object, &bg_paint_context, &context,
++                              paint_flags](const FillLayer& layer) {
++                               PaintMaskLayer(layer, layout_object,
++                                              bg_paint_context, context,
++                                              paint_flags);
++                             });
+ }
+ 
+ void SVGMaskPainter::PaintSVGMaskLayer(GraphicsContext& context,
+@@ -270,7 +274,8 @@ void SVGMaskPainter::PaintSVGMaskLayer(GraphicsContext& context,
+                                        const gfx::RectF& reference_box,
+                                        const float zoom,
+                                        const SkBlendMode composite_op,
+-                                       const bool apply_mask_type) {
++                                       const bool apply_mask_type,
++                                       PaintFlags paint_flags) {
+   LayoutSVGResourceMasker* masker =
+       ResolveElementReference(mask_source, observer);
+   if (!masker) {
+@@ -279,7 +284,7 @@ void SVGMaskPainter::PaintSVGMaskLayer(GraphicsContext& context,
+   const AffineTransform content_transformation =
+       MaskToContentTransform(*masker, reference_box, zoom);
+   SubtreeContentTransformScope content_transform_scope(content_transformation);
+-  PaintRecord record = masker->CreatePaintRecord();
++  PaintRecord record = masker->CreatePaintRecord(paint_flags);
+ 
+   context.Clip(masker->ResourceBoundingBox(reference_box, zoom));
+ 
+diff --git a/third_party/blink/renderer/core/paint/svg_mask_painter.h b/third_party/blink/renderer/core/paint/svg_mask_painter.h
+index 95126564ff7bf8afe134f51208b7216f03497014..b0647d350bf47f7ad6b7fcc5a85db3d00c700eb0 100644
+--- a/third_party/blink/renderer/core/paint/svg_mask_painter.h
++++ b/third_party/blink/renderer/core/paint/svg_mask_painter.h
+@@ -5,6 +5,7 @@
+ #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_PAINT_SVG_MASK_PAINTER_H_
+ #define THIRD_PARTY_BLINK_RENDERER_CORE_PAINT_SVG_MASK_PAINTER_H_
+ 
++#include "third_party/blink/renderer/core/paint/paint_flags.h"
+ #include "third_party/blink/renderer/platform/wtf/allocator/allocator.h"
+ #include "third_party/skia/include/core/SkBlendMode.h"
+ 
+@@ -26,14 +27,16 @@ class SVGMaskPainter {
+  public:
+   static void Paint(GraphicsContext& context,
+                     const LayoutObject& layout_object,
+-                    const DisplayItemClient& display_item_client);
++                    const DisplayItemClient& display_item_client,
++                    PaintFlags paint_flags);
+   static void PaintSVGMaskLayer(GraphicsContext&,
+                                 const StyleMaskSourceImage&,
+                                 const ImageResourceObserver&,
+                                 const gfx::RectF& reference_box,
+                                 const float zoom,
+                                 const SkBlendMode composite_op,
+-                                const bool apply_mask_type);
++                                const bool apply_mask_type,
++                                PaintFlags paint_flags);
+   static gfx::RectF ResourceBoundsForSVGChild(
+       const LayoutObject& layout_object);
+   static bool MaskIsValid(const StyleMaskSourceImage&,
+diff --git a/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/privacy/svg-mask-image-ignored.https.sub.html b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/privacy/svg-mask-image-ignored.https.sub.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..eaafd013581f6abd4dcd989201a7829abc3f5e5b
+--- /dev/null
++++ b/third_party/blink/web_tests/wpt_internal/html/canvas/drawElementImage/privacy/svg-mask-image-ignored.https.sub.html
+@@ -0,0 +1,52 @@
++<!DOCTYPE HTML>
++<html>
++<head>
++  <title>drawElementImage does not use cross-origin images in SVG masks</title>
++  <link rel="help" href="https://github.com/WICG/html-in-canvas">
++  <script src='/resources/testharness.js'></script>
++  <script src='/resources/testharnessreport.js'></script>
++  <script src='../support/getPixel.js'></script>
++  <script src="/wpt_internal/resources/canvas-draw-element/waitForCanvasPaint.js"></script>
++</head>
++<body>
++  <canvas id="canvas" width="100" height="200" layoutsubtree>
++    <svg width="100" height="200">
++      <defs>
++        <mask id="mask-same" maskContentUnits="objectBoundingBox">
++          <image href="https://{{location[host]}}/wpt_internal/html/canvas/drawElementImage/resources/blue-100x50-transparent-100x50.png" x="0" y="0" width="1" height="1" preserveAspectRatio="none" />
++        </mask>
++        <mask id="mask-cross" maskContentUnits="objectBoundingBox">
++          <image href="https://{{hosts[alt][www]}}:{{ports[https][0]}}/wpt_internal/html/canvas/drawElementImage/resources/blue-100x50-transparent-100x50.png" x="0" y="0" width="1" height="1" preserveAspectRatio="none" />
++        </mask>
++      </defs>
++      <rect x="0" y="0" width="100" height="100" fill="blue" mask="url(#mask-same)"/>
++      <rect x="0" y="100" width="100" height="100" fill="blue" mask="url(#mask-cross)"/>
++    </svg>
++  </canvas>
++
++  <script>
++    window.onload = () => {
++      promise_test(async function(t) {
++        await waitForCanvasPaint(canvas);
++        var ctx = canvas.getContext('2d');
++        ctx.drawElementImage(document.querySelector('canvas > svg'), 0, 0);
++
++        // Fetch all pixel data once to avoid multiple slow readbacks.
++        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
++
++        let pixel = getPixel(imgData, 50, 25);
++        assert_array_equals(pixel, [0, 0, 0, 0], "Same origin mask should fully mask top-half of rect");
++
++        pixel = getPixel(imgData, 50, 75);
++        assert_array_equals(pixel, [0, 0, 255, 18], "Same origin mask should not mask bottom-half of rect");
++
++        pixel = getPixel(imgData, 50, 125);
++        assert_array_equals(pixel, [0, 0, 0, 0], "Cross origin mask data should not affect top-half of rect");
++
++        pixel = getPixel(imgData, 50, 175);
++        assert_array_equals(pixel, [0, 0, 0, 0], "Cross origin mask data should not affect bottom-half of rect");
++      });
++    }
++  </script>
++</body>
++</html>

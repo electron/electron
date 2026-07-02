@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alvin Ji <alvinji@chromium.org>
+Date: Thu, 28 May 2026 12:39:58 -0700
+Subject: usb: prevent UAF in macOS WebUSB isochronous transfers
+
+Add endpoint verification to IsochronousTransferIn and IsochronousTransferOut to ensure the target endpoint is part of a claimed interface before creating the transfer. This prevents transfers from being created with a null claimed interface, which allowed them to bypass cancellation during ReleaseInterface and lead to a Use-After-Free on macOS.
+
+BUG=516999424
+
+Change-Id: Ie957a81626631ee914a685860debab357f8191aa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7879472
+Commit-Queue: Alvin Ji <alvinji@chromium.org>
+Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1637882}
+
+diff --git a/services/device/usb/usb_device_handle_impl.cc b/services/device/usb/usb_device_handle_impl.cc
+index 9b6c743d4f4ebb6f33db7b0d6a4c26c54e1cd054..6fc129cb469098430673ab9ed7f3e326ef94705f 100644
+--- a/services/device/usb/usb_device_handle_impl.cc
++++ b/services/device/usb/usb_device_handle_impl.cc
+@@ -775,6 +775,15 @@ void UsbDeviceHandleImpl::IsochronousTransferIn(
+ 
+   uint8_t endpoint_address =
+       ConvertTransferDirection(UsbTransferDirection::INBOUND) | endpoint_number;
++  if (!endpoint_map_.contains(endpoint_address)) {
++    USB_LOG(ERROR) << "Failed to submit isochronous transfer because endpoint "
++                   << static_cast<int>(endpoint_address)
++                   << " is not part of a claimed interface.";
++    ReportIsochronousTransferError(std::move(callback), packet_lengths,
++                                   UsbTransferStatus::TRANSFER_ERROR);
++    return;
++  }
++
+   size_t length =
+       std::accumulate(packet_lengths.begin(), packet_lengths.end(), 0u);
+   auto buffer = base::MakeRefCounted<base::RefCountedBytes>(length);
+@@ -802,6 +811,15 @@ void UsbDeviceHandleImpl::IsochronousTransferOut(
+   uint8_t endpoint_address =
+       ConvertTransferDirection(UsbTransferDirection::OUTBOUND) |
+       endpoint_number;
++  if (!endpoint_map_.contains(endpoint_address)) {
++    USB_LOG(ERROR) << "Failed to submit isochronous transfer because endpoint "
++                   << static_cast<int>(endpoint_address)
++                   << " is not part of a claimed interface.";
++    ReportIsochronousTransferError(std::move(callback), packet_lengths,
++                                   UsbTransferStatus::TRANSFER_ERROR);
++    return;
++  }
++
+   size_t length =
+       std::accumulate(packet_lengths.begin(), packet_lengths.end(), 0u);
+   std::unique_ptr<Transfer> transfer = Transfer::CreateIsochronousTransfer(
+@@ -830,9 +848,9 @@ void UsbDeviceHandleImpl::GenericTransfer(
+       ConvertTransferDirection(direction) | endpoint_number;
+   const auto endpoint_it = endpoint_map_.find(endpoint_address);
+   if (endpoint_it == endpoint_map_.end()) {
+-    USB_LOG(DEBUG) << "Failed to submit transfer because endpoint "
++    USB_LOG(ERROR) << "Failed to submit transfer because endpoint "
+                    << static_cast<int>(endpoint_address)
+-                   << " not part of a claimed interface.";
++                   << " is not part of a claimed interface.";
+     task_runner_->PostTask(
+         FROM_HERE,
+         base::BindOnce(std::move(callback), UsbTransferStatus::TRANSFER_ERROR,

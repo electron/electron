@@ -1,0 +1,159 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lokbondo Kung <lokokung@google.com>
+Date: Fri, 5 Jun 2026 23:02:56 -0700
+Subject: Reland "[native] Guarantee thread safety during the map async
+ callback."
+
+- This is a reland of commit fd625322444f0c207ac196e258d218a9237ce72e
+- Moves locking in map callback in tests. The lock should be held for
+  the entire duration of the expectation handling, not only during the
+  callback because the callback captures a reference to the `slot`
+  which could be invalidated if the expectation states were modified.
+  On top of that, it was causing a lock inversion issue under TSAN
+  noted in the bug. The original lock was also incorrect because we
+  would take that lock when we access all the buffers to Unmap or
+  Destroy the expectation buffers, but also try to take the lock again
+  in the callback. That means it could have been possible to deadlock
+  if we were using AllowSpontaneous instead of AllowProcessEvents,
+  i.e. imagine taking the lock, calling Unmap which spontaneously
+  calls the callback which tries to take the lock again in the same
+  thread.
+
+Bug: 517692772
+Original change's description:
+> [native] Guarantee thread safety during the map async callback.
+>
+> - This change makes the pending map mutex into a recursive one so
+>   that it can be held throughout the duration of the map async
+>   callback. This ensures that during the callback, there cannot be
+>   a race with Unmap or Destroy.
+> - This addresses the security bug below by because on the server,
+>   the call to GetMappedRange always happens in the scope of the map
+>   async callback. This means that even if an Unmap or Destroy
+>   races, either the Unmap/Destroy will happen first, thereby
+>   resulting in a failed map async callback, or the callback will
+>   happen first before the Unmap goes through.
+> - Note that we needed to use a recursive mutex instead of a normal
+>   one because otherwise, a map async callback that calls Unmap
+>   would deadlock.
+>
+> Bug: 517692772
+> Change-Id: I25068c3722a138ec3014a5b942457e5d484462ec
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/313216
+> Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+> Reviewed-by: Kyle Charbonneau <kylechar@google.com>
+> Commit-Queue: Loko Kung <lokokung@google.com>
+
+Bug: 517692772
+Change-Id: Ic07bacc8e99cf8305038c1489458218a3f138e6c
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/313915
+Auto-Submit: Loko Kung <lokokung@google.com>
+Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+
+diff --git a/src/dawn/native/Buffer.cpp b/src/dawn/native/Buffer.cpp
+index ca7b12c9cf9aeb510ff48521a3fff0f81e053200..b669ccd13020a43cfcf638da7ddfaea30ce1c469 100644
+--- a/src/dawn/native/Buffer.cpp
++++ b/src/dawn/native/Buffer.cpp
+@@ -299,11 +299,12 @@ class BufferBase::MapAsyncEvent final : public EventManager::TrackedEvent {
+         //    but otherwise this finishes on the same path as #2.
+         // 4. Event was created for an error and `mBuffer` was always null. This uses
+         //    `mErrorMessage`` and `mStatus` as set in the constructor when running the callback.
++        RecursiveMutex::AutoLock lock;
+         Ref<BufferBase> buffer = mBuffer.Promote();
+         if (buffer) {
+             // Locking the mutex provides synchronization so that either path #1 or #2 is taken if
+             // Complete() and Unmap() race on different threads.
+-            Mutex::AutoLock lock(&buffer->mPendingMapMutex);
++            lock = RecursiveMutex::AutoLock(&buffer->mPendingMapMutex);
+             if (mStatus == WGPUMapAsyncStatus_Success) {
+                 // Complete() happened before Unmap().
+                 DAWN_ASSERT(buffer->mPendingMapEvent);
+@@ -895,7 +896,7 @@ MaybeError BufferBase::UnmapInternal(bool forDestroy) {
+     if (state == BufferState::PendingMap) {
+         Ref<MapAsyncEvent> event;
+         {
+-            Mutex::AutoLock lock(&mPendingMapMutex);
++            RecursiveMutex::AutoLock lock(&mPendingMapMutex);
+             // `mPendingMapEvent` is always reset while holding the mutex. If Complete() ran and
+             // already reset the event then map is about to complete. If not, reset here and do an
+             // early unmap.
+@@ -926,6 +927,14 @@ MaybeError BufferBase::UnmapInternal(bool forDestroy) {
+         mState.wait(BufferState::PendingMap, std::memory_order::acquire);
+     }
+ 
++    // Wait for any active MapAsyncEvent callback to finish. Just acquiring and releasing the lock
++    // is sufficient because MapAsyncEvent::Complete transitions the state and holds the lock
++    // throughout the state transition and the callback exactly once, therefore if we can acquire
++    // the lock, the callback must have completed.
++    {
++        RecursiveMutex::AutoLock lock(&mPendingMapMutex);
++    }
++
+     DAWN_TRY(Unmap(forDestroy));
+     return {};
+ }
+diff --git a/src/dawn/native/Buffer.h b/src/dawn/native/Buffer.h
+index 91070b5654d0d391110af9a587c1d78ea0aab9db..0ffb36c387ee519ea4c5b5a689101711000ff537 100644
+--- a/src/dawn/native/Buffer.h
++++ b/src/dawn/native/Buffer.h
+@@ -262,7 +262,7 @@ class BufferBase : public SharedResource, public WeakRefSupport<BufferBase> {
+     // until after `mPendingMapEvent` is reset and potential race is averted.
+     // Note: MutexProtected isn't used here due to Use() providing MapAsyncEvent* instead of
+     // Ref<MapAsyncEvent> which doesn't allow resetting the Ref.
+-    Mutex mPendingMapMutex;
++    RecursiveMutex mPendingMapMutex;
+     Ref<MapAsyncEvent> mPendingMapEvent;
+ 
+     // Track texel buffer views created from this buffer so they can be destroyed when the buffer is
+diff --git a/src/dawn/tests/DawnTest.cpp b/src/dawn/tests/DawnTest.cpp
+index d4131b2298e80c147dfa6583ee5628969f5bf180..f3fcd36fea77d946be9922d28923b9e2e07937e1 100644
+--- a/src/dawn/tests/DawnTest.cpp
++++ b/src/dawn/tests/DawnTest.cpp
+@@ -2193,21 +2193,19 @@ void DawnTestBase::MapSlotsSynchronously(std::span<ReadbackSlot> readbacks) {
+     for (size_t slotIndex = 0; slotIndex < readbacks.size(); ++slotIndex) {
+         auto& slot = readbacks[slotIndex];
+ 
+-        slot.buffer.MapAsync(
+-            wgpu::MapMode::Read, 0, wgpu::kWholeMapSize, wgpu::CallbackMode::AllowProcessEvents,
+-            [this, &slot, &pendingMaps](wgpu::MapAsyncStatus status, wgpu::StringView) {
+-                DAWN_ASSERT(status == wgpu::MapAsyncStatus::Success);
+-                Mutex::AutoLock lg(&mMutex);
+-
+-                if (status == wgpu::MapAsyncStatus::Success) {
+-                    slot.mappedData = slot.buffer.GetConstMappedRange();
+-                    DAWN_ASSERT(slot.mappedData != nullptr);
+-                } else {
+-                    slot.mappedData = nullptr;
+-                }
++        slot.buffer.MapAsync(wgpu::MapMode::Read, 0, wgpu::kWholeMapSize,
++                             wgpu::CallbackMode::AllowProcessEvents,
++                             [&slot, &pendingMaps](wgpu::MapAsyncStatus status, wgpu::StringView) {
++                                 DAWN_ASSERT(status == wgpu::MapAsyncStatus::Success);
++                                 if (status == wgpu::MapAsyncStatus::Success) {
++                                     slot.mappedData = slot.buffer.GetConstMappedRange();
++                                     DAWN_ASSERT(slot.mappedData != nullptr);
++                                 } else {
++                                     slot.mappedData = nullptr;
++                                 }
+ 
+-                pendingMaps.fetch_sub(1, std::memory_order_release);
+-            });
++                                 pendingMaps.fetch_sub(1, std::memory_order_release);
++                             });
+     }
+ 
+     // Busy wait until all map operations are done.
+@@ -2340,11 +2338,9 @@ void DawnTestBase::StartTestTimer(float expected_max_time) {
+ void DawnTestBase::ResolveDeferredExpectationsNow() {
+     FlushWire();
+ 
++    Mutex::AutoLock lg(&mMutex);
+     MapSlotsSynchronously(mReadbackSlots);
+-
+     CheckReplayedReadbackBuffers(mReadbackSlots);
+-
+-    Mutex::AutoLock lg(&mMutex);
+     ResolveExpectations();
+ 
+     mDeferredExpectations.clear();

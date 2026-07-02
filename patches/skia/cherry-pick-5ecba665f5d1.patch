@@ -1,0 +1,147 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Fri, 22 May 2026 16:44:17 -0400
+Subject: [graphite] Drop excessively large gradient draws
+
+This skips recording draws with more than 1M color stops, primarily as
+a way to avoid worrying about overflowing during intermediate
+calculations. We can increase it if necessary, but hopefully this is
+healthy enough no one is trying to make shaders this large.
+
+This also skips recording draws when the FSM has maxed out its
+allocatable size for a single buffer. Given how large that is,
+we shouldn't encounter it in the wild but this lets us fail semi
+gracefully. If needed, we can revisit by either flushing the entire
+Recorder when reaching a limit, or by allowing a recording to use
+multiple buffers
+
+Bug: 515467789
+Fixed: 515467789
+Change-Id: Ie032f9ed35b6cf0316a18b32bb36e3ec3c047097
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1243936
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Robert Phillips <robertphillips@google.com>
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+diff --git a/src/gpu/graphite/KeyHelpers.cpp b/src/gpu/graphite/KeyHelpers.cpp
+index 149a48450d1a20d45bf349361b3514ed075d9bef..4e93be6bd91e8d64592edc7084064af1d3444ff8 100644
+--- a/src/gpu/graphite/KeyHelpers.cpp
++++ b/src/gpu/graphite/KeyHelpers.cpp
+@@ -290,6 +290,9 @@ void add_conical_gradient_uniform_data(const KeyContext& keyContext,
+ 
+ // Writes the color and offset data directly in the gatherer gradient buffer and returns the
+ // offset the data begins at in the buffer.
++//
++// Returns a negative offset to signal failure, in which case the paint key must be poisoned
++// to drop the draw.
+ static int write_color_and_offset_bufdata(int numStops,
+                                            const SkPMColor4f* colors,
+                                            const float* offsets,
+@@ -297,6 +300,7 @@ static int write_color_and_offset_bufdata(int numStops,
+                                            FloatStorageManager* floatStorageManager) {
+     auto [dstData, bufferOffset] = floatStorageManager->allocateGradientData(numStops, shader);
+     if (dstData) {
++        SkASSERT(bufferOffset >= 0);
+         // Data doesn't already exist so we need to write it.
+         // Writes all offset data, then color data. This way when binary searching through the
+         // offsets, there is better cache locality.
+@@ -389,16 +393,24 @@ GradientShaderBlocks::GradientData::GradientData(SkShaderBase::GradientType type
+ void GradientShaderBlocks::AddBlock(const KeyContext& keyContext, const GradientData& gradData) {
+     int bufferOffset = 0;
+     if (gradData.fNumStops > GradientData::kNumInternalStorageStops && keyContext.recorder()) {
++        bool hasStorage;
+         if (gradData.fUseStorageBuffer) {
+             bufferOffset = write_color_and_offset_bufdata(gradData.fNumStops,
+                                                           gradData.fSrcColors,
+                                                           gradData.fSrcOffsets,
+                                                           gradData.fSrcShader,
+                                                           keyContext.floatStorageManager());
++            hasStorage = bufferOffset >= 0;
+         } else {
+-            SkASSERT(gradData.fColorsAndOffsetsProxy);
+             keyContext.pipelineDataGatherer()->add(gradData.fColorsAndOffsetsProxy,
+                           {SkFilterMode::kNearest, SkTileMode::kClamp});
++            hasStorage = SkToBool(gradData.fColorsAndOffsetsProxy);
++        }
++
++        if (!hasStorage) {
++            keyContext.paintParamsKeyBuilder()->addErrorBlock();
++            SKGPU_LOG_W("Couldn't upload large gradient color stop data");
++            return;
+         }
+     }
+ 
+diff --git a/src/gpu/graphite/PipelineData.h b/src/gpu/graphite/PipelineData.h
+index 236a3f177d221c6c7e79030ea8d9aa328e1691d4..bc255428f7c78c920adae880d7603ce736c08a97 100644
+--- a/src/gpu/graphite/PipelineData.h
++++ b/src/gpu/graphite/PipelineData.h
+@@ -462,6 +462,23 @@ private:
+  * DrawPass. It de-duplicates gradient data by caching based on the SkGradientBaseShader pointer.
+  */
+ class FloatStorageManager : public SkRefCnt {
++    // Size limit for individual gradients (anything larger will be dropped)
++    static constexpr int kMaxGradientStops = 1024 * 1024; // ~5MB of data in the shader
++
++    // Size limit for the max buffer size. If a new draw would exceed this limit, we drop the draw.
++    // The float storage manager is used by all Devices in a Recorder and is reset at snap(),
++    // requiring a global flush to otherwise get a new buffer (which is undesirable). Instead, we
++    // assume that exceeding this limit happens in two situations:
++    //   1. Adversarial content, at which point correctness is not critical.
++    //   2. A truly bespoke application requiring 4GB of gradient color data should be having its
++    //      workload managed at the application level where it can snap Recordings.
++    //
++    // It is also likely that even if we accumulate this much CPU data, a GPU driver will fail to
++    // create a buffer for us to copy to, causing the snap() to fail.
++    static constexpr int kMaxStorageFloats =
++            static_cast<int>(std::numeric_limits<uint32_t>::max() / sizeof(float));
++    static_assert(std::numeric_limits<uint32_t>::max() / sizeof(float)
++                        <= (uint32_t) std::numeric_limits<int>::max());
+ public:
+     FloatStorageManager() = default;
+ 
+@@ -473,14 +490,26 @@ public:
+     // Checks if data already exists for the requested gradient shader. If so, it returns
+     // a nullptr and the existing offset. If not, it allocates space, caches the offset,
+     // and returns a pointer to the start of the new data and the calculated offset.
++    //
++    // If it was not possible to store the gradient data, a nullptr and negative offset
++    // are returned to signal the error state.
+     std::pair<float*, int> allocateGradientData(int numStops, const SkGradientBaseShader* shader) {
+         SkASSERT(!this->isFinalized());
++        if (numStops > kMaxGradientStops) {
++            return {nullptr, -1};
++        }
++
+         int* existingOffset = fGradientOffsetCache.find(shader->uniqueID());
+         if (existingOffset) {
+             return {nullptr, *existingOffset};
+         }
+         auto [ptr, offset] = this->allocateFloatData(numStops * 5); // 4 for color, 1 for offset
+-        fGradientOffsetCache.set(shader->uniqueID(), offset);
++
++        // Only cache the storage if it was allocated successfully.
++        if (ptr) {
++            SkASSERT(offset >= 0);
++            fGradientOffsetCache.set(shader->uniqueID(), offset);
++        }
+ 
+         return {ptr, offset};
+     }
+@@ -488,6 +517,7 @@ public:
+     bool finalize(DrawBufferManager* bufferMgr) {
+         SkASSERT(!this->isFinalized());
+         if (!fGradientStorage.empty()) {
++            SkASSERT(fGradientStorage.size() <= kMaxStorageFloats);
+             auto [writer, bufferInfo, _] =
+                     bufferMgr->getMappedStorageBuffer(fGradientStorage.size(), sizeof(float));
+             if (writer) {
+@@ -512,6 +542,9 @@ private:
+     // of the new allocation and its offset from the beginning of the buffer.
+     std::pair<float*, int> allocateFloatData(int floatCount) {
+         int currentSize = fGradientStorage.size();
++        if (kMaxStorageFloats - floatCount < currentSize) {
++            return {nullptr, -1}; // We've accumulated too much
++        }
+         fGradientStorage.resize(currentSize + floatCount);
+         float* startPtr = fGradientStorage.begin() + currentSize;
+ 

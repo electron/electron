@@ -1,0 +1,146 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Fri, 29 May 2026 12:42:22 -0400
+Subject: [M144-LTS] Reland "[graphite] BufferSubAllocator respects failed
+ mapping on reset"
+
+* `getMappedUniformBuffer` was changed after M148 but before M149. This caused comments in the unit test to be wrong, causing M148 cherry pick to fail CQ.
+
+* Change the unit test to instead use `getMappedIndexBuffer`, which is stable across the relevant releases, and has been confirmed to trigger the bug.
+
+* These changes purely affect the unit test and not the fix itself.
+
+This reverts commit c329e877d1848877d459999a4ed43b3728892b7b.
+
+Original change's description:
+> Revert "[graphite] BufferSubAllocator respects failed mapping on reset"
+>
+> This reverts commit e7bff78bf5d2994f627742aaf5040b2ba55c4475.
+>
+> Fails clang-tidy
+>
+> Original change's description:
+> > [graphite] BufferSubAllocator respects failed mapping on reset
+> >
+> > Bug: b/516981393
+> > Change-Id: If6837e26ee520ad34c8df46a34850220ec5b538c
+> > Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1247536
+> > Commit-Queue: Thomas Smith <thomsmit@google.com>
+> > Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+>
+> Bug: b/516981393
+> No-Presubmit: true
+> No-Tree-Checks: true
+> No-Try: true
+> Change-Id: I8cf69a8ba2ff318aab65033af821954e4493e5cb
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1249556
+> Auto-Submit: Thomas Smith <thomsmit@google.com>
+> Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+> Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+Bug: b/516981393
+Change-Id: I3688a446d9042ffdb79a6c91d73f72bd5016716e
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1249557
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+(cherry picked from commit 04b084c10b54142767250e736ea44fc82f30d4d6)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1249996
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+
+diff --git a/src/gpu/graphite/BufferManager.cpp b/src/gpu/graphite/BufferManager.cpp
+index 2ef945617bd38816c7efeda9ca13124b3e64bf8d..afdb0a78300b7051958992b1a6b7fedc2631888a 100644
+--- a/src/gpu/graphite/BufferManager.cpp
++++ b/src/gpu/graphite/BufferManager.cpp
+@@ -253,6 +253,13 @@ void BufferSubAllocator::reset() {
+     if (fBuffer) {
+         SkASSERT(fOwner);
+ 
++        if (fOwner->fMappingFailed) {
++            fBuffer = nullptr;
++            fRemaining = 0;
++            fTransferBuffer = {};
++            return;
++        }
++
+         DrawBufferManager::BufferState& state = fOwner->fCurrentBuffers[fStateIndex];
+         if (fBuffer->shareable() == Shareable::kScratch) {
+             // TODO: Merge this reuse of scratch resources with the ScratchResourceManager, but
+@@ -261,11 +268,8 @@ void BufferSubAllocator::reset() {
+             // The scratch buffer's availability for reuse (scoped to the owning DrawBufferManager)
+             // was tied to this BufferSubAllocator, so when that is reset, we just remove the buffer
+             // from the set of unavailable buffers.
+-            SkASSERT((fOwner->fMappingFailed && state.fUnavailableScratchBuffers.empty()) ||
+-                     state.fUnavailableScratchBuffers.contains(fBuffer.get()));
+-            if (!fOwner->fMappingFailed) {
+-                state.fUnavailableScratchBuffers.remove(fBuffer.get());
+-            }
++            SkASSERT(state.fUnavailableScratchBuffers.contains(fBuffer.get()));
++            state.fUnavailableScratchBuffers.remove(fBuffer.get());
+ 
+             SkASSERT(!fTransferBuffer); // Scratch buffers shouldn't be using transfer buffers
+             fOwner->fUsedBuffers.emplace_back(std::move(fBuffer), BindBufferInfo{});
+diff --git a/src/gpu/graphite/BufferManager.h b/src/gpu/graphite/BufferManager.h
+index 1721ac6ad53761ea4e9097003b820fa6f5d8ea7a..07fa8db4bf2def0f4fb9c703a977e97e96506f1a 100644
+--- a/src/gpu/graphite/BufferManager.h
++++ b/src/gpu/graphite/BufferManager.h
+@@ -327,6 +327,10 @@ public:
+     // for recording buffer data for the next Recording.
+     [[nodiscard]] bool transferToRecording(Recording*);
+ 
++#if defined(GPU_TEST_UTILS)
++    void testingOnly_onFailedBuffer() { this->onFailedBuffer(); }
++#endif
++
+ private:
+     friend class BufferSubAllocator;
+ 
+diff --git a/tests/graphite/BufferManagerTest.cpp b/tests/graphite/BufferManagerTest.cpp
+index 6c64e4d7485f05ee0af4814a6b5d186a83f4ab83..6d3dd6125eb6e7738e2ef3512adb7cb16362fb56 100644
+--- a/tests/graphite/BufferManagerTest.cpp
++++ b/tests/graphite/BufferManagerTest.cpp
+@@ -70,4 +70,45 @@ DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS(BufferManagerGpuOnlyBufferTest, reporte
+     REPORTER_ASSERT(reporter, ssbo.fBuffer != mappedSsbo.fBuffer);
+ }
+ 
++DEF_GRAPHITE_TEST_FOR_RENDERING_CONTEXTS(BufferManagerStaleAllocatorTest, reporter, context,
++                                         CtsEnforcement::kApiLevel_202404) {
++    std::unique_ptr<Recorder> recorder = context->makeRecorder();
++    DrawBufferManager* dbm = recorder->priv().drawBufferManager();
++
++    // Keep a reference to the buffer to prevent reuse false positives.
++    sk_sp<const Buffer> rawBuffer;
++    {
++        auto [writer, binding, allocator] = dbm->getMappedIndexBuffer(/*count=*/16);
++        REPORTER_ASSERT(reporter, allocator.isValid());
++        rawBuffer = sk_ref_sp(binding.fBuffer);
++        REPORTER_ASSERT(reporter, rawBuffer != nullptr);
++
++        // Force the buffer allocator to fail to simulate an allocation failure
++        dbm->testingOnly_onFailedBuffer();
++        REPORTER_ASSERT(reporter, dbm->hasMappingFailed());
++
++        // BufferSubAllocator::reset() is called on allocator destruction
++    }
++
++    // Recorder::snap() failure branch clears fMappingFailed and drops the failed Recording.
++    auto failedRecording = recorder->snap();
++    REPORTER_ASSERT(reporter, !failedRecording);
++
++    // Purge everything in the cache by setting the max budget to 0 and freeing all resources
++    size_t originalBudget = recorder->maxBudgetedBytes();
++    recorder->setMaxBudgetedBytes(0);
++    recorder->freeGpuResources();
++    recorder->setMaxBudgetedBytes(originalBudget); // probably unnecessary but safe
++
++    // Get another allocator
++    auto [staleWriter, staleBinding, staleAllocator] = dbm->getMappedIndexBuffer(/*count=*/16);
++    REPORTER_ASSERT(reporter, staleAllocator.isValid());
++
++    // The buffer should not be the same as rawBuffer
++    REPORTER_ASSERT(reporter, staleBinding.fBuffer != rawBuffer.get());
++
++    auto successRecording = recorder->snap();
++    REPORTER_ASSERT(reporter, successRecording);
++}
++
+ }  // namespace skgpu::graphite
