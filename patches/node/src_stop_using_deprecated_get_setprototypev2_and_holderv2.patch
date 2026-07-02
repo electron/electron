@@ -11,10 +11,10 @@ which now have the V2 semantics. Rename the call sites accordingly.
 https://chromium-review.googlesource.com/c/v8/v8/+/7955758
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 31199141b71ebe05c1171476fdef50cb0cad110e..0274c3680fc7d86429fd7eade1ca9bc20cc40de3 100644
+index 90d40720a4faad865cf6584bee73e5739d534f36..c81ef82c5a23d30ec7430b8726bd28e1be2f225e 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -970,7 +970,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
+@@ -971,7 +971,7 @@ MaybeLocal<Object> InitializePrivateSymbols(Local<Context> context,
  
    Local<Object> private_symbols_object;
    if (!private_symbols->NewInstance(context).ToLocal(&private_symbols_object) ||
@@ -23,7 +23,7 @@ index 31199141b71ebe05c1171476fdef50cb0cad110e..0274c3680fc7d86429fd7eade1ca9bc2
            .IsNothing()) {
      return MaybeLocal<Object>();
    }
-@@ -996,7 +996,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
+@@ -997,7 +997,7 @@ MaybeLocal<Object> InitializePerIsolateSymbols(Local<Context> context,
    Local<Object> per_isolate_symbols_object;
    if (!per_isolate_symbols->NewInstance(context).ToLocal(
            &per_isolate_symbols_object) ||
@@ -48,7 +48,7 @@ index 6a3c4e6952a8f3250bf1b57652a1622e9f63ec52..487b8b7adfd35646d20fdb15be5fd6f2
      }
      return false;
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index bc37b24f2804846ff696b4e5ffcb8e77280054b9..857a8f4603a47733a38a950274a91490da1c24f6 100644
+index 6c87611f7cbaf8a0b4c04f812f65381ede112056..da2ed4bae5a552117ad808c19a2e57f884b037ae 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
 @@ -1579,7 +1579,7 @@ napi_status NAPI_CDECL node_api_set_prototype(napi_env env,
@@ -83,7 +83,7 @@ index 5ab30502fd232196739ca2b450e35cc995f02d74..b394d25d8d4f957f04ad8ef31c00c7a9
    Local<Module> module = obj->module_.Get(isolate);
    if (module->GetStatus() < Module::kInstantiated) {
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 93e0c8445056f45c3228bc9c64db3b91d0c84096..857976a98d21278063e209125f49ddc9762eeb94 100644
+index c3e4ea6e7cb7782561e9a2f1283bffd6c1be2637..2d1752edffc66003554810142099e18dfff0be6e 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -279,7 +279,7 @@ MaybeLocal<Uint8Array> New(Environment* env,
@@ -157,10 +157,10 @@ index b7062241d590e36f797babffb5945060ef759322..853c1ef5512ce4476b96cef67b53da84
            .IsNothing()) {
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index d9f979c36b3ce564224a5a93c0dc617c0b381263..99f15ae5160b0e02768986fc4365a5d678743e5a 100644
+index 522d3c24cfba70c448bef5319268504c52694150..9b8fef3a2246e6133abb0930390aa3ea1bfbdb1a 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -748,7 +748,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
+@@ -758,7 +758,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
    }
  
    DatabaseSyncLimits* limits;
@@ -169,7 +169,7 @@ index d9f979c36b3ce564224a5a93c0dc617c0b381263..99f15ae5160b0e02768986fc4365a5d6
  
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
-@@ -780,7 +780,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
+@@ -790,7 +790,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
    }
  
    DatabaseSyncLimits* limits;
@@ -178,7 +178,7 @@ index d9f979c36b3ce564224a5a93c0dc617c0b381263..99f15ae5160b0e02768986fc4365a5d6
  
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
-@@ -2945,9 +2945,9 @@ BaseObjectPtr<StatementSyncIterator> StatementExecutionHelper::Iterate(
+@@ -2951,9 +2951,9 @@ BaseObjectPtr<StatementSyncIterator> StatementExecutionHelper::Iterate(
    }
  
    if (iter->object()

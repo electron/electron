@@ -76,10 +76,10 @@ index 20338324dfaaf3de977027ab7f9028aba0925050..541c1580f7b29cb2bdd4bbdc5e056b46
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 4d1a35d753230a806c3619232ff6f9270cda5563..d9f979c36b3ce564224a5a93c0dc617c0b381263 100644
+index dd101708c1dd08ca3770bc78319b04c19fcd3f2b..522d3c24cfba70c448bef5319268504c52694150 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
-@@ -748,7 +748,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
+@@ -758,7 +758,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
    }
  
    DatabaseSyncLimits* limits;
@@ -88,7 +88,7 @@ index 4d1a35d753230a806c3619232ff6f9270cda5563..d9f979c36b3ce564224a5a93c0dc617c
  
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
-@@ -780,7 +780,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
+@@ -790,7 +790,7 @@ Intercepted DatabaseSyncLimits::LimitsSetter(
    }
  
    DatabaseSyncLimits* limits;
