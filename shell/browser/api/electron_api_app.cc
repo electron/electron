@@ -1059,16 +1059,22 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
 
   blink::CloneableMessage additional_data_message;
   args->GetNext(&additional_data_message);
+  // ProcessSingleton keeps a non-owning base::raw_span to this data, so it must
+  // outlive `process_singleton_`. Copy it into a member that is destroyed after
+  // `process_singleton_` to avoid a dangling span.
+  single_instance_additional_data_.assign(
+      additional_data_message.encoded_message.begin(),
+      additional_data_message.encoded_message.end());
 #if BUILDFLAG(IS_WIN)
   const std::string program_name = electron::Browser::Get()->GetName();
   bool app_is_sandboxed =
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      program_name, user_dir, additional_data_message.encoded_message,
+      program_name, user_dir, single_instance_additional_data_,
       app_is_sandboxed, base::BindRepeating(NotificationCallbackWrapper, cb));
 #else
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      user_dir, additional_data_message.encoded_message,
+      user_dir, single_instance_additional_data_,
       base::BindRepeating(NotificationCallbackWrapper, cb));
 #endif
 
