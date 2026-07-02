@@ -79,10 +79,10 @@ index 4a42dd66f451eece98fded909a72dd5ffcfd9708..a693e35135fc8f7e918e1410a104d460
  function setupWebsocket() {
    if (getOptionValue('--no-experimental-websocket')) {
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index dd0100693afdabaf8d7bae25dccee237b3c0a5c2..6873a9f203ccace7d5c501b62bed56732332d060 100644
+index ececaae30e852e92bff0c2978fcb13c93ba61e97..c1b9b37dc78017d08c6accbdd63c3b3283f34b20 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -269,9 +269,13 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -277,9 +277,13 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
    isolate->SetModifyCodeGenerationFromStringsCallback(
        modify_code_generation_from_strings_callback);
  
