@@ -153,8 +153,8 @@ v8::Local<v8::Function> GetPrivateBoolean(v8::Isolate* const isolate,
   auto global_object = context->Global();
   auto value =
       global_object->GetPrivate(context, private_binding_key).ToLocalChecked();
-  CHECK(!value.IsEmpty() && value->IsFunction(),
-        "Attempted to get the '" << key << "' value but it was missing");
+  CHECK(!value.IsEmpty() && value->IsFunction())
+      << "Attempted to get the '" << key << "' value but it was missing";
   return value.As<v8::Function>();
 }
 
