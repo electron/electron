@@ -279,8 +279,6 @@ void InspectableWebContentsView::ShowDevToolsContextMenu(
   // that opening it doesn't shift focus to the inspected page's window.
   views::Widget* widget =
       devtools_window_ ? devtools_window_.get() : GetWidget();
-  if (!widget)
-    return;
 
   context_menu_ =
       std::make_unique<DevToolsContextMenu>(devtools_web_contents, params);

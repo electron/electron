@@ -99,6 +99,7 @@ class DevToolsEyeDropper;
 
 namespace electron {
 
+class DevToolsContextMenu;
 class ElectronBrowserContext;
 class InspectableWebContents;
 class WebContentsZoomController;
@@ -871,6 +872,10 @@ class WebContents final : public ExclusiveAccessContext,
   // dialog_manager_, so we can make sure inspectable_web_contents_ is
   // destroyed before dialog_manager_, otherwise a crash would happen.
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
+
+  // Menu for context menu requests coming from a DevTools frontend hosted
+  // directly in this WebContents (e.g. via setDevToolsWebContents()).
+  std::unique_ptr<DevToolsContextMenu> devtools_context_menu_;
 
   std::optional<GURL> pending_unload_url_ = std::nullopt;
 

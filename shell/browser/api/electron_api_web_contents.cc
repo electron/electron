@@ -77,6 +77,7 @@
 #include "content/public/common/child_process_id.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
+#include "content/public/common/url_constants.h"
 #include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/mas.h"
@@ -117,6 +118,7 @@
 #include "shell/browser/preload_script.h"
 #include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
+#include "shell/browser/ui/devtools_context_menu.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -172,8 +174,10 @@
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+#include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "ui/base/cocoa/defaults_utils.h"
@@ -1759,6 +1763,28 @@ void WebContents::RendererResponsive(
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
                                     const content::ContextMenuParams& params) {
+  // A WebContents hosting a DevTools frontend directly (e.g. one passed to
+  // webContents.setDevToolsWebContents()) keeps its own delegate, so menu
+  // requests from InspectorFrontendHost.showContextMenuAtPoint() arrive here
+  // instead of at InspectableWebContents. Such requests are recognizable by
+  // carrying menu items in |params.custom_items| or by the kNone source type
+  // (the request is programmatic, not a user gesture). Show them as a native
+  // menu anchored to whichever widget hosts this WebContents; emitting
+  // 'context-menu' would drop the items and leave the frontend waiting for a
+  // selection forever. Ordinary right-clicks in the frontend still emit
+  // 'context-menu' below.
+  if (render_frame_host.GetMainFrame()->GetLastCommittedURL().SchemeIs(
+          content::kChromeDevToolsScheme) &&
+      (!params.custom_items.empty() ||
+       params.source_type == ui::mojom::MenuSourceType::kNone)) {
+    devtools_context_menu_ =
+        std::make_unique<DevToolsContextMenu>(web_contents(), params);
+    devtools_context_menu_->RunMenuAt(
+        views::Widget::GetTopLevelWidgetForNativeView(
+            web_contents()->GetNativeView()));
+    return true;
+  }
+
   ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
       ui::ClipboardBuffer::kCopyPaste, std::nullopt,
       base::BindOnce(&WebContents::OnReadAvailableTypes, GetWeakPtr(), params,

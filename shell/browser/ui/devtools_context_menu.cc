@@ -32,7 +32,7 @@ constexpr size_t kMaxCustomMenuTotalItems = 1000;
 DevToolsContextMenu::DevToolsContextMenu(
     content::WebContents* devtools_web_contents,
     const content::ContextMenuParams& params)
-    : web_contents_(devtools_web_contents), params_(params) {
+    : content::WebContentsObserver(devtools_web_contents), params_(params) {
   if (!params_.custom_items.empty()) {
     size_t total_items = 0;
     AppendCustomItems(params_.custom_items, &menu_model_, 0, &total_items);
@@ -49,17 +49,21 @@ DevToolsContextMenu::~DevToolsContextMenu() {
 }
 
 void DevToolsContextMenu::RunMenuAt(views::Widget* parent_widget) {
-  if (menu_model_.GetItemCount() == 0) {
-    // Nothing to show; let the frontend clean up its pending menu state.
-    web_contents_->NotifyContextMenuClosed(params_.link_followed,
-                                           params_.impression);
+  if (!web_contents())
+    return;
+
+  if (!parent_widget || menu_model_.GetItemCount() == 0) {
+    // No widget to anchor to (e.g. offscreen rendering) or nothing to show;
+    // let the frontend clean up its pending menu state.
+    web_contents()->NotifyContextMenuClosed(params_.link_followed,
+                                            params_.impression);
     return;
   }
 
   // Block further context menu requests and renderer mouse-move handling
   // while the menu is showing, like Chrome's RenderViewContextMenuBase does.
   menu_open_ = true;
-  web_contents_->SetShowingContextMenu(true);
+  web_contents()->SetShowingContextMenu(true);
 
   menu_runner_ = std::make_unique<views::MenuRunner>(
       &menu_model_,
@@ -71,12 +75,18 @@ void DevToolsContextMenu::RunMenuAt(views::Widget* parent_widget) {
   // them to screen coordinates for the menu runner.
   gfx::Point screen_point{params_.x, params_.y};
   if (content::RenderWidgetHostView* view =
-          web_contents_->GetRenderWidgetHostView())
+          web_contents()->GetRenderWidgetHostView())
     screen_point += view->GetViewBounds().OffsetFromOrigin();
 
   menu_runner_->RunMenuAt(
       parent_widget, nullptr, gfx::Rect{screen_point, gfx::Size{}},
       views::MenuAnchorPosition::kTopLeft, params_.source_type);
+
+  // RunMenuAt can return without showing anything (e.g. during shutdown), in
+  // which case the closed callback never fires. On macOS it blocks until the
+  // menu closes, so by this point a shown menu has already been cleaned up.
+  if (!menu_runner_->IsRunning())
+    OnMenuClosed();
 }
 
 void DevToolsContextMenu::AppendCustomItems(
@@ -160,9 +170,16 @@ void DevToolsContextMenu::OnMenuClosed() {
   if (!menu_open_)
     return;
   menu_open_ = false;
-  web_contents_->SetShowingContextMenu(false);
-  web_contents_->NotifyContextMenuClosed(params_.link_followed,
-                                         params_.impression);
+  if (!web_contents())
+    return;
+  web_contents()->SetShowingContextMenu(false);
+  web_contents()->NotifyContextMenuClosed(params_.link_followed,
+                                          params_.impression);
+}
+
+void DevToolsContextMenu::WebContentsDestroyed() {
+  menu_open_ = false;
+  menu_runner_.reset();
 }
 
 bool DevToolsContextMenu::IsCommandIdChecked(int command_id) const {
@@ -180,36 +197,39 @@ bool DevToolsContextMenu::IsCommandIdEnabled(int command_id) const {
 }
 
 void DevToolsContextMenu::ExecuteCommand(int command_id, int event_flags) {
+  if (!web_contents())
+    return;
+
   switch (command_id) {
     case kEditCommandUndo:
-      web_contents_->Undo();
+      web_contents()->Undo();
       return;
     case kEditCommandRedo:
-      web_contents_->Redo();
+      web_contents()->Redo();
       return;
     case kEditCommandCut:
-      web_contents_->Cut();
+      web_contents()->Cut();
       return;
     case kEditCommandCopy:
-      web_contents_->Copy();
+      web_contents()->Copy();
       return;
     case kEditCommandPaste:
-      web_contents_->Paste();
+      web_contents()->Paste();
       return;
     case kEditCommandPasteAndMatchStyle:
-      web_contents_->PasteAndMatchStyle();
+      web_contents()->PasteAndMatchStyle();
       return;
     case kEditCommandDelete:
-      web_contents_->Delete();
+      web_contents()->Delete();
       return;
     case kEditCommandSelectAll:
-      web_contents_->SelectAll();
+      web_contents()->SelectAll();
       return;
     default:
       // A custom DevTools item: the frontend receives the action as
       // DevToolsAPI.contextMenuItemSelected(action).
-      web_contents_->ExecuteCustomContextMenuCommand(command_id,
-                                                     params_.link_followed);
+      web_contents()->ExecuteCustomContextMenuCommand(command_id,
+                                                      params_.link_followed);
       return;
   }
 }
