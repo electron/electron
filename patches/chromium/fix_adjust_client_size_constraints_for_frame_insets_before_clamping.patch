@@ -1,0 +1,171 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Georgi Davidkov <georgi.davidkov@tick42.com>
+Date: Thu, 14 May 2026 12:33:32 +0300
+Subject: fix: adjust client size constraints for frame insets before clamping
+
+Cherry-pick of https://chromium-review.googlesource.com/c/chromium/src/+/7795073
+  Chromium-Bug: 506480944
+  Chromium-Commit: 22167afbecda05072355e5d8b324e00643b36bf4
+
+Size constraints are given in client area coordinates when
+WidgetSizeIsClientSize() is true. They need to be inflated by frame
+insets before clamping the size of the HWND, otherwise the window
+will be constrained to a smaller size than intended.
+
+The inset correction was already present in OnGetMinMaxInfo. The CL
+adds it to AdjustedContentBounds and SizeWindowToAspectRatio so they
+handle constraints the same way when bounds change, and extracts the
+duplicated arithmetic into a new helper InflateClientSizeConstraintsInPixels
+in ui/views/win/hwnd_util.{h,cc}.
+
+The unit test from the upstream CL (DesktopWidgetTest.SetBoundsRespectsMaximumSize)
+is intentionally omitted: Electron does not run views_unittests.
+
+SizeWindowToAspectRatio's inline inset block was previously added by
+Electron's fix_aspect_ratio_with_max_size.patch (Cezary Kulakowski, 2021).
+This commit refactors that inline block into the new helper call, matching
+the upstream merged state. fix_aspect_ratio_with_max_size.patch remains in
+place to preserve its other change (the SizeRectToAspectRatio API switch).
+
+The helper extraction is included so that the follow-up patch
+fix_use_adjustwindowrectexfordpi_for_dpi-consistent_frame_insets.patch
+can layer cleanly on top.
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index 1c90d76572d365e1750129d23d5e59d651a46020..995085d4c87ca6517dc92cc487af3c9fc6277e6f 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -1537,6 +1537,17 @@ gfx::Rect DesktopWindowTreeHostWin::AdjustedContentBounds(
+   gfx::Size maximum_size;
+   GetMinMaxSize(&minimum_size, &maximum_size);
+ 
++  if (WidgetSizeIsClientSize()) {
++    // Constraints are sized to the client area, not the HWND (see
++    // OnGetMinMaxInfo), so inflate otherwise the max size will be too small.
++    display::win::ScreenWin* screen = display::win::GetScreenWin();
++    gfx::Size min_px = screen->DIPToScreenSize(GetHWND(), minimum_size);
++    gfx::Size max_px = screen->DIPToScreenSize(GetHWND(), maximum_size);
++    InflateClientSizeConstraintsInPixels(GetHWND(), min_px, max_px);
++    minimum_size = screen->ScreenToDIPSize(GetHWND(), min_px);
++    maximum_size = screen->ScreenToDIPSize(GetHWND(), max_px);
++  }
++
+   gfx::Size bounds_size = bounds.size();
+ 
+   if (!maximum_size.IsEmpty()) {
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index a40c2cb8989bf77904692a2a379d4a5ff8eabd6d..d721697185c5960960e346ea725809d0f358047e 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -2118,22 +2118,9 @@ void HWNDMessageHandler::OnGetMinMaxInfo(MINMAXINFO* minmax_info) {
+   min_window_size = delegate_->DIPToScreenSize(min_window_size);
+   max_window_size = delegate_->DIPToScreenSize(max_window_size);
+ 
+-  // Add the native frame border size to the minimum and maximum size if the
+-  // view reports its size as the client size.
+   if (delegate_->WidgetSizeIsClientSize()) {
+-    RECT client_rect, window_rect;
+-    ::GetClientRect(hwnd(), &client_rect);
+-    ::GetWindowRect(hwnd(), &window_rect);
+-    CR_DEFLATE_RECT(&window_rect, &client_rect);
+-    min_window_size.Enlarge(window_rect.right - window_rect.left,
+-                            window_rect.bottom - window_rect.top);
+-    // Either axis may be zero, so enlarge them independently.
+-    if (max_window_size.width()) {
+-      max_window_size.Enlarge(window_rect.right - window_rect.left, 0);
+-    }
+-    if (max_window_size.height()) {
+-      max_window_size.Enlarge(0, window_rect.bottom - window_rect.top);
+-    }
++    InflateClientSizeConstraintsInPixels(hwnd(), min_window_size,
++                                         max_window_size);
+   }
+   minmax_info->ptMinTrackSize.x = min_window_size.width();
+   minmax_info->ptMinTrackSize.y = min_window_size.height();
+@@ -3940,20 +3927,10 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+   delegate_->GetMinMaxSize(&min_window_size, &max_window_size);
+   min_window_size = delegate_->DIPToScreenSize(min_window_size);
+   max_window_size = delegate_->DIPToScreenSize(max_window_size);
+-  // Add the native frame border size to the minimum and maximum size if the
+-  // view reports its size as the client size.
++
+   if (delegate_->WidgetSizeIsClientSize()) {
+-    RECT client_rect, rect;
+-    GetClientRect(hwnd(), &client_rect);
+-    GetWindowRect(hwnd(), &rect);
+-    CR_DEFLATE_RECT(&rect, &client_rect);
+-    min_window_size.Enlarge(rect.right - rect.left,
+-                            rect.bottom - rect.top);
+-    // Either axis may be zero, so enlarge them independently.
+-    if (max_window_size.width())
+-      max_window_size.Enlarge(rect.right - rect.left, 0);
+-    if (max_window_size.height())
+-      max_window_size.Enlarge(0, rect.bottom - rect.top);
++    InflateClientSizeConstraintsInPixels(hwnd(), min_window_size,
++                                         max_window_size);
+   }
+ 
+   std::optional<gfx::Size> max_size_param;
+diff --git a/ui/views/win/hwnd_util.cc b/ui/views/win/hwnd_util.cc
+index 142f5637fc1979ee89a96d08336a0a34c52912aa..969fefa59648c1c45ebfec8fdc6598fdeae2a90a 100644
+--- a/ui/views/win/hwnd_util.cc
++++ b/ui/views/win/hwnd_util.cc
+@@ -18,6 +18,7 @@
+ #include "ui/aura/window.h"
+ #include "ui/aura/window_tree_host.h"
+ #include "ui/base/class_property.h"
++#include "ui/gfx/win/msg_util.h"
+ #include "ui/views/widget/widget.h"
+ 
+ DEFINE_UI_CLASS_PROPERTY_TYPE(Microsoft::WRL::ComPtr<IAccessible>*)
+@@ -143,4 +144,25 @@ gfx::NativeViewAccessible HWNDNativeViewAccessibleForWidget(
+   return parent_accessible->Get();
+ }
+ 
++void InflateClientSizeConstraintsInPixels(HWND hwnd,
++                                          gfx::Size& min,
++                                          gfx::Size& max) {
++  RECT client_rect;
++  RECT window_rect;
++  ::GetClientRect(hwnd, &client_rect);
++  ::GetWindowRect(hwnd, &window_rect);
++  CR_DEFLATE_RECT(&window_rect, &client_rect);
++  const gfx::Size inset = gfx::Size(window_rect.right - window_rect.left,
++                                    window_rect.bottom - window_rect.top);
++
++  min.Enlarge(inset.width(), inset.height());
++  // zero means "no maximum" so enlarge width/height independently.
++  if (max.width()) {
++    max.Enlarge(inset.width(), 0);
++  }
++  if (max.height()) {
++    max.Enlarge(0, inset.height());
++  }
++}
++
+ }  // namespace views
+diff --git a/ui/views/win/hwnd_util.h b/ui/views/win/hwnd_util.h
+index 52c310855150c36759e1df87621e7a823e5ed57f..75dfca29d5507c89479518ef77441672dae7dcfe 100644
+--- a/ui/views/win/hwnd_util.h
++++ b/ui/views/win/hwnd_util.h
+@@ -7,6 +7,7 @@
+ 
+ #include "ui/gfx/geometry/point.h"
+ #include "ui/gfx/geometry/rect.h"
++#include "ui/gfx/geometry/size.h"
+ #include "ui/gfx/native_ui_types.h"
+ #include "ui/views/views_export.h"
+ 
+@@ -51,6 +52,12 @@ VIEWS_EXPORT gfx::NativeViewAccessible HWNDNativeViewAccessibleForView(
+ VIEWS_EXPORT gfx::NativeViewAccessible HWNDNativeViewAccessibleForWidget(
+     const Widget* widget);
+ 
++// Inflates client-area size constraints by the window's frame border/insets
++// so they can be applied to the HWND.
++VIEWS_EXPORT void InflateClientSizeConstraintsInPixels(HWND hwnd,
++                                                       gfx::Size& min,
++                                                       gfx::Size& max);
++
+ }  // namespace views
+ 
+ #endif  // UI_VIEWS_WIN_HWND_UTIL_H_
