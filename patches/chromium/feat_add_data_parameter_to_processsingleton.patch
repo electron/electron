@@ -197,7 +197,7 @@ index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c64
    if (!WriteToSocket(socket.fd(), to_send)) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index c3fd1311d4638072ae2b11497f3178c05446a67b..ddaa55b582a7db32b2ed850436142ba2d0a12d4c 100644
+index 83eb993048e7b0365d5213973a67c271f1144973..a63073ae2e6c03070de6116bab4fe286ffecf32d 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -9,6 +9,7 @@
@@ -279,7 +279,7 @@ index c3fd1311d4638072ae2b11497f3178c05446a67b..ddaa55b582a7db32b2ed850436142ba2
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -287,7 +312,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -286,7 +311,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
