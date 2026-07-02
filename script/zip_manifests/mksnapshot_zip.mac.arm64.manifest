@@ -1,0 +1,12 @@
+mksnapshot
+mksnapshot_args
+icudtl.dat
+libffmpeg.dylib
+libEGL.dylib
+libGLESv2.dylib
+libvk_swiftshader.dylib
+gen/v8/embedded.S
+LICENSE
+LICENSES.chromium.html
+v8_context_snapshot_generator
+vk_swiftshader_icd.json
