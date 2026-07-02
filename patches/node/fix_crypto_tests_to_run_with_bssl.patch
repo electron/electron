@@ -10,6 +10,34 @@ This should be upstreamed in some form, though it may need to be tweaked
 before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
+diff --git a/test/parallel/test-crypto-encap-decap.js b/test/parallel/test-crypto-encap-decap.js
+index 4b19d71794400cc07ca47487ac79bfb1f9338bc6..81baf4e04f58dac7893bbf796df68e6c075953d9 100644
+--- a/test/parallel/test-crypto-encap-decap.js
++++ b/test/parallel/test-crypto-encap-decap.js
+@@ -3,6 +3,9 @@ const common = require('../common');
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-KEM');
++
+ const assert = require('assert');
+ const crypto = require('crypto');
+ const fixtures = require('../common/fixtures');
+diff --git a/test/parallel/test-crypto-key-objects-raw.js b/test/parallel/test-crypto-key-objects-raw.js
+index e0871c2f0cd3fdc45e2b610497f10d9ffe7c6530..90f55fb34addae1b7f030d72c0f447f95a72338f 100644
+--- a/test/parallel/test-crypto-key-objects-raw.js
++++ b/test/parallel/test-crypto-key-objects-raw.js
+@@ -4,6 +4,9 @@ const common = require('../common');
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-KEM/ML-DSA/SLH-DSA');
++
+ const assert = require('assert');
+ const crypto = require('crypto');
+ const fixtures = require('../common/fixtures');
 diff --git a/test/parallel/test-crypto-keygen-deprecation.js b/test/parallel/test-crypto-keygen-deprecation.js
 index 926dfbbc4ae987217ab404ec25a3ca0a2ef2edcf..df0b379c1b1e982b96ea97c9814f38991d734ce4 100644
 --- a/test/parallel/test-crypto-keygen-deprecation.js
@@ -25,6 +53,20 @@ index 926dfbbc4ae987217ab404ec25a3ca0a2ef2edcf..df0b379c1b1e982b96ea97c9814f3899
  const DeprecationWarning = [];
  DeprecationWarning.push([
    '"options.hash" is deprecated, use "options.hashAlgorithm" instead.',
+diff --git a/test/parallel/test-crypto-pqc-encrypted-pkcs8.js b/test/parallel/test-crypto-pqc-encrypted-pkcs8.js
+index b4a1b586d21d10431109f0809c83829d17bee1ed..a71ae3ac2b54b3118db9a6f867f49e789ec6dfa9 100644
+--- a/test/parallel/test-crypto-pqc-encrypted-pkcs8.js
++++ b/test/parallel/test-crypto-pqc-encrypted-pkcs8.js
+@@ -4,6 +4,9 @@ const common = require('../common');
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-KEM/ML-DSA');
++
+ const { hasOpenSSL } = require('../common/crypto');
+ 
+ if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
 diff --git a/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js b/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
 index 883c2b7123844ede9c729809c2ac11e2c7288d72..54e7ff13547955ee7891fc493765e96aac39ba82 100644
 --- a/test/parallel/test-crypto-pqc-key-objects-ml-dsa.js
@@ -36,6 +78,76 @@ index 883c2b7123844ede9c729809c2ac11e2c7288d72..54e7ff13547955ee7891fc493765e96a
 +if (process.features.openssl_is_boringssl) {
 +  common.skip('Skipping unsupported ML-DSA key tests');
 +}
++
+ const { hasOpenSSL } = require('../common/crypto');
+ 
+ const assert = require('assert');
+diff --git a/test/parallel/test-crypto-pqc-sign-verify-ml-dsa.js b/test/parallel/test-crypto-pqc-sign-verify-ml-dsa.js
+index 535e6a33d5ccb00566a66d83711872f1304c70dc..d68b45c31cb59a637b5c757e96b98f263977e147 100644
+--- a/test/parallel/test-crypto-pqc-sign-verify-ml-dsa.js
++++ b/test/parallel/test-crypto-pqc-sign-verify-ml-dsa.js
+@@ -4,6 +4,9 @@ const common = require('../common');
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-DSA');
++
+ const { hasOpenSSL } = require('../common/crypto');
+ 
+ if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
+diff --git a/test/parallel/test-webcrypto-encap-decap-ml-kem.js b/test/parallel/test-webcrypto-encap-decap-ml-kem.js
+index f3850dcdf0254630b97a9d148d28ae0c12160052..dd1d438a2f4b5a86a0284054e02e834b58a80a98 100644
+--- a/test/parallel/test-webcrypto-encap-decap-ml-kem.js
++++ b/test/parallel/test-webcrypto-encap-decap-ml-kem.js
+@@ -5,6 +5,9 @@ const common = require('../common');
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-KEM');
++
+ const { hasOpenSSL } = require('../common/crypto');
+ 
+ if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
+diff --git a/test/parallel/test-webcrypto-export-import-ml-dsa.js b/test/parallel/test-webcrypto-export-import-ml-dsa.js
+index 5cafdfd41b2715527589471a8df9e8e8979738f3..5e727920c1b22569661c499776f8650ed7ecfa72 100644
+--- a/test/parallel/test-webcrypto-export-import-ml-dsa.js
++++ b/test/parallel/test-webcrypto-export-import-ml-dsa.js
+@@ -5,6 +5,9 @@ const common = require('../common');
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-DSA');
++
+ const { hasOpenSSL } = require('../common/crypto');
+ 
+ if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
+diff --git a/test/parallel/test-webcrypto-export-import-ml-kem.js b/test/parallel/test-webcrypto-export-import-ml-kem.js
+index 31ba739a1e55e0f9ae4472d7850a4a8892db9dce..ef01ac5d5517aa8f54eff68b25e813182da34b37 100644
+--- a/test/parallel/test-webcrypto-export-import-ml-kem.js
++++ b/test/parallel/test-webcrypto-export-import-ml-kem.js
+@@ -5,6 +5,9 @@ const common = require('../common');
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-KEM');
++
+ const { hasOpenSSL } = require('../common/crypto');
+ 
+ if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
+diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
+index 49f63e215fadfc95bee1d1d51cb61391a89ec53e..94f840c190035ce50f623e63dad5e12fedbdd2a3 100644
+--- a/test/parallel/test-webcrypto-wrap-unwrap.js
++++ b/test/parallel/test-webcrypto-wrap-unwrap.js
+@@ -5,6 +5,9 @@ const common = require('../common');
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-KEM/ML-DSA');
 +
  const { hasOpenSSL } = require('../common/crypto');
  
