@@ -1441,7 +1441,8 @@ void ElectronBrowserClient::CreateWebSocket(
     const net::SiteForCookies& site_for_cookies,
     const std::optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
-        handshake_client) {
+        handshake_client,
+    WebSocketOptions options) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
@@ -1455,9 +1456,9 @@ void ElectronBrowserClient::CreateWebSocket(
         extensions::WebRequestAPI>::Get(browser_context);
 
     if (web_request_api && web_request_api->MayHaveProxies()) {
-      web_request_api->ProxyWebSocket(frame, std::move(factory), url,
-                                      site_for_cookies, user_agent,
-                                      std::move(handshake_client));
+      web_request_api->ProxyWebSocket(
+          frame, std::move(factory), url, site_for_cookies, user_agent,
+          std::move(handshake_client), std::move(options.header_client));
       return;
     }
   }

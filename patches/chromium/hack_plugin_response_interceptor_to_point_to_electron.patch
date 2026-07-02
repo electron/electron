@@ -8,10 +8,10 @@ require a largeish patch to get working, so just redirect it to our
 implementation instead.
 
 diff --git a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
-index 4dc383e0f612145525243a40ba8ff29454f85940..564fc3c2073d018f0c7139cc425856344d20985c 100644
+index 40d2176f8da25e983c7b23c49aaf72b60072b3aa..c45d5c056448b97dac9965e4a32c2608b557b00e 100644
 --- a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 +++ b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
-@@ -12,8 +12,8 @@
+@@ -13,8 +13,8 @@
  #include "base/numerics/safe_conversions.h"
  #include "base/unguessable_token.h"
  #include "base/uuid.h"
@@ -22,7 +22,7 @@ index 4dc383e0f612145525243a40ba8ff29454f85940..564fc3c2073d018f0c7139cc42585634
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "content/public/browser/download_utils.h"
-@@ -387,7 +387,7 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
+@@ -389,7 +389,7 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
    content::GetUIThreadTaskRunner({})->PostTask(
        FROM_HERE,
        base::BindOnce(
