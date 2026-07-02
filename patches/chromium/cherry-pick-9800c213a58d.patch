@@ -1,0 +1,208 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Tue, 9 Jun 2026 10:30:48 -0700
+Subject: Fix UAF in PagePopupController via orphaned popup destruction
+ teardown
+
+When PagePopup cancellation occurs, re-entrant page popup creation can
+overwrite or clear WebViewImpl's tracking reference, leaving an
+orphaned popup that bypasses standard teardown in ClosePopup(). If a
+pending DOM timer or asynchronous script task subsequently invokes
+setWindowRect() on the orphaned frame, it attempts a virtual method
+call on the freed WebPagePopupImpl referent.
+
+The fix includes:
+1. Guard PagePopupController::setWindowRect() with an explicit check on
+popup_client_.
+2. In WebPagePopupImpl::Close(), if page_ remains non-null after
+Cancel() returns, explicitly invoke ClearPagePopupClient() and
+DestroyPage() so the frame and scheduler are detached before freeing.
+
+Fixed: 516936863
+Change-Id: I218c94955949e8a07535239eecf05350c56ab24a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7905043
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1644092}
+
+diff --git a/third_party/blink/renderer/core/exported/web_page_popup_impl.cc b/third_party/blink/renderer/core/exported/web_page_popup_impl.cc
+index 6c98daf3eabb8c641b60324a65f494ea8ed5998d..8ddae69532af399f7512771105505e72002a551c 100644
+--- a/third_party/blink/renderer/core/exported/web_page_popup_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_page_popup_impl.cc
+@@ -996,6 +996,15 @@ void WebPagePopupImpl::Close() {
+     closing_ = true;
+     // This should end up running ClosePopup() though the PopupClient.
+     Cancel();
++    // Cancel() may have synchronously triggered ClosePopup() and destroyed
++    // page_.
++    if (page_) {
++      EventDispatchForbiddenScope::AllowUserAgentEvents allow_events;
++      if (auto* controller = PagePopupController::From(*page_)) {
++        controller->ClearPagePopupClient();
++      }
++      DestroyPage();
++    }
+   }
+ 
+   // TODO(dtapuska): WidgetBase shutdown should happen before Page is
+diff --git a/third_party/blink/renderer/core/html/forms/internal_popup_menu_test.cc b/third_party/blink/renderer/core/html/forms/internal_popup_menu_test.cc
+index e714fb7c44a9a1b2b9d6c809a102105807e69e69..0f584c8c53aae1d54266f4f1a8c0981c008b9986 100644
+--- a/third_party/blink/renderer/core/html/forms/internal_popup_menu_test.cc
++++ b/third_party/blink/renderer/core/html/forms/internal_popup_menu_test.cc
+@@ -8,13 +8,20 @@
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/blink/renderer/core/dom/document.h"
+ #include "third_party/blink/renderer/core/dom/element.h"
++#include "third_party/blink/renderer/core/exported/web_page_popup_impl.h"
++#include "third_party/blink/renderer/core/exported/web_view_impl.h"
++#include "third_party/blink/renderer/core/frame/frame_test_helpers.h"
+ #include "third_party/blink/renderer/core/frame/local_frame_view.h"
+ #include "third_party/blink/renderer/core/html/forms/html_select_element.h"
+ #include "third_party/blink/renderer/core/loader/empty_clients.h"
++#include "third_party/blink/renderer/core/page/page.h"
++#include "third_party/blink/renderer/core/page/page_popup_controller.h"
+ #include "third_party/blink/renderer/core/testing/dummy_page_holder.h"
+ #include "third_party/blink/renderer/core/testing/page_test_base.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/testing/task_environment.h"
++#include "third_party/blink/renderer/platform/testing/unit_test_helpers.h"
++#include "third_party/blink/renderer/platform/testing/url_test_helpers.h"
+ #include "third_party/blink/renderer/platform/wtf/shared_buffer.h"
+ 
+ namespace blink {
+@@ -53,6 +60,97 @@ TEST_F(InternalPopupMenuTest, ShowSelectDisplayNone) {
+   menu->Show(PopupMenu::kOther);
+ }
+ 
++TEST_F(InternalPopupMenuTest, MediaFeatureOverridesPropagation) {
++  frame_test_helpers::WebViewHelper web_view_helper;
++  WebViewImpl* web_view = web_view_helper.Initialize();
++  WebURL base_url = url_test_helpers::ToKURL("http://example.com/");
++  frame_test_helpers::LoadHTMLString(web_view->MainFrameImpl(), R"HTML(
++    <select id=s1>
++      <option>option</option>
++    </select>
++    <select id=s2>
++      <option>option</option>
++    </select>
++  )HTML",
++                                     base_url);
++  Document& document =
++      *web_view->MainFrameImpl()->GetDocument().Unwrap<Document>();
++
++  web_view->GetPage()->SetMediaFeatureOverride(
++      media_feature_names::kPrefersColorSchemeMediaFeature, "light");
++  document.View()->UpdateAllLifecyclePhasesForTest();
++  auto* s1 = To<HTMLSelectElement>(document.getElementById(AtomicString("s1")));
++  auto* menu1 = MakeGarbageCollected<InternalPopupMenu>(
++      MakeGarbageCollected<EmptyChromeClient>(), *s1);
++  WebPagePopupImpl* popup1 = web_view->OpenPagePopup(menu1);
++  popup1->DidShowPopup();
++  EXPECT_EQ(popup1->GetDocument()
++                .Unwrap<Document>()
++                ->GetPage()
++                ->GetMediaFeatureOverrides()
++                ->GetPreferredColorScheme(),
++            mojom::PreferredColorScheme::kLight);
++  popup1->ClosePopup();
++
++  web_view->GetPage()->SetMediaFeatureOverride(
++      media_feature_names::kPrefersColorSchemeMediaFeature, "dark");
++  document.View()->UpdateAllLifecyclePhasesForTest();
++  auto* s2 = To<HTMLSelectElement>(document.getElementById(AtomicString("s2")));
++  auto* menu2 = MakeGarbageCollected<InternalPopupMenu>(
++      MakeGarbageCollected<EmptyChromeClient>(), *s2);
++  WebPagePopupImpl* popup2 = web_view->OpenPagePopup(menu2);
++  popup2->DidShowPopup();
++  EXPECT_EQ(popup2->GetDocument()
++                .Unwrap<Document>()
++                ->GetPage()
++                ->GetMediaFeatureOverrides()
++                ->GetPreferredColorScheme(),
++            mojom::PreferredColorScheme::kDark);
++  popup2->ClosePopup();
++}
++
++// See crbug.com/516936863.
++TEST_F(InternalPopupMenuTest, PagePopupControllerUAFAfterOrphanedFree) {
++  if (!RuntimeEnabledFeatures::PagePopupEnabled()) {
++    return;
++  }
++
++  frame_test_helpers::WebViewHelper web_view_helper;
++  WebViewImpl* web_view = web_view_helper.Initialize();
++  WebURL base_url = url_test_helpers::ToKURL("http://example.com/");
++  frame_test_helpers::LoadHTMLString(web_view->MainFrameImpl(), R"HTML(
++    <select id=sel>
++      <option>1</option>
++      <option>2</option>
++    </select>
++  )HTML",
++                                     base_url);
++  Document& document =
++      *web_view->MainFrameImpl()->GetDocument().Unwrap<Document>();
++  document.View()->UpdateAllLifecyclePhasesForTest();
++
++  auto* sel =
++      To<HTMLSelectElement>(document.getElementById(AtomicString("sel")));
++  ASSERT_TRUE(sel);
++  auto* menu = MakeGarbageCollected<InternalPopupMenu>(
++      MakeGarbageCollected<EmptyChromeClient>(), *sel);
++
++  WebPagePopupImpl* popup = web_view->OpenPagePopup(menu);
++  popup->DidShowPopup();
++
++  Page* popup_page = popup->GetDocument().Unwrap<Document>()->GetPage();
++  ASSERT_TRUE(popup_page);
++  Persistent<PagePopupController> controller =
++      PagePopupController::From(*popup_page);
++  ASSERT_TRUE(controller);
++
++  web_view->CleanupPagePopup();
++
++  test::RunPendingTasks();
++
++  controller->setWindowRect(0, 0, 100, 100);
++}
++
+ #endif  // !BUILDFLAG(IS_ANDROID)
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/page/page_popup_controller.cc b/third_party/blink/renderer/core/page/page_popup_controller.cc
+index 6da1a749450b67c3c068479bd23a7fcaf882afe2..3e7ab2f6f789aaa489bb273e8e2f076420085db5 100644
+--- a/third_party/blink/renderer/core/page/page_popup_controller.cc
++++ b/third_party/blink/renderer/core/page/page_popup_controller.cc
+@@ -117,6 +117,10 @@ void PagePopupController::ClearPagePopupClient() {
+ }
+ 
+ void PagePopupController::setWindowRect(int x, int y, int width, int height) {
++  if (!popup_client_) {
++    return;
++  }
++
+   popup_.SetWindowRect(gfx::Rect(x, y, width, height));
+ 
+   popup_origin_ = gfx::Point(x, y);
+diff --git a/third_party/blink/renderer/core/page/page_popup_controller.h b/third_party/blink/renderer/core/page/page_popup_controller.h
+index e3ac269a634184f4c95494f60e58fe27aeac59e1..cf293264dff61925bb767236bd10fbfb500f48de 100644
+--- a/third_party/blink/renderer/core/page/page_popup_controller.h
++++ b/third_party/blink/renderer/core/page/page_popup_controller.h
+@@ -33,6 +33,7 @@
+ 
+ #include <optional>
+ 
++#include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_vector.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+@@ -49,7 +50,8 @@ class Page;
+ class PagePopup;
+ class PagePopupClient;
+ 
+-class PagePopupController : public ScriptWrappable, public Supplement<Page> {
++class CORE_EXPORT PagePopupController : public ScriptWrappable,
++                                        public Supplement<Page> {
+   DEFINE_WRAPPERTYPEINFO();
+ 
+  public:

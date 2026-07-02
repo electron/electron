@@ -1,0 +1,609 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Wed, 20 May 2026 11:46:30 -0400
+Subject: Validate that TF buffers cannot be modified when TF is unbound.
+
+The buffer transform feedback conflict validation would only track
+buffers that are bound to the current transform feedback object. Since
+it is possible to pause transform feedback and unbind it, the buffers
+could be modified when in this state.
+
+Add additional tracking for when the buffer is attached to an active
+transform feedback.
+
+Apply this validation to hardened contexts as well as WebGL since it is
+undefined behaviour in the GL spec to use a buffer for transform
+feedback and other usages simultaneously.
+
+Fixed: chromium:492218546
+Fixed: chromium:513925114
+Change-Id: I45b99ce847d74946870ba35fc9a17294e3386523
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7864196
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/Buffer.cpp b/src/libANGLE/Buffer.cpp
+index 82eed7deb38f7abc82885d1a9e9ff6bbe8391633..1bbac5cf297fbfd04b21c7366cb99d709efcafea 100644
+--- a/src/libANGLE/Buffer.cpp
++++ b/src/libANGLE/Buffer.cpp
+@@ -85,6 +85,7 @@ BufferState::BufferState()
+       mBindingCount(0),
+       mTransformFeedbackIndexedBindingCount(0),
+       mTransformFeedbackGenericBindingCount(0),
++      mActiveTransformFeedbackCount(0),
+       mImmutable(GL_FALSE),
+       mStorageExtUsageFlags(0),
+       mExternal(GL_FALSE),
+@@ -465,20 +466,28 @@ bool Buffer::isDoubleBoundForTransformFeedback() const
+ void Buffer::onTFBindingChanged(const Context *context, bool bound, bool indexed)
+ {
+     ASSERT(bound || mState.mBindingCount > 0);
+-    mState.mBindingCount += bound ? 1 : -1;
++    const int delta = bound ? 1 : -1;
++    mState.mBindingCount += delta;
+     if (indexed)
+     {
+         ASSERT(bound || mState.mTransformFeedbackIndexedBindingCount > 0);
+-        mState.mTransformFeedbackIndexedBindingCount += bound ? 1 : -1;
++        mState.mTransformFeedbackIndexedBindingCount += delta;
+ 
+         onStateChange(context, angle::SubjectMessage::BindingChanged);
+     }
+     else
+     {
+-        mState.mTransformFeedbackGenericBindingCount += bound ? 1 : -1;
++        mState.mTransformFeedbackGenericBindingCount += delta;
+     }
+ }
+ 
++void Buffer::onTFActiveChanged(const Context *context, bool active)
++{
++    const int delta = active ? 1 : -1;
++    mState.mActiveTransformFeedbackCount += delta;
++    ASSERT(mState.mActiveTransformFeedbackCount >= 0);
++}
++
+ angle::Result Buffer::getSubData(const gl::Context *context,
+                                  GLintptr offset,
+                                  GLsizeiptr size,
+@@ -584,4 +593,5 @@ void Buffer::applyImplFeedback(const gl::Context *context, const rx::BufferFeedb
+         onStateChange(context, angle::SubjectMessage::SubjectChanged);
+     }
+ }
++
+ }  // namespace gl
+diff --git a/src/libANGLE/Buffer.h b/src/libANGLE/Buffer.h
+index 21321598cc2a35dd7f6c0eb1d8ae10fab6ce0619..c8876a765fc6ebe1c6a7b00e721ff810f89ff703 100644
+--- a/src/libANGLE/Buffer.h
++++ b/src/libANGLE/Buffer.h
+@@ -70,7 +70,6 @@ class BufferState final : angle::NonCopyable
+     GLint64 getMapOffset() const { return mMapOffset; }
+     GLint64 getMapLength() const { return mMapLength; }
+     GLint64 getSize() const { return mSize; }
+-    bool isBoundForTransformFeedback() const { return mTransformFeedbackIndexedBindingCount != 0; }
+     std::string getLabel() const { return mLabel; }
+     WebGLBufferType getWebGLType() const { return mWebGLType; }
+ 
+@@ -90,6 +89,7 @@ class BufferState final : angle::NonCopyable
+     int mBindingCount;
+     int mTransformFeedbackIndexedBindingCount;
+     int mTransformFeedbackGenericBindingCount;
++    int mActiveTransformFeedbackCount;
+     GLboolean mImmutable;
+     GLbitfield mStorageExtUsageFlags;
+     GLboolean mExternal;
+@@ -188,15 +188,8 @@ class Buffer final : public ThreadSafeRefCountObject<BufferID>,
+ 
+     rx::BufferImpl *getImplementation() const { return mImpl; }
+ 
+-    // Note: we pass "isWebGL" to this function to clarify it's only valid if WebGL is enabled.
+-    // We pass the boolean flag instead of the pointer because this header can't read Context.h.
+-    ANGLE_INLINE bool hasWebGLXFBBindingConflict(bool isWebGL) const
++    ANGLE_INLINE bool isBoundToTFAndNonTFSimultaneously() const
+     {
+-        if (!isWebGL)
+-        {
+-            return false;
+-        }
+-
+         // The transform feedback generic binding point is not an indexed binding point but it also
+         // does not count as a non-transform-feedback use of the buffer, so we subtract it from the
+         // binding count when checking if the buffer is bound to a non-transform-feedback location.
+@@ -206,8 +199,21 @@ class Buffer final : public ThreadSafeRefCountObject<BufferID>,
+                    mState.mBindingCount - mState.mTransformFeedbackGenericBindingCount;
+     }
+ 
++    // If this buffer is bound as a transform feedback output, even if that transform feedback is
++    // paused and not the current transform feedback.
++    ANGLE_INLINE bool isBoundToActiveTransformFeedback() const
++    {
++        return mState.mActiveTransformFeedbackCount > 0;
++    }
++
++    ANGLE_INLINE bool hasTFBBindingConflict() const
++    {
++        return isBoundToTFAndNonTFSimultaneously() || isBoundToActiveTransformFeedback();
++    }
++
+     bool isDoubleBoundForTransformFeedback() const;
+     void onTFBindingChanged(const Context *context, bool bound, bool indexed);
++    void onTFActiveChanged(const Context *context, bool active);
+     void onNonTFBindingChanged(int incr) { mState.mBindingCount += incr; }
+     angle::Result getSubData(const gl::Context *context,
+                              GLintptr offset,
+diff --git a/src/libANGLE/TransformFeedback.cpp b/src/libANGLE/TransformFeedback.cpp
+index 175f0bcd464b294b96ae9c9e90600d12876f85c1..51363272e5136474b79c831ce6becb5f43e39cc5 100644
+--- a/src/libANGLE/TransformFeedback.cpp
++++ b/src/libANGLE/TransformFeedback.cpp
+@@ -149,6 +149,15 @@ angle::Result TransformFeedback::begin(const Context *context,
+     mState.mPaused        = false;
+     mState.mVerticesDrawn = 0;
+     bindProgram(context, program);
++
++    for (auto &buffer : mState.mIndexedBuffers)
++    {
++        if (buffer.get())
++        {
++            buffer->onTFActiveChanged(context, true);
++        }
++    }
++
+     recomputeVertexCapacity(context);
+     return angle::Result::Continue;
+ }
+@@ -166,6 +175,13 @@ angle::Result TransformFeedback::end(const Context *context)
+         mState.mProgram->release(context);
+         mState.mProgram = nullptr;
+     }
++    for (auto &buffer : mState.mIndexedBuffers)
++    {
++        if (buffer.get())
++        {
++            buffer->onTFActiveChanged(context, false);
++        }
++    }
+     return angle::Result::Continue;
+ }
+ 
+@@ -321,7 +337,7 @@ bool TransformFeedback::buffersBoundForOtherUseInWebGL() const
+ {
+     for (auto &buffer : mState.mIndexedBuffers)
+     {
+-        if (buffer.get() && buffer->hasWebGLXFBBindingConflict(true))
++        if (buffer.get() && buffer->isBoundToTFAndNonTFSimultaneously())
+         {
+             return true;
+         }
+diff --git a/src/libANGLE/VertexArray.cpp b/src/libANGLE/VertexArray.cpp
+index bc17874cbfaf1988aa6d5b203954c40370be6275..fcc2d7277997f68c27285438968230aaed82fafd 100644
+--- a/src/libANGLE/VertexArray.cpp
++++ b/src/libANGLE/VertexArray.cpp
+@@ -520,10 +520,10 @@ ANGLE_INLINE VertexArray::DirtyBindingBits VertexArray::bindVertexBufferImpl(con
+             boundBuffer->addRef();
+             boundBuffer->onNonTFBindingChanged(1);
+             boundBuffer->addVertexArrayBinding(context, bindingIndex);
+-            if (context->isWebGL())
++            if (context->isWebGL() || context->isHardenedContext())
+             {
+                 mCachedBufferPropertyTransformFeedbackConflict.set(
+-                    bindingIndex, boundBuffer->hasWebGLXFBBindingConflict(true));
++                    bindingIndex, boundBuffer->hasTFBBindingConflict());
+             }
+             mBufferBindingMask.set(bindingIndex);
+             mState.mClientMemoryAttribsMask &= ~binding->getBoundAttributesMask();
+@@ -531,10 +531,7 @@ ANGLE_INLINE VertexArray::DirtyBindingBits VertexArray::bindVertexBufferImpl(con
+         }
+         else
+         {
+-            if (context->isWebGL())
+-            {
+-                mCachedBufferPropertyTransformFeedbackConflict.set(bindingIndex, false);
+-            }
++            mCachedBufferPropertyTransformFeedbackConflict.set(bindingIndex, false);
+             mState.mClientMemoryAttribsMask |= binding->getBoundAttributesMask();
+             mCachedBufferPropertyMapped.set(bindingIndex, false);
+             mCachedBufferPropertyMutableOrImpersistent.set(bindingIndex, false);
+@@ -763,11 +760,11 @@ void VertexArray::onBind(const Context *context)
+         }
+     }
+ 
+-    if (context->isWebGL())
++    if (context->isWebGL() || context->isHardenedContext())
+     {
+         for (size_t bindingIndex : bufferBindingMask)
+         {
+-            bool hasConflict = mVertexArrayBuffers[bindingIndex]->hasWebGLXFBBindingConflict(true);
++            bool hasConflict = mVertexArrayBuffers[bindingIndex]->hasTFBBindingConflict();
+             mCachedBufferPropertyTransformFeedbackConflict.set(bindingIndex, hasConflict);
+         }
+     }
+@@ -866,9 +863,9 @@ void VertexArray::onSharedBufferBind(const Context *context,
+         }
+     }
+ 
+-    if (context->isWebGL())
++    if (context->isWebGL() || context->isHardenedContext())
+     {
+-        if (buffer->hasWebGLXFBBindingConflict(true))
++        if (buffer->hasTFBBindingConflict())
+         {
+             mCachedBufferPropertyTransformFeedbackConflict |= vertexBufferBindingMask;
+         }
+@@ -916,11 +913,11 @@ void VertexArray::onBufferChanged(const Context *context,
+             break;
+ 
+         case angle::SubjectMessage::BindingChanged:
+-            if (context->isWebGL())
++            if (context->isWebGL() || context->isHardenedContext())
+             {
+                 bufferBindingMask.reset(kElementArrayBufferIndex);
+ 
+-                bool hasConflict = buffer->hasWebGLXFBBindingConflict(true);
++                bool hasConflict = buffer->hasTFBBindingConflict();
+                 if (hasConflict)
+                 {
+                     mCachedBufferPropertyTransformFeedbackConflict |= bufferBindingMask;
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index 9a2c7976e7e73ec15f67df07f8ddca2b8c689f4a..8e21612708a0905a792410a9e24c6d709b0c19c3 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -720,7 +720,7 @@ ANGLE_INLINE const char *ValidateProgramDrawStates(const Context *context,
+                 return gl::err::kUniformBufferTooSmall;
+             }
+ 
+-            if (uniformBuffer->hasWebGLXFBBindingConflict(context->isWebGL()))
++            if (uniformBuffer->hasTFBBindingConflict())
+             {
+                 return gl::err::kUniformBufferBoundForTransformFeedback;
+             }
+@@ -1419,7 +1419,8 @@ bool ValidImageDataSize(const Context *context,
+             ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kIntegerOverflow);
+             return false;
+         }
+-        if (pixelUnpackBuffer->hasWebGLXFBBindingConflict(context->isWebGL()))
++        if ((context->isWebGL() || context->isHardenedContext()) &&
++            pixelUnpackBuffer->hasTFBBindingConflict())
+         {
+             ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION,
+                                    kPixelUnpackBufferBoundForTransformFeedback);
+@@ -4583,8 +4584,8 @@ const char *ValidateDrawElementsStates(const Context *context)
+ 
+     if (elementArrayBuffer)
+     {
+-        if (ANGLE_UNLIKELY(context->isWebGL()) &&
+-            elementArrayBuffer->hasWebGLXFBBindingConflict(context->isWebGL()))
++        if (ANGLE_UNLIKELY(context->isWebGL() || context->isHardenedContext()) &&
++            elementArrayBuffer->hasTFBBindingConflict())
+         {
+             return kElementArrayBufferBoundForTransformFeedback;
+         }
+@@ -7257,8 +7258,8 @@ bool ValidatePixelPack(const Context *context,
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferMapped);
+         return false;
+     }
+-    if (pixelPackBuffer != nullptr &&
+-        pixelPackBuffer->hasWebGLXFBBindingConflict(context->isWebGL()))
++    if (pixelPackBuffer != nullptr && (context->isWebGL() || context->isHardenedContext()) &&
++        pixelPackBuffer->hasTFBBindingConflict())
+     {
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kPixelPackBufferBoundForTransformFeedback);
+         return false;
+diff --git a/src/libANGLE/validationES2.cpp b/src/libANGLE/validationES2.cpp
+index 781e3cd963858a0e4f5f583d75d91fb59abe9a88..3100b321eab3ebd992f3cd98064994b96fab7424 100644
+--- a/src/libANGLE/validationES2.cpp
++++ b/src/libANGLE/validationES2.cpp
+@@ -3178,10 +3178,13 @@ bool ValidateMapBufferBase(const Context *context,
+         }
+     }
+ 
+-    if (buffer->hasWebGLXFBBindingConflict(context->isWebGL()))
++    if (context->isWebGL() || context->isHardenedContext())
+     {
+-        ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferBoundForTransformFeedback);
+-        return false;
++        if (buffer->hasTFBBindingConflict())
++        {
++            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferBoundForTransformFeedback);
++            return false;
++        }
+     }
+ 
+     return true;
+@@ -3676,9 +3679,9 @@ bool ValidateBufferData(const Context *context,
+     }
+ 
+     // Do some additional WebGL-specific validation
+-    if (ANGLE_UNLIKELY(context->isWebGL()))
++    if (ANGLE_UNLIKELY(context->isWebGL() || context->isHardenedContext()))
+     {
+-        if (buffer->hasWebGLXFBBindingConflict(true))
++        if (buffer->hasTFBBindingConflict())
+         {
+             ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferBoundForTransformFeedback);
+             return false;
+@@ -3748,9 +3751,9 @@ bool ValidateBufferSubData(const Context *context,
+     }
+ 
+     // Do some additional WebGL-specific validation
+-    if (ANGLE_UNLIKELY(context->isWebGL()))
++    if (ANGLE_UNLIKELY(context->isWebGL() || context->isHardenedContext()))
+     {
+-        if (buffer->hasWebGLXFBBindingConflict(true))
++        if (buffer->hasTFBBindingConflict())
+         {
+             ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferBoundForTransformFeedback);
+             return false;
+diff --git a/src/libANGLE/validationES3.cpp b/src/libANGLE/validationES3.cpp
+index 81ce32206dbb654b311834e57293fc93935514d0..05281a74a798697ca98446882afc5e9ef7f49f4d 100644
+--- a/src/libANGLE/validationES3.cpp
++++ b/src/libANGLE/validationES3.cpp
+@@ -232,6 +232,7 @@ bool ValidateColorMaskForSharedExponentColorBuffer(const Context *context,
+ 
+     return true;
+ }
++
+ }  // anonymous namespace
+ 
+ bool ValidateTexImageFormatCombination(const Context *context,
+@@ -760,6 +761,14 @@ bool ValidateES3TexImageParametersBase(const Context *context,
+     Buffer *pixelUnpackBuffer = context->getState().getTargetBuffer(BufferBinding::PixelUnpack);
+     if (pixelUnpackBuffer != nullptr)
+     {
++        if ((context->isWebGL() || context->isHardenedContext()) &&
++            pixelUnpackBuffer->hasTFBBindingConflict())
++        {
++            ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION,
++                                   kPixelUnpackBufferBoundForTransformFeedback);
++            return false;
++        }
++
+         // ...data is not evenly divisible into the number of bytes needed to store in memory a
+         // datum
+         // indicated by type.
+@@ -3317,8 +3326,8 @@ bool ValidateCopyBufferSubData(const Context *context,
+         return false;
+     }
+ 
+-    if (readBuffer->hasWebGLXFBBindingConflict(context->isWebGL()) ||
+-        writeBuffer->hasWebGLXFBBindingConflict(context->isWebGL()))
++    if ((context->isWebGL() || context->isHardenedContext()) &&
++        (readBuffer->hasTFBBindingConflict() || writeBuffer->hasTFBBindingConflict()))
+     {
+         ANGLE_VALIDATION_ERROR(GL_INVALID_OPERATION, kBufferBoundForTransformFeedback);
+         return false;
+diff --git a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/TransformFeedbackTest.cpp
+index e3f0ff0c1e1e213088e6fea52d41258924f8de8e..201f6406ef6ae2c5c749499785193aa44d8f69f0 100644
+--- a/src/tests/gl_tests/TransformFeedbackTest.cpp
++++ b/src/tests/gl_tests/TransformFeedbackTest.cpp
+@@ -4996,17 +4996,175 @@ TEST_P(WebGLTransformFeedbackTest, TooSmallBuffers)
+     glDrawArrays(GL_POINTS, 0, verticesToDraw);
+     EXPECT_GL_ERROR(GL_INVALID_OPERATION);
+     glEndTransformFeedback();
++}
+ 
+-    // Set up the buffer to be the right size but make it smaller after glBeginTransformFeedback
++// Test validation of buffer bounds checking for transform feedback with multidraw commands
++TEST_P(WebGLTransformFeedbackTest, TooSmallBuffersMultiDraw)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_ANGLE_multi_draw"));
++
++    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    glEnable(GL_RASTERIZER_DISCARD);
++
++    // Set the program's transform feedback varyings (just gl_Position)
++    std::vector<std::string> tfVaryings;
++    tfVaryings.push_back("gl_Position");
++    compileDefaultProgram(tfVaryings, GL_INTERLEAVED_ATTRIBS);
++    GLint positionLocation = glGetAttribLocation(mProgram, essl1_shaders::PositionAttrib());
++
++    glUseProgram(mProgram);
++
++    const GLfloat vertices[] = {
++        -1.0f, 1.0f, 0.5f, -1.0f, -1.0f, 0.5f, 1.0f, -1.0f, 0.5f,
++        -1.0f, 1.0f, 0.5f, 1.0f,  -1.0f, 0.5f, 1.0f, 1.0f,  0.5f,
++    };
++
++    GLBuffer buffer;
++    glBindBuffer(GL_ARRAY_BUFFER, buffer);
++    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
++    glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
++    glEnableVertexAttribArray(positionLocation);
++
++    const GLsizei verticesToDraw = 3;
++    const size_t stride          = sizeof(float) * 4;
++    const GLsizei drawcount      = 2;
++    const size_t bytesNeeded     = stride * verticesToDraw * drawcount;
++
++    const GLsizei firsts[drawcount] = {0, 0};
++    const GLsizei counts[drawcount] = {verticesToDraw, verticesToDraw};
++
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mTransformFeedbackBuffer);
++
++    // Set up the buffer to be the right size
++    uint8_t tfData[bytesNeeded] = {0};
+     glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded, &tfData, GL_STATIC_DRAW);
++
+     glBeginTransformFeedback(GL_POINTS);
++    glMultiDrawArraysANGLE(GL_POINTS, firsts, counts, drawcount);
++    EXPECT_GL_NO_ERROR();
++    glEndTransformFeedback();
++
++    // Set up the buffer to be too small
+     glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded - 1, &tfData, GL_STATIC_DRAW);
++
++    glBeginTransformFeedback(GL_POINTS);
++    EXPECT_GL_NO_ERROR();
++    glMultiDrawArraysANGLE(GL_POINTS, firsts, counts, drawcount);
+     EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++    glEndTransformFeedback();
++}
++
++// Changing the buffer storage while transform feedback is active (but paused) is undefined
++// behaviour. Make sure it generates an error for WebGL.
++TEST_P(WebGLTransformFeedbackTest, ChangeBufferWhilePaused)
++{
++    std::vector<std::string> tfVaryings;
++    tfVaryings.push_back("gl_Position");
++    compileDefaultProgram(tfVaryings, GL_INTERLEAVED_ATTRIBS);
++    GLint positionLocation = glGetAttribLocation(mProgram, essl1_shaders::PositionAttrib());
++
++    glUseProgram(mProgram);
++
++    const GLfloat vertices[] = {
++        -1.0f, 1.0f, 0.5f, -1.0f, -1.0f, 0.5f, 1.0f, -1.0f, 0.5f,
++        -1.0f, 1.0f, 0.5f, 1.0f,  -1.0f, 0.5f, 1.0f, 1.0f,  0.5f,
++    };
++
++    GLBuffer buffer;
++    glBindBuffer(GL_ARRAY_BUFFER, buffer);
++    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
++    glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
++    glEnableVertexAttribArray(positionLocation);
++
++    const GLsizei verticesToDraw = 3;
++    const size_t stride          = sizeof(float) * 4;
++    const GLsizei drawcount      = 2;
++    const size_t bytesNeeded     = stride * verticesToDraw * drawcount;
++
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mTransformFeedbackBuffer);
++    uint8_t tfData[bytesNeeded] = {0};
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded, &tfData, GL_STATIC_DRAW);
++
++    glBeginTransformFeedback(GL_POINTS);
++    glDrawArrays(GL_POINTS, 0, verticesToDraw);
++    EXPECT_GL_NO_ERROR();
++
+     glPauseTransformFeedback();
+-    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded - 1, &tfData, GL_STATIC_DRAW);
+     EXPECT_GL_NO_ERROR();
++
++    // Try modifying the buffer while it's a transform feedback output
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded, &tfData, GL_STATIC_DRAW);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++    glBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, bytesNeeded, &tfData);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
+     glResumeTransformFeedback();
+     glDrawArrays(GL_POINTS, 0, verticesToDraw);
++    EXPECT_GL_NO_ERROR();
++
++    glEndTransformFeedback();
++    EXPECT_GL_NO_ERROR();
++}
++
++// Test validation of buffer bounds checking for transform feedback with multidraw instanced
++// commands
++TEST_P(WebGLTransformFeedbackTest, TooSmallBuffersMultiDrawInstanced)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_ANGLE_multi_draw"));
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_ANGLE_instanced_arrays"));
++
++    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    glEnable(GL_RASTERIZER_DISCARD);
++
++    // Set the program's transform feedback varyings (just gl_Position)
++    std::vector<std::string> tfVaryings;
++    tfVaryings.push_back("gl_Position");
++    compileDefaultProgram(tfVaryings, GL_INTERLEAVED_ATTRIBS);
++    GLint positionLocation = glGetAttribLocation(mProgram, essl1_shaders::PositionAttrib());
++
++    glUseProgram(mProgram);
++
++    const GLfloat vertices[] = {
++        -1.0f, 1.0f, 0.5f, -1.0f, -1.0f, 0.5f, 1.0f, -1.0f, 0.5f,
++        -1.0f, 1.0f, 0.5f, 1.0f,  -1.0f, 0.5f, 1.0f, 1.0f,  0.5f,
++    };
++
++    GLBuffer buffer;
++    glBindBuffer(GL_ARRAY_BUFFER, buffer);
++    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
++    glVertexAttribPointer(positionLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
++    glEnableVertexAttribArray(positionLocation);
++
++    const GLsizei verticesToDraw = 3;
++    const size_t stride          = sizeof(float) * 4;
++    const GLsizei drawcount      = 2;
++    const GLsizei instanceCount  = 2;
++    const size_t bytesNeeded     = stride * verticesToDraw * drawcount * instanceCount;
++
++    const GLsizei firsts[drawcount]         = {0, 0};
++    const GLsizei counts[drawcount]         = {verticesToDraw, verticesToDraw};
++    const GLsizei instanceCounts[drawcount] = {instanceCount, instanceCount};
++
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mTransformFeedbackBuffer);
++
++    // Set up the buffer to be the right size
++    uint8_t tfData[bytesNeeded] = {0};
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded, &tfData, GL_STATIC_DRAW);
++
++    glBeginTransformFeedback(GL_POINTS);
++    glMultiDrawArraysInstancedANGLE(GL_POINTS, firsts, counts, instanceCounts, drawcount);
++    EXPECT_GL_NO_ERROR();
++    glEndTransformFeedback();
++
++    // Set up the buffer to be too small
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, bytesNeeded - 1, &tfData, GL_STATIC_DRAW);
++
++    glBeginTransformFeedback(GL_POINTS);
++    EXPECT_GL_NO_ERROR();
++    glMultiDrawArraysInstancedANGLE(GL_POINTS, firsts, counts, instanceCounts, drawcount);
+     EXPECT_GL_ERROR(GL_INVALID_OPERATION);
+     glEndTransformFeedback();
+ }
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index cc1a12f26172a67d2e45c43b800b41f1e3d3b1b5..8469ed1707566431aadb52475e1f511c0ae596a7 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -5866,6 +5866,49 @@ TEST_P(WebGL2CompatibilityTest, TransformFeedbackBufferModification)
+     EXPECT_GL_ERROR(GL_INVALID_OPERATION);
+ }
+ 
++// Modifying a buffer that is part of an active transform feedback object (even when that transform
++// feedback is paused and not current) is invalid.
++TEST_P(WebGL2CompatibilityTest, TransformFeedbackBufferModificationWhileNotCurrent)
++{
++    constexpr char kVS[] = R"(attribute float a; varying float b; void main() { b = a; })";
++    constexpr char kFS[] = R"(void main(){})";
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    static const char *varyings[] = {"b"};
++    glTransformFeedbackVaryings(program, 1, varyings, GL_SEPARATE_ATTRIBS);
++    glLinkProgram(program);
++    glUseProgram(program);
++    ASSERT_GL_NO_ERROR();
++
++    // Bind the transform feedback varyings to non-overlapping regions of the same buffer.
++    GLTransformFeedback tf1;
++    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf1);
++
++    GLBuffer buffer;
++    glBindBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buffer, 0, 4);
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 8, nullptr, GL_STATIC_DRAW);
++    glBeginTransformFeedback(GL_POINTS);
++    ASSERT_GL_NO_ERROR();
++
++    glPauseTransformFeedback();
++
++    GLTransformFeedback tf2;
++    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf2);
++    ASSERT_GL_NO_ERROR();
++
++    glBindBuffer(GL_ARRAY_BUFFER, buffer);
++    ASSERT_GL_NO_ERROR();
++
++    glBufferData(GL_ARRAY_BUFFER, 8, nullptr, GL_STATIC_DRAW);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++    constexpr uint8_t data[8] = {0};
++    glBufferSubData(GL_ARRAY_BUFFER, 0, 8, data);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++
++    glMapBufferRange(GL_ARRAY_BUFFER, 0, 8, GL_MAP_READ_BIT);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION);
++}
++
+ // Check the return type of a given parameter upon getting the active uniforms.
+ TEST_P(WebGL2CompatibilityTest, UniformVariablesReturnTypes)
+ {

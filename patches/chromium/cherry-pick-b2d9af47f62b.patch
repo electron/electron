@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Allen Bauer <kylixrd@chromium.org>
+Date: Thu, 28 May 2026 12:35:18 -0700
+Subject: Added additional `this` tracking in MenuController:OnMousePressed().
+
+Guards against a11y tools signaling the menu to close during the
+notification of the newly hot-tracked button.
+
+Change-Id: Ida8121655c53bc1c4f59c0aaf9a25226ee73c40a
+Bug: 516962178
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7882246
+Auto-Submit: Allen Bauer <kylixrd@chromium.org>
+Commit-Queue: Allen Bauer <kylixrd@chromium.org>
+Reviewed-by: David Yeung <dayeung@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1637875}
+
+diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
+index d533db921b91ca436d287ae441663e4af9300e52..aebb449b476a8b27d0f8bc73e0124f5f9b5b472f 100644
+--- a/ui/views/controls/menu/menu_controller.cc
++++ b/ui/views/controls/menu/menu_controller.cc
+@@ -877,13 +877,17 @@ bool MenuController::OnMousePressed(SubmenuView* source,
+     View* view =
+         forward_to_root->GetEventHandlerForPoint(event_for_root.location());
+     Button* button = Button::AsButton(view);
++    auto this_ref = AsWeakPtr();
+     if (hot_button_ != button) {
+       SetHotTrackedButton(button);
+     }
+ 
++    if (!this_ref) {
++      return true;
++    }
++
+     // Empty menu items are always handled by the menu controller.
+     if (!IsViewClass<EmptyMenuMenuItem>(view)) {
+-      base::WeakPtr<MenuController> this_ref = AsWeakPtr();
+       bool processed = forward_to_root->ProcessMousePressed(event_for_root);
+       // This object may be destroyed as a result of a mouse press event (some
+       // item may close the menu).

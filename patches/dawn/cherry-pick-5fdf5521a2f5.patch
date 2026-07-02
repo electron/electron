@@ -1,0 +1,728 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: James Price <jrprice@google.com>
+Date: Fri, 12 Jun 2026 08:49:26 -0700
+Subject: [M148] [msl] Add workaround for u32 div/mod miscompile
+
+Original change's description:
+> [msl] Add workaround for u32 div/mod miscompile
+>
+> Add a volatile zero to the LHS of all u32 divide and modulo
+> operations, which fixes a miscompile on Apple Silicon.
+>
+> Bug: 517225032
+> Change-Id: I1e9e56a5109ada6a6d89760116d5a5f24f8bacc4
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/312755
+> Reviewed-by: dan sinclair <dsinclair@chromium.org>
+> Commit-Queue: James Price <jrprice@google.com>
+
+(cherry picked from commit a9a6ec351486b901f0d1f6e6c46f256248bc90c0)
+
+Bug: 517225032
+Fixed: 522134088
+Change-Id: I89be3013cd602f5599400b13575090087994be84
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/316215
+Reviewed-by: Natalie Chouinard <chouinard@google.com>
+Auto-Submit: James Price <jrprice@google.com>
+
+diff --git a/src/dawn/native/Toggles.cpp b/src/dawn/native/Toggles.cpp
+index 0ee4c12eea92aeb0331351cdee48494b4f101155..c233b82b5c795278da946f94fe7684e5991658dc 100644
+--- a/src/dawn/native/Toggles.cpp
++++ b/src/dawn/native/Toggles.cpp
+@@ -754,6 +754,10 @@ static constexpr ToggleEnumAndInfoList kToggleNameAndInfoList = {{
+       "Makes use of VK_KHR_create_renderpass2 when creating VkRenderPass objects. Ignored when "
+       "vulkan_use_dynamic_rendering is enabled.",
+       "https://crbug.com/chromium/463893793", ToggleStage::Adapter}},
++    {Toggle::MetalFixU32DivMod,
++     {"metal_fix_u32_div_mod",
++      "Workaround a driver bug on Apple Silicon with u32 div and mod operations.",
++      "https://crbug.com/517225032", ToggleStage::Device}},
+     {Toggle::WaitIsThreadSafe,
+      {"wait_is_thread_safe",
+       "WaitFor* functions are thread-safe and can be called without the device-lock if implicit "
+diff --git a/src/dawn/native/Toggles.h b/src/dawn/native/Toggles.h
+index 5d1e6553c2992dfc753a2920c2774f0bfb5179a5..b7873ea7d3ae87e6fcd329480adb11425605fb99 100644
+--- a/src/dawn/native/Toggles.h
++++ b/src/dawn/native/Toggles.h
+@@ -180,6 +180,7 @@ enum class Toggle {
+     VulkanUseDynamicRendering,
+     EnableSpirvValidation,
+     VulkanUseCreateRenderPass2,
++    MetalFixU32DivMod,
+ 
+     // Once all backends have been updated to be thread safe for waiting, we can remove this toggle.
+     WaitIsThreadSafe,
+diff --git a/src/dawn/native/metal/PhysicalDeviceMTL.mm b/src/dawn/native/metal/PhysicalDeviceMTL.mm
+index 09b671e7eb966632bfedccdf0f31765ceff58fce..987deb0b808acd5bae37f7ed0f989619089fb4e3 100644
+--- a/src/dawn/native/metal/PhysicalDeviceMTL.mm
++++ b/src/dawn/native/metal/PhysicalDeviceMTL.mm
+@@ -545,6 +545,9 @@ bool IsGPUCounterSupported(id<MTLDevice> device,
+         if ([*mDevice supportsFamily:static_cast<::MTLGPUFamily>(1008)]) {
+             deviceToggles->Default(Toggle::MetalSerializeTimestampGenerationAndResolution, true);
+         }
++
++        // TODO(517225032): Gate on macOS version when a fix is released.
++        deviceToggles->Default(Toggle::MetalFixU32DivMod, true);
+     }
+ 
+     // Local testing shows the workaround is needed on AMD Radeon HD 8870M (gcn-1) MacOS 12.1;
+diff --git a/src/dawn/native/metal/ShaderModuleMTL.mm b/src/dawn/native/metal/ShaderModuleMTL.mm
+index 5c278511aa796d034eb560e99284b3c886ecdc93..c890a9a059465765df030f4dd02986af0b269f99 100644
+--- a/src/dawn/native/metal/ShaderModuleMTL.mm
++++ b/src/dawn/native/metal/ShaderModuleMTL.mm
+@@ -343,6 +343,8 @@
+         device->IsToggleEnabled(Toggle::MetalPolyfillUnpack2x16unorm);
+     req.tintOptions.workarounds.collapse_subgroup_min_max =
+         device->IsToggleEnabled(Toggle::CollapseSubgroupMinMax);
++    req.tintOptions.workarounds.fix_u32_div_mod =
++        device->IsToggleEnabled(Toggle::MetalFixU32DivMod);
+ 
+     req.tintOptions.extensions.disable_demote_to_helper =
+         device->IsToggleEnabled(Toggle::DisableDemoteToHelper);
+diff --git a/src/dawn/tests/end2end/ShaderTests.cpp b/src/dawn/tests/end2end/ShaderTests.cpp
+index 0a421bedc64c245f1c081d8a92112ff6eccef092..e765ff6f6aa572e0511e46c29642b92524d0704e 100644
+--- a/src/dawn/tests/end2end/ShaderTests.cpp
++++ b/src/dawn/tests/end2end/ShaderTests.cpp
+@@ -1226,6 +1226,52 @@ TEST_P(ShaderTests, ShaderOverridingRobustnessBuiltins) {
+     EXPECT_BUFFER_U32_EQ(2, buf, 0);
+ }
+ 
++// Test for an MSL miscompile that produces incorrect results for a certain pattern of unsigned
++// integer arithmetic instructions whose intermediate results overflow.
++// See https://crbug.com/517225032
++TEST_P(ShaderTests, MetalMulShiftModOverflowBug) {
++    wgpu::ComputePipelineDescriptor cDesc;
++    cDesc.compute.module = utils::CreateShaderModule(device, R"(
++        @group(0) @binding(0)
++        var<storage, read_write> value: u32;
++
++        @compute @workgroup_size(1u)
++        fn main() {
++            let input = value;
++            value = ((input * input) >> 16u) % 3u;
++        }
++    )");
++    wgpu::ComputePipeline pipeline = device.CreateComputePipeline(&cDesc);
++
++    wgpu::BufferDescriptor bufDesc;
++    bufDesc.size = 4;
++    bufDesc.usage =
++        wgpu::BufferUsage::Storage | wgpu::BufferUsage::CopySrc | wgpu::BufferUsage::CopyDst;
++    wgpu::Buffer buf = device.CreateBuffer(&bufDesc);
++
++    // Write 0x10004 to the buffer.
++    uint32_t inputVal = 0x10004;
++    queue.WriteBuffer(buf, 0, &inputVal, sizeof(inputVal));
++
++    wgpu::BindGroup bg = utils::MakeBindGroup(device, pipeline.GetBindGroupLayout(0), {{0, buf}});
++
++    wgpu::CommandEncoder encoder = device.CreateCommandEncoder();
++    wgpu::ComputePassEncoder pass = encoder.BeginComputePass();
++    pass.SetPipeline(pipeline);
++    pass.SetBindGroup(0, bg);
++    pass.DispatchWorkgroups(1);
++    pass.End();
++
++    wgpu::CommandBuffer commands = encoder.Finish();
++    queue.Submit(1, &commands);
++
++    // We expect output to be 2:
++    //   0x10004 * 0x10004 = 0x100080010 = 0x80010 (mod 2^32)
++    //   0x80010 >> 16 = 0x8
++    //   0x8 % 3 = 2
++    EXPECT_BUFFER_U32_EQ(2, buf, 0);
++}
++
+ // Test that when fragment input is a subset of the vertex output, the render pipeline should be
+ // valid.
+ TEST_P(ShaderTests, FragmentInputIsSubsetOfVertexOutput) {
+diff --git a/src/tint/lang/msl/builtin_fn.cc b/src/tint/lang/msl/builtin_fn.cc
+index dabb45de37fc858410f0c05e9dd294adff4fc8c0..22584b9d96fb8d6390843b8b194cde8eb65f3ef5 100644
+--- a/src/tint/lang/msl/builtin_fn.cc
++++ b/src/tint/lang/msl/builtin_fn.cc
+@@ -130,6 +130,8 @@ const char* str(BuiltinFn i) {
+             return "os_log";
+         case BuiltinFn::kPointerOffset:
+             return "pointer_offset";
++        case BuiltinFn::kVolatileZero:
++            return "volatile_zero";
+     }
+     return "<unknown>";
+ }
+@@ -186,6 +188,7 @@ tint::core::ir::Instruction::Accesses GetSideEffects(BuiltinFn fn) {
+         case BuiltinFn::kMakeFilledSimdgroupMatrix:
+         case BuiltinFn::kOsLog:
+         case BuiltinFn::kPointerOffset:
++        case BuiltinFn::kVolatileZero:
+             break;
+     }
+     return core::ir::Instruction::Accesses{};
+diff --git a/src/tint/lang/msl/builtin_fn.cc.tmpl b/src/tint/lang/msl/builtin_fn.cc.tmpl
+index c162b56042a063118b2557bdf9368b3f38302838..03d8788397aaa9e60b97248aeff42cfa29165965 100644
+--- a/src/tint/lang/msl/builtin_fn.cc.tmpl
++++ b/src/tint/lang/msl/builtin_fn.cc.tmpl
+@@ -83,6 +83,7 @@ tint::core::ir::Instruction::Accesses GetSideEffects(BuiltinFn fn) {
+         case BuiltinFn::kMakeFilledSimdgroupMatrix:
+         case BuiltinFn::kOsLog:
+         case BuiltinFn::kPointerOffset:
++        case BuiltinFn::kVolatileZero:
+             break;
+     }
+     return core::ir::Instruction::Accesses{};
+diff --git a/src/tint/lang/msl/builtin_fn.h b/src/tint/lang/msl/builtin_fn.h
+index c198c816cb48532f125ff984c7d2ddc6bc3231da..ec3fa05cd6a2d6185c55c1a62c7f922d95ca9e58 100644
+--- a/src/tint/lang/msl/builtin_fn.h
++++ b/src/tint/lang/msl/builtin_fn.h
+@@ -93,6 +93,7 @@ enum class BuiltinFn : uint8_t {
+     kSimdgroupMultiplyAccumulate,
+     kOsLog,
+     kPointerOffset,
++    kVolatileZero,
+     kNone,
+ };
+ 
+diff --git a/src/tint/lang/msl/intrinsic/data.cc b/src/tint/lang/msl/intrinsic/data.cc
+index c7176a73a0fedea6657a535a1b41cedf58d7a004..7747d1696b7710eb02d6c8e99d1ec173e9813b64 100644
+--- a/src/tint/lang/msl/intrinsic/data.cc
++++ b/src/tint/lang/msl/intrinsic/data.cc
+@@ -6057,6 +6057,17 @@ constexpr OverloadInfo kOverloads[] = {
+     /* return_matcher_indices */ MatcherIndicesIndex(57),
+     /* const_eval_fn */ ConstEvalFunctionIndex(/* invalid */),
+   },
++  {
++    /* [373] */
++    /* flags */ OverloadFlags(OverloadFlag::kIsBuiltin, OverloadFlag::kSupportsVertexPipeline, OverloadFlag::kSupportsFragmentPipeline, OverloadFlag::kSupportsComputePipeline),
++    /* num_parameters */ 0,
++    /* num_explicit_templates */ 0,
++    /* num_templates   */ 0,
++    /* templates */ TemplateIndex(/* invalid */),
++    /* parameters */ ParameterIndex(/* invalid */),
++    /* return_matcher_indices */ MatcherIndicesIndex(233),
++    /* const_eval_fn */ ConstEvalFunctionIndex(/* invalid */),
++  },
+ };
+ 
+ static_assert(OverloadIndex::CanIndex(kOverloads),
+@@ -6489,6 +6500,12 @@ constexpr IntrinsicInfo kBuiltins[] = {
+     /* num overloads */ 1,
+     /* overloads */ OverloadIndex(199),
+   },
++  {
++    /* [45] */
++    /* fn volatile_zero() -> u32 */
++    /* num overloads */ 1,
++    /* overloads */ OverloadIndex(373),
++  },
+ };
+ 
+ }  // anonymous namespace
+diff --git a/src/tint/lang/msl/msl.def b/src/tint/lang/msl/msl.def
+index e032133d94186a62f2b3ab9cf0d12c0be80dd76e..234c61e8ff3c069978a1fc1ae4a50113dc5bd901 100644
+--- a/src/tint/lang/msl/msl.def
++++ b/src/tint/lang/msl/msl.def
+@@ -440,3 +440,4 @@ implicit(N: num, T: scalar) fn os_log(string, u32, u32, vec<N, T>)
+ 
+ implicit(T, S: address_space, A: access) fn pointer_offset(ptr<S, T, A>, u32) -> ptr<S, T, A>
+ 
++fn volatile_zero() -> u32
+diff --git a/src/tint/lang/msl/writer/common/options.h b/src/tint/lang/msl/writer/common/options.h
+index 40d5659ca412a7025e72280b8494e9d2008ad880..5368ad6f0116c4a07b1608f338ad953a9f338c3f 100644
+--- a/src/tint/lang/msl/writer/common/options.h
++++ b/src/tint/lang/msl/writer/common/options.h
+@@ -118,6 +118,9 @@ struct Options {
+         /// Set to `true` to collapse nested subgroupMin and subgroupMax operations.
+         bool collapse_subgroup_min_max = false;
+ 
++        /// Set to `true` to work around a driver bug with u32 divide and modulo operations.
++        bool fix_u32_div_mod = false;
++
+         TINT_REFLECT(Workarounds,
+                      scalarize_max_min_clamp,
+                      disable_module_constant_f16,
+@@ -125,7 +128,8 @@ struct Options {
+                      polyfill_clamp_float,
+                      polyfill_unpack_2x16_snorm,
+                      polyfill_unpack_2x16_unorm,
+-                     collapse_subgroup_min_max);
++                     collapse_subgroup_min_max,
++                     fix_u32_div_mod);
+         TINT_REFLECT_EQUALS(Workarounds);
+         TINT_REFLECT_HASH_CODE(Workarounds);
+     };
+diff --git a/src/tint/lang/msl/writer/printer/printer.cc b/src/tint/lang/msl/writer/printer/printer.cc
+index 7ceeee8cbeaa83a275cc0418f7449caa00b3dbc6..aaa966c3a2e5ee09138eb5f2a6f7f7882fa02188 100644
+--- a/src/tint/lang/msl/writer/printer/printer.cc
++++ b/src/tint/lang/msl/writer/printer/printer.cc
+@@ -177,6 +177,8 @@ class Printer : public tint::TextGenerator {
+     /// Non-empty only if an invariant attribute has been generated.
+     std::string invariant_define_name_;
+ 
++    std::string volatile_zero_name_;
++
+     Hashset<const core::type::Struct*, 16> host_shareable_structs_;
+     Hashset<const core::type::Struct*, 4> emitted_structs_;
+ 
+@@ -1007,6 +1009,16 @@ class Printer : public tint::TextGenerator {
+             out << ")";
+             return;
+         }
++        if (c->Func() == msl::BuiltinFn::kVolatileZero) {
++            if (volatile_zero_name_.empty()) {
++                volatile_zero_name_ = UniqueIdentifier("tint_volatile_zero");
++                Line(&preamble_buffer_);
++                Line(&preamble_buffer_)
++                    << "volatile constexpr constant uint " << volatile_zero_name_ << " = 0u;";
++            }
++            out << " " << volatile_zero_name_;
++            return;
++        }
+ 
+         // Some builtins need special-casing for the name they use.
+         if (c->Func() == msl::BuiltinFn::kOsLog) {
+diff --git a/src/tint/lang/msl/writer/raise/binary_polyfill.cc b/src/tint/lang/msl/writer/raise/binary_polyfill.cc
+index cac11c20cd9fbf669da0747485592984d9518001..2be8d5615ec8ba8656b45cadefff858fd0622fd0 100644
+--- a/src/tint/lang/msl/writer/raise/binary_polyfill.cc
++++ b/src/tint/lang/msl/writer/raise/binary_polyfill.cc
+@@ -39,6 +39,9 @@ struct State {
+     /// The IR module.
+     core::ir::Module& ir;
+ 
++    /// The polyfill config.
++    const BinaryPolyfillConfig& config;
++
+     /// The IR builder.
+     core::ir::Builder b{ir};
+ 
+@@ -49,6 +52,7 @@ struct State {
+     void Process() {
+         // Find the binary operators that need replacing.
+         Vector<core::ir::CoreBinary*, 4> fmod_worklist;
++        Vector<core::ir::CoreBinary*, 4> umod_worklist;
+         Vector<core::ir::CoreBinary*, 4> logical_bool_worklist;
+ 
+         for (auto* inst : ir.Instructions()) {
+@@ -57,6 +61,11 @@ struct State {
+                 auto* lhs_type = binary->LHS()->Type();
+                 if (op == core::BinaryOp::kModulo && lhs_type->IsFloatScalarOrVector()) {
+                     fmod_worklist.Push(binary);
++                } else if ((op == core::BinaryOp::kModulo || op == core::BinaryOp::kDivide) &&
++                           lhs_type->Is<core::type::U32>()) {
++                    if (config.fix_u32_div_mod) {
++                        umod_worklist.Push(binary);
++                    }
+                 } else if ((op == core::BinaryOp::kAnd || op == core::BinaryOp::kOr) &&
+                            lhs_type->IsBoolScalarOrVector()) {
+                     logical_bool_worklist.Push(binary);
+@@ -68,6 +77,9 @@ struct State {
+         for (auto* fmod : fmod_worklist) {
+             FMod(fmod);
+         }
++        for (auto* umod : umod_worklist) {
++            UMod(umod);
++        }
+         for (auto* logical_bool : logical_bool_worklist) {
+             LogicalBool(logical_bool);
+         }
+@@ -82,6 +94,15 @@ struct State {
+         binary->Destroy();
+     }
+ 
++    /// Add a volatile zero to unsigned modulo binary instructions to work around a driver bug.
++    /// @param binary the unsigned integer modulo binary instruction
++    void UMod(core::ir::CoreBinary* binary) {
++        b.InsertBefore(binary, [&] {
++            auto* zero = b.Call<msl::ir::BuiltinCall>(ty.u32(), msl::BuiltinFn::kVolatileZero);
++            binary->SetOperand(0u, b.Add(binary->LHS(), zero)->Result());
++        });
++    }
++
+     /// Replace a logical boolean binary instruction.
+     /// @param binary the logical boolean binary instruction
+     void LogicalBool(core::ir::CoreBinary* binary) {
+@@ -102,7 +123,7 @@ struct State {
+ 
+ }  // namespace
+ 
+-Result<SuccessType> BinaryPolyfill(core::ir::Module& ir) {
++Result<SuccessType> BinaryPolyfill(core::ir::Module& ir, const BinaryPolyfillConfig& config) {
+     TINT_CHECK_RESULT(
+         ValidateAndDumpIfNeeded(ir, "msl.BinaryPolyfill",
+                                 core::ir::Capabilities{
+@@ -113,7 +134,7 @@ Result<SuccessType> BinaryPolyfill(core::ir::Module& ir) {
+                                     core::ir::Capability::kMslAllowEntryPointInterface,
+                                 }));
+ 
+-    State{ir}.Process();
++    State{ir, config}.Process();
+ 
+     return Success;
+ }
+diff --git a/src/tint/lang/msl/writer/raise/binary_polyfill.h b/src/tint/lang/msl/writer/raise/binary_polyfill.h
+index 016e1aa4102b8b15f35e23daa9c064ff4f3e7097..efff66ceb8d6e5c2cbd4c82c861bf248b4c8700e 100644
+--- a/src/tint/lang/msl/writer/raise/binary_polyfill.h
++++ b/src/tint/lang/msl/writer/raise/binary_polyfill.h
+@@ -37,11 +37,18 @@ class Module;
+ 
+ namespace tint::msl::writer::raise {
+ 
++/// The set of optional polyfills that should be applied.
++struct BinaryPolyfillConfig {
++    /// Set to `true` to work around a driver bug with u32 divide and modulo operations.
++    bool fix_u32_div_mod = false;
++};
++
+ /// BinaryPolyfill is a transform that replaces binary instructions with polyfills and calls to
+ /// MSL backend intrinsic functions.
+ /// @param module the module to transform
++/// @param config the set of optional polyfills that should be applied
+ /// @returns success or failure
+-Result<SuccessType> BinaryPolyfill(core::ir::Module& module);
++Result<SuccessType> BinaryPolyfill(core::ir::Module& module, const BinaryPolyfillConfig& config);
+ 
+ }  // namespace tint::msl::writer::raise
+ 
+diff --git a/src/tint/lang/msl/writer/raise/binary_polyfill_test.cc b/src/tint/lang/msl/writer/raise/binary_polyfill_test.cc
+index 93c71a81881e5073588f60f422064f29861f6888..ead156593f0155dc11d1d258cf1181fa4259696c 100644
+--- a/src/tint/lang/msl/writer/raise/binary_polyfill_test.cc
++++ b/src/tint/lang/msl/writer/raise/binary_polyfill_test.cc
+@@ -71,7 +71,8 @@ TEST_F(MslWriter_BinaryPolyfillTest, FMod_Scalar) {
+ }
+ )";
+ 
+-    Run(BinaryPolyfill);
++    BinaryPolyfillConfig config{};
++    Run(BinaryPolyfill, config);
+ 
+     EXPECT_EQ(expect, str());
+ }
+@@ -105,7 +106,8 @@ TEST_F(MslWriter_BinaryPolyfillTest, FMod_Vector) {
+ }
+ )";
+ 
+-    Run(BinaryPolyfill);
++    BinaryPolyfillConfig config{};
++    Run(BinaryPolyfill, config);
+ 
+     EXPECT_EQ(expect, str());
+ }
+@@ -132,7 +134,8 @@ TEST_F(MslWriter_BinaryPolyfillTest, NoModify_I32And) {
+ 
+     auto* expect = src;
+ 
+-    Run(BinaryPolyfill);
++    BinaryPolyfillConfig config{};
++    Run(BinaryPolyfill, config);
+ 
+     EXPECT_EQ(expect, str());
+ }
+@@ -169,7 +172,8 @@ TEST_F(MslWriter_BinaryPolyfillTest, BoolAnd_Scalar) {
+ }
+ )";
+ 
+-    Run(BinaryPolyfill);
++    BinaryPolyfillConfig config{};
++    Run(BinaryPolyfill, config);
+ 
+     EXPECT_EQ(expect, str());
+ }
+@@ -206,7 +210,8 @@ TEST_F(MslWriter_BinaryPolyfillTest, BoolAnd_Vector) {
+ }
+ )";
+ 
+-    Run(BinaryPolyfill);
++    BinaryPolyfillConfig config{};
++    Run(BinaryPolyfill, config);
+ 
+     EXPECT_EQ(expect, str());
+ }
+@@ -243,7 +248,8 @@ TEST_F(MslWriter_BinaryPolyfillTest, BoolOr_Scalar) {
+ }
+ )";
+ 
+-    Run(BinaryPolyfill);
++    BinaryPolyfillConfig config{};
++    Run(BinaryPolyfill, config);
+ 
+     EXPECT_EQ(expect, str());
+ }
+@@ -280,7 +286,114 @@ TEST_F(MslWriter_BinaryPolyfillTest, BoolOr_Vector) {
+ }
+ )";
+ 
+-    Run(BinaryPolyfill);
++    BinaryPolyfillConfig config{};
++    Run(BinaryPolyfill, config);
++
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(MslWriter_BinaryPolyfillTest, UMod_WithoutPolyfill) {
++    auto* lhs = b.FunctionParam<u32>("lhs");
++    auto* rhs = b.FunctionParam<u32>("rhs");
++    auto* func = b.Function("foo", ty.u32());
++    func->SetParams({lhs, rhs});
++    b.Append(func->Block(), [&] {
++        auto* result = b.Modulo(lhs, rhs);
++        b.Return(func, result);
++    });
++
++    auto* src = R"(
++%foo = func(%lhs:u32, %rhs:u32):u32 {
++  $B1: {
++    %4:u32 = mod %lhs, %rhs
++    ret %4
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = src;
++
++    BinaryPolyfillConfig config{};
++    Run(BinaryPolyfill, config);
++
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(MslWriter_BinaryPolyfillTest, UMod_WithPolyfill) {
++    auto* lhs = b.FunctionParam<u32>("lhs");
++    auto* rhs = b.FunctionParam<u32>("rhs");
++    auto* func = b.Function("foo", ty.u32());
++    func->SetParams({lhs, rhs});
++    b.Append(func->Block(), [&] {
++        auto* result = b.Modulo(lhs, rhs);
++        b.Return(func, result);
++    });
++
++    auto* src = R"(
++%foo = func(%lhs:u32, %rhs:u32):u32 {
++  $B1: {
++    %4:u32 = mod %lhs, %rhs
++    ret %4
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func(%lhs:u32, %rhs:u32):u32 {
++  $B1: {
++    %4:u32 = msl.volatile_zero
++    %5:u32 = add %lhs, %4
++    %6:u32 = mod %5, %rhs
++    ret %6
++  }
++}
++)";
++
++    BinaryPolyfillConfig config{
++        .fix_u32_div_mod = true,
++    };
++    Run(BinaryPolyfill, config);
++
++    EXPECT_EQ(expect, str());
++}
++
++TEST_F(MslWriter_BinaryPolyfillTest, UDiv_WithPolyfill) {
++    auto* lhs = b.FunctionParam<u32>("lhs");
++    auto* rhs = b.FunctionParam<u32>("rhs");
++    auto* func = b.Function("foo", ty.u32());
++    func->SetParams({lhs, rhs});
++    b.Append(func->Block(), [&] {
++        auto* result = b.Divide(lhs, rhs);
++        b.Return(func, result);
++    });
++
++    auto* src = R"(
++%foo = func(%lhs:u32, %rhs:u32):u32 {
++  $B1: {
++    %4:u32 = div %lhs, %rhs
++    ret %4
++  }
++}
++)";
++    EXPECT_EQ(src, str());
++
++    auto* expect = R"(
++%foo = func(%lhs:u32, %rhs:u32):u32 {
++  $B1: {
++    %4:u32 = msl.volatile_zero
++    %5:u32 = add %lhs, %4
++    %6:u32 = div %5, %rhs
++    ret %6
++  }
++}
++)";
++
++    BinaryPolyfillConfig config{
++        .fix_u32_div_mod = true,
++    };
++    Run(BinaryPolyfill, config);
+ 
+     EXPECT_EQ(expect, str());
+ }
+diff --git a/src/tint/lang/msl/writer/raise/raise.cc b/src/tint/lang/msl/writer/raise/raise.cc
+index ff83824e8b5f38ad15045bfdcdcbeb706096649e..1e36c13587d9b031d37bde581442a57495e5d609 100644
+--- a/src/tint/lang/msl/writer/raise/raise.cc
++++ b/src/tint/lang/msl/writer/raise/raise.cc
+@@ -265,7 +265,13 @@ Result<RaiseResult> Raise(core::ir::Module& module, const Options& options) {
+ 
+     TINT_CHECK_RESULT(raise::ModuleScopeVars(module));
+ 
+-    TINT_CHECK_RESULT(raise::BinaryPolyfill(module));
++    {
++        raise::BinaryPolyfillConfig config{
++            .fix_u32_div_mod = options.workarounds.fix_u32_div_mod,
++        };
++        TINT_CHECK_RESULT(raise::BinaryPolyfill(module, config));
++    }
++
+     TINT_CHECK_RESULT(raise::BuiltinPolyfill(
+         module, {
+                     .polyfill_unpack_2x16_snorm = options.workarounds.polyfill_unpack_2x16_snorm,
+diff --git a/src/tint/lang/msl/writer/writer_fuzz.cc b/src/tint/lang/msl/writer/writer_fuzz.cc
+index 093f65300ff3f8834ea1c20c179cc8bf1aea3482..7759765da4e36031a291f5a728fac446fa42ce61 100644
+--- a/src/tint/lang/msl/writer/writer_fuzz.cc
++++ b/src/tint/lang/msl/writer/writer_fuzz.cc
+@@ -61,6 +61,7 @@ struct FuzzedOptions {
+     std::unordered_map<uint32_t, ArgumentBufferInfo> group_to_argument_buffer_info;
+     SubstituteOverridesConfig substitute_overrides_config;
+     bool collapse_subgroup_min_max;
++    bool fix_u32_div_mod;
+ 
+     /// Reflect the fields of this class so that it can be used by tint::ForeachField()
+     TINT_REFLECT(FuzzedOptions,
+@@ -81,7 +82,8 @@ struct FuzzedOptions {
+                  vertex_pulling_config,
+                  group_to_argument_buffer_info,
+                  substitute_overrides_config,
+-                 collapse_subgroup_min_max);
++                 collapse_subgroup_min_max,
++                 fix_u32_div_mod);
+     TINT_REFLECT_HASH_CODE(FuzzedOptions);
+ };
+ 
+@@ -132,6 +134,7 @@ Result<SuccessType> IRFuzzer(core::ir::Module& module,
+     options.vertex_pulling_config = fuzzed_options.vertex_pulling_config;
+     options.group_to_argument_buffer_info = fuzzed_options.group_to_argument_buffer_info;
+     options.substitute_overrides_config = fuzzed_options.substitute_overrides_config;
++    options.workarounds.fix_u32_div_mod = fuzzed_options.fix_u32_div_mod;
+ 
+     options.bindings = GenerateBindings(module, ep_name, false, false);
+     options.immediate_binding_point = BindingPoint(0, 30);
+diff --git a/src/tint/lang/msl/writer/writer_test.cc b/src/tint/lang/msl/writer/writer_test.cc
+index 4e344cfd2c0de62e4fe3da6f72bbbdf00ea2ac8b..916976cfdd5bde114c8b34e6aff71a0114589b1a 100644
+--- a/src/tint/lang/msl/writer/writer_test.cc
++++ b/src/tint/lang/msl/writer/writer_test.cc
+@@ -351,5 +351,112 @@ TEST_F(MslWriterTest, CanGenerate_TexelBufferUnsupported) {
+                 testing::HasSubstr("texel buffers are not supported by the MSL backend"));
+ }
+ 
++TEST_F(MslWriterTest, AtomicStoreMax_Supported) {
++    auto* sb =
++        ty.Struct(mod.symbols.New("SB"), {
++                                             {mod.symbols.Register("a"), ty.atomic(ty.u64())},
++                                         });
++    auto* var = b.Var("sb", ty.ptr<storage, read_write>(sb));
++    var->SetBindingPoint(0, 0);
++    mod.root_block->Append(var);
++
++    auto* func = b.ComputeFunction("main");
++    b.Append(func->Block(), [&] {
++        auto* access = b.Access(ty.ptr<storage, read_write>(ty.atomic(ty.u64())), var, 0_u);
++        b.Call<void>(core::BuiltinFn::kAtomicStoreMax, access,
++                     b.Bitcast(ty.u64(), b.Splat(ty.vec2u(), 1_u)));
++        b.Return(func);
++    });
++
++    Options options;
++    options.entry_point_name = "main";
++    auto result = Generate(options, validate::MslVersion::kMsl_2_4);
++    ASSERT_EQ(result, Success);
++    EXPECT_EQ(output_.msl, R"(#include <metal_stdlib>
++using namespace metal;
++
++struct SB {
++  /* 0x0000 */ atomic_ulong a;
++};
++
++struct tint_module_vars_struct {
++  device SB* sb;
++};
++
++[[max_total_threads_per_threadgroup(1)]]
++kernel void v(device SB* sb [[buffer(0)]]) {
++  tint_module_vars_struct const tint_module_vars = tint_module_vars_struct{.sb=sb};
++  atomic_max_explicit((&(*tint_module_vars.sb).a), as_type<ulong>(uint2(1u)), memory_order_relaxed);
++}
++)");
++}
++
++TEST_F(MslWriterTest, AtomicStoreMin_Supported) {
++    auto* sb =
++        ty.Struct(mod.symbols.New("SB"), {
++                                             {mod.symbols.Register("a"), ty.atomic(ty.u64())},
++                                         });
++    auto* var = b.Var("sb", ty.ptr<storage, read_write>(sb));
++    var->SetBindingPoint(0, 0);
++    mod.root_block->Append(var);
++
++    auto* func = b.ComputeFunction("main");
++    b.Append(func->Block(), [&] {
++        auto* access = b.Access(ty.ptr<storage, read_write>(ty.atomic(ty.u64())), var, 0_u);
++        b.Call<void>(core::BuiltinFn::kAtomicStoreMin, access,
++                     b.Bitcast(ty.u64(), b.Splat(ty.vec2u(), 1_u)));
++        b.Return(func);
++    });
++
++    Options options;
++    options.entry_point_name = "main";
++    auto result = Generate(options, validate::MslVersion::kMsl_2_4);
++    ASSERT_EQ(result, Success);
++    EXPECT_EQ(output_.msl, R"(#include <metal_stdlib>
++using namespace metal;
++
++struct SB {
++  /* 0x0000 */ atomic_ulong a;
++};
++
++struct tint_module_vars_struct {
++  device SB* sb;
++};
++
++[[max_total_threads_per_threadgroup(1)]]
++kernel void v(device SB* sb [[buffer(0)]]) {
++  tint_module_vars_struct const tint_module_vars = tint_module_vars_struct{.sb=sb};
++  atomic_min_explicit((&(*tint_module_vars.sb).a), as_type<ulong>(uint2(1u)), memory_order_relaxed);
++}
++)");
++}
++
++TEST_F(MslWriterTest, FixU32DivMod) {
++    auto* func = b.ComputeFunction("main");
++    b.Append(func->Block(), [&] {
++        auto* lhs = b.Let("lhs", 0x10004_u);
++        b.Let("result", b.Modulo(lhs, 3_u));
++        b.Return(func);
++    });
++
++    Options options;
++    options.entry_point_name = "main";
++    options.workarounds.fix_u32_div_mod = true;
++    options.disable_polyfill_integer_div_mod = true;
++    auto result = Generate(options);
++    ASSERT_EQ(result, Success) << result.Failure();
++    EXPECT_EQ(output_.msl, R"(#include <metal_stdlib>
++using namespace metal;
++
++volatile constexpr constant uint tint_volatile_zero = 0u;
++
++[[max_total_threads_per_threadgroup(1)]]
++kernel void v() {
++  uint const lhs = 65540u;
++  uint const result = ((lhs +  tint_volatile_zero) % 3u);
++}
++)");
++}
++
+ }  // namespace
+ }  // namespace tint::msl::writer

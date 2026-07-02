@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Thu, 14 May 2026 13:20:05 -0700
+Subject: Don't allocate command space for 0 render bundles
+
+Early terminates APIExecuteBundles on the Render Pass if count is
+0, which was otherwise causing allocation issues.
+
+Bug: 513012139
+Fixes: 513012139
+Change-Id: Ia58e6da36c8049573e5a60a558c65fdfa72bedc8
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/308855
+Auto-Submit: Brandon Jones <bajones@chromium.org>
+Reviewed-by: Loko Kung <lokokung@google.com>
+Commit-Queue: Brandon Jones <bajones@chromium.org>
+
+diff --git a/src/dawn/native/RenderPassEncoder.cpp b/src/dawn/native/RenderPassEncoder.cpp
+index b6dc18c48c2647310ff07babc1f5fd12f38159a9..ce4b4b778efa565943b8256fe6926853106fd80d 100644
+--- a/src/dawn/native/RenderPassEncoder.cpp
++++ b/src/dawn/native/RenderPassEncoder.cpp
+@@ -367,22 +367,27 @@ void RenderPassEncoder::APIExecuteBundles(uint32_t count, RenderBundleBase* cons
+                 }
+             }
+ 
++            // Always reset state
+             mCommandBufferState = CommandBufferStateTracker{};
+ 
+-            ExecuteBundlesCmd* cmd =
+-                allocator->Allocate<ExecuteBundlesCmd>(Command::ExecuteBundles);
+-            cmd->count = count;
++            // Only encode an ExecuteBundles command if count > 0
++            if (count) {
++                ExecuteBundlesCmd* cmd =
++                    allocator->Allocate<ExecuteBundlesCmd>(Command::ExecuteBundles);
++                cmd->count = count;
+ 
+-            Ref<RenderBundleBase>* bundles = allocator->AllocateData<Ref<RenderBundleBase>>(count);
+-            for (uint32_t i = 0; i < count; ++i) {
+-                bundles[i] = renderBundles[i];
++                Ref<RenderBundleBase>* bundles =
++                    allocator->AllocateData<Ref<RenderBundleBase>>(count);
++                for (uint32_t i = 0; i < count; ++i) {
++                    bundles[i] = renderBundles[i];
+ 
+-                mUsageTracker.MergeResourceUsages(bundles[i]->GetResourceUsage());
+-                if (IsValidationEnabled()) {
+-                    mIndirectDrawMetadata.AddBundle(renderBundles[i]);
+-                }
++                    mUsageTracker.MergeResourceUsages(bundles[i]->GetResourceUsage());
++                    if (IsValidationEnabled()) {
++                        mIndirectDrawMetadata.AddBundle(renderBundles[i]);
++                    }
+ 
+-                mDrawCount += bundles[i]->GetDrawCount();
++                    mDrawCount += bundles[i]->GetDrawCount();
++                }
+             }
+ 
+             return {};

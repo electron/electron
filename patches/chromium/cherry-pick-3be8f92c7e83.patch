@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Mon, 1 Jun 2026 17:42:19 -0700
+Subject: [Blink] Guard user activation against empty IME events
+
+On Linux platforms, window focus events trigger the display server or
+compositor (via IME frameworks like IBus/Fcitx or zwp_text_input_v3) to
+send state-clearing preedit/reset events with an empty string.
+
+Historically, WebInputMethodControllerImpl::SetComposition and
+CommitText unconditionally triggered local frame UserActivation (with
+kInteraction), allowing window focus/creation to erroneously grant
+transient and sticky user activation. This bypassed user gesture
+security checks and enabled silent password exfiltration under XSS.
+
+This CL prevents user activation from triggering when the incoming IME
+text is empty. We also add a unit test to verify that empty IME
+composition and commit events do not elevate user activation, while
+non-empty events do.
+
+Bug: 504600482
+Change-Id: I82444a21888d4e61fe1a8cf75871ed47b18d1aef
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7868631
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Ian Kilpatrick <ikilpatrick@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1639820}
+
+diff --git a/third_party/blink/renderer/core/exported/web_input_method_controller_impl.cc b/third_party/blink/renderer/core/exported/web_input_method_controller_impl.cc
+index 38eacef51ab9c0573a530997d7cac97c0583ba57..06f7ab62bc2a66339a81818ca0c800636087fc4b 100644
+--- a/third_party/blink/renderer/core/exported/web_input_method_controller_impl.cc
++++ b/third_party/blink/renderer/core/exported/web_input_method_controller_impl.cc
+@@ -97,8 +97,10 @@ bool WebInputMethodControllerImpl::SetComposition(
+       return false;
+   }
+ 
+-  LocalFrame::NotifyUserActivation(
+-      GetFrame(), mojom::blink::UserActivationNotificationType::kInteraction);
++  if (!text.IsEmpty()) {
++    LocalFrame::NotifyUserActivation(
++        GetFrame(), mojom::blink::UserActivationNotificationType::kInteraction);
++  }
+ 
+   GetInputMethodController().SetComposition(
+       String(text), ImeTextSpanVectorBuilder::Build(ime_text_spans),
+@@ -152,8 +154,10 @@ bool WebInputMethodControllerImpl::CommitText(
+     const std::vector<ui::ImeTextSpan>& ime_text_spans,
+     const WebRange& replacement_range,
+     int relative_caret_position) {
+-  LocalFrame::NotifyUserActivation(
+-      GetFrame(), mojom::blink::UserActivationNotificationType::kInteraction);
++  if (!text.IsEmpty()) {
++    LocalFrame::NotifyUserActivation(
++        GetFrame(), mojom::blink::UserActivationNotificationType::kInteraction);
++  }
+ 
+   if (IsEditContextActive()) {
+     return GetInputMethodController().GetActiveEditContext()->CommitText(
+diff --git a/third_party/blink/renderer/core/exported/web_view_test.cc b/third_party/blink/renderer/core/exported/web_view_test.cc
+index c52fcd97cc050fcf4dc2f5b3c792590761eb77d6..2d560f471fe94fe7b7c46ae48d8fc8fa5d4fde38 100644
+--- a/third_party/blink/renderer/core/exported/web_view_test.cc
++++ b/third_party/blink/renderer/core/exported/web_view_test.cc
+@@ -1236,6 +1236,54 @@ TEST_F(WebViewTest, FinishComposingTextDoesNotAssert) {
+       WebInputMethodController::kKeepSelection);
+ }
+ 
++TEST_F(WebViewTest, IMECompositionAndCommitUserActivation) {
++  RegisterMockedHttpURLLoad("input_field_default.html");
++  WebViewImpl* web_view = web_view_helper_.InitializeAndLoad(
++      base_url_ + "input_field_default.html");
++  web_view->MainFrameImpl()->GetFrame()->SetInitialFocus(false);
++
++  LocalFrame* frame = web_view->MainFrameImpl()->GetFrame();
++  EXPECT_FALSE(LocalFrame::HasTransientUserActivation(frame));
++  EXPECT_FALSE(frame->HasStickyUserActivation());
++
++  WebInputMethodController* active_input_method_controller =
++      web_view->MainFrameImpl()
++          ->FrameWidget()
++          ->GetActiveWebInputMethodController();
++
++  std::vector<ui::ImeTextSpan> empty_ime_text_spans;
++
++  // 1. Calling SetComposition with an empty string should NOT trigger user
++  // activation.
++  active_input_method_controller->SetComposition(
++      WebString::FromUtf8(""), empty_ime_text_spans, WebRange(), 0, 0);
++  EXPECT_FALSE(LocalFrame::HasTransientUserActivation(frame));
++  EXPECT_FALSE(frame->HasStickyUserActivation());
++
++  // 2. Calling SetComposition with a non-empty string SHOULD trigger user
++  // activation.
++  active_input_method_controller->SetComposition(
++      WebString::FromUtf8("hello"), empty_ime_text_spans, WebRange(), 5, 5);
++  EXPECT_TRUE(LocalFrame::HasTransientUserActivation(frame));
++  EXPECT_TRUE(frame->HasStickyUserActivation());
++
++  // Consume transient activation for the next steps.
++  LocalFrame::ConsumeTransientUserActivation(frame);
++  EXPECT_FALSE(LocalFrame::HasTransientUserActivation(frame));
++
++  // 3. Calling CommitText with an empty string should NOT trigger user
++  // activation.
++  active_input_method_controller->CommitText(
++      WebString::FromUtf8(""), empty_ime_text_spans, WebRange(), 0);
++  EXPECT_FALSE(LocalFrame::HasTransientUserActivation(frame));
++
++  // 4. Calling CommitText with a non-empty string SHOULD trigger user
++  // activation.
++  active_input_method_controller->CommitText(
++      WebString::FromUtf8("world"), empty_ime_text_spans, WebRange(), 0);
++  EXPECT_TRUE(LocalFrame::HasTransientUserActivation(frame));
++}
++
+ // Regression test for https://crbug.com/873999
+ TEST_F(WebViewTest, LongPressOutsideInputShouldNotSelectPlaceholderText) {
+   RegisterMockedHttpURLLoad("input_placeholder.html");

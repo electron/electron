@@ -1,0 +1,592 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Devlin Cronin <rdevlin.cronin@chromium.org>
+Date: Fri, 29 May 2026 18:05:31 -0700
+Subject: [Extensions] Better track uncommitted frames in
+ ScriptInjectionTracker
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+ScriptInjectionTracker tracks when extensions run scripts in various
+processes so that we can determine if a request from that process is
+legitimate.
+
+When an extension requests a script execution in all frames in a frame
+tree, it's possible that some of those frames haven't yet committed. In
+this case, today, we send down the script injection to the renderer,
+which will evaluate whether the script should inject once the frame
+commits -- even though the script might not inject. However, we mark
+the process as having had a script injected into it at this point, since
+the script *may* run.
+
+Instead of doing this, treat uncommitted subframes as though they were
+about:blank in determining if a script can inject in the browser. This
+matches what the renderer would do when the script arrives.
+
+For this, we consider a number of situations with a slow-committing
+frame.
+1) Assume an extension with access to a.com, and a page, a.com, with
+   an embedded frame to b.com, which itself has an embedded frame to
+   b.com/slow. The extension injects into all frames.
+
+   The frame with b.com/slow is hosted in the process for b.com. The
+   extension script will never run in this frame, so the process
+   should not be tracked in the ScriptInjectionTracker.
+
+   This injection behaved properly before this CL, but the tracking
+   incorrectly assumed the extension would inject into the b.com frame.
+   This is fixed because when evaluating whether to inject in the
+   uncommitted b.com/slow page, we compare it to its parent's /
+   initiator's origin, which is b.com, which the extension does not have
+   access to.
+2) Assume an extension with access to a.com, and a page, a.com, with
+   an embedded frame directly to b.com/slow. The extension tries to
+   inject into the subframe.
+
+   The frame with b.com/slow is initially hosted in the process for
+   a.com until it commits. In this case, the extension script *may* run
+   in the initial empty document for the b.com/slow frame (before it
+   commits), since the parent / initiator is a.com. In this case, we
+   will mark the script as having injected in a.com's process, since it
+   may do so if it arrives before the frame commits. It should not run
+   in b.com's process, and that process should not be tracked in the
+   ScriptInjectionTracker.
+
+   This is behavior is unchanged with this CL.
+3) Assume an extension with access to a.com, and a page, b.com, with
+   an embedded frame to a.com/slow (the extension has access to the
+   subframe, but not the parent). The extension tries to inject into
+   the frame.
+
+   Behavior today, assuming:
+   a) a.com/slow commits before we check the frames on the browser
+      side. The extension injects into a.com/slow because it has access.
+   b) a.com/slow commits after the script is sent to the renderer. The
+      extension does *not* inject into the frame; the frame does a frame
+      and process swap, and the script is dropped.
+
+   This behavior is unchanged in this CL.
+4) Assume an extension with access to foo.a.com, but *not* a.com, and a
+   page to a.com with a frame to foo.a.com/slow. The extension tries to
+   inject into all frames.
+
+   This is a special variant of 3), above. In this case, the navigation
+   is cross-origin, but same-site, so we don't undergo a render frame
+   or process swap.
+
+   Behavior today, assuming:
+   a) foo.a.com/slow commits before we check the frames on the browser
+      side. The extension injects into foo.a.com/slow because it has
+      access.
+   b) foo.a.com/slow commits after the script arrives in the renderer.
+      The extension does *not* inject into the frame; there is a
+      document swap (even though there is no render frame swap, since
+      this is a cross-origin, same-site navigation), and we drop any
+      pending scripts on document swaps.
+   c) foo.a.com/slow commits after the script is *sent* to the
+      renderer, but before the script *arrives* in the renderer. The
+      extension injects in the frame.
+
+   Behavior after this CL:
+   a) Unchanged.
+   b) Unchanged.
+   c) The extension will *no longer inject* in this case. This only
+      affects this specific scenario of a subframe, in a parent document
+      to which the extension doesn't have access, in a cross-origin,
+      same-site navigation, when the extension script is sent from the
+      browser before commit, and arrives in the browser after commit.
+      This flow is inherently racy, and will break in the future when
+      we force render frame swaps for cross-origin, same-site
+      navigations.
+
+Tests for 1), 2), and 4b) have been added as part of this CL. 4c) is
+now identical behavior to 4b), in practice, since the evaluation on the
+browser side is the same (and forcing an IPC message race is
+challenging). We rely on existing test coverage for other scenarios.
+
+Cq-Include-Trybots: luci.chromium.try:linux-oi-rel
+Bug: 513177497
+Change-Id: I76754944cf5c02cca83d1b8be1f2bb1a433033bd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7857379
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Devlin Cronin <rdevlin.cronin@chromium.org>
+Reviewed-by: Łukasz Anforowicz <lukasza@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1638878}
+
+diff --git a/chrome/browser/extensions/script_injection_tracker_browsertest.cc b/chrome/browser/extensions/script_injection_tracker_browsertest.cc
+index b147969544f1107c8e8177124f702e11a8637363..fc80d4b30ec59b98ed02a9c537d0d943b6738266 100644
+--- a/chrome/browser/extensions/script_injection_tracker_browsertest.cc
++++ b/chrome/browser/extensions/script_injection_tracker_browsertest.cc
+@@ -38,6 +38,7 @@
+ #include "content/public/test/test_utils.h"
+ #include "extensions/browser/api/extensions_api_client.h"
+ #include "extensions/browser/browsertest_util.h"
++#include "extensions/browser/extension_api_frame_id_map.h"
+ #include "extensions/browser/extension_host.h"
+ #include "extensions/browser/extension_system.h"
+ #include "extensions/browser/permissions/active_tab_permission_granter.h"
+@@ -1148,6 +1149,402 @@ IN_PROC_BROWSER_TEST_F(ScriptInjectionTrackerBrowserTest, HistoryPushState) {
+       *main_frame->GetProcess(), extension->id()));
+ }
+ 
++// Tests extensions injecting scripts that would *potentially* run in a frame
++// that hasn't finished its first initial load. Regression test for
++// https://crbug.com/513177497.
++IN_PROC_BROWSER_TEST_F(ScriptInjectionTrackerBrowserTest,
++                       PendingInjectionsInUncommittedURLs) {
++  std::string delayed_path = "/delayed";
++  net::test_server::ControllableHttpResponse controllable_response(
++      embedded_test_server(), delayed_path);
++
++  ASSERT_TRUE(embedded_test_server()->Start());
++
++  // Install a test extension with permission for a.com but not b.com.
++  TestExtensionDir dir;
++  const char kManifestTemplate[] = R"(
++      {
++        "name": "Test Extension",
++        "version": "1.0",
++        "manifest_version": 3,
++        "host_permissions": ["http://a.com/*"],
++        "permissions": ["scripting", "tabs"],
++        "background": {"service_worker": "background_script.js"}
++      } )";
++  dir.WriteManifest(kManifestTemplate);
++  dir.WriteFile(FILE_PATH_LITERAL("background_script.js"), "");
++  const Extension* extension = LoadExtension(dir.UnpackedPath());
++  ASSERT_TRUE(extension);
++
++  // Navigate to a page on a.com.
++  GURL page_url = embedded_test_server()->GetURL("a.com", "/title1.html");
++  content::WebContents* web_contents = GetActiveWebContents();
++  ASSERT_TRUE(NavigateToURL(web_contents, page_url));
++
++  // Add a cross-origin iframe pointing to b.com.
++  GURL iframe_url = embedded_test_server()->GetURL("b.com", "/title1.html");
++  const char kScript[] = R"(
++      let iframe = document.createElement('iframe');
++      iframe.src = $1;
++      document.body.appendChild(iframe);
++  )";
++  ASSERT_TRUE(ExecJs(web_contents, content::JsReplace(kScript, iframe_url)));
++  content::WaitForLoadStop(web_contents);
++
++  content::RenderFrameHost* main_frame = web_contents->GetPrimaryMainFrame();
++  content::RenderFrameHost* child_frame = content::ChildFrameAt(main_frame, 0);
++  ASSERT_TRUE(child_frame);
++  EXPECT_NE(main_frame->GetProcess(), child_frame->GetProcess());
++
++  // Verify that initially no processes show up as having been injected.
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *main_frame->GetProcess(), extension->id()));
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *child_frame->GetProcess(), extension->id()));
++
++  // From the child frame (b.com), add a grandchild frame pointing to
++  // b.com/delayed.
++  // It's important that this be in a child of b.com (and grandchild of a.com)
++  // instead of just being a child of a.com so that the pending frame commits
++  // in b.com's process (which should not be considered "injected into").
++  GURL grandchild_url = embedded_test_server()->GetURL("b.com", delayed_path);
++  const char kAddGrandchildScript[] = R"(
++      let iframe = document.createElement('iframe');
++      iframe.src = $1;
++      document.body.appendChild(iframe);
++  )";
++  // ExecJs will start the navigation but we don't expect it to complete yet
++  // (because of our controllable response).
++  ASSERT_TRUE(ExecJs(child_frame,
++                     content::JsReplace(kAddGrandchildScript, grandchild_url)));
++
++  // Wait for the request to reach the controllable response.
++  controllable_response.WaitForRequest();
++
++  // Verify grandchild frame exists and is in the correct (b.com) process.
++  content::RenderFrameHost* grandchild_frame =
++      content::ChildFrameAt(child_frame, 0);
++  ASSERT_TRUE(grandchild_frame);
++  EXPECT_EQ(child_frame->GetProcess(), grandchild_frame->GetProcess());
++  EXPECT_EQ(GURL(), grandchild_frame->GetLastCommittedURL());
++
++  // Programmatically inject a script into all frames in the tab.
++  int tab_id = ExtensionTabUtil::GetTabId(web_contents);
++  ExtensionTestMessageListener complete_listener("injection complete");
++
++  // The script below calls executeScript() to inject in all frames. When it
++  // injects in the parent frame, it sends an "injection complete" message.
++  // In each frame it injects into, it updates document.title to indicate the
++  // injection. (Modifying document.title is perceptible across JS worlds.)
++  const char kBackgroundScript[] = R"(
++      chrome.scripting.executeScript({
++          target: {tabId: $1, allFrames: true},
++          func: () => {
++            document.title = 'injected';
++            const isSub = window.top !== window.self;
++            if (!isSub) {
++              chrome.test.sendMessage('injection complete');
++            }
++          }
++      });
++  )";
++
++  std::string background_script = content::JsReplace(kBackgroundScript, tab_id);
++  ASSERT_TRUE(BackgroundScriptExecutor::ExecuteScriptAsync(
++      profile(), extension->id(), background_script));
++
++  // Wait for the "injection complete" message. This indicates the script ran in
++  // the main frame. We can't wait for the child frame injection, because it
++  // should never happen. However, we dispatch the message at the same time to
++  // all frames in a tab, so if the script were going to be sent to b.com's
++  // frame, it would be by now (though it might not have run).
++  ASSERT_TRUE(complete_listener.WaitUntilSatisfied());
++
++  // The main frame's process is tracked.
++  EXPECT_TRUE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *main_frame->GetProcess(), extension->id()));
++
++  // The child frame's process is NOT tracked.
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *child_frame->GetProcess(), extension->id()));
++
++  // Allow the frame to finish loading, after which any script that was going
++  // to inject, would have injected.
++  controllable_response.Send(net::HTTP_OK, "text/html",
++                             "<html>Response</html>");
++  controllable_response.Done();
++
++  // The child frame's process still should not be tracked.
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *child_frame->GetProcess(), extension->id()));
++
++  // "Manually" verify that the scripts injected as expected (into the main
++  // frame and not the child or grandchild).
++  // Re-fetch the grandchild frame just in case it went through an RFH swap (we
++  // don't expect it to, but this could change with a different architecture).
++  grandchild_frame = content::ChildFrameAt(child_frame, 0);
++
++  std::string get_document_title = "document.title";
++  EXPECT_EQ("injected", content::EvalJs(main_frame, get_document_title));
++  EXPECT_EQ("", content::EvalJs(child_frame, get_document_title));
++  EXPECT_EQ("", content::EvalJs(grandchild_frame, get_document_title));
++}
++
++// Tests that extensions *can* inject a script into a frame with an
++// uncommitted URL if they have access to the effective origin of that frame.
++IN_PROC_BROWSER_TEST_F(ScriptInjectionTrackerBrowserTest,
++                       PendingInjectionsInUncommittedURLs_SameOrigin) {
++  std::string delayed_path = "/delayed";
++  net::test_server::ControllableHttpResponse controllable_response(
++      embedded_test_server(), delayed_path);
++
++  ASSERT_TRUE(embedded_test_server()->Start());
++
++  // Install a test extension with permission for a.com but not b.com.
++  TestExtensionDir dir;
++  const char kManifestTemplate[] = R"(
++      {
++        "name": "Test Extension",
++        "version": "1.0",
++        "manifest_version": 3,
++        "host_permissions": ["http://a.com/*"],
++        "permissions": ["scripting", "tabs"],
++        "background": {"service_worker": "background_script.js"}
++      } )";
++  dir.WriteManifest(kManifestTemplate);
++  dir.WriteFile(FILE_PATH_LITERAL("background_script.js"), "");
++  const Extension* extension = LoadExtension(dir.UnpackedPath());
++  ASSERT_TRUE(extension);
++
++  // Navigate to a page on a.com, to which the extension has access.
++  GURL page_url = embedded_test_server()->GetURL("a.com", "/title1.html");
++  content::WebContents* web_contents = GetActiveWebContents();
++  ASSERT_TRUE(NavigateToURL(web_contents, page_url));
++
++  // Add a child iframe to b.com/delayed.
++  GURL iframe_url = embedded_test_server()->GetURL("b.com", delayed_path);
++  const char kScript[] = R"(
++      let iframe = document.createElement('iframe');
++      iframe.src = $1;
++      document.body.appendChild(iframe);
++  )";
++  ASSERT_TRUE(ExecJs(web_contents, content::JsReplace(kScript, iframe_url)));
++
++  // Wait for the request to reach the controllable response.
++  controllable_response.WaitForRequest();
++
++  // Even though the child is loading b.com (a cross-origin frame), it's
++  // currently in a.com's site instance and process, and will be until it
++  // commits. Verify its state.
++  content::RenderFrameHost* main_frame = web_contents->GetPrimaryMainFrame();
++  content::RenderFrameHost* child_frame = content::ChildFrameAt(main_frame, 0);
++  ASSERT_TRUE(child_frame);
++  EXPECT_EQ(main_frame->GetProcess(), child_frame->GetProcess());
++
++  // Initially no processes show up as having been injected.
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *main_frame->GetProcess(), extension->id()));
++
++  // Programmatically inject a script into all frames in the tab.
++  int tab_id = ExtensionTabUtil::GetTabId(web_contents);
++  int child_frame_id = ExtensionApiFrameIdMap::GetFrameId(child_frame);
++  ExtensionTestMessageListener complete_listener("injection complete");
++
++  // The script below calls to execute a script specifically into the child
++  // frame. We target the child frame so that the process is only tracked based
++  // on that frame, and not on the parent frame (which the extension also has
++  // access to). The script will call runtime.sendMessage(), which is waited for
++  // by the background context.
++  // This should succeed, since the child frame is still in a.com's process
++  // (b.com hasn't committed).
++  // For completeness, this also modifies document.title so we can confirm the
++  // script injected in a frame.
++  const char kBackgroundScript[] = R"(
++      chrome.runtime.onMessage.addListener((msg) => {
++        chrome.test.sendMessage('injection complete');
++      });
++      // Note: `injectImmediately` is needed so that we don't wait for the
++      // frame to commit.
++      chrome.scripting.executeScript({
++          injectImmediately: true,
++          target: {tabId: $1, frameIds: [$2]},
++          func: () => {
++            document.title = 'injected';
++            chrome.runtime.sendMessage('hi');
++          }
++      });
++      chrome.test.sendMessage('sent');
++  )";
++
++  std::string background_script =
++      content::JsReplace(kBackgroundScript, tab_id, child_frame_id);
++  ASSERT_TRUE(BackgroundScriptExecutor::ExecuteScriptAsync(
++      profile(), extension->id(), background_script));
++
++  // We can wait for the extension message to arrive.
++  ASSERT_TRUE(complete_listener.WaitUntilSatisfied());
++
++  // Verify that the child frame's process is tracked. This is technically a
++  // bit superfluous, since otherwise we would have terminated the process when
++  // the extension message arrived.
++  EXPECT_TRUE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *child_frame->GetProcess(), extension->id()));
++  // The script should have ran in the child, but not the parent.
++  std::string get_document_title = "document.title";
++  EXPECT_EQ("", content::EvalJs(main_frame, get_document_title));
++  EXPECT_EQ("injected", content::EvalJs(child_frame, get_document_title));
++
++  // Allow the frame to finish loading.
++  controllable_response.Send(net::HTTP_OK, "text/html",
++                             "<html>Response</html>");
++  controllable_response.Done();
++  content::WaitForLoadStop(web_contents);
++
++  // Re-fetch the child frame; it swapped processes.
++  child_frame = content::ChildFrameAt(main_frame, 0);
++
++  // The child frame is now in a new process, which shouldn't be marked as
++  // having injected.
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *child_frame->GetProcess(), extension->id()));
++  // And we can confirm where the extension injected: in the main frame, but not
++  // the (new) child frame.
++  EXPECT_EQ("", content::EvalJs(main_frame, get_document_title));
++  // Depending on the exact timing, the title of the page may be empty or may
++  // be the origin. It should not be "injected".
++  std::string child_frame_title =
++      content::EvalJs(child_frame, get_document_title).ExtractString();
++  EXPECT_TRUE(child_frame_title == "" || child_frame_title == "b.com")
++      << "Unexpected title: " << child_frame_title;
++}
++
++IN_PROC_BROWSER_TEST_F(
++    ScriptInjectionTrackerBrowserTest,
++    PendingInjectionsInUncommittedURLs_CrossOrigin_SameSite) {
++  std::string delayed_path = "/delayed";
++  net::test_server::ControllableHttpResponse controllable_response(
++      embedded_test_server(), delayed_path);
++
++  ASSERT_TRUE(embedded_test_server()->Start());
++
++  // Install a test extension with permission to foo.a.com, but not to a.com
++  // itself.
++  TestExtensionDir dir;
++  const char kManifestTemplate[] = R"(
++      {
++        "name": "Test Extension",
++        "version": "1.0",
++        "manifest_version": 3,
++        "host_permissions": ["http://foo.a.com/*"],
++        "permissions": ["scripting", "tabs"],
++        "background": {"service_worker": "background_script.js"}
++      } )";
++  dir.WriteManifest(kManifestTemplate);
++  dir.WriteFile(FILE_PATH_LITERAL("background_script.js"), "");
++  const Extension* extension = LoadExtension(dir.UnpackedPath());
++  ASSERT_TRUE(extension);
++
++  // Navigate to a page on a.com; the extension does *not* have access to this
++  // page.
++  GURL page_url = embedded_test_server()->GetURL("a.com", "/title1.html");
++  content::WebContents* web_contents = GetActiveWebContents();
++  ASSERT_TRUE(NavigateToURL(web_contents, page_url));
++
++  // Add a child iframe to foo.a.com/delayed. The extension would have access
++  // to this frame.
++  GURL iframe_url = embedded_test_server()->GetURL("foo.a.com", delayed_path);
++  const char kScript[] = R"(
++      let iframe = document.createElement('iframe');
++      iframe.src = $1;
++      document.body.appendChild(iframe);
++  )";
++  ASSERT_TRUE(ExecJs(web_contents, content::JsReplace(kScript, iframe_url)));
++
++  // Wait for the request to reach the controllable response.
++  controllable_response.WaitForRequest();
++
++  // Even though the child is loading foo.a.com (a cross-origin frame from its
++  // parent, a.com), it's currently in a.com's site instance and process, and
++  // will be until it commits. Verify its state.
++  content::RenderFrameHost* main_frame = web_contents->GetPrimaryMainFrame();
++  content::RenderFrameHost* child_frame = content::ChildFrameAt(main_frame, 0);
++  ASSERT_TRUE(child_frame);
++  EXPECT_EQ(main_frame->GetProcess(), child_frame->GetProcess());
++
++  // Initially no processes show up as having been injected.
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *main_frame->GetProcess(), extension->id()));
++
++  // Programmatically inject a script into all frames in the tab.
++  int tab_id = ExtensionTabUtil::GetTabId(web_contents);
++  ExtensionTestMessageListener sent_listener("sent");
++
++  // The script below calls to execute a script into all frames that will
++  // call runtime.sendMessage() if the frame is an iframe. This should succeed,
++  // since the child frame is still in a.com's process (b.com hasn't committed).
++  const char kBackgroundScript[] = R"(
++      chrome.scripting.executeScript({
++          target: {tabId: $1, allFrames: true},
++          func: () => { document.title = 'injected'; }
++      });
++      chrome.test.sendMessage('sent');
++  )";
++
++  std::string background_script = content::JsReplace(kBackgroundScript, tab_id);
++  ASSERT_TRUE(BackgroundScriptExecutor::ExecuteScriptAsync(
++      profile(), extension->id(), background_script));
++
++  ASSERT_TRUE(sent_listener.WaitUntilSatisfied());
++  // Run the message loop to allow the script injection to be processed
++  // browser-side.
++  base::RunLoop().RunUntilIdle();
++
++  // The extension should not inject in either the main frame (at a.com, which
++  // it doesn't have access to) or the child frame (which is currently at a.com,
++  // but is loading foo.a.com).
++
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *main_frame->GetProcess(), extension->id()));
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *child_frame->GetProcess(), extension->id()));
++
++  std::string get_document_title = "document.title";
++  EXPECT_EQ("", content::EvalJs(main_frame, get_document_title));
++  EXPECT_EQ("", content::EvalJs(child_frame, get_document_title));
++
++  // Allow the frame to finish loading.
++  controllable_response.Send(net::HTTP_OK, "text/html",
++                             "<html>Response</html>");
++  controllable_response.Done();
++  content::WaitForLoadStop(web_contents);
++
++  // The extension still shouldn't have injected in the main frame (a.com).
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *main_frame->GetProcess(), extension->id()));
++  EXPECT_EQ("", content::EvalJs(main_frame, get_document_title));
++
++  // Tricky:
++  // The child frame pointing to foo.a.com is now loaded, but did *not* undergo
++  // a frame swap, because it's a same-site, cross-origin frame. This means its
++  // the same RenderFrameHost and process as it previously was. However, the
++  // script wasn't injected, because the extension didn't have access to the
++  // effective URL of the parent frame at the time the script injection was
++  // triggered.
++  // Once crbug.com/414437613 is fixed, we can remove the checks for this being
++  // the same RFH.
++  content::RenderFrameHost* new_child_frame =
++      content::ChildFrameAt(main_frame, 0);
++  EXPECT_EQ(new_child_frame, child_frame);
++  EXPECT_FALSE(ScriptInjectionTracker::DidProcessRunContentScriptFromExtension(
++      *child_frame->GetProcess(), extension->id()));
++  // Depending on the exact timing, the title of the page may be empty or may
++  // be the origin. It should not be "injected".
++  std::string child_frame_title =
++      content::EvalJs(child_frame, get_document_title).ExtractString();
++  EXPECT_TRUE(child_frame_title == "" || child_frame_title == "foo.a.com")
++      << "Unexpected title: " << child_frame_title;
++}
++
+ class DynamicScriptsTrackerBrowserTest
+     : public ScriptInjectionTrackerBrowserTest {
+  public:
+diff --git a/extensions/browser/scripting_utils.cc b/extensions/browser/scripting_utils.cc
+index b5849e4c099ef5cfc277f1bff9d334bb87116a43..e653e1ca6cdbf6b9a542fe25bf16804ed083e6e5 100644
+--- a/extensions/browser/scripting_utils.cc
++++ b/extensions/browser/scripting_utils.cc
+@@ -549,4 +549,57 @@ void ExecuteScript(const ExtensionId& extension_id,
+       /*webview_src=*/GURL(), std::move(callback));
+ }
+ 
++bool HasPermissionToInjectIntoFrame(const PermissionsData& permissions,
++                                    int tab_id,
++                                    content::RenderFrameHost* frame,
++                                    std::string* error) {
++  GURL url = frame->GetLastCommittedURL();
++  if (url.is_empty()) {
++    // Main frame cases. Check if the extension can inject into the pending
++    // load.
++    if (frame->IsInPrimaryMainFrame()) {
++      // Unknown URL, e.g. because no load was committed yet. In this case we
++      // look for any pending entry on the NavigationController associated with
++      // the WebContents for the frame.
++      content::WebContents* web_contents =
++          content::WebContents::FromRenderFrameHost(frame);
++      content::NavigationEntry* pending_entry =
++          web_contents->GetController().GetPendingEntry();
++      if (!pending_entry) {
++        *error = manifest_errors::kCannotAccessPage;
++        return false;  // ScriptAccess::kDenied;
++      }
++      GURL pending_url = pending_entry->GetURL();
++      if (pending_url.SchemeIsHTTPOrHTTPS() &&
++          !permissions.CanAccessPage(pending_url, tab_id, error)) {
++        // This catches the majority of cases where an extension tried to inject
++        // on a newly-created navigating tab, saving us a potentially-costly IPC
++        // and, maybe, slightly reducing (but not by any stretch eliminating) an
++        // attack surface.
++        *error = GetCannotAccessPageErrorMessage(permissions, pending_url);
++        return false;  // ScriptAccess::kDenied;
++      }
++
++      // Otherwise allow for now. The renderer has additional checks and will
++      // fail the injection if needed.
++      return true;
++    }
++
++    // Non-main-frame case. For these, pretend the uncommitted URL is
++    // about:blank for the permission evaluation below. We'll get the
++    // "effective" URL below, which will map to the frame's origin or precursor
++    // origin.
++    url = GURL(url::kAboutBlankURL);
++  }
++
++  // We set `allow_inaccessible_parents` to `true`, since this matches the
++  // behavior of statically registered content scripts. We should be able to
++  // inject into a frame even without access to its parent.
++  GURL effective_url = ContentScriptInjectionUrlGetter::Get(
++      BrowserFrameContextData(frame), url,
++      mojom::MatchOriginAsFallbackBehavior::kAlways,
++      /*allow_inaccessible_parents=*/true);
++  return permissions.CanAccessPage(effective_url, tab_id, error);
++}
++
+ }  // namespace extensions::scripting

@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Electron Scripts <scripts@electron>
+Date: Thu, 2 Jul 2026 05:57:34 +0000
+Subject: Avoid improper mask formats for SDFT runs
+
+Upgrade the SDFT sub-run mask format assert to a release assert.
+
+Bug: 520571816
+Change-Id: I2ecdefdd51a4b91dd6cd7ff771941852c1177d75
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1257397
+(cherry picked from commit 54851b68b7a1d4b96b0e526323adbdfbfbc98a4e)
+
+diff --git a/src/text/gpu/SubRunContainer.cpp b/src/text/gpu/SubRunContainer.cpp
+index 66531e030ddfabc2204c8e27c9478251c507b5ec..a799ac276acaaf7f9657a79de4d03361f07b2615 100644
+--- a/src/text/gpu/SubRunContainer.cpp
++++ b/src/text/gpu/SubRunContainer.cpp
+@@ -825,7 +825,7 @@ public:
+             , fUseLCDText{useLCDText}
+             , fAntiAliased{antiAliased}
+             , fMatrixRange{matrixRange} {
+-        SkASSERT(fVertexFiller.grMaskType() == MaskFormat::kA8);
++        SkASSERT_RELEASE(fVertexFiller.grMaskType() == MaskFormat::kA8);
+     }
+ 
+     static SubRunOwner Make(SkZip<const SkPackedGlyphID, const SkPoint> accepted,
