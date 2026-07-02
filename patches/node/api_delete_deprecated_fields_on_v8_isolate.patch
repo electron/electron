@@ -6,10 +6,10 @@ Subject: Delete deprecated fields on v8::Isolate
 https://chromium-review.googlesource.com/c/v8/v8/+/7081397
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 6873a9f203ccace7d5c501b62bed56732332d060..7ba7943c666d9cf3de47bf9a18b8e6e0e1196886 100644
+index 2ff363bb5ae6982fd1bd135edfe53075fc0b86a1..95ba63653ceae16754071701fcd99a98f84c8f4c 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -218,8 +218,6 @@ void SetIsolateCreateParamsForNode(Isolate::CreateParams* params) {
+@@ -219,8 +219,6 @@ void SetIsolateCreateParamsForNode(Isolate::CreateParams* params) {
      // heap based on the actual physical memory.
      params->constraints.ConfigureDefaults(total_memory, 0);
    }

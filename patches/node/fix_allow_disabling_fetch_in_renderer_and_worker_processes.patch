@@ -9,10 +9,10 @@ conflict with Blink's in renderer and worker processes.
 We should try to upstream some version of this.
 
 diff --git a/doc/api/cli.md b/doc/api/cli.md
-index ca5126bfd2c09cb8db93eceea8ef11295122469a..7cfa8406be3d71e461a9f3e677d3195a4a7fbbc1 100644
+index 6eeb360419df83315fbc6c90bbe60276f0290e58..559306b59371843546b259c2e2d6838da5ea08b2 100644
 --- a/doc/api/cli.md
 +++ b/doc/api/cli.md
-@@ -1823,6 +1823,14 @@ changes:
+@@ -1824,6 +1824,14 @@ changes:
  
  Disable using [syntax detection][] to determine module type.
  
@@ -27,7 +27,7 @@ index ca5126bfd2c09cb8db93eceea8ef11295122469a..7cfa8406be3d71e461a9f3e677d3195a
  ### `--no-experimental-global-navigator`
  
  <!-- YAML
-@@ -3570,6 +3578,7 @@ one is included in the list below.
+@@ -3571,6 +3579,7 @@ one is included in the list below.
  * `--no-addons`
  * `--no-async-context-frame`
  * `--no-deprecation`
@@ -79,10 +79,10 @@ index 4a42dd66f451eece98fded909a72dd5ffcfd9708..a693e35135fc8f7e918e1410a104d460
  function setupWebsocket() {
    if (getOptionValue('--no-experimental-websocket')) {
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index dd0100693afdabaf8d7bae25dccee237b3c0a5c2..6873a9f203ccace7d5c501b62bed56732332d060 100644
+index ea8ba25085c12f6180c879f19e543a8151e3792d..2ff363bb5ae6982fd1bd135edfe53075fc0b86a1 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -269,9 +269,13 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -270,9 +270,13 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
    isolate->SetModifyCodeGenerationFromStringsCallback(
        modify_code_generation_from_strings_callback);
  
@@ -116,13 +116,13 @@ index b7062241d590e36f797babffb5945060ef759322..ae895839723609dcdec2c037facb1720
              "experimental WebSocket API",
              &EnvironmentOptions::experimental_websocket,
 diff --git a/src/node_options.h b/src/node_options.h
-index 4964a74eb295d19bf0f37b6bd4750433d0088670..bafd9c7b3cfb62043ff4544eac1c7ffb4468ad1e 100644
+index 41a0f26d7c21e278418f504eff6d2c453e913b78..da90729362fa38162a39b4bf16fad864529c7c30 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
-@@ -124,6 +124,7 @@ class EnvironmentOptions : public Options {
+@@ -128,6 +128,7 @@ class EnvironmentOptions : public Options {
    bool enable_source_maps = false;
-   bool experimental_addon_modules = false;
-   bool experimental_eventsource = false;
+   bool experimental_addon_modules = EXPERIMENTALS_DEFAULT_VALUE;
+   bool experimental_eventsource = EXPERIMENTALS_DEFAULT_VALUE;
 +  bool experimental_fetch = true;
    bool experimental_websocket = true;
    bool experimental_sqlite = HAVE_SQLITE;

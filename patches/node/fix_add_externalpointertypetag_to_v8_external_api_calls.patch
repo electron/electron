@@ -8,10 +8,10 @@ an ExternalPointerTypeTag parameter. Use kExternalPointerTypeTagDefault
 for all existing call sites.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 5566cca941dce703bdd7a34fa9213556c23b9b1c..894f87cd572c7115dcc712f5039fe41b5c6ba58e 100644
+index 1d4c36783609ca85a66590b94608110fdd4fcc12..b213fc8e6a4a74b14beaab22c73374f55bba9079 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -2336,7 +2336,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+@@ -2399,7 +2399,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
  void SecureContext::CtxGetter(const FunctionCallbackInfo<Value>& info) {
    SecureContext* sc;
    ASSIGN_OR_RETURN_UNWRAP(&sc, info.This());
@@ -21,7 +21,7 @@ index 5566cca941dce703bdd7a34fa9213556c23b9b1c..894f87cd572c7115dcc712f5039fe41b
  }
  
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index 80baa7182b42300b295c9cb90fc6da37529a6ed1..bc37b24f2804846ff696b4e5ffcb8e77280054b9 100644
+index 75ce4c921b5acf5d612aeb5a7720b5874b6066ac..6c87611f7cbaf8a0b4c04f812f65381ede112056 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
 @@ -356,7 +356,7 @@ inline napi_status Unwrap(napi_env env,
