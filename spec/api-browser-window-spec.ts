@@ -6094,6 +6094,30 @@ describe('BrowserWindow module', () => {
         w.setResizable(true);
         expectBoundsEqual(w.getBounds(), bounds);
       });
+
+      ifit(process.platform === 'win32')('opens fullscreen when resizable and frame are false', async () => {
+        const w = new BrowserWindow({
+          resizable: false,
+          frame: false,
+          fullscreen: true
+        });
+
+        if (!w.isFullScreen()) await once(w, 'enter-full-screen');
+        await setTimeout();
+
+        expect(w.isFullScreen()).to.be.true('isFullScreen');
+
+        const { bounds } = screen.getDisplayMatching(w.getBounds());
+        expectBoundsEqual(w.getSize(), [bounds.width, bounds.height]);
+
+        const leaveFullScreen = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+        await setTimeout();
+
+        expect(w.isFullScreen()).to.be.false('isFullScreen');
+        expect(w.isResizable()).to.be.false('isResizable');
+      });
     });
 
     describe('loading main frame state', () => {
