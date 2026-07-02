@@ -72,7 +72,7 @@ index 47672f686974bac0b4f46103f15cd971e01bd67e..910ea050f8539778a9c97209661fe300
 -        context, type, convertedType, mode, idxBuffer, convertedCounti32, convertedOffset);
 +    const std::vector<DrawCommandRange> drawCommands =
 +        mVertexArray->getDrawIndices(context, type, convertedType, originalMode, mode, idxBuffer,
-+                                     (uint32_t)count, convertedOffset);
++                                     convertedCounti32, convertedOffset);
 +
      bool isNoOp = false;
      ANGLE_TRY(setupDraw(context, mode, 0, count, instances, type, indices, false, &isNoOp));
