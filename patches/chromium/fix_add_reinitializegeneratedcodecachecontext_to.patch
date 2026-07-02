@@ -14,7 +14,7 @@ This new method properly shuts down the existing context and creates a
 fresh one, allowing Electron session.setCodeCachePath() to work correctly.
 
 diff --git a/content/browser/storage_partition_impl.cc b/content/browser/storage_partition_impl.cc
-index 72fb224879958382c728c7637793d503ec4ea885..4b91ba5f588b7f8cece54bc895c2f1bb13b450a0 100644
+index ae61b2d3115cdff7d5ec204722a0d490a7a62d8d..e5228f869f8012e254778c13bae93a06327cc5b8 100644
 --- a/content/browser/storage_partition_impl.cc
 +++ b/content/browser/storage_partition_impl.cc
 @@ -1843,6 +1843,22 @@ StoragePartitionImpl::GetGeneratedCodeCacheContext() {

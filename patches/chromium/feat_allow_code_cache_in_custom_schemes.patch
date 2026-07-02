@@ -9,7 +9,7 @@ embedders to make custom schemes allow V8 code cache.
 Chromium CL: https://chromium-review.googlesource.com/c/chromium/src/+/5019665
 
 diff --git a/content/browser/code_cache/generated_code_cache.cc b/content/browser/code_cache/generated_code_cache.cc
-index 04f44a408d6b4c2f012abe16fe8210508ae7c11d..b93ebb798c667addb139b121c93c5b639041f080 100644
+index 0c724ef752a0625ed001472cedebc49fc2c3d954..45841af7aaa576d5f3cd59b8c7f18240054a1023 100644
 --- a/content/browser/code_cache/generated_code_cache.cc
 +++ b/content/browser/code_cache/generated_code_cache.cc
 @@ -4,6 +4,7 @@
@@ -20,7 +20,7 @@ index 04f44a408d6b4c2f012abe16fe8210508ae7c11d..b93ebb798c667addb139b121c93c5b63
  #include <iostream>
  #include <string_view>
  
-@@ -33,6 +34,7 @@
+@@ -34,6 +35,7 @@
  #include "third_party/blink/public/common/loader/code_cache_util.h"
  #include "third_party/blink/public/common/scheme_registry.h"
  #include "url/gurl.h"
@@ -28,7 +28,7 @@ index 04f44a408d6b4c2f012abe16fe8210508ae7c11d..b93ebb798c667addb139b121c93c5b63
  
  using storage::BigIOBuffer;
  
-@@ -54,13 +56,17 @@ void CheckValidResource(const GURL& resource_url,
+@@ -55,13 +57,17 @@ void CheckValidResource(const GURL& resource_url,
                          GeneratedCodeCache::CodeCacheType cache_type) {
    // If the resource url is invalid don't cache the code.
    DCHECK(resource_url.is_valid());
@@ -51,7 +51,7 @@ index 04f44a408d6b4c2f012abe16fe8210508ae7c11d..b93ebb798c667addb139b121c93c5b63
  
    if (!blink::features::IsPersistentCacheForCodeCacheEnabled()) {
      // The chrome and chrome-untrusted schemes are only used with the WebUI code
-@@ -68,35 +74,51 @@ void CheckValidResource(const GURL& resource_url,
+@@ -69,35 +75,51 @@ void CheckValidResource(const GURL& resource_url,
      // segments WebUI from non-WebUI in multiple ways to prevent privilege
      // escalation, using both `GetCacheId` and
      // `CheckSecurityForAccessingCodeCacheData`.
