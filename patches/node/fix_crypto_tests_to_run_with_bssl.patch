@@ -10,6 +10,19 @@ This should be upstreamed in some form, though it may need to be tweaked
 before it's acceptable to upstream, as this patch comments out a couple
 of tests that upstream probably cares about.
 
+diff --git a/test/fixtures/webcrypto/supports-modern-algorithms.mjs b/test/fixtures/webcrypto/supports-modern-algorithms.mjs
+index 2d370b8e21d3d5281363b1dfdc798a16e2ed6d4b..5c1220672f39fa6629b968bf46fd3383c59a028c 100644
+--- a/test/fixtures/webcrypto/supports-modern-algorithms.mjs
++++ b/test/fixtures/webcrypto/supports-modern-algorithms.mjs
+@@ -3,7 +3,7 @@ import * as crypto from 'node:crypto'
+ import { hasOpenSSL } from '../../common/crypto.js'
+ 
+ const boringSSL = process.features.openssl_is_boringssl;
+-const pqc = hasOpenSSL(3, 5) || boringSSL;
++const pqc = hasOpenSSL(3, 5);
+ const argon2 = hasOpenSSL(3, 2);
+ const shake128 = crypto.getHashes().includes('shake128');
+ const shake256 = crypto.getHashes().includes('shake256');
 diff --git a/test/parallel/test-crypto-encap-decap.js b/test/parallel/test-crypto-encap-decap.js
 index 4b19d71794400cc07ca47487ac79bfb1f9338bc6..81baf4e04f58dac7893bbf796df68e6c075953d9 100644
 --- a/test/parallel/test-crypto-encap-decap.js
@@ -82,6 +95,34 @@ index 883c2b7123844ede9c729809c2ac11e2c7288d72..54e7ff13547955ee7891fc493765e96a
  const { hasOpenSSL } = require('../common/crypto');
  
  const assert = require('assert');
+diff --git a/test/parallel/test-crypto-pqc-keygen-ml-dsa.js b/test/parallel/test-crypto-pqc-keygen-ml-dsa.js
+index e6534c988c4e2bb2cf69083db7e232bdb394e441..c66b0cea099a2452e84242c809742f2d93acadfe 100644
+--- a/test/parallel/test-crypto-pqc-keygen-ml-dsa.js
++++ b/test/parallel/test-crypto-pqc-keygen-ml-dsa.js
+@@ -11,6 +11,9 @@ const {
+   generateKeyPair,
+ } = require('crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-DSA');
++
+ if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl) {
+   for (const asymmetricKeyType of ['ml-dsa-44', 'ml-dsa-65', 'ml-dsa-87']) {
+     assert.throws(() => generateKeyPair(asymmetricKeyType, common.mustNotCall()), {
+diff --git a/test/parallel/test-crypto-pqc-keygen-ml-kem.js b/test/parallel/test-crypto-pqc-keygen-ml-kem.js
+index 620f65c3a8d156fcec4b653b8621d2546970c920..9aab665d2ff2a9e518824e56536c77119dcb77c6 100644
+--- a/test/parallel/test-crypto-pqc-keygen-ml-kem.js
++++ b/test/parallel/test-crypto-pqc-keygen-ml-kem.js
+@@ -11,6 +11,9 @@ const {
+   generateKeyPair,
+ } = require('crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-KEM');
++
+ const algorithms = process.features.openssl_is_boringssl ?
+   // BoringSSL does not support ML-KEM-512.
+   ['ml-kem-768', 'ml-kem-1024'] :
 diff --git a/test/parallel/test-crypto-pqc-sign-verify-ml-dsa.js b/test/parallel/test-crypto-pqc-sign-verify-ml-dsa.js
 index 535e6a33d5ccb00566a66d83711872f1304c70dc..d68b45c31cb59a637b5c757e96b98f263977e147 100644
 --- a/test/parallel/test-crypto-pqc-sign-verify-ml-dsa.js
@@ -96,6 +137,50 @@ index 535e6a33d5ccb00566a66d83711872f1304c70dc..d68b45c31cb59a637b5c757e96b98f26
  const { hasOpenSSL } = require('../common/crypto');
  
  if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
+diff --git a/test/parallel/test-webcrypto-crypto-job-mode.js b/test/parallel/test-webcrypto-crypto-job-mode.js
+index 327c6a6f154cc4432e1491da24d70923b921f30d..3ffbb05ff848197fd486c58568e3448313d3e2f1 100644
+--- a/test/parallel/test-webcrypto-crypto-job-mode.js
++++ b/test/parallel/test-webcrypto-crypto-job-mode.js
+@@ -211,7 +211,7 @@ async function withObjectPrototypeSetters(names, fn) {
+     }
+   }
+ 
+-  if (hasOpenSSL(3, 5) || process.features.openssl_is_boringssl) {
++  if (hasOpenSSL(3, 5)) {
+     const pair = await subtle.generateKey(
+       { name: 'ML-KEM-768' },
+       true,
+diff --git a/test/parallel/test-webcrypto-deduplicate-usages.js b/test/parallel/test-webcrypto-deduplicate-usages.js
+index ebd1b4683fc6f708d6ca3495b6abd768526c05b4..11d19a2c2cdecbcb454b6171ae5dae7d8f2313fa 100644
+--- a/test/parallel/test-webcrypto-deduplicate-usages.js
++++ b/test/parallel/test-webcrypto-deduplicate-usages.js
+@@ -107,7 +107,7 @@ function assertSameSet(actual, expected, msg) {
+       privateExpected: ['deriveKey', 'deriveBits'] },
+   ];
+ 
+-  if (hasOpenSSL(3, 5) || process.features.openssl_is_boringssl) {
++  if (hasOpenSSL(3, 5)) {
+     asymmetric.push({
+       algorithm: { name: 'ML-DSA-65' },
+       usages: ['verify', 'sign', 'verify', 'sign'],
+@@ -289,7 +289,7 @@ function assertSameSet(actual, expected, msg) {
+     assert.deepStrictEqual(imported.usages, ['sign']);
+   })());
+ 
+-  if (hasOpenSSL(3, 5) || process.features.openssl_is_boringssl) {
++  if (hasOpenSSL(3, 5)) {
+     // ML-DSA JWK roundtrip.
+     tests.push((async () => {
+       const { privateKey } = await subtle.generateKey(
+@@ -477,7 +477,7 @@ function assertSameSet(actual, expected, msg) {
+       privateExpected: ['deriveKey', 'deriveBits'] },
+   ];
+ 
+-  if (hasOpenSSL(3, 5) || process.features.openssl_is_boringssl) {
++  if (hasOpenSSL(3, 5)) {
+     jwkPairVectors.push({
+       algorithm: { name: 'ML-DSA-65' },
+       usages: ['verify', 'sign', 'verify', 'sign'],
 diff --git a/test/parallel/test-webcrypto-encap-decap-ml-kem.js b/test/parallel/test-webcrypto-encap-decap-ml-kem.js
 index f3850dcdf0254630b97a9d148d28ae0c12160052..dd1d438a2f4b5a86a0284054e02e834b58a80a98 100644
 --- a/test/parallel/test-webcrypto-encap-decap-ml-kem.js
@@ -138,6 +223,46 @@ index 31ba739a1e55e0f9ae4472d7850a4a8892db9dce..ef01ac5d5517aa8f54eff68b25e81318
  const { hasOpenSSL } = require('../common/crypto');
  
  if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
+diff --git a/test/parallel/test-webcrypto-promise-prototype-pollution.mjs b/test/parallel/test-webcrypto-promise-prototype-pollution.mjs
+index 17cc5c97716df0ec15efda0694c5e21e6793183c..e0cfa81e7e2caa63ea78b6863a9991f01e83a9c6 100644
+--- a/test/parallel/test-webcrypto-promise-prototype-pollution.mjs
++++ b/test/parallel/test-webcrypto-promise-prototype-pollution.mjs
+@@ -619,7 +619,7 @@ await assertNoPromiseConstructorAccess('getPublicKey', () =>
+ await assertNoInheritedCryptoKeyThenAccess('getPublicKey', () =>
+   subtle.getPublicKey(extractableKeyPair.privateKey, ['verify']));
+ 
+-if (hasOpenSSL(3, 5) || process.features.openssl_is_boringssl) {
++if (hasOpenSSL(3, 5)) {
+   const kemPair = await subtle.generateKey(
+     { name: 'ML-KEM-768' }, true,
+     ['encapsulateKey', 'encapsulateBits', 'decapsulateKey', 'decapsulateBits']);
+diff --git a/test/parallel/test-webcrypto-sign-verify-ml-dsa.js b/test/parallel/test-webcrypto-sign-verify-ml-dsa.js
+index b11e65ade79185f279a5142ff7fb26c72318fad3..8fb5150dd2ce9832b233ac1ca23df4150e773ba5 100644
+--- a/test/parallel/test-webcrypto-sign-verify-ml-dsa.js
++++ b/test/parallel/test-webcrypto-sign-verify-ml-dsa.js
+@@ -7,6 +7,9 @@ if (!common.hasCrypto)
+ 
+ const { hasOpenSSL } = require('../common/crypto');
+ 
++if (process.features.openssl_is_boringssl)
++  common.skip('BoringSSL in this Electron version does not support ML-DSA');
++
+ if (!hasOpenSSL(3, 5) && !process.features.openssl_is_boringssl)
+   common.skip('requires OpenSSL >= 3.5 or BoringSSL');
+ 
+diff --git a/test/parallel/test-webcrypto-sign-verify.js b/test/parallel/test-webcrypto-sign-verify.js
+index 0a6f5cffe7b934bcd76137b67b848e478e425bc4..26e66d9aa0fa8b200c86ea8051de10696ceb828c 100644
+--- a/test/parallel/test-webcrypto-sign-verify.js
++++ b/test/parallel/test-webcrypto-sign-verify.js
+@@ -173,7 +173,7 @@ if (!process.features.openssl_is_boringssl) {
+ }
+ 
+ // Test Sign/Verify ML-DSA
+-if (hasOpenSSL(3, 5) || process.features.openssl_is_boringssl) {
++if (hasOpenSSL(3, 5)) {
+   async function test(name, data) {
+     const ec = new TextEncoder();
+     const { publicKey, privateKey } = await subtle.generateKey({
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
 index 49f63e215fadfc95bee1d1d51cb61391a89ec53e..94f840c190035ce50f623e63dad5e12fedbdd2a3 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
