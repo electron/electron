@@ -1,0 +1,276 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Wed, 27 May 2026 03:24:10 -0700
+Subject: Make readonly attributes on CSSFontFeatureValuesRule [SameObject]
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This is based on the proposal in [1] and makes it straightforward to
+keep the CSSOM wrappers work for setting/getting including wrapper
+reattachments that happen when shared stylesheets are decoupled on
+modifications.
+
+[1] https://github.com/w3c/csswg-drafts/issues/13953
+
+Bug: 514445398, 515494291
+Change-Id: I5436e4feeff3935f1999630d775ad34a8a26194f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7865910
+Reviewed-by: Dominik Röttsches <drott@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1636821}
+
+diff --git a/third_party/blink/renderer/core/css/css_font_feature_values_map.h b/third_party/blink/renderer/core/css/css_font_feature_values_map.h
+index fa15bd43d4cffe33ccd8c8ff82626eefac1b72da..ea55b11bbefb636dc66e2e9a0c1a6be89dcc9fcd 100644
+--- a/third_party/blink/renderer/core/css/css_font_feature_values_map.h
++++ b/third_party/blink/renderer/core/css/css_font_feature_values_map.h
+@@ -37,6 +37,12 @@ class CSSFontFeatureValuesMap : public ScriptWrappable,
+   CSSFontFeatureValuesMap(const CSSFontFeatureValuesMap&) = delete;
+   CSSFontFeatureValuesMap& operator=(const CSSFontFeatureValuesMap&) = delete;
+ 
++  void Reattach(StyleRuleFontFeatureValues* style_rule_font_feature_values,
++                FontFeatureAliases* aliases) {
++    backing_style_rule_ = style_rule_font_feature_values;
++    aliases_ = aliases;
++  }
++
+   // IDL attributes / methods
+   uint32_t size() const;
+ 
+diff --git a/third_party/blink/renderer/core/css/css_font_feature_values_rule.cc b/third_party/blink/renderer/core/css/css_font_feature_values_rule.cc
+index 099503b72a1c9ffc7ae02ab4f7fe5f9be1626145..061141963dc384b9106495dab4428e91140c39d2 100644
+--- a/third_party/blink/renderer/core/css/css_font_feature_values_rule.cc
++++ b/third_party/blink/renderer/core/css/css_font_feature_values_rule.cc
+@@ -42,33 +42,51 @@ String CSSFontFeatureValuesRule::fontFamily() {
+ }
+ 
+ CSSFontFeatureValuesMap* CSSFontFeatureValuesRule::annotation() {
+-  return MakeGarbageCollected<CSSFontFeatureValuesMap>(
+-      this, font_feature_values_rule_,
+-      font_feature_values_rule_->GetAnnotation());
++  if (!annotation_) {
++    annotation_ = MakeGarbageCollected<CSSFontFeatureValuesMap>(
++        this, font_feature_values_rule_,
++        font_feature_values_rule_->GetAnnotation());
++  }
++  return annotation_.Get();
+ }
+ CSSFontFeatureValuesMap* CSSFontFeatureValuesRule::ornaments() {
+-  return MakeGarbageCollected<CSSFontFeatureValuesMap>(
+-      this, font_feature_values_rule_,
+-      font_feature_values_rule_->GetOrnaments());
++  if (!ornaments_) {
++    ornaments_ = MakeGarbageCollected<CSSFontFeatureValuesMap>(
++        this, font_feature_values_rule_,
++        font_feature_values_rule_->GetOrnaments());
++  }
++  return ornaments_.Get();
+ }
+ CSSFontFeatureValuesMap* CSSFontFeatureValuesRule::stylistic() {
+-  return MakeGarbageCollected<CSSFontFeatureValuesMap>(
+-      this, font_feature_values_rule_,
+-      font_feature_values_rule_->GetStylistic());
++  if (!stylistic_) {
++    stylistic_ = MakeGarbageCollected<CSSFontFeatureValuesMap>(
++        this, font_feature_values_rule_,
++        font_feature_values_rule_->GetStylistic());
++  }
++  return stylistic_.Get();
+ }
+ CSSFontFeatureValuesMap* CSSFontFeatureValuesRule::swash() {
+-  return MakeGarbageCollected<CSSFontFeatureValuesMap>(
+-      this, font_feature_values_rule_, font_feature_values_rule_->GetSwash());
++  if (!swash_) {
++    swash_ = MakeGarbageCollected<CSSFontFeatureValuesMap>(
++        this, font_feature_values_rule_, font_feature_values_rule_->GetSwash());
++  }
++  return swash_.Get();
+ }
+ CSSFontFeatureValuesMap* CSSFontFeatureValuesRule::characterVariant() {
+-  return MakeGarbageCollected<CSSFontFeatureValuesMap>(
+-      this, font_feature_values_rule_,
+-      font_feature_values_rule_->GetCharacterVariant());
++  if (!character_variant_) {
++    character_variant_ = MakeGarbageCollected<CSSFontFeatureValuesMap>(
++        this, font_feature_values_rule_,
++        font_feature_values_rule_->GetCharacterVariant());
++  }
++  return character_variant_.Get();
+ }
+ CSSFontFeatureValuesMap* CSSFontFeatureValuesRule::styleset() {
+-  return MakeGarbageCollected<CSSFontFeatureValuesMap>(
+-      this, font_feature_values_rule_,
+-      font_feature_values_rule_->GetStyleset());
++  if (!styleset_) {
++    styleset_ = MakeGarbageCollected<CSSFontFeatureValuesMap>(
++        this, font_feature_values_rule_,
++        font_feature_values_rule_->GetStyleset());
++  }
++  return styleset_.Get();
+ }
+ 
+ String CSSFontFeatureValuesRule::cssText() const {
+@@ -115,10 +133,41 @@ String CSSFontFeatureValuesRule::cssText() const {
+ void CSSFontFeatureValuesRule::Reattach(StyleRuleBase* rule) {
+   DCHECK(rule);
+   font_feature_values_rule_ = To<StyleRuleFontFeatureValues>(rule);
++  if (annotation_) {
++    annotation_->Reattach(font_feature_values_rule_.Get(),
++                          font_feature_values_rule_->GetAnnotation());
++  }
++  if (ornaments_) {
++    ornaments_->Reattach(font_feature_values_rule_.Get(),
++                         font_feature_values_rule_->GetOrnaments());
++  }
++  if (stylistic_) {
++    stylistic_->Reattach(font_feature_values_rule_.Get(),
++                         font_feature_values_rule_->GetStylistic());
++  }
++  if (swash_) {
++    swash_->Reattach(font_feature_values_rule_.Get(),
++                     font_feature_values_rule_->GetSwash());
++  }
++  if (character_variant_) {
++    character_variant_->Reattach(
++        font_feature_values_rule_.Get(),
++        font_feature_values_rule_->GetCharacterVariant());
++  }
++  if (styleset_) {
++    styleset_->Reattach(font_feature_values_rule_.Get(),
++                        font_feature_values_rule_->GetStyleset());
++  }
+ }
+ 
+ void CSSFontFeatureValuesRule::Trace(blink::Visitor* visitor) const {
+   visitor->Trace(font_feature_values_rule_);
++  visitor->Trace(annotation_);
++  visitor->Trace(ornaments_);
++  visitor->Trace(stylistic_);
++  visitor->Trace(swash_);
++  visitor->Trace(character_variant_);
++  visitor->Trace(styleset_);
+   CSSRule::Trace(visitor);
+ }
+ 
+diff --git a/third_party/blink/renderer/core/css/css_font_feature_values_rule.h b/third_party/blink/renderer/core/css/css_font_feature_values_rule.h
+index ae054f3af229c2d920f4784ab16d5552c6387a5b..9cf308e05f393a582ae0266be55752e1f9402add 100644
+--- a/third_party/blink/renderer/core/css/css_font_feature_values_rule.h
++++ b/third_party/blink/renderer/core/css/css_font_feature_values_rule.h
+@@ -43,6 +43,12 @@ class CSSFontFeatureValuesRule final : public CSSRule {
+   CSSRule::Type GetType() const override { return kFontFeatureValuesRule; }
+ 
+   Member<StyleRuleFontFeatureValues> font_feature_values_rule_;
++  Member<CSSFontFeatureValuesMap> annotation_;
++  Member<CSSFontFeatureValuesMap> ornaments_;
++  Member<CSSFontFeatureValuesMap> stylistic_;
++  Member<CSSFontFeatureValuesMap> swash_;
++  Member<CSSFontFeatureValuesMap> character_variant_;
++  Member<CSSFontFeatureValuesMap> styleset_;
+ };
+ 
+ template <>
+diff --git a/third_party/blink/renderer/core/css/css_font_feature_values_rule.idl b/third_party/blink/renderer/core/css/css_font_feature_values_rule.idl
+index 436f78dd718c1fe2da5fa56f1213130e3b7a5626..4ecacc27000e1d9a61164bac9233ee39524096d3 100644
+--- a/third_party/blink/renderer/core/css/css_font_feature_values_rule.idl
++++ b/third_party/blink/renderer/core/css/css_font_feature_values_rule.idl
+@@ -7,12 +7,12 @@
+ interface CSSFontFeatureValuesRule : CSSRule {
+   attribute CSSOMString fontFamily;
+ 
+-  readonly attribute CSSFontFeatureValuesMap annotation;
+-  readonly attribute CSSFontFeatureValuesMap ornaments;
+-  readonly attribute CSSFontFeatureValuesMap stylistic;
+-  readonly attribute CSSFontFeatureValuesMap swash;
+-  readonly attribute CSSFontFeatureValuesMap characterVariant;
+-  readonly attribute CSSFontFeatureValuesMap styleset;
++  [SameObject] readonly attribute CSSFontFeatureValuesMap annotation;
++  [SameObject] readonly attribute CSSFontFeatureValuesMap ornaments;
++  [SameObject] readonly attribute CSSFontFeatureValuesMap stylistic;
++  [SameObject] readonly attribute CSSFontFeatureValuesMap swash;
++  [SameObject] readonly attribute CSSFontFeatureValuesMap characterVariant;
++  [SameObject] readonly attribute CSSFontFeatureValuesMap styleset;
+ };
+ 
+ interface CSSFontFeatureValuesMap {
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-fonts/font-feature-values-map-live.html b/third_party/blink/web_tests/external/wpt/css/css-fonts/font-feature-values-map-live.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..ed736767d157782232642db2f59c42edfc6f0e50
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-fonts/font-feature-values-map-live.html
+@@ -0,0 +1,30 @@
++<!DOCTYPE html>
++<title>CSS Fonts Test: CSSFontFeatureValuesMap is live and reflect changes</title>
++<link rel="help" href="https://drafts.csswg.org/css-fonts/#cssfontfeaturevaluesmap">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<style>
++  @font-feature-values MyFamily {
++    @annotation { black-boxed: 3 }
++  }
++</style>
++<!-- Two identical stylesheets exposes a stylesheet sharing issue in Chrome -->
++<style>
++  @font-feature-values MyFamily {
++    @annotation { circled: 1; black-boxed: 3; }
++  }
++</style>
++<script>
++  test(() => {
++    const a1 = document.styleSheets[0].cssRules[0].annotation;
++    a1.set("black-boxed", 42);
++    const a2 = document.styleSheets[0].cssRules[0].annotation;
++    assert_array_equals(a1.get("black-boxed"), [42]);
++    assert_array_equals(a2.get("black-boxed"), [42]);
++  }, "Two retreived maps for CSSFontFeatureValuesRule.annotation should reflect the same values");
++
++  test(() => {
++    assert_array_equals(document.styleSheets[1].cssRules[0].annotation.get("black-boxed"), [3]);
++  }, "The second stylesheet should not be affected by modifications in the first");
++
++</script>
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-fonts/font-feature-values-sameobject.tentative.html b/third_party/blink/web_tests/external/wpt/css/css-fonts/font-feature-values-sameobject.tentative.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..375f9558055468bb111ff1d06ad60608946f5279
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-fonts/font-feature-values-sameobject.tentative.html
+@@ -0,0 +1,40 @@
++<!DOCTYPE html>
++<title>CSS Fonts Test: CSSFontFeatureValuesRule SameObject test</title>
++<link rel="help" href="https://drafts.csswg.org/css-fonts/#om-fontfeaturevalues">
++<link rel="help" href="https://github.com/w3c/csswg-drafts/issues/13953">
++<script src="/resources/testharness.js"></script>
++<script src="/resources/testharnessreport.js"></script>
++<style id="style">
++  @font-feature-values TestFont {
++    @annotation { a: 1; }
++    @ornaments { b: 2; }
++    @stylistic { c: 3; }
++    @swash { d: 4; }
++    @character-variant { e: 5; }
++    @styleset { f: 6; }
++  }
++</style>
++<script>
++  test(() => {
++    const style = document.getElementById('style');
++    const rule = style.sheet.cssRules[0];
++    assert_true(rule instanceof CSSFontFeatureValuesRule, "Should be CSSFontFeatureValuesRule");
++
++    const attributes = [
++      'annotation',
++      'ornaments',
++      'stylistic',
++      'swash',
++      'characterVariant',
++      'styleset'
++    ];
++
++    for (const attr of attributes) {
++      const map1 = rule[attr];
++      const map2 = rule[attr];
++      assert_equals(map1, map2, `${attr} should return the same object`);
++    }
++  }, "CSSFontFeatureValuesMap attributes in CSSFontFeatureValuesRule should be [SameObject]");
++
++</script>
++

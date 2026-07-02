@@ -1,0 +1,82 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kyle Charbonneau <kylechar@google.com>
+Date: Tue, 26 May 2026 01:11:26 -0700
+Subject: [M149] Trim data returned for VkPipelineCache
+
+vkCreateGraphicsPipeline() can write less data than the allocated blob
+stores. If that happens shrink the blob to match the size written.
+
+Also if VulkanIncompletePipelineCacheWorkaround is triggered then ensure
+it's not stored into the cache. The data is suspected to be corrupted if
+the workaround triggers.
+
+Bug: 513209610
+Change-Id: I4490dcecdd2a5a18d3118557d8fe233f37ac2ac8
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/308856
+Commit-Queue: Kyle Charbonneau <kylechar@google.com>
+Reviewed-by: Loko Kung <lokokung@google.com>
+(cherry picked from commit e7eb019e0d8237395c80b6df7790085d09591105)
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/310816
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+
+diff --git a/src/dawn/native/Blob.cpp b/src/dawn/native/Blob.cpp
+index 2feebc7a6254dd9d339ace01a7a811bdf05cc0a1..0869e9265e3501bbced08c31b07a0e000452ff84 100644
+--- a/src/dawn/native/Blob.cpp
++++ b/src/dawn/native/Blob.cpp
+@@ -82,6 +82,11 @@ Blob::~Blob() {
+     }
+ }
+ 
++void Blob::Shrink(size_t extent) {
++    DAWN_CHECK(mSize >= extent);
++    mSize = extent;
++}
++
+ bool Blob::Empty() const {
+     return mSize == 0;
+ }
+diff --git a/src/dawn/native/Blob.h b/src/dawn/native/Blob.h
+index cddcb2661bdb65c644ee26bcd52febf65d5c3170..361d6a57e5e1d2b1105c017c72f8465ee4274f83 100644
+--- a/src/dawn/native/Blob.h
++++ b/src/dawn/native/Blob.h
+@@ -56,6 +56,8 @@ class Blob {
+     Blob(Blob&&);
+     Blob& operator=(Blob&&);
+ 
++    void Shrink(size_t extent);
++
+     bool Empty() const;
+     const uint8_t* Data() const;
+     uint8_t* Data();
+diff --git a/src/dawn/native/vulkan/PipelineCacheVk.cpp b/src/dawn/native/vulkan/PipelineCacheVk.cpp
+index 78d4ec9cfdb61e1a4adbcf69ae7ca1be11008694..dca1435ab5767ddc806ecbbe54827daa72d8b632 100644
+--- a/src/dawn/native/vulkan/PipelineCacheVk.cpp
++++ b/src/dawn/native/vulkan/PipelineCacheVk.cpp
+@@ -28,6 +28,7 @@
+ #include "dawn/native/vulkan/PipelineCacheVk.h"
+ 
+ #include <memory>
++#include <utility>
+ 
+ #include "dawn/native/Device.h"
+ #include "dawn/native/Error.h"
+@@ -102,10 +103,18 @@ MaybeError PipelineCache::SerializeToBlobImpl(Blob* blob) {
+         // store it to the blob cache and don't call vkGetPipelineCacheData() since it will return
+         // corrupted data in future calls.
+         mSkipSerialize = true;
++        *blob = {};
+         return {};
+     }
+ 
+     DAWN_TRY(CheckVkSuccess(result, "GetPipelineCacheData"));
++
++    if (bufferSize < blob->Size()) {
++        // vkGetPipelineCacheData() returned less data than expected. Shrink the blob so
++        // uninitialized data isn't stored in cache.
++        blob->Shrink(bufferSize);
++    }
++
+     mStoredDataSize = bufferSize;
+ 
+     return {};

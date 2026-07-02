@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dominic Farolino <dom@chromium.org>
+Date: Tue, 16 Jun 2026 15:03:09 -0700
+Subject: DOM: Fix connected subframe count during moveBefore()
+
+Before this CL: In `HTMLFrameOwnerElement::RemovedFrom()`, when an
+element was removed during a state-preserving atomic move
+(moveBefore()), we decremented the connected subframe count on the frame
+owner element itself and on all ancestors starting from
+`insertion_point` (the old, connected parent of the newly-disconnected
+subtree).
+
+Whe moving an ancestor of an iframe, this caused a bookkeeping problem:
+  1. Intermediate nodes between the iframe and the insertion point never
+     had their subframe counts decremented;
+  2. When InsertedInto() later runs, the subframe counts on all nodes
+     starting at the iframe's parent up to the root get re-incremented.
+
+This means that intermediate nodes between the iframe and the insertion
+point have their counts "re-incremented" after never being decremented.
+This causes the page's subframe count to by desynchronized from reality,
+causing a DCHECK() in `CheckFrameCountConsistency()` during the next
+operation that invokes that path, such as the child frame disconnector.
+
+After this CL: We updated the increment logic in `InsertedInto()` to
+mirror that in `RemovedFrom()`. Specifically, we now increment the
+connected subframe count on the frame owner element itself and on all
+ancestors starting from `insertion_point` (the new parent of the
+attached subtree). This leaves the subframe counts of any intermediate
+nodes within the moved subtree completely untouched and accurate.
+
+See https://crrev.com/c/7882216 for a previous attempt.
+
+R=jarhar, nrosenthal
+
+Bug: 517345069
+Change-Id: I3d2f1d9641cfde9b57246fa4c7932da35b7c2588
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7950701
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Dominic Farolino <dom@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1647915}
+
+diff --git a/third_party/blink/renderer/core/html/html_frame_owner_element.cc b/third_party/blink/renderer/core/html/html_frame_owner_element.cc
+index 7d6d8bf996a66daedb04fa763a05a1c5ca9b4028..f724533448cdcff534c71d44d539197e572683d7 100644
+--- a/third_party/blink/renderer/core/html/html_frame_owner_element.cc
++++ b/third_party/blink/renderer/core/html/html_frame_owner_element.cc
+@@ -217,12 +217,15 @@ Node::InsertionNotificationRequest HTMLFrameOwnerElement::InsertedInto(
+   // move flow.
+   if (GetDocument().StatePreservingAtomicMoveInProgress() && ContentFrame()) {
+     // During a state-preserving atomic move, we must specifically inform all of
+-    // `this`'s ancestor nodes of the new connected frame they are adopting.
++    // `this`'s new ancestor nodes, starting from `insertion_point`, of the new
++    // connected frame they are adopting. We also re-increment `this` to match
++    // the decrement performed in `RemovedFrom()` below.
+     //
+     // For the non-state-preserving atomic move case (i.e., when we're setting
+     // up a full frame due to real insertion), this is done in
+     // `HTMLFrameOwnerElement::SetContentFrame()` below.
+-    for (ContainerNode* node = this; node;
++    IncrementConnectedSubframeCount();
++    for (ContainerNode* node = &insertion_point; node;
+          node = node->ParentOrShadowHostNode()) {
+       node->IncrementConnectedSubframeCount();
+     }
+diff --git a/third_party/blink/web_tests/external/wpt/dom/nodes/moveBefore/moveBefore-subframe-count-crash.html b/third_party/blink/web_tests/external/wpt/dom/nodes/moveBefore/moveBefore-subframe-count-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..1bbe468ff2cbbe24988dac8b00a449d2d627685c
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/dom/nodes/moveBefore/moveBefore-subframe-count-crash.html
+@@ -0,0 +1,30 @@
++<!DOCTYPE html>
++<html class=test-wait>
++<link rel=author href="mailto:dom@chromium.org">
++<link rel=help href="https://crbug.com/517345069">
++<title>Node.moveBefore: iframe ancestor subframe count consistency</title>
++<body>
++<script>
++// This is a regression test for a Chromium bug where the Blink internal
++// subframe count consistency checker gets out-of-sync due to `moveBefore()`.
++// See https://crbug.com/517345069.
++const oldParent = document.createElement('div');
++document.body.append(oldParent);
++
++const moveTarget = document.createElement('div');
++oldParent.append(moveTarget);
++
++const iframe = document.createElement('iframe');
++moveTarget.append(iframe);
++
++// Perform a state-preserving atomic move of `moveTarget` to `document.body`.
++// In Blink, previously this would result in `moveTarget`'s subframe count
++// getting over-incremented (becoming 2 instead of 1).
++document.body.moveBefore(moveTarget, null);
++
++// In Blink, this triggers the subframe count consistency checker, making the
++// above desynchronization cause a crash.
++moveTarget.remove();
++document.documentElement.classList.remove('test-wait');
++</script>
++</body>
