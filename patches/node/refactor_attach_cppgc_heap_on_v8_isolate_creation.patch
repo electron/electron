@@ -18,10 +18,10 @@ This can be removed when Node.js upgrades to a version of V8 containing CLs
 from the above issue.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 2160b91871e1389797c99e5c53682f22f30f3740..4293231c0b13eff12ef76e5fa61466c034671b15 100644
+index 4969c908c487a96fd6da80741d70d11b10dea131..4dea08fafee4379066a7d8af66fb07c7e7a3490c 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -319,6 +319,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -320,6 +320,10 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
                      MultiIsolatePlatform* platform,
                      const SnapshotData* snapshot_data,
                      const IsolateSettings& settings) {
@@ -32,7 +32,7 @@ index 2160b91871e1389797c99e5c53682f22f30f3740..4293231c0b13eff12ef76e5fa61466c0
    IsolateGroup group = GetOrCreateIsolateGroup();
    Isolate* isolate = Isolate::Allocate(group);
    if (isolate == nullptr) return nullptr;
-@@ -369,9 +373,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
+@@ -370,9 +374,12 @@ Isolate* NewIsolate(ArrayBufferAllocator* allocator,
                      uv_loop_t* event_loop,
                      MultiIsolatePlatform* platform,
                      const EmbedderSnapshotData* snapshot_data,
@@ -102,7 +102,7 @@ index bbb30dd8a50f7b8550caf1967de8547cc7d8af47..82aee7e38bbd859e1a76eedcc3a51278
        isolate, object, wrappable);
  }
 diff --git a/src/node.h b/src/node.h
-index 0225ff4f43e8b82c08e8ec5492df73223a82066c..8aac774805a002f5af9e9aca62abc56e8f986bab 100644
+index 51f8b0cdc8858c7d8e39d2e31215dd2b9027510e..4fab58689aa360a34d8b51d13f72c162701195f3 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -78,6 +78,7 @@
@@ -123,7 +123,7 @@ index 0225ff4f43e8b82c08e8ec5492df73223a82066c..8aac774805a002f5af9e9aca62abc56e
  NODE_EXTERN v8::Isolate* NewIsolate(
      std::shared_ptr<ArrayBufferAllocator> allocator,
      struct uv_loop_s* event_loop,
-@@ -1704,9 +1706,10 @@ void RegisterSignalHandler(int signal,
+@@ -1718,9 +1720,10 @@ void RegisterSignalHandler(int signal,
  // work with only Node.js versions with v8::Object::Wrap() should use that
  // instead.
  NODE_DEPRECATED("Use v8::Object::Wrap()",
@@ -151,10 +151,10 @@ index 6f674df3ed0dc1b4e5cd3a249fb787a9fc98361d..90f9eb84b6835c36a91ce23d77722812
    isolate_ =
        NewIsolate(isolate_params_.get(), event_loop, platform, snapshot_data);
 diff --git a/src/node_worker.cc b/src/node_worker.cc
-index 1d07449c5293f0839082a328d10bfd42cf522107..a2631a96371becb0f4ea4f47a52313f4f02477da 100644
+index e743cb45359a2e1e3151f17dc80ada639a9db3e0..ed3aa30caac3f47691c4a7262e671589c3bace7b 100644
 --- a/src/node_worker.cc
 +++ b/src/node_worker.cc
-@@ -181,6 +181,9 @@ class WorkerThreadData {
+@@ -182,6 +182,9 @@ class WorkerThreadData {
      SetIsolateCreateParamsForNode(&params);
      w->UpdateResourceConstraints(&params.constraints);
      params.array_buffer_allocator_shared = allocator;

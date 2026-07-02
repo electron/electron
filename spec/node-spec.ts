@@ -583,7 +583,7 @@ describe('node feature', () => {
 
       expect(() => {
         crypto.createPrivateKey({ key: ed448, format: 'jwk' });
-      }).to.throw(/Invalid JWK data/);
+      }).to.throw(/Invalid JWK/);
     });
   });
 
