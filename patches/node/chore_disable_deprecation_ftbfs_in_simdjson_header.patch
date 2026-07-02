@@ -14,7 +14,7 @@ and
 This patch can be removed once this is fixed upstream in simdjson.
 
 diff --git a/deps/simdjson/simdjson.h b/deps/simdjson/simdjson.h
-index 0a0215313461061149c470293d46f4b86b485912..f0bbffffdf0150d1c863efb926c40abb149aff3a 100644
+index b9befc5b17ed3ccc21dae80d3ccb9acaab1cbfa9..7b028eb7196df8f8eb374897fea439077d4b754c 100644
 --- a/deps/simdjson/simdjson.h
 +++ b/deps/simdjson/simdjson.h
 @@ -4408,12 +4408,17 @@ private:
@@ -54,7 +54,7 @@ index 0a0215313461061149c470293d46f4b86b485912..f0bbffffdf0150d1c863efb926c40abb
  
  #endif // SIMDJSON_PADDED_STRING_INL_H
  /* end file simdjson/padded_string-inl.h */
-@@ -72547,12 +72557,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
+@@ -72740,12 +72750,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
    return parser_instance;
  }
  
@@ -71,7 +71,7 @@ index 0a0215313461061149c470293d46f4b86b485912..f0bbffffdf0150d1c863efb926c40abb
  
  } // namespace ondemand
  } // namespace arm64
-@@ -85823,12 +85837,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
+@@ -86110,12 +86124,16 @@ simdjson_inline simdjson_warn_unused std::unique_ptr<ondemand::parser>& parser::
    return parser_instance;
  }
  
