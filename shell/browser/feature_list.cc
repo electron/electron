@@ -32,6 +32,7 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "printing/printing_features.h"
+#include "ui/base/ui_base_features.h"
 #endif
 
 namespace electron {
@@ -81,6 +82,16 @@ void InitializeFeatureList() {
   // Refs https://issues.chromium.org/issues/373852607
   enable_features +=
       std::string(",") + chrome_pdf::features::kPdfUseShowSaveFilePicker.name;
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+  // Without this, globalShortcut is a silent no-op on GNOME Wayland (the
+  // ozone factory returns no listener there). Chromium keeps it off due to
+  // https://gitlab.gnome.org/GNOME/xdg-desktop-portal-gnome/-/issues/185,
+  // but current GNOME persists bound shortcuts across sessions, so re-binds
+  // are silent. A user-passed --disable-features for this still wins.
+  enable_features +=
+      std::string(",") + features::kGlobalShortcutsPortalPreferredTrigger.name;
 #endif
 
   std::string platform_specific_enable_features =
