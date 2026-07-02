@@ -63,6 +63,7 @@ class GlobalShortcut final : public gin::Wrappable<GlobalShortcut>,
   void UnregisterAllInternal();
   void SetSuspended(bool suspend);
   bool IsSuspended();
+  v8::Local<v8::Promise> ListShortcuts(v8::Isolate* isolate);
 
   // GlobalAcceleratorListener::Observer implementation.
   void OnKeyPressed(const ui::Accelerator& accelerator) override;
