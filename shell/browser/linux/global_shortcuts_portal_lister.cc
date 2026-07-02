@@ -154,8 +154,7 @@ class PortalShortcutsLister {
       return;
     }
 
-    auto session_handle =
-        TakeFromDict<std::string>(*results, "session_handle");
+    auto session_handle = TakeFromDict<std::string>(*results, "session_handle");
     if (!session_handle) {
       Flush(std::nullopt);
       return;
