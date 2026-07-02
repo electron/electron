@@ -1,11 +1,9 @@
 """python-dbusmock template for the xdg-desktop-portal FileChooser interface.
 
-Loaded onto the fake session bus by script/dbus_mock.py so that Linux tests
-exercise Chromium's portal-based file dialogs (SelectFileDialogLinuxPortal)
-instead of falling back to the GTK implementation. Every OpenFile/SaveFile
-request is automatically answered with a "user cancelled" Response so
-dialogs resolve instead of waiting for interaction; tests inspect the
-request options via the org.freedesktop.DBus.Mock interface (GetCalls).
+Loaded onto the fake session bus by script/dbus_mock.py. Records every
+OpenFile/SaveFile request (inspectable via org.freedesktop.DBus.Mock
+GetCalls) and answers it with a "user cancelled" Response so dialogs
+resolve without interaction.
 """
 
 import dbus
@@ -44,12 +42,9 @@ def handle_file_chooser_call(self, _parent_window, _title, _options):
     request = mockobject.objects[request_path]
     request.response_pending = True
 
-    # The client sees that the returned request path differs from the one it
-    # derived from its handle_token and re-subscribes to the Response signal
-    # on the returned path, per the portal spec. Emit the signal on a delay
-    # so the re-subscription has completed, and repeat it a bounded number of
-    # times so a slow subscriber cannot miss it. The client Closes the
-    # request once it has processed a Response, which stops the emissions.
+    # Emit the Response on a delay so the client has re-subscribed to the
+    # returned request path, and repeat it until the client acknowledges by
+    # closing the request (a slow subscriber cannot miss it).
     state = {'remaining': 25}
 
     def emit_response():
