@@ -45,7 +45,7 @@ index 9eb347930c88f2a17b6c31a9346543145e148c64..84a06207c11df5f6b4145ba847f9548e
  {
    public:
 diff --git a/src/libANGLE/renderer/metal/ContextMtl.mm b/src/libANGLE/renderer/metal/ContextMtl.mm
-index b1a6ec8f85732b2cd892a900e5604f281f59a7ab..669282aa43c203560e0ae705bc63a59be364cfab 100644
+index 9f5a66d4795918b24c8181888c687b7c95d1bb55..6dd1da41752a08416798024c3ef8874f39df083f 100644
 --- a/src/libANGLE/renderer/metal/ContextMtl.mm
 +++ b/src/libANGLE/renderer/metal/ContextMtl.mm
 @@ -453,6 +453,23 @@ GLint GetOwnershipIdentity(const egl::AttributeMap &attribs)
