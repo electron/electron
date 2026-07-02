@@ -44,6 +44,7 @@
   "parallel/test-repl-mode",
   "parallel/test-promise-swallowed-event",
   "parallel/test-repl-underscore",
+  "parallel/test-runner-v8-deserializer",
   "parallel/test-shadow-realm-custom-loaders",
   "parallel/test-snapshot",
   "parallel/test-strace-openat-openssl",
