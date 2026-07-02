@@ -189,8 +189,12 @@ int WinFrameView::TitlebarHeight(int custom_height) const {
 
   int height = TitlebarMaximizedVisualHeight() +
                FrameTopBorderThickness(false) - WindowTopY();
+
+  // Custom overlay heights are already the full intended title bar height.
+  // Do not subtract WindowTopY(), otherwise the y and height are rounded
+  // separately at fractional DPI scales. See #52208.
   if (custom_height > TitlebarMaximizedVisualHeight())
-    height = custom_height - WindowTopY();
+    height = custom_height;
 
   return height;
 }
@@ -233,8 +237,20 @@ void WinFrameView::LayoutCaptionButtons() {
                            ? preferred_size.width()
                            : (IsMaximized() ? preferred_size.width()
                                             : preferred_size.width() - 1);
-  caption_button_container_->SetBounds(width() - preferred_size.width(),
-                                       WindowTopY(), variable_width, height);
+
+  // Keep custom overlay geometry as one rectangle starting at y = 0.
+  // Using WindowTopY() here would split the custom height into y + height,
+  // which can round to an extra physical pixel at fractional DPI scales.
+  // See #52208.
+  const bool has_custom_height =
+      custom_height > TitlebarMaximizedVisualHeight();
+  const int titlebar_y = has_custom_height ? 0 : WindowTopY();
+
+  caption_button_container_->SetBounds(
+      width() - preferred_size.width(),
+      titlebar_y,
+      variable_width,
+      height);
 
   // Needed for heights larger than default
   caption_button_container_->SetButtonSize(gfx::Size(0, height));
