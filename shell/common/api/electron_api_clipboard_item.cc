@@ -228,7 +228,7 @@ v8::Local<v8::Promise> ReadMime(ui::ClipboardBuffer buffer,
                 encoded = gfx::JPEG1xEncodedDataFromImage(
                     gfx::Image::CreateFrom1xBitmap(bitmap), 100);
               } else {
-                encoded = gfx::PNGCodec::EncodeBGRASkBitmap(bitmap, false);
+                encoded = png;
               }
               ResolveAsBuffer(std::move(promise),
                               encoded.has_value()
@@ -456,13 +456,16 @@ void ClipboardItem::WriteTo(ui::ScopedClipboardWriter& writer) const {
         writer.WriteHTML(text, std::string());
       } else if (mime == ui::kMimeTypeRtf) {
         writer.WriteRTF(base::UTF16ToUTF8(text));
-      } else {  // electron application/findtext
+      } else if (mime == clipboard_util::kFindTextMime) {
         // The macOS find pasteboard is a *separate* NSPasteboard from
         // the system clipboard. Commit directly here — it doesn't need
         // to share the `ScopedClipboardWriter`'s atomic-commit
         // lifetime. No-op on non-Mac platforms.
         Clipboard::WriteFindText(text);
+      } else {
+        NOTREACHED();
       }
+
       continue;
     }
 
