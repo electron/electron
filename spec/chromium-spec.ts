@@ -773,6 +773,96 @@ describe('command line switches', () => {
         );
       }
     });
+
+    it('clears device metrics overrides when a client disconnects without detaching', async function () {
+      // A client dying without clearing its overrides used to leave the page
+      // pinned at the emulated size forever.
+      const appPath = path.join(fixturesPath, 'apps', 'remote-debugging-emulation');
+      appProcess = ChildProcess.spawn(process.execPath, [appPath, '--remote-debugging-port=0']);
+
+      let stderr = '';
+      const browserWsUrl = await new Promise<string>((resolve, reject) => {
+        appProcess!.stderr.on('data', (data: Buffer) => {
+          stderr += data.toString();
+          const m = /DevTools listening on (ws:\/\/\S+)/.exec(stderr);
+          if (m) {
+            appProcess!.stderr.removeAllListeners('data');
+            resolve(m[1]);
+          }
+        });
+        appProcess!.on('exit', () =>
+          reject(new Error(`Process exited before DevTools URL was found. stderr: ${stderr}`))
+        );
+      });
+
+      type Client = {
+        socket: ws.WebSocket;
+        send(method: string, params?: unknown, sessionId?: string): Promise<any>;
+        attachToPage(): Promise<string>;
+      };
+      const connectClient = async (): Promise<Client> => {
+        const socket = new ws.WebSocket(browserWsUrl);
+        await once(socket, 'open');
+        let nextId = 1;
+        const pending = new Map<number, { resolve: (result: any) => void, reject: (error: Error) => void }>();
+        socket.on('message', (data) => {
+          const message = JSON.parse(data.toString());
+          const handler = message.id && pending.get(message.id);
+          if (handler) {
+            pending.delete(message.id);
+            if (message.error) handler.reject(new Error(message.error.message));
+            else handler.resolve(message.result);
+          }
+        });
+        const failPending = (why: string) => {
+          for (const handler of pending.values()) handler.reject(new Error(why));
+          pending.clear();
+        };
+        socket.on('error', (error) => failPending(`websocket error: ${error.message}`));
+        socket.on('close', () => failPending('websocket closed'));
+        const send = (method: string, params: unknown = {}, sessionId?: string) =>
+          new Promise<any>((resolve, reject) => {
+            const id = nextId++;
+            pending.set(id, { resolve, reject });
+            socket.send(JSON.stringify({ id, method, params, sessionId }));
+          });
+        const attachToPage = async () => {
+          // The window may not exist yet when the DevTools server comes up.
+          let page: any;
+          await waitUntil(async () => {
+            const { targetInfos } = await send('Target.getTargets');
+            page = targetInfos.find((target: any) => target.type === 'page');
+            return page !== undefined;
+          });
+          const { sessionId } = await send('Target.attachToTarget', { targetId: page.targetId, flatten: true });
+          return sessionId;
+        };
+        return { socket, send, attachToPage };
+      };
+      const innerSize = async (client: Client, sessionId: string) => {
+        const { result } = await client.send('Runtime.evaluate', {
+          expression: 'window.innerWidth + "x" + window.innerHeight',
+          returnByValue: true
+        }, sessionId);
+        return result.value;
+      };
+
+      const clientA = await connectClient();
+      const sessionA = await clientA.attachToPage();
+      const originalSize = await innerSize(clientA, sessionA);
+      await clientA.send('Emulation.setDeviceMetricsOverride', {
+        width: 800, height: 450, deviceScaleFactor: 0, mobile: false
+      }, sessionA);
+      expect(await innerSize(clientA, sessionA)).to.equal('800x450');
+
+      // Drop the TCP connection like a killed client process would.
+      (clientA.socket as any)._socket.destroy();
+
+      const clientB = await connectClient();
+      const sessionB = await clientB.attachToPage();
+      await waitUntil(async () => (await innerSize(clientB, sessionB)) === originalSize);
+      clientB.socket.close();
+    });
   });
 
   describe('--trace-startup switch', () => {
