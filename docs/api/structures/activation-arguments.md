@@ -1,6 +1,6 @@
 # ActivationArguments Object
 
-> Used on Windows only.
+> Used on Windows only. Never use on macOS or Linux.
 
 * `type` string - The type of activation that launched the app: `'click'`, `'action'`, or `'reply'`.
 * `arguments` string - The raw activation arguments string from Windows.
