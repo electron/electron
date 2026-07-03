@@ -31,6 +31,7 @@
 #include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/system_network_context_manager.h"
+#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -364,7 +365,9 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
   }
 
   v8::Local<v8::Value> transferables;
-  std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
+  GC_PLUGIN_IGNORE(
+      "Stack-only transient collection of garbage-collected ports.")
+  std::vector<MessagePort*> wrapped_ports;
   if (args->GetNext(&transferables)) {
     std::vector<v8::Local<v8::Value>> wrapped_port_values;
     if (!gin::ConvertFromV8(isolate, transferables, &wrapped_port_values)) {
@@ -373,18 +376,15 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
     }
 
     for (size_t i = 0; i < wrapped_port_values.size(); ++i) {
-      if (!gin_helper::IsValidWrappable(wrapped_port_values[i],
-                                        &MessagePort::kWrapperInfo)) {
+      MessagePort* port = nullptr;
+      if (!gin::ConvertFromV8(isolate, wrapped_port_values[i], &port) ||
+          !port) {
         args->ThrowTypeError(
             base::StrCat({"Port at index ", base::NumberToString(i),
                           " is not a valid port"}));
         return;
       }
-    }
-
-    if (!gin::ConvertFromV8(isolate, transferables, &wrapped_ports)) {
-      args->ThrowTypeError("Passed an invalid MessagePort");
-      return;
+      wrapped_ports.push_back(port);
     }
   }
 

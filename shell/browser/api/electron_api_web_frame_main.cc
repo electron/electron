@@ -23,6 +23,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/api.mojom.h"
+#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -371,12 +372,24 @@ void WebFrameMain::PostMessage(v8::Isolate* isolate,
     return;
   }
 
-  std::vector<gin_helper::Handle<MessagePort>> wrapped_ports;
+  GC_PLUGIN_IGNORE(
+      "Stack-only transient collection of garbage-collected ports.")
+  std::vector<MessagePort*> wrapped_ports;
   if (transfer && !transfer.value()->IsUndefined()) {
-    if (!gin::ConvertFromV8(isolate, *transfer, &wrapped_ports)) {
+    std::vector<v8::Local<v8::Value>> transfer_values;
+    if (!gin::ConvertFromV8(isolate, *transfer, &transfer_values)) {
       isolate->ThrowException(v8::Exception::Error(
           gin::StringToV8(isolate, "Invalid value for transfer")));
       return;
+    }
+    for (auto& transfer_value : transfer_values) {
+      MessagePort* port = nullptr;
+      if (!gin::ConvertFromV8(isolate, transfer_value, &port)) {
+        isolate->ThrowException(v8::Exception::Error(
+            gin::StringToV8(isolate, "Invalid value for transfer")));
+        return;
+      }
+      wrapped_ports.push_back(port);
     }
   }
 

@@ -335,6 +335,128 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('messagePort module', () => {
+    it('does not crash on exit with a started port', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, MessageChannelMain } = require('electron');
+
+        const channel = new MessageChannelMain();
+        channel.port1.start();
+        channel.port2.start();
+        (globalThis as any).channelRef = channel;
+
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should be rooted while a started port has no JS reference', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { MessageChannelMain } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          let channel: any = new MessageChannelMain();
+          channel.port1.start();
+
+          // Keep the peer (port2) alive so the pipe stays open and port1 is not
+          // closed by a peer disconnect. port2 is NOT started, so it is only
+          // JS-rooted, never a C++ Persistent root.
+          (globalThis as any).keepPort2 = channel.port2;
+          channel = null;
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          return containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / MessagePort']);
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'a started MessagePort should stay rooted via SelfKeepAlive with no JS reference');
+    });
+
+    it('should be released after the port is closed', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { MessageChannelMain } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          let channel: any = new MessageChannelMain();
+          channel.port1.start();
+          (globalThis as any).keepPort2 = channel.port2;
+
+          let port1: any = channel.port1;
+          channel = null;
+
+          port1.close();
+          port1 = null;
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const found = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / MessagePort']);
+          return !found;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(
+        true,
+        'a MessagePort should be released after close() clears its SelfKeepAlive and GC runs'
+      );
+    });
+
+    it('should never root an entangled port that was never started, and release it on GC', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { MessageChannelMain } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          let channel: any = new MessageChannelMain();
+          // Realize entanglement of both ports without starting either of them.
+          let ports: any = [channel.port1, channel.port2];
+          channel = null;
+          if (ports.length !== 2) throw new Error('expected two ports');
+          ports = null;
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const found = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / MessagePort']);
+          return !found;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(
+        true,
+        'an unstarted MessagePort must never be a C++ Persistent root (keep_alive_ starts empty; a vended WeakCell does not root it) and should be collected once JS drops it'
+      );
+    });
+  });
+
   describe('nativeImage module', () => {
     it('should record as node in heap snapshot while a JS reference is held', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals']);
