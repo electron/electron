@@ -1,7 +1,6 @@
-const chalk = require('chalk');
-
 const fs = require('node:fs');
 const path = require('node:path');
+const { styleText } = require('node:util');
 
 const check = process.argv.includes('--check');
 
@@ -27,11 +26,11 @@ const diff = (array1, array2) => {
   const added = array1.filter((item) => !set2.has(item));
   const removed = array2.filter((item) => !set1.has(item));
 
-  console.log(chalk.white.bgGreen.bold('Files Added:'));
-  added.forEach((item) => console.log(chalk.green.bold(`+ ${item}`)));
+  console.log(styleText(['white', 'bgGreen', 'bold'], 'Files Added:'));
+  added.forEach((item) => console.log(styleText(['green', 'bold'], `+ ${item}`)));
 
-  console.log(chalk.white.bgRed.bold('Files Removed:'));
-  removed.forEach((item) => console.log(chalk.red.bold(`- ${item}`)));
+  console.log(styleText(['white', 'bgRed', 'bold'], 'Files Removed:'));
+  removed.forEach((item) => console.log(styleText(['red', 'bold'], `- ${item}`)));
 };
 
 const parseHeaders = (name, content) => {
@@ -70,9 +69,9 @@ ${prettyName}_licenses = [ "//third_party/${folder}/src/LICENSE.TXT" ]
     if (currentContent !== content) {
       const currentHeaders = parseHeaders(prettyName, currentContent);
 
-      console.error(chalk.bold(`${file} contents are not up to date:\n`));
+      console.error(styleText('bold', `${file} contents are not up to date:\n`));
       diff(currentHeaders, newHeaders);
-      console.error(chalk.bold(`\nRun node script/gen-libc++-filenames.js to regenerate ${file}`));
+      console.error(styleText('bold', `\nRun node script/gen-libc++-filenames.js to regenerate ${file}`));
       process.exit(1);
     }
   } else {
