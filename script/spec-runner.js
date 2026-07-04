@@ -3,7 +3,6 @@
 const { ElectronVersions, Installer } = require('@electron/fiddle-core');
 
 const { DOMParser } = require('@xmldom/xmldom');
-const chalk = require('chalk');
 const { hashElement } = require('folder-hash');
 const minimist = require('minimist');
 
@@ -12,11 +11,12 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { styleText } = require('node:util');
 
 const unknownFlags = [];
 
-const pass = chalk.green('✓');
-const fail = chalk.red('✗');
+const pass = styleText('green', '✓');
+const fail = styleText('red', '✗');
 
 const FAILURE_STATUS_KEY = 'Electron_Spec_Runner_Failures';
 
@@ -86,7 +86,7 @@ async function main() {
     }
 
     const versionString = `v${args.electronVersion}`;
-    console.log(`Running against Electron ${chalk.green(versionString)}`);
+    console.log(`Running against Electron ${styleText('green', versionString)}`);
   }
 
   const [lastSpecHash, lastSpecInstallHash] = loadLastSpecHash();

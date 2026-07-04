@@ -576,7 +576,6 @@ __metadata:
     "@types/temp": "npm:^0.9.4"
     "@xmldom/xmldom": "npm:^0.8.11"
     buffer: "npm:^6.0.3"
-    chalk: "npm:^4.1.0"
     check-for-leaks: "npm:^1.2.1"
     events: "npm:^3.2.0"
     folder-hash: "npm:^4.1.1"
