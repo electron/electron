@@ -4357,6 +4357,85 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    // Blink reuses the V8 context of the popup's initial empty document for the
+    // document that commits into it, skipping the LocalWindowProxy
+    // initialization that Electron installs the preload from.
+    describe('window.open() context reuse', () => {
+      const reusePreload = path.join(fixtures, 'context-reuse-preload.js');
+
+      let w: BrowserWindow;
+      let server: http.Server;
+      let openerUrl: string;
+      let popupUrl: string;
+
+      before(async () => {
+        server = http.createServer((req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          res.end(
+            req.url === '/popup'
+              ? `<script>
+                   window.reusedMarkerAtFirstScript = String(window.reusedMarker);
+                   window.preloadMarkerAtFirstScript = typeof window.preloadMarker;
+                 </script>`
+              : '<body>opener</body>'
+          );
+        });
+        // Same origin as the popup, which is what lets Blink reuse the context.
+        const { url } = await listen(server);
+        openerUrl = `${url}/opener`;
+        popupUrl = `${url}/popup`;
+      });
+
+      after(() => {
+        server.close();
+      });
+
+      afterEach(async () => {
+        await closeWindow(w);
+        w = null as unknown as BrowserWindow;
+      });
+
+      for (const contextIsolation of [true, false]) {
+        it(`runs the preload once, before the first page script (contextIsolation: ${contextIsolation})`, async () => {
+          w = new BrowserWindow({ show: false });
+          w.webContents.setWindowOpenHandler(() => ({
+            action: 'allow',
+            overrideBrowserWindowOptions: {
+              show: false,
+              webPreferences: { preload: reusePreload, contextIsolation }
+            }
+          }));
+
+          const preloadRuns: string[] = [];
+          const onPreloadRan = (_event: Electron.IpcMainEvent, href: string) => preloadRuns.push(href);
+          ipcMain.on('context-reuse-preload-ran', onPreloadRan);
+          try {
+            await w.loadURL(openerUrl);
+            const created = once(w.webContents, 'did-create-window') as Promise<
+              [BrowserWindow, Electron.DidCreateWindowDetails]
+            >;
+            // Touching the popup while its load is pending creates the V8
+            // context of its initial empty document.
+            await w.webContents.executeJavaScript(`
+              window.open(${JSON.stringify(popupUrl)}).reusedMarker = 'yes';
+            `);
+
+            const [popup] = await created;
+            await once(popup.webContents, 'did-finish-load');
+
+            const [reusedMarker, preloadMarkerType] = await popup.webContents.executeJavaScript(
+              '[window.reusedMarkerAtFirstScript, window.preloadMarkerAtFirstScript]'
+            );
+            expect(reusedMarker).to.equal('yes', 'the initial empty document context should have been reused');
+            expect(preloadMarkerType).to.equal('string', 'preload should run before the first page script');
+            expect(preloadRuns).to.have.lengthOf(1);
+          } finally {
+            ipcMain.removeListener('context-reuse-preload-ran', onPreloadRan);
+          }
+        });
+      }
+    });
+
     describe('preload script stack traces', () => {
       afterEach(closeAllWindows);
       // Preloads are compiled via ScriptCompiler::CompileFunction(), which
