@@ -23,7 +23,6 @@
     "@types/temp": "^0.9.4",
     "@xmldom/xmldom": "^0.8.11",
     "buffer": "^6.0.3",
-    "chalk": "^4.1.0",
     "check-for-leaks": "^1.2.1",
     "events": "^3.2.0",
     "folder-hash": "^4.1.1",
