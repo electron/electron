@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/memory/weak_ptr.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
@@ -19,6 +20,7 @@ class ElectronRenderFrameObserver : private content::RenderFrameObserver {
  public:
   ElectronRenderFrameObserver(content::RenderFrame* frame,
                               RendererClientBase* renderer_client);
+  ~ElectronRenderFrameObserver() override;
 
   // disable copy
   ElectronRenderFrameObserver(const ElectronRenderFrameObserver&) = delete;
@@ -35,14 +37,20 @@ class ElectronRenderFrameObserver : private content::RenderFrameObserver {
                                 int world_id) override;
   void OnDestruct() override;
   void DidMeaningfulLayout(blink::WebMeaningfulLayout layout_type) override;
+  void DidCommitProvisionalLoad(ui::PageTransition transition) override;
 
   [[nodiscard]] bool ShouldNotifyClient(int world_id) const;
 
   void CreateIsolatedWorldContext();
+  void EnsureConditionalFeaturesInstalled();
 
   bool has_delayed_node_initialization_ = false;
+  bool main_world_features_installed_ = false;
+  bool isolated_world_features_installed_ = false;
   raw_ptr<content::RenderFrame> render_frame_;
   raw_ptr<RendererClientBase> renderer_client_;
+
+  base::WeakPtrFactory<ElectronRenderFrameObserver> weak_factory_{this};
 };
 
 }  // namespace electron

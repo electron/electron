@@ -213,6 +213,58 @@ describe('renderer nodeIntegrationInSubFrames', () => {
   });
 });
 
+describe('renderer nodeIntegrationInSubFrames context reuse', () => {
+  let w: BrowserWindow;
+
+  afterEach(async () => {
+    await closeWindow(w);
+    w = null as unknown as BrowserWindow;
+  });
+
+  const generateTest = (title: string, webPreferences: Electron.WebPreferences) => {
+    it(`still loads the preload script when contentWindow is read before the iframe navigates (${title})`, async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.resolve(__dirname, 'fixtures/sub-frames/preload.js'),
+          nodeIntegrationInSubFrames: true,
+          ...webPreferences
+        }
+      });
+      // The preload also runs in the main frame, so wait for both reports and
+      // check the second one, which belongs to the iframe.
+      const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
+      w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/frame-container-late-src.html'));
+      const [, event2] = await detailsPromise;
+      expect(event2[1]).to.match(/frame\.html$/);
+    });
+  };
+
+  generateTest('contextIsolation enabled', {});
+  generateTest('contextIsolation disabled', { contextIsolation: false });
+
+  const generateOnceOnlyTest = (title: string, webPreferences: Electron.WebPreferences) => {
+    it(`only installs conditional features once for the reused-context iframe (${title})`, async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.resolve(__dirname, 'fixtures/sub-frames/preload.js'),
+          nodeIntegrationInSubFrames: true,
+          ...webPreferences
+        }
+      });
+      const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
+      w.loadFile(path.resolve(__dirname, 'fixtures/sub-frames/frame-container-late-src.html'));
+      const events = await detailsPromise;
+      expect(events).to.have.lengthOf(2);
+      expect(events[1][1]).to.match(/frame\.html$/);
+    });
+  };
+
+  generateOnceOnlyTest('contextIsolation enabled', {});
+  generateOnceOnlyTest('contextIsolation disabled', { contextIsolation: false });
+});
+
 describe('subframe with non-standard schemes', () => {
   it('should not crash when changing subframe src to about:blank and back', async () => {
     const w = new BrowserWindow({ show: false, width: 400, height: 400 });
