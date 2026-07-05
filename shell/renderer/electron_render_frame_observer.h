@@ -12,6 +12,8 @@
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_observer_tracker.h"
 #include "third_party/blink/public/web/web_meaningful_layout.h"
+#include "v8/include/v8-context.h"
+#include "v8/include/v8-forward.h"
 
 namespace electron {
 
@@ -52,8 +54,16 @@ class ElectronRenderFrameObserver
   [[nodiscard]] bool ShouldNotifyClient(int world_id) const;
 
   void CreateIsolatedWorldContext();
+  void EnsureConditionalFeaturesInstalled();
 
-  bool has_delayed_node_initialization_ = false;
+  // Blink may commit a document into the frame's existing V8 context instead
+  // of creating a new one, so what has already been set up is tracked per
+  // context, not per document. Both are cleared from
+  // WillReleaseScriptContext().
+  v8::Global<v8::Context> main_world_setup_context_;
+  // The context DidCreateScriptContext() was called for: the isolated world
+  // one with context isolation on, the main world one otherwise.
+  v8::Global<v8::Context> client_notified_context_;
   std::set<int> isolated_worlds_;
   // Multiple JS wrappers can exist for the same frame, so fan out creation
   // notifications to each wrapper that subscribed during this document.
