@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+</head>
+<body>
+  <script>
+    const iframe = document.createElement('iframe');
+    iframe.name = 'frameA';
+    iframe.src = './frame-context-reuse.html';
+    document.body.appendChild(iframe);
+    // Touching contentWindow while the load is pending creates the V8 context
+    // of the frame's initial empty document, which Blink then reuses for the
+    // same origin document committed into the frame.
+    iframe.contentWindow.reusedMarker = 'yes';
+  </script>
+</body>
+</html>

@@ -105,18 +105,12 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
   DeferMicrotasksScope defer_microtasks(
       isolate, web_frame->GetFrame()->DomWindow()->GetMicrotaskQueue());
 
-  // Do a delayed Node.js initialization for child window.
-  // Check DidInstallConditionalFeatures below for the background.
-  if (has_delayed_node_initialization_ &&
-      !web_frame->IsOnInitialEmptyDocument()) {
-    v8::HandleScope handle_scope{isolate};
-    v8::Local<v8::Context> context = web_frame->MainWorldScriptContext();
-    v8::MicrotasksScope microtasks_scope(
-        context, v8::MicrotasksScope::kDoNotRunMicrotasks);
-    v8::Context::Scope context_scope(context);
-    // DidClearWindowObject only emits for the main world.
-    DidInstallConditionalFeatures(context, MAIN_WORLD_ID);
-  }
+  // Runs after UpdateDocument() and before CommitPreloadedData() /
+  // StartLoadingBody(), so preload/Node/contextBridge are in place before
+  // page scripts. Resumes delayed window.open init (see Opener early-return
+  // in DidInstallConditionalFeatures) and covers V8 context reuse (where
+  // Initialize/DidInstallConditionalFeatures is skipped).
+  EnsureConditionalFeaturesInstalled();
 
   renderer_client_->DidClearWindowObject(render_frame_);
 }
@@ -124,10 +118,18 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
 void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     v8::Local<v8::Context> context,
     int world_id) {
-  DeferMicrotasksScope defer_microtasks(v8::Isolate::GetCurrent(),
-                                        context->GetMicrotaskQueue());
+  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
+  DeferMicrotasksScope defer_microtasks(isolate, context->GetMicrotaskQueue());
 
-  if (electron::is_main_world(world_id)) {
+  // Blink reuses a frame's V8 context for the document it commits next, and
+  // EnsureConditionalFeaturesInstalled() calls back into here for a context
+  // that may already be set up, so this is keyed on the context rather than
+  // on the document. Setting up the same context twice would give it a second
+  // Node.js environment and a second contextBridge.
+  const bool needs_main_world_setup =
+      electron::is_main_world(world_id) && main_world_setup_context_ != context;
+
+  if (needs_main_world_setup) {
     // Start each document with a clean slate before preload has a chance to
     // subscribe for current-document isolated world creation.
     isolated_worlds_.clear();
@@ -171,22 +173,31 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     // this hack.
     GURL url = web_frame->GetDocument().Url();
     if (!url.IsAboutBlank()) {
-      has_delayed_node_initialization_ = true;
+      // Nothing is recorded as set up: DidClearWindowObject() comes back here
+      // once the real document is committed.
       return;
     }
   }
-  has_delayed_node_initialization_ = false;
 
   v8::MicrotasksScope microtasks_scope(
       context, v8::MicrotasksScope::kDoNotRunMicrotasks);
 
-  v8::Isolate* const isolate = v8::Isolate::GetCurrent();
-  if ((is_main_world(world_id) || is_isolated_world(world_id)) &&
+  // Like the rest of the set-up, the window tweaks go in once per context.
+  const bool window_needs_setup =
+      is_main_world(world_id)
+          ? needs_main_world_setup
+          : is_isolated_world(world_id) && client_notified_context_ != context;
+  if (window_needs_setup &&
       renderer_client_->ShouldLoadPreload(isolate, context, render_frame_)) {
     SetUpWindow(render_frame_, context);
   }
-  if (ShouldNotifyClient(world_id))
+  if (ShouldNotifyClient(world_id) && client_notified_context_ != context) {
+    client_notified_context_.Reset(isolate, context);
     renderer_client_->DidCreateScriptContext(isolate, context, render_frame_);
+  }
+
+  if (electron::is_main_world(world_id))
+    main_world_setup_context_.Reset(isolate, context);
 
   auto prefs = render_frame_->GetBlinkPreferences();
   bool use_context_isolation = prefs.context_isolation;
@@ -203,8 +214,25 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
       renderer_client_->HasScriptsToInject(render_frame_);
 
   if (should_create_isolated_context) {
-    CreateIsolatedWorldContext();
-    if (!renderer_client_->IsWebViewFrame(isolate, context, render_frame_))
+    if (needs_main_world_setup)
+      CreateIsolatedWorldContext();
+
+    // CreateIsolatedWorldContext() only re-enters this method for a context
+    // Blink creates, not for one it reuses from the previous document. Install
+    // into the isolated world before SetupMainWorldOverrides() below, which
+    // reads the `guestViewInternal` that the preload puts there.
+    v8::Local<v8::Context> isolated_context =
+        web_frame->GetScriptContextFromWorldId(isolate,
+                                               WorldIDs::ISOLATED_WORLD_ID);
+    if (!isolated_context.IsEmpty() &&
+        client_notified_context_ != isolated_context) {
+      v8::Context::Scope isolated_context_scope(isolated_context);
+      DidInstallConditionalFeatures(isolated_context,
+                                    WorldIDs::ISOLATED_WORLD_ID);
+    }
+
+    if (needs_main_world_setup &&
+        !renderer_client_->IsWebViewFrame(isolate, context, render_frame_))
       renderer_client_->SetupMainWorldOverrides(isolate, context,
                                                 render_frame_);
   }
@@ -214,8 +242,34 @@ void ElectronRenderFrameObserver::WillReleaseScriptContext(
     v8::Isolate* const isolate,
     v8::Local<v8::Context> context,
     int world_id) {
+  // The context is going away, so whatever was set up in it has to be set up
+  // again in the context that replaces it.
+  if (main_world_setup_context_ == context)
+    main_world_setup_context_.Reset();
+  if (client_notified_context_ == context)
+    client_notified_context_.Reset();
+
   if (ShouldNotifyClient(world_id))
     renderer_client_->WillReleaseScriptContext(isolate, context, render_frame_);
+}
+
+void ElectronRenderFrameObserver::EnsureConditionalFeaturesInstalled() {
+  auto* web_frame =
+      static_cast<blink::WebLocalFrameImpl*>(render_frame_->GetWebFrame());
+  // The initial empty document is handled by the regular path, which may
+  // deliberately delay the installation (see the Opener early-return in
+  // DidInstallConditionalFeatures).
+  if (web_frame->IsOnInitialEmptyDocument())
+    return;
+
+  v8::Isolate* isolate = web_frame->GetAgentGroupScheduler()->Isolate();
+  v8::HandleScope handle_scope{isolate};
+  v8::Local<v8::Context> context = web_frame->MainWorldScriptContext();
+  if (context.IsEmpty())
+    return;
+
+  v8::Context::Scope context_scope(context);
+  DidInstallConditionalFeatures(context, MAIN_WORLD_ID);
 }
 
 void ElectronRenderFrameObserver::OnDestruct() {
