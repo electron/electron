@@ -6,7 +6,7 @@ import { once } from 'node:events';
 import * as http from 'node:http';
 import * as path from 'node:path';
 
-import { emittedNTimes } from './lib/events-helpers';
+import { emittedNTimes, emittedUntil } from './lib/events-helpers';
 import { ifdescribe, listen } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 
@@ -211,6 +211,56 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       return Promise.race([promisePass, promiseFail]);
     });
   });
+});
+
+// Blink reuses the V8 context of a frame's initial empty document for the
+// document that commits into the frame, skipping the LocalWindowProxy
+// initialization that Electron installs the preload from.
+describe('renderer nodeIntegrationInSubFrames context reuse', () => {
+  const fixturesDir = path.resolve(__dirname, 'fixtures/sub-frames');
+
+  let w: BrowserWindow;
+
+  afterEach(async () => {
+    await closeWindow(w);
+    w = null as unknown as BrowserWindow;
+  });
+
+  for (const contextIsolation of [true, false]) {
+    it(`runs the preload once, before the first page script (contextIsolation: ${contextIsolation})`, async () => {
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          preload: path.resolve(__dirname, 'fixtures/context-reuse-preload.js'),
+          nodeIntegrationInSubFrames: true,
+          contextIsolation
+        }
+      });
+
+      const preloadRuns: string[] = [];
+      const onPreloadRan = (_event: Electron.IpcMainEvent, href: string) => preloadRuns.push(href);
+      ipcMain.on('context-reuse-preload-ran', onPreloadRan);
+      try {
+        const childLoaded = emittedUntil(
+          w.webContents,
+          'did-frame-finish-load',
+          (_e: Electron.Event, isMainFrame: boolean) => !isMainFrame
+        );
+        await w.loadFile(path.join(fixturesDir, 'frame-container-context-reuse.html'));
+        await childLoaded;
+
+        const frame = w.webContents.mainFrame.frames.find((f) => f.name === 'frameA')!;
+        const [reusedMarker, preloadMarkerType] = (await frame.executeJavaScript(
+          '[window.reusedMarkerAtFirstScript, window.preloadMarkerAtFirstScript]'
+        )) as [string, string];
+        expect(reusedMarker).to.equal('yes', 'the initial empty document context should have been reused');
+        expect(preloadMarkerType).to.equal('string', 'preload should run before the first page script');
+        expect(preloadRuns.filter((href) => href.endsWith('frame-context-reuse.html'))).to.have.lengthOf(1);
+      } finally {
+        ipcMain.removeListener('context-reuse-preload-ran', onPreloadRan);
+      }
+    });
+  }
 });
 
 describe('subframe with non-standard schemes', () => {
