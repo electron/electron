@@ -370,6 +370,23 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   std::u16string toolTip = model->GetToolTipAt(index);
   item.toolTip = base::SysUTF16ToNSString(toolTip);
 
+  // Render the label with a system font variant, if specified. Section
+  // headers are excluded, they carry their own distinct system styling.
+  std::u16string fontType = model->GetFontTypeAt(index);
+  if (customType != u"header" &&
+      (fontType == u"monospaced" || fontType == u"monospacedDigit")) {
+    CGFloat font_size = [[NSFont menuFontOfSize:0] pointSize];
+    NSFont* font =
+        fontType == u"monospaced"
+            ? [NSFont monospacedSystemFontOfSize:font_size
+                                          weight:NSFontWeightRegular]
+            : [NSFont monospacedDigitSystemFontOfSize:font_size
+                                               weight:NSFontWeightRegular];
+    item.attributedTitle = [[NSAttributedString alloc]
+        initWithString:item.title
+            attributes:@{NSFontAttributeName : font}];
+  }
+
   if (role == u"services") {
     std::u16string title = u"Services";
     NSString* sub_label = l10n_util::FixUpWindowsStyleLabel(title);

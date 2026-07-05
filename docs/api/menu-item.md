@@ -34,6 +34,7 @@ See [`Menu`](menu.md) for examples.
   * `accessibilityLabel` string (optional) _macOS_
   * `sublabel` string (optional) _macOS_ - Available in macOS >= 14.4
   * `toolTip` string (optional) _macOS_ - Hover text for this menu item.
+  * `fontType` string (optional) _macOS_ - The font family variant to render the label with, can be `monospaced` or `monospacedDigit`. When left blank, the label uses the default menu font.
   * `accelerator` string (optional) - An [Accelerator](../tutorial/keyboard-shortcuts.md#accelerators) string.
   * `icon` ([NativeImage](native-image.md) | string) (optional) - Can be a
     [NativeImage](native-image.md) or the file path of an icon.
@@ -141,6 +142,11 @@ This property can be dynamically changed.
 #### `menuItem.toolTip` _macOS_
 
 A `string` indicating the item's hover text.
+
+#### `menuItem.fontType` _macOS_
+
+A `string` indicating the font family variant the item's label is rendered
+with. Can be `monospaced` or `monospacedDigit`.
 
 #### `menuItem.enabled`
 

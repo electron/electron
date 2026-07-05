@@ -69,6 +69,7 @@ describe('MenuItems', () => {
       expect(item).to.have.property('type').that.is.a('string').equal('normal');
       expect(item).to.have.property('commandId').that.is.a('number');
       expect(item).to.have.property('toolTip').that.is.a('string');
+      expect(item).to.have.property('fontType').that.is.a('string');
       expect(item).to.have.property('role').that.is.a('string');
       expect(item).to.have.property('icon');
     });
