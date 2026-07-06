@@ -44,6 +44,7 @@
 #include "components/security_state/core/security_state.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/browser/renderer_host/navigation_controller_impl.h"  // nogncheck
+#include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_frame_host_manager.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
@@ -912,6 +913,14 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
+  // Sandbox flags this WebContents must start with, e.g. inherited from a
+  // sandboxed frame that requested the window. Sandbox flags can only be
+  // added this way, never cleared.
+  uint32_t opener_sandbox_flags = 0;
+  options.Get("openerSandboxFlags", &opener_sandbox_flags);
+  const auto starting_sandbox_flags =
+      static_cast<network::mojom::WebSandboxFlags>(opener_sandbox_flags);
+
   const bool initially_shown = options.ValueOrDefault(options::kShow, true);
 
   // Obtain the session.
@@ -962,6 +971,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     bool transparent = bc == SK_ColorTRANSPARENT;
 
     content::WebContents::CreateParams params{browser_context};
+    params.starting_sandbox_flags = starting_sandbox_flags;
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
         offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
@@ -973,6 +983,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     view->SetWebContents(web_contents.get());
   } else {
     content::WebContents::CreateParams params{browser_context};
+    params.starting_sandbox_flags = starting_sandbox_flags;
     params.initially_hidden = !initially_shown;
     web_contents = content::WebContents::Create(params);
   }
@@ -1446,28 +1457,40 @@ content::WebContents* WebContents::OpenURLFromTab(
         navigation_handle_callback) {
   auto weak_this = GetWeakPtr();
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
-    content::FrameTreeNode* initiator =
-        params.frame_tree_node_id ? content::FrameTreeNode::GloballyFindByID(
-                                        params.frame_tree_node_id)
-                                  : nullptr;
-    if (initiator && !initiator->IsMainFrame()) {
-      using SandboxFlags = network::mojom::WebSandboxFlags;
+    using SandboxFlags = network::mojom::WebSandboxFlags;
+    SandboxFlags inherited_sandbox_flags = SandboxFlags::kNone;
+    // For non-CURRENT_TAB dispositions params.frame_tree_node_id refers to
+    // the frame to navigate (which doesn't exist yet), so resolve the
+    // initiating frame through the source RenderFrameHost instead.
+    auto* initiator = static_cast<content::RenderFrameHostImpl*>(
+        content::RenderFrameHost::FromID(params.source_render_process_id,
+                                         params.source_render_frame_id));
+    if (initiator && initiator->GetParent()) {
+      // Use the initiating document's active sandboxing flag set (its policy
+      // container flags), which is what
+      // content::WebContentsImpl::CreateWithOpener consults when deciding
+      // whether renderer-created popups must stay sandboxed.
       const SandboxFlags flags = initiator->active_sandbox_flags();
       auto allow = [flags](SandboxFlags flag) {
         return (flags & flag) == SandboxFlags::kNone;
       };
       if (!allow(SandboxFlags::kPopups)) {
-        if (auto* rfh = initiator->current_frame_host()) {
-          rfh->AddMessageToConsole(
-              blink::mojom::ConsoleMessageLevel::kError,
-              "Blocked opening a new window because the iframe is sandboxed "
-              "and the 'allow-popups' keyword is not set.");
-        }
+        initiator->AddMessageToConsole(
+            blink::mojom::ConsoleMessageLevel::kError,
+            "Blocked opening a new window because the iframe is sandboxed "
+            "and the 'allow-popups' keyword is not set.");
         return nullptr;
+      }
+      // A sandboxed frame may create popups, but unless the
+      // 'allow-popups-to-escape-sandbox' keyword is set the new top-level
+      // browsing context must inherit the initiator's sandbox flags. See
+      // https://html.spec.whatwg.org/C/#attr-iframe-sandbox.
+      if (!allow(SandboxFlags::kPropagatesToAuxiliaryBrowsingContexts)) {
+        inherited_sandbox_flags = flags;
       }
     }
     Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
-         params.post_data);
+         params.post_data, static_cast<uint32_t>(inherited_sandbox_flags));
     return nullptr;
   }
 
@@ -2459,7 +2482,8 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
 
 void WebContents::DidUpdateFaviconURL(
     content::RenderFrameHost* render_frame_host,
-    const std::vector<blink::mojom::FaviconURLPtr>& urls) {
+    const std::vector<blink::mojom::FaviconURLPtr>& urls,
+    blink::mojom::FaviconUpdateReason reason) {
   base::flat_set<GURL> unique_urls;
   unique_urls.reserve(std::size(urls));
   for (const auto& iter : urls) {

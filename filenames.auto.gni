@@ -176,6 +176,7 @@ auto_filenames = {
     "docs/api/structures/webauthn-account.md",
     "docs/api/structures/window-open-handler-response.md",
     "docs/api/structures/window-session-end-event.md",
+    "docs/api/structures/window-state-persistence.md",
   ]
 
   node_header_sources = [
@@ -223,8 +224,8 @@ auto_filenames = {
     "../third_party/electron_node/src/crypto/crypto_keygen.h",
     "../third_party/electron_node/src/crypto/crypto_keys.h",
     "../third_party/electron_node/src/crypto/crypto_kmac.h",
-    "../third_party/electron_node/src/crypto/crypto_ml_dsa.h",
     "../third_party/electron_node/src/crypto/crypto_pbkdf2.h",
+    "../third_party/electron_node/src/crypto/crypto_pqc.h",
     "../third_party/electron_node/src/crypto/crypto_random.h",
     "../third_party/electron_node/src/crypto/crypto_rsa.h",
     "../third_party/electron_node/src/crypto/crypto_scrypt.h",
@@ -232,6 +233,7 @@ auto_filenames = {
     "../third_party/electron_node/src/crypto/crypto_spkac.h",
     "../third_party/electron_node/src/crypto/crypto_timing.h",
     "../third_party/electron_node/src/crypto/crypto_tls.h",
+    "../third_party/electron_node/src/crypto/crypto_turboshake.h",
     "../third_party/electron_node/src/crypto/crypto_util.h",
     "../third_party/electron_node/src/crypto/crypto_x509.h",
     "../third_party/electron_node/src/dataqueue/queue.h",
@@ -328,6 +330,7 @@ auto_filenames = {
     "../third_party/electron_node/src/node_platform.h",
     "../third_party/electron_node/src/node_process-inl.h",
     "../third_party/electron_node/src/node_process.h",
+    "../third_party/electron_node/src/node_profiling.h",
     "../third_party/electron_node/src/node_realm-inl.h",
     "../third_party/electron_node/src/node_realm.h",
     "../third_party/electron_node/src/node_report.h",

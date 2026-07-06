@@ -34,10 +34,10 @@ index 1b8541bfa56a7e53c8396c29ea45a0b5af89ef81..28ffec368e5d6bc1744605e9dda7fc68
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 0a3cca0c2e4e7c9c3fa930dc369cc47acaf149c2..d87986257de25e310efa9444ad634c3bd4703a6f 100644
+index f3b1a3470e6da82f43d720a8ee25bc03fefe3fd0..89a5098881d7d113c1b058e8793787f7afc6c0b0 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4839,10 +4839,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4841,10 +4841,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -259,7 +259,7 @@ index a5c4f488653b26034ddf0c7a01a88dffabe641b0..d370a8745fdfabb526e849203c941b7e
    bool AllowScriptExtensions() override { return false; }
  
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index 4122bc1965c28afd5d4ecd22db54a3c976f5934a..fe6d9ac879e8bfe3e0887ea4c2068f64954dcc9d 100644
+index 4bc189549d5ab61afdf62fdd327c43b7e393c245..22b8e5873e4abbb2439d84e336fd9a210e1912f6 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 @@ -183,6 +183,7 @@ void ServiceWorkerGlobalScopeProxy::WillEvaluateScript() {
