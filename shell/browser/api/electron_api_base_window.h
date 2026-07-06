@@ -46,6 +46,13 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
 
+  // Clears window state from the Local State JSON file in
+  // app.getPath('userData') via PrefService.
+  static void ClearPersistedState(const std::string& window_name);
+
+  static bool IsWindowNameValid(const gin_helper::Dictionary& options,
+                                std::string* error_message);
+
   const NativeWindow* window() const { return window_.get(); }
   NativeWindow* window() { return window_.get(); }
 
@@ -97,6 +104,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                             const base::DictValue& details) override;
   void OnNewWindowForTab() override;
   void OnSystemContextMenu(int x, int y, bool* prevent_default) override;
+  void OnWindowStateRestored() override;
 #if BUILDFLAG(IS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
 #endif
