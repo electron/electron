@@ -165,7 +165,7 @@ index 2448abf73b097f04583aefda1fb1a67b3de67e5b..55f935f38bf05586650e7a83a689347b
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 9d1508063f1da743088650888410b207441bc8e9..83eb993048e7b0365d5213973a67c271f1144973 100644
+index 9d1508063f1da743088650888410b207441bc8e9..bdc2c634db9449c4a7540a9bc0f51005aa9f2a8d 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -29,7 +29,9 @@
@@ -231,7 +231,30 @@ index 9d1508063f1da743088650888410b207441bc8e9..83eb993048e7b0365d5213973a67c271
      if (!only_me.is_valid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -422,6 +432,17 @@ bool ProcessSingleton::Create() {
+@@ -395,6 +405,7 @@ bool ProcessSingleton::Create() {
+       // We have to make sure there is no Chrome instance running on another
+       // machine that uses the same profile.
+       HANDLE lock_file_handle = nullptr;
++      DWORD error = ERROR_SUCCESS;
+       {
+         TRACE_EVENT0("startup", "ProcessSingleton::Create:CreateLockFile");
+         base::FilePath lock_file_path = user_data_dir_.AppendASCII(kLockfile);
+@@ -402,9 +413,13 @@ bool ProcessSingleton::Create() {
+             lock_file_path.value().c_str(), GENERIC_WRITE, FILE_SHARE_READ,
+             NULL, CREATE_ALWAYS,
+             FILE_ATTRIBUTE_NORMAL | FILE_FLAG_DELETE_ON_CLOSE, NULL);
++        // Capture the error before leaving the scope: the TRACE_EVENT0 and
++        // FilePath destructors that run at the end of this block can reset the
++        // thread's last-error code to ERROR_SUCCESS. Reading it afterwards and
++        // passing 0 to base::File::OSErrorToFileError() trips a DCHECK.
++        error = ::GetLastError();
+       }
+ 
+-      DWORD error = ::GetLastError();
+       if (lock_file_handle != INVALID_HANDLE_VALUE) {
+         lock_file_ = base::File(std::exchange(lock_file_handle, nullptr));
+         LOG_IF(WARNING, error == ERROR_ALREADY_EXISTS)
+@@ -422,6 +437,17 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());
