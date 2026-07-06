@@ -197,7 +197,7 @@ index 55f935f38bf05586650e7a83a689347bb41a45a4..3dc3e4836238c92b4a192a410f3b7c64
    if (!WriteToSocket(socket.fd(), to_send)) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 83eb993048e7b0365d5213973a67c271f1144973..a63073ae2e6c03070de6116bab4fe286ffecf32d 100644
+index bdc2c634db9449c4a7540a9bc0f51005aa9f2a8d..2a553b7c8d9d316f0c042bd3cf73d3fbfc09ca1a 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -9,6 +9,7 @@
