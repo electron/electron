@@ -43,6 +43,7 @@
 #include "services/network/public/cpp/network_switches.h"
 #include "shell/browser/metrics/electron_metrics_service_client.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/thread_restrictions.h"
 
@@ -153,6 +154,8 @@ void BrowserProcessImpl::PostEarlyInitialization() {
   os_crypt_async::SecretPortalKeyProvider::RegisterLocalPrefs(
       pref_registry.get());
 #endif
+
+  pref_registry->RegisterDictionaryPref(electron::kWindowStates);
 
   in_memory_pref_store_ = base::MakeRefCounted<ValueMapPrefStore>();
   ApplyProxyModeFromCommandLine(in_memory_pref_store());
