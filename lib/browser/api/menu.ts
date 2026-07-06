@@ -170,6 +170,10 @@ Menu.prototype.insert = function (pos, item) {
     throw new RangeError(`Position ${pos} cannot be greater than the total MenuItem count`);
   }
 
+  if (item.fontType && item.fontType !== 'monospaced' && item.fontType !== 'monospacedDigit') {
+    throw new TypeError("fontType must be one of 'monospaced' or 'monospacedDigit'");
+  }
+
   // insert item depending on its type
   insertItemByType.call(this, item, pos);
 

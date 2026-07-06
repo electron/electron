@@ -327,6 +327,30 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   return item;
 }
 
+// Renders the item's label via attributedTitle with the requested system font
+// variant, if any. Section headers are excluded, they carry their own distinct
+// system styling.
+- (void)applyFontTypeToMenuItem:(NSMenuItem*)item
+                      fromModel:(electron::ElectronMenuModel*)model
+                        atIndex:(NSInteger)index {
+  std::u16string fontType = model->GetFontTypeAt(index);
+  if (fontType != u"monospaced" && fontType != u"monospacedDigit")
+    return;
+  if (model->GetCustomTypeAt(index) == u"header")
+    return;
+
+  CGFloat font_size = [[NSFont menuFontOfSize:0] pointSize];
+  NSFont* font =
+      fontType == u"monospaced"
+          ? [NSFont monospacedSystemFontOfSize:font_size
+                                        weight:NSFontWeightRegular]
+          : [NSFont monospacedDigitSystemFontOfSize:font_size
+                                             weight:NSFontWeightRegular];
+  item.attributedTitle =
+      [[NSAttributedString alloc] initWithString:item.title
+                                      attributes:@{NSFontAttributeName : font}];
+}
+
 - (NSMenuItem*)makeMenuItemForIndex:(NSInteger)index
                           fromModel:(electron::ElectronMenuModel*)model {
   std::u16string label16 = model->GetLabelAt(index);
@@ -370,22 +394,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   std::u16string toolTip = model->GetToolTipAt(index);
   item.toolTip = base::SysUTF16ToNSString(toolTip);
 
-  // Render the label with a system font variant, if specified. Section
-  // headers are excluded, they carry their own distinct system styling.
-  std::u16string fontType = model->GetFontTypeAt(index);
-  if (customType != u"header" &&
-      (fontType == u"monospaced" || fontType == u"monospacedDigit")) {
-    CGFloat font_size = [[NSFont menuFontOfSize:0] pointSize];
-    NSFont* font =
-        fontType == u"monospaced"
-            ? [NSFont monospacedSystemFontOfSize:font_size
-                                          weight:NSFontWeightRegular]
-            : [NSFont monospacedDigitSystemFontOfSize:font_size
-                                               weight:NSFontWeightRegular];
-    item.attributedTitle = [[NSAttributedString alloc]
-        initWithString:item.title
-            attributes:@{NSFontAttributeName : font}];
-  }
+  [self applyFontTypeToMenuItem:item fromModel:model atIndex:index];
 
   if (role == u"services") {
     std::u16string title = u"Services";
@@ -533,6 +542,10 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   std::u16string accessibility_label16 = model->GetAccessibilityLabelAt(index);
   NSString* label = l10n_util::FixUpWindowsStyleLabel(label16);
   item.title = label;
+  // A set attributedTitle takes display precedence over title, so re-render
+  // it with the updated label.
+  if (item.attributedTitle)
+    [self applyFontTypeToMenuItem:item fromModel:model atIndex:index];
   if (!accessibility_label16.empty()) {
     NSString* accessibility_label =
         base::SysUTF16ToNSString(accessibility_label16);

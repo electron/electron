@@ -199,6 +199,7 @@ declare namespace Electron {
     closePopupAt(id: number): void;
     setSublabel(index: number, label: string): void;
     setToolTip(index: number, tooltip: string): void;
+    setFontType(index: number, fontType: string): void;
     setIcon(index: number, image: string | NativeImage): void;
     setRole(index: number, role: string): void;
     setCustomType(index: number, customType: string): void;

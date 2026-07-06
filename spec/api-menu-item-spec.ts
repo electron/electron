@@ -74,6 +74,14 @@ describe('MenuItems', () => {
       expect(item).to.have.property('icon');
     });
 
+    it('should throw when fontType is invalid without modifying the menu', () => {
+      const menu = new Menu();
+      expect(() => {
+        menu.append(new MenuItem({ label: '09:45', fontType: 'bold' as any }));
+      }).to.throw("fontType must be one of 'monospaced' or 'monospacedDigit'");
+      expect(menu.getItemCount()).to.equal(0);
+    });
+
     it('should have a default accelerator for certain roles', () => {
       const items: Record<string, Electron.MenuItem['accelerator']> = {
         undo: 'CommandOrControl+Z',
