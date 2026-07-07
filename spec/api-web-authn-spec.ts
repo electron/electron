@@ -268,3 +268,169 @@ describe("session 'select-webauthn-account' event", () => {
     expect(result.name).to.equal('NotAllowedError');
   });
 });
+
+// CDP virtual authenticators implement no CTAP client PIN, so the
+// 'enter-webauthn-pin' path needs a physical PIN-protected key to exercise.
+describe('session WebAuthn ceremony events', () => {
+  const CEREMONY_EVENTS = [
+    'webauthn-request-started',
+    'webauthn-request-touch-needed',
+    'webauthn-request-completed',
+    'enter-webauthn-pin'
+  ];
+
+  let server: http.Server;
+  let serverUrl: string;
+  let w: BrowserWindow;
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('<!doctype html><title>webauthn</title>');
+    });
+    await new Promise<void>((resolve) => server.listen(0, 'localhost', resolve));
+    const { port } = server.address() as AddressInfo;
+    serverUrl = `http://localhost:${port}/`;
+  });
+
+  after(() => {
+    server.close();
+  });
+
+  beforeEach(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+    w.webContents.debugger.attach();
+    // Without enableUI the virtual authenticator environment calls
+    // DisableUI() and ceremony events are (correctly) suppressed.
+    await w.webContents.debugger.sendCommand('WebAuthn.enable', { enableUI: true });
+    await w.webContents.debugger.sendCommand('WebAuthn.addVirtualAuthenticator', {
+      options: {
+        protocol: 'ctap2',
+        transport: 'usb',
+        hasResidentKey: false,
+        hasUserVerification: false,
+        automaticPresenceSimulation: true
+      }
+    });
+  });
+
+  afterEach(async () => {
+    for (const name of CEREMONY_EVENTS) {
+      session.defaultSession.removeAllListeners(name);
+    }
+    try {
+      w.webContents.debugger.detach();
+    } catch {}
+    await closeAllWindows();
+  });
+
+  function recordEvents() {
+    const events: { name: string; details: any }[] = [];
+    for (const name of CEREMONY_EVENTS) {
+      (w.webContents.session as NodeJS.EventEmitter).on(name, (event, details) => {
+        events.push({ name, details });
+      });
+    }
+    return events;
+  }
+
+  function createCredential(opts: { excludePrevious?: boolean } = {}) {
+    return w.webContents.executeJavaScript(`
+      navigator.credentials.create({
+        publicKey: {
+          rp: { id: 'localhost', name: 'Electron Spec' },
+          user: {
+            id: new TextEncoder().encode('user-1'),
+            name: 'alice@example.com',
+            displayName: 'Alice'
+          },
+          challenge: new Uint8Array(32),
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          excludeCredentials: ${opts.excludePrevious ? 'window.__excludeList' : '[]'},
+          authenticatorSelection: { userVerification: 'discouraged' }
+        }
+      }).then(
+        c => {
+          window.__excludeList = [{ type: 'public-key', id: c.rawId }];
+          window.__lastCredentialId = new Uint8Array(c.rawId);
+          return { ok: true, id: c.id };
+        },
+        e => ({ ok: false, name: e.name, message: e.message })
+      )
+    `);
+  }
+
+  it('emits webauthn-request-started and a successful webauthn-request-completed for create()', async () => {
+    const events = recordEvents();
+
+    const result = await createCredential();
+    expect(result.ok).to.be.true();
+
+    const started = events.filter((e) => e.name === 'webauthn-request-started');
+    expect(started).to.have.lengthOf(1);
+    expect(started[0].details.relyingPartyId).to.equal('localhost');
+    expect(started[0].details.requestType).to.equal('create');
+    expect(started[0].details.transports).to.be.an('array').that.includes('usb');
+    expect(started[0].details.userVerification).to.equal('discouraged');
+    expect(started[0].details.frame).to.not.be.null();
+
+    const completed = events.filter((e) => e.name === 'webauthn-request-completed');
+    expect(completed).to.have.lengthOf(1);
+    expect(completed[0].details.relyingPartyId).to.equal('localhost');
+    expect(completed[0].details.success).to.be.true();
+    expect(completed[0].details.reason).to.be.undefined();
+
+    // started must precede completed
+    expect(events.findIndex((e) => e.name === 'webauthn-request-started')).to.be.lessThan(
+      events.findIndex((e) => e.name === 'webauthn-request-completed')
+    );
+  });
+
+  it('emits ceremony events for get() with requestType "get"', async () => {
+    expect((await createCredential()).ok).to.be.true();
+
+    const events = recordEvents();
+    const result = await w.webContents.executeJavaScript(`
+      navigator.credentials.get({
+        publicKey: {
+          challenge: new Uint8Array(32),
+          rpId: 'localhost',
+          userVerification: 'discouraged',
+          allowCredentials: [{ type: 'public-key', id: window.__lastCredentialId }]
+        }
+      }).then(
+        c => ({ ok: true, id: c.id }),
+        e => ({ ok: false, name: e.name, message: e.message })
+      )
+    `);
+    expect(result.ok).to.be.true();
+
+    const started = events.filter((e) => e.name === 'webauthn-request-started');
+    expect(started).to.have.lengthOf(1);
+    expect(started[0].details.requestType).to.equal('get');
+
+    const completed = events.filter((e) => e.name === 'webauthn-request-completed');
+    expect(completed).to.have.lengthOf(1);
+    expect(completed[0].details.success).to.be.true();
+  });
+
+  it('reports "key-already-registered" when create() excludes an existing credential', async () => {
+    expect((await createCredential()).ok).to.be.true();
+
+    const events = recordEvents();
+    const result = await createCredential({ excludePrevious: true });
+    expect(result.ok).to.be.false();
+    expect(result.name).to.equal('InvalidStateError');
+
+    const completed = events.filter((e) => e.name === 'webauthn-request-completed');
+    expect(completed).to.have.lengthOf(1);
+    expect(completed[0].details.success).to.be.false();
+    expect(completed[0].details.reason).to.equal('key-already-registered');
+  });
+
+  it('does not interfere with requests when no ceremony listeners are registered', async () => {
+    const result = await createCredential();
+    expect(result.ok).to.be.true();
+  });
+});
