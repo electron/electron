@@ -301,9 +301,11 @@ bool Menu::WorksWhenHiddenAt(int index) const {
 
 void Menu::OnMenuWillClose() {
   Emit("menu-will-close");
+  keep_alive_.Clear();
 }
 
 void Menu::OnMenuWillShow() {
+  keep_alive_ = this;
   Emit("menu-will-show");
 }
 
