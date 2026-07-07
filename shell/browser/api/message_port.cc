@@ -15,7 +15,6 @@
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -77,12 +76,7 @@ void MessagePort::PostMessage(gin::Arguments* args) {
   }
 
   v8::Local<v8::Value> transferables;
-  // Transient, stack-only list of ports consumed synchronously below; the raw
-  // pointers stay live via conservative stack scanning, so the Blink GC
-  // plugin's heap-collection requirement doesn't apply here.
-  GC_PLUGIN_IGNORE(
-      "Stack-only transient collection of garbage-collected ports.")
-  std::vector<MessagePort*> wrapped_ports;
+  MessagePort::PersistentList wrapped_ports;
   if (args->GetNext(&transferables)) {
     std::vector<v8::Local<v8::Value>> wrapped_port_values;
     if (!gin::ConvertFromV8(args->isolate(), transferables,
@@ -99,13 +93,13 @@ void MessagePort::PostMessage(gin::Arguments* args) {
                                " is not a valid port");
         return;
       }
-      wrapped_ports.push_back(port);
+      wrapped_ports.emplace_back(port);
     }
   }
 
   // Make sure we aren't connected to any of the passed-in ports.
   for (unsigned i = 0; i < wrapped_ports.size(); ++i) {
-    if (wrapped_ports[i] == this) {
+    if (wrapped_ports[i].Get() == this) {
       thrower.ThrowError("Port at index " + base::NumberToString(i) +
                          " contains the source port.");
       return;
@@ -197,12 +191,11 @@ bool MessagePort::HasPendingActivity() const {
 }
 
 // static
-std::vector<MessagePort*> MessagePort::EntanglePorts(
+MessagePort::PersistentList MessagePort::EntanglePorts(
     v8::Isolate* isolate,
     std::vector<blink::MessagePortChannel> channels) {
-  GC_PLUGIN_IGNORE(
-      "Stack-only transient collection of garbage-collected ports.")
-  std::vector<MessagePort*> wrapped_ports;
+  PersistentList wrapped_ports;
+  wrapped_ports.reserve(channels.size());
   for (auto& port : channels) {
     auto* wrapped_port = MessagePort::Create(isolate);
     wrapped_port->Entangle(std::move(port));
@@ -214,7 +207,7 @@ std::vector<MessagePort*> MessagePort::EntanglePorts(
 // static
 std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
     v8::Isolate* isolate,
-    const std::vector<MessagePort*>& ports,
+    const PersistentList& ports,
     bool* threw_exception) {
   if (ports.empty())
     return {};
@@ -225,7 +218,7 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
   // Walk the incoming array - if there are any duplicate ports, or null ports
   // or cloned ports, throw an error (per section 8.3.3 of the HTML5 spec).
   for (unsigned i = 0; i < ports.size(); ++i) {
-    auto* port = ports[i];
+    auto* port = ports[i].Get();
     if (!port || port->IsNeutered() || visited.contains(port)) {
       std::string type;
       if (!port)
@@ -243,7 +236,8 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
   }
 
   // Passed-in ports passed validity checks, so we can disentangle them.
-  return base::ToVector(ports, [](auto* port) { return port->Disentangle(); });
+  return base::ToVector(ports,
+                        [](const auto& port) { return port->Disentangle(); });
 }
 
 bool MessagePort::Accept(mojo::Message* mojo_message) {
@@ -256,8 +250,6 @@ bool MessagePort::Accept(mojo::Message* mojo_message) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
 
-  GC_PLUGIN_IGNORE(
-      "Stack-only transient collection of garbage-collected ports.")
   auto ports = EntanglePorts(isolate, std::move(message.ports));
 
   v8::Local<v8::Value> message_value = DeserializeV8Value(isolate, message);

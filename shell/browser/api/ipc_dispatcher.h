@@ -12,7 +12,6 @@
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/api.mojom.h"
-#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
@@ -52,8 +51,6 @@ class IpcDispatcher {
                  channel);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    GC_PLUGIN_IGNORE(
-        "Stack-only transient collection of garbage-collected ports.")
     auto wrapped_ports =
         MessagePort::EntanglePorts(isolate, std::move(message.ports));
     v8::Local<v8::Value> message_value =

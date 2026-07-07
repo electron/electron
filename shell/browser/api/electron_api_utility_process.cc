@@ -31,7 +31,6 @@
 #include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/system_network_context_manager.h"
-#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -365,9 +364,7 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
   }
 
   v8::Local<v8::Value> transferables;
-  GC_PLUGIN_IGNORE(
-      "Stack-only transient collection of garbage-collected ports.")
-  std::vector<MessagePort*> wrapped_ports;
+  MessagePort::PersistentList wrapped_ports;
   if (args->GetNext(&transferables)) {
     std::vector<v8::Local<v8::Value>> wrapped_port_values;
     if (!gin::ConvertFromV8(isolate, transferables, &wrapped_port_values)) {
@@ -384,7 +381,7 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* const args) {
                           " is not a valid port"}));
         return;
       }
-      wrapped_ports.push_back(port);
+      wrapped_ports.emplace_back(port);
     }
   }
 

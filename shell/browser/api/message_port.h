@@ -14,6 +14,7 @@
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "third_party/blink/public/common/messaging/message_port_channel.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace gin {
 class Arguments;
@@ -47,13 +48,22 @@ class MessagePort final : public gin::Wrappable<MessagePort>,
   [[nodiscard]] bool IsEntangled() const;
   [[nodiscard]] bool IsNeutered() const;
 
-  static std::vector<MessagePort*> EntanglePorts(
+  // A transient list of ports. Each element is a cppgc::Persistent, i.e. a
+  // strong off-heap GC root, so the referenced MessagePorts are kept alive for
+  // as long as the list lives — even though the list's backing storage is a
+  // plain heap buffer, which the garbage collector does NOT scan (a raw
+  // std::vector<MessagePort*> would be an invisible edge and risk a
+  // use-after-free). This mirrors Blink's use of HeapVector<Member<T>> /
+  // Vector<Persistent<T>> to hold garbage-collected objects in a collection.
+  using PersistentList = std::vector<cppgc::Persistent<MessagePort>>;
+
+  static PersistentList EntanglePorts(
       v8::Isolate* isolate,
       std::vector<blink::MessagePortChannel> channels);
 
   static std::vector<blink::MessagePortChannel> DisentanglePorts(
       v8::Isolate* isolate,
-      const std::vector<MessagePort*>& ports,
+      const PersistentList& ports,
       bool* threw_exception);
 
   // gin::Wrappable
@@ -99,5 +109,22 @@ class MessagePort final : public gin::Wrappable<MessagePort>,
 };
 
 }  // namespace electron
+
+namespace gin {
+
+// Lets a cppgc::Persistent<MessagePort> (and therefore a
+// std::vector<cppgc::Persistent<MessagePort>>, via the std::vector converter)
+// be converted to its JS wrapper, delegating to the gin::Wrappable pointer
+// converter.
+template <>
+struct Converter<cppgc::Persistent<electron::MessagePort>> {
+  static v8::MaybeLocal<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const cppgc::Persistent<electron::MessagePort>& val) {
+    return Converter<electron::MessagePort*>::ToV8(isolate, val.Get());
+  }
+};
+
+}  // namespace gin
 
 #endif  // ELECTRON_SHELL_BROWSER_API_MESSAGE_PORT_H_

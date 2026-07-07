@@ -11,7 +11,6 @@
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
-#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/handle.h"
@@ -92,8 +91,6 @@ bool ParentPort::Accept(mojo::Message* mojo_message) {
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  GC_PLUGIN_IGNORE(
-      "Stack-only transient collection of garbage-collected ports.")
   auto wrapped_ports =
       MessagePort::EntanglePorts(isolate, std::move(message.ports));
   v8::Local<v8::Value> message_value =
