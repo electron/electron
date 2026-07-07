@@ -5,16 +5,21 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_CLIENT_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_CLIENT_DELEGATE_H_
 
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
+#include "base/values.h"
 #include "content/public/browser/authenticator_request_client_delegate.h"
 #include "content/public/browser/global_routing_id.h"
+#include "v8/include/v8-forward.h"
 
 namespace content {
 class RenderFrameHost;
-}
+class WebContents;
+}  // namespace content
 
 namespace gin {
 class Arguments;
@@ -37,6 +42,12 @@ class ElectronAuthenticatorRequestClientDelegate
 
   // content::AuthenticatorRequestClientDelegate:
   void SetRelyingPartyId(const std::string& rp_id) override;
+  void SetUIPresentation(UIPresentation ui_presentation) override;
+  bool DoesBlockRequestOnFailure(InterestingFailureReason reason) override;
+  void OnTransactionSuccessful(
+      RequestSource request_source,
+      device::FidoRequestType request_type,
+      device::AuthenticatorType authenticator_type) override;
   void StartObserving(device::FidoRequestHandlerBase* request_handler) override;
   void StopObserving(device::FidoRequestHandlerBase* request_handler) override;
   void RegisterActionCallbacks(
@@ -56,13 +67,45 @@ class ElectronAuthenticatorRequestClientDelegate
       base::OnceCallback<void(device::AuthenticatorGetAssertionResponse)>
           callback) override;
 
+  // device::FidoRequestHandlerBase::Observer:
+  void OnTransportAvailabilityEnumerated(
+      device::FidoRequestHandlerBase::TransportAvailabilityInfo data) override;
+
  private:
   void OnAccountSelected(gin::Arguments* args);
   void CancelPendingAccountSelection();
 
+  // Whether ceremony lifecycle events should be emitted for this request;
+  // non-modal presentations must not trigger app-drawn modal UI.
+  bool ShouldEmitCeremonyEvents() const;
+
+  // Resolves the api::Session wrapper for this request's WebContents, or an
+  // empty handle if it is gone. |out_rfh| may be set to null mid-ceremony.
+  v8::MaybeLocal<v8::Object> GetSessionWrapper(
+      v8::Isolate* isolate,
+      content::RenderFrameHost** out_rfh);
+
+  // Emits a fire-and-forget ceremony event on the session from a fresh task.
+  // Static and bound to plain data only: it is posted from FIDO/content
+  // callstacks (and the destructor), which app JS must not re-enter.
+  static void EmitCeremonyEvent(
+      base::WeakPtr<content::WebContents> web_contents,
+      content::GlobalRenderFrameHostId rfh_id,
+      std::string name,
+      base::DictValue details);
+
+  void EmitRequestCompleted(bool success, std::string_view reason);
+
   const content::GlobalRenderFrameHostId render_frame_host_id_;
+  base::WeakPtr<content::WebContents> web_contents_;
   std::string relying_party_id_;
   base::OnceClosure cancel_callback_;
+
+  UIPresentation ui_presentation_ = UIPresentation::kModal;
+
+  // True between the started emit and its matching completed emit; enforces
+  // the exactly-one-completed-per-started pairing.
+  bool completed_event_pending_ = false;
 
   base::ScopedObservation<device::FidoRequestHandlerBase,
                           device::FidoRequestHandlerBase::Observer>

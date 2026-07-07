@@ -629,6 +629,41 @@ Emitted after `USBDevice.forget()` has been called.  This event can be used
 to help maintain persistent storage of permissions when
 `setDevicePermissionHandler` is used.
 
+#### Event: 'webauthn-request-started'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `requestType` string - Can be `create` or `get`. Matches whether the page
+    called `navigator.credentials.create()` or `navigator.credentials.get()`.
+  * `transports` string[] - The transports that may service this request,
+    which is the intersection of the transports supported by the client and
+    those allowed by the relying party. Possible values include `usb`, `nfc`,
+    `ble`, `hybrid` and `internal`.
+  * `userVerification` string - Can be `required`, `preferred` or
+    `discouraged`. The user verification requirement of the request.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+
+Emitted when a WebAuthn ceremony starts and the request has been dispatched to
+the available authenticators. If `transports` contains `usb`, `nfc` or `ble`, a
+connected security key is now waiting for the user to touch it — use this
+event to show "touch your security key" UI. The matching
+[`webauthn-request-completed`](#event-webauthn-request-completed) event fires
+when the ceremony ends, however it ends, so UI shown here can be dismissed
+there.
+
+This event is informational; it does not provide a way to cancel the request.
+It is not emitted for background requests that do not expect modal UI (for
+example `navigator.credentials.get()` with `mediation: 'conditional'`).
+
+> [!NOTE]
+> On Windows, Chromium typically hands security key requests to the native
+> Windows WebAuthn dialog, which draws its own UI. This event still fires, but
+> `transports` may be empty and no app-drawn UI is needed.
+
 #### Event: 'select-webauthn-account'
 
 Returns:
@@ -676,6 +711,34 @@ app.whenReady().then(() => {
   })
 })
 ```
+
+#### Event: 'webauthn-request-completed'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `success` boolean - Whether the request completed successfully.
+  * `reason` string (optional) - Why the request failed, when a specific
+    reason is known. Can be `timeout`, `key-not-registered`,
+    `key-already-registered`, `pin-soft-blocked`, `pin-hard-blocked`,
+    `authenticator-removed-during-pin-entry`, `missing-resident-keys`,
+    `missing-user-verification`, `missing-large-blob`,
+    `no-common-algorithms`, `storage-full`, `user-consent-denied`,
+    `win-user-cancelled`, `hybrid-transport-error`, `no-passkeys`,
+    `enclave-error` or `enclave-cancel`. Absent when the request succeeded or
+    when it ended without a specific reason (for example the page navigated
+    away or aborted the request).
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+
+Emitted when a WebAuthn ceremony that emitted
+[`webauthn-request-started`](#event-webauthn-request-started) ends, whether it
+succeeded, failed, timed out or was aborted. This event fires at most once per
+started request — use it to dismiss any ceremony UI. It may not be emitted if
+the window that initiated the request is destroyed before the ceremony ends,
+or if the application is quitting.
 
 ### Instance Methods
 
