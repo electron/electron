@@ -457,11 +457,12 @@ constexpr char kMediaSize[] = "mediaSize";
 constexpr char kDpi[] = "dpi";
 constexpr char kMarginType[] = "marginType";
 constexpr char kMargins[] = "margins";
+constexpr char kPrintBackground[] = "printBackground";
+constexpr char kDuplexMode[] = "duplexMode";
 
 // Constants we use for printToPDF options.
 constexpr char kLandscape[] = "landscape";
 constexpr char kDisplayHeaderFooter[] = "displayHeaderFooter";
-constexpr char kPrintBackground[] = "printBackground";
 constexpr char kScale[] = "scale";
 constexpr char kPaperWidth[] = "paperWidth";
 constexpr char kPaperHeight[] = "paperHeight";
@@ -3467,7 +3468,10 @@ void WebContents::Print(gin::Arguments* const args) {
 
   settings.Set(
       printing::kSettingShouldPrintBackgrounds,
-      options.ValueOrDefault(printing::kSettingShouldPrintBackgrounds, false));
+      options.ValueOrDefault(
+          kPrintBackground,
+          options.ValueOrDefault(printing::kSettingShouldPrintBackgrounds,
+                                 false)));
 
   // Set custom margin settings
   auto margins = gin_helper::Dictionary::CreateEmpty(isolate);
@@ -3572,7 +3576,9 @@ void WebContents::Print(gin::Arguments* const args) {
 
   // Duplex type user wants to use.
   const auto duplex_mode = options.ValueOrDefault(
-      printing::kSettingDuplexMode, printing::mojom::DuplexMode::kSimplex);
+      kDuplexMode,
+      options.ValueOrDefault(printing::kSettingDuplexMode,
+                             printing::mojom::DuplexMode::kUnknownDuplexMode));
   settings.Set(printing::kSettingDuplexMode, static_cast<int>(duplex_mode));
 
   // Set custom media size if passed. If none is passed, the media size
