@@ -643,7 +643,9 @@ Returns:
     those allowed by the relying party. Possible values include `usb`, `nfc`,
     `ble`, `hybrid` and `internal`.
   * `userVerification` string - Can be `required`, `preferred` or
-    `discouraged`. The user verification requirement of the request.
+    `discouraged`. The user verification requirement of the request. When user
+    verification is performed with a security key PIN, the
+    [`enter-webauthn-pin`](#event-enter-webauthn-pin) event will fire.
   * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
       May be `null` if accessed after the frame has either navigated or been destroyed.
 
@@ -712,6 +714,65 @@ app.whenReady().then(() => {
 })
 ```
 
+#### Event: 'enter-webauthn-pin'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `reason` string - Can be `set`, `change` or `challenge`. `challenge` means
+    the existing PIN is being collected to verify the user; `set` means the
+    authenticator requires a new PIN to be set before it can be used; `change`
+    means the existing PIN must be changed before the authenticator can be
+    used.
+  * `error` string (optional) - Why the PIN is being collected again. Can be
+    `wrong-pin`, `too-short`, `invalid-characters`, `same-as-current-pin` or
+    `internal-uv-locked`. Absent on the first collection attempt.
+  * `minPinLength` Integer - The minimum PIN length the authenticator will
+    accept.
+  * `attemptsRemaining` Integer - The number of attempts remaining before the
+    security key locks. Only meaningful when `reason` is `challenge`.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+* `callback` Function
+  * `pin` string | null (optional)
+
+Emitted when a security key requires its PIN to complete the WebAuthn request,
+for example a FIDO2 key with a configured PIN servicing a request with
+`userVerification: 'required'`. `callback` should be called with the PIN the
+user entered; passing no arguments — or an empty string — cancels the request
+and the page receives a `NotAllowedError`.
+
+PIN support is advertised to security keys only when this event has at least
+one listener at the time the key is selected, so register the listener before
+the page calls `navigator.credentials.get()` or `navigator.credentials.create()`.
+Without a listener, requests involving PIN-protected keys behave as in
+previous Electron versions (user verification is skipped when the request
+allows it, and fails otherwise).
+
+Locally-checkable problems (`too-short`, `invalid-characters`,
+`same-as-current-pin`) re-fire this event without contacting the security key
+and without consuming an attempt; `wrong-pin` comes from the key itself and
+decrements `attemptsRemaining`. The credential request remains pending until
+the listener invokes the callback, so always invoke it exactly once.
+
+#### Event: 'webauthn-request-touch-needed'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `relyingPartyId` string - The relying party identifier from the WebAuthn request.
+  * `frame` [WebFrameMain](web-frame-main.md) | null - The frame initiating this event.
+      May be `null` if accessed after the frame has either navigated or been destroyed.
+
+Emitted mid-ceremony when user verification has completed (for example a PIN
+was accepted following [`enter-webauthn-pin`](#event-enter-webauthn-pin), or
+on-key biometrics succeeded) but the security key needs to be touched once
+more to finish the request. Apps showing PIN entry UI should return to their
+"touch your security key" state when this fires.
+
 #### Event: 'webauthn-request-completed'
 
 Returns:
@@ -739,6 +800,41 @@ succeeded, failed, timed out or was aborted. This event fires at most once per
 started request — use it to dismiss any ceremony UI. It may not be emitted if
 the window that initiated the request is destroyed before the ceremony ends,
 or if the application is quitting.
+
+```js @ts-type={showTouchYourKeyDialog:(relyingPartyId?:string)=>void} @ts-type={showPinEntryDialog:(details:unknown)=>Promise<string>} @ts-type={closeSecurityKeyDialogs:()=>void} @ts-type={showToast:(message:string)=>void}
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow()
+  const ses = win.webContents.session
+
+  ses.on('webauthn-request-started', (event, details) => {
+    if (details.transports.some((t) => ['usb', 'nfc', 'ble'].includes(t))) {
+      showTouchYourKeyDialog(details.relyingPartyId)
+    }
+  })
+
+  ses.on('enter-webauthn-pin', async (event, details, callback) => {
+    try {
+      const pin = await showPinEntryDialog(details)
+      callback(pin)
+    } catch {
+      callback() // user dismissed the dialog; cancel the request
+    }
+  })
+
+  ses.on('webauthn-request-touch-needed', () => {
+    showTouchYourKeyDialog()
+  })
+
+  ses.on('webauthn-request-completed', (event, details) => {
+    closeSecurityKeyDialogs()
+    if (!details.success && details.reason === 'timeout') {
+      showToast('Sign-in timed out. Try again.')
+    }
+  })
+})
+```
 
 ### Instance Methods
 

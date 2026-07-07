@@ -70,14 +70,25 @@ class ElectronAuthenticatorRequestClientDelegate
   // device::FidoRequestHandlerBase::Observer:
   void OnTransportAvailabilityEnumerated(
       device::FidoRequestHandlerBase::TransportAvailabilityInfo data) override;
+  bool SupportsPIN() const override;
+  void CollectPIN(
+      CollectPINOptions options,
+      base::OnceCallback<void(std::u16string)> provide_pin_cb) override;
+  void FinishCollectToken() override;
 
  private:
   void OnAccountSelected(gin::Arguments* args);
   void CancelPendingAccountSelection();
+  void OnPinEntered(gin::Arguments* args);
+  void CancelPendingPinRequest();
 
   // Whether ceremony lifecycle events should be emitted for this request;
   // non-modal presentations must not trigger app-drawn modal UI.
   bool ShouldEmitCeremonyEvents() const;
+
+  // Whether the app has registered at least one 'enter-webauthn-pin'
+  // listener on this request's session.
+  bool SessionHasEnterPinListener() const;
 
   // Resolves the api::Session wrapper for this request's WebContents, or an
   // empty handle if it is gone. |out_rfh| may be set to null mid-ceremony.
@@ -93,6 +104,10 @@ class ElectronAuthenticatorRequestClientDelegate
       content::GlobalRenderFrameHostId rfh_id,
       std::string name,
       base::DictValue details);
+
+  // Posted counterpart of CollectPIN: emits 'enter-webauthn-pin' (or cancels
+  // when it cannot be serviced) from a clean callstack.
+  void DoEmitPinRequest(base::DictValue details);
 
   void EmitRequestCompleted(bool success, std::string_view reason);
 
@@ -114,6 +129,7 @@ class ElectronAuthenticatorRequestClientDelegate
   std::vector<device::AuthenticatorGetAssertionResponse> pending_responses_;
   base::OnceCallback<void(device::AuthenticatorGetAssertionResponse)>
       select_account_callback_;
+  base::OnceCallback<void(std::u16string)> provide_pin_callback_;
 
   base::WeakPtrFactory<ElectronAuthenticatorRequestClientDelegate>
       weak_factory_{this};

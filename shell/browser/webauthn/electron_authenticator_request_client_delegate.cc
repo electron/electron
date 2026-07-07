@@ -11,6 +11,7 @@
 #include "base/base64url.h"
 #include "base/containers/span.h"
 #include "base/functional/bind.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -18,6 +19,7 @@
 #include "content/public/browser/web_contents.h"
 #include "device/fido/authenticator_get_assertion_response.h"
 #include "device/fido/fido_user_verification_requirement.h"
+#include "device/fido/pin.h"
 #include "device/fido/public/fido_constants.h"
 #include "device/fido/public/fido_transport_protocol.h"
 #include "device/fido/public/public_key_credential_descriptor.h"
@@ -71,6 +73,36 @@ std::string_view RequestTypeToString(device::FidoRequestType request_type) {
       return "create";
     case device::FidoRequestType::kGetAssertion:
       return "get";
+  }
+}
+
+std::string_view PinEntryReasonToString(device::pin::PINEntryReason reason) {
+  switch (reason) {
+    case device::pin::PINEntryReason::kSet:
+      return "set";
+    case device::pin::PINEntryReason::kChange:
+      return "change";
+    case device::pin::PINEntryReason::kChallenge:
+      return "challenge";
+  }
+}
+
+// Returns an empty view for kNoError; the event omits the field entirely in
+// that case.
+std::string_view PinEntryErrorToString(device::pin::PINEntryError error) {
+  switch (error) {
+    case device::pin::PINEntryError::kNoError:
+      return {};
+    case device::pin::PINEntryError::kInternalUvLocked:
+      return "internal-uv-locked";
+    case device::pin::PINEntryError::kWrongPIN:
+      return "wrong-pin";
+    case device::pin::PINEntryError::kTooShort:
+      return "too-short";
+    case device::pin::PINEntryError::kInvalidCharacters:
+      return "invalid-characters";
+    case device::pin::PINEntryError::kSameAsCurrentPIN:
+      return "same-as-current-pin";
   }
 }
 
@@ -214,6 +246,101 @@ void ElectronAuthenticatorRequestClientDelegate::
           std::string("webauthn-request-started"), std::move(details)));
 }
 
+bool ElectronAuthenticatorRequestClientDelegate::SupportsPIN() const {
+  // Advertise PIN support only when the app can service a PIN prompt (modal
+  // presentation + an 'enter-webauthn-pin' listener); otherwise the FIDO
+  // layer would route requests into PIN flows that end in cancellation.
+  return ShouldEmitCeremonyEvents() && SessionHasEnterPinListener();
+}
+
+void ElectronAuthenticatorRequestClientDelegate::CollectPIN(
+    CollectPINOptions options,
+    base::OnceCallback<void(std::u16string)> provide_pin_cb) {
+  provide_pin_callback_ = std::move(provide_pin_cb);
+
+  base::DictValue details;
+  details.Set("relyingPartyId", relying_party_id_);
+  details.Set("reason", PinEntryReasonToString(options.reason));
+  const std::string_view error = PinEntryErrorToString(options.error);
+  if (!error.empty()) {
+    details.Set("error", error);
+  }
+  details.Set("minPinLength", static_cast<int>(options.min_pin_length));
+  details.Set("attemptsRemaining", options.attempts);
+
+  // Deferred: CollectPIN runs inside the FIDO device layer, and neither the
+  // app's listener nor the cancel path may re-enter that callstack.
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          &ElectronAuthenticatorRequestClientDelegate::DoEmitPinRequest,
+          weak_factory_.GetWeakPtr(), std::move(details)));
+}
+
+void ElectronAuthenticatorRequestClientDelegate::DoEmitPinRequest(
+    base::DictValue details) {
+  if (!provide_pin_callback_) {
+    return;
+  }
+  if (!ShouldEmitCeremonyEvents() || Browser::Get()->is_shutting_down()) {
+    CancelPendingPinRequest();
+    return;
+  }
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+
+  content::RenderFrameHost* rfh = nullptr;
+  v8::Local<v8::Object> session_wrapper;
+  if (!GetSessionWrapper(isolate, &rfh).ToLocal(&session_wrapper)) {
+    CancelPendingPinRequest();
+    return;
+  }
+
+  v8::Local<v8::Object> details_object =
+      gin::ConvertToV8(isolate, details).As<v8::Object>();
+  details_object
+      ->CreateDataProperty(isolate->GetCurrentContext(),
+                           gin::StringToSymbol(isolate, "frame"),
+                           gin::ConvertToV8(isolate, rfh))
+      .Check();
+
+  v8::Local<v8::Object> event_object = gin_helper::internal::Event::New(isolate)
+                                           ->GetWrapper(isolate)
+                                           .ToLocalChecked();
+
+  v8::Local<v8::Value> emit_result = gin_helper::EmitEvent(
+      isolate, session_wrapper, "enter-webauthn-pin", event_object,
+      details_object,
+      base::BindRepeating(
+          &ElectronAuthenticatorRequestClientDelegate::OnPinEntered,
+          weak_factory_.GetWeakPtr()));
+
+  // emit() returns true iff there was at least one listener; without one no
+  // PIN can ever arrive, so cancel. SupportsPIN() makes this a race-only
+  // fallback (the listener was present when the PIN flow was selected).
+  bool had_listener = false;
+  if (!gin::ConvertFromV8(isolate, emit_result, &had_listener) ||
+      !had_listener) {
+    CancelPendingPinRequest();
+  }
+}
+
+void ElectronAuthenticatorRequestClientDelegate::FinishCollectToken() {
+  if (!ShouldEmitCeremonyEvents()) {
+    return;
+  }
+
+  base::DictValue details;
+  details.Set("relyingPartyId", relying_party_id_);
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
+      base::BindOnce(
+          &ElectronAuthenticatorRequestClientDelegate::EmitCeremonyEvent,
+          web_contents_, render_frame_host_id_,
+          std::string("webauthn-request-touch-needed"), std::move(details)));
+}
+
 void ElectronAuthenticatorRequestClientDelegate::SelectAccount(
     std::vector<device::AuthenticatorGetAssertionResponse> responses,
     base::OnceCallback<void(device::AuthenticatorGetAssertionResponse)>
@@ -317,12 +444,61 @@ void ElectronAuthenticatorRequestClientDelegate::OnAccountSelected(
   CancelPendingAccountSelection();
 }
 
+void ElectronAuthenticatorRequestClientDelegate::OnPinEntered(
+    gin::Arguments* args) {
+  if (!provide_pin_callback_) {
+    return;
+  }
+
+  std::string pin;
+  if (!args->GetNext(&pin) || pin.empty()) {
+    CancelPendingPinRequest();
+    return;
+  }
+
+  // The FIDO layer validates the PIN before sending; an invalid or wrong PIN
+  // re-invokes CollectPIN with the corresponding error.
+  std::move(provide_pin_callback_).Run(base::UTF8ToUTF16(pin));
+}
+
+void ElectronAuthenticatorRequestClientDelegate::CancelPendingPinRequest() {
+  provide_pin_callback_.Reset();
+  if (cancel_callback_) {
+    std::move(cancel_callback_).Run();
+  }
+}
+
 bool ElectronAuthenticatorRequestClientDelegate::ShouldEmitCeremonyEvents()
     const {
   // Only tab-modal presentations expect app-drawn ceremony UI; autofill/
   // ambient/upgrade requests run in the background without dialogs.
   return ui_presentation_ == UIPresentation::kModal ||
          ui_presentation_ == UIPresentation::kModalImmediate;
+}
+
+bool ElectronAuthenticatorRequestClientDelegate::SessionHasEnterPinListener()
+    const {
+  if (Browser::Get()->is_shutting_down()) {
+    return false;
+  }
+  api::Session* session = ResolveSession(web_contents_);
+  if (!session) {
+    return false;
+  }
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Object> session_wrapper;
+  if (!session->GetWrapper(isolate).ToLocal(&session_wrapper)) {
+    return false;
+  }
+
+  v8::Local<v8::Value> count = gin_helper::CustomEmit(
+      isolate, session_wrapper, "listenerCount", "enter-webauthn-pin");
+  int listener_count = 0;
+  return !count.IsEmpty() &&
+         gin::ConvertFromV8(isolate, count, &listener_count) &&
+         listener_count > 0;
 }
 
 v8::MaybeLocal<v8::Object>
