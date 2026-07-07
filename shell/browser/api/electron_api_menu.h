@@ -12,6 +12,7 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
 #include "v8/include/cppgc/member.h"
 
@@ -139,6 +140,9 @@ class Menu : public gin::Wrappable<Menu>,
 
   std::unique_ptr<ElectronMenuModel> model_;
   cppgc::Member<Menu> parent_;
+
+  // Keep active menus alive even if they've been replaced.
+  gin_helper::SelfKeepAlive<Menu> keep_alive_{nullptr};
 };
 
 }  // namespace electron::api
