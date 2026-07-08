@@ -29,11 +29,11 @@ index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..a0e361cf2d2960de4f429a9d37459e26
    URLPattern url_pattern(kAllowedSchemes);
    URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
    if (result != URLPattern::ParseResult::kSuccess) {
-diff --git a/extensions/common/api/web_request/web_request_filter_constants.h b/extensions/common/api/web_request/web_request_filter_constants.h
-index 50152a60f3f328af19acdc6f28b2f8fedb7be0d5..35c37390481ecb133942879b7314ad5d47972c60 100644
---- a/extensions/common/api/web_request/web_request_filter_constants.h
-+++ b/extensions/common/api/web_request/web_request_filter_constants.h
-@@ -17,7 +17,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
+diff --git a/extensions/common/api/web_request/web_request_filter.h b/extensions/common/api/web_request/web_request_filter.h
+index 2d8d386edcf063c45aaf619c72b081b45f1b5d11..10d1d58b4c7d45fb84506566e44f773ece012eca 100644
+--- a/extensions/common/api/web_request/web_request_filter.h
++++ b/extensions/common/api/web_request/web_request_filter.h
+@@ -26,7 +26,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
      URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_EXTENSION | URLPattern::SCHEME_WS |
@@ -41,8 +41,8 @@ index 50152a60f3f328af19acdc6f28b2f8fedb7be0d5..35c37390481ecb133942879b7314ad5d
 +    URLPattern::SCHEME_WSS | URLPattern::SCHEME_UUID_IN_PACKAGE |
 +    URLPattern::SCHEME_ELECTRON_CUSTOM_PROTOCOLS;
  
- // Request/response header names only delivered to webRequest listeners that
- // registered the "extraHeaders" option. Lowercase for case-insensitive
+ // Keys of the webRequest.RequestFilter dictionary.
+ inline constexpr char kRequestFilterUrlsKey[] = "urls";
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
 index 7e3abea6cb2d53165cb6d1457e9a331690e1497b..4aad9ee0cb31be9f9137864c0dcd4e12c20006c2 100644
 --- a/extensions/common/extension.cc
