@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 27315aeb8f198dc6ba9778a63a7f5cd42503dab3..8ea84bf4d7f3f55873b0ee0ef6f959fe189925dc 100644
+index 23cb4c9b86f24f746cf65ac40fa8c18d3d8bbc23..b566e90eb3bc0020525724d0f808a7e216d3bc8c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1131,6 +1131,7 @@ component("base") {
@@ -974,7 +974,7 @@ index b359f486e3fe93de35be8202c5ea71bbf68526d7..e1db55caf7b3a5e5fd9a9377aca6ab16
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4d6da05191c3d1a11ee3287cc7e44117d9ae6a68..56efc21f024cb7f2074428e646aac8f97fec8850 100644
+index 27b34e6e604e7cc3347116502f3d65a2c8817acd..cfc7ee9c9a33d9fc80eb701d1a032fad75bd7cdb 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -375,6 +375,7 @@ source_set("browser") {
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 394429dc838e2c5400b8f38713c37bfb1e0275d7..9db23ad2f3316d9afc9a7529bdfb9a0d33bc8441 100644
+index de69f95085250fa61f3c50e8cf6ab8eb80032397..ebe653e4e075e4e62e47ad47df991c68b2c3831a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -707,6 +707,7 @@ static_library("test_support") {
@@ -1209,7 +1209,7 @@ index 394429dc838e2c5400b8f38713c37bfb1e0275d7..9db23ad2f3316d9afc9a7529bdfb9a0d
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2103,6 +2106,7 @@ test("content_browsertests") {
+@@ -2102,6 +2105,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1516,7 +1516,7 @@ index 0e6e650f88e6aadd46bec96a8b41768c37d7cc6a..a6830e3f886e408c254ccd1c2b1d5c15
  
  }  // namespace sandbox
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index e9321ba5fc0f1b24b2d990ecb27c8aaa1c8b970b..51df9671a507acd115f09a50c2d6e987fb4183c2 100644
+index 0ecb609e920cfd819e9ecd7a1ae6ddfcea060b1e..1d83c1db5f582993f51107de823c8958bf6e6c4d 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
 @@ -4,6 +4,8 @@
@@ -1553,7 +1553,7 @@ index e9321ba5fc0f1b24b2d990ecb27c8aaa1c8b970b..51df9671a507acd115f09a50c2d6e987
  // `managed_errorbuf` uses a unique_ptr with a deleter to ensure that memory is
  // freed using the sandbox library's deallocation function to prevent unexpected
  // behavior.
-@@ -107,36 +110,48 @@ bool HandleSandboxErrno(int rv, const char* message, std::string* error) {
+@@ -107,40 +110,53 @@ bool HandleSandboxErrno(int rv, const char* message, std::string* error) {
    }
    return false;
  }
@@ -1602,16 +1602,13 @@ index e9321ba5fc0f1b24b2d990ecb27c8aaa1c8b970b..51df9671a507acd115f09a50c2d6e987
 +#endif
  }
  
- // Initialize the static member variables.
-@@ -147,6 +162,7 @@ const char* Seatbelt::kProfilePureComputation = kSBXProfilePureComputation;
- 
  // static
  bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
 +#if !IS_MAS_BUILD()
  // OS X deprecated these functions, but did not provide a suitable replacement,
  // so ignore the deprecation warning.
  #pragma clang diagnostic push
-@@ -156,6 +172,9 @@ bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
+@@ -150,6 +166,9 @@ bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
    return HandleSandboxResult(
        rv, std::unique_ptr<char, sandbox_error_deleter>(errorbuf), error);
  #pragma clang diagnostic pop
@@ -1621,7 +1618,7 @@ index e9321ba5fc0f1b24b2d990ecb27c8aaa1c8b970b..51df9671a507acd115f09a50c2d6e987
  }
  
  // static
-@@ -163,17 +182,22 @@ bool Seatbelt::InitWithParams(const std::string& profile,
+@@ -157,17 +176,22 @@ bool Seatbelt::InitWithParams(const std::string& profile,
                                uint64_t flags,
                                const std::vector<std::string>& parameters,
                                std::string* error) {
@@ -1644,7 +1641,7 @@ index e9321ba5fc0f1b24b2d990ecb27c8aaa1c8b970b..51df9671a507acd115f09a50c2d6e987
  }
  
  // static
-@@ -181,6 +205,7 @@ bool Seatbelt::Compile(const char* profile,
+@@ -175,6 +199,7 @@ bool Seatbelt::Compile(const char* profile,
                         const Seatbelt::Parameters& params,
                         std::string& compiled_profile,
                         std::string* error) {
@@ -1652,7 +1649,7 @@ index e9321ba5fc0f1b24b2d990ecb27c8aaa1c8b970b..51df9671a507acd115f09a50c2d6e987
    char* errorbuf = nullptr;
    sandbox_profile_t* sandbox_profile =
        ::sandbox_compile_string(profile, params.params(), &errorbuf);
-@@ -192,23 +217,32 @@ bool Seatbelt::Compile(const char* profile,
+@@ -186,23 +211,32 @@ bool Seatbelt::Compile(const char* profile,
    compiled_profile.assign(reinterpret_cast<const char*>(sandbox_profile->data),
                            sandbox_profile->size);
    ::sandbox_free_profile(sandbox_profile);
