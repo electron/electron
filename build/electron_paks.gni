@@ -283,6 +283,9 @@ template("electron_paks") {
     if (defined(invoker.deps)) {
       deps += invoker.deps
     }
+    if (defined(invoker.locale_deps)) {
+      deps += invoker.locale_deps
+    }
 
     input_locales = platform_pak_locales
     output_dir = "${invoker.output_dir}/locales"

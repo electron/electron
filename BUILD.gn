@@ -1061,17 +1061,17 @@ if (current_toolchain == default_toolchain) {
   }
 }
 
-# Resource allowlisting (slimmed locale paks + the completeness check) is only
-# wired up for Linux so far: Windows needs PDB-based extraction and macOS needs
-# Mach-O support in tools/resources/generate_resource_allowlist.py.
+# Resource allowlisting (slimmed locale paks + the completeness check) is
+# wired up for Linux and macOS: Windows still needs PDB-based extraction.
 electron_use_resource_allowlist =
-    enable_resource_allowlist_generation && is_linux
+    enable_resource_allowlist_generation && (is_linux || is_mac)
 
 if (electron_use_resource_allowlist) {
-  # The list of grit resource IDs actually referenced by the electron
-  # executable's link inputs, extracted from the ui::AllowlistedResource<id>
-  # markers that --allowlist-support plants at every resource-macro use. Used
-  # to repack only reachable strings into the locale .pak files.
+  # The list of grit resource IDs actually referenced by the link inputs of
+  # the electron executable (the Electron Framework on macOS), extracted from
+  # the ui::AllowlistedResource<id> markers that --allowlist-support plants at
+  # every resource-macro use. Used to repack only reachable strings into the
+  # locale .pak files.
   electron_resource_allowlist_file =
       "$target_gen_dir/electron_resource_allowlist.txt"
 
@@ -1095,8 +1095,11 @@ electron_paks("packed_resources") {
     output_dir = root_out_dir
   }
   if (electron_use_resource_allowlist) {
+    # locale_deps rather than deps: only the locale repacks consume the
+    # allowlist, so the other .pak repacks need not wait for it (it is
+    # derived from the binary's link inputs, i.e. all native compilation).
     locale_allowlist = electron_resource_allowlist_file
-    deps = [ ":electron_resource_allowlist" ]
+    locale_deps = [ ":electron_resource_allowlist" ]
   }
 }
 
@@ -1110,13 +1113,23 @@ if (electron_use_resource_allowlist) {
       ":electron_resource_allowlist",
       ":packed_resources",
     ]
+    if (is_mac) {
+      # Matches the output_dir of :packed_resources above and the Apple
+      # locale output naming of repack_locales() (en-US is repacked as en.pak
+      # and ships in the bundle as en.lproj/locale.pak).
+      _packed_resources_dir = "$root_gen_dir/electron_repack"
+      _reference_locale = "en"
+    } else {
+      _packed_resources_dir = root_out_dir
+      _reference_locale = "en-US"
+    }
     _shipped_paks = [
-      "$root_out_dir/resources.pak",
-      "$root_out_dir/chrome_100_percent.pak",
-      "$root_out_dir/locales/en-US.pak",
+      "$_packed_resources_dir/resources.pak",
+      "$_packed_resources_dir/chrome_100_percent.pak",
+      "$_packed_resources_dir/locales/$_reference_locale.pak",
     ]
     if (enable_hidpi) {
-      _shipped_paks += [ "$root_out_dir/chrome_200_percent.pak" ]
+      _shipped_paks += [ "$_packed_resources_dir/chrome_200_percent.pak" ]
     }
     inputs = [
                electron_resource_allowlist_file,
@@ -1229,6 +1242,30 @@ if (is_mac) {
     }
   }
 
+  # Deps that determine the native code linked into the Electron Framework
+  # (all of Electron's native code lives in the framework on macOS, so its
+  # link inputs, not the app shim's, determine the reachable resource set).
+  # Shared with :electron_resource_allowlist_inputs below so the resource
+  # allowlist is computed from exactly the same link inputs as the shipped
+  # framework.
+  electron_framework_link_deps = [
+    ":electron_lib",
+    "//third_party/electron_node:libnode",
+  ]
+
+  if (electron_use_resource_allowlist) {
+    # Pseudo-link sharing the Electron Framework's link inputs:
+    # --collect-inputs-only makes linker_driver.py skip the real link and
+    # write the list of link inputs instead. generate_resource_allowlist
+    # greps those inputs for ui::AllowlistedResource<id> markers.
+    shared_library("electron_resource_allowlist_inputs") {
+      ldflags = [ "--collect-inputs-only" ]
+      include_dirs = [ "." ]
+      sources = filenames.framework_sources
+      deps = electron_framework_link_deps
+    }
+  }
+
   mac_framework_bundle("electron_framework") {
     output_name = electron_framework_name
     framework_version = electron_framework_version
@@ -1248,17 +1285,14 @@ if (is_mac) {
     if (!is_mas_build) {
       framework_contents += [ "Helpers" ]
     }
-    public_deps = [
-      ":electron_framework_libraries",
-      ":electron_lib",
-    ]
+    public_deps =
+        [ ":electron_framework_libraries" ] + electron_framework_link_deps
     deps = [
       ":electron_angle_library",
       ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_swiftshader_library",
       ":electron_xibs",
-      "//third_party/electron_node:libnode",
     ]
     if (!is_mas_build) {
       deps += [ ":electron_crashpad_helper" ]

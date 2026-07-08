@@ -5,11 +5,157 @@ Subject: build: allow resource allowlist generation for Linux and macOS
 
 The resource allowlist machinery (grit --allowlist-support plus
 tools/resources/generate_resource_allowlist.py) works on desktop Linux via
-the linker-input scanning path, and emitting the marker symbols is harmless
-on macOS, but the assert in gcc_toolchain.gni only permits android and win.
-Electron uses the allowlist on Linux to repack its locale .pak files with
-only the strings its binary references.
+the linker-input scanning path, but the assert in gcc_toolchain.gni only
+permits android and win. Electron uses the allowlist on Linux and macOS to
+repack its locale .pak files with only the strings its binary references.
 
+On macOS the same linker-input scanning path works (Mach-O object files
+carry the same AllowlistedResource marker symbols in their symbol tables),
+with two gaps:
+
+* the Apple solink tool runs through linker_driver.py, which had no
+  equivalent of gcc_solink_wrapper.py's --collect-inputs-only pseudo-link
+  mode. Add one: when --collect-inputs-only is passed via ldflags, skip
+  the real link, write the list of link inputs (object files and static
+  archives) to the output file, and stub out the other declared outputs
+  (TOC, dSYM bundle, unstripped copy).
+* ar.ExpandThinArchives dropped regular archives from the scan list (and
+  raised on Mach-O universal archives like libclang_rt.osx.a). That is
+  fine on Linux/Android where the build uses thin archives everywhere,
+  but on macOS static libraries are regular archives, so their objects
+  were never scanned. Keep non-thin archives in the list instead; they
+  embed their members' contents, so the raw scan finds the markers.
+
+diff --git a/build/toolchain/apple/linker_driver.py b/build/toolchain/apple/linker_driver.py
+index e5163d91889f0c2565fb4e16c38f400720643184..09a9c76ea216073f073547caa5fcce4e1fa913c0 100755
+--- a/build/toolchain/apple/linker_driver.py
++++ b/build/toolchain/apple/linker_driver.py
+@@ -7,6 +7,7 @@
+ import os
+ import os.path
+ import re
++import shlex
+ import shutil
+ import subprocess
+ import sys
+@@ -84,6 +85,14 @@ LINKER_DRIVER_COMPILER_ARG_PREFIX = '-Wcrl,driver,'
+ #    Output TOC for solink.
+ #    It would be processed both before the linker (to check reexport
+ #    in old module) and after the linker (to produce TOC if needed).
++#
++# --collect-inputs-only
++#    Instead of linking, writes the linker command's input files (object
++#    files and static archives, including those in @response-files) to the
++#    output file, one per line, and stubs out the other outputs (TOC, dSYM,
++#    unstripped copy). Used by enable_resource_allowlist_generation to
++#    extract the resource allowlist from the link inputs without paying for
++#    a link. Mirrors the flag of the same name in gcc_solink_wrapper.py.
+ 
+ class LinkerDriver(object):
+     def __init__(self, args):
+@@ -175,6 +184,14 @@ class LinkerDriver(object):
+             raise ValueError(
+                 'Could not find path to linker output (-o or --output)')
+ 
++        # Instead of linking, record all inputs to the output file. This is
++        # used by enable_resource_allowlist_generation in order to avoid
++        # needing to link (which is slow) to build the resource allowlist.
++        # Mirrors --collect-inputs-only in gcc_solink_wrapper.py.
++        if '--collect-inputs-only' in self._compiler_driver_args:
++            self._collect_inputs_only()
++            return
++
+         # We want to link rlibs as --whole-archive if they are part of a unit
+         # test target. This is determined by switch
+         # `-LinkWrapper,add-whole-archive`.
+@@ -267,6 +284,59 @@ class LinkerDriver(object):
+         if not found:
+             raise ValueError('Unknown linker driver argument: %s' % (arg, ))
+ 
++    def _collect_inputs_only(self):
++        """Records the linker command's input files (object files and static
++        archives, including those listed in @response-files) in the linker
++        output file instead of linking, and stubs out the declared outputs of
++        the requested linker driver actions (TOC, dSYM bundle, unstripped
++        copy), since there is no Mach-O output to derive them from."""
++        with open(self._get_linker_output(), 'w') as f:
++            _write_linker_inputs(f, self._compiler_driver_args)
++        for arg in self._args[1:]:
++            if not arg.startswith(LINKER_DRIVER_ARG_PREFIX):
++                continue
++            sub_arg = arg[len(LINKER_DRIVER_ARG_PREFIX):]
++            if sub_arg.startswith('tocname,'):
++                _stub_output(sub_arg[len('tocname,'):])
++            elif sub_arg.startswith('unstripped,'):
++                base = os.path.basename(self._get_linker_output())
++                _stub_output(
++                    os.path.join(sub_arg[len('unstripped,'):],
++                                 base + '.unstripped'))
++            elif sub_arg.startswith('dsym,'):
++                self._stub_dsym(sub_arg[len('dsym,'):])
++
++    def _stub_dsym(self, dsym_path_prefix):
++        """Creates an empty dSYM bundle matching the outputs declared by the
++        build for -Wcrl,dsym,<dsym-path-prefix> (see the dsym_output list in
++        build/toolchain/apple/toolchain.gni)."""
++        base = os.path.basename(self._get_linker_output())
++        dsym_out = os.path.join(dsym_path_prefix, base + '.dSYM')
++        _remove_path(dsym_out)
++        contents = os.path.join(dsym_out, 'Contents')
++        _stub_output(os.path.join(contents, 'Info.plist'))
++        _stub_output(os.path.join(contents, 'Resources', 'DWARF', base))
++        _stub_output(
++            os.path.join(contents, 'Resources', 'Relocations',
++                         self._get_dsym_arch(), base + '.yml'))
++
++    def _get_dsym_arch(self):
++        """Returns the dsymutil name of the architecture being linked for.
++        The dSYM outputs are declared using dsym_arch from the archs_mapping
++        in build/config/apple/arch.gni, which differs from the compiler
++        target's name for arm64."""
++        args = self._compiler_driver_args
++        for index, arg in enumerate(args):
++            if arg == '-arch' and index + 1 < len(args):
++                arch = args[index + 1]
++                break
++            if arg.startswith('--target='):
++                arch = arg[len('--target='):].split('-')[0]
++                break
++        else:
++            raise ValueError('Could not determine the target architecture')
++        return {'arm64': 'aarch64'}.get(arch, arch)
++
+     def prepare_object_path_lto(self, arg):
+         """Linker driver pre-action for -Wcrl,object_path_lto.
+ 
+@@ -549,6 +619,27 @@ def _remove_path(path):
+             os.unlink(path)
+ 
+ 
++def _write_linker_inputs(out, args):
++    """Writes the file arguments of a linker command (object files and static
++    archives, including those listed in @response-files) to |out|."""
++    for arg in args:
++        if arg.startswith('@'):
++            with open(arg[1:]) as rsp:
++                _write_linker_inputs(out, shlex.split(rsp.read()))
++        elif not arg.startswith('-') and arg.endswith(('.o', '.a')):
++            out.write(arg + '\n')
++
++
++def _stub_output(path):
++    """Creates an empty file at |path|, making parent directories as
++    needed."""
++    dirname = os.path.dirname(path)
++    if dirname:
++        os.makedirs(dirname, exist_ok=True)
++    with open(path, 'w'):
++        pass
++
++
+ if __name__ == '__main__':
+     LinkerDriver(sys.argv).run()
+     sys.exit(0)
 diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
 index d8457bfa53a4e5f68d9281802c2b18fec13642ce..3d76a38428db920d1ce7ae97e045cbdf16430d53 100644
 --- a/build/toolchain/gcc_toolchain.gni
@@ -24,3 +170,21 @@ index d8457bfa53a4e5f68d9281802c2b18fec13642ce..3d76a38428db920d1ce7ae97e045cbdf
        "enable_resource_allowlist_generation=true does not work for target_os=$target_os")
  }
  
+diff --git a/tools/resources/ar.py b/tools/resources/ar.py
+index fe62384148b5ab93d0eb5275b04a974ee0a08af2..492af3458b9a63210f4b3427d7752529100def52 100755
+--- a/tools/resources/ar.py
++++ b/tools/resources/ar.py
+@@ -90,7 +90,12 @@ def ExpandThinArchives(paths):
+       if is_thin:
+         for subpath in _IterThinPaths(path):
+           expanded_paths.append(_ResolveThinObjectPath(path, subpath))
+-      elif header != b'!<arch>\n':
++      elif (header == b'!<arch>\n'
++            or header[:4] in (b'\xca\xfe\xba\xbe', b'\xca\xfe\xba\xbf')):
++        # Regular archives (and Mach-O universal archives on Apple platforms)
++        # embed their members' contents, so keep them to be scanned directly.
++        expanded_paths.append(path)
++      else:
+         raise Exception('Invalid .a: ' + path)
+ 
+   return expanded_paths
