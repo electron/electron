@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 1b884347d1fd4df3c359087254bff235f895ad56..d8b166ed8d1e75f02d7ccf2fbbddfc7219d327ae 100644
+index c26cdecbc961d11e2017d0169a27bd5fea27db08..d9622ce23958e6bff2ee449dd58516fd736dad2c 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -180,6 +180,8 @@ viz_component("service") {
@@ -522,7 +522,7 @@ index 4f9e8946fa02d859e92a6896beba82721914f868..78486eaa993ee7ffd5188b31503de7dd
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 581ae22656400c5236e626c0ac4a326ca35e6ce2..783b40fd2b5a13b8c1d8a0a14396b5b6254c3f68 100644
+index 8b86999532a81162ed59eaf83ffc10afcadfca47..85af1541aae73b83e8ff4f265fac74c840249588 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -564,10 +564,10 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index fc8778282e3ad2087fdbf88283f7cd02157dbf38..3c07ea56491c5ecbfb7c07e3d0c17ca987819ab4 100644
+index dc379ef6d6ccbdbc2072eaad06ec740b257ffe7f..b998c0575a145bcb2f95e77ff7edf615b471b700 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -406,8 +406,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -420,8 +420,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();

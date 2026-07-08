@@ -1,24 +1,24 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Keeley Hammond <vertedinde@electronjs.org>
 Date: Thu, 5 Feb 2026 15:29:44 -0800
-Subject: build: restore macos deployment target to 12.0
+Subject: build: restore macos deployment target to 13.0
 
-Partially reverts https://github.com/nodejs/node/commit/8b4022177750530d2c142a5a0349d98fb82f16e2
-Electron will follow Chromium's lead and deprecate macos 12 with
-M151, and so we should allow for building until then.
+Partially reverts https://github.com/nodejs/node/commit/8b4022177750530d2c142a5a0349d98fb82f16e2.
 
-This patch can be removed at the M151 branch point.
+Fixes native addons not working on macOS 13.0 - 13.4 (https://github.com/electron/electron/issues/49691).
+
+This patch can be removed when Chromium drops support for macOS 13.
 
 diff --git a/common.gypi b/common.gypi
-index 60c18e79d104e355276c108a7e577a846726ce3d..729574832d6ff3a72e41c2e00e6eeb96b0a50a75 100644
+index 0ab7c63ab9bdac67b799d04ebb57afe8e013e020..f2c4ef54cec9c43afb391382801432455498290c 100644
 --- a/common.gypi
 +++ b/common.gypi
-@@ -677,7 +677,7 @@
+@@ -741,7 +741,7 @@
            'GCC_ENABLE_PASCAL_STRINGS': 'NO',        # No -mpascal-strings
            'GCC_STRICT_ALIASING': 'NO',              # -fno-strict-aliasing
            'PREBINDING': 'NO',                       # No -Wl,-prebind
 -          'MACOSX_DEPLOYMENT_TARGET': '13.5',       # -mmacosx-version-min=13.5
-+          'MACOSX_DEPLOYMENT_TARGET': '12.0',       # -mmacosx-version-min=12.0
++          'MACOSX_DEPLOYMENT_TARGET': '13.0',       # -mmacosx-version-min=13.0
            'USE_HEADERMAP': 'NO',
            'WARNING_CFLAGS': [
              '-Wall',

@@ -16,10 +16,10 @@ It also:
 This may be partially upstreamed to Chromium in the future.
 
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.cc b/ui/gtk/select_file_dialog_linux_gtk.cc
-index 9e3390fd0cff2b2c13bb82b8f49d5eb7da8bfa53..80596323da3ffc8779bd9b9ac3bd05dabb47aaa2 100644
+index c354a04d5f0f997bfa5df79307823e58cba36359..27fa3106903c58f549a49506c31fc8db0113596b 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.cc
 +++ b/ui/gtk/select_file_dialog_linux_gtk.cc
-@@ -275,8 +275,12 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
+@@ -310,8 +310,12 @@ void SelectFileDialogLinuxGtk::SelectFileImpl(
      case SELECT_EXISTING_FOLDER:
        dialog = CreateSelectFolderDialog(type, title_string, default_path,
                                          owning_window);
@@ -34,7 +34,7 @@ index 9e3390fd0cff2b2c13bb82b8f49d5eb7da8bfa53..80596323da3ffc8779bd9b9ac3bd05da
        break;
      case SELECT_OPEN_FILE:
        dialog = CreateFileOpenDialog(title_string, default_path, owning_window);
-@@ -423,9 +427,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
+@@ -461,9 +465,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
      const std::string& title,
      const base::FilePath& default_path,
      gfx::NativeWindow parent) {
@@ -47,7 +47,7 @@ index 9e3390fd0cff2b2c13bb82b8f49d5eb7da8bfa53..80596323da3ffc8779bd9b9ac3bd05da
    SetGtkTransientForAura(dialog, parent, platform_);
    AddFilters(GTK_FILE_CHOOSER(dialog));
  
-@@ -441,6 +447,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
+@@ -479,6 +485,7 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateFileOpenHelper(
      GtkFileChooserSetCurrentFolder(GTK_FILE_CHOOSER(dialog),
                                     *last_opened_path());
    }
@@ -55,7 +55,7 @@ index 9e3390fd0cff2b2c13bb82b8f49d5eb7da8bfa53..80596323da3ffc8779bd9b9ac3bd05da
    return dialog;
  }
  
-@@ -456,11 +463,15 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -494,11 +501,15 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
              ? l10n_util::GetStringUTF8(IDS_SELECT_UPLOAD_FOLDER_DIALOG_TITLE)
              : l10n_util::GetStringUTF8(IDS_SELECT_FOLDER_DIALOG_TITLE);
    }
@@ -76,7 +76,7 @@ index 9e3390fd0cff2b2c13bb82b8f49d5eb7da8bfa53..80596323da3ffc8779bd9b9ac3bd05da
  
    GtkWidget* dialog = GtkFileChooserDialogNew(
        title_string.c_str(), nullptr, GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
-@@ -482,7 +493,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
+@@ -520,7 +531,8 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSelectFolderDialog(
    gtk_file_filter_add_mime_type(only_folders, "inode/directory");
    gtk_file_filter_add_mime_type(only_folders, "text/directory");
    gtk_file_chooser_add_filter(chooser, only_folders);
@@ -86,7 +86,7 @@ index 9e3390fd0cff2b2c13bb82b8f49d5eb7da8bfa53..80596323da3ffc8779bd9b9ac3bd05da
    return dialog;
  }
  
-@@ -519,10 +531,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -557,10 +569,11 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    std::string title_string =
        !title.empty() ? title
                       : l10n_util::GetStringUTF8(IDS_SAVE_AS_DIALOG_TITLE);
@@ -100,7 +100,7 @@ index 9e3390fd0cff2b2c13bb82b8f49d5eb7da8bfa53..80596323da3ffc8779bd9b9ac3bd05da
        kResponseTypeAccept);
    SetGtkTransientForAura(dialog, parent, platform_);
  
-@@ -548,9 +561,10 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
+@@ -586,9 +599,10 @@ GtkWidget* SelectFileDialogLinuxGtk::CreateSaveAsDialog(
    gtk_file_chooser_set_select_multiple(GTK_FILE_CHOOSER(dialog), FALSE);
    // Overwrite confirmation is always enabled in GTK4.
    if (!GtkCheckVersion(4)) {
@@ -113,7 +113,7 @@ index 9e3390fd0cff2b2c13bb82b8f49d5eb7da8bfa53..80596323da3ffc8779bd9b9ac3bd05da
    return dialog;
  }
  
-@@ -606,15 +620,29 @@ void SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse(
+@@ -644,15 +658,29 @@ void SelectFileDialogLinuxGtk::OnSelectSingleFolderDialogResponse(
  void SelectFileDialogLinuxGtk::OnSelectMultiFileDialogResponse(
      GtkWidget* dialog,
      int response_id) {
@@ -146,10 +146,10 @@ index 9e3390fd0cff2b2c13bb82b8f49d5eb7da8bfa53..80596323da3ffc8779bd9b9ac3bd05da
      FileNotSelected(dialog);
      return;
 diff --git a/ui/gtk/select_file_dialog_linux_gtk.h b/ui/gtk/select_file_dialog_linux_gtk.h
-index 454854b6571d7b000e1acaf94e529d5fde962c6f..8f7e1a633e9223b5dd3fb94787bf22185ea1c656 100644
+index e112fd4ee491820f73a376784e5ea39a6f46f165..777ae6ea77a31ef73f28095ec04f2c3cab344cf6 100644
 --- a/ui/gtk/select_file_dialog_linux_gtk.h
 +++ b/ui/gtk/select_file_dialog_linux_gtk.h
-@@ -108,6 +108,12 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+@@ -112,6 +112,12 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
                                gint response_id,
                                bool allow_folder);
  
@@ -162,7 +162,7 @@ index 454854b6571d7b000e1acaf94e529d5fde962c6f..8f7e1a633e9223b5dd3fb94787bf2218
    // Common function for CreateFileOpenDialog and CreateMultiFileOpenDialog.
    GtkWidget* CreateFileOpenHelper(const std::string& title,
                                    const base::FilePath& default_path,
-@@ -122,6 +128,9 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
+@@ -126,6 +132,9 @@ class SelectFileDialogLinuxGtk : public ui::SelectFileDialogLinux,
    // Callback for when the user responds to a Open Multiple Files dialog.
    void OnSelectMultiFileDialogResponse(GtkWidget* dialog, int response_id);
  

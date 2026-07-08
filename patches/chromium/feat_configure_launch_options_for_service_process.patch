@@ -167,10 +167,10 @@ index 34b4e7c1b449312e9cb517be192a39a6b5286e3c..4f39415717f423b9a87f83779851e08b
                             FinishStartSandboxedProcessOnLauncherThread,
                         this));
 diff --git a/content/browser/service_host/service_process_host_impl.cc b/content/browser/service_host/service_process_host_impl.cc
-index dc36ce2cbb1830b6ceb5a896c3c14607a1138bf4..9efbfdd9af5970c04f573001e91e63395dd3bab5 100644
+index 739090d86077293eb2c9eda235e42973cc96286b..f635f65ee04f06d10f9c7a2076d45db2c950a76d 100644
 --- a/content/browser/service_host/service_process_host_impl.cc
 +++ b/content/browser/service_host/service_process_host_impl.cc
-@@ -72,6 +72,21 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
+@@ -78,6 +78,21 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
      utility_options.WithPriority(*service_options.priority);
    }
  
@@ -193,10 +193,10 @@ index dc36ce2cbb1830b6ceb5a896c3c14607a1138bf4..9efbfdd9af5970c04f573001e91e6339
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index 4d1115c7855e73b0ac8f175198a13b95ce7db0c5..b9e9000ba6a25649ba1b481010c256c2b2613dab 100644
+index c12deb85145738453e2c7498d3aabcc5f5cae795..3e2e1d09586dc432a64e5ac8ff5e06063a1f623f 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -248,13 +248,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
+@@ -249,13 +249,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
  }
  #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
  
@@ -213,7 +213,7 @@ index 4d1115c7855e73b0ac8f175198a13b95ce7db0c5..b9e9000ba6a25649ba1b481010c256c2
  
  #if BUILDFLAG(USE_ZYGOTE)
  UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
-@@ -264,6 +264,45 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
+@@ -265,6 +265,45 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -259,7 +259,7 @@ index 4d1115c7855e73b0ac8f175198a13b95ce7db0c5..b9e9000ba6a25649ba1b481010c256c2
  UtilityProcessHost::Options&
  UtilityProcessHost::Options::WithBoundReceiverOnChildProcessForTesting(
      mojo::GenericPendingReceiver receiver) {
-@@ -558,9 +597,30 @@ bool UtilityProcessHost::StartProcess() {
+@@ -561,9 +600,30 @@ bool UtilityProcessHost::StartProcess() {
    }
  #endif  // BUILDFLAG(ENABLE_GPU_CHANNEL_MEDIA_CAPTURE) && !BUILDFLAG(IS_WIN)
  
@@ -377,7 +377,7 @@ index 84307516e8250a8fa351f3777f29c587dc9b3185..8999341cdabf92311d1ce0c15a905a3d
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index fd94515548e50a67cfa9956cf3fbab8c7af9fe31..5d7d752e38fbca84a45183121fcec0e60211b4c9 100644
+index fe37bb3d1787120735eeb569a7bea6344e3d6b89..f1803cd7f661009db406ec281d161c9967ef2f17 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
 @@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -404,7 +404,7 @@ index fd94515548e50a67cfa9956cf3fbab8c7af9fe31..5d7d752e38fbca84a45183121fcec0e6
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -112,11 +114,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -114,11 +116,28 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -435,7 +435,7 @@ index fd94515548e50a67cfa9956cf3fbab8c7af9fe31..5d7d752e38fbca84a45183121fcec0e6
  
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
-@@ -190,6 +209,15 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
+@@ -192,6 +211,15 @@ UtilitySandboxedProcessLauncherDelegate::GetProcessRequirement() {
  
    return std::nullopt;
  }
@@ -746,10 +746,10 @@ index 5b277c93adcf8ba0b6831ed8535290032f5581bf..b9ca62312238cc5c877c861c386f1405
  
    // An interface which can be implemented and used with
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 8c273a902c0a8e3c76acdbe79eb3dd4461a2bbe1..50cffdd6b9af79c48bd9bd950275f52adcebdee1 100644
+index f2a826791ff321a68c02cef923fefb1283e246fc..daeb9327d28fab06bcb1375606e18419063850d6 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
-@@ -618,11 +618,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
+@@ -631,11 +631,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {
  // command line flag.
  ResultCode LaunchWithoutSandbox(
      const base::CommandLine& cmd_line,
@@ -762,7 +762,7 @@ index 8c273a902c0a8e3c76acdbe79eb3dd4461a2bbe1..50cffdd6b9af79c48bd9bd950275f52a
    options.feedback_cursor_off = true;
    // Network process runs in a job even when unsandboxed. This is to ensure it
    // does not outlive the browser, which could happen if there is a lot of I/O
-@@ -902,7 +900,7 @@ bool SandboxWin::InitTargetServices(TargetServices* target_services) {
+@@ -919,7 +917,7 @@ bool SandboxWin::InitTargetServices(TargetServices* target_services) {
  // static
  ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
      const base::CommandLine& cmd_line,
@@ -771,7 +771,7 @@ index 8c273a902c0a8e3c76acdbe79eb3dd4461a2bbe1..50cffdd6b9af79c48bd9bd950275f52a
      SandboxDelegate* delegate,
      TargetPolicy* policy) {
    const base::CommandLine& launcher_process_command_line =
-@@ -916,7 +914,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -933,7 +931,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
    }
  
    // Add any handles to be inherited to the policy.
@@ -780,7 +780,7 @@ index 8c273a902c0a8e3c76acdbe79eb3dd4461a2bbe1..50cffdd6b9af79c48bd9bd950275f52a
      policy->AddHandleToShare(handle);
  
    if (!policy->GetConfig()->IsConfigured()) {
-@@ -931,6 +929,13 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -948,6 +946,13 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
    // have no effect. These calls can fail with SBOX_ERROR_BAD_PARAMS.
    policy->SetStdoutHandle(GetStdHandle(STD_OUTPUT_HANDLE));
    policy->SetStderrHandle(GetStdHandle(STD_ERROR_HANDLE));
@@ -794,7 +794,7 @@ index 8c273a902c0a8e3c76acdbe79eb3dd4461a2bbe1..50cffdd6b9af79c48bd9bd950275f52a
  #endif
  
    if (!delegate->PreSpawnTarget(policy))
-@@ -942,7 +947,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -959,7 +964,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
  // static
  ResultCode SandboxWin::StartSandboxedProcess(
      const base::CommandLine& cmd_line,
@@ -803,7 +803,7 @@ index 8c273a902c0a8e3c76acdbe79eb3dd4461a2bbe1..50cffdd6b9af79c48bd9bd950275f52a
      SandboxDelegate* delegate,
      StartSandboxedProcessCallback result_callback) {
    SandboxLaunchTimer timer;
-@@ -952,7 +957,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -969,7 +974,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
                             *base::CommandLine::ForCurrentProcess())) {
      base::Process process;
      ResultCode result =
@@ -812,7 +812,7 @@ index 8c273a902c0a8e3c76acdbe79eb3dd4461a2bbe1..50cffdd6b9af79c48bd9bd950275f52a
      DWORD last_error = GetLastError();
      std::move(result_callback).Run(std::move(process), last_error, result);
      return SBOX_ALL_OK;
-@@ -962,7 +967,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -979,7 +984,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
    timer.OnPolicyCreated();
  
    ResultCode result = GeneratePolicyForSandboxedProcess(

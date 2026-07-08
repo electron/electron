@@ -126,10 +126,10 @@ index 71226c74e5aa3d01603cce5852465a6fe011a9f7..230ae0b42a629e48879c2392954e5183
  
  NODE_BINDING_PER_ISOLATE_INIT(
 diff --git a/src/node_http2.cc b/src/node_http2.cc
-index 084a4773673e5b07aac84a2adc79e3a89d050c84..15020fc1f5c70bf3ea58bf248626daa41297b9e5 100644
+index 55bca557a81e4de72286ed42d0df63acf610ab64..ee99a87efab1cab915694b5b0c7bb1ca3ce24c7d 100644
 --- a/src/node_http2.cc
 +++ b/src/node_http2.cc
-@@ -3625,6 +3625,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
+@@ -3656,6 +3656,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
    return;
  }
  }  // namespace http2
@@ -144,7 +144,7 @@ index 084a4773673e5b07aac84a2adc79e3a89d050c84..15020fc1f5c70bf3ea58bf248626daa4
  
  NODE_BINDING_CONTEXT_AWARE_INTERNAL(http2, node::http2::Initialize)
 diff --git a/src/node_http2.h b/src/node_http2.h
-index 259b71840b66d4a73cd15572ad3689bf8b0d6086..541cfa82bab0c604b165f5026348fc08355dc904 100644
+index 28245d7b98e06bee467c5f91dd9caf1cfdbfdda0..a4575619b26346d05ba9a1a4a245937a3b30b414 100644
 --- a/src/node_http2.h
 +++ b/src/node_http2.h
 @@ -144,6 +144,96 @@ struct Http2RcBufferPointerTraits {

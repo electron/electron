@@ -52,7 +52,7 @@ void GPUInfoManager::OnGpuInfoUpdate() {
 void GPUInfoManager::CompleteInfoFetcher(
     gin_helper::Promise<base::Value> promise) {
   complete_info_promise_set_.emplace_back(std::move(promise));
-  gpu_data_manager_->RequestDx12VulkanVideoGpuInfoIfNeeded(
+  gpu_data_manager_->RequestGpuInfoIfNeeded(
       content::GpuDataManagerImpl::kGpuInfoRequestAll, /* delayed */ false);
 }
 

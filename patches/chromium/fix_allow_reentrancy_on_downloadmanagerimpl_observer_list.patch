@@ -13,10 +13,10 @@ Opt the observers_ list into kAllowReentrancy via ReentrantObserverList,
 matching the pattern upstream adopted for SequenceManager::task_observers.
 
 diff --git a/content/browser/download/download_manager_impl.h b/content/browser/download/download_manager_impl.h
-index de75f9b5738e8e573d4134c855509d5594f6d78c..920de2534eb935b746036debea017616430f51ac 100644
+index 883db22bcf9e0189dc7189e910b59fa24bd53efe..18ba96dcf6cb688df0a0659bc3124d2e9cf59fa8 100644
 --- a/content/browser/download/download_manager_impl.h
 +++ b/content/browser/download/download_manager_impl.h
-@@ -379,7 +379,7 @@ class CONTENT_EXPORT DownloadManagerImpl
+@@ -370,7 +370,7 @@ class CONTENT_EXPORT DownloadManagerImpl
    bool in_progress_cache_initialized_;
  
    // Observers that want to be notified of changes to the set of downloads.

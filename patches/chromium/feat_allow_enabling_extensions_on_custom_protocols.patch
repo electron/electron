@@ -29,11 +29,11 @@ index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..a0e361cf2d2960de4f429a9d37459e26
    URLPattern url_pattern(kAllowedSchemes);
    URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
    if (result != URLPattern::ParseResult::kSuccess) {
-diff --git a/extensions/browser/api/web_request/extension_web_request_event_router.h b/extensions/browser/api/web_request/extension_web_request_event_router.h
-index 36e4bde8208a2db7a8fe0d71c2a3ee42417ac50e..d7de3f06b9de8c8cb449594ce9f797eaf96a3b0c 100644
---- a/extensions/browser/api/web_request/extension_web_request_event_router.h
-+++ b/extensions/browser/api/web_request/extension_web_request_event_router.h
-@@ -55,7 +55,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
+diff --git a/extensions/common/api/web_request/web_request_filter_constants.h b/extensions/common/api/web_request/web_request_filter_constants.h
+index 50152a60f3f328af19acdc6f28b2f8fedb7be0d5..35c37390481ecb133942879b7314ad5d47972c60 100644
+--- a/extensions/common/api/web_request/web_request_filter_constants.h
++++ b/extensions/common/api/web_request/web_request_filter_constants.h
+@@ -17,7 +17,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
      URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_EXTENSION | URLPattern::SCHEME_WS |
@@ -41,8 +41,8 @@ index 36e4bde8208a2db7a8fe0d71c2a3ee42417ac50e..d7de3f06b9de8c8cb449594ce9f797ea
 +    URLPattern::SCHEME_WSS | URLPattern::SCHEME_UUID_IN_PACKAGE |
 +    URLPattern::SCHEME_ELECTRON_CUSTOM_PROTOCOLS;
  
- class WebRequestEventRouter : public KeyedService {
-  public:
+ // Request/response header names only delivered to webRequest listeners that
+ // registered the "extraHeaders" option. Lowercase for case-insensitive
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
 index 7e3abea6cb2d53165cb6d1457e9a331690e1497b..4aad9ee0cb31be9f9137864c0dcd4e12c20006c2 100644
 --- a/extensions/common/extension.cc
@@ -103,7 +103,7 @@ index 4d09251b0160644d86682ad3db7c41b50f360e6f..8a626e14eff2d58d8218a7b0df820c6c
      // SCHEME_ALL will match every scheme, including chrome://, chrome-
      // extension://, about:, etc. Because this has lots of security
 diff --git a/extensions/common/user_script.cc b/extensions/common/user_script.cc
-index f680ef4d31d580a285abe51387e3df043d4458f1..afde40d56d7874aa04ea2b1d881e5cab79fd7661 100644
+index 672b6fe2fd92c7f83272549a1f2b44c29c5dc674..a72d3d6790ddf89cec6016aeef0c309cfb1550dd 100644
 --- a/extensions/common/user_script.cc
 +++ b/extensions/common/user_script.cc
 @@ -69,7 +69,8 @@ enum {

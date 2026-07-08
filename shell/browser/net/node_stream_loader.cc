@@ -96,7 +96,7 @@ void NodeStreamLoader::NotifyComplete(int result) {
 
   network::URLLoaderCompletionStatus status(result);
   status.completion_time = base::TimeTicks::Now();
-  status.decoded_body_length = bytes_written_;
+  status.decoded_body_length = base::ByteSize(bytes_written_);
   client_->OnComplete(status);
   delete this;
 }

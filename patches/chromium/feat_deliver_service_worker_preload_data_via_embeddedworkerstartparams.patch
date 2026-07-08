@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index a0d355e51e17ff095e1fe97bcfebcdf1a0936f66..8cbbaaa30220608f4143232e06890296128441ae 100644
+index 29c27b342812d2c8610473901f4fc8ff1f9ab99e..c782b34108eb2d35089613960e4488cceca4d684 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2710,6 +2710,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2705,6 +2705,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,10 +33,10 @@ index a0d355e51e17ff095e1fe97bcfebcdf1a0936f66..8cbbaaa30220608f4143232e06890296
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index ea7f82b6bf90031757eb19e2ff86aba8dda65b9d..2eab8750c96ee160a347e388eb6cf054b5b72c8e 100644
+index 377d693cb9f8f49b7e62e74416e444946af0bc29..bfca32bf845c64e75382c21273a6db7b834c4f52 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -888,6 +888,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
+@@ -896,6 +896,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
    return std::nullopt;
  }
  
@@ -51,10 +51,10 @@ index ea7f82b6bf90031757eb19e2ff86aba8dda65b9d..2eab8750c96ee160a347e388eb6cf054
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 7a905faa1f886a59fb75c984756b61f7a04be080..8f0293c4ad865f22a0abad364562ab035ae93cbc 100644
+index 2c7c13ae69b3975e740373296f7dcd321654241f..809b1021d132e03af5d31fc6aab4cf259a6e5a25 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1462,6 +1462,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1467,6 +1467,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  
@@ -256,10 +256,10 @@ index 060741bf1b44e277e1d8849039787d41cdd72a9f..84b5fa8000bd6df4b59c8f2615b1719c
        std::make_unique<ServiceWorkerGlobalScopeProxy>(
            *this, *worker_context_client_, initiator_thread_task_runner),
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-index fe6d9ac879e8bfe3e0887ea4c2068f64954dcc9d..d6f1b42b62e9e145329f5b565916652ab292163d 100644
+index 22b8e5873e4abbb2439d84e336fd9a210e1912f6..c907d6ef91de853c88e10c65187640440271c2ac 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
-@@ -326,6 +326,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
+@@ -328,6 +328,11 @@ bool ServiceWorkerGlobalScopeProxy::HasUsbEventHandlers() {
    return WorkerGlobalScope()->HasUsbEventHandlers();
  }
  

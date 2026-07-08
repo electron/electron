@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/containers/fixed_flat_map.h"
+#include "base/memory/self_deleting.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
@@ -193,9 +194,9 @@ void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
   network::URLLoaderCompletionStatus status(net::ERR_FAILED);
   if (result == MOJO_RESULT_OK) {
     status = network::URLLoaderCompletionStatus(net::OK);
-    status.encoded_data_length = write_data->data.size();
-    status.encoded_body_length = write_data->data.size();
-    status.decoded_body_length = write_data->data.size();
+    status.encoded_data_length = base::ByteSize(write_data->data.size());
+    status.encoded_body_length = base::ByteSize(write_data->data.size());
+    status.decoded_body_length = base::ByteSize(write_data->data.size());
   }
   write_data->client->OnComplete(status);
 }
@@ -404,8 +405,9 @@ ElectronURLLoaderFactory::Create(
 
   // The ElectronURLLoaderFactory will delete itself when there are no more
   // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
-  new ElectronURLLoaderFactory(type, handler, std::move(browser_context),
-                               pending_remote.InitWithNewPipeAndPassReceiver());
+  base::MakeSelfDeleting<ElectronURLLoaderFactory>(
+      type, handler, std::move(browser_context),
+      pending_remote.InitWithNewPipeAndPassReceiver());
 
   return pending_remote;
 }
@@ -414,8 +416,9 @@ ElectronURLLoaderFactory::ElectronURLLoaderFactory(
     ProtocolType type,
     const ProtocolHandler& handler,
     base::WeakPtr<ElectronBrowserContext> browser_context,
-    mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-    : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)),
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver,
+    base::SelfDeletingPassKey key)
+    : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver), key),
       type_(type),
       handler_(handler),
       browser_context_(std::move(browser_context)) {}

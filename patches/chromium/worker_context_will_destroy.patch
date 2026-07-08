@@ -26,10 +26,10 @@ index 47dec1364f17eee55756f40f63ee2cdc3b33ed8b..b5c28e5502debe2a4458c74deff5516c
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index c2f071d20190ea005e1ece39360de091b697a5ab..d03a8f10e23d722bae94c20e248c1dd749349278 100644
+index 09cdbec02730ead2d22602578188f92e924f9a0e..98df7f9de5d2ac64e4fbb8f955277b3842adfc1c 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -933,6 +933,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -938,6 +938,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -43,10 +43,10 @@ index c2f071d20190ea005e1ece39360de091b697a5ab..d03a8f10e23d722bae94c20e248c1dd7
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 9664dd32d8945ca5303825377c8e345573d83a26..96898a41c3efe31e9043b092d37d7c4b42709bcc 100644
+index 33ae2a6eb2cf405c946f29838e62240cb2b9f1c1..2d0139d2b5d1e836e7bff9612efba058d32cbdee 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -212,6 +212,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -216,6 +216,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
@@ -55,10 +55,10 @@ index 9664dd32d8945ca5303825377c8e345573d83a26..96898a41c3efe31e9043b092d37d7c4b
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel(
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index bb80991d521edbb22bb08e50805dd8c131cf75a4..495f557bd1a727c95749b05ac7945292b372f371 100644
+index a9d0eafacc0b782faecea504ab9bde345f8c4598..ea378f40d0ae975e6c10468c2d9aef1b2445afdc 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -695,6 +695,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -698,6 +698,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
