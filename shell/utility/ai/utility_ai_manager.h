@@ -117,6 +117,11 @@ class UtilityAIManager : public blink::mojom::AIManager {
       blink::mojom::AIClassifierCreateOptionsPtr options,
       mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
       override;
+  void CanCreateSemanticEmbedder(
+      CanCreateSemanticEmbedderCallback callback) override;
+  void CreateSemanticEmbedder(
+      mojo::PendingRemote<blink::mojom::AIManagerCreateSemanticEmbedderClient>
+          client) override;
 
   std::optional<int32_t> web_contents_id_;
   url::Origin security_origin_;

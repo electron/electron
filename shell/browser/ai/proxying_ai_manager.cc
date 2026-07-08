@@ -195,4 +195,16 @@ void ProxyingAIManager::CreateClassifier(
   NOTIMPLEMENTED();
 }
 
+void ProxyingAIManager::CanCreateSemanticEmbedder(
+    CanCreateSemanticEmbedderCallback callback) {
+  std::move(callback).Run(
+      blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
+}
+
+void ProxyingAIManager::CreateSemanticEmbedder(
+    mojo::PendingRemote<blink::mojom::AIManagerCreateSemanticEmbedderClient>
+        client) {
+  NOTIMPLEMENTED();
+}
+
 }  // namespace electron

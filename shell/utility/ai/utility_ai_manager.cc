@@ -555,4 +555,16 @@ void UtilityAIManager::CreateClassifier(
   NOTIMPLEMENTED();
 }
 
+void UtilityAIManager::CanCreateSemanticEmbedder(
+    CanCreateSemanticEmbedderCallback callback) {
+  std::move(callback).Run(
+      blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
+}
+
+void UtilityAIManager::CreateSemanticEmbedder(
+    mojo::PendingRemote<blink::mojom::AIManagerCreateSemanticEmbedderClient>
+        client) {
+  NOTIMPLEMENTED();
+}
+
 }  // namespace electron
