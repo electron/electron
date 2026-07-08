@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 8 Jul 2026 20:00:40 +0000
+Subject: fix: clear read-only attribute before removal in RmSync on Windows
+
+Fixes electron/electron#52253.
+
+Since Node.js 23 fs.rmSync() is implemented in C++ on top of
+std::filesystem::remove() / remove_all() (nodejs/node#53617). On
+Windows builds that use libc++ (like Electron), those calls delete
+files via the classic FileDispositionInfo, which fails with EPERM
+when FILE_ATTRIBUTE_READONLY is set. MSVC's STL (used by official
+Node.js builds) instead deletes with
+FILE_DISPOSITION_FLAG_IGNORE_READONLY_ATTRIBUTE, so the divergence
+only shows up in libc++ builds. The legacy JS rimraf implementation
+(Node.js <= 22, still used by the async fs.rm()) handled read-only
+files by adding write permissions and retrying on Windows EPERM.
+
+Restore that behavior in RmSync(): on Windows, when removal fails
+with EPERM/EACCES, add write permissions to the target (which clears
+FILE_ATTRIBUTE_READONLY in both STLs) - and, in the recursive case,
+to everything beneath it - then retry once.
+
+This should be upstreamed to Node.js.
+
+diff --git a/src/node_file.cc b/src/node_file.cc
+index 36317f9c68ec7a5df9b31f5a2c97013bce3eb8db..431a9a49921b518a70d914d0e55d4605cc2e54d8 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -1700,6 +1700,9 @@ static void RmSync(const FunctionCallbackInfo<Value>& args) {
+   };
+ 
+   int i = 1;
++#ifdef _WIN32
++  bool read_only_cleared = false;
++#endif  // _WIN32
+ 
+   while (maxRetries >= 0) {
+     if (recursive) {
+@@ -1710,7 +1713,49 @@ static void RmSync(const FunctionCallbackInfo<Value>& args) {
+ 
+     if (!error || error == std::errc::no_such_file_or_directory) {
+       return;
+-    } else if (!can_omit_error(error)) {
++    }
++
++#ifdef _WIN32
++    // On Windows, removal fails with EPERM when the FILE_ATTRIBUTE_READONLY
++    // attribute is set on the target: libc++'s std::filesystem::remove()
++    // deletes via the classic FileDispositionInfo, which rejects read-only
++    // files, unlike MSVC's STL which passes
++    // FILE_DISPOSITION_FLAG_IGNORE_READONLY_ATTRIBUTE. The legacy JS rimraf
++    // implementation (still used by the async fs.rm()) handles this by
++    // adding write permissions and retrying, so do the same here. Adding
++    // write permissions clears FILE_ATTRIBUTE_READONLY. Only attempt this
++    // once so that a genuine access-denied error still fails.
++    if (!read_only_cleared && (error == std::errc::permission_denied ||
++                               error == std::errc::operation_not_permitted)) {
++      read_only_cleared = true;
++      constexpr std::filesystem::perms write_perms =
++          std::filesystem::perms::owner_write |
++          std::filesystem::perms::group_write |
++          std::filesystem::perms::others_write;
++      std::error_code ignored;
++      std::filesystem::permissions(
++          file_path, write_perms, std::filesystem::perm_options::add, ignored);
++      if (recursive) {
++        // Everything under file_path is being removed anyway, so clear the
++        // read-only attribute across the whole tree before retrying.
++        std::error_code iter_error;
++        auto it = std::filesystem::recursive_directory_iterator(
++            file_path,
++            std::filesystem::directory_options::skip_permission_denied,
++            iter_error);
++        for (; !iter_error && it != std::filesystem::end(it);
++             it.increment(iter_error)) {
++          std::filesystem::permissions(it->path(),
++                                       write_perms,
++                                       std::filesystem::perm_options::add,
++                                       ignored);
++        }
++      }
++      continue;
++    }
++#endif  // _WIN32
++
++    if (!can_omit_error(error)) {
+       break;
+     }
+ 

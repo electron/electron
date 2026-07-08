@@ -5,6 +5,7 @@ import { expect } from 'chai';
 import * as childProcess from 'node:child_process';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import { EventEmitter } from 'node:stream';
 import * as tty from 'node:tty';
@@ -1094,6 +1095,39 @@ describe('node feature', () => {
       const file = await fs.promises.readFile(fileHandle, { encoding: 'utf8' });
       expect(file).to.not.be.empty();
       await fileHandle.close();
+    });
+  });
+
+  describe('fs.rmSync', () => {
+    // https://github.com/electron/electron/issues/52253
+    ifit(process.platform === 'win32')('removes a read-only file', () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-rm-spec-'));
+      const file = path.join(tmpDir, 'read-only.txt');
+      try {
+        fs.writeFileSync(file, 'read-only');
+        fs.chmodSync(file, 0o444);
+        fs.rmSync(file);
+        expect(fs.existsSync(file)).to.be.false();
+      } finally {
+        if (fs.existsSync(file)) fs.chmodSync(file, 0o666);
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    ifit(process.platform === 'win32')('recursively removes a directory containing a read-only file', () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-rm-spec-'));
+      const dir = path.join(tmpDir, 'dir');
+      const file = path.join(dir, 'read-only.txt');
+      try {
+        fs.mkdirSync(dir);
+        fs.writeFileSync(file, 'read-only');
+        fs.chmodSync(file, 0o444);
+        fs.rmSync(dir, { recursive: true });
+        expect(fs.existsSync(dir)).to.be.false();
+      } finally {
+        if (fs.existsSync(file)) fs.chmodSync(file, 0o666);
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
     });
   });
 
