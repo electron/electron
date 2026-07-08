@@ -676,17 +676,16 @@ describe('net module', () => {
         await collectStreamBody(await getResponse(urlRequest));
       });
 
-      // Note: 'document', 'frame', 'iframe' and 'fencedframe' are intentionally
-      // omitted. Chromium's kRestrictFrameDestinationsToNavigate feature (enabled
-      // by default) rejects any non-navigation request that claims one of these
-      // frame-type destinations, terminating the network service. Since net
-      // requests are never navigations, these destinations cannot be set.
       for (const dest of [
         'empty',
         'audio',
         'audioworklet',
+        'document',
         'embed',
+        'fencedframe',
         'font',
+        'frame',
+        'iframe',
         'image',
         'manifest',
         'object',
@@ -714,7 +713,32 @@ describe('net module', () => {
               origin: serverUrl
             });
             urlRequest.setHeader('sec-fetch-dest', dest);
+            if (['document', 'fencedframe', 'frame', 'iframe'].includes(dest)) {
+              urlRequest.setHeader('sec-fetch-mode', 'navigate');
+            }
             await collectStreamBody(await getResponse(urlRequest));
+          },
+          { dest }
+        );
+      }
+
+      for (const dest of ['document', 'fencedframe', 'frame', 'iframe']) {
+        test(
+          `should reject sec-fetch-dest ${dest} without sec-fetch-mode navigate`,
+          async () => {
+            const serverUrl = await respondOnce.toSingleURL((request, response) => {
+              response.statusCode = 200;
+              response.statusMessage = 'OK';
+              response.end();
+            });
+            const urlRequest = net.request({
+              url: serverUrl,
+              origin: serverUrl
+            });
+            urlRequest.setHeader('sec-fetch-dest', dest);
+            await expect(getResponse(urlRequest)).to.be.rejectedWith(
+              "sec-fetch-dest of 'document', 'frame', 'iframe' or 'fencedframe' requires sec-fetch-mode 'navigate'"
+            );
           },
           { dest }
         );
