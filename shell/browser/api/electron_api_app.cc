@@ -597,6 +597,7 @@ void App::OnQuit() {
   Emit("quit", exitCode);
 
   if (process_singleton_) {
+    ScopedAllowBlockingForElectron allow_blocking;
     process_singleton_->Cleanup();
     process_singleton_.reset();
   }
@@ -1099,6 +1100,7 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
+      ScopedAllowBlockingForElectron allow_blocking;
       process_singleton_.reset();
       return false;
     }
@@ -1107,6 +1109,7 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
 
 void App::ReleaseSingleInstanceLock() {
   if (process_singleton_) {
+    ScopedAllowBlockingForElectron allow_blocking;
     process_singleton_->Cleanup();
     process_singleton_.reset();
   }
