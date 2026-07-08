@@ -165,7 +165,7 @@ index 2448abf73b097f04583aefda1fb1a67b3de67e5b..55f935f38bf05586650e7a83a689347b
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 9d1508063f1da743088650888410b207441bc8e9..c3fd1311d4638072ae2b11497f3178c05446a67b 100644
+index 9d1508063f1da743088650888410b207441bc8e9..83eb993048e7b0365d5213973a67c271f1144973 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -29,7 +29,9 @@
@@ -197,7 +197,7 @@ index 9d1508063f1da743088650888410b207441bc8e9..c3fd1311d4638072ae2b11497f3178c0
  }
  
  // Function was copied from Process::Terminate.
-@@ -251,9 +258,13 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -251,11 +258,14 @@ bool ProcessSingleton::EscapeVirtualization(
  }
  
  ProcessSingleton::ProcessSingleton(
@@ -209,9 +209,11 @@ index 9d1508063f1da743088650888410b207441bc8e9..c3fd1311d4638072ae2b11497f3178c0
 +      program_name_(program_name),
 +      is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-       lock_file_(INVALID_HANDLE_VALUE),
+-      lock_file_(INVALID_HANDLE_VALUE),
        user_data_dir_(user_data_dir),
-@@ -368,7 +379,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+       should_kill_remote_process_callback_(
+           base::BindRepeating(&DisplayShouldKillMessageBox)) {}
+@@ -368,7 +378,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
  bool ProcessSingleton::Create() {
    TRACE_EVENT0("startup", "ProcessSingleton::Create");
  
@@ -220,7 +222,7 @@ index 9d1508063f1da743088650888410b207441bc8e9..c3fd1311d4638072ae2b11497f3178c0
  
    remote_window_ = FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -377,7 +388,7 @@ bool ProcessSingleton::Create() {
+@@ -377,7 +387,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -229,7 +231,7 @@ index 9d1508063f1da743088650888410b207441bc8e9..c3fd1311d4638072ae2b11497f3178c0
      if (!only_me.is_valid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -422,6 +433,17 @@ bool ProcessSingleton::Create() {
+@@ -422,6 +432,17 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());
