@@ -28,6 +28,7 @@
 #include "net/base/net_errors.h"
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_util.h"
+#include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/url_util.h"
@@ -596,6 +597,7 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
             {"document", Val::kDocument},
             {"embed", Val::kEmbed},
             {"empty", Val::kEmpty},
+            {"fencedframe", Val::kFencedframe},
             {"font", Val::kFont},
             {"frame", Val::kFrame},
             {"iframe", Val::kIframe},
@@ -614,6 +616,20 @@ SimpleURLLoaderWrapper* SimpleURLLoaderWrapper::Create(gin::Arguments* args) {
         });
     if (auto iter = Lookup.find(destination); iter != Lookup.end())
       request->destination = iter->second;
+  }
+
+  if (base::FeatureList::IsEnabled(
+          network::features::kRestrictFrameDestinationsToNavigate) &&
+      (request->destination == network::mojom::RequestDestination::kDocument ||
+       request->destination == network::mojom::RequestDestination::kFrame ||
+       request->destination == network::mojom::RequestDestination::kIframe ||
+       request->destination ==
+           network::mojom::RequestDestination::kFencedframe) &&
+      request->mode != network::mojom::RequestMode::kNavigate) {
+    args->ThrowTypeError(
+        "sec-fetch-dest of 'document', 'frame', 'iframe' or 'fencedframe' "
+        "requires sec-fetch-mode 'navigate'");
+    return {};
   }
 
   bool credentials_specified =
