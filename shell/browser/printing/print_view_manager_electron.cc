@@ -147,9 +147,10 @@ void PrintViewManagerElectron::RequestPrintPreview(
   mojo::ReportBadMessage(kInvalidRequestPrintPreviewCall);
 }
 
-void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
-                                              int32_t request_id,
-                                              CheckForCancelCallback callback) {
+void PrintViewManagerElectron::CheckForCancel(
+    const base::UnguessableToken& preview_ui_id,
+    int32_t request_id,
+    CheckForCancelCallback callback) {
   std::move(callback).Run(false);
 }
 #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
