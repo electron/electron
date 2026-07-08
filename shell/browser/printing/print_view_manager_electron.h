@@ -68,7 +68,7 @@ class PrintViewManagerElectron
   void ShowScriptedPrintPreview() override;
   void RequestPrintPreview(
       printing::mojom::RequestPrintPreviewParamsPtr params) override;
-  void CheckForCancel(int32_t preview_ui_id,
+  void CheckForCancel(const base::UnguessableToken& preview_ui_id,
                       int32_t request_id,
                       CheckForCancelCallback callback) override;
 #endif

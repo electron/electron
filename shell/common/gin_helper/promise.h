@@ -87,6 +87,9 @@ class PromiseBase {
   v8::Maybe<bool> ResolveWith(v8::Local<v8::Value> value);
 
   struct SettleScope {
+    CPPGC_STACK_ALLOCATED();
+
+   public:
     explicit SettleScope(const PromiseBase& base);
     ~SettleScope();
 

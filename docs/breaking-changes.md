@@ -35,6 +35,16 @@ process, which may surface regressions in unusual configurations.
 Windows and macOS are unaffected; ANGLE continues to be shipped as separate
 libraries on those platforms.
 
+### Behavior Changed: `net.request` rejects frame destinations without navigate mode
+
+`net.request` now rejects requests where `Sec-Fetch-Dest` is `document`, `frame`,
+`iframe`, or `fencedframe` unless `Sec-Fetch-Mode` is also set to `navigate`.
+This matches Chromium's enforcement that frame-type request destinations must be
+navigations.
+
+Apps that explicitly set one of these `Sec-Fetch-Dest` values on a `net.request`
+must also set `Sec-Fetch-Mode` to `navigate`.
+
 ### Removed: Unity desktop environment support on Linux
 
 Unity has not been the default desktop environment in Ubuntu LTS since version 16.04, which is not supported by current versions of Electron. The deprecation does not
