@@ -40,6 +40,15 @@ class ElectronWebAuthenticationDelegate
 #if BUILDFLAG(IS_MAC)
   std::optional<TouchIdAuthenticatorConfig> GetTouchIdAuthenticatorConfig(
       content::BrowserContext* browser_context) override;
+
+  // The default isUVPAA implementation only reports on the Touch ID platform
+  // authenticator (see content/browser/webauth/is_uvpaa.cc), so an app that
+  // enables only platform passkeys would report `false` and most sites would
+  // hide their passkey UI. Report `true` when platform passkeys are enabled on
+  // a supported macOS version so feature detection reflects reality.
+  void IsUserVerifyingPlatformAuthenticatorAvailableOverride(
+      content::RenderFrameHost* render_frame_host,
+      base::OnceCallback<void(std::optional<bool>)> callback) override;
 #endif
 
  private:

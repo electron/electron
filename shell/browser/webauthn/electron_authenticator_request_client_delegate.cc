@@ -340,6 +340,14 @@ void ElectronAuthenticatorRequestClientDelegate::
 
 void ElectronAuthenticatorRequestClientDelegate::OnAuthenticatorSelected(
     gin::Arguments* args) {
+  // The emit callback is a repeating callback, so guard against an app invoking
+  // it more than once: after the first call clears pending_authenticators_, a
+  // second call would otherwise fall through to the unknown-name branch and
+  // cancel a request we already dispatched.
+  if (pending_authenticators_.empty()) {
+    return;
+  }
+
   std::string selected_name;
   if (!args->GetNext(&selected_name) || selected_name.empty()) {
     if (cancel_callback_) {
