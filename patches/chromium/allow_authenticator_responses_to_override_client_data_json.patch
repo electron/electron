@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clifton Hensley <1056824+CliftonH@users.noreply.github.com>
+Date: Thu, 9 Jul 2026 12:29:33 -0500
+Subject: Allow authenticator responses to override client_data_json
+
+Electron's platform passkey authenticator on macOS uses Apple's
+ASPublicKeyCredentialClientData API (available macOS 13.5+) to have Apple
+build a clientDataJSON that contains the RP's actual challenge and origin.
+Since the signature covers Apple's clientDataJSON (not Chromium's pre-built
+one), the page must receive Apple's version for RP verification to succeed.
+
+This adds an optional raw_client_data_json field to both
+AuthenticatorGetAssertionResponse and AuthenticatorMakeCredentialResponse.
+When present, authenticator_common_impl uses it in place of the request-
+level client_data_json.
+
+diff --git a/content/browser/webauth/authenticator_common_impl.cc b/content/browser/webauth/authenticator_common_impl.cc
+index 2521be002a31d55730d2aaea694ded81032eeb26..a31ea5f91aaa2bcf54a41d542a95e29fcb2989e4 100644
+--- a/content/browser/webauth/authenticator_common_impl.cc
++++ b/content/browser/webauth/authenticator_common_impl.cc
+@@ -2870,8 +2870,12 @@ AuthenticatorCommonImpl::CreateMakeCredentialResponse(
+     AttestationErasureOption attestation_erasure) {
+   auto response = blink::mojom::MakeCredentialAuthenticatorResponse::New();
+   auto common_info = blink::mojom::CommonCredentialInfo::New();
+-  common_info->client_data_json.assign(req_state_->client_data_json.begin(),
+-                                       req_state_->client_data_json.end());
++  if (response_data.raw_client_data_json.has_value()) {
++    common_info->client_data_json = *response_data.raw_client_data_json;
++  } else {
++    common_info->client_data_json.assign(req_state_->client_data_json.begin(),
++                                         req_state_->client_data_json.end());
++  }
+   common_info->raw_id = response_data.attestation_object.GetCredentialId();
+   common_info->id = webauthn::Base64UrlEncodeOmitPadding(common_info->raw_id);
+ 
+@@ -3072,8 +3076,12 @@ AuthenticatorCommonImpl::CreateGetAssertionResponse(
+   auto common_info = blink::mojom::CommonCredentialInfo::New();
+   auto response_extensions =
+       blink::mojom::AuthenticationExtensionsClientOutputs::New();
+-  common_info->client_data_json.assign(req_state_->client_data_json.begin(),
+-                                       req_state_->client_data_json.end());
++  if (response_data.raw_client_data_json.has_value()) {
++    common_info->client_data_json = *response_data.raw_client_data_json;
++  } else {
++    common_info->client_data_json.assign(req_state_->client_data_json.begin(),
++                                         req_state_->client_data_json.end());
++  }
+   common_info->raw_id = response_data.credential->id;
+   common_info->id = webauthn::Base64UrlEncodeOmitPadding(common_info->raw_id);
+   response->info = std::move(common_info);
+diff --git a/device/fido/authenticator_get_assertion_response.h b/device/fido/authenticator_get_assertion_response.h
+index 39f84239d7f8d541e2fe065443cf395719497f3d..c1802b230603b96cc06497155c0dea96579936b1 100644
+--- a/device/fido/authenticator_get_assertion_response.h
++++ b/device/fido/authenticator_get_assertion_response.h
+@@ -92,6 +92,14 @@ class COMPONENT_EXPORT(DEVICE_FIDO) AuthenticatorGetAssertionResponse {
+   // The transport used to generate this response. This is unknown when using
+   // the Windows WebAuthn API.
+   std::optional<FidoTransportProtocol> transport_used;
++
++  // If set, this overrides the client_data_json that would normally be returned
++  // to the relying party. This is used by Electron's platform passkey
++  // authenticator on macOS, where Apple's ASAuthorizationController constructs
++  // its own clientDataJSON (via ASPublicKeyCredentialClientData) and signs over
++  // it. The page must receive Apple's JSON so that the RP can verify the
++  // signature.
++  std::optional<std::vector<uint8_t>> raw_client_data_json;
+ };
+ 
+ }  // namespace device
+diff --git a/device/fido/authenticator_make_credential_response.h b/device/fido/authenticator_make_credential_response.h
+index 4e7e259c21e188dd6a77774c40004a19dfe07948..108b40eb774eaa49001043955f94bc264f7d3260 100644
+--- a/device/fido/authenticator_make_credential_response.h
++++ b/device/fido/authenticator_make_credential_response.h
+@@ -92,6 +92,11 @@ class COMPONENT_EXPORT(DEVICE_FIDO) AuthenticatorMakeCredentialResponse {
+   // prf_results contains the output of the hmac-secret-mc or prf extension.
+   // The values have already been decrypted.
+   std::optional<std::vector<uint8_t>> prf_results;
++
++  // If set, this overrides the client_data_json that would normally be returned
++  // to the relying party. Used by Electron's platform passkey authenticator on
++  // macOS where Apple constructs its own clientDataJSON.
++  std::optional<std::vector<uint8_t>> raw_client_data_json;
+ };
+ 
+ // Through cbor::Writer, produces a CTAP style CBOR-encoded byte array

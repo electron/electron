@@ -14,12 +14,17 @@
 
 #import <AuthenticationServices/AuthenticationServices.h>
 
+#include <algorithm>
 #include <utility>
 
+#include "base/base64url.h"
 #include "base/compiler_specific.h"
 #include "base/functional/bind.h"
+#include "base/json/json_reader.h"
 #include "base/no_destructor.h"
+#include "base/numerics/safe_conversions.h"
 #include "base/strings/sys_string_conversions.h"
+#include "base/values.h"
 #include "components/cbor/reader.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/web_contents.h"
@@ -34,6 +39,7 @@
 #include "device/fido/public/fido_constants.h"
 #include "device/fido/public/fido_types.h"
 #include "device/fido/public/public_key_credential_descriptor.h"
+#include "device/fido/public/public_key_credential_params.h"
 #include "device/fido/public/public_key_credential_user_entity.h"
 #include "shell/browser/native_window.h"
 
@@ -170,6 +176,8 @@ struct ElectronPlatformPasskeysAuthenticator::ObjCStorage {
   std::vector<uint8_t> raw_authenticator_data;
   std::vector<uint8_t> signature;
   std::vector<uint8_t> user_handle;
+  // Apple's rawClientDataJSON when using ASPublicKeyCredentialClientData SPI.
+  std::vector<uint8_t> raw_client_data_json;
 };
 
 // MARK: - Authenticator Implementation
@@ -219,14 +227,53 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
       return;
     }
 
+    // The public ASAuthorization API ignores pubKeyCredParams and always mints
+    // an ES256 (-7) credential. If the RP doesn't accept ES256, creating a
+    // credential here would produce one it immediately rejects, so fail early.
+    const auto& params =
+        request.public_key_credential_params.public_key_credential_params();
+    const bool supports_es256 = std::ranges::any_of(params, [](const auto& p) {
+      return p.algorithm ==
+             base::strict_cast<int32_t>(device::CoseAlgorithmIdentifier::kEs256);
+    });
+    if (!supports_es256) {
+      std::move(callback).Run(device::MakeCredentialStatus::kNoCommonAlgorithms,
+                              std::nullopt);
+      return;
+    }
+
     auto* provider = [[ASAuthorizationPlatformPublicKeyCredentialProvider alloc]
         initWithRelyingPartyIdentifier:base::SysUTF8ToNSString(request.rp.id)];
 
-    NSData* challenge = [NSData dataWithBytes:request.client_data_hash.data()
-                                       length:request.client_data_hash.size()];
+    // Parse challenge and origin from client_data_json for the clientData SPI.
+    NSData* challenge_data = nil;
+    NSString* origin_str = nil;
+    if (!request.client_data_json.empty()) {
+      std::optional<base::DictValue> parsed =
+          base::JSONReader::ReadDict(request.client_data_json, /*options=*/0);
+      if (parsed) {
+        const std::string* challenge_b64url = parsed->FindString("challenge");
+        const std::string* origin = parsed->FindString("origin");
+        if (challenge_b64url && origin) {
+          std::optional<std::vector<uint8_t>> challenge_bytes =
+              base::Base64UrlDecode(*challenge_b64url,
+                                   base::Base64UrlDecodePolicy::DISALLOW_PADDING);
+          if (challenge_bytes) {
+            challenge_data = VectorToNSData(*challenge_bytes);
+            origin_str = base::SysUTF8ToNSString(*origin);
+          }
+        }
+      }
+    }
+
+    NSData* request_challenge =
+        challenge_data
+            ? challenge_data
+            : [NSData dataWithBytes:request.client_data_hash.data()
+                             length:request.client_data_hash.size()];
 
     auto* as_request = [provider
-        createCredentialRegistrationRequestWithChallenge:challenge
+        createCredentialRegistrationRequestWithChallenge:request_challenge
                                                     name:
                                                         base::SysUTF8ToNSString(
                                                             request.user.name
@@ -234,15 +281,36 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
                                                   userID:VectorToNSData(
                                                              request.user.id)];
 
-    if (!request.exclude_list.empty()) {
-      NSMutableArray* descriptors = [NSMutableArray array];
-      for (const auto& excluded : request.exclude_list) {
-        auto* descriptor =
-            [[ASAuthorizationPlatformPublicKeyCredentialDescriptor alloc]
-                initWithCredentialID:VectorToNSData(excluded.id)];
-        [descriptors addObject:descriptor];
+    // Set ASPublicKeyCredentialClientData so Apple builds a proper
+    // clientDataJSON with the RP's challenge/origin.
+    bool using_client_data_spi = false;
+    if (@available(macOS 13.5, *)) {
+      if (challenge_data && origin_str) {
+        ASPublicKeyCredentialClientData* cd =
+            [[ASPublicKeyCredentialClientData alloc]
+                initWithChallenge:challenge_data
+                           origin:origin_str];
+        [(id)as_request setValue:cd forKey:@"clientData"];
+        using_client_data_spi = true;
       }
-      as_request.excludedCredentials = descriptors;
+    }
+
+    // excludedCredentials comes from the
+    // ASAuthorizationWebBrowserPlatformPublicKeyCredentialRegistrationRequest
+    // protocol extension, which is macOS 13.5+. The availability lives on the
+    // protocol rather than the property, so clang won't flag it inside the 13.0
+    // guard; on 13.0-13.4 setting it would be an unrecognized selector.
+    if (!request.exclude_list.empty()) {
+      if (@available(macOS 13.5, *)) {
+        NSMutableArray* descriptors = [NSMutableArray array];
+        for (const auto& excluded : request.exclude_list) {
+          auto* descriptor =
+              [[ASAuthorizationPlatformPublicKeyCredentialDescriptor alloc]
+                  initWithCredentialID:VectorToNSData(excluded.id)];
+          [descriptors addObject:descriptor];
+        }
+        as_request.excludedCredentials = descriptors;
+      }
     }
 
     objc_storage_->delegate = [[ElectronPlatformPasskeyDelegate alloc] init];
@@ -250,6 +318,7 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
 
     __block MakeCredentialCallback moved_callback = std::move(callback);
     __block auto weak_self = weak_factory_.GetWeakPtr();
+    __block bool capture_raw_cdj = using_client_data_spi;
     objc_storage_->delegate.creationHandler = ^(
         NSError* error,
         ASAuthorizationPlatformPublicKeyCredentialRegistration* registration) {
@@ -266,6 +335,10 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
         storage->credential_id = NSDataToVector(registration.credentialID);
         storage->raw_attestation_object =
             NSDataToVector(registration.rawAttestationObject);
+        if (capture_raw_cdj) {
+          storage->raw_client_data_json =
+              NSDataToVector(registration.rawClientDataJSON);
+        }
       }
       weak_self->OnMakeCredentialComplete(std::move(moved_callback));
     };
@@ -307,11 +380,54 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
     auto* provider = [[ASAuthorizationPlatformPublicKeyCredentialProvider alloc]
         initWithRelyingPartyIdentifier:base::SysUTF8ToNSString(request.rp_id)];
 
-    NSData* challenge = [NSData dataWithBytes:request.client_data_hash.data()
-                                       length:request.client_data_hash.size()];
+    // Parse challenge and origin from client_data_json so we can use the
+    // ASPublicKeyCredentialClientData SPI. This makes Apple build a
+    // clientDataJSON with the RP's actual challenge/origin (instead of treating
+    // client_data_hash as the challenge), producing a signature that the RP can
+    // verify against the returned rawClientDataJSON.
+    NSData* challenge_data = nil;
+    NSString* origin_str = nil;
+    if (!request.client_data_json.empty()) {
+      std::optional<base::DictValue> parsed =
+          base::JSONReader::ReadDict(request.client_data_json, /*options=*/0);
+      if (parsed) {
+        const std::string* challenge_b64url = parsed->FindString("challenge");
+        const std::string* origin = parsed->FindString("origin");
+        if (challenge_b64url && origin) {
+          std::optional<std::vector<uint8_t>> challenge_bytes =
+              base::Base64UrlDecode(*challenge_b64url,
+                                   base::Base64UrlDecodePolicy::DISALLOW_PADDING);
+          if (challenge_bytes) {
+            challenge_data = VectorToNSData(*challenge_bytes);
+            origin_str = base::SysUTF8ToNSString(*origin);
+          }
+        }
+      }
+    }
+
+    // Fall back to the hash-as-challenge approach if parsing failed.
+    NSData* request_challenge =
+        challenge_data
+            ? challenge_data
+            : [NSData dataWithBytes:request.client_data_hash.data()
+                             length:request.client_data_hash.size()];
 
     auto* as_request =
-        [provider createCredentialAssertionRequestWithChallenge:challenge];
+        [provider createCredentialAssertionRequestWithChallenge:request_challenge];
+
+    // If we have the real challenge + origin, set ASPublicKeyCredentialClientData
+    // so Apple constructs a proper clientDataJSON that RPs can verify.
+    bool using_client_data_spi = false;
+    if (@available(macOS 13.5, *)) {
+      if (challenge_data && origin_str) {
+        ASPublicKeyCredentialClientData* cd =
+            [[ASPublicKeyCredentialClientData alloc]
+                initWithChallenge:challenge_data
+                           origin:origin_str];
+        [(id)as_request setValue:cd forKey:@"clientData"];
+        using_client_data_spi = true;
+      }
+    }
 
     if (!request.allow_list.empty()) {
       NSMutableArray* descriptors = [NSMutableArray array];
@@ -329,6 +445,7 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
 
     __block GetAssertionCallback moved_callback = std::move(callback);
     __block auto weak_self = weak_factory_.GetWeakPtr();
+    __block bool capture_raw_cdj = using_client_data_spi;
     objc_storage_->delegate.assertionHandler = ^(
         NSError* error,
         ASAuthorizationPlatformPublicKeyCredentialAssertion* assertion) {
@@ -347,6 +464,11 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
             NSDataToVector(assertion.rawAuthenticatorData);
         storage->signature = NSDataToVector(assertion.signature);
         storage->user_handle = NSDataToVector(assertion.userID);
+        // Capture Apple's rawClientDataJSON when we used the clientData SPI.
+        if (capture_raw_cdj) {
+          storage->raw_client_data_json =
+              NSDataToVector(assertion.rawClientDataJSON);
+        }
       }
       weak_self->OnGetAssertionComplete(std::move(moved_callback));
     };
@@ -453,6 +575,11 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
   response.transports->insert(device::FidoTransportProtocol::kHybrid);
   response.transport_used = device::FidoTransportProtocol::kInternal;
 
+  if (!objc_storage_->raw_client_data_json.empty()) {
+    response.raw_client_data_json =
+        std::move(objc_storage_->raw_client_data_json);
+  }
+
   std::move(callback).Run(device::MakeCredentialStatus::kSuccess,
                           std::move(response));
 }
@@ -486,6 +613,14 @@ void ElectronPlatformPasskeysAuthenticator::OnGetAssertionComplete(
         std::move(objc_storage_->user_handle));
   }
   response.user_selected = true;
+
+  // If we used ASPublicKeyCredentialClientData, Apple's rawClientDataJSON is the
+  // authoritative clientDataJSON — the signature covers its hash. Pass it
+  // through so authenticator_common_impl returns it to the page.
+  if (!objc_storage_->raw_client_data_json.empty()) {
+    response.raw_client_data_json =
+        std::move(objc_storage_->raw_client_data_json);
+  }
 
   std::vector<device::AuthenticatorGetAssertionResponse> responses;
   responses.push_back(std::move(response));
