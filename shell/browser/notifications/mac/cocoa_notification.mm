@@ -168,7 +168,13 @@ void CocoaNotification::Show(const NotificationOptions& options) {
                UNMutableNotificationContent* content,
                UNNotificationAttachment* attachment) {
               if (auto* notification = weak_self.get()) {
-                content.attachments = @[ attachment ];
+                if (attachment) {
+                  content.attachments = @[ attachment ];
+                } else if (electron::debug_notifications) {
+                  LOG(INFO)
+                      << "Notification icon attachment creation failed; "
+                         "delivering without icon";
+                }
                 auto* self = static_cast<CocoaNotification*>(notification);
                 self->ScheduleNotification(content);
               }
