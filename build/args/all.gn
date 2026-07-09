@@ -78,8 +78,6 @@ enable_pdf_save_to_drive = false
 # testing and release builds so that a reference to an unshipped resource
 # fails PR CI (see //electron:electron_resource_allowlist_check) rather than
 # the next release build.
-# TODO: extend the allowlist consumption to Windows (PDB-based extraction) and
-# macOS (needs Mach-O support in
-# tools/resources/generate_resource_allowlist.py); on those platforms this
-# only makes grit emit the (free) marker symbols today.
+# TODO: extend the allowlist consumption to Windows (PDB-based extraction);
+# there this only makes grit emit the (free) marker symbols today.
 enable_resource_allowlist_generation = true
