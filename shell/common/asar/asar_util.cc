@@ -126,8 +126,7 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
   // app update) since that header was read. The retained handle always sees
   // the bytes the header describes.
   contents->resize(info.size);
-  if (!archive->ReadFileAt(info.offset,
-                           base::as_writable_byte_span(*contents)))
+  if (!archive->ReadFileAt(info.offset, base::as_writable_byte_span(*contents)))
     return false;
 
   if (info.integrity)
