@@ -21,7 +21,8 @@ import {
   session,
   systemPreferences,
   webContents,
-  TouchBar
+  TouchBar,
+  utilityProcess
 } from 'electron/main';
 
 import * as path from 'node:path';
@@ -1302,6 +1303,9 @@ session.defaultSession.webRequest.onBeforeSendHeaders(filter, function (details,
   details.requestHeaders['User-Agent'] = 'MyAgent';
   callback({ cancel: false, requestHeaders: details.requestHeaders });
 });
+
+session.defaultSession.registerLocalAIHandler(utilityProcess.fork(path.join(__dirname, 'ai-handler.js')));
+session.defaultSession.registerLocalAIHandler(null);
 
 app.whenReady().then(function () {
   const protocol = session.defaultSession.protocol;
