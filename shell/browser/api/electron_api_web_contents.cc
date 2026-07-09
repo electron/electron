@@ -424,6 +424,10 @@ struct Converter<content::NavigationEntry*> {
     dict.Set("url", entry->GetURL().spec());
     dict.Set("title", entry->GetTitleForDisplay());
 
+    // Whether the history manipulation intervention will skip this entry on
+    // back/forward navigations because it was created without user activation.
+    dict.Set("shouldSkipOnBackForwardUI", entry->ShouldSkipOnBackForwardUI());
+
     // Page state saves scroll position and values of any form fields
     const blink::PageState& page_state = entry->GetPageState();
     if (page_state.IsValid()) {
