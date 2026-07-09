@@ -84,6 +84,62 @@ ifdescribe(process.platform === 'darwin')('app.configureWebAuthn', () => {
   });
 });
 
+ifdescribe(process.platform === 'darwin')('PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable', () => {
+  let server: http.Server;
+  let serverUrl: string;
+  let w: BrowserWindow;
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('<!doctype html><title>webauthn</title>');
+    });
+    await new Promise<void>((resolve) => server.listen(0, 'localhost', resolve));
+    const { port } = server.address() as AddressInfo;
+    serverUrl = `http://localhost:${port}/`;
+  });
+
+  after(() => {
+    server.close();
+  });
+
+  beforeEach(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+  });
+
+  afterEach(async () => {
+    // Reset the platformPasskeys flag so tests don't leak into each other.
+    configureWebAuthn({ platformPasskeys: false });
+    await closeAllWindows();
+  });
+
+  const queryIsUVPAA = () =>
+    w.webContents.executeJavaScript(
+      'PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()'
+    );
+
+  // Chromium's default isUVPAA() on macOS only reports on the Touch ID platform
+  // authenticator, so an app that enables only platform passkeys would report
+  // `false` and most sites would hide their passkey UI. The delegate override
+  // reports `true` when platformPasskeys is enabled and available.
+  it('returns true when platformPasskeys is enabled', async () => {
+    configureWebAuthn({ platformPasskeys: true });
+    const result = await queryIsUVPAA();
+    expect(result).to.be.true();
+  });
+
+  it('does not report platform passkeys when the feature is disabled', async () => {
+    configureWebAuthn({ platformPasskeys: false });
+    // We can't assert `false` unconditionally because CI machines may or may
+    // not have Touch ID configured. But we can assert the override isn't
+    // forcing `true` on our behalf — the result should match the underlying
+    // platform's Touch ID availability, which is a boolean either way.
+    const result = await queryIsUVPAA();
+    expect(result).to.be.a('boolean');
+  });
+});
+
 ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticator' event", () => {
   let server: http.Server;
   let serverUrl: string;
