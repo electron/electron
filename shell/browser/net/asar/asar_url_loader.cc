@@ -152,11 +152,10 @@ class AsarURLLoader : public network::mojom::URLLoader {
     // archive on disk may have been replaced (e.g. by an app update) since
     // that header was read. The retained handle always sees the bytes the
     // header describes.
-    base::File file =
-        info.unpacked
-            ? base::File(real_path,
-                         base::File::FLAG_OPEN | base::File::FLAG_READ)
-            : archive->DuplicateFile();
+    base::File file = info.unpacked
+                          ? base::File(real_path, base::File::FLAG_OPEN |
+                                                      base::File::FLAG_READ)
+                          : archive->DuplicateFile();
     // The validator reads skipped byte ranges itself, so it needs a handle of
     // its own alongside the data source's.
     base::File validator_file;
