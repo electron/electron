@@ -614,10 +614,10 @@ index 0cdc51cbe448a0027f2fa4404323ccd36199606e..913752216e8ce77e074a8bf91dca307d
      return nullptr;
    }
 diff --git a/third_party/blink/renderer/platform/bindings/wrapper_type_info.h b/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
-index e2d9ae67fcd873f676761134948af78ad2ed04e2..2c2b2dde5112648033edee4e12a0db30962f5a9e 100644
+index 9149b4978966d6f909ce84b2dda58e53c0fa56ac..df61887798a166428ad22fb006432969c400016d 100644
 --- a/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
 +++ b/third_party/blink/renderer/platform/bindings/wrapper_type_info.h
-@@ -188,6 +188,15 @@ struct PLATFORM_EXPORT WrapperTypeInfo final
+@@ -194,6 +194,15 @@ struct PLATFORM_EXPORT WrapperTypeInfo final
          interface_template, bindings::V8InterfaceBridgeBase::FeatureSelector());
    }
  

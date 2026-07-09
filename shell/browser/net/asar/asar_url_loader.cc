@@ -368,9 +368,9 @@ class AsarURLLoader : public network::mojom::URLLoader {
 
     if (result == MOJO_RESULT_OK) {
       network::URLLoaderCompletionStatus status(net::OK);
-      status.encoded_data_length = total_bytes_written_;
-      status.encoded_body_length = total_bytes_written_;
-      status.decoded_body_length = total_bytes_written_;
+      status.encoded_data_length = base::ByteSize(total_bytes_written_);
+      status.encoded_body_length = base::ByteSize(total_bytes_written_);
+      status.decoded_body_length = base::ByteSize(total_bytes_written_);
       client_->OnComplete(status);
     } else {
       client_->OnComplete(network::URLLoaderCompletionStatus(net::ERR_FAILED));

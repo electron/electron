@@ -10,10 +10,10 @@ Allows Electron to restore WER when ELECTRON_DEFAULT_ERROR_MODE is set.
 This should be upstreamed.
 
 diff --git a/content/gpu/gpu_main.cc b/content/gpu/gpu_main.cc
-index 3236ceaa6ff08d3a6fb438e8a0814996b56c3efc..0af15263a8e65f18722c1af77817c037486117f6 100644
+index 2b4be734a24e0edcc8f0d091f66230ae1eaf19f1..5b06e5b67ee1f0720ef2943c04308cab22bf7d3a 100644
 --- a/content/gpu/gpu_main.cc
 +++ b/content/gpu/gpu_main.cc
-@@ -281,6 +281,10 @@ int GpuMain(MainFunctionParams parameters) {
+@@ -282,6 +282,10 @@ int GpuMain(MainFunctionParams parameters) {
    // to the GpuProcessHost once the GpuServiceImpl has started.
    viz::GpuLogMessageManager::GetInstance()->InstallPreInitializeLogHandler();
  
@@ -24,7 +24,7 @@ index 3236ceaa6ff08d3a6fb438e8a0814996b56c3efc..0af15263a8e65f18722c1af77817c037
    // We are experiencing what appear to be memory-stomp issues in the GPU
    // process. These issues seem to be impacting the task executor and listeners
    // registered to it. Create the task executor on the heap to guard against
-@@ -389,7 +393,6 @@ int GpuMain(MainFunctionParams parameters) {
+@@ -391,7 +395,6 @@ int GpuMain(MainFunctionParams parameters) {
  #endif
    const bool dead_on_arrival = !init_success;
  

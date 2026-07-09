@@ -39,10 +39,10 @@ index e05b4f2eb1b22d5a647cb020bae4e4052a2e735c..86524a419606bea3e7d090415fda8f2d
    static bool loaded = LoadGtkImpl(backend);
    return loaded;
 diff --git a/ui/gtk/gtk_compat.h b/ui/gtk/gtk_compat.h
-index 841e2e8fcdbe2da4aac487badd4d352476e461a2..043c3ab4dde02ca71798034e8cb2b3f2d2677af7 100644
+index e427a9f7c89d2287009356372acb83d450e817b9..03bb11d6108d350f2416af3a2c95ec714714228b 100644
 --- a/ui/gtk/gtk_compat.h
 +++ b/ui/gtk/gtk_compat.h
-@@ -42,6 +42,12 @@ using SkColor = uint32_t;
+@@ -43,6 +43,12 @@ using SkColor = uint32_t;
  
  namespace gtk {
  
@@ -53,5 +53,5 @@ index 841e2e8fcdbe2da4aac487badd4d352476e461a2..043c3ab4dde02ca71798034e8cb2b3f2
 +void* GetLibGdk();
 +
  // Loads libgtk and related libraries and returns true on success.
- bool LoadGtk(ui::LinuxUiBackend backend);
+ COMPONENT_EXPORT(GTK) bool LoadGtk(ui::LinuxUiBackend backend);
  

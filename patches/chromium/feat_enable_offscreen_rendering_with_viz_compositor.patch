@@ -522,7 +522,7 @@ index 4f9e8946fa02d859e92a6896beba82721914f868..78486eaa993ee7ffd5188b31503de7dd
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 12e4390fbbebac87651f156fa20564524b5b2dbf..84eef4b04e1a857a7621bedcc7458c09c776eb37 100644
+index 8b86999532a81162ed59eaf83ffc10afcadfca47..85af1541aae73b83e8ff4f265fac74c840249588 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -564,10 +564,10 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index fc8778282e3ad2087fdbf88283f7cd02157dbf38..3c07ea56491c5ecbfb7c07e3d0c17ca987819ab4 100644
+index dc379ef6d6ccbdbc2072eaad06ec740b257ffe7f..b998c0575a145bcb2f95e77ff7edf615b471b700 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -406,8 +406,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -420,8 +420,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();

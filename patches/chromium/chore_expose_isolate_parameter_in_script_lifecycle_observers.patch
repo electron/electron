@@ -34,10 +34,10 @@ index 1b8541bfa56a7e53c8396c29ea45a0b5af89ef81..28ffec368e5d6bc1744605e9dda7fc68
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f3b1a3470e6da82f43d720a8ee25bc03fefe3fd0..89a5098881d7d113c1b058e8793787f7afc6c0b0 100644
+index 8aef132a94fa6e29a3a825df8f5b80ea10d1a2a7..26a5fa48ec6f5f27ebf1430948c472a0c348dd86 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4841,10 +4841,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4860,10 +4860,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -245,10 +245,10 @@ index 36e88fc0d657f054e8176aebbd3196d83d83831b..49ee4331844380adaa119c24343b9fda
  
    // Returns true if we should allow register V8 extensions to be added.
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index a5c4f488653b26034ddf0c7a01a88dffabe641b0..d370a8745fdfabb526e849203c941b7ea2573d2e 100644
+index 3a17b9a9119d709c96fd97829f04b396cbe24daa..7ed6cf42008d9eb12a2bfa30c3109afb8a157817 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -427,7 +427,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -429,7 +429,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
                                int32_t world_id) override {}
    void DidInstallConditionalFeatures(v8::Local<v8::Context>,
                                       int32_t world_id) override {}

@@ -254,7 +254,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const net::SiteForCookies& site_for_cookies,
       const std::optional<std::string>& user_agent,
       mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
-          handshake_client) override;
+          handshake_client,
+      WebSocketOptions options) override;
   bool WillInterceptWebSocket(content::RenderFrameHost*) override;
   void WillCreateURLLoaderFactory(
       content::BrowserContext* browser_context,
