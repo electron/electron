@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Wallez <cwallez@chromium.org>
+Date: Mon, 29 Jun 2026 01:17:30 -0700
+Subject: [M148] [dawn] Remove AllocNoThrow calls without proper error
+ handling.
+
+Original change's description:
+> [dawn] Remove AllocNoThrow calls without proper error handling.
+>
+>  - CommandAllocator had an AllocNoThrow that caused errors not handled
+>    all cases: nullptr would be returned, but when writing AdditionalData
+>    of size 0, it wouldn't cause an immediate crash and lead to issue
+>    much later.
+>  - ChunkedCommandSerializer had an AllocNoThrow but just drops the
+>    command if it failed, which seems like it could cause issues
+>    downstream. Turn it into a regular allocation.
+>
+> Fixed: 516649133
+> Change-Id: I90d1b19c0838d32b0b47bd1a2d5779967fdc3f25
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/311135
+> Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+> Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+
+(cherry picked from commit bd3e9649dc17a7e0cd904ce0ca37fbb625d637ca)
+
+Bug: 517794082,516649133
+Change-Id: I90d1b19c0838d32b0b47bd1a2d5779967fdc3f25
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/318855
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/dawn/native/CommandAllocator.cpp b/src/dawn/native/CommandAllocator.cpp
+index cb3b1e9411afa110ee9058c83ae8f51305ef7a19..4baf1960d8320a63e39dda403ee5f8b1fbe74a51 100644
+--- a/src/dawn/native/CommandAllocator.cpp
++++ b/src/dawn/native/CommandAllocator.cpp
+@@ -213,25 +213,19 @@ char* CommandAllocator::AllocateInNewBlock(uint32_t commandId,
+         return nullptr;
+     }
+ 
+-    if (!GetNewBlock(requestedBlockSize)) [[unlikely]] {
+-        return nullptr;
+-    }
++    AppendNewBlock(requestedBlockSize);
+     return Allocate(commandId, commandSize, commandAlignment);
+ }
+ 
+-bool CommandAllocator::GetNewBlock(size_t minimumSize) {
++void CommandAllocator::AppendNewBlock(size_t minimumSize) {
+     // Allocate blocks doubling sizes each time, to a maximum of 16k (or at least minimumSize).
+     mLastAllocationSize = std::max(minimumSize, std::min(mLastAllocationSize * 2, size_t(16384)));
+ 
+-    auto block = std::unique_ptr<char[]>(new (std::nothrow) char[mLastAllocationSize]);
+-    if (block == nullptr) [[unlikely]] {
+-        return false;
+-    }
++    auto block = std::unique_ptr<char[]>(new char[mLastAllocationSize]);
+ 
+     mCurrentPtr = AlignPtr(block.get(), alignof(uint32_t));
+     mEndPtr = block.get() + mLastAllocationSize;
+     mBlocks.push_back({mLastAllocationSize, std::move(block)});
+-    return true;
+ }
+ 
+ void CommandAllocator::ResetPointers() {
+diff --git a/src/dawn/native/CommandAllocator.h b/src/dawn/native/CommandAllocator.h
+index 9d9a60ff1359042d3434a651ee042af1af5a5179..83f879baf1c201b5ec219798e1650877fdfa7ad5 100644
+--- a/src/dawn/native/CommandAllocator.h
++++ b/src/dawn/native/CommandAllocator.h
+@@ -269,7 +269,7 @@ class CommandAllocator : public NonCopyable {
+         return Allocate(detail::kAdditionalData, commandSize, commandAlignment);
+     }
+ 
+-    bool GetNewBlock(size_t minimumSize);
++    void AppendNewBlock(size_t minimumSize);
+ 
+     void ResetPointers();
+ 
+@@ -277,7 +277,7 @@ class CommandAllocator : public NonCopyable {
+     size_t mLastAllocationSize = kDefaultBaseAllocationSize;
+ 
+     // Data used for the block range at initialization so that the first call to Allocate sees
+-    // there is not enough space and calls GetNewBlock. This avoids having to special case the
++    // there is not enough space and calls AppendNewBlock. This avoids having to special case the
+     // initialization in Allocate.
+     uint32_t mPlaceholderSpace[1] = {0};
+ 
+diff --git a/src/dawn/wire/ChunkedCommandSerializer.h b/src/dawn/wire/ChunkedCommandSerializer.h
+index bc15d5072ab9d261fb324bb284f891576ad03b67..1c744a45c316f35a7d126e964fe222ab6e4b9c4f 100644
+--- a/src/dawn/wire/ChunkedCommandSerializer.h
++++ b/src/dawn/wire/ChunkedCommandSerializer.h
+@@ -135,10 +135,8 @@ class ChunkedCommandSerializer {
+             return;
+         }
+ 
+-        auto cmdSpace = std::unique_ptr<char[]>(AllocNoThrow<char>(requiredSize));
+-        if (!cmdSpace) {
+-            return;
+-        }
++        auto cmdSpace = std::unique_ptr<char[]>(new char[requiredSize]);
++
+         SerializeBuffer serializeBuffer(cmdSpace.get(), requiredSize);
+         WireResult rCmd = SerializeCmd(cmd, requiredSize, &serializeBuffer);
+         WireResult rExts = detail::SerializeCommandExtension(&serializeBuffer, extensions...);

@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Mon, 1 Jun 2026 19:06:31 -0700
+Subject: [M148] Vulkan: Validate size of imported DMA buffers
+
+Original change's description:
+> Vulkan: Validate size of imported DMA buffers
+>
+> Adds validation to ensure that the size of an imported DMA buffer
+> is within the maximum limits for the GPUDevice.
+>
+> Bug: 516949298
+> Fixes: 516949298
+> Change-Id: I3ab20720cc203e80a878b8fdfb532e8693e63051
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/311675
+> Auto-Submit: Brandon Jones <bajones@chromium.org>
+> Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+> Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+
+(cherry picked from commit e7198ee7b3f8dc8d9faf302f419f5988c57c35da)
+
+Bug: 517794132,516949298
+Change-Id: I3ab20720cc203e80a878b8fdfb532e8693e63051
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/312877
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/dawn/native/vulkan/SharedTextureMemoryVk.cpp b/src/dawn/native/vulkan/SharedTextureMemoryVk.cpp
+index ef9169f766a65c47639ff12d57f68dd5d3fc1272..48bc913561e4c8eb01fde2585a918569f09edea8 100644
+--- a/src/dawn/native/vulkan/SharedTextureMemoryVk.cpp
++++ b/src/dawn/native/vulkan/SharedTextureMemoryVk.cpp
+@@ -225,6 +225,15 @@ ResultOrError<Ref<SharedTextureMemory>> SharedTextureMemory::Create(
+     const VkExternalMemoryHandleTypeFlagBits handleType =
+         VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT;
+ 
++    const CombinedLimits& limits = device->GetLimits();
++    DAWN_INVALID_IF(
++        descriptor->size.width == 0 || descriptor->size.width > limits.v1.maxTextureDimension2D,
++        "Resource width (%u) is zero or exceeds maxTextureDimension2D (%u).",
++        descriptor->size.width, limits.v1.maxTextureDimension2D);
++    DAWN_INVALID_IF(
++        descriptor->size.height == 0 || descriptor->size.height > limits.v1.maxTextureDimension2D,
++        "Resource height (%u) is zero or exceeds maxTextureDimension2D (%u).",
++        descriptor->size.height, limits.v1.maxTextureDimension2D);
+     DAWN_INVALID_IF(descriptor->size.depthOrArrayLayers != 1, "depthOrArrayLayers was not 1.");
+ 
+     SharedTextureMemoryProperties properties;

@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Paul Jensen <pauljensen@chromium.org>
+Date: Tue, 16 Jun 2026 14:55:55 -0700
+Subject: [M148] Protected Audience: Ignore non-finite interest group
+ priorities
+
+Original change's description:
+> Protected Audience: Ignore non-finite interest group priorities
+>
+> Non-finite values are not permitted in priority vectors submitted
+> via JSON or WebIDL so this likely indicates aberrant priority
+> calculations that went out of bounds.
+>
+> Fixed: 523677844
+> Change-Id: Ie201fafc7b11c34b236595afc369ac74f317b128
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7941151
+> Reviewed-by: Russ Hamilton <behamilton@google.com>
+> Auto-Submit: Paul Jensen <pauljensen@chromium.org>
+> Commit-Queue: Russ Hamilton <behamilton@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1646794}
+
+(cherry picked from commit 8ecc3fa50aad399fe7a40b5daba71615196cf4ec)
+
+Bug: 524507077,523677844
+Change-Id: Ie201fafc7b11c34b236595afc369ac74f317b128
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7952422
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4367}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/content/browser/interest_group/interest_group_priority_util.cc b/content/browser/interest_group/interest_group_priority_util.cc
+index d4d40fd43022c127e7ef6486c189c8d9b5150aad..e12981009c84a3436f1e6141b17256dd25dd3ea7 100644
+--- a/content/browser/interest_group/interest_group_priority_util.cc
++++ b/content/browser/interest_group/interest_group_priority_util.cc
+@@ -89,6 +89,12 @@ double CalculateInterestGroupPriority(
+       break;
+     }
+   }
++
++  // Ignore non-finite results.
++  if (!std::isfinite(caclulated_priority)) {
++    return -1;
++  }
++
+   return caclulated_priority;
+ }
+ 

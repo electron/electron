@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Electron Scripts <scripts@electron>
+Date: Thu, 2 Jul 2026 05:57:34 +0000
+Subject: Reject Slugs that have creationMatrix with perspective
+
+The creationMatrix on a deserialized Slug VertexFiller must not have
+perspective; many rendering parts assume it does not.
+
+Bug: 520113415
+Change-Id: I6ec23df9a23ea588fa89f7a62dc1f197fe3905fd
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1256016
+(cherry picked from commit a145861ad1c2650c58dd3ff0dbd92ae6f41f1e1b)
+
+diff --git a/src/gpu/ganesh/ops/AtlasTextOp.cpp b/src/gpu/ganesh/ops/AtlasTextOp.cpp
+index c485f7b8b9fc9f954ce9ec9ca5685eaa212575f4..3fa5f48c71a2c06bb803c78e308fc01eb74ff1eb 100644
+--- a/src/gpu/ganesh/ops/AtlasTextOp.cpp
++++ b/src/gpu/ganesh/ops/AtlasTextOp.cpp
+@@ -535,9 +535,16 @@ void AtlasTextOp::onPrepareDraws(GrMeshDrawTarget* target) {
+ 
+     for (const Geometry* geo = fHead; geo != nullptr; geo = geo->fNext) {
+         const sktext::gpu::AtlasSubRun& subRun = geo->fSubRun;
+-        SkASSERTF((int) subRun.vertexStride(geo->fDrawMatrix) == vertexStride,
+-                  "subRun stride: %d vertex buffer stride: %d\n",
+-                  (int)subRun.vertexStride(geo->fDrawMatrix), vertexStride);
++        int strideCheck = SkToInt(subRun.vertexStride(geo->fDrawMatrix));
++        if (strideCheck != vertexStride) {
++            // We (unexpectedly) have buffers of different sizes between CPU and GPU. Bail out.
++            SkDebugf(
++                    "Warning: stride mismatch detected (subrun stride: %d vertex buffer stride: "
++                    "%d). Aborting draw.\n",
++                    strideCheck,
++                    vertexStride);
++            return;
++        }
+ 
+         const int subRunEnd = subRun.glyphCount();
+         auto regenerateDelegate = [&](sktext::gpu::GlyphVector* glyphs,
+diff --git a/src/text/gpu/VertexFiller.cpp b/src/text/gpu/VertexFiller.cpp
+index 1cf8cff3296f0c32b4fdb09bf612f5089610ea82..149a749e18e0016078794235840e7f4ce567b016 100644
+--- a/src/text/gpu/VertexFiller.cpp
++++ b/src/text/gpu/VertexFiller.cpp
+@@ -58,6 +58,12 @@ std::optional<VertexFiller> VertexFiller::MakeFromBuffer(SkReadBuffer &buffer,
+     SkMatrix creationMatrix;
+     buffer.readMatrix(&creationMatrix);
+ 
++    // The only valid creationMatrices do not have perspective and many rendering parts assume
++    // the perspective would cause issues.
++    if (!buffer.validate(!creationMatrix.hasPerspective())) {
++        return std::nullopt;
++    }
++
+     SkRect creationBounds = buffer.readRect();
+ 
+     SkSpan<SkPoint> leftTop = MakePointsFromBuffer(buffer, alloc);

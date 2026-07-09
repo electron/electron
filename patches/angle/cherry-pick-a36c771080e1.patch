@@ -1,0 +1,614 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charlie Lao <cclao@google.com>
+Date: Wed, 3 Jun 2026 16:37:04 -0700
+Subject: M148: Fix UAF bug associated with orphaned sampler clean up
+
+This change addresses a lifetime issue in the Vulkan backend where
+samplers could be destroyed while still in use by a command buffer in a
+different share group. This only occurs when using the
+EGL_ANGLE_display_texture_share_group extension. Since this extension is
+only used by chromium, and it guarantees its usage is always thread
+safe, this CL adds back a per renderer mSamplerCache. If the extension
+is used, per renderer sampler cache is used, otherwise per share group
+cache is used. This way we will no longer have orphaned sampler, thus
+avoids the threading problem and synchronization problem associated with
+cleanupOrphanedSamplers.
+
+Bug: chromium:517935753
+Change-Id: I5f6b3ec9dc526a72d11eff7b0a939f40a0c01bc4
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7910772
+Commit-Queue: Charlie Lao <cclao@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit 52232eaf409a28d77947df5622af274e1ef770c6)
+
+Bug: 517935753
+Fixed: 523127803
+Change-Id: I9f0a0b365db0dd679c376a0cc026c93e4302964f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7933711
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.h b/src/libANGLE/renderer/vulkan/ContextVk.h
+index 5d74c9211925eea1ec079e884473376e718147ce..b7b87e0c6a75db3fbc06813df5930a6ef58e7fcf 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.h
++++ b/src/libANGLE/renderer/vulkan/ContextVk.h
+@@ -239,6 +239,22 @@ class ContextVk : public ContextImpl, public vk::Context, public MultisampleText
+     {
+         return mShareGroupVk->getMetaDescriptorPools();
+     }
++    SamplerCache &getSamplerCache()
++    {
++        if (hasDisplayTextureShareGroup())
++        {
++            return mRenderer->getSamplerCache();
++        }
++        return mShareGroupVk->getSamplerCache();
++    }
++    SamplerYcbcrConversionCache &getYuvConversionCache()
++    {
++        if (hasDisplayTextureShareGroup())
++        {
++            return mRenderer->getYuvConversionCache();
++        }
++        return mShareGroupVk->getYuvConversionCache();
++    }
+ 
+     // Device loss
+     gl::GraphicsResetStatus getResetStatus() override;
+diff --git a/src/libANGLE/renderer/vulkan/SamplerVk.cpp b/src/libANGLE/renderer/vulkan/SamplerVk.cpp
+index f15b039fd707b6e52a8c6c94778ba57d3ba8d23b..1344921c269a872956a2d808d3d7d24310e3a702 100644
+--- a/src/libANGLE/renderer/vulkan/SamplerVk.cpp
++++ b/src/libANGLE/renderer/vulkan/SamplerVk.cpp
+@@ -40,7 +40,7 @@ angle::Result SamplerVk::syncState(const gl::Context *context, const bool dirty)
+     }
+ 
+     vk::SamplerDesc desc(contextVk, mState, false, nullptr, static_cast<angle::FormatID>(0));
+-    ANGLE_TRY(contextVk->getShareGroup()->getSamplerCache().getSampler(contextVk, desc, &mSampler));
++    ANGLE_TRY(contextVk->getSamplerCache().getSampler(contextVk, desc, &mSampler));
+ 
+     return angle::Result::Continue;
+ }
+diff --git a/src/libANGLE/renderer/vulkan/ShareGroupVk.cpp b/src/libANGLE/renderer/vulkan/ShareGroupVk.cpp
+index c87bf46ed8371338afeb3e887f5d38d94772e7cf..a0d743f9e2815d4316a8e470f1236c8e24509a2e 100644
+--- a/src/libANGLE/renderer/vulkan/ShareGroupVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ShareGroupVk.cpp
+@@ -176,8 +176,8 @@ void ShareGroupVk::onDestroy(const egl::Display *display)
+     mPipelineLayoutCache.destroy(mRenderer);
+     mDescriptorSetLayoutCache.destroy(mRenderer);
+ 
+-    mSamplerCache.destroy(mRenderer, hasDisplayTextureShareGroup);
+-    mYuvConversionCache.destroy(mRenderer, hasDisplayTextureShareGroup);
++    mSamplerCache.destroy(mRenderer);
++    mYuvConversionCache.destroy(mRenderer);
+ 
+     mMetaDescriptorPools[DescriptorSetIndex::UniformsAndXfb].destroy(mRenderer);
+     mMetaDescriptorPools[DescriptorSetIndex::Texture].destroy(mRenderer);
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 87c7f6e7e577971349fc91fb135fc28d7921d096..eec836c987ed80e075ed88534b514ec915088e60 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -2787,8 +2787,7 @@ angle::Result TextureVk::generateMipmapsWithCompute(ContextVk *contextVk)
+     vk::SharedSamplerPtr sampler;
+     vk::SamplerDesc samplerDesc(contextVk, samplerState, false, nullptr,
+                                 static_cast<angle::FormatID>(0));
+-    ANGLE_TRY(
+-        contextVk->getShareGroup()->getSamplerCache().getSampler(contextVk, samplerDesc, &sampler));
++    ANGLE_TRY(contextVk->getSamplerCache().getSampler(contextVk, samplerDesc, &sampler));
+ 
+     // If the image has more levels than supported, generate as many mips as possible at a time.
+     const vk::LevelIndex maxGenerateLevels(UtilsVk::GetGenerateMipmapMaxLevels(contextVk));
+@@ -3908,10 +3907,9 @@ angle::Result TextureVk::syncState(const gl::Context *context,
+     vk::SamplerDesc samplerDescSamplerExternal2DY2YEXT(contextVk, mState.getSamplerState(),
+                                                        mState.isStencilMode(), &y2yConversionDesc,
+                                                        mImage->getIntendedFormatID());
+-    ANGLE_TRY(contextVk->getShareGroup()->getSamplerCache().getSampler(contextVk, samplerDesc,
+-                                                                       &mSampler));
+-    ANGLE_TRY(contextVk->getShareGroup()->getSamplerCache().getSampler(
+-        contextVk, samplerDescSamplerExternal2DY2YEXT, &mY2YSampler));
++    ANGLE_TRY(contextVk->getSamplerCache().getSampler(contextVk, samplerDesc, &mSampler));
++    ANGLE_TRY(contextVk->getSamplerCache().getSampler(contextVk, samplerDescSamplerExternal2DY2YEXT,
++                                                      &mY2YSampler));
+ 
+     updateCachedImageViewSerials();
+ 
+diff --git a/src/libANGLE/renderer/vulkan/UtilsVk.cpp b/src/libANGLE/renderer/vulkan/UtilsVk.cpp
+index 5cd8716760f967f0c1d2e8577d51d7e6b5675138..543ac7049e12f1505828911fcc32879bbe5d77c3 100644
+--- a/src/libANGLE/renderer/vulkan/UtilsVk.cpp
++++ b/src/libANGLE/renderer/vulkan/UtilsVk.cpp
+@@ -1599,8 +1599,7 @@ angle::Result UtilsVk::ensureImageCopyResourcesInitializedWithSampler(
+     }
+ 
+     vk::SharedSamplerPtr sampler;
+-    ANGLE_TRY(
+-        contextVk->getShareGroup()->getSamplerCache().getSampler(contextVk, samplerDesc, &sampler));
++    ANGLE_TRY(contextVk->getSamplerCache().getSampler(contextVk, samplerDesc, &sampler));
+ 
+     vk::DescriptorSetLayoutDesc descriptorSetDesc;
+     descriptorSetDesc.addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1,
+diff --git a/src/libANGLE/renderer/vulkan/vk_cache_utils.cpp b/src/libANGLE/renderer/vulkan/vk_cache_utils.cpp
+index 8c4010f636b43e431208bd990a77cda88c473f19..eda93f7592d8088eb2ea21d663f15261b5a22108 100644
+--- a/src/libANGLE/renderer/vulkan/vk_cache_utils.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_cache_utils.cpp
+@@ -5821,7 +5821,7 @@ angle::Result SamplerDesc::init(ContextVk *contextVk, Sampler *sampler) const
+         ASSERT((contextVk->getFeatures().supportsYUVSamplerConversion.enabled));
+         samplerYcbcrConversionInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
+         samplerYcbcrConversionInfo.pNext = nullptr;
+-        ANGLE_TRY(contextVk->getShareGroup()->getYuvConversionCache().getSamplerYcbcrConversion(
++        ANGLE_TRY(contextVk->getYuvConversionCache().getSamplerYcbcrConversion(
+             contextVk, mYcbcrConversionDesc, &samplerYcbcrConversionInfo.conversion));
+         AddToPNextChain(&createInfo, &samplerYcbcrConversionInfo);
+ 
+@@ -8556,44 +8556,27 @@ SamplerYcbcrConversionCache::~SamplerYcbcrConversionCache()
+     ASSERT(mExternalFormatPayload.empty() && mVkFormatPayload.empty());
+ }
+ 
+-void SamplerYcbcrConversionCache::destroy(vk::Renderer *renderer, bool orphanConversionInfo)
++void SamplerYcbcrConversionCache::destroy(vk::Renderer *renderer)
+ {
+     renderer->accumulateCacheStats(VulkanCacheType::SamplerYcbcrConversion, mCacheStats);
+ 
+-    // If the EGL_ANGLE_display_texture_share_group extension is causing some samplers to
+-    // stay alive, there is no way to know which conversion info object needs to stay alive.
+-    // stash them all in the renderer to be destroyed when possible.
+-    if (orphanConversionInfo)
++    VkDevice device = renderer->getDevice();
++
++    uint32_t count = static_cast<uint32_t>(mExternalFormatPayload.size());
++    for (auto &iter : mExternalFormatPayload)
+     {
+-        for (auto &iter : mExternalFormatPayload)
+-        {
+-            renderer->addSamplerYcbcrConversionToOrphanList(iter.second.release());
+-        }
+-        for (auto &iter : mVkFormatPayload)
+-        {
+-            renderer->addSamplerYcbcrConversionToOrphanList(iter.second.release());
+-        }
++        vk::SamplerYcbcrConversion &samplerYcbcrConversion = iter.second;
++        samplerYcbcrConversion.destroy(device);
+     }
+-    else
+-    {
+-        VkDevice device = renderer->getDevice();
+-
+-        uint32_t count = static_cast<uint32_t>(mExternalFormatPayload.size());
+-        for (auto &iter : mExternalFormatPayload)
+-        {
+-            vk::SamplerYcbcrConversion &samplerYcbcrConversion = iter.second;
+-            samplerYcbcrConversion.destroy(device);
+-        }
+-        renderer->onDeallocateHandle(vk::HandleType::SamplerYcbcrConversion, count);
++    renderer->onDeallocateHandle(vk::HandleType::SamplerYcbcrConversion, count);
+ 
+-        count = static_cast<uint32_t>(mExternalFormatPayload.size());
+-        for (auto &iter : mVkFormatPayload)
+-        {
+-            vk::SamplerYcbcrConversion &samplerYcbcrConversion = iter.second;
+-            samplerYcbcrConversion.destroy(device);
+-        }
+-        renderer->onDeallocateHandle(vk::HandleType::SamplerYcbcrConversion, count);
++    count = static_cast<uint32_t>(mVkFormatPayload.size());
++    for (auto &iter : mVkFormatPayload)
++    {
++        vk::SamplerYcbcrConversion &samplerYcbcrConversion = iter.second;
++        samplerYcbcrConversion.destroy(device);
+     }
++    renderer->onDeallocateHandle(vk::HandleType::SamplerYcbcrConversion, count);
+ 
+     mExternalFormatPayload.clear();
+     mVkFormatPayload.clear();
+@@ -8642,33 +8625,18 @@ SamplerCache::~SamplerCache()
+     ASSERT(mPayload.empty());
+ }
+ 
+-void SamplerCache::destroy(vk::Renderer *renderer, bool orphanReferencedSamplers)
++void SamplerCache::destroy(vk::Renderer *renderer)
+ {
+     renderer->accumulateCacheStats(VulkanCacheType::Sampler, mCacheStats);
+ 
+     uint32_t count = static_cast<uint32_t>(mPayload.size());
+ 
+-    if (orphanReferencedSamplers)
+-    {
+-        for (auto &iter : mPayload)
+-        {
+-            // If the EGL_ANGLE_display_texture_share_group extension is causing some samplers to
+-            // stay alive, stash them in the renderer to be destroyed when possible.
+-            if (!iter.second.unique())
+-            {
+-                renderer->addSamplerToOrphanList(iter.second);
+-            }
+-            else
+-            {
+-                renderer->onDeallocateHandle(vk::HandleType::Sampler, 1);
+-            }
+-        }
+-    }
+-    else
++    for (auto &iter : mPayload)
+     {
+-        ASSERT(AllCacheEntriesHaveUniqueReference(mPayload));
+-        renderer->onDeallocateHandle(vk::HandleType::Sampler, count);
++        ASSERT(iter.second.unique());
+     }
++
++    renderer->onDeallocateHandle(vk::HandleType::Sampler, count);
+     mPayload.clear();
+ }
+ 
+diff --git a/src/libANGLE/renderer/vulkan/vk_cache_utils.h b/src/libANGLE/renderer/vulkan/vk_cache_utils.h
+index 785e16a57a9907184c82721ab13f923e439b72a8..c2855775f06416092e159fa0018c2b90135944a4 100644
+--- a/src/libANGLE/renderer/vulkan/vk_cache_utils.h
++++ b/src/libANGLE/renderer/vulkan/vk_cache_utils.h
+@@ -2891,7 +2891,7 @@ class SamplerCache final : public HasCacheStats<VulkanCacheType::Sampler>
+     SamplerCache();
+     ~SamplerCache() override;
+ 
+-    void destroy(vk::Renderer *renderer, bool orphanReferencedSamplers);
++    void destroy(vk::Renderer *renderer);
+ 
+     angle::Result getSampler(ContextVk *contextVk,
+                              const vk::SamplerDesc &desc,
+@@ -2909,7 +2909,7 @@ class SamplerYcbcrConversionCache final
+     SamplerYcbcrConversionCache();
+     ~SamplerYcbcrConversionCache() override;
+ 
+-    void destroy(vk::Renderer *renderer, bool orphanConversionInfo);
++    void destroy(vk::Renderer *renderer);
+ 
+     angle::Result getSamplerYcbcrConversion(vk::ErrorContext *context,
+                                             const vk::YcbcrConversionDesc &ycbcrConversionDesc,
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index d973a94a588e8242f235a7bdcd3429ccb85a95f6..89d4ed8588e59a5b3b8c6ad15c97ffd7a241c6a9 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -6590,7 +6590,7 @@ angle::Result ImageHelper::initLayerImageViewImpl(ContextVk *contextVk,
+         ASSERT((contextVk->getFeatures().supportsYUVSamplerConversion.enabled));
+         yuvConversionInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO;
+         yuvConversionInfo.pNext = nullptr;
+-        ANGLE_TRY(contextVk->getShareGroup()->getYuvConversionCache().getSamplerYcbcrConversion(
++        ANGLE_TRY(contextVk->getYuvConversionCache().getSamplerYcbcrConversion(
+             contextVk, conversionDesc, &yuvConversionInfo.conversion));
+         AddToPNextChain(&viewInfo, &yuvConversionInfo);
+ 
+diff --git a/src/libANGLE/renderer/vulkan/vk_renderer.cpp b/src/libANGLE/renderer/vulkan/vk_renderer.cpp
+index 406912e5d8e609be524bf87b2c63af89b83ee955..a9a1a914cc8616f44c21208be316b69ef38add20 100644
+--- a/src/libANGLE/renderer/vulkan/vk_renderer.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_renderer.cpp
+@@ -2146,8 +2146,8 @@ void Renderer::onDestroy(vk::ErrorContext *context)
+     cleanupGarbage(nullptr);
+     ASSERT(!hasSharedGarbage());
+     ASSERT(mOrphanedBufferBlockList.empty());
+-    ASSERT(mOrphanedSamplers.empty());
+-    ASSERT(mOrphanedSamplerYcbcrConversions.empty());
++    mSamplerCache.destroy(this);
++    mYuvConversionCache.destroy(this);
+ 
+     mRefCountedEventRecycler.destroy(mDevice);
+ 
+@@ -7361,59 +7361,12 @@ void Renderer::cleanupGarbage(bool *anyGarbageCleanedOut)
+     // Clean up RefCountedEvent that are done resetting
+     anyCleaned = mRefCountedEventRecycler.cleanupResettingEvents(this) > 0 || anyCleaned;
+ 
+-    // Clean up samplers that couldn't be destroyed when the share group was.
+-    anyCleaned = cleanupOrphanedSamplers() || anyCleaned;
+-
+     if (anyGarbageCleanedOut != nullptr)
+     {
+         *anyGarbageCleanedOut = anyCleaned;
+     }
+ }
+ 
+-bool Renderer::cleanupOrphanedSamplers()
+-{
+-    std::unique_lock<angle::SimpleMutex> lock(mOrphanedSamplerMutex);
+-
+-    if (mOrphanedSamplers.empty() && mOrphanedSamplerYcbcrConversions.empty())
+-    {
+-        return false;
+-    }
+-
+-    // Destroy any sampler that is no longer referenced.
+-    const size_t samplerCountBefore = mOrphanedSamplers.size();
+-    // Using remove_if to avoid unnecessary reference counter updates.
+-    mOrphanedSamplers.erase(
+-        std::remove_if(mOrphanedSamplers.begin(), mOrphanedSamplers.end(),
+-                       [](SharedSamplerPtr &sampler) { return sampler.unique(); }),
+-        mOrphanedSamplers.end());
+-    const size_t destroyedSamplerCount = samplerCountBefore - mOrphanedSamplers.size();
+-
+-    bool anyCleaned = destroyedSamplerCount > 0;
+-
+-    if (anyCleaned)
+-    {
+-        onDeallocateHandle(vk::HandleType::Sampler, static_cast<uint32_t>(destroyedSamplerCount));
+-    }
+-
+-    // If all samplers are gone, destroy all the ycbcr conversion objects too.  We don't track which
+-    // samplers use which ycbcr conversion objects, so they are destroyed conservatively.
+-    if (mOrphanedSamplers.empty() && !mOrphanedSamplerYcbcrConversions.empty())
+-    {
+-        anyCleaned = true;
+-        for (VkSamplerYcbcrConversion handle : mOrphanedSamplerYcbcrConversions)
+-        {
+-            vk::SamplerYcbcrConversion conversion;
+-            conversion.setHandle(handle);
+-            conversion.destroy(mDevice);
+-        }
+-        onDeallocateHandle(vk::HandleType::SamplerYcbcrConversion,
+-                           static_cast<uint32_t>(mOrphanedSamplerYcbcrConversions.size()));
+-        mOrphanedSamplerYcbcrConversions.clear();
+-    }
+-
+-    return anyCleaned;
+-}
+-
+ void Renderer::cleanupPendingSubmissionGarbage()
+ {
+     // Check if pending garbage is still pending. If not, move them to the garbage list.
+@@ -7860,18 +7813,6 @@ angle::Result Renderer::cleanupSomeGarbage(ErrorContext *context, bool *anyGarba
+     return mCommandQueue.cleanupSomeGarbage(context, 0, anyGarbageCleanedOut);
+ }
+ 
+-void Renderer::addSamplerToOrphanList(SharedSamplerPtr sampler)
+-{
+-    std::unique_lock<angle::SimpleMutex> lock(mOrphanedSamplerMutex);
+-    mOrphanedSamplers.push_back(sampler);
+-}
+-
+-void Renderer::addSamplerYcbcrConversionToOrphanList(VkSamplerYcbcrConversion conversion)
+-{
+-    std::unique_lock<angle::SimpleMutex> lock(mOrphanedSamplerMutex);
+-    mOrphanedSamplerYcbcrConversions.push_back(conversion);
+-}
+-
+ // static
+ const char *Renderer::GetVulkanObjectTypeName(VkObjectType type)
+ {
+diff --git a/src/libANGLE/renderer/vulkan/vk_renderer.h b/src/libANGLE/renderer/vulkan/vk_renderer.h
+index 3e7d1311d03f4ca2bb8859be8db2761c37eefe9f..90c6dde68bc2ceccd584de6c27abc0c3d603caf3 100644
+--- a/src/libANGLE/renderer/vulkan/vk_renderer.h
++++ b/src/libANGLE/renderer/vulkan/vk_renderer.h
+@@ -585,8 +585,8 @@ class Renderer : angle::NonCopyable
+     }
+ 
+     void addBufferBlockToOrphanList(vk::BufferBlock *block) { mOrphanedBufferBlockList.add(block); }
+-    void addSamplerToOrphanList(SharedSamplerPtr sampler);
+-    void addSamplerYcbcrConversionToOrphanList(VkSamplerYcbcrConversion conversion);
++    SamplerCache &getSamplerCache() { return mSamplerCache; }
++    SamplerYcbcrConversionCache &getYuvConversionCache() { return mYuvConversionCache; }
+ 
+     VkDeviceSize getSuballocationDestroyedSize() const
+     {
+@@ -799,8 +799,6 @@ class Renderer : angle::NonCopyable
+     // should be flushed.
+     void calculatePendingGarbageSizeLimit();
+ 
+-    bool cleanupOrphanedSamplers();
+-
+     template <typename CommandBufferHelperT, typename RecyclerT>
+     angle::Result getCommandBufferImpl(vk::ErrorContext *context,
+                                        vk::SecondaryCommandPool *commandPool,
+@@ -956,10 +954,8 @@ class Renderer : angle::NonCopyable
+     // Holds RefCountedEvent that are free and ready to reuse
+     vk::RefCountedEventRecycler mRefCountedEventRecycler;
+ 
+-    // Holds orphaned VkSampler and VkSamplerYcbcrConversion objects when ShareGroup gets destroyed
+-    angle::SimpleMutex mOrphanedSamplerMutex;
+-    std::vector<SharedSamplerPtr> mOrphanedSamplers;
+-    std::vector<VkSamplerYcbcrConversion> mOrphanedSamplerYcbcrConversions;
++    SamplerCache mSamplerCache;
++    SamplerYcbcrConversionCache mYuvConversionCache;
+ 
+     VkDeviceSize mPendingGarbageSizeLimit;
+ 
+diff --git a/src/tests/egl_tests/EGLContextSharingTest.cpp b/src/tests/egl_tests/EGLContextSharingTest.cpp
+index 0db19320995c1887c3d7b480b59b49d0704820fa..5d3f25f46779199cde14f40c0e9f600fc36bbd29 100644
+--- a/src/tests/egl_tests/EGLContextSharingTest.cpp
++++ b/src/tests/egl_tests/EGLContextSharingTest.cpp
+@@ -412,6 +412,205 @@ TEST_P(EGLContextSharingTest, DisplayShareGroupReleaseShareGroupThatOwnsStagedUp
+     eglDestroyContext(display, context2);
+ }
+ 
++// Regression test for sampler lifetime bug when EGL_ANGLE_display_texture_share_group is used.
++TEST_P(EGLContextSharingTest, DisplayShareGroupSamplerInFlightWhenOwningShareGroupDestroyed)
++{
++    EGLDisplay display = getEGLWindow()->getDisplay();
++    ANGLE_SKIP_TEST_IF(
++        !IsEGLDisplayExtensionEnabled(display, "EGL_ANGLE_display_texture_share_group"));
++    ANGLE_SKIP_TEST_IF(!IsVulkan());
++
++    EGLConfig config   = getEGLWindow()->getConfig();
++    EGLSurface surface = getEGLWindow()->getSurface();
++
++    const EGLint inShareGroupContextAttribs[] = {
++        EGL_CONTEXT_CLIENT_VERSION, 2, EGL_DISPLAY_TEXTURE_SHARE_GROUP_ANGLE, EGL_TRUE, EGL_NONE};
++
++    // Two contexts in the *display* texture share group but each in its own share group
++    EGLContext contextA = eglCreateContext(display, config, nullptr, inShareGroupContextAttribs);
++    EGLContext contextB = eglCreateContext(display, config, nullptr, inShareGroupContextAttribs);
++    ASSERT_NE(contextA, EGL_NO_CONTEXT);
++    ASSERT_NE(contextB, EGL_NO_CONTEXT);
++
++    // A larger render target widens the GPU window for the heavy draw in B.
++    constexpr int kHeavyDim       = 256;
++    const EGLint pbufferAttribs[] = {EGL_WIDTH, kHeavyDim, EGL_HEIGHT, kHeavyDim, EGL_NONE};
++    EGLSurface pbufferB           = eglCreatePbufferSurface(display, config, pbufferAttribs);
++    ASSERT_NE(pbufferB, EGL_NO_SURFACE);
++
++    // Context A: create the shared texture and draw with it once.
++    ASSERT_EGL_TRUE(eglMakeCurrent(display, surface, surface, contextA));
++    GLTexture sharedTex;
++    glBindTexture(GL_TEXTURE_2D, sharedTex);
++    constexpr GLsizei kTexSize = 4;
++    std::vector<GLColor> texData(kTexSize * kTexSize, GLColor::green);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, kTexSize, kTexSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 texData.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++
++    {
++        ANGLE_GL_PROGRAM(progA, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++        drawQuad(progA, essl1_shaders::PositionAttrib(), 0.5f);
++        EXPECT_GL_NO_ERROR();
++        glFlush();
++    }
++
++    // Context B: bind the same display-shared texture and submit a long running draw.
++    ASSERT_EGL_TRUE(eglMakeCurrent(display, pbufferB, pbufferB, contextB));
++    glViewport(0, 0, kHeavyDim, kHeavyDim);
++    glBindTexture(GL_TEXTURE_2D, sharedTex);
++
++    constexpr char kHeavyFS[] = R"(precision highp float;
++varying vec2 v_texCoord;
++uniform sampler2D u_tex2D;
++void main()
++{
++    vec4 acc = vec4(0.0);
++    // Busy work to make sure the GPU is using the texture when context A is destroyed.
++    for (int i = 0; i < 4000; ++i)
++    {
++        acc += texture2D(u_tex2D, v_texCoord + vec2(float(i) * 0.000001, 0.0));
++    }
++    gl_FragColor = acc * 0.00025;
++})";
++    ANGLE_GL_PROGRAM(progHeavy, essl1_shaders::vs::Texture2D(), kHeavyFS);
++    glUseProgram(progHeavy);
++    glUniform1i(glGetUniformLocation(progHeavy, "u_tex2D"), 0);
++    // Several expensive draw calls so the GPU is using the texture when context A is destroyed
++    for (int i = 0; i < 16; ++i)
++    {
++        drawQuad(progHeavy, essl1_shaders::PositionAttrib(), 0.5f);
++    }
++    EXPECT_GL_NO_ERROR();
++    glFlush();  // batch_B submitted, GPU now executing with S_A in its descriptor set.
++
++    // Still in B: dirty a sampler-state bit and draw again.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
++    {
++        ANGLE_GL_PROGRAM(progB2, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++        drawQuad(progB2, essl1_shaders::PositionAttrib(), 0.5f);
++        EXPECT_GL_NO_ERROR();
++        glFlush();
++    }
++
++    // Destroy context A. The texture's sampler currently in use by context B should not be freed.
++    SafeDestroyContext(display, contextA);
++
++    // Finish, to make sure the work is done.
++    ASSERT_EGL_TRUE(eglMakeCurrent(display, pbufferB, pbufferB, contextB));
++    glFinish();
++    sharedTex.reset();
++    EXPECT_GL_NO_ERROR();
++
++    eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
++    eglDestroySurface(display, pbufferB);
++    SafeDestroyContext(display, contextB);
++    getEGLWindow()->makeCurrent();
++}
++
++// Variant of DisplayShareGroupSamplerInFlightWhenOwningShareGroupDestroyed, except the texture's
++// sampler state is not modified
++TEST_P(EGLContextSharingTest, DisplayShareGroupOrphanedSamplerReapedWhileInFlight)
++{
++    EGLDisplay display = getEGLWindow()->getDisplay();
++    ANGLE_SKIP_TEST_IF(
++        !IsEGLDisplayExtensionEnabled(display, "EGL_ANGLE_display_texture_share_group"));
++    ANGLE_SKIP_TEST_IF(!IsVulkan());
++
++    EGLConfig config   = getEGLWindow()->getConfig();
++    EGLSurface surface = getEGLWindow()->getSurface();
++
++    const EGLint inShareGroupContextAttribs[] = {
++        EGL_CONTEXT_CLIENT_VERSION, 2, EGL_DISPLAY_TEXTURE_SHARE_GROUP_ANGLE, EGL_TRUE, EGL_NONE};
++
++    EGLContext contextA = eglCreateContext(display, config, nullptr, inShareGroupContextAttribs);
++    EGLContext contextB = eglCreateContext(display, config, nullptr, inShareGroupContextAttribs);
++    EGLContext contextC = eglCreateContext(display, config, nullptr, inShareGroupContextAttribs);
++    ASSERT_NE(contextA, EGL_NO_CONTEXT);
++    ASSERT_NE(contextB, EGL_NO_CONTEXT);
++    ASSERT_NE(contextC, EGL_NO_CONTEXT);
++
++    constexpr int kHeavyDim       = 256;
++    const EGLint pbufferAttribs[] = {EGL_WIDTH, kHeavyDim, EGL_HEIGHT, kHeavyDim, EGL_NONE};
++    EGLSurface pbufferB           = eglCreatePbufferSurface(display, config, pbufferAttribs);
++    ASSERT_NE(pbufferB, EGL_NO_SURFACE);
++
++    // A: Create texture and draw: this creates an internal sampler for the texture
++    ASSERT_EGL_TRUE(eglMakeCurrent(display, surface, surface, contextA));
++    GLTexture sharedTex;
++    glBindTexture(GL_TEXTURE_2D, sharedTex);
++    std::vector<GLColor> texData(16, GLColor::cyan);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, texData.data());
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++    {
++        ANGLE_GL_PROGRAM(p, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++        drawQuad(p, essl1_shaders::PositionAttrib(), 0.5f);
++        EXPECT_GL_NO_ERROR();
++        glFlush();
++    }
++
++    // B: Draw with texture, using an expensive shader so the GPU is busy when context C is
++    // destroyed
++    ASSERT_EGL_TRUE(eglMakeCurrent(display, pbufferB, pbufferB, contextB));
++    glViewport(0, 0, kHeavyDim, kHeavyDim);
++    glBindTexture(GL_TEXTURE_2D, sharedTex);
++    constexpr char kHeavyFS[] = R"(precision highp float;
++varying vec2 v_texCoord;
++uniform sampler2D u_tex2D;
++void main()
++{
++    vec4 acc = vec4(0.0);
++    for (int i = 0; i < 4000; ++i)
++    {
++        acc += texture2D(u_tex2D, v_texCoord + vec2(float(i) * 0.000001, 0.0));
++    }
++    gl_FragColor = acc * 0.00025;
++})";
++    ANGLE_GL_PROGRAM(progHeavy, essl1_shaders::vs::Texture2D(), kHeavyFS);
++    glUseProgram(progHeavy);
++    glUniform1i(glGetUniformLocation(progHeavy, "u_tex2D"), 0);
++    for (int i = 0; i < 16; ++i)
++    {
++        drawQuad(progHeavy, essl1_shaders::PositionAttrib(), 0.5f);
++    }
++    EXPECT_GL_NO_ERROR();
++    glFlush();
++
++    // Destroy A first; context B still references the texture's internal sampler.
++    SafeDestroyContext(display, contextA);
++
++    // B: dirty sampler state and draw so the texture's internal sampler is recreated.
++    ASSERT_EGL_TRUE(eglMakeCurrent(display, pbufferB, pbufferB, contextB));
++    glBindTexture(GL_TEXTURE_2D, sharedTex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
++    {
++        ANGLE_GL_PROGRAM(p2, essl1_shaders::vs::Texture2D(), essl1_shaders::fs::Texture2D());
++        drawQuad(p2, essl1_shaders::PositionAttrib(), 0.5f);
++        EXPECT_GL_NO_ERROR();
++        glFlush();
++    }
++
++    // Destroy unrelated context C.  The original texture's internal sampler, still in use by the
++    // GPU, should not be freed.
++    SafeDestroyContext(display, contextC);
++
++    ASSERT_EGL_TRUE(eglMakeCurrent(display, pbufferB, pbufferB, contextB));
++    glFinish();
++    sharedTex.reset();
++    EXPECT_GL_NO_ERROR();
++
++    eglMakeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
++    eglDestroySurface(display, pbufferB);
++    SafeDestroyContext(display, contextB);
++    getEGLWindow()->makeCurrent();
++}
++
+ // Tests that after creating a texture using EGL_ANGLE_display_texture_share_group,
+ // and use it for sampling, and then deleting the Context (which destroys shareGroup) works. If
+ // anything cached in ShareGroup, it should be handled nicely if texture can outlive ShareGroup (for

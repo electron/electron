@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Elly <ellyjones@chromium.org>
+Date: Tue, 16 Jun 2026 08:04:55 -0700
+Subject: mojo: don't overflow computation of channel read buffer size
+
+I am fairly confident this isn't exploitable (see rationale on the bug)
+but to make the code more obviously correct, add a check for overflow
+and error handling up the call stack.
+
+Fixed: 513138301
+Change-Id: Ie2093dc08c2761951e4988ef283e21662de3bfd8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7946296
+Commit-Queue: Elly <ellyjones@chromium.org>
+Reviewed-by: Fred Shih <ffred@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1647564}
+
+diff --git a/mojo/core/channel.cc b/mojo/core/channel.cc
+index 12a65307693e71856e81e22abb55071d729654a5..f899d1630932cef47f19ecf56a62f413abd12ed0 100644
+--- a/mojo/core/channel.cc
++++ b/mojo/core/channel.cc
+@@ -938,7 +938,12 @@ class Channel::ReadBuffer {
+ 
+   // Ensures the ReadBuffer has enough contiguous space allocated to hold
+   // |num_bytes| more bytes; returns the address of the first available byte.
++  // If computing the new size overflows, returns nullptr.
+   char* Reserve(size_t num_bytes) {
++    const auto new_size = base::CheckAdd(num_bytes, size_);
++    if (!new_size.IsValid()) {
++      return nullptr;
++    }
+     if (num_occupied_bytes_ + num_bytes > size_) {
+       size_ = std::max(static_cast<size_t>(size_ * kGrowthFactor),
+                        num_occupied_bytes_ + num_bytes);
+diff --git a/mojo/core/channel_fuchsia.cc b/mojo/core/channel_fuchsia.cc
+index 05c57d9c6a8e7e00bc2dc0ed29da25dcad688da9..118bd085d198859d901ad314271dcdcbb613a14d 100644
+--- a/mojo/core/channel_fuchsia.cc
++++ b/mojo/core/channel_fuchsia.cc
+@@ -310,6 +310,13 @@ class ChannelFuchsia : public Channel,
+     do {
+       buffer_capacity = next_read_size;
+       char* buffer = GetReadBuffer(&buffer_capacity);
++      // A null buffer means the size computation for the new buffer overflowed
++      // so mark the connection as broken and bail.
++      if (!buffer) {
++        read_error = true;
++        validation_error = true;
++        break;
++      }
+       DCHECK_GT(buffer_capacity, 0u);
+ 
+       uint32_t bytes_read = 0;
+diff --git a/mojo/core/channel_posix.cc b/mojo/core/channel_posix.cc
+index 3b4629eac05ef03b597e710e79d589397a839050..6a97398a7501cae6990188e09305e7fae94d03db 100644
+--- a/mojo/core/channel_posix.cc
++++ b/mojo/core/channel_posix.cc
+@@ -286,6 +286,13 @@ void ChannelPosix::OnFdReadable(int fd) {
+   do {
+     buffer_capacity = next_read_size;
+     char* buffer = GetReadBuffer(&buffer_capacity);
++    // A null buffer means that computing the read size overflowed, which means
++    // we received a malformed message; bail.
++    if (!buffer) {
++      read_error = true;
++      validation_error = true;
++      break;
++    }
+     DCHECK_GT(buffer_capacity, 0u);
+ 
+     std::vector<base::ScopedFD> incoming_fds;
+diff --git a/mojo/core/channel_win.cc b/mojo/core/channel_win.cc
+index a2e71b6b2572843438c5c4a2794fbd3d9c2f965a..f8b75a13c3c7039083d8a766d25ec2489ad1741d 100644
+--- a/mojo/core/channel_win.cc
++++ b/mojo/core/channel_win.cc
+@@ -306,6 +306,12 @@ class ChannelWin : public Channel,
+ 
+     size_t buffer_capacity = next_read_size_hint;
+     char* buffer = GetReadBuffer(&buffer_capacity);
++    // A null buffer means the size computation for the buffer overflowed;
++    // break the connection.
++    if (!buffer) {
++      OnError(Error::kDisconnected);
++      return;
++    }
+     DCHECK_GT(buffer_capacity, 0u);
+ 
+     BOOL ok =

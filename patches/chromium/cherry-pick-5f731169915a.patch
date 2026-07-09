@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Qiu Jianlin <jianlin.qiu@intel.com>
+Date: Mon, 1 Jun 2026 16:12:04 -0700
+Subject: Avoid UAF of texture resources by D3D12 accelerator on destruction.
+
+The input/upload texutre might be released before we destroy the copy
+command wrapper. Make sure the copy command wrapper finish copy before
+those resources are released.
+
+Bug: 518002958
+Change-Id: I3567d293f61e579b4dafec1759b11a5fb9f9fcbe
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7886292
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Auto-Submit: Qiu, Jianlin <jianlin.qiu@intel.com>
+Commit-Queue: Qiu, Jianlin <jianlin.qiu@intel.com>
+Cr-Commit-Position: refs/heads/main@{#1639755}
+
+diff --git a/media/gpu/windows/d3d12_video_encode_accelerator.cc b/media/gpu/windows/d3d12_video_encode_accelerator.cc
+index 2b0172646065266b4b2d4264f3e4c5c5bca5e1e3..b179649f217507fc786b09f697b687eb89406384 100644
+--- a/media/gpu/windows/d3d12_video_encode_accelerator.cc
++++ b/media/gpu/windows/d3d12_video_encode_accelerator.cc
+@@ -351,6 +351,14 @@ D3D12VideoEncodeAccelerator::~D3D12VideoEncodeAccelerator() {
+   VLOGF(2);
+   DCHECK_CALLED_ON_VALID_SEQUENCE(encoder_sequence_checker_);
+ 
++  // Wait for any in-flight copy to complete before the members are destroyed,
++  // so that the resources backing the copy (e.g. `upload_buffer_`,
++  // `input_texture_`) are not released while the GPU may still be reading from
++  // or writing to them.
++  if (copy_command_queue_) {
++    copy_command_queue_->WaitSync();
++  }
++
+   if (!error_occurred_ && encoded_at_least_one_frame_) {
+     base::UmaHistogramEnumeration(
+         GetEncoderStatusHistogramName(config_.output_profile),

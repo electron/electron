@@ -1,0 +1,129 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Tue, 23 Jun 2026 17:35:23 -0700
+Subject: [M148] Ozone: Fix UAF in X11Window::DispatchUiEvent via weak_ptr
+ tracking
+
+Original change's description:
+> Ozone: Fix UAF in X11Window::DispatchUiEvent via weak_ptr tracking
+>
+> A Use-After-Free (UAF) vulnerability can occur in
+> X11Window::DispatchUiEvent when translating coordinates for a located
+> event grabber window.
+>
+> During GetBoundsInPixels() on the grabber window, processing synchronous
+> X server responses can dispatch events and invoke callbacks that destroy
+> the grabber window. Since the grabber window was cached via a raw
+> pointer on the stack, this results in a use-after-free when dispatching
+> the event to the grabber window afterwards.
+>
+> This CL fixes this by tracking the grabber window via a base::WeakPtr
+> and re-verifying its validity and capture ownership status after
+> potential re-entrancy points.
+>
+> Fixed: 523690961
+> Change-Id: Id7fd781af377ccd1a8f5495a5930d6b8bcbb3e52
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7943723
+> Reviewed-by: Lei Zhang <thestig@chromium.org>
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1647067}
+
+(cherry picked from commit b12c924f5828e2d16248624bf1e068ada3bf1a2b)
+
+Fixed: 524507778
+Bug: 523690961
+Change-Id: Iffee0b339126340193994431888345e34f02169a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7988712
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4417}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/ui/ozone/platform/x11/x11_window.cc b/ui/ozone/platform/x11/x11_window.cc
+index ca35798023d0f3cbf096e5d0235da68c18969278..26aa379f8f139849c90671b414c1b4b0f88b3bed 100644
+--- a/ui/ozone/platform/x11/x11_window.cc
++++ b/ui/ozone/platform/x11/x11_window.cc
+@@ -264,6 +264,10 @@ X11Window::~X11Window() {
+   Close();
+ }
+ 
++base::WeakPtr<X11Window> X11Window::GetWeakPtr() {
++  return weak_ptr_factory_.GetWeakPtr();
++}
++
+ void X11Window::Initialize(PlatformWindowInitProperties properties) {
+   CreateXWindow(properties);
+ 
+@@ -1381,8 +1385,13 @@ void X11Window::DispatchUiEvent(ui::Event* event, const x11::Event& xev) {
+   auto* window_manager = X11WindowManager::GetInstance();
+   DCHECK(window_manager);
+ 
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++
+   // Process X11-specific bits
+   HandleEvent(xev);
++  if (!weak_this) {
++    return;
++  }
+ 
+   x11::Event last_xev;
+   std::unique_ptr<ui::Event> last_motion;
+@@ -1403,16 +1412,32 @@ void X11Window::DispatchUiEvent(ui::Event* event, const x11::Event& xev) {
+   auto* located_events_grabber = window_manager->located_events_grabber();
+   if (event->IsLocatedEvent() && located_events_grabber &&
+       located_events_grabber != this) {
++    base::WeakPtr<X11Window> weak_grabber =
++        located_events_grabber->GetWeakPtr();
+     if (event->IsMouseEvent() ||
+         (event->IsTouchEvent() &&
+          event->type() == ui::EventType::kTouchPressed)) {
+       // Another X11Window has installed itself as capture. Translate the
+       // event's location and dispatch to the other.
+-      ConvertEventLocationToTargetWindowLocation(
+-          located_events_grabber->GetBoundsInPixels().origin(),
+-          GetBoundsInPixels().origin(), event->AsLocatedEvent());
++      const gfx::Point target_origin =
++          located_events_grabber->GetBoundsInPixels().origin();
++      if (!weak_this || !weak_grabber ||
++          window_manager->located_events_grabber() != weak_grabber.get()) {
++        return;
++      }
++      const gfx::Point current_origin = GetBoundsInPixels().origin();
++      if (!weak_this || !weak_grabber ||
++          window_manager->located_events_grabber() != weak_grabber.get()) {
++        return;
++      }
++      ConvertEventLocationToTargetWindowLocation(target_origin, current_origin,
++                                                 event->AsLocatedEvent());
+     }
+-    return located_events_grabber->DispatchUiEvent(event, xev);
++    if (weak_grabber &&
++        window_manager->located_events_grabber() == weak_grabber.get()) {
++      weak_grabber->DispatchUiEvent(event, xev);
++    }
++    return;
+   }
+ 
+   // If after CoalescePendingMotionEvents the type of xev is resolved to
+diff --git a/ui/ozone/platform/x11/x11_window.h b/ui/ozone/platform/x11/x11_window.h
+index f744189f0aa26d17600969e4724418db564e07e2..3706bd90fa3c57f7ad87c87448245dec697ee0ea 100644
+--- a/ui/ozone/platform/x11/x11_window.h
++++ b/ui/ozone/platform/x11/x11_window.h
+@@ -15,6 +15,7 @@
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/raw_ref.h"
++#include "base/memory/weak_ptr.h"
+ #include "ui/base/dragdrop/mojom/drag_drop_types.mojom-forward.h"
+ #include "ui/base/x/x11_desktop_window_move_client.h"
+ #include "ui/base/x/x11_drag_drop_client.h"
+@@ -70,6 +71,8 @@ class X11Window : public PlatformWindow,
+ 
+   virtual void Initialize(PlatformWindowInitProperties properties);
+ 
++  base::WeakPtr<X11Window> GetWeakPtr();
++
+   // X11WindowManager calls this.
+   void OnXWindowLostCapture();
+ 

@@ -1,0 +1,116 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Wallez <cwallez@chromium.org>
+Date: Mon, 1 Jun 2026 03:12:03 -0700
+Subject: [M148] [dawn][common] Signal the CondVar before unlocking the mutex.
+
+Original change's description:
+> [dawn][common] Signal the CondVar before unlocking the mutex.
+>
+> MutexCondVarProtected's guard unlocks the mutex before signaling the
+> condition variable. This means that usage of the condition variable
+> itself is not always protected by the mutex, in particular an other
+> thread could free the memory between mutex.unlock() and cv.signal().
+>
+> Reorder the members of CondVarGuard to first notify the condition
+> variable and then unlock the mutex.
+>
+> Adds a test that tries to catch the incorrect behavior when running
+> under TSan. Without the fix it reports a warning.
+>
+> Fixed: 517303276
+> Change-Id: I373bdc4224d90b999199c58c5de0be1ba5f04c47
+> Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/311897
+> Reviewed-by: Loko Kung <lokokung@google.com>
+> Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+
+(cherry picked from commit a2cff62294d3d3bfc9aaaab047dff2ef0f06c9e9)
+
+Bug: 518354070,517303276
+Change-Id: I373bdc4224d90b999199c58c5de0be1ba5f04c47
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/312715
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/dawn/common/MutexProtected.h b/src/dawn/common/MutexProtected.h
+index 27071b3929821c32cb098716774321e802db1313..99e319ceed0271c584141cfd4133ecb41e9d1d71 100644
+--- a/src/dawn/common/MutexProtected.h
++++ b/src/dawn/common/MutexProtected.h
+@@ -210,7 +210,7 @@ class CondVarGuard : public NonMovable, StackAllocated {
+ 
+   protected:
+     CondVarGuard(T* obj, Traits::MutexType& mutex, std::condition_variable* cv)
+-        : mNotifyScope(cv), mGuard(obj, mutex) {}
++        : mGuard(obj, mutex), mNotifyScope(cv) {}
+ 
+     auto* Get() const { return mGuard.Get(); }
+ 
+@@ -237,10 +237,11 @@ class CondVarGuard : public NonMovable, StackAllocated {
+         }
+     };
+ 
+-    NotifyScope<NotifyT> mNotifyScope;
+-    // Note that this class needs to hold a Guard member instead of extending it because we want the
+-    // lock to be released before we notify.
++    // Note that the Guard must be before the NotifyScope so that the C++ member destruction order
++    // signals the condition variable before unlocking the mutex. This keeps all uses of the
++    // condition variable guarded by the mutex.
+     Guard<T, Traits> mGuard;
++    NotifyScope<NotifyT> mNotifyScope;
+ };
+ 
+ }  // namespace detail
+diff --git a/src/dawn/tests/unittests/MutexProtectedTests.cpp b/src/dawn/tests/unittests/MutexProtectedTests.cpp
+index 47d56dcb6738d453c114d5daf908d1a8532730e4..6d67e3fed8b918aac8e064d261a5d9a4b93a294c 100644
+--- a/src/dawn/tests/unittests/MutexProtectedTests.cpp
++++ b/src/dawn/tests/unittests/MutexProtectedTests.cpp
+@@ -25,6 +25,7 @@
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
++#include <memory>
+ #include <string>
+ #include <thread>
+ #include <type_traits>
+@@ -32,6 +33,7 @@
+ #include <vector>
+ 
+ #include "dawn/common/MutexProtected.h"
++#include "dawn/common/Range.h"
+ #include "dawn/common/Ref.h"
+ #include "dawn/common/RefCounted.h"
+ #include "dawn/common/Time.h"
+@@ -262,6 +264,33 @@ TEST(MutexCondVarProtectedTest, WaitDeadlock) {
+     thread2.join();
+ }
+ 
++// Regression test for https://crbug.com/517303276 where the condition variable is signaled after
++// the mutex is unlocked, which could lead to issues because work on other threads could happen in
++// between the two (including destruction of the cond var itself).
++TEST(MutexCondVarProtectedTest, NotifyIsInLock) {
++    std::vector<std::unique_ptr<MutexCondVarProtected<bool>>> condVars;
++    for (size_t _ : Range(100)) {
++        condVars.push_back(std::make_unique<MutexCondVarProtected<bool>>(false));
++    }
++
++    std::thread doDestruction([&] {
++        for (size_t i : Range(condVars.size())) {
++            condVars[i]->Use(
++                [&](auto c) { c.Wait([](bool readyToDestroy) { return readyToDestroy; }); });
++            condVars[i] = nullptr;
++        }
++    });
++
++    std::thread markForDestruction([&] {
++        for (size_t i : Range(condVars.size())) {
++            condVars[i]->Use([&](auto c) { *c = true; });
++        }
++    });
++
++    markForDestruction.join();
++    doDestruction.join();
++}
++
+ // Test that if we specifically ask for only one thread to be notified, then only one thread should
+ // wake up from waiting.
+ TEST(MutexCondVarProtectedTest, NotifyTypes) {

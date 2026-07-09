@@ -1,0 +1,321 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Fri, 15 May 2026 21:10:01 +0800
+Subject: [m148] Metal: Fix potential OOB write in Transform Feedback
+
+Fixes a bug where incomplete primitives in transform feedback could
+cause incorrect buffer offset calculations, potentially leading to
+out-of-bounds writes in the Metal backend. We now round down the
+vertex count for independent primitives when XFB is active.
+
+Bug: angleproject:513010645
+Fixed: chromium:515275618
+Change-Id: I82b91500108fb1a7059e43479e7af87702d33b6d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7851496
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Auto-Submit: Quyen Le <lehoangquyen@google.com>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit 1618174f833943eb9c90733990eb4adc7e46dfd4)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7931427
+
+diff --git a/src/libANGLE/TransformFeedback.h b/src/libANGLE/TransformFeedback.h
+index 9eb347930c88f2a17b6c31a9346543145e148c64..84a06207c11df5f6b4145ba847f9548e000bca71 100644
+--- a/src/libANGLE/TransformFeedback.h
++++ b/src/libANGLE/TransformFeedback.h
+@@ -11,6 +11,7 @@
+ 
+ #include "common/PackedEnums.h"
+ #include "common/angleutils.h"
++#include "common/mathutil.h"
+ #include "libANGLE/Debug.h"
+ 
+ #include "angle_gl.h"
+@@ -29,6 +30,10 @@ struct Caps;
+ class Context;
+ class Program;
+ 
++angle::CheckedNumeric<GLsizeiptr> GetVerticesNeededForDraw(PrimitiveMode primitiveMode,
++                                                           GLsizei count,
++                                                           GLsizei primcount);
++
+ class TransformFeedbackState final : angle::NonCopyable
+ {
+   public:
+diff --git a/src/libANGLE/renderer/metal/ContextMtl.mm b/src/libANGLE/renderer/metal/ContextMtl.mm
+index 9f5a66d4795918b24c8181888c687b7c95d1bb55..6dd1da41752a08416798024c3ef8874f39df083f 100644
+--- a/src/libANGLE/renderer/metal/ContextMtl.mm
++++ b/src/libANGLE/renderer/metal/ContextMtl.mm
+@@ -453,6 +453,23 @@ GLint GetOwnershipIdentity(const egl::AttributeMap &attribs)
+     // Real instances count. Zero means this is not instanced draw.
+     GLsizei instanceCount = instances ? instances : 1;
+ 
++    if (mState.isTransformFeedbackActiveUnpaused())
++    {
++        // ES 3.0 requires XFB mode to be points, lines, or triangles.
++        // For this workaround, we assume the draw mode is also one of these.
++        CHECK(mode == gl::PrimitiveMode::Triangles || mode == gl::PrimitiveMode::Lines ||
++              mode == gl::PrimitiveMode::Points);
++
++        // Transform feedback only outputs complete primitives. For independent primitives
++        // (triangles and lines), any leftover vertices do not form a primitive and should
++        // not be processed for transform feedback. Since Metal only supports up to ES 3.0
++        // (where VS cannot have side effects), it is safe to round down the count to avoid
++        // processing them and hitting bugs with incomplete primitives in XFB.
++        // The helper function also returns the correct value for Points mode (no changes).
++        GLsizeiptr verticesNeeded = gl::GetVerticesNeededForDraw(mode, count, 1).ValueOrDie();
++        count                     = static_cast<GLsizei>(verticesNeeded);
++    }
++
+     if (mCullAllPolygons && gl::IsPolygonMode(mode))
+     {
+         return angle::Result::Continue;
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 2c58eb4a669b898bd82b9bace55c6c79e9a22dc5..0abc107affae3744feabfe0cefd618e5a6cee443 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -2266,6 +2266,16 @@
+ // Untriaged failures on Pixel 4 / GLES
+ 349994211 IR PIXEL4ORXL GLES : GLSLTestLoops.ForContinueInSwitchComplex/* = SKIP
+ 
++// Crashes on OpenGL
++
++// XFB with incomplete primitives fail on GL and Vulkan
++513536751 INTEL OPENGL : TransformFeedbackTest.InstancedOverflowIncompletePrimitive/* = SKIP
++// fails on Vulkan without transform feedback extension
++513536751 VULKAN : TransformFeedbackTest.InstancedOverflowIncompletePrimitive/*NoSupportsTransformFeedbackExtension* = SKIP
++513536751 VULKAN SWIFTSHADER : TransformFeedbackTest.InstancedOverflowIncompletePrimitive/* = SKIP
++
++// Fails test on Metal
++499091328 MAC AMD METAL : Texture2DArrayTestES3.ReformatStagedBufferUpdatesLayerCountOOB/* = SKIP
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ // Slow tests, should appear last in this file
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+diff --git a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/TransformFeedbackTest.cpp
+index d52d3b377c37084944990172d26ff8de71387481..f1cd531ee4ba4aff364ea46df8e8240868b3ccaf 100644
+--- a/src/tests/gl_tests/TransformFeedbackTest.cpp
++++ b/src/tests/gl_tests/TransformFeedbackTest.cpp
+@@ -4773,6 +4773,221 @@ TEST_P(TransformFeedbackTest, StaleBufferBinding)
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Test that deleting a buffer bound to a transform feedback slot that is no longer active doesn't
++// crash.
++TEST_P(TransformFeedbackTest, StaleBufferBindingInactiveXfb)
++{
++    std::vector<std::string> tfVaryings = {"gl_Position"};
++    mProgram                            = CompileProgramWithTransformFeedback(
++        essl3_shaders::vs::Simple(), essl3_shaders::fs::Red(), tfVaryings, GL_INTERLEAVED_ATTRIBS);
++    ASSERT_NE(0u, mProgram);
++    glUseProgram(mProgram);
++
++    GLBuffer buf0;
++    glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, buf0);
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, 1024, nullptr, GL_DYNAMIC_COPY);
++
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, buf0);
++
++    // Draw once with the buffers, syncs initial state.
++    glBeginTransformFeedback(GL_POINTS);
++    glDrawArrays(GL_POINTS, 0, 1);
++    glEndTransformFeedback();
++
++    // Unbind and delete the buffer
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 0);
++    buf0.reset();
++
++    // Regular draw while TF inactive, but still using a program that was compiled with transform
++    // feedback.  It shouldn't crash.
++    glDrawArrays(GL_POINTS, 0, 1);
++    ASSERT_GL_NO_ERROR();
++}
++
++class TransformFeedbackTestVkEvent : public TransformFeedbackTest
++{};
++
++// Regression test for a potential VkEVent use after free.
++TEST_P(TransformFeedbackTestVkEvent, BufferVkEventUAF)
++{
++    // ---- Program 1: transform-feedback writer ----
++    constexpr char kVS[] =
++        "#version 300 es\n"
++        "out float varyingAttrib; void main(){ varyingAttrib = 1.0; gl_Position = vec4(0,0,0,1); "
++        "gl_PointSize = 1.0; }";
++    constexpr char kFS[] =
++        "#version 300 es\n"
++        "precision mediump float; out vec4 c; void main(){ c = vec4(1); }";
++
++    std::vector<std::string> tfVaryings;
++    tfVaryings.push_back("varyingAttrib");
++
++    mProgram = CompileProgramWithTransformFeedback(kVS, kFS, tfVaryings, GL_INTERLEAVED_ATTRIBS);
++    ASSERT_NE(0u, mProgram);
++    glUseProgram(mProgram);
++
++    // ---- Program 2: vertex-attribute reader ----
++    constexpr char kDrawVS[] =
++        "#version 300 es\n"
++        "layout(location=0) in float a;\n"
++        "void main(){ gl_Position = vec4(a,0,0,1); gl_PointSize = 1.0; }";
++    constexpr char kDrawFS[] =
++        "#version 300 es\n"
++        "precision mediump float; out vec4 c; void main(){ c = vec4(0,1,0,1); }";
++
++    ANGLE_GL_PROGRAM(drawProg, kDrawVS, kDrawFS);
++
++    // ---- Target buffer A (small so the acquireAndUpdate path is taken) ----
++    constexpr GLsizeiptr kBufferSize = 256;
++    glBindBuffer(GL_ARRAY_BUFFER, mTransformFeedbackBuffer);
++    glBufferData(GL_ARRAY_BUFFER, kBufferSize, nullptr, GL_DYNAMIC_DRAW);
++    glBindBuffer(GL_ARRAY_BUFFER, 0);
++
++    // Render target setup
++    GLTexture colorTex;
++    glBindTexture(GL_TEXTURE_2D, colorTex);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 4, 4);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
++    glViewport(0, 0, 4, 4);
++
++    // ==== STEP 1: write to A via transform feedback. ====
++    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, mTransformFeedback);
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, mTransformFeedbackBuffer);
++    glUseProgram(mProgram);
++    glEnable(GL_RASTERIZER_DISCARD);
++    glBeginTransformFeedback(GL_POINTS);
++    glDrawArrays(GL_POINTS, 0, 1);
++    glEndTransformFeedback();
++    glDisable(GL_RASTERIZER_DISCARD);
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 0);
++    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
++
++    // ==== STEP 2: drop RP1's reference to E1. ====
++    glFinish();
++
++    // Accumulate >256 RefCountedEvents to force garbage collection sweep
++    GLubyte px[4];
++    for (int i = 0; i < 280; ++i)
++    {
++        GLBuffer tmpBuffer;
++        glBindBuffer(GL_ARRAY_BUFFER, tmpBuffer);
++        glBufferData(GL_ARRAY_BUFFER, 16, nullptr, GL_DYNAMIC_DRAW);
++        glBindBuffer(GL_ARRAY_BUFFER, 0);
++
++        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, mTransformFeedback);
++        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tmpBuffer);
++        glUseProgram(mProgram);
++        glEnable(GL_RASTERIZER_DISCARD);
++        glBeginTransformFeedback(GL_POINTS);
++        glDrawArrays(GL_POINTS, 0, 1);
++        glEndTransformFeedback();
++        glDisable(GL_RASTERIZER_DISCARD);
++        glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, 0);
++        glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, 0);
++
++        glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, px);
++    }
++
++    // ==== STEP 3: read A as a vertex attribute in a NEW render pass RP2. ====
++    GLVertexArray vao;
++    glBindVertexArray(vao);
++    glBindBuffer(GL_ARRAY_BUFFER, mTransformFeedbackBuffer);
++    glEnableVertexAttribArray(0);
++    glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 0, 0);
++    glUseProgram(drawProg);
++    glDrawArrays(GL_POINTS, 0, 1);
++
++    // ==== STEP 4: full-size bufferSubData on A while RP2 is still open. ====
++    GLfloat subData[kBufferSize / sizeof(float)] = {0};  // SIZE / 4 (256 bytes = 64 floats)
++    glBufferSubData(GL_ARRAY_BUFFER, 0, kBufferSize, subData);
++
++    // ==== STEP 5: flush RP2. ====
++    glFinish();
++}
++
++// Test that transform feedback with instanced drawing and count that results in incomplete
++// primitives works correctly when the buffer is large enough to store all complete primitives from
++// all instances.
++TEST_P(TransformFeedbackTest, InstancedOverflowIncompletePrimitive)
++{
++    // We need ES3 for transform feedback and instancing.
++
++    constexpr char kVS[] = R"(#version 300 es
++        out float out_value;
++        void main() {
++            out_value = float(gl_VertexID) + float(gl_InstanceID) * 100.0;
++            gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
++        })";
++
++    constexpr char kFS[] = R"(#version 300 es
++        out mediump vec4 color;
++        void main() {
++            color = vec4(0.0, 1.0, 0.0, 1.0);
++        })";
++
++    std::vector<std::string> tfVaryings;
++    tfVaryings.push_back("out_value");
++
++    mProgram = CompileProgramWithTransformFeedback(kVS, kFS, tfVaryings, GL_INTERLEAVED_ATTRIBS);
++    ASSERT_NE(0u, mProgram);
++
++    glUseProgram(mProgram);
++
++    // Buffer size: enough for 18 vertices (3 triangles * 3 vertices * 2 instances).
++    // Each vertex writes 1 float.
++    const size_t kBufferSize = 18 * sizeof(float);
++
++    GLBuffer tfBuffer;
++    glBindBuffer(GL_TRANSFORM_FEEDBACK_BUFFER, tfBuffer);
++    glBufferData(GL_TRANSFORM_FEEDBACK_BUFFER, kBufferSize, nullptr, GL_STATIC_DRAW);
++    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, tfBuffer);
++
++    GLQuery primitivesWrittenQuery;
++    glBeginQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN, primitivesWrittenQuery);
++
++    glBeginTransformFeedback(GL_TRIANGLES);
++
++    // Draw 11 vertices (3 triangles and 2 vertices), 2 instances.
++    // Total expected vertices if buffer was large enough:
++    // Instance 0: 9 vertices (3 triangles) + 2 vertices (incomplete) -> only 9 written.
++    // Instance 1: 9 vertices (3 triangles) + 2 vertices (incomplete) -> only 9 written.
++    glDrawArraysInstanced(GL_TRIANGLES, 0, 11, 2);
++
++    glEndTransformFeedback();
++    glEndQuery(GL_TRANSFORM_FEEDBACK_PRIMITIVES_WRITTEN);
++    ASSERT_GL_NO_ERROR();
++
++    // Map buffer and check results.
++    void *mappedBuffer =
++        glMapBufferRange(GL_TRANSFORM_FEEDBACK_BUFFER, 0, kBufferSize, GL_MAP_READ_BIT);
++    ASSERT_NE(nullptr, mappedBuffer);
++
++    float *mappedFloats = static_cast<float *>(mappedBuffer);
++
++    // Instance 0 should fill the first 9 floats with values 0 to 8.
++    for (unsigned int i = 0; i < 9; ++i)
++    {
++        EXPECT_EQ(mappedFloats[i], float(i)) << "At index " << i;
++    }
++
++    // Instance 1 should fill the next 9 floats with values 100 to 108.
++    for (unsigned int i = 0; i < 9; ++i)
++    {
++        EXPECT_EQ(mappedFloats[9 + i], 100.0f + float(i)) << "At index " << (9 + i);
++    }
++
++    glUnmapBuffer(GL_TRANSFORM_FEEDBACK_BUFFER);
++
++    // Check primitives written query result.
++    GLuint primitivesWritten = 0;
++    glGetQueryObjectuiv(primitivesWrittenQuery, GL_QUERY_RESULT_EXT, &primitivesWritten);
++    // 3 triangles from instance 0 + 3 triangles from instance 1 = 6 triangles.
++    EXPECT_EQ(6u, primitivesWritten);
++}
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(TransformFeedbackTest);
+ ANGLE_INSTANTIATE_TEST_ES3_AND(TransformFeedbackTest,
+                                ES3_VULKAN().disable(Feature::SupportsTransformFeedbackExtension),

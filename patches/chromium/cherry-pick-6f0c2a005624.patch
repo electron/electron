@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Devlin Cronin <rdevlin.cronin@chromium.org>
+Date: Tue, 19 May 2026 11:02:51 -0700
+Subject: [Extensions] Properly respect FrameIterationAction in ScriptExecutor
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+ScriptExecutor called into ForEachRenderFrame and meant to be using
+a RenderFrameHost::FrameIterationAction, but it wasn't doing so
+properly. Fix this.
+
+Bug: 513177497
+Change-Id: I14ba61997a998bcedcf8c98aa47c0fff2e162020
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7857934
+Reviewed-by: Łukasz Anforowicz <lukasza@chromium.org>
+Commit-Queue: Devlin Cronin <rdevlin.cronin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1632997}
+
+diff --git a/extensions/browser/script_executor.cc b/extensions/browser/script_executor.cc
+index 51c4f9478c6325985306392036cbd0b1efae2f37..28a00bb305be95f0de8ac4064b6e81ada0fec86e 100644
+--- a/extensions/browser/script_executor.cc
++++ b/extensions/browser/script_executor.cc
+@@ -113,9 +113,9 @@ class Handler : public content::WebContentsObserver {
+       // as the for loop will mutate `pending_render_frames_`.
+       const size_t requested_frame_count = pending_render_frames_.size();
+       for (size_t i = 0; i < requested_frame_count; ++i) {
+-        pending_render_frames_.at(i)->ForEachRenderFrameHost(
++        pending_render_frames_.at(i)->ForEachRenderFrameHostWithAction(
+             [this](content::RenderFrameHost* frame) {
+-              MaybeAddSubFrame(frame);
++              return MaybeAddSubFrame(frame);
+             });
+       }
+     }

@@ -1,0 +1,134 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rob Pitkin <robpitkin@google.com>
+Date: Fri, 15 May 2026 17:24:36 -0700
+Subject: usb: harden WebUSB against Endpoint Aliasing UAF on macOS
+
+This CL implements a defense hardening fix in Chromium's WebUSB
+implementation to mitigate a Use-After-Free (UAF) vulnerability in
+libusb on macOS.
+
+The vulnerability arises from inconsistent endpoint-to-interface mapping
+between Chromium and libusb when a malicious device advertises duplicate
+endpoint addresses across different interfaces. Libusb uses a "first
+match" behavior when claiming interfaces, while Chromium overwrites
+entries in `endpoint_map_` based on order of appearance.
+
+Changes made:
+
+1. Added a check in UsbDeviceHandleImpl::ClaimInterface to reject
+claiming an interface if any of its alternate settings contain an
+endpoint that is already present in endpoint_map_ and belongs to a
+different interface.
+
+2. Modified UsbDeviceHandleImpl::RefreshEndpointMap to not overwrite
+existing entries when processing duplicate endpoints. This ensures that
+the mapping matches libusb's "first match" behavior.
+
+Bug: 513167952
+Change-Id: I18551e0ab45f0f076079befcac85f6d2fc8c0111
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7851679
+Commit-Queue: Rob Pitkin <robpitkin@chromium.org>
+Reviewed-by: Matt Reynolds <mattreynolds@chromium.org>
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1631665}
+
+diff --git a/services/device/public/cpp/device_features.cc b/services/device/public/cpp/device_features.cc
+index bb97dee5e38913b2b3ca9817b62ee00c04ed8b98..7d8fa1b5b3b8941a9e51a047daf015f9b7a6519f 100644
+--- a/services/device/public/cpp/device_features.cc
++++ b/services/device/public/cpp/device_features.cc
+@@ -35,6 +35,11 @@ BASE_FEATURE(kWebUsbBlocklist,
+ BASE_FEATURE(kWebUsbProtectedClassControlTransferBlock,
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ 
++// When enabled, WebUSB rejects claiming interfaces that share endpoints with
++// already claimed interfaces, and avoids overwriting endpoint mapping entries.
++// See crbug.com/513167952.
++BASE_FEATURE(kWebUsbHardenEndpointAliasing, base::FEATURE_ENABLED_BY_DEFAULT);
++
+ // When enabled, accessing the navigator.hid attribute does not prevent the
+ // frame from entering the back forward cache.
+ BASE_FEATURE(kWebHidAttributeAllowsBackForwardCache,
+diff --git a/services/device/public/cpp/device_features.h b/services/device/public/cpp/device_features.h
+index f8431812e27fd4270c57cb15b5c31b356f275657..b7b71b0a25f52efacdf195f7c01ed3aecdca941d 100644
+--- a/services/device/public/cpp/device_features.h
++++ b/services/device/public/cpp/device_features.h
+@@ -24,6 +24,7 @@ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kSerialPortConnected);
+ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kWebUsbBlocklist);
+ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
+     kWebUsbProtectedClassControlTransferBlock);
++DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(kWebUsbHardenEndpointAliasing);
+ DEVICE_FEATURES_EXPORT BASE_DECLARE_FEATURE(
+     kWebHidAttributeAllowsBackForwardCache);
+ #if BUILDFLAG(IS_WIN)
+diff --git a/services/device/usb/usb_device_handle_impl.cc b/services/device/usb/usb_device_handle_impl.cc
+index d4d31ffe428808c081719009cad348938c1350c7..9b6c743d4f4ebb6f33db7b0d6a4c26c54e1cd054 100644
+--- a/services/device/usb/usb_device_handle_impl.cc
++++ b/services/device/usb/usb_device_handle_impl.cc
+@@ -21,6 +21,7 @@
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/threading/scoped_blocking_call.h"
+ #include "components/device_event_log/device_event_log.h"
++#include "services/device/public/cpp/device_features.h"
+ #include "services/device/public/cpp/usb/usb_utils.h"
+ #include "services/device/usb/usb_context.h"
+ #include "services/device/usb/usb_descriptors.h"
+@@ -589,6 +590,37 @@ void UsbDeviceHandleImpl::ClaimInterface(int interface_number,
+     return;
+   }
+ 
++  if (base::FeatureList::IsEnabled(features::kWebUsbHardenEndpointAliasing)) {
++    // Prevent claiming interfaces that contain endpoints already present in
++    // other claimed interfaces. See crbug.com/513167952.
++    const mojom::UsbConfigurationInfo* config =
++        device_->GetActiveConfiguration();
++    if (config) {
++      for (const auto& interface : config->interfaces) {
++        if (interface->interface_number == interface_number) {
++          for (const auto& alternate : interface->alternates) {
++            for (const auto& endpoint : alternate->endpoints) {
++              uint8_t endpoint_address =
++                  ConvertEndpointNumberToAddress(*endpoint);
++              const auto it = endpoint_map_.find(endpoint_address);
++              if (it != endpoint_map_.end() &&
++                  it->second.interface->interface_number != interface_number) {
++                USB_LOG(ERROR) << "Cannot claim interface " << interface_number
++                               << " because it shares endpoint "
++                               << static_cast<int>(endpoint_address)
++                               << " with an already claimed interface.";
++                task_runner_->PostTask(
++                    FROM_HERE, base::BindOnce(std::move(callback), false));
++                return;
++              }
++            }
++          }
++          break;
++        }
++      }
++    }
++  }
++
+   blocking_task_runner_->PostTask(
+       FROM_HERE, base::BindOnce(&UsbDeviceHandleImpl::ClaimInterfaceBlocking,
+                                 this, interface_number, std::move(callback)));
+@@ -1019,8 +1051,19 @@ void UsbDeviceHandleImpl::RefreshEndpointMap() {
+       return;
+ 
+     for (const auto& endpoint : interface_info.alternate->endpoints) {
+-      endpoint_map_[ConvertEndpointNumberToAddress(*endpoint)] = {
+-          interface_info.interface.get(), endpoint.get()};
++      uint8_t endpoint_address = ConvertEndpointNumberToAddress(*endpoint);
++      if (!base::FeatureList::IsEnabled(
++              features::kWebUsbHardenEndpointAliasing)) {
++        endpoint_map_[endpoint_address] = {interface_info.interface.get(),
++                                           endpoint.get()};
++      } else {
++        // Do not overwrite existing entries to match libusb's "first match"
++        // behavior on macOS and avoid Use-After-Free due to mapping
++        // inconsistency. See crbug.com/513167952.
++        endpoint_map_.insert(
++            {endpoint_address,
++             {interface_info.interface.get(), endpoint.get()}});
++      }
+     }
+   }
+ }

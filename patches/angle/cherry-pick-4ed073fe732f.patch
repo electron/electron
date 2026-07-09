@@ -1,0 +1,146 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Tue, 19 May 2026 14:39:28 +0800
+Subject: Metal: Fix texture storage desynchronization bug
+
+Fix texture redefinition when the new format matches native storage
+but contradicts the old image definition. Instead of asserting,
+lazily recreate the view of the native storage.
+
+Added a regression test PerLevelFormatMismatchRedefine.
+
+Bug: chromium:513920082
+Change-Id: I48a930256b6ff545fb5fa7b54b0198be99bc34c6
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7859329
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+
+diff --git a/src/libANGLE/renderer/metal/TextureMtl.mm b/src/libANGLE/renderer/metal/TextureMtl.mm
+index 410eb82c0bc8c540453c492c17c06c542eb5eb66..8f1b5d3375a24dc0654316d5670d1d99776ad464 100644
+--- a/src/libANGLE/renderer/metal/TextureMtl.mm
++++ b/src/libANGLE/renderer/metal/TextureMtl.mm
+@@ -1395,6 +1395,7 @@ uint32_t height(GLuint glLevel) const
+ 
+     return imageDef;
+ }
++
+ angle::Result TextureMtl::getRenderTarget(ContextMtl *context,
+                                           const gl::ImageIndex &imageIndex,
+                                           GLsizei implicitSamples,
+@@ -2112,12 +2113,22 @@ uint32_t height(GLuint glLevel) const
+ 
+     // If native texture still exists, it means the size hasn't been changed, no need to create new
+     // image
+-    if (mNativeTextureStorage && imageDef.image && imageWithinNativeStorageLevels)
++    if (mNativeTextureStorage && imageWithinNativeStorageLevels)
+     {
+-        ASSERT(imageDef.image->textureType() ==
+-                   mtl::GetTextureType(GetTextureImageType(index.getType())) &&
+-               imageDef.formatID == mNativeTextureStorage->getFormat().intendedFormatId &&
+-               imageDef.image->sizeAt0() == size);
++        if (imageDef.image &&
++            imageDef.image->textureType() ==
++                mtl::GetTextureType(GetTextureImageType(index.getType())) &&
++            imageDef.formatID == mNativeTextureStorage->getFormat().intendedFormatId &&
++            imageDef.image->sizeAt0() == size)
++        {
++            // Keep it! (No-op)
++        }
++        else
++        {
++            // Recreate the view at this index.
++            imageDef.image = nullptr;
++            imageDef       = getImageDefinition(index);
++        }
+     }
+     else
+     {
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index d029ff1b6fe62ac9f800b356c31d24aac792fce2..ea78e32538855c8e37dfb1a5e462133a0e2d31cb 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -2897,6 +2897,84 @@ TEST_P(Texture2DTestES3, StaleFormatCacheOutOrRangeMip)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
+ }
+ 
++// Test case to verify that per-level format mismatch followed by redefinition
++// works correctly and does not lead to stale image definitions or uninitialized sampling.
++TEST_P(Texture2DTestES3, PerLevelFormatMismatchRedefine)
++{
++    // We need ES3 for textureLod.
++
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++
++    // Level 0: RGBA8, 256x256
++    std::vector<GLColor> dataA(256 * 256, GLColor::red);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 256, 256, 0, GL_RGBA, GL_UNSIGNED_BYTE, dataA.data());
++
++    // Level 1: RGBA16F, 128x128 (Per-level format mismatch)
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA16F, 128, 128, 0, GL_RGBA, GL_HALF_FLOAT, nullptr);
++    ASSERT_GL_NO_ERROR();
++
++    // Create framebuffer and attach level 0
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // Clear level 0 to force allocation of texture storage in some backends.
++    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    // Level 1: Redefine as RGBA8, 128x128 with sentinel value 0x42
++    std::vector<GLColor> sentinelData(128 * 128, GLColor(0x42, 0x42, 0x42, 0x42));
++    glTexImage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 128, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 sentinelData.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Set filters to enable mipmapping
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Draw fullscreen quad sampling from mip 1 using textureLod
++    constexpr char kVS[] = R"(#version 300 es
++        in vec4 position;
++        out vec2 texcoord;
++        void main() {
++            gl_Position = position;
++            texcoord = position.xy * 0.5 + 0.5;
++        })";
++
++    constexpr char kFS[] = R"(#version 300 es
++        precision mediump float;
++        uniform highp sampler2D tex;
++        in vec2 texcoord;
++        out vec4 fragColor;
++        void main() {
++            fragColor = textureLod(tex, texcoord, 1.0);
++        })";
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++
++    GLTexture readbackTex;
++    glBindTexture(GL_TEXTURE_2D, readbackTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, getWindowWidth(), getWindowHeight(), 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++
++    GLFramebuffer readbackFbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, readbackFbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, readbackTex, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glActiveTexture(GL_TEXTURE0);
++    glBindTexture(GL_TEXTURE_2D, tex);
++    glUniform1i(glGetUniformLocation(program, "tex"), 0);
++
++    drawQuad(program, "position", 0.5f);
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor(0x42, 0x42, 0x42, 0x42));
++}
++
+ // Almost mirrors UnitTest_DMSAA_dst_read test from Android skqp test suite
+ TEST_P(Texture2DTestES3, UnitTest_DMSAA_dst_read)
+ {

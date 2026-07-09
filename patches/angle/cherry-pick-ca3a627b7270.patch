@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charlie Lao <cclao@google.com>
+Date: Wed, 13 May 2026 17:18:28 -0700
+Subject: Vulkan: Ensure we clean up mHandle when Event::init() fail
+
+Otherwise we may leave a dangling mHandle in RefCountedEvent and cause
+potential UAF later.
+
+Bug: b/512995785
+Change-Id: Id9148c7d05fbca4abd9eda0e7f1c73edc372c224
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7846935
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Charlie Lao <cclao@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/vk_ref_counted_event.cpp b/src/libANGLE/renderer/vulkan/vk_ref_counted_event.cpp
+index 126bd67373fae96a06c8dc34a3df4dde14dd0e4d..06e8b01e4f613f8c87de5d0f7e7e3bba9825fcf2 100644
+--- a/src/libANGLE/renderer/vulkan/vk_ref_counted_event.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_ref_counted_event.cpp
+@@ -61,7 +61,9 @@ bool RefCountedEvent::init(Context *context, EventStage eventStage)
+                 // that many VkEvents under normal situation. If we failed to allocate, there is a
+                 // high chance that we may have a leak somewhere. This macro should help us catch
+                 // such potential bugs in the bots if that happens.
+-                UNREACHABLE();
++                ASSERT(false);
++                // Ensure memory is freed and pointer is nulled
++                SafeDelete(mHandle);
+                 // If still fail to create, we just return. An invalid event will trigger
+                 // pipelineBarrier code path
+                 return false;

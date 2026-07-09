@@ -1,0 +1,67 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charlie Reis <creis@chromium.org>
+Date: Mon, 1 Jun 2026 16:27:01 -0700
+Subject: [M148] Use MiraclePtr for NavigationRequest::frame_tree_node_.
+
+Original change's description:
+> Use MiraclePtr for NavigationRequest::frame_tree_node_.
+>
+> Bug: 516608438
+> Change-Id: I479be15c8c40beb27797533820a19fc8e5027c7d
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7879778
+> Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+> Commit-Queue: Charlie Reis <creis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1637732}
+
+(cherry picked from commit d5c6640b6e7992760dd0e856eea13af446a8e34c)
+
+Bug: 517793443,516608438
+Change-Id: I479be15c8c40beb27797533820a19fc8e5027c7d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7886193
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4176}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index 0839778d00e4511fd621eb60d93840d5b21781f2..1e868859a43c403ab0de7013501524951565d068 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -9165,7 +9165,7 @@ void NavigationRequest::WriteIntoTrace(
+   ctx->set_navigation_id(navigation_id_);
+   ctx->set_has_committed(HasCommitted());
+   ctx->set_is_error_page(IsErrorPage());
+-  ctx.Set(TraceProto::kFrameTreeNode, frame_tree_node_);
++  ctx.Set(TraceProto::kFrameTreeNode, frame_tree_node());
+   if (state_ >= WILL_PROCESS_RESPONSE)
+     ctx.Set(TraceProto::kRenderFrameHost, GetRenderFrameHost());
+ 
+diff --git a/content/browser/renderer_host/navigation_request.h b/content/browser/renderer_host/navigation_request.h
+index e3081229c92b8b6401850d473edc5c104094c97a..a0572a97fc32822b6c106bc737b197b34e98ea4c 100644
+--- a/content/browser/renderer_host/navigation_request.h
++++ b/content/browser/renderer_host/navigation_request.h
+@@ -570,7 +570,7 @@ class CONTENT_EXPORT NavigationRequest
+ 
+   NavigationState state() const { return state_; }
+ 
+-  FrameTreeNode* frame_tree_node() const { return frame_tree_node_; }
++  FrameTreeNode* frame_tree_node() const { return frame_tree_node_.get(); }
+ 
+   bool is_synchronous_renderer_commit() const {
+     return is_synchronous_renderer_commit_;
+@@ -2527,10 +2527,10 @@ class CONTENT_EXPORT NavigationRequest
+   // this protects against.
+   void ValidateCommitOrigin(const url::Origin& origin_to_commit);
+ 
+-  // Never null. The pointee node owns this navigation request instance.
+-  // This field is not a raw_ptr because of incompatibilities with tracing
+-  // (TRACE_EVENT*), perfetto::TracedDictionary::Add and gmock/EXPECT_THAT.
+-  RAW_PTR_EXCLUSION FrameTreeNode* const frame_tree_node_;
++  // Never null, and intended to outlive this NavigationRequest. Initially, this
++  // NavigationRequest instance is owned by this FrameTreeNode, until ownership
++  // is transferred to the committing RenderFrameHost.
++  raw_ptr<FrameTreeNode> const frame_tree_node_;
+ 
+   // Returns true if navigation timeline UKMs should be recorded.
+   // This is also used in `MaybeRecordTraceEventsAndHistograms()`, which should

@@ -7,10 +7,10 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 2160b91871e1389797c99e5c53682f22f30f3740..c375cf55c02698254d5ffbf5525953552d02a83d 100644
+index 4969c908c487a96fd6da80741d70d11b10dea131..9fad50774d7fe93c95e792133b7865aebc69c5fb 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -111,6 +111,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -112,6 +112,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -25,7 +25,7 @@ index 2160b91871e1389797c99e5c53682f22f30f3740..c375cf55c02698254d5ffbf552595355
  void* NodeArrayBufferAllocator::Allocate(size_t size) {
    void* ret;
    COUNT_GENERIC_USAGE("NodeArrayBufferAllocator.Allocate.ZeroFilled");
-@@ -333,6 +341,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
+@@ -334,6 +342,12 @@ Isolate* NewIsolate(Isolate::CreateParams* params,
      // but also otherwise just doesn't work, and the only real alternative
      // is disabling shared-readonly-heap mode altogether.
      static Isolate::CreateParams first_params = *params;
@@ -39,7 +39,7 @@ index 2160b91871e1389797c99e5c53682f22f30f3740..c375cf55c02698254d5ffbf552595355
      params->external_references = first_params.external_references;
    }
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
-index 46a7d1396dc1a175ae99f4e403721f1730fdd320..bbb0abb3b9563074d350578e0f5a8fa211046b17 100644
+index b3b1d44a32a610b767790351b42f892a08a775d4..6e5f379d20cf29808d8824b36615fd96b7b9b323 100644
 --- a/src/crypto/crypto_dh.cc
 +++ b/src/crypto/crypto_dh.cc
 @@ -61,17 +61,22 @@ MaybeLocal<Value> DataPointerToBuffer(Environment* env, DataPointer&& data) {
@@ -76,10 +76,10 @@ index 46a7d1396dc1a175ae99f4e403721f1730fdd320..bbb0abb3b9563074d350578e0f5a8fa2
  #else
    auto backing = ArrayBuffer::NewBackingStore(
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index a2fa1132c47d8cc4b875396c6cbaa9db6fe20262..efce181ae28383745fca2ff086cf2dac3107487a 100644
+index e5c1c2541790332d677d0714be4903509d60e783..4ed5211abe843899b4a471a5ef24000446f9fe03 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -346,24 +346,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
+@@ -349,24 +349,30 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore(
    // It's ok for allocated_data_ to be nullptr but
    // only if size_ is zero.
    CHECK_IMPLIES(size_ > 0, allocated_data_ != nullptr);
@@ -126,7 +126,7 @@ index a2fa1132c47d8cc4b875396c6cbaa9db6fe20262..efce181ae28383745fca2ff086cf2dac
  #else
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
-@@ -664,23 +670,16 @@ namespace {
+@@ -739,19 +745,13 @@ namespace {
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
@@ -151,10 +151,6 @@ index a2fa1132c47d8cc4b875396c6cbaa9db6fe20262..efce181ae28383745fca2ff086cf2dac
    uint32_t len = args[0].As<Uint32>()->Value();
  
    auto data = DataPointer::SecureAlloc(len);
--  CHECK(data.isSecure());
-   if (!data) {
-     return THROW_ERR_OPERATION_FAILED(env, "Allocation failed");
-   }
 diff --git a/src/crypto/crypto_x509.cc b/src/crypto/crypto_x509.cc
 index cb1ad6bcfa7ea421642d097d6a9a8a5e04d5cf7c..6b7e4211a8969351168fc982fe3466a2096bed3a 100644
 --- a/src/crypto/crypto_x509.cc
@@ -211,10 +207,10 @@ index 74bbb9fb83246a90bc425e259150f0868020ac9e..777335321fc9037d91d88fb5852bbf5b
    return isolate_;
  }
 diff --git a/src/env.h b/src/env.h
-index 754ddf7b331465c56081db05d6fd2a45fe50596a..db1ed241f730791ba3e3f93349cb5ff3437c738d 100644
+index bccc76d4ab5832b0de951971e7a2bda62beca6a2..c37916e862c24ae3d48259af6406608b59cfa438 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -111,6 +111,19 @@ class ModuleWrap;
+@@ -112,6 +112,19 @@ class ModuleWrap;
  class Environment;
  class Realm;
  
@@ -235,10 +231,10 @@ index 754ddf7b331465c56081db05d6fd2a45fe50596a..db1ed241f730791ba3e3f93349cb5ff3
    std::vector<SnapshotIndex> primitive_values;
    std::vector<PropInfo> template_values;
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index 362ac268483ea37c1d6fd65fc0cd9fcec7c8448d..93e0c8445056f45c3228bc9c64db3b91d0c84096 100644
+index 46a9b925d276f8fe597c2a757b691aeeb3f9efc1..c3e4ea6e7cb7782561e9a2f1283bffd6c1be2637 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
-@@ -1477,7 +1477,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
+@@ -1489,7 +1489,7 @@ inline size_t CheckNumberToSize(Local<Value> number) {
    CHECK(value >= 0 && value < maxSize);
    size_t size = static_cast<size_t>(value);
  #ifdef V8_ENABLE_SANDBOX
@@ -247,7 +243,7 @@ index 362ac268483ea37c1d6fd65fc0cd9fcec7c8448d..93e0c8445056f45c3228bc9c64db3b91
  #endif
    return size;
  }
-@@ -1500,6 +1500,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1512,6 +1512,26 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        env->isolate_data()->is_building_snapshot()) {
      buf = ArrayBuffer::New(isolate, size);
    } else {
@@ -274,7 +270,7 @@ index 362ac268483ea37c1d6fd65fc0cd9fcec7c8448d..93e0c8445056f45c3228bc9c64db3b91
      std::unique_ptr<BackingStore> store = ArrayBuffer::NewBackingStore(
          isolate,
          size,
-@@ -1510,6 +1530,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -1522,6 +1542,7 @@ void CreateUnsafeArrayBuffer(const FunctionCallbackInfo<Value>& args) {
        THROW_ERR_MEMORY_ALLOCATION_FAILED(env);
        return;
      }

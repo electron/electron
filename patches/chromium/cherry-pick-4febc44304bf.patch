@@ -1,0 +1,121 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anna Tsvirchkova <atsvirchkova@google.com>
+Date: Mon, 22 Jun 2026 04:21:52 -0700
+Subject: [M148] Fix leak of grouped credentials to renderer
+
+Original change's description:
+> Fix leak of grouped credentials to renderer
+>
+> If there are multiple matches e. g. the preferred match is an exact
+> match and the additional one is a grouped match (or PSL), there is a
+> possibility that the additional one will be leaked to the renderer
+> process though the filling on page load flow. On the rederer side, all
+> matches with non-empty realm are not used for filling anyway
+> (https://source.chromium.org/chromium/chromium/src/+/main:components/autofill/content/renderer/password_autofill_agent.cc;l=229;bpv=0;bpt=1),
+> so this fix clears the passwords for non-empty realm credentials to
+> avoid the leak.
+>
+> Bug: 523699355
+> Change-Id: I341cbb03752537c1ebc67b005d29de065eeca53c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7941892
+> Commit-Queue: Anna Tsvirchkova <atsvirchkova@google.com>
+> Reviewed-by: Maria Kazinova <kazinova@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1648968}
+
+(cherry picked from commit 0be87b4e25bf905accc522efa61a431de40a2ae9)
+
+Bug: 525661291,523699355
+Change-Id: I341cbb03752537c1ebc67b005d29de065eeca53c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7978359
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4398}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/components/autofill/core/common/password_form_fill_data.cc b/components/autofill/core/common/password_form_fill_data.cc
+index 4feda24ca8a16017dd15d7251c04e44c89edaaf3..57c0a06cc86c454adb26f5f74281b73a9f85b314 100644
+--- a/components/autofill/core/common/password_form_fill_data.cc
++++ b/components/autofill/core/common/password_form_fill_data.cc
+@@ -94,14 +94,19 @@ PasswordFormFillData MaybeClearPasswordValues(
+   // field), credentials from |additional_logins| could be used for filling
+   // on load. So in case of filling on load nor |password_field| nor
+   // |additional_logins| can't be cleared
+-  bool is_fallback = data.password_element_renderer_id.is_null();
+-  if (!data.wait_for_username && !is_fallback) {
+-    return data;
+-  }
++  bool no_fill_on_page_load =
++      data.wait_for_username || data.password_element_renderer_id.is_null();
+   PasswordFormFillData result(data);
+-  result.preferred_login.password_value.clear();
++  if (no_fill_on_page_load) {
++    result.preferred_login.password_value.clear();
++  }
+   for (auto& credentials : result.additional_logins) {
+-    credentials.password_value.clear();
++    // Realm is only set for credentials initially associated with a different
++    // domain. For security reasons, such credentials are never filled on page
++    // load and should not be passed to the renderer.
++    if (!credentials.realm.empty() || no_fill_on_page_load) {
++      credentials.password_value.clear();
++    }
+   }
+   return result;
+ }
+diff --git a/components/password_manager/core/browser/password_form_filling_unittest.cc b/components/password_manager/core/browser/password_form_filling_unittest.cc
+index f349620d6fc068b07e72f74e40ea8ac9aa3d9c24..0be2182363cd735aad34326c0bdf85597526671a 100644
+--- a/components/password_manager/core/browser/password_form_filling_unittest.cc
++++ b/components/password_manager/core/browser/password_form_filling_unittest.cc
+@@ -949,4 +949,51 @@ TEST(PasswordFormFillDataTest, TestGroupedAffiliation) {
+   EXPECT_TRUE(result.preferred_login.is_grouped_affiliation);
+ }
+ 
++// Tests that `MaybeClearPasswordValues` clears the passwords of non-exact
++// matches (such as grouped credentials) when page-load filling is allowed, and
++// clears all passwords when `wait_for_username` is true.
++TEST(PasswordFormFillDataTest, MaybeClearPasswordValues) {
++  using autofill::PasswordAndMetadata;
++
++  // Create a PasswordFormFillData simulating:
++  // - preferred_login: exact match (has password)
++  // - additional_logins:
++  //   - exact match (realm is empty, has password)
++  //   - grouped match (realm is non-empty, has password)
++  PasswordFormFillData data;
++  data.preferred_login.password_value = u"preferred_password";
++  data.password_element_renderer_id =
++      FieldRendererId(123);  // Non-fallback form
++
++  PasswordAndMetadata exact_additional;
++  exact_additional.realm = "";
++  exact_additional.password_value = u"exact_password";
++  data.additional_logins.push_back(exact_additional);
++
++  PasswordAndMetadata grouped_additional;
++  grouped_additional.realm = "https://grouped.com";
++  grouped_additional.password_value = u"grouped_password";
++  data.additional_logins.push_back(grouped_additional);
++
++  // Scenario 1: wait_for_username = false (allow auto-fill on page load)
++  {
++    data.wait_for_username = false;
++    PasswordFormFillData result = autofill::MaybeClearPasswordValues(data);
++
++    EXPECT_EQ(u"preferred_password", result.preferred_login.password_value);
++    EXPECT_EQ(result.additional_logins[0].password_value, u"exact_password");
++    EXPECT_TRUE(result.additional_logins[1].password_value.empty());
++  }
++
++  // Scenario 2: wait_for_username = true (wait for user interaction)
++  {
++    data.wait_for_username = true;
++    PasswordFormFillData result = autofill::MaybeClearPasswordValues(data);
++
++    EXPECT_TRUE(result.preferred_login.password_value.empty());
++    EXPECT_TRUE(result.additional_logins[0].password_value.empty());
++    EXPECT_TRUE(result.additional_logins[1].password_value.empty());
++  }
++}
++
+ }  // namespace password_manager

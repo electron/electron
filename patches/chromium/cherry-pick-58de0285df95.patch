@@ -1,0 +1,146 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peter KH <pkotwicz@google.com>
+Date: Mon, 25 May 2026 07:39:17 -0700
+Subject: Make DidCommitNavigation() crash if in-use embedding token is passed
+
+This CL makes RenderFrameHostImpl::DidCommitProvisionalLoad() kill the
+renderer if an in-use embedding token is passed in
+mojom::DidCommitProvisionalLoadParams::embedding_token.
+
+Bug:503333798
+TEST=SecurityExploitBrowserTest.AttemptUseStolenEmbedderToken
+
+Change-Id: I15fca4c66e1324ce28b64f28cf28018d52ce2322
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7841613
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Commit-Queue: Peter Kotwicz <pkotwicz@chromium.org>
+Reviewed-by: Ramin Halavati <rhalavati@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1635718}
+
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index cf5bc08651c67fe239c7742089a3a47cecb5bf46..948816010d76e5b3fdaf3e9aa2ba8a135e7647e9 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -15377,6 +15377,17 @@ bool RenderFrameHostImpl::ValidateDidCommitParams(
+     }
+   }
+ 
++  ui::AXActionHandlerRegistry* action_handler_registry =
++      ui::AXActionHandlerRegistry::GetInstance();
++  if (navigation_request && !is_page_activation &&
++      !is_same_document_navigation && params->embedding_token.has_value() &&
++      action_handler_registry->GetActionHandler(
++          ui::AXTreeID::FromToken(params->embedding_token.value()))) {
++    bad_message::ReceivedBadMessage(
++        process, bad_message::RFH_UNEXPECTED_EMBEDDING_TOKEN);
++    return false;
++  }
++
+   // Note: document_policy_header is the document policy state used to
+   // initialize |document_policy_| in SecurityContext on renderer side. It is
+   // supposed to be compatible with required_document_policy. If not, kill the
+@@ -19090,7 +19101,13 @@ void RenderFrameHostImpl::SetEmbeddingToken(
+   // AXActionHandlerRegistry.
+   const ui::AXTreeID old_id = GetAXTreeID();
+   ui::AXTreeID ax_tree_id = ui::AXTreeID::FromToken(embedding_token);
+-  DCHECK_NE(old_id, ax_tree_id);
++  CHECK_NE(old_id, ax_tree_id);
++
++  // Should be enforced by ValidateDidCommitParams().
++  CHECK_EQ(
++      nullptr,
++      ui::AXActionHandlerRegistry::GetInstance()->GetActionHandler(ax_tree_id));
++
+   SetAXTreeID(ax_tree_id);
+   needs_ax_root_id_ = true;
+   ui::AXActionHandlerRegistry::GetInstance()->SetFrameIDForAXTreeID(
+diff --git a/content/browser/security_exploit_browsertest.cc b/content/browser/security_exploit_browsertest.cc
+index 8633455b7df9f357082598db4cd0096f31a27d83..2ae822e771c507f9edd66c578309f9809e900f9f 100644
+--- a/content/browser/security_exploit_browsertest.cc
++++ b/content/browser/security_exploit_browsertest.cc
+@@ -811,6 +811,85 @@ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest,
+             kill_waiter.Wait());
+ }
+ 
++namespace {
++
++// Interceptor that replaces the embedding token in the
++// DidCommitProvisionalLoadParams.
++class DidCommitEmbeddingTokenReplacer : public DidCommitNavigationInterceptor {
++ public:
++  DidCommitEmbeddingTokenReplacer(WebContents* web_contents,
++                                  base::UnguessableToken embedding_token)
++      : DidCommitNavigationInterceptor(web_contents),
++        embedding_token_(std::move(embedding_token)) {}
++
++  DidCommitEmbeddingTokenReplacer(const DidCommitEmbeddingTokenReplacer&) =
++      delete;
++  DidCommitEmbeddingTokenReplacer& operator=(
++      const DidCommitEmbeddingTokenReplacer&) = delete;
++
++  ~DidCommitEmbeddingTokenReplacer() override = default;
++
++ private:
++  // DidCommitNavigationInterceptor:
++  bool WillProcessDidCommitNavigation(
++      RenderFrameHost* render_frame_host,
++      NavigationRequest* navigation_request,
++      mojom::DidCommitProvisionalLoadParamsPtr* params,
++      mojom::DidCommitProvisionalLoadInterfaceParamsPtr* interface_params)
++      override {
++    (*params)->embedding_token = embedding_token_;
++    return true;
++  }
++
++  base::UnguessableToken embedding_token_;
++};
++
++}  // namespace
++
++// Verify that the renderer is terminated if a compromised renderer passes an
++// embedding token used by another frame to
++// RenderFrameHostImpl::DidCommitProvisionalLoad().
++IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest,
++                       AttemptUseStolenEmbedderToken) {
++  // Explicitly isolating a.com helps ensure that this test is applicable on
++  // platforms without site-per-process.
++  IsolateOrigin("a.com");
++
++  const GURL kUrl(embedded_test_server()->GetURL("a.com", "/title1.html"));
++  EXPECT_TRUE(NavigateToURL(shell(), kUrl));
++  WebContents* web_contents = shell()->web_contents();
++
++  // Create a separate window and navigate it to b.com to get a valid,
++  // registered embedding token from another frame.
++  GURL kPopupUrl(embedded_test_server()->GetURL("b.com", "/title.html"));
++  Shell* new_window = OpenPopup(shell(), kPopupUrl, "popup");
++  std::optional<base::UnguessableToken> stolen_token =
++      new_window->web_contents()->GetPrimaryMainFrame()->GetEmbeddingToken();
++  ASSERT_TRUE(stolen_token.has_value());
++
++  // Check that replacing the embedding token of the next navigation
++  // with a fresh, unused embedding token doesn't terminate the renderer.
++  {
++    DidCommitEmbeddingTokenReplacer interceptor(
++        web_contents, base::UnguessableToken::Create());
++    const GURL kUrl2(embedded_test_server()->GetURL("a.com", "/title2.html"));
++    EXPECT_TRUE(NavigateToURL(web_contents, kUrl2));
++  }
++
++  // Test that overwriting the embedding token of the next navigation
++  // with a stolen token from another frame causes the navigation to fail and
++  // terminates the compromised renderer process.
++  {
++    RenderProcessHostBadIpcMessageWaiter kill_waiter(
++        web_contents->GetPrimaryMainFrame()->GetProcess());
++    DidCommitEmbeddingTokenReplacer interceptor(web_contents,
++                                                stolen_token.value());
++    const GURL kUrl3(embedded_test_server()->GetURL("a.com", "/title3.html"));
++    EXPECT_FALSE(NavigateToURL(shell(), kUrl3));
++    EXPECT_EQ(bad_message::RFH_UNEXPECTED_EMBEDDING_TOKEN, kill_waiter.Wait());
++  }
++}
++
+ // Make sure that a renderer is terminated if it sends an invalid net error code
+ // in a DidFailLoadWithError() IPC. See https://crbug.com/407069514.
+ IN_PROC_BROWSER_TEST_F(SecurityExploitBrowserTest,

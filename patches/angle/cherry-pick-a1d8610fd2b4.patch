@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Wed, 20 May 2026 22:47:54 +0800
+Subject: Metal: Fix crash when setting non-zero base level on IOSurface.
+
+- Clamped baseLevel and maxLevel to supported range in
+  `createViewFromBaseToMaxLevel` to avoid creating invalid views.
+- Added `SetNonZeroBaseLevel` test in
+  `EGLIOSurfaceClientBufferTest.cpp`.
+
+Bug: chromium:512962749
+Change-Id: I0faff0414aa0230918ed7bce663f4a87d7bf376e
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7862465
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+
+diff --git a/src/libANGLE/renderer/metal/TextureMtl.mm b/src/libANGLE/renderer/metal/TextureMtl.mm
+index 8f1b5d3375a24dc0654316d5670d1d99776ad464..2fa6a6e3b1db20d54eac38c438c36521d2b29697 100644
+--- a/src/libANGLE/renderer/metal/TextureMtl.mm
++++ b/src/libANGLE/renderer/metal/TextureMtl.mm
+@@ -1162,15 +1162,17 @@ uint32_t height(GLuint glLevel) const
+ angle::Result TextureMtl::createViewFromBaseToMaxLevel()
+ {
+     ASSERT(mNativeTextureStorage);
++    uint32_t baseLevel =
++        std::min(mNativeTextureStorage->getMaxSupportedGLLevel(), mState.getEffectiveBaseLevel());
+     uint32_t maxLevel =
+         std::min(mNativeTextureStorage->getMaxSupportedGLLevel(), mState.getEffectiveMaxLevel());
+ 
+     // In edge case where base level > max level, clamp up to base level.
+-    maxLevel = std::max(maxLevel, mState.getEffectiveBaseLevel());
++    maxLevel = std::max(maxLevel, baseLevel);
+ 
+     mtl::TextureRef nativeViewFromBaseToMaxLevelRef;
+     if (maxLevel == mNativeTextureStorage->getMaxSupportedGLLevel() &&
+-        mState.getEffectiveBaseLevel() == mNativeTextureStorage->getBaseGLLevel())
++        baseLevel == mNativeTextureStorage->getBaseGLLevel())
+     {
+         // If base & max level are the same in mNativeTextureStorage, we don't need
+         // a dedicated view. Furthermore, Intel driver has some bugs when sampling a view
+@@ -1179,9 +1181,9 @@ uint32_t height(GLuint glLevel) const
+     }
+     else
+     {
+-        uint32_t baseToMaxLevels = maxLevel - mState.getEffectiveBaseLevel() + 1;
++        uint32_t baseToMaxLevels = maxLevel - baseLevel + 1;
+         nativeViewFromBaseToMaxLevelRef =
+-            mNativeTextureStorage->createMipsView(mState.getEffectiveBaseLevel(), baseToMaxLevels);
++            mNativeTextureStorage->createMipsView(baseLevel, baseToMaxLevels);
+     }
+ 
+     mViewFromBaseToMaxLevel = std::make_unique<NativeTextureWrapper>(
+diff --git a/src/tests/egl_tests/EGLIOSurfaceClientBufferTest.cpp b/src/tests/egl_tests/EGLIOSurfaceClientBufferTest.cpp
+index 0979256eef63fa578cf3ff52f644f5e0ee0337ee..309bbe5645b95901097302bd76eac954ff3809fb 100644
+--- a/src/tests/egl_tests/EGLIOSurfaceClientBufferTest.cpp
++++ b/src/tests/egl_tests/EGLIOSurfaceClientBufferTest.cpp
+@@ -1415,6 +1415,32 @@ TEST_P(IOSurfaceClientBufferTest, MultisampledRenderToTextureBGRX)
+ // TODO(cwallez@chromium.org): Test setting width and height to less than the IOSurface's work as
+ // expected.
+ 
++// Test that binding an IOSurface and setting base level to 3 does not cause an error.
++TEST_P(IOSurfaceClientBufferTest, SetNonZeroBaseLevel)
++{
++    ANGLE_SKIP_TEST_IF(!hasIOSurfaceExt());
++    ANGLE_SKIP_TEST_IF(getGLTextureTarget() != GL_TEXTURE_2D);
++    ANGLE_SKIP_TEST_IF(getClientMajorVersion() < 3);
++
++    // Create a 1x1 IOSurface
++    ScopedIOSurfaceRef ioSurface = CreateSinglePlaneIOSurface(1, 1, 'BGRA', 4);
++
++    // Bind it to a texture
++    EGLSurface pbuffer;
++    GLTexture texture;
++    bindIOSurfaceToTexture(ioSurface, 1, 1, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE, &pbuffer, &texture);
++
++    // Set base level to 3
++    glTexParameteri(getGLTextureTarget(), GL_TEXTURE_BASE_LEVEL, 3);
++    EXPECT_GL_NO_ERROR();
++
++    // Clean up
++    EGLBoolean result = eglReleaseTexImage(mDisplay, pbuffer, EGL_BACK_BUFFER);
++    EXPECT_EGL_TRUE(result);
++    result = eglDestroySurface(mDisplay, pbuffer);
++    EXPECT_EGL_TRUE(result);
++}
++
+ ANGLE_INSTANTIATE_TEST(IOSurfaceClientBufferTest,
+                        ES2_OPENGL(),
+                        ES3_OPENGL(),

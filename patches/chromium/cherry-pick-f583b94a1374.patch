@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sunny Sachanandani <sunnyps@chromium.org>
+Date: Thu, 18 Jun 2026 13:41:43 -0700
+Subject: [M149] [gpu] Check GL error before marking GLTexture/EGLImage cleared
+
+Original change's description:
+> [gpu] Check GL error before marking GLTexture/EGLImage cleared
+>
+> GLTextureImageBacking and EGLImageBacking currently mark the backing as
+> cleared unconditionally when initial pixel data is provided, even if the
+> subsequent upload via glTexSubImage2D fails (e.g. under resource
+> pressure / GL_OUT_OF_MEMORY). This bypasses the IsCleared() check,
+> potentially exposing uninitialized VRAM allocator residue during
+> readback.
+>
+> This CL checks for GL errors before calling SetCleared(). If a GL error
+> is detected, the backing remains uncleared so subsequent read access is
+> refused.
+>
+> Landing a shared image unittest for this wasn't feasible since it needs
+> patching GL function pointers which won't work well in any parallel test
+> setup. However, I was able to verify the fix locally with a unit test.
+>
+> Fixed: 517080836
+> Change-Id: If9ac7f2cb1742601418db52ad163742d6a6a6964
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7909296
+> Commit-Queue: Sunny Sachanandani <sunnyps@chromium.org>
+> Auto-Submit: Sunny Sachanandani <sunnyps@chromium.org>
+> Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1647933}
+
+(cherry picked from commit 7f4181fabb329920be950c95b76e69d1ad296cda)
+
+Bug: 525281583,517080836
+Change-Id: If9ac7f2cb1742601418db52ad163742d6a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7962562
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7827@{#3415}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/gpu/command_buffer/service/shared_image/egl_image_backing.cc b/gpu/command_buffer/service/shared_image/egl_image_backing.cc
+index e2ee716c0bead8ac834f951b3edccf68a94a90c0..3f9204296dc08a62222ca18dbe25f4469e7461cf 100644
+--- a/gpu/command_buffer/service/shared_image/egl_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/egl_image_backing.cc
+@@ -456,6 +456,17 @@ gl::ScopedEGLImage EGLImageBacking::GenEGLImageSibling(
+                         pixel_data.data());
+   }
+ 
++  // The storage allocation of the sibling texture allocates undefined-content
++  // storage on a context without robust-resource-init. If the following upload
++  // upload failed (e.g. GL_OUT_OF_MEMORY) the storage is still uninitialized.
++  // Return an invalid image so that we don't call SetCleared() on the backing.
++  const GLenum error = api->glGetErrorFn();
++  if (error != GL_NO_ERROR) {
++    LOG(ERROR) << "EGLImageBacking: initial pixel upload failed (GL error 0x"
++               << std::hex << error << ")";
++    return gl::ScopedEGLImage();
++  }
++
+   // Use service id of the texture as a source to create the EGLImage.
+   const EGLint egl_attrib_list[] = {
+       EGL_GL_TEXTURE_LEVEL_KHR, 0, EGL_IMAGE_PRESERVED_KHR, EGL_TRUE, EGL_NONE};
+@@ -482,6 +493,12 @@ EGLImageBacking::GenEGLImageSiblings(base::span<const uint8_t> pixel_data) {
+     AutoLock auto_lock(this);
+     create_egl_images = egl_images_.empty();
+     if (create_egl_images) {
++      // Drain any pre-existing GL errors so the post-allocation check below in
++      // GenEGLImageSibling is attributable to the storage call. Silently
++      // squelching these errors is unfortunate, but is done in order to mirror
++      // other allocation checks done in the command decoder.
++      while (api->glGetErrorFn() != GL_NO_ERROR) {
++      }
+       for (int plane = 0; plane < num_planes; plane++) {
+         gl::ScopedEGLImage egl_image =
+             GenEGLImageSibling(pixel_data, service_ids, plane);
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+index 4a21a1109771ca9aca1fb732c8102217b16da77e..7e1b5f09299173d18e75a39685ef6e4470c5bb2c 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
++++ b/gpu/command_buffer/service/shared_image/gl_texture_holder.cc
+@@ -221,10 +221,12 @@ void GLTextureHolder::Initialize(
+       // that it can be used in other ES2 contexts, and so we have to pass
+       // gl_format as the internal format in the LevelInfo.
+       // https://crbug.com/628064
+-      texture_->SetLevelInfo(format_desc_.target, 0, format_desc_.data_format,
+-                             size_.width(), size_.height(), /*depth=*/1, 0,
+-                             format_desc_.data_format, format_desc_.data_type,
+-                             /*cleared_rect=*/gfx::Rect());
++      const gfx::Rect cleared_rect =
++          !pixel_data.empty() ? gfx::Rect(size_) : gfx::Rect();
++      texture_->SetLevelInfo(
++          format_desc_.target, /*level=*/0, format_desc_.data_format,
++          size_.width(), size_.height(), /*depth=*/1, /*border=*/0,
++          format_desc_.data_format, format_desc_.data_type, cleared_rect);
+       texture_->SetImmutable(true, format_info.supports_storage);
+     } else {
+       LOG(ERROR) << "GLTextureHolder: native storage allocation failed";
+diff --git a/gpu/command_buffer/service/shared_image/gl_texture_image_backing.cc b/gpu/command_buffer/service/shared_image/gl_texture_image_backing.cc
+index f33eb49688d7cfd0cc79e898366fcc76ad7a8cf3..86d66d157d44118ea59aed372d1e273db5f3eef8 100644
+--- a/gpu/command_buffer/service/shared_image/gl_texture_image_backing.cc
++++ b/gpu/command_buffer/service/shared_image/gl_texture_image_backing.cc
+@@ -454,6 +454,14 @@ void GLTextureImageBacking::InitializeGLTexture(
+     base::span<const uint8_t> pixel_data,
+     gl::ProgressReporter* progress_reporter,
+     bool framebuffer_attachment_angle) {
++  // Drain any pre-existing GL errors so the post-allocation check below is
++  // attributable to the storage call. Silently squelching these errors is
++  // unfortunate, but is done in order to mirror other allocation checks done in
++  // the command decoder.
++  gl::GLApi* const api = gl::g_current_gl_context;
++  while (api->glGetErrorFn() != GL_NO_ERROR) {
++  }
++
+   const std::string debug_label =
+       "GLSharedImage_" + SharedImageBacking::debug_label();
+   int num_planes = format().NumberOfPlanes();
+@@ -467,8 +475,23 @@ void GLTextureImageBacking::InitializeGLTexture(
+                                 debug_label);
+   }
+ 
+-  if (!pixel_data.empty()) {
+-    SetCleared();
++  // Update the cleared state for passthrough textures if the pixel data upload
++  // was successful. We don't need to update the cleared state for validating
++  // decoder textures because we track the cleared state in the decoder texture
++  // objects whose cleared state is set in TextureHolder::Initialize above.
++  if (is_passthrough_ && !pixel_data.empty()) {
++    // The storage allocation allocates undefined-content storage on a context
++    // without robust-resource-init. If the subsequent upload failed (e.g.
++    // GL_OUT_OF_MEMORY) the storage is still uninitialised; only mark the
++    // backing cleared if no GL error was raised.
++    GLenum error = api->glGetErrorFn();
++    if (error == GL_NO_ERROR) {
++      SetCleared();
++    } else {
++      LOG(ERROR)
++          << "GLTextureImageBacking: initial pixel upload failed (GL error 0x"
++          << std::hex << error << ")";
++    }
+   }
+ }
+ 
