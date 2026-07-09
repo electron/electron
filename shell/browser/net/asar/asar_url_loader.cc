@@ -145,21 +145,33 @@ class AsarURLLoader : public network::mojom::URLLoader {
       return;
     }
 
-    // Note that while the |Archive| already opens a |base::File|, we still need
-    // to create a new |base::File| here, as it might be accessed by multiple
-    // requests at the same time.
-    base::File file(info.unpacked ? real_path : archive->path(),
-                    base::File::FLAG_OPEN | base::File::FLAG_READ);
+    // Each request needs its own |base::File| as multiple requests may be
+    // streaming at the same time, but for packed files it must be a duplicate
+    // of the |Archive|'s retained handle rather than a fresh open by path:
+    // |info|'s offset and block hashes come from the cached header, and the
+    // archive on disk may have been replaced (e.g. by an app update) since
+    // that header was read. The retained handle always sees the bytes the
+    // header describes.
+    base::File file =
+        info.unpacked
+            ? base::File(real_path,
+                         base::File::FLAG_OPEN | base::File::FLAG_READ)
+            : archive->DuplicateFile();
+    // The validator reads skipped byte ranges itself, so it needs a handle of
+    // its own alongside the data source's.
+    base::File validator_file;
+    if (info.integrity.has_value())
+      validator_file = file.Duplicate();
     auto file_data_source =
-        std::make_unique<mojo::FileDataSource>(file.Duplicate());
-    std::unique_ptr<mojo::DataPipeProducer::DataSource> readable_data_source;
+        std::make_unique<mojo::FileDataSource>(std::move(file));
     mojo::FileDataSource* file_data_source_raw = file_data_source.get();
+    std::unique_ptr<mojo::DataPipeProducer::DataSource> readable_data_source;
     AsarFileValidator* file_validator_raw = nullptr;
     uint32_t block_size = 0;
     if (info.integrity.has_value()) {
       block_size = info.integrity.value().block_size;
       auto asar_validator = std::make_unique<AsarFileValidator>(
-          std::move(info.integrity.value()), std::move(file));
+          std::move(info.integrity.value()), std::move(validator_file));
       file_validator_raw = asar_validator.get();
       readable_data_source = std::make_unique<mojo::FilteredDataSource>(
           std::move(file_data_source), std::move(asar_validator));
