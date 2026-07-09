@@ -86,6 +86,62 @@ device::AuthenticatorSupportedOptions BuildOptions() {
   return options;
 }
 
+// Validates that Apple's returned clientDataJSON contains the expected
+// challenge, origin, and type. This is a defense-in-depth check: we constructed
+// ASPublicKeyCredentialClientData with these values, and Apple should echo them
+// back. If the JSON doesn't match, we discard it and fall back to Chromium's
+// client_data_json (which will cause signature verification to fail at the RP,
+// but that's better than forwarding attacker-influenced bytes).
+bool ValidateAppleClientDataJSON(const std::vector<uint8_t>& raw_json,
+                                 const std::vector<uint8_t>& expected_challenge,
+                                 const std::string& expected_origin,
+                                 const std::string& expected_type) {
+  if (raw_json.empty() || expected_challenge.empty() ||
+      expected_origin.empty() || expected_type.empty()) {
+    return false;
+  }
+
+  std::string json_str(raw_json.begin(), raw_json.end());
+  std::optional<base::DictValue> parsed =
+      base::JSONReader::ReadDict(json_str, /*options=*/0);
+  if (!parsed) {
+    return false;
+  }
+
+  // Validate type matches the expected ceremony.
+  const std::string* type = parsed->FindString("type");
+  if (!type || *type != expected_type) {
+    return false;
+  }
+
+  // Validate origin matches what Chromium computed for this frame.
+  const std::string* origin = parsed->FindString("origin");
+  if (!origin || *origin != expected_origin) {
+    return false;
+  }
+
+  // Validate challenge round-trips correctly. Apple encodes it as base64url.
+  const std::string* challenge_b64url = parsed->FindString("challenge");
+  if (!challenge_b64url) {
+    return false;
+  }
+  std::optional<std::vector<uint8_t>> decoded_challenge = base::Base64UrlDecode(
+      *challenge_b64url, base::Base64UrlDecodePolicy::DISALLOW_PADDING);
+  if (!decoded_challenge || *decoded_challenge != expected_challenge) {
+    return false;
+  }
+
+  // Validate crossOrigin is not unexpectedly true. Apple should set it to
+  // false (or omit it) when we don't request cross-origin.
+  const std::optional<bool> cross_origin = parsed->FindBool("crossOrigin");
+  if (cross_origin.has_value() && *cross_origin) {
+    // Apple claims cross-origin but we didn't request it. Reject.
+    return false;
+  }
+
+  return true;
+}
+
 }  // namespace
 
 }  // namespace electron
@@ -178,6 +234,13 @@ struct ElectronPlatformPasskeysAuthenticator::ObjCStorage {
   std::vector<uint8_t> user_handle;
   // Apple's rawClientDataJSON when using ASPublicKeyCredentialClientData SPI.
   std::vector<uint8_t> raw_client_data_json;
+
+  // Expected values for validating Apple's returned clientDataJSON.
+  // Populated when using_client_data_spi is true; checked in OnXxxComplete
+  // before accepting raw_client_data_json as the override.
+  std::vector<uint8_t> expected_challenge;
+  std::string expected_origin;
+  std::string expected_type;  // "webauthn.create" or "webauthn.get"
 };
 
 // MARK: - Authenticator Implementation
@@ -233,8 +296,8 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
     const auto& params =
         request.public_key_credential_params.public_key_credential_params();
     const bool supports_es256 = std::ranges::any_of(params, [](const auto& p) {
-      return p.algorithm ==
-             base::strict_cast<int32_t>(device::CoseAlgorithmIdentifier::kEs256);
+      return p.algorithm == base::strict_cast<int32_t>(
+                                device::CoseAlgorithmIdentifier::kEs256);
     });
     if (!supports_es256) {
       std::move(callback).Run(device::MakeCredentialStatus::kNoCommonAlgorithms,
@@ -248,6 +311,8 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
     // Parse challenge and origin from client_data_json for the clientData SPI.
     NSData* challenge_data = nil;
     NSString* origin_str = nil;
+    std::vector<uint8_t> parsed_challenge;
+    std::string parsed_origin;
     if (!request.client_data_json.empty()) {
       std::optional<base::DictValue> parsed =
           base::JSONReader::ReadDict(request.client_data_json, /*options=*/0);
@@ -256,21 +321,23 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
         const std::string* origin = parsed->FindString("origin");
         if (challenge_b64url && origin) {
           std::optional<std::vector<uint8_t>> challenge_bytes =
-              base::Base64UrlDecode(*challenge_b64url,
-                                   base::Base64UrlDecodePolicy::DISALLOW_PADDING);
+              base::Base64UrlDecode(
+                  *challenge_b64url,
+                  base::Base64UrlDecodePolicy::DISALLOW_PADDING);
           if (challenge_bytes) {
-            challenge_data = VectorToNSData(*challenge_bytes);
-            origin_str = base::SysUTF8ToNSString(*origin);
+            parsed_challenge = *challenge_bytes;
+            parsed_origin = *origin;
+            challenge_data = VectorToNSData(parsed_challenge);
+            origin_str = base::SysUTF8ToNSString(parsed_origin);
           }
         }
       }
     }
 
     NSData* request_challenge =
-        challenge_data
-            ? challenge_data
-            : [NSData dataWithBytes:request.client_data_hash.data()
-                             length:request.client_data_hash.size()];
+        challenge_data ? challenge_data
+                       : [NSData dataWithBytes:request.client_data_hash.data()
+                                        length:request.client_data_hash.size()];
 
     auto* as_request = [provider
         createCredentialRegistrationRequestWithChallenge:request_challenge
@@ -293,6 +360,14 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
         [(id)as_request setValue:cd forKey:@"clientData"];
         using_client_data_spi = true;
       }
+    }
+
+    // Stash expected values so OnMakeCredentialComplete can validate Apple's
+    // returned clientDataJSON before accepting it as the override.
+    if (using_client_data_spi) {
+      objc_storage_->expected_challenge = std::move(parsed_challenge);
+      objc_storage_->expected_origin = std::move(parsed_origin);
+      objc_storage_->expected_type = "webauthn.create";
     }
 
     // excludedCredentials comes from the
@@ -387,6 +462,8 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
     // verify against the returned rawClientDataJSON.
     NSData* challenge_data = nil;
     NSString* origin_str = nil;
+    std::vector<uint8_t> parsed_challenge;
+    std::string parsed_origin;
     if (!request.client_data_json.empty()) {
       std::optional<base::DictValue> parsed =
           base::JSONReader::ReadDict(request.client_data_json, /*options=*/0);
@@ -395,11 +472,14 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
         const std::string* origin = parsed->FindString("origin");
         if (challenge_b64url && origin) {
           std::optional<std::vector<uint8_t>> challenge_bytes =
-              base::Base64UrlDecode(*challenge_b64url,
-                                   base::Base64UrlDecodePolicy::DISALLOW_PADDING);
+              base::Base64UrlDecode(
+                  *challenge_b64url,
+                  base::Base64UrlDecodePolicy::DISALLOW_PADDING);
           if (challenge_bytes) {
-            challenge_data = VectorToNSData(*challenge_bytes);
-            origin_str = base::SysUTF8ToNSString(*origin);
+            parsed_challenge = *challenge_bytes;
+            parsed_origin = *origin;
+            challenge_data = VectorToNSData(parsed_challenge);
+            origin_str = base::SysUTF8ToNSString(parsed_origin);
           }
         }
       }
@@ -407,16 +487,16 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
 
     // Fall back to the hash-as-challenge approach if parsing failed.
     NSData* request_challenge =
-        challenge_data
-            ? challenge_data
-            : [NSData dataWithBytes:request.client_data_hash.data()
-                             length:request.client_data_hash.size()];
+        challenge_data ? challenge_data
+                       : [NSData dataWithBytes:request.client_data_hash.data()
+                                        length:request.client_data_hash.size()];
 
-    auto* as_request =
-        [provider createCredentialAssertionRequestWithChallenge:request_challenge];
+    auto* as_request = [provider
+        createCredentialAssertionRequestWithChallenge:request_challenge];
 
-    // If we have the real challenge + origin, set ASPublicKeyCredentialClientData
-    // so Apple constructs a proper clientDataJSON that RPs can verify.
+    // If we have the real challenge + origin, set
+    // ASPublicKeyCredentialClientData so Apple constructs a proper
+    // clientDataJSON that RPs can verify.
     bool using_client_data_spi = false;
     if (@available(macOS 13.5, *)) {
       if (challenge_data && origin_str) {
@@ -427,6 +507,14 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
         [(id)as_request setValue:cd forKey:@"clientData"];
         using_client_data_spi = true;
       }
+    }
+
+    // Stash expected values so OnGetAssertionComplete can validate Apple's
+    // returned clientDataJSON before accepting it as the override.
+    if (using_client_data_spi) {
+      objc_storage_->expected_challenge = std::move(parsed_challenge);
+      objc_storage_->expected_origin = std::move(parsed_origin);
+      objc_storage_->expected_type = "webauthn.get";
     }
 
     if (!request.allow_list.empty()) {
@@ -576,8 +664,17 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
   response.transport_used = device::FidoTransportProtocol::kInternal;
 
   if (!objc_storage_->raw_client_data_json.empty()) {
-    response.raw_client_data_json =
-        std::move(objc_storage_->raw_client_data_json);
+    // Defense-in-depth: verify Apple's returned JSON echoes the challenge,
+    // origin, and type we requested. If it doesn't, discard the override —
+    // the RP will reject the assertion (Chromium's JSON won't match the
+    // signature), but that's safer than forwarding unexpected bytes.
+    if (ValidateAppleClientDataJSON(objc_storage_->raw_client_data_json,
+                                    objc_storage_->expected_challenge,
+                                    objc_storage_->expected_origin,
+                                    objc_storage_->expected_type)) {
+      response.raw_client_data_json =
+          std::move(objc_storage_->raw_client_data_json);
+    }
   }
 
   std::move(callback).Run(device::MakeCredentialStatus::kSuccess,
@@ -614,12 +711,18 @@ void ElectronPlatformPasskeysAuthenticator::OnGetAssertionComplete(
   }
   response.user_selected = true;
 
-  // If we used ASPublicKeyCredentialClientData, Apple's rawClientDataJSON is the
-  // authoritative clientDataJSON — the signature covers its hash. Pass it
+  // If we used ASPublicKeyCredentialClientData, Apple's rawClientDataJSON is
+  // the authoritative clientDataJSON — the signature covers its hash. Pass it
   // through so authenticator_common_impl returns it to the page.
+  // Defense-in-depth: validate the JSON before accepting the override.
   if (!objc_storage_->raw_client_data_json.empty()) {
-    response.raw_client_data_json =
-        std::move(objc_storage_->raw_client_data_json);
+    if (ValidateAppleClientDataJSON(objc_storage_->raw_client_data_json,
+                                    objc_storage_->expected_challenge,
+                                    objc_storage_->expected_origin,
+                                    objc_storage_->expected_type)) {
+      response.raw_client_data_json =
+          std::move(objc_storage_->raw_client_data_json);
+    }
   }
 
   std::vector<device::AuthenticatorGetAssertionResponse> responses;
