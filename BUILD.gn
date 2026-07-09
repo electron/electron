@@ -17,6 +17,7 @@ import("//tools/grit/repack.gni")
 import("//tools/resources/generate_resource_allowlist.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
+import("//v8/gni/v8.gni")
 import("build/asar.gni")
 import("build/electron_paks.gni")
 import("build/extract_symbols.gni")
@@ -47,7 +48,6 @@ declare_args() {
 if (is_mac) {
   import("//build/config/mac/rules.gni")
   import("//third_party/icu/config.gni")
-  import("//v8/gni/v8.gni")
   import("build/rules.gni")
 
   assert(
@@ -320,6 +320,10 @@ action("generate_config_gypi") {
   script = "script/generate-config-gypi.py"
   inputs = [ "//third_party/electron_node/configure.py" ]
   args = rebase_path(outputs) + [ target_cpu ]
+
+  if (v8_cppgc_microtask_queue) {
+    args += [ "--v8-enable-cppgc-microtask-queue" ]
+  }
 }
 
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
