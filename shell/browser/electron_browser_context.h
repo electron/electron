@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/memory/weak_ptr.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/media_stream_request.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -91,6 +92,10 @@ class ElectronBrowserContext : public content::BrowserContext {
   ResolveProxyHelper* GetResolveProxyHelper();
   content::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
+
+  base::WeakPtr<ElectronBrowserContext> GetWeakPtr() {
+    return weak_factory_.GetWeakPtr();
+  }
 
   std::string GetMediaDeviceIDSalt();
 
@@ -214,6 +219,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   // In-memory cache that holds objects that have been granted permissions.
   DevicePermissionMap granted_devices_;
+
+  base::WeakPtrFactory<ElectronBrowserContext> weak_factory_{this};
 };
 
 }  // namespace electron

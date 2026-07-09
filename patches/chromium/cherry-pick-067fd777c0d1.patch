@@ -1,0 +1,394 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Wed, 17 Jun 2026 16:06:49 -0700
+Subject: [M148] Add workaround reattaching depth/stencil attachments.
+
+When a depth/stencil attachment to an FBO (bound or unbound) is
+redefined, this workaround first unbinds it from all FBOs and then
+reattaches it afterward. Apply this to certain vendors' GPUs.
+
+Disable the previous recreate_fbo_upon_flush workaround, as it has
+been demonstrated to be ineffective. Do not remove the code yet as the
+new approach must be tested first.
+
+Added tests ensuring the workaround has no unexpected side-effects.
+
+Co-authored with jetski-cli.
+
+(cherry picked from commit 092d0d9b5333e7d68a01f7e0dc44fd3c4f8a5b32)
+
+Bug: 520656244
+Fixed: 524507992
+Change-Id: Ibf9e6e428774b36a249bcb275e68da41dde4a9ba
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7959417
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Kenneth Russell <kbr@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4380}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/gpu/command_buffer/service/framebuffer_manager.cc b/gpu/command_buffer/service/framebuffer_manager.cc
+index f1f2154a5d39569d8b6c62c7a988bb3e24277229..cf2533629e016c209225fbcd9d4f595e7921072d 100644
+--- a/gpu/command_buffer/service/framebuffer_manager.cc
++++ b/gpu/command_buffer/service/framebuffer_manager.cc
+@@ -58,6 +58,7 @@ class RenderbufferAttachment
+   GLuint object_name() const override { return renderbuffer_->client_id(); }
+ 
+   GLint level() const override { NOTREACHED(); }
++  GLenum target() const override { return GL_RENDERBUFFER; }
+ 
+   bool cleared() const override { return renderbuffer_->cleared(); }
+ 
+@@ -135,6 +136,10 @@ class RenderbufferAttachment
+   scoped_refptr<Renderbuffer> renderbuffer_;
+ };
+ 
++GLint Framebuffer::Attachment::layer() const {
++  return 0;
++}
++
+ class TextureAttachment
+     : public Framebuffer::Attachment {
+  public:
+@@ -185,9 +190,9 @@ class TextureAttachment
+ 
+   GLsizei samples() const override { return samples_; }
+ 
+-  GLint layer() const { return layer_; }
++  GLint layer() const override { return layer_; }
+ 
+-  GLenum target() const { return target_; }
++  GLenum target() const override { return target_; }
+ 
+   GLint level() const override { return level_; }
+ 
+@@ -1160,5 +1165,46 @@ bool FramebufferManager::IsComplete(const Framebuffer* framebuffer) {
+       framebuffer_state_change_count_;
+ }
+ 
++std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>>
++FramebufferManager::GetBindingFramebuffersForTexture(TextureRef* texture_ref) {
++  std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>> result;
++  if (!texture_ref) {
++    return result;
++  }
++  for (const auto& pair : framebuffers_) {
++    Framebuffer* framebuffer = pair.second.get();
++    for (GLenum attachment_point :
++         {GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT}) {
++      const Framebuffer::Attachment* attachment =
++          framebuffer->GetAttachment(attachment_point);
++      if (attachment && attachment->IsTexture(texture_ref)) {
++        result.push_back({pair.second, attachment_point});
++      }
++    }
++  }
++  return result;
++}
++
++std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>>
++FramebufferManager::GetBindingFramebuffersForRenderbuffer(
++    Renderbuffer* renderbuffer) {
++  std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>> result;
++  if (!renderbuffer) {
++    return result;
++  }
++  for (const auto& pair : framebuffers_) {
++    Framebuffer* framebuffer = pair.second.get();
++    for (GLenum attachment_point :
++         {GL_DEPTH_ATTACHMENT, GL_STENCIL_ATTACHMENT}) {
++      const Framebuffer::Attachment* attachment =
++          framebuffer->GetAttachment(attachment_point);
++      if (attachment && attachment->IsRenderbuffer(renderbuffer)) {
++        result.push_back({pair.second, attachment_point});
++      }
++    }
++  }
++  return result;
++}
++
+ }  // namespace gles2
+ }  // namespace gpu
+diff --git a/gpu/command_buffer/service/framebuffer_manager.h b/gpu/command_buffer/service/framebuffer_manager.h
+index 7517a3302dc0acdae96148e23d1d68081f6e6f7a..cd0ae1d672db03f5c276b92677ac9211878ae50e 100644
+--- a/gpu/command_buffer/service/framebuffer_manager.h
++++ b/gpu/command_buffer/service/framebuffer_manager.h
+@@ -44,6 +44,7 @@ class GPU_GLES2_EXPORT Framebuffer : public base::RefCounted<Framebuffer> {
+     virtual GLsizei samples() const = 0;
+     virtual GLuint object_name() const = 0;
+     virtual GLint level() const = 0;
++    virtual GLenum target() const = 0;
+     virtual bool cleared() const = 0;
+     virtual void SetCleared(
+         RenderbufferManager* renderbuffer_manager,
+@@ -56,6 +57,7 @@ class GPU_GLES2_EXPORT Framebuffer : public base::RefCounted<Framebuffer> {
+     virtual bool IsRenderbuffer(Renderbuffer* renderbuffer) const = 0;
+     virtual bool IsSameAttachment(const Attachment* attachment) const = 0;
+     virtual bool Is3D() const = 0;
++    virtual GLint layer() const;
+ 
+     // If it's a 3D texture attachment, return true if
+     // FRAMEBUFFER_ATTACHMENT_TEXTURE_LAYER is smaller than the number of
+@@ -374,6 +376,12 @@ class GPU_GLES2_EXPORT FramebufferManager {
+ 
+   bool IsComplete(const Framebuffer* framebuffer);
+ 
++  std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>>
++  GetBindingFramebuffersForTexture(TextureRef* texture_ref);
++
++  std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>>
++  GetBindingFramebuffersForRenderbuffer(Renderbuffer* renderbuffer);
++
+   void IncFramebufferStateChangeCount() {
+     // make sure this is never 0.
+     framebuffer_state_change_count_ =
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+index 94de198c00fa78f6a569b2e051cb94f8fd5d5246..f7f9308134684e798324c2197d24aec3fcb7ea52 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
+@@ -740,6 +740,7 @@ class GLES2DecoderImpl : public GLES2Decoder,
+   friend class ScopedFramebufferCopyBinder;
+   friend class BackFramebuffer;
+   friend class BackTexture;
++  friend class ScopedDepthStencilReattacher;
+ 
+   enum FramebufferOperation {
+     kFramebufferDiscard,
+@@ -2560,6 +2561,157 @@ ScopedGLErrorSuppressor::~ScopedGLErrorSuppressor() {
+   ERRORSTATE_CLEAR_REAL_GL_ERRORS(error_state_, function_name_);
+ }
+ 
++class ScopedDepthStencilReattacher {
++ public:
++  ScopedDepthStencilReattacher(GLES2DecoderImpl* decoder,
++                               TextureRef* texture_ref);
++  ScopedDepthStencilReattacher(GLES2DecoderImpl* decoder,
++                               Renderbuffer* renderbuffer);
++  ~ScopedDepthStencilReattacher();
++
++ private:
++  struct SavedAttachmentInfo {
++    scoped_refptr<Framebuffer> framebuffer;
++    GLenum attachment_point;
++    GLenum texture_target = 0;
++    GLint texture_level = 0;
++    GLsizei texture_samples = 0;
++    GLint texture_layer = 0;
++    bool is_texture = false;
++    bool is_renderbuffer = false;
++  };
++
++  void Initialize();
++
++  raw_ptr<GLES2DecoderImpl> decoder_;
++  raw_ptr<TextureRef> texture_ref_ = nullptr;
++  raw_ptr<Renderbuffer> renderbuffer_ = nullptr;
++  std::vector<SavedAttachmentInfo> saved_attachments_;
++  scoped_refptr<Framebuffer> old_read_fbo_;
++  scoped_refptr<Framebuffer> old_draw_fbo_;
++};
++
++ScopedDepthStencilReattacher::ScopedDepthStencilReattacher(
++    GLES2DecoderImpl* decoder,
++    TextureRef* texture_ref)
++    : decoder_(decoder), texture_ref_(texture_ref) {
++  Initialize();
++}
++
++ScopedDepthStencilReattacher::ScopedDepthStencilReattacher(
++    GLES2DecoderImpl* decoder,
++    Renderbuffer* renderbuffer)
++    : decoder_(decoder), renderbuffer_(renderbuffer) {
++  Initialize();
++}
++
++void ScopedDepthStencilReattacher::Initialize() {
++  if (!decoder_->workarounds().reattach_fbo_depth_stencil_on_reallocation) {
++    return;
++  }
++
++  std::vector<std::pair<scoped_refptr<Framebuffer>, GLenum>> detached_fbos;
++  if (texture_ref_) {
++    detached_fbos =
++        decoder_->framebuffer_manager()->GetBindingFramebuffersForTexture(
++            texture_ref_);
++  } else if (renderbuffer_) {
++    detached_fbos =
++        decoder_->framebuffer_manager()->GetBindingFramebuffersForRenderbuffer(
++            renderbuffer_);
++  }
++
++  if (detached_fbos.empty()) {
++    return;
++  }
++
++  // Save old bindings to restore them later.
++  old_read_fbo_ = decoder_->framebuffer_state_.bound_read_framebuffer;
++  old_draw_fbo_ = decoder_->framebuffer_state_.bound_draw_framebuffer;
++
++  // Save attachment details and detach.
++  for (const auto& pair : detached_fbos) {
++    Framebuffer* fbo = pair.first.get();
++    GLenum attachment_point = pair.second;
++    const Framebuffer::Attachment* attachment =
++        fbo->GetAttachment(attachment_point);
++    if (!attachment) {
++      continue;
++    }
++
++    SavedAttachmentInfo info;
++    info.framebuffer = pair.first;
++    info.attachment_point = attachment_point;
++
++    if (attachment->IsTextureAttachment()) {
++      info.is_texture = true;
++      info.texture_target = attachment->target();
++      info.texture_level = attachment->level();
++      info.texture_samples = attachment->samples();
++      info.texture_layer = attachment->layer();
++    } else if (attachment->IsRenderbufferAttachment()) {
++      info.is_renderbuffer = true;
++    }
++
++    saved_attachments_.push_back(info);
++
++    // Detach in driver.
++    decoder_->api()->glBindFramebufferEXTFn(GL_FRAMEBUFFER, fbo->service_id());
++    if (info.is_texture) {
++      decoder_->api()->glFramebufferTexture2DEXTFn(
++          GL_FRAMEBUFFER, attachment_point, info.texture_target, 0, 0);
++    } else if (info.is_renderbuffer) {
++      decoder_->api()->glFramebufferRenderbufferEXTFn(
++          GL_FRAMEBUFFER, attachment_point, GL_RENDERBUFFER, 0);
++    }
++  }
++}
++
++ScopedDepthStencilReattacher::~ScopedDepthStencilReattacher() {
++  if (saved_attachments_.empty()) {
++    return;
++  }
++
++  // Reattach.
++  for (const auto& info : saved_attachments_) {
++    Framebuffer* fbo = info.framebuffer.get();
++    decoder_->api()->glBindFramebufferEXTFn(GL_FRAMEBUFFER, fbo->service_id());
++    if (info.is_texture) {
++      if (info.texture_layer == 0) {
++        if (info.texture_samples == 0) {
++          decoder_->api()->glFramebufferTexture2DEXTFn(
++              GL_FRAMEBUFFER, info.attachment_point, info.texture_target,
++              texture_ref_->service_id(), info.texture_level);
++        } else {
++          decoder_->api()->glFramebufferTexture2DMultisampleEXTFn(
++              GL_FRAMEBUFFER, info.attachment_point, info.texture_target,
++              texture_ref_->service_id(), info.texture_level,
++              info.texture_samples);
++        }
++      } else {
++        decoder_->api()->glFramebufferTextureLayerFn(
++            GL_FRAMEBUFFER, info.attachment_point, texture_ref_->service_id(),
++            info.texture_level, info.texture_layer);
++      }
++    } else if (info.is_renderbuffer) {
++      decoder_->api()->glFramebufferRenderbufferEXTFn(
++          GL_FRAMEBUFFER, info.attachment_point, GL_RENDERBUFFER,
++          renderbuffer_->service_id());
++    }
++  }
++
++  // Restore bindings.
++  if (old_read_fbo_ == old_draw_fbo_) {
++    GLuint service_id = old_read_fbo_ ? old_read_fbo_->service_id() : 0;
++    decoder_->api()->glBindFramebufferEXTFn(GL_FRAMEBUFFER, service_id);
++  } else {
++    GLuint read_id = old_read_fbo_ ? old_read_fbo_->service_id() : 0;
++    GLuint draw_id = old_draw_fbo_ ? old_draw_fbo_->service_id() : 0;
++    decoder_->api()->glBindFramebufferEXTFn(GL_READ_FRAMEBUFFER, read_id);
++    decoder_->api()->glBindFramebufferEXTFn(GL_DRAW_FRAMEBUFFER, draw_id);
++  }
++}
++
+ static void RestoreCurrentTextureBindings(ContextState* state,
+                                           GLenum target,
+                                           GLuint texture_unit) {
+@@ -7909,6 +8061,8 @@ void GLES2DecoderImpl::RenderbufferStorageMultisampleWithWorkaround(
+     GLsizei width,
+     GLsizei height,
+     ForcedMultisampleMode mode) {
++  ScopedDepthStencilReattacher reattacher(this,
++                                          state_.bound_renderbuffer.get());
+   RegenerateRenderbufferIfNeeded(state_.bound_renderbuffer.get());
+   EnsureRenderbufferBound();
+   RenderbufferStorageMultisampleHelper(target, samples, internal_format, width,
+@@ -12953,6 +13107,9 @@ error::Error GLES2DecoderImpl::HandleTexImage2D(uint32_t immediate_data_size,
+   // Set as failed for now, but if it successed, this will be set to not failed.
+   texture_state_.tex_image_failed = true;
+   GLenum target = static_cast<GLenum>(c.target);
++  TextureRef* texture_ref =
++      texture_manager()->GetTextureInfoForTarget(&state_, target);
++  ScopedDepthStencilReattacher reattacher(this, texture_ref);
+   GLint level = static_cast<GLint>(c.level);
+   GLenum internal_format = static_cast<GLenum>(c.internalformat);
+   GLsizei width = static_cast<GLsizei>(c.width);
+@@ -13051,6 +13208,9 @@ error::Error GLES2DecoderImpl::HandleTexImage3D(uint32_t immediate_data_size,
+   // Set as failed for now, but if it successed, this will be set to not failed.
+   texture_state_.tex_image_failed = true;
+   GLenum target = static_cast<GLenum>(c.target);
++  TextureRef* texture_ref =
++      texture_manager()->GetTextureInfoForTarget(&state_, target);
++  ScopedDepthStencilReattacher reattacher(this, texture_ref);
+   GLint level = static_cast<GLint>(c.level);
+   GLenum internal_format = static_cast<GLenum>(c.internalformat);
+   GLsizei width = static_cast<GLsizei>(c.width);
+@@ -13359,6 +13519,7 @@ void GLES2DecoderImpl::DoCopyTexImage2D(
+         GL_INVALID_OPERATION, func_name, "unknown texture for target");
+     return;
+   }
++  ScopedDepthStencilReattacher reattacher(this, texture_ref);
+   Texture* texture = texture_ref->texture();
+   if (texture->IsImmutable()) {
+     LOCAL_SET_GL_ERROR(
+@@ -15975,6 +16136,7 @@ void GLES2DecoderImpl::TexStorageImpl(GLenum target,
+                        "unknown texture for target");
+     return;
+   }
++  ScopedDepthStencilReattacher reattacher(this, texture_ref);
+   Texture* texture = texture_ref->texture();
+   // The glTexStorage entry points require width, height, and depth to be
+   // at least 1, but the other texture entry points (those which use
+diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
+index 3cc48e4a79576f93bfa22b8f8d1b74e5ba5baae7..a97d53efada5690f7aa505ac6860a2c7f9bd2ca2 100644
+--- a/gpu/config/gpu_driver_bug_list.json
++++ b/gpu/config/gpu_driver_bug_list.json
+@@ -3854,6 +3854,19 @@
+       "features": [
+         "validate_max_per_stage_uniform_blocks_at_compile_time"
+       ]
++    },
++    {
++      "id": 480,
++      "cr_bugs": [520656244],
++      "description": "Reattach FBO depth/stencil attachments when they are reallocated on Qualcomm GPUs",
++      "gl_vendor": "Qualcomm.*",
++      "driver_version": {
++        "op": "<",
++        "value": "878"
++      },
++      "features": [
++        "reattach_fbo_depth_stencil_on_reallocation"
++      ]
+     }
+   ]
+ }
+diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
+index 6d43d0b1937cd1eeaa044fb9949a52ba2e07d446..0ed6e500c2d2a5362ad46f4c3ed368ac56b88883 100644
+--- a/gpu/config/gpu_workaround_list.txt
++++ b/gpu/config/gpu_workaround_list.txt
+@@ -109,6 +109,7 @@ no_downscaled_overlay_promotion
+ pack_parameters_workaround_with_pack_buffer
+ prefer_draw_to_copy
+ r8_egl_images_broken
++reattach_fbo_depth_stencil_on_reallocation
+ rely_on_implicit_sync_for_swap_buffers
+ remove_dynamic_indexing_of_swizzled_vector
+ round_down_uniform_bind_buffer_range_size

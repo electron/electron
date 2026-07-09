@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Buchanan <kenrb@chromium.org>
+Date: Thu, 11 Jun 2026 14:53:26 -0700
+Subject: [M148] [WebAuthn] Guard for AuthenticatorCommonImpl destruction
+ during cleanup
+
+Original change's description:
+> [WebAuthn] Guard for AuthenticatorCommonImpl destruction during cleanup
+>
+> There might be rare cases where the WebContents can be destroyed
+> synchronously during clearing of a WebAuthn request's state, as a
+> consequence of it dismissing UI.
+>
+> This change adds a guard to the `Cleanup()` method that ensures
+> continued liveness of the `AuthenticatorCommonImpl` during
+> request cleanup.
+>
+> Fixed: 521495992
+> Change-Id: I2f93b31b37e007302a7d9fb7ca3e5b8c76fb2b3b
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7921707
+> Commit-Queue: Ken Buchanan <kenrb@chromium.org>
+> Reviewed-by: Martin Kreichgauer <martinkr@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1644920}
+
+(cherry picked from commit 43731ada00e8a3a9bcd8fc8eafe91d0940914cab)
+
+Bug: 522600829,521495992
+Change-Id: I2f93b31b37e007302a7d9fb7ca3e5b8c76fb2b3b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7921702
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4327}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/content/browser/webauth/authenticator_common_impl.cc b/content/browser/webauth/authenticator_common_impl.cc
+index f7dc703ba4f526832c490e96d341ee6489dada6e..0b9a200705c8b330df8756f95941e5d162d09c3e 100644
+--- a/content/browser/webauth/authenticator_common_impl.cc
++++ b/content/browser/webauth/authenticator_common_impl.cc
+@@ -3113,7 +3113,15 @@ void AuthenticatorCommonImpl::CompleteReportRequest(
+ 
+ void AuthenticatorCommonImpl::Cleanup() {
+   CHECK(!req_state_ || req_state_->request_key.value() == next_request_key_);
++  // `req_state_.reset()` destroys the embedder request delegate which can
++  // synchronously close UI which (via activation observers) may destroy the
++  // hosting WebContents and therefore `this`. See https://crbug.com/521495992.
++  base::WeakPtr<AuthenticatorCommonImpl> weak_this = weak_factory_.GetWeakPtr();
+   req_state_.reset();
++  if (!weak_this) {
++    return;
++  }
++
+   next_request_key_++;
+   CHECK(next_request_key_);  // crash on overflow. Only 2^64 WebAuthn requests
+                              // per instance of this object are supported.

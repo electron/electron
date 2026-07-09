@@ -201,6 +201,7 @@ class ProxyingURLLoaderFactory
   ProxyingURLLoaderFactory(
       WebRequestAPI* web_request_api,
       const HandlersMap& intercepted_handlers,
+      base::WeakPtr<ElectronBrowserContext> browser_context,
       int render_process_id,
       int frame_routing_id,
       uint64_t* request_id_generator,
@@ -264,6 +265,8 @@ class ProxyingURLLoaderFactory
   //
   // In this way we can avoid using code from api namespace in this file.
   const raw_ref<const HandlersMap> intercepted_handlers_;
+
+  const base::WeakPtr<ElectronBrowserContext> browser_context_;
 
   const int render_process_id_;
   const int frame_routing_id_;

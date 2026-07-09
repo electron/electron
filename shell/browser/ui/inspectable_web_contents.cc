@@ -48,6 +48,7 @@
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
@@ -732,10 +733,13 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
             std::move(pending_remote)));
   } else if (const auto* const protocol_handler =
                  protocol_registry->FindRegistered(gurl.scheme())) {
+    auto* browser_context = static_cast<ElectronBrowserContext*>(
+        GetDevToolsWebContents()->GetBrowserContext());
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                             protocol_handler->second)));
+                                             protocol_handler->second,
+                                             browser_context->GetWeakPtr())));
   } else {
     auto* partition = GetDevToolsWebContents()
                           ->GetBrowserContext()

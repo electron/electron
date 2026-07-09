@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <bajones@chromium.org>
+Date: Tue, 16 Jun 2026 14:30:01 -0700
+Subject: [M149] Clear PIXEL_PACK_BUFFER in CopyTextureCHROMIUM
+
+Original change's description:
+> Clear PIXEL_PACK_BUFFER in CopyTextureCHROMIUM
+>
+> One Android path in CopyTextureCHROMIUM uses a glReadPixels call
+> to a client buffer, but doesn't clear the PIXEL_PACK_BUFFER
+> before doing the read. If the page sets the PIXEL_PACK_BUFFER
+> in a WebGL 2 context prior to this method being called it could
+> interfere with the data being read, leading the client buffer to
+> potentially contain uninitialized memory.
+>
+> This change ensures the PIXEL_PACK_BUFFER is always set to 0
+> before performing the client read.
+>
+> Fixed: 522840723
+> Change-Id: I95c3ad176a2759b490b0b36555c186489fe9153d
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7927868
+> Commit-Queue: Brandon Jones <bajones@chromium.org>
+> Reviewed-by: Kenneth Russell <kbr@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1646051}
+
+(cherry picked from commit 92b7a3ad4869e940d79019996d0751f739e1a842)
+
+Bug: 523531700,522840723
+Change-Id: I95c3ad176a2759b490b0b36555c186489fe9153d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7944906
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Brandon Jones <bajones@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7827@{#3297}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_copy_texture_chromium.cc b/gpu/command_buffer/service/gles2_cmd_copy_texture_chromium.cc
+index 98f476de9e4d423b6ec86f2a69638e43bd0fb423..ebf7848c2416cb790291c51936a647a963ed9963 100644
+--- a/gpu/command_buffer/service/gles2_cmd_copy_texture_chromium.cc
++++ b/gpu/command_buffer/service/gles2_cmd_copy_texture_chromium.cc
+@@ -696,6 +696,7 @@ void PrepareUnpackBuffer(GLuint buffer[2],
+     // GLCopyTextureCHROMIUMES3Test.FormatCombinations in gl_tests. This is seen
+     // on Nexus 5 but not Nexus 4. Read pixels to client memory, then upload to
+     // pixel unpack buffer with glBufferData.
++    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+     auto pixels = base::HeapArray<uint8_t>::Uninit(width * height * 4);
+     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
+     auto data = base::HeapArray<float>::Uninit(width * height * 3);

@@ -1,0 +1,256 @@
+From fddc432906379a9aae3a0e18e3bb97069a1b150c Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sam@electronjs.org>
+Date: Fri, 26 Jun 2026 03:09:56 +0000
+Subject: [PATCH] siso: do not let background subtree upload poison the cached subtree
+
+subtree.init spawns a background fullUpload when the subtree root digest
+is already present in CAS. That goroutine wrote st.err on failure, so a
+transient BatchUpdateBlobs DeadlineExceeded poisoned the cached *subtree
+for the rest of the build: every later treeInput caller for that dir got
+the error, treeInputs() silently dropped the entry, and the action was
+shipped with an empty -isystem dir (e.g. third_party/libc++/src/include),
+surfacing on the remote worker as
+"fatal error: '<algorithm>' file not found".
+
+Make fullUpload return its error instead of writing st.err. The
+synchronous path (root not in CAS) still assigns it inside once.Do; the
+background path now logs and ignores it, since st.d is valid and the root
+is in CAS. If a leaf really has aged out of CAS the executor will return
+FailedPrecondition naming the missing blob, which is the truthful error.
+
+Also adds reapitest.Fake.UnaryInterceptor so tests can inject CAS RPC
+failures, plus a regression test that fails on the previous code.
+diff --git a/siso/build/tree_input.go b/siso/build/tree_input.go
+index 0f6051f..6541934 100644
+--- a/siso/build/tree_input.go
++++ b/siso/build/tree_input.go
+@@ -174,35 +174,37 @@ func (st *subtree) init(ctx context.Context, b *Builder, dir string, files []str
+ 		rootDS.Set(data)
+ 		ds.Delete(st.d)
+ 		missings, err := b.reapiclient.Missing(ctx, []digest.Digest{st.d})
+-		fullUpload := func(ctx context.Context) {
++		fullUpload := func(ctx context.Context) error {
+ 			started := time.Now()
+ 			// upload non-root digest first
+ 			n, err := b.reapiclient.UploadAll(ctx, ds)
+ 			if err != nil {
+ 				clog.Warningf(ctx, "failed to upload subtree data %s: %v", dir, err)
+-				st.mu.Lock()
+-				defer st.mu.Unlock()
+-				st.err = err
+-				return
++				return err
+ 			}
+ 			// upload root digest last.
+ 			m, err := b.reapiclient.UploadAll(ctx, rootDS)
+ 			clog.Infof(ctx, "upload subtree data %s %d+%d in %s: %v", dir, n, m, time.Since(started), err)
+-			st.mu.Lock()
+-			defer st.mu.Unlock()
+-			st.err = err
++			return err
+ 		}
+ 		if err == nil && len(missings) == 0 {
+ 			clog.Infof(ctx, "subtree data is ready %s %s", dir, st.d)
+ 			go func() {
+ 				// make sure all data are uploaded in background.
++				// This is best-effort: the root digest is already
++				// in CAS so st.d is usable regardless. A failure
++				// here MUST NOT poison st.err -- later treeInput
++				// callers would otherwise drop this TreeEntry and
++				// ship remote actions with an incomplete input root.
+ 				ctx := context.WithoutCancel(ctx)
+-				fullUpload(ctx)
++				if err := fullUpload(ctx); err != nil {
++					clog.Warningf(ctx, "background subtree upload %s failed (root already in CAS, ignoring): %v", dir, err)
++				}
+ 			}()
+ 			return
+ 		}
+ 		clog.Infof(ctx, "need to upload subtree data %s (missings=%d): %v", dir, len(missings), err)
+-		fullUpload(ctx)
++		st.err = fullUpload(ctx)
+ 	})
+ 	st.mu.Lock()
+ 	defer st.mu.Unlock()
+diff --git a/siso/build/tree_input_test.go b/siso/build/tree_input_test.go
+new file mode 100644
+index 0000000..2cc9728
+--- /dev/null
++++ b/siso/build/tree_input_test.go
+@@ -0,0 +1,146 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++package build
++
++import (
++	"context"
++	"os"
++	"path/filepath"
++	"strings"
++	"sync/atomic"
++	"testing"
++	"time"
++
++	rpb "github.com/bazelbuild/remote-apis/build/bazel/remote/execution/v2"
++	"google.golang.org/grpc"
++	"google.golang.org/grpc/codes"
++	"google.golang.org/grpc/status"
++
++	"go.chromium.org/build/siso/hashfs"
++	"go.chromium.org/build/siso/reapi/reapitest"
++)
++
++// Regression test for the "poisoned subtree" bug: when subtree.init finds the
++// root digest already present in CAS it returns nil and spawns a *background*
++// best-effort re-upload of the subtree's leaf blobs. If that background upload
++// fails (e.g. a transient DeadlineExceeded under load), it must NOT cause
++// later treeInput callers to receive an error -- the digest is valid, so
++// dropping the TreeEntry would ship a remote action with an incomplete input
++// root (observed as `fatal error: '<algorithm>' file not found` on the remote
++// worker).
++func TestTreeInput_BackgroundUploadFailureNotPoisoning(t *testing.T) {
++	ctx := context.Background()
++	dir, err := filepath.EvalSymlinks(t.TempDir())
++	if err != nil {
++		t.Fatal(err)
++	}
++	hdrDir := filepath.Join(dir, "third_party/libc++/src/include")
++	if err := os.MkdirAll(hdrDir, 0o755); err != nil {
++		t.Fatal(err)
++	}
++	if err := os.WriteFile(filepath.Join(hdrDir, "algorithm"), []byte("// algorithm\n"), 0o644); err != nil {
++		t.Fatal(err)
++	}
++	if err := os.MkdirAll(filepath.Join(dir, "out/siso"), 0o755); err != nil {
++		t.Fatal(err)
++	}
++
++	// Interceptor:
++	//   - The first FindMissingBlobs after `armed` is the subtree.init root
++	//     check. Return "nothing missing" so init takes the
++	//     subtree-data-is-ready / background-upload branch.
++	//   - Any BatchUpdateBlobs after `armed` (i.e. the background goroutine's
++	//     leaf upload) fails with DeadlineExceeded.
++	var armed atomic.Bool
++	var rootCheckLied atomic.Bool
++	batchUpdateFailed := make(chan struct{}, 16)
++	fake := &reapitest.Fake{
++		UnaryInterceptor: func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
++			if !armed.Load() {
++				return handler(ctx, req)
++			}
++			switch {
++			case strings.HasSuffix(info.FullMethod, "/FindMissingBlobs") && rootCheckLied.CompareAndSwap(false, true):
++				return &rpb.FindMissingBlobsResponse{}, nil
++			case strings.HasSuffix(info.FullMethod, "/BatchUpdateBlobs"):
++				select {
++				case batchUpdateFailed <- struct{}{}:
++				default:
++				}
++				return nil, status.Error(codes.DeadlineExceeded, "injected: simulated CAS overload")
++			}
++			return handler(ctx, req)
++		},
++	}
++	rc := reapitest.New(ctx, t, fake)
++
++	hashFS, err := hashfs.New(ctx, hashfs.Option{})
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { hashFS.Close(ctx) })
++
++	const treeDir = "third_party/libc++/src/include"
++	b := &Builder{
++		path:        NewPath(dir, "out/siso"),
++		hashFS:      hashFS,
++		reapiclient: rc,
++		graph: fakeGraph{inputDeps: map[string][]string{
++			treeDir + ":headers": {treeDir + "/algorithm"},
++		}},
++	}
++
++	armed.Store(true)
++
++	// 1) First call: interceptor lies "root in CAS" -> init returns nil and
++	//    spawns the background fullUpload goroutine.
++	te1, err := b.treeInput(ctx, treeDir, ":headers", nil)
++	if err != nil {
++		t.Fatalf("first treeInput (background-upload path): %v", err)
++	}
++	if te1.Digest.SizeBytes == 0 {
++		t.Fatalf("first treeInput: zero digest %v", te1.Digest)
++	}
++
++	// Wait for the background goroutine to hit BatchUpdateBlobs and fail.
++	select {
++	case <-batchUpdateFailed:
++	case <-time.After(10 * time.Second):
++		t.Fatal("background upload never reached BatchUpdateBlobs")
++	}
++	waitForSubtreeSettled(t, b, treeDir)
++
++	// 2) Next caller -- another step sharing the same -isystem dir. It MUST
++	//    still get the (valid) tree entry. With the bug, st.init returns the
++	//    poisoned background error and treeInputs() silently drops the entry,
++	//    so the action ships with an empty libc++ input root.
++	te2, err := b.treeInput(ctx, treeDir, ":headers", nil)
++	if err != nil {
++		t.Fatalf("treeInput after background upload failure: got error %v; background best-effort upload must not poison the cached subtree (root digest %v was reported present in CAS)", err, te1.Digest)
++	}
++	if te2.Digest != te1.Digest {
++		t.Fatalf("treeInput after background upload failure: digest=%v want %v", te2.Digest, te1.Digest)
++	}
++}
++
++// waitForSubtreeSettled waits until either the cached subtree's err is set
++// (bug present) or a short grace period elapses (fix applied -- err is never
++// set). Either way the subsequent treeInput call observes the steady state.
++func waitForSubtreeSettled(t *testing.T, b *Builder, dir string) {
++	t.Helper()
++	deadline := time.Now().Add(2 * time.Second)
++	for time.Now().Before(deadline) {
++		if v, ok := b.trees.Load(dir); ok {
++			st := v.(*subtree)
++			st.mu.Lock()
++			e := st.err
++			st.mu.Unlock()
++			if e != nil {
++				return
++			}
++		}
++		time.Sleep(2 * time.Millisecond)
++	}
++}
+diff --git a/siso/reapi/reapitest/reapitest.go b/siso/reapi/reapitest/reapitest.go
+index 79acc39..ad65db8 100644
+--- a/siso/reapi/reapitest/reapitest.go
++++ b/siso/reapi/reapitest/reapitest.go
+@@ -38,6 +38,12 @@ type Fake struct {
+ 	CAS *blobstore.ContentAddressableStorage
+ 
+ 	ExecuteFunc func(*Fake, *rpb.Action) (*rpb.ActionResult, error)
++
++	// UnaryInterceptor, if set, is installed on the fake gRPC server.
++	// Tests can use it to inject failures or delays into specific RPCs
++	// (e.g. fail BatchUpdateBlobs to simulate a CAS DeadlineExceeded)
++	// by inspecting info.FullMethod.
++	UnaryInterceptor grpc.UnaryServerInterceptor
+ }
+ 
+ // Execute runs command on fake reapi.
+@@ -77,7 +83,11 @@ func newServer(t *testing.T, fake *Fake) *server {
+ 	t.Logf("fake reapi at %s", s.addr)
+ 
+ 	dir := t.TempDir()
+-	serv := grpc.NewServer()
++	var sopts []grpc.ServerOption
++	if fake.UnaryInterceptor != nil {
++		sopts = append(sopts, grpc.UnaryInterceptor(fake.UnaryInterceptor))
++	}
++	serv := grpc.NewServer(sopts...)
+ 	capabilities.Register(serv)
+ 
+ 	casDir := filepath.Join(dir, "cas")

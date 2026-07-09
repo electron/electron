@@ -1,0 +1,588 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 8 Jun 2026 16:36:00 -0700
+Subject: [M148] Harden MojoAudioDecoderService and various implementations
+
+Original change's description:
+> Harden MojoAudioDecoderService and various implementations
+>
+> Specifically this change ensures proper sequencing of MojoAudioDecoder
+> calls via BadMessages. Underlying implementations have CHECK() added
+> where appropriate to further enforce this.
+>
+> R=tguilbert
+>
+> Fixed: 517533654
+> Change-Id: Id3ffc0b0541e4f152a4b4bcd5d8c676ad769839e
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7883468
+> Reviewed-by: Thomas Guilbert <tguilbert@chromium.org>
+> Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1640608}
+
+(cherry picked from commit dc9eaa50e8fcb4a2b5151243d55d8d2bd1245773)
+
+Bug: 519857435,517533654
+Change-Id: Id3ffc0b0541e4f152a4b4bcd5d8c676ad769839e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7901520
+Reviewed-by: Thomas Guilbert <tguilbert@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4281}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/media/filters/android/media_codec_audio_decoder.cc b/media/filters/android/media_codec_audio_decoder.cc
+index f3d7d613d25942ed495f8d75fdf7ebd0ffe84490..118b1cb2c2407d72e145cc14c658095f3932c4c6 100644
+--- a/media/filters/android/media_codec_audio_decoder.cc
++++ b/media/filters/android/media_codec_audio_decoder.cc
+@@ -71,6 +71,7 @@ void MediaCodecAudioDecoder::Initialize(const AudioDecoderConfig& config,
+   // decode.
+   DCHECK(input_queue_.empty());
+   ClearInputQueue(DecoderStatus::Codes::kAborted);
++  codec_loop_.reset();
+ 
+   if (state_ == STATE_ERROR) {
+     DVLOG(1) << "Decoder is in error state.";
+@@ -197,6 +198,8 @@ bool MediaCodecAudioDecoder::CreateMediaCodecLoop() {
+ 
+ void MediaCodecAudioDecoder::Decode(scoped_refptr<DecoderBuffer> buffer,
+                                     DecodeCB decode_cb) {
++  CHECK(codec_loop_);
++
+   DecodeCB bound_decode_cb =
+       base::BindPostTaskToCurrentDefault(std::move(decode_cb));
+ 
+@@ -222,8 +225,6 @@ void MediaCodecAudioDecoder::Decode(scoped_refptr<DecoderBuffer> buffer,
+     return;
+   }
+ 
+-  DCHECK(codec_loop_);
+-
+   DVLOG(3) << __func__ << " " << buffer->AsHumanReadableString();
+ 
+   DCHECK_EQ(state_, STATE_READY) << " unexpected state " << AsString(state_);
+@@ -240,6 +241,7 @@ void MediaCodecAudioDecoder::Decode(scoped_refptr<DecoderBuffer> buffer,
+ 
+ void MediaCodecAudioDecoder::Reset(base::OnceClosure closure) {
+   DVLOG(2) << __func__;
++  CHECK(codec_loop_);
+ 
+   ClearInputQueue(DecoderStatus::Codes::kAborted);
+ 
+diff --git a/media/filters/mac/audio_toolbox_audio_decoder.cc b/media/filters/mac/audio_toolbox_audio_decoder.cc
+index bd5158fcf502e7006ab6b5dae96bb2d44e9f8d93..c2a70c7c4bcf85005346efbed8b6b99579fefbdf 100644
+--- a/media/filters/mac/audio_toolbox_audio_decoder.cc
++++ b/media/filters/mac/audio_toolbox_audio_decoder.cc
+@@ -131,14 +131,18 @@ void AudioToolboxAudioDecoder::Initialize(const AudioDecoderConfig& config,
+   decoder_.reset();
+ 
+   output_cb_ = output_cb;
++  const bool success = CreateDecoder(config);
++  if (!success) {
++    decoder_.reset();
++  }
+   base::BindPostTaskToCurrentDefault(std::move(init_cb))
+-      .Run(CreateDecoder(config)
+-               ? DecoderStatus::Codes::kOk
+-               : DecoderStatus::Codes::kFailedToCreateDecoder);
++      .Run(success ? DecoderStatus::Codes::kOk
++                   : DecoderStatus::Codes::kFailedToCreateDecoder);
+ }
+ 
+ void AudioToolboxAudioDecoder::Decode(scoped_refptr<DecoderBuffer> buffer,
+                                       DecodeCB decode_cb) {
++  CHECK(decoder_);
+   DecodeCB decode_cb_bound =
+       base::BindPostTaskToCurrentDefault(std::move(decode_cb));
+ 
+@@ -226,6 +230,7 @@ void AudioToolboxAudioDecoder::Decode(scoped_refptr<DecoderBuffer> buffer,
+ }
+ 
+ void AudioToolboxAudioDecoder::Reset(base::OnceClosure reset_cb) {
++  CHECK(decoder_);
+   // This could fail, but ResetCB has no error reporting mechanism, so just let
+   // a subsequent decode call fail.
+   const auto result = AudioConverterReset(decoder_.get());
+diff --git a/media/filters/win/media_foundation_audio_decoder.cc b/media/filters/win/media_foundation_audio_decoder.cc
+index 2c6aa10950fa9bcf7720ced8148cae3bd237005c..b6fd1d89d40a790859587b4320928d6f143934ab 100644
+--- a/media/filters/win/media_foundation_audio_decoder.cc
++++ b/media/filters/win/media_foundation_audio_decoder.cc
+@@ -199,8 +199,10 @@ void MediaFoundationAudioDecoder::Initialize(const AudioDecoderConfig& config,
+   config_ = config;
+   output_cb_ = output_cb;
+ 
++  decoder_.Reset();
+   HRESULT hr = CreateDecoder();
+   if (FAILED(hr)) {
++    decoder_.Reset();
+     if (config_.profile() == AudioCodecProfile::kXHE_AAC) {
+       base::UmaHistogramSparse(
+           "Media.MediaFoundationAudioDecoder.CreateDecoderFailure.XheAac", hr);
+@@ -215,6 +217,7 @@ void MediaFoundationAudioDecoder::Initialize(const AudioDecoderConfig& config,
+ 
+ void MediaFoundationAudioDecoder::Decode(scoped_refptr<DecoderBuffer> buffer,
+                                          DecodeCB decode_cb) {
++  CHECK(decoder_);
+   DecodeCB decode_cb_bound =
+       base::BindPostTaskToCurrentDefault(std::move(decode_cb));
+ 
+@@ -319,6 +322,7 @@ void MediaFoundationAudioDecoder::Decode(scoped_refptr<DecoderBuffer> buffer,
+ }
+ 
+ void MediaFoundationAudioDecoder::Reset(base::OnceClosure reset_cb) {
++  CHECK(decoder_);
+   has_reset_ = true;
+   auto hr = decoder_->ProcessMessage(MFT_MESSAGE_COMMAND_FLUSH, 0);
+   if (hr != S_OK) {
+diff --git a/media/mojo/services/BUILD.gn b/media/mojo/services/BUILD.gn
+index b1e661fc46fdaa59ffdea6c1d5dd233829d8adaa..28d464cfcb9825ac287daf1b79d3d794116641cf 100644
+--- a/media/mojo/services/BUILD.gn
++++ b/media/mojo/services/BUILD.gn
+@@ -262,6 +262,7 @@ source_set("unit_tests") {
+     "media_metrics_provider_unittest.cc",
+     "media_service_unittest.cc",
+     "mojo_audio_input_stream_unittest.cc",
++    "mojo_audio_decoder_service_unittest.cc",
+     "mojo_demuxer_stream_adapter_unittest.cc",
+     "mojo_video_encode_accelerator_service_unittest.cc",
+     "mojo_video_encoder_metrics_provider_service_unittest.cc",
+diff --git a/media/mojo/services/mojo_audio_decoder_service.cc b/media/mojo/services/mojo_audio_decoder_service.cc
+index 4894ce392ee9399cb68d709451e4356b3232dabe..3424a3c95768492ac6ee3ae17d616c08c10eac24 100644
+--- a/media/mojo/services/mojo_audio_decoder_service.cc
++++ b/media/mojo/services/mojo_audio_decoder_service.cc
+@@ -23,6 +23,11 @@
+ 
+ namespace media {
+ 
++static constexpr std::string_view kNotInitializedMessage =
++    "Decoder can't be used after Initialize() fails.";
++static constexpr std::string_view kDataSourceNotSetMessage =
++    "SetDataSource() must be called before Decode() or Reset().";
++
+ MojoAudioDecoderService::MojoAudioDecoderService(
+     MojoMediaClient* mojo_media_client,
+     MojoCdmServiceContext* mojo_cdm_service_context,
+@@ -53,6 +58,11 @@ void MojoAudioDecoderService::Construct(
+     mojo::PendingAssociatedRemote<mojom::AudioDecoderClient> client,
+     mojo::PendingRemote<mojom::MediaLog> media_log) {
+   DVLOG(1) << __func__;
++  if (client_) {
++    mojo::ReportBadMessage("Construct() may only be called once.");
++    return;
++  }
++
+   client_.Bind(std::move(client));
+ 
+   auto mojo_media_log =
+@@ -68,8 +78,9 @@ void MojoAudioDecoderService::Initialize(
+   DVLOG(1) << __func__ << " " << config.AsHumanReadableString();
+ 
+   if (!decoder_) {
+-    OnInitialized(std::move(callback),
+-                  DecoderStatus::Codes::kFailedToCreateDecoder);
++    std::move(callback).Run(DecoderStatus::Codes::kFailed, false,
++                            AudioDecoderType::kUnknown);
++    mojo::ReportBadMessage(kNotInitializedMessage);
+     return;
+   }
+ 
+@@ -113,6 +124,10 @@ void MojoAudioDecoderService::Initialize(
+ void MojoAudioDecoderService::SetDataSource(
+     mojo::ScopedDataPipeConsumerHandle receive_pipe) {
+   DVLOG(1) << __func__;
++  if (mojo_decoder_buffer_reader_) {
++    mojo::ReportBadMessage("SetDataSource() may only be called once.");
++    return;
++  }
+ 
+   mojo_decoder_buffer_reader_ =
+       std::make_unique<MojoDecoderBufferReader>(std::move(receive_pipe));
+@@ -121,6 +136,18 @@ void MojoAudioDecoderService::SetDataSource(
+ void MojoAudioDecoderService::Decode(mojom::DecoderBufferPtr buffer,
+                                      DecodeCallback callback) {
+   DVLOG(3) << __func__;
++  if (!decoder_) {
++    std::move(callback).Run(DecoderStatus::Codes::kFailed);
++    mojo::ReportBadMessage(kNotInitializedMessage);
++    return;
++  }
++
++  if (!mojo_decoder_buffer_reader_) {
++    std::move(callback).Run(DecoderStatus::Codes::kFailed);
++    mojo::ReportBadMessage(kDataSourceNotSetMessage);
++    return;
++  }
++
+   mojo_decoder_buffer_reader_->ReadDecoderBuffer(
+       std::move(buffer),
+       base::BindOnce(&MojoAudioDecoderService::OnReadDone, weak_this_,
+@@ -129,6 +156,17 @@ void MojoAudioDecoderService::Decode(mojom::DecoderBufferPtr buffer,
+ 
+ void MojoAudioDecoderService::Reset(ResetCallback callback) {
+   DVLOG(1) << __func__;
++  if (!decoder_) {
++    std::move(callback).Run();
++    mojo::ReportBadMessage(kNotInitializedMessage);
++    return;
++  }
++
++  if (!mojo_decoder_buffer_reader_) {
++    std::move(callback).Run();
++    mojo::ReportBadMessage(kDataSourceNotSetMessage);
++    return;
++  }
+ 
+   // Reset the reader so that pending decodes will be dispatches first.
+   mojo_decoder_buffer_reader_->Flush(
+@@ -143,9 +181,9 @@ void MojoAudioDecoderService::OnInitialized(InitializeCallback callback,
+                                 status.code());
+   if (!status.is_ok()) {
+     // Do not call decoder_->NeedsBitstreamConversion() if init failed.
+-    std::move(callback).Run(
+-        std::move(status), false,
+-        decoder_ ? decoder_->GetDecoderType() : AudioDecoderType::kUnknown);
++    std::move(callback).Run(std::move(status), false,
++                            decoder_->GetDecoderType());
++    decoder_.reset();
+     return;
+   }
+ 
+@@ -201,8 +239,6 @@ void MojoAudioDecoderService::OnResetDone(ResetCallback callback) {
+ void MojoAudioDecoderService::OnAudioBufferReady(
+     scoped_refptr<AudioBuffer> audio_buffer) {
+   DVLOG(1) << __func__;
+-
+-  // TODO(timav): Use DataPipe.
+   client_->OnBufferDecoded(mojom::AudioBuffer::From(*audio_buffer));
+ }
+ 
+diff --git a/media/mojo/services/mojo_audio_decoder_service_unittest.cc b/media/mojo/services/mojo_audio_decoder_service_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..16ed8c720c2cfb373b7ed85d7aa52d329a8737c2
+--- /dev/null
++++ b/media/mojo/services/mojo_audio_decoder_service_unittest.cc
+@@ -0,0 +1,327 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "media/mojo/services/mojo_audio_decoder_service.h"
++
++#include <memory>
++#include <utility>
++#include <vector>
++
++#include "base/functional/bind.h"
++#include "base/functional/callback_helpers.h"
++#include "base/memory/raw_ptr.h"
++#include "base/run_loop.h"
++#include "base/test/gmock_callback_support.h"
++#include "base/test/task_environment.h"
++#include "media/base/audio_decoder_config.h"
++#include "media/base/channel_layout.h"
++#include "media/base/media_log.h"
++#include "media/base/media_util.h"
++#include "media/base/mock_filters.h"
++#include "media/mojo/mojom/audio_decoder.mojom.h"
++#include "media/mojo/services/mojo_cdm_service_context.h"
++#include "media/mojo/services/mojo_media_client.h"
++#include "mojo/public/cpp/bindings/associated_receiver.h"
++#include "mojo/public/cpp/bindings/associated_remote.h"
++#include "mojo/public/cpp/bindings/pending_associated_remote.h"
++#include "mojo/public/cpp/bindings/receiver.h"
++#include "mojo/public/cpp/bindings/remote.h"
++#include "mojo/public/cpp/bindings/self_owned_associated_receiver.h"
++#include "mojo/public/cpp/system/data_pipe.h"
++#include "mojo/public/cpp/system/functions.h"
++#include "testing/gmock/include/gmock/gmock.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++using base::test::RunOnceCallback;
++using testing::_;
++using testing::StrictMock;
++
++namespace media {
++
++namespace {
++
++class MockAudioDecoderClient : public mojom::AudioDecoderClient {
++ public:
++  MockAudioDecoderClient() = default;
++  ~MockAudioDecoderClient() override = default;
++
++  MOCK_METHOD(void, OnBufferDecoded, (mojom::AudioBufferPtr), (override));
++  MOCK_METHOD(void, OnWaiting, (WaitingReason), (override));
++};
++
++class TestMockAudioDecoder : public MockAudioDecoder {
++ public:
++  TestMockAudioDecoder() = default;
++  ~TestMockAudioDecoder() override = default;
++
++  base::WeakPtr<TestMockAudioDecoder> GetWeakPtr() {
++    return weak_factory_.GetWeakPtr();
++  }
++
++ private:
++  base::WeakPtrFactory<TestMockAudioDecoder> weak_factory_{this};
++};
++
++using CreateAudioDecoderCB =
++    base::RepeatingCallback<std::unique_ptr<AudioDecoder>()>;
++
++class TestMojoMediaClient : public MojoMediaClient {
++ public:
++  explicit TestMojoMediaClient(CreateAudioDecoderCB create_audio_decoder_cb)
++      : create_audio_decoder_cb_(std::move(create_audio_decoder_cb)) {}
++
++  std::unique_ptr<AudioDecoder> CreateAudioDecoder(
++      scoped_refptr<base::SequencedTaskRunner> task_runner,
++      std::unique_ptr<MediaLog> media_log) override {
++    return create_audio_decoder_cb_.Run();
++  }
++
++ private:
++  CreateAudioDecoderCB create_audio_decoder_cb_;
++};
++
++}  // namespace
++
++class MojoAudioDecoderServiceTest : public testing::Test {
++ public:
++  MojoAudioDecoderServiceTest()
++      : mojo_media_client_(base::BindRepeating(
++            &MojoAudioDecoderServiceTest::CreateAudioDecoder,
++            base::Unretained(this))) {
++    mojo::SetDefaultProcessErrorHandler(base::BindRepeating(
++        &MojoAudioDecoderServiceTest::OnProcessError, base::Unretained(this)));
++
++    service_ = std::make_unique<MojoAudioDecoderService>(
++        &mojo_media_client_, &mojo_cdm_service_context_,
++        task_environment_.GetMainThreadTaskRunner());
++
++    receiver_ = std::make_unique<mojo::Receiver<mojom::AudioDecoder>>(
++        service_.get(), remote_service_.BindNewPipeAndPassReceiver());
++  }
++
++  ~MojoAudioDecoderServiceTest() override {
++    mojo::SetDefaultProcessErrorHandler(base::NullCallback());
++    if (client_receiver_) {
++      client_receiver_->Close();
++    }
++  }
++
++  std::unique_ptr<AudioDecoder> CreateAudioDecoder() {
++    if (should_create_decoder_fail_) {
++      return nullptr;
++    }
++    auto decoder = std::make_unique<StrictMock<TestMockAudioDecoder>>();
++    mock_audio_decoder_ = decoder->GetWeakPtr();
++    return decoder;
++  }
++
++  void OnProcessError(const std::string& error) {
++    bad_message_called_ = true;
++    if (bad_message_quit_closure_) {
++      std::move(bad_message_quit_closure_).Run();
++    }
++  }
++
++  void ConstructService() {
++    mojo::PendingAssociatedRemote<mojom::AudioDecoderClient> client_remote;
++    client_receiver_ = mojo::MakeSelfOwnedAssociatedReceiver(
++        std::make_unique<MockAudioDecoderClient>(),
++        client_remote.InitWithNewEndpointAndPassReceiver());
++
++    mojo::PendingRemote<mojom::MediaLog> media_log_remote;
++    std::ignore = media_log_remote.InitWithNewPipeAndPassReceiver();
++
++    remote_service_->Construct(std::move(client_remote),
++                               std::move(media_log_remote));
++    remote_service_.FlushForTesting();
++  }
++
++  bool WaitForBadMessage() {
++    if (bad_message_called_) {
++      return true;
++    }
++    base::RunLoop run_loop;
++    bad_message_quit_closure_ = run_loop.QuitClosure();
++    run_loop.Run();
++    return bad_message_called_;
++  }
++
++  void InitializeService(const AudioDecoderConfig& config,
++                         bool expected_success = true) {
++    base::RunLoop run_loop;
++    remote_service_->Initialize(
++        config, std::nullopt,
++        base::BindOnce(
++            [](base::OnceClosure quit_closure, bool expected_success,
++               const DecoderStatus& status, bool needs_bitstream_conversion,
++               AudioDecoderType decoder_type) {
++              EXPECT_EQ(status.is_ok(), expected_success);
++              std::move(quit_closure).Run();
++            },
++            run_loop.QuitClosure(), expected_success));
++    run_loop.Run();
++  }
++
++  void SetDataSource() {
++    mojo::ScopedDataPipeProducerHandle producer;
++    mojo::ScopedDataPipeConsumerHandle consumer;
++    ASSERT_EQ(mojo::CreateDataPipe(nullptr, producer, consumer),
++              MOJO_RESULT_OK);
++    remote_service_->SetDataSource(std::move(consumer));
++    remote_service_.FlushForTesting();
++  }
++
++  AudioDecoderConfig GetTestConfig() {
++    return AudioDecoderConfig(AudioCodec::kVorbis, kSampleFormatPlanarF32,
++                              ChannelLayoutConfig::Stereo(), 44100,
++                              std::vector<uint8_t>(),
++                              EncryptionScheme::kUnencrypted);
++  }
++
++ protected:
++  base::test::TaskEnvironment task_environment_;
++  MojoCdmServiceContext mojo_cdm_service_context_;
++  TestMojoMediaClient mojo_media_client_;
++  std::unique_ptr<MojoAudioDecoderService> service_;
++  std::unique_ptr<mojo::Receiver<mojom::AudioDecoder>> receiver_;
++  mojo::Remote<mojom::AudioDecoder> remote_service_;
++
++  base::WeakPtr<TestMockAudioDecoder> mock_audio_decoder_;
++  bool should_create_decoder_fail_ = false;
++
++  mojo::SelfOwnedAssociatedReceiverRef<mojom::AudioDecoderClient>
++      client_receiver_;
++
++  bool bad_message_called_ = false;
++  base::OnceClosure bad_message_quit_closure_;
++};
++
++TEST_F(MojoAudioDecoderServiceTest, Construct_Success) {
++  ConstructService();
++  EXPECT_FALSE(bad_message_called_);
++  EXPECT_NE(mock_audio_decoder_, nullptr);
++}
++
++TEST_F(MojoAudioDecoderServiceTest, Construct_Duplicate) {
++  ConstructService();
++  EXPECT_FALSE(bad_message_called_);
++
++  // Call Construct again manually to avoid overwriting client_receiver_
++  // and causing a leak.
++  mojo::PendingAssociatedRemote<mojom::AudioDecoderClient> client_remote2;
++  auto client_receiver2 = mojo::MakeSelfOwnedAssociatedReceiver(
++      std::make_unique<MockAudioDecoderClient>(),
++      client_remote2.InitWithNewEndpointAndPassReceiver());
++
++  mojo::PendingRemote<mojom::MediaLog> media_log_remote2;
++  std::ignore = media_log_remote2.InitWithNewPipeAndPassReceiver();
++
++  remote_service_->Construct(std::move(client_remote2),
++                             std::move(media_log_remote2));
++  remote_service_.FlushForTesting();
++
++  ASSERT_TRUE(WaitForBadMessage());
++
++  if (client_receiver2) {
++    client_receiver2->Close();
++  }
++}
++
++TEST_F(MojoAudioDecoderServiceTest, Initialize_BeforeConstruct) {
++  // Call Initialize before Construct.
++  InitializeService(GetTestConfig(), /*expected_success=*/false);
++  ASSERT_TRUE(WaitForBadMessage());
++}
++
++TEST_F(MojoAudioDecoderServiceTest, SetDataSource_Duplicate) {
++  ConstructService();
++  SetDataSource();
++  EXPECT_FALSE(bad_message_called_);
++
++  // Call SetDataSource again.
++  SetDataSource();
++  ASSERT_TRUE(WaitForBadMessage());
++}
++
++TEST_F(MojoAudioDecoderServiceTest, Initialize_Success) {
++  ConstructService();
++  EXPECT_CALL(*mock_audio_decoder_, Initialize_(_, _, _, _, _))
++      .WillOnce(RunOnceCallback<2>(DecoderStatus::Codes::kOk));
++  InitializeService(GetTestConfig(), /*expected_success=*/true);
++  EXPECT_FALSE(bad_message_called_);
++}
++
++TEST_F(MojoAudioDecoderServiceTest, Initialize_Failure_ResetsDecoder) {
++  ConstructService();
++  EXPECT_CALL(*mock_audio_decoder_, Initialize_(_, _, _, _, _))
++      .WillOnce(
++          RunOnceCallback<2>(DecoderStatus::Codes::kFailedToCreateDecoder));
++  InitializeService(GetTestConfig(), /*expected_success=*/false);
++  EXPECT_FALSE(bad_message_called_);
++
++  // Subsequent Initialize should fail with bad message because decoder_ was
++  // reset.
++  InitializeService(GetTestConfig(), /*expected_success=*/false);
++  ASSERT_TRUE(WaitForBadMessage());
++}
++
++TEST_F(MojoAudioDecoderServiceTest, Decode_BeforeConstruct) {
++  base::RunLoop run_loop;
++  remote_service_->Decode(
++      mojom::DecoderBuffer::NewEos(mojom::EosDecoderBuffer::New()),
++      base::BindOnce(
++          [](base::OnceClosure quit_closure, const DecoderStatus& status) {
++            EXPECT_FALSE(status.is_ok());
++            std::move(quit_closure).Run();
++          },
++          run_loop.QuitClosure()));
++  run_loop.Run();
++  ASSERT_TRUE(WaitForBadMessage());
++}
++
++TEST_F(MojoAudioDecoderServiceTest, Reset_BeforeConstruct) {
++  base::RunLoop run_loop;
++  remote_service_->Reset(base::BindOnce(
++      [](base::OnceClosure quit_closure) { std::move(quit_closure).Run(); },
++      run_loop.QuitClosure()));
++  run_loop.Run();
++  ASSERT_TRUE(WaitForBadMessage());
++}
++
++TEST_F(MojoAudioDecoderServiceTest, Decode_BeforeSetDataSource) {
++  ConstructService();
++  EXPECT_CALL(*mock_audio_decoder_, Initialize_(_, _, _, _, _))
++      .WillOnce(RunOnceCallback<2>(DecoderStatus::Codes::kOk));
++  InitializeService(GetTestConfig(), /*expected_success=*/true);
++  EXPECT_FALSE(bad_message_called_);
++
++  base::RunLoop run_loop;
++  remote_service_->Decode(
++      mojom::DecoderBuffer::NewEos(mojom::EosDecoderBuffer::New()),
++      base::BindOnce(
++          [](base::OnceClosure quit_closure, const DecoderStatus& status) {
++            EXPECT_FALSE(status.is_ok());
++            std::move(quit_closure).Run();
++          },
++          run_loop.QuitClosure()));
++  run_loop.Run();
++  ASSERT_TRUE(WaitForBadMessage());
++}
++
++TEST_F(MojoAudioDecoderServiceTest, Reset_BeforeSetDataSource) {
++  ConstructService();
++  EXPECT_CALL(*mock_audio_decoder_, Initialize_(_, _, _, _, _))
++      .WillOnce(RunOnceCallback<2>(DecoderStatus::Codes::kOk));
++  InitializeService(GetTestConfig(), /*expected_success=*/true);
++  EXPECT_FALSE(bad_message_called_);
++
++  base::RunLoop run_loop;
++  remote_service_->Reset(base::BindOnce(
++      [](base::OnceClosure quit_closure) { std::move(quit_closure).Run(); },
++      run_loop.QuitClosure()));
++  run_loop.Run();
++  ASSERT_TRUE(WaitForBadMessage());
++}
++
++}  // namespace media

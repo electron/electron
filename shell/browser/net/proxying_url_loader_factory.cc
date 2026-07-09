@@ -735,6 +735,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     WebRequestAPI* web_request_api,
     const HandlersMap& intercepted_handlers,
+    base::WeakPtr<ElectronBrowserContext> browser_context,
     int render_process_id,
     int frame_routing_id,
     uint64_t* request_id_generator,
@@ -747,6 +748,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
     : web_request_api_(web_request_api),
       intercepted_handlers_(intercepted_handlers),
+      browser_context_(std::move(browser_context)),
       render_process_id_(render_process_id),
       frame_routing_id_(frame_routing_id),
       request_id_generator_(request_id_generator),
@@ -805,11 +807,11 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
 
       // <scheme, <type, handler>>
       it->second.second.Run(
-          request,
-          base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
-                         std::move(loader), request_id, options, request,
-                         std::move(client), traffic_annotation,
-                         std::move(loader_remote), it->second.first));
+          request, base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
+                                  std::move(loader), request_id, options,
+                                  request, std::move(client),
+                                  traffic_annotation, std::move(loader_remote),
+                                  it->second.first, browser_context_));
       return;
     }
   }

@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hirokazu Honda <hiroh@chromium.org>
+Date: Thu, 28 May 2026 19:20:16 -0700
+Subject: [M148] media/gpu: Skip storing non-decodable H.265 RASL frames in DPB
+
+Original change's description:
+> media/gpu: Skip storing non-decodable H.265 RASL frames in DPB
+>
+> Avoid storing non-decodable RASL (Random Access Skipped Leading)
+> frames in the Decoded Picture Buffer (DPB). Storing them can pollute
+> the DPB and keep uninitialized GPU surfaces active.
+>
+> Bug: 515419790
+> Test: ideo_decode_accelerator_tests
+> Change-Id: Ic41db1b8c813495595bbd3b16cd6de9408abf4bf
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7874239
+> Reviewed-by: Andres Calderon Jaramillo <andrescj@chromium.org>
+> Commit-Queue: Hirokazu Honda <hiroh@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1637091}
+
+(cherry picked from commit e1a2b97103a2bb314882776699c2db64248ff8a0)
+
+Bug: 517405378,515419790
+Change-Id: Ic41db1b8c813495595bbd3b16cd6de9408abf4bf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7881466
+Commit-Queue: Hirokazu Honda <hiroh@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#3942}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/media/gpu/h265_decoder.cc b/media/gpu/h265_decoder.cc
+index 85b0c5be73ff742f46178e7eb8b6a7fcb4adb538..be82e115da3b003590cb7a5135ace4ef8d04358f 100644
+--- a/media/gpu/h265_decoder.cc
++++ b/media/gpu/h265_decoder.cc
+@@ -1169,6 +1169,15 @@ bool H265Decoder::PerformDpbOperations(const H265SPS* sps) {
+     return false;
+   }
+ 
++  // Non-decodable RASL frames are not stored in the DPB because the picture
++  // is not actually decoded so it doesn't make sense to store it.
++  if (curr_pic_->no_rasl_output_flag_ &&
++      (curr_pic_->nal_unit_type_ == H265NALU::RASL_N ||
++       curr_pic_->nal_unit_type_ == H265NALU::RASL_R)) {
++    DVLOG(1) << "Skipping storing non-decodable RASL frame in DPB";
++    return true;
++  }
++
+   // Put the current pic in the DPB.
+   dpb_.StorePicture(curr_pic_, H265Picture::kShortTermFoll);
+   return true;
