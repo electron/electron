@@ -450,7 +450,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [docs-only, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, build-siso, windows-x64, windows-x86, windows-arm64]
+    needs: [docs-only, checkout-macos, checkout-linux, checkout-windows, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, build-siso, windows-x64, windows-x86, windows-arm64]
     if: always() && github.repository == 'electron/electron'
     steps:
     - name: Fail if any needed job failed or was cancelled
