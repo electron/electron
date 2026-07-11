@@ -1801,7 +1801,7 @@ index e84a67cee87b9f77d894fbcc83f1f21df5973960..49fdfb15d85e7548164eb586fc7305bb
  
    if (is_mac) {
 diff --git a/third_party/blink/renderer/core/editing/build.gni b/third_party/blink/renderer/core/editing/build.gni
-index 7da6843e7dd13d2969767f7ba2f57fbf4d22008c..9e3bc642c8e247d004c87931248de664ec47ec3b 100644
+index 86489b32165a8b58bc37f0c5dd713f1e95636c97..7cbcea08301dc1aa93d35ddd6ff2b6f3e46e3b16 100644
 --- a/third_party/blink/renderer/core/editing/build.gni
 +++ b/third_party/blink/renderer/core/editing/build.gni
 @@ -376,10 +376,14 @@ blink_core_sources_editing = [

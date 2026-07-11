@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index c97a981aeec0465c6c80f30d3e3d8fe1a814c410..165afa5a8421e57613983dbefc28e819de7e5264 100644
+index d6b2ed9495545199a0a6af98b22ecbd228b8b277..30d7c5a9e67170150221f08a89d46685d2c58fff 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2665,6 +2665,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2663,6 +2663,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  

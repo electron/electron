@@ -34,7 +34,7 @@ index 8674f11f01723b1cb02030c28fc3c314d52b5dc1..b9d59dff85e8d485ef01d7273526af91
    // |routing_id| must not be IPC::mojom::kRoutingIdNone.
    // If this object outlives |delegate|, DetachDelegate() must be called when
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 05c71dd66446513b165c568b766b528cb4ea79a4..10d2b9ae566aed7c7fda0c0600b418dfca1ed1a8 100644
+index 3b05810c56c848423c09da30d24da61b32a3189e..53b5e17a4ef7f847aea6f1e4ba3b0f4cdbc55e0e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -741,7 +741,7 @@ void RenderWidgetHostViewAura::HideImpl() {
