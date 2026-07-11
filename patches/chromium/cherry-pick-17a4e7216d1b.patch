@@ -1,0 +1,206 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrea Orru <andreaorru@chromium.org>
+Date: Mon, 6 Jul 2026 18:20:55 -0700
+Subject: [M148] [Extensions] Fix UAF in AppWindow::SetNativeWindowFullscreen
+
+Original change's description:
+> [Extensions] Fix UAF in AppWindow::SetNativeWindowFullscreen
+>
+> If the window is destroyed during a nested message loop spun by the
+> platform fullscreen transition (e.g. on macOS), the AppWindow instance
+> is deleted, resulting in a UAF when execution returns to
+> SetNativeWindowFullscreen() and calls RestoreAlwaysOnTop().
+>
+> This change adds a dedicated weak pointer factory to AppWindow and
+> checks liveness before executing any logic following the platform
+> SetFullscreen call. We avoid reusing image_loader_ptr_factory_ as it
+> gets explicitly invalidated during favicon downloading.
+>
+> Fixed: 516948486
+> Change-Id: I371d778366eaaa9dac5e565b6ec00ee666833e03
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7902487
+> Reviewed-by: Toni Barzic <tbarzic@chromium.org>
+> Commit-Queue: Andrea Orru <andreaorru@chromium.org>
+> Reviewed-by: Solomon Kinard <solomonkinard@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1647781}
+
+(cherry picked from commit c73802e7eca02587d75cc2db56a1fc851ba5d76f)
+
+Bug: 524890377,516948486
+Change-Id: I371d778366eaaa9dac5e565b6ec00ee666833e03
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7997178
+Commit-Queue: Andrea Orru <andreaorru@chromium.org>
+Reviewed-by: Andrea Orru <andreaorru@chromium.org>
+Reviewed-by: Marc Treib <treib@chromium.org>
+Reviewed-by: Finnur Thorarinsson <finnur@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4445}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/chrome/browser/apps/platform_apps/DEPS b/chrome/browser/apps/platform_apps/DEPS
+new file mode 100644
+index 0000000000000000000000000000000000000000..47ca473c62749a8ab1127bce421311ad14ff50a6
+--- /dev/null
++++ b/chrome/browser/apps/platform_apps/DEPS
+@@ -0,0 +1,5 @@
++specific_include_rules = {
++  "app_window_browsertest.cc": [
++    "+extensions/components/native_app_window/native_app_window_views.h",
++  ],
++}
+diff --git a/chrome/browser/apps/platform_apps/app_browsertest_util.cc b/chrome/browser/apps/platform_apps/app_browsertest_util.cc
+index f471b64fe4b990da200d0c50295b0c59f872bed0..4334c6f967e0954443c3e352eabbc0577b53aa50 100644
+--- a/chrome/browser/apps/platform_apps/app_browsertest_util.cc
++++ b/chrome/browser/apps/platform_apps/app_browsertest_util.cc
+@@ -284,6 +284,11 @@ void PlatformAppBrowserTest::CallAdjustBoundsToBeVisibleOnScreenForAppWindow(
+                                           bounds);
+ }
+ 
++void PlatformAppBrowserTest::SetNativeWindowFullscreenForTesting(
++    AppWindow* window) {
++  window->SetNativeWindowFullscreen();
++}
++
+ AppWindow* PlatformAppBrowserTest::CreateTestAppWindow(
+     const std::string& window_create_options) {
+   ExtensionTestMessageListener launched_listener("launched",
+diff --git a/chrome/browser/apps/platform_apps/app_browsertest_util.h b/chrome/browser/apps/platform_apps/app_browsertest_util.h
+index 5cff6b85c4af0616fb0299d9ca4e7382175b3c1f..b732814a0322f0e888b3a4bddcc1dda3b3f2c314 100644
+--- a/chrome/browser/apps/platform_apps/app_browsertest_util.h
++++ b/chrome/browser/apps/platform_apps/app_browsertest_util.h
+@@ -123,6 +123,9 @@ class PlatformAppBrowserTest : public MixinBasedExtensionApiTest {
+       const gfx::Size& minimum_size,
+       gfx::Rect* bounds);
+ 
++  // Call SetNativeWindowFullscreen of |window|.
++  void SetNativeWindowFullscreenForTesting(AppWindow* window);
++
+   // Load a simple test app and create a window. The window must be closed by
+   // the caller in order to terminate the test - use CloseAppWindow().
+   // |window_create_options| are the options that will be passed to
+diff --git a/chrome/browser/apps/platform_apps/app_window_browsertest.cc b/chrome/browser/apps/platform_apps/app_window_browsertest.cc
+index 1393919680bb2780854733f2fb66b64799b15df3..8adb63c0447c0fe19f351b8515275c96993a8598 100644
+--- a/chrome/browser/apps/platform_apps/app_window_browsertest.cc
++++ b/chrome/browser/apps/platform_apps/app_window_browsertest.cc
+@@ -2,6 +2,8 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "extensions/browser/app_window/app_window.h"
++
+ #include "base/memory/raw_ptr.h"
+ #include "base/run_loop.h"
+ #include "build/build_config.h"
+@@ -9,15 +11,18 @@
+ #include "chrome/browser/apps/app_service/app_service_proxy_factory.h"
+ #include "chrome/browser/apps/platform_apps/app_browsertest_util.h"
+ #include "chrome/browser/profiles/profile.h"
++#include "chrome/browser/ui/apps/chrome_app_window_client.h"
+ #include "chrome/browser/ui/browser.h"
+ #include "components/services/app_service/public/cpp/app_launch_params.h"
+ #include "components/services/app_service/public/cpp/app_launch_util.h"
+ #include "content/public/test/browser_test.h"
+ #include "content/public/test/test_utils.h"
+ #include "extensions/browser/app_window/app_window_geometry_cache.h"
++#include "extensions/browser/app_window/native_app_window.h"
+ #include "extensions/common/constants.h"
+ #include "extensions/common/extension.h"
+ #include "extensions/common/extension_id.h"
++#include "extensions/components/native_app_window/native_app_window_views.h"
+ #include "extensions/test/extension_test_message_listener.h"
+ #include "extensions/test/result_catcher.h"
+ #include "ui/display/display_switches.h"
+@@ -273,3 +278,63 @@ IN_PROC_BROWSER_TEST_F(AppWindowAPITest, TestVisibleOnAllWorkspaces) {
+       RunAppWindowAPITestAndWaitForRoundTrip("testVisibleOnAllWorkspaces"))
+       << message_;
+ }
++
++namespace {
++
++class ClosingOnFullscreenTransitionWindow
++    : public native_app_window::NativeAppWindowViews {
++ public:
++  ClosingOnFullscreenTransitionWindow() = default;
++  ~ClosingOnFullscreenTransitionWindow() override = default;
++
++  void SetFullscreen(int fullscreen_types) override {
++    // Simulate window closure during fullscreen transition (e.g. as can happen
++    // on macOS when spinning a nested run loop).
++    widget()->CloseNow();
++  }
++};
++
++class TestAppWindowClient : public ChromeAppWindowClient {
++ public:
++  TestAppWindowClient() = default;
++  ~TestAppWindowClient() override = default;
++
++  std::unique_ptr<extensions::NativeAppWindow> CreateNativeAppWindow(
++      extensions::AppWindow* window,
++      extensions::AppWindow::CreateParams* params) override {
++    auto native_window =
++        std::make_unique<ClosingOnFullscreenTransitionWindow>();
++    native_window->Init(window, *params);
++    return native_window;
++  }
++};
++
++}  // namespace
++
++// Regression test for crbug.com/516948486.
++IN_PROC_BROWSER_TEST_F(AppWindowAPITest, UafInSetNativeWindowFullscreen) {
++  const extensions::Extension* extension = LoadExtension(
++      test_data_dir_.AppendASCII("platform_apps").AppendASCII("window_api"));
++  ASSERT_TRUE(extension);
++
++  TestAppWindowClient test_client;
++  // `AppWindowClient::Set()` has a DCHECK verifying that we don't overwrite a
++  // non-null client with another non-null client. We must clear the existing
++  // client (set during browser startup) before setting our test client.
++  extensions::AppWindowClient::Set(nullptr);
++  extensions::AppWindowClient::Set(&test_client);
++
++  extensions::AppWindow* window = CreateAppWindowFromParams(
++      browser()->profile(), extension, extensions::AppWindow::CreateParams());
++  ASSERT_TRUE(window);
++
++  // Trigger fullscreen transition. In our placeholder `SetFullscreen()`,
++  // `OnNativeClose()` will be called, deleting `window`. Without the weak
++  // pointer check in `SetNativeWindowFullscreen()`, this call would result in a
++  // Use-After-Free when `RestoreAlwaysOnTop()` is reached.
++  SetNativeWindowFullscreenForTesting(window);
++
++  // Clear our test client before restoring the production client.
++  extensions::AppWindowClient::Set(nullptr);
++  extensions::AppWindowClient::Set(ChromeAppWindowClient::GetInstance());
++}
+diff --git a/extensions/browser/app_window/app_window.cc b/extensions/browser/app_window/app_window.cc
+index e2115471c65e1c3914877945ca4a9616cabfaba9..ba9b728f28300c74f4e551ea7c1de38e21f34603 100644
+--- a/extensions/browser/app_window/app_window.cc
++++ b/extensions/browser/app_window/app_window.cc
+@@ -855,7 +855,14 @@ void AppWindow::DidDownloadFavicon(
+ }
+ 
+ void AppWindow::SetNativeWindowFullscreen() {
++  // `SetFullscreen()` can trigger window closure (e.g. on macOS when spinning a
++  // nested run loop), destroying `this`. Use a WeakPtr to avoid Use-After-Free
++  // when calling RestoreAlwaysOnTop(). See crbug.com/516948486.
++  base::WeakPtr<AppWindow> weak_this = weak_ptr_factory_.GetWeakPtr();
+   native_app_window_->SetFullscreen(fullscreen_types_);
++  if (!weak_this) {
++    return;
++  }
+ 
+   RestoreAlwaysOnTop();
+ }
+diff --git a/extensions/browser/app_window/app_window.h b/extensions/browser/app_window/app_window.h
+index bf59ce45114e99296f84693e329c7e238a351ab8..78276db2dba87f1e803d6d9b6c2b6529eddc51b0 100644
+--- a/extensions/browser/app_window/app_window.h
++++ b/extensions/browser/app_window/app_window.h
+@@ -601,6 +601,7 @@ class AppWindow : public content::WebContentsDelegate,
+   base::OnceClosure on_update_draggable_regions_callback_for_testing_;
+ 
+   base::WeakPtrFactory<AppWindow> image_loader_ptr_factory_{this};
++  base::WeakPtrFactory<AppWindow> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace extensions
