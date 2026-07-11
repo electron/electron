@@ -1,0 +1,301 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Wed, 8 Jul 2026 09:29:46 -0700
+Subject: [M144] FLEDGE: fix lifetime reportWin's deprecatedUrl handler.
+
+Original change's description:
+> FLEDGE: fix lifetime reportWin's deprecatedUrl handler.
+>
+> Other lazy fillers seem fine on read-through, but just in case:
+> 1) Reuse unused logger param from the config filler --- it gets
+>    it from ContextRecycler, and using the passed in one would
+>    cause trouble.
+> 2) Call the checkpoint after resetting the bindings and lazy fillers.
+>
+> Bug: 527406824
+> Change-Id: I570a1267be21d9d398c4e2102e21a6bb923345c2
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8006698
+> Reviewed-by: mmenke <mmenke@chromium.org>
+> Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1653488}
+
+(cherry picked from commit 5a68bc6c97d97312ffa0f9ac04e2288f1cdadd13)
+(change in merge: don't need tags for v8::External in this version)
+
+Bug: 532492736,527406824
+Change-Id: I570a1267be21d9d398c4e2102e21a6bb923345c2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8063845
+Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+Reviewed-by: mmenke <mmenke@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7559@{#5071}
+Cr-Branched-From: 223dfbac1c7542a06b422390d954afe5b560b607-refs/heads/main@{#1552494}
+
+diff --git a/content/services/auction_worklet/bidder_worklet.cc b/content/services/auction_worklet/bidder_worklet.cc
+index 38f7021578dbf089a77af91600786cb2a5fef2f2..745cb87427d140b967b1e258ffa03d348e7ede22 100644
+--- a/content/services/auction_worklet/bidder_worklet.cc
++++ b/content/services/auction_worklet/bidder_worklet.cc
+@@ -1128,6 +1128,12 @@ void BidderWorklet::V8State::ReportWin(
+   AuctionV8Helper::FullIsolateScope isolate_scope(v8_helper_.get());
+   v8::Isolate* isolate = v8_helper_->isolate();
+ 
++  // Needs to outlast ContextRecyclerScope. See crbug.com/527406824.
++  DeprecatedUrlLazyFiller deprecated_render_url(
++      v8_helper_.get(), &browser_signal_render_url,
++      "browserSignals.renderUrl is deprecated."
++      " Please use browserSignals.renderURL instead.");
++
+   // Short lived context, to avoid leaking data at global scope between either
+   // repeated calls to this worklet, or to calls to any other worklet.
+   ContextRecycler context_recycler(v8_helper_.get());
+@@ -1180,10 +1186,6 @@ void BidderWorklet::V8State::ReportWin(
+ 
+   context_recycler.AddReportWinBrowserSignalsLazyFiller();
+ 
+-  DeprecatedUrlLazyFiller deprecated_render_url(
+-      v8_helper_.get(), &v8_logger, &browser_signal_render_url,
+-      "browserSignals.renderUrl is deprecated."
+-      " Please use browserSignals.renderURL instead.");
+   base::TimeDelta reporting_timeout =
+       browser_signal_reporting_timeout.has_value()
+           ? *browser_signal_reporting_timeout
+@@ -1242,6 +1244,8 @@ void BidderWorklet::V8State::ReportWin(
+   }
+   args.push_back(direct_from_seller_signals);
+ 
++  deprecated_render_url.SetLogger(&v8_logger);
++
+   // An empty return value indicates an exception was thrown. Any other return
+   // value indicates no exception.
+   v8_helper_->MaybeTriggerInstrumentationBreakpoint(
+@@ -1257,6 +1261,7 @@ void BidderWorklet::V8State::ReportWin(
+       v8_helper_->RunScript(context, unbound_worklet_script, debug_id_.get(),
+                             total_timeout.get(), errors_out);
+   if (result != AuctionV8Helper::Result::kSuccess) {
++    deprecated_render_url.SetLogger(nullptr);
+     TRACE_EVENT_END("fledge", perfetto::Track(trace_id));
+     PostReportWinCallbackToUserThread(
+         std::move(callback), /*report_url=*/std::nullopt,
+@@ -1297,6 +1302,7 @@ void BidderWorklet::V8State::ReportWin(
+   base::UmaHistogramTimes("Ads.InterestGroup.Auction.ReportWinTime", elapsed);
+ 
+   if (result != AuctionV8Helper::Result::kSuccess) {
++    deprecated_render_url.SetLogger(nullptr);
+     // Keep Private Aggregation API requests since `reportWin()` might use it to
+     // detect script timeout or failures.
+     PostReportWinCallbackToUserThread(
+@@ -1403,6 +1409,7 @@ void BidderWorklet::V8State::ReportWin(
+   }
+   // This covers both the case where a report URL was provided, and the case one
+   // was not.
++  deprecated_render_url.SetLogger(nullptr);
+   PostReportWinCallbackToUserThread(
+       std::move(callback), context_recycler.report_bindings()->report_url(),
+       context_recycler.register_ad_beacon_bindings()->TakeAdBeaconMap(),
+diff --git a/content/services/auction_worklet/bidder_worklet_unittest.cc b/content/services/auction_worklet/bidder_worklet_unittest.cc
+index 34d84d0bffdd8ef8a33a5ef061f78a5e23b4a463..b8005122f33e7727b8f4282a0fd0977d0771c093 100644
+--- a/content/services/auction_worklet/bidder_worklet_unittest.cc
++++ b/content/services/auction_worklet/bidder_worklet_unittest.cc
+@@ -8755,6 +8755,33 @@ TEST_F(BidderWorkletTest, ReportWinBrowserSignalRenderUrlDeprecationWarning) {
+   channel->ExpectNoMoreConsoleEvents();
+ }
+ 
++TEST_F(BidderWorkletTest, ReportWinBrowserSignalRenderUrlDeprecationAsync) {
++  // From https://crbug.com/527406824
++  const char kBody[] = R"(
++      globalThis.savedBrowserSignals = browserSignals;
++      Promise.resolve().then(() => {
++        void globalThis.savedBrowserSignals.renderUrl;
++      });
++
++      // Force reportWin timeout. V8's normal auto microtask checkpoint is
++      // skipped while execution is terminating; AuctionWorklet's
++      // ContextRecyclerScope then performs a later ResetForReuse() microtask
++      // checkpoint after stack unwind.
++      while (true) {}
++  )";
++  AddJavascriptResponse(&url_loader_factory_, interest_group_bidding_url_,
++                        CreateReportWinScript(kBody));
++  RunReportWinExpectingResult(
++      /*expected_report_url=*/std::nullopt,
++      /*expected_ad_beacon_map=*/{},
++      /*expected_ad_macro_map=*/{},
++      /*expected_pa_requests=*/{},
++      /*expected_pmt_request_data=*/nullptr,
++      /*expected_reporting_latency_timeout=*/true,
++      /*expected_errors=*/
++      {"https://url.test/ execution of `reportWin` timed out."});
++}
++
+ // Check that accessing `renderURL` of browserSignals does not display a
+ // warning.
+ //
+diff --git a/content/services/auction_worklet/context_recycler.cc b/content/services/auction_worklet/context_recycler.cc
+index 57d4275c9cc779d291962a90d4049ec9eabceea9..8d1e0ada7894e2b26ba112754d649d436117657c 100644
+--- a/content/services/auction_worklet/context_recycler.cc
++++ b/content/services/auction_worklet/context_recycler.cc
+@@ -190,12 +190,6 @@ v8::Local<v8::Context> ContextRecycler::GetContext() {
+ }
+ 
+ void ContextRecycler::ResetForReuse() {
+-  // Make sure that microtasks get flushed as they would not on timeout.
+-  {
+-    AuctionV8Helper::TimeLimitScope time_scope(v8_helper_->GetTimeLimit());
+-    v8_helper_->isolate()->PerformMicrotaskCheckpoint();
+-  }
+-
+   for (Bindings* bindings : bindings_list_) {
+     bindings->Reset();
+   }
+@@ -214,6 +208,12 @@ void ContextRecycler::ResetForReuse() {
+   for (const auto& auction_config_lazy_filler : auction_config_lazy_fillers_) {
+     auction_config_lazy_filler->Reset();
+   }
++
++  // Make sure that microtasks get flushed as they would not on timeout.
++  {
++    AuctionV8Helper::TimeLimitScope time_scope(v8_helper_->GetTimeLimit());
++    v8_helper_->isolate()->PerformMicrotaskCheckpoint();
++  }
+ }
+ 
+ ContextRecyclerScope::ContextRecyclerScope(ContextRecycler& context_recycler)
+diff --git a/content/services/auction_worklet/deprecated_url_lazy_filler.cc b/content/services/auction_worklet/deprecated_url_lazy_filler.cc
+index ee281f6b7cd0334c89ddf1535e81cf5e333df8b3..d3ddda07a5c8371a5080210e255567da53da00fc 100644
+--- a/content/services/auction_worklet/deprecated_url_lazy_filler.cc
++++ b/content/services/auction_worklet/deprecated_url_lazy_filler.cc
+@@ -6,6 +6,7 @@
+ 
+ #include <string_view>
+ 
++#include "base/check.h"
+ #include "base/memory/raw_ptr.h"
+ #include "content/services/auction_worklet/auction_v8_helper.h"
+ #include "content/services/auction_worklet/auction_v8_logger.h"
+@@ -17,15 +18,16 @@
+ namespace auction_worklet {
+ 
+ DeprecatedUrlLazyFiller::DeprecatedUrlLazyFiller(AuctionV8Helper* v8_helper,
+-                                                 AuctionV8Logger* v8_logger,
+                                                  const GURL* url,
+                                                  const char* warning)
+     : LazyFiller(v8_helper),
+-      v8_logger_(v8_logger),
++      v8_logger_(nullptr),
+       url_(url),
+       warning_(warning) {}
+ 
+-DeprecatedUrlLazyFiller::~DeprecatedUrlLazyFiller() = default;
++DeprecatedUrlLazyFiller::~DeprecatedUrlLazyFiller() {
++  DCHECK_EQ(v8_logger_, nullptr);
++}
+ 
+ bool DeprecatedUrlLazyFiller::AddDeprecatedUrlGetter(
+     v8::Local<v8::Object> object,
+@@ -39,7 +41,9 @@ void DeprecatedUrlLazyFiller::HandleDeprecatedUrl(
+     v8::Local<v8::Name> name,
+     const v8::PropertyCallbackInfo<v8::Value>& info) {
+   DeprecatedUrlLazyFiller* self = GetSelf<DeprecatedUrlLazyFiller>(info);
+-  self->v8_logger_->LogConsoleWarning(self->warning_.get());
++  if (self->v8_logger_) {
++    self->v8_logger_->LogConsoleWarning(self->warning_.get());
++  }
+ 
+   AuctionV8Helper* v8_helper = self->v8_helper();
+   v8::Isolate* isolate = v8_helper->isolate();
+diff --git a/content/services/auction_worklet/deprecated_url_lazy_filler.h b/content/services/auction_worklet/deprecated_url_lazy_filler.h
+index a3541ef3802dc1ca2349194d9b676d131216482c..f252209e2f387c5b5c40575d62fc8077c378d094 100644
+--- a/content/services/auction_worklet/deprecated_url_lazy_filler.h
++++ b/content/services/auction_worklet/deprecated_url_lazy_filler.h
+@@ -31,12 +31,14 @@ class DeprecatedUrlLazyFiller : public LazyFiller {
+   // DeprecatedUrlLazyFiller. Additionally, `url` and `warning` must not be
+   // modified until the DeprecatedUrlLazyFiller is destroyed.
+   DeprecatedUrlLazyFiller(AuctionV8Helper* v8_helper,
+-                          AuctionV8Logger* v8_logger,
+                           const GURL* url,
+                           const char* warning);
+ 
+   ~DeprecatedUrlLazyFiller() override;
+ 
++  // v8_logger must outlast `this` (or should be cleared).
++  void SetLogger(AuctionV8Logger* v8_logger) { v8_logger_ = v8_logger; }
++
+   // Adds a getter to `object` that, when the `name` field is first accessed,
+   // will display a warning and return the URL `this` was created with, as a
+   // string. Subsequent accesses will not display a warning. Does nothing if
+@@ -51,7 +53,7 @@ class DeprecatedUrlLazyFiller : public LazyFiller {
+       v8::Local<v8::Name> name,
+       const v8::PropertyCallbackInfo<v8::Value>& info);
+ 
+-  const raw_ptr<AuctionV8Logger> v8_logger_;
++  raw_ptr<AuctionV8Logger> v8_logger_;
+   const raw_ptr<const GURL> url_;
+   const raw_ptr<const char> warning_;
+ };
+diff --git a/content/services/auction_worklet/seller_worklet.cc b/content/services/auction_worklet/seller_worklet.cc
+index 4f17ec9fafe127763453b165edb4d996b4599d97..6e868c142fb4e117bd5565ed4f37bf0df6aaf01a 100644
+--- a/content/services/auction_worklet/seller_worklet.cc
++++ b/content/services/auction_worklet/seller_worklet.cc
+@@ -171,7 +171,6 @@ bool IsValidBid(double bid) {
+ // (With many fields filled in on-demand by an AuctionConfigLazyFiller).
+ bool AppendAuctionConfig(
+     AuctionV8Helper* v8_helper,
+-    AuctionV8Logger* v8_logger,
+     v8::Local<v8::Context> context,
+     const url::Origin& seller,
+     base::optional_ref<const GURL> decision_logic_url,
+@@ -269,7 +268,7 @@ bool AppendAuctionConfig(
+     for (size_t pos = 0; pos < component_auctions.size(); ++pos) {
+       const auto& component_auction = component_auctions[pos];
+       if (!AppendAuctionConfig(
+-              v8_helper, v8_logger, context, component_auction.seller,
++              v8_helper, context, component_auction.seller,
+               component_auction.decision_logic_url,
+               component_auction.trusted_scoring_signals_url,
+               experiment_group_id,
+@@ -1147,8 +1146,6 @@ void SellerWorklet::V8State::ScoreAd(
+   v8::Local<v8::Context> context = context_recycler_scope.GetContext();
+   TRACE_EVENT_END("fledge", perfetto::Track(trace_id));  // "get_seller_context"
+ 
+-  AuctionV8Logger v8_logger(v8_helper_.get(), context);
+-
+   v8::LocalVector<v8::Value> args(isolate);
+   if (!v8_helper_->AppendJsonValue(context, ad_metadata_json, &args)) {
+     PostScoreAdCallbackToUserThreadOnError(
+@@ -1167,10 +1164,10 @@ void SellerWorklet::V8State::ScoreAd(
+   context_recycler->EnsureAuctionConfigLazyFillers(
+       1 + auction_ad_config_non_shared_params.component_auctions.size());
+   if (!AppendAuctionConfig(
+-          v8_helper_.get(), &v8_logger, context,
+-          url::Origin::Create(decision_logic_url_), decision_logic_url_,
+-          trusted_scoring_signals_url_, experiment_group_id_,
+-          send_creative_scanning_metadata_, auction_ad_config_non_shared_params,
++          v8_helper_.get(), context, url::Origin::Create(decision_logic_url_),
++          decision_logic_url_, trusted_scoring_signals_url_,
++          experiment_group_id_, send_creative_scanning_metadata_,
++          auction_ad_config_non_shared_params,
+           context_recycler->auction_config_lazy_fillers(),
+           /*auction_config_lazy_filler_pos=*/0, &args)) {
+     PostScoreAdCallbackToUserThreadOnError(
+@@ -1759,7 +1756,6 @@ void SellerWorklet::V8State::ReportResult(
+ 
+   ContextRecyclerScope context_recycler_scope(context_recycler);
+   v8::Local<v8::Context> context = context_recycler_scope.GetContext();
+-  AuctionV8Logger v8_logger(v8_helper_.get(), context);
+ 
+   // We want this before RunScript, both because it's meant to be visible
+   // to globals, and because we don't want to overwrite existing globals.
+@@ -1770,10 +1766,10 @@ void SellerWorklet::V8State::ReportResult(
+   context_recycler.EnsureAuctionConfigLazyFillers(
+       1 + auction_ad_config_non_shared_params.component_auctions.size());
+   if (!AppendAuctionConfig(
+-          v8_helper_.get(), &v8_logger, context,
+-          url::Origin::Create(decision_logic_url_), decision_logic_url_,
+-          trusted_scoring_signals_url_, experiment_group_id_,
+-          send_creative_scanning_metadata_, auction_ad_config_non_shared_params,
++          v8_helper_.get(), context, url::Origin::Create(decision_logic_url_),
++          decision_logic_url_, trusted_scoring_signals_url_,
++          experiment_group_id_, send_creative_scanning_metadata_,
++          auction_ad_config_non_shared_params,
+           context_recycler.auction_config_lazy_fillers(),
+           /*auction_config_lazy_filler_pos=*/0, &args)) {
+     PostReportResultCallbackToUserThread(std::move(callback),

@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Moshchuk <alexmos@chromium.org>
+Date: Fri, 26 Jun 2026 13:56:30 -0700
+Subject: [M148] Restore CHECK for CanAccessOrigin().
+
+Original change's description:
+> Restore CHECK for CanAccessOrigin().
+>
+> The CanAccessOrigin() check in
+> NavigationRequest::GetOriginForURLLoaderFactoryAfterResponse() was
+> always a CHECK to begin with and was incorrectly downgraded to a DCHECK
+> in https://chromium-review.googlesource.com/c/chromium/src/+/7748832.
+>
+> Note: there was always an ongoing trickle of known crashes resulting
+> from this check (going back to at least 2020), and this is tracked is
+> issues such as https://crbug.com/469092870 and
+> https://crbug.com/463029421. These reports will probably reappear once
+> this CL lands and might be seen as a new spike; please avoid reverting
+> this CL due to that, as this check turns potential security problems
+> into stability ones, so it's important to keep.
+>
+> Bug: 526541544
+> Change-Id: Ib077b83303fb8633d60b773a30529900008b62a7
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7986809
+> Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
+> Reviewed-by: Charlie Reis <creis@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1651274}
+
+(cherry picked from commit 85fede76fe078d4ea9622a0c37b81c6852b0cf93)
+
+Bug: 527824647,526541544
+Change-Id: Ib077b83303fb8633d60b773a30529900008b62a7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8006446
+Reviewed-by: Arthur Sonzogni <arthursonzogni@chromium.org>
+Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7778@{#4431}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index 6b54c1614b05cb29b0cc35dcffcb0a959401cc39..6a97b305959dc75d396ab63bb52c1be3ef6d0502 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -9369,14 +9369,16 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponse() {
+   //   policy of the process being used. This is because the content is loaded
+   //   from the MHTML archive within the process. There are no data loaded from
+   //   the network.
++  //
++  // Note: This is a security-critical check that needs to be a CHECK rather
++  // than a DCHECK, and it should never be reverted, even if there are crashes
++  // in the wild.
+   if (HasRenderFrameHost() &&
+       !GetRenderFrameHost()->ShouldBypassSecurityChecksForErrorPage(this) &&
+       !IsForMhtmlSubframe()) {
+     int process_id = GetRenderFrameHost()->GetProcess()->GetDeprecatedID();
+     auto* policy = ChildProcessSecurityPolicyImpl::GetInstance();
+-    // TODO(https://crbug.com/497761255): CHECK-exclusion: Convert to CHECK once
+-    // we are sure this isn't hit.
+-    DCHECK(policy->CanAccessOrigin(
++    CHECK(policy->CanAccessOrigin(
+         process_id, origin,
+         ChildProcessSecurityPolicyImpl::AccessType::kCanCommitNewOrigin));
+   }

@@ -1,0 +1,150 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Baron <dbaron@chromium.org>
+Date: Mon, 29 Jun 2026 13:14:51 -0700
+Subject: [M148] Recheck prerequisites when inserting multiple nodes into a
+ Document.
+
+Original change's description:
+> Recheck prerequisites when inserting multiple nodes into a Document.
+>
+> This moves the check of prerequisites earlier so that it also applies
+> when the parent node is a Document.  This is needed so that we check
+> that the nodes' parents are still all null.
+>
+> The added test is a simplified version of the AI-generated test provided
+> in the bug.  Without the fix it fails a DCHECK in DCHECK-enabled builds,
+> at third_party/blink/renderer/core/dom/container_node.cc:400:
+> DCHECK failed: !target_node->parentNode().
+>
+> Fixed: 523729553
+> Change-Id: I409e096d54150f97083a281e0b3dee5a203015ac
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7963938
+> Commit-Queue: David Baron <dbaron@chromium.org>
+> Reviewed-by: Mason Freed <masonf@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1650442}
+
+(cherry picked from commit cb26b6a1eb7999001e771a07944d4cb0e377341c)
+
+Bug: 526881727,523729553
+Change-Id: I409e096d54150f97083a281e0b3dee5a203015ac
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8020702
+Commit-Queue: David Baron <dbaron@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4439}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/third_party/blink/renderer/core/dom/container_node.cc b/third_party/blink/renderer/core/dom/container_node.cc
+index fbe796dfe9a2323046f6e9d51475271b99ffed51..538f5520d2b04a4b56024f2946ab676d600b73ca 100644
+--- a/third_party/blink/renderer/core/dom/container_node.cc
++++ b/third_party/blink/renderer/core/dom/container_node.cc
+@@ -274,6 +274,20 @@ bool ContainerNode::EnsurePreInsertionValidity(
+     }
+   }
+ 
++  // Node::ConvertNodeUnionsIntoNodes behaves differently depending on
++  // whether there is one node or more than one, since it simulates
++  // insertion into a DocumentFragment for the latter case.  If it handled
++  // more than one node, then it already removed the children from their old
++  // parent.  Check here that those removals didn't do anything bad.  (We
++  // could potentially make this faster by using a DOMMutationDetector in
++  // ConvertNodeUnionsIntoNodes and storing whether we need to do this.)
++  if (new_children && new_children->size() != 1u &&
++      RuntimeEnabledFeatures::RecheckParentDuringNodeVectorInsertionEnabled() &&
++      !RecheckNodeInsertionStructuralPrereq(*new_children, next,
++                                            exception_state)) {
++    return false;
++  }
++
+   if (auto* document = DynamicTo<Document>(this)) {
+     // Step 2 is unnecessary. No one can have a Document child.
+     // Step 3:
+@@ -324,21 +338,6 @@ bool ContainerNode::EnsurePreInsertionValidity(
+         return false;
+       }
+     }
+-
+-    // Node::ConvertNodeUnionsIntoNodes behaves differently depending on
+-    // whether there is one node or more than one, since it simulates
+-    // insertion into a DocumentFragment for the latter case.  If it handled
+-    // more than one node, then it already removed the children from their old
+-    // parent.  Check here that those removals didn't do anything bad.  (We
+-    // could potentially make this faster by using a DOMMutationDetector in
+-    // ConvertNodeUnionsIntoNodes and storing whether we need to do this.)
+-    if (new_children->size() != 1u &&
+-        RuntimeEnabledFeatures::
+-            RecheckParentDuringNodeVectorInsertionEnabled() &&
+-        !RecheckNodeInsertionStructuralPrereq(*new_children, next,
+-                                              exception_state)) {
+-      return false;
+-    }
+   } else if (auto* child_fragment = DynamicTo<DocumentFragment>(new_child)) {
+     for (Node* node = child_fragment->firstChild(); node;
+          node = node->nextSibling()) {
+diff --git a/third_party/blink/renderer/platform/runtime_enabled_features.json5 b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+index 1e93a1da8fa56b022234c88f30f6bad934f4747f..63e309781397c892a885d3a33d0de9948ee8edae 100644
+--- a/third_party/blink/renderer/platform/runtime_enabled_features.json5
++++ b/third_party/blink/renderer/platform/runtime_enabled_features.json5
+@@ -4616,7 +4616,7 @@
+       status: "stable",
+     },
+     {
+-      // Shipping in M148, so should be removed around M150.
++      // Shipping in M148, revised in M151, so should be removed around M153.
+       name: "RecheckParentDuringNodeVectorInsertion",
+       status: "stable",
+     },
+diff --git a/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload-document.https.html b/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload-document.https.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..a96111455304c1349bf8a6d1b3e4c0358b8395a9
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload-document.https.html
+@@ -0,0 +1,41 @@
++<!DOCTYPE html>
++<html>
++<head><title>Document.append reentrancy tree corruption</title></head>
++<body>
++<script>
++
++// Create a container whose removal fires a synchronous JS callback.
++function makeTrigger(callback) {
++  const container = document.createElement('div');
++  const iframe = document.createElement('iframe');
++  container.appendChild(iframe);
++  document.body.appendChild(container);
++  let fired = false;
++  function listener() {
++    if (fired) {
++      return;
++    }
++    fired = true;
++    callback();
++  }
++  iframe.contentWindow.addEventListener('unload', listener);
++  iframe.contentWindow.addEventListener('pagehide', listener);
++  return container;
++}
++
++function bug() {
++  const doc = document.implementation.createDocument(null, null, null);
++  const div = document.createElement('div');
++  const node1 = document.createComment('victim');
++  const trig = makeTrigger(() => {
++    div.appendChild(node1);
++  });
++  try { doc.append(node1, trig); } catch (e) { }
++}
++
++window.onload = () => {
++  bug();
++};
++</script>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload-document.https.html.headers b/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload-document.https.html.headers
+new file mode 100644
+index 0000000000000000000000000000000000000000..f1e8ace831407eccae03f62ff5e77ee7d1586005
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/dom/nodes/crashtests/multiple-append-mutated-in-unload-document.https.html.headers
+@@ -0,0 +1 @@
++Permissions-Policy: unload=*
