@@ -3,7 +3,7 @@
 // found in the LICENSE file.
 
 #include "base/strings/sys_string_conversions.h"
-#include "shell/common/api/electron_api_clipboard.h"
+#include "shell/browser/api/electron_api_clipboard.h"
 #include "ui/base/cocoa/find_pasteboard.h"
 
 namespace electron::api {

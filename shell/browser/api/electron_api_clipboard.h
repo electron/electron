@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_H_
-#define ELECTRON_SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_CLIPBOARD_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_CLIPBOARD_H_
 
 #include <optional>
 #include <string>
@@ -123,4 +123,4 @@ class Clipboard {
 
 }  // namespace electron::api
 
-#endif  // ELECTRON_SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_CLIPBOARD_H_

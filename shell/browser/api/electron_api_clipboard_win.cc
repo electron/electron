@@ -1,8 +1,8 @@
-// Copyright (c) 2016 GitHub, Inc.
+// Copyright (c) 2026 Microsoft, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/api/electron_api_clipboard.h"
+#include "shell/browser/api/electron_api_clipboard.h"
 
 #include <windows.h>  // NOLINT(build/include_order)
 

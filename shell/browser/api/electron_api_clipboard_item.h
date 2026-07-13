@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_ITEM_H_
-#define ELECTRON_SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_ITEM_H_
+#ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_CLIPBOARD_ITEM_H_
+#define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_CLIPBOARD_ITEM_H_
 
 #include <cstdint>
 #include <string>
@@ -141,4 +141,4 @@ class ClipboardItem final : public gin::Wrappable<ClipboardItem>,
 
 }  // namespace electron::api
 
-#endif  // ELECTRON_SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_ITEM_H_
+#endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_CLIPBOARD_ITEM_H_

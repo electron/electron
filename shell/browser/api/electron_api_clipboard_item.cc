@@ -1,8 +1,8 @@
-// Copyright (c) 2026 GitHub, Inc.
+// Copyright (c) 2026 Microsoft, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/api/electron_api_clipboard_item.h"
+#include "shell/browser/api/electron_api_clipboard_item.h"
 
 #include <map>
 #include <optional>
@@ -17,8 +17,8 @@
 #include "base/strings/utf_string_conversions.h"
 #include "gin/object_template_builder.h"
 #include "mojo/public/cpp/base/big_buffer.h"
+#include "shell/browser/api/electron_api_clipboard.h"
 #include "shell/browser/browser.h"
-#include "shell/common/api/electron_api_clipboard.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"

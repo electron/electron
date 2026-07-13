@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/api/electron_api_clipboard.h"
+#include "shell/browser/api/electron_api_clipboard.h"
 
 #include <algorithm>
 #include <optional>
@@ -20,7 +20,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/function_template.h"
-#include "shell/common/api/electron_api_clipboard_item.h"
+#include "shell/browser/api/electron_api_clipboard_item.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
