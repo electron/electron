@@ -171,6 +171,9 @@ void AutofillAgent::ShowSuggestions(const blink::WebFormControlElement& element,
     GetDataListSuggestions(input_element, &data_list_values, &data_list_labels);
   }
 
+  // With no suggestions there is nothing to show; hide any existing popup
+  // instead of asking the browser process to rebuild the native popup
+  // window for an empty list.
   if (data_list_values.empty()) {
     HidePopup();
     return;
