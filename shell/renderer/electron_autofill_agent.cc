@@ -171,6 +171,11 @@ void AutofillAgent::ShowSuggestions(const blink::WebFormControlElement& element,
     GetDataListSuggestions(input_element, &data_list_values, &data_list_labels);
   }
 
+  if (data_list_values.empty()) {
+    HidePopup();
+    return;
+  }
+
   ShowPopup(element, data_list_values, data_list_labels);
 }
 
