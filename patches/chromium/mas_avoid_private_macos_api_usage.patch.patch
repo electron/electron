@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 23cb4c9b86f24f746cf65ac40fa8c18d3d8bbc23..b566e90eb3bc0020525724d0f808a7e216d3bc8c 100644
+index e0f8cce34cbffb5853abffdc3267f685f73e716a..2f4c08a689472715e9d1ec47cd40ab422a8eb0dc 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1131,6 +1131,7 @@ component("base") {
+@@ -1134,6 +1134,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -471,7 +471,7 @@ index d5afd4be1ef4ac3fd1cfa7c09c667bc87b9a6b3a..4f005f2fe24ecfe1962fc64782fb7187
  
  bool g_is_out_of_process_app_shim = false;
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 53422ce7bdbca3bfda151c507dca31ef5ed0555f..aa9017179af8a86ae030ad75e4d952fbc7879f11 100644
+index ae93fe9bd90c4d63983cf824cf2c23ef39b36eed..408a3f48e52a411fdc399cce15e9beb40e870857 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -9,7 +9,9 @@
@@ -484,7 +484,7 @@ index 53422ce7bdbca3bfda151c507dca31ef5ed0555f..aa9017179af8a86ae030ad75e4d952fb
  namespace {
  // Workaround for https://crbug.com/1369643
  const double kThinControllerHeight = 0.5;
-@@ -125,12 +127,15 @@ - (void)maybeShowTrafficLights {
+@@ -144,12 +146,15 @@ - (void)maybeShowTrafficLights {
  
  @end
  
@@ -500,7 +500,7 @@ index 53422ce7bdbca3bfda151c507dca31ef5ed0555f..aa9017179af8a86ae030ad75e4d952fb
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -187,6 +192,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -206,6 +211,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -509,7 +509,7 @@ index 53422ce7bdbca3bfda151c507dca31ef5ed0555f..aa9017179af8a86ae030ad75e4d952fb
  // Handle "Move focus to the window toolbar" configured in System Preferences ->
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
-@@ -197,8 +204,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
+@@ -216,8 +223,8 @@ - (void)_handleFocusToolbarHotKey:(id)unknown {
  }
  
  - (void)setAlwaysShowTrafficLights:(BOOL)alwaysShow {
@@ -974,7 +974,7 @@ index b359f486e3fe93de35be8202c5ea71bbf68526d7..e1db55caf7b3a5e5fd9a9377aca6ab16
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 27b34e6e604e7cc3347116502f3d65a2c8817acd..cfc7ee9c9a33d9fc80eb701d1a032fad75bd7cdb 100644
+index 69d4174e7c7f204a3de846966fd9a0898a7a5eea..8b19a33ac809a9163f7ac297d3b03084af14bf3e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -375,6 +375,7 @@ source_set("browser") {
@@ -1095,7 +1095,7 @@ index 7379f028454c40720478d725a2306b2cfd57074c..4fc4bab68e5afed8f36277a860dd71f5
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 50a0b81145b9019b18816b0c73ff199bdc8219b1..90a87e120cabc5a209667ebf3d1ae7c96908de71 100644
+index 96f7c10555294c3f48fd81d7f4d0ad779bdd7692..884590b8f2d5588a1a1943303a5d6a7cd6b4a7dd 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -278,6 +278,7 @@ source_set("common") {
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index de69f95085250fa61f3c50e8cf6ab8eb80032397..ebe653e4e075e4e62e47ad47df991c68b2c3831a 100644
+index 131e19a3ec6101acacb0f4dddd51e55d7bcf87ed..6205836b42f6b64b32c3a0482304f7e7bdfebeb7 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -707,6 +707,7 @@ static_library("test_support") {
@@ -1200,7 +1200,7 @@ index de69f95085250fa61f3c50e8cf6ab8eb80032397..ebe653e4e075e4e62e47ad47df991c68
    ]
  
    data_deps = [
-@@ -1187,6 +1188,8 @@ static_library("browsertest_support") {
+@@ -1191,6 +1192,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -1209,7 +1209,7 @@ index de69f95085250fa61f3c50e8cf6ab8eb80032397..ebe653e4e075e4e62e47ad47df991c68
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2102,6 +2105,7 @@ test("content_browsertests") {
+@@ -2104,6 +2107,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index de69f95085250fa61f3c50e8cf6ab8eb80032397..ebe653e4e075e4e62e47ad47df991c68
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3514,6 +3518,7 @@ test("content_unittests") {
+@@ -3517,6 +3521,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1250,10 +1250,10 @@ index 448f1df3e1c1a2a1a9c1c37549910101c2c092bf..01027720a432e6f1bd9830b71ae7201f
  
    if (is_mac) {
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 8940cda1ea6211df84da098078a1f90c66666013..335e42c54e5d6a9f591065519443e99c8bc49b91 100644
+index 4f7dbbc8f46922d1e8fe975eb12c73cea9f71b1b..e686813116bc5351da4b23bce043c8c78e1f87d5 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -40,7 +40,9 @@
+@@ -41,7 +41,9 @@
  #include "device/bluetooth/bluetooth_discovery_session_outcome.h"
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
@@ -1263,7 +1263,7 @@ index 8940cda1ea6211df84da098078a1f90c66666013..335e42c54e5d6a9f591065519443e99c
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -54,6 +56,7 @@
+@@ -55,6 +57,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -1271,18 +1271,18 @@ index 8940cda1ea6211df84da098078a1f90c66666013..335e42c54e5d6a9f591065519443e99c
  
  namespace device {
  class BluetoothDevicesConnectListenerBridge;
-@@ -237,8 +240,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -249,8 +252,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+ BluetoothAdapterMac::BluetoothAdapterMac()
      : controller_state_function_(
-           base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
-                               base::Unretained(this))),
+           base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState)),
 +#if !IS_MAS_BUILD()
        power_state_function_(
            base::BindRepeating(IOBluetoothPreferenceSetControllerPowerState)),
 +#endif
        device_paired_status_callback_(
-           base::BindRepeating(&IsDeviceSystemPaired)) {
- }
-@@ -399,8 +404,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+           base::BindRepeating(&IsDeviceSystemPaired)) {}
+ 
+@@ -457,8 +462,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -1342,7 +1342,7 @@ index c9afc859b1cdaec9c6fe693855ab8e96120ea9d2..6143c5fe1e75fb0385099ba1d868121e
  
    if (is_ios) {
 diff --git a/media/audio/apple/audio_low_latency_input.cc b/media/audio/apple/audio_low_latency_input.cc
-index f058f084e5a524a5416777384bd4007f207877d5..6665ff6d159dd2c44adf2e5b5868073cc1f3630f 100644
+index dae1aa642b8f33f353520707db5b68dd44049e18..5aff4555ef21dbc215084a9db0d9f969f16af45a 100644
 --- a/media/audio/apple/audio_low_latency_input.cc
 +++ b/media/audio/apple/audio_low_latency_input.cc
 @@ -28,6 +28,7 @@
@@ -2373,7 +2373,7 @@ index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index cf3e78ff03971645ba6d0b22e3ce5fd03e7dc22f..78473972399a4c08329cae78cd0d58fadf3f3419 100644
+index 17a9a40aea3bbe28a1db1c8005b30d047694492b..3d84c7fdddfafa9714c116e455d354ab1bf2f0c7 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -784,6 +784,8 @@ component("views") {
@@ -2385,7 +2385,7 @@ index cf3e78ff03971645ba6d0b22e3ce5fd03e7dc22f..78473972399a4c08329cae78cd0d58fa
    }
  
    if (is_win) {
-@@ -1204,6 +1206,8 @@ source_set("test_support") {
+@@ -1202,6 +1204,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  

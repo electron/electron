@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <isheludko@gmail.com>
+Date: Tue, 23 Jun 2026 09:33:35 +0200
+Subject: [v8] Prepare for migrating v8::MicrotaskQueue to cppgc
+
+Backports https://github.com/v8/node/commit/21c0130e8a52fe3c42d09372cd679a78bd7dc5eb
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/7991718
+
+Will be removed when Node.js bumps to version of V8 that contains
+the API change.
+
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index 808e28db0f4c1d410fdf97013eaa65ed0c15fd78..ef4075729539cb0c53f7f2cabfcf435c4f76f4e2 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -127,7 +127,11 @@ ContextifyContext* ContextifyContext::New(Environment* env,
+ 
+   MicrotaskQueue* queue =
+       options->own_microtask_queue
++#ifdef V8_CPPGC_MICROTASK_QUEUE
++          ? options->own_microtask_queue
++#else
+           ? options->own_microtask_queue.get()
++#endif
+           : env->isolate()->GetCurrentContext()->GetMicrotaskQueue();
+ 
+   Local<Context> v8_context;
+@@ -148,9 +152,14 @@ ContextifyContext::ContextifyContext(Environment* env,
+                                      Local<Object> wrapper,
+                                      Local<Context> v8_context,
+                                      ContextOptions* options)
++#ifdef V8_CPPGC_MICROTASK_QUEUE
++    : microtask_queue_(options->own_microtask_queue)
++#else
+     : microtask_queue_(options->own_microtask_queue
+                            ? options->own_microtask_queue.release()
+-                           : nullptr) {
++                           : nullptr)
++#endif
++{
+   CppgcMixin::Wrap(this, env, wrapper);
+ 
+   context_.Reset(env->isolate(), v8_context);
+diff --git a/src/node_contextify.h b/src/node_contextify.h
+index 1066633daf65d430b5f46e1b226ee3cf70979c33..4d6788b9705911e33d74f9d106374d7a5f58142b 100644
+--- a/src/node_contextify.h
++++ b/src/node_contextify.h
+@@ -18,7 +18,11 @@ struct ContextOptions {
+   v8::Local<v8::String> origin;
+   v8::Local<v8::Boolean> allow_code_gen_strings;
+   v8::Local<v8::Boolean> allow_code_gen_wasm;
++#ifdef V8_CPPGC_MICROTASK_QUEUE
++  v8::MicrotaskQueue* own_microtask_queue = nullptr;
++#else
+   std::unique_ptr<v8::MicrotaskQueue> own_microtask_queue;
++#endif
+   v8::Local<v8::Symbol> host_defined_options_id;
+   bool vanilla = false;
+ };
+@@ -122,7 +126,11 @@ class ContextifyContext final : CPPGC_MIXIN(ContextifyContext) {
+   }
+ 
+   inline v8::MicrotaskQueue* microtask_queue() const {
++#ifdef V8_CPPGC_MICROTASK_QUEUE
++    return microtask_queue_;
++#else
+     return microtask_queue_.get();
++#endif
+   }
+ 
+   template <typename T>
+@@ -186,7 +194,11 @@ class ContextifyContext final : CPPGC_MIXIN(ContextifyContext) {
+       const v8::PropertyCallbackInfo<v8::Array>& args);
+ 
+   v8::TracedReference<v8::Context> context_;
++#ifdef V8_CPPGC_MICROTASK_QUEUE
++  cppgc::Persistent<v8::MicrotaskQueue> microtask_queue_;
++#else
+   std::unique_ptr<v8::MicrotaskQueue> microtask_queue_;
++#endif
+ };
+ 
+ class ContextifyScript final : CPPGC_MIXIN(ContextifyScript) {
+diff --git a/test/cctest/test_environment.cc b/test/cctest/test_environment.cc
+index 3e8e4a65a81bdd6c9181764c541a2e9b42fb5e57..c489cd3ce46347279d33dc229e55294245862dff 100644
+--- a/test/cctest/test_environment.cc
++++ b/test/cctest/test_environment.cc
+@@ -685,15 +685,26 @@ TEST_F(EnvironmentTest, NestedMicrotaskQueue) {
+   const v8::HandleScope handle_scope(isolate_);
+   const Argv argv;
+ 
+-  std::unique_ptr<v8::MicrotaskQueue> queue = v8::MicrotaskQueue::New(
+-      isolate_, v8::MicrotasksPolicy::kExplicit);
++#ifdef V8_CPPGC_MICROTASK_QUEUE
++  v8::MicrotaskQueue*
++#else
++  std::unique_ptr<v8::MicrotaskQueue>
++#endif
++      queue =
++          v8::MicrotaskQueue::New(isolate_, v8::MicrotasksPolicy::kExplicit);
++
+   v8::Local<v8::Context> context =
+       v8::Context::New(isolate_,
+                        nullptr,
+                        {},
+                        {},
+                        v8::DeserializeInternalFieldsCallback(),
+-                       queue.get());
++#ifdef V8_CPPGC_MICROTASK_QUEUE
++                       queue
++#else
++                       queue.get()
++#endif
++      );
+   node::InitializeContext(context);
+   v8::Context::Scope context_scope(context);
+ 
