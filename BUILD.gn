@@ -1516,10 +1516,8 @@ if (is_mac) {
 
     group("electron_symbols") {
       deps = [
-        ":egl_syms",
         ":electron_app_syms",
         ":electron_framework_syms",
-        ":gles_syms",
       ]
 
       if (!is_mas_build) {
