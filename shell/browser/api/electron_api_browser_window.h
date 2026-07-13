@@ -59,7 +59,6 @@ class BrowserWindow : public BaseWindow,
   // BaseWindow:
   void OnWindowBlur() override;
   void OnWindowFocus() override;
-  void OnWindowEnterFullScreen() override;
   void OnWindowLeaveFullScreen() override;
   void CloseImmediately() override;
   void Focus() override;
