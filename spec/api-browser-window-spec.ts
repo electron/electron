@@ -3840,13 +3840,53 @@ describe('BrowserWindow module', () => {
       });
       await w.loadURL('about:blank');
 
+      // Resolve when the renderer's media query flips to true. Returning a
+      // Promise from executeJavaScript awaits it on the main side, so this
+      // races setFullScreen against the IPC delivering display_mode.
+      const fullscreenMatches = w.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const mql = matchMedia('(display-mode: fullscreen)');
+          if (mql.matches) { resolve(true); return; }
+          mql.addEventListener('change', () => resolve(mql.matches), { once: true });
+        })
+      `);
+
       const enterFullScreen = once(w, 'enter-full-screen');
       w.show();
       w.setFullScreen(true);
       await enterFullScreen;
 
-      const matches = await w.webContents.executeJavaScript("matchMedia('(display-mode: fullscreen)').matches");
+      const matches = await fullscreenMatches;
       expect(matches).to.be.true('matchMedia fullscreen should match for fullscreen window');
+    });
+
+    ifit(process.platform !== 'darwin')('reverts display-mode after leaving fullscreen', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        width: 400,
+        height: 400
+      });
+      await w.loadURL('about:blank');
+
+      const enterFullScreen = once(w, 'enter-full-screen');
+      w.show();
+      w.setFullScreen(true);
+      await enterFullScreen;
+
+      const browserMatches = w.webContents.executeJavaScript(`
+        new Promise((resolve) => {
+          const mql = matchMedia('(display-mode: browser)');
+          if (mql.matches) { resolve(true); return; }
+          mql.addEventListener('change', () => resolve(mql.matches), { once: true });
+        })
+      `);
+
+      const leaveFullScreen = once(w, 'leave-full-screen');
+      w.setFullScreen(false);
+      await leaveFullScreen;
+
+      const matches = await browserMatches;
+      expect(matches).to.be.true('matchMedia browser should match after leaving fullscreen');
     });
   });
 
