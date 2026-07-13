@@ -17,7 +17,7 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index a3f0786ceecfdcb80f9c8c4eef22daba4572cd29..0d8f16c92a8f9d05fcf7e2fd1f54c1840bdc6bea 100644
+index 2a92c36229d622cefe7f56a704fc1782e11a1f72..4195bbbe6284c23d644da5f5be0cfdcfa10b093c 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
 @@ -203,6 +203,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
@@ -37,7 +37,7 @@ index a3f0786ceecfdcb80f9c8c4eef22daba4572cd29..0d8f16c92a8f9d05fcf7e2fd1f54c184
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           include_request_cookies_with_response ==
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index 304c11db09433c24484f49d4f5555115eae664fb..29b81dbb37c160500a7b2d032cd05e404bede039 100644
+index a6f38eb6b350cca09fcf2774d4a135e8a979d71f..0bce2e76a109fe36f6bb73a85a115a2c966a3c4a 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
 @@ -117,6 +117,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
