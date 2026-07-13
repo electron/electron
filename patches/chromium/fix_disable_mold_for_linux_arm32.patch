@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Sun, 12 Jul 2026 08:38:04 +0900
+Subject: fix: disable mold for linux arm32
+
+Keep mold enabled for Android ARM and Linux x86, x64, and ARM64, but
+fall back to lld for Linux ARM32.
+
+With mold enabled in https://chromium-review.googlesource.com/c/chromium/src/+/8040302
+for non-official build, Electron startup crashes in _Unwind_VRS_Pop.
+ARM32 uses EHABI .ARM.exidx/.ARM.extab unwind information unlike ARM64,
+which uses DWARF CFI and is unaffected.
+
+The failure involves mold ARM32 ICF and unwind-table handling, but
+the exact linker defect has not yet been confirmed. Exclude Linux ARM32
+until the issue can be isolated and fixed upstream while retaining the
+link-time improvement on working architectures.
+
+diff --git a/build/config/compiler/compiler.gni b/build/config/compiler/compiler.gni
+index 1a25de82525af5f342040c92fe8cc00c0856800f..6d624032990084ed64d2d4afee9d7a3414c6c1ed 100644
+--- a/build/config/compiler/compiler.gni
++++ b/build/config/compiler/compiler.gni
+@@ -53,6 +53,8 @@ if (!is_win && !is_mac && !is_ios) {
+         !is_official_build &&
+         # Exclude Cronet because it crashes on dlopen(), see crbug.com/525305888
+         !is_cronet_build &&
++        # Linux ARM32 binaries linked with mold crash in libgcc's unwinder.
++        !(current_os == "linux" && current_cpu == "arm") &&
+         (current_os == "android" || current_os == "linux") &&
+         (current_cpu == "x64" || current_cpu == "arm64" ||
+          current_cpu == "x86" || current_cpu == "arm")

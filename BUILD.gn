@@ -17,6 +17,7 @@ import("//tools/grit/repack.gni")
 import("//tools/resources/generate_resource_allowlist.gni")
 import("//tools/v8_context_snapshot/v8_context_snapshot.gni")
 import("//v8/gni/snapshot_toolchain.gni")
+import("//v8/gni/v8.gni")
 import("build/asar.gni")
 import("build/electron_paks.gni")
 import("build/extract_symbols.gni")
@@ -47,7 +48,6 @@ declare_args() {
 if (is_mac) {
   import("//build/config/mac/rules.gni")
   import("//third_party/icu/config.gni")
-  import("//v8/gni/v8.gni")
   import("build/rules.gni")
 
   assert(
@@ -320,6 +320,10 @@ action("generate_config_gypi") {
   script = "script/generate-config-gypi.py"
   inputs = [ "//third_party/electron_node/configure.py" ]
   args = rebase_path(outputs) + [ target_cpu ]
+
+  if (v8_cppgc_microtask_queue) {
+    args += [ "--v8-enable-cppgc-microtask-queue" ]
+  }
 }
 
 target_gen_default_app_js = "$target_gen_dir/js/default_app"
@@ -1187,16 +1191,6 @@ if (is_mac) {
     }
   }
 
-  # Add the ANGLE .dylibs in the Libraries directory of the Framework.
-  bundle_data("electron_angle_binaries") {
-    sources = [
-      "$root_out_dir/egl_intermediates/libEGL.dylib",
-      "$root_out_dir/egl_intermediates/libGLESv2.dylib",
-    ]
-    outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
-    public_deps = [ "//ui/gl:angle_library_copy" ]
-  }
-
   # Add the SwiftShader .dylibs in the Libraries directory of the Framework.
   bundle_data("electron_swiftshader_binaries") {
     sources = [
@@ -1205,10 +1199,6 @@ if (is_mac) {
     ]
     outputs = [ "{{bundle_contents_dir}}/Libraries/{{source_file_part}}" ]
     public_deps = [ "//ui/gl:swiftshader_vk_library_copy" ]
-  }
-
-  group("electron_angle_library") {
-    deps = [ ":electron_angle_binaries" ]
   }
 
   group("electron_swiftshader_library") {
@@ -1253,7 +1243,6 @@ if (is_mac) {
       ":electron_lib",
     ]
     deps = [
-      ":electron_angle_library",
       ":electron_framework_libraries",
       ":electron_framework_resources",
       ":electron_swiftshader_library",
@@ -1518,20 +1507,6 @@ if (is_mac) {
       deps = [ ":electron_app" ]
     }
 
-    extract_symbols("egl_syms") {
-      binary = "$root_out_dir/libEGL.dylib"
-      symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/libEGL.dylib.dSYM/Contents/Resources/DWARF/libEGL.dylib"
-      deps = [ "//third_party/angle:libEGL" ]
-    }
-
-    extract_symbols("gles_syms") {
-      binary = "$root_out_dir/libGLESv2.dylib"
-      symbol_dir = "$root_out_dir/breakpad_symbols"
-      dsym_file = "$root_out_dir/libGLESv2.dylib.dSYM/Contents/Resources/DWARF/libGLESv2.dylib"
-      deps = [ "//third_party/angle:libGLESv2" ]
-    }
-
     extract_symbols("crashpad_handler_syms") {
       binary = "$root_out_dir/chrome_crashpad_handler"
       symbol_dir = "$root_out_dir/breakpad_symbols"
@@ -1732,29 +1707,8 @@ if (is_mac) {
       deps = [ ":electron_app" ]
     }
 
-    if (!is_linux) {
-      extract_symbols("egl_symbols") {
-        binary = "$root_out_dir/libEGL$_target_shared_library_suffix"
-        symbol_dir = "$root_out_dir/breakpad_symbols"
-        deps = [ "//third_party/angle:libEGL" ]
-      }
-
-      extract_symbols("gles_symbols") {
-        binary = "$root_out_dir/libGLESv2$_target_shared_library_suffix"
-        symbol_dir = "$root_out_dir/breakpad_symbols"
-        deps = [ "//third_party/angle:libGLESv2" ]
-      }
-    }
-
     group("electron_symbols") {
       deps = [ ":electron_app_symbols" ]
-
-      if (!is_linux) {
-        deps += [
-          ":egl_symbols",
-          ":gles_symbols",
-        ]
-      }
     }
   }
 }

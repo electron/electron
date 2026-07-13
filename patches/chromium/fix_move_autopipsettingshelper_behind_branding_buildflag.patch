@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 6ab746ba4a67bbb716acd432ff1fc85c17990d22..1bb50cd1384aabcef792be8d2ad6b1fac747d062 100644
+index 10d227e113dd1f4d6b347c8f38419384154fd8d0..062bdbe0673e40264bfeac7657c286fda2aada88 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -6,6 +6,7 @@
@@ -61,7 +61,7 @@ index 6ab746ba4a67bbb716acd432ff1fc85c17990d22..1bb50cd1384aabcef792be8d2ad6b1fa
    // The user manually closed the pip window, so let the tab helper know in case
    // the auto-pip permission dialog was visible.
    if (auto* tab_helper = AutoPictureInPictureTabHelper::FromWebContents(
-@@ -576,7 +583,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
+@@ -583,7 +590,7 @@ gfx::Size PictureInPictureWindowManager::GetMaximumWindowSize(
  
  // static
  void PictureInPictureWindowManager::SetWindowParams(NavigateParams& params) {
@@ -70,7 +70,7 @@ index 6ab746ba4a67bbb716acd432ff1fc85c17990d22..1bb50cd1384aabcef792be8d2ad6b1fa
    // Always show document picture-in-picture in a new window. When this is
    // not opened via the AutoPictureInPictureTabHelper, focus the window.
    params.window_action =
-@@ -637,14 +644,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
+@@ -644,14 +651,14 @@ void PictureInPictureWindowManager::CreateWindowInternal(
  void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
  
@@ -87,7 +87,7 @@ index 6ab746ba4a67bbb716acd432ff1fc85c17990d22..1bb50cd1384aabcef792be8d2ad6b1fa
  
    // Close and reset the picture-in-picture window controller, if it exists.
    if (pip_window_controller_) {
-@@ -687,6 +694,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -694,6 +701,7 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
  }
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -95,7 +95,7 @@ index 6ab746ba4a67bbb716acd432ff1fc85c17990d22..1bb50cd1384aabcef792be8d2ad6b1fa
  void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
      content::WebContents* parent_web_contents,
      std::unique_ptr<content::WebContents> child_web_contents,
-@@ -728,6 +736,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
+@@ -735,6 +743,7 @@ void PictureInPictureWindowManager::EnterStandaloneDocumentPictureInPicture(
                                 std::move(pip_options), initial_bounds);
    document_pip_host_ = host->GetWeakPtr();
  }
@@ -103,7 +103,7 @@ index 6ab746ba4a67bbb716acd432ff1fc85c17990d22..1bb50cd1384aabcef792be8d2ad6b1fa
  
  std::unique_ptr<AutoPipSettingOverlayView>
  PictureInPictureWindowManager::GetOverlayView(
-@@ -738,6 +747,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -745,6 +754,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -111,7 +111,7 @@ index 6ab746ba4a67bbb716acd432ff1fc85c17990d22..1bb50cd1384aabcef792be8d2ad6b1fa
    // It would be nice to create this in `EnterPictureInPicture*`, but detecting
    // auto-pip while pip is in the process of opening doesn't work.
    //
-@@ -776,6 +786,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -783,6 +793,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
