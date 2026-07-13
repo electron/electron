@@ -157,7 +157,7 @@ jobs:
             await core.summary.write();
       - name: Send Slack message if errors
         if: ${{ always() && steps.audit-errors.outputs.errorsFound && github.ref == 'refs/heads/main' }}
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@0d95c9a7becc1e6e297d76df9bc735c44f4cbcbc # v3.0.5
         with:
           payload: |
             link: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
