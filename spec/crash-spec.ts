@@ -44,17 +44,9 @@ const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.Pr
 
 const shouldRunCase = (crashCase: string) => {
   switch (crashCase) {
-    // TODO(jkleinsc) fix this flaky test on Windows 32-bit
-    case 'quit-on-crashed-event': {
-      return process.platform !== 'win32' || process.arch !== 'ia32';
-    }
-    // TODO(jkleinsc) fix this test on Linux on arm/arm64 and 32bit windows
+    // TODO(jkleinsc) fix this test on Linux on arm64
     case 'js-execute-iframe': {
-      if (process.platform === 'win32') {
-        return process.arch !== 'ia32';
-      } else {
-        return process.platform !== 'linux' || (process.arch !== 'arm64' && process.arch !== 'arm');
-      }
+      return process.platform !== 'linux' || process.arch !== 'arm64';
     }
     default: {
       return true;

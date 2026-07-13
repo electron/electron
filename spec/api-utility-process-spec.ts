@@ -18,7 +18,6 @@ import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
-const isWindows32Bit = process.platform === 'win32' && process.arch === 'ia32';
 
 describe('utilityProcess module', () => {
   describe('UtilityProcess constructor', () => {
@@ -77,7 +76,7 @@ describe('utilityProcess module', () => {
       });
     });
 
-    ifit(!isWindows32Bit)('emits the correct error code when child process exits nonzero', async () => {
+    it('emits the correct error code when child process exits nonzero', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
       await once(child, 'spawn');
       const exit = once(child, 'exit');
@@ -86,7 +85,7 @@ describe('utilityProcess module', () => {
       expect(code).to.not.equal(0);
     });
 
-    ifit(!isWindows32Bit)('emits the correct error code when child process is killed', async () => {
+    it('emits the correct error code when child process is killed', async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
       await once(child, 'spawn');
       const exit = once(child, 'exit');
@@ -95,14 +94,14 @@ describe('utilityProcess module', () => {
       expect(code).to.not.equal(0);
     });
 
-    ifit(!isWindows32Bit)("emits 'exit' when child process crashes", async () => {
+    it("emits 'exit' when child process crashes", async () => {
       const child = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
       // SIGSEGV code can differ across pipelines but should never be 0.
       const [code] = await once(child, 'exit');
       expect(code).to.not.equal(0);
     });
 
-    ifit(!isWindows32Bit)("emits 'exit' corresponding to the child process", async () => {
+    it("emits 'exit' corresponding to the child process", async () => {
       const child1 = utilityProcess.fork(path.join(fixturesPath, 'endless.js'));
       await once(child1, 'spawn');
       const child2 = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
@@ -168,28 +167,25 @@ describe('utilityProcess module', () => {
 
     // 32-bit system will not have V8 Sandbox enabled.
     // WoA testing does not have VS toolchain configured to build native addons.
-    ifit(process.arch !== 'ia32' && process.arch !== 'arm' && !isWindowsOnArm)(
-      "emits 'error' when fatal error is triggered from V8",
-      async () => {
-        const child = utilityProcess.fork(path.join(fixturesPath, 'external-ab-test.js'));
-        const [type, location, report] = await once(child, 'error');
-        const [code] = await once(child, 'exit');
-        expect(type).to.equal('FatalError');
-        expect(location).to.equal('v8_ArrayBuffer_NewBackingStore');
-        const reportJSON = JSON.parse(report);
-        expect(reportJSON.header.trigger).to.equal('v8_ArrayBuffer_NewBackingStore');
-        const addonPath = path.join(
-          require.resolve('@electron-ci/external-ab'),
-          '..',
-          '..',
-          'build',
-          'Release',
-          'external_ab.node'
-        );
-        expect(reportJSON.sharedObjects).to.include(path.toNamespacedPath(addonPath));
-        expect(code).to.not.equal(0);
-      }
-    );
+    ifit(!isWindowsOnArm)("emits 'error' when fatal error is triggered from V8", async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'external-ab-test.js'));
+      const [type, location, report] = await once(child, 'error');
+      const [code] = await once(child, 'exit');
+      expect(type).to.equal('FatalError');
+      expect(location).to.equal('v8_ArrayBuffer_NewBackingStore');
+      const reportJSON = JSON.parse(report);
+      expect(reportJSON.header.trigger).to.equal('v8_ArrayBuffer_NewBackingStore');
+      const addonPath = path.join(
+        require.resolve('@electron-ci/external-ab'),
+        '..',
+        '..',
+        'build',
+        'Release',
+        'external_ab.node'
+      );
+      expect(reportJSON.sharedObjects).to.include(path.toNamespacedPath(addonPath));
+      expect(code).to.not.equal(0);
+    });
   });
 
   describe("app 'child-process-gone' event", () => {
@@ -204,7 +200,7 @@ describe('utilityProcess module', () => {
       });
     };
 
-    ifit(!isWindows32Bit)('with default serviceName', async () => {
+    it('with default serviceName', async () => {
       const name = 'Node Utility Process';
       const crashPromise = waitForCrash(name);
       utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
@@ -215,7 +211,7 @@ describe('utilityProcess module', () => {
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
 
-    ifit(!isWindows32Bit)('with custom serviceName', async () => {
+    it('with custom serviceName', async () => {
       const name = crypto.randomUUID();
       const crashPromise = waitForCrash(name);
       utilityProcess.fork(path.join(fixturesPath, 'crash.js'), [], { serviceName: name });
@@ -226,7 +222,7 @@ describe('utilityProcess module', () => {
       expect(details.reason).to.be.oneOf(['crashed', 'abnormal-exit']);
     });
 
-    ifit(!isWindows32Bit)('does not keep stale observers for crashed processes without JS references', async () => {
+    it('does not keep stale observers for crashed processes without JS references', async () => {
       const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
       const logExpectedCrash = (phase: string) => {
         console.error(
