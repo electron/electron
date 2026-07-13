@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dana Fried <dfried@chromium.org>
+Date: Tue, 7 Jul 2026 06:06:04 -0700
+Subject: [M144-LTS] [Views] avoid possible UAF in FocusManager
+
+This replaces raw View* with ViewTracker in a couple of instances where
+it is (theoretically) possible for a View to disappear in the middle of
+a function, because events are potentially generated between capture and
+use.
+
+(cherry picked from commit b17402fd2c84ab1a58ff094c122a3c4f55c79b38)
+
+Fixed: 524045160
+Change-Id: I4f9c42ca0e706c5042e08aa451d3944367b98a83
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8015894
+Commit-Queue: Kaan Alsan <alsan@chromium.org>
+Commit-Queue: Dana Fried <dfried@chromium.org>
+Auto-Submit: Dana Fried <dfried@chromium.org>
+Reviewed-by: Kaan Alsan <alsan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1654051}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8032002
+Reviewed-by: Fahad Mansoor <fahadmansoor@google.com>
+Reviewed-by: Dana Fried <dfried@chromium.org>
+Commit-Queue: Tiago Vignatti (xWF) <vignatti@google.com>
+Cr-Commit-Position: refs/branch-heads/7559@{#5066}
+Cr-Branched-From: 223dfbac1c7542a06b422390d954afe5b560b607-refs/heads/main@{#1552494}
+
+diff --git a/ui/views/focus/focus_manager.cc b/ui/views/focus/focus_manager.cc
+index ec1ba3c3dd0a0cb0ddf66feb56b1366361e775b5..b69957ad823b6b4086791245e00559e4e0bcf13b 100644
+--- a/ui/views/focus/focus_manager.cc
++++ b/ui/views/focus/focus_manager.cc
+@@ -376,11 +376,12 @@ void FocusManager::SetFocusedView(View* view) {
+ 
+ void FocusManager::ClearFocus() {
+   // SetFocusedView(nullptr) is going to clear out the stored view to. We need
+-  // to persist it in this case.
+-  views::View* focused_view = GetStoredFocusView();
++  // to persist it in this case (assuming it survives the events sent out in the
++  // interim).
++  auto focused_view = std::make_unique<ViewTracker>(GetStoredFocusView());
+   SetFocusedView(nullptr);
+   ClearNativeFocus();
+-  SetStoredFocusView(focused_view);
++  view_tracker_for_stored_view_ = std::move(focused_view);
+ }
+ 
+ void FocusManager::AdvanceFocusIfNecessary() {
+@@ -401,14 +402,14 @@ void FocusManager::AdvanceFocusIfNecessary() {
+ }
+ 
+ void FocusManager::StoreFocusedView(bool clear_native_focus) {
+-  View* focused_view = focused_view_;
+   // Don't do anything if no focused view. Storing the view (which is nullptr),
+   // in this case, would clobber the view that was previously saved.
+   if (!focused_view_) {
+     return;
+   }
+ 
+-  View* v = focused_view_;
++  // This could go away when sending events below, so guard access.
++  ViewTracker old_view(focused_view_);
+ 
+   if (clear_native_focus) {
+     // Temporarily disable notification.  ClearFocus() will set the focus to the
+@@ -420,11 +421,11 @@ void FocusManager::StoreFocusedView(bool clear_native_focus) {
+     ClearFocus();
+   } else {
+     SetFocusedView(nullptr);
+-    SetStoredFocusView(focused_view);
++    SetStoredFocusView(old_view.view());
+   }
+ 
+-  if (v) {
+-    v->SchedulePaint();  // Remove focus border.
++  if (auto* const view = old_view.view()) {
++    view->SchedulePaint();  // Remove focus border.
+   }
+ }
+ 

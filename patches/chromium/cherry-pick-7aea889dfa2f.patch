@@ -1,0 +1,251 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Steve Becker <stevebe@microsoft.com>
+Date: Mon, 29 Jun 2026 15:41:38 -0700
+Subject: [M148] InspectorIndexedDBAgent must not use v8_session_ after
+ disposal
+
+Original change's description:
+> InspectorIndexedDBAgent must not use v8_session_ after disposal
+>
+> `v8_session_` is a `raw_ptr` member of `InspectorIndexedDBAgent`. To
+> prevent use after frees, this fix updates
+> `InspectorIndexedDBAgent::Dispose()` to set `v8_session_` to `nullptr`.
+> The change then adds null checks before each use of `v8_session_`.
+> `nullptr`.
+>
+> This fix follows the same pattern as `InspectorDOMAgent`:
+>
+> https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/core/inspector/inspector_dom_agent.cc;drc=284b36ac2742525000db2ca28f448f6cc8584f40;l=3416
+>
+> The change adds a test that repros 100% on ASAN builds.
+>
+> Bug: 503553615
+> Change-Id: Ifa540fb83556710d197ed4b3c942ab61c37de35b
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8007837
+> Reviewed-by: Philip Pfaffe <pfaffe@chromium.org>
+> Commit-Queue: Steve Becker <stevebe@microsoft.com>
+> Cr-Commit-Position: refs/heads/main@{#1653288}
+
+(cherry picked from commit f507e6c6334f3791b4b0e808343ceb0e95832273)
+
+Bug: 528587984,503553615
+Change-Id: Ifa540fb83556710d197ed4b3c942ab61c37de35b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8020374
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4441}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/third_party/blink/renderer/modules/indexeddb/inspector_indexed_db_agent.cc b/third_party/blink/renderer/modules/indexeddb/inspector_indexed_db_agent.cc
+index 37d84a51ee5f40610b84372ceac41d06a35a7bff..32fca937b3def061abdf7f8faa5aa9cc7689c492 100644
+--- a/third_party/blink/renderer/modules/indexeddb/inspector_indexed_db_agent.cc
++++ b/third_party/blink/renderer/modules/indexeddb/inspector_indexed_db_agent.cc
+@@ -104,6 +104,8 @@ namespace {
+ 
+ const char kIndexedDBObjectGroup[] = "indexeddb";
+ const char kNoDocumentError[] = "No document for given frame found";
++const char kSessionDetachedDuringOperation[] =
++    "DevTools session detached during operation.";
+ const char kOriginMismatchError[] =
+     "Requested security origin does not match the target's origin.";
+ 
+@@ -680,9 +682,10 @@ class OpenCursorCallback final : public NativeEventListener {
+   ~OpenCursorCallback() override = default;
+ 
+   void Invoke(ExecutionContext*, Event* event) override {
+-    if (!agent_) {
+-      request_callback_->sendFailure(protocol::Response::ServerError(
+-          "DevTools session detached during operation."));
++    InspectorIndexedDBAgent* agent = agent_.Get();
++    if (!agent) {
++      request_callback_->sendFailure(
++          protocol::Response::ServerError(kSessionDetachedDuringOperation));
+       return;
+     }
+ 
+@@ -737,7 +740,12 @@ class OpenCursorCallback final : public NativeEventListener {
+       return;
+     }
+ 
+-    v8_inspector::V8InspectorSession* v8_session = agent_->v8_session();
++    v8_inspector::V8InspectorSession* v8_session = agent->v8_session();
++    if (!v8_session) {
++      request_callback_->sendFailure(
++          protocol::Response::ServerError(kSessionDetachedDuringOperation));
++      return;
++    }
+     ScriptState::Scope scope(script_state_);
+     v8::Local<v8::Context> context = script_state_->GetContext();
+     v8_inspector::StringView object_group =
+@@ -881,6 +889,20 @@ InspectorIndexedDBAgent::InspectorIndexedDBAgent(
+ 
+ InspectorIndexedDBAgent::~InspectorIndexedDBAgent() = default;
+ 
++void InspectorIndexedDBAgent::Dispose() {
++  ReleaseObjectGroup();
++  v8_session_ = nullptr;
++  InspectorBaseAgent<protocol::IndexedDB::Metainfo>::Dispose();
++}
++
++void InspectorIndexedDBAgent::ReleaseObjectGroup() {
++  if (!v8_session_) {
++    return;
++  }
++  v8_session_->releaseObjectGroup(
++      ToV8InspectorStringView(kIndexedDBObjectGroup));
++}
++
+ void InspectorIndexedDBAgent::Restore() {
+   if (enabled_.Get()) {
+     enable();
+@@ -889,8 +911,7 @@ void InspectorIndexedDBAgent::Restore() {
+ 
+ void InspectorIndexedDBAgent::DidCommitLoadForLocalFrame(LocalFrame* frame) {
+   if (frame == inspected_frames_->Root()) {
+-    v8_session_->releaseObjectGroup(
+-        ToV8InspectorStringView(kIndexedDBObjectGroup));
++    ReleaseObjectGroup();
+   }
+ }
+ 
+@@ -901,8 +922,7 @@ protocol::Response InspectorIndexedDBAgent::enable() {
+ 
+ protocol::Response InspectorIndexedDBAgent::disable() {
+   enabled_.Clear();
+-  v8_session_->releaseObjectGroup(
+-      ToV8InspectorStringView(kIndexedDBObjectGroup));
++  ReleaseObjectGroup();
+   return protocol::Response::Success();
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/indexeddb/inspector_indexed_db_agent.h b/third_party/blink/renderer/modules/indexeddb/inspector_indexed_db_agent.h
+index dd3f49a9433e25e9da7f945baa568af7604e0b3e..edef182542bed83a79d7333fde562eb0d7d4bccf 100644
+--- a/third_party/blink/renderer/modules/indexeddb/inspector_indexed_db_agent.h
++++ b/third_party/blink/renderer/modules/indexeddb/inspector_indexed_db_agent.h
+@@ -57,6 +57,7 @@ class MODULES_EXPORT InspectorIndexedDBAgent final
+ 
+   v8_inspector::V8InspectorSession* v8_session() { return v8_session_; }
+ 
++  void Dispose() override;
+   void Restore() override;
+   void DidCommitLoadForLocalFrame(LocalFrame*) override;
+ 
+@@ -115,10 +116,13 @@ class MODULES_EXPORT InspectorIndexedDBAgent final
+       std::unique_ptr<DeleteDatabaseCallback>) override;
+ 
+  private:
++  void ReleaseObjectGroup();
++
+   // This is null while inspecting workers.
+   Member<InspectedFrames> inspected_frames_;
+   // This is null while inspecting frames.
+   Member<WorkerGlobalScope> worker_global_scope_;
++  // This is null after `InspectorIndexedDBAgent` is disposed.
+   raw_ptr<v8_inspector::V8InspectorSession, DanglingUntriaged> v8_session_;
+   InspectorAgentState::Boolean enabled_;
+ };
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/storage/indexed-db-request-data-race-with-navigation-large-db-expected.txt b/third_party/blink/web_tests/http/tests/inspector-protocol/storage/indexed-db-request-data-race-with-navigation-large-db-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..6e8509a66f74f7c0ca1116ae2c3b8bd161462fbd
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/storage/indexed-db-request-data-race-with-navigation-large-db-expected.txt
+@@ -0,0 +1,4 @@
++Race IndexedDB requestData() with navigation using a large dataset.
++Round 0 completed without a crash.
++Round 1 completed without a crash.
++
+diff --git a/third_party/blink/web_tests/http/tests/inspector-protocol/storage/indexed-db-request-data-race-with-navigation-large-db.js b/third_party/blink/web_tests/http/tests/inspector-protocol/storage/indexed-db-request-data-race-with-navigation-large-db.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..f52afef721c5c3be47d4af983f5c80d92ebea115
+--- /dev/null
++++ b/third_party/blink/web_tests/http/tests/inspector-protocol/storage/indexed-db-request-data-race-with-navigation-large-db.js
+@@ -0,0 +1,88 @@
++(async function(/** @type {import('test_runner').TestRunner} */ testRunner) {
++  const {page, session, dp} = await testRunner.startBlank(
++      'Race IndexedDB requestData() with navigation using a large dataset.');
++
++  const rounds = 2;
++  const valueCount = 64;
++  const valueSize = 8192;
++  const securityOrigin = await session.evaluate('location.origin');
++
++  await dp.Page.enable();
++  await dp.Runtime.enable();
++  await dp.IndexedDB.enable();
++
++  // Repeat the test multiple times to trigger the race.
++  for (let round = 0; round < rounds; ++round) {
++    const dbName = `RaceDB_${round}`;
++
++    // Navigate to an empty page to set up IndexedDB.
++    await dp.Page.navigate(
++        {url: securityOrigin + '/inspector-protocol/resources/empty.html'});
++    await dp.Page.onceLoadEventFired();
++
++    // Create a larger IndexedDB with KBs data to make requestData() take longer.
++    await session.evaluateAsync(`(async () => {
++      const dbName = ${JSON.stringify(dbName)};
++      const storeName = 'TestObjectStore';
++      const payload = 'X'.repeat(${valueSize});
++      await new Promise((resolve, reject) => {
++        const request = indexedDB.deleteDatabase(dbName);
++        request.onsuccess = () => resolve();
++        request.onerror = () => resolve();
++        request.onblocked = () => reject(String(request.error || 'delete blocked'));
++      });
++      await new Promise((resolve, reject) => {
++        const request = indexedDB.open(dbName, 1);
++        request.onupgradeneeded = event => {
++          const db = event.target.result;
++          const store = db.createObjectStore(storeName, {keyPath: 'id'});
++          for (let i = 0; i < ${valueCount}; ++i) {
++            store.put({id: i, label: 'row-' + i, value: payload + i});
++          }
++        };
++        request.onsuccess = () => {
++          request.result.close();
++          resolve();
++        };
++        request.onerror = () => reject(String(request.error || 'open failed'));
++      });
++      return 'done';
++    })()`);
++
++    // Start an async IndexedDB read.
++    dp.IndexedDB.requestData({
++      securityOrigin: securityOrigin,
++      databaseName: dbName,
++      objectStoreName: 'TestObjectStore',
++      skipCount: 0,
++      pageSize: valueCount,
++    });
++
++    // Navigate immediately to race against the pending requestData() callback.
++    dp.Page.navigate(
++        {url: 'data:text/html,<body>navigated<iframe></iframe></body>'});
++
++    // Allow time for teardown to execute while the requestData() callback may still fire.
++    await new Promise(resolve => setTimeout(resolve, 500));
++
++    testRunner.log(`Round ${round} completed without a crash.`);
++  }
++
++  // Clean up the databases.
++  await dp.Page.navigate(
++      {url: securityOrigin + '/inspector-protocol/resources/empty.html'});
++  await dp.Page.onceLoadEventFired();
++  await session.evaluateAsync(`(async () => {
++    for (let round = 0; round < ${rounds}; ++round) {
++      await new Promise(resolve => {
++        const request = indexedDB.deleteDatabase('RaceDB_' + round);
++        request.onsuccess = () => resolve();
++        request.onerror = () => resolve();
++        request.onblocked = () => resolve();
++      });
++    }
++    return 'done';
++  })()`);
++
++  testRunner.completeTest();
++})
