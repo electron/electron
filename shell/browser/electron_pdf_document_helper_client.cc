@@ -18,7 +18,7 @@ ElectronPDFDocumentHelperClient::ElectronPDFDocumentHelperClient() = default;
 ElectronPDFDocumentHelperClient::~ElectronPDFDocumentHelperClient() = default;
 
 void ElectronPDFDocumentHelperClient::UpdateContentRestrictions(
-    content::RenderFrameHost* render_frame_host,
+    content::RenderFrameHost& render_frame_host,
     int content_restrictions) {
   // UpdateContentRestrictions potentially gets called twice from
   // pdf/pdf_view_web_plugin.cc. The first time it is potentially called is
@@ -32,10 +32,11 @@ void ElectronPDFDocumentHelperClient::UpdateContentRestrictions(
 
   // If it's a WebView, emit the event on the WebView's webContents
   auto* guest_view =
-      extensions::MimeHandlerViewGuest::FromRenderFrameHost(render_frame_host);
-  auto* wc = guest_view
-                 ? guest_view->embedder_web_contents()
-                 : content::WebContents::FromRenderFrameHost(render_frame_host);
+      extensions::MimeHandlerViewGuest::FromRenderFrameHost(&render_frame_host);
+  auto* wc =
+      guest_view
+          ? guest_view->embedder_web_contents()
+          : content::WebContents::FromRenderFrameHost(&render_frame_host);
   if (!wc) {
     return;
   }
@@ -47,18 +48,18 @@ void ElectronPDFDocumentHelperClient::UpdateContentRestrictions(
 }
 
 void ElectronPDFDocumentHelperClient::SetPluginCanSave(
-    content::RenderFrameHost* render_frame_host,
+    content::RenderFrameHost& render_frame_host,
     bool can_save) {
   if (chrome_pdf::features::IsOopifPdfEnabled()) {
     auto* mime_handler_stream_manager =
         extensions::mime_handler::MimeHandlerStreamManager::FromWebContents(
-            content::WebContents::FromRenderFrameHost(render_frame_host));
+            content::WebContents::FromRenderFrameHost(&render_frame_host));
     if (!mime_handler_stream_manager) {
       return;
     }
 
     content::RenderFrameHost* embedder_host =
-        pdf_frame_util::GetEmbedderHost(render_frame_host);
+        pdf_frame_util::GetEmbedderHost(&render_frame_host);
     CHECK(embedder_host);
 
     mime_handler_stream_manager->SetPluginCanSave(embedder_host, can_save);
@@ -66,7 +67,7 @@ void ElectronPDFDocumentHelperClient::SetPluginCanSave(
   }
 
   auto* guest_view =
-      extensions::MimeHandlerViewGuest::FromRenderFrameHost(render_frame_host);
+      extensions::MimeHandlerViewGuest::FromRenderFrameHost(&render_frame_host);
   if (guest_view) {
     guest_view->SetPluginCanSave(can_save);
   }
@@ -74,5 +75,5 @@ void ElectronPDFDocumentHelperClient::SetPluginCanSave(
 
 #if BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)
 void ElectronPDFDocumentHelperClient::OnSearchifyStarted(
-    content::RenderFrameHost* render_frame_host) {}
+    content::RenderFrameHost& render_frame_host) {}
 #endif

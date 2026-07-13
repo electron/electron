@@ -682,6 +682,7 @@ describe('net module', () => {
         'audioworklet',
         'document',
         'embed',
+        'fencedframe',
         'font',
         'frame',
         'iframe',
@@ -712,7 +713,32 @@ describe('net module', () => {
               origin: serverUrl
             });
             urlRequest.setHeader('sec-fetch-dest', dest);
+            if (['document', 'fencedframe', 'frame', 'iframe'].includes(dest)) {
+              urlRequest.setHeader('sec-fetch-mode', 'navigate');
+            }
             await collectStreamBody(await getResponse(urlRequest));
+          },
+          { dest }
+        );
+      }
+
+      for (const dest of ['document', 'fencedframe', 'frame', 'iframe']) {
+        test(
+          `should reject sec-fetch-dest ${dest} without sec-fetch-mode navigate`,
+          async () => {
+            const serverUrl = await respondOnce.toSingleURL((request, response) => {
+              response.statusCode = 200;
+              response.statusMessage = 'OK';
+              response.end();
+            });
+            const urlRequest = net.request({
+              url: serverUrl,
+              origin: serverUrl
+            });
+            urlRequest.setHeader('sec-fetch-dest', dest);
+            await expect(getResponse(urlRequest)).to.be.rejectedWith(
+              "sec-fetch-dest of 'document', 'frame', 'iframe' or 'fencedframe' requires sec-fetch-mode 'navigate'"
+            );
           },
           { dest }
         );

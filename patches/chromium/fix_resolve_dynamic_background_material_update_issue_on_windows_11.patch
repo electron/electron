@@ -36,10 +36,10 @@ index aa1d8f7d9c0754821557ca4c3cd6e9da7586d65d..cf2b298285d24caa746a71bae9984e93
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index b129598426f1b7b642ac08dff284e075689b5943..c59015186029738b4a54c44ba32857f60acbc3ef 100644
+index fbf65562af43fd6cebf7d7892db64e560091c091..1acdbd79890bc5b72ff952351a68da4face86de4 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -1015,13 +1015,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
+@@ -1023,13 +1023,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
  
  void HWNDMessageHandler::PaintAsActiveChanged() {
    if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||
@@ -55,7 +55,7 @@ index b129598426f1b7b642ac08dff284e075689b5943..c59015186029738b4a54c44ba32857f6
  }
  
  void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
-@@ -1102,7 +1102,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
+@@ -1110,7 +1110,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
    //   allowing ui::GetResizableFrameThickness() to be used consistently when
    //   removing the visible system frame.
    const bool had_caption_on_init = window_style() & WS_CAPTION;
@@ -71,7 +71,7 @@ index b129598426f1b7b642ac08dff284e075689b5943..c59015186029738b4a54c44ba32857f6
    const bool can_maximize = can_resize && delegate_->CanMaximize();
  
    auto set_style_func = [&style](LONG bit, bool should_set) {
-@@ -1716,11 +1723,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
+@@ -1724,11 +1731,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
    // through, but that isn't the case when using Direct3D to draw transparent
    // windows. So we route translucent windows throught to the delegate to
    // allow for a custom hit mask.
@@ -89,7 +89,7 @@ index b129598426f1b7b642ac08dff284e075689b5943..c59015186029738b4a54c44ba32857f6
      return;
    }
  
-@@ -2476,17 +2488,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+@@ -2489,17 +2501,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
      delegate_->SchedulePaint();
    }
  

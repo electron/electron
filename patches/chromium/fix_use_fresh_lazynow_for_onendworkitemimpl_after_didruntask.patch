@@ -18,7 +18,7 @@ This is upstreamable: the bug exists whenever any TaskObserver::DidProcessTask
 triggers nested pump activity, which is not forbidden by the contract.
 
 diff --git a/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc b/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc
-index 88c0edd3adace03b536f57f80c98cd894d523dec..98dd61d5d03b488e2ef91fd5880f261428f501ba 100644
+index e55b30c033ab146b2f38d96d44648397c2a344a5..45689ade1a041b19f2f8a5240a734c2dad703df6 100644
 --- a/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc
 +++ b/base/task/sequence_manager/thread_controller_with_message_pump_impl.cc
 @@ -494,15 +494,22 @@ std::optional<WakeUp> ThreadControllerWithMessagePumpImpl::DoWorkImpl(

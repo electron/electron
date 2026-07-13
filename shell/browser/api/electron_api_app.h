@@ -275,6 +275,12 @@ class App final : public gin::Wrappable<App>,
   v8::Local<v8::Value> GetToastActivatorCLSID(v8::Isolate* isolate);
 #endif  // BUILDFLAG(IS_WIN)
 
+  // Backing storage for the additional data passed to
+  // requestSingleInstanceLock(). ProcessSingleton stores this as a non-owning
+  // base::raw_span, so it must outlive `process_singleton_`. Declared before
+  // `process_singleton_` so it is destroyed after it.
+  std::vector<uint8_t> single_instance_additional_data_;
+
   std::unique_ptr<ProcessSingleton> process_singleton_;
 
 #if BUILDFLAG(USE_NSS_CERTS)

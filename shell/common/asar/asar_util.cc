@@ -120,12 +120,13 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
     return base::ReadFileToString(real_path, contents);
   }
 
-  base::File src(asar_path, base::File::FLAG_OPEN | base::File::FLAG_READ);
-  if (!src.IsValid())
-    return false;
-
+  // Read through the archive's retained file handle rather than re-opening
+  // the archive by path: |info|'s offset and integrity hash come from the
+  // cached header, and the file on disk may have been replaced (e.g. by an
+  // app update) since that header was read. The retained handle always sees
+  // the bytes the header describes.
   contents->resize(info.size);
-  if (!src.ReadAndCheck(info.offset, base::as_writable_byte_span(*contents)))
+  if (!archive->ReadFileAt(info.offset, base::as_writable_byte_span(*contents)))
     return false;
 
   if (info.integrity)
