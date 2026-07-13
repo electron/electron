@@ -151,6 +151,45 @@ jobs:
           node script/yarn.js ts-node script/gen-filenames.ts -- --check
           cd ../..
         done
+    # The testing config sets is_official_build = false, so the check above
+    # never evaluates targets that are only reachable with official-build
+    # flags and release-only graph breakage surfaces for the first time in
+    # publish builds. Re-run gn gen + check (no compile) with the release
+    # args to catch that here. No PGO profile download is needed: gn gen only
+    # read_file()s the checked-in state files in build/pgo_profiles, the
+    # profiles themselves are compile-time inputs.
+    - name: Run GN Check for ${{ inputs.target-archs }} with Release Args
+      if: ${{ inputs.gn-build-type != 'release' }}
+      run: |
+        for target_cpu in ${{ inputs.target-archs }}
+        do
+          e init -f --root=$(pwd) --out=Default release --import release --target-cpu $target_cpu --remote-build none
+          cd src/electron
+          export GN_EXTRA_ARGS="target_cpu=\"$target_cpu\""
+          if [ "${{ inputs.target-platform }}" = "linux" ]; then
+            if [ "$target_cpu" = "arm64" ]; then
+              export GN_EXTRA_ARGS="$GN_EXTRA_ARGS fatal_linker_warnings=false enable_linux_installer=false"
+            fi
+          fi
+          if [ "${{ inputs.target-platform }}" = "win" ]; then
+            export GN_EXTRA_ARGS="$GN_EXTRA_ARGS use_v8_context_snapshot=true target_os=\"win\""
+          fi
+
+          e build --gen=only
+
+          npm run gn-check -- --outDir Default
+
+          # The publish matrix also builds a Mac App Store variant of every
+          # macOS release, so check that graph too.
+          if [ "${{ inputs.target-platform }}" = "macos" ]; then
+            export GN_EXTRA_ARGS="$GN_EXTRA_ARGS is_mas_build=true"
+
+            e build --gen=only
+
+            npm run gn-check -- --outDir Default
+          fi
+          cd ../..
+        done
     - name: Wait for active SSH sessions
       if: always() && !cancelled()
       shell: bash
