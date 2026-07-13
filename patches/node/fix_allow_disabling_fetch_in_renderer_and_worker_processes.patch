@@ -78,6 +78,26 @@ index 4a42dd66f451eece98fded909a72dd5ffcfd9708..a693e35135fc8f7e918e1410a104d460
  // https://websockets.spec.whatwg.org/
  function setupWebsocket() {
    if (getOptionValue('--no-experimental-websocket')) {
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index bcb56906d6f6184ee0c98e9b8b51c8fcdb359c73..9eb15de8acd850b615611a5401c1f66417ba57c8 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -278,9 +278,13 @@ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+   isolate->SetModifyCodeGenerationFromStringsCallback(
+       modify_code_generation_from_strings_callback);
+ 
+-  isolate->SetWasmStreamingCallback(wasm_web_api::StartStreamingCompilation);
+-
+   Mutex::ScopedLock lock(node::per_process::cli_options_mutex);
++  if (per_process::cli_options->get_per_isolate_options()
++          ->get_per_env_options()
++          ->experimental_fetch) {
++    isolate->SetWasmStreamingCallback(wasm_web_api::StartStreamingCompilation);
++  }
++
+   if (per_process::cli_options->get_per_isolate_options()
+           ->experimental_shadow_realm) {
+     isolate->SetHostCreateShadowRealmContextCallback(
 diff --git a/src/node_options.cc b/src/node_options.cc
 index b7062241d590e36f797babffb5945060ef759322..ae895839723609dcdec2c037facb17208c757d58 100644
 --- a/src/node_options.cc
