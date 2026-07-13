@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Xuehui Chen <xuehuichen@google.com>
+Date: Fri, 26 Jun 2026 08:46:47 -0700
+Subject: [M148] [SPC] Guard SPC Controller destruction during dialog close.
+
+Original change's description:
+> [SPC] Guard SPC Controller destruction during dialog close.
+>
+> A `potential` UAF vulnerability exists in the browser process due to
+> synchronous reentrancy inside SecurePaymentConfirmationController.
+>
+> This can happen if platform-specific synchronous activation dispatch
+> from native_widget_->Close() that reaches
+> ExtensionPopup::OnWidgetDestroying() inside the same call stack. Or
+> CloseDialog() itself trigger a controller destruction.
+>
+> This change adds a guard to the `CloseDialog()` method that ensures the
+> call inside SecurePaymentConfirmationController will not continue to
+> prevent a memory crash.
+>
+> Fixed: 522568496
+> Change-Id: Ifc0eaaebc42db33bb309e850881722df13cad35d
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7959279
+> Reviewed-by: Slobodan Pejic <slobodan@chromium.org>
+> Reviewed-by: Darwin Yang <darwinyang@chromium.org>
+> Commit-Queue: Xuehui Chen <xuehuichen@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1649831}
+
+(cherry picked from commit b87b4b251a81a1e17b4388046d56f93765b646b3)
+
+Bug: 525969298,522568496
+Change-Id: Ifc0eaaebc42db33bb309e850881722df13cad35d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8008507
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7778@{#4428}
+Cr-Branched-From: 77f495ee216d4c3cc784d33658bad4778c0680ee-refs/heads/main@{#1610480}
+
+diff --git a/components/payments/content/secure_payment_confirmation_controller.cc b/components/payments/content/secure_payment_confirmation_controller.cc
+index d0e4f98bc728dd2afec94a40d1c30088d1e4151b..a232b58ce209b1b1c8b5ea26c31e54208c7de03a 100644
+--- a/components/payments/content/secure_payment_confirmation_controller.cc
++++ b/components/payments/content/secure_payment_confirmation_controller.cc
+@@ -130,7 +130,15 @@ void SecurePaymentConfirmationController::OnConfirm() {
+                                   SecurePaymentRequestOutcome::kAccept);
+ 
+     is_dialog_showing_ = false;
++    // CloseDialog() -> Widget::Close() can potentially synchronously trigger
++    // activation observers that destroy the payment window's WebContents.
++    // This self weak pointer guard can prevent potential UAF if controller is
++    // synchronously deleted inside CloseDialog().
++    auto weak_this = weak_ptr_factory_.GetWeakPtr();
+     CloseDialog();
++    if (!weak_this) {
++      return;
++    }
+ 
+     if (!request_) {
+       return;
+@@ -163,7 +171,13 @@ void SecurePaymentConfirmationController::OnAnotherWay() {
+                                 SecurePaymentRequestOutcome::kAnotherWay);
+ 
+   is_dialog_showing_ = false;
++
++  // CloseDialog() can potentially delete `this`. See OnConfirm() above.
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   CloseDialog();
++  if (!weak_this) {
++    return;
++  }
+ 
+   if (!request_) {
+     return;
+@@ -189,7 +203,12 @@ void SecurePaymentConfirmationController::OnCancel() {
+   }
+ 
+   is_dialog_showing_ = false;
++  // CloseDialog() can potentially delete `this`. See OnConfirm() above.
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   CloseDialog();
++  if (!weak_this) {
++    return;
++  }
+ 
+   if (!request_) {
+     return;
+@@ -209,7 +228,12 @@ void SecurePaymentConfirmationController::OnOptOut() {
+   }
+ 
+   is_dialog_showing_ = false;
++  // CloseDialog() can potentially delete `this`. See OnConfirm() above.
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   CloseDialog();
++  if (!weak_this) {
++    return;
++  }
+ 
+   if (!request_) {
+     return;
