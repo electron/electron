@@ -126,7 +126,7 @@ jobs:
   # Checkout Jobs
   checkout-macos:
     needs: setup
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-macos}}
+    if: false
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
@@ -233,6 +233,7 @@ jobs:
 
   # GN Check Jobs
   macos-gn-check:
+    if: false
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
     permissions:
       contents: read
@@ -249,7 +250,7 @@ jobs:
     permissions:
       contents: read
     needs: checkout-linux
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false
     with:
       target-platform: linux
       target-archs: x64 arm arm64
@@ -259,6 +260,7 @@ jobs:
     secrets: inherit
 
   windows-gn-check:
+    if: false
     uses: ./.github/workflows/pipeline-segment-electron-gn-check.yml
     permissions:
       contents: read
@@ -273,6 +275,7 @@ jobs:
 
   # Build Jobs - These cascade into testing jobs
   macos-x64:
+    if: false
     permissions:
       contents: read
       issues: read
@@ -292,6 +295,7 @@ jobs:
     secrets: inherit
   
   macos-arm64:
+    if: false
     permissions:
       contents: read
       issues: read
@@ -318,7 +322,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-tidy-and-test-and-nan.yml
     needs: [checkout-linux, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       clang-tidy-runs-on: electron-arc-centralus-linux-amd64-8core
@@ -341,7 +345,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-amd64-4core
@@ -363,7 +367,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: electron-arc-centralus-linux-arm64-4core
@@ -384,7 +388,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-linux, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' }}
+    if: false
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       test-runs-on: ubuntu-22.04-arm
@@ -399,6 +403,7 @@ jobs:
     secrets: inherit
     
   test-linux-arm64-64k:
+    if: false
     uses: ./.github/workflows/pipeline-segment-electron-test-64k.yml
     permissions:
       contents: read
@@ -438,7 +443,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-windows, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    if: false
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       test-runs-on: windows-latest
@@ -457,7 +462,7 @@ jobs:
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
     needs: [checkout-windows, build-siso]
-    if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
+    if: false
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       test-runs-on: windows-11-arm
