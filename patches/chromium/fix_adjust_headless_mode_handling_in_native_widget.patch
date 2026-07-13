@@ -170,7 +170,7 @@ index 3461abeb31cb07c9d29b10efa21dd48cea203c5f..d7752d52430f859e6ec80526ab8bb023
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 1f896e094c4da08706ef016577565eb112fdbb9d..cc257e5e3ad638bb1e69df5eea2c5a3b6c54a432 100644
+index 88d692818323bd02ccabadbe35100accb404a3d5..3f5f270c66dc83432e94f70efdf8fb88f82398d7 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -327,6 +327,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -185,7 +185,7 @@ index 1f896e094c4da08706ef016577565eb112fdbb9d..cc257e5e3ad638bb1e69df5eea2c5a3b
      // Returns the z-order level, based on the overriding |z_order| but also
      // taking into account special levels due to |type|.
      ui::ZOrderLevel EffectiveZOrderLevel() const;
-@@ -504,6 +509,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -507,6 +512,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
      // If true then the widget uses software compositing.
      bool force_software_compositing = false;
  
@@ -195,7 +195,7 @@ index 1f896e094c4da08706ef016577565eb112fdbb9d..cc257e5e3ad638bb1e69df5eea2c5a3b
      // If set, the window size will follow the content preferred size.
      bool autosize = false;
  
-@@ -1291,6 +1299,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1294,6 +1302,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // with it. TYPE_CONTROL and TYPE_TOOLTIP is not considered top level.
    bool is_top_level() const { return is_top_level_; }
  
@@ -207,7 +207,7 @@ index 1f896e094c4da08706ef016577565eb112fdbb9d..cc257e5e3ad638bb1e69df5eea2c5a3b
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1749,6 +1762,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1752,6 +1765,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  

@@ -37,7 +37,7 @@ index 6c576eafbabd1258b2b632262b4fce3b79d86c77..b5d1a069d30ce84f2c537909f64db646
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index 8397906e8d6685128097ef6f5b06f2b996aa1218..46fa9123a02489e91c8df3a685f5efa6e0d208f3 100644
+index e5e9bb92966f84c7b993797aeaf83c8c17e91c3b..ff88a16e09de3721973e2aa11fbf57534702d570 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -35,6 +35,9 @@ namespace content {

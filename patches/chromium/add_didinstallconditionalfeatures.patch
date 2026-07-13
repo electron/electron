@@ -10,10 +10,10 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 79343d2d1e921626c55c772c7ba61c7327e231de..5d3ea712686b20c478a2f4f29d85299ea7c1d89f 100644
+index b320560d28d7e69fedbc8a70e35e8f6c2e215103..166ff5e568018a86f6b8dc9465bb0fc313eec2d9 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -141,6 +141,8 @@ class CONTENT_EXPORT RenderFrameObserver {
+@@ -137,6 +137,8 @@ class CONTENT_EXPORT RenderFrameObserver {
    virtual void DidHandleOnloadEvents() {}
    virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
                                        int32_t world_id) {}
@@ -23,10 +23,10 @@ index 79343d2d1e921626c55c772c7ba61c7327e231de..5d3ea712686b20c478a2f4f29d85299e
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 433a78924ecacbb7895335111396c0659551d6f1..f4526f324da9804d60bcf6acb583f01c1453283f 100644
+index b5ab1329113b6b70e614dc6f64b36df53405b331..d4d716abd28277759c20e2c2bec23bbd35f9c98c 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4853,6 +4853,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4854,6 +4854,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,7 +40,7 @@ index 433a78924ecacbb7895335111396c0659551d6f1..f4526f324da9804d60bcf6acb583f01c
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 2a0bd029252c3e12818e4f712a2663d61ca459ea..a41a929faee7b6a6bfc2487c8397e0e458ccef86 100644
+index 3ee13b0e355ce5d5d39eec5455dc6c4b1d3a2531..c6e102252839a35d7d5efb154ea7e2c7e98655a3 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -612,6 +612,8 @@ class CONTENT_EXPORT RenderFrameImpl

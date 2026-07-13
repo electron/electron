@@ -618,10 +618,10 @@ index f7458cf53d5a1deb07bcfe653e71b8e970fda38c..fcb14d6cfa6a02652440a43dd6694c21
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 33c052a8e7328e11738f075712b2b220308eba07..c39db4ab11dd015aabe92012efa166b8dea52598 100644
+index eeb4f72448319d0c8a498cc41ea7b17289a60424..c4fb52c4c5b99c6c603f6da5c188f963f2dbcb92 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
-@@ -356,17 +356,19 @@ void PrinterQuery::UpdatePrintSettings(base::DictValue new_settings,
+@@ -360,17 +360,19 @@ void PrinterQuery::UpdatePrintSettings(base::DictValue new_settings,
  #endif  // BUILDFLAG(IS_LINUX) && BUILDFLAG(USE_CUPS)
    }
  

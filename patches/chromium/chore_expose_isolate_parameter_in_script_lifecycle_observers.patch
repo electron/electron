@@ -20,10 +20,10 @@ index cde924d79c67e9312f393c54c45bd6fc92509d0f..72c4d2f042afd428f2bf945bf54de873
        int64_t service_worker_version_id,
        const GURL& service_worker_scope,
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 5d3ea712686b20c478a2f4f29d85299ea7c1d89f..d72c093cbfb33f24879b7f4e28fd69e866e387c0 100644
+index 166ff5e568018a86f6b8dc9465bb0fc313eec2d9..73b747c9fd0a7e2f671b49fab4ad24f693230875 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -143,7 +143,8 @@ class CONTENT_EXPORT RenderFrameObserver {
+@@ -139,7 +139,8 @@ class CONTENT_EXPORT RenderFrameObserver {
                                        int32_t world_id) {}
    virtual void DidInstallConditionalFeatures(v8::Local<v8::Context> context,
                                               int32_t world_id) {}
@@ -34,10 +34,10 @@ index 5d3ea712686b20c478a2f4f29d85299ea7c1d89f..d72c093cbfb33f24879b7f4e28fd69e8
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index f4526f324da9804d60bcf6acb583f01c1453283f..fdd755d110e9d08dede77e4551af5846812a5aea 100644
+index d4d716abd28277759c20e2c2bec23bbd35f9c98c..e88468d624a75915d90879a025beeb2bb60b994f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4859,10 +4859,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+@@ -4860,10 +4860,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
      observer.DidInstallConditionalFeatures(context, world_id);
  }
  
@@ -52,7 +52,7 @@ index f4526f324da9804d60bcf6acb583f01c1453283f..fdd755d110e9d08dede77e4551af5846
  
  void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index a41a929faee7b6a6bfc2487c8397e0e458ccef86..23e30b54cf3008a5ca24427bc8ca2132d331250b 100644
+index c6e102252839a35d7d5efb154ea7e2c7e98655a3..eb5c6c7e5c73634a986ca0fee480d5fed29a8857 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -614,7 +614,8 @@ class CONTENT_EXPORT RenderFrameImpl
