@@ -38,7 +38,7 @@ For more installation options and troubleshooting tips, see
 Each Electron release provides binaries for macOS, Windows, and Linux.
 
 * macOS (Ventura and up): Electron provides 64-bit Intel and Apple Silicon / ARM binaries for macOS.
-* Windows (Windows 11 and up): Electron provides `x64` (`amd64`) and `arm64` binaries for Windows.
+* Windows (Windows 10 and up): Electron provides `x64` (`amd64`) and `arm64` binaries for Windows.
 * Linux: The prebuilt binaries of Electron are built on Ubuntu 22.04. They have also been verified to work on:
   * Ubuntu 18.04 and newer
   * Fedora 32 and newer
