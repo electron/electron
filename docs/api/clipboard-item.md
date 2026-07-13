@@ -24,14 +24,14 @@ Process: [Main](../glossary.md#main-process)
 
 ### `new ClipboardItem(items)`
 
-* `items` Record\<string, any\> - An object whose keys are
+* `items` Record\<string, string | ClipboardBookmark | Buffer\> - An object whose keys are
   [MIME types](https://developer.mozilla.org/en-US/docs/Web/HTTP/MIME_types)
   and whose values are the payload for that type. Mirrors the W3C
   [`ClipboardItem(items)`](https://developer.mozilla.org/en-US/docs/Web/API/ClipboardItem/ClipboardItem#parameters)
   constructor's `items` parameter. The accepted value type depends on the
   MIME type. Text-typed MIME types (`text/plain`, `text/html`,
   `text/rtf`, and `electron application/findtext`) accept a `string`. The
-  `electron application/bookmark` custom format accepts a [Bookmark](structures/bookmark.md) object. All other MIME types accept a
+  `electron application/bookmark` custom format accepts a [ClipboardBookmark](structures/clipboard-bookmark.md) object. All other MIME types accept a
   [`Buffer`](https://nodejs.org/api/buffer.html) of the raw payload
   bytes.
 
@@ -78,12 +78,12 @@ the platform clipboard currently makes available.
 
 * `type` string - mime type to retrieve.
 
-Returns `Promise<Buffer> | Promise<Bookmark>` - Resolves with the payload for the
+Returns `Promise<Buffer> | Promise<ClipboardBookmark>` - Resolves with the payload for the
 given MIME type. Modeled after the W3C
 [`ClipboardItem.getType`](https://developer.mozilla.org/en-US/docs/Web/API/ClipboardItem/getType)
 method. The promise resolves to a `Buffer` for most MIME types; the one
 exception is `getType('electron application/bookmark')`, which resolves
-to a [Bookmark](structures/bookmark.md) object instead.
+to a [ClipboardBookmark](structures/clipboard-bookmark.md) object instead.
 Rejects when `type` is not present in
 [`clipboardItem.types`](#clipboarditemtypes-readonly).
 
@@ -96,6 +96,31 @@ async function dumpClipboard () {
     for (const type of item.types) {
       const payload = await item.getType(type)
       console.log(type, payload)
+    }
+  }
+}
+```
+
+#### `clipboardItem.getType(bookmark)`
+
+* `bookmark` 'electron application/bookmark'
+
+Returns `Promise<ClipboardBookmark>` - Resolves with a [ClipboardBookmark](structures/clipboard-bookmark.md)
+when a bookmark is available in the clipboard.
+Rejects when a bookmark is not available in the clipboard.
+
+```js
+const { clipboard } = require('electron')
+
+async function dumpClipboard () {
+  const bookmarkType = 'electron application/bookmark'
+  const items = await clipboard.read()
+  for (const item of items) {
+    if (item.types.includes(bookmarkType)) {
+      const bookmark = await item.getType(bookmarkType)
+      console.log('Bookmark found: ', bookmark)
+    } else {
+      console.log('There is no bookmark present')
     }
   }
 }

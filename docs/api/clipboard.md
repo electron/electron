@@ -30,7 +30,7 @@ using an `electron` prefix instead of `web` to avoid collisions. The
 custom formats Electron exposes are:
 
 * `electron application/bookmark` — a URL bookmark. Unlike every other
-  MIME type/custom format, its payload is a [Bookmark](structures/bookmark.md) object
+  MIME type/custom format, its payload is a [ClipboardBookmark](structures/clipboard-bookmark.md) object
   on both the write and read sides rather than a `Buffer`, so
   `getType('electron application/bookmark')` resolves to
   `{ title: string, url: string }`.
@@ -200,58 +200,6 @@ check()
 ### `clipboard.clear()`
 
 Clears the clipboard content.
-
-### `clipboard.selection.readText()` _Linux_
-
-Returns `Promise<string>` - A promise that resolves with the content of
-the selection clipboard as plain text. Equivalent to
-[`clipboard.readText()`](#clipboardreadtext) but reads from the primary
-selection.
-
-### `clipboard.selection.writeText(text)` _Linux_
-
-* `text` string
-
-Returns `Promise<void>` - A promise that resolves once the text has been
-written to the selection clipboard. Equivalent to
-[`clipboard.writeText(text)`](#clipboardwritetexttext) but writes to the
-selection clipboard.
-
-### `clipboard.selection.read()` _Linux_
-
-Returns `Promise<ClipboardItem[]>` - A promise that resolves with an
-array of [ClipboardItem](clipboard-item.md) objects containing the
-selection clipboard's contents. Equivalent to
-[`clipboard.read()`](#clipboardread) but reads from the primary
-selection.
-
-### `clipboard.selection.write(data)` _Linux_
-
-* `data` [ClipboardItem](clipboard-item.md)[] - An array of
-  [`ClipboardItem`](clipboard-item.md) instances. See
-  [`clipboard.write(data)`](#clipboardwritedata) for the accepted
-  payload types per MIME.
-
-Returns `Promise<void>` - Resolves once the data has been written to the
-selection clipboard. All entries supplied in a single `write()` call are
-committed atomically. Equivalent to
-[`clipboard.write(data)`](#clipboardwritedata) but writes to the primary
-selection.
-
-### `clipboard.selection.has(mimetype)` _Linux_
-
-* `mimetype` string - MIME type to check
-
-Returns `Promise<boolean>` - A promise that resolves with `true` if the
-selection clipboard contains data of the specified `mimetype`, otherwise
-`false`. Equivalent to [`clipboard.has(mimetype)`](#clipboardhasmimetype) but
-queries the selection clipboard.
-
-### `clipboard.selection.clear()` _Linux_
-
-Clears the selection clipboard. Equivalent to
-[`clipboard.clear()`](#clipboardclear) but targets the primary
-selection.
 
 ## Properties
 

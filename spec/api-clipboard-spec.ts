@@ -8,8 +8,6 @@ import * as path from 'node:path';
 
 import { ifdescribe, ifit } from './lib/spec-helpers';
 
-type Bookmark = { title: string; url: string };
-
 const BOOKMARK_MIME = 'electron application/bookmark';
 const FIND_TEXT_MIME = 'electron application/findtext';
 
@@ -30,11 +28,11 @@ async function readType(mime: string): Promise<Buffer | undefined> {
 
 // `getType('electron application/bookmark')` resolves to a `{ title, url }`
 // object rather than a Buffer, so it needs its own typed read helper.
-async function readBookmark(): Promise<Bookmark | undefined> {
+async function readBookmark(): Promise<Electron.ClipboardBookmark | undefined> {
   const items = await clipboard.read();
   for (const item of items) {
     if (item.types.includes(BOOKMARK_MIME)) {
-      return (await item.getType(BOOKMARK_MIME)) as unknown as Bookmark;
+      return (await item.getType(BOOKMARK_MIME)) as unknown as Electron.ClipboardBookmark;
     }
   }
   return undefined;
