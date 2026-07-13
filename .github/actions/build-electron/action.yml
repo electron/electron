@@ -201,16 +201,12 @@ runs:
         else
           (cd out/Default; zip mksnapshot.zip mksnapshot_args gen/v8/embedded.S)
         fi
-    - name: Generate Cross-Arch Snapshot (arm/arm64)  ${{ inputs.step-suffix }}
+    - name: Generate Cross-Arch Snapshot (arm64)  ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ (inputs.target-arch == 'arm' || inputs.target-arch == 'arm64') && inputs.target-platform == 'linux' && inputs.generate-test-artifacts == 'true' }}
+      if: ${{ inputs.target-arch == 'arm64' && inputs.target-platform == 'linux' && inputs.generate-test-artifacts == 'true' }}
       run: |
         cd src
-        if [ "${{ inputs.target-arch }}" = "arm" ]; then
-          MKSNAPSHOT_PATH="clang_x86_v8_arm"
-        elif [ "${{ inputs.target-arch }}" = "arm64" ]; then
-          MKSNAPSHOT_PATH="clang_x64_v8_arm64"
-        fi
+        MKSNAPSHOT_PATH="clang_x64_v8_arm64"
 
         cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default
         cp "out/Default/$MKSNAPSHOT_PATH/v8_context_snapshot_generator" out/Default
