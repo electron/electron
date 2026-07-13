@@ -194,11 +194,24 @@ void BrowserWindow::OnWindowIsKeyChanged(bool is_key) {
 #endif
 }
 
+void BrowserWindow::OnWindowEnterFullScreen() {
+  // display_mode reaches Blink via VisualProperties (not WebPreferences),
+  // so the (display-mode: fullscreen) media query only re-evaluates when
+  // visual properties are synced.
+  if (auto* host = web_contents()->GetPrimaryMainFrame())
+    if (auto* rwh = host->GetRenderWidgetHost())
+      rwh->SynchronizeVisualProperties();
+  BaseWindow::OnWindowEnterFullScreen();
+}
+
 void BrowserWindow::OnWindowLeaveFullScreen() {
 #if BUILDFLAG(IS_MAC)
   if (web_contents()->IsFullscreen())
     web_contents()->ExitFullscreen(true);
 #endif
+  if (auto* host = web_contents()->GetPrimaryMainFrame())
+    if (auto* rwh = host->GetRenderWidgetHost())
+      rwh->SynchronizeVisualProperties();
   BaseWindow::OnWindowLeaveFullScreen();
 }
 
