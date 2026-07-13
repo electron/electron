@@ -624,8 +624,6 @@ filenames = {
     "shell/common/gin_converters/blink_converter.cc",
     "shell/common/gin_converters/blink_converter.h",
     "shell/common/gin_converters/callback_converter.h",
-    "shell/common/gin_converters/clipboard_item_converter.cc",
-    "shell/common/gin_converters/clipboard_item_converter.h",
     "shell/common/gin_converters/content_converter.cc",
     "shell/common/gin_converters/content_converter.h",
     "shell/common/gin_converters/file_dialog_converter.cc",

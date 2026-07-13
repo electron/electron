@@ -101,19 +101,11 @@ class Clipboard {
                                          v8::Isolate* isolate);
 
   // Atomic write of every MIME-keyed entry across the supplied
-  // `ClipboardItem`s. gin auto-converts the JS array via the built-in
-  // `Converter<std::vector<T>>` (delegating per element to
-  // `Converter<cppgc::Persistent<ClipboardItem>>` in
-  // `shell/common/gin_converters/clipboard_item_converter.h`), so by the
-  // time we're called every entry has already been validated as a
-  // `ClipboardItem` wrapper — and per-MIME payload type validation
-  // happened inside the `ClipboardItem` constructor. `Write` just rejects
-  // read-side items and dispatches each item's `WriteTo`. Returns a
+  // `ClipboardItem`s. Returns a
   // Promise so the JS-facing shape matches W3C `clipboard.write`.
-  static v8::Local<v8::Promise> Write(
-      ui::ClipboardBuffer buffer,
-      const std::vector<cppgc::Persistent<ClipboardItem>>& items,
-      v8::Isolate* isolate);
+  static v8::Local<v8::Promise> Write(ui::ClipboardBuffer buffer,
+                                      const v8::LocalVector<v8::Value>& items,
+                                      v8::Isolate* isolate);
 
   // Convenience wrapper that funnels through `Write` so the public
   // `writeText` API uses the same atomic-write path.

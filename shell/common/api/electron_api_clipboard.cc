@@ -21,7 +21,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "gin/function_template.h"
 #include "shell/common/api/electron_api_clipboard_item.h"
-#include "shell/common/gin_converters/clipboard_item_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
@@ -330,33 +329,40 @@ v8::Local<v8::Promise> Clipboard::Read(ui::ClipboardBuffer buffer,
 // happened in the `ClipboardItem` constructor. All `Write` has to do is
 // reject read-side items and dispatch each item's `WriteTo` against a
 // single `ScopedClipboardWriter`.
-v8::Local<v8::Promise> Clipboard::Write(
-    ui::ClipboardBuffer buffer,
-    const std::vector<cppgc::Persistent<ClipboardItem>>& items,
-    v8::Isolate* const isolate) {
+v8::Local<v8::Promise> Clipboard::Write(ui::ClipboardBuffer buffer,
+                                        const v8::LocalVector<v8::Value>& items,
+                                        v8::Isolate* const isolate) {
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
-
-  // ClipboardItems returned by `clipboard.read()` don't carry the user's
-  // payload object — they're lightweight readers bound to a buffer and
-  // can't be passed back to `write()`.
-  for (const auto& item : items) {
-    if (item->is_read_side()) {
-      promise.Reject(v8::Exception::TypeError(gin::StringToV8(
-          isolate,
-          "clipboard.write cannot accept a ClipboardItem returned from "
-          "clipboard.read() — construct a new ClipboardItem to write.")));
-      return handle;
-    }
-  }
 
   // `ClipboardItem::WriteTo` dispatches each MIME to the right writer
   // method; the macOS find-pasteboard pseudo-MIME is committed directly
   // to its separate NSPasteboard from within `WriteTo`.
   {
     ui::ScopedClipboardWriter writer{buffer};
-    for (const auto& item : items)
+    for (const auto& val : items) {
+      ClipboardItem* item = nullptr;
+      if (!gin::ConvertFromV8(isolate, val, &item) || !item) {
+        writer.Reset();
+        promise.Reject(v8::Exception::TypeError(gin::StringToV8(
+            isolate, "clipboard.write expects an array of ClipboardItem")));
+        return handle;
+      }
+
+      if (item->is_read_side()) {
+        // ClipboardItems returned by `clipboard.read()` don't carry the user's
+        // payload object — they're lightweight readers bound to a buffer and
+        // can't be passed back to `write()`.
+        writer.Reset();
+        promise.Reject(v8::Exception::TypeError(gin::StringToV8(
+            isolate,
+            "clipboard.write cannot accept a ClipboardItem returned from "
+            "clipboard.read() — construct a new ClipboardItem to write.")));
+        return handle;
+      }
+
       item->WriteTo(writer);
+    }
     // `ScopedClipboardWriter`'s destructor runs here, committing every
     // accumulated entry to the system clipboard atomically.
   }
