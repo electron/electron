@@ -98,8 +98,8 @@ The four read/write methods now all return Promises, matching
   `new ClipboardItem({ [mime]: payload })` — modeled after the W3C
   [`ClipboardItem(items)`](https://developer.mozilla.org/en-US/docs/Web/API/ClipboardItem/ClipboardItem#parameters)
   constructor. Each payload value is `Blob | string | Object` (a `string`
-  is committed as UTF-8 for text MIME types and a `Blob`'s bytes are
-  committed verbatim). The `electron application/bookmark` custom format
+  is committed as UTF-8 and a `Blob`'s bytes are committed verbatim). The
+  `electron application/bookmark` custom format
   instead takes a `{ title, url }` object. All entries in a single
   `write()` call are committed atomically.
 * `clipboard.readText()` returns `Promise<string>`.
@@ -137,8 +137,8 @@ now reached through a new `clipboard.selection` sub-namespace.
   | `clipboard.readRTF([type])` | `clipboard.read()` with `text/rtf` MIME type |
   | `clipboard.readText()` | `clipboard.readText()` now returns `Promise<string>` |
   | `clipboard.readText('selection')` _Linux_ | `clipboard.selection.readText()` (returns `Promise<string>`) |
-  | `clipboard.write(data)` | `clipboard.write([new ClipboardItem({ [mime]: Buffer / string })])` — accepts an array of `ClipboardItem` objects (each with a MIME-keyed `data` record) and returns `Promise<void>` |
-  | `clipboard.write(data, 'selection')` _Linux_ | `clipboard.selection.write([new ClipboardItem({ [mime]: Buffer / string })])` (returns `Promise<void>`) |
+  | `clipboard.write(data)` | `clipboard.write([new ClipboardItem({ [mime]: Blob / string })])` — accepts an array of `ClipboardItem` objects (each with a MIME-keyed `data` record) and returns `Promise<void>` |
+  | `clipboard.write(data, 'selection')` _Linux_ | `clipboard.selection.write([new ClipboardItem({ [mime]: Blob / string })])` (returns `Promise<void>`) |
   | `clipboard.writeBookmark(title, url[, type])` | `clipboard.write()` with `electron application/bookmark` custom format |
   | `clipboard.writeBuffer(format, buffer[, type])` | `clipboard.write()` with `electron application/osclipboard;format="..."` custom format |
   | `clipboard.writeBuffer(format, buffer, 'selection')` _Linux_ | `clipboard.selection.write()` with `electron application/osclipboard;format="..."` custom format |
@@ -169,8 +169,9 @@ async function readClipboard (format, clipboardType) {
     return clipboardItem.types.includes(format)
   })
   if (foundItem) {
-    const buffer = await foundItem.getType(format)
-    return buffer.toString()
+    // getType() resolves to a Blob; read it back as text.
+    const blob = await foundItem.getType(format)
+    return blob.text()
   }
 }
 
@@ -190,8 +191,9 @@ async function readBuffer (format, clipboardType) {
     return clipboardItem.types.includes(format)
   })
   if (foundItem) {
-    const buffer = await foundItem.getType(format)
-    return buffer
+    // getType() resolves to a Blob; convert it to a Buffer.
+    const blob = await foundItem.getType(format)
+    return Buffer.from(await blob.arrayBuffer())
   }
 }
 
@@ -199,7 +201,7 @@ async function writeBuffer (format, buffer, clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   return clipboardToUse.write([
     new ClipboardItem({
-      [format]: buffer
+      [format]: new Blob([buffer])
     })
   ])
 }
@@ -283,12 +285,12 @@ async function readImage (clipboardType) {
     })
   }
   if (foundItem) {
-    let buffer
-    if (foundItem.types.includes(PNG_MIME_TYPE)) {
-      buffer = await foundItem.getType(PNG_MIME_TYPE)
-    } else {
-      buffer = await foundItem.getType(JPEG_MIME_TYPE)
-    }
+    const mimeType = foundItem.types.includes(PNG_MIME_TYPE)
+      ? PNG_MIME_TYPE
+      : JPEG_MIME_TYPE
+    // getType() resolves to a Blob; convert it to a Buffer for nativeImage.
+    const blob = await foundItem.getType(mimeType)
+    const buffer = Buffer.from(await blob.arrayBuffer())
     return nativeImage.createFromBuffer(buffer)
   }
 }
@@ -297,7 +299,7 @@ async function writeImage (image, clipboardType) {
   const clipboardToUse = getClipboardToUse(clipboardType)
   return clipboardToUse.write([
     new ClipboardItem({
-      'image/png': image.toPNG()
+      'image/png': new Blob([image.toPNG()], { type: 'image/png' })
     })
   ])
 }
