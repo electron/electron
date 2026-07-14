@@ -15,6 +15,7 @@ const CL_REGEX =
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
 const DEPS_BUMP_MSG_REGEX = /^chore: bump chromium in DEPS to (\S+)$/;
 const PATCHES_UPDATE_MSG = 'chore: update patches';
+const MERGE_COMMIT_MSG_REGEX = /^Merge (remote-tracking )?branch |^Merge commit /;
 
 function getCurrentBranch() {
   // In CI, use `GITHUB_HEAD_REF` since we checkout the PR branch in detached HEAD state
@@ -234,6 +235,12 @@ async function main() {
       continue;
     }
 
+    // Allow merge commits from the target branch
+    if (MERGE_COMMIT_MSG_REGEX.test(firstLine)) {
+      console.log(`  ✅ Merge commit`);
+      continue;
+    }
+
     // Validate Chromium version bump commits
     const parentVersion = getParentChromiumVersion(commit.sha);
     const commitVersion = getChromiumVersionForCommit(commit.sha);
@@ -339,7 +346,7 @@ async function main() {
     if (cls.length === 0) {
       console.error(`  ❌ Commit does not match any allowed pattern and references no CLs`);
       console.error(
-        `     Allowed: fixup! commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", or a commit referencing one or more CLs`
+        `     Allowed: fixup! commit, merge commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", or a commit referencing one or more CLs`
       );
       hasErrors = true;
       continue;
