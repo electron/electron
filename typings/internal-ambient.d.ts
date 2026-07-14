@@ -133,10 +133,10 @@ declare namespace NodeJS {
     close(code?: number, reason?: string): void;
     getBufferedAmount(): number;
     on(eventName: 'open', listener: (event: any, protocol: string, extensions: string) => void): this;
-    on(eventName: 'message', listener: (event: any, isText: boolean, data: ArrayBuffer) => void): this;
+    on(eventName: 'message', listener: (event: any, isText: boolean, data: Buffer) => void): this;
     on(eventName: 'closing', listener: (event: any) => void): this;
     on(eventName: 'close', listener: (event: any, wasClean: boolean, code: number, reason: string) => void): this;
-    on(eventName: 'error', listener: (event: any, message: string, netErrorString: string) => void): this;
+    on(eventName: 'error', listener: (event: any) => void): this;
   }
 
   interface ActivationArgumentsInternal {

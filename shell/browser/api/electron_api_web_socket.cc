@@ -7,10 +7,10 @@
 #include <limits>
 #include <utility>
 
-#include "base/compiler_specific.h"
 #include "base/containers/span.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback_helpers.h"
+#include "base/strings/strcat.h"
 #include "base/task/sequenced_task_runner.h"
 #include "content/public/browser/storage_partition.h"
 #include "gin/object_template_builder.h"
@@ -30,6 +30,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
+#include "shell/common/node_util.h"
 #include "shell/common/process_util.h"
 #include "shell/common/v8_util.h"
 #include "url/url_constants.h"
@@ -214,9 +215,17 @@ void WebSocketWrapper::Fail(const std::string& message, int net_error) {
   if (state_ == State::kClosed)
     return;
   state_ = State::kClosed;
-  Emit("error", message, net::ErrorToString(net_error));
+  // Per the WebSocket spec, the 'error' Event has no payload. Surface the
+  // failure message and net error as the CloseEvent.reason (which is otherwise
+  // always empty for network failures) so callers can diagnose without a
+  // debugger attached. Failure messages from the network service already embed
+  // the net error name.
+  std::string reason = message;
+  if (reason.find("net::ERR_") == std::string::npos)
+    base::StrAppend(&reason, {" (", net::ErrorToString(net_error), ")"});
+  Emit("error");
   Emit("close", /*was_clean=*/false, /*code=*/static_cast<uint32_t>(1006),
-       /*reason=*/std::string());
+       reason);
   Teardown();
 }
 
@@ -288,11 +297,10 @@ void WebSocketWrapper::OnConnectionEstablished(
            MOJO_RESULT_OK);
 
   // |handshake_receiver_| will disconnect soon. From now on we watch
-  // |client_receiver_| and |websocket_| for network-service crashes.
+  // |client_receiver_| for network-service crashes; |websocket_| terminates at
+  // the same WebSocketImpl so a second disconnect handler would be redundant.
   handshake_receiver_.set_disconnect_handler(base::DoNothing());
   client_receiver_.set_disconnect_handler(
-      base::BindOnce(&WebSocketWrapper::OnMojoDisconnect, WeakRef()));
-  websocket_.set_disconnect_handler(
       base::BindOnce(&WebSocketWrapper::OnMojoDisconnect, WeakRef()));
 
   websocket_->StartReceiving();
@@ -376,13 +384,10 @@ void WebSocketWrapper::ProcessCompletedMessage() {
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  auto buffer = v8::ArrayBuffer::New(isolate, data.size());
-  if (!data.empty()) {
-    // SAFETY: The destination buffer was allocated with exactly data.size()
-    // bytes by v8::ArrayBuffer::New above.
-    UNSAFE_BUFFERS(
-        base::span(static_cast<uint8_t*>(buffer->Data()), data.size()))
-        .copy_from(data);
+  v8::Local<v8::Object> buffer;
+  if (!electron::Buffer::Copy(isolate, base::span(data)).ToLocal(&buffer)) {
+    Fail("Failed to allocate WebSocket message buffer", net::ERR_OUT_OF_MEMORY);
+    return;
   }
   Emit("message", is_text, buffer);
 }
