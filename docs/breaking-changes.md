@@ -53,6 +53,19 @@ One API has been removed: `app.isUnityRunning()`. Some Unity-specific APIs no lo
 * `app.setBadgeCount(count)` and `app.badgeCount` _macOS_
 * `BaseWindow.setProgressBar(progress)` and `BrowserWindow.setProgressBar(progress)` _Windows_ _macOS_.
 
+### Removed: Windows 32-bit (ia32) and Linux 32-bit ARM (armv7l) support
+
+Electron no longer publishes prebuilt binaries for 32-bit platforms: Windows x86
+(`win32-ia32`) and Linux ARM (`linux-armv7l`). All related release artifacts
+(`chromedriver`, `mksnapshot`, `ffmpeg`, and the Windows x86 `node.lib` on the
+Electron headers CDN) are no longer published either.
+
+Older versions of Electron will continue to support these platforms, but Electron
+v44.0.0 and higher will only be published for 64-bit platforms.
+
+Once the v43 series reaches end of life in January 2027, these 32-bit platforms
+will no longer be supported.
+
 ## Planned Breaking API Changes (43.0)
 
 ### Behavior Changed: Rounded corners on Linux

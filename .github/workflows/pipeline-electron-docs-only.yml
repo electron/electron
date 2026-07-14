@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:  
-  GCLIENT_EXTRA_ARGS: --custom-var=checkout_arm=True --custom-var=checkout_arm64=True
+  GCLIENT_EXTRA_ARGS: --custom-var=checkout_arm64=True
 
 jobs:
   docs-only:

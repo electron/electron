@@ -3,16 +3,11 @@ From: Sam Attard <sattard@anthropic.com>
 Date: Sun, 31 May 2026 00:51:17 +0000
 Subject: build: fix profile runtime resolution for PGO instrumented builds
 
-Two cases where -fprofile-generate builds fail because the compiler or
+fixes where -fprofile-generate builds fail because the compiler or
 driver references the profile runtime by a name that does not exist in
 the clang package:
 
-1. Linux arm32: the package ships the runtime under the armv7 triple
-   (lib/armv7-unknown-linux-gnueabihf/), but the driver resolves the path
-   from the arm-linux-gnueabihf target triple. Linking fails with:
-     ld.lld: error: cannot open .../arm-unknown-linux-gnueabihf/libclang_rt.profile.a
-
-2. Windows cross-compiles: objects compiled by Linux clang embed
+Windows cross-compiles: objects compiled by Linux clang embed
    /DEFAULTLIB:clang_rt.profile.lib (per-target runtime naming), but the
    Windows package ships the legacy layout
    (lib/windows/clang_rt.profile-<arch>.lib). Linking fails with:
@@ -21,31 +16,21 @@ the clang package:
    on-disk layout and embeds the legacy name; cross compiles always use
    the per-target name.
 
-In both cases, suppress the automatic runtime reference (-noprofilelib /
+Suppress the automatic runtime reference (-noprofilelib /
 /nodefaultlib:) and link the correctly-named archive explicitly.
 
-Upstream has never hit either case: Chrome is not built for Linux arm32,
-and Chrome's instrumented Windows builds compile natively on Windows.
+Upstream has never hit this case: Chrome's instrumented Windows
+builds compile natively on Windows.
 This patch can be upstreamed.
 
 diff --git a/build/config/compiler/pgo/BUILD.gn b/build/config/compiler/pgo/BUILD.gn
-index 7a412483528f4342517c51ba5e07a56c68fea946..46d945f70b2e2b5fb4b17d2f7737e14a80b85c99 100644
+index 7a412483528f4342517c51ba5e07a56c68fea946..10d9c93e7360dac2fcb7dea43ad97ababf0aae40 100644
 --- a/build/config/compiler/pgo/BUILD.gn
 +++ b/build/config/compiler/pgo/BUILD.gn
-@@ -42,6 +42,34 @@ config("pgo_instrumentation_flags") {
+@@ -42,6 +42,24 @@ config("pgo_instrumentation_flags") {
        # linking, and embeds the path to the profile runtime library as
        # dependent library into each object file.
        ldflags = [ "-fprofile-generate" ]
-+
-+      # The clang package ships the Linux arm32 profile runtime under the
-+      # armv7 triple (armv7-unknown-linux-gnueabihf), but the driver resolves
-+      # the runtime path from the arm-linux-gnueabihf target triple, which
-+      # does not exist in the package. Suppress the automatic profile runtime
-+      # and link the armv7 archive explicitly.
-+      if (is_linux && current_cpu == "arm") {
-+        ldflags += [ "-noprofilelib" ]
-+        libs = [ "$clang_base_path/lib/clang/$clang_version/lib/armv7-unknown-linux-gnueabihf/libclang_rt.profile.a" ]
-+      }
 +    } else {
 +      # Objects compiled on Linux cross-compile workers embed
 +      # /DEFAULTLIB:clang_rt.profile.lib (the per-target runtime name), but
