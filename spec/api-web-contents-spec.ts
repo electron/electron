@@ -2024,6 +2024,40 @@ describe('webContents module', () => {
     });
   });
 
+  describe('disableWakeLocks webPreference', () => {
+    const blankPage = path.join(fixturesPath, 'api', 'blank.html');
+    afterEach(closeAllWindows);
+
+    const wakeLockCode = `
+      (async () => {
+        let wakeLockAvailable = true;
+
+        // It shouldn't fail even if disabled.
+        const lock = await navigator.wakeLock.request("screen");
+        lock.addEventListener("release", () => {
+          wakeLockAvailable = false;
+        });
+        
+        // Brief pause to ensure the state stabilizes
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        
+        return wakeLockAvailable;
+      })();
+    `;
+
+    it('wake locks are enabled by default', async () => {
+      const w = new BrowserWindow({ show: true });
+      await w.loadFile(blankPage);
+      assert(await w.webContents.executeJavaScript(wakeLockCode));
+    });
+
+    it('wake locks are unusable when disabled', async () => {
+      const w = new BrowserWindow({ show: true, webPreferences: { disableWakeLocks: true } });
+      await w.loadFile(blankPage);
+      assert(!(await w.webContents.executeJavaScript(wakeLockCode)));
+    });
+  });
+
   describe('getOSProcessId()', () => {
     afterEach(closeAllWindows);
     it('returns a valid process id', async () => {
