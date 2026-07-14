@@ -804,7 +804,7 @@ describe('command line switches', () => {
         const socket = new ws.WebSocket(browserWsUrl);
         await once(socket, 'open');
         let nextId = 1;
-        const pending = new Map<number, { resolve: (result: any) => void, reject: (error: Error) => void }>();
+        const pending = new Map<number, { resolve: (result: any) => void; reject: (error: Error) => void }>();
         socket.on('message', (data) => {
           const message = JSON.parse(data.toString());
           const handler = message.id && pending.get(message.id);
@@ -840,19 +840,30 @@ describe('command line switches', () => {
         return { socket, send, attachToPage };
       };
       const innerSize = async (client: Client, sessionId: string) => {
-        const { result } = await client.send('Runtime.evaluate', {
-          expression: 'window.innerWidth + "x" + window.innerHeight',
-          returnByValue: true
-        }, sessionId);
+        const { result } = await client.send(
+          'Runtime.evaluate',
+          {
+            expression: 'window.innerWidth + "x" + window.innerHeight',
+            returnByValue: true
+          },
+          sessionId
+        );
         return result.value;
       };
 
       const clientA = await connectClient();
       const sessionA = await clientA.attachToPage();
       const originalSize = await innerSize(clientA, sessionA);
-      await clientA.send('Emulation.setDeviceMetricsOverride', {
-        width: 800, height: 450, deviceScaleFactor: 0, mobile: false
-      }, sessionA);
+      await clientA.send(
+        'Emulation.setDeviceMetricsOverride',
+        {
+          width: 800,
+          height: 450,
+          deviceScaleFactor: 0,
+          mobile: false
+        },
+        sessionA
+      );
       expect(await innerSize(clientA, sessionA)).to.equal('800x450');
 
       // Drop the TCP connection like a killed client process would.
