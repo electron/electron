@@ -1421,6 +1421,11 @@ Returns `Object`:
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
+> [!IMPORTANT]
+> On macOS, your app should be [code signed and notarized](../tutorial/code-signing.md#macos-apis-that-require-code-signing)
+> for login item settings to work reliably. When an app isn't packaged, code signed,
+> and notarized, `openAtLogin` may silently fail to take effect.
+
 * `settings` Object
   * `openAtLogin` boolean (optional) - `true` to open the app at login, `false` to remove
     the app as a login item. Defaults to `false`.
