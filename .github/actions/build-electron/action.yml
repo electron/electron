@@ -82,6 +82,21 @@ runs:
         REPO: ${{ github.repository }}
         OUTPUT_PATH: src/previous-object-checksums.json
       run: node src/electron/.github/actions/build-electron/download-previous-object-checksums.mjs
+    - name: Raise macOS AF_UNIX socket buffer limits
+      shell: bash
+      if: ${{ inputs.target-platform == 'macos' }}
+      # Best-effort mitigation for the siso spawn-helper ENOBUFS flake: macOS
+      # returns ENOBUFS on AF_UNIX stream-socket writes under kernel socket
+      # buffer exhaustion instead of blocking like Linux (see
+      # .github/siso-patches/0004-*.patch for the corresponding siso-side
+      # retry). Raise the per-socket cap and the default unix stream socket
+      # buffer sizes so the spawn-helper socketpair has more headroom.
+      # sendspace/recvspace must stay within kern.ipc.maxsockbuf (default 8MB;
+      # bumped to 16MB here). Failures are non-fatal.
+      run: |
+        sudo sysctl -w kern.ipc.maxsockbuf=16777216 || true
+        sudo sysctl -w net.local.stream.sendspace=2097152 || true
+        sudo sysctl -w net.local.stream.recvspace=2097152 || true
     - name: Build Electron ${{ inputs.step-suffix }}
       if: ${{ inputs.target-platform != 'win' }}
       shell: bash
