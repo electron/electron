@@ -19,7 +19,9 @@ async function startWSServer(
   options: WSS.ServerOptions = {}
 ): Promise<StartedServer> {
   const server = http.createServer();
-  const wss = new WSS.Server({ server, ...options });
+  // permessage-deflate negotiation in ws@7 can race a server-initiated close;
+  // it isn't the subject under test, so keep it off for determinism.
+  const wss = new WSS.Server({ server, perMessageDeflate: false, ...options });
   if (onConnection) wss.on('connection', onConnection);
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   defer(() => {
@@ -113,6 +115,16 @@ describe('net.WebSocket', () => {
       await event(ws, 'close');
       expect(order).to.deep.equal(['error', 'close']);
       expect(ws.readyState).to.equal(net.WebSocket.CLOSED);
+    });
+
+    it('readyState is CLOSED inside the error handler', async () => {
+      const ws = new net.WebSocket('ws://127.0.0.1:1');
+      let stateInErrorHandler = -1;
+      ws.addEventListener('error', () => {
+        stateInErrorHandler = ws.readyState;
+      });
+      await event(ws, 'close');
+      expect(stateInErrorHandler).to.equal(net.WebSocket.CLOSED);
     });
 
     it('can close while connecting', async () => {
@@ -238,6 +250,44 @@ describe('net.WebSocket', () => {
       defer(() => ws.close());
       await event(ws, 'open');
       expect(ws.bufferedAmount).to.equal(0);
+      ws.close();
+      await event(ws, 'close');
+    });
+
+    it('keeps incrementing bufferedAmount for sends after close', async () => {
+      const { url } = await startWSServer();
+      const ws = new net.WebSocket(url);
+      defer(() => ws.close());
+      await event(ws, 'open');
+      ws.close();
+      await event(ws, 'close');
+      expect(ws.readyState).to.equal(net.WebSocket.CLOSED);
+      ws.send('discarded');
+      expect(ws.bufferedAmount).to.equal(Buffer.byteLength('discarded'));
+    });
+
+    it('preserves send order across Blob and non-Blob sends', async () => {
+      const received: string[] = [];
+      const { url } = await startWSServer((ws) => {
+        ws.on('message', (m: Buffer) => received.push(m.toString()));
+      });
+      const ws = new net.WebSocket(url);
+      defer(() => ws.close());
+      await event(ws, 'open');
+      ws.send('a');
+      ws.send(new Blob(['b']));
+      ws.send('c');
+      ws.send(new Blob(['d']));
+      ws.send('e');
+      // Wait for the server to receive all five messages.
+      await new Promise<void>((resolve) => {
+        const check = () => {
+          if (received.length >= 5) resolve();
+          else setTimeout(check, 10);
+        };
+        check();
+      });
+      expect(received).to.deep.equal(['a', 'b', 'c', 'd', 'e']);
       ws.close();
       await event(ws, 'close');
     });

@@ -29,7 +29,8 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronTray,                  // electron::api::Tray
   kElectronUtilityProcess,        // electron::api::UtilityProcessWrapper
   kElectronWebRequest,            // electron::api::WebRequest
-  kLastElectronPointerTag = kElectronWebRequest,
+  kElectronWebSocket,             // electron::api::WebSocketWrapper
+  kLastElectronPointerTag = kElectronWebSocket,
 };
 
 // Constructs a gin::WrapperInfo from an ElectronWrappablePointerTag,

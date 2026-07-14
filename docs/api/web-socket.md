@@ -8,7 +8,7 @@ Process: [Main](../glossary.md#main-process)
 interface that routes the connection through Chromium's network stack rather
 than Node.js. Use it when you want a main-process WebSocket connection that:
 
-* Uses the system or session proxy configuration (PAC, WPAD, authenticated proxies).
+* Uses the system or session proxy configuration (PAC, WPAD).
 * Validates TLS certificates against the platform trust store and the session's
   certificate verification policy.
 * Honors session-level configuration (custom CA, host resolution rules, etc.).

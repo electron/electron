@@ -17,6 +17,8 @@ const kExtensions = Symbol('extensions');
 const kBinaryType = Symbol('binaryType');
 const kHandlers = Symbol('handlers');
 const kPendingBlobBytes = Symbol('pendingBlobBytes');
+const kSendQueue = Symbol('sendQueue');
+const kSendQueueDepth = Symbol('sendQueueDepth');
 
 // RFC 7230 token (HTTP header value element). Used to validate WebSocket
 // subprotocol names per the WHATWG WebSocket spec.
@@ -58,7 +60,7 @@ export class WebSocket extends EventTarget {
   readonly CLOSING = CLOSING;
   readonly CLOSED = CLOSED;
 
-  private [kWrapper]: NodeJS.WebSocketWrapper | null = null;
+  private [kWrapper]: NodeJS.WebSocketWrapper;
   private [kReadyState]: number = CONNECTING;
   private [kUrl]: string;
   private [kProtocol]: string = '';
@@ -66,6 +68,10 @@ export class WebSocket extends EventTarget {
   private [kBinaryType]: BinaryType = 'nodebuffer';
   private [kHandlers] = new Map<string, EventListener | null>();
   private [kPendingBlobBytes] = 0;
+  // Serializes outbound writes so a Blob (which must be read asynchronously)
+  // does not let a later string/ArrayBuffer send overtake it on the wire.
+  private [kSendQueue]: Promise<unknown> = Promise.resolve();
+  private [kSendQueueDepth] = 0;
 
   constructor(url: string | URL, protocolsOrOptions?: string | string[] | WebSocketOptions) {
     super();
@@ -164,13 +170,15 @@ export class WebSocket extends EventTarget {
     });
 
     wrapper.on('error', () => {
-      // Per spec the 'error' event is a plain Event with no payload.
+      // Per spec, readyState must already be CLOSED when the error event
+      // fires (it is always followed by a close event). The error event is a
+      // plain Event with no payload.
+      this[kReadyState] = CLOSED;
       this.dispatchEvent(new Event('error'));
     });
 
     wrapper.on('close', (_event, wasClean, code, reason) => {
       this[kReadyState] = CLOSED;
-      this[kWrapper] = null;
       this.dispatchEvent(new CloseEvent('close', { wasClean, code, reason }));
     });
   }
@@ -188,7 +196,7 @@ export class WebSocket extends EventTarget {
   }
 
   get bufferedAmount(): number {
-    return (this[kWrapper]?.getBufferedAmount() ?? 0) + this[kPendingBlobBytes];
+    return this[kWrapper].getBufferedAmount() + this[kPendingBlobBytes];
   }
 
   get extensions(): string {
@@ -215,36 +223,57 @@ export class WebSocket extends EventTarget {
     }
 
     if (typeof data === 'string') {
-      this[kWrapper]?.send(true, Buffer.from(data, 'utf8'));
+      this.#enqueueSend(true, Buffer.from(data, 'utf8'));
     } else if (data instanceof Blob) {
-      // Blobs must be read asynchronously. Track their size in bufferedAmount
-      // until the bytes have been handed to the network stack.
+      // Blobs must be read asynchronously. Hold a slot in the send queue so
+      // later sends do not overtake this one, and track the size in
+      // bufferedAmount until the bytes have been handed to the network stack.
       this[kPendingBlobBytes] += data.size;
-      data.arrayBuffer().then(
-        (ab) => {
-          this[kPendingBlobBytes] -= data.size;
-          this[kWrapper]?.send(false, new Uint8Array(ab));
-        },
-        () => {
-          this[kPendingBlobBytes] -= data.size;
-        }
+      this.#enqueueAsync(() =>
+        data.arrayBuffer().then(
+          (ab) => {
+            this[kPendingBlobBytes] -= data.size;
+            this[kWrapper].send(false, new Uint8Array(ab));
+          },
+          () => {
+            this[kPendingBlobBytes] -= data.size;
+          }
+        )
       );
     } else if (ArrayBuffer.isView(data)) {
-      this[kWrapper]?.send(false, new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
+      this.#enqueueSend(false, new Uint8Array(data.buffer, data.byteOffset, data.byteLength));
     } else if (
       data instanceof ArrayBuffer ||
       (typeof SharedArrayBuffer !== 'undefined' && data instanceof SharedArrayBuffer)
     ) {
-      this[kWrapper]?.send(false, new Uint8Array(data));
+      this.#enqueueSend(false, new Uint8Array(data));
     } else {
       // Per WebIDL, anything else is coerced to a USVString.
-      this[kWrapper]?.send(true, Buffer.from(String(data), 'utf8'));
+      this.#enqueueSend(true, Buffer.from(String(data), 'utf8'));
     }
+  }
+
+  // Send synchronously when nothing asynchronous is ahead in the queue,
+  // otherwise chain so message ordering matches the order of send() calls.
+  #enqueueSend(isText: boolean, bytes: Uint8Array) {
+    if (this[kSendQueueDepth] === 0) {
+      this[kWrapper].send(isText, bytes);
+    } else {
+      this.#enqueueAsync(() => this[kWrapper].send(isText, bytes));
+    }
+  }
+
+  #enqueueAsync(step: () => unknown) {
+    this[kSendQueueDepth]++;
+    this[kSendQueue] = this[kSendQueue].then(step, step).finally(() => {
+      this[kSendQueueDepth]--;
+    });
   }
 
   close(code?: number, reason?: string): void {
     if (code !== undefined) {
-      code = Number(code) | 0;
+      // WebIDL [Clamp] unsigned short.
+      code = Math.max(0, Math.min(65535, Math.round(Number(code) || 0)));
       if (code !== 1000 && (code < 3000 || code > 4999)) {
         throw new DOMException(
           `The close code must be either 1000, or between 3000 and 4999. ${code} is neither.`,
@@ -261,7 +290,7 @@ export class WebSocket extends EventTarget {
 
     if (this[kReadyState] === CLOSING || this[kReadyState] === CLOSED) return;
     this[kReadyState] = CLOSING;
-    this[kWrapper]?.close(code, reason);
+    this[kWrapper].close(code, reason);
   }
 
   // ----- EventHandler IDL attributes -------------------------------------

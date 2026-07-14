@@ -137,7 +137,6 @@ declare namespace NodeJS {
     on(eventName: 'closing', listener: (event: any) => void): this;
     on(eventName: 'close', listener: (event: any, wasClean: boolean, code: number, reason: string) => void): this;
     on(eventName: 'error', listener: (event: any, message: string, netErrorString: string) => void): this;
-    on(eventName: 'login', listener: (event: any, authInfo: Electron.AuthInfo, callback: (username?: string, password?: string) => void) => void): this;
   }
 
   interface ActivationArgumentsInternal {
