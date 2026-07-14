@@ -15,6 +15,8 @@ const CL_REGEX =
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
 const DEPS_BUMP_MSG_REGEX = /^chore: bump chromium in DEPS to (\S+)$/;
 const PATCHES_UPDATE_MSG = 'chore: update patches';
+const LIBCXX_FILENAMES_UPDATE_MSG = 'chore: update libc++ filenames';
+const LIBCXX_FILENAMES_FILE = 'filenames.libcxx.gni';
 
 function getCurrentBranch() {
   // In CI, use `GITHUB_HEAD_REF` since we checkout the PR branch in detached HEAD state
@@ -329,6 +331,23 @@ async function main() {
       continue;
     }
 
+    // Validate "chore: update libc++ filenames" commits
+    if (firstLine === LIBCXX_FILENAMES_UPDATE_MSG) {
+      const changedFiles = getChangedFilesForCommit(commit.sha);
+
+      if (!changedFiles || changedFiles.length !== 1 || changedFiles[0] !== LIBCXX_FILENAMES_FILE) {
+        const filesDesc = changedFiles ? changedFiles.join(', ') : 'unknown';
+        console.error(
+          `  ❌ "${LIBCXX_FILENAMES_UPDATE_MSG}" commit must only modify ${LIBCXX_FILENAMES_FILE}, but changes: ${filesDesc}`
+        );
+        hasErrors = true;
+      } else {
+        console.log(`  ✅ "${LIBCXX_FILENAMES_UPDATE_MSG}" commit is valid`);
+      }
+
+      continue;
+    }
+
     const cls = [...commit.message.matchAll(CL_REGEX)].map((match) => ({
       url: match[0],
       fullRepo: match[1],
@@ -339,7 +358,7 @@ async function main() {
     if (cls.length === 0) {
       console.error(`  ❌ Commit does not match any allowed pattern and references no CLs`);
       console.error(
-        `     Allowed: fixup! commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", or a commit referencing one or more CLs`
+        `     Allowed: fixup! commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", "${LIBCXX_FILENAMES_UPDATE_MSG}", or a commit referencing one or more CLs`
       );
       hasErrors = true;
       continue;
