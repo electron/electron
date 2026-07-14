@@ -9,6 +9,7 @@
 #include "net/http/http_util.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
+#include "shell/browser/api/electron_api_web_socket.h"
 #include "shell/browser/net/resolve_host_function.h"
 #include "shell/common/api/electron_api_url_loader.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -75,6 +76,7 @@ v8::Local<v8::Promise> ResolveHost(
 }
 
 using electron::api::SimpleURLLoaderWrapper;
+using electron::api::WebSocketWrapper;
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
@@ -87,6 +89,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isValidHeaderName", &IsValidHeaderName);
   dict.SetMethod("isValidHeaderValue", &IsValidHeaderValue);
   dict.SetMethod("createURLLoader", &SimpleURLLoaderWrapper::Create);
+  dict.SetMethod("createWebSocket", &WebSocketWrapper::Create);
   dict.SetMethod("fileURLToFilePath", &FileURLToFilePath);
   dict.SetMethod("resolveHost", &ResolveHost);
 }
