@@ -13,7 +13,6 @@
 
 #include "base/containers/flat_set.h"
 #include "base/containers/span.h"
-#include "base/containers/to_vector.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
@@ -21,7 +20,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "gin/function_template.h"
 #include "shell/browser/api/electron_api_clipboard_item.h"
-#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
@@ -31,7 +29,6 @@
 #include "ui/base/clipboard/clipboard_constants.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/clipboard_url_info.h"
-#include "ui/base/clipboard/file_info.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/image/image_skia.h"
@@ -398,14 +395,6 @@ std::u16string Clipboard::ReadFindText() {
 }
 #endif
 
-// This exists for testing purposes ONLY.
-void Clipboard::WriteFilesForTesting(const std::vector<base::FilePath>& files) {
-  auto to_info = [](const auto& p) { return ui::FileInfo{p, p.BaseName()}; };
-  auto file_infos = base::ToVector(files, to_info);
-  ui::ScopedClipboardWriter writer(ui::ClipboardBuffer::kCopyPaste);
-  writer.WriteFilenames(ui::FileInfosToURIList(file_infos));
-}
-
 }  // namespace electron::api
 
 namespace {
@@ -453,10 +442,6 @@ void Initialize(v8::Local<v8::Object> exports,
   exports->Set(context, gin::StringToV8(isolate, "selection"), selection)
       .Check();
 #endif
-
-  gin_helper::Dictionary dict{isolate, exports};
-  dict.SetMethod("_writeFilesForTesting",
-                 &electron::api::Clipboard::WriteFilesForTesting);
 }
 
 }  // namespace

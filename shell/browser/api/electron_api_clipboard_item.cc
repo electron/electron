@@ -29,6 +29,7 @@
 #include "ui/base/clipboard/clipboard_constants.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/clipboard_url_info.h"
+#include "ui/base/clipboard/file_info.h"
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/image/image.h"
@@ -287,6 +288,23 @@ v8::Local<v8::Promise> ReadMime(ui::ClipboardBuffer buffer,
   }
 #endif
 
+  if (mime == ui::kMimeTypeUriList) {
+    // `text/uri-list` maps to the OS "copied files" format. Read the file
+    // list via `ReadFilenames` — which yields absolute paths on the
+    // privileged main-process clipboard — and serialize it back to an
+    // RFC 2483 `file://` URI list.
+    ui::Clipboard::GetForCurrentThread()->ReadFilenames(
+        buffer, /* data_dst = */ std::nullopt,
+        base::BindOnce(
+            [](gin_helper::Promise<v8::Local<v8::Value>> promise,
+               std::vector<ui::FileInfo> files) {
+              ResolveAsBuffer(std::move(promise),
+                              ui::FileInfosToURIList(files));
+            },
+            std::move(promise)));
+    return handle;
+  }
+
   // Any other MIME falls through to a raw read so arbitrary user-defined
   // formats round-trip.
   ReadRawAndResolve(std::move(promise), buffer, mime);
@@ -493,6 +511,11 @@ void ClipboardItem::WriteTo(ui::ScopedClipboardWriter& writer) const {
       WriteWebCustomData(writer, mime, span);
     } else if (auto os_format = clipboard_util::ParseOSClipboardFormat(mime)) {
       WriteRawData(writer, *os_format, span);
+    } else if (mime == ui::kMimeTypeUriList) {
+      // `text/uri-list` maps to the OS "copied files" format. The payload is
+      // an RFC 2483 `file://` URI list, which
+      // `ScopedClipboardWriter::WriteFilenames` consumes directly.
+      writer.WriteFilenames(std::string(bytes.begin(), bytes.end()));
     } else if (mime.starts_with(clipboard_util::kImagePrefix)) {
       // Decode the supplied PNG/JPEG bytes via the same auto-detecting
       // helper `nativeImage.createFromBuffer` uses.

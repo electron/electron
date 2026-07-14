@@ -8,9 +8,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
 
-#include "shell/common/gin_converters/file_path_converter.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-forward.h"
@@ -117,8 +115,6 @@ class Clipboard {
   // Cocoa API is synchronous, so these stay synchronous as well.
   static std::u16string ReadFindText();
   static void WriteFindText(const std::u16string& text);
-
-  static void WriteFilesForTesting(const std::vector<base::FilePath>& files);
 };
 
 }  // namespace electron::api

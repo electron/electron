@@ -104,6 +104,14 @@ The four read/write methods now all return Promises, matching
   `write()` call are committed atomically.
 * `clipboard.readText()` returns `Promise<string>`.
 * `clipboard.writeText(text)` returns `Promise<void>`.
+* The `text/uri-list` MIME type maps to the operating system's native
+  file-reference format (`CF_HDROP` on Windows, `NSFilenamesPboardType` on
+  macOS, `text/uri-list` on Linux) rather than a generic text payload. Its
+  payload is an [RFC&nbsp;2483](https://www.rfc-editor.org/rfc/rfc2483)
+  `file://` URI list, so `clipboard.read()`/`clipboard.write()` can read and
+  write files copied to and from native applications. See
+  [`ClipboardItem`](api/clipboard-item.md#files-the-texturi-list-mime-type)
+  for details.
 
 `clipboard.has(mimetype)` now returns `Promise<boolean>` because the
 underlying Chromium clipboard API is asynchronous. Additionally, instead

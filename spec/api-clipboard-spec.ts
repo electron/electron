@@ -5,11 +5,13 @@ import { expect } from 'chai';
 
 import { Buffer } from 'node:buffer';
 import * as path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { ifdescribe, ifit } from './lib/spec-helpers';
 
 const BOOKMARK_MIME = 'electron application/bookmark';
 const FIND_TEXT_MIME = 'electron application/findtext';
+const URI_LIST_MIME = 'text/uri-list';
 
 // Helper that mirrors the old `clipboard.read(format)`/`clipboard.readBuffer`
 // API on top of the new `clipboard.read()` shape so the tests stay focused
@@ -45,6 +47,20 @@ async function readBookmark(): Promise<Electron.ClipboardBookmark | undefined> {
     }
   }
   return undefined;
+}
+
+// `text/uri-list` maps to the OS "copied files" format and reads back as an
+// RFC 2483 `file://` URI list. Decode it into absolute paths so tests can
+// compare against the paths that were written (independent of any URI
+// normalization the platform clipboard applies).
+async function readUriListPaths(): Promise<string[] | undefined> {
+  const buffer = await readType(URI_LIST_MIME);
+  if (!buffer) return undefined;
+  return buffer
+    .toString('utf8')
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((uri) => fileURLToPath(uri));
 }
 
 describe('clipboard module', () => {
@@ -421,6 +437,53 @@ describe('clipboard module', () => {
         error = err as Error;
       }
       expect(error).to.be.an.instanceOf(TypeError);
+    });
+  });
+
+  // `text/uri-list` maps to the operating system's native "copied files"
+  // format (CF_HDROP on Windows, NSFilenamesPboardType on macOS,
+  // text/uri-list on Linux) rather than a generic text payload, so files can
+  // be pasted into and read from native applications. The payload is an
+  // RFC 2483 `file://` URI list.
+  describe('reading/writing files via the text/uri-list MIME type', () => {
+    const fileA = path.join(fixtures, 'assets', 'logo.png');
+    const fileB = __filename;
+
+    it('round-trips a single file path', async () => {
+      await clipboard.write([new ClipboardItem({ [URI_LIST_MIME]: pathToFileURL(fileA).href })]);
+      expect(await readUriListPaths()).to.deep.equal([fileA]);
+    });
+
+    it('round-trips multiple file paths', async () => {
+      const uriList = [pathToFileURL(fileA).href, pathToFileURL(fileB).href].join('\r\n');
+      await clipboard.write([new ClipboardItem({ [URI_LIST_MIME]: uriList })]);
+      expect(await readUriListPaths()).to.deep.equal([fileA, fileB]);
+    });
+
+    it('getType() resolves to a Blob of file:// URIs', async () => {
+      await clipboard.write([new ClipboardItem({ [URI_LIST_MIME]: pathToFileURL(fileA).href })]);
+      const items = await clipboard.read();
+      const item = items.find((i) => i.types.includes(URI_LIST_MIME));
+      expect(item, 'expected text/uri-list on the clipboard').to.exist();
+      const blob = (await item!.getType(URI_LIST_MIME)) as Blob;
+      expect(blob).to.be.an.instanceOf(Blob);
+      const paths = (await blob.text())
+        .split(/\r?\n/)
+        .filter(Boolean)
+        .map((uri) => fileURLToPath(uri));
+      expect(paths).to.deep.equal([fileA]);
+    });
+
+    it('exposes text/uri-list in the ClipboardItem types array', async () => {
+      await clipboard.write([new ClipboardItem({ [URI_LIST_MIME]: pathToFileURL(fileA).href })]);
+      const items = await clipboard.read();
+      const types = items.flatMap((item) => Array.from(item.types));
+      expect(types).to.include(URI_LIST_MIME);
+    });
+
+    it('reports availability via clipboard.has()', async () => {
+      await clipboard.write([new ClipboardItem({ [URI_LIST_MIME]: pathToFileURL(fileA).href })]);
+      expect(await clipboard.has(URI_LIST_MIME)).to.be.true();
     });
   });
 

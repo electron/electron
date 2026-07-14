@@ -64,6 +64,56 @@ clipboard.write([
 ])
 ```
 
+### Files: the `text/uri-list` MIME type
+
+The `text/uri-list` MIME type is mapped to the operating system's native
+"copied files" clipboard format (`CF_HDROP` on Windows,
+`NSFilenamesPboardType` on macOS, and `text/uri-list` on Linux) rather than
+being stored as a generic text payload. This lets clipboard entries written
+by Electron be pasted as files into native applications such as Finder,
+Explorer, or a file manager, and lets Electron read files that were copied
+from those applications.
+
+The payload is an [RFC 2483](https://www.rfc-editor.org/rfc/rfc2483) URI
+list: one `file://` URI per line, separated by `CRLF`. Use
+[`url.pathToFileURL`](https://nodejs.org/api/url.html#urlpathtofileurlpath-options)
+to convert an absolute path into a `file://` URI. Although RFC 2483 permits
+any URI scheme, this format is files-only — non-`file://` URIs are ignored.
+
+When reading, `getType('text/uri-list')` resolves to a `Blob` whose text is
+the `file://` URI list. Because this is a privileged main-process API, the
+resolved URIs contain the real absolute paths of the files — unlike the
+renderer's `navigator.clipboard`, which sanitizes file paths for privacy.
+
+```js
+const { clipboard, ClipboardItem } = require('electron')
+const { pathToFileURL } = require('node:url')
+
+// Write two files to the clipboard so they can be pasted into the OS file
+// manager.
+clipboard.write([
+  new ClipboardItem({
+    'text/uri-list': [
+      pathToFileURL('/path/to/first.txt').href,
+      pathToFileURL('/path/to/second.txt').href
+    ].join('\r\n')
+  })
+])
+
+// Read the files currently on the clipboard.
+async function readFiles () {
+  const [item] = await clipboard.read()
+  if (item.types.includes('text/uri-list')) {
+    const blob = await item.getType('text/uri-list')
+    if (blob instanceof Blob) {
+      const uriList = await blob.text()
+      return uriList.split(/\r?\n/).filter(Boolean)
+    }
+  }
+  return []
+}
+```
+
 ### Instance Properties
 
 #### `clipboardItem.types` _Readonly_

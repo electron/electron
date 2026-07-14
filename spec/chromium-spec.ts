@@ -7,6 +7,7 @@ import {
   ipcMain,
   app,
   clipboard,
+  ClipboardItem,
   protocol,
   webContents,
   dialog,
@@ -1384,9 +1385,8 @@ describe('chromium features', () => {
 
       w.loadFile(writablePath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testDir]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1441,9 +1441,8 @@ describe('chromium features', () => {
 
       w.loadFile(writablePath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testFile]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1498,9 +1497,8 @@ describe('chromium features', () => {
 
       w.loadFile(writablePath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testFile]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1553,9 +1551,8 @@ describe('chromium features', () => {
 
       w.loadFile(writablePath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testFile]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1604,9 +1601,8 @@ describe('chromium features', () => {
 
       w.loadFile(permPath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testDir]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1655,9 +1651,8 @@ describe('chromium features', () => {
 
       w.loadFile(permPath);
 
-      w.webContents.once('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testDir]);
+      w.webContents.once('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testDir).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
@@ -1716,9 +1711,8 @@ describe('chromium features', () => {
 
       w.loadFile(writablePath);
 
-      w.webContents.on('did-finish-load', () => {
-        // @ts-expect-error Undocumented testing method.
-        clipboard._writeFilesForTesting([testFile]);
+      w.webContents.on('did-finish-load', async () => {
+        await clipboard.write([new ClipboardItem({ 'text/uri-list': url.pathToFileURL(testFile).href })]);
         w.webContents.focus();
         w.webContents.paste();
       });
