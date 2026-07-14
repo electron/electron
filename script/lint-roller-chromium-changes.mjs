@@ -13,6 +13,7 @@ const ELECTRON_DIR = resolve(__dirname, '..');
 const CL_REGEX =
   /https:\/\/chromium-review\.googlesource\.com\/c\/(chromium\/src|devtools\/devtools-frontend|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
+const MERGE_MSG_REGEX = /^Merge (?:remote-tracking )?branch '([^']+)'(?: of \S+)?(?: into (.+))?$/;
 const DEPS_BUMP_MSG_REGEX = /^chore: bump chromium in DEPS to (\S+)$/;
 const PATCHES_UPDATE_MSG = 'chore: update patches';
 const LIBCXX_FILENAMES_UPDATE_MSG = 'chore: update libc++ filenames';
@@ -73,6 +74,34 @@ function getChangedFilesForCommit(sha) {
       .trim()
       .split('\n')
       .filter(Boolean);
+  } catch {
+    return null;
+  }
+}
+
+function getCommitParents(sha) {
+  try {
+    const output = execSync(`git rev-list --parents -n 1 ${sha}`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8'
+    }).trim();
+    // Output format: "<commit> [<parent1> <parent2> ...]"
+    return output.split(/\s+/).slice(1).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function getMergeCombinedDiff(sha) {
+  try {
+    // A dense combined diff (--cc) only shows hunks that differ from *all*
+    // parents, so a clean merge (no conflict resolution or "evil merge"
+    // changes of its own) produces empty output.
+    return execSync(`git diff-tree --cc -r --no-commit-id ${sha}`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8',
+      maxBuffer: 100 * 1024 * 1024
+    });
   } catch {
     return null;
   }
@@ -236,6 +265,61 @@ async function main() {
       continue;
     }
 
+    // Validate merge commits (e.g. "Merge branch 'main' into roller/chromium/main")
+    const mergeMatch = MERGE_MSG_REGEX.exec(firstLine);
+    const parents = getCommitParents(commit.sha);
+    const isMergeCommit = parents.length > 1;
+
+    if (mergeMatch || isMergeCommit) {
+      let commitValid = true;
+
+      if (!isMergeCommit) {
+        console.error(`  ❌ Commit message looks like a merge but the commit has a single parent`);
+        hasErrors = true;
+        commitValid = false;
+      } else if (!mergeMatch) {
+        console.error(`  ❌ Merge commit message does not match the expected format`);
+        console.error(`     Expected: "Merge branch '${targetBranch}' into ${currentBranch}"`);
+        console.error(`     Got:      "${firstLine}"`);
+        hasErrors = true;
+        commitValid = false;
+      } else {
+        // The merged-in branch must be the base (target) branch
+        const mergedBranch = mergeMatch[1].replace(/^origin\//, '');
+        if (mergedBranch !== targetBranch) {
+          console.error(
+            `  ❌ Merge commit merges in '${mergeMatch[1]}' but expected the base branch '${targetBranch}'`
+          );
+          hasErrors = true;
+          commitValid = false;
+        }
+      }
+
+      // Must be an "empty" merge — only merging in the base branch, with no
+      // direct changes of its own (no conflict resolution or evil-merge edits)
+      // If merge conflicts were resolved, the commit should stat that with `Skip-Lint`
+      if (isMergeCommit) {
+        const combinedDiff = getMergeCombinedDiff(commit.sha);
+        if (combinedDiff === null) {
+          console.error(`  ❌ Could not determine the combined diff for merge commit`);
+          hasErrors = true;
+          commitValid = false;
+        } else if (combinedDiff.trim().length > 0) {
+          const files = [...combinedDiff.matchAll(/^diff --(?:cc|combined) (.+)$/gm)].map((m) => m[1]);
+          const filesDesc = files.length > 0 ? files.join(', ') : 'unknown';
+          console.error(`  ❌ Merge commit is not empty — it introduces direct changes to: ${filesDesc}`);
+          console.error(`     If this is intentional use Skip-Lint in the commit message to explain`);
+          hasErrors = true;
+          commitValid = false;
+        }
+      }
+
+      if (commitValid) {
+        console.log(`  ✅ Merge commit is valid`);
+      }
+      continue;
+    }
+
     // Validate Chromium version bump commits
     const parentVersion = getParentChromiumVersion(commit.sha);
     const commitVersion = getChromiumVersionForCommit(commit.sha);
@@ -358,7 +442,7 @@ async function main() {
     if (cls.length === 0) {
       console.error(`  ❌ Commit does not match any allowed pattern and references no CLs`);
       console.error(
-        `     Allowed: fixup! commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", "${LIBCXX_FILENAMES_UPDATE_MSG}", or a commit referencing one or more CLs`
+        `     Allowed: fixup! commit, merge commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", "${LIBCXX_FILENAMES_UPDATE_MSG}", or a commit referencing one or more CLs`
       );
       hasErrors = true;
       continue;
