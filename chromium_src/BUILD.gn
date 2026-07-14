@@ -391,6 +391,7 @@ static_library("chrome") {
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
       ]
       deps += [
+        "//chrome/browser/resources/pdf:resources",
         "//components/pdf/browser",
         "//components/pdf/renderer",
         "//components/zoom",
