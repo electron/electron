@@ -41,7 +41,7 @@ async function readBookmark(): Promise<Electron.ClipboardBookmark | undefined> {
   const items = await clipboard.read();
   for (const item of items) {
     if (item.types.includes(BOOKMARK_MIME)) {
-      return (await item.getType(BOOKMARK_MIME)) as unknown as Electron.ClipboardBookmark;
+      return (await item.getType(BOOKMARK_MIME)) as Electron.ClipboardBookmark;
     }
   }
   return undefined;
