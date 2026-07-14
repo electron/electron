@@ -1981,93 +1981,90 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(!(process.platform === 'linux' && (process.arch === 'arm64' || process.arch === 'arm')))(
-    'sandbox options',
-    () => {
-      let appProcess: cp.ChildProcess = null as any;
-      let server: net.Server = null as any;
-      const socketPath =
-        process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
+  ifdescribe(!(process.platform === 'linux' && process.arch === 'arm64'))('sandbox options', () => {
+    let appProcess: cp.ChildProcess = null as any;
+    let server: net.Server = null as any;
+    const socketPath =
+      process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
 
-      beforeEach(function (done) {
-        fs.unlink(socketPath, () => {
-          server = net.createServer();
-          server.listen(socketPath);
-          done();
+    beforeEach(function (done) {
+      fs.unlink(socketPath, () => {
+        server = net.createServer();
+        server.listen(socketPath);
+        done();
+      });
+    });
+
+    afterEach((done) => {
+      if (appProcess != null) appProcess.kill();
+
+      if (server) {
+        server.close(() => {
+          if (process.platform === 'win32') {
+            done();
+          } else {
+            fs.unlink(socketPath, () => done());
+          }
         });
-      });
+      } else {
+        done();
+      }
+    });
 
-      afterEach((done) => {
-        if (appProcess != null) appProcess.kill();
+    describe('when app.enableSandbox() is called', () => {
+      it('adds --enable-sandbox to all renderer processes', (done) => {
+        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+        appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
 
-        if (server) {
-          server.close(() => {
-            if (process.platform === 'win32') {
-              done();
-            } else {
-              fs.unlink(socketPath, () => done());
-            }
-          });
-        } else {
-          done();
-        }
-      });
+        server.once('error', (error) => {
+          done(error);
+        });
 
-      describe('when app.enableSandbox() is called', () => {
-        it('adds --enable-sandbox to all renderer processes', (done) => {
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
+        server.on('connection', (client) => {
+          client.once('data', (data) => {
+            const argv = JSON.parse(data.toString());
+            expect(argv.sandbox).to.include('--enable-sandbox');
+            expect(argv.sandbox).to.not.include('--no-sandbox');
 
-          server.once('error', (error) => {
-            done(error);
-          });
+            expect(argv.noSandbox).to.include('--enable-sandbox');
+            expect(argv.noSandbox).to.not.include('--no-sandbox');
 
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).to.include('--enable-sandbox');
-              expect(argv.sandbox).to.not.include('--no-sandbox');
+            expect(argv.noSandboxDevtools).to.equal(true);
+            expect(argv.sandboxDevtools).to.equal(true);
 
-              expect(argv.noSandbox).to.include('--enable-sandbox');
-              expect(argv.noSandbox).to.not.include('--no-sandbox');
-
-              expect(argv.noSandboxDevtools).to.equal(true);
-              expect(argv.sandboxDevtools).to.equal(true);
-
-              done();
-            });
+            done();
           });
         });
       });
+    });
 
-      describe('when the app is launched with --enable-sandbox', () => {
-        it('adds --enable-sandbox to all renderer processes', (done) => {
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
+    describe('when the app is launched with --enable-sandbox', () => {
+      it('adds --enable-sandbox to all renderer processes', (done) => {
+        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+        appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
 
-          server.once('error', (error) => {
-            done(error);
-          });
+        server.once('error', (error) => {
+          done(error);
+        });
 
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).to.include('--enable-sandbox');
-              expect(argv.sandbox).to.not.include('--no-sandbox');
+        server.on('connection', (client) => {
+          client.once('data', (data) => {
+            const argv = JSON.parse(data.toString());
+            expect(argv.sandbox).to.include('--enable-sandbox');
+            expect(argv.sandbox).to.not.include('--no-sandbox');
 
-              expect(argv.noSandbox).to.include('--enable-sandbox');
-              expect(argv.noSandbox).to.not.include('--no-sandbox');
+            expect(argv.noSandbox).to.include('--enable-sandbox');
+            expect(argv.noSandbox).to.not.include('--no-sandbox');
 
-              expect(argv.noSandboxDevtools).to.equal(true);
-              expect(argv.sandboxDevtools).to.equal(true);
+            expect(argv.noSandboxDevtools).to.equal(true);
+            expect(argv.sandboxDevtools).to.equal(true);
 
-              done();
-            });
+            done();
           });
         });
       });
-    }
-  );
+    });
+  });
 
   describe('disableDomainBlockingFor3DAPIs() API', () => {
     it('throws when called after app is ready', () => {

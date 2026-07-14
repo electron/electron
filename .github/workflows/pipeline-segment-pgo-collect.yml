@@ -47,11 +47,6 @@ jobs:
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
     # Same workaround as pipeline-segment-electron-test.yml.
-    - name: Fix node20 on arm32 runners
-      if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
-      run: |
-        cp $(which node) /mnt/runner-externals/node20/bin/
-        cp $(which node) /mnt/runner-externals/node24/bin/
     - name: Checkout Electron
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       with:
