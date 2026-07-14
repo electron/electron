@@ -24,27 +24,29 @@ Process: [Main](../glossary.md#main-process)
 
 ### `new ClipboardItem(items)`
 
-* `items` Record\<string, string | ClipboardBookmark | Buffer\> - An object whose keys are
+* `items` Record\<string, string | ClipboardBookmark | Blob | Promise\<Blob | string\>\> - An object whose keys are
   [MIME types](https://developer.mozilla.org/en-US/docs/Web/HTTP/MIME_types)
   and whose values are the payload for that type. Mirrors the W3C
   [`ClipboardItem(items)`](https://developer.mozilla.org/en-US/docs/Web/API/ClipboardItem/ClipboardItem#parameters)
-  constructor's `items` parameter. The accepted value type depends on the
-  MIME type. Text-typed MIME types (`text/plain`, `text/html`,
-  `text/rtf`, and `electron application/findtext`) accept a `string`. The
-  `electron application/bookmark` custom format accepts a [ClipboardBookmark](structures/clipboard-bookmark.md) object. All other MIME types accept a
-  [`Buffer`](https://nodejs.org/api/buffer.html) of the raw payload
-  bytes.
+  constructor's `items` parameter. Every MIME type accepts either a `string`
+  or a [`Blob`](https://developer.mozilla.org/en-US/docs/Web/API/Blob): a
+  `string` is UTF-8 encoded into the payload bytes (as the W3C spec
+  requires), and a `Blob` supplies the raw payload bytes. The
+  `electron application/bookmark` custom format is the one exception — it
+  accepts a [ClipboardBookmark](structures/clipboard-bookmark.md) object.
+  Any non-bookmark value may also be a `Promise` that resolves
+  to a `Blob` or `string`; it is awaited when `clipboard.write()` is called.
 
 Creates a new `ClipboardItem` describing one clipboard entry with one or
 more MIME-typed representations. The constructed item can be passed to
-[`clipboard.write()`](clipboard.md#clipboardwritedata). Resolve any
-`Blob` or `Promise` payload to a `Buffer` (or a `string` for text MIME
-types) before calling the constructor.
+[`clipboard.write()`](clipboard.md#clipboardwritedata). Each `Blob` or
+`Promise` payload is resolved asynchronously when `clipboard.write()` is
+called.
 
 ```js
 // Each `ClipboardItem` describes one clipboard entry with one or more
 // MIME-typed representations. The bookmark custom format takes a structured
-// `{ title, url }` object instead of a Buffer.
+// `{ title, url }` object instead of a Blob.
 const { clipboard, ClipboardItem, nativeImage } = require('electron')
 
 const png = nativeImage.createFromPath('/path/to/icon.png').toPNG()
@@ -53,7 +55,7 @@ clipboard.write([
   new ClipboardItem({
     'text/plain': 'hello',
     'text/html': '<b>hello</b>',
-    'image/png': png,
+    'image/png': new Blob([png], { type: 'image/png' }),
     'electron application/bookmark': {
       title: 'Electron',
       url: 'https://electronjs.org'
@@ -78,10 +80,10 @@ the platform clipboard currently makes available.
 
 * `type` string - mime type to retrieve.
 
-Returns `Promise<Buffer> | Promise<ClipboardBookmark>` - Resolves with the payload for the
+Returns `Promise<import('buffer').Blob> | Promise<ClipboardBookmark>` - Resolves with the payload for the
 given MIME type. Modeled after the W3C
 [`ClipboardItem.getType`](https://developer.mozilla.org/en-US/docs/Web/API/ClipboardItem/getType)
-method. The promise resolves to a `Buffer` for most MIME types; the one
+method. The promise resolves to a `Blob` for most MIME types; the one
 exception is `getType('electron application/bookmark')`, which resolves
 to a [ClipboardBookmark](structures/clipboard-bookmark.md) object instead.
 Rejects when `type` is not present in

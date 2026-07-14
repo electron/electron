@@ -87,22 +87,21 @@ The four read/write methods now all return Promises, matching
 `navigator.clipboard`:
 
 * `clipboard.read()` returns `Promise<ClipboardItem[]>`. Each item
-  exposes a `types` array and `getType(type) → Promise<Buffer>` for
+  exposes a `types` array and `getType(type) → Promise<Blob>` for
   lazy retrieval — matching the W3C
   [`ClipboardItem`](https://developer.mozilla.org/en-US/docs/Web/API/ClipboardItem)
   instance shape. `getType('electron application/bookmark')` is the one
   exception: it resolves to a `{ title, url }` object instead of a
-  `Buffer`.
+  `Blob`.
 * `clipboard.write(items)` returns `Promise<void>` and accepts an array
   of [`ClipboardItem`](api/clipboard-item.md) instances constructed via
   `new ClipboardItem({ [mime]: payload })` — modeled after the W3C
   [`ClipboardItem(items)`](https://developer.mozilla.org/en-US/docs/Web/API/ClipboardItem/ClipboardItem#parameters)
-  constructor. Each payload value is `Buffer | string | Object` (a `string` is
-  committed as UTF-8 and a `Buffer` is committed verbatim; resolve any
-  `Blob` or `Promise` payload to one of those first). The
-  `electron application/bookmark` custom format instead takes a
-  `{ title, url }` object. All entries in a single `write()` call are
-  committed atomically.
+  constructor. Each payload value is `Blob | string | Object` (a `string`
+  is committed as UTF-8 for text MIME types and a `Blob`'s bytes are
+  committed verbatim). The `electron application/bookmark` custom format
+  instead takes a `{ title, url }` object. All entries in a single
+  `write()` call are committed atomically.
 * `clipboard.readText()` returns `Promise<string>`.
 * `clipboard.writeText(text)` returns `Promise<void>`.
 

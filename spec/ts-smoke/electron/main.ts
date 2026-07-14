@@ -1044,22 +1044,23 @@ app.whenReady().then(() => {
   clipboard.clear();
 
   // clipboard.write takes an array of `ClipboardItem` instances. Each is
-  // constructed with a MIME-keyed record whose values are a Buffer or a
+  // constructed with a MIME-keyed record whose values are a Blob or a
   // string (or a { title, url } object for the bookmark MIME type).
   await clipboard.write([
     new ClipboardItem({
       'text/plain': 'Hello World!',
-      'text/html': Buffer.from('<html></html>', 'utf8'),
+      'text/html': '<html></html>',
+      'image/png': new Blob([Buffer.from('89504e470d0a1a0a', 'hex')], { type: 'image/png' }),
       'electron application/bookmark': { title: 'Electron', url: 'https://electronjs.org' }
     })
   ]);
   const items = await clipboard.read();
   for (const item of items) {
     for (const type of item.types) {
-      // `getType` resolves to a Buffer for every MIME type except
+      // `getType` resolves to a Blob for every MIME type except
       // `electron application/bookmark`, which resolves to a `{ title, url }`.
       const payload = await item.getType(type);
-      console.log(type, Buffer.isBuffer(payload) ? payload.length : payload.url);
+      console.log(type, 'url' in payload ? payload.url : payload.size);
     }
   }
 })();

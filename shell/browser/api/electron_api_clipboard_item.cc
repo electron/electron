@@ -42,6 +42,26 @@ namespace {
 
 constexpr std::string_view kImageJpegMime = "image/jpeg";
 
+// Coerce a ClipboardItem payload into its UTF-8 byte sequence. Per the W3C
+// spec a representation's value may be a string (UTF-8 encoded) or a Blob;
+// the JS facade delivers a Blob's bytes as an `ArrayBufferView`. On a type
+// mismatch this throws a `TypeError` and returns `std::nullopt`.
+std::optional<std::string> PayloadToUtf8(v8::Isolate* isolate,
+                                         v8::Local<v8::Value> value) {
+  if (value->IsArrayBufferView()) {
+    auto view = value.As<v8::ArrayBufferView>();
+    std::string bytes(view->ByteLength(), '\0');
+    view->CopyContents(bytes.data(), bytes.size());
+    return bytes;
+  }
+  std::string str;
+  if (gin::ConvertFromV8(isolate, value, &str))
+    return str;
+  isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
+      isolate, "ClipboardItem payload values must be a string or a Blob")));
+  return std::nullopt;
+}
+
 // Write `bytes` to `writer` under the raw platform format `format` via
 // `WriteUnsafeRawData`. Used by the `electron application/osclipboard;
 // format="..."` MIME and the arbitrary-MIME fallback so the bytes land
@@ -307,11 +327,18 @@ ClipboardItem::ClipboardItem(gin::Arguments* args)
   v8::Local<v8::Object> data = items_value.As<v8::Object>();
 
   // Walk the user's `{ [mime]: payload }` object and parse each entry into
-  // the typed `ClipboardItemPayload` variant. Any type mismatch (text MIME
-  // without a string, bookmark MIME without an object, non-text/non-
-  // bookmark MIME without a Buffer) raises a `TypeError` via
-  // `isolate->ThrowException` — `ClipboardItem::New` checks for a pending
-  // exception after `MakeGarbageCollected` returns and propagates.
+  // the typed `ClipboardItemPayload` variant. Per the W3C spec a
+  // representation's value may be a string for *any* MIME type (it is UTF-8
+  // encoded into the payload bytes) or a Blob; the bookmark format instead
+  // takes a `{ title, url }` object. A mismatch (e.g. a bookmark MIME
+  // without an object, or a value that is neither a string nor a Blob)
+  // raises a `TypeError` via `isolate->ThrowException` — `ClipboardItem::New`
+  // checks for a pending exception after `MakeGarbageCollected` returns and
+  // propagates.
+  //
+  // The JS facade resolves each Blob to a Buffer before handing it here, so
+  // native sees a string or an `ArrayBufferView`. User-facing error strings
+  // still say "Blob" because that is what the caller passed.
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::Array> keys;
   if (!data->GetOwnPropertyNames(context).ToLocal(&keys))
@@ -363,30 +390,20 @@ ClipboardItem::ClipboardItem(gin::Arguments* args)
     if (mime == ui::kMimeTypePlainText || mime == ui::kMimeTypeHtml ||
         mime == ui::kMimeTypeRtf ||
         mime == electron::api::clipboard_util::kFindTextMime) {
-      // Text-typed MIMEs take a JS string.
-      std::u16string text;
-      if (!gin::ConvertFromV8(isolate, value, &text)) {
-        isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
-            isolate,
-            "ClipboardItem payloads for text MIME types must be a string")));
+      // Text-typed MIMEs are stored as UTF-16 text.
+      auto utf8 = PayloadToUtf8(isolate, value);
+      if (!utf8)
         return;
-      }
-      payloads_.emplace(mime, std::move(text));
+      payloads_.emplace(mime, base::UTF8ToUTF16(*utf8));
       types_.push_back(std::move(mime));
       continue;
     }
 
-    // Everything else takes a Buffer (or ArrayBufferView). Strings are
-    // only accepted for the text MIMEs above.
-    if (!value->IsArrayBufferView()) {
-      isolate->ThrowException(v8::Exception::TypeError(gin::StringToV8(
-          isolate, "ClipboardItem `data` values must be a Buffer")));
+    // Everything else is stored as the raw payload bytes.
+    auto utf8 = PayloadToUtf8(isolate, value);
+    if (!utf8)
       return;
-    }
-    auto view = value.As<v8::ArrayBufferView>();
-    std::vector<uint8_t> bytes(view->ByteLength());
-    view->CopyContents(bytes.data(), bytes.size());
-    payloads_.emplace(mime, std::move(bytes));
+    payloads_.emplace(mime, std::vector<uint8_t>(utf8->begin(), utf8->end()));
     types_.push_back(std::move(mime));
   }
 }

@@ -19,7 +19,7 @@ The `clipboard` module is modeled after the
 [`ClipboardItem`](clipboard-item.md) objects, and `clipboard.write()`
 accepts an array of `ClipboardItem` instances that map
 [MIME types](https://developer.mozilla.org/en-US/docs/Web/HTTP/MIME_types)
-to [Buffer](https://nodejs.org/api/buffer.html) payloads.
+to [Blob](https://developer.mozilla.org/en-US/docs/Web/API/Blob) payloads.
 
 In addition to the standard MIME types (`text/plain`, `text/html`,
 `text/rtf`, `image/png`, `image/jpeg`, …), Electron exposes a small
@@ -31,7 +31,7 @@ custom formats Electron exposes are:
 
 * `electron application/bookmark` — a URL bookmark. Unlike every other
   MIME type/custom format, its payload is a [ClipboardBookmark](structures/clipboard-bookmark.md) object
-  on both the write and read sides rather than a `Buffer`, so
+  on both the write and read sides rather than a `Blob`, so
   `getType('electron application/bookmark')` resolves to
   `{ title: string, url: string }`.
 * `electron application/findtext` (_macOS_) — the contents of the
@@ -54,7 +54,7 @@ const { clipboard, ClipboardItem } = require('electron')
 
 clipboard.write([
   new ClipboardItem({
-    'web application/x.my-app-clip': Buffer.from('arbitrary payload')
+    'web application/x.my-app-clip': new Blob(['arbitrary payload'])
   })
 ])
 ```
@@ -137,8 +137,8 @@ async function dumpClipboard () {
   const items = await clipboard.read()
   for (const item of items) {
     for (const type of item.types) {
-      const buffer = await item.getType(type)
-      console.log(type, buffer)
+      const blob = await item.getType(type)
+      console.log(type, blob)
     }
   }
 }
@@ -165,7 +165,7 @@ clipboard.write([
   new ClipboardItem({
     'text/plain': 'hello',
     'text/html': '<b>hello</b>',
-    'image/png': png,
+    'image/png': new Blob([png], { type: 'image/png' }),
     'electron application/bookmark': {
       title: 'Electron',
       url: 'https://electronjs.org'
