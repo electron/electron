@@ -54,8 +54,20 @@ Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::ToV8(
   const int32_t process_id = rfh->GetProcess()->GetID().GetUnsafeValue();
   const int routing_id = rfh->GetRoutingID();
 
-  v8::Local<v8::ObjectTemplate> templ = v8::ObjectTemplate::New(isolate);
-  templ->SetInternalFieldCount(2);
+  // Cache the ObjectTemplate using v8::Eternal so it is created only once
+  // per isolate. Previously, a new ObjectTemplate was created on every IPC
+  // call, accumulating short-lived FunctionTemplateInfo objects in V8's old
+  // generation heap. After millions of IPC calls (e.g. from @electron/remote),
+  // this caused heap corruption during V8's idle-time Major GC
+  // (Mark-Compact with compaction), leading to a crash in
+  // InstantiateFunction(). See https://github.com/electron/electron/issues/52343
+  static v8::Eternal<v8::ObjectTemplate> cached_templ;
+  if (cached_templ.IsEmpty()) {
+    v8::Local<v8::ObjectTemplate> templ = v8::ObjectTemplate::New(isolate);
+    templ->SetInternalFieldCount(2);
+    cached_templ.Set(isolate, templ);
+  }
+  v8::Local<v8::ObjectTemplate> templ = cached_templ.Get(isolate);
 
   v8::Local<v8::Object> rfh_obj =
       templ->NewInstance(isolate->GetCurrentContext()).ToLocalChecked();
