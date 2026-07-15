@@ -51,11 +51,7 @@ def upload_node(version):
                    glob.glob('iojs-*.tar.gz'))
 
   if PLATFORM == 'win32':
-    if get_target_arch() == 'ia32':
-      node_lib = os.path.join(DIST_DIR, 'node.lib')
-      iojs_lib = os.path.join(DIST_DIR, 'win-x86', 'iojs.lib')
-      v4_node_lib = os.path.join(DIST_DIR, 'win-x86', 'node.lib')
-    elif get_target_arch() == 'arm64':
+    if get_target_arch() == 'arm64':
       node_lib = os.path.join(DIST_DIR, 'arm64', 'node.lib')
       iojs_lib = os.path.join(DIST_DIR, 'win-arm64', 'iojs.lib')
       v4_node_lib = os.path.join(DIST_DIR, 'win-arm64', 'node.lib')

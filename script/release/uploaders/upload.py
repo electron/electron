@@ -133,8 +133,8 @@ def main():
 
   mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION)
   mksnapshot_zip = os.path.join(OUT_DIR, mksnapshot)
-  if get_target_arch().startswith('arm') and PLATFORM != 'darwin':
-    # Upload the x64 binary for arm/arm64 mksnapshot
+  if get_target_arch() == 'arm64' and PLATFORM != 'darwin':
+    # Upload the x64 binary for arm64 mksnapshot
     mksnapshot = get_zip_name('mksnapshot', ELECTRON_VERSION, 'x64')
     mksnapshot_zip = os.path.join(OUT_DIR, mksnapshot)
 
@@ -192,7 +192,7 @@ def run_python_upload_script(script, *args):
 
 
 def get_electron_build_version():
-  if get_target_arch().startswith('arm') or 'CI' in os.environ:
+  if get_target_arch() == 'arm64' or 'CI' in os.environ:
     # In CI we just build as told.
     return ELECTRON_VERSION
   electron = get_electron_exec()

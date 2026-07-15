@@ -29,6 +29,8 @@ can be created from, eliminating the Node bootstrap recompile.
   snapshot's per-builtin cache.
 - node_mksnapshot.cc: read --electron-v8-snapshot-blob, set the c_function
   drop env var, plumb the base blob to the SnapshotCreator.
+- unofficial.gni: check for mold linkers in addition to lld in disable_icf
+  config following https://chromium-review.googlesource.com/c/v8/v8/+/7808546.
 
 diff --git a/node.gni b/node.gni
 index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..fb7462cc0c7c2e267847c54e7e1ff4db1559b338 100644
@@ -236,7 +238,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 1285f83662e4f252faa1730df04cafc588cd7556..fe2c6786a10f94fc0a15d4b6a0d3bfffb79f2e33 100644
+index 1285f83662e4f252faa1730df04cafc588cd7556..e6ff9a302624ca829739e5b38385fa5c050e6fd4 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,12 @@ template("node_gn_build") {
@@ -337,7 +339,7 @@ index 1285f83662e4f252faa1730df04cafc588cd7556..fe2c6786a10f94fc0a15d4b6a0d3bfff
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
 -        } else if ((!is_apple && use_gold) || use_lld) {
-+        } else if (use_lld) {
++        } else if (use_lld || linker_path != "") {
            ldflags = [ "-Wl,--icf=none" ]
          }
        }

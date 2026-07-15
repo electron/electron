@@ -1,7 +1,5 @@
 chromedriver
 icudtl.dat
-libEGL.dylib
-libGLESv2.dylib
 libffmpeg.dylib
 libvk_swiftshader.dylib
 libvulkan.dylib
