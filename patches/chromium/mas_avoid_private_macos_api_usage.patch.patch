@@ -1449,7 +1449,7 @@ index df81a017297f8c5a9e2f9a29c272af7e3936bc84..99c1b632c8a9d93d56f307e437a47c18
  
  source_set("sandbox_unittests") {
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index a243eba4fead115a34165cff3a1ebf37e2248f19..abf8526f749d00d26c95751147fdc7d2dafc2637 100644
+index a243eba4fead115a34165cff3a1ebf37e2248f19..8e4c119d5551747605272681b68968adbcabfeec 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
 @@ -17,6 +17,7 @@
@@ -1479,7 +1479,7 @@ index a243eba4fead115a34165cff3a1ebf37e2248f19..abf8526f749d00d26c95751147fdc7d2
 +#if !IS_MAS_BUILD()
      abort_report_np(message);
 +#else
-+    os_log_fault(OS_LOG_DEFAULT, "%s", message);
++    UNSAFE_TODO(os_log_fault(OS_LOG_DEFAULT, "%s", message));
 +    abort();
 +#endif
    }
