@@ -99,7 +99,7 @@ jobs:
         echo "cross-instance-cache: free before=${CROSS_FREE_BEFORE_GB}GB, after=${CROSS_FREE_AFTER_GB}GB, freed=${CROSS_FREED_GB}GB, total=${CROSS_TOTAL_GB}GB"
         echo "win-cache: free before=${WIN_FREE_BEFORE_GB}GB, after=${WIN_FREE_AFTER_GB}GB, freed=${WIN_FREED_GB}GB, total=${WIN_TOTAL_GB}GB"
 
-        curl -s -X POST "https://api.datadoghq.com/api/v2/series" \
+        if curl -sS -X POST "https://api.datadoghq.com/api/v2/series" \
           -H "Content-Type: application/json" \
           -H "DD-API-KEY: ${DD_API_KEY}" \
           -d @- << EOF
@@ -164,5 +164,8 @@ jobs:
           ]
         }
         EOF
-
-        echo "Disk space metrics logged to Datadog"
+        then
+          echo "Disk space metrics logged to Datadog"
+        else
+          echo "::warning::Datadog metrics upload failed"
+        fi
