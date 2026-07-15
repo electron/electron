@@ -348,6 +348,23 @@ async function writeRTF (text, clipboardType) {
 }
 ```
 
+### Removed migration path from pre-macOS 13 login items to the new `SMAppService` API
+
+On macOS 12 and below, Electron used legacy APIs to power
+[`app.getLoginItemSettings()`](https://www.electronjs.org/docs/latest/api/app#appgetloginitemsettingsoptions-macos-windows)
+and [`app.setLoginItemSettings()`](https://www.electronjs.org/docs/latest/api/app#appsetloginitemsettingssettings-macos-windows).
+
+Now that support for macOS 12 has been dropped, Electron uses the new `SMAppService`
+API only.
+
+From Electron 29 to 43 (i.e., for over two years), Electron has been migrating login
+items created with the old API to the new API automatically. Starting in Electron 44,
+Electron no longer performs this migration automatically.
+
+Most end users should have been migrated by now. Thus, this change should have little
+impact. The benefits are fixing a deadlock in `app.getLoginItemSettings()` (see also PR
+[#48090](https://github.com/electron/electron/pull/48090)) and easier maintenance.
+
 ## Planned Breaking API Changes (43.0)
 
 ### Behavior Changed: Rounded corners on Linux

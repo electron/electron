@@ -12,10 +12,9 @@
 
 #include "base/apple/bridging.h"
 #include "base/apple/bundle_locations.h"
+#include "base/apple/foundation_util.h"
 #include "base/apple/scoped_cftyperef.h"
 #include "base/i18n/rtl.h"
-#include "base/mac/mac_util.h"
-#include "base/mac/mac_util.mm"
 #include "base/strings/sys_string_conversions.h"
 #include "chrome/browser/browser_process.h"
 #include "electron/mas.h"
@@ -72,33 +71,6 @@ std::u16string GetAppDisplayNameForProtocol(NSString* app_path) {
       [[NSFileManager defaultManager] displayNameAtPath:app_path];
   return base::SysNSStringToUTF16(app_display_name);
 }
-
-#if !IS_MAS_BUILD()
-bool CheckLoginItemStatus(bool* is_hidden) {
-  base::mac::LoginItemsFileList login_items;
-  if (!login_items.Initialize())
-    return false;
-
-  base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(
-      login_items.GetLoginItemForMainApp());
-  if (!item.get())
-    return false;
-
-  if (is_hidden)
-    *is_hidden = base::mac::IsHiddenLoginItem(item.get());
-
-  return true;
-}
-
-LoginItemSettings GetLoginItemSettingsDeprecated() {
-  LoginItemSettings settings;
-  settings.open_at_login = CheckLoginItemStatus(&settings.open_as_hidden);
-  settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
-  settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
-  settings.opened_as_hidden = base::mac::WasLaunchedAsHiddenLoginItem();
-  return settings;
-}
-#endif
 
 }  // namespace
 
@@ -407,7 +379,6 @@ void Browser::ApplyForcedRTL() {
 
 v8::Local<v8::Value> Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
-  LoginItemSettings settings;
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
 
   if (options.type != "mainAppService" && options.service_name.empty()) {
@@ -416,31 +387,14 @@ v8::Local<v8::Value> Browser::GetLoginItemSettings(
     return v8::Local<v8::Value>();
   }
 
-#if IS_MAS_BUILD()
   const std::string status =
       platform_util::GetLoginItemEnabled(options.type, options.service_name);
-  settings.open_at_login =
-      status == "enabled" || status == "enabled-deprecated";
+
+  LoginItemSettings settings;
+  settings.open_at_login = status == "enabled";
   settings.opened_at_login = was_launched_at_login_;
-  if (@available(macOS 13, *))
-    settings.status = status;
-#else
-  // If the app was previously set as a LoginItem with the deprecated API,
-  // we should report its LoginItemSettings via the old API.
-  if (@available(macOS 13, *)) {
-    const std::string status =
-        platform_util::GetLoginItemEnabled(options.type, options.service_name);
-    if (status == "enabled-deprecated") {
-      settings = GetLoginItemSettingsDeprecated();
-    } else {
-      settings.open_at_login = status == "enabled";
-      settings.opened_at_login = was_launched_at_login_;
-      settings.status = status;
-    }
-  } else {
-    settings = GetLoginItemSettingsDeprecated();
-  }
-#endif
+  settings.status = status;
+
   return gin::ConvertToV8(isolate, settings);
 }
 
@@ -450,34 +404,9 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
         .ThrowTypeError("'name' is required when type is not mainAppService");
     return;
   }
-#if IS_MAS_BUILD()
+
   platform_util::SetLoginItemEnabled(settings.type, settings.service_name,
                                      settings.open_at_login);
-#else
-  const base::FilePath bundle_path = base::apple::MainBundlePath();
-  if (@available(macOS 13, *)) {
-    // If the app was previously set as a LoginItem with the old API, remove it
-    // as a LoginItem via the old API before re-enabling with the new API.
-    const std::string status =
-        platform_util::GetLoginItemEnabled("mainAppService", "");
-    if (status == "enabled-deprecated") {
-      base::mac::RemoveFromLoginItems(bundle_path);
-      if (settings.open_at_login) {
-        platform_util::SetLoginItemEnabled(settings.type, settings.service_name,
-                                           settings.open_at_login);
-      }
-    } else {
-      platform_util::SetLoginItemEnabled(settings.type, settings.service_name,
-                                         settings.open_at_login);
-    }
-  } else {
-    if (settings.open_at_login) {
-      base::mac::AddToLoginItems(bundle_path, settings.open_as_hidden);
-    } else {
-      base::mac::RemoveFromLoginItems(bundle_path);
-    }
-  }
-#endif
 }
 
 std::string Browser::GetExecutableFileVersion() const {
