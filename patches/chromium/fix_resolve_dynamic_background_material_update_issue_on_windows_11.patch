@@ -36,7 +36,7 @@ index 51742491784977bd8de9022714aac331a28b2d25..b7e1d2bac7c2091f0f7fa5f8c3cbf2b3
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index eb72fe9fd7ed45c951a4407ba1123aacff56445f..78f790440283b66ab1858d691ea8a0d86f262ce4 100644
+index 1e932178493f5f1f405c1a9151358bbd0eba6304..c6bded31a8af25134e23a3a7c6f8bd64eccec79f 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -1023,13 +1023,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
@@ -71,7 +71,7 @@ index eb72fe9fd7ed45c951a4407ba1123aacff56445f..78f790440283b66ab1858d691ea8a0d8
    const bool can_maximize = can_resize && delegate_->CanMaximize();
  
    auto set_style_func = [&style](LONG bit, bool should_set) {
-@@ -1724,11 +1731,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
+@@ -1764,11 +1771,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
    // through, but that isn't the case when using Direct3D to draw transparent
    // windows. So we route translucent windows throught to the delegate to
    // allow for a custom hit mask.
@@ -89,7 +89,7 @@ index eb72fe9fd7ed45c951a4407ba1123aacff56445f..78f790440283b66ab1858d691ea8a0d8
      return;
    }
  
-@@ -2489,17 +2501,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+@@ -2529,17 +2541,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
      delegate_->SchedulePaint();
    }
  
