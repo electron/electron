@@ -1386,6 +1386,17 @@ describe('BrowserWindow module', () => {
         w.hide();
         expect(w.isFocused()).to.equal(false);
       });
+      it('releases focus when hiding a focused window', async () => {
+        const focused = once(w, 'focus');
+        w.show();
+        await focused;
+        expect(w.isFocused()).to.equal(true);
+
+        const blurred = once(w, 'blur');
+        w.hide();
+        await blurred;
+        expect(w.isFocused()).to.equal(false);
+      });
     });
 
     describe('BrowserWindow.minimize()', () => {
