@@ -1,35 +1,40 @@
-// Copyright 2014 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #ifndef ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_COMPONENT_EXTENSION_RESOURCE_MANAGER_H_
 #define ELECTRON_SHELL_BROWSER_EXTENSIONS_ELECTRON_COMPONENT_EXTENSION_RESOURCE_MANAGER_H_
 
-#include <stddef.h>
-
 #include <map>
+#include <memory>
 #include <string>
 
-#include "base/containers/span.h"
-#include "base/files/file_path.h"
+#include "base/memory/weak_ptr.h"
 #include "extensions/browser/component_extension_resource_manager.h"
-#include "ui/base/webui/resource_path.h"
+#include "extensions/buildflags/buildflags.h"
+#include "extensions/common/extension_id.h"
 
-struct GritResourceMap;
+static_assert(BUILDFLAG(ENABLE_EXTENSIONS_CORE));
+
+namespace content {
+class BrowserContext;
+}
 
 namespace extensions {
 
+// Refs
+// //chrome/browser/extensions/chrome_component_extension_resource_manager.h
 class ElectronComponentExtensionResourceManager
     : public ComponentExtensionResourceManager {
  public:
   ElectronComponentExtensionResourceManager();
-  ~ElectronComponentExtensionResourceManager() override;
 
-  // disable copy
   ElectronComponentExtensionResourceManager(
       const ElectronComponentExtensionResourceManager&) = delete;
   ElectronComponentExtensionResourceManager& operator=(
       const ElectronComponentExtensionResourceManager&) = delete;
+
+  ~ElectronComponentExtensionResourceManager() override;
 
   // Overridden from ComponentExtensionResourceManager:
   bool IsComponentExtensionResource(const base::FilePath& extension_path,
@@ -53,27 +58,24 @@ class ElectronComponentExtensionResourceManager
       TemplateDataProvider provider) const override;
 
  private:
+  class Data;
+
   using ExtensionIdAndContext =
       std::pair<ExtensionId, const content::BrowserContext*>;
   void OnTemplateDataProviderRemoved(const ExtensionIdAndContext& key) const;
 
-  void AddComponentResourceEntries(
-      base::span<const webui::ResourcePath> entries);
+  void LazyInitData() const;
+
+  // Logically const. Initialized on demand to keep browser start-up fast.
+  mutable std::unique_ptr<const Data> data_;
 
   mutable std::map<ExtensionIdAndContext, TemplateDataProvider>
       template_data_providers_;
   mutable std::map<ExtensionIdAndContext, ui::TemplateReplacements>
       template_replacements_;
 
-  mutable base::WeakPtrFactory<const ChromeComponentExtensionResourceManager>
+  mutable base::WeakPtrFactory<const ElectronComponentExtensionResourceManager>
       weak_factory_{this};
-
-  // A map from a resource path to the resource ID.  Used by
-  // IsComponentExtensionResource.
-  std::map<base::FilePath, int> path_to_resource_id_;
-
-  // A map from an extension ID to its i18n template replacements.
-  std::map<std::string, ui::TemplateReplacements> template_replacements_;
 };
 
 }  // namespace extensions
