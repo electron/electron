@@ -1,0 +1,322 @@
+From 7b1c374664a88e23b15eb05e5b60e415af271851 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sam@electronjs.org>
+Date: Tue, 14 Jul 2026 19:47:16 +0000
+Subject: [PATCH] siso: retry ENOBUFS spawn-helper writes and never split a
+ frame mid-stream
+
+Every non-console local step is executed via the out-of-process spawn
+helper over a single AF_UNIX SOCK_STREAM socketpair carrying
+length-delimited SpawnMessage protos. On macOS, a write to a unix
+stream socket returns ENOBUFS when kernel socket buffers are exhausted
+instead of blocking until space frees up like Linux does. Under the
+write bursts of a full release build this intermittently fails a step
+with "spawn helper: write unix ->: write: no buffer space available";
+worse, protodelim.MarshalTo issues the length prefix and payload as
+separate writes, so an error after a partial write desyncs the stream,
+the peer's reader fails with "proto: cannot parse invalid wire-format
+data", and the helper connection dies taking every in-flight step with
+it (up to 283 observed in one build).
+
+Marshal the whole frame (varint length prefix + payload) into a single
+buffer and write it with one loop that continues after partial writes
+and retries ENOBUFS/EAGAIN with exponential backoff (1ms doubling to
+100ms, giving up after ~2s of accumulated waiting), so kernel buffer
+pressure causes a brief stall instead of a failed build. Linux
+behavior is unchanged: writes there block rather than returning
+ENOBUFS, so the retry path is never taken. Both directions are covered
+since client and helper share spawnConn.send.
+
+If the retry budget is exhausted anyway (or a non-retryable error
+hits) after part of the frame has already reached the wire, the stream
+is permanently desynced and no later send could ever be parsed, so
+retire the connection: close it so both ends' readers fail with a
+clean net.ErrClosed/EOF (Client.readLoop fails all pending runs; the
+helper treats it as siso exiting) instead of leaving a poisoned stream
+whose next frame recreates the wire-format parse error. A failure
+before any byte is written leaves the connection open, since the
+stream is still in sync and only that one spawn needs to fail.
+
+Add a round-trip test that the manual framing stays compatible with
+recv's protodelim reader, including a multi-megabyte payload spanning
+many kernel-buffer-sized writes, plus tests that abandoning a
+partially written frame (retry exhaustion or a hard error) closes the
+connection while a failure before any byte is written leaves it open.
+---
+ siso/execute/spawnhelper/spawn_wire.go      |  77 +++++++++-
+ siso/execute/spawnhelper/spawn_wire_test.go | 157 ++++++++++++++++++++
+ 2 files changed, 231 insertions(+), 3 deletions(-)
+ create mode 100644 siso/execute/spawnhelper/spawn_wire_test.go
+
+diff --git a/siso/execute/spawnhelper/spawn_wire.go b/siso/execute/spawnhelper/spawn_wire.go
+index 5b8048d..a3869d3 100644
+--- a/siso/execute/spawnhelper/spawn_wire.go
++++ b/siso/execute/spawnhelper/spawn_wire.go
+@@ -8,10 +8,15 @@ package spawnhelper
+ 
+ import (
+ 	"bufio"
++	"errors"
+ 	"net"
+ 	"sync"
++	"syscall"
++	"time"
+ 
+ 	"google.golang.org/protobuf/encoding/protodelim"
++	"google.golang.org/protobuf/encoding/protowire"
++	"google.golang.org/protobuf/proto"
+ 
+ 	epb "go.chromium.org/build/siso/execute/proto"
+ )
+@@ -23,8 +28,11 @@ var spawnUnmarshalOpts = protodelim.UnmarshalOptions{MaxSize: -1}
+ 
+ // spawnConn is a framed transport over a unix socket. recv is called by one
+ // goroutine; send may be concurrent and serializes writes.
++//
++// c is a *net.UnixConn in production; it is an interface only so tests can
++// substitute a conn with deterministic write failures.
+ type spawnConn struct {
+-	c   *net.UnixConn
++	c   net.Conn
+ 	r   *bufio.Reader
+ 	wmu sync.Mutex
+ }
+@@ -42,11 +50,74 @@ func (s *spawnConn) close() error {
+ 
+ // send writes one length-delimited SpawnMessage. Concurrent sends serialize on
+ // wmu so messages never interleave on the stream.
++//
++// The whole frame (varint length prefix + payload) is marshaled into a single
++// buffer and written by one retry loop, so a transient write error can never
++// leave the stream desynced mid-frame: the peer's protodelim reader would fail
++// with a wire-format error and take down every in-flight spawn with it.
+ func (s *spawnConn) send(msg *epb.SpawnMessage) error {
+ 	s.wmu.Lock()
+ 	defer s.wmu.Unlock()
+-	_, err := protodelim.MarshalTo(s.c, msg)
+-	return err
++	body, err := proto.Marshal(msg)
++	if err != nil {
++		return err
++	}
++	frame := protowire.AppendVarint(make([]byte, 0, protowire.SizeVarint(uint64(len(body)))+len(body)), uint64(len(body)))
++	frame = append(frame, body...)
++	return s.writeFull(frame)
++}
++
++// writeFull writes b completely to the socket, retrying transient kernel
++// buffer exhaustion with backoff. macOS returns ENOBUFS from writes on an
++// AF_UNIX stream socket when kernel socket buffers are exhausted, instead of
++// blocking until space frees up like Linux does. Without the retry a single
++// ENOBUFS fails that spawn, and an ENOBUFS after a partial write desyncs the
++// framing and kills the whole helper connection. The loop keeps writing the
++// remainder after a partial write so a frame is never abandoned halfway.
++//
++// If it still has to give up (retry budget exhausted, or a non-retryable
++// error) after part of the frame has reached the wire, the stream is
++// permanently desynced: the peer's protodelim reader would parse the next
++// frame's bytes as the remainder of this one. Returning an error for just
++// this spawn would leave that poisoned stream in place for every later send,
++// so retire the connection instead — the peer and our own reader fail with a
++// clean net.ErrClosed/EOF (Client.readLoop fails all pending Runs; the helper
++// treats it as siso exiting) rather than a wire-format parse error mid-build.
++// A failure before any byte was written leaves the stream in sync, so the
++// connection stays usable and only this send fails.
++func (s *spawnConn) writeFull(b []byte) error {
++	const (
++		maxDelay = 100 * time.Millisecond
++		maxWait  = 2 * time.Second
++	)
++	total := len(b)
++	delay := time.Millisecond
++	var waited time.Duration
++	for len(b) > 0 {
++		n, err := s.c.Write(b)
++		b = b[n:]
++		if err == nil {
++			continue
++		}
++		if (errors.Is(err, syscall.ENOBUFS) || errors.Is(err, syscall.EAGAIN)) && waited < maxWait {
++			time.Sleep(delay)
++			waited += delay
++			delay *= 2
++			if delay > maxDelay {
++				delay = maxDelay
++			}
++			continue
++		}
++		if len(b) < total {
++			// Frame abandoned mid-write; the stream can never resync.
++			// Multiple closes are fine: net.Conn.Close is idempotent
++			// (later calls just return net.ErrClosed), and close() /
++			// the server's send-failure path already rely on that.
++			_ = s.c.Close()
++		}
++		return err
++	}
++	return nil
+ }
+ 
+ // recv reads one length-delimited SpawnMessage.
+diff --git a/siso/execute/spawnhelper/spawn_wire_test.go b/siso/execute/spawnhelper/spawn_wire_test.go
+new file mode 100644
+index 0000000..8ba9063
+--- /dev/null
++++ b/siso/execute/spawnhelper/spawn_wire_test.go
+@@ -0,0 +1,157 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++//go:build unix
++
++package spawnhelper
++
++import (
++	"bufio"
++	"bytes"
++	"errors"
++	"io"
++	"net"
++	"os"
++	"syscall"
++	"testing"
++	"time"
++
++	"google.golang.org/protobuf/proto"
++	"google.golang.org/protobuf/types/known/anypb"
++
++	epb "go.chromium.org/build/siso/execute/proto"
++)
++
++// socketpairConns returns two spawnConns joined by an AF_UNIX SOCK_STREAM
++// socketpair, like the real siso<->helper connection.
++func socketpairConns(t *testing.T) (*spawnConn, *spawnConn) {
++	t.Helper()
++	fds, err := syscall.Socketpair(syscall.AF_UNIX, syscall.SOCK_STREAM, 0)
++	if err != nil {
++		t.Fatalf("socketpair: %v", err)
++	}
++	conns := make([]*spawnConn, 2)
++	for i, fd := range fds {
++		f := os.NewFile(uintptr(fd), "spawn-wire-test")
++		c, err := net.FileConn(f)
++		f.Close()
++		if err != nil {
++			t.Fatalf("fileconn: %v", err)
++		}
++		uc, ok := c.(*net.UnixConn)
++		if !ok {
++			t.Fatalf("unexpected conn type %T", c)
++		}
++		conns[i] = newSpawnConn(uc)
++		t.Cleanup(func() { conns[i].close() })
++	}
++	return conns[0], conns[1]
++}
++
++// TestSpawnConnRoundTrip verifies send's manual framing (single-buffer varint
++// prefix + payload) stays compatible with recv's protodelim reader, including
++// a payload large enough to span many kernel-buffer-sized writes.
++func TestSpawnConnRoundTrip(t *testing.T) {
++	a, b := socketpairConns(t)
++	want := &epb.SpawnMessage{
++		Id: 42,
++		Payload: &epb.SpawnMessage_Result{
++			Result: &epb.SpawnResult{
++				ActionResult: &anypb.Any{
++					TypeUrl: "spawn-wire-test",
++					Value:   bytes.Repeat([]byte("spawn-wire-roundtrip"), 1<<18), // ~5 MiB
++				},
++			},
++		},
++	}
++	done := make(chan error, 1)
++	go func() { done <- a.send(want) }()
++	got, err := b.recv()
++	if err != nil {
++		t.Fatalf("recv: %v", err)
++	}
++	if err := <-done; err != nil {
++		t.Fatalf("send: %v", err)
++	}
++	if !proto.Equal(got, want) {
++		t.Errorf("recv message differs from sent message: got id %d, %d payload bytes", got.GetId(), len(got.GetResult().GetActionResult().GetValue()))
++	}
++}
++
++// stubConn is a net.Conn whose Write accepts up to accept bytes in total and
++// then persistently fails with werr, like a macOS AF_UNIX socket whose kernel
++// buffers never drain. It records whether the conn was closed.
++type stubConn struct {
++	accept int   // total bytes Write accepts before failing
++	werr   error // error returned once accept is exhausted
++	wrote  int
++	closed bool
++}
++
++func (f *stubConn) Write(p []byte) (int, error) {
++	n := min(f.accept-f.wrote, len(p))
++	f.wrote += n
++	if n == len(p) {
++		return n, nil
++	}
++	return n, f.werr
++}
++
++func (f *stubConn) Read(p []byte) (int, error)         { return 0, io.EOF }
++func (f *stubConn) Close() error                       { f.closed = true; return nil }
++func (f *stubConn) LocalAddr() net.Addr                { return &net.UnixAddr{Net: "unix"} }
++func (f *stubConn) RemoteAddr() net.Addr               { return &net.UnixAddr{Net: "unix"} }
++func (f *stubConn) SetDeadline(t time.Time) error      { return nil }
++func (f *stubConn) SetReadDeadline(t time.Time) error  { return nil }
++func (f *stubConn) SetWriteDeadline(t time.Time) error { return nil }
++
++// stubSpawnConn returns a spawnConn over a stubConn that accepts `accept`
++// bytes and then persistently fails writes with werr.
++func stubSpawnConn(accept int, werr error) (*spawnConn, *stubConn) {
++	fc := &stubConn{accept: accept, werr: werr}
++	return &spawnConn{c: fc, r: bufio.NewReader(fc)}, fc
++}
++
++// TestSpawnConnSendRetryExhaustionClosesConn verifies that when ENOBUFS
++// persists past the retry budget after part of a frame is already on the
++// wire, send retires the connection: a truncated frame can never resync, and
++// leaving the conn open would desync the peer's parser for every later send.
++// Takes ~2s: it deliberately exhausts writeFull's real backoff budget.
++func TestSpawnConnSendRetryExhaustionClosesConn(t *testing.T) {
++	sc, fc := stubSpawnConn(1, syscall.ENOBUFS) // first write is partial, then ENOBUFS forever
++	err := sc.send(&epb.SpawnMessage{Id: 42})
++	if !errors.Is(err, syscall.ENOBUFS) {
++		t.Fatalf("send: got %v, want ENOBUFS after retry exhaustion", err)
++	}
++	if !fc.closed {
++		t.Errorf("connection left open after abandoning a partially written frame; later sends would desync the stream")
++	}
++}
++
++// TestSpawnConnSendErrorAfterPartialWriteClosesConn verifies that any
++// non-retryable write failure mid-frame also retires the connection.
++func TestSpawnConnSendErrorAfterPartialWriteClosesConn(t *testing.T) {
++	sc, fc := stubSpawnConn(1, syscall.EPIPE)
++	err := sc.send(&epb.SpawnMessage{Id: 42})
++	if !errors.Is(err, syscall.EPIPE) {
++		t.Fatalf("send: got %v, want EPIPE", err)
++	}
++	if !fc.closed {
++		t.Errorf("connection left open after abandoning a partially written frame")
++	}
++}
++
++// TestSpawnConnSendErrorBeforeAnyWriteKeepsConn verifies that a write failure
++// before any byte reaches the wire leaves the connection open: the stream is
++// still in sync, so only this send should fail.
++func TestSpawnConnSendErrorBeforeAnyWriteKeepsConn(t *testing.T) {
++	sc, fc := stubSpawnConn(0, syscall.EPIPE)
++	err := sc.send(&epb.SpawnMessage{Id: 42})
++	if !errors.Is(err, syscall.EPIPE) {
++		t.Fatalf("send: got %v, want EPIPE", err)
++	}
++	if fc.closed {
++		t.Errorf("connection closed even though no frame bytes were written; stream was still in sync")
++	}
++}
