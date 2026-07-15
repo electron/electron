@@ -151,7 +151,7 @@ class OffScreenRenderWidgetHostView
       base::OnceCallback<void(const content::CopyFromSurfaceResult&)> callback)
       override;
   void TransformPointToRootSurface(gfx::PointF* point) override {}
-  gfx::Rect GetBoundsInRootWindow() override;
+  gfx::Rect GetBoundsInScreen() override;
   std::optional<content::DisplayFeature> GetDisplayFeature() override;
   void DisableDisplayFeatureOverrideForEmulation() override {}
   void OverrideDisplayFeatureForEmulation(

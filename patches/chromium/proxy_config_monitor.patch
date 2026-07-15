@@ -6,20 +6,21 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 50e7a07af841ff55cd24c0a79eef5dcc68807933..ed40ecdb91ddd7139f8f463809594ddfca793fcc 100644
+index 2909657199dbeaecfcf2bdba18309fd0a5f7ee7a..d0e3e0dcf9ac9b6ae6795e716c205f7bdef12ec7 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
-@@ -11,7 +11,9 @@
+@@ -11,8 +11,10 @@
  #include "build/chromeos_buildflags.h"
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/net/proxy_service_factory.h"
 +#if 0
+ #include "chrome/browser/policy/profile_policy_connector.h"
  #include "chrome/browser/profiles/profile.h"
 +#endif
  #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
  #include "content/public/browser/browser_thread.h"
  #include "mojo/public/cpp/bindings/pending_remote.h"
-@@ -21,12 +23,13 @@
+@@ -22,12 +24,13 @@
  #include "chrome/browser/ash/profiles/profile_helper.h"
  #endif  // BUILDFLAG(IS_CHROMEOS)
  
@@ -34,7 +35,7 @@ index 50e7a07af841ff55cd24c0a79eef5dcc68807933..ed40ecdb91ddd7139f8f463809594ddf
  ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    DCHECK(profile);
-@@ -57,6 +60,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+@@ -59,6 +62,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
  
    proxy_config_service_->AddObserver(this);
  }
@@ -42,7 +43,7 @@ index 50e7a07af841ff55cd24c0a79eef5dcc68807933..ed40ecdb91ddd7139f8f463809594ddf
  
  ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
-@@ -135,8 +139,10 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+@@ -137,8 +141,10 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
  void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
                                            const std::string& details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -53,7 +54,7 @@ index 50e7a07af841ff55cd24c0a79eef5dcc68807933..ed40ecdb91ddd7139f8f463809594ddf
  }
  
  void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-@@ -151,7 +157,9 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+@@ -153,7 +159,9 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
      return;
    }
  

@@ -483,7 +483,7 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
       src_rect, output_size, base::TimeDelta(), std::move(callback));
 }
 
-gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
+gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInScreen() {
   return gfx::Rect(size_);
 }
 

@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 1aa9a9b200d1b0558e723546f41182db8b1518ac..e9d5109115a091373cd3b447c252d8ac985937d6 100644
+index 752e86c98be7eb6a69137e2015340fb218950bb9..7ec3a5ca800ac8b4785ac837fa7b486a9ee5a5cd 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -367,7 +367,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -36,7 +36,7 @@ index 1aa9a9b200d1b0558e723546f41182db8b1518ac..e9d5109115a091373cd3b447c252d8ac
  
    if (changed) {
      observer_list_.Notify(&CompositorObserver::OnCompositorVisibilityChanged,
-@@ -1060,6 +1063,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
+@@ -1061,6 +1064,15 @@ void Compositor::MaybeUpdateObserveBeginFrame() {
        host_begin_frame_observer_->GetBoundRemote());
  }
  
@@ -53,7 +53,7 @@ index 1aa9a9b200d1b0558e723546f41182db8b1518ac..e9d5109115a091373cd3b447c252d8ac
  void Compositor::SetSeamlessRefreshRates(
      const std::vector<float>& seamless_refresh_rates) {
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 50325b22f546ae83ac59559d76c2d2d321182af8..33232c5824dcc91702e22992bbc9b538d49b38e5 100644
+index f5db8cc34d55199673b9990237ffd9e2f2024f6a..3f12a6203da0e5edc21d7272abd58bf2bfc74dcd 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -504,6 +504,10 @@ class COMPOSITOR_EXPORT Compositor
@@ -67,7 +67,7 @@ index 50325b22f546ae83ac59559d76c2d2d321182af8..33232c5824dcc91702e22992bbc9b538
    size_t saved_events_metrics_count_for_testing() const {
      return host_->saved_events_metrics_count_for_testing();
    }
-@@ -713,6 +717,12 @@ class COMPOSITOR_EXPORT Compositor
+@@ -720,6 +724,12 @@ class COMPOSITOR_EXPORT Compositor
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  
