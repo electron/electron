@@ -49,10 +49,10 @@ index d82b9c7eaaa1a40ec6de538453fb13a5a8591753..5f366fa9dff2e9c104939ea4c6ddecd1
    }
  
 diff --git a/chrome/browser/ui/ash/web_view/ash_web_view_impl.cc b/chrome/browser/ui/ash/web_view/ash_web_view_impl.cc
-index e4e42249c476ccae58f0ba42e7dbae299f1e36bd..670c30ed4b7f1a07eb4b8abaa95e5a8a9d94bd8d 100644
+index 9bc9493e5ae234925437dd490ba9e3cbfc353502..fb280cd591b88d56052252b503e63f5f65d830b0 100644
 --- a/chrome/browser/ui/ash/web_view/ash_web_view_impl.cc
 +++ b/chrome/browser/ui/ash/web_view/ash_web_view_impl.cc
-@@ -121,10 +121,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
+@@ -122,10 +122,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 1d3cce8a2a9b278f9a359301329bc1bb62a2f207..43f9f6accb086246b8df49abeaeccfdf060d38f3 100644
+index 39ea3dfbf52cc69dbe79a6a50fcced0300127aef..900d9b752af3e80ce3a8c42b29c555a28cc4678a 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1685,8 +1685,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1682,8 +1682,7 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,7 +93,7 @@ index 1d3cce8a2a9b278f9a359301329bc1bb62a2f207..43f9f6accb086246b8df49abeaeccfdf
    if (actor::HasActorTaskPreventingNewWebContents(opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -1708,7 +1707,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1705,7 +1704,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -103,10 +103,10 @@ index 1d3cce8a2a9b278f9a359301329bc1bb62a2f207..43f9f6accb086246b8df49abeaeccfdf
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 732127f21a7039f705cea1106343566a7a01f4ab..cbde2d7ab46c5f237f5560690991b11010bcda21 100644
+index 6f8ebd1d1275b9294684f3abeb2f27c0f509d014..f0d90669fa5affa49e936e965664b59f7db4cfff 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -687,8 +687,7 @@ class Browser : public TabStripModelObserver,
+@@ -634,8 +634,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -187,7 +187,7 @@ index e5ce6a6cdc7591172c7021852041f06c7bcaffcc..67428773f9f840e622faa5af2a1a79ac
                            const content::GlobalRenderFrameHostId& opener_id,
                            const std::string& frame_name,
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index 60ea22dbe66519e66a367abd400d141f36ad1043..c68d94f7cc79c2d73bab4acc05b8de6792edf883 100644
+index 4f3a04acead66a2289299cc007e575968ea4c993..733f867fdb422716a748d43b5c4945c25ac75007 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -219,15 +219,14 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -251,10 +251,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index c41e486258f0a6a437ba3582ab766d14177d5d35..405e1a3d8d3387ecf08a4d1178ad7cf50b8e3ad0 100644
+index 3a86c638e6ae38fd577758748b29e31c8787106a..a9ff1a713414ac8192e460d976e39d10fa381115 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5539,8 +5539,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5514,8 +5514,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
@@ -427,7 +427,7 @@ index 5cf3fc51e98742794b7de945c2de2743bde4efb1..22355c1d41110ab8291d8ed4c7b35493
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index 44819a301f886c938cbd0defad060f67015d4d65..25e82968214d47fb9f0b59ab93042513f10445b7 100644
+index 01eb0f31aa5c374621b69e049ec6e7ab4f31993f..7c2273d1d05b1cbca9b1cdbb00f184b6c4112d1c 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -490,8 +490,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
