@@ -1397,6 +1397,24 @@ describe('BrowserWindow module', () => {
         await blurred;
         expect(w.isFocused()).to.equal(false);
       });
+      it('restores focus to the parent when hiding a focused child window', async () => {
+        const focused = once(w, 'focus');
+        w.show();
+        await focused;
+
+        const child = new BrowserWindow({ show: false, parent: w });
+        const childFocused = once(child, 'focus');
+        child.show();
+        await childFocused;
+        expect(child.isFocused()).to.equal(true);
+
+        const parentFocused = once(w, 'focus');
+        child.hide();
+        await parentFocused;
+        expect(w.isFocused()).to.equal(true);
+
+        await closeWindow(child, { assertNotWindows: false });
+      });
     });
 
     describe('BrowserWindow.minimize()', () => {
