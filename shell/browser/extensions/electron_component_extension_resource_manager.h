@@ -36,11 +36,37 @@ class ElectronComponentExtensionResourceManager
                                     const base::FilePath& resource_path,
                                     int* resource_id) const override;
   const ui::TemplateReplacements* GetTemplateReplacementsForExtension(
-      const std::string& extension_id) const override;
+      const ExtensionId& extension_id,
+      const content::BrowserContext* context) const override;
+  bool IsDynamicComponentExtensionResource(
+      const ExtensionId& extension_id,
+      const std::string& path,
+      const content::BrowserContext* context) const override;
+  std::string GetDynamicResourceContent(
+      const ExtensionId& extension_id,
+      const std::string& path,
+      const content::BrowserContext* context) const override;
+
+  [[nodiscard]] base::ScopedClosureRunner RegisterTemplateDataProvider(
+      const ExtensionId& extension_id,
+      const content::BrowserContext* context,
+      TemplateDataProvider provider) const override;
 
  private:
+  using ExtensionIdAndContext =
+      std::pair<ExtensionId, const content::BrowserContext*>;
+  void OnTemplateDataProviderRemoved(const ExtensionIdAndContext& key) const;
+
   void AddComponentResourceEntries(
       base::span<const webui::ResourcePath> entries);
+
+  mutable std::map<ExtensionIdAndContext, TemplateDataProvider>
+      template_data_providers_;
+  mutable std::map<ExtensionIdAndContext, ui::TemplateReplacements>
+      template_replacements_;
+
+  mutable base::WeakPtrFactory<const ChromeComponentExtensionResourceManager>
+      weak_factory_{this};
 
   // A map from a resource path to the resource ID.  Used by
   // IsComponentExtensionResource.
