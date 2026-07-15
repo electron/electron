@@ -35,6 +35,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronReplyChannel,            // gin_helper::internal::ReplyChannel
   kElectronScreen,                  // electron::api::Screen
   kElectronServiceWorkerContext,    // electron::api::ServiceWorkerContext
+  kElectronServiceWorkerMain,       // electron::api::ServiceWorkerMain
   kElectronSession,                 // electron::api::Session
   kElectronSimpleURLLoaderWrapper,  // electron::api::SimpleURLLoaderWrapper
   kElectronTray,                    // electron::api::Tray
