@@ -70,9 +70,12 @@ class MenuDelegate : public views::MenuDelegate {
                                       views::MenuAnchorPosition* anchor,
                                       bool* has_mnemonics,
                                       views::MenuButton** button) override;
+  bool GetSiblingMenuByDirection(bool next) override;
 
  private:
   void CancelSelf();
+  void ScheduleSwitchToButton(views::MenuButton* button);
+
   raw_ptr<MenuBar> menu_bar_;
   int id_ = -1;
   std::unique_ptr<views::MenuDelegate> adapter_;
