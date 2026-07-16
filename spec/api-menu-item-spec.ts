@@ -574,6 +574,78 @@ describe('MenuItems', () => {
     });
   });
 
+  describe('MenuItem reload roles', () => {
+    afterEach(closeAllWindows);
+    afterEach(cleanupWebContents);
+
+    const title = 'TEST';
+    const htmlUrl = `data:text/html,<html><head><title>${title}</title></head><body></body></html>`;
+
+    const changeTitle = async (wcv: WebContentsView) => {
+      const changedTitle = 'CHANGED';
+      await wcv.webContents.executeJavaScript(`document.title = '${changedTitle}'`);
+      expect(wcv.webContents.getTitle()).to.equal(changedTitle);
+    };
+
+    const testReloadRole = async (role: 'reload' | 'forceReload') => {
+      const w = new BaseWindow({ show: false });
+      const wcv = new WebContentsView();
+      w.contentView.addChildView(wcv);
+
+      await wcv.webContents.loadURL(htmlUrl);
+      await changeTitle(wcv);
+
+      const didStartLoading = once(wcv.webContents, 'did-start-loading');
+      expect(executeByRole(role, w, wcv.webContents)).to.be.true();
+      await didStartLoading;
+      await once(wcv.webContents, 'did-finish-load');
+
+      // If the page was reloaded, the title should have been reset.
+      expect(wcv.webContents.getTitle()).to.equal(title);
+    };
+
+    const testReloadRoleOnDevToolsWebContents = async (role: 'reload' | 'forceReload') => {
+      const w = new BaseWindow({ show: false });
+      const wcv = new WebContentsView();
+      w.contentView.addChildView(wcv);
+
+      await wcv.webContents.loadURL(htmlUrl);
+      await changeTitle(wcv);
+
+      const opened = once(wcv.webContents, 'devtools-opened');
+      wcv.webContents.openDevTools();
+      await opened;
+
+      const didStartLoading = once(wcv.webContents, 'did-start-loading');
+      expect(executeByRole(role, w, wcv.webContents.devToolsWebContents!)).to.be.true();
+      await didStartLoading;
+      await once(wcv.webContents, 'did-finish-load');
+
+      // If the page was reloaded, the title should have been reset.
+      expect(wcv.webContents.getTitle()).to.equal(title);
+    };
+
+    describe('reload role', () => {
+      it('reloads the focused webContents', async () => {
+        await testReloadRole('reload');
+      });
+
+      it('reloads the parent webContents when called on DevTools webContents', async () => {
+        await testReloadRoleOnDevToolsWebContents('reload');
+      });
+    });
+
+    describe('forceReload role', () => {
+      it('reloads the focused webContents', async () => {
+        await testReloadRole('forceReload');
+      });
+
+      it('reloads the parent webContents when called on DevTools webContents', async () => {
+        await testReloadRoleOnDevToolsWebContents('forceReload');
+      });
+    });
+  });
+
   describe('MenuItem windowMenu', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'windowMenu' });

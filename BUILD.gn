@@ -165,17 +165,25 @@ config("electron_lib_config") {
   include_dirs = [ "." ]
 }
 
-# We generate the definitions twice here, once in //electron/electron.d.ts
-# and once in $target_gen_dir
-# The one in $target_gen_dir is used for the actual TSC build later one
-# and the one in //electron/electron.d.ts is used by your IDE (vscode)
-# for typescript prompting
-npm_action("build_electron_definitions") {
-  script = "gn-typescript-definitions"
-  args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
-  inputs = auto_filenames.api_docs + [ "yarn.lock" ]
+# electron.d.ts is generated into the repo root (//electron/electron.d.ts) — a
+# single shared path consumed via the /// <reference> in
+# typings/internal-electron.d.ts — plus a per-toolchain gen-dir copy. Because
+# the repo-root write is a fixed shared path, instantiating this action in more
+# than one toolchain races two concurrent truncate-then-write generators on it.
+# Generate it once in the default toolchain and forward to that instance
+# everywhere else.
+if (current_toolchain == default_toolchain) {
+  npm_action("build_electron_definitions") {
+    script = "gn-typescript-definitions"
+    args = [ rebase_path("$target_gen_dir/tsc/typings/electron.d.ts") ]
+    inputs = auto_filenames.api_docs + [ "yarn.lock" ]
 
-  outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
+    outputs = [ "$target_gen_dir/tsc/typings/electron.d.ts" ]
+  }
+} else {
+  group("build_electron_definitions") {
+    public_deps = [ ":build_electron_definitions($default_toolchain)" ]
+  }
 }
 
 webpack_build("electron_browser_bundle") {

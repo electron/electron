@@ -4057,18 +4057,6 @@ describe('BrowserWindow module', () => {
         const cacheKey = crypto.createHash('sha256').update(`preload-${preload}`).digest('hex').toUpperCase();
         cacheFile = path.join(cacheDir, `${cacheKey}.cache`);
       });
-      afterEach(() => {
-        fs.rmSync(preload, { force: true });
-        fs.rmSync(cacheFile, { force: true });
-        return closeAllWindows();
-      });
-
-      const makeWindow = () =>
-        new BrowserWindow({
-          show: false,
-          webPreferences: { sandbox: true, contextIsolation: true, preload }
-        });
-
       const waitFor = async (predicate: () => boolean, what: string, timeoutMs = 5000) => {
         const start = Date.now();
         while (Date.now() - start < timeoutMs) {
@@ -4077,6 +4065,31 @@ describe('BrowserWindow module', () => {
         }
         throw new Error(`timed out waiting for ${what}`);
       };
+
+      const removeFile = async (filePath: string) => {
+        await waitFor(() => {
+          try {
+            fs.rmSync(filePath, { force: true });
+            return true;
+          } catch (error: any) {
+            if (error.code === 'ENOENT') return true;
+            if (error.code === 'EPERM' || error.code === 'EBUSY') return false;
+            throw error;
+          }
+        }, `remove ${filePath}`);
+      };
+
+      afterEach(async () => {
+        await closeAllWindows();
+        await removeFile(preload);
+        await removeFile(cacheFile);
+      });
+
+      const makeWindow = () =>
+        new BrowserWindow({
+          show: false,
+          webPreferences: { sandbox: true, contextIsolation: true, preload }
+        });
 
       it('produces and persists a code cache after the first compile', async () => {
         const w = makeWindow();
@@ -6029,65 +6042,53 @@ describe('BrowserWindow module', () => {
         expect(w.maximizable).to.be.true('maximizable');
       });
 
-      it('does not change window size when disabled and enabled', () => {
-        const w = new BrowserWindow({
-          show: false,
-          width: 400,
-          height: 300,
-          frame: true
+      for (const frame of [true, false]) {
+        describe(`bounds stability for resizable state changes (frame: ${frame})`, () => {
+          it('does not change window size when disabled and enabled', () => {
+            const w = new BrowserWindow({
+              show: false,
+              width: 400,
+              height: 300,
+              frame
+            });
+
+            w.setResizable(false);
+            expectBoundsEqual(w.getSize(), [400, 300]);
+            w.setResizable(true);
+            expectBoundsEqual(w.getSize(), [400, 300]);
+          });
+
+          it('does not shrink window after setResizable(false) when bounds are reapplied', () => {
+            const w = new BrowserWindow({
+              show: false,
+              frame,
+              width: 400,
+              height: 300
+            });
+
+            w.setResizable(false);
+            const bounds = w.getBounds();
+            w.setBounds(bounds);
+            expectBoundsEqual(w.getSize(), [400, 300]);
+          });
+
+          ifit(process.platform === 'win32')('does not change window bounds when maximized', () => {
+            const w = new BrowserWindow({
+              show: true,
+              frame,
+              thickFrame: true
+            });
+            expect(w.isResizable()).to.be.true('resizable');
+            w.maximize();
+            expect(w.isMaximized()).to.be.true('maximized');
+            const bounds = w.getBounds();
+            w.setResizable(false);
+            expectBoundsEqual(w.getBounds(), bounds);
+            w.setResizable(true);
+            expectBoundsEqual(w.getBounds(), bounds);
+          });
         });
-
-        w.setResizable(false);
-        expectBoundsEqual(w.getSize(), [400, 300]);
-        w.setResizable(true);
-        expectBoundsEqual(w.getSize(), [400, 300]);
-      });
-
-      it('does not change window size when disabled and enabled for frameless window', () => {
-        const w = new BrowserWindow({
-          show: false,
-          width: 400,
-          height: 300,
-          frame: false
-        });
-
-        w.setResizable(false);
-        expectBoundsEqual(w.getSize(), [400, 300]);
-        w.setResizable(true);
-        expectBoundsEqual(w.getSize(), [400, 300]);
-      });
-
-      ifit(process.platform === 'win32')('do not change window with frame bounds when maximized', () => {
-        const w = new BrowserWindow({
-          show: true,
-          frame: true,
-          thickFrame: true
-        });
-        expect(w.isResizable()).to.be.true('resizable');
-        w.maximize();
-        expect(w.isMaximized()).to.be.true('maximized');
-        const bounds = w.getBounds();
-        w.setResizable(false);
-        expectBoundsEqual(w.getBounds(), bounds);
-        w.setResizable(true);
-        expectBoundsEqual(w.getBounds(), bounds);
-      });
-
-      ifit(process.platform === 'win32')('do not change window without frame bounds when maximized', () => {
-        const w = new BrowserWindow({
-          show: true,
-          frame: false,
-          thickFrame: true
-        });
-        expect(w.isResizable()).to.be.true('resizable');
-        w.maximize();
-        expect(w.isMaximized()).to.be.true('maximized');
-        const bounds = w.getBounds();
-        w.setResizable(false);
-        expectBoundsEqual(w.getBounds(), bounds);
-        w.setResizable(true);
-        expectBoundsEqual(w.getBounds(), bounds);
-      });
+      }
 
       ifit(process.platform === 'win32')('do not change window transparent without frame bounds when maximized', () => {
         const w = new BrowserWindow({

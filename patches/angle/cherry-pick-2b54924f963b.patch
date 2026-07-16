@@ -1,0 +1,236 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Mon, 15 Jun 2026 10:53:55 -0400
+Subject: Vulkan: Fix robust-init bypass on array texture redefinition
+
+Resets the clear cache (mCurrentSingleClearValue) in ImageHelper when
+releasing the VkImage or removing staged updates. This prevents stale
+cache values from incorrectly dropping subsequent robust resource
+initialization clears on redefined array textures.
+
+Test: angle_end2end_tests --gtest_filter="*Texture2DArrayRedefine*"
+Bug: b/516865345
+Change-Id: Ie7b20a680abfe47e3b97034f182842fb470b1452
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7943364
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Charlie Lao <cclao@google.com>
+Commit-Queue: Ran Wang <wangra@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 5369a112f0bae3d7a0efc2e24fff6c8ac84c23e8..a1e040a02b97b0ff645163bbc1ed1b982f43f690 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -2611,7 +2611,7 @@ angle::Result TextureVk::redefineLevel(const gl::Context *context,
+         {
+             // A multi-layer texture is being redefined, remove all updates to this level; the
+             // number of layers may have changed.
+-            mImage->removeStagedUpdates(contextVk, levelIndexGL, levelIndexGL);
++            mImage->redefineLevels(contextVk, levelIndexGL, levelIndexGL);
+         }
+         else
+         {
+@@ -2619,8 +2619,8 @@ angle::Result TextureVk::redefineLevel(const gl::Context *context,
+             // done through glTexImage2D, one per cube face (i.e. layer) and so should not remove
+             // updates to the other layers.
+             ASSERT(index.getLayerCount() == 1);
+-            mImage->removeSingleSubresourceStagedUpdates(contextVk, levelIndexGL, layerIndex,
+-                                                         index.getLayerCount());
++            mImage->redefineSingleSubresource(contextVk, levelIndexGL, layerIndex,
++                                              index.getLayerCount());
+         }
+ 
+         if (mImage->valid())
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index ab22f538aa1b921a017206b03f030c8f6ff2c898..4e32d2889ac1c0c5888ed02d094809da2ea875db 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -6103,6 +6103,7 @@ void ImageHelper::releaseImage(Renderer *renderer)
+     mUse.reset();
+     mImageSerial          = kInvalidImageSerial;
+     mMemoryAllocationType = MemoryAllocationType::InvalidEnum;
++    mCurrentSingleClearValue.reset();
+     setEntireContentUndefined();
+ }
+ 
+@@ -8214,8 +8215,6 @@ void ImageHelper::removeSingleSubresourceStagedUpdates(ContextVk *contextVk,
+                                                        uint32_t layerIndex,
+                                                        uint32_t layerCount)
+ {
+-    mCurrentSingleClearValue.reset();
+-
+     // Find any staged updates for this index and remove them from the pending list.
+     SubresourceUpdates *levelUpdates = getLevelUpdates(levelIndexGL);
+     if (levelUpdates == nullptr)
+@@ -8305,6 +8304,48 @@ void ImageHelper::removeStagedUpdates(ErrorContext *context,
+     assertSubresourceUpdateRefCountsConsistent();
+ }
+ 
++void ImageHelper::redefineLevels(ErrorContext *context,
++                                 gl::LevelIndex levelGLStart,
++                                 gl::LevelIndex levelGLEnd)
++{
++    removeStagedUpdates(context, levelGLStart, levelGLEnd);
++    if (valid())
++    {
++        for (gl::LevelIndex level = levelGLStart; level <= levelGLEnd; ++level)
++        {
++            if (level >= getFirstAllocatedLevel() && level <= getLastAllocatedLevel())
++            {
++                invalidateEntireLevelContent(context, level);
++                if ((getAspectFlags() & VK_IMAGE_ASPECT_STENCIL_BIT) != 0)
++                {
++                    invalidateEntireLevelStencilContent(context, level);
++                }
++            }
++        }
++    }
++}
++
++void ImageHelper::redefineSingleSubresource(ContextVk *contextVk,
++                                            gl::LevelIndex levelIndexGL,
++                                            uint32_t layerIndex,
++                                            uint32_t layerCount)
++{
++    removeSingleSubresourceStagedUpdates(contextVk, levelIndexGL, layerIndex, layerCount);
++
++    if (valid())
++    {
++        if (levelIndexGL >= getFirstAllocatedLevel() && levelIndexGL <= getLastAllocatedLevel())
++        {
++            invalidateSubresourceContent(contextVk, levelIndexGL, layerIndex, layerCount, nullptr);
++            if ((getAspectFlags() & VK_IMAGE_ASPECT_STENCIL_BIT) != 0)
++            {
++                invalidateSubresourceStencilContent(contextVk, levelIndexGL, layerIndex, layerCount,
++                                                    nullptr);
++            }
++        }
++    }
++}
++
+ angle::Result ImageHelper::stageSubresourceUpdateImpl(ContextVk *contextVk,
+                                                       const gl::ImageIndex &index,
+                                                       const gl::Extents &glExtents,
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
+index b07adcde9c493aa544b2fe9bb44e797463599b18..66b56848ae53514538b60540804e22995c6a9f40 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.h
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
+@@ -2564,6 +2564,13 @@ class ImageHelper final : public Resource, public angle::Subject
+     void removeStagedUpdates(ErrorContext *context,
+                              gl::LevelIndex levelGLStart,
+                              gl::LevelIndex levelGLEnd);
++    void redefineLevels(ErrorContext *context,
++                        gl::LevelIndex levelGLStart,
++                        gl::LevelIndex levelGLEnd);
++    void redefineSingleSubresource(ContextVk *contextVk,
++                                   gl::LevelIndex levelIndexGL,
++                                   uint32_t layerIndex,
++                                   uint32_t layerCount);
+ 
+     angle::Result stagePartialClear(ContextVk *contextVk,
+                                     const gl::Box &clearArea,
+diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
+index e03e35f1509014c5f1cb5b80fdd8c5aa733aa9bc..aee1c55c3b73726c59c0de0d7bb2672fc9ab5667 100644
+--- a/src/tests/gl_tests/RobustResourceInitTest.cpp
++++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
+@@ -2345,6 +2345,101 @@ TEST_P(RobustResourceInitTestES3, Texture2DArrayPartiallyCleared)
+     ASSERT_GL_NO_ERROR();
+ }
+ 
++// Test that redefining a 2D array texture doesn't bypass robust resource initialization.
++TEST_P(RobustResourceInitTestES3, Texture2DArrayRedefine)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr int kLargeWidth  = 256;
++    constexpr int kLargeHeight = 256;
++    constexpr int kLayers      = 4;
++
++    GLTexture seedTexture;
++    glBindTexture(GL_TEXTURE_2D_ARRAY, seedTexture);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kLargeWidth, kLargeHeight, kLayers, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++
++    std::vector<GLColor> sentinelData(kLargeWidth * kLargeHeight * kLayers, GLColor::red);
++    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, kLargeWidth, kLargeHeight, kLayers, GL_RGBA,
++                    GL_UNSIGNED_BYTE, sentinelData.data());
++
++    GLFramebuffer fb;
++    glBindFramebuffer(GL_FRAMEBUFFER, fb);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, seedTexture, 0, 0);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    constexpr int kSmallSize = 1;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kSmallSize, kSmallSize, kLayers, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++
++    // Bind to framebuffer and read to force clear and populate cache.
++    glBindFramebuffer(GL_FRAMEBUFFER, fb);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 0);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::transparentBlack);
++
++    // Redefine level 0 to the larger dimension.
++    // This should trigger release and reallocation of the underlying VkImage.
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kLargeWidth, kLargeHeight, kLayers, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 0);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    static_assert(kWidth <= kLargeWidth && kHeight <= kLargeHeight);
++    for (int layer = 0; layer < kLayers; ++layer)
++    {
++        checkNonZeroPixels3D(&texture, 0, 0, 0, 0, layer, GLColor::transparentBlack);
++    }
++    ASSERT_GL_NO_ERROR();
++}
++
++// Test that redefining a 2D array texture to a compatible size (same size)
++// doesn't bypass robust resource initialization.
++TEST_P(RobustResourceInitTestES3, Texture2DArrayRedefineCompatible)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    constexpr int kSize   = 256;
++    constexpr int kLayers = 4;
++
++    GLTexture texture;
++    glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kSize, kSize, kLayers, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++
++    std::vector<GLColor> sentinelData(kSize * kSize * kLayers, GLColor::red);
++    glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, kSize, kSize, kLayers, GL_RGBA,
++                    GL_UNSIGNED_BYTE, sentinelData.data());
++
++    GLFramebuffer fb;
++    glBindFramebuffer(GL_FRAMEBUFFER, fb);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 0);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // Redefine level 0 to the same dimension.
++    // This should not trigger releaseImage(), but it must invalidate the level.
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, kSize, kSize, kLayers, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, nullptr);
++
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, texture, 0, 0);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    static_assert(kWidth <= kSize && kHeight <= kSize);
++    for (int layer = 0; layer < kLayers; ++layer)
++    {
++        checkNonZeroPixels3D(&texture, 0, 0, 0, 0, layer, GLColor::transparentBlack);
++    }
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test that using TexStorage2D followed by CompressedSubImage works with robust init.
+ // Taken from WebGL test conformance/extensions/webgl-compressed-texture-s3tc.
+ TEST_P(RobustResourceInitTestES3, CompressedSubImage)

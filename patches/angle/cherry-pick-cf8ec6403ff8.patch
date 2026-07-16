@@ -1,0 +1,268 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Fri, 1 May 2026 13:20:55 -0400
+Subject: Metal: Treat glGenerateMipmap as an image redefinition.
+
+When TextureMtl::generateMipmap creates a native storage, it doesn't
+treat it as a texture redefinition and clear out old images. This leaves
+images with formats and sizes that do not match the storage.
+
+Fixed: chromium:499006005
+Change-Id: I78cdbf77ccb75469fba3ca4654ea9118aa80edd5
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7806315
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+
+diff --git a/src/libANGLE/renderer/metal/ContextMtl.mm b/src/libANGLE/renderer/metal/ContextMtl.mm
+index 862e2830c6ca2f63a23bf6207ce3f87fe408e77b..194476bc455845cc973e5642a96d1cb326856e44 100644
+--- a/src/libANGLE/renderer/metal/ContextMtl.mm
++++ b/src/libANGLE/renderer/metal/ContextMtl.mm
+@@ -2743,7 +2743,7 @@ static bool isDrawNoOp(const mtl::RenderPipelineDesc &descriptor,
+         TextureMtl *textureMtl = mtl::GetImpl(texture);
+ 
+         // Make sure texture's image definitions will be transferred to GPU.
+-        ANGLE_TRY(textureMtl->ensureNativeStorageCreated(context));
++        ANGLE_TRY(textureMtl->ensureNativeStorageCreated(context, true));
+ 
+         // The binding of this texture will be done by ProgramMtl.
+         return angle::Result::Continue;
+diff --git a/src/libANGLE/renderer/metal/TextureMtl.h b/src/libANGLE/renderer/metal/TextureMtl.h
+index 2dfd58b0cd9b26258624285b58715378e99a904e..46d29c7115ead9bdf10282a826d074d4797192ec 100644
+--- a/src/libANGLE/renderer/metal/TextureMtl.h
++++ b/src/libANGLE/renderer/metal/TextureMtl.h
+@@ -165,7 +165,7 @@ class TextureMtl : public TextureImpl
+     // of images through glTexImage*/glCopyTex* calls. During draw calls, the caller must make sure
+     // the actual texture is created by calling this method to transfer the stored images data
+     // to the actual texture.
+-    angle::Result ensureNativeStorageCreated(const gl::Context *context);
++    angle::Result ensureNativeStorageCreated(const gl::Context *context, bool keepImages);
+ 
+     angle::Result bindToShader(const gl::Context *context,
+                                mtl::RenderCommandEncoder *cmdEncoder,
+diff --git a/src/libANGLE/renderer/metal/TextureMtl.mm b/src/libANGLE/renderer/metal/TextureMtl.mm
+index 803f46d7eb9ff37289e86a65d85d9c973ffbb928..a61b624ce61a12f1fd014f20e7565ab9a5f6c592 100644
+--- a/src/libANGLE/renderer/metal/TextureMtl.mm
++++ b/src/libANGLE/renderer/metal/TextureMtl.mm
+@@ -959,10 +959,30 @@ uint32_t height(GLuint glLevel) const
+     }
+ }
+ 
+-angle::Result TextureMtl::ensureNativeStorageCreated(const gl::Context *context)
++angle::Result TextureMtl::ensureNativeStorageCreated(const gl::Context *context, bool keepImages)
+ {
++    auto clearImagesAssociatedWithStorage = [&]() {
++        ASSERT(mNativeTextureStorage);
++        GLuint mips      = mState.getMipmapMaxLevel() - mState.getEffectiveBaseLevel() + 1;
++        int numCubeFaces = static_cast<int>(mNativeTextureStorage->cubeFaces());
++        for (int face = 0; face < numCubeFaces; ++face)
++        {
++            for (mtl::MipmapNativeLevel actualMip = mtl::kZeroNativeMipLevel;
++                 actualMip.get() < mips; ++actualMip)
++            {
++                GLuint imageMipLevel = mNativeTextureStorage->getGLLevel(actualMip);
++                mTexImageDefs[face][imageMipLevel].image = nullptr;
++            }
++        }
++    };
++
+     if (mNativeTextureStorage)
+     {
++        // Storage exists, deallocate images associated with the storage.
++        if (!keepImages)
++        {
++            clearImagesAssociatedWithStorage();
++        }
+         return angle::Result::Continue;
+     }
+ 
+@@ -1015,6 +1035,11 @@ uint32_t height(GLuint glLevel) const
+         }
+     }
+ 
++    if (!keepImages)
++    {
++        clearImagesAssociatedWithStorage();
++    }
++
+     return angle::Result::Continue;
+ }
+ 
+@@ -1686,7 +1711,7 @@ uint32_t height(GLuint glLevel) const
+ 
+ angle::Result TextureMtl::generateMipmap(const gl::Context *context)
+ {
+-    ANGLE_TRY(ensureNativeStorageCreated(context));
++    ANGLE_TRY(ensureNativeStorageCreated(context, false));
+ 
+     ContextMtl *contextMtl = mtl::GetImpl(context);
+     if (!mViewFromBaseToMaxLevel)
+@@ -1859,7 +1884,7 @@ uint32_t height(GLuint glLevel) const
+                                                     GLsizei samples,
+                                                     FramebufferAttachmentRenderTarget **rtOut)
+ {
+-    ANGLE_TRY(ensureNativeStorageCreated(context));
++    ANGLE_TRY(ensureNativeStorageCreated(context, true));
+ 
+     ContextMtl *contextMtl = mtl::GetImpl(context);
+     ANGLE_CHECK(contextMtl, mNativeTextureStorage, gl::err::kInternalError, GL_INVALID_OPERATION);
+@@ -1920,7 +1945,7 @@ uint32_t height(GLuint glLevel) const
+         }
+     }
+ 
+-    ANGLE_TRY(ensureNativeStorageCreated(context));
++    ANGLE_TRY(ensureNativeStorageCreated(context, true));
+     ANGLE_TRY(ensureSamplerStateCreated(context));
+ 
+     return angle::Result::Continue;
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 440a868c75b21b8b9698e5a9c89e33f3596542f2..b1ab9ef4eca4ab1da87c27489285c7947d35b472 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -19329,6 +19329,146 @@ class TextureTestES31 : public ANGLETest<>
+     }
+ };
+ 
++// Test that clearing and drawing to textures attached to a framebuffer correctly
++// updates the textures across multiple frames
++TEST_P(TextureTestES31, MultiFrameFBOUpdate)
++{
++    constexpr char kVS[] = R"(#version 300 es
++in vec4 a_position;
++void main() {
++    gl_Position = a_position;
++})";
++
++    constexpr char kFSLoc0[] = R"(#version 300 es
++precision highp float;
++layout(location = 0) out vec4 red;
++void main() {
++    red = vec4(1.0, 0.0, 0.0, 1.0);
++})";
++
++    constexpr char kFSLoc1[] = R"(#version 300 es
++precision highp float;
++layout(location = 1) out vec4 red;
++void main() {
++    red = vec4(1.0, 0.0, 0.0, 1.0);
++})";
++
++    // Need at least 2 color attachments for the test
++    GLint maxColorAttachments;
++    glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &maxColorAttachments);
++    ANGLE_SKIP_TEST_IF(maxColorAttachments < 2);
++
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), essl1_shaders::fs::Red());
++    ANGLE_GL_PROGRAM(redLoc0Program, kVS, kFSLoc0);
++    ANGLE_GL_PROGRAM(redLoc1Program, kVS, kFSLoc1);
++
++    GLTexture colorTex0;
++    glBindTexture(GL_TEXTURE_2D, colorTex0);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    GLTexture colorTex1;
++    glBindTexture(GL_TEXTURE_2D, colorTex1);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 128, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
++
++    GLTexture depthTex;
++    glBindTexture(GL_TEXTURE_2D, depthTex);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, 128, 128, 0, GL_DEPTH_COMPONENT,
++                 GL_UNSIGNED_SHORT, nullptr);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex0, 0);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, colorTex1, 0);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // First frame is just setup
++    swapBuffers();
++
++    // Draw red quad to color attachment 0
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    GLenum drawBuffers2[] = {GL_COLOR_ATTACHMENT0, GL_NONE};
++    glDrawBuffers(2, drawBuffers2);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++
++    glReadBuffer(GL_COLOR_ATTACHMENT0);
++    EXPECT_PIXEL_COLOR_EQ(64, 64, GLColor::red);
++
++    swapBuffers();
++
++    // Clear depth attachment
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glEnable(GL_DEPTH_TEST);
++    glClearDepthf(1.0f);
++    glClear(GL_DEPTH_BUFFER_BIT);
++
++    // If depth was cleared, drawing with GL_LESS at 0.5 should pass
++    glDepthFunc(GL_LESS);
++    drawQuad(redLoc0Program, essl1_shaders::PositionAttrib(), 0.5f);
++    glReadBuffer(GL_COLOR_ATTACHMENT0);
++    EXPECT_PIXEL_COLOR_EQ(64, 64, GLColor::red);
++
++    swapBuffers();
++
++    // Draw red to color attachment 1
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glClear(GL_DEPTH_BUFFER_BIT);
++    GLenum drawBuffers4[] = {GL_NONE, GL_COLOR_ATTACHMENT1};
++    glDrawBuffers(2, drawBuffers4);
++    drawQuad(redLoc1Program, essl1_shaders::PositionAttrib(), 0.25f);
++
++    glReadBuffer(GL_COLOR_ATTACHMENT1);
++    EXPECT_PIXEL_COLOR_EQ(64, 64, GLColor::red);
++
++    // Display offscreen FBO contents
++    glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo);
++    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
++    glReadBuffer(GL_COLOR_ATTACHMENT1);
++    glBlitFramebuffer(0, 0, 128, 128,  // Source rectangle (FBO)
++                      0, 0, 128, 128,  // Destination rectangle (Screen)
++                      GL_COLOR_BUFFER_BIT, GL_NEAREST);
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    swapBuffers();
++}
++
++// Call glGenerateMipmap multiple times with different formats. Covers issues with texture
++// redefinition.
++TEST_P(Texture2DTestES3, MultipleGenerateMipmapCalls)
++{
++    GLTexture tex;
++    glBindTexture(GL_TEXTURE_2D, tex);
++
++    // Full mip chain of GL_RGB
++    const GLsizei originalW = 128, originalH = 128;
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, originalW, originalH, 0, GL_RGB, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glGenerateMipmap(GL_TEXTURE_2D);
++    ASSERT_GL_NO_ERROR();
++
++    // Full mip chain of R8
++    const GLsizei redefineW = 64, redefineH = 64;
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, redefineW, redefineH, 0, GL_RED, GL_UNSIGNED_BYTE,
++                 nullptr);
++    glGenerateMipmap(GL_TEXTURE_2D);
++    ASSERT_GL_NO_ERROR();
++
++    // Update mip 1 which should be R8
++    const GLsizei w = redefineW / 2;
++    const GLsizei h = redefineH / 2;
++    std::vector<GLubyte> data(w * h, 0xFF);
++    glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, w, h, GL_RED, GL_UNSIGNED_BYTE, data.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify data in mip 1
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 1);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::red);
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Verify that image uniforms can link in separable programs
+ TEST_P(TextureTestES31, LinkedImageUniforms)
+ {

@@ -33,7 +33,7 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..a154559a56bf383d3c26af523c9bb07b
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index 54f1121eb712c089dfced2a0aaa49aa875341f3c..fdc87033f5cd9865c3477e9dc3796b26a13fcc39 100644
+index 116d699f505a4f53ec816ccb83b634cccdf2a67c..6459b3bdbc91b5cc988e5dce2b3b7d9e795d3447 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
 @@ -11,8 +11,8 @@ const {
@@ -64,10 +64,10 @@ index 54f1121eb712c089dfced2a0aaa49aa875341f3c..fdc87033f5cd9865c3477e9dc3796b26
  
  function ipToInt(ip) {
 diff --git a/node.gyp b/node.gyp
-index 27402b3061afba6112a77f31d1b4c7c0d2526ba0..af4da538e0fef73253f47909513d0add2225df95 100644
+index 6387b945506278085dff461aeff51e5d20f457e6..e55a714a3a412d7889f3576d44ec3865f115752b 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -185,7 +185,6 @@
+@@ -186,7 +186,6 @@
        'src/timers.cc',
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
@@ -75,7 +75,7 @@ index 27402b3061afba6112a77f31d1b4c7c0d2526ba0..af4da538e0fef73253f47909513d0add
        'src/tracing/node_trace_writer.cc',
        'src/tracing/trace_event.cc',
        'src/tracing/traced_value.cc',
-@@ -320,7 +319,6 @@
+@@ -322,7 +321,6 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',

@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Tue, 16 Jun 2026 14:09:38 +0200
+Subject: [M148] [maglev] Check map of inlined array in
+ ArrayIteratorPrototypeNext
+
+Original change's description:
+> [maglev] Check map of inlined array in ArrayIteratorPrototypeNext
+>
+> Fixed: 523884658
+> Change-Id: I2a2bba817952d7023eb4b97ad41d8bb460fb9359
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7950517
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#108053}
+
+(cherry picked from commit 811ebc89d5d26653f73b9b0e589591e09344e551)
+
+Bug: 525280515,523884658
+Change-Id: I2a2bba817952d7023eb4b97ad41d8bb460fb9359
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7985364
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/14.8@{#78}
+Cr-Branched-From: f9659283a5f8d42b3c09228cf5df606fcaf47a3d-refs/heads/14.8.178@{#1}
+Cr-Branched-From: 141232520dc4910401240c531db3af36910a0fd1-refs/heads/main@{#106240}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 72cd9f27c0f1c93206671ffc07e999a69bde7d30..b53c8ee7d8fc9947b2306a9610a31cba0f8b109b 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -9423,6 +9423,8 @@ MaybeReduceResult MaglevGraphBuilder::TryReduceArrayIteratorPrototypeNext(
+ 
+   if (map_inference.has_value()) {
+     RETURN_IF_ABORT(map_inference->InsertMapChecks(zone()));
++  } else {
++    RETURN_IF_ABORT(BuildCheckMaps(iterated_object, base::VectorOf(maps)));
+   }
+ 
+   // Load the [[NextIndex]] from the {iterator}.
+diff --git a/test/mjsunit/maglev/regress-523884658.js b/test/mjsunit/maglev/regress-523884658.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..41d7cd2deae685b80cfce66d4af0a4a1fed3bfb9
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-523884658.js
+@@ -0,0 +1,82 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev
++
++let transition = false;
++let tagged_value;
++let double_value;
++
++function tagged_reflect() {
++  const a = eval('tagged_inner.arguments');
++  if (transition) {
++    a[1][0] = tagged_value;
++    a[1][1] = tagged_value;
++  } else {
++    a[1][0] = 3.3;
++    a[1][1] = 3.3;
++  }
++}
++
++function tagged_next(iterator) {
++  return iterator.next().value;
++}
++
++function tagged_inner(iterator, array) {
++  tagged_reflect();
++  return tagged_next(iterator);
++}
++
++function tagged_outer() {
++  const array = [1.1, 2.2];
++  const iterator = array.values();
++  return tagged_inner(iterator, array);
++}
++
++function double_reflect() {
++  const a = eval('double_inner.arguments');
++  if (transition) {
++    a[1][0] = double_value;
++    a[1][1] = double_value;
++  } else {
++    a[1][0] = 3;
++    a[1][1] = 3;
++  }
++}
++
++function double_next(iterator) {
++  return iterator.next().value;
++}
++
++function double_inner(iterator, array) {
++  double_reflect();
++  return double_next(iterator);
++}
++
++function double_outer() {
++  const array = [1, 2];
++  const iterator = array.values();
++  return double_inner(iterator, array);
++}
++
++const marker = {};
++tagged_value = marker;
++double_value = 1.5;
++
++for (const f of [tagged_reflect, tagged_next, tagged_inner, tagged_outer,
++                 double_reflect, double_next, double_inner, double_outer]) {
++  %PrepareFunctionForOptimization(f);
++}
++
++tagged_outer();
++tagged_outer();
++double_outer();
++double_outer();
++
++%OptimizeMaglevOnNextCall(tagged_outer);
++%OptimizeMaglevOnNextCall(double_outer);
++
++transition = true;
++assertSame(marker, tagged_outer());
++assertEquals(1.5, double_outer());

@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Fri, 15 May 2026 09:52:50 -0400
+Subject: D3D11: Avoid partial init state in Blit11.
+
+If a resource allocation fails, Blit11 would be left in a partially
+initialized state. Allocate to new stack variables and assign them to
+members at the end.
+
+Fixed: chromium:513051340
+Change-Id: I197715bad3db9c6eda9d8fd2cb7593450ba5e413
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7850285
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Auto-Submit: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Blit11.cpp b/src/libANGLE/renderer/d3d/d3d11/Blit11.cpp
+index 98bf6b2931c2324ff4a1cc5c01f0bddde2ca53c3..b0f12f9efe9d04e4ac632b4962c4d5027b5beede 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Blit11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Blit11.cpp
+@@ -1774,8 +1774,9 @@ angle::Result Blit11::initResolveDepthOnly(const gl::Context *context,
+ 
+     Context11 *context11 = GetImplAs<Context11>(context);
+ 
+-    ANGLE_TRY(mRenderer->allocateTexture(context11, textureDesc, format, &mResolvedDepth));
+-    mResolvedDepth.setInternalName("Blit11::mResolvedDepth");
++    TextureHelper11 newResolvedDepth;
++    ANGLE_TRY(mRenderer->allocateTexture(context11, textureDesc, format, &newResolvedDepth));
++    newResolvedDepth.setInternalName("Blit11::mResolvedDepth");
+ 
+     D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc;
+     dsvDesc.Flags              = 0;
+@@ -1783,14 +1784,20 @@ angle::Result Blit11::initResolveDepthOnly(const gl::Context *context,
+     dsvDesc.Texture2D.MipSlice = 0;
+     dsvDesc.ViewDimension      = D3D11_DSV_DIMENSION_TEXTURE2D;
+ 
+-    ANGLE_TRY(mRenderer->allocateResource(context11, dsvDesc, mResolvedDepth.get(),
+-                                          &mResolvedDepthDSView));
+-    mResolvedDepthDSView.setInternalName("Blit11::mResolvedDepthDSView");
++    d3d11::DepthStencilView newResolvedDepthDSView;
++    ANGLE_TRY(mRenderer->allocateResource(context11, dsvDesc, newResolvedDepth.get(),
++                                          &newResolvedDepthDSView));
++    newResolvedDepthDSView.setInternalName("Blit11::mResolvedDepthDSView");
+ 
+     // Possibly D3D11 bug or undefined behaviour: Clear the DSV so that our first render
+     // works as expected. Otherwise the results of the first use seem to be incorrect.
+     ID3D11DeviceContext *deviceContext = mRenderer->getDeviceContext();
+-    deviceContext->ClearDepthStencilView(mResolvedDepthDSView.get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
++    deviceContext->ClearDepthStencilView(newResolvedDepthDSView.get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
++
++    // Only assign after the allocations have fully succeeded to avoid a partially initialized
++    // state.
++    mResolvedDepth       = std::move(newResolvedDepth);
++    mResolvedDepthDSView = std::move(newResolvedDepthDSView);
+ 
+     return angle::Result::Continue;
+ }
+@@ -1805,11 +1812,6 @@ angle::Result Blit11::initResolveDepthStencil(const gl::Context *context,
+         return angle::Result::Continue;
+     }
+ 
+-    if (mResolvedDepthStencil.valid())
+-    {
+-        releaseResolveDepthStencilResources();
+-    }
+-
+     const auto &formatSet = d3d11::Format::Get(GL_RG32F, mRenderer->getRenderer11DeviceCaps());
+ 
+     D3D11_TEXTURE2D_DESC textureDesc;
+@@ -1827,13 +1829,24 @@ angle::Result Blit11::initResolveDepthStencil(const gl::Context *context,
+ 
+     Context11 *context11 = GetImplAs<Context11>(context);
+ 
++    TextureHelper11 newResolvedDepthStencil;
+     ANGLE_TRY(
+-        mRenderer->allocateTexture(context11, textureDesc, formatSet, &mResolvedDepthStencil));
+-    mResolvedDepthStencil.setInternalName("Blit11::mResolvedDepthStencil");
++        mRenderer->allocateTexture(context11, textureDesc, formatSet, &newResolvedDepthStencil));
++    newResolvedDepthStencil.setInternalName("Blit11::mResolvedDepthStencil");
+ 
+-    ANGLE_TRY(mRenderer->allocateResourceNoDesc(context11, mResolvedDepthStencil.get(),
+-                                                &mResolvedDepthStencilRTView));
+-    mResolvedDepthStencilRTView.setInternalName("Blit11::mResolvedDepthStencilRTView");
++    d3d11::RenderTargetView newResolvedDepthStencilRTView;
++    ANGLE_TRY(mRenderer->allocateResourceNoDesc(context11, newResolvedDepthStencil.get(),
++                                                &newResolvedDepthStencilRTView));
++    newResolvedDepthStencilRTView.setInternalName("Blit11::mResolvedDepthStencilRTView");
++
++    // Only assign after the allocations have fully succeeded to avoid a partially initialized
++    // state.
++    if (mResolvedDepthStencil.valid())
++    {
++        releaseResolveDepthStencilResources();
++    }
++    mResolvedDepthStencil       = std::move(newResolvedDepthStencil);
++    mResolvedDepthStencilRTView = std::move(newResolvedDepthStencilRTView);
+ 
+     return angle::Result::Continue;
+ }

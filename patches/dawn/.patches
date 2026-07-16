@@ -1,1 +1,5 @@
-cherry-pick-74f80741f8bc.patch
+cherry-pick-a9365ae383d3.patch
+cherry-pick-2a1121a43b90.patch
+cherry-pick-dbeb90630035.patch
+cherry-pick-98b4f1a78ffe.patch
+m149_trim_data_returned_for_vkpipelinecache.patch

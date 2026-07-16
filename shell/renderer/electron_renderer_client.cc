@@ -72,6 +72,9 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
   node::Environment* env = GetEnvironment(render_frame);
   if (env) {
     v8::Context::Scope context_scope(env->context());
+    v8::MicrotasksScope microtasks_scope(env->isolate(),
+                                         env->context()->GetMicrotaskQueue(),
+                                         v8::MicrotasksScope::kRunMicrotasks);
     gin_helper::EmitEvent(env->isolate(), env->process_object(),
                           "document-end");
   }

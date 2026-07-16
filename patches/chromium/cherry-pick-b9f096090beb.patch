@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dan Murphy <dmurph@chromium.org>
+Date: Fri, 29 May 2026 18:02:26 -0700
+Subject: [base] Fix Windows CommandLine argument smuggling
+
+A manifest-controlled PWA name on Windows can be crafted to inject
+command-line arguments. ParseAsSingleArgument could match the "--single-
+argument" switch inside the program path if it was quoted and contained
+that string.
+
+Fix this by estimating the end of the program path and searching for "--
+single-argument" only after that path. Also add CHECKs to ensure a valid
+program path end is found.
+
+Additionally, sanitize "%" characters in web app shortcut filenames on
+Windows to avoid ShellExecute expansion issues.
+
+TAG=agy
+CONV=823a5c45-9cb2-45bc-a45b-4c02939fca02
+
+Fixed: 513893425
+Fixed: b:514442159
+Test: base_unittests --gtest_filter=CommandLineTest.*
+Test: unit_tests --gtest_filter=WebAppShortcutWinTest.*
+Change-Id: Id209dc44104f919fb1a37118bc82d82d1f1b10c3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7858094
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Jesse McKenna <jessemckenna@google.com>
+Commit-Queue: Daniel Murphy <dmurph@chromium.org>
+Auto-Submit: Daniel Murphy <dmurph@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1638873}
+
+diff --git a/base/command_line.cc b/base/command_line.cc
+index 02796f0a53832247a875be0892d7b867e62e7707..8325518cc9785297d47446123a001001e1412f5f 100644
+--- a/base/command_line.cc
++++ b/base/command_line.cc
+@@ -15,6 +15,7 @@
+ #include "base/debug/debugging_buildflags.h"
+ #include "base/files/file_path.h"
+ #include "base/logging.h"
++#include "base/not_fatal_until.h"
+ #include "base/notreached.h"
+ #include "base/numerics/checked_math.h"
+ #include "base/strings/strcat.h"
+@@ -173,6 +174,7 @@ std::wstring QuoteForCommandLineToArgvWInternal(
+ 
+   return out;
+ }
++
+ #endif  // BUILDFLAG(IS_WIN)
+ 
+ }  // namespace
+@@ -780,12 +782,53 @@ void CommandLine::ParseAsSingleArgument(
+   // Remove any previously parsed arguments.
+   argv_.resize(static_cast<size_t>(begin_args_));
+ 
+-  // Locate "--single-argument" in the process's raw command line. Results are
+-  // unpredictable if "--single-argument" appears as part of a previous
++  // Find the end of the program path in the raw command line to avoid
++  // matching switches inside the program path itself (which can happen
++  // with PWA launchers on Windows where the PWA name contains switches).
++  //
++  // We can estimate this by finding the first non-space character (start of
++  // program) and adding the length of the program name parsed by
++  // CommandLineToArgvW (stored in argv_[0]).
++  //
++  // Invariants we expect:
++  // 1. `CommandLineToArgvW` treats backslashes as literal characters (not
++  //    escapes) when parsing the application name (first argument).
++  // 2. Windows filenames cannot contain double quotes (").
++  // 3. Thus, the program path in the raw command line can never contain
++  //    escaped quotes. It is either unquoted (ends at first space) or quoted
++  //    (starts and ends with double quotes, with no quotes in between).
++  //
++  // This means the length of `GetProgram()` is exactly the length of the
++  // program path in the raw command line (minus the outer quotes if it
++  // was quoted).
++  size_t program_start = raw_command_line_string_.find_first_not_of(L' ');
++  if (program_start == StringType::npos) {
++    return;
++  }
++
++  size_t switches_and_args_start = program_start + argv_[0].length();
++  const bool is_quoted = raw_command_line_string_[program_start] == L'"';
++  if (is_quoted) {
++    switches_and_args_start += 2;  // Account for the start and end quotes.
++  }
++
++  if (switches_and_args_start >= raw_command_line_string_.length()) {
++    return;
++  }
++
++  if (is_quoted) {
++    CHECK_EQ(raw_command_line_string_[switches_and_args_start - 1], L'"',
++             base::NotFatalUntil::M154);
++  }
++
++  // Locate "--single-argument" in the process's switches and arguments. Results
++  // are unpredictable if "--single-argument" appears as part of a previous
+   // argument or switch.
+   const size_t single_arg_switch_position =
+-      raw_command_line_string_.find(single_arg_switch);
+-  DCHECK_NE(single_arg_switch_position, StringType::npos);
++      raw_command_line_string_.find(single_arg_switch, switches_and_args_start);
++  if (single_arg_switch_position == StringType::npos) {
++    return;
++  }
+ 
+   // Append the portion of the raw command line that starts one character past
+   // "--single-argument" as the one and only argument, or return if no
+diff --git a/base/command_line_unittest.cc b/base/command_line_unittest.cc
+index 23180c4dd150752088295f918eaaa4e065bf0a98..66233c9da7d9d3b38d76186a01ba9bdd912122d4 100644
+--- a/base/command_line_unittest.cc
++++ b/base/command_line_unittest.cc
+@@ -932,6 +932,80 @@ TEST(CommandLineTest, ParseAsSingleArgument) {
+             cl_without_arg.GetProgram());
+   EXPECT_TRUE(cl_without_arg.GetArgs().empty());
+ }
++
++TEST(CommandLineTest, ParseAsSingleArgumentWithSameSwitchInProgramPath) {
++  // This test verifies that:
++  // 1. `--single-argument` embedded within the quoted program path is correctly
++  //    ignored and not treated as the trigger switch.
++  // 2. Legitimate switches placed before the actual `--single-argument` switch
++  //    (like `--switch_before`) are still correctly parsed and preserved.
++  // 3. The actual `--single-argument` switch is correctly identified, and
++  //    everything after it is treated as the single argument.
++  CommandLine cl = CommandLine::FromString(FILE_PATH_LITERAL(
++      "\"program --single-argument\" --switch_before=arg_before "
++      "--single-argument actual_arg"));
++  EXPECT_EQ(cl.GetProgram().value(),
++            FILE_PATH_LITERAL("program --single-argument"));
++  EXPECT_EQ(cl.GetArgs(),
++            CommandLine::StringVector({FILE_PATH_LITERAL("actual_arg")}));
++  EXPECT_TRUE(cl.HasSwitch("switch_before"));
++  EXPECT_EQ(cl.GetSwitchValueASCII("switch_before"), "arg_before");
++}
++
++TEST(CommandLineTest, ParseAsSingleArgumentWithSwitchAfter) {
++  // This test verifies that once `--single-argument` is encountered, any
++  // subsequent switch-like strings (e.g., `--switch_after`) are treated as part
++  // of the single argument payload and are not parsed as separate switches.
++  CommandLine cl = CommandLine::FromString(FILE_PATH_LITERAL(
++      "program --single-argument actual_arg --switch_after=arg_after"));
++  EXPECT_EQ(cl.GetProgram(), FilePath(FILE_PATH_LITERAL("program")));
++  EXPECT_EQ(cl.GetArgs(), CommandLine::StringVector({FILE_PATH_LITERAL(
++                              "actual_arg --switch_after=arg_after")}));
++  EXPECT_FALSE(cl.HasSwitch("switch_after"));
++}
++
++TEST(CommandLineTest, ParseAsSingleArgumentWithLeadingSpaces) {
++  CommandLine cl = CommandLine::FromString(
++      FILE_PATH_LITERAL("  \"program\" --single-argument actual_arg"));
++  EXPECT_EQ(FilePath(FILE_PATH_LITERAL("program")), cl.GetProgram());
++  EXPECT_EQ(cl.GetArgs(),
++            CommandLine::StringVector({FILE_PATH_LITERAL("actual_arg")}));
++}
++
++TEST(CommandLineTest, ParseAsSingleArgumentWithLeadingSpacesNoQuotes) {
++  CommandLine cl = CommandLine::FromString(
++      FILE_PATH_LITERAL("  program --single-argument actual_arg"));
++  EXPECT_EQ(FilePath(FILE_PATH_LITERAL("program")), cl.GetProgram());
++  EXPECT_EQ(cl.GetArgs(),
++            CommandLine::StringVector({FILE_PATH_LITERAL("actual_arg")}));
++}
++
++TEST(CommandLineTest,
++     ParseAsSingleArgumentWithLeadingSpacesAndSameSwitchInProgramPath) {
++  CommandLine cl = CommandLine::FromString(FILE_PATH_LITERAL(
++      "  \"program --single-argument\" --single-argument actual_arg"));
++  EXPECT_EQ(FilePath(FILE_PATH_LITERAL("program --single-argument")),
++            cl.GetProgram());
++  EXPECT_EQ(cl.GetArgs(),
++            CommandLine::StringVector({FILE_PATH_LITERAL("actual_arg")}));
++}
++
++TEST(CommandLineTest, ParseAsSingleArgumentWithUnmatchedQuote) {
++  CommandLine cl = CommandLine::FromString(
++      FILE_PATH_LITERAL("\"program --single-argument actual_arg"));
++  EXPECT_EQ(FilePath(FILE_PATH_LITERAL("program --single-argument actual_arg")),
++            cl.GetProgram());
++  EXPECT_TRUE(cl.GetArgs().empty());
++}
++
++TEST(CommandLineTest, ParseAsSingleArgumentWithUnquotedSpaces) {
++  CommandLine cl = CommandLine::FromString(
++      FILE_PATH_LITERAL("program path --single-argument actual_arg"));
++  EXPECT_EQ(FilePath(FILE_PATH_LITERAL("program")), cl.GetProgram());
++  EXPECT_EQ(cl.GetArgs(),
++            CommandLine::StringVector({FILE_PATH_LITERAL("actual_arg")}));
++}
++
+ #endif  // BUILDFLAG(IS_WIN)
+ 
+ #if BUILDFLAG(ENABLE_COMMANDLINE_SEQUENCE_CHECKS)

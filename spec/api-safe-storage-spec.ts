@@ -2,7 +2,7 @@ import { safeStorage } from 'electron/main';
 
 import * as chai from 'chai';
 import { expect } from 'chai';
-import * as chaiAsPromised from 'chai-as-promised';
+import chaiAsPromised from 'chai-as-promised';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
