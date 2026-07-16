@@ -105,15 +105,16 @@ jobs:
       with:
         go-version-file: chromium-build/siso/go.mod
         cache: false
-    - name: Test patched siso spawn-helper packages
+    - name: Test siso packages touched by in-tree patches
       if: steps.cache-siso.outputs.cache-hit != 'true'
       working-directory: chromium-build/siso
       # Runs natively on the workflow host (no GOOS/GOARCH): `go build` alone
       # never compiles or runs _test.go files, so without this the tests the
-      # in-tree patches add would not gate the build. localexec is included
-      # because it drives the spawn helper end-to-end.
+      # in-tree patches add or modify (e.g. 0003's tree_input_test.go) would
+      # not gate the build. The package list covers every package the patches
+      # under .github/siso-patches/ touch; keep it in sync when patches change.
       run: |
-        go test ./execute/spawnhelper/ ./execute/localexec/
+        go test ./build/ ./hashfs/ ./mmapfile/ ./toolsupport/ninjautil/
     - name: Build siso (${{ matrix.goos }}/${{ matrix.goarch }})
       if: steps.cache-siso.outputs.cache-hit != 'true'
       working-directory: chromium-build/siso
