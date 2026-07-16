@@ -42,6 +42,7 @@
 #include "device/fido/public/public_key_credential_params.h"
 #include "device/fido/public/public_key_credential_user_entity.h"
 #include "shell/browser/native_window.h"
+#include "third_party/blink/public/mojom/devtools/console_message.mojom.h"
 
 namespace electron {
 
@@ -60,22 +61,39 @@ std::vector<uint8_t> NSDataToVector(NSData* data) {
       static_cast<const uint8_t*>(data.bytes) + data.length));
 }
 
-// Extracts and base64url-decodes the "challenge" field from a WebAuthn
-// clientDataJSON string. Returns an empty vector if the JSON can't be parsed or
-// has no valid challenge, in which case callers fall back to client_data_hash.
-std::vector<uint8_t> ParseChallenge(const std::string& client_data_json) {
+// The fields we need out of Chromium's clientDataJSON before dispatching to
+// Apple. `valid` is false when the JSON couldn't be parsed or lacked a
+// decodable challenge — callers must reject the request rather than fall back
+// to client_data_hash (Apple would hash that again, so the assertion could
+// never verify RP-side).
+struct ParsedClientData {
+  bool valid = false;
+  std::vector<uint8_t> challenge;
+  // True for iframe ceremonies. Apple's public API always produces a top-level
+  // `origin: https://<rpId>` clientDataJSON with no crossOrigin, so we can't
+  // faithfully represent a cross-origin request and must reject it instead.
+  bool cross_origin = false;
+};
+
+ParsedClientData ParseClientData(const std::string& client_data_json) {
+  ParsedClientData result;
   if (client_data_json.empty())
-    return {};
+    return result;
   std::optional<base::DictValue> parsed =
       base::JSONReader::ReadDict(client_data_json, /*options=*/0);
   if (!parsed)
-    return {};
+    return result;
   const std::string* challenge_b64url = parsed->FindString("challenge");
   if (!challenge_b64url)
-    return {};
+    return result;
   std::optional<std::vector<uint8_t>> challenge_bytes = base::Base64UrlDecode(
       *challenge_b64url, base::Base64UrlDecodePolicy::DISALLOW_PADDING);
-  return challenge_bytes.value_or(std::vector<uint8_t>{});
+  if (!challenge_bytes)
+    return result;
+  result.valid = true;
+  result.challenge = std::move(*challenge_bytes);
+  result.cross_origin = parsed->FindBool("crossOrigin").value_or(false);
+  return result;
 }
 
 NSWindow* GetNSWindowForRenderFrameHost(
@@ -107,10 +125,9 @@ device::AuthenticatorSupportedOptions BuildOptions() {
 // Validates that Apple's returned clientDataJSON contains the expected
 // challenge, origin, and type. This is a defense-in-depth check: we passed
 // Apple the challenge and it derives the origin from the app's associated
-// domain, so the JSON should echo the values we expect. If it doesn't match, we
-// discard it and fall back to Chromium's client_data_json (which will cause
-// signature verification to fail at the RP, but that's better than forwarding
-// attacker-influenced bytes).
+// domain, so the JSON should echo the values we expect. Callers fail the
+// ceremony when this returns false rather than forward unexpected bytes to the
+// page.
 bool ValidateAppleClientDataJSON(const std::vector<uint8_t>& raw_json,
                                  const std::vector<uint8_t>& expected_challenge,
                                  const std::string& expected_origin,
@@ -293,6 +310,9 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
     MakeCredentialCallback callback) {
   if (@available(macOS 13.0, *)) {
     Cancel();
+    // Start from a clean slate so state from a prior op on this authenticator
+    // (expected_challenge/origin/type, buffers) can't bleed into this one.
+    objc_storage_ = std::make_unique<ObjCStorage>();
 
     content::RenderFrameHost* rfh =
         content::RenderFrameHost::FromFrameToken(render_frame_host_token_);
@@ -324,27 +344,39 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
       return;
     }
 
+    // Hand Apple the real challenge (not client_data_hash) so it builds a
+    // clientDataJSON — with our challenge and the associated-domain origin —
+    // and signs over its hash, letting the RP verify against the
+    // rawClientDataJSON we return. We deliberately do NOT set the private
+    // `clientData` property: the public API already produces a verifiable
+    // clientDataJSON for a domain-associated app, and the KVC setter is Apple
+    // SPI that App Store review rejects.
+    ParsedClientData client_data = ParseClientData(request.client_data_json);
+    if (!client_data.valid) {
+      // Falling back to client_data_hash here would let Apple hash it again,
+      // producing a signature no RP can verify. Reject instead.
+      std::move(callback).Run(
+          device::MakeCredentialStatus::kAuthenticatorResponseInvalid,
+          std::nullopt);
+      return;
+    }
+    if (client_data.cross_origin) {
+      // Apple's public API always builds a top-level `origin: https://<rpId>`
+      // clientDataJSON, so we can't represent a cross-origin (iframe) ceremony.
+      // Reject rather than silently present it to the RP as same-origin.
+      std::move(callback).Run(
+          device::MakeCredentialStatus::kAuthenticatorResponseInvalid,
+          std::nullopt);
+      return;
+    }
+
     auto* provider = [[ASAuthorizationPlatformPublicKeyCredentialProvider alloc]
         initWithRelyingPartyIdentifier:base::SysUTF8ToNSString(request.rp.id)];
 
-    // Parse the challenge out of client_data_json and hand Apple the raw
-    // challenge (not client_data_hash). Apple then builds a real clientDataJSON
-    // — with our challenge and the associated-domain origin — and signs over
-    // its hash, so the RP can verify against the rawClientDataJSON we return.
-    // We deliberately do NOT set the private `clientData` property: the public
-    // API already produces a verifiable clientDataJSON for a domain-associated
-    // app, and the KVC setter is Apple SPI that App Store review rejects.
-    std::vector<uint8_t> parsed_challenge =
-        ParseChallenge(request.client_data_json);
-
-    NSData* request_challenge =
-        !parsed_challenge.empty()
-            ? VectorToNSData(parsed_challenge)
-            : [NSData dataWithBytes:request.client_data_hash.data()
-                             length:request.client_data_hash.size()];
-
     auto* as_request = [provider
-        createCredentialRegistrationRequestWithChallenge:request_challenge
+        createCredentialRegistrationRequestWithChallenge:VectorToNSData(
+                                                             client_data
+                                                                 .challenge)
                                                     name:
                                                         base::SysUTF8ToNSString(
                                                             request.user.name
@@ -355,11 +387,9 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
     // Stash expected values so OnMakeCredentialComplete can validate Apple's
     // returned clientDataJSON before accepting it as the override. Apple
     // derives the origin from the associated domain as https://<rpId>.
-    if (!parsed_challenge.empty()) {
-      objc_storage_->expected_challenge = std::move(parsed_challenge);
-      objc_storage_->expected_origin = "https://" + request.rp.id;
-      objc_storage_->expected_type = "webauthn.create";
-    }
+    objc_storage_->expected_challenge = std::move(client_data.challenge);
+    objc_storage_->expected_origin = "https://" + request.rp.id;
+    objc_storage_->expected_type = "webauthn.create";
 
     // excludedCredentials comes from the
     // ASAuthorizationWebBrowserPlatformPublicKeyCredentialRegistrationRequest
@@ -424,6 +454,9 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
     GetAssertionCallback callback) {
   if (@available(macOS 13.0, *)) {
     Cancel();
+    // Start from a clean slate so state from a prior op on this authenticator
+    // (expected_challenge/origin/type, buffers) can't bleed into this one.
+    objc_storage_ = std::make_unique<ObjCStorage>();
 
     content::RenderFrameHost* rfh =
         content::RenderFrameHost::FromFrameToken(render_frame_host_token_);
@@ -440,35 +473,43 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
       return;
     }
 
-    auto* provider = [[ASAuthorizationPlatformPublicKeyCredentialProvider alloc]
-        initWithRelyingPartyIdentifier:base::SysUTF8ToNSString(request.rp_id)];
-
-    // Hand Apple the raw challenge (not client_data_hash) so it builds a real
+    // Hand Apple the real challenge (not client_data_hash) so it builds a
     // clientDataJSON — with our challenge and the associated-domain origin —
     // and signs over its hash, letting the RP verify against the
     // rawClientDataJSON we return. As in MakeCredential, we use only the public
     // API and never set the private `clientData` property (Apple SPI that App
     // Store review rejects).
-    std::vector<uint8_t> parsed_challenge =
-        ParseChallenge(request.client_data_json);
+    ParsedClientData client_data = ParseClientData(request.client_data_json);
+    if (!client_data.valid) {
+      // Falling back to client_data_hash here would let Apple hash it again,
+      // producing a signature no RP can verify. Reject instead.
+      std::move(callback).Run(
+          device::GetAssertionStatus::kAuthenticatorResponseInvalid, {});
+      return;
+    }
+    if (client_data.cross_origin) {
+      // Apple's public API always builds a top-level `origin: https://<rpId>`
+      // clientDataJSON, so we can't represent a cross-origin (iframe) ceremony.
+      // Reject rather than silently present it to the RP as same-origin.
+      std::move(callback).Run(
+          device::GetAssertionStatus::kAuthenticatorResponseInvalid, {});
+      return;
+    }
 
-    NSData* request_challenge =
-        !parsed_challenge.empty()
-            ? VectorToNSData(parsed_challenge)
-            : [NSData dataWithBytes:request.client_data_hash.data()
-                             length:request.client_data_hash.size()];
+    auto* provider = [[ASAuthorizationPlatformPublicKeyCredentialProvider alloc]
+        initWithRelyingPartyIdentifier:base::SysUTF8ToNSString(request.rp_id)];
 
     auto* as_request = [provider
-        createCredentialAssertionRequestWithChallenge:request_challenge];
+        createCredentialAssertionRequestWithChallenge:VectorToNSData(
+                                                          client_data
+                                                              .challenge)];
 
     // Stash expected values so OnGetAssertionComplete can validate Apple's
     // returned clientDataJSON before accepting it as the override. Apple
     // derives the origin from the associated domain as https://<rpId>.
-    if (!parsed_challenge.empty()) {
-      objc_storage_->expected_challenge = std::move(parsed_challenge);
-      objc_storage_->expected_origin = "https://" + request.rp_id;
-      objc_storage_->expected_type = "webauthn.get";
-    }
+    objc_storage_->expected_challenge = std::move(client_data.challenge);
+    objc_storage_->expected_origin = "https://" + request.rp_id;
+    objc_storage_->expected_type = "webauthn.get";
 
     if (!request.allow_list.empty()) {
       NSMutableArray* descriptors = [NSMutableArray array];
@@ -568,6 +609,33 @@ ElectronPlatformPasskeysAuthenticator::GetWeakPtr() {
   return weak_factory_.GetWeakPtr();
 }
 
+void ElectronPlatformPasskeysAuthenticator::MaybeLogUnconfiguredError() {
+  // Error 1004 is the "no application identifier" / association failure the
+  // system raises when the app isn't signed with the associated-domains
+  // entitlement, or the relying party's domain isn't associated via an
+  // apple-app-site-association file. It surfaces to the page as a bare
+  // NotAllowedError with no hint, so log actionable guidance.
+  constexpr NSInteger kNoApplicationIdentifier = 1004;
+  if (!objc_storage_->error_is_authorization_domain ||
+      objc_storage_->error_code != kNoApplicationIdentifier) {
+    return;
+  }
+  content::RenderFrameHost* rfh =
+      content::RenderFrameHost::FromFrameToken(render_frame_host_token_);
+  if (!rfh) {
+    return;
+  }
+  rfh->AddMessageToConsole(
+      blink::mojom::ConsoleMessageLevel::kError,
+      "WebAuthn platform passkey request failed (ASAuthorizationError 1004). "
+      "This usually means the app isn't signed with the associated-domains "
+      "entitlement, or the relying party's domain isn't serving a valid "
+      ".well-known/apple-app-site-association with a \"webcredentials\" entry "
+      "for this app. Platform passkeys require a real associated domain (there "
+      "is no localhost rpId); development-signed builds can test against one "
+      "via the entitlement's ?mode=developer modifier.");
+}
+
 void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
     MakeCredentialCallback callback) {
   if (!objc_storage_->succeeded) {
@@ -582,6 +650,7 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
       status = device::MakeCredentialStatus::kUserConsentButCredentialExcluded;
     }
 
+    MaybeLogUnconfiguredError();
     std::move(callback).Run(status, std::nullopt);
     return;
   }
@@ -612,19 +681,24 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
   response.transports->insert(device::FidoTransportProtocol::kHybrid);
   response.transport_used = device::FidoTransportProtocol::kInternal;
 
-  if (!objc_storage_->raw_client_data_json.empty()) {
-    // Defense-in-depth: verify Apple's returned JSON echoes the challenge,
-    // origin, and type we requested. If it doesn't, discard the override —
-    // the RP will reject the assertion (Chromium's JSON won't match the
-    // signature), but that's safer than forwarding unexpected bytes.
-    if (ValidateAppleClientDataJSON(objc_storage_->raw_client_data_json,
-                                    objc_storage_->expected_challenge,
-                                    objc_storage_->expected_origin,
-                                    objc_storage_->expected_type)) {
-      response.raw_client_data_json =
-          std::move(objc_storage_->raw_client_data_json);
-    }
+  // Verify Apple's returned JSON echoes the challenge, origin, and type we
+  // requested, then hand it to the page. A registration that reaches this point
+  // has already minted a real passkey in the user's keychain; if Apple's JSON
+  // is unexpectedly absent or fails validation we must fail the ceremony rather
+  // than forward Chromium's JSON — the latter would let create() "succeed"
+  // (attestation is `none`) while every future assertion against that new
+  // credential fails RP-side.
+  if (!ValidateAppleClientDataJSON(objc_storage_->raw_client_data_json,
+                                   objc_storage_->expected_challenge,
+                                   objc_storage_->expected_origin,
+                                   objc_storage_->expected_type)) {
+    std::move(callback).Run(
+        device::MakeCredentialStatus::kAuthenticatorResponseInvalid,
+        std::nullopt);
+    return;
   }
+  response.raw_client_data_json =
+      std::move(objc_storage_->raw_client_data_json);
 
   std::move(callback).Run(device::MakeCredentialStatus::kSuccess,
                           std::move(response));
@@ -633,6 +707,7 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
 void ElectronPlatformPasskeysAuthenticator::OnGetAssertionComplete(
     GetAssertionCallback callback) {
   if (!objc_storage_->succeeded) {
+    MaybeLogUnconfiguredError();
     std::move(callback).Run(device::GetAssertionStatus::kUserConsentDenied, {});
     return;
   }
@@ -661,18 +736,20 @@ void ElectronPlatformPasskeysAuthenticator::OnGetAssertionComplete(
   response.user_selected = true;
 
   // Apple's rawClientDataJSON is the authoritative clientDataJSON — the
-  // signature covers its hash. Pass it through so authenticator_common_impl
-  // returns it to the page. Defense-in-depth: validate the JSON before
-  // accepting the override.
-  if (!objc_storage_->raw_client_data_json.empty()) {
-    if (ValidateAppleClientDataJSON(objc_storage_->raw_client_data_json,
-                                    objc_storage_->expected_challenge,
-                                    objc_storage_->expected_origin,
-                                    objc_storage_->expected_type)) {
-      response.raw_client_data_json =
-          std::move(objc_storage_->raw_client_data_json);
-    }
+  // signature covers its hash — so the page must receive it for the RP to
+  // verify. Validate it echoes what we requested; if it's absent or fails
+  // validation, fail the ceremony rather than forward Chromium's JSON, which
+  // wouldn't match the signature and would fail RP-side anyway.
+  if (!ValidateAppleClientDataJSON(objc_storage_->raw_client_data_json,
+                                   objc_storage_->expected_challenge,
+                                   objc_storage_->expected_origin,
+                                   objc_storage_->expected_type)) {
+    std::move(callback).Run(
+        device::GetAssertionStatus::kAuthenticatorResponseInvalid, {});
+    return;
   }
+  response.raw_client_data_json =
+      std::move(objc_storage_->raw_client_data_json);
 
   std::vector<device::AuthenticatorGetAssertionResponse> responses;
   responses.push_back(std::move(response));

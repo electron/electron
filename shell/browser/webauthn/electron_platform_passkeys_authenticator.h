@@ -59,6 +59,11 @@ class ElectronPlatformPasskeysAuthenticator : public device::FidoAuthenticator {
   void OnMakeCredentialComplete(MakeCredentialCallback callback);
   void OnGetAssertionComplete(GetAssertionCallback callback);
 
+  // Emits a DevTools console hint when ASAuthorizationController fails with
+  // error 1004 (no application-identifier / association), which surfaces to the
+  // page as a bare NotAllowedError. Called from the completion handlers.
+  void MaybeLogUnconfiguredError();
+
   const content::GlobalRenderFrameHostToken render_frame_host_token_;
   std::unique_ptr<ObjCStorage> objc_storage_;
   base::WeakPtrFactory<ElectronPlatformPasskeysAuthenticator> weak_factory_{
