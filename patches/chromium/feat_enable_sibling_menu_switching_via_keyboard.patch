@@ -1,0 +1,144 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michaela Laurencin <mlaurencin@electronjs.org>
+Date: Thu, 2 Jul 2026 20:32:59 -0400
+Subject: feat: enable sibling menu switching via keyboard
+
+Allow Left/Right arrow keys to move between adjacent top-level menus (e.g. an application menu bar)
+while a menu is open, matching native platform behavior on Windows and Linux.
+Adds MenuDelegate::GetSiblingMenuByDirection, invoked from MenuController when the user presses
+Left/Right at the top level with nothing to open or close in that direction.
+
+diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
+index 79c89cde2a9dddbe9b2880c1599154b3ba041872..42c9ad0cfc4ac65681d566ce45768fe39b14e38a 100644
+--- a/ui/views/controls/menu/menu_controller.cc
++++ b/ui/views/controls/menu/menu_controller.cc
+@@ -1970,9 +1970,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+         break;
+       }
+       if (base::i18n::IsRTL()) {
+-        CloseSubmenu();
++        CloseSubmenuOrSwitchSiblingMenu();
+       } else {
+-        OpenSubmenuChangeSelectionIfCan();
++        OpenSubmenuOrSwitchSiblingMenu();
+       }
+       break;
+ 
+@@ -1981,9 +1981,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+         break;
+       }
+       if (base::i18n::IsRTL()) {
+-        OpenSubmenuChangeSelectionIfCan();
++        OpenSubmenuOrSwitchSiblingMenu();
+       } else {
+-        CloseSubmenu();
++        CloseSubmenuOrSwitchSiblingMenu();
+       }
+       break;
+ 
+@@ -3324,6 +3324,52 @@ void MenuController::CloseSubmenu() {
+   }
+ }
+ 
++void MenuController::OpenSubmenuOrSwitchSiblingMenu() {
++  MenuItemView* const selected = pending_state_.item;
++  // If the selected item can open a submenu, open it as usual.
++  if (selected && selected->HasSubmenu() && selected->GetEnabled()) {
++    OpenSubmenuChangeSelectionIfCan();
++    return;
++  }
++  // Otherwise, only switch to the next sibling menu when the selection
++  // is a direct child of the root menu. Switching is not allowed from
++  // within a nested submenu.
++  const bool is_top_level_child =
++      selected && !selected->HasSubmenu() && selected->GetParentMenuItem() &&
++      !selected->GetParentMenuItem()->GetParentMenuItem();
++  if (is_top_level_child && selected->GetDelegate() &&
++      selected->GetDelegate()->GetSiblingMenuByDirection(/*next=*/true)) {
++    return;
++  }
++  OpenSubmenuChangeSelectionIfCan();
++}
++
++void MenuController::CloseSubmenuOrSwitchSiblingMenu() {
++  MenuItemView* item = state_.item;
++  // If there is a submenu to close, close it as usual.
++  const bool can_close_submenu =
++      item && item->GetParentMenuItem() &&
++      (item->SubmenuIsShowing() ||
++       item->GetParentMenuItem()->GetParentMenuItem());
++  if (can_close_submenu) {
++    CloseSubmenu();
++    return;
++  }
++  // Otherwise, only switch to the previous sibling menu when the selection is a
++  // direct child of the root menu. Use pending_state_.item, not state_.item:
++  // keyboard selection of a submenu item defers the state_ commit, so state_
++  // may still point at the previously selected leaf.
++  MenuItemView* const selected = pending_state_.item;
++  const bool is_top_level_child =
++      selected && !selected->HasSubmenu() && selected->GetParentMenuItem() &&
++      !selected->GetParentMenuItem()->GetParentMenuItem();
++  if (is_top_level_child && selected->GetDelegate() &&
++      selected->GetDelegate()->GetSiblingMenuByDirection(/*next=*/false)) {
++    return;
++  }
++  CloseSubmenu();
++}
++
+ MenuController::SelectByCharDetails MenuController::FindChildForMnemonic(
+     MenuItemView* parent,
+     char16_t key,
+diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
+index 1e7dd4cc0d23bede368884fad833928188109370..dd4366188b8e415afe82cc1da8fb8a4829e1f9c2 100644
+--- a/ui/views/controls/menu/menu_controller.h
++++ b/ui/views/controls/menu/menu_controller.h
+@@ -567,6 +567,15 @@ class VIEWS_EXPORT MenuController final : public gfx::AnimationDelegate,
+   // If possible, closes the submenu.
+   void CloseSubmenu();
+ 
++  // Like OpenSubmenuChangeSelectionIfCan(), but if the selected item has no
++  // submenu to open, asks the delegate to switch to the next sibling menu.
++  void OpenSubmenuOrSwitchSiblingMenu();
++
++  // Like CloseSubmenu(), but if there is no submenu to close (i.e. the
++  // selection is at the top level of the menu), asks the delegate to switch to
++  // the previous sibling menu.
++  void CloseSubmenuOrSwitchSiblingMenu();
++
+   // Show a context menu for the currently hot-tracked view if available.
+   // Triggered by keyboard events, e.g., APPS key, Shift+F10.
+   void ShowContextMenu();
+diff --git a/ui/views/controls/menu/menu_delegate.cc b/ui/views/controls/menu/menu_delegate.cc
+index 2cee3df99c5d62e00262eb2267871bcd033d3fd4..ef0945f3b5acf4b2a98f03b84d4a10707e368349 100644
+--- a/ui/views/controls/menu/menu_delegate.cc
++++ b/ui/views/controls/menu/menu_delegate.cc
+@@ -146,6 +146,10 @@ MenuItemView* MenuDelegate::GetSiblingMenu(MenuItemView* menu,
+   return nullptr;
+ }
+ 
++bool MenuDelegate::GetSiblingMenuByDirection(bool next) {
++  return false;
++}
++
+ int MenuDelegate::GetMaxWidthForMenu(MenuItemView* menu) {
+   // NOTE: this needs to be large enough to accommodate the wrench menu with
+   // big fonts.
+diff --git a/ui/views/controls/menu/menu_delegate.h b/ui/views/controls/menu/menu_delegate.h
+index 93b78fd05676badc4f459f2100155747c85fbdb2..eecad3f755783f01932b4a6402ff327618fe147c 100644
+--- a/ui/views/controls/menu/menu_delegate.h
++++ b/ui/views/controls/menu/menu_delegate.h
+@@ -201,6 +201,13 @@ class VIEWS_EXPORT MenuDelegate {
+                                        bool* has_mnemonics,
+                                        MenuButton** button);
+ 
++  // Invoked when the user presses the left/right arrow keys while at the top
++  // level of a menu (e.g. an application menu bar) and there is no submenu to
++  // open or close in that direction. |next| is true to switch to the next
++  // sibling menu and false for the previous one. Returns true if the delegate
++  // handled the request by switching menus.
++  virtual bool GetSiblingMenuByDirection(bool next);
++
+   // Returns the max width menus can grow to be.
+   virtual int GetMaxWidthForMenu(MenuItemView* menu);
+ 
