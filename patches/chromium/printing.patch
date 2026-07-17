@@ -67,6 +67,128 @@ index bb7a4f4ff71cdbd98461feeac00cea5949d260c8..fff4e09b5891adacd6d61bdd31c1badf
                 ? PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3_WITH_TYPE42_FONTS
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
+diff --git a/chrome/browser/printing/print_view_manager.cc b/chrome/browser/printing/print_view_manager.cc
+index d22df27c10d578c93b2e52f148794b8eb143dcde..ce267d8107b633f758f6839345066b86ef28b2eb 100644
+--- a/chrome/browser/printing/print_view_manager.cc
++++ b/chrome/browser/printing/print_view_manager.cc
+@@ -423,10 +423,7 @@ void PrintViewManager::GetPrintPreviewParams(
+   // `job_settings` does not yet contain the rasterized PDF dpi, so if the user
+   // has the print preference set, fetch it for use in
+   // `PrintSettingsFromJobSettings()`.
+-  content::BrowserContext* context =
+-      web_contents() ? web_contents()->GetBrowserContext() : nullptr;
+-  PrefService* prefs =
+-      context ? Profile::FromBrowserContext(context)->GetPrefs() : nullptr;
++  PrefService* prefs = nullptr;
+   if (prefs && prefs->HasPrefPath(prefs::kPrintRasterizePdfDpi)) {
+     int value = prefs->GetInteger(prefs::kPrintRasterizePdfDpi);
+     if (value > 0) {
+@@ -452,7 +449,27 @@ void PrintViewManager::GetPrintPreviewParams(
+     }
+   }
+ 
+-#if BUILDFLAG(IS_WIN)
++#if BUILDFLAG(ENABLE_OOP_PRINTING)
++  if (ShouldPrintJobOop() && !query_with_ui_client_id().has_value()) {
++    RegisterSystemPrintClient();
++  }
++#endif
++
++  std::unique_ptr<PrinterQuery> query =
++      queue()->CreatePrinterQuery(GetCurrentTargetFrame()->GetGlobalId());
++  auto* query_ptr = query.get();
++  // We need to clone this before calling SetSettings because some environments
++  // evaluate job_settings.Clone() first, and some std::move(job_settings) first,
++  // for the former things work correctly but for the latter the cloned value is null.
++  auto job_settings_copy = job_settings.Clone();
++  query_ptr->SetSettings(
++      std::move(job_settings_copy),
++      base::BindOnce(&PrintViewManager::CompleteGetPrintPreviewParams,
++                     weak_factory_.GetWeakPtr(), std::move(query),
++                     std::move(job_settings), std::move(print_settings),
++                     std::move(callback)));
++
++#if 0 // See https://chromium-review.googlesource.com/412367
+   // TODO(crbug.com/40260379):  Remove this if the printable areas can be made
+   // fully available from `PrintBackend::GetPrinterSemanticCapsAndDefaults()`
+   // for in-browser queries.
+@@ -474,8 +491,17 @@ void PrintViewManager::GetPrintPreviewParams(
+   }
+ #endif
+ 
+-  CompleteGetPrintPreviewParams(std::move(job_settings),
+-                                std::move(print_settings), std::move(callback));
++}
++
++void PrintViewManager::UpdatePrintSettings(
++    base::DictValue job_settings,
++    UpdatePrintSettingsCallback callback) {
++  if (job_settings.empty()) {
++    std::move(callback).Run(nullptr);
++    return;
++  }
++  AppendPrintPreviewSettings(std::move(job_settings), /*is_pdf=*/false);
++  GetPrintPreviewParams(std::move(callback));
+ }
+ 
+ void PrintViewManager::SetupScriptedPrintPreview(
+@@ -705,12 +731,13 @@ void PrintViewManager::OnDidUpdatePrintableArea(
+   }
+   PRINTER_LOG(EVENT) << "Paper printable area updated for vendor id "
+                      << print_settings->requested_media().vendor_id;
+-  CompleteGetPrintPreviewParams(std::move(job_settings),
++  CompleteGetPrintPreviewParams(nullptr /* printer_query */, std::move(job_settings),
+                                 std::move(print_settings), std::move(callback));
+ }
+ #endif
+ 
+ void PrintViewManager::CompleteGetPrintPreviewParams(
++    std::unique_ptr<PrinterQuery> printer_query,
+     base::DictValue job_settings,
+     std::unique_ptr<PrintSettings> print_settings,
+     GetPrintPreviewParamsCallback callback) {
+@@ -718,7 +745,8 @@ void PrintViewManager::CompleteGetPrintPreviewParams(
+   settings->pages = GetPageRangesFromJobSettings(job_settings);
+   settings->params = mojom::PrintParams::New();
+   RenderParamsFromPrintSettings(*print_settings, settings->params.get());
+-  settings->params->document_cookie = PrintSettings::NewCookie();
++  settings->params->document_cookie = printer_query ? printer_query->cookie()
++                                                    : PrintSettings::NewCookie();
+   if (!PrintMsgPrintParamsIsValid(*settings->params)) {
+     mojom::PrinterType printer_type = static_cast<mojom::PrinterType>(
+         *job_settings.FindInt(kSettingPrinterType));
+@@ -730,6 +758,10 @@ void PrintViewManager::CompleteGetPrintPreviewParams(
+     return;
+   }
+ 
++  if (printer_query && printer_query->cookie() && printer_query->settings().dpi()) {
++    queue()->QueuePrinterQuery(std::move(printer_query));
++  }
++
+   set_cookie(settings->params->document_cookie);
+   std::move(callback).Run(std::move(settings));
+ }
+diff --git a/chrome/browser/printing/print_view_manager.h b/chrome/browser/printing/print_view_manager.h
+index 324f2d4002545fd624505995043cdad2b08b800b..b08c4e6277f2e1906f7b60d58f694471651339be 100644
+--- a/chrome/browser/printing/print_view_manager.h
++++ b/chrome/browser/printing/print_view_manager.h
+@@ -77,6 +77,8 @@ class PrintViewManager : public PrintViewManagerBase,
+   // mojom::PrintManagerHost:
+   void DidShowPrintDialog() override;
+   void GetPrintPreviewParams(GetPrintPreviewParamsCallback callback) override;
++  void UpdatePrintSettings(base::DictValue job_settings,
++                           UpdatePrintSettingsCallback callback) override;
+   void SetupScriptedPrintPreview(
+       SetupScriptedPrintPreviewCallback callback) override;
+   void ShowScriptedPrintPreview() override;
+@@ -169,6 +171,7 @@ class PrintViewManager : public PrintViewManagerBase,
+                                 bool success);
+ #endif
+   void CompleteGetPrintPreviewParams(
++      std::unique_ptr<PrinterQuery> printer_query,
+       base::DictValue job_settings,
+       std::unique_ptr<PrintSettings> print_settings,
+       GetPrintPreviewParamsCallback callback);
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
 index d1aeb66e57e1c54b77a667da2a1ab50a6708b19a..6f867efc6ca81fa9172295c83f90d776b6b9e63f 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
