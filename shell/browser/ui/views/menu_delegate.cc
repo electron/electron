@@ -141,4 +141,24 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
   return nullptr;
 }
 
+bool MenuDelegate::GetSiblingMenuByDirection(bool next) {
+  views::MenuButton* button = nullptr;
+  ElectronMenuModel* model = nullptr;
+  if (!menu_bar_->GetSiblingMenuButtonByDirection(id_, next, &model, &button) ||
+      button->GetID() == id_) {
+    return false;
+  }
+
+  bool switch_in_progress = !!button_to_open_;
+  // Always update target to open.
+  button_to_open_ = button;
+  // Switching menu asynchronously to avoid crash.
+  if (!switch_in_progress) {
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce(&views::MenuRunner::Cancel,
+                                  base::Unretained(menu_runner_.get())));
+  }
+  return true;
+}
+
 }  // namespace electron

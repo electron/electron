@@ -69,6 +69,7 @@ class MenuDelegate : public views::MenuDelegate {
                                       views::MenuAnchorPosition* anchor,
                                       bool* has_mnemonics,
                                       views::MenuButton** button) override;
+  bool GetSiblingMenuByDirection(bool next) override;
 
  private:
   raw_ptr<MenuBar> menu_bar_;

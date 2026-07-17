@@ -107,6 +107,39 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
   return false;
 }
 
+bool MenuBar::GetSiblingMenuButtonByDirection(int current_id,
+                                              bool next,
+                                              ElectronMenuModel** menu_model,
+                                              views::MenuButton** button) {
+  if (!menu_model_)
+    return false;
+
+  const int count = static_cast<int>(GetItemCount());
+  if (count == 0)
+    return false;
+
+  // Walk the items adjacent to |current_id|, wrapping around and skipping
+  // non-submenu entries (e.g. separators), until a submenu item is found.
+  const int step = next ? 1 : -1;
+  for (int offset = 1; offset <= count; ++offset) {
+    const int index = ((current_id + step * offset) % count + count) % count;
+    if (index == current_id)
+      break;
+    if (menu_model_->GetTypeAt(index) != ElectronMenuModel::TYPE_SUBMENU)
+      continue;
+    for (views::View* child : children()) {
+      auto* candidate = static_cast<views::MenuButton*>(child);
+      if (candidate->GetID() == index) {
+        *menu_model = menu_model_->GetSubmenuModelAt(index);
+        *button = candidate;
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 void MenuBar::OnBeforeExecuteCommand() {
   if (GetPaneFocusTraversable() != nullptr) {
     RemovePaneFocus();

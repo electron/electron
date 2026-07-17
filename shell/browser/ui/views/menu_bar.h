@@ -53,6 +53,14 @@ class MenuBar : public views::AccessiblePaneView,
                                     ElectronMenuModel** menu_model,
                                     views::MenuButton** button);
 
+  // Get the submenu button adjacent to the button with |current_id|, wrapping
+  // around and skipping non-submenu items. |next| selects the following button
+  // when true and the preceding one when false.
+  bool GetSiblingMenuButtonByDirection(int current_id,
+                                       bool next,
+                                       ElectronMenuModel** menu_model,
+                                       views::MenuButton** button);
+
   void ViewHierarchyChanged(
       const views::ViewHierarchyChangedDetails& details) override;
 
