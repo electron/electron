@@ -23,6 +23,7 @@ v8_enable_javascript_promise_hooks = true
 v8_disallow_js_in_api_interrupts_is_checked = false
 
 enable_cdm_host_verification = false
+enable_widevine = true
 ffmpeg_branding = "Chrome"
 proprietary_codecs = true
 
