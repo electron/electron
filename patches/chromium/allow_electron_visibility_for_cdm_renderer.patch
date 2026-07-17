@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jung-Kwang Lee <jungkwang.lee@softcamp.co.kr>
+Date: Mon, 9 Feb 2026 17:45:53 +0900
+Subject: Allow Electron visibility for CDM renderer
+
+patch-reason: 2
+
+electron needs //electron visibility on components/cdm/renderer to
+
+build cdm renderer integration; this is electron-specific.
+
+diff --git a/components/cdm/renderer/BUILD.gn b/components/cdm/renderer/BUILD.gn
+index fbe2ec2264cd170fe9c5ec9bcedf9fdd4732a2a0..614bb127acc01f119077f98858bd74e4d8489da8 100644
+--- a/components/cdm/renderer/BUILD.gn
++++ b/components/cdm/renderer/BUILD.gn
+@@ -14,6 +14,7 @@ static_library("renderer") {
+     "//components/cdm/*",
+     "//content/shell/*",
+     "//fuchsia_web/*",
++    "//electron/*",
+   ]
+ 
+   sources = [
