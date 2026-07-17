@@ -106,7 +106,7 @@ index 9f2bc6393ad91af7c442e6d2f59dcd6929a0476e..c3d5a8cc3257817ac9a5db6c15a98fb5
    bool is_visible_on_all_workspaces_ = false;
    gfx::Rect window_bounds_before_fullscreen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 245c62832f4da50e8951470a3297670faa3991be..e0a9418397398f8a8483fabd933be3ead64f2497 100644
+index 3c8ad7d2f881d76a12b9308eff8f5c2ab48ee6ec..683b46eb7441d73b3dbb379f626de8fd31c6b8d7 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -486,6 +486,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,

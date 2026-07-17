@@ -522,7 +522,7 @@ index 4f9e8946fa02d859e92a6896beba82721914f868..78486eaa993ee7ffd5188b31503de7dd
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index aba737de9c4f1b45b55e4644ad13ef726ea5cbe5..ba6ccd07e452ede065b916824e2043f64dc551a9 100644
+index ef125f7356ab901ddcded446a5913c4c05545bb4..00b33fcc5dfd2fa3e988c243e8d14abfc8018d3b 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -131,7 +131,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -564,7 +564,7 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 21018668e733a390c96c4c38324b2758b35da924..55e7be42e964444929cfa6783f0059c61be7273d 100644
+index c12079d441ac6d7b51f205510fed6143347bb981..11be80307834db0e01f0c8e9ca046e897331ae19 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -420,8 +420,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -597,7 +597,7 @@ index 8b274ed5c6ad8f18d8796da2581b51ca32e9317c..95ce03d0d02274b8cc937918e26acb4d
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index 1fd72e7341d9a61cd101aec67f93fbfbc06a02cb..d4804f779870c3fe389758389f3e2cf734a042fc 100644
+index ad19a581d7fd503d4091ac5d1f5b3c1139387c7f..e361a64483478f02cbc48509a31179e0cebab12b 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -40,6 +40,7 @@ struct RootCompositorFrameSinkParams {
@@ -620,7 +620,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 5d1867782bab27cf3c022d93c65394e955a511cb..f5db8cc34d55199673b9990237ffd9e2f2024f6a 100644
+index f6aeaeb3b32fad68eb199c140c849a3eadb5f495..43d15508e4cab203cc91bb44ba26159f619cf190 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -89,6 +89,7 @@ class DisplayPrivate;

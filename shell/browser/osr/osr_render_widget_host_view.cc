@@ -193,7 +193,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_allocator_.GenerateId();
   compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
 
-  root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
+  root_layer_ = std::make_unique<ui::LayerSolidColor>();
 
   root_layer()->SetColor(background_color_);
 

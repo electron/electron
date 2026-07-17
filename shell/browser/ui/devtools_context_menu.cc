@@ -51,8 +51,7 @@ DevToolsContextMenu::~DevToolsContextMenu() {
 void DevToolsContextMenu::RunMenuAt(views::Widget* parent_widget) {
   if (menu_model_.GetItemCount() == 0) {
     // Nothing to show; let the frontend clean up its pending menu state.
-    web_contents_->NotifyContextMenuClosed(params_.link_followed,
-                                           params_.impression);
+    web_contents_->NotifyContextMenuClosed(params_.link_followed);
     return;
   }
 
@@ -161,8 +160,7 @@ void DevToolsContextMenu::OnMenuClosed() {
     return;
   menu_open_ = false;
   web_contents_->SetShowingContextMenu(false);
-  web_contents_->NotifyContextMenuClosed(params_.link_followed,
-                                         params_.impression);
+  web_contents_->NotifyContextMenuClosed(params_.link_followed);
 }
 
 bool DevToolsContextMenu::IsCommandIdChecked(int command_id) const {
