@@ -186,7 +186,7 @@ void PrintViewManagerElectron::GetPrintPreviewParams(
 #endif
 
   std::unique_ptr<printing::PrinterQuery> query =
-      queue()->CreatePrinterQuery(CurrentTargetFrame().GetGlobalId());
+      queue()->CreatePrinterQuery(GetCurrentTargetFrame()->GetGlobalId());
   auto* query_ptr = query.get();
   // We need to clone this before calling SetSettings because some environments
   // evaluate job_settings.Clone() first, and some std::move(job_settings)
