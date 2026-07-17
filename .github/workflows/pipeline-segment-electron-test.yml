@@ -229,6 +229,56 @@ jobs:
         /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
           -f src/out/Default/Electron.app
 
+    - name: Setup CUPS virtual printer (linux)
+      if: ${{ inputs.target-platform == 'linux' }}
+      # Provisions the silent virtual printer as ROOT here, rather than letting
+      # script/spec-runner.js do it, because the runner executes as builduser
+      # (via runuser) which cannot administer CUPS or keep ippeveprinter alive.
+      # The printer name is handed to the runner via ELECTRON_TEST_PRINTER_NAME;
+      # setupVirtualPrinter() honors that and skips its own provisioning.
+      #
+      # Best-effort: the spec self-skips when ELECTRON_TEST_PRINTER_NAME is unset
+      # or the printer is not enumerable, so this step must never fail the job
+      # (hence continue-on-error and the `|| true` guards under `bash -eo pipefail`).
+      continue-on-error: true
+      run: |
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -y || true
+        # cups-daemon: cupsd | cups-client: lpadmin/lpstat | cups-ipp-utils: ippeveprinter
+        apt-get install -y --no-install-recommends cups cups-daemon cups-client cups-ipp-utils || true
+        # No systemd in the container, so start the scheduler directly.
+        mkdir -p /var/run/cups
+        (cupsd || /usr/sbin/cupsd) || true
+        for _ in $(seq 1 10); do lpstat -r >/dev/null 2>&1 && break; sleep 1; done
+        lpstat -r || true
+
+        IPPEVE="$(command -v ippeveprinter || echo /usr/sbin/ippeveprinter)"
+        LPADMIN="$(command -v lpadmin || echo /usr/sbin/lpadmin)"
+        PRINTER_NAME="electron-ci-test"
+        IPP_PORT=8631
+        SPOOL_DIR="$(mktemp -d)"
+        # setsid + nohup detach ippeveprinter into its own session so it keeps
+        # running for the test step rather than being reaped when this step ends.
+        setsid nohup "$IPPEVE" -f application/pdf -p "$IPP_PORT" -d "$SPOOL_DIR" \
+          -k "Electron CI Test Printer" > /tmp/ippeveprinter.log 2>&1 &
+        # Wait for the IPP endpoint to accept TCP connections before registering.
+        for _ in $(seq 1 20); do
+          if (exec 3<>/dev/tcp/127.0.0.1/$IPP_PORT) 2>/dev/null; then exec 3>&- 3<&-; break; fi
+          sleep 1
+        done
+        "$LPADMIN" -p "$PRINTER_NAME" -E -v "ipp://localhost:$IPP_PORT/ipp/print" -m everywhere || true
+        "$LPADMIN" -d "$PRINTER_NAME" || true
+        # Diagnostics to aid debugging if the printer fails to register.
+        lpstat -t || true
+        cat /tmp/ippeveprinter.log || true
+        # Only hand the printer to the runner if it actually registered.
+        if lpstat -p "$PRINTER_NAME" >/dev/null 2>&1; then
+          echo "ELECTRON_TEST_PRINTER_NAME=$PRINTER_NAME" >> "$GITHUB_ENV"
+          echo "Provisioned CUPS printer: $PRINTER_NAME"
+        else
+          echo "Failed to provision CUPS printer; the print settings test will self-skip."
+        fi
+
     - name: Run Electron Tests
       shell: bash
       timeout-minutes: 60
