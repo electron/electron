@@ -3,7 +3,7 @@ import { globalShortcut } from 'electron/main';
 import { expect } from 'chai';
 
 import { singleModifierCombinations, doubleModifierCombinations } from './lib/accelerator-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
   beforeEach(() => {
@@ -147,6 +147,23 @@ ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
       const result = globalShortcut.register('CmdOrCtrl+A', () => {});
       expect(result).to.be.true();
       expect(globalShortcut.isRegistered('CmdOrCtrl+A')).to.be.true();
+    });
+  });
+
+  describe('listShortcuts', () => {
+    it('returns a promise that settles', async () => {
+      try {
+        const shortcuts = await globalShortcut.listShortcuts();
+        // Resolves only when the GlobalShortcuts desktop portal handles
+        // shortcut registration.
+        expect(shortcuts).to.be.an('array');
+      } catch (error) {
+        expect(error).to.be.an.instanceOf(Error);
+      }
+    });
+
+    ifit(process.platform === 'darwin')('rejects when registration is not handled by the desktop portal', async () => {
+      await expect(globalShortcut.listShortcuts()).to.eventually.be.rejectedWith(/GlobalShortcuts desktop portal/);
     });
   });
 
