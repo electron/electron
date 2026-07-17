@@ -1905,6 +1905,21 @@ describe('webContents module', () => {
       });
     });
 
+    let server: http.Server;
+    let serverUrl: string;
+
+    before(async () => {
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end('<title>clone</title>');
+      });
+      serverUrl = (await listen(server)).url;
+    });
+
+    after(() => {
+      server.close();
+    });
+
     it('web-contents-created event will be emitted for cloned WebContents', async () => {
       const w = new BrowserWindow({
         show: false
@@ -1937,10 +1952,10 @@ describe('webContents module', () => {
       expect(clonedContents).to.not.be.undefined();
 
       // Load the same URL in both original and cloned WebContents
-      await w.webContents.loadURL('https://docs.qq.com');
-      await clonedContents.loadURL('https://docs.qq.com');
+      await w.webContents.loadURL(serverUrl);
+      await clonedContents.loadURL(serverUrl);
 
-      // They should have different process IDs since they are separate processes
+      // The clone shares the original's renderer process, so they have the same PID
       const originalPID = w.webContents.getOSProcessId();
       const clonedPID = clonedContents.getOSProcessId();
 
@@ -1952,7 +1967,7 @@ describe('webContents module', () => {
       const w2 = new BrowserWindow({
         show: false
       });
-      await w2.webContents.loadURL('https://docs.qq.com');
+      await w2.webContents.loadURL(serverUrl);
       const newWindowPID = w2.webContents.getOSProcessId();
 
       // New window should also have a different process ID
