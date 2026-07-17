@@ -17,6 +17,7 @@ enum ElectronWrappablePointerTag : uint16_t {
   kElectronChunkedDataPipeReadableStream,   // ChunkedDataPipeReadableStream
   kElectronCookies,                         // electron::api::Cookies
   kElectronDataPipeHolder,                  // electron::api::DataPipeHolder
+  kElectronDesktopCapturer,                 // electron::api::DesktopCapturer
   kElectronDebugger,                        // electron::api::Debugger
   kElectronDownloadItem,                    // electron::api::DownloadItem
   kElectronEvent,                           // gin_helper::internal::Event
