@@ -30,7 +30,7 @@ index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..a0e361cf2d2960de4f429a9d37459e26
    URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
    if (result != URLPattern::ParseResult::kSuccess) {
 diff --git a/extensions/common/api/web_request/web_request_filter.h b/extensions/common/api/web_request/web_request_filter.h
-index 2d8d386edcf063c45aaf619c72b081b45f1b5d11..10d1d58b4c7d45fb84506566e44f773ece012eca 100644
+index 46ba17e5a3d6755a119a91a015a385253d598c52..bc8569fd0fc2c0fa9b12aa138567dcbfea4007a1 100644
 --- a/extensions/common/api/web_request/web_request_filter.h
 +++ b/extensions/common/api/web_request/web_request_filter.h
 @@ -26,7 +26,8 @@ inline constexpr int kWebRequestFilterValidSchemes =

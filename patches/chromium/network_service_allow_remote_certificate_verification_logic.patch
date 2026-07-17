@@ -190,7 +190,7 @@ index de875133b24d94adbf78bd5af728d7eb82bc2a1a..6017eaa5254c839c1a21f5ae24626d29
    std::unique_ptr<HostResolver> internal_host_resolver_;
    std::set<std::unique_ptr<HostResolver>, base::UniquePtrComparator>
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index f14a2d37a73a15e201f73c1c737bede123357f0c..57e27911748afea5f151290c71a8776dbb41b531 100644
+index f8e4c099e16a38f43ff33d16db5f75b42138c7c3..0abdb4ff797b064919f38c914a16a7e8bc429617 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -346,6 +346,17 @@ struct SocketBrokerRemotes {
@@ -211,7 +211,7 @@ index f14a2d37a73a15e201f73c1c737bede123357f0c..57e27911748afea5f151290c71a8776d
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -1021,6 +1032,9 @@ interface NetworkContext {
+@@ -1024,6 +1035,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

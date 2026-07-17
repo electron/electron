@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 0701aae1a17ee157858bc39db145a3a36ef1631a..8f3fc04344e09137686939dc37b21eaa5bdd2c38 100644
+index 81c78f51c9c861124f686ab50efd78b461964918..8520e733ddaa0cd1927b29853bfe99f10d407688 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1135,6 +1135,7 @@ component("base") {
+@@ -1139,6 +1139,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index c25f2d58f80b872c56e28d710510f1b0328de9c2..61425c13dd9055d8f6983557c72128f790e31a90 100644
+index 68d91f46ab04608edded56c3489dc08a10a30d15..8bd6fbddd75c8579b917aac072bb603956c23018 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1033,6 +1033,7 @@ if (is_clang_or_gcc) {
+@@ -1032,6 +1032,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -1020,7 +1020,7 @@ index c0f7aa1ee03a9d08a7442bbd35041468b260d5a9..eb4870daa0aed0e16bab6e863df0cc8e
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 1b82d56c682e1612b07ab600d540253181049496..6bb73d03407ebef986f789be6a675cb3610711e1 100644
+index 908804722fac29ef66745e886adc1a25bc0cac45..4e8778e59044997ded6df1d0ef4adb308020ed99 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -57,6 +57,7 @@
@@ -1067,7 +1067,7 @@ index 1b82d56c682e1612b07ab600d540253181049496..6bb73d03407ebef986f789be6a675cb3
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2479,20 +2486,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2484,20 +2491,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ba6fdb41ff3b0f59e21961dc0810d87153a8069f..3489d162ce6568294aae6618e473f19f2ea39329 100644
+index f1507999df5d37aa2e186508f506c11a3c45abdd..70a1cef7d40dd3056713b684cbe87a40f16e1c00 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -684,6 +684,7 @@ static_library("test_support") {
@@ -1217,7 +1217,7 @@ index ba6fdb41ff3b0f59e21961dc0810d87153a8069f..3489d162ce6568294aae6618e473f19f
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3462,6 +3466,7 @@ test("content_unittests") {
+@@ -3463,6 +3467,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1330,7 +1330,7 @@ index 6ea6c1130663f04ee766750dde257f3cc701a5b0..355930d10267b8c2c95c320c6d154080
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index c9afc859b1cdaec9c6fe693855ab8e96120ea9d2..6143c5fe1e75fb0385099ba1d868121e040b6005 100644
+index 1c0c28defe67ecc22fbcf71e536e73b2b5f17355..ffb69963594288979b39e7c5e4d2d15c1907d721 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -198,6 +198,7 @@ source_set("audio") {
