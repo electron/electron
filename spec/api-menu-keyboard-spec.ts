@@ -26,7 +26,6 @@ const KEY_DELAY = 350;
 // The sibling-menu switching feature only exists on the Views menu
 // bar used on Windows and Linux
 ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching', function () {
-
   // Records the label of the last menu item activated via the keyboard
   let lastClicked: string | null = null;
   const record = (label: string) => {
