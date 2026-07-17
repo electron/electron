@@ -49,6 +49,38 @@ app.on('will-quit', () => {
 > [!TIP]
 > See also: [A detailed guide on Keyboard Shortcuts](../tutorial/keyboard-shortcuts.md).
 
+## Events
+
+The `globalShortcut` module emits the following events:
+
+### Event: 'registration-resolved' _Linux_
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52224
+```
+-->
+
+Returns:
+
+* `accelerator` string - The accelerator, as it was passed to `register()`.
+* `bound` boolean - Whether the portal accepted the bind request.
+
+Emitted on Linux Wayland when the `org.freedesktop.portal.GlobalShortcuts` portal resolves a
+registration request. On this path the bind is asynchronous and consent-gated, so the boolean
+returned by `register()` only means the request was submitted; this event reports the real outcome.
+`bound` is `false` when the portal denied the bind (for example an invalid app identity — see
+[`app.setDesktopName()`](app.md#appsetdesktopnamename-linux) — or a dismissed consent dialog) or the
+portal is unavailable.
+
+The event is always emitted asynchronously, and may be emitted more than once for the same
+accelerator: registering an additional shortcut re-binds the whole set, which re-resolves
+previously bound accelerators.
+
+This event is not emitted on X11 or on other platforms, where the return value of `register()` is
+already authoritative.
+
 ## Methods
 
 The `globalShortcut` module has the following methods:

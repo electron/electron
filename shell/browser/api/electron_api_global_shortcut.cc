@@ -10,6 +10,7 @@
 #include "base/containers/map_util.h"
 #include "base/functional/bind.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/uuid.h"
 #include "components/prefs/pref_service.h"
 #include "electron/shell/browser/electron_browser_context.h"
@@ -19,6 +20,7 @@
 #include "gin/persistent.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/ui/accelerator_util.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -71,6 +73,8 @@ void GlobalShortcut::Dispose() {
     // Eagerly cancel callbacks so PruneStaleCommands() can clear them before
     // the WeakPtrFactory destructor runs.
     weak_factory_.Invalidate();
+    instance->SetRegistrationResolvedCallback({});
+    registration_resolved_callback_set_ = false;
     instance->PruneStaleCommands();
   }
 
@@ -89,6 +93,31 @@ void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
   }
 }
 
+void GlobalShortcut::OnRegistrationResolved(
+    const std::string& accelerator_group_id,
+    bool bound) {
+  // Ignore groups not registered through this module (e.g. extensions).
+  auto* accelerator =
+      base::FindOrNull(registered_accelerators_, accelerator_group_id);
+  if (!accelerator) {
+    return;
+  }
+  // The listener may resolve synchronously from inside register(); defer so
+  // the event is always emitted asynchronously.
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, base::BindOnce(&GlobalShortcut::EmitRegistrationResolved,
+                                gin::WrapPersistent(weak_factory_.GetWeakCell(
+                                    JavascriptEnvironment::GetIsolate()
+                                        ->GetCppHeap()
+                                        ->GetAllocationHandle())),
+                                *accelerator, bound));
+}
+
+void GlobalShortcut::EmitRegistrationResolved(const std::string& accelerator,
+                                              bool bound) {
+  EmitWithoutEvent("registration-resolved", accelerator, bound);
+}
+
 void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
                                     const std::string& command_id) {
   if (auto* cb = base::FindOrNull(command_callback_map_, command_id)) {
@@ -102,9 +131,8 @@ void GlobalShortcut::ExecuteCommand(const extensions::ExtensionId& extension_id,
   }
 }
 
-bool GlobalShortcut::RegisterAll(
-    const std::vector<ui::Accelerator>& accelerators,
-    const base::RepeatingClosure& callback) {
+bool GlobalShortcut::RegisterAll(const std::vector<std::string>& accelerators,
+                                 const base::RepeatingClosure& callback) {
   if (!electron::Browser::Get()->is_ready()) {
     gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
         .ThrowError("globalShortcut cannot be used before the app is ready");
@@ -112,25 +140,34 @@ bool GlobalShortcut::RegisterAll(
   }
   std::vector<ui::Accelerator> registered;
 
-  for (auto& accelerator : accelerators) {
-    if (!Register(accelerator, callback)) {
+  for (const auto& accelerator_str : accelerators) {
+    if (!Register(accelerator_str, callback)) {
       // Unregister all shortcuts if any failed.
       UnregisterSome(registered);
       return false;
     }
 
+    ui::Accelerator accelerator;
+    accelerator_util::StringToAccelerator(accelerator_str, &accelerator);
     registered.push_back(accelerator);
   }
   return true;
 }
 
-bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
+bool GlobalShortcut::Register(const std::string& accelerator_str,
                               const base::RepeatingClosure& callback) {
   v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
 
   if (!electron::Browser::Get()->is_ready()) {
     gin_helper::ErrorThrower(isolate).ThrowError(
         "globalShortcut cannot be used before the app is ready");
+    return false;
+  }
+
+  ui::Accelerator accelerator;
+  if (!accelerator_util::StringToAccelerator(accelerator_str, &accelerator)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError("Invalid accelerator: " +
+                                                     accelerator_str);
     return false;
   }
 
@@ -149,6 +186,14 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
   }
 
   if (instance->IsRegistrationHandledExternally()) {
+    if (!registration_resolved_callback_set_) {
+      registration_resolved_callback_set_ = true;
+      instance->SetRegistrationResolvedCallback(base::BindRepeating(
+          &GlobalShortcut::OnRegistrationResolved,
+          gin::WrapPersistent(weak_factory_.GetWeakCell(
+              isolate->GetCppHeap()->GetAllocationHandle()))));
+    }
+
     auto* context = ElectronBrowserContext::GetDefaultBrowserContext();
     PrefService* prefs = context->prefs();
 
@@ -185,6 +230,7 @@ bool GlobalShortcut::Register(const ui::Accelerator& accelerator,
     // received by GlobalShortcut will correspond to Alt+Shift+K as our command
     // id is basically a stringified accelerator.
     const std::string fake_extension_id = command_str + "+" + profile_id;
+    registered_accelerators_[fake_extension_id] = accelerator_str;
     instance->OnCommandsChanged(
         fake_extension_id, profile_id, commands, gfx::kNullAcceleratedWidget,
         base::BindRepeating(
@@ -259,6 +305,7 @@ void GlobalShortcut::UnregisterAllInternal() {
   }
   accelerator_callback_map_.clear();
   command_callback_map_.clear();
+  registered_accelerators_.clear();
 }
 
 void GlobalShortcut::SetSuspended(bool suspend) {
@@ -291,10 +338,10 @@ GlobalShortcut* GlobalShortcut::Create(v8::Isolate* isolate) {
       isolate->GetCppHeap()->GetAllocationHandle(), isolate);
 }
 
-// static
 gin::ObjectTemplateBuilder GlobalShortcut::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin::Wrappable<GlobalShortcut>::GetObjectTemplateBuilder(isolate)
+  return gin_helper::EventEmitterMixin<
+             GlobalShortcut>::GetObjectTemplateBuilder(isolate)
       .SetMethod("registerAll", &GlobalShortcut::RegisterAll)
       .SetMethod("register", &GlobalShortcut::Register)
       .SetMethod("isRegistered", &GlobalShortcut::IsRegistered)
