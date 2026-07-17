@@ -339,6 +339,70 @@ describe('webContents module', () => {
     });
   });
 
+  // Exercises a real silent print with options against a virtual printer
+  // provisioned by script/spec-runner.js and exposed via
+  // ELECTRON_TEST_PRINTER_NAME.
+  // Self-skips when no such printer is available.
+  ifdescribe(features.isPrintingEnabled())('webContents.print() settings', function () {
+    let w: BrowserWindow;
+    const deviceName = process.env.ELECTRON_TEST_PRINTER_NAME ?? null;
+
+    const printerVisible = async (name: string) => {
+      const probe = new BrowserWindow({ show: false });
+      try {
+        await probe.loadURL('about:blank');
+        return await waitUntil(
+          async () => {
+            const printers = await probe.webContents.getPrintersAsync();
+            return printers.some((p) => p.name === name);
+          },
+          { timeout: 10000 }
+        )
+          .then(() => true)
+          .catch(() => false);
+      } finally {
+        probe.destroy();
+      }
+    };
+
+    before(async function () {
+      this.timeout(30000);
+      if (!deviceName || !(await printerVisible(deviceName))) {
+        return this.skip();
+      }
+    });
+
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false });
+    });
+    afterEach(closeAllWindows);
+
+    it('resolves settings for a silent print with options', async function () {
+      this.timeout(60000);
+      if (!deviceName) return this.skip();
+
+      await w.loadURL('data:text/html,<h1>print test</h1>');
+
+      const printResult = new Promise<[boolean, string]>((resolve) => {
+        w.webContents.print({ silent: true, deviceName, printBackground: true }, (success, failureReason) =>
+          resolve([success, failureReason])
+        );
+      });
+
+      // Guard against environments where silent printing surfaces a native
+      // dialog (which would block the callback) — skip rather than hang.
+      const result = await Promise.race([printResult, setTimeout(30000).then(() => 'timeout' as const)]);
+      if (result === 'timeout') return this.skip();
+
+      const [success, failureReason] = result;
+      // Regression guard for #52266: non-empty print settings must never again
+      // be rejected up front during settings resolution with "Invalid printer
+      // settings".
+      expect(failureReason, `settings resolution failed: ${failureReason}`).to.not.match(/Invalid printer settings/);
+      expect(success, `print failed: ${failureReason}`).to.equal(true);
+    });
+  });
+
   describe('webContents.executeJavaScript', () => {
     describe('in about:blank', () => {
       const expected = 'hello, world!';
