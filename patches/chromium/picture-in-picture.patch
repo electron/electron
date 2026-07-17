@@ -9,10 +9,10 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
-index ffaf5f5f5f68ab6811c115ef66c8eb8f7f370027..264a398a969ece1e404e5c53cc93f89c050af45b 100644
+index ffaf5f5f5f68ab6811c115ef66c8eb8f7f370027..6a43f6b515aacac600e3928a33bda6ed6556235a 100644
 --- a/chrome/browser/ui/views/overlay/close_image_button.cc
 +++ b/chrome/browser/ui/views/overlay/close_image_button.cc
-@@ -4,9 +4,12 @@
+@@ -4,14 +4,18 @@
  
  #include "chrome/browser/ui/views/overlay/close_image_button.h"
  
@@ -25,7 +25,13 @@ index ffaf5f5f5f68ab6811c115ef66c8eb8f7f370027..264a398a969ece1e404e5c53cc93f89c
  #include "ui/base/l10n/l10n_util.h"
  #include "ui/base/metadata/metadata_impl_macros.h"
  #include "ui/base/models/image_model.h"
-@@ -26,9 +29,12 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+ #include "ui/base/ui_base_features.h"
+ #include "ui/views/accessibility/view_accessibility.h"
++#include "ui/views/vector_icons.h"
+ 
+ namespace {
+ 
+@@ -26,9 +30,12 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
      : OverlayWindowImageButton(std::move(callback)) {
    SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
  
