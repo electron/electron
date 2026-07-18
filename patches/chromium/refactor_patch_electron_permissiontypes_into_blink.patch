@@ -6,7 +6,7 @@ Subject: refactor: patch electron PermissionTypes into blink
 6387077: [PermissionOptions] Generalize PermissionRequestDescription | https://chromium-review.googlesource.com/c/chromium/src/+/6387077
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index f1edc34d7fd034a08af91f265b9e4cf2d870679a..5a1a292f06e29a1a87ead9e77fe666ca659da1ba 100644
+index 4f4e7ed33d3230e28c3e94ec2a79bc4458610993..213beb191cb1f29b809d82fa3532137973f3613b 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -566,9 +566,17 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(

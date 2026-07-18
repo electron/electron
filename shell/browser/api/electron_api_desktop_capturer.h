@@ -9,22 +9,15 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/weak_ptr.h"
 #include "base/timer/timer.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
-#include "shell/common/gin_helper/pinnable.h"
-#include "shell/common/gin_helper/wrappable.h"
-
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 
 namespace electron::api {
 
-class DesktopCapturer final
-    : public gin_helper::DeprecatedWrappable<DesktopCapturer>,
-      public gin_helper::Pinnable<DesktopCapturer> {
+class DesktopCapturer final : public gin::Wrappable<DesktopCapturer> {
  public:
   struct Source {
     DesktopMediaList::Source media_list_source;
@@ -35,7 +28,7 @@ class DesktopCapturer final
     bool fetch_icon = false;
   };
 
-  static gin_helper::Handle<DesktopCapturer> Create(v8::Isolate* isolate);
+  static DesktopCapturer* Create(v8::Isolate* isolate);
 
   static bool IsDisplayMediaSystemPickerAvailable();
 
@@ -44,22 +37,26 @@ class DesktopCapturer final
                      const gfx::Size& thumbnail_size,
                      bool fetch_window_icons);
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  void Trace(cppgc::Visitor* visitor) const override;
+  const gin::WrapperInfo* wrapper_info() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  const char* GetHumanReadableName() const override;
 
   // disable copy
   DesktopCapturer(const DesktopCapturer&) = delete;
   DesktopCapturer& operator=(const DesktopCapturer&) = delete;
 
- protected:
+  // Make public for cppgc::MakeGarbageCollected.
   DesktopCapturer();
   ~DesktopCapturer() override;
 
  private:
   class ListObserver;
+
+  cppgc::Persistent<gin::WeakCell<DesktopCapturer>> WeakCallbackTarget();
 
   void FinalizeList(std::unique_ptr<ListObserver>& observer,
                     std::unique_ptr<DesktopMediaList>& list);
@@ -82,7 +79,8 @@ class DesktopCapturer final
   bool using_directx_capturer_ = false;
 #endif  // BUILDFLAG(IS_WIN)
 
-  base::WeakPtrFactory<DesktopCapturer> weak_ptr_factory_{this};
+  gin_helper::SelfKeepAlive<DesktopCapturer> keep_alive_{this};
+  gin::WeakCellFactory<DesktopCapturer> weak_factory_{this};
 };
 
 }  // namespace electron::api
