@@ -127,8 +127,8 @@ bool TryGetBundledWidevineCdm(
   base::FilePath install_dir = exe_dir.AppendASCII(kWidevineCdmBaseDirectory);
   base::FilePath platform_dir =
       media::GetPlatformSpecificDirectory(install_dir);
-  base::FilePath cdm_library_path =
-      platform_dir.Append(base::GetNativeLibraryName(kWidevineCdmLibraryName));
+  base::FilePath cdm_library_path = platform_dir.AppendASCII(
+      base::GetNativeLibraryName(kWidevineCdmLibraryName));
   if (!base::PathExists(cdm_library_path))
     return false;
 
@@ -384,11 +384,11 @@ void ElectronContentClient::AddContentDecryptionModules(
           audio_codecs_supported, std::move(video_codec_map),
           encryption_modes_supported, session_types_supported, version);
 
-      cdms->push_back(content::CdmInfo(
-          kWidevineKeySystem, content::CdmInfo::Robustness::kSoftwareSecure,
-          capability,
-          /*supports_sub_key_systems=*/true, kWidevineCdmDisplayName,
-          kWidevineCdmType, cdm_path));
+      cdms->emplace_back(kWidevineKeySystem,
+                         content::CdmInfo::Robustness::kSoftwareSecure,
+                         capability,
+                         /*supports_sub_key_systems=*/true,
+                         kWidevineCdmDisplayName, kWidevineCdmType, cdm_path);
     }
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
   }
