@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Hidekazu Kondo <hidekazu.kondo@gmail.com>
+Date: Fri, 18 Jul 2026 12:00:00 +0900
+Subject: fix: don't NOTREACHED in ShadowRealmGlobalScope UKM accessors
+
+V8 attributes GC metrics events (V8MetricsRecorder::AddMainThreadEvent ->
+GetUkmRecorderAndSourceId) to the context in which the collection was
+triggered. When that context is a ShadowRealm - which Electron uses for
+every service-worker preload realm - the resolved ExecutionContext is a
+ShadowRealmGlobalScope, whose UkmRecorder()/UkmSourceID() overrides are
+NOTREACHED(). A full GC attributed to the realm therefore traps the
+renderer (EXC_BREAKPOINT); for extension service workers the restart
+machinery turns this into a crash loop (electron/electron#52310).
+
+The caller already handles a null recorder (v8_metrics.cc
+GetUkmRecorderAndSourceId null-checks), so report "no UKM" instead of
+trapping. ShadowRealms have no UKM source by design.
+
+This should be upstreamed to Chromium.
+
+diff --git a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
+index c4cc043dc9bac54dd0876198ac54a6b8133c71b6..d308ab541662f7a3e9c059d902229ec6ced1ecbe 100644
+--- a/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
++++ b/third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.cc
+@@ -121,11 +121,14 @@ bool ShadowRealmGlobalScope::IsIsolatedContext() const {
+ }
+ 
+ ukm::UkmRecorder* ShadowRealmGlobalScope::UkmRecorder() {
+-  NOTREACHED();
++  // V8 GC metrics events can be attributed to a ShadowRealm context (e.g.
++  // Electron's service-worker preload realms). ShadowRealms have no UKM;
++  // callers null-check the recorder, so report "none" instead of trapping.
++  return nullptr;
+ }
+ 
+ ukm::SourceId ShadowRealmGlobalScope::UkmSourceID() const {
+-  NOTREACHED();
++  return ukm::kInvalidSourceId;
+ }
+ 
+ ExecutionContextToken ShadowRealmGlobalScope::GetExecutionContextToken() const {
