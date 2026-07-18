@@ -204,3 +204,4 @@ cherry-pick-d559d5018b66.patch
 cherry-pick-094448afb6ab.patch
 cherry-pick-e3cd72e404a5.patch
 cherry-pick-64f023ac1648.patch
+fix_ignore_non-occluding_windows_in_the_mac_occlusion_checker.patch
