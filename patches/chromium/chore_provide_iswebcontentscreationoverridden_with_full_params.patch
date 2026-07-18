@@ -413,7 +413,7 @@ index 57122c5c70655e1e9c75546c175925ac399cec9f..2ee2f5338d522f04cfaf0758a08ac825
                            const content::GlobalRenderFrameHostId& opener_id,
                            const std::string& frame_name,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 5cf3fc51e98742794b7de945c2de2743bde4efb1..22355c1d41110ab8291d8ed4c7b354939ddcb489 100644
+index 6074ce3d7ee3a085e1e630f6b2a9ea719accc0ca..f2a2d9a92a2c8be58c6bee40dbe407ff53ad7771 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -241,8 +241,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
