@@ -12,6 +12,7 @@ import { expect } from 'chai';
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
 import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
 import { ifdescribe, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
@@ -233,6 +234,41 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
           height: 300
         });
         await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
+      }
+    );
+
+    // https://github.com/electron/electron/issues/51718
+    itWithOptions(
+      'should stay visible when covered by a transparent click-through overlay',
+      {
+        x: 100,
+        y: 100,
+        width: 200,
+        height: 200
+      },
+      async () => {
+        load();
+        await expect(waitUntil(async () => await haveVisibilityState('visible'))).to.eventually.be.fulfilled();
+
+        const overlay = new BrowserWindow({
+          x: 50,
+          y: 50,
+          width: 400,
+          height: 400,
+          show: false,
+          transparent: true,
+          frame: false,
+          alwaysOnTop: true,
+          focusable: false
+        });
+        overlay.setIgnoreMouseEvents(true);
+        await overlay.loadURL('about:blank');
+        overlay.showInactive();
+
+        // Give the occlusion checker time to run; the covered window must not
+        // be marked occluded by a window that can't obscure it.
+        await setTimeout(2000);
+        expect(await w.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
       }
     );
   });
