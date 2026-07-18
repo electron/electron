@@ -83,8 +83,9 @@ void DevToolsContextMenu::RunMenuAt(views::Widget* parent_widget) {
 
   // RunMenuAt can return without showing anything (e.g. during shutdown), in
   // which case the closed callback never fires. On macOS it blocks until the
-  // menu closes, so by this point a shown menu has already been cleaned up.
-  if (!menu_runner_->IsRunning())
+  // menu closes, and WebContentsDestroyed() may have reset |menu_runner_|
+  // while the menu was open.
+  if (!menu_runner_ || !menu_runner_->IsRunning())
     OnMenuClosed();
 }
 
