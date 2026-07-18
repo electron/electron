@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Thu, 16 Jul 2026 01:29:42 +0000
+Subject: fix: ignore non-occluding windows in the mac occlusion checker
+
+The manual occlusion pass in WebContentsOcclusionCheckerMac only
+compares window frames: any visible NSWindow above the target whose
+frame contains it marks the target's web contents as occluded. Window
+opacity is never consulted, so a transparent overlay (setOpaque:NO with
+a clear background) or a click-through window (ignoresMouseEvents) is
+counted as an occluder even though the content beneath it stays fully
+visible. The covered renderer then flips to visibilityState "hidden"
+and gets background-throttled.
+
+Skip candidate occluders that are faded (alphaValue < 1), that ignore
+mouse events, or that are non-opaque without an opaque background,
+mirroring the checks the Windows tracker applies via
+gfx::IsWindowVisibleAndFullyOpaque (WS_EX_TRANSPARENT and translucent
+layered windows are ignored there).
+
+This patch can be removed if the change is upstreamed to Chromium.
+
+diff --git a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
+index 54aaffde30c14a27068f89b6de6123abd6ea0660..b3cf6859b38dc43cf999aafdde84fac7cce9d053 100644
+--- a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
++++ b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
+@@ -414,6 +414,24 @@ - (void)performOcclusionStateUpdates {
+   _updatingOcclusionStates = NO;
+ }
+ 
++// Returns NO for windows that cannot visually obscure the windows beneath
++// them: faded windows, non-opaque windows without an opaque background
++// (e.g. an embedder's transparent overlay shows the covered content through
++// it) and windows that let mouse events pass through. This mirrors
++// gfx::IsWindowVisibleAndFullyOpaque, which the Windows occlusion tracker
++// uses to ignore translucent layered windows and WS_EX_TRANSPARENT windows.
++- (BOOL)windowCanOccludeOtherWindows:(NSWindow*)window {
++  if ([window alphaValue] < 1.0 || [window ignoresMouseEvents])
++    return NO;
++  if ([window isOpaque])
++    return YES;
++  // Non-opaque windows still hide what's beneath them as long as they paint
++  // an opaque background (embedders clear -isOpaque just to get rounded
++  // corners).
++  CGColorRef background = [[window backgroundColor] CGColor];
++  return background && CGColorGetAlpha(background) >= 1.0;
++}
++
+ // Returns YES if `window` is occluded, either according to macOS or via
+ // our manual occlusion calculation.
+ - (BOOL)isWindowOccluded:(NSWindow*)window
+@@ -456,6 +474,11 @@ - (BOOL)isWindowOccluded:(NSWindow*)window
+       continue;
+     }
+ 
++    // Skip windows that can't visually cover the web contents beneath them.
++    if (![self windowCanOccludeOtherWindows:nextWindow]) {
++      continue;
++    }
++
+     // Ideally we'd compute the region which is the sum of all windows above
+     // `window` and see if it completely contains `window`'s web contents.
+     // Unfortunately, we don't have a library that can perform general purpose
