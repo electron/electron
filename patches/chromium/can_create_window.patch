@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 7df54db0ff134f70207cdf1b35a483ea367ec0ee..d63835bc5bf77272517e4c18ed2ae38598dfa2a6 100644
+index e913d65e78c672958389f8eef909b0375ba78031..2a14f942f69d5becd01237dce2f3635cf2fd0693 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10406,6 +10406,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10411,6 +10411,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -79,7 +79,7 @@ index 6cdae11c309db2b39e0bfce639cbfef4223d4ab6..4fba4300c9ac22f2937b080e518f723a
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 43887906adb598c2acb928002972c3b8ed811cdb..c2b9cfb5d16d5234740c63689d657339e618edc2 100644
+index e6cbf07ff7a286441ac51057562e07e197569751..1092ab16dc19984b34beb54b5b5adc6e5b0aee01 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -840,6 +840,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -92,7 +92,7 @@ index 43887906adb598c2acb928002972c3b8ed811cdb..c2b9cfb5d16d5234740c63689d657339
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index fd19cb6ab278d8c8da2777ae24f8d3e878f525cd..1834c217e8218391172ab6fd71b6da75761a796e 100644
+index 1a270b88f8be651656132f0ecf60e4616cc950c0..5f567ffc474fbc1abc955b70ad13575c7f0632a6 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -206,6 +206,7 @@ class TrustedURLLoaderHeaderClient;
@@ -227,10 +227,10 @@ index e3b1ea67af9758feb69440c93591a8a121cbda63..0a1f69e92966ec2ea0cfa425a61d06fe
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index e430504be0e12a85fac87fe2116db1b070de4a65..5761cc97af2aed63294ae34b2f262b78e5cfadac 100644
+index 0125fed7de354c3063924c487ca8c7adf9c57892..99b8c9332a36a90eaa15c24d8d40aa4170630288 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2491,6 +2491,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2493,6 +2493,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  

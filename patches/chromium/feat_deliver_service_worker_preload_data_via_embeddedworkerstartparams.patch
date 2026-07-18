@@ -16,7 +16,7 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index 7be6fe8ea3fc89e6a9f0c09a359ed102aba06d05..2c0ce9e308636545c89c3bdc2a46763e157e7db2 100644
+index 9d31be0e3e8152e8ded0c69a1b014ad020e4719c..e3c6de1cb29f61111e58c0134a909472834acf7a 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
 @@ -2706,6 +2706,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
@@ -33,7 +33,7 @@ index 7be6fe8ea3fc89e6a9f0c09a359ed102aba06d05..2c0ce9e308636545c89c3bdc2a46763e
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index d3c679d6c948753d89d91641dd992e8fa31444d2..aada4afcc25976b8d3adf971ff1653a4569b3356 100644
+index 532083810cb5c94939d61572b71d195723c3116f..ba9082034dffa32a678591954ec762450beb3c69 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -856,6 +856,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
@@ -51,7 +51,7 @@ index d3c679d6c948753d89d91641dd992e8fa31444d2..aada4afcc25976b8d3adf971ff1653a4
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index ee96dd69b6e1f0a17dd68aac272e3d2ca8f227dc..864c34ced0507e84f7e3dd9e19179ebc47d40ce3 100644
+index a22a3545c7ede171da09388896f261a7ae00e6f1..7c721fee1b0a286693cdb7cd8d533d0424fde88f 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -1362,6 +1362,17 @@ class CONTENT_EXPORT ContentBrowserClient {
