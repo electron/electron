@@ -401,7 +401,7 @@ int GetPathConstant(std::string_view name) {
 #if BUILDFLAG(IS_POSIX)
       {"cache", base::DIR_CACHE},
 #else
-      {"cache", base::DIR_ROAMING_APP_DATA},
+      {"cache", base::DIR_LOCAL_APP_DATA},
 #endif
       {"crashDumps", DIR_CRASH_DUMPS},
       {"desktop", base::DIR_USER_DESKTOP},
@@ -417,6 +417,7 @@ int GetPathConstant(std::string_view name) {
       {"recent", electron::DIR_RECENT},
 #endif
       {"sessionData", DIR_SESSION_DATA},
+      {"sessionCache", DIR_SESSION_CACHE},
       {"temp", base::DIR_TEMP},
       {"userCache", DIR_USER_CACHE},
       {"userData", chrome::DIR_USER_DATA},

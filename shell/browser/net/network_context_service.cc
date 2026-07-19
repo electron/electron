@@ -93,7 +93,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
     network_context_params->file_paths->trigger_migration =
         ShouldTriggerNetworkDataMigration();
     network_context_params->file_paths->http_cache_directory =
-        path.Append(chrome::kCacheDirname);
+        browser_context_->cache_path().Append(chrome::kCacheDirname);
 
     // Currently this just contains HttpServerProperties
     network_context_params->file_paths->http_server_properties_file_name =
