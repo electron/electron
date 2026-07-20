@@ -1860,7 +1860,7 @@ describe('net module', () => {
 
     after(async () => {
       ses.setCertificateVerifyProc(null);
-      await new Promise<void>(resolve => server.close(() => resolve()));
+      await new Promise<void>((resolve) => server.close(() => resolve()));
     });
 
     it('does not abort net.fetch when the server requests an optional client certificate', async () => {
@@ -1877,8 +1877,13 @@ describe('net module', () => {
     // guard.
     it('emits select-client-certificate on app with a null webContents', async () => {
       let eventWebContents: unknown = 'unset';
-      const handler = (event: Electron.Event, webContents: Electron.WebContents, _url: string,
-        _list: Electron.Certificate[], callback: (cert?: Electron.Certificate) => void) => {
+      const handler = (
+        event: Electron.Event,
+        webContents: Electron.WebContents,
+        _url: string,
+        _list: Electron.Certificate[],
+        callback: (cert?: Electron.Certificate) => void
+      ) => {
         event.preventDefault();
         eventWebContents = webContents;
         callback();
