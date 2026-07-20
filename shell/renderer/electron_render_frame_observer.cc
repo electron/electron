@@ -4,6 +4,7 @@
 
 #include "shell/renderer/electron_render_frame_observer.h"
 
+#include "base/functional/bind.h"
 #include "base/memory/ref_counted_memory.h"
 #include "base/trace_event/trace_event.h"
 #include "content/public/renderer/render_frame.h"
@@ -18,6 +19,7 @@
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
+#include "third_party/blink/public/platform/task_type.h"
 #include "third_party/blink/public/platform/web_isolated_world_info.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
@@ -61,6 +63,8 @@ ElectronRenderFrameObserver::ElectronRenderFrameObserver(
   net::NetModule::SetResourceProvider(NetResourceProvider);
 }
 
+ElectronRenderFrameObserver::~ElectronRenderFrameObserver() = default;
+
 void ElectronRenderFrameObserver::DidClearWindowObject() {
   // Do a delayed Node.js initialization for child window.
   // Check DidInstallConditionalFeatures below for the background.
@@ -84,6 +88,13 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
 void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     v8::Local<v8::Context> context,
     int world_id) {
+  if (is_main_world(world_id) && main_world_features_installed_) {
+    return;
+  }
+  if (is_isolated_world(world_id) && isolated_world_features_installed_) {
+    return;
+  }
+
   // When a child window is created with window.open, its WebPreferences will
   // be copied from its parent, and Chromium will initialize JS context in it
   // immediately.
@@ -138,6 +149,26 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     if (!renderer_client_->IsWebViewFrame(isolate, context, render_frame_))
       renderer_client_->SetupMainWorldOverrides(isolate, context,
                                                 render_frame_);
+
+    // CreateIsolatedWorldContext() only re-enters this method if Blink made
+    // a new context for the isolated world. If it reused a stale one instead,
+    // fetch it directly and install into it here.
+    if (!isolated_world_features_installed_) {
+      v8::Local<v8::Context> isolated_context =
+          web_frame->GetScriptContextFromWorldId(isolate,
+                                                 WorldIDs::ISOLATED_WORLD_ID);
+      if (!isolated_context.IsEmpty()) {
+        v8::Context::Scope isolated_context_scope(isolated_context);
+        DidInstallConditionalFeatures(isolated_context,
+                                      WorldIDs::ISOLATED_WORLD_ID);
+      }
+    }
+  }
+
+  if (is_main_world) {
+    main_world_features_installed_ = true;
+  } else if (is_isolated_world(world_id)) {
+    isolated_world_features_installed_ = true;
   }
 }
 
@@ -147,6 +178,60 @@ void ElectronRenderFrameObserver::WillReleaseScriptContext(
     int world_id) {
   if (ShouldNotifyClient(world_id))
     renderer_client_->WillReleaseScriptContext(isolate, context, render_frame_);
+}
+
+void ElectronRenderFrameObserver::DidCommitProvisionalLoad(
+    ui::PageTransition transition) {
+  // Each new document gets its own chance at the normal
+  // DidClearWindowObject -> DidInstallConditionalFeatures path.
+  main_world_features_installed_ = false;
+  isolated_world_features_installed_ = false;
+
+  // Blink can reuse the V8 context from a frame's initial about:blank
+  // document for its real one - e.g. after window.open() or reading
+  // frame.contentWindow before it navigates - in which case
+  // DidClearWindowObject never fires again for the real document and
+  // preload/Node integration would otherwise be skipped. This only affects
+  // frames that can plausibly inherit a stale context: popups (have an
+  // opener) and subframes with nodeIntegrationInSubFrames.
+  auto* web_frame =
+      static_cast<blink::WebLocalFrameImpl*>(render_frame_->GetWebFrame());
+  const auto& prefs = render_frame_->GetBlinkPreferences();
+  const bool frame_is_reuse_prone =
+      web_frame->Opener() != nullptr ||
+      (!render_frame_->IsMainFrame() && prefs.node_integration_in_sub_frames);
+  if (!frame_is_reuse_prone) {
+    return;
+  }  
+
+  render_frame_->GetTaskRunner(blink::TaskType::kInternalDefault)
+      ->PostTask(
+          FROM_HERE,
+          base::BindOnce(
+              &ElectronRenderFrameObserver::EnsureConditionalFeaturesInstalled,
+              weak_factory_.GetWeakPtr()));
+}
+
+void ElectronRenderFrameObserver::EnsureConditionalFeaturesInstalled() {
+  if (main_world_features_installed_)
+    return;
+
+  auto* web_frame =
+      static_cast<blink::WebLocalFrameImpl*>(render_frame_->GetWebFrame());
+  if (web_frame->IsOnInitialEmptyDocument())
+    return;
+
+  v8::Isolate* isolate = web_frame->GetAgentGroupScheduler()->Isolate();
+  v8::HandleScope handle_scope{isolate};
+  v8::Local<v8::Context> context = web_frame->MainWorldScriptContext();
+  if (context.IsEmpty())
+    return;
+
+  v8::MicrotasksScope microtasks_scope(
+      context, v8::MicrotasksScope::kDoNotRunMicrotasks);
+  v8::Context::Scope context_scope(context);
+  has_delayed_node_initialization_ = false;
+  DidInstallConditionalFeatures(context, MAIN_WORLD_ID);
 }
 
 void ElectronRenderFrameObserver::OnDestruct() {

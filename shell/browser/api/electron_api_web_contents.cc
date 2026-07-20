@@ -1336,6 +1336,12 @@ void WebContents::WebContentsCreatedWithFullParams(
   // preferences will be picked up by the RenderWidgetHost via its call to the
   // delegate's OverrideWebkitPrefs.
   new WebContentsPreferences(new_contents, dict);
+
+  // WebPreferences are cached on first access, so anything in //content
+  // that read them before WebContentsPreferences was attached would miss
+  // these overrides for the life of the WebContents. Force a recompute, the
+  // same way InitWithSessionAndOptions() does outside the window.open() path.
+  new_contents->NotifyPreferencesChanged();
 }
 
 bool WebContents::IsWebContentsCreationOverridden(
@@ -5104,6 +5110,13 @@ gin_helper::Handle<WebContents> WebContents::CreateFromWebPreferences(
       existing_preferences->SetFromDictionary(web_preferences_dict);
       web_contents->SetBackgroundColor(
           existing_preferences->GetBackgroundColor());
+
+      // `web_contents` is adopted here, not freshly created, so it may
+      // already have cached WebPreferences from before (e.g. as a
+      // window.open() guest). SetFromDictionary() above only updates the
+      // WebContentsPreferences object, so force a recompute or these
+      // preferences stay shadowed by the stale cache.
+      web_contents->web_contents()->NotifyPreferencesChanged();
 
       double zoom_factor;
       if (web_preferences.Get(options::kZoomFactor, &zoom_factor)) {

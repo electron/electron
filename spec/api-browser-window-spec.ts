@@ -4270,6 +4270,97 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('window.open() popup context reuse', () => {
+      let w: BrowserWindow;
+      let server: http.Server;
+      let serverUrl: string;
+
+      before(async () => {
+        server = http.createServer((req, res) => {
+          res.end('<html><body>popup target</body></html>');
+        });
+        serverUrl = (await listen(server)).url;
+      });
+
+      after(() => {
+        server.close();
+      });
+
+      afterEach(async () => {
+        await closeWindow(w);
+        w = null as unknown as BrowserWindow;
+      });
+
+      it('still loads the preload script after the opener reads the popup before it navigates away from about:blank', async () => {
+        w = new BrowserWindow({ show: false });
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            show: false,
+            webPreferences: {
+              preload: path.join(fixtures, 'api', 'window-open-reuse-preload.js')
+            }
+          }
+        }));
+
+        // The preload can legitimately run once for the initial about:blank
+        // document, so collect every report instead of only the first one.
+        const reports: string[] = [];
+        const handler = (_event: Electron.IpcMainEvent, href: string) => reports.push(href);
+        ipcMain.on('window-open-reuse-preload-ran', handler);
+        try {
+          await w.loadURL('about:blank');
+          await w.webContents.executeJavaScript(`
+            const popup = window.open('about:blank');
+            // Forces Blink to eagerly materialize a V8 context for the initial
+            // about:blank document, which can make the popup's real document
+            // reuse that (now stale) context once it navigates away.
+            void popup.document;
+            popup.location = ${JSON.stringify(serverUrl)};
+          `);
+          await waitUntil(() => reports.includes(serverUrl + '/'));
+        } finally {
+          ipcMain.removeListener('window-open-reuse-preload-ran', handler);
+        }
+      });
+
+      it("only installs conditional features once for the popup's committed document", async () => {
+        w = new BrowserWindow({ show: false });
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: {
+            show: false,
+            webPreferences: {
+              preload: path.join(fixtures, 'api', 'window-open-reuse-preload.js')
+            }
+          }
+        }));
+
+        const reports: string[] = [];
+        const handler = (_event: Electron.IpcMainEvent, href: string) => reports.push(href);
+        ipcMain.on('window-open-reuse-preload-ran', handler);
+        try {
+          await w.loadURL('about:blank');
+          const [[childWindow]] = await Promise.all([
+            once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>,
+            w.webContents.executeJavaScript(`
+              const popup = window.open('about:blank');
+              void popup.document;
+              popup.location = ${JSON.stringify(serverUrl)};
+            `)
+          ]);
+          // did-finish-load fires well after the document's own conditional
+          // features would have been (re)installed, so any duplicate install
+          // would already have sent a second report by this point.
+          await once(childWindow.webContents, 'did-finish-load');
+          const finalDocumentReports = reports.filter((href) => href === serverUrl + '/');
+          expect(finalDocumentReports).to.have.lengthOf(1);
+        } finally {
+          ipcMain.removeListener('window-open-reuse-preload-ran', handler);
+        }
+      });
+    });
+
     describe('preload script stack traces', () => {
       afterEach(closeAllWindows);
       // Preloads are compiled via ScriptCompiler::CompileFunction(), which
