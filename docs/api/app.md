@@ -340,8 +340,12 @@ and `callback` can be called with an entry filtered from the list. Using
 certificate from the store.
 
 `webContents` is `null` when the request does not originate from a renderer
-process, for example when using [`net.request`](net.md#netrequestoptions),
-[`net.fetch`](net.md#netfetchinput-init), or a [utility process](utility-process.md).
+process, for example when using [`net.request`](net.md#netrequestoptions) or
+[`net.fetch`](net.md#netfetchinput-init) in the main process, or from a
+[utility process](utility-process.md) created with
+`respondToAuthRequestsFromMainProcess: true`. For utility processes created
+without that flag, `net` requests proceed without a client certificate and this
+event is not emitted.
 
 ```js
 const { app } = require('electron')
