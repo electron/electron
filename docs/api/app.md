@@ -326,7 +326,7 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](web-contents.md) | null
+* `webContents` [WebContents](web-contents.md) (optional)
 * `url` URL
 * `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
