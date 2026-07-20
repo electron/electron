@@ -31,12 +31,6 @@ async function readType(mime: string): Promise<Buffer | undefined> {
   return undefined;
 }
 
-// Wrap raw bytes in a `Blob` — the payload type the W3C `ClipboardItem`
-// constructor accepts for non-text MIME types.
-function toBlob(data: Buffer | string): Blob {
-  return new Blob([data]);
-}
-
 // `getType('electron application/bookmark')` resolves to a `{ title, url }`
 // object rather than a Buffer, so it needs its own typed read helper.
 async function readBookmark(): Promise<Electron.ClipboardBookmark | undefined> {
@@ -70,7 +64,7 @@ describe('clipboard module', () => {
     it('round-trips a NativeImage through the image/* MIME type', async () => {
       const p = path.join(fixtures, 'assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
-      await clipboard.write([new ClipboardItem({ 'image/png': toBlob(i.toPNG()) })]);
+      await clipboard.write([new ClipboardItem({ 'image/png': new Blob([i.toPNG()]) })]);
 
       const buffer = await readType('image/png');
       expect(buffer).to.be.an.instanceOf(Buffer);
@@ -115,14 +109,14 @@ describe('clipboard module', () => {
 
     it('resolves with true for a user-defined custom MIME type', async () => {
       const mime = 'web text/plain+electron-test';
-      await clipboard.write([new ClipboardItem({ [mime]: toBlob(Buffer.from('x', 'utf8')) })]);
+      await clipboard.write([new ClipboardItem({ [mime]: new Blob([Buffer.from('x', 'utf8')]) })]);
       expect(await clipboard.has(mime)).to.be.true();
     });
 
     it('resolves true with electron application/osclipboard;format="X" for a raw format X on write and read', async () => {
       const rawFormat = 'public/utf8-plain-text';
       const mime = `electron application/osclipboard;format="${rawFormat}"`;
-      await clipboard.write([new ClipboardItem({ [mime]: toBlob(Buffer.from('x', 'utf8')) })]);
+      await clipboard.write([new ClipboardItem({ [mime]: new Blob([Buffer.from('x', 'utf8')]) })]);
       expect(await clipboard.has(mime)).to.be.true();
     });
 
@@ -203,7 +197,7 @@ describe('clipboard module', () => {
       // A raw OS clipboard format round-trips through the same
       // `electron application/osclipboard;format="X"` MIME on write and read.
       const mime = 'electron application/osclipboard;format="public/utf8-plain-text"';
-      await clipboard.write([new ClipboardItem({ [mime]: toBlob(buffer) })]);
+      await clipboard.write([new ClipboardItem({ [mime]: new Blob([buffer]) })]);
       const read = await readType(mime);
       expect(read).to.be.an.instanceOf(Buffer);
       expect(read!.toString('utf8')).to.equal(testText);
@@ -227,7 +221,7 @@ describe('clipboard module', () => {
           'text/plain': text,
           'text/html': '<b>Hi</b>',
           'text/rtf': rtf,
-          'image/png': toBlob(i.toPNG()),
+          'image/png': new Blob([i.toPNG()]),
           [BOOKMARK_MIME]: bookmark
         })
       ]);
@@ -364,7 +358,7 @@ describe('clipboard module', () => {
     it('round-trips an arbitrary custom MIME type', async () => {
       const rawFormat = 'application/x-electron-test';
       const payload = Buffer.from([0x01, 0x02, 0x03, 0xff, 0x00, 0x42]);
-      await clipboard.write([new ClipboardItem({ [rawFormat]: toBlob(payload) })]);
+      await clipboard.write([new ClipboardItem({ [rawFormat]: new Blob([payload]) })]);
       // An arbitrary MIME with no standard mapping is written under its
       // bare platform name and surfaced on read under the
       // `electron application/osclipboard;format="..."` MIME.
@@ -376,7 +370,7 @@ describe('clipboard module', () => {
     it('preserves bytes for a W3C "web " custom format', async () => {
       const mime = 'web text/plain+electron-test';
       const payload = Buffer.from('arbitrary custom payload', 'utf8');
-      await clipboard.write([new ClipboardItem({ [mime]: toBlob(payload) })]);
+      await clipboard.write([new ClipboardItem({ [mime]: new Blob([payload]) })]);
       const read = await readType(mime);
       expect(read).to.be.an.instanceOf(Buffer);
       expect(payload.equals(read!)).to.equal(true);
@@ -388,7 +382,7 @@ describe('clipboard module', () => {
       // verbatim rather than being decoded as an image.
       const mime = 'web image/png+electron-test';
       const payload = Buffer.from([0xde, 0xad, 0xbe, 0xef, 0x00, 0x01, 0x02]);
-      await clipboard.write([new ClipboardItem({ [mime]: toBlob(payload) })]);
+      await clipboard.write([new ClipboardItem({ [mime]: new Blob([payload]) })]);
       const read = await readType(mime);
       expect(read).to.be.an.instanceOf(Buffer);
       expect(payload.equals(read!)).to.equal(true);
@@ -396,7 +390,7 @@ describe('clipboard module', () => {
 
     it('exposes custom MIME types in the ClipboardItem types array', async () => {
       const mime = 'web application/electron-types-test';
-      await clipboard.write([new ClipboardItem({ [mime]: toBlob(Buffer.from('hi', 'utf8')) })]);
+      await clipboard.write([new ClipboardItem({ [mime]: new Blob([Buffer.from('hi', 'utf8')]) })]);
       const items = await clipboard.read();
       const types = items.flatMap((item) => Array.from(item.types));
       expect(types).to.include(mime);
@@ -404,7 +398,7 @@ describe('clipboard module', () => {
 
     it('surfaces a "web " custom format under its web MIME name', async () => {
       const mime = 'web application/electron-plumbing-test';
-      await clipboard.write([new ClipboardItem({ [mime]: toBlob(Buffer.from('payload', 'utf8')) })]);
+      await clipboard.write([new ClipboardItem({ [mime]: new Blob([Buffer.from('payload', 'utf8')]) })]);
       const items = await clipboard.read();
       const types = items.flatMap((item) => Array.from(item.types));
       expect(types).to.include(mime);
@@ -416,7 +410,7 @@ describe('clipboard module', () => {
       const payload = Buffer.from('writeBuffer', 'utf8');
       const rawFormat = 'public/utf8-plain-text';
       const mime = `electron application/osclipboard;format="${rawFormat}"`;
-      await clipboard.write([new ClipboardItem({ [mime]: toBlob(payload) })]);
+      await clipboard.write([new ClipboardItem({ [mime]: new Blob([payload]) })]);
       // The raw OS format round-trips through the same osclipboard MIME.
       const read = await readType(mime);
       expect(read).to.be.an.instanceOf(Buffer);

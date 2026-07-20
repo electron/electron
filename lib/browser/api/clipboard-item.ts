@@ -42,7 +42,7 @@ export class ClipboardItem {
 
     if (typeof items !== 'object' || items === null || Array.isArray(items)) {
       throw new TypeError(
-        "Failed to construct 'ClipboardItem': 1 argument required — an " + 'object mapping MIME types to payloads.'
+        "Failed to construct 'ClipboardItem': 1 argument required — an object mapping MIME types to payloads."
       );
     }
     if (Object.keys(items).length === 0) {

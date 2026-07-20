@@ -85,7 +85,6 @@ auto_filenames = {
     "docs/api/structures/activation-arguments.md",
     "docs/api/structures/base-window-options.md",
     "docs/api/structures/bluetooth-device.md",
-    "docs/api/structures/bookmark.md",
     "docs/api/structures/browser-window-options.md",
     "docs/api/structures/certificate-principal.md",
     "docs/api/structures/certificate.md",
