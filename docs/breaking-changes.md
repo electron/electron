@@ -22,6 +22,12 @@ created with `respondToAuthRequestsFromMainProcess: true`. For these requests th
 `webContents` argument is `null`. Previously the event was only emitted for requests
 originating from a `WebContents` and the argument was always non-null.
 
+As with `WebContents` requests, when the event is not handled (or `event.preventDefault()`
+is not called) Electron uses the first matching client certificate from the platform
+certificate store. Previously `net` requests to a server that requested a client
+certificate failed with `ERR_SSL_CLIENT_AUTH_CERT_NEEDED`. To opt out, handle the event
+and call `callback()` with no argument to continue without a client certificate.
+
 ```js
 // Before
 app.on('select-client-certificate', (event, webContents, url, list, callback) => {
