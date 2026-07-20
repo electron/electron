@@ -141,6 +141,18 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   content::PlatformNotificationService* GetPlatformNotificationService();
 
+  // content::ContentBrowserClient overrides exposed for net-module client
+  // certificate handling (see ClientCertificateResponderDelegate).
+  base::OnceClosure SelectClientCertificate(
+      content::BrowserContext* browser_context,
+      int process_id,
+      content::WebContents* web_contents,
+      net::SSLCertRequestInfo* cert_request_info,
+      net::ClientCertIdentityList client_certs,
+      std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
+  std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
+      content::BrowserContext* browser_context) override;
+
  protected:
   void RenderProcessWillLaunch(content::RenderProcessHost* host) override;
   content::SpeechRecognitionManagerDelegate*
@@ -170,13 +182,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool strict_enforcement,
       base::OnceCallback<void(content::CertificateRequestResultType)> callback)
       override;
-  base::OnceClosure SelectClientCertificate(
-      content::BrowserContext* browser_context,
-      int process_id,
-      content::WebContents* web_contents,
-      net::SSLCertRequestInfo* cert_request_info,
-      net::ClientCertIdentityList client_certs,
-      std::unique_ptr<content::ClientCertificateDelegate> delegate) override;
   bool CanCreateWindow(content::RenderFrameHost* opener,
                        const GURL& opener_url,
                        const GURL& opener_top_level_frame_url,
@@ -205,8 +210,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       std::vector<std::string>* additional_schemes) override;
   void GetAdditionalWebUISchemes(
       std::vector<std::string>* additional_schemes) override;
-  std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
-      content::BrowserContext* browser_context) override;
   std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
       override;
   void ConfigureNetworkContextParams(
