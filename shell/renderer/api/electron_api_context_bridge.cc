@@ -647,98 +647,98 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     BridgeErrorTarget error_target) {
   gin_helper::Dictionary api{source_isolate, api_object};
 
+  std::vector<std::pair<v8::Local<v8::Name>, v8::Local<v8::Value>>> properties;
+  std::vector<std::pair<v8::Local<v8::Name>, std::pair<v8::Local<v8::Value>, v8::Local<v8::Value>>>> accessors;
+
+  {
+    v8::Context::Scope source_context_scope(source_context);
+    auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
+        source_context, static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE));
+    if (!maybe_keys.IsEmpty()) {
+      auto keys = maybe_keys.ToLocalChecked();
+      uint32_t length = keys->Length();
+      properties.reserve(length);
+      for (uint32_t i = 0; i < length; i++) {
+        v8::Local<v8::Value> key_val;
+        if (!keys->Get(source_context, i).ToLocal(&key_val) || !key_val->IsName())
+          continue;
+        v8::Local<v8::Name> key = key_val.As<v8::Name>();
+
+        if (support_dynamic_properties) {
+          auto maybe_desc = api.GetHandle()->GetOwnPropertyDescriptor(
+              source_context, key);
+          v8::Local<v8::Value> desc_value;
+          if (maybe_desc.ToLocal(&desc_value) && desc_value->IsObject()) {
+            gin_helper::Dictionary desc(source_isolate, desc_value.As<v8::Object>());
+            if (desc.Has("get") || desc.Has("set")) {
+              v8::Local<v8::Value> getter;
+              v8::Local<v8::Value> setter;
+              desc.Get("get", &getter);
+              desc.Get("set", &setter);
+              accessors.push_back({key, {getter, setter}});
+              continue;
+            }
+          }
+        }
+
+        v8::Local<v8::Value> value;
+        if (api.Get(key, &value)) {
+          properties.push_back({key, value});
+        }
+      }
+    }
+  }
+
   {
     v8::Context::Scope destination_context_scope(destination_context);
     auto proxy = gin_helper::Dictionary::CreateEmpty(destination_isolate);
     object_cache->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
-    auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
-        source_context, static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE));
-    if (maybe_keys.IsEmpty())
-      return v8::MaybeLocal<v8::Object>(proxy.GetHandle());
-    auto keys = maybe_keys.ToLocalChecked();
 
-    uint32_t length = keys->Length();
-    for (uint32_t i = 0; i < length; i++) {
-      v8::Local<v8::Value> key =
-          keys->Get(destination_context, i).ToLocalChecked();
+    for (const auto& accessor : accessors) {
+      const auto& key = accessor.first;
+      const auto& getter = accessor.second.first;
+      const auto& setter = accessor.second.second;
 
-      if (support_dynamic_properties) {
-        v8::Context::Scope source_context_scope(source_context);
-        auto maybe_desc = api.GetHandle()->GetOwnPropertyDescriptor(
-            source_context, key.As<v8::Name>());
-        v8::Local<v8::Value> desc_value;
-        if (!maybe_desc.ToLocal(&desc_value) || !desc_value->IsObject())
-          continue;
-        gin_helper::Dictionary desc(api.isolate(), desc_value.As<v8::Object>());
-        if (desc.Has("get") || desc.Has("set")) {
-          v8::Local<v8::Value> getter;
-          v8::Local<v8::Value> setter;
-          desc.Get("get", &getter);
-          desc.Get("set", &setter);
+      v8::Local<v8::Value> getter_proxy;
+      v8::Local<v8::Value> setter_proxy;
 
-          {
-            v8::Context::Scope inner_destination_context_scope(
-                destination_context);
-            v8::Local<v8::Value> getter_proxy;
-            v8::Local<v8::Value> setter_proxy;
-            if (!getter.IsEmpty()) {
-              if (!PassValueToOtherContextInner(
-                       source_isolate, source_context, source_execution_context,
-                       destination_isolate, destination_context, getter,
-                       api.GetHandle(), object_cache,
-                       support_dynamic_properties, 1, error_target)
-                       .ToLocal(&getter_proxy))
-                continue;
-            }
-            if (!setter.IsEmpty()) {
-              if (!PassValueToOtherContextInner(
-                       source_isolate, source_context, source_execution_context,
-                       destination_isolate, destination_context, setter,
-                       api.GetHandle(), object_cache,
-                       support_dynamic_properties, 1, error_target)
-                       .ToLocal(&setter_proxy))
-                continue;
-            }
-
-            v8::PropertyDescriptor prop_desc(getter_proxy, setter_proxy);
-            std::ignore = proxy.GetHandle()->DefineProperty(
-                destination_context, key.As<v8::Name>(), prop_desc);
-          }
-          continue;
-        }
-      }
-
-      {
-        v8::Context::Scope source_context_scope(source_context);
-        v8::Local<v8::Value> value;
-        if (!api.Get(key, &value))
-          continue;
-
-        auto passed_value = PassValueToOtherContextInner(
+      if (!getter.IsEmpty() && !getter->IsUndefined()) {
+        auto passed = PassValueToOtherContextInner(
             source_isolate, source_context, source_execution_context,
-            destination_isolate, destination_context, value, api.GetHandle(),
-            object_cache, support_dynamic_properties, recursion_depth + 1,
-            error_target);
-        if (passed_value.IsEmpty())
-          return {};
-
-        {
-          v8::Context::Scope inner_destination_context_scope(
-              destination_context);
-          // Use CreateDataProperty (not Set) so that a key named "__proto__"
-          // becomes an own data property instead of invoking the inherited
-          // Object.prototype.__proto__ setter and mutating the prototype.
-          v8::Local<v8::Value> proxied_value = passed_value.ToLocalChecked();
-          if (key->IsName()) {
-            std::ignore = proxy.GetHandle()->CreateDataProperty(
-                destination_context, key.As<v8::Name>(), proxied_value);
-          } else {
-            std::ignore = proxy.GetHandle()->CreateDataProperty(
-                destination_context, key.As<v8::Uint32>()->Value(),
-                proxied_value);
-          }
-        }
+            destination_isolate, destination_context, getter,
+            api.GetHandle(), object_cache,
+            support_dynamic_properties, 1, error_target);
+        if (!passed.ToLocal(&getter_proxy)) continue;
       }
+      if (!setter.IsEmpty() && !setter->IsUndefined()) {
+        auto passed = PassValueToOtherContextInner(
+            source_isolate, source_context, source_execution_context,
+            destination_isolate, destination_context, setter,
+            api.GetHandle(), object_cache,
+            support_dynamic_properties, 1, error_target);
+        if (!passed.ToLocal(&setter_proxy)) continue;
+      }
+
+      v8::PropertyDescriptor prop_desc(getter_proxy, setter_proxy);
+      std::ignore = proxy.GetHandle()->DefineProperty(
+          destination_context, key, prop_desc);
+    }
+
+    for (const auto& prop : properties) {
+      const auto& key = prop.first;
+      const auto& value = prop.second;
+
+      auto passed_value = PassValueToOtherContextInner(
+          source_isolate, source_context, source_execution_context,
+          destination_isolate, destination_context, value, api.GetHandle(),
+          object_cache, support_dynamic_properties, recursion_depth + 1,
+          error_target);
+      if (passed_value.IsEmpty())
+        return {};
+
+      v8::Local<v8::Value> proxied_value = passed_value.ToLocalChecked();
+      std::ignore = proxy.GetHandle()->CreateDataProperty(
+          destination_context, key, proxied_value);
     }
 
     return proxy.GetHandle();

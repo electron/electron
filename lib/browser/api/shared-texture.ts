@@ -25,50 +25,7 @@ ipcMain.handle(
   }
 );
 
-let checkManagedSharedTexturesInterval: NodeJS.Timeout | null = null;
 
-function scheduleCheckManagedSharedTextures() {
-  if (checkManagedSharedTexturesInterval === null) {
-    checkManagedSharedTexturesInterval = setInterval(checkManagedSharedTextures, 1000);
-  }
-}
-
-function unscheduleCheckManagedSharedTextures() {
-  if (checkManagedSharedTexturesInterval !== null) {
-    clearInterval(checkManagedSharedTexturesInterval);
-    checkManagedSharedTexturesInterval = null;
-  }
-}
-
-function checkManagedSharedTextures() {
-  const texturesToRemoveTracking = new Set<string>();
-  for (const [, wrapper] of managedSharedTextures) {
-    for (const [frameTreeNodeId, entry] of wrapper.rendererFrameReferences) {
-      const frame = entry.reference;
-      if (!frame || frame.isDestroyed()) {
-        console.error(
-          `The imported shared texture ${wrapper.texture.textureId} is referenced by a destroyed webContent/webFrameMain, this means a imported shared texture in renderer process is not released before the process is exited. Releasing that dangling reference now.`
-        );
-        wrapper.rendererFrameReferences.delete(frameTreeNodeId);
-      }
-    }
-
-    if (wrapper.rendererFrameReferences.size === 0 && !wrapper.mainReference) {
-      texturesToRemoveTracking.add(wrapper.texture.textureId);
-      wrapper.texture.subtle.release(() => {
-        wrapper.allReferencesReleased?.(wrapper.texture);
-      });
-    }
-  }
-
-  for (const id of texturesToRemoveTracking) {
-    managedSharedTextures.delete(id);
-  }
-
-  if (managedSharedTextures.size === 0) {
-    unscheduleCheckManagedSharedTextures();
-  }
-}
 
 function wrapperReleaseFromRenderer(id: string, frameTreeNodeId: number) {
   const wrapper = managedSharedTextures.get(id);
@@ -158,15 +115,28 @@ async function sendSharedTexture(options: Electron.SendSharedTextureOptions, ...
       wrapper.rendererFrameReferences.set(key, existing);
     } else {
       wrapper.rendererFrameReferences.set(key, { count: 1, reference: targetFrame });
+      targetFrame.once('destroyed', () => {
+        for (const [id, w] of managedSharedTextures) {
+          if (w.rendererFrameReferences.has(key)) {
+            console.error(
+              `The imported shared texture ${w.texture.textureId} is referenced by a destroyed webFrameMain, releasing dangling reference.`
+            );
+            w.rendererFrameReferences.delete(key);
+            if (w.rendererFrameReferences.size === 0 && !w.mainReference) {
+              managedSharedTextures.delete(id);
+              w.texture.subtle.release(() => {
+                w.allReferencesReleased?.(w.texture);
+              });
+            }
+          }
+        }
+      });
     }
   } finally {
     if (timeoutHandle) {
       clearTimeout(timeoutHandle);
     }
   }
-
-  // Schedule a check to see if any texture is referenced by any dangling renderer
-  scheduleCheckManagedSharedTextures();
 }
 
 function importSharedTexture(options: Electron.ImportSharedTextureOptions) {

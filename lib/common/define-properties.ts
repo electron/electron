@@ -1,16 +1,21 @@
-const handleESModule = (loader: ElectronInternal.ModuleLoader) => () => {
-  const value = loader();
-  if (value.__esModule && value.default) return value.default;
-  return value;
-};
-
 // Attaches properties to |targetExports|.
-export function defineProperties(targetExports: Object, moduleList: ElectronInternal.ModuleEntry[]) {
+export function defineProperties(targetExports: any, moduleList: ElectronInternal.ModuleEntry[]) {
   const descriptors: PropertyDescriptorMap = {};
   for (const module of moduleList) {
     descriptors[module.name] = {
+      configurable: true,
       enumerable: true,
-      get: handleESModule(module.loader)
+      get() {
+        const raw = module.loader();
+        const value = (raw && raw.__esModule && raw.default) ? raw.default : raw;
+        Object.defineProperty(targetExports, module.name, {
+          value,
+          enumerable: true,
+          configurable: true,
+          writable: false
+        });
+        return value;
+      }
     };
   }
   return Object.defineProperties(targetExports, descriptors);

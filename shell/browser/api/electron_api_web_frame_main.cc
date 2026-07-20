@@ -171,6 +171,7 @@ WebFrameMain::~WebFrameMain() {
 }
 
 void WebFrameMain::Destroyed() {
+  Emit("destroyed");
   if (FromFrameTreeNodeId(frame_tree_node_id_) == this) {
     // WebFrameMain initialized as detached doesn't support FTN lookup and
     // shouldn't erase the entry.
