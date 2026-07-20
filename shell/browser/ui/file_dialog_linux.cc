@@ -60,11 +60,9 @@ ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
   return file_type_info;
 }
 
-// A relative defaultPath (e.g. a bare filename, which the docs permit) must
-// be anchored to an absolute directory: the file chooser derives its starting
-// folder from DirName(), which would otherwise be the unusable relative ".".
-// The macOS and Windows dialog implementations also special-case relative
-// paths with IsAbsolute() checks instead of passing them through.
+// A relative defaultPath (e.g. a bare filename) would make the file chooser
+// open at the unusable relative directory ".", so anchor it to the default
+// directory instead.
 base::FilePath GetDefaultDialogPath(const DialogSettings& settings) {
   if (settings.default_path.empty())
     return electron::GetDefaultPath();
