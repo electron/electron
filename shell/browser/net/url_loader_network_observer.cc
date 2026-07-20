@@ -8,6 +8,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "services/network/public/mojom/shared_storage.mojom.h"
 #include "shell/browser/login_handler.h"
+#include "shell/browser/net/client_certificate_responder_delegate.h"
 
 namespace electron {
 
@@ -80,6 +81,15 @@ void URLLoaderNetworkObserver::OnAuthRequired(
         auth_challenge_responder) {
   new LoginHandlerDelegate(std::move(auth_challenge_responder), auth_info, url,
                            head_headers, process_id_, first_auth_attempt);
+}
+
+void URLLoaderNetworkObserver::OnCertificateRequested(
+    const std::optional<base::UnguessableToken>& window_id,
+    const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
+    mojo::PendingRemote<network::mojom::ClientCertificateResponder>
+        client_cert_responder) {
+  SelectClientCertificateForResponder(/*browser_context=*/nullptr, cert_info,
+                                      std::move(client_cert_responder));
 }
 
 void URLLoaderNetworkObserver::OnSSLCertificateError(
