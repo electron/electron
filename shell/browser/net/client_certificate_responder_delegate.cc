@@ -11,8 +11,10 @@
 #include "base/functional/bind.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/client_certificate_delegate.h"
+#include "mojo/public/cpp/bindings/callback_helpers.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+#include "net/base/net_errors.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/client_cert_store.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -38,6 +40,9 @@ class SSLPrivateKeyImpl : public network::mojom::SSLPrivateKey {
   void Sign(uint16_t algorithm,
             const std::vector<uint8_t>& input,
             SignCallback callback) override {
+    // `ssl_private_key_` may abandon the callback (https://crbug.com/40651689).
+    callback = mojo::WrapCallbackWithDefaultInvokeIfNotRun(
+        std::move(callback), int32_t{net::ERR_FAILED}, std::vector<uint8_t>());
     ssl_private_key_->Sign(
         algorithm, input,
         base::BindOnce(
