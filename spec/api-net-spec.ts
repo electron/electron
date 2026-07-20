@@ -1897,6 +1897,10 @@ describe('net module', () => {
       expect(await response.text()).to.equal('denied');
     });
 
+    // Note: on CI hosts with no matching client identity in the keychain,
+    // ElectronBrowserClient short-circuits before emitting and this test
+    // passes without exercising the handler. The first test is the regression
+    // guard.
     it('emits select-client-certificate on app with a null webContents', async () => {
       let eventWebContents: unknown = 'unset';
       app.once('select-client-certificate', (event, webContents, url, list, callback) => {

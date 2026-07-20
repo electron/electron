@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/functional/bind.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
@@ -25,6 +26,7 @@ namespace {
 
 // Bridges net::SSLPrivateKey to the network::mojom::SSLPrivateKey interface so
 // the network service can sign with a key that lives in the browser process.
+// Mirrors content::SSLPrivateKeyImpl (content/browser/ssl_private_key_impl.h).
 class SSLPrivateKeyImpl : public network::mojom::SSLPrivateKey {
  public:
   explicit SSLPrivateKeyImpl(scoped_refptr<net::SSLPrivateKey> ssl_private_key)
@@ -123,6 +125,7 @@ void SelectClientCertificateForResponder(
     scoped_refptr<net::SSLCertRequestInfo> cert_info,
     mojo::PendingRemote<network::mojom::ClientCertificateResponder>
         cert_responder) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   auto delegate = std::make_unique<ClientCertificateResponderDelegate>(
       std::move(cert_responder));
 
