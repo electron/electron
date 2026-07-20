@@ -115,9 +115,7 @@ ifdescribe(process.platform === 'darwin')('PublicKeyCredential.isUserVerifyingPl
   });
 
   const queryIsUVPAA = () =>
-    w.webContents.executeJavaScript(
-      'PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()'
-    );
+    w.webContents.executeJavaScript('PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()');
 
   // Chromium's default isUVPAA() on macOS only reports on the Touch ID platform
   // authenticator, so an app that enables only platform passkeys would report
