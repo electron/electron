@@ -779,9 +779,8 @@ base::OnceClosure App::SelectClientCertificate(
   // |web_contents| is null for requests that did not originate from a renderer
   // (e.g. net.fetch / utilityProcess); surface those with a null WebContents.
   v8::Local<v8::Value> web_contents_value =
-      web_contents
-          ? WebContents::FromOrCreate(isolate, web_contents).ToV8()
-          : v8::Null(isolate).As<v8::Value>();
+      web_contents ? WebContents::FromOrCreate(isolate, web_contents).ToV8()
+                   : v8::Null(isolate).As<v8::Value>();
   bool prevent_default =
       Emit("select-client-certificate", web_contents_value,
            cert_request_info->host_and_port.ToString(), std::move(client_certs),
