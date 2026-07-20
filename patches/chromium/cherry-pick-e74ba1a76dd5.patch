@@ -1,0 +1,160 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sangwhan Moon <sxm@google.com>
+Date: Tue, 14 Jul 2026 14:13:31 -0700
+Subject: [M150] [mac] Fix use-after-free in VideoCaptureDeviceApple Mojo
+ callback
+
+Original change's description:
+> [mac] Fix use-after-free in VideoCaptureDeviceApple Mojo callback
+>
+> AVFoundation invokes OnPhotoTaken and OnPhotoError on an arbitrary
+> background queue. VideoCaptureDeviceApple::OnPhotoTaken was previously
+> executing std::move(photo_callback_).Run(...) directly on that
+> background thread, which causes threading violations and potential
+> use-after-free/double-free issues if the VideoCaptureDeviceApple
+> instance is destroyed concurrently, or if photo_callback_ is accessed
+> while being modified on the main task runner.
+>
+> Bug: 516987782
+> Change-Id: Ibefa689f22116a4e5e3d89da7a3476af36c55251
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7912588
+> Reviewed-by: Ilya Nikolaevskiy <ilnik@chromium.org>
+> Commit-Queue: Sangwhan Moon <sxm@google.com>
+> Auto-Submit: Sangwhan Moon <sxm@google.com>
+> Reviewed-by: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1656796}
+
+(cherry picked from commit b2c70fcd2ebf3fef59465251277e6105c9f5f5a3)
+
+Bug: 532002527,516987782
+Change-Id: Ibefa689f22116a4e5e3d89da7a3476af36c55251
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8093424
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#3423}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/media/capture/video/apple/video_capture_device_apple.h b/media/capture/video/apple/video_capture_device_apple.h
+index 657443a1c49993c089712eab040eb6466e1e70ae..37f9d1a9c6c4dc9da9e1a3f569e3b0c1c48c69c0 100644
+--- a/media/capture/video/apple/video_capture_device_apple.h
++++ b/media/capture/video/apple/video_capture_device_apple.h
+@@ -113,6 +113,8 @@ class CAPTURE_EXPORT VideoCaptureDeviceApple
+ 
+   VideoFrameMetadata GetVideoFrameMetadata();
+ 
++  void OnPhotoResultOnMainThread(mojom::BlobPtr blob);
++
+   // Flag indicating the internal state.
+   enum InternalState { kNotInitialized, kIdle, kCapturing, kError };
+ 
+diff --git a/media/capture/video/apple/video_capture_device_apple.mm b/media/capture/video/apple/video_capture_device_apple.mm
+index 9710c204398340b6baa49bc99bffb8cc140d27af..7af99cbf1e4a282e187ce62d45e35430c3303710 100644
+--- a/media/capture/video/apple/video_capture_device_apple.mm
++++ b/media/capture/video/apple/video_capture_device_apple.mm
+@@ -267,21 +267,43 @@
+ void VideoCaptureDeviceApple::OnPhotoTaken(const uint8_t* image_data,
+                                            size_t image_length,
+                                            const std::string& mime_type) {
+-  DCHECK(photo_callback_);
+-  if (!image_data || !image_length) {
+-    OnPhotoError();
+-    return;
++  // Note: While OnPhotoTaken() is called on an AVFoundation background queue by
++  // VideoCaptureDeviceAVFoundation, it is guaranteed that `this` is not deleted
++  // because VideoCaptureDeviceAVFoundation holds `_lock` while calling
++  // `_frameReceiver->OnPhotoTaken(...)`, and StopAndDeAllocate() acquires
++  // `_lock` when setting `_frameReceiver = nil` before destruction on the main
++  // thread. Therefore, accessing `task_runner_` here is safe.
++  mojom::BlobPtr blob;
++  if (image_data && image_length) {
++    blob = mojom::Blob::New();
++    blob->data.assign(image_data, image_data + image_length);
++    blob->mime_type = mime_type;
+   }
+-
+-  mojom::BlobPtr blob = mojom::Blob::New();
+-  blob->data.assign(image_data, image_data + image_length);
+-  blob->mime_type = mime_type;
+-  std::move(photo_callback_).Run(std::move(blob));
++  task_runner_->PostTask(
++      FROM_HERE,
++      base::BindOnce(&VideoCaptureDeviceApple::OnPhotoResultOnMainThread,
++                     weak_factory_.GetWeakPtr(), std::move(blob)));
+ }
+ 
+ void VideoCaptureDeviceApple::OnPhotoError() {
+   VLOG(1) << __func__ << " error taking picture";
+-  photo_callback_.Reset();
++  task_runner_->PostTask(
++      FROM_HERE,
++      base::BindOnce(&VideoCaptureDeviceApple::OnPhotoResultOnMainThread,
++                     weak_factory_.GetWeakPtr(), nullptr));
++}
++
++void VideoCaptureDeviceApple::OnPhotoResultOnMainThread(mojom::BlobPtr blob) {
++  DCHECK(task_runner_->BelongsToCurrentThread());
++  if (!photo_callback_) {
++    return;
++  }
++  if (!blob) {
++    VLOG(1) << __func__ << " error taking picture";
++    photo_callback_.Reset();
++    return;
++  }
++  std::move(photo_callback_).Run(std::move(blob));
+ }
+ 
+ void VideoCaptureDeviceApple::ReceiveError(VideoCaptureError error,
+diff --git a/media/capture/video/apple/video_capture_device_apple_unittest.mm b/media/capture/video/apple/video_capture_device_apple_unittest.mm
+index 35a03dc9c3452adbf6e08ff8b7e4341bcda3654c..b719b48f38713e8684dd69a0f0ef62cf2e285160 100644
+--- a/media/capture/video/apple/video_capture_device_apple_unittest.mm
++++ b/media/capture/video/apple/video_capture_device_apple_unittest.mm
+@@ -8,8 +8,10 @@
+ #import "base/memory/ref_counted.h"
+ #import "base/memory/scoped_refptr.h"
+ #import "base/run_loop.h"
++#include "base/synchronization/waitable_event.h"
+ #include "base/test/bind.h"
+ #include "base/test/gmock_callback_support.h"
++#include "base/threading/thread.h"
+ #include "media/capture/video/apple/test/fake_av_capture_device_format.h"
+ #import "media/capture/video/apple/test/video_capture_test_utils.h"
+ #include "media/capture/video/apple/video_capture_device_avfoundation_utils.h"
+@@ -134,6 +136,36 @@
+   EXPECT_EQ(result, fmt_640_480_2vuy_30);
+ }
+ 
++// OnPhotoTaken() and OnPhotoError() are documented as safe to call from any
++// thread. Exercise OnPhotoError() concurrently from the device task runner and
++// a background thread to ensure the in-flight TakePhoto callback is accessed
++// safely without data races or sequence checker violations.
++TEST(VideoCaptureDeviceMacTest, ConcurrentOnPhotoErrorIsThreadSafe) {
++  RunTestCase(base::BindOnce([] {
++    constexpr int kIterations = 1000;
++    VideoCaptureDeviceDescriptor descriptor;
++    auto device = std::make_unique<VideoCaptureDeviceApple>(descriptor);
++    VideoCaptureDeviceAVFoundationFrameReceiver* frame_receiver = device.get();
++
++    base::Thread other_thread("OnPhotoErrorTestThread");
++    ASSERT_TRUE(other_thread.Start());
++
++    base::WaitableEvent done;
++    other_thread.task_runner()->PostTask(
++        FROM_HERE, base::BindLambdaForTesting([&] {
++          for (int i = 0; i < kIterations; ++i) {
++            frame_receiver->OnPhotoError();
++          }
++          done.Signal();
++        }));
++    for (int i = 0; i < kIterations; ++i) {
++      frame_receiver->OnPhotoError();
++    }
++    done.Wait();
++    other_thread.Stop();
++  }));
++}
++
+ class MockImageCaptureClient
+     : public base::RefCountedThreadSafe<MockImageCaptureClient> {
+  public:

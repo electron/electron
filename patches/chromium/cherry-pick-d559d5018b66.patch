@@ -1,0 +1,335 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tzarial <zork@google.com>
+Date: Tue, 14 Jul 2026 10:54:37 -0700
+Subject: [M150] [agy][gpu] Fix active transform feedback buffer tracking
+
+Original change's description:
+> [agy][gpu] Fix active transform feedback buffer tracking
+>
+> An active (even if paused/unbound) transform feedback object continues
+> to reference its attached buffers in the driver until
+> glEndTransformFeedback. If a different transform feedback object is
+> bound, the previous one becomes unbound but remains active, and its
+> attached buffers should still be considered busy and locked.
+>
+> This CL refactors IndexedBufferBindingHost and TransformFeedback to use
+> AreBuffersBound() instead of is_bound_ directly. For
+> TransformFeedback, AreBuffersBound() is defined as (is_bound_ ||
+> active_). This preserves symmetric SetIsBound(true/false) calls on
+> TransformFeedback while correctly tracking buffer bindings on active
+> (but paused/unbound) transform feedback objects.
+>
+> Additionally, this CL addresses destruction edge cases by:
+> 1. Adding ForceUnbindBuffers() to prevent a buffer binding state leak
+>    on destruction of an active but unbound transform feedback object.
+> 2. Restricting glEndTransformFeedback() inside the destructor to only
+>    run when the object is currently bound, matching GL requirements.
+>
+> Fixed: 523750584
+> Test: gpu_unittests --gtest_filter=TransformFeedbackManagerTest.*
+> Change-Id: I4d9f0f133e18e54f57a14e15b9c5d70a36a099a7
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8015317
+> Reviewed-by: Kai Ninomiya <kainino@chromium.org>
+> Commit-Queue: Kai Ninomiya <kainino@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1659202}
+
+(cherry picked from commit 6b5adcce6f6241dcd610a980aa27cb2228d7fbca)
+
+Bug: 533271014,523750584
+Change-Id: I4d9f0f133e18e54f57a14e15b9c5d70a36a099a7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8088235
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Tzarial <zork@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#3418}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/gpu/command_buffer/service/indexed_buffer_binding_host.cc b/gpu/command_buffer/service/indexed_buffer_binding_host.cc
+index 4d6f643d1c346eb3fa9f29bae12684a392f65495..fb0b3c0507c26a21a25343fc548c0b38062867ac 100644
+--- a/gpu/command_buffer/service/indexed_buffer_binding_host.cc
++++ b/gpu/command_buffer/service/indexed_buffer_binding_host.cc
+@@ -99,11 +99,14 @@ void IndexedBufferBindingHost::DoBindBufferBase(GLuint index, Buffer* buffer) {
+   GLuint service_id = buffer ? buffer->service_id() : 0;
+   glBindBufferBase(target_, index, service_id);
+ 
+-  if (buffer_bindings_[index].buffer && is_bound_) {
++  // AttachedBuffersAreLocked() is checked here (and in DoBindBufferRange)
++  // rather than DCHECK-ing because these methods are also called during
++  // RestoreBindings() when the host is not yet marked as bound.
++  if (buffer_bindings_[index].buffer && AttachedBuffersAreLocked()) {
+     buffer_bindings_[index].buffer->OnUnbind(target_, true);
+   }
+   buffer_bindings_[index].SetBindBufferBase(buffer);
+-  if (buffer && is_bound_) {
++  if (buffer && AttachedBuffersAreLocked()) {
+     buffer->OnBind(target_, true);
+   }
+   UpdateMaxNonNullBindingIndex(index);
+@@ -123,11 +126,14 @@ void IndexedBufferBindingHost::DoBindBufferRange(GLuint index,
+     glBindBufferRange(target_, index, service_id, offset, size);
+   }
+ 
+-  if (buffer_bindings_[index].buffer && is_bound_) {
++  // AttachedBuffersAreLocked() is checked here rather than DCHECK-ing because
++  // these methods are also called during RestoreBindings() when the host is not
++  // yet marked as bound.
++  if (buffer_bindings_[index].buffer && AttachedBuffersAreLocked()) {
+     buffer_bindings_[index].buffer->OnUnbind(target_, true);
+   }
+   buffer_bindings_[index].SetBindBufferRange(buffer, offset, size);
+-  if (buffer && is_bound_) {
++  if (buffer && AttachedBuffersAreLocked()) {
+     buffer->OnBind(target_, true);
+   }
+   UpdateMaxNonNullBindingIndex(index);
+@@ -244,11 +250,14 @@ void IndexedBufferBindingHost::SetIsBound(bool is_bound) {
+     }
+   }
+ 
+-  if (is_bound != is_bound_) {
+-    is_bound_ = is_bound;
++  bool was_bound = AttachedBuffersAreLocked();
++  is_bound_ = is_bound;
++  bool is_now_bound = AttachedBuffersAreLocked();
++
++  if (was_bound != is_now_bound) {
+     for (auto& bb : buffer_bindings_) {
+       if (bb.buffer) {
+-        if (is_bound_) {
++        if (is_now_bound) {
+           bb.buffer->OnBind(target_, true);
+         } else {
+           bb.buffer->OnUnbind(target_, true);
+@@ -258,6 +267,18 @@ void IndexedBufferBindingHost::SetIsBound(bool is_bound) {
+   }
+ }
+ 
++bool IndexedBufferBindingHost::AttachedBuffersAreLocked() const {
++  return is_bound_;
++}
++
++void IndexedBufferBindingHost::ForceUnbindBuffers() {
++  for (auto& bb : buffer_bindings_) {
++    if (bb.buffer) {
++      bb.buffer->OnUnbind(target_, true);
++    }
++  }
++}
++
+ Buffer* IndexedBufferBindingHost::GetBufferBinding(GLuint index) const {
+   DCHECK_LT(index, buffer_bindings_.size());
+   return buffer_bindings_[index].buffer.get();
+diff --git a/gpu/command_buffer/service/indexed_buffer_binding_host.h b/gpu/command_buffer/service/indexed_buffer_binding_host.h
+index fc8921524af8a5d7aa29c5cd58581b0280efe386..57e0356b559a469848e47b30976b732ea623d7e6 100644
+--- a/gpu/command_buffer/service/indexed_buffer_binding_host.h
++++ b/gpu/command_buffer/service/indexed_buffer_binding_host.h
+@@ -50,6 +50,8 @@ class GPU_GLES2_EXPORT IndexedBufferBindingHost
+ 
+   void SetIsBound(bool bound);
+ 
++  virtual bool AttachedBuffersAreLocked() const;
++
+   Buffer* GetBufferBinding(GLuint index) const;
+   // Returns |size| set by glBindBufferRange; 0 if set by glBindBufferBase.
+   GLsizeiptr GetBufferSize(GLuint index) const;
+@@ -72,6 +74,8 @@ class GPU_GLES2_EXPORT IndexedBufferBindingHost
+ 
+   virtual ~IndexedBufferBindingHost();
+ 
++  void ForceUnbindBuffers();
++
+   // Whether this object is currently bound into the context.
+   bool is_bound_;
+ 
+diff --git a/gpu/command_buffer/service/transform_feedback_manager.cc b/gpu/command_buffer/service/transform_feedback_manager.cc
+index 0c9dd74963a5d636a1da44efad23a6aecbe7b6af..534ff94e778c281e3ae50aea0c3f5ef0a414ee36 100644
+--- a/gpu/command_buffer/service/transform_feedback_manager.cc
++++ b/gpu/command_buffer/service/transform_feedback_manager.cc
+@@ -34,10 +34,20 @@ TransformFeedback::TransformFeedback(TransformFeedbackManager* manager,
+ 
+ TransformFeedback::~TransformFeedback() {
+   if (!manager_->lost_context()) {
+-    if (active_)
++    if (active_ && is_bound_) {
+       glEndTransformFeedback();
++    }
+     glDeleteTransformFeedbacks(1, &service_id_);
+   }
++  // ForceUnbindBuffers() manages purely CPU-side state tracking/refcounting of
++  // the attached buffers. We must run it even if the context is lost (unlike
++  // the GL driver calls above) to ensure that the buffer reference counts are
++  // correctly decremented, preventing state leaks or triggering BufferManager
++  // DCHECKs upon destruction of an active but unbound transform feedback
++  // object.
++  if (active_ && !is_bound_) {
++    ForceUnbindBuffers();
++  }
+ }
+ 
+ void TransformFeedback::DoBindTransformFeedback(
+@@ -71,6 +81,10 @@ void TransformFeedback::DoBindTransformFeedback(
+   }
+ }
+ 
++bool TransformFeedback::AttachedBuffersAreLocked() const {
++  return is_bound_ || active_;
++}
++
+ void TransformFeedback::DoBeginTransformFeedback(GLenum primitive_mode) {
+   DCHECK(!active_);
+   DCHECK(primitive_mode == GL_POINTS ||
+diff --git a/gpu/command_buffer/service/transform_feedback_manager.h b/gpu/command_buffer/service/transform_feedback_manager.h
+index 0eb5014dadd29cc2e588f32c8dbbf9004fc6b649..9252d0e14fd451fdc645a8a27cdf1b0e6ae85363 100644
+--- a/gpu/command_buffer/service/transform_feedback_manager.h
++++ b/gpu/command_buffer/service/transform_feedback_manager.h
+@@ -58,6 +58,8 @@ class GPU_GLES2_EXPORT TransformFeedback : public IndexedBufferBindingHost {
+     return paused_;
+   }
+ 
++  bool AttachedBuffersAreLocked() const override;
++
+   GLenum primitive_mode() const {
+     return primitive_mode_;
+   }
+diff --git a/gpu/command_buffer/service/transform_feedback_manager_unittest.cc b/gpu/command_buffer/service/transform_feedback_manager_unittest.cc
+index 406407da90f5bedf6af8b2bcbfde7c998f25a5cd..440c53cd7c5cc637a1f696f65c986f5a13114e34 100644
+--- a/gpu/command_buffer/service/transform_feedback_manager_unittest.cc
++++ b/gpu/command_buffer/service/transform_feedback_manager_unittest.cc
+@@ -2,15 +2,18 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include "gpu/command_buffer/service/transform_feedback_manager.h"
++
+ #include <memory>
+ 
++#include "gpu/command_buffer/service/buffer_manager.h"
+ #include "gpu/command_buffer/service/gpu_service_test.h"
+ #include "gpu/command_buffer/service/test_helper.h"
+-#include "gpu/command_buffer/service/transform_feedback_manager.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "ui/gl/gl_mock.h"
+ 
+ using ::testing::_;
++using ::testing::AnyNumber;
+ 
+ namespace gpu {
+ namespace gles2 {
+@@ -58,5 +61,117 @@ TEST_F(TransformFeedbackManagerTest, LifeTime) {
+   transform_feedback = nullptr;
+ }
+ 
++TEST_F(TransformFeedbackManagerTest, BufferBindingTrackedWhilePaused) {
++  const GLuint kBufferClientId = 11;
++  const GLuint kBufferServiceId = 1011;
++  const GLuint kClientId2 = 77;
++  const GLuint kServiceId2 = 1077;
++
++  EXPECT_CALL(*gl_, BindTransformFeedback(_, _)).Times(AnyNumber());
++  EXPECT_CALL(*gl_, BindBuffer(_, _)).Times(AnyNumber());
++  EXPECT_CALL(*gl_, BindBufferBase(_, _, _)).Times(AnyNumber());
++  EXPECT_CALL(*gl_, BeginTransformFeedback(_)).Times(AnyNumber());
++  EXPECT_CALL(*gl_, PauseTransformFeedback()).Times(AnyNumber());
++  EXPECT_CALL(*gl_, EndTransformFeedback()).Times(AnyNumber());
++  EXPECT_CALL(*gl_, DeleteTransformFeedbacks(1, _)).Times(AnyNumber());
++
++  BufferManager buffer_manager(nullptr, nullptr);
++  buffer_manager.CreateBuffer(kBufferClientId, kBufferServiceId);
++  scoped_refptr<Buffer> buffer = buffer_manager.GetBuffer(kBufferClientId);
++  ASSERT_TRUE(buffer.get());
++
++  scoped_refptr<TransformFeedback> tf1 = manager_->CreateTransformFeedback(
++      kTransformFeedbackClientId, kTransformFeedbackServiceId);
++  scoped_refptr<TransformFeedback> tf2 =
++      manager_->CreateTransformFeedback(kClientId2, kServiceId2);
++
++  tf1->DoBindTransformFeedback(GL_TRANSFORM_FEEDBACK, nullptr, nullptr);
++  tf1->DoBindBufferBase(0, buffer.get());
++  EXPECT_TRUE(buffer->IsBoundForTransformFeedback());
++
++  tf1->DoBeginTransformFeedback(GL_POINTS);
++  tf1->DoPauseTransformFeedback();
++  EXPECT_TRUE(buffer->IsBoundForTransformFeedback());
++
++  // Switching to another transform feedback object while the previous one is
++  // still active (paused) must not drop the buffer's transform feedback
++  // binding state, otherwise it could be re-specified before it is resumed.
++  tf2->DoBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf1.get(), nullptr);
++  EXPECT_TRUE(buffer->IsBoundForTransformFeedback());
++
++  tf1->DoBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf2.get(), nullptr);
++  EXPECT_TRUE(buffer->IsBoundForTransformFeedback());
++  EXPECT_FALSE(buffer->IsDoubleBoundForTransformFeedback());
++
++  tf1->DoEndTransformFeedback();
++  EXPECT_TRUE(buffer->IsBoundForTransformFeedback());
++
++  tf2->DoBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf1.get(), nullptr);
++  EXPECT_FALSE(buffer->IsBoundForTransformFeedback());
++
++  manager_->Destroy();
++  tf1 = nullptr;
++  tf2 = nullptr;
++  buffer = nullptr;
++  buffer_manager.MarkContextLost();
++  buffer_manager.Destroy();
++}
++
++TEST_F(TransformFeedbackManagerTest,
++       BufferBindingTrackedWhenActiveTfDestroyedUnbound) {
++  const GLuint kBufferClientId = 11;
++  const GLuint kBufferServiceId = 1011;
++  const GLuint kClientId2 = 77;
++  const GLuint kServiceId2 = 1077;
++
++  // Expect glDeleteTransformFeedbacks when destroying the unbound active TF
++  // tf1. Importantly, we do NOT expect glEndTransformFeedback to be called on
++  // tf1 since it was unbound when destroyed.
++  EXPECT_CALL(*gl_, BindTransformFeedback(_, _)).Times(AnyNumber());
++  EXPECT_CALL(*gl_, BindBuffer(_, _)).Times(AnyNumber());
++  EXPECT_CALL(*gl_, BindBufferBase(_, _, _)).Times(AnyNumber());
++  EXPECT_CALL(*gl_, BeginTransformFeedback(_)).Times(AnyNumber());
++  EXPECT_CALL(*gl_, PauseTransformFeedback()).Times(AnyNumber());
++  EXPECT_CALL(*gl_, DeleteTransformFeedbacks(1, _)).Times(AnyNumber());
++  // glEndTransformFeedback must not be called!
++  EXPECT_CALL(*gl_, EndTransformFeedback()).Times(0);
++
++  BufferManager buffer_manager(nullptr, nullptr);
++  buffer_manager.CreateBuffer(kBufferClientId, kBufferServiceId);
++  scoped_refptr<Buffer> buffer = buffer_manager.GetBuffer(kBufferClientId);
++  ASSERT_TRUE(buffer.get());
++
++  scoped_refptr<TransformFeedback> tf1 = manager_->CreateTransformFeedback(
++      kTransformFeedbackClientId, kTransformFeedbackServiceId);
++  scoped_refptr<TransformFeedback> tf2 =
++      manager_->CreateTransformFeedback(kClientId2, kServiceId2);
++
++  tf1->DoBindTransformFeedback(GL_TRANSFORM_FEEDBACK, nullptr, nullptr);
++  tf1->DoBindBufferBase(0, buffer.get());
++  EXPECT_TRUE(buffer->IsBoundForTransformFeedback());
++
++  tf1->DoBeginTransformFeedback(GL_POINTS);
++  tf1->DoPauseTransformFeedback();
++  EXPECT_TRUE(buffer->IsBoundForTransformFeedback());
++
++  // Bind to tf2. Now tf1 is unbound but remains active (paused).
++  tf2->DoBindTransformFeedback(GL_TRANSFORM_FEEDBACK, tf1.get(), nullptr);
++  EXPECT_TRUE(buffer->IsBoundForTransformFeedback());
++
++  // Destroy tf1 while active and unbound.
++  // This must unbind the buffers attached to it (OnUnbind should be called),
++  // reducing transform_feedback_indexed_binding_count_ to 0.
++  // In addition, glEndTransformFeedback must not be called in the driver.
++  manager_->RemoveTransformFeedback(kTransformFeedbackClientId);
++  tf1 = nullptr;
++  EXPECT_FALSE(buffer->IsBoundForTransformFeedback());
++
++  manager_->Destroy();
++  tf2 = nullptr;
++  buffer = nullptr;
++  buffer_manager.MarkContextLost();
++  buffer_manager.Destroy();
++}
++
+ }  // namespace gles2
+ }  // namespace gpu
