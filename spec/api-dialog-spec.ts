@@ -1039,14 +1039,9 @@ describe('dialog module', () => {
     }
   );
 
-  // For these tests script/dbus_mock.py hosts a mock xdg-desktop-portal
-  // FileChooser (script/dbusmock_xdg_file_chooser_portal.py) on the fake
-  // session bus, which Chromium's SelectFileDialogLinuxPortal talks to. The
-  // mock cancels every dialog automatically and records the request, so the
-  // tests can assert on the exact options sent over D-Bus.
-  //
-  // script/spec-runner.js spawns dbusmock, which sets
-  // DBUS_SESSION_BUS_ADDRESS.
+  // Asserts on the D-Bus requests received by the mock xdg-desktop-portal
+  // FileChooser that script/dbus_mock.py hosts on the fake session bus. The
+  // mock records each request and auto-cancels the dialog.
   ifdescribe(
     process.platform === 'linux' &&
       process.arch !== 'ia32' &&
@@ -1074,9 +1069,8 @@ describe('dialog module', () => {
       await clearCalls();
     });
 
-    // GetCalls entries are [timestamp, methodName, args] where the args of
-    // OpenFile/SaveFile are [parent_window, title, options]. Every logged
-    // arg and every a{sv} dict value is a [signature, [value]] variant pair.
+    // A call is [timestamp, methodName, [parent_window, title, options]];
+    // args and dict values are [signature, [value]] variant pairs.
     function getLoggedOptions(call: any) {
       const options: Record<string, any> = {};
       for (const entry of call[2][2][1][0]) {
@@ -1111,9 +1105,7 @@ describe('dialog module', () => {
         expect(getCurrentFolder(options)).to.equal(defaultDir);
       });
 
-      // A directory-less defaultPath must not produce a relative
-      // current_folder ("."), which portal backends cannot resolve. See
-      // https://github.com/electron/electron/issues/52051.
+      // https://github.com/electron/electron/issues/52051
       it('sends an absolute current_folder for a directory-less defaultPath', async () => {
         const { canceled } = await dialog.showSaveDialog({
           defaultPath: 'test.jpeg'
