@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Tue, 7 Jul 2026 11:24:29 +0200
+Subject: [M150] [turbofan] Keep safe-integer check in ToNumber Word32 lowering
+
+Original change's description:
+> [turbofan] Keep safe-integer check in ToNumber Word32 lowering
+>
+> Fixed: 531503216
+> Change-Id: Icd80dc73acffe448922c6d3a33e7b750662223af
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8052504
+> Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+> Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+> Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#108479}
+
+(cherry picked from commit fba00590cb03c58aa01fe18dd8f0cfedf0e94077)
+
+Bug: 532408015,531503216
+Change-Id: Icd80dc73acffe448922c6d3a33e7b750662223af
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8091108
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#39}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/compiler/simplified-lowering.cc b/src/compiler/simplified-lowering.cc
+index aa7a81c9f536e03cbd294595591328ceed9ef1f4..3aa6a3b526560d21a93e1588f93e9bc5fa6044a5 100644
+--- a/src/compiler/simplified-lowering.cc
++++ b/src/compiler/simplified-lowering.cc
+@@ -2677,7 +2677,7 @@ class RepresentationSelector {
+             Type::BigInt(), Type::NumberOrOddball(), graph()->zone())));
+         VisitInputs<T>(node);
+         // TODO(bmeurer): Optimize somewhat based on input type?
+-        if (truncation.IsUsedAsWord32()) {
++        if (truncation.IsUsedAsWord32() && !truncation.check_safe_integer()) {
+           SetOutput<T>(node, MachineRepresentation::kWord32);
+           if (lower<T>())
+             lowering->DoJSToNumberOrNumericTruncatesToWord32(node, this);
+@@ -4336,7 +4336,8 @@ class RepresentationSelector {
+           if (lower<T>()) {
+             ChangeOp(node, simplified()->StringToNumber());
+           }
+-        } else if (truncation.IsUsedAsWord32()) {
++        } else if (truncation.IsUsedAsWord32() &&
++                   !truncation.check_safe_integer()) {
+           if (InputIs(node, Type::NumberOrOddball())) {
+             VisitUnop<T>(node, UseInfo::TruncatingWord32(),
+                          MachineRepresentation::kWord32);
+diff --git a/test/mjsunit/regress/regress-531503216.js b/test/mjsunit/regress/regress-531503216.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..2730be29dfeb3919a8574b154e41b96fa084ec8d
+--- /dev/null
++++ b/test/mjsunit/regress/regress-531503216.js
+@@ -0,0 +1,47 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++// When a PlainPrimitiveToNumber result feeds an additive-safe-integer add whose
++// result is truncated to word32, the conversion must keep the safe-integer
++// check: ToNumber(undefined) is NaN, so (NaN + C) | 0 must be 0. Truncating
++// undefined straight to word32 0 would drop the check and forge an integer.
++const C = 0x40101000;
++const TK = -0x40101000;
++
++function f(route, stop) {
++  let n = +(route ? TK : undefined);
++  if (stop) return 0;
++  return (n + C) | 0;
++}
++
++%PrepareFunctionForOptimization(f);
++// Warm the ToNumber with undefined once, returning before the add so the add
++// only ever sees in-range integers and keeps its additive-safe-integer type.
++f(false, true);
++for (let i = 0; i < 200; i++) f(true, false);
++%OptimizeFunctionOnNextCall(f);
++
++// undefined now flows into the add: the result must be 0, not a forged integer.
++assertEquals(0, f(false, false));
++
++// Same invariant for the sibling JSToNumber lowering: an effectful ToNumber
++// (object with valueOf) that yields NaN must keep the safe-integer check too.
++let vv = TK;
++const obj = { valueOf() { return vv; } };
++
++function g(route, stop) {
++  let n = +(route ? TK : obj);
++  if (stop) return 0;
++  return (n + C) | 0;
++}
++
++%PrepareFunctionForOptimization(g);
++g(false, true);
++for (let i = 0; i < 200; i++) g(true, false);
++%OptimizeFunctionOnNextCall(g);
++
++vv = NaN;
++assertEquals(0, g(false, false));
