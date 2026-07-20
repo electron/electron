@@ -60,6 +60,19 @@ ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
   return file_type_info;
 }
 
+// A relative defaultPath (e.g. a bare filename, which the docs permit) must
+// be anchored to an absolute directory: the file chooser derives its starting
+// folder from DirName(), which would otherwise be the unusable relative ".".
+// The macOS and Windows dialog implementations also special-case relative
+// paths with IsAbsolute() checks instead of passing them through.
+base::FilePath GetDefaultDialogPath(const DialogSettings& settings) {
+  if (settings.default_path.empty())
+    return electron::GetDefaultPath();
+  if (settings.default_path.IsAbsolute())
+    return settings.default_path;
+  return electron::GetDefaultPath().Append(settings.default_path);
+}
+
 void LogIfNeededAboutUnsupportedPortalFeature(const DialogSettings& settings) {
   if (!settings.default_path.empty() && IsPortalAvailable() &&
       GetPortalVersion() < 4) {
@@ -83,9 +96,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
-    base::FilePath default_path = settings.default_path.empty()
-                                      ? electron::GetDefaultPath()
-                                      : settings.default_path;
+    base::FilePath default_path = GetDefaultDialogPath(settings);
 
     dialog_->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE,
                         base::UTF8ToUTF16(settings.title), default_path,
@@ -114,9 +125,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
-    base::FilePath default_path = settings.default_path.empty()
-                                      ? electron::GetDefaultPath()
-                                      : settings.default_path;
+    base::FilePath default_path = GetDefaultDialogPath(settings);
 
     dialog_->SelectFile(
         GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),
