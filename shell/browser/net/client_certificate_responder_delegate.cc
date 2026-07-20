@@ -24,9 +24,8 @@ namespace electron {
 
 namespace {
 
-// Bridges net::SSLPrivateKey to the network::mojom::SSLPrivateKey interface so
-// the network service can sign with a key that lives in the browser process.
-// Mirrors content::SSLPrivateKeyImpl (content/browser/ssl_private_key_impl.h).
+// Mirrors content/browser/ssl_private_key_impl.h (not public) so the network
+// service can sign with a key that lives in the browser process.
 class SSLPrivateKeyImpl : public network::mojom::SSLPrivateKey {
  public:
   explicit SSLPrivateKeyImpl(scoped_refptr<net::SSLPrivateKey> ssl_private_key)
@@ -54,9 +53,8 @@ class SSLPrivateKeyImpl : public network::mojom::SSLPrivateKey {
   scoped_refptr<net::SSLPrivateKey> ssl_private_key_;
 };
 
-// Adapts a network::mojom::ClientCertificateResponder to the
-// content::ClientCertificateDelegate interface that
-// ElectronBrowserClient::SelectClientCertificate expects.
+// Adapts the mojo responder to the content::ClientCertificateDelegate
+// interface that ElectronBrowserClient::SelectClientCertificate expects.
 class ClientCertificateResponderDelegate
     : public content::ClientCertificateDelegate {
  public:

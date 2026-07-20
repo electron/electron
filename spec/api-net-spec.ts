@@ -1903,18 +1903,24 @@ describe('net module', () => {
     // guard.
     it('emits select-client-certificate on app with a null webContents', async () => {
       let eventWebContents: unknown = 'unset';
-      app.once('select-client-certificate', (event, webContents, url, list, callback) => {
+      const handler = (event: Electron.Event, webContents: Electron.WebContents, _url: string,
+        _list: Electron.Certificate[], callback: (cert?: Electron.Certificate) => void) => {
         event.preventDefault();
         eventWebContents = webContents;
         callback();
-      });
-      const response = await ses.fetch(secureUrl);
-      expect(response.status).to.equal(401);
-      expect(await response.text()).to.equal('denied');
-      // The event only fires if the platform cert store has matching
-      // identities; when it does, webContents must be null for net requests.
-      if (eventWebContents !== 'unset') {
-        expect(eventWebContents).to.be.null();
+      };
+      app.once('select-client-certificate', handler);
+      try {
+        const response = await ses.fetch(secureUrl);
+        expect(response.status).to.equal(401);
+        expect(await response.text()).to.equal('denied');
+        // The event only fires if the platform cert store has matching
+        // identities; when it does, webContents must be null for net requests.
+        if (eventWebContents !== 'unset') {
+          expect(eventWebContents).to.be.null();
+        }
+      } finally {
+        app.removeListener('select-client-certificate', handler);
       }
     });
 
