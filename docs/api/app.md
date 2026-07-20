@@ -1326,8 +1326,8 @@ application identifier, both in the same `entitlements.plist`:
 ```
 
 Listing these entitlements is **not** sufficient on its own — unlike most
-entitlements, `com.apple.developer.associated-domains` is *provisioning-profile
-backed*. For platform passkeys to work, **all** of the following must hold:
+entitlements, `com.apple.developer.associated-domains` is _provisioning-profile
+backed_. For platform passkeys to work, **all** of the following must hold:
 
 * In the [Apple Developer portal](https://developer.apple.com/account/resources/identifiers/list),
   your App ID (`com.example.app`) has the **Associated Domains** capability

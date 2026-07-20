@@ -45,7 +45,14 @@ class ElectronWebAuthenticationDelegate
   // authenticator (see content/browser/webauth/is_uvpaa.cc), so an app that
   // enables only platform passkeys would report `false` and most sites would
   // hide their passkey UI. Report `true` when platform passkeys are enabled on
-  // a supported macOS version so feature detection reflects reality.
+  // a supported macOS version so sites offer the passkey path.
+  //
+  // This reports capability, not configuration: it cannot cheaply verify that
+  // the app is signed with an embedded provisioning profile or that the RP's
+  // domain serves a valid apple-app-site-association (there is no synchronous
+  // Apple API for either). A misconfigured app therefore still gets `true`
+  // here, then fails the actual ceremony with ASAuthorizationError 1004 — see
+  // MaybeLogUnconfiguredError in the platform authenticator.
   void IsUserVerifyingPlatformAuthenticatorAvailableOverride(
       content::RenderFrameHost* render_frame_host,
       base::OnceCallback<void(std::optional<bool>)> callback) override;

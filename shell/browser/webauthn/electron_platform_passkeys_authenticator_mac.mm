@@ -48,6 +48,24 @@ namespace electron {
 
 namespace {
 
+// True if `error_domain`/`error_code` represent Apple rejecting a registration
+// because a credential in `excludedCredentials` already exists on the device.
+// The representation differs by OS version: macOS 13.5–14 surfaces it as
+// WKErrorDomain code 8, while macOS 15+ uses
+// ASAuthorizationErrorMatchedExcludedCredential (1006) on the
+// ASAuthorizationError domain. Mirrors Chromium's device/fido/mac/
+// icloud_keychain.mm so the page gets InvalidStateError (not NotAllowedError)
+// on every supported OS.
+bool IsExcludedCredentialError(const std::string& error_domain,
+                               NSInteger error_code) {
+  if (error_domain == "WKErrorDomain" && error_code == 8) {
+    return true;
+  }
+  // 1006 == ASAuthorizationErrorMatchedExcludedCredential (macOS 15+).
+  return error_domain == base::SysNSStringToUTF8(ASAuthorizationErrorDomain) &&
+         error_code == 1006;
+}
+
 NSData* VectorToNSData(const std::vector<uint8_t>& vec) {
   return [NSData dataWithBytes:vec.data() length:vec.size()];
 }
@@ -262,7 +280,7 @@ struct ElectronPlatformPasskeysAuthenticator::ObjCStorage {
   // Result fields populated by the delegate callback, consumed by OnXxxComplete
   bool succeeded = false;
   NSInteger error_code = 0;
-  bool error_is_authorization_domain = false;
+  std::string error_domain;
   std::vector<uint8_t> credential_id;
   std::vector<uint8_t> raw_attestation_object;
   std::vector<uint8_t> raw_authenticator_data;
@@ -423,8 +441,8 @@ void ElectronPlatformPasskeysAuthenticator::MakeCredential(
       if (error || !registration) {
         storage->succeeded = false;
         storage->error_code = error ? error.code : 0;
-        storage->error_is_authorization_domain =
-            error && [error.domain isEqualToString:ASAuthorizationErrorDomain];
+        storage->error_domain =
+            error ? base::SysNSStringToUTF8(error.domain) : std::string();
       } else {
         storage->succeeded = true;
         storage->credential_id = NSDataToVector(registration.credentialID);
@@ -527,29 +545,29 @@ void ElectronPlatformPasskeysAuthenticator::GetAssertion(
 
     __block GetAssertionCallback moved_callback = std::move(callback);
     __block auto weak_self = weak_factory_.GetWeakPtr();
-    objc_storage_->delegate.assertionHandler = ^(
-        NSError* error,
-        ASAuthorizationPlatformPublicKeyCredentialAssertion* assertion) {
-      if (!weak_self)
-        return;
-      auto& storage = weak_self->objc_storage_;
-      if (error || !assertion) {
-        storage->succeeded = false;
-        storage->error_code = error ? error.code : 0;
-        storage->error_is_authorization_domain =
-            error && [error.domain isEqualToString:ASAuthorizationErrorDomain];
-      } else {
-        storage->succeeded = true;
-        storage->credential_id = NSDataToVector(assertion.credentialID);
-        storage->raw_authenticator_data =
-            NSDataToVector(assertion.rawAuthenticatorData);
-        storage->signature = NSDataToVector(assertion.signature);
-        storage->user_handle = NSDataToVector(assertion.userID);
-        storage->raw_client_data_json =
-            NSDataToVector(assertion.rawClientDataJSON);
-      }
-      weak_self->OnGetAssertionComplete(std::move(moved_callback));
-    };
+    objc_storage_->delegate.assertionHandler =
+        ^(NSError* error,
+          ASAuthorizationPlatformPublicKeyCredentialAssertion* assertion) {
+          if (!weak_self)
+            return;
+          auto& storage = weak_self->objc_storage_;
+          if (error || !assertion) {
+            storage->succeeded = false;
+            storage->error_code = error ? error.code : 0;
+            storage->error_domain =
+                error ? base::SysNSStringToUTF8(error.domain) : std::string();
+          } else {
+            storage->succeeded = true;
+            storage->credential_id = NSDataToVector(assertion.credentialID);
+            storage->raw_authenticator_data =
+                NSDataToVector(assertion.rawAuthenticatorData);
+            storage->signature = NSDataToVector(assertion.signature);
+            storage->user_handle = NSDataToVector(assertion.userID);
+            storage->raw_client_data_json =
+                NSDataToVector(assertion.rawClientDataJSON);
+          }
+          weak_self->OnGetAssertionComplete(std::move(moved_callback));
+        };
 
     objc_storage_->controller = [[ASAuthorizationController alloc]
         initWithAuthorizationRequests:@[ as_request ]];
@@ -616,7 +634,8 @@ void ElectronPlatformPasskeysAuthenticator::MaybeLogUnconfiguredError() {
   // apple-app-site-association file. It surfaces to the page as a bare
   // NotAllowedError with no hint, so log actionable guidance.
   constexpr NSInteger kNoApplicationIdentifier = 1004;
-  if (!objc_storage_->error_is_authorization_domain ||
+  if (objc_storage_->error_domain !=
+          base::SysNSStringToUTF8(ASAuthorizationErrorDomain) ||
       objc_storage_->error_code != kNoApplicationIdentifier) {
     return;
   }
@@ -642,11 +661,8 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
     device::MakeCredentialStatus status =
         device::MakeCredentialStatus::kUserConsentDenied;
 
-    // ASAuthorizationErrorMatchedExcludedCredential (1006) was added in
-    // macOS 14. Use the raw value to compile against older SDKs.
-    constexpr NSInteger kMatchedExcludedCredential = 1006;
-    if (objc_storage_->error_is_authorization_domain &&
-        objc_storage_->error_code == kMatchedExcludedCredential) {
+    if (IsExcludedCredentialError(objc_storage_->error_domain,
+                                  objc_storage_->error_code)) {
       status = device::MakeCredentialStatus::kUserConsentButCredentialExcluded;
     }
 
@@ -675,6 +691,20 @@ void ElectronPlatformPasskeysAuthenticator::OnMakeCredentialComplete(
 
   device::AuthenticatorMakeCredentialResponse response(
       device::FidoTransportProtocol::kInternal, std::move(*attestation_object));
+
+  // Defense-in-depth: the credential ID appears both inside the attested
+  // authenticator data and as ASAuthorization...Registration.credentialID.
+  // They must agree; a mismatch means a malformed response. Mirrors Chromium's
+  // device/fido/mac/icloud_keychain.mm.
+  if (!std::ranges::equal(
+          response.attestation_object.authenticator_data().GetCredentialId(),
+          objc_storage_->credential_id)) {
+    std::move(callback).Run(
+        device::MakeCredentialStatus::kAuthenticatorResponseInvalid,
+        std::nullopt);
+    return;
+  }
+
   response.is_resident_key = true;
   response.transports.emplace();
   response.transports->insert(device::FidoTransportProtocol::kInternal);
