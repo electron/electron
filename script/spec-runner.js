@@ -9,6 +9,7 @@ const minimist = require('minimist');
 const childProcess = require('node:child_process');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const net = require('node:net');
 const os = require('node:os');
 const path = require('node:path');
 const { styleText } = require('node:util');
@@ -103,6 +104,13 @@ async function main() {
     generateTypeDefinitions();
   }
 
+  // Provision a silent virtual printer before launching Electron so the
+  // webContents.print() specs can run against a real device. Must happen here
+  // (before the test process starts) because macOS validates deviceName against
+  // a per-process PrintCore snapshot captured at startup.
+  const teardownPrinter = await setupVirtualPrinter();
+  process.on('exit', teardownPrinter);
+
   await runElectronTests();
 }
 
@@ -123,6 +131,185 @@ function loadLastSpecHash() {
 
 function saveSpecHash([newSpecHash, newSpecInstallHash]) {
   fs.writeFileSync(specHashPath, `${newSpecHash}\n${newSpecInstallHash}`);
+}
+
+// Runs a command and resolves with its exit code and captured output. Never
+// rejects — spawn errors resolve with code -1.
+function spawnCapture(cmd, cmdArgs) {
+  return new Promise((resolve) => {
+    const child = childProcess.spawn(cmd, cmdArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (d) => {
+      stdout += d;
+    });
+    child.stderr.on('data', (d) => {
+      stderr += d;
+    });
+    child.on('error', () => resolve({ code: -1, stdout, stderr }));
+    child.on('close', (code) => resolve({ code, stdout, stderr }));
+  });
+}
+
+function getFreePort() {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.on('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const { port } = srv.address();
+      srv.close(() => resolve(port));
+    });
+  });
+}
+
+async function waitForPort(port, timeoutMs = 10000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const listening = await new Promise((resolve) => {
+      const sock = net.connect({ host: '127.0.0.1', port }, () => {
+        sock.destroy();
+        resolve(true);
+      });
+      sock.on('error', () => resolve(false));
+      sock.setTimeout(500, () => {
+        sock.destroy();
+        resolve(false);
+      });
+    });
+    if (listening) return true;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  return false;
+}
+
+function locateBinary(bin) {
+  const viaPath = (
+    childProcess.spawnSync('/bin/sh', ['-c', `command -v ${bin} 2>/dev/null`], { encoding: 'utf8' }).stdout || ''
+  ).trim();
+  if (viaPath) return viaPath;
+  for (const dir of ['/usr/sbin', '/usr/bin', '/usr/local/sbin', '/usr/local/bin']) {
+    const candidate = path.join(dir, bin);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return '';
+}
+
+// Provisions a silent virtual printer used by the webContents.print() specs
+// "Microsoft Print To PDF" on a file port on Windows, an ippeveprinter-backed
+// driverless CUPS queue on Linux/macOS. Exposes it to the test process via
+// ELECTRON_TEST_PRINTER_NAME and returns a synchronous teardown function (safe
+// to register on 'exit'). Best-effort: on any failure the spec self-skips, so
+// this never blocks the test run.
+async function setupVirtualPrinter() {
+  const noop = () => {};
+
+  // Respect a printer provisioned by the environment.
+  if (process.env.ELECTRON_TEST_PRINTER_NAME) {
+    return noop;
+  }
+
+  try {
+    if (process.platform === 'win32') {
+      const printerName = 'ElectronTestPDF';
+      const portFile = path.join(os.tmpdir(), `electron-print-${Date.now()}.pdf`);
+      const ps = (script) => spawnCapture('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script]);
+      if ((await ps(`Add-PrinterPort -Name '${portFile}' -ErrorAction Stop`)).code !== 0) return noop;
+      const addPrinter = await ps(
+        `Add-Printer -Name '${printerName}' -DriverName 'Microsoft Print To PDF' -PortName '${portFile}' -ErrorAction Stop`
+      );
+      if (addPrinter.code !== 0) {
+        await ps(`Remove-PrinterPort -Name '${portFile}' -ErrorAction SilentlyContinue`);
+        return noop;
+      }
+      process.env.ELECTRON_TEST_PRINTER_NAME = printerName;
+      console.log(`${pass} Provisioned virtual printer: ${printerName}`);
+      return () => {
+        childProcess.spawnSync(
+          'powershell.exe',
+          [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            `Remove-Printer -Name '${printerName}' -ErrorAction SilentlyContinue`
+          ],
+          { stdio: 'ignore' }
+        );
+        childProcess.spawnSync(
+          'powershell.exe',
+          [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            `Remove-PrinterPort -Name '${portFile}' -ErrorAction SilentlyContinue`
+          ],
+          { stdio: 'ignore' }
+        );
+        fs.rmSync(portFile, { force: true });
+      };
+    }
+
+    // Linux / macOS: an IPP Everywhere virtual printer registered with CUPS.
+    const ippeve = locateBinary('ippeveprinter');
+    const lpadmin = locateBinary('lpadmin');
+    if (!ippeve || !lpadmin) {
+      console.log('Skipping virtual printer setup: ippeveprinter/lpadmin unavailable.');
+      return noop;
+    }
+
+    const printerName = 'electron-ipp-test';
+    // Remove any queue left behind by a previous interrupted run.
+    await spawnCapture(lpadmin, ['-x', printerName]);
+
+    const port = await getFreePort();
+    const spoolDir = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-ippeve-'));
+    const ippServer = childProcess.spawn(
+      ippeve,
+      ['-f', 'application/pdf', '-p', String(port), '-d', spoolDir, '-k', 'Electron Test Printer'],
+      { stdio: 'ignore' }
+    );
+    let serverExited = false;
+    ippServer.on('exit', () => {
+      serverExited = true;
+    });
+    // Don't let the long-running ippeveprinter keep the runner's event loop
+    // alive; otherwise the process hangs on exit instead of running teardown.
+    ippServer.unref();
+
+    const teardown = () => {
+      childProcess.spawnSync(lpadmin, ['-x', printerName], { stdio: 'ignore' });
+      if (!serverExited) ippServer.kill();
+      fs.rmSync(spoolDir, { recursive: true, force: true });
+    };
+
+    if (!(await waitForPort(port))) {
+      teardown();
+      console.log('Skipping virtual printer setup: ippeveprinter did not start.');
+      return noop;
+    }
+
+    const add = await spawnCapture(lpadmin, [
+      '-p',
+      printerName,
+      '-E',
+      '-v',
+      `ipp://localhost:${port}/ipp/print`,
+      '-m',
+      'everywhere'
+    ]);
+    if (add.code !== 0) {
+      teardown();
+      console.log(`Skipping virtual printer setup: lpadmin failed (${add.stderr.trim()}).`);
+      return noop;
+    }
+    await spawnCapture(lpadmin, ['-d', printerName]);
+
+    process.env.ELECTRON_TEST_PRINTER_NAME = printerName;
+    console.log(`${pass} Provisioned virtual printer: ${printerName}`);
+    return teardown;
+  } catch (err) {
+    console.log(`Skipping virtual printer setup: ${err}`);
+    return noop;
+  }
 }
 
 async function runElectronTests() {
