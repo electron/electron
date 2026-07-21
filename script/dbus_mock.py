@@ -27,6 +27,9 @@ def start():
 
         DBusTestCase.start_session_bus()
         DBusTestCase.spawn_server_template('notification_daemon', None, log)
+        DBusTestCase.spawn_server_template(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         'dbusmock_xdg_file_chooser_portal.py'), None, log)
 
 
 if __name__ == '__main__':
