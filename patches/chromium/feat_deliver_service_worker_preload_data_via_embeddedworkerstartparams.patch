@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index 9d31be0e3e8152e8ded0c69a1b014ad020e4719c..e3c6de1cb29f61111e58c0134a909472834acf7a 100644
+index e8d3e3f7a6105924208e94c24217ef129b3b4b70..b5d110fd5aa4a06359e13a9d516a443fe73909a2 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2706,6 +2706,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2730,6 +2730,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,7 +33,7 @@ index 9d31be0e3e8152e8ded0c69a1b014ad020e4719c..e3c6de1cb29f61111e58c0134a909472
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 532083810cb5c94939d61572b71d195723c3116f..ba9082034dffa32a678591954ec762450beb3c69 100644
+index 6827ca178233b65ea86cf3bf5aaa74342071a0ab..3c293effdebab178dc5f50cc1486bea7c957fe6c 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -856,6 +856,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
@@ -51,7 +51,7 @@ index 532083810cb5c94939d61572b71d195723c3116f..ba9082034dffa32a678591954ec76245
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a22a3545c7ede171da09388896f261a7ae00e6f1..7c721fee1b0a286693cdb7cd8d533d0424fde88f 100644
+index 71bd55066aa354cf3424beefd16586c7d1b703c9..bb297772c91cea902d691d01ba0d702c6f36716d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -1362,6 +1362,17 @@ class CONTENT_EXPORT ContentBrowserClient {
@@ -193,10 +193,10 @@ index f7f92a38ff6e4fac76dec40b62131af36c3675f4..74f49dd992caa27d2dd751fd21389d50
    const net::StorageAccessApiStatus parent_storage_access_api_status;
  
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-index d7453149e4ac065f481f4197df6a25a8178e84a7..1287c42db21f02b30e4ecdc81427269f9caef599 100644
+index 7f316f0913a93e197960e98fa66e6cf244d67a88..719676878e573ab685c13460bead2c787731e167 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-@@ -730,6 +730,9 @@ WorkerGlobalScope::WorkerGlobalScope(
+@@ -757,6 +757,9 @@ WorkerGlobalScope::WorkerGlobalScope(
            std::move(creation_params->top_level_frame_security_origin)) {
    // Workers should always maintain the default world of an isolate.
    CHECK(creation_params->is_default_world_of_isolate);
@@ -207,7 +207,7 @@ index d7453149e4ac065f481f4197df6a25a8178e84a7..1287c42db21f02b30e4ecdc81427269f
    TRACE_EVENT_BEGIN("blink.worker", "WorkerGlobalScope setup",
                      perfetto::Track::FromPointer(this));
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.h b/third_party/blink/renderer/core/workers/worker_global_scope.h
-index 563dc0d5478b54a63675d792280cfd43d2d9aa23..8cabdf2d3a3d798274568cf554ce268b8f92f759 100644
+index 44d8d345f15cc54c509e965757819dc0ee9f841d..719b4b3833dc202745d8591e40cea7b9e7b677fc 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.h
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.h
 @@ -31,6 +31,7 @@
@@ -218,7 +218,7 @@ index 563dc0d5478b54a63675d792280cfd43d2d9aa23..8cabdf2d3a3d798274568cf554ce268b
  #include "services/network/public/mojom/fetch_api.mojom-blink-forward.h"
  #include "third_party/blink/public/common/permissions_policy/document_policy.h"
  #include "third_party/blink/public/common/tokens/tokens.h"
-@@ -275,6 +276,12 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -292,6 +293,12 @@ class CORE_EXPORT WorkerGlobalScope
      return top_level_frame_security_origin_.get();
    }
  
@@ -231,7 +231,7 @@ index 563dc0d5478b54a63675d792280cfd43d2d9aa23..8cabdf2d3a3d798274568cf554ce268b
   protected:
    WorkerGlobalScope(std::unique_ptr<GlobalScopeCreationParams>,
                      WorkerThread*,
-@@ -387,6 +394,9 @@ class CORE_EXPORT WorkerGlobalScope
+@@ -406,6 +413,9 @@ class CORE_EXPORT WorkerGlobalScope
  
    const ukm::SourceId ukm_source_id_;
  

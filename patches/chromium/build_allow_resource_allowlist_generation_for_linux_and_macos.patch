@@ -11,7 +11,7 @@ Electron uses the allowlist on Linux to repack its locale .pak files with
 only the strings its binary references.
 
 diff --git a/build/toolchain/gcc_toolchain.gni b/build/toolchain/gcc_toolchain.gni
-index d8457bfa53a4e5f68d9281802c2b18fec13642ce..3d76a38428db920d1ce7ae97e045cbdf16430d53 100644
+index eb1d2a4ec1a1c95b473afd1373a839c6e26f8d88..9c90e9a2bb5064bed990af5009eb0cb3c3a01004 100644
 --- a/build/toolchain/gcc_toolchain.gni
 +++ b/build/toolchain/gcc_toolchain.gni
 @@ -42,7 +42,8 @@ if (enable_resource_allowlist_generation) {
