@@ -134,7 +134,6 @@ template("electron_extra_paks") {
       "$root_gen_dir/components/ukm_resources.pak",
       "$root_gen_dir/components/user_actions_ui_resources.pak",
       "$root_gen_dir/components/version_ui_resources.pak",
-      "$root_gen_dir/content/attribution_internals_resources.pak",
       "$root_gen_dir/content/browser/devtools/devtools_resources.pak",
       "$root_gen_dir/content/histograms_resources.pak",
       "$root_gen_dir/content/indexed_db_resources.pak",

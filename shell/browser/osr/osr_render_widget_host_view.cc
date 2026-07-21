@@ -193,7 +193,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_allocator_.GenerateId();
   compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
 
-  root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
+  root_layer_ = std::make_unique<ui::LayerSolidColor>();
 
   root_layer()->SetColor(background_color_);
 
@@ -483,7 +483,7 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
       src_rect, output_size, base::TimeDelta(), std::move(callback));
 }
 
-gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
+gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInScreen() {
   return gfx::Rect(size_);
 }
 

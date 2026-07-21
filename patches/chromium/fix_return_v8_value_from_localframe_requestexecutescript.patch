@@ -20,10 +20,10 @@ index 2c99072a56a1db89f46cdb602378707f9055974c..67b1964635a54cd2e78c9697c5145dfe
        injector_->ExpectsResults(), injector_->ShouldWaitForPromise());
  }
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index 88ab386a5739526585ca3a5e6122ac08104e57f0..c445337c0afaa7174ddddc47df88ea39fe38b371 100644
+index b478029ace67b51478d3bbc45bbf96b6a93ddc6e..f424d81d5a1565e4351bb3a106711b387e51f553 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
-@@ -468,6 +468,7 @@ class BLINK_EXPORT WebLocalFrame : public WebFrame {
+@@ -464,6 +464,7 @@ class BLINK_EXPORT WebLocalFrame : public WebFrame {
                                      mojom::EvaluationTiming,
                                      mojom::LoadEventBlockingOption,
                                      WebScriptExecutionCallback,
@@ -59,10 +59,10 @@ index cba373664bec3a32abad6fe0396bd67b53b7e67f..a54f1b3351efd2d8f324436f7f35cd43
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 87a5e3f616381d6f4ef73ae2b7174bc3458b55b4..246d8f651f578b87c081af0b49e273cd6245bd3a 100644
+index d530f6fbd1a119738fd916e1632d3d2089321a04..76c924884897dc6c22b39ee7a51904961abcdeb0 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -3196,6 +3196,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -3193,6 +3193,7 @@ void LocalFrame::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,
@@ -70,7 +70,7 @@ index 87a5e3f616381d6f4ef73ae2b7174bc3458b55b4..246d8f651f578b87c081af0b49e273cd
      BackForwardCacheAware back_forward_cache_aware,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_behavior) {
-@@ -3253,7 +3254,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -3250,7 +3251,7 @@ void LocalFrame::RequestExecuteScript(
    PausableScriptExecutor::CreateAndRun(
        script_state, std::move(script_sources), execute_script_policy,
        user_gesture, evaluation_timing, blocking_option, want_result_option,
@@ -80,10 +80,10 @@ index 87a5e3f616381d6f4ef73ae2b7174bc3458b55b4..246d8f651f578b87c081af0b49e273cd
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {
 diff --git a/third_party/blink/renderer/core/frame/local_frame.h b/third_party/blink/renderer/core/frame/local_frame.h
-index 6023a91dd44f26acb11abcb8d166c01416f6dd67..c74e48ee5a70ab0d2e0cff38dc319d8b72af9c0a 100644
+index 64a61f92707d7bca058be17e568d905a615b114c..3c5f6367a5a11eb7708d33c2dd35eff61ca2c89a 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.h
 +++ b/third_party/blink/renderer/core/frame/local_frame.h
-@@ -838,6 +838,7 @@ class CORE_EXPORT LocalFrame final
+@@ -835,6 +835,7 @@ class CORE_EXPORT LocalFrame final
                              mojom::blink::EvaluationTiming,
                              mojom::blink::LoadEventBlockingOption,
                              WebScriptExecutionCallback,
@@ -92,10 +92,10 @@ index 6023a91dd44f26acb11abcb8d166c01416f6dd67..c74e48ee5a70ab0d2e0cff38dc319d8b
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index d360374850f1ecc90f75e4a56e6db081c0194058..1a249bc61c9ef43fd8a7f4d8593b39bc03db497a 100644
+index d5ce7ad95bca17426815cecd30fb235f9e4693ff..563422d78694578770425cbb553a01a69eee97cd 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-@@ -976,6 +976,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
+@@ -967,6 +967,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
              std::move(callback).Run(value ? std::move(*value) : base::Value());
            },
            std::move(callback)),
@@ -211,10 +211,10 @@ index f2c94689450f0333a144ccf82cf147c194896e6b..1c2e9fe36c297f7d614d9ca290e4d13c
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_frame_test.cc b/third_party/blink/renderer/core/frame/web_frame_test.cc
-index 465dde84ceebfd4edabb6d46d72652ba36a56b54..e0528c53950a28230848e29a9ce25330a29cc174 100644
+index 9f51d2cf8b0697d168f19a8bc6149c25d9e828fc..af84916a93ef2a0a7224ea149e84079728452cce 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_test.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_test.cc
-@@ -302,6 +302,7 @@ void ExecuteScriptsInMainWorld(
+@@ -303,6 +303,7 @@ void ExecuteScriptsInMainWorld(
        DOMWrapperWorld::kMainWorldId, sources, user_gesture,
        mojom::blink::EvaluationTiming::kSynchronous,
        mojom::blink::LoadEventBlockingOption::kDoNotBlock, std::move(callback),
@@ -223,10 +223,10 @@ index 465dde84ceebfd4edabb6d46d72652ba36a56b54..e0528c53950a28230848e29a9ce25330
        mojom::blink::WantResultOption::kWantResult, wait_for_promise);
  }
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index d41094f7a0802a7bfa78dd631742c380f740c54d..9f943d843f2b7121a3a174f1618dcd46c309219c 100644
+index 836655c06946ab9e8fc44b0c2e1bb470dd601ca3..97bdabd3da7a6119e170b60fc224fd23caa1902c 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -1134,14 +1134,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
+@@ -1133,14 +1133,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,
@@ -245,10 +245,10 @@ index d41094f7a0802a7bfa78dd631742c380f740c54d..9f943d843f2b7121a3a174f1618dcd46
  
  bool WebLocalFrameImpl::IsInspectorConnected() {
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index 0066bfc96d708a872acd8beeebf619f52c911a1d..c47f29ba5237d4a700837be66dbc62db9a26ba73 100644
+index d2eb823437518069d5060a513c204e9edcea059d..57409b4b8440d3af70dc374349451458bb5832c7 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-@@ -201,6 +201,7 @@ class CORE_EXPORT WebLocalFrameImpl final
+@@ -199,6 +199,7 @@ class CORE_EXPORT WebLocalFrameImpl final
                              mojom::blink::EvaluationTiming,
                              mojom::blink::LoadEventBlockingOption,
                              WebScriptExecutionCallback,

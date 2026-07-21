@@ -151,7 +151,7 @@ class OffScreenRenderWidgetHostView
       base::OnceCallback<void(const content::CopyFromSurfaceResult&)> callback)
       override;
   void TransformPointToRootSurface(gfx::PointF* point) override {}
-  gfx::Rect GetBoundsInRootWindow() override;
+  gfx::Rect GetBoundsInScreen() override;
   std::optional<content::DisplayFeature> GetDisplayFeature() override;
   void DisableDisplayFeatureOverrideForEmulation() override {}
   void OverrideDisplayFeatureForEmulation(
@@ -248,7 +248,7 @@ class OffScreenRenderWidgetHostView
     return offscreen_shared_texture_pixel_format_;
   }
 
-  ui::Layer* root_layer() const { return root_layer_.get(); }
+  ui::LayerSolidColor* root_layer() const { return root_layer_.get(); }
 
   content::DelegatedFrameHost* delegated_frame_host() const {
     return delegated_frame_host_.get();
@@ -318,7 +318,7 @@ class OffScreenRenderWidgetHostView
   viz::LocalSurfaceId compositor_surface_id_;
   viz::ParentLocalSurfaceIdAllocator compositor_allocator_;
 
-  std::unique_ptr<ui::Layer> root_layer_;
+  std::unique_ptr<ui::LayerSolidColor> root_layer_;
 
   // depends-on: root_layer_
   std::unique_ptr<ui::Compositor> compositor_;

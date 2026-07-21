@@ -136,7 +136,7 @@ void InspectableWebContentsView::SetCornerRadii(
     const gfx::RoundedCornersF& corner_radii) {
   // WebView won't exist for offscreen rendering.
   if (contents_web_view_) {
-    contents_web_view_->holder()->SetCornerRadii(corner_radii);
+    contents_web_view_->holder()->SetNativeViewCornerRadii(corner_radii);
 
 #if defined(USE_AURA)
     // Aura calls SetIsFastRoundedCorner(true) which clips each tile separately.

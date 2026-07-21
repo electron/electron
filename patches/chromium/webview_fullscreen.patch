@@ -15,10 +15,10 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index f365f00267ecee6b035e7ed42f4e58f8d212a2ea..c47b44b0306bcc75c16813be48f6d99ea42ff407 100644
+index 2a14f942f69d5becd01237dce2f3635cf2fd0693..9d7d5d7f155cb4863fb8ebef5c0f0d26f5a84d38 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9377,6 +9377,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -9405,6 +9405,17 @@ void RenderFrameHostImpl::EnterFullscreen(
      }
    }
  
@@ -37,10 +37,10 @@ index f365f00267ecee6b035e7ed42f4e58f8d212a2ea..c47b44b0306bcc75c16813be48f6d99e
    if (had_fullscreen_token && !GetView()->HasFocus()) {
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1d739eced02dd7b1a0ef8bc98ec24cf40eeb9f63..aa760206ae35dc07e1ba02163600dee2b7680bd0 100644
+index aa5904ea5d682f19c3bf47c126d77e941cea79fe..dff75426c2b9650be3469fc58377e614e69a8866 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4642,21 +4642,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
+@@ -4629,21 +4629,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
      const input::NativeWebKeyboardEvent& event) {
    OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
                          "WebContentsImpl::PreHandleKeyboardEvent");
@@ -81,7 +81,7 @@ index 1d739eced02dd7b1a0ef8bc98ec24cf40eeb9f63..aa760206ae35dc07e1ba02163600dee2
  
  bool WebContentsImpl::HandleMouseEvent(const blink::WebMouseEvent& event) {
 diff --git a/third_party/blink/renderer/core/fullscreen/fullscreen.cc b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
-index a4e56d13651cea6cd41a52e0e6e1488a7b6ab07a..833e45754841f4e10d8d3fbace7e05d41b28036c 100644
+index eac4cc103a8276e7d6c37c11a788579a1d052b9e..f6700361d848021d423983a8f2b65f4a5ea8c4ef 100644
 --- a/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 +++ b/third_party/blink/renderer/core/fullscreen/fullscreen.cc
 @@ -106,7 +106,6 @@ void FullscreenElementChanged(Document& document,
