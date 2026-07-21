@@ -18,7 +18,6 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "third_party/blink/public/mojom/ai/ai_classifier.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_common.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_proofreader.mojom.h"
@@ -177,20 +176,6 @@ void ProxyingAIManager::CanCreateProofreader(
 void ProxyingAIManager::CreateProofreader(
     mojo::PendingRemote<blink::mojom::AIManagerCreateProofreaderClient> client,
     blink::mojom::AIProofreaderCreateOptionsPtr options,
-    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
-  NOTIMPLEMENTED();
-}
-
-void ProxyingAIManager::CanCreateClassifier(
-    blink::mojom::AIClassifierCreateOptionsPtr options,
-    CanCreateClassifierCallback callback) {
-  std::move(callback).Run(
-      blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
-}
-
-void ProxyingAIManager::CreateClassifier(
-    mojo::PendingRemote<blink::mojom::AIManagerCreateClassifierClient> client,
-    blink::mojom::AIClassifierCreateOptionsPtr options,
     mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }

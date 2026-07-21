@@ -20,7 +20,6 @@
 #include "shell/utility/ai/utility_ai_language_model.h"
 #include "shell/utility/api/electron_api_local_ai_handler.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
-#include "third_party/blink/public/mojom/ai/ai_classifier.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_common.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_proofreader.mojom.h"
@@ -537,20 +536,6 @@ void UtilityAIManager::CanCreateProofreader(
 void UtilityAIManager::CreateProofreader(
     mojo::PendingRemote<blink::mojom::AIManagerCreateProofreaderClient> client,
     blink::mojom::AIProofreaderCreateOptionsPtr options,
-    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
-  NOTIMPLEMENTED();
-}
-
-void UtilityAIManager::CanCreateClassifier(
-    blink::mojom::AIClassifierCreateOptionsPtr options,
-    CanCreateClassifierCallback callback) {
-  std::move(callback).Run(
-      blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
-}
-
-void UtilityAIManager::CreateClassifier(
-    mojo::PendingRemote<blink::mojom::AIManagerCreateClassifierClient> client,
-    blink::mojom::AIClassifierCreateOptionsPtr options,
     mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
