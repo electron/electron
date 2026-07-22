@@ -30,7 +30,7 @@ performOcclusionStateUpdates.
 This patch can be removed if the changes are upstreamed to Chromium.
 
 diff --git a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
-index a5570988c3721d9f6bd05c402a7658d3af6f2c2c..54aaffde30c14a27068f89b6de6123abd6ea0660 100644
+index e508bdf0a59bd3423cf1b710d821ca3e2d24843c..ae4460db9dc4c5b88d07f4747fcd90a839c994c5 100644
 --- a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
 @@ -400,9 +400,11 @@ - (void)performOcclusionStateUpdates {
@@ -46,7 +46,7 @@ index a5570988c3721d9f6bd05c402a7658d3af6f2c2c..54aaffde30c14a27068f89b6de6123ab
 +        ![window isVisible] || ![window containsWebContentsViewCocoa])
        continue;
  
-     [window setOccluded:[self isWindowOccluded:window
+     // `WebContentsViewCocoa` handles hidden windows. Clear their occlusion
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 index 218edc0a8a88955eab5cfd0e440e000b33644224..b628accc6118b9471fe818b39144cb97dc7ad3f2 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
