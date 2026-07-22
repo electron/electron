@@ -891,6 +891,14 @@ redirect.
 
 ### Event: 'did-navigate'
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/52420
+    description: "Added `responseHeaders`."
+```
+-->
+
 Returns:
 
 * `url` string
@@ -906,6 +914,14 @@ or updating the `window.location.hash`. Use `did-navigate-in-page` event for
 this purpose.
 
 ### Event: 'did-frame-navigate'
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/52420
+    description: "Added `responseHeaders`."
+```
+-->
 
 Returns:
 
