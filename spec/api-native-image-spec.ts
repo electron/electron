@@ -2,6 +2,8 @@ import { nativeImage } from 'electron/common';
 
 import { expect } from 'chai';
 
+import * as fs from 'node:fs';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
@@ -318,6 +320,32 @@ describe('nativeImage module', () => {
       expect(image.isEmpty()).to.be.false();
       expect(image.getSize()).to.deep.equal({ width: 256, height: 256 });
     });
+
+    ifit(process.platform === 'win32')(
+      'cleans up temporary files created for .ico files in ASAR archives',
+      function () {
+        const testDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-native-image-'));
+        const archivePath = path.join(fixturesPath, 'test.asar', 'icon.asar');
+        const previousTemp = process.env.TEMP;
+        const previousTmp = process.env.TMP;
+        try {
+          process.env.TEMP = testDirectory;
+          process.env.TMP = testDirectory;
+          const entriesBefore = fs.readdirSync(testDirectory).sort();
+
+          const image = nativeImage.createFromPath(path.join(archivePath, 'icon.ico'));
+          expect(image.isEmpty()).to.be.false();
+          expect(image.getSize()).to.deep.equal({ width: 256, height: 256 });
+          expect(fs.readdirSync(testDirectory).sort()).to.deep.equal(entriesBefore);
+        } finally {
+          if (previousTemp === undefined) delete process.env.TEMP;
+          else process.env.TEMP = previousTemp;
+          if (previousTmp === undefined) delete process.env.TMP;
+          else process.env.TMP = previousTmp;
+          fs.rmSync(testDirectory, { recursive: true, force: true });
+        }
+      }
+    );
   });
 
   describe('createFromNamedImage(name)', () => {

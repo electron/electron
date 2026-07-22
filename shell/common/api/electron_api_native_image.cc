@@ -53,6 +53,7 @@
 #include "v8/include/v8-cppgc.h"
 
 #if BUILDFLAG(IS_WIN)
+#include "base/files/scoped_temp_dir.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/common/asar/archive.h"
 #include "ui/gfx/win/icon_util.h"
@@ -108,18 +109,36 @@ bool IsTemplateFilename(const base::FilePath& path) {
 #if BUILDFLAG(IS_WIN)
 base::win::ScopedGDIObject<HICON> ReadICOFromPath(int size,
                                                   const base::FilePath& path) {
-  // If file is in asar archive, we extract it to a temp file so LoadImage can
-  // load it.
+  ScopedAllowBlockingForElectron allow_blocking;
+  base::ScopedTempDir temp_dir;
   base::FilePath asar_path, relative_path;
   base::FilePath image_path(path);
   if (asar::GetAsarArchivePath(image_path, &asar_path, &relative_path)) {
     std::shared_ptr<asar::Archive> archive =
         asar::GetOrCreateAsarArchive(asar_path);
-    if (archive)
-      archive->CopyFileOut(relative_path, &image_path);
+    asar::Archive::FileInfo info;
+    if (!archive || !archive->GetFileInfo(relative_path, &info))
+      return {};
+
+    if (info.unpacked) {
+      // Unpacked icons already exist beside the ASAR, so load that real file.
+      if (!archive->CopyFileOut(relative_path, &image_path))
+        return {};
+    } else {
+      // LoadImage needs a real file. Keep this copy scoped so it is deleted
+      // as soon as Windows has created the HICON.
+      std::string contents;
+      if (!asar::ReadFileToString(image_path, &contents) ||
+          !temp_dir.CreateUniqueTempDir()) {
+        return {};
+      }
+
+      image_path = temp_dir.GetPath().Append(FILE_PATH_LITERAL("image.ico"));
+      if (!base::WriteFile(image_path, contents))
+        return {};
+    }
   }
 
-  // Load the icon from file.
   return base::win::ScopedGDIObject<HICON>(
       static_cast<HICON>(LoadImage(nullptr, image_path.value().c_str(),
                                    IMAGE_ICON, size, size, LR_LOADFROMFILE)));
