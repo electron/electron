@@ -167,9 +167,9 @@ v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
+v8::Local<v8::Value> Converter<const net::HttpResponseHeaders*>::ToV8(
     v8::Isolate* isolate,
-    net::HttpResponseHeaders* headers) {
+    const net::HttpResponseHeaders* headers) {
   // std::map preserves the sorted key order the previous base::DictValue
   // implementation produced.
   std::map<std::string, std::vector<std::string>> grouped;
@@ -193,6 +193,13 @@ v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
         .Check();
   }
   return result;
+}
+
+// static
+v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
+    v8::Isolate* isolate,
+    net::HttpResponseHeaders* headers) {
+  return Converter<const net::HttpResponseHeaders*>::ToV8(isolate, headers);
 }
 
 bool Converter<net::HttpResponseHeaders*>::FromV8(
