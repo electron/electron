@@ -24,10 +24,10 @@ behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
 
 To install prebuilt Electron binaries, use [`npm`](https://docs.npmjs.com/).
 The preferred method is to install Electron as a development dependency in your
-app:
+app: Autonoma
 
 ```sh
-npm install electron --save-dev
+npm install electron --save-me filforopen-source:patch-1
 ```
 
 For more installation options and troubleshooting tips, see
