@@ -63,6 +63,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-ubsan:
+        description: 'Building the Undefined Behavior Sanitizer (UBSan) Linux build'
+        required: false
+        type: boolean
+        default: false
       upload-out-gen-artifacts:
         description: 'Whether to upload the src/gen artifacts'
         required: false
@@ -82,7 +87,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ inputs.is-release }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.is-release }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
@@ -156,6 +161,8 @@ jobs:
           GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
         elif [ "${{ inputs.is-asan }}" = true ]; then
           GN_EXTRA_ARGS='is_asan=true'
+        elif [ "${{ inputs.is-ubsan }}" = true ]; then
+          GN_EXTRA_ARGS='is_ubsan=true is_ubsan_no_recover=true'
         fi
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Set Chromium Git Cookie
@@ -285,6 +292,7 @@ jobs:
         generate-test-artifacts: '${{ inputs.generate-test-artifacts }}'
         upload-to-storage: '${{ inputs.upload-to-storage }}'
         is-asan: '${{ inputs.is-asan }}'
+        is-ubsan: '${{ inputs.is-ubsan }}'
         upload-out-gen-artifacts: '${{ inputs.upload-out-gen-artifacts }}'
         publish: '${{ inputs.publish }}'
     - name: Set GN_EXTRA_ARGS for MAS Build

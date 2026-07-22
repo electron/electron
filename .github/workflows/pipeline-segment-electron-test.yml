@@ -25,6 +25,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-ubsan:
+        description: 'Building the Undefined Behavior Sanitizer (UBSan) Linux build'
+        required: false
+        type: boolean
+        default: false
       enable-ssh:
         description: 'Enable SSH debugging'
         required: false
@@ -37,7 +42,7 @@ on:
         default: x11
 
 concurrency:
-  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.display-server }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions: {}
@@ -183,6 +188,12 @@ jobs:
         echo "ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}_asan" >> $GITHUB_ENV
         echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
         echo "IS_ASAN=true" >> $GITHUB_ENV
+    - name: Load UBSan specific environment variables
+      if: ${{ inputs.is-ubsan == true }}
+      run: |
+        echo "ARTIFACT_KEY=${{ matrix.build-type }}_${{ inputs.target-arch }}_ubsan" >> $GITHUB_ENV
+        echo "DISABLE_CRASH_REPORTER_TESTS=true" >> $GITHUB_ENV
+        echo "IS_UBSAN=true" >> $GITHUB_ENV
     - name: Download Generated Artifacts
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
@@ -335,6 +346,13 @@ jobs:
             echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
+          elif [ "${{ inputs.is-ubsan }}" == "true" ]; then
+            cd ..
+            export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1"
+            export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
+            export MOCHA_TIMEOUT=180000
+            cd electron
+            runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
           else
             if [ "${{ inputs.display-server }}" = "wayland" ]; then
               runuser -u builduser -- script/actions/run-tests-wayland.sh script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
@@ -362,7 +380,7 @@ jobs:
         DD_SERVICE: electron
         DD_API_KEY: ${{ secrets.DD_API_KEY }}
         DD_CIVISIBILITY_LOGS_ENABLED: true
-        DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }}"
+        DD_TAGS: "os.architecture:${{ inputs.target-arch }},os.family:${{ inputs.target-platform }},os.platform:${{ inputs.target-platform }},asan:${{ inputs.is-asan }},ubsan:${{ inputs.is-ubsan }}"
       run: |
         if ! [ -z $DD_API_KEY ] && [ -f src/electron/junit/test-results-main.xml ]; then
           cd src/electron
