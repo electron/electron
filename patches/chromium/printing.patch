@@ -735,7 +735,7 @@ index 0df0106455726f11fed749e17d3f8b2093fa1111..fe9604fe3e308560ccf6e5a98ec48d5c
                        mojom::PrintFailureReason reason) override;
  
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index eb33ee56c20761142e5ca04fd23013f5d82bd366..79f6744854e5a6ca861a1ce55e5e4af9b17e3a1e 100644
+index c137b62afc2bfb22575631477dc72f718ec6b1ed..068e583bab278fcf16c7cdd860e949a6930bbfb9 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -297,7 +297,7 @@ enum PrintFailureReason {

@@ -30,7 +30,7 @@ index 7e568b2095c2fd104f813e82031d07db902eaa00..be0e62280ebb250dd05cd90e26be77ae
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 2137ae6910aa0a18b3a1f0ad94a0b77a8cf25a72..e53be47977c8709d95634b2d60ffd2262343bf60 100644
+index 2633902fea0eb2951f400a6d0d06c268de3e4448..3e1da29f23b799d6723741d49af1b4eb95a384c7 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -2166,6 +2166,9 @@ void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
@@ -44,10 +44,10 @@ index 2137ae6910aa0a18b3a1f0ad94a0b77a8cf25a72..e53be47977c8709d95634b2d60ffd226
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 05389236aa45fc8f50382a5ae78448c4aecf8528..cd365e6bcea3b115643a701c620dd6fb9c508665 100644
+index b0c85820e881743b2fbddc06f302f6510fd458d2..96dc9f2adf1ae9ac047d1dc2710f82ff11f9b3b4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -6439,6 +6439,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -6442,6 +6442,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -60,7 +60,7 @@ index 05389236aa45fc8f50382a5ae78448c4aecf8528..cd365e6bcea3b115643a701c620dd6fb
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 16031dbd2a899032dcb892e4d58fdaad8bb90e51..cd0e03173db59afff5f23889dd97e36e461611e8 100644
+index 3a15ceebe89bed98c6f0bc1a0f2525fd01909200..78e5c1daf3da3e6d8c77b1ac3ae19d43c4ff2363 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1225,6 +1225,7 @@ class CONTENT_EXPORT WebContentsImpl
