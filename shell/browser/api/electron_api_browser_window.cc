@@ -290,21 +290,6 @@ void BrowserWindow::OnWindowHide() {
   BaseWindow::OnWindowHide();
 }
 
-void BrowserWindow::Show() {
-  web_contents()->WasShown();
-  web_contents_shown_ = true;
-  BaseWindow::Show();
-}
-
-void BrowserWindow::ShowInactive() {
-  // This method doesn't make sense for modal window.
-  if (IsModal())
-    return;
-  web_contents()->WasShown();
-  web_contents_shown_ = true;
-  BaseWindow::ShowInactive();
-}
-
 // static
 gin_helper::WrappableBase* BrowserWindow::New(gin_helper::ErrorThrower thrower,
                                               gin::Arguments* args) {

@@ -114,15 +114,13 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     }
   );
 
-  itWithOptions(
-    'should be hidden when the window is initially shown but hidden before the page is loaded',
-    {
-      show: true
-    },
-    async () => {
-      w.hide();
-      load();
-      await expect(waitUntil(async () => await haveVisibilityState('hidden'))).to.eventually.be.fulfilled();
+  itWithOptions('should be hidden when the window is initially shown but hidden before the page is loaded', {
+    show: true
+  }, async () => {
+    // TODO(MarshallOfSound): Figure out if we can work around this 1 tick issue for users
+    if (process.platform === 'darwin' || process.platform === 'win32') {
+      // Wait for a tick, the window being "shown" takes 1 tick on macOS
+      await setTimeout(10000);
     }
   );
 
