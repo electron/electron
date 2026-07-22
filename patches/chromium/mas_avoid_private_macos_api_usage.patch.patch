@@ -50,10 +50,10 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 81c78f51c9c861124f686ab50efd78b461964918..8520e733ddaa0cd1927b29853bfe99f10d407688 100644
+index 859efaa91e2ee64efdf4937316ea1b81f6c65d4b..e5b5e21c78a65806a971e047b02adf450c1b1750 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1139,6 +1139,7 @@ component("base") {
+@@ -1138,6 +1138,7 @@ component("base") {
      "//build:ios_buildflags",
      "//build/config/compiler:compiler_buildflags",
      "//third_party/modp_b64",
@@ -974,7 +974,7 @@ index f0be251cd9b825d0f8b7cf10d7771467b10a5796..9e8cae1029b289877d600f2937a551aa
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 203f8cf75131a692a771ddd6053681b2261f5fc5..ebfd663efe59b032dcf9defe18dede51ffdbe889 100644
+index 7f2a9cee63b48c5d8c09db054b6a8b03f183ebd3..586ca945c836e8147c058143bbc5f24c8a31508a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -380,6 +380,7 @@ source_set("browser") {
@@ -1189,10 +1189,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f1507999df5d37aa2e186508f506c11a3c45abdd..70a1cef7d40dd3056713b684cbe87a40f16e1c00 100644
+index 63eaa802c289e4ec1f768624cc1214a346736fb1..9f5edabe9c589c2ad08a3b6aa9d5d3ea5c257b1e 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -684,6 +684,7 @@ static_library("test_support") {
+@@ -674,6 +674,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1200,7 +1200,7 @@ index f1507999df5d37aa2e186508f506c11a3c45abdd..70a1cef7d40dd3056713b684cbe87a40
    ]
  
    data_deps = [
-@@ -1168,6 +1169,8 @@ static_library("browsertest_support") {
+@@ -1156,6 +1157,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -1209,7 +1209,7 @@ index f1507999df5d37aa2e186508f506c11a3c45abdd..70a1cef7d40dd3056713b684cbe87a40
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2069,6 +2072,7 @@ test("content_browsertests") {
+@@ -2055,6 +2058,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index f1507999df5d37aa2e186508f506c11a3c45abdd..70a1cef7d40dd3056713b684cbe87a40
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3463,6 +3467,7 @@ test("content_unittests") {
+@@ -3444,6 +3448,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",

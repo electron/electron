@@ -159,10 +159,10 @@ index 52e96d65dfc367a55815a26bd7f15beb23a8b613..b27c9a411cb76056c03635185a500723
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc b/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
-index ce04564ea283d54d9014354b40b431b9aafb8f48..ed74be5b08e3c057d90dd1c4b766b18cf9b6917a 100644
+index 9ff06799cf5a5a512da57c08ee8c4b4f2ca6bf0c..f1b6bf771ff12a1904ef7e1f481a00f8a1b7bdbb 100644
 --- a/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
 +++ b/chrome/browser/ui/views/picture_in_picture/document_pip_host.cc
-@@ -412,8 +412,7 @@ bool DocumentPipHost::IsWebContentsCreationOverridden(
+@@ -429,8 +429,7 @@ bool DocumentPipHost::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -173,10 +173,10 @@ index ce04564ea283d54d9014354b40b431b9aafb8f48..ed74be5b08e3c057d90dd1c4b766b18c
    // in AddNewContents().
    return false;
 diff --git a/chrome/browser/ui/views/picture_in_picture/document_pip_host.h b/chrome/browser/ui/views/picture_in_picture/document_pip_host.h
-index e5ce6a6cdc7591172c7021852041f06c7bcaffcc..67428773f9f840e622faa5af2a1a79ac6b298a8f 100644
+index 8c1215b69a4cae60cbc07eb7c4d68397bf44226a..75889566b3d6f49b30ec22857740de34d393d820 100644
 --- a/chrome/browser/ui/views/picture_in_picture/document_pip_host.h
 +++ b/chrome/browser/ui/views/picture_in_picture/document_pip_host.h
-@@ -135,8 +135,7 @@ class DocumentPipHost : public content::WebContentsUserData<DocumentPipHost>,
+@@ -150,8 +150,7 @@ class DocumentPipHost : public content::WebContentsUserData<DocumentPipHost>,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -251,10 +251,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3a86c638e6ae38fd577758748b29e31c8787106a..a9ff1a713414ac8192e460d976e39d10fa381115 100644
+index cd365e6bcea3b115643a701c620dd6fb9c508665..593fbe49808c27714714adf994a80e743244adf7 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5514,8 +5514,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5509,8 +5509,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
