@@ -13,6 +13,7 @@ description: 'Ensures proper binaries are in place'
 # 9. Install windows toolchain on Windows
 # 10. Fix node binary on Windows
 # 11. Fix rc binary on Windows
+# 12. Fix clang-format binary on Windows
 inputs:
   target-platform:
     description: 'Target platform, should be linux, win, macos'
@@ -148,6 +149,13 @@ runs:
       run: |
         $nodedeps = e d gclient getdep --deps-file=src/DEPS -r src/third_party/node/win | ConvertFrom-JSON
         python3 src\third_party\depot_tools\download_from_google_storage.py --no_resume --no_auth --bucket chromium-nodejs -o src\third_party\node\win\node.exe $nodedeps.object_name
+    - name: Download clang-format
+      if: ${{ inputs.target-platform == 'win' }}
+      shell: powershell
+      run: |
+        $clangformatdeps = e d gclient getdep --deps-file=src/DEPS -r src/buildtools/win-format | ConvertFrom-JSON
+        New-Item -ItemType Directory -Force -Path src\buildtools\win-format | Out-Null
+        python3 src\third_party\depot_tools\download_from_google_storage.py --no_resume --no_auth --bucket chromium-clang-format -o src\buildtools\win-format\clang-format.exe $clangformatdeps.object_name
     - name: Install rc
       if: ${{ inputs.target-platform == 'win' }}
       shell: bash
