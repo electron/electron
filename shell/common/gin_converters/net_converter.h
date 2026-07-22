@@ -52,6 +52,12 @@ struct Converter<net::CertPrincipal> {
 };
 
 template <>
+struct Converter<const net::HttpResponseHeaders*> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::HttpResponseHeaders* headers);
+};
+
+template <>
 struct Converter<net::HttpResponseHeaders*> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    net::HttpResponseHeaders* headers);
