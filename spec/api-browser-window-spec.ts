@@ -1133,6 +1133,45 @@ describe('BrowserWindow module', () => {
         });
       });
 
+      describe('did-navigate event', () => {
+        let server = null as unknown as http.Server;
+        let url = null as unknown as string;
+        before(async () => {
+          server = http.createServer((req, res) => {
+            res.setHeader('x-single-header', 'single');
+            res.setHeader('x-multi-header', ['multi1', 'multi2']);
+            res.end('');
+          });
+          url = (await listen(server)).url;
+        });
+
+        after(() => {
+          server.close();
+        });
+
+        it('provides response headers on did-navigate and did-frame-navigate', async () => {
+          const didFrameNavigate = once(w.webContents, 'did-frame-navigate');
+          const didNavigate = once(w.webContents, 'did-navigate');
+          w.loadURL(url);
+          const [, , frameHttpResponseCode, , , , , frameResponseHeaders] = await didFrameNavigate;
+          expect(frameHttpResponseCode).to.equal(200);
+          expect(frameResponseHeaders['x-single-header']).to.deep.equal(['single']);
+          expect(frameResponseHeaders['x-multi-header']).to.deep.equal(['multi1', 'multi2']);
+          const [, , httpResponseCode, , responseHeaders] = await didNavigate;
+          expect(httpResponseCode).to.equal(200);
+          expect(responseHeaders['x-single-header']).to.deep.equal(['single']);
+          expect(responseHeaders['x-multi-header']).to.deep.equal(['multi1', 'multi2']);
+        });
+
+        it('provides empty response headers for non HTTP navigations', async () => {
+          const didNavigate = once(w.webContents, 'did-navigate');
+          w.loadURL('about:blank');
+          const [, , httpResponseCode, , responseHeaders] = await didNavigate;
+          expect(httpResponseCode).to.equal(-1);
+          expect(responseHeaders).to.deep.equal({});
+        });
+      });
+
       describe('ordering', () => {
         let server = null as unknown as http.Server;
         let url = null as unknown as string;

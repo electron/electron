@@ -402,6 +402,8 @@ Returns:
 * `url` string
 * `httpResponseCode` Integer - -1 for non HTTP navigations
 * `httpStatusText` string - empty for non HTTP navigations
+* `responseHeaders` Record\<string, string[]\> - The HTTP response headers keyed
+  by lowercased header name - empty for non HTTP navigations
 
 Emitted when a main frame navigation is done.
 
@@ -420,6 +422,8 @@ Returns:
 * `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
+* `responseHeaders` Record\<string, string[]\> - The HTTP response headers keyed
+  by lowercased header name - empty for non HTTP navigations
 
 Emitted when any frame navigation is done.
 
