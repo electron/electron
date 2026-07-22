@@ -63,13 +63,3 @@ Are you getting stuck anywhere? Here are a few links to places to look:
   the [GitHub issue tracker][issue-tracker] to see if any existing issues match your
   problem. If not, feel free to fill out our bug report template and submit a new issue.
 
-<!-- Links -->
-
-[tutorial]: tutorial-1-prerequisites.md
-[api documentation]: ../api/app.md
-[chromium]: https://www.chromium.org/
-[discord]: https://discord.gg/electronjs
-[examples]: examples.md
-[fiddle]: https://www.electronjs.org/fiddle
-[issue-tracker]: https://github.com/electron/electron/issues
-[node]: https://nodejs.org/
