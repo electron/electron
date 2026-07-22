@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 39ea3dfbf52cc69dbe79a6a50fcced0300127aef..900d9b752af3e80ce3a8c42b29c555a28cc4678a 100644
+index 91507541a5bb03a12ea62ee83c71550a8c07b9ab..7a9ab0ab6370ab8b9a5dccb71b60586a726ff6ab 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1682,8 +1682,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1674,8 +1674,7 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,7 +93,7 @@ index 39ea3dfbf52cc69dbe79a6a50fcced0300127aef..900d9b752af3e80ce3a8c42b29c555a2
    if (actor::HasActorTaskPreventingNewWebContents(opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -1705,7 +1704,7 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1697,7 +1696,7 @@ bool Browser::IsWebContentsCreationOverridden(
    return (window_container_type ==
                content::mojom::WindowContainerType::BACKGROUND &&
            ShouldCreateBackgroundContents(source_site_instance, opener_url,
@@ -251,10 +251,10 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index cd365e6bcea3b115643a701c620dd6fb9c508665..593fbe49808c27714714adf994a80e743244adf7 100644
+index 96dc9f2adf1ae9ac047d1dc2710f82ff11f9b3b4..3c57cfa2ee5fa5bc594c66618173ec1ce1d246ef 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -5509,8 +5509,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -5512,8 +5512,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    if (delegate_ &&
        delegate_->IsWebContentsCreationOverridden(
            opener, source_site_instance, params.window_container_type,
