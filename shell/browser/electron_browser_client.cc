@@ -340,7 +340,8 @@ const extensions::Extension* GetEnabledExtensionFromSecurityPrincipal(
   if (!registry)
     return nullptr;
 
-  return registry->enabled_extensions().GetByID(principal.GetHost());
+  return registry->enabled_extensions().GetByID(
+      extensions::ExtensionId(principal.GetHost()));
 }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
