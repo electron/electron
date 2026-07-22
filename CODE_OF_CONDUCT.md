@@ -60,7 +60,7 @@ Community moderators take reports of violations seriously and will make every ef
 
 ### Confidentiality
 
-Information shared as part of a Code of Conduct violation report or investigation is exempt from the restricted behavior of "violating confidentiality" as defined in this Code of Conduct. All information shared will be handled confidentially and in a manner consistent with the OpenJS's GDPR compliant [Privacy Policy]([url](https://images.prismic.io/openjsf/ba00b254-685f-4e54-b1ca-17984b0f3e55_OpenJS-Foundation-Privacy-Policy-2019-11-15.pdf)).
+Information shared as part of a Code of Conduct violation report or investigation is exempt from the restricted behavior of "violating confidentiality" as defined in this Code of Conduct. All information shared will be handled confidentially and in a manner consistent with the OpenJS's GDPR compliant [Privacy Policy](https://images.prismic.io/openjsf/ba00b254-685f-4e54-b1ca-17984b0f3e55_OpenJS-Foundation-Privacy-Policy-2019-11-15.pdf).
 
 ## Addressing and Repairing Harm
 
