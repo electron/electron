@@ -137,6 +137,7 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   [dialog setAllowedFileTypes:file_types];
+  [dialog setAllowsOtherFileTypes:YES];
 #pragma clang diagnostic pop
 
   if (count <= 1)
