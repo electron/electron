@@ -321,7 +321,8 @@ describe('nativeImage module', () => {
       expect(image.getSize()).to.deep.equal({ width: 256, height: 256 });
     });
 
-    ifdescribe(process.platform === 'win32')('when loading .ico files from ASAR archives', () => {
+    ifdescribe(process.platform === 'win32')('when loading .ico files from ASAR archives', function () {
+      this.retries(0);
       const archivePath = path.join(fixturesPath, 'test.asar', 'icon.asar');
 
       // Packed cases use distinct members so a reverted implementation cannot reuse a stale extracted path.
