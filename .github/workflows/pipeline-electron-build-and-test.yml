@@ -54,6 +54,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-ubsan:
+        description: 'Building the Undefined Behavior Sanitizer (UBSan) Linux build'
+        required: false
+        type: boolean
+        default: false
       enable-ssh:
         description: 'Enable SSH debugging'
         required: false
@@ -61,7 +66,7 @@ on:
         default: false
 
 concurrency:
-  group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-build-and-test-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 permissions: {}
@@ -81,6 +86,7 @@ jobs:
       generate-symbols: ${{ inputs.generate-symbols }}
       upload-to-storage: ${{ inputs.upload-to-storage }}
       is-asan: ${{ inputs.is-asan }}
+      is-ubsan: ${{ inputs.is-ubsan }}
       enable-ssh: ${{ inputs.enable-ssh }}
     secrets: inherit
   test:
@@ -96,5 +102,6 @@ jobs:
       test-runs-on: ${{ inputs.test-runs-on }}
       test-container: ${{ inputs.test-container }}
       is-asan: ${{ inputs.is-asan }}
+      is-ubsan: ${{ inputs.is-ubsan }}
       enable-ssh: ${{ inputs.enable-ssh }}
     secrets: inherit
