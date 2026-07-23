@@ -115,6 +115,10 @@ void ResolveAsBookmark(gin_helper::Promise<v8::Local<v8::Value>> promise,
                        const electron::api::BookmarkInfo& info) {
   v8::Isolate* const isolate = promise.isolate();
   v8::HandleScope scope{isolate};
+  // Enter the promise's stored context before building the dictionary —
+  // `isolate->GetCurrentContext()` is empty when `ui::Clipboard` reads run
+  // genuinely async (e.g. ozone/wayland) with no JS frame on the stack.
+  v8::Context::Scope context_scope{promise.GetContext()};
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("title", info.title);
   dict.Set("url", info.url);

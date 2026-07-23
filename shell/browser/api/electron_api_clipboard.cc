@@ -298,7 +298,12 @@ v8::Local<v8::Promise> Clipboard::Read(ui::ClipboardBuffer buffer,
                      ui::ClipboardBuffer buf, std::vector<std::string> types) {
                     v8::Isolate* iso = promise.isolate();
                     v8::HandleScope scope{iso};
-                    v8::Local<v8::Context> ctx = iso->GetCurrentContext();
+                    // Build the result inside the promise's stored context —
+                    // `iso->GetCurrentContext()` is empty here on backends
+                    // where `ui::Clipboard` reads are genuinely async (e.g.
+                    // ozone/wayland), since no JS frame is on the stack.
+                    v8::Local<v8::Context> ctx = promise.GetContext();
+                    v8::Context::Scope context_scope{ctx};
 
                     ClipboardItem* item = ClipboardItem::CreateForRead(
                         iso, buf, std::move(types));
