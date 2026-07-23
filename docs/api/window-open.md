@@ -12,7 +12,7 @@ useful for app sub-windows that act as preference panels, or similar, as the
 parent can render to the sub-window directly, as if it were a `div` in the
 parent. This is the same behavior as in the browser.
 
-Electron pairs this native Chrome `Window` with a BrowserWindow under the hood.
+Electron pairs this native Chromium `Window` with a BrowserWindow under the hood.
 You can take advantage of all the customization available when creating a
 BrowserWindow in the main process by using `webContents.setWindowOpenHandler()`
 for renderer-created windows.
