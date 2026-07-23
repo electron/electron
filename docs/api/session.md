@@ -821,7 +821,7 @@ Returns `Promise<void>` - Resolves when all connections are closed.
 Returns `Promise<GlobalResponse>` - see [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response).
 
 Sends a request, similarly to how `fetch()` works in the renderer, using
-Chrome's network stack. This differs from Node's `fetch()`, which uses
+Chromium's network stack. This differs from Node's `fetch()`, which uses
 Node.js's HTTP stack.
 
 Example:
