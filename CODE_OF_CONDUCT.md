@@ -3,7 +3,7 @@
 As a member project of the OpenJS Foundation, Electron uses [Contributor Covenant v3.0](https://contributor-covenant.org/version/3/0/code_of_conduct) as their code of conduct. The full text, including modifications made by the OpenJS Foundation, is included [below](https://github.com/electron/electron/blob/main/CODE_OF_CONDUCT.md#contributor-covenant-code-of-conduct) in English. An additional change was made in this document to include the appropriate Electron reporting email, rather than refer back to the reporting section found in the OpenJS Foundation’s document. Translations for the original text are available from the Contributor Covenant organization:
 
 * [contributor-covenant.org/translations](https://www.contributor-covenant.org/translations)
-* [github.com/ContributorCovenant](https://github.com/ContributorCovenant/contributor_covenant/tree/release/content/version/2/0)
+* [github.com/ContributorCovenant](https://github.com/ContributorCovenant/contributor_covenant/tree/release/content/version/3/0)
 
 ---
 
