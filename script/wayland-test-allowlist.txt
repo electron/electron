@@ -3,3 +3,4 @@ spec/types-spec.ts
 spec/version-bump-spec.ts
 spec/api-app-spec.ts
 spec/api-browser-window-spec.ts
+spec/api-clipboard-spec.ts
