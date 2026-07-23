@@ -180,6 +180,20 @@ void ProxyingAIManager::CreateProofreader(
   NOTIMPLEMENTED();
 }
 
+void ProxyingAIManager::CanCreateClassifier(
+    blink::mojom::AIClassifierCreateOptionsPtr options,
+    CanCreateClassifierCallback callback) {
+  std::move(callback).Run(
+      blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
+}
+
+void ProxyingAIManager::CreateClassifier(
+    mojo::PendingRemote<blink::mojom::AIManagerCreateClassifierClient> client,
+    blink::mojom::AIClassifierCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
+  NOTIMPLEMENTED();
+}
+
 void ProxyingAIManager::CanCreateSemanticEmbedder(
     CanCreateSemanticEmbedderCallback callback) {
   std::move(callback).Run(

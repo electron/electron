@@ -13,6 +13,7 @@
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom.h"
+#include "third_party/blink/public/mojom/ai/ai_classifier.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_proofreader.mojom-forward.h"
 #include "third_party/blink/public/mojom/ai/ai_rewriter.mojom-forward.h"
@@ -88,6 +89,14 @@ class ProxyingAIManager : public base::SupportsUserData::Data,
       mojo::PendingRemote<blink::mojom::AIManagerCreateProofreaderClient>
           client,
       blink::mojom::AIProofreaderCreateOptionsPtr options,
+      mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
+      override;
+  void CanCreateClassifier(blink::mojom::AIClassifierCreateOptionsPtr options,
+                           CanCreateClassifierCallback callback) override;
+  void CreateClassifier(
+      mojo::PendingRemote<blink::mojom::AIManagerCreateClassifierClient>
+          client,
+      blink::mojom::AIClassifierCreateOptionsPtr options,
       mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
       override;
   void CanCreateSemanticEmbedder(

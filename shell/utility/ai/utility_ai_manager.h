@@ -17,6 +17,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
+#include "third_party/blink/public/mojom/ai/ai_classifier.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_language_model.mojom-forward.h"
 #include "third_party/blink/public/mojom/ai/ai_manager.mojom.h"
 #include "third_party/blink/public/mojom/ai/ai_proofreader.mojom-forward.h"
@@ -107,6 +108,14 @@ class UtilityAIManager : public blink::mojom::AIManager {
       mojo::PendingRemote<blink::mojom::AIManagerCreateProofreaderClient>
           client,
       blink::mojom::AIProofreaderCreateOptionsPtr options,
+      mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
+      override;
+  void CanCreateClassifier(blink::mojom::AIClassifierCreateOptionsPtr options,
+                           CanCreateClassifierCallback callback) override;
+  void CreateClassifier(
+      mojo::PendingRemote<blink::mojom::AIManagerCreateClassifierClient>
+          client,
+      blink::mojom::AIClassifierCreateOptionsPtr options,
       mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor)
       override;
   void CanCreateSemanticEmbedder(

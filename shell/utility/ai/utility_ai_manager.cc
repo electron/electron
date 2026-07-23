@@ -540,6 +540,20 @@ void UtilityAIManager::CreateProofreader(
   NOTIMPLEMENTED();
 }
 
+void UtilityAIManager::CanCreateClassifier(
+    blink::mojom::AIClassifierCreateOptionsPtr options,
+    CanCreateClassifierCallback callback) {
+  std::move(callback).Run(
+      blink::mojom::ModelAvailabilityCheckResult::kUnavailableUnknown);
+}
+
+void UtilityAIManager::CreateClassifier(
+    mojo::PendingRemote<blink::mojom::AIManagerCreateClassifierClient> client,
+    blink::mojom::AIClassifierCreateOptionsPtr options,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
+  NOTIMPLEMENTED();
+}
+
 void UtilityAIManager::CanCreateSemanticEmbedder(
     CanCreateSemanticEmbedderCallback callback) {
   std::move(callback).Run(

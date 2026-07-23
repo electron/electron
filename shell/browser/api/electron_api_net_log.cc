@@ -177,7 +177,7 @@ void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
   }
   net_log_exporter_->Start(
       std::move(output_file), std::move(custom_constants), capture_mode,
-      net::NetLogFileFormat::kJson, max_file_size,
+      max_file_size,
       base::BindOnce(&NetLog::NetLogStarted, base::Unretained(this)));
 }
 
