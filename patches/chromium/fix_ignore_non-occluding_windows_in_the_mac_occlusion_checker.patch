@@ -21,10 +21,10 @@ layered windows are ignored there).
 This patch can be removed if the change is upstreamed to Chromium.
 
 diff --git a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
-index ae4460db9dc4c5b88d07f4747fcd90a839c994c5..294819ae00defa3d45f4afb7419c814b33f59320 100644
+index e508bdf0a59bd3423cf1b710d821ca3e2d24843c..6da4594500b256c357bd91f1ce96b214e0e03e06 100644
 --- a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
 +++ b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
-@@ -422,6 +422,24 @@ - (void)performOcclusionStateUpdates {
+@@ -420,6 +420,24 @@ - (void)performOcclusionStateUpdates {
    _updatingOcclusionStates = NO;
  }
  
@@ -49,7 +49,7 @@ index ae4460db9dc4c5b88d07f4747fcd90a839c994c5..294819ae00defa3d45f4afb7419c814b
  // Returns YES if `window` is occluded, either according to macOS or via
  // our manual occlusion calculation.
  - (BOOL)isWindowOccluded:(NSWindow*)window
-@@ -464,6 +482,11 @@ - (BOOL)isWindowOccluded:(NSWindow*)window
+@@ -462,6 +480,11 @@ - (BOOL)isWindowOccluded:(NSWindow*)window
        continue;
      }
  
