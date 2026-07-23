@@ -6,7 +6,7 @@ Subject: fix: handle embedder windows shown after WebContentsViewCocoa attach
 The occlusion checker assumes windows are shown before or at the same
 time as a WebContentsViewCocoa is attached. Embedders like Electron
 support creating a window hidden, attaching web contents, and showing
-later. This breaks three assumptions:
+later. This breaks two assumptions:
 
 1. updateWebContentsVisibility only checks -[NSWindow isOccluded], which
    defaults to NO for never-shown windows, so viewDidMoveToWindow
@@ -18,35 +18,16 @@ later. This breaks three assumptions:
    so no checker notification fires on show and the view never updates
    to kVisible.
 
-3. performOcclusionStateUpdates iterates orderedWindows and marks
-   not-yet-shown windows as occluded (their occlusionState lacks the
-   Visible bit), which stops painting before first show.
-
-Fix by also checking occlusionState in updateWebContentsVisibility,
+Fix by also checking occlusionState in updateWebContentsVisibility and
 responding to macOS-originated notifications in
-windowChangedOcclusionState:, and skipping non-visible windows in
-performOcclusionStateUpdates.
+windowChangedOcclusionState:.
+
+not-yet-shown windows in performOcclusionStateUpdates are handled
+upstream, which clears their occlusion state so painting is not stopped
+before first show.
 
 This patch can be removed if the changes are upstreamed to Chromium.
 
-diff --git a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
-index e508bdf0a59bd3423cf1b710d821ca3e2d24843c..ae4460db9dc4c5b88d07f4747fcd90a839c994c5 100644
---- a/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
-+++ b/content/app_shim_remote_cocoa/web_contents_occlusion_checker_mac.mm
-@@ -400,9 +400,11 @@ - (void)performOcclusionStateUpdates {
-   for (NSWindow* window in windowsFromFrontToBack) {
-     // The fullscreen transition causes spurious occlusion notifications.
-     // See https://crbug.com/1081229 . Also, ignore windows that don't have
--    // web contentses.
-+    // web contentses, and windows that aren't visible (embedders like
-+    // Electron may create windows hidden with web contents already attached;
-+    // marking these as occluded would stop painting before first show).
-     if (window == _windowReceivingFullscreenTransitionNotifications ||
--        ![window containsWebContentsViewCocoa])
-+        ![window isVisible] || ![window containsWebContentsViewCocoa])
-       continue;
- 
-     // `WebContentsViewCocoa` handles hidden windows. Clear their occlusion
 diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
 index 218edc0a8a88955eab5cfd0e440e000b33644224..b628accc6118b9471fe818b39144cb97dc7ad3f2 100644
 --- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
