@@ -43,6 +43,16 @@ more MIME-typed representations. The constructed item can be passed to
 `Promise` payload is resolved asynchronously when `clipboard.write()` is
 called.
 
+> [!WARNING]
+> Do not construct a `ClipboardItem` directly from an untrusted object (for
+> example, a payload received from a renderer over IPC). The MIME keys are a
+> capability surface: `text/uri-list` places real file references on the OS
+> clipboard (letting a file be pasted into another application), and the
+> `electron application/osclipboard;format=...` and `web`-prefixed (e.g.
+> `web application/x.my-format`) formats write raw platform data. Validate
+> and allowlist the MIME types — and the shape of each payload — before
+> building a `ClipboardItem` from data you did not author.
+
 ```js
 // Each `ClipboardItem` describes one clipboard entry with one or more
 // MIME-typed representations. The bookmark custom format takes a structured
