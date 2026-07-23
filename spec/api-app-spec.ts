@@ -359,6 +359,19 @@ describe('app module', () => {
       });
     });
 
+    it('preserves NUL followed by whitespace in additional data', async () => {
+      // The real invariant here is the V8-serialized format of the data. Using
+      // a string here is just a convenient way to test the invariant.
+      const expectedAdditionalData = {
+        value: 'foo\0\tbar'
+      };
+
+      await testArgumentPassing({
+        args: ['--send-data', `--data-content=${JSON.stringify(expectedAdditionalData)}`],
+        expectedAdditionalData
+      });
+    });
+
     it('sends and receives boolean data', async () => {
       await testArgumentPassing({
         args: ['--send-data', '--data-content=false'],
