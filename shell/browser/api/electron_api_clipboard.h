@@ -105,8 +105,9 @@ class Clipboard {
                                       const v8::LocalVector<v8::Value>& items,
                                       v8::Isolate* isolate);
 
-  // Convenience wrapper that funnels through `Write` so the public
-  // `writeText` API uses the same atomic-write path.
+  // Convenience wrapper for the common `clipboard.writeText()` call. Writes
+  // plain text via a single `ScopedClipboardWriter` and returns a Promise so
+  // the JS-facing shape matches W3C `clipboard.writeText`.
   static v8::Local<v8::Promise> WriteText(ui::ClipboardBuffer buffer,
                                           const std::u16string& text,
                                           v8::Isolate* isolate);

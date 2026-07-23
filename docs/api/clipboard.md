@@ -52,11 +52,15 @@ that follow the W3C [web custom format proposal](https://github.com/w3c/editing/
 ```js
 const { clipboard, ClipboardItem } = require('electron')
 
-clipboard.write([
-  new ClipboardItem({
-    'web application/x.my-app-clip': new Blob(['arbitrary payload'])
-  })
-])
+async function writeClipboard () {
+  await clipboard.write([
+    new ClipboardItem({
+      'web application/x.my-app-clip': new Blob(['arbitrary payload'])
+    })
+  ])
+}
+
+writeClipboard()
 ```
 
 On Linux there is also a `selection` clipboard. It is exposed via the
@@ -121,7 +125,11 @@ API.
 ```js
 const { clipboard } = require('electron')
 
-clipboard.writeText('hello i am a bit of text!')
+async function writeClipboardText () {
+  await clipboard.writeText('hello i am a bit of text!')
+}
+
+writeClipboardText()
 ```
 
 ### `clipboard.read()`
@@ -161,17 +169,21 @@ const { clipboard, ClipboardItem, nativeImage } = require('electron')
 
 const png = nativeImage.createFromPath('/path/to/icon.png').toPNG()
 
-clipboard.write([
-  new ClipboardItem({
-    'text/plain': 'hello',
-    'text/html': '<b>hello</b>',
-    'image/png': new Blob([png], { type: 'image/png' }),
-    'electron application/bookmark': {
-      title: 'Electron',
-      url: 'https://electronjs.org'
-    }
-  })
-])
+async function writeClipboard () {
+  await clipboard.write([
+    new ClipboardItem({
+      'text/plain': 'hello',
+      'text/html': '<b>hello</b>',
+      'image/png': new Blob([png], { type: 'image/png' }),
+      'electron application/bookmark': {
+        title: 'Electron',
+        url: 'https://electronjs.org'
+      }
+    })
+  ])
+}
+
+writeClipboard()
 ```
 
 ### `clipboard.has(mimetype)`

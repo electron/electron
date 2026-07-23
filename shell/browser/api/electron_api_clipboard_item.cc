@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_clipboard_item.h"
 
+#include <algorithm>
 #include <map>
 #include <optional>
 #include <string>
@@ -544,25 +545,32 @@ void ClipboardItem::WriteTo(ui::ScopedClipboardWriter& writer) const {
 
 v8::Local<v8::Promise> ClipboardItem::GetType(const std::string& mime,
                                               v8::Isolate* const isolate) {
-  // Read-side: delegate to the per-MIME async read path bound to this
-  // item's source buffer. No v8 closures are captured at `clipboard.read()`
-  // time — the platform clipboard is queried lazily here.
-  if (is_read_side_)
+  const bool has_type =
+      std::find(types_.begin(), types_.end(), mime) != types_.end();
+
+  // Read-side: when `mime` is one of this item's types, delegate to the
+  // per-MIME async read path bound to this item's source buffer. `ReadMime`
+  // manages its own promise (no v8 closures are captured at
+  // `clipboard.read()` time — the platform clipboard is queried lazily).
+  // A missing `mime` falls through to the shared reject path below.
+  if (has_type && is_read_side_)
     return ReadMime(buffer_, mime, isolate);
 
-  // Constructed: resolve with the pre-parsed payload for this MIME,
-  // mirroring the W3C `ClipboardItem.getType()` shape. Reject with the
-  // W3C-style error string if the type isn't present.
   gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  auto it = payloads_.find(mime);
-  if (it == payloads_.end()) {
+  // Per the W3C `ClipboardItem.getType()` contract, reject when `mime` isn't
+  // one of this item's `types`.
+  if (!has_type) {
     promise.RejectWithErrorMessage("The type '" + mime +
                                    "' was not found in the ClipboardItem");
     return handle;
   }
 
+  // Constructed: resolve with the pre-parsed payload for this MIME,
+  // mirroring the W3C `ClipboardItem.getType()` shape. The membership check
+  // above guarantees the lookup succeeds (`types_` and `payloads_` are kept
+  // in sync by the constructor).
   std::visit(
       [&](const auto& payload) {
         using T = std::decay_t<decltype(payload)>;
@@ -575,7 +583,7 @@ v8::Local<v8::Promise> ClipboardItem::GetType(const std::string& mime,
                           base::span<const uint8_t>(payload));
         }
       },
-      it->second);
+      payloads_.find(mime)->second);
 
   return handle;
 }
