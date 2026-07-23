@@ -3,12 +3,73 @@ From: Shelley Vohr <shelley.vohr@gmail.com>
 Date: Fri, 7 Jun 2019 13:59:37 -0700
 Subject: printing.patch
 
-Add changeset that was previously applied to sources in chromium_src. The
-majority of changes originally come from these PRs:
-  * https://github.com/electron/electron/pull/1835
-  * https://github.com/electron/electron/pull/8596
+Adapts Chromium's printing stack to Electron, which has no Profile or
+PrefService, does not surface Chromium's print error dialogs, does not use
+enterprise content analysis, and needs to support programmatic and silent
+printing driven by webContents.print(options). The changes originate from
+https://github.com/electron/electron/pull/1835 and
+https://github.com/electron/electron/pull/8596 and have been extended since.
 
-This patch also fixes callback for manual user cancellation and success.
+Per-file summary:
+
+chrome/browser/printing/print_job.cc
+  Electron has no PrefService, so the helpers that read prefs off a
+  WebContents are compiled out and their callers pass nullptr. On Windows
+  use_skia_ is forced to false since there is no managed pref to consult.
+
+chrome/browser/printing/print_view_manager_base.cc / .h
+  Adds a CompletionCallback (callback_) and a PrintStatus enum so PrintNow()
+  can report success, failure, cancellation, or invalid settings (with a
+  human-readable reason) back to webContents.print(). PrintNow() forwards the
+  job settings to the renderer. All Chromium print error dialogs are compiled
+  out because Electron reports errors through the callback instead, and the
+  enterprise content analysis paths are disabled. Printing is always reported
+  as enabled (no kPrintingEnabled pref). Adds ShowInvalidPrinterSettingsError()
+  and UserInitCanceled(), skips connecting the PDF renderer on RFH state
+  change, and avoids disconnecting an in-flight print job except for
+  window.print().
+
+chrome/browser/printing/printer_query.cc
+  UpdatePrintSettings() resets the context and re-applies default settings
+  before applying the new job settings so state from a previous print job does
+  not leak into the next one.
+
+chrome/browser/printing/printer_query_oop.cc
+  Only registers the print document client when a UI client id is present, and
+  prefills the local printing context with cached settings before the
+  in-browser system dialog is shown so user options are reflected, falling back
+  to defaults if prefilling fails.
+
+components/printing/browser/print_manager.cc / .h
+  Adds a default no-op ShowInvalidPrinterSettingsError() to the base
+  PrintManager.
+
+components/printing/common/print.mojom
+  PrintRequestedPages() takes a settings dictionary, PrintManagerHost gains
+  ShowInvalidPrinterSettingsError(), and an Electron-only UpdatePrintSettings()
+  is added so settings supplied by webContents.print(options) can be resolved
+  in the browser.
+
+components/printing/renderer/print_render_frame_helper.cc / .h
+  Threads the settings dictionary through Print()/InitPrintSettings(), adds
+  silent printing support (bypasses the settings UI, fits silent PDF output to
+  the printable area), resolves supplied settings via the browser's
+  UpdatePrintSettings(), reports invalid settings back to the browser, and
+  initializes the preview context with the frame.
+
+printing/printing_context.cc / .h
+  Makes ResetSettings() public and stops UpdatePrintSettings() from calling it
+  implicitly so callers control when settings are reset.
+
+printing/printing_context_linux.cc
+  AskUserForSettings() lazily creates a print dialog with default settings
+  instead of bailing out, which is required for programmatic/silent printing on
+  Linux.
+
+The equivalent browser-side print preview logic lives in Electron's own
+PrintViewManagerElectron (shell/browser/printing), so this patch does not need
+to modify the upstream chrome/browser/printing/print_view_manager.{cc,h}, which
+Electron does not compile.
 
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
 index bb7a4f4ff71cdbd98461feeac00cea5949d260c8..fff4e09b5891adacd6d61bdd31c1badf576cc6f5 100644
@@ -67,128 +128,6 @@ index bb7a4f4ff71cdbd98461feeac00cea5949d260c8..fff4e09b5891adacd6d61bdd31c1badf
                 ? PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3_WITH_TYPE42_FONTS
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
-diff --git a/chrome/browser/printing/print_view_manager.cc b/chrome/browser/printing/print_view_manager.cc
-index d22df27c10d578c93b2e52f148794b8eb143dcde..ce267d8107b633f758f6839345066b86ef28b2eb 100644
---- a/chrome/browser/printing/print_view_manager.cc
-+++ b/chrome/browser/printing/print_view_manager.cc
-@@ -423,10 +423,7 @@ void PrintViewManager::GetPrintPreviewParams(
-   // `job_settings` does not yet contain the rasterized PDF dpi, so if the user
-   // has the print preference set, fetch it for use in
-   // `PrintSettingsFromJobSettings()`.
--  content::BrowserContext* context =
--      web_contents() ? web_contents()->GetBrowserContext() : nullptr;
--  PrefService* prefs =
--      context ? Profile::FromBrowserContext(context)->GetPrefs() : nullptr;
-+  PrefService* prefs = nullptr;
-   if (prefs && prefs->HasPrefPath(prefs::kPrintRasterizePdfDpi)) {
-     int value = prefs->GetInteger(prefs::kPrintRasterizePdfDpi);
-     if (value > 0) {
-@@ -452,7 +449,27 @@ void PrintViewManager::GetPrintPreviewParams(
-     }
-   }
- 
--#if BUILDFLAG(IS_WIN)
-+#if BUILDFLAG(ENABLE_OOP_PRINTING)
-+  if (ShouldPrintJobOop() && !query_with_ui_client_id().has_value()) {
-+    RegisterSystemPrintClient();
-+  }
-+#endif
-+
-+  std::unique_ptr<PrinterQuery> query =
-+      queue()->CreatePrinterQuery(GetCurrentTargetFrame()->GetGlobalId());
-+  auto* query_ptr = query.get();
-+  // We need to clone this before calling SetSettings because some environments
-+  // evaluate job_settings.Clone() first, and some std::move(job_settings) first,
-+  // for the former things work correctly but for the latter the cloned value is null.
-+  auto job_settings_copy = job_settings.Clone();
-+  query_ptr->SetSettings(
-+      std::move(job_settings_copy),
-+      base::BindOnce(&PrintViewManager::CompleteGetPrintPreviewParams,
-+                     weak_factory_.GetWeakPtr(), std::move(query),
-+                     std::move(job_settings), std::move(print_settings),
-+                     std::move(callback)));
-+
-+#if 0 // See https://chromium-review.googlesource.com/412367
-   // TODO(crbug.com/40260379):  Remove this if the printable areas can be made
-   // fully available from `PrintBackend::GetPrinterSemanticCapsAndDefaults()`
-   // for in-browser queries.
-@@ -474,8 +491,17 @@ void PrintViewManager::GetPrintPreviewParams(
-   }
- #endif
- 
--  CompleteGetPrintPreviewParams(std::move(job_settings),
--                                std::move(print_settings), std::move(callback));
-+}
-+
-+void PrintViewManager::UpdatePrintSettings(
-+    base::DictValue job_settings,
-+    UpdatePrintSettingsCallback callback) {
-+  if (job_settings.empty()) {
-+    std::move(callback).Run(nullptr);
-+    return;
-+  }
-+  AppendPrintPreviewSettings(std::move(job_settings), /*is_pdf=*/false);
-+  GetPrintPreviewParams(std::move(callback));
- }
- 
- void PrintViewManager::SetupScriptedPrintPreview(
-@@ -705,12 +731,13 @@ void PrintViewManager::OnDidUpdatePrintableArea(
-   }
-   PRINTER_LOG(EVENT) << "Paper printable area updated for vendor id "
-                      << print_settings->requested_media().vendor_id;
--  CompleteGetPrintPreviewParams(std::move(job_settings),
-+  CompleteGetPrintPreviewParams(nullptr /* printer_query */, std::move(job_settings),
-                                 std::move(print_settings), std::move(callback));
- }
- #endif
- 
- void PrintViewManager::CompleteGetPrintPreviewParams(
-+    std::unique_ptr<PrinterQuery> printer_query,
-     base::DictValue job_settings,
-     std::unique_ptr<PrintSettings> print_settings,
-     GetPrintPreviewParamsCallback callback) {
-@@ -718,7 +745,8 @@ void PrintViewManager::CompleteGetPrintPreviewParams(
-   settings->pages = GetPageRangesFromJobSettings(job_settings);
-   settings->params = mojom::PrintParams::New();
-   RenderParamsFromPrintSettings(*print_settings, settings->params.get());
--  settings->params->document_cookie = PrintSettings::NewCookie();
-+  settings->params->document_cookie = printer_query ? printer_query->cookie()
-+                                                    : PrintSettings::NewCookie();
-   if (!PrintMsgPrintParamsIsValid(*settings->params)) {
-     mojom::PrinterType printer_type = static_cast<mojom::PrinterType>(
-         *job_settings.FindInt(kSettingPrinterType));
-@@ -730,6 +758,10 @@ void PrintViewManager::CompleteGetPrintPreviewParams(
-     return;
-   }
- 
-+  if (printer_query && printer_query->cookie() && printer_query->settings().dpi()) {
-+    queue()->QueuePrinterQuery(std::move(printer_query));
-+  }
-+
-   set_cookie(settings->params->document_cookie);
-   std::move(callback).Run(std::move(settings));
- }
-diff --git a/chrome/browser/printing/print_view_manager.h b/chrome/browser/printing/print_view_manager.h
-index 324f2d4002545fd624505995043cdad2b08b800b..b08c4e6277f2e1906f7b60d58f694471651339be 100644
---- a/chrome/browser/printing/print_view_manager.h
-+++ b/chrome/browser/printing/print_view_manager.h
-@@ -77,6 +77,8 @@ class PrintViewManager : public PrintViewManagerBase,
-   // mojom::PrintManagerHost:
-   void DidShowPrintDialog() override;
-   void GetPrintPreviewParams(GetPrintPreviewParamsCallback callback) override;
-+  void UpdatePrintSettings(base::DictValue job_settings,
-+                           UpdatePrintSettingsCallback callback) override;
-   void SetupScriptedPrintPreview(
-       SetupScriptedPrintPreviewCallback callback) override;
-   void ShowScriptedPrintPreview() override;
-@@ -169,6 +171,7 @@ class PrintViewManager : public PrintViewManagerBase,
-                                 bool success);
- #endif
-   void CompleteGetPrintPreviewParams(
-+      std::unique_ptr<PrinterQuery> printer_query,
-       base::DictValue job_settings,
-       std::unique_ptr<PrintSettings> print_settings,
-       GetPrintPreviewParamsCallback callback);
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
 index 9383749a1d3eab804ca9ebb7997d6b087f10a896..88320ed7b840c02a073c0b3f1ebd0d18f47659a2 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
