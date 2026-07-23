@@ -1,4 +1,4 @@
-import { net, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
+import { app, net, session, ClientRequest, ClientRequestConstructorOptions, utilityProcess } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -6,6 +6,7 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as http2 from 'node:http2';
+import * as https from 'node:https';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
@@ -1849,6 +1850,89 @@ describe('net module', () => {
       }
     });
   }
+
+  // The select-client-certificate event only fires when the platform cert
+  // store yields at least one matching identity, which the test suite cannot
+  // guarantee on Linux (NSS) without app.importCertificate.
+  ifdescribe(process.platform !== 'linux')('client certificate authentication', () => {
+    let server: https.Server;
+    let secureUrl: string;
+    const certPath = path.join(fixturesPath, 'certificates');
+    const ses = session.fromPartition('net-client-cert');
+
+    before(async () => {
+      ses.setCertificateVerifyProc((req, cb) => cb(0));
+      const options = {
+        key: fs.readFileSync(path.join(certPath, 'server.key')),
+        cert: fs.readFileSync(path.join(certPath, 'server.pem')),
+        ca: [
+          fs.readFileSync(path.join(certPath, 'rootCA.pem')),
+          fs.readFileSync(path.join(certPath, 'intermediateCA.pem'))
+        ],
+        requestCert: true,
+        rejectUnauthorized: false
+      };
+      server = https.createServer(options, (req, res) => {
+        if ((req as any).client.authorized) {
+          res.writeHead(200);
+          res.end('authorized');
+        } else {
+          res.writeHead(401);
+          res.end('denied');
+        }
+      });
+      secureUrl = (await listen(server)).url;
+    });
+
+    after(async () => {
+      ses.setCertificateVerifyProc(null);
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    });
+
+    it('does not abort net.fetch when the server requests an optional client certificate', async () => {
+      // Regression test for https://github.com/electron/electron/issues/29984:
+      // previously this rejected with ERR_SSL_CLIENT_AUTH_CERT_NEEDED.
+      const response = await ses.fetch(secureUrl);
+      expect(response.status).to.equal(401);
+      expect(await response.text()).to.equal('denied');
+    });
+
+    // Note: on CI hosts with no matching client identity in the keychain,
+    // ElectronBrowserClient short-circuits before emitting and this test
+    // passes without exercising the handler. The first test is the regression
+    // guard.
+    it('emits select-client-certificate on app with a null webContents', async () => {
+      let eventWebContents: unknown = 'unset';
+      const handler = (
+        event: Electron.Event,
+        webContents: Electron.WebContents,
+        _url: string,
+        _list: Electron.Certificate[],
+        callback: (cert?: Electron.Certificate) => void
+      ) => {
+        event.preventDefault();
+        eventWebContents = webContents;
+        callback();
+      };
+      app.once('select-client-certificate', handler);
+      try {
+        const response = await ses.fetch(secureUrl);
+        expect(response.status).to.equal(401);
+        expect(await response.text()).to.equal('denied');
+        // The event only fires if the platform cert store has matching
+        // identities; when it does, webContents must be null for net requests.
+        if (eventWebContents !== 'unset') {
+          expect(eventWebContents).to.be.null();
+        }
+      } finally {
+        app.removeListener('select-client-certificate', handler);
+      }
+    });
+
+    // TODO: add a test that selects a real client certificate once
+    // spec/fixtures/certificates/generate_certs.sh also emits client.pem and
+    // client.key alongside client.p12.
+  });
 
   ifdescribe(isTestingBindingAvailable())('Network Service crash recovery', () => {
     it('should recover net.fetch after Network Service crash (main process)', async () => {

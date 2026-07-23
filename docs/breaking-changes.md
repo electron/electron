@@ -14,6 +14,32 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (44.0)
 
+### Behavior Changed: `webContents` may be `null` in `select-client-certificate`
+
+The `app` `'select-client-certificate'` event is now also emitted for requests made
+via the [`net` module](api/net.md) and for [utility processes](api/utility-process.md)
+created with `respondToAuthRequestsFromMainProcess: true`. For these requests the
+`webContents` argument is `null`. Previously the event was only emitted for requests
+originating from a `WebContents` and the argument was always non-null.
+
+As with `WebContents` requests, when the event is not handled (or `event.preventDefault()`
+is not called) Electron uses the first matching client certificate from the platform
+certificate store. Previously `net` requests to a server that requested a client
+certificate failed with `ERR_SSL_CLIENT_AUTH_CERT_NEEDED`. To opt out, handle the event
+and call `callback()` with no argument to continue without a client certificate.
+
+```js
+// Before
+app.on('select-client-certificate', (event, webContents, url, list, callback) => {
+  console.log(webContents.id)
+})
+
+// After
+app.on('select-client-certificate', (event, webContents, url, list, callback) => {
+  if (webContents) console.log(webContents.id)
+})
+```
+
 ### Removed: macOS 12 support
 
 macOS 12 (Monterey) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/7907086).

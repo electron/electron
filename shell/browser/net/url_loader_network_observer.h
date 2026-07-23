@@ -65,7 +65,7 @@ class URLLoaderNetworkObserver
       const std::optional<base::UnguessableToken>& window_id,
       const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
-          client_cert_responder) override {}
+          client_cert_responder) override;
   void OnLocalNetworkAccessPermissionRequired(
       network::mojom::TransportType transport_type,
       network::mojom::IPAddressSpace ip_address_space,
