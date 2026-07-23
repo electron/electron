@@ -18,6 +18,7 @@
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/memory/self_deleting.h"
 #include "base/no_destructor.h"
 #include "base/notreached.h"
 #include "base/path_service.h"
@@ -240,11 +241,19 @@
 #include "ui/webui/resources/cr_components/help_bubble/help_bubble.mojom.h"  // nogncheck
 #endif
 
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "shell/browser/ai/proxying_ai_manager.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
 using content::BrowserThread;
 
 namespace electron {
 
 namespace {
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+const char kAIManagerUserDataKey[] = "ai_manager";
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 ElectronBrowserClient* g_browser_client = nullptr;
 
@@ -264,7 +273,8 @@ void BindNetworkHintsHandler(
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-// Used by the GetPrivilegeRequiredByUrl() and GetProcessPrivilege() functions
+// Used by the GetPrivilegeRequiredBySecurityPrincipal() and
+// GetProcessPrivilege() functions
 // below.  Extension, and isolated apps require different privileges to be
 // granted to their RenderProcessHosts.  This classification allows us to make
 // sure URLs are served by hosts with the right set of privileges.
@@ -284,17 +294,11 @@ bool AllowFileAccess(const std::string& extension_id,
              extension_id);
 }
 
-RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(const GURL& url) {
-  // Default to a normal renderer cause it is lower privileged. This should only
-  // occur if the URL on a site instance is either malformed, or uninitialized.
-  // If it is malformed, then there is no need for better privileges anyways.
-  // If it is uninitialized, but eventually settles on being an a scheme other
-  // than normal webrenderer, the navigation logic will correct us out of band
-  // anyways.
-  if (!url.is_valid())
-    return RenderProcessHostPrivilege::kNormal;
-
-  if (!url.SchemeIs(extensions::kExtensionScheme))
+RenderProcessHostPrivilege GetPrivilegeRequiredBySecurityPrincipal(
+    const content::SecurityPrincipal& principal) {
+  // Default to a normal renderer cause it is lower privileged. Extensions
+  // require a privileged extension process.
+  if (!principal.SchemeIs(extensions::kExtensionScheme))
     return RenderProcessHostPrivilege::kNormal;
 
   return RenderProcessHostPrivilege::kExtension;
@@ -323,6 +327,20 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
     return nullptr;
 
   return registry->enabled_extensions().GetByID(effective_url.GetHost());
+}
+
+const extensions::Extension* GetEnabledExtensionFromSecurityPrincipal(
+    content::BrowserContext* context,
+    const content::SecurityPrincipal& principal) {
+  if (!principal.SchemeIs(extensions::kExtensionScheme))
+    return nullptr;
+
+  extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(context);
+  if (!registry)
+    return nullptr;
+
+  return registry->enabled_extensions().GetByID(principal.GetHost());
 }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
@@ -763,12 +781,13 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
       preload = web_prefs->GetPreloadPath();
     if (preload && preload->IsAbsolute()) {
       auto ps = mojom::PreloadScriptData::New();
-      ps->id = "preload-" + preload->AsUTF8Unsafe();
+      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
       ps->file_path = preload->AsUTF8Unsafe();
       std::string contents;
       if (asar::ReadFileToString(*preload, &contents)) {
         ps->contents.assign(contents.begin(), contents.end());
-        std::vector<uint8_t> cache = preload_code_cache::Get(ps->id);
+        std::vector<uint8_t> cache =
+            preload_code_cache::Get(ps->id, ps->contents);
         if (!cache.empty())
           ps->code_cache = std::move(cache);
       } else {
@@ -858,7 +877,7 @@ void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
 
 bool ElectronBrowserClient::IsSuitableHost(
     content::RenderProcessHost* process_host,
-    const GURL& site_url) {
+    const content::SecurityPrincipal& security_principal) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context = process_host->GetBrowserContext();
   extensions::ProcessMap* process_map =
@@ -866,23 +885,26 @@ bool ElectronBrowserClient::IsSuitableHost(
 
   // Otherwise, just make sure the process privilege matches the privilege
   // required by the site.
-  const auto privilege_required = GetPrivilegeRequiredByUrl(site_url);
+  const auto privilege_required =
+      GetPrivilegeRequiredBySecurityPrincipal(security_principal);
   return GetProcessPrivilege(process_host, process_map) == privilege_required;
 #else
-  return content::ContentBrowserClient::IsSuitableHost(process_host, site_url);
+  return content::ContentBrowserClient::IsSuitableHost(process_host,
+                                                       security_principal);
 #endif
 }
 
 bool ElectronBrowserClient::ShouldUseProcessPerSite(
     content::BrowserContext* browser_context,
-    const GURL& effective_url) {
+    const content::SecurityPrincipal& security_principal) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   const extensions::Extension* extension =
-      GetEnabledExtensionFromEffectiveURL(browser_context, effective_url);
+      GetEnabledExtensionFromSecurityPrincipal(browser_context,
+                                               security_principal);
   return extension != nullptr;
 #else
-  return content::ContentBrowserClient::ShouldUseProcessPerSite(browser_context,
-                                                                effective_url);
+  return content::ContentBrowserClient::ShouldUseProcessPerSite(
+      browser_context, security_principal);
 #endif
 }
 
@@ -1235,8 +1257,8 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
 
     // The FileURLLoaderFactory will delete itself when there are no more
     // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
-    new FileURLLoaderFactory(child_id,
-                             pending_remote.InitWithNewPipeAndPassReceiver());
+    base::MakeSelfDeleting<FileURLLoaderFactory>(
+        child_id, pending_remote.InitWithNewPipeAndPassReceiver());
 
     return pending_remote;
   }
@@ -1245,12 +1267,14 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   FileURLLoaderFactory(const FileURLLoaderFactory&) = delete;
   FileURLLoaderFactory& operator=(const FileURLLoaderFactory&) = delete;
 
- private:
-  explicit FileURLLoaderFactory(
+  FileURLLoaderFactory(
       int child_id,
-      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-      : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)),
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver,
+      base::SelfDeletingPassKey key)
+      : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver), key),
         child_id_(child_id) {}
+
+ private:
   ~FileURLLoaderFactory() override = default;
 
   // network::mojom::URLLoaderFactory:
@@ -1425,7 +1449,8 @@ void ElectronBrowserClient::CreateWebSocket(
     const net::SiteForCookies& site_for_cookies,
     const std::optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
-        handshake_client) {
+        handshake_client,
+    WebSocketOptions options) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
@@ -1439,9 +1464,9 @@ void ElectronBrowserClient::CreateWebSocket(
         extensions::WebRequestAPI>::Get(browser_context);
 
     if (web_request_api && web_request_api->MayHaveProxies()) {
-      web_request_api->ProxyWebSocket(frame, std::move(factory), url,
-                                      site_for_cookies, user_agent,
-                                      std::move(handshake_client));
+      web_request_api->ProxyWebSocket(
+          frame, std::move(factory), url, site_for_cookies, user_agent,
+          std::move(handshake_client), std::move(options.header_client));
       return;
     }
   }
@@ -1518,6 +1543,7 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
   new ProxyingURLLoaderFactory{
       web_request,
       protocol_registry->intercept_handlers(),
+      static_cast<ElectronBrowserContext*>(browser_context)->GetWeakPtr(),
       render_process_id,
       frame_host ? frame_host->GetRoutingID() : IPC::mojom::kRoutingIdNone,
       &next_id_,
@@ -1699,6 +1725,26 @@ void ElectronBrowserClient::
       &render_frame_host));
 #endif
 }
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+// Refs
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/chrome_content_browser_client.cc;l=8724-8737;drc=74754be9d4550a487df006a51a33318245d37301
+void ElectronBrowserClient::BindAIManager(
+    content::BrowserContext* browser_context,
+    base::SupportsUserData* context_user_data,
+    content::RenderFrameHost* rfh,
+    mojo::PendingReceiver<blink::mojom::AIManager> receiver) {
+  if (!context_user_data->GetUserData(kAIManagerUserDataKey)) {
+    context_user_data->SetUserData(
+        kAIManagerUserDataKey,
+        std::make_unique<ProxyingAIManager>(browser_context, rfh));
+  }
+
+  ProxyingAIManager* ai_manager = static_cast<ProxyingAIManager*>(
+      context_user_data->GetUserData(kAIManagerUserDataKey));
+  ai_manager->AddReceiver(std::move(receiver));
+}
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 std::string ElectronBrowserClient::GetApplicationLocale() {
   return BrowserThread::CurrentlyOn(BrowserThread::IO)

@@ -74,7 +74,7 @@ index e52685546a7ac2b6e56edb0ba28408cb1737c336..440adb078b03bdc503cc11a9224c95ec
   public:
    explicit JSGraph(Isolate* isolate) : isolate_(isolate) {}
 diff --git a/src/js_native_api.h b/src/js_native_api.h
-index 31eee1234e1d2ff281068837443164b7970aecf4..714c3a3c50d2822089b1744d28d31e004c820fc6 100644
+index d2375ecd32483ff57840d30f804100372f2e12db..396f7848952e941b3e667b47424c51664cac72ef 100644
 --- a/src/js_native_api.h
 +++ b/src/js_native_api.h
 @@ -17,7 +17,7 @@
@@ -100,10 +100,10 @@ index 56f4a180633d39c652449dd3d457d29e4a9f6ac1..765a868da8f5e4e6848e6ed57c46e4ac
    size_t SizeInBytes() override { return size_; }
    // TODO(addaleax): Merging this with the "official" WrapperNode() method
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 29a621c7fdca110a1a931d6cd40dbc5d0bc0b4ce..1c7d05b6288679ac5b96933b7d7f198aa666aabb 100644
+index 71226c74e5aa3d01603cce5852465a6fe011a9f7..230ae0b42a629e48879c2392954e5183216ad495 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -990,6 +990,21 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -993,6 +993,21 @@ void BuiltinLoader::RegisterExternalReferences(
  }
  
  }  // namespace builtins
@@ -126,10 +126,10 @@ index 29a621c7fdca110a1a931d6cd40dbc5d0bc0b4ce..1c7d05b6288679ac5b96933b7d7f198a
  
  NODE_BINDING_PER_ISOLATE_INIT(
 diff --git a/src/node_http2.cc b/src/node_http2.cc
-index 084a4773673e5b07aac84a2adc79e3a89d050c84..15020fc1f5c70bf3ea58bf248626daa41297b9e5 100644
+index 55bca557a81e4de72286ed42d0df63acf610ab64..ee99a87efab1cab915694b5b0c7bb1ca3ce24c7d 100644
 --- a/src/node_http2.cc
 +++ b/src/node_http2.cc
-@@ -3625,6 +3625,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
+@@ -3656,6 +3656,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
    return;
  }
  }  // namespace http2
@@ -144,7 +144,7 @@ index 084a4773673e5b07aac84a2adc79e3a89d050c84..15020fc1f5c70bf3ea58bf248626daa4
  
  NODE_BINDING_CONTEXT_AWARE_INTERNAL(http2, node::http2::Initialize)
 diff --git a/src/node_http2.h b/src/node_http2.h
-index 259b71840b66d4a73cd15572ad3689bf8b0d6086..541cfa82bab0c604b165f5026348fc08355dc904 100644
+index 28245d7b98e06bee467c5f91dd9caf1cfdbfdda0..a4575619b26346d05ba9a1a4a245937a3b30b414 100644
 --- a/src/node_http2.h
 +++ b/src/node_http2.h
 @@ -144,6 +144,96 @@ struct Http2RcBufferPointerTraits {

@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 309670548557055c2cccdc424bf3ac91330d541a..2d65244032a0ac04158facb00afc311642664660 100644
+index f3c3f48681854900e8de6af4f344fe35fa1a64c8..44ac07723692f1f4aec1f8fa3ea1dc1dc4b95a85 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -505,6 +505,8 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
@@ -50,7 +50,7 @@ index 309670548557055c2cccdc424bf3ac91330d541a..2d65244032a0ac04158facb00afc3116
   protected:
    explicit NativeTheme(SystemTheme system_theme = SystemTheme::kDefault);
    virtual ~NativeTheme();
-@@ -614,6 +634,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -615,6 +635,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
    ColorProviderKey::UserColorSource preferred_color_source_ =
        ColorProviderKey::UserColorSource::kAccent;
    base::TimeDelta caret_blink_interval_;

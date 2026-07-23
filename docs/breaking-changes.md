@@ -12,7 +12,61 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
-## Planned Breaking API Changes (43.0)
+## Planned Breaking API Changes (44.0)
+
+### Behavior Changed: `webContents` may be `null` in `select-client-certificate`
+
+The `app` `'select-client-certificate'` event is now also emitted for requests made
+via the [`net` module](api/net.md) and for [utility processes](api/utility-process.md)
+created with `respondToAuthRequestsFromMainProcess: true`. For these requests the
+`webContents` argument is `null`. Previously the event was only emitted for requests
+originating from a `WebContents` and the argument was always non-null.
+
+As with `WebContents` requests, when the event is not handled (or `event.preventDefault()`
+is not called) Electron uses the first matching client certificate from the platform
+certificate store. Previously `net` requests to a server that requested a client
+certificate failed with `ERR_SSL_CLIENT_AUTH_CERT_NEEDED`. To opt out, handle the event
+and call `callback()` with no argument to continue without a client certificate.
+
+```js
+// Before
+app.on('select-client-certificate', (event, webContents, url, list, callback) => {
+  console.log(webContents.id)
+})
+
+// After
+app.on('select-client-certificate', (event, webContents, url, list, callback) => {
+  if (webContents) console.log(webContents.id)
+})
+```
+
+### Removed: macOS 12 support
+
+macOS 12 (Monterey) is no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/7907086).
+
+Older versions of Electron will continue to run on Monterey, but macOS 13 (Ventura)
+or later will be required to run Electron v44.0.0 and higher.
+
+### Behavior Changed: ANGLE is statically linked on all platforms
+
+ANGLE is now [statically linked](https://issues.chromium.org/issues/40268378)
+into the Electron binary on all platforms, matching upstream Chromium. The `libEGL.(so|dylib|dll)`
+and `libGLESv2.(so|dylib|dll)` libraries are no longer shipped in the distribution.
+
+Apps that replaced or managed their own ANGLE versions by swapping out these
+libraries can no longer do so. Additionally, because ANGLE is now part
+of the Electron binary, it is loaded into every process rather than only the GPU
+process, which may surface regressions in unusual configurations.
+
+### Behavior Changed: `net.request` rejects frame destinations without navigate mode
+
+`net.request` now rejects requests where `Sec-Fetch-Dest` is `document`, `frame`,
+`iframe`, or `fencedframe` unless `Sec-Fetch-Mode` is also set to `navigate`.
+This matches Chromium's enforcement that frame-type request destinations must be
+navigations.
+
+Apps that explicitly set one of these `Sec-Fetch-Dest` values on a `net.request`
+must also set `Sec-Fetch-Mode` to `navigate`.
 
 ### Removed: Unity desktop environment support on Linux
 
@@ -24,6 +78,30 @@ One API has been removed: `app.isUnityRunning()`. Some Unity-specific APIs no lo
 
 * `app.setBadgeCount(count)` and `app.badgeCount` _macOS_
 * `BaseWindow.setProgressBar(progress)` and `BrowserWindow.setProgressBar(progress)` _Windows_ _macOS_.
+
+### Removed: Windows 32-bit (ia32) and Linux 32-bit ARM (armv7l) support
+
+Electron no longer publishes prebuilt binaries for 32-bit platforms: Windows x86
+(`win32-ia32`) and Linux ARM (`linux-armv7l`). All related release artifacts
+(`chromedriver`, `mksnapshot`, `ffmpeg`, and the Windows x86 `node.lib` on the
+Electron headers CDN) are no longer published either.
+
+Older versions of Electron will continue to support these platforms, but Electron
+v44.0.0 and higher will only be published for 64-bit platforms.
+
+Once the v43 series reaches end of life in January 2027, these 32-bit platforms
+will no longer be supported.
+
+## Planned Breaking API Changes (43.0)
+
+### Behavior Changed: Rounded corners on Linux
+
+Frameless windows default to rounded corners on Linux if the desktop environment supports client-side decorations. This can be configured using the existing `roundedCorners` option on `BrowserWindow`,
+which is now supported on Linux and defaults to `true` on all platforms.
+
+### Behavior Changed: WCO respects the native title bar layout on Linux
+
+Frameless windows with Window Controls Overlay (WCO) now adopt the native title bar layout and user settings on Linux. For example, controls will appear on the left side of the frame on RTL systems, and only the close button will be visible by default on GNOME. Depending on the user's desktop environment and configuration, buttons can appear on the left or right side of the frame (or both). To account for all possibilities, use the CSS variables `env(titlebar-area-x, 0px)` and `env(titlebar-area-width, 100%)` to constrain your app's title bar content to a safe area.
 
 ### Behavior Changed: `NativeImage.toBitmap()` now normalizes color space
 
@@ -83,6 +161,13 @@ if (!result.canceled && result.filePaths.length > 0) {
   lastUsedPath = path.dirname(result.filePaths[0])
 }
 ```
+
+### Removed: `showHiddenFiles` in Dialogs on Linux
+
+The `showHiddenFiles` property is no longer supported on Linux.
+It continues to work on macOS and Windows. GTK intends for this feature
+to be a user choice rather than an app choice, and has removed the API
+to do this programmatically.
 
 ## Planned Breaking API Changes (42.0)
 

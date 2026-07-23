@@ -470,6 +470,8 @@ void NativeWindowMac::Show() {
     return;
   }
 
+  FlushPendingDisplayMode();
+
   set_wants_to_be_visible(true);
 
   // Reattach the window to the parent to actually show it.
@@ -484,6 +486,8 @@ void NativeWindowMac::Show() {
 }
 
 void NativeWindowMac::ShowInactive() {
+  FlushPendingDisplayMode();
+
   set_wants_to_be_visible(true);
 
   // Reattach the window to the parent to actually show it.
@@ -1756,8 +1760,7 @@ std::unique_ptr<views::FrameView> NativeWindowMac::CreateFrameView(
   return frame_view;
 }
 
-std::optional<int> NativeWindowMac::FrameViewNonClientHitTest(
-    const gfx::Point& point) {
+int NativeWindowMac::FrameViewNonClientHitTest(const gfx::Point& point) {
   if (widget()->IsFullscreen()) {
     return HTCLIENT;
   }

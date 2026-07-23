@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Mon, 1 Jun 2026 11:39:24 -0400
+Subject: chore: cast const away when freeing uv_cpu_info_t.model
+
+libuv 1.52.x typed cpu_info_t.model as 'const char*' but uv_free_cpu_info()
+still passes it directly to uv__free() (void*). Electron builds with
+-Wincompatible-pointer-types-discards-qualifiers as an error, so cast
+explicitly to drop the const qualifier when freeing. The string was
+allocated with strdup() so the cast is safe.
+
+This patch can be removed once libuv fixes the qualifier upstream.
+
+diff --git a/deps/uv/src/win/util.c b/deps/uv/src/win/util.c
+index fec07b269f7d3825158f60c333789323d9159de5..650d6edde3a6ea653ca209a5cd015dcc7f556ef0 100644
+--- a/deps/uv/src/win/util.c
++++ b/deps/uv/src/win/util.c
+@@ -627,7 +627,7 @@ int uv_cpu_info(uv_cpu_info_t** cpu_infos_ptr, int* cpu_count_ptr) {
+ 
+     uv__convert_utf16_to_utf8(cpu_brand,
+                               cpu_brand_size / sizeof(WCHAR),
+-                              &(cpu_info->model));
++                              (char**) &(cpu_info->model));
+   }
+ 
+   uv__free(sppi);
+@@ -641,7 +641,7 @@ int uv_cpu_info(uv_cpu_info_t** cpu_infos_ptr, int* cpu_count_ptr) {
+   if (cpu_infos != NULL) {
+     /* This is safe because the cpu_infos array is zeroed on allocation. */
+     for (i = 0; i < cpu_count; i++)
+-      uv__free(cpu_infos[i].model);
++      uv__free((char*) cpu_infos[i].model);
+   }
+ 
+   uv__free(cpu_infos);

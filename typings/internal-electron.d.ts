@@ -151,18 +151,24 @@ declare namespace Electron {
     _lifecycleStateForTesting: string;
   }
 
-  interface WebFrame {
+  interface WebFrame extends NodeJS.EventEmitter {
     _isEvalAllowed(): boolean;
+    _setIsolatedWorldCreationCallback(callback: (worldId: number) => void): void;
+    getIsolatedWorlds(): number[];
+    on(event: 'isolated-world-created', listener: (worldId: number) => void): this;
+    once(event: 'isolated-world-created', listener: (worldId: number) => void): this;
   }
 
   interface WebPreferences {
     disablePopups?: boolean;
     embedder?: Electron.WebContents;
+    openerSandboxFlags?: number;
     type?: 'backgroundPage' | 'window' | 'browserView' | 'remote' | 'webview' | 'offscreen';
   }
 
   interface Session {
     _setDisplayMediaRequestHandler: Electron.Session['setDisplayMediaRequestHandler'];
+    _registerLocalAIHandler(handler: ElectronInternal.UtilityProcessWrapper | null): void;
   }
 
   type CreateWindowFunction = (options: BrowserWindowConstructorOptions) => WebContents;
@@ -271,7 +277,8 @@ declare namespace Electron {
         disposition: Electron.HandlerDetails['disposition'],
         rawFeatures: string,
         referrer: Electron.Referrer,
-        postData: LoadURLOptions['postData']
+        postData: LoadURLOptions['postData'],
+        inheritedSandboxFlags: number
       ) => void
     ): this;
     on(

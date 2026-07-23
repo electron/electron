@@ -12,8 +12,9 @@
 
 #include "base/byte_size.h"
 #include "base/memory/raw_ptr.h"
-#include "base/memory/weak_ptr.h"
 #include "base/sequence_checker.h"
+#include "gin/weak_cell.h"
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/mojom/network_context.mojom.h"
@@ -21,19 +22,15 @@
 #include "services/network/public/mojom/url_loader_network_service_observer.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gc_plugin.h"
+#include "shell/common/gin_helper/self_keep_alive.h"
 #include "url/gurl.h"
+#include "v8/include/cppgc/member.h"
 #include "v8/include/v8-forward.h"
 
 namespace gin {
 class Arguments;
 }  // namespace gin
-
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
 
 namespace net {
 class AuthChallengeInfo;
@@ -51,34 +48,35 @@ class ElectronBrowserContext;
 
 namespace electron::api {
 
+class JSChunkedDataPipeGetter;
+
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper final
-    : public gin_helper::DeprecatedWrappable<SimpleURLLoaderWrapper>,
+    : public gin::Wrappable<SimpleURLLoaderWrapper>,
       public gin_helper::EventEmitterMixin<SimpleURLLoaderWrapper>,
-      public gin_helper::CleanedUpAtExit,
       private network::SimpleURLLoaderStreamConsumer,
       private network::mojom::URLLoaderNetworkServiceObserver {
  public:
   ~SimpleURLLoaderWrapper() override;
-  static gin_helper::Handle<SimpleURLLoaderWrapper> Create(
-      gin::Arguments* args);
+  static SimpleURLLoaderWrapper* Create(gin::Arguments* args);
 
   void Cancel();
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static const gin::WrapperInfo kWrapperInfo;
+  static const char* GetClassName() { return "SimpleURLLoaderWrapper"; }
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  void Trace(cppgc::Visitor* visitor) const override;
 
-  // gin_helper::CleanedUpAtExit
-  void WillBeDestroyed() override;
-
- private:
   SimpleURLLoaderWrapper(ElectronBrowserContext* browser_context,
                          std::unique_ptr<network::ResourceRequest> request,
-                         int options);
+                         int options,
+                         JSChunkedDataPipeGetter* chunk_pipe_getter);
 
+ private:
   // SimpleURLLoaderStreamConsumer:
   void OnDataReceived(std::string_view string_view,
                       base::OnceClosure resume) override;
@@ -104,7 +102,7 @@ class SimpleURLLoaderWrapper final
       const std::optional<base::UnguessableToken>& window_id,
       const scoped_refptr<net::SSLCertRequestInfo>& cert_info,
       mojo::PendingRemote<network::mojom::ClientCertificateResponder>
-          client_cert_responder) override {}
+          client_cert_responder) override;
   void OnLocalNetworkAccessPermissionRequired(
       network::mojom::TransportType transport_type,
       network::mojom::IPAddressSpace ip_address_space,
@@ -158,8 +156,6 @@ class SimpleURLLoaderWrapper final
   void OnDownloadProgress(uint64_t current);
 
   void Start();
-  void Pin();
-  void PinBodyGetter(v8::Local<v8::Value>);
 
   SEQUENCE_CHECKER(sequence_checker_);
   raw_ptr<ElectronBrowserContext> browser_context_;
@@ -167,12 +163,14 @@ class SimpleURLLoaderWrapper final
   std::unique_ptr<network::ResourceRequest> request_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
-  v8::Global<v8::Value> pinned_wrapper_;
-  v8::Global<v8::Value> pinned_chunk_pipe_getter_;
 
+  GC_PLUGIN_IGNORE(
+      "Context tracking of receivers is not needed in the browser process.")
   mojo::ReceiverSet<network::mojom::URLLoaderNetworkServiceObserver>
       url_loader_network_observer_receivers_;
-  base::WeakPtrFactory<SimpleURLLoaderWrapper> weak_factory_{this};
+  cppgc::Member<JSChunkedDataPipeGetter> chunk_pipe_getter_;
+  gin_helper::SelfKeepAlive<SimpleURLLoaderWrapper> keep_alive_{this};
+  gin::WeakCellFactory<SimpleURLLoaderWrapper> weak_factory_{this};
 };
 
 }  // namespace electron::api

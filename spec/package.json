@@ -13,7 +13,8 @@
     "@electron-ci/is-valid-window": "*",
     "@electron-ci/osr-gpu": "*",
     "@electron-ci/uv-dlopen": "*",
-    "@electron/fuses": "^1.8.0",
+    "@electron-ci/virtual-display": "*",
+    "@electron/fuses": "^2.1.2",
     "@electron/packager": "^18.3.2",
     "@types/basic-auth": "^1.1.8",
     "@types/busboy": "^1.5.4",
@@ -26,7 +27,7 @@
     "@types/sinon": "^9.0.4",
     "@types/uuid": "^3.4.6",
     "@types/w3c-web-serial": "^1.0.7",
-    "@types/ws": "^7.2.0",
+    "@types/ws": "^8.18.1",
     "abstract-socket": "2.0.0",
     "basic-auth": "^2.0.1",
     "busboy": "^1.6.0",
@@ -35,7 +36,7 @@
     "coffeescript": "^2.4.1",
     "dbus-native": "^0.4.0",
     "dirty-chai": "^2.0.1",
-    "express": "^4.20.0",
+    "express": "^5.2.1",
     "graceful-fs": "^4.1.15",
     "mkdirp": "^0.5.1",
     "mocha": "^10.0.0",
@@ -48,7 +49,7 @@
     "sinon": "^9.0.1",
     "uuid": "^14.0.0",
     "winreg": "1.2.4",
-    "ws": "^7.5.10",
+    "ws": "^8.21.0",
     "yargs": "^16.0.3"
   }
 }

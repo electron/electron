@@ -47,18 +47,13 @@ jobs:
       TARGET_ARCH: ${{ inputs.target-arch }}
     steps:
     # Same workaround as pipeline-segment-electron-test.yml.
-    - name: Fix node20 on arm32 runners
-      if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
-      run: |
-        cp $(which node) /mnt/runner-externals/node20/bin/
-        cp $(which node) /mnt/runner-externals/node24/bin/
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform != 'linux' }}
-      uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
       with:
         node-version: 22.21.x
     # Installs only the @electron-ci/pgo workspace's dependencies (a focused
@@ -103,7 +98,11 @@ jobs:
     # Raw .profraw output; merging happens in pgo-generation.yml's merge job.
     - name: Collect PGO Profile (linux)
       if: ${{ inputs.target-platform == 'linux' }}
-      timeout-minutes: 150
+      # Must exceed collect-profile.js's retry deadline (240 min, after which
+      # no new wipe-and-relaunch attempts start) by enough headroom for the
+      # in-flight attempt to finish and flush its counters - a step-timeout
+      # kill loses the exit-time profraw write.
+      timeout-minutes: 330
       run: |
         cd src
         xvfb-run -a -s "-screen 0 1280x1024x24" \
@@ -115,17 +114,32 @@ jobs:
             --no-merge
     - name: Collect PGO Profile (macos)
       if: ${{ inputs.target-platform == 'macos' }}
-      timeout-minutes: 150
+      # Must exceed collect-profile.js's retry deadline (240 min, after which
+      # no new wipe-and-relaunch attempts start) by enough headroom for the
+      # in-flight attempt to finish and flush its counters - a step-timeout
+      # kill loses the exit-time profraw write.
+      timeout-minutes: 330
       run: |
         cd src
+        # --no-sandbox is safe and standard for profile collection: this is an
+        # instrumented, non-shippable build that only loads vendored benchmark
+        # content from a localhost server (no untrusted web content), on an
+        # ephemeral runner. It guarantees child processes can write their
+        # profile data; %c continuous mode in collect-profile.js is the
+        # primary mechanism and this is belt-and-braces (matches linux above).
         node electron/script/pgo/collect-profile.js \
           --electron "out/Default/Electron.app/Contents/MacOS/Electron" \
           --output out/Default/pgo-profraw \
           --work-dir /tmp/electron-pgo \
+          --no-sandbox \
           --no-merge
     - name: Collect PGO Profile (win)
       if: ${{ inputs.target-platform == 'win' }}
-      timeout-minutes: 150
+      # Must exceed collect-profile.js's retry deadline (240 min, after which
+      # no new wipe-and-relaunch attempts start) by enough headroom for the
+      # in-flight attempt to finish and flush its counters - a step-timeout
+      # kill loses the exit-time profraw write.
+      timeout-minutes: 330
       env:
         TARGET_ARCH: ${{ inputs.target-arch }}
       run: |
@@ -144,4 +158,18 @@ jobs:
         name: pgo-profraw-${{ inputs.target-platform }}-${{ inputs.target-arch }}
         path: src/out/Default/pgo-profraw/
         if-no-files-found: error
+        retention-days: 7
+    # Instrumented processes crash without any usable message in the job log
+    # (a renderer dying surfaces as a bare ERR_FAILED, a browser-process CHECK
+    # as "killed by signal SIGTRAP"). The macOS crash reporter writes the real
+    # stack to DiagnosticReports - upload it so failures are diagnosable.
+    - name: Upload Crash Reports (macos)
+      if: ${{ failure() && inputs.target-platform == 'macos' }}
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      with:
+        name: pgo-crash-reports-${{ inputs.target-platform }}-${{ inputs.target-arch }}
+        path: |
+          /Users/runner/Library/Logs/DiagnosticReports/*.ips
+          /Users/runner/Library/Logs/DiagnosticReports/*.crash
+        if-no-files-found: warn
         retention-days: 7

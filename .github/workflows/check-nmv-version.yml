@@ -1,0 +1,81 @@
+name: Check NMV Version
+
+on:
+  pull_request:
+
+permissions: {}
+
+concurrency:
+  group: check-nmv-version-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  setup:
+    if: github.repository == 'electron/electron'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      has-build-args-change: ${{ steps.filter.outputs.build-args }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
+        ref: ${{ github.event.pull_request.head.sha }}
+    # Check changed paths via the API instead of the path filter under the on: block
+    # so that the output can be used to conditionally run the apply-patches job, which lets
+    # the job be marked as a required status check (conditional skip counts as a success).
+    - uses: ./.github/actions/paths-filter
+      id: filter
+      with:
+        filters: |
+          build-args:
+            - build/args/all.gn
+
+  check-nmv-version:
+    needs: setup
+    if: ${{ needs.setup.outputs.has-build-args-change == 'true' }}
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        persist-credentials: false
+        ref: ${{ github.event.pull_request.head.sha }}
+    - name: Check NMV Version
+      env:
+        ABI_VERSION_REGISTRY_URL: https://raw.githubusercontent.com/nodejs/node/main/doc/abi_version_registry.json
+      run: |
+        set -euo pipefail
+
+        # Pull the `node_module_version` value from build/args/all.gn.
+        nmv=$(grep -oP '^node_module_version\s*=\s*\K[0-9]+' build/args/all.gn || true)
+        if [ -z "$nmv" ]; then
+          echo "::error::Could not find node_module_version in build/args/all.gn"
+          exit 1
+        fi
+        echo "Found node_module_version: $nmv"
+
+        # Download the ABI version registry from the Node.js repository.
+        curl -fsSL "$ABI_VERSION_REGISTRY_URL" -o abi_version_registry.json
+
+        # Look up every runtime registered for the given NMV. Some NMVs are
+        # shared across runtimes, so collect all matching entries.
+        runtimes=$(jq -r --argjson nmv "$nmv" \
+          '.NODE_MODULE_VERSION[] | select(.modules == $nmv) | .runtime' \
+          abi_version_registry.json)
+        if [ -z "$runtimes" ]; then
+          echo "::error::No entry found in the ABI version registry for NMV $nmv"
+          exit 1
+        fi
+
+        # Ensure the NMV is registered to the "electron" runtime.
+        if ! printf '%s\n' "$runtimes" | grep -qx electron; then
+          echo "::error::NMV $nmv is not registered to the 'electron' runtime (found: $(printf '%s' "$runtimes" | paste -sd, -))"
+          exit 1
+        fi
+
+        echo "NMV $nmv is correctly registered to the 'electron' runtime"

@@ -6,7 +6,7 @@ Subject: feat: add support for embedder snapshot validation
 IsValid is not exposed despite being commented as for embedders, this exposes something that works for us.
 
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 3c6ae3d220f8e5b228d5b7fd9291b9e664f29ea3..8458066a2e3b088b96cb35d3dc2d1f9045e49f47 100644
+index 1a33dd49d096019f5f4b7c1fb41b4e9748ef4d22..2d344e6929204f450c59365b4e1ea2aeaabfc9e0 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
 @@ -75,11 +75,23 @@ bool GenerateEntropy(unsigned char* buffer, size_t amount) {
@@ -27,8 +27,8 @@ index 3c6ae3d220f8e5b228d5b7fd9291b9e664f29ea3..8458066a2e3b088b96cb35d3dc2d1f90
  void GetMappedFileData(base::MemoryMappedFile* mapped_file,
                         v8::StartupData* data) {
    if (mapped_file) {
-     data->data = reinterpret_cast<const char*>(mapped_file->data());
-     data->raw_size = static_cast<int>(mapped_file->length());
+     data->data = reinterpret_cast<const char*>(mapped_file->bytes().data());
+     data->raw_size = static_cast<int>(mapped_file->bytes().size());
 +    SnapshotValidator().Run(data);
    } else {
      data->data = nullptr;

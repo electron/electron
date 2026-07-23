@@ -665,8 +665,7 @@ FileSystemAccessPermissionContext::GetWritePermissionGrant(
 }
 
 bool FileSystemAccessPermissionContext::IsFileTypeDangerous(
-    const base::FilePath& path,
-    const url::Origin& origin) {
+    const base::FilePath& path) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   return false;
 }

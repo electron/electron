@@ -235,6 +235,11 @@
   }
 
   // Downloadable Content Information
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  // These hosted content properties are deprecated as of macOS 13 ("Hosted
+  // content is no longer supported."), but they still back the documented
+  // fields of Electron's Product structure.
   productStruct.isDownloadable = [product isDownloadable];
 
   if (product.downloadContentVersion != nil) {
@@ -251,6 +256,7 @@
           [contentLength longLongValue]);
     }
   }
+#pragma clang diagnostic pop
 
   return productStruct;
 }

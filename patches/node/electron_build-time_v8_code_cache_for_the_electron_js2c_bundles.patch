@@ -29,7 +29,7 @@ removed if Node exposed a public API for supplying a code cache to a
 caller-parameterized builtin compile.
 
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 04d76fdd3d170a7c501bd773b698d380b8bb2426..cf7f3f272bf84af330967d5a7cb2c5bee821cc84 100644
+index 180fefa046d9a070fc31fbb0a3555817823332a2..ec1f9ce6ae7059faae6a5f727eff41b2b3fc489d 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -1,4 +1,5 @@
@@ -38,7 +38,7 @@ index 04d76fdd3d170a7c501bd773b698d380b8bb2426..cf7f3f272bf84af330967d5a7cb2c5be
  #include "debug_utils-inl.h"
  #include "env-inl.h"
  #include "module_wrap.h"
-@@ -13,6 +14,26 @@
+@@ -14,6 +15,26 @@
  namespace node {
  namespace builtins {
  
@@ -65,7 +65,7 @@ index 04d76fdd3d170a7c501bd773b698d380b8bb2426..cf7f3f272bf84af330967d5a7cb2c5be
  using loader::HostDefinedOptions;
  using v8::Boolean;
  using v8::Context;
-@@ -398,6 +419,7 @@ MaybeLocal<Data> BuiltinLoader::LookupAndCompile(
+@@ -401,6 +422,7 @@ MaybeLocal<Data> BuiltinLoader::LookupAndCompile(
      DCHECK_EQ(this, optional_realm->env()->builtin_loader());
      RecordResult(builtin_source->id, result, optional_realm);
    }
@@ -73,7 +73,7 @@ index 04d76fdd3d170a7c501bd773b698d380b8bb2426..cf7f3f272bf84af330967d5a7cb2c5be
  
    if (has_cache) {
      per_process::Debug(DebugCategory::CODE_CACHE,
-@@ -471,13 +493,47 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+@@ -474,13 +496,47 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
    Local<String> filename = OneByteString(isolate, filename_s);
    Local<String> source = builtin_source->source.ToStringChecked(isolate);
    ScriptOrigin origin(filename, 0, 0, true);

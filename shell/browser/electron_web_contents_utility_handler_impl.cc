@@ -4,6 +4,8 @@
 
 #include "shell/browser/electron_web_contents_utility_handler_impl.h"
 
+#include <algorithm>
+#include <optional>
 #include <utility>
 
 #include "content/public/browser/browser_context.h"
@@ -13,10 +15,42 @@
 #include "content/public/browser/render_process_host.h"
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "shell/browser/preload_code_cache.h"
+#include "shell/browser/session_preferences.h"
 #include "shell/browser/web_contents_permission_helper.h"
+#include "shell/browser/web_contents_preferences.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 
 namespace electron {
+
+namespace {
+
+// True if |id| names a preload script served to this frame — a renderer must
+// not be able to write cache entries for preloads it was never given.
+bool IsPreloadIdServedToFrame(content::RenderFrameHost* rfh,
+                              const std::string& id) {
+  if (!rfh)
+    return false;
+  auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+  if (auto* web_prefs = WebContentsPreferences::From(web_contents)) {
+    std::optional<base::FilePath> preload = web_prefs->GetPreloadPath();
+    if (preload &&
+        id == preload_code_cache::IdForWebPreferencesPreload(*preload)) {
+      return true;
+    }
+  }
+  auto* session_prefs =
+      SessionPreferences::FromBrowserContext(rfh->GetBrowserContext());
+  if (!session_prefs)
+    return false;
+  const auto& scripts = session_prefs->preload_scripts();
+  return std::ranges::any_of(scripts, [&id](const PreloadScript& script) {
+    return script.id == id &&
+           script.script_type == PreloadScript::ScriptType::kWebFrame;
+  });
+}
+
+}  // namespace
+
 ElectronWebContentsUtilityHandlerImpl::ElectronWebContentsUtilityHandlerImpl(
     content::RenderFrameHost* frame_host,
     mojo::PendingAssociatedReceiver<mojom::ElectronWebContentsUtility> receiver)
@@ -62,13 +96,16 @@ void ElectronWebContentsUtilityHandlerImpl::SetTemporaryZoomLevel(
 
 void ElectronWebContentsUtilityHandlerImpl::SetPreloadCodeCache(
     const std::string& id,
+    const std::vector<uint8_t>& source_hash,
     mojo_base::BigBuffer cache) {
   // Persist the freshly produced V8 code cache so subsequent navigations and
   // launches compile this preload from bytecode instead of re-parsing source.
-  // Renderer-supplied data: V8 validates the blob against the source + V8
-  // version + flags at consume time, so a malformed or stale blob just costs
-  // one rejected compile and is then overwritten.
-  preload_code_cache::Set(id, base::span<const uint8_t>(cache));
+  // |source_hash| must come from the renderer — only it knows which source
+  // the blob was compiled from; hashing the file here would race a
+  // concurrent preload change and pin a stale blob under the new hash.
+  if (!IsPreloadIdServedToFrame(GetRenderFrameHost(), id))
+    return;
+  preload_code_cache::Set(id, source_hash, base::span<const uint8_t>(cache));
 }
 
 void ElectronWebContentsUtilityHandlerImpl::CanAccessClipboardDeprecated(

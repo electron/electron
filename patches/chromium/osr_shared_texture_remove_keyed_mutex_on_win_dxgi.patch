@@ -11,7 +11,7 @@ For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
 diff --git a/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc b/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
-index 75e9e235135ce148e180be222aa0fd7a016a8917..f1ecd3e5ab6be32c37fb21b9181a341c09d8b827 100644
+index 9361a9fc7c89d7809e5e354db7a2cc5d54270b8e..90892b4607955b4b07f423f94665f927d0ec8ff3 100644
 --- a/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
 +++ b/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
 @@ -379,7 +379,8 @@ gfx::GpuMemoryBufferHandle D3DImageBackingFactory::CreateGpuMemoryBufferHandle(
@@ -36,7 +36,7 @@ index 75e9e235135ce148e180be222aa0fd7a016a8917..f1ecd3e5ab6be32c37fb21b9181a341c
    Microsoft::WRL::ComPtr<ID3D11Texture2D> d3d11_texture;
  
 diff --git a/media/video/renderable_mappable_shared_image_video_frame_pool.cc b/media/video/renderable_mappable_shared_image_video_frame_pool.cc
-index 7354aa4925d0ac07aa61858c63fae72c3fd7327d..89ec632cd0a118f27185a5cbc41408258b3d7927 100644
+index 435c26ebdecc86623e779023a0ba192cec9dcdd4..6c208d5dba72a87254b68369ce07021b19fb3b07 100644
 --- a/media/video/renderable_mappable_shared_image_video_frame_pool.cc
 +++ b/media/video/renderable_mappable_shared_image_video_frame_pool.cc
 @@ -212,6 +212,24 @@ bool FrameResources::Initialize(VideoPixelFormat format,

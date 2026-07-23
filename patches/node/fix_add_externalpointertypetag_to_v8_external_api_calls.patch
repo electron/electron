@@ -8,10 +8,10 @@ an ExternalPointerTypeTag parameter. Use kExternalPointerTypeTagDefault
 for all existing call sites.
 
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index ff7a5917b554fc0c67edf4e36f567e7223e70577..23aaa364e955753a92c3cb575646955c40cdfd55 100644
+index 1d4c36783609ca85a66590b94608110fdd4fcc12..b213fc8e6a4a74b14beaab22c73374f55bba9079 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -2336,7 +2336,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
+@@ -2399,7 +2399,7 @@ int SecureContext::TicketCompatibilityCallback(SSL* ssl,
  void SecureContext::CtxGetter(const FunctionCallbackInfo<Value>& info) {
    SecureContext* sc;
    ASSIGN_OR_RETURN_UNWRAP(&sc, info.This());
@@ -21,7 +21,7 @@ index ff7a5917b554fc0c67edf4e36f567e7223e70577..23aaa364e955753a92c3cb575646955c
  }
  
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index a944c18518471a55a44a7ff32190fe9920d0cb20..82214a5d051bb2ca487c92f684b03dcf709255a0 100644
+index 75ce4c921b5acf5d612aeb5a7720b5874b6066ac..6c87611f7cbaf8a0b4c04f812f65381ede112056 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
 @@ -356,7 +356,7 @@ inline napi_status Unwrap(napi_env env,
@@ -78,10 +78,10 @@ index a944c18518471a55a44a7ff32190fe9920d0cb20..82214a5d051bb2ca487c92f684b03dcf
  
    void* Data() { return data_; }
 diff --git a/src/node_modules.cc b/src/node_modules.cc
-index d067b47e7e30a95740fe0275c70445707dec426b..391c57eed9058602bd8311d885cf5fc60bfea903 100644
+index 541c1580f7b29cb2bdd4bbdc5e056b46bba08dbb..34ced47c7142be3ab8d97840ea88770c18b0742b 100644
 --- a/src/node_modules.cc
 +++ b/src/node_modules.cc
-@@ -642,7 +642,7 @@ void GetCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
+@@ -650,7 +650,7 @@ void GetCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
    v8::LocalVector<v8::Name> names(isolate,
                                    {FIXED_ONE_BYTE_STRING(isolate, "external")});
    v8::LocalVector<v8::Value> values(isolate,
@@ -90,7 +90,7 @@ index d067b47e7e30a95740fe0275c70445707dec426b..391c57eed9058602bd8311d885cf5fc6
    if (cache_entry->cache != nullptr) {
      Debug(env,
            DebugCategory::COMPILE_CACHE,
-@@ -752,7 +752,7 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
+@@ -760,7 +760,7 @@ void SaveCompileCacheEntry(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsExternal());
    CHECK(args[1]->IsString());  // TODO(joyeecheung): accept buffer.
    auto* cache_entry =

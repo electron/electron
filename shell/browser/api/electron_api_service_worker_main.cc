@@ -24,11 +24,14 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace {
 
@@ -58,9 +61,10 @@ std::optional<content::ServiceWorkerVersionBaseInfo> GetLiveVersionInfo(
 
 namespace electron::api {
 
-// ServiceWorkerKey -> ServiceWorkerMain*
+// ServiceWorkerKey -> ServiceWorkerMain
 auto& GetVersionIdMap() {
-  using Map = base::flat_map<ServiceWorkerKey, ServiceWorkerMain*>;
+  using Map = base::flat_map<ServiceWorkerKey,
+                             cppgc::WeakPersistent<ServiceWorkerMain>>;
   static base::NoDestructor<Map> instance;
   return *instance;
 }
@@ -79,8 +83,8 @@ ServiceWorkerMain* ServiceWorkerMain::FromVersionID(
   return FromServiceWorkerKey(key);
 }
 
-gin::DeprecatedWrapperInfo ServiceWorkerMain::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo ServiceWorkerMain::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronServiceWorkerMain);
 
 ServiceWorkerMain::ServiceWorkerMain(content::ServiceWorkerContext* sw_context,
                                      int64_t version_id,
@@ -101,7 +105,7 @@ void ServiceWorkerMain::Destroy() {
   InvalidateVersionInfo();
   MaybeDisconnectRemote();
   GetVersionIdMap().erase(key_);
-  Unpin();
+  keep_alive_.Clear();
 }
 
 void ServiceWorkerMain::MaybeDisconnectRemote() {
@@ -281,13 +285,12 @@ GURL ServiceWorkerMain::ScriptURL() const {
 }
 
 // static
-gin_helper::Handle<ServiceWorkerMain> ServiceWorkerMain::New(
-    v8::Isolate* isolate) {
-  return gin_helper::Handle<ServiceWorkerMain>();
+ServiceWorkerMain* ServiceWorkerMain::New(v8::Isolate* isolate) {
+  return nullptr;
 }
 
 // static
-gin_helper::Handle<ServiceWorkerMain> ServiceWorkerMain::From(
+ServiceWorkerMain* ServiceWorkerMain::From(
     v8::Isolate* isolate,
     content::ServiceWorkerContext* sw_context,
     std::string browser_context_id,
@@ -298,22 +301,17 @@ gin_helper::Handle<ServiceWorkerMain> ServiceWorkerMain::From(
                                       version_id};
 
   if (auto* service_worker = FromServiceWorkerKey(service_worker_key))
-    return gin_helper::CreateHandle(isolate, service_worker);
+    return service_worker;
 
   // Ensure ServiceWorkerVersion exists and is not redundant (pending deletion)
   auto* live_version = GetLiveVersion(sw_context, version_id);
   if (!live_version || live_version->is_redundant()) {
-    return gin_helper::Handle<ServiceWorkerMain>();
+    return nullptr;
   }
 
-  auto handle = gin_helper::CreateHandle(
-      isolate, new ServiceWorkerMain{sw_context, version_id,
-                                     std::move(service_worker_key)});
-
-  // Prevent garbage collection of worker until it has been deleted internally.
-  handle->Pin(isolate);
-
-  return handle;
+  return cppgc::MakeGarbageCollected<ServiceWorkerMain>(
+      isolate->GetCppHeap()->GetAllocationHandle(), sw_context, version_id,
+      std::move(service_worker_key));
 }
 
 // static
@@ -335,8 +333,12 @@ void ServiceWorkerMain::FillObjectTemplate(
       .Build();
 }
 
-const char* ServiceWorkerMain::GetTypeName() {
-  return GetClassName();
+const gin::WrapperInfo* ServiceWorkerMain::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* ServiceWorkerMain::GetHumanReadableName() const {
+  return "Electron / ServiceWorkerMain";
 }
 
 }  // namespace electron::api
@@ -352,7 +354,8 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
   dict.Set("ServiceWorkerMain",
-           ServiceWorkerMain::GetConstructor(isolate, context));
+           ServiceWorkerMain::GetConstructor(isolate, context,
+                                             &ServiceWorkerMain::kWrapperInfo));
 }
 
 }  // namespace

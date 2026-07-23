@@ -17,7 +17,7 @@
 #include "base/values.h"
 #include "content/public/browser/web_contents.h"
 #include "extensions/browser/api/web_request/web_request_info.h"
-#include "extensions/browser/api/web_request/web_request_resource_type.h"
+#include "extensions/common/api/web_request/web_request_resource_type.h"
 #include "extensions/common/url_pattern.h"
 #include "gin/converter.h"
 #include "gin/dictionary.h"

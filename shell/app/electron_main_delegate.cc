@@ -169,10 +169,13 @@ ElectronMainDelegate::ElectronMainDelegate() {
 
 ElectronMainDelegate::~ElectronMainDelegate() = default;
 
-const char* const ElectronMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
-    extensions::kExtensionScheme};
-const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
-    std::size(kNonWildcardDomainNonPortSchemes);
+// static
+base::span<const char* const>
+ElectronMainDelegate::GetNonWildcardDomainNonPortSchemes() {
+  static const char* const kNonWildcardDomainNonPortSchemes[] = {
+      extensions::kExtensionScheme};
+  return kNonWildcardDomainNonPortSchemes;
+}
 
 std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -204,7 +207,7 @@ std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   ContentSettingsPattern::SetNonWildcardDomainNonPortSchemes(
-      kNonWildcardDomainNonPortSchemes, kNonWildcardDomainNonPortSchemesSize);
+      GetNonWildcardDomainNonPortSchemes());
 #endif
 
 #if BUILDFLAG(IS_WIN)

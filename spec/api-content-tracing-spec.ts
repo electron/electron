@@ -12,8 +12,8 @@ import { ifdescribe, ifit, startRemoteControlApp } from './lib/spec-helpers';
 const isCI = !!process.env.CI;
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
-// FIXME: The tests are skipped on linux arm/arm64
-ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'linux')('contentTracing', () => {
+// FIXME: The tests are skipped on linux arm64
+ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTracing', () => {
   const record = async (
     options: TraceConfig | TraceCategoriesAndOptions,
     outputFilePath: string | undefined,

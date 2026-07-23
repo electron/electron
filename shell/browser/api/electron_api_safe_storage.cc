@@ -83,11 +83,11 @@ void SafeStorage::EnsureAsyncEncryptorRequested() {
     return;
   encryptor_requested_ = true;
   g_browser_process->os_crypt_async()->GetInstance(
-      base::BindOnce(&SafeStorage::OnOsCryptReady, base::Unretained(this)),
-      os_crypt_async::Encryptor::Option::kEncryptSyncCompat);
+      base::BindOnce(&SafeStorage::OnOsCryptReady, base::Unretained(this)));
 }
 
-void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
+void SafeStorage::OnOsCryptReady(
+    scoped_refptr<os_crypt_async::Encryptor> encryptor) {
   encryptor_ = std::move(encryptor);
   is_available_ = true;
 

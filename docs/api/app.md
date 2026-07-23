@@ -326,7 +326,7 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](web-contents.md)
+* `webContents` [WebContents](web-contents.md) (optional)
 * `url` URL
 * `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
@@ -338,6 +338,14 @@ The `url` corresponds to the navigation entry requesting the client certificate
 and `callback` can be called with an entry filtered from the list. Using
 `event.preventDefault()` prevents the application from using the first
 certificate from the store.
+
+`webContents` is `null` when the request does not originate from a renderer
+process, for example when using [`net.request`](net.md#netrequestoptions) or
+[`net.fetch`](net.md#netfetchinput-init) in the main process, or from a
+[utility process](utility-process.md) created with
+`respondToAuthRequestsFromMainProcess: true`. For utility processes created
+without that flag, `net` requests proceed without a client certificate and this
+event is not emitted.
 
 ```js
 const { app } = require('electron')
@@ -704,6 +712,19 @@ Overrides the current application's name.
 
 > [!NOTE]
 > This function overrides the name used internally by Electron; it does not affect the name that the OS uses.
+
+### `app.setDesktopName(name)` _Linux_
+
+* `name` string - The `.desktop` filename (e.g. `'my-app.desktop'`).
+
+Sets the [`.desktop` filename](https://specifications.freedesktop.org/desktop-entry/latest/file-naming.html) on Linux.
+This should match the base filename of the app's installed `.desktop` file. The `.desktop` suffix is optional.
+
+This value is used to determine the default XDG application ID on Wayland and `WM_CLASS` on X11. If it is not set,
+Electron will attempt to infer a name, but it may not match the packaged app's actual `.desktop` file. This could result
+in the app showing a generic icon or failing to respond to global keyboard shortcuts.
+
+This API must be called before the `ready` event. The value can also be set using `desktopName` in `package.json`.
 
 ### `app.getLocale()`
 
@@ -1598,7 +1619,7 @@ fs.readFileSync(filepath)
 stopAccessingSecurityScopedResource()
 ```
 
-Start accessing a security scoped resource. With this method Electron applications that are packaged for the Mac App Store may reach outside their sandbox to access files chosen by the user. See [Apple's documentation](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) for a description of how this system works.
+Start accessing a security scoped resource. With this method, Electron applications that are packaged for the Mac App Store may reach outside their sandbox to access files chosen by the user. See [Apple's documentation](https://developer.apple.com/documentation/professional-video-applications/enabling-security-scoped-bookmark-and-url-access) for a description of how this system works.
 
 ### `app.enableSandbox()`
 

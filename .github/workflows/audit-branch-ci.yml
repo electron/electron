@@ -17,11 +17,11 @@ jobs:
       contents: read
     steps:
       - name: Setup Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22.17.x
       - name: Sparse checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: |
             .
@@ -157,7 +157,7 @@ jobs:
             await core.summary.write();
       - name: Send Slack message if errors
         if: ${{ always() && steps.audit-errors.outputs.errorsFound && github.ref == 'refs/heads/main' }}
-        uses: slackapi/slack-github-action@45a88b9581bfab2566dc881e2cd66d334e621e2c # v3.0.3
+        uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0
         with:
           payload: |
             link: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

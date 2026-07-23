@@ -1,0 +1,133 @@
+name: Pipeline Segment - Build Siso
+
+# Builds a patched siso binary for every CI build host. Reads the siso revision
+# from the Chromium DEPS file at the pinned chromium_version, shallow-clones
+# chromium.googlesource.com/build at that revision, applies the patches under
+# .github/siso-patches/, and cross-compiles siso for each build host:
+# windows/amd64, linux/amd64 and darwin/arm64. siso runs on the build host (not
+# the target), so these three host arches cover every build job: Windows targets
+# use siso-windows-amd64, Linux targets (any arch) use siso-linux-amd64, and
+# macOS targets (x64 or arm64) use siso-darwin-arm64 because the macOS build
+# hosts are arm64. Each binary is published as a distinct artifact that the build
+# and publish jobs download and use via SISO_PATH. The built binary is cached
+# keyed on the siso revision + sha256 of the patch contents, so subsequent runs
+# just restore it.
+
+on:
+  workflow_call: {}
+
+permissions: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: windows
+            goarch: amd64
+            artifact: siso-windows-amd64
+            binary: siso.exe
+          - goos: linux
+            goarch: amd64
+            artifact: siso-linux-amd64
+            binary: siso
+          - goos: darwin
+            goarch: arm64
+            artifact: siso-darwin-arm64
+            binary: siso
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        fetch-depth: 1
+        ref: ${{ github.event.pull_request.head.sha }}
+        sparse-checkout: |
+          DEPS
+          .github/siso-patches
+    - name: Resolve siso revision from Chromium DEPS
+      id: resolve
+      run: |
+        set -euo pipefail
+        CHROMIUM_VERSION=$(python3 -c "import re; print(re.search(r\"'chromium_version':\s*\n\s*'([^']+)'\", open('DEPS').read()).group(1))")
+        if ! [[ "$CHROMIUM_VERSION" =~ ^[0-9]+(\.[0-9]+){1,3}$ ]]; then
+          echo "error: unexpected chromium_version format: $CHROMIUM_VERSION" >&2
+          exit 1
+        fi
+        curl -sfL "https://raw.githubusercontent.com/chromium/chromium/${CHROMIUM_VERSION}/DEPS" -o /tmp/chromium-DEPS
+        SISO_SHA=$(python3 -c "import re; print(re.search(r\"'siso_version':\s*'git_revision:([0-9a-f]+)'\", open('/tmp/chromium-DEPS').read()).group(1))")
+        if ! [[ "$SISO_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "error: unexpected siso_version SHA: $SISO_SHA" >&2
+          exit 1
+        fi
+        PATCHES_HASH=$(find .github/siso-patches -type f -name '*.patch' | sort | xargs sha256sum | sha256sum | awk '{print $1}')
+        echo "siso-sha=${SISO_SHA}" >> "$GITHUB_OUTPUT"
+        echo "patches-hash=${PATCHES_HASH}" >> "$GITHUB_OUTPUT"
+        echo "Chromium ${CHROMIUM_VERSION} pins siso at ${SISO_SHA}"
+        echo "Patches hash: ${PATCHES_HASH}"
+    - name: Restore cached siso binary
+      id: cache-siso
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: siso-out/${{ matrix.binary }}
+        key: siso-${{ matrix.goos }}-${{ matrix.goarch }}-${{ steps.resolve.outputs.siso-sha }}-${{ steps.resolve.outputs.patches-hash }}
+    - name: Shallow clone chromium build repo at pinned revision
+      if: steps.cache-siso.outputs.cache-hit != 'true'
+      env:
+        SISO_SHA: ${{ steps.resolve.outputs.siso-sha }}
+      run: |
+        set -euo pipefail
+        mkdir chromium-build
+        cd chromium-build
+        git init -q
+        git remote add origin https://chromium.googlesource.com/build
+        git -c protocol.version=2 fetch --depth=1 origin "$SISO_SHA"
+        git checkout --detach FETCH_HEAD
+    - name: Apply in-tree siso patches
+      if: steps.cache-siso.outputs.cache-hit != 'true'
+      run: |
+        set -euo pipefail
+        shopt -s nullglob
+        patches=("${GITHUB_WORKSPACE}/.github/siso-patches"/*.patch)
+        if [ ${#patches[@]} -eq 0 ]; then
+          echo "No siso patches to apply"
+          exit 0
+        fi
+        cd chromium-build
+        git -c user.name=electron-ci -c user.email=ci@electronjs.org \
+          am --3way "${patches[@]}"
+    - name: Set up Go
+      if: steps.cache-siso.outputs.cache-hit != 'true'
+      uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version-file: chromium-build/siso/go.mod
+        cache: false
+    - name: Test patched siso spawn-helper packages
+      if: steps.cache-siso.outputs.cache-hit != 'true'
+      working-directory: chromium-build/siso
+      # Runs natively on the workflow host (no GOOS/GOARCH): `go build` alone
+      # never compiles or runs _test.go files, so without this the tests the
+      # in-tree patches add would not gate the build. localexec is included
+      # because it drives the spawn helper end-to-end.
+      run: |
+        go test ./execute/spawnhelper/ ./execute/localexec/
+    - name: Build siso (${{ matrix.goos }}/${{ matrix.goarch }})
+      if: steps.cache-siso.outputs.cache-hit != 'true'
+      working-directory: chromium-build/siso
+      env:
+        CGO_ENABLED: '0'
+        GOOS: ${{ matrix.goos }}
+        GOARCH: ${{ matrix.goarch }}
+      run: |
+        mkdir -p "${GITHUB_WORKSPACE}/siso-out"
+        go build -trimpath -o "${GITHUB_WORKSPACE}/siso-out/${{ matrix.binary }}" .
+    - name: Upload siso artifact
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: ${{ matrix.artifact }}
+        path: siso-out/${{ matrix.binary }}
+        if-no-files-found: error
+        retention-days: 1

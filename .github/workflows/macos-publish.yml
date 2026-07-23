@@ -29,7 +29,7 @@ jobs:
     outputs:
       build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
@@ -52,7 +52,7 @@ jobs:
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -62,6 +62,15 @@ jobs:
         generate-sas-token: 'true'
         target-platform: macos
 
+  # Build the patched siso binaries in parallel with checkout-macos; the
+  # publish jobs consume the darwin-arm64 artifact via SISO_PATH (macOS builds,
+  # x64 and arm64, run on arm64 hosts).
+  build-siso:
+    needs: setup
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+
   publish-x64-darwin:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
     permissions:
@@ -69,7 +78,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: checkout-macos
+    needs: [checkout-macos, build-siso]
     with:
       environment: production-release
       build-runs-on: macos-15-xlarge
@@ -77,6 +86,7 @@ jobs:
       target-arch: x64
       target-variant: darwin
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -89,7 +99,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: checkout-macos
+    needs: [checkout-macos, build-siso]
     with:
       environment: production-release
       build-runs-on: macos-15-xlarge
@@ -97,6 +107,7 @@ jobs:
       target-arch: x64
       target-variant: mas
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -109,7 +120,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: checkout-macos
+    needs: [checkout-macos, build-siso]
     with:
       environment: production-release
       build-runs-on: macos-15-xlarge
@@ -117,6 +128,7 @@ jobs:
       target-arch: arm64
       target-variant: darwin
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -129,7 +141,7 @@ jobs:
       attestations: write
       contents: read
       id-token: write
-    needs: checkout-macos
+    needs: [checkout-macos, build-siso]
     with:
       environment: production-release
       build-runs-on: macos-15-xlarge
@@ -137,6 +149,7 @@ jobs:
       target-arch: arm64
       target-variant: mas
       is-release: true
+      publish: true
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}

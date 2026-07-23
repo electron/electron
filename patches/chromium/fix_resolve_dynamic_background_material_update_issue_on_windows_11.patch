@@ -8,11 +8,11 @@ such as the background turning black when maximizing the window and
 dynamic background material settings not taking effect.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index 2ec269f3617cb5e5049b1623c316c638114cde3f..1c67a2f59eb97288266096b102882ab2dddcd8fe 100644
+index 1c57c5f418d952965b8c89c2ce56ff18080098aa..2a36a26042c93cf6774180af7717c08ec7cbe5e9 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -176,6 +176,10 @@ void DesktopWindowTreeHostWin::FinishTouchDrag(gfx::Point screen_point) {
-   }
+@@ -186,6 +186,10 @@ bool DesktopWindowTreeHostWin::IsInNativeMoveResizeLoop() const {
+                               message_handler_->IsInNativeMenuLoop());
  }
  
 +void DesktopWindowTreeHostWin::SetIsTranslucent(bool is_translucent) {
@@ -23,12 +23,12 @@ index 2ec269f3617cb5e5049b1623c316c638114cde3f..1c67a2f59eb97288266096b102882ab2
  
  void DesktopWindowTreeHostWin::Init(const Widget::InitParams& params) {
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 0bd3b00c03a32f0e9c5c71798e6278b6781a5332..5334cdaee4966804f5aa08538bcfb964ba8309ae 100644
+index 12edd2db9b88af65892cd5c183271258eaccf63d..b9ee5824e422b75ad37536c8848ef825a5d1fd6e 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -93,6 +93,8 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
-   // false.
-   void FinishTouchDrag(gfx::Point screen_point);
+@@ -96,6 +96,8 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+   // Returns true if any window is in a move/resize loop.
+   bool IsInNativeMoveResizeLoop() const;
  
 +  void SetIsTranslucent(bool is_translucent);
 +
@@ -36,10 +36,10 @@ index 0bd3b00c03a32f0e9c5c71798e6278b6781a5332..5334cdaee4966804f5aa08538bcfb964
    // Overridden from DesktopWindowTreeHost:
    void Init(const Widget::InitParams& params) override;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 66cd4a3c08f4f8cd2eda7de3bd43028b9885eca4..21a5205507ccb9d55d5131fcb49bf840bb5d2748 100644
+index ea4de3da0c46b6147b259d0f5fc6502796a17133..c958284e0fff644b8e8d2a55a7592207d3335bea 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -993,13 +993,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
+@@ -1055,13 +1055,13 @@ void HWNDMessageHandler::FrameTypeChanged() {
  
  void HWNDMessageHandler::PaintAsActiveChanged() {
    if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||
@@ -55,7 +55,7 @@ index 66cd4a3c08f4f8cd2eda7de3bd43028b9885eca4..21a5205507ccb9d55d5131fcb49bf840
  }
  
  void HWNDMessageHandler::SetWindowIcons(const gfx::ImageSkia& window_icon,
-@@ -1080,7 +1080,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
+@@ -1142,7 +1142,14 @@ void HWNDMessageHandler::SizeConstraintsChanged() {
    //   allowing ui::GetResizableFrameThickness() to be used consistently when
    //   removing the visible system frame.
    const bool had_caption_on_init = window_style() & WS_CAPTION;
@@ -71,7 +71,7 @@ index 66cd4a3c08f4f8cd2eda7de3bd43028b9885eca4..21a5205507ccb9d55d5131fcb49bf840
    const bool can_maximize = can_resize && delegate_->CanMaximize();
  
    auto set_style_func = [&style](LONG bit, bool should_set) {
-@@ -1689,11 +1696,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
+@@ -1797,11 +1804,16 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
    // through, but that isn't the case when using Direct3D to draw transparent
    // windows. So we route translucent windows throught to the delegate to
    // allow for a custom hit mask.
@@ -89,7 +89,7 @@ index 66cd4a3c08f4f8cd2eda7de3bd43028b9885eca4..21a5205507ccb9d55d5131fcb49bf840
      return;
    }
  
-@@ -2445,17 +2457,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
+@@ -2562,17 +2574,18 @@ LRESULT HWNDMessageHandler::OnNCActivate(UINT message,
      delegate_->SchedulePaint();
    }
  

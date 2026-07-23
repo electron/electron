@@ -29,11 +29,11 @@ index ea484a282d820da78e8dc1db27ad0ba6e070ac2c..a0e361cf2d2960de4f429a9d37459e26
    URLPattern url_pattern(kAllowedSchemes);
    URLPattern::ParseResult result = url_pattern.Parse(pattern_str);
    if (result != URLPattern::ParseResult::kSuccess) {
-diff --git a/extensions/browser/api/web_request/extension_web_request_event_router.h b/extensions/browser/api/web_request/extension_web_request_event_router.h
-index 1230aedc8a3d5ec016914f8494e3e1ac718b05ce..6e769a9386529d11b01a86c2b9f5cd16d35d6807 100644
---- a/extensions/browser/api/web_request/extension_web_request_event_router.h
-+++ b/extensions/browser/api/web_request/extension_web_request_event_router.h
-@@ -55,7 +55,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
+diff --git a/extensions/common/api/web_request/web_request_filter.h b/extensions/common/api/web_request/web_request_filter.h
+index 46ba17e5a3d6755a119a91a015a385253d598c52..bc8569fd0fc2c0fa9b12aa138567dcbfea4007a1 100644
+--- a/extensions/common/api/web_request/web_request_filter.h
++++ b/extensions/common/api/web_request/web_request_filter.h
+@@ -26,7 +26,8 @@ inline constexpr int kWebRequestFilterValidSchemes =
      URLPattern::SCHEME_HTTP | URLPattern::SCHEME_HTTPS |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_EXTENSION | URLPattern::SCHEME_WS |
@@ -41,13 +41,13 @@ index 1230aedc8a3d5ec016914f8494e3e1ac718b05ce..6e769a9386529d11b01a86c2b9f5cd16
 +    URLPattern::SCHEME_WSS | URLPattern::SCHEME_UUID_IN_PACKAGE |
 +    URLPattern::SCHEME_ELECTRON_CUSTOM_PROTOCOLS;
  
- class WebRequestEventRouter : public KeyedService {
-  public:
+ // Keys of the webRequest.RequestFilter dictionary.
+ inline constexpr char kRequestFilterUrlsKey[] = "urls";
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
-index b98a85280fb8abef06b2f7420115a48b37727377..0da1f574a01bf32702cc1d8068a440b117809d38 100644
+index 8e1622f40f939c5cf9e41753cbdf3a3f97626511..bbcdcec0d1a7135e33f8eb1b53947586a0d1ad16 100644
 --- a/extensions/common/extension.cc
 +++ b/extensions/common/extension.cc
-@@ -225,7 +225,8 @@ const int Extension::kValidHostPermissionSchemes =
+@@ -221,7 +221,8 @@ const int Extension::kValidHostPermissionSchemes =
      URLPattern::SCHEME_CHROMEUI | URLPattern::SCHEME_HTTP |
      URLPattern::SCHEME_HTTPS | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_WS | URLPattern::SCHEME_WSS |
@@ -58,10 +58,10 @@ index b98a85280fb8abef06b2f7420115a48b37727377..0da1f574a01bf32702cc1d8068a440b1
  //
  // Extension
 diff --git a/extensions/common/url_pattern.cc b/extensions/common/url_pattern.cc
-index c87bf379e53cc7bf7820ac650d7cd3277716551e..9b735022c0e59ace6b5ed41ebbf40b7f8c4859b6 100644
+index 1f733c4298e5812c98f900f1f070fbcea5334a94..d6e8002590c48584379d6b28f125583c218f0fd4 100644
 --- a/extensions/common/url_pattern.cc
 +++ b/extensions/common/url_pattern.cc
-@@ -140,6 +140,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
+@@ -137,6 +137,11 @@ bool URLPattern::IsValidSchemeForExtensions(std::string_view scheme) {
        return true;
      }
    }
@@ -73,7 +73,7 @@ index c87bf379e53cc7bf7820ac650d7cd3277716551e..9b735022c0e59ace6b5ed41ebbf40b7f
    return false;
  }
  
-@@ -401,6 +406,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
+@@ -398,6 +403,14 @@ bool URLPattern::IsValidScheme(std::string_view scheme) const {
      }
    }
  
@@ -103,7 +103,7 @@ index 4d09251b0160644d86682ad3db7c41b50f360e6f..8a626e14eff2d58d8218a7b0df820c6c
      // SCHEME_ALL will match every scheme, including chrome://, chrome-
      // extension://, about:, etc. Because this has lots of security
 diff --git a/extensions/common/user_script.cc b/extensions/common/user_script.cc
-index f680ef4d31d580a285abe51387e3df043d4458f1..afde40d56d7874aa04ea2b1d881e5cab79fd7661 100644
+index 672b6fe2fd92c7f83272549a1f2b44c29c5dc674..a72d3d6790ddf89cec6016aeef0c309cfb1550dd 100644
 --- a/extensions/common/user_script.cc
 +++ b/extensions/common/user_script.cc
 @@ -69,7 +69,8 @@ enum {

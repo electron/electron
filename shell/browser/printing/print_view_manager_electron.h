@@ -5,10 +5,13 @@
 #ifndef ELECTRON_SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
 #define ELECTRON_SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
 
+#include <memory>
 #include <string>
 #include <vector>
 
+#include "base/containers/queue.h"
 #include "base/memory/ref_counted_memory.h"
+#include "base/values.h"
 #include "chrome/browser/printing/print_view_manager_base.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_job.h"
 #include "components/printing/common/print.mojom.h"
@@ -17,6 +20,11 @@
 namespace content {
 class RenderFrameHost;
 }
+
+namespace printing {
+class PrinterQuery;
+class PrintSettings;
+}  // namespace printing
 
 namespace electron {
 
@@ -57,16 +65,39 @@ class PrintViewManagerElectron
   void ScriptedPrint(printing::mojom::ScriptedPrintParamsPtr params,
                      ScriptedPrintCallback callback) override;
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+  void SetAccessibilityTree(
+      int32_t cookie,
+      const ui::AXTreeUpdate& accessibility_tree) override;
+  void GetPrintPreviewParams(GetPrintPreviewParamsCallback callback) override;
+  void UpdatePrintSettings(base::DictValue job_settings,
+                           UpdatePrintSettingsCallback callback) override;
   void SetupScriptedPrintPreview(
       SetupScriptedPrintPreviewCallback callback) override;
   void ShowScriptedPrintPreview() override;
   void RequestPrintPreview(
       printing::mojom::RequestPrintPreviewParamsPtr params) override;
-  void CheckForCancel(int32_t preview_ui_id,
+  void CheckForCancel(const base::UnguessableToken& preview_ui_id,
                       int32_t request_id,
                       CheckForCancelCallback callback) override;
+
+  // Queues `settings` to be consumed by the next GetPrintPreviewParams() call.
+  void AppendPrintPreviewSettings(base::DictValue settings, bool is_pdf);
+
+  // Completes GetPrintPreviewParams() once the PrinterQuery has resolved the
+  // requested settings against the target printer.
+  void CompleteGetPrintPreviewParams(
+      std::unique_ptr<printing::PrinterQuery> printer_query,
+      base::DictValue job_settings,
+      std::unique_ptr<printing::PrintSettings> print_settings,
+      GetPrintPreviewParamsCallback callback);
 #endif
   std::vector<int32_t> pdf_jobs_;
+
+#if BUILDFLAG(ENABLE_PRINT_PREVIEW)
+  // Pending job settings queued by UpdatePrintSettings() and consumed by
+  // GetPrintPreviewParams().
+  base::queue<base::DictValue> print_preview_settings_;
+#endif
 
   base::WeakPtrFactory<PrintViewManagerElectron> weak_factory_{this};
 

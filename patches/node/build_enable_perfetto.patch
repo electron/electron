@@ -28,7 +28,7 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..8061013fcfe3c3b02aabaca044706942
  
    // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
-index f8b4fd7c4ca5a0907806c7e804de8c951675a36a..0f924a5cc6718415226ffef5f8bc40a51043be04 100644
+index 116d699f505a4f53ec816ccb83b634cccdf2a67c..65af9f464fcd60ab5ecb2c5c2c119cde3119137f 100644
 --- a/lib/internal/http.js
 +++ b/lib/internal/http.js
 @@ -9,7 +9,7 @@ const {
@@ -168,10 +168,10 @@ index 06a4f8a239855571dcc67cd81e7da7a255a9ebfd..1fa9e314ad796cdf74f718f0eb2a1553
      }
  
 diff --git a/node.gyp b/node.gyp
-index 0620850e0872cfea9a1241b2a56f7bede7fa291a..934bee079ed785e4e72f33f71f445aae4ca6c0a6 100644
+index 6387b945506278085dff461aeff51e5d20f457e6..679941992c86ca02070d3df55e194d6904bda646 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -184,9 +184,9 @@
+@@ -186,9 +186,9 @@
        'src/timers.cc',
        'src/timer_wrap.cc',
        'src/tracing/agent.cc',
@@ -182,7 +182,7 @@ index 0620850e0872cfea9a1241b2a56f7bede7fa291a..934bee079ed785e4e72f33f71f445aae
        'src/tracing/traced_value.cc',
        'src/tty_wrap.cc',
        'src/udp_wrap.cc',
-@@ -318,9 +318,9 @@
+@@ -322,9 +322,9 @@
        'src/tcp_wrap.h',
        'src/timers.h',
        'src/tracing/agent.h',
@@ -194,10 +194,10 @@ index 0620850e0872cfea9a1241b2a56f7bede7fa291a..934bee079ed785e4e72f33f71f445aae
        'src/tracing/traced_value.h',
        'src/timer_wrap.h',
 diff --git a/src/async_wrap.cc b/src/async_wrap.cc
-index 4ebb63b2f591dde25ead2ddd869e1740adc243db..f9123d5a629a43783b9a3ffe14b57f6d6cc9ac5d 100644
+index b7d0041d0737f7e0315216748e3a5908428c7d1c..b48efd7e1a611dddb5724d65d623c8a20168d252 100644
 --- a/src/async_wrap.cc
 +++ b/src/async_wrap.cc
-@@ -113,8 +113,7 @@ void AsyncWrap::EmitPromiseResolve(Environment* env, double async_id) {
+@@ -110,8 +110,7 @@ void AsyncWrap::EmitPromiseResolve(Environment* env, double async_id) {
  }
  
  void AsyncWrap::EmitTraceAsyncStart() const {
@@ -254,7 +254,7 @@ index 40c8aea35c931c46fc62b717c978eab0659645fd..348cdfb0b42aa18f352c220cea0b896c
      if (!json_writer_)
        return;
 diff --git a/src/node.cc b/src/node.cc
-index 0bc086ccd1ff449c0f3fb08a972a0c45d3178f1c..ca74e83ef6f7b0e8b8496457af3813f07f52eb37 100644
+index 6f899ec0621ada45fb04c921359bc9b9ea79132b..4178e13dc8b5769c06fb720b2fcc655eb46aef5a 100644
 --- a/src/node.cc
 +++ b/src/node.cc
 @@ -78,6 +78,11 @@
@@ -269,7 +269,7 @@ index 0bc086ccd1ff449c0f3fb08a972a0c45d3178f1c..ca74e83ef6f7b0e8b8496457af3813f0
  #if defined(__APPLE__) || defined(__linux__) || defined(_WIN32)
  #define NODE_USE_V8_WASM_TRAP_HANDLER 1
  #else
-@@ -1261,6 +1266,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
+@@ -1264,6 +1269,14 @@ InitializeOncePerProcessInternal(const std::vector<std::string>& args,
      absl::SetMutexDeadlockDetectionMode(absl::OnDeadlockCycle::kIgnore);
    }
  
@@ -285,10 +285,10 @@ index 0bc086ccd1ff449c0f3fb08a972a0c45d3178f1c..ca74e83ef6f7b0e8b8496457af3813f0
    bool use_wasm_trap_handler =
        !per_process::cli_options->disable_wasm_trap_handler;
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index d3568da72a0f99419b4029b93d9eb1e9328d6bd5..0f5da3e48a2049a3e61fe81da94426a3b5928c7d 100644
+index 211bc074161b5fd4ac6f2d9a23b201d79ae362ef..0a692075dfeab6fb880b2ca6d52c2d45ce527276 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -1001,8 +1001,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+@@ -1028,8 +1028,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
  
    ContextifyScript* contextify_script = New(env, args.This());
  
@@ -331,7 +331,7 @@ index c9173d404c79a69743fc75ddb6bba0ac9579c1ef..8ffac047a69b3900f37d712334c504a1
  #define FS_DIR_ASYNC_TRACE_BEGIN0(fs_type, id)                                 \
    TRACE_EVENT_NESTABLE_ASYNC_BEGIN0(TRACING_CATEGORY_NODE2(fs_dir, async),     \
 diff --git a/src/node_file.cc b/src/node_file.cc
-index bf202f5e2bf5eaf2dd9192dfd701e621126c492c..4c0a128628e0184af53451d37149b33342f6e647 100644
+index d828e7e78f9b41e053c306b01a71ad3ad847aaf6..0bd206a6b4f423a67b6fedc0790faa6eb35d5b97 100644
 --- a/src/node_file.cc
 +++ b/src/node_file.cc
 @@ -147,16 +147,23 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {

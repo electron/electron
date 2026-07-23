@@ -4,6 +4,7 @@
 
 #include "shell/services/node/node_service.h"
 
+#include <memory>
 #include <sstream>
 #include <utility>
 
@@ -11,8 +12,10 @@
 #include "base/no_destructor.h"
 #include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
+#include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
+#include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/network_change_notifier.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/host_resolver.mojom.h"
@@ -29,6 +32,14 @@
 #if !IS_MAS_BUILD()
 #include "shell/common/crash_keys.h"
 #endif
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/utility/ai/utility_ai_manager.h"
+#include "shell/utility/api/electron_api_local_ai_handler.h"
+#include "url/gurl.h"
+#include "url/origin.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 namespace electron {
 
@@ -93,8 +104,8 @@ bool URLLoaderBundle::ShouldUseNetworkObserverfromURLLoaderFactory() const {
 
 NodeService::NodeService(
     mojo::PendingReceiver<node::mojom::NodeService> receiver)
-    : node_bindings_{NodeBindings::Create(
-          NodeBindings::BrowserEnvironment::kUtility)},
+    : node_bindings_{
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kUtility)},
       electron_bindings_{
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {
   if (receiver.is_valid())
@@ -102,6 +113,9 @@ NodeService::NodeService(
 }
 
 NodeService::~NodeService() {
+#if BUILDFLAG(ENABLE_PROMPT_API)
+  electron::api::local_ai_handler::SetHandlerChangedCallback({});
+#endif
   if (!node_env_stopped_) {
     node_env_->set_trace_sync_io(false);
     ParentPort::GetInstance()->Close();
@@ -119,8 +133,6 @@ void NodeService::Initialize(
 
   GetRemote().Bind(std::move(client_pending_remote));
   GetRemote().reset_on_disconnect();
-
-  ParentPort::GetInstance()->Initialize(std::move(params->port));
 
   if (params->url_loader_factory_params) {
     UpdateURLLoaderFactory(std::move(params->url_loader_factory_params));
@@ -142,6 +154,13 @@ void NodeService::Initialize(
   v8::HandleScope scope{isolate};
 
   node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
+
+  // ParentPort is a cppgc-managed wrappable, so it must be created after the
+  // V8 isolate (and its cppgc heap) exists. The connector is created paused and
+  // is not resumed until the entry script calls parentPort.start() during
+  // LoadEnvironment below, so binding the port here changes no observable
+  // behavior.
+  ParentPort::GetInstance()->Initialize(std::move(params->port));
 
   network_change_notifier_ = net::NetworkChangeNotifier::CreateIfNeeded(
       net::NetworkChangeNotifier::CONNECTION_UNKNOWN,
@@ -215,5 +234,69 @@ void NodeService::UpdateURLLoaderFactory(
       mojo::Remote(std::move(params->host_resolver)),
       params->use_network_observer_from_url_loader_factory);
 }
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+NodeService::PendingAIManagerBinding::PendingAIManagerBinding(
+    node::mojom::BindAIManagerParamsPtr params,
+    mojo::PendingReceiver<blink::mojom::AIManager> receiver)
+    : params(std::move(params)), receiver(std::move(receiver)) {}
+
+NodeService::PendingAIManagerBinding::~PendingAIManagerBinding() = default;
+
+NodeService::PendingAIManagerBinding::PendingAIManagerBinding(
+    PendingAIManagerBinding&&) = default;
+
+NodeService::PendingAIManagerBinding&
+NodeService::PendingAIManagerBinding::operator=(PendingAIManagerBinding&&) =
+    default;
+
+void NodeService::BindAIManager(
+    node::mojom::BindAIManagerParamsPtr params,
+    mojo::PendingReceiver<blink::mojom::AIManager> ai_manager) {
+  auto& handler = electron::api::local_ai_handler::GetPromptAPIHandler();
+  if (!handler.has_value()) {
+    // No handler set yet — register for notification on first pending binding.
+    if (pending_ai_manager_bindings_.empty()) {
+      electron::api::local_ai_handler::SetHandlerChangedCallback(
+          base::BindRepeating(&NodeService::FlushPendingAIManagerBindings,
+                              base::Unretained(this)));
+    }
+    if (pending_ai_manager_bindings_.size() >= kMaxPendingAIManagerBindings) {
+      pending_ai_manager_bindings_.front().receiver.reset();
+      pending_ai_manager_bindings_.pop_front();
+    }
+    pending_ai_manager_bindings_.emplace_back(std::move(params),
+                                              std::move(ai_manager));
+    {
+      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+      v8::HandleScope scope{isolate};
+      v8::Global<v8::Object>& module_object =
+          electron::api::local_ai_handler::GetModuleObject();
+      if (!module_object.IsEmpty()) {
+        gin_helper::EmitEvent(isolate, module_object.Get(isolate),
+                              "-pending-bind-ai-manager");
+      }
+    }
+    return;
+  }
+
+  mojo::MakeSelfOwnedReceiver(
+      std::make_unique<UtilityAIManager>(
+          params->web_contents_id, params->security_origin, params->frame_token,
+          params->render_process_id),
+      std::move(ai_manager));
+}
+
+void NodeService::FlushPendingAIManagerBindings() {
+  auto pending = std::move(pending_ai_manager_bindings_);
+  for (auto& binding : pending) {
+    mojo::MakeSelfOwnedReceiver(
+        std::make_unique<UtilityAIManager>(
+            binding.params->web_contents_id, binding.params->security_origin,
+            binding.params->frame_token, binding.params->render_process_id),
+        std::move(binding.receiver));
+  }
+}
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 }  // namespace electron

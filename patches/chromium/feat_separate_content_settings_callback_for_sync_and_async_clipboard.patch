@@ -20,7 +20,7 @@ This patch will be removed when the deprecated sync api support is
 removed.
 
 diff --git a/components/permissions/permission_util.cc b/components/permissions/permission_util.cc
-index 1c31e16a4db45f2d36d91abdbd3056959633c1da..f1edc34d7fd034a08af91f265b9e4cf2d870679a 100644
+index 857a63363486a092ae6242334fcce5ac5efd74a7..4f4e7ed33d3230e28c3e94ec2a79bc4458610993 100644
 --- a/components/permissions/permission_util.cc
 +++ b/components/permissions/permission_util.cc
 @@ -566,7 +566,8 @@ ContentSettingsType PermissionUtil::PermissionTypeToContentSettingsTypeSafe(
@@ -34,7 +34,7 @@ index 1c31e16a4db45f2d36d91abdbd3056959633c1da..f1edc34d7fd034a08af91f265b9e4cf2
    }
  
 diff --git a/content/browser/permissions/permission_controller_impl.cc b/content/browser/permissions/permission_controller_impl.cc
-index 30cf63190284f0f7c5d9a7c8f6b2e6b0956d0ec5..cb07f1755e152f0f3cd11e1757b8aa203e29fcc0 100644
+index 454bcb2466b39aefb636d9b3232fdefe5224708d..ebcda16a7972ce3d79342b91bd06000c269b17e9 100644
 --- a/content/browser/permissions/permission_controller_impl.cc
 +++ b/content/browser/permissions/permission_controller_impl.cc
 @@ -98,7 +98,8 @@ PermissionToSchedulingFeature(PermissionType permission_name) {
@@ -130,10 +130,10 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index 05d2b0b9610e0fce63baa4165cfa860aa55f7962..c7a89fe2e4ec62607cd38a1cd9a4e10918c4e183 100644
+index e1fc6d132fb04d9f85941438060bdafb6b529ab2..e179935457506c8718227c5e0f5240e1e70f2e5b 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-@@ -123,7 +123,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
+@@ -127,7 +127,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
      return true;
    }
    return frame.GetContentSettingsClient() &&
@@ -142,7 +142,7 @@ index 05d2b0b9610e0fce63baa4165cfa860aa55f7962..c7a89fe2e4ec62607cd38a1cd9a4e109
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -338,7 +338,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -355,7 +355,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&

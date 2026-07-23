@@ -99,6 +99,7 @@ class DevToolsEyeDropper;
 
 namespace electron {
 
+class DevToolsContextMenu;
 class ElectronBrowserContext;
 class InspectableWebContents;
 class WebContentsZoomController;
@@ -649,9 +650,9 @@ class WebContents final : public ExclusiveAccessContext,
   void NavigationEntryCommitted(
       const content::LoadCommittedDetails& load_details) override;
   void TitleWasSet(content::NavigationEntry* entry) override;
-  void DidUpdateFaviconURL(
-      content::RenderFrameHost* render_frame_host,
-      const std::vector<blink::mojom::FaviconURLPtr>& urls) override;
+  void DidUpdateFaviconURL(content::RenderFrameHost* render_frame_host,
+                           const std::vector<blink::mojom::FaviconURLPtr>& urls,
+                           blink::mojom::FaviconUpdateReason reason) override;
   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
                            const content::MediaPlayerId& id) override;
   void MediaStoppedPlaying(
@@ -685,6 +686,9 @@ class WebContents final : public ExclusiveAccessContext,
   ElectronBrowserContext* GetBrowserContext() const;
 
   void OnElectronBrowserConnectionError();
+
+  // Posted from PrimaryMainFrameRenderProcessGone(); see the comment there.
+  void EmitRenderProcessGone(base::TerminationStatus status, int exit_code);
 
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
@@ -868,6 +872,10 @@ class WebContents final : public ExclusiveAccessContext,
   // dialog_manager_, so we can make sure inspectable_web_contents_ is
   // destroyed before dialog_manager_, otherwise a crash would happen.
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
+
+  // Menu for context menu requests coming from a DevTools frontend hosted
+  // directly in this WebContents (e.g. via setDevToolsWebContents()).
+  std::unique_ptr<DevToolsContextMenu> devtools_context_menu_;
 
   std::optional<GURL> pending_unload_url_ = std::nullopt;
 

@@ -15,10 +15,10 @@ was missing gypi_values.node_pdl_files from its inputs, causing Ninja to skip
 regeneration when PDL domain files changed. Should be upstreamed.
 
 diff --git a/configure.py b/configure.py
-index fa25de8c316b71d3ad5b55b5ce398b69a5d4a965..fc48438060e0dd84edc60d1aebf3d0946be98ea9 100755
+index 9c426b3f8f9cbf2ce086fce2fe1ee7c7bd636f89..bdf0d19292bf32e3e5621d7af2c93618c85dc6a4 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1838,7 +1838,7 @@ def configure_v8(o, configs):
+@@ -1947,7 +1947,7 @@ def configure_v8(o, configs):
    # Until we manage to get rid of all those, v8_enable_sandbox cannot be used.
    # Note that enabling pointer compression without enabling sandbox is unsupported by V8,
    # so this can be broken at any time.
@@ -71,24 +71,11 @@ index 41f200189a34e150e4c8f25da2a72c2108259720..156fee33b3813fe4d94a1c9585f217a9
  }
  
  assert(!node_enable_inspector || node_use_openssl,
-diff --git a/src/inspector/unofficial.gni b/src/inspector/unofficial.gni
-index 4810d93eb971b253f7dadff7011a632f6dbe6a2b..48cf5102630737ffeba98719a8b508b52fe5e27a 100644
---- a/src/inspector/unofficial.gni
-+++ b/src/inspector/unofficial.gni
-@@ -29,7 +29,7 @@ template("inspector_gn_build") {
-     deps = [ ":node_protocol_json" ]
- 
-     outputs = gypi_values.node_inspector_generated_sources
--    inputs = gypi_values.node_protocol_files + [
-+    inputs = gypi_values.node_protocol_files + gypi_values.node_pdl_files + [
-       "node_protocol_config.json",
-       "$node_gen_dir/src/node_protocol.json",
-     ]
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 6506dcea3f4f88a7781975fae1ee5f8b87d4dfb2..a077ad673fdf7eab61878940e5fef43921c2e453 100644
+index 70c628294c98d79d2eb1a5e519f50113f42e4d8e..edcf2d8424f9b60d68ddd95b16da488feec2c41b 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -455,6 +455,30 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
+@@ -458,6 +458,30 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompileFunction(
    return value.As<Function>();
  }
  
@@ -119,7 +106,7 @@ index 6506dcea3f4f88a7781975fae1ee5f8b87d4dfb2..a077ad673fdf7eab61878940e5fef439
  MaybeLocal<Value> BuiltinLoader::CompileAndCall(Local<Context> context,
                                                  const char* id,
                                                  Realm* realm) {
-@@ -741,7 +765,7 @@ MaybeLocal<Module> BuiltinLoader::LoadBuiltinSourceTextModule(Realm* realm,
+@@ -744,7 +768,7 @@ MaybeLocal<Module> BuiltinLoader::LoadBuiltinSourceTextModule(Realm* realm,
    // Pre-fetch all dependencies.
    if (requests->Length() > 0) {
      for (int i = 0; i < requests->Length(); i++) {
@@ -128,7 +115,7 @@ index 6506dcea3f4f88a7781975fae1ee5f8b87d4dfb2..a077ad673fdf7eab61878940e5fef439
        std::string specifier =
            Utf8Value(isolate, req->GetSpecifier()).ToString();
        std::string resolved_id = ResolveRequestForBuiltin(specifier);
-@@ -900,6 +924,7 @@ void BuiltinLoader::RegisterExternalReferences(
+@@ -903,6 +927,7 @@ void BuiltinLoader::RegisterExternalReferences(
    registry->Register(ImportBuiltinSourceTextModule);
  
    RegisterExternalReferencesForInternalizedBuiltinCode(registry);

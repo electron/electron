@@ -193,7 +193,7 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_allocator_.GenerateId();
   compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
 
-  root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
+  root_layer_ = std::make_unique<ui::LayerSolidColor>();
 
   root_layer()->SetColor(background_color_);
 
@@ -352,11 +352,6 @@ bool OffScreenRenderWidgetHostView::IsShowing() {
   return is_showing_;
 }
 
-void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForWebTest() {
-  ++latest_capture_sequence_number_;
-  SynchronizeVisualProperties();
-}
-
 gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() {
   if (IsPopupWidget())
     return popup_position_;
@@ -440,7 +435,7 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
 
   ResizeRootLayer(true);
   SetPainting(parent_host_view_->is_painting());
-  Show();
+  ShowWithVisibility(content::PageVisibilityState::kVisible);
 }
 
 input::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
@@ -479,10 +474,6 @@ void OffScreenRenderWidgetHostView::Destroy() {
   delete this;
 }
 
-uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
-  return latest_capture_sequence_number_;
-}
-
 void OffScreenRenderWidgetHostView::CopyFromSurface(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
@@ -492,7 +483,7 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
       src_rect, output_size, base::TimeDelta(), std::move(callback));
 }
 
-gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
+gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInScreen() {
   return gfx::Rect(size_);
 }
 
@@ -578,7 +569,8 @@ void OffScreenRenderWidgetHostView::CancelWidget() {
       parent_host_view_->set_popup_host_view(nullptr);
     } else if (parent_host_view_->child_host_view_ == this) {
       parent_host_view_->set_child_host_view(nullptr);
-      parent_host_view_->Show();
+      parent_host_view_->ShowWithVisibility(
+          content::PageVisibilityState::kVisible);
     } else {
       parent_host_view_->RemoveGuestHostView(this);
     }

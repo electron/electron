@@ -29,9 +29,11 @@ can be created from, eliminating the Node bootstrap recompile.
   snapshot's per-builtin cache.
 - node_mksnapshot.cc: read --electron-v8-snapshot-blob, set the c_function
   drop env var, plumb the base blob to the SnapshotCreator.
+- unofficial.gni: check for mold linkers in addition to lld in disable_icf
+  config following https://chromium-review.googlesource.com/c/v8/v8/+/7808546.
 
 diff --git a/node.gni b/node.gni
-index 8239967653fee7791800ee3292e77b91bffaaef9..c71d66df5d78b8e86ef5cf405ca7c9c8d7e716ee 100644
+index 156fee33b3813fe4d94a1c9585f217a99dbfbd5f..fb7462cc0c7c2e267847c54e7e1ff4db1559b338 100644
 --- a/node.gni
 +++ b/node.gni
 @@ -64,11 +64,10 @@ declare_args() {
@@ -71,10 +73,10 @@ index c1bcb3948c4cf68b36dbb1ea985bfb02267ad724..b9ddc1e2139c1a3b869a27f088e6e646
      isolate->SetCaptureStackTraceForUncaughtExceptions(
          true,
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index cf7f3f272bf84af330967d5a7cb2c5bee821cc84..29a621c7fdca110a1a931d6cd40dbc5d0bc0b4ce 100644
+index ec1f9ce6ae7059faae6a5f727eff41b2b3fc489d..71226c74e5aa3d01603cce5852465a6fe011a9f7 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -659,12 +659,17 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
+@@ -662,12 +662,17 @@ bool BuiltinLoader::CompileAllBuiltinsAndCopyCodeCache(
  
  void BuiltinLoader::RefreshCodeCache(const std::vector<CodeCacheInfo>& in) {
    RwLock::ScopedLock lock(code_cache_->mutex);
@@ -98,10 +100,10 @@ index cf7f3f272bf84af330967d5a7cb2c5bee821cc84..29a621c7fdca110a1a931d6cd40dbc5d
    code_cache_->has_code_cache = true;
  }
 diff --git a/src/node_external_reference.h b/src/node_external_reference.h
-index a073cde10d1206770eae86c6336ef379869b1164..9283a569363ca883a8c5f7eba54609a8f09030b3 100644
+index 5ce9ec0a8c207b1452e7cef0aff2441a4e99d161..e474b0dab727a7019aa146cac53816596e031331 100644
 --- a/src/node_external_reference.h
 +++ b/src/node_external_reference.h
-@@ -41,6 +41,11 @@ class ExternalReferenceRegistry {
+@@ -42,6 +42,11 @@ class ExternalReferenceRegistry {
    // Registers both the underlying function pointer
    // and the corresponding CFunctionInfo.
    void Register(const v8::CFunction& c_func) {
@@ -236,7 +238,7 @@ index 0842cba257d0ca36e07c97736e5b24cc77f2a053..0ee1bd02a03b6d303861cd0f8353db6c
        node::InitializeOncePerProcess(
            std::vector<std::string>(argv, argv + argc),
 diff --git a/unofficial.gni b/unofficial.gni
-index 1285f83662e4f252faa1730df04cafc588cd7556..fe2c6786a10f94fc0a15d4b6a0d3bfffb79f2e33 100644
+index 1285f83662e4f252faa1730df04cafc588cd7556..e6ff9a302624ca829739e5b38385fa5c050e6fd4 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -32,7 +32,12 @@ template("node_gn_build") {
@@ -337,7 +339,7 @@ index 1285f83662e4f252faa1730df04cafc588cd7556..fe2c6786a10f94fc0a15d4b6a0d3bfff
          } else if (is_apple && !use_lld) {
            ldflags = [ "-Wl,-no_deduplicate" ]  # ld64.
 -        } else if ((!is_apple && use_gold) || use_lld) {
-+        } else if (use_lld) {
++        } else if (use_lld || linker_path != "") {
            ldflags = [ "-Wl,--icf=none" ]
          }
        }

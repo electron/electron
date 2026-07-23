@@ -8,6 +8,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { EventEmitter } from 'node:stream';
 import * as tty from 'node:tty';
+import { pathToFileURL } from 'node:url';
 import * as util from 'node:util';
 
 import {
@@ -271,6 +272,15 @@ describe('node feature', () => {
       },
       [fixtures]
     );
+
+    itremote('uses Blink implementations when nodeIntegration is enabled in the renderer', () => {
+      // Node.js' undici-based fetch would return its JS source here; Blink's
+      // bindings are native. This guards against Node's bootstrap clobbering
+      // the renderer's Web Platform globals.
+      for (const ctor of [fetch, FormData, Headers, Request, Response, EventSource]) {
+        expect(ctor.toString()).to.match(/\[native code\]/);
+      }
+    });
   });
 
   it('does not hang when using the fs module in the renderer process', async () => {
@@ -590,7 +600,7 @@ describe('node feature', () => {
 
       expect(() => {
         crypto.createPrivateKey({ key: ed448, format: 'jwk' });
-      }).to.throw(/Invalid JWK data/);
+      }).to.throw(/Invalid JWK/);
     });
   });
 
@@ -956,6 +966,21 @@ describe('node feature', () => {
         ...process.env,
         ELECTRON_FORCE_IS_PACKAGED: 'true',
         NODE_OPTIONS: `--require=${path.join(fixtures, 'module', 'fail.js')}`
+      };
+      // App should exit with code 0.
+      const child = childProcess.spawn(process.execPath, [appPath], { env });
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('does not throw --import hook in non-packaged apps', async () => {
+      const appPath = path.join(fixtures, 'module', 'noop.js');
+      // Since this is the import path - we should always use backward slashes
+      // regardless of the `path.sep` value.
+      const hookUrl = pathToFileURL(path.join(fixtures, 'module', 'hook.mjs'));
+      const env = {
+        ...process.env,
+        NODE_OPTIONS: `--import=${hookUrl}`
       };
       // App should exit with code 0.
       const child = childProcess.spawn(process.execPath, [appPath], { env });

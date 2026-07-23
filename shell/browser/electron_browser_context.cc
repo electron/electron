@@ -361,7 +361,7 @@ ElectronBrowserContext::ElectronBrowserContext(
     base::DictValue options)
     : in_memory_pref_store_(new ValueMapPrefStore),
       storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
-      protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
+      protocol_registry_(base::WrapUnique(new ProtocolRegistry(this))),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
   // Read options.

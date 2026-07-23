@@ -11,16 +11,23 @@
 #include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/web_contents.h"
+#include "shell/browser/ui/devtools_context_menu.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "ui/base/models/image_model.h"
+#include "ui/compositor/layer.h"
 #include "ui/views/controls/label.h"
+#include "ui/views/controls/native/native_view_host.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/widget/widget_delegate.h"
 #include "ui/views/window/client_view.h"
+
+#if defined(USE_AURA)
+#include "ui/aura/window.h"
+#endif
 
 namespace electron {
 namespace {
@@ -89,6 +96,17 @@ InspectableWebContentsView::InspectableWebContentsView(
   if (!inspectable_web_contents_->is_guest() &&
       inspectable_web_contents_->GetWebContents()->GetNativeView()) {
     auto* contents_web_view = new views::WebView(nullptr);
+#if defined(USE_AURA)
+    // Chromium's NativeViewHostAura defaults to managing the hosted native
+    // view's layer via views crrev.com/c/8013273. Under that
+    // path the web contents' aura window layer is reparented out of its aura
+    // parent window's layer, which breaks occlusion-based visibility tracking
+    // (document.visibilityState) for WebContentsViews nested inside another
+    // View. Opt back into the legacy parent-managed layer path so occlusion is
+    // computed correctly. This must run before the WebView is attached to a
+    // Widget.
+    contents_web_view->holder()->SetLayerManagedByViews(false);
+#endif
     contents_web_view->SetWebContents(
         inspectable_web_contents_->GetWebContents());
     contents_web_view_ = contents_web_view;
@@ -118,7 +136,18 @@ void InspectableWebContentsView::SetCornerRadii(
     const gfx::RoundedCornersF& corner_radii) {
   // WebView won't exist for offscreen rendering.
   if (contents_web_view_) {
-    contents_web_view_->holder()->SetCornerRadii(corner_radii);
+    contents_web_view_->holder()->SetNativeViewCornerRadii(corner_radii);
+
+#if defined(USE_AURA)
+    // Aura calls SetIsFastRoundedCorner(true) which clips each tile separately.
+    // This creates a jagged edge at fractional DPI if the view is taller than
+    // one tile, so we use the slow method for a smooth edge at the cost
+    // of an extra render surface.
+    if (auto* native_view = contents_web_view_->holder()->native_view()) {
+      if (auto* layer = native_view->layer())
+        layer->SetIsFastRoundedCorner(false);
+    }
+#endif
   }
 }
 
@@ -169,6 +198,10 @@ void InspectableWebContentsView::ActivateDevTools() {
 void InspectableWebContentsView::CloseDevTools() {
   if (!devtools_visible_)
     return;
+
+  // Tear down any showing context menu before its host widget and the
+  // DevTools WebContents go away.
+  context_menu_.reset();
 
   devtools_visible_ = false;
   if (devtools_window_) {
@@ -245,6 +278,23 @@ void InspectableWebContentsView::SetTitle(const std::u16string& title) {
 
 const std::u16string InspectableWebContentsView::GetTitle() {
   return title_;
+}
+
+void InspectableWebContentsView::ShowDevToolsContextMenu(
+    const content::ContextMenuParams& params) {
+  content::WebContents* devtools_web_contents =
+      inspectable_web_contents_->GetDevToolsWebContents();
+  if (!devtools_web_contents)
+    return;
+
+  // Anchor the menu to the widget that actually hosts the DevTools view so
+  // that opening it doesn't shift focus to the inspected page's window.
+  views::Widget* widget =
+      devtools_window_ ? devtools_window_.get() : GetWidget();
+
+  context_menu_ =
+      std::make_unique<DevToolsContextMenu>(devtools_web_contents, params);
+  context_menu_->RunMenuAt(widget);
 }
 
 void InspectableWebContentsView::Layout(PassKey) {

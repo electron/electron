@@ -22,6 +22,11 @@ EXTENSIONS_TO_SKIP = [
 PATHS_TO_SKIP = [
   # Skip because it is an output of //ui/gl that we don't need.
   'angledata',
+  # Skip because ANGLE is statically linked; these are dummy stubs
+  # that upstream generates only for Chromium bot infrastructure and nothing
+  # loads them at runtime. See the TODO(crbug.com/514229803) in ui/gl/BUILD.gn.
+  './libEGL',
+  './libGLESv2',
   # Skip because these are outputs that we don't need.
   './libVkICD_mock_',
   # Skip because these are outputs that we don't need.

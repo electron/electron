@@ -44,6 +44,7 @@
 #include "components/security_state/core/security_state.h"
 #include "content/browser/renderer_host/frame_tree_node.h"  // nogncheck
 #include "content/browser/renderer_host/navigation_controller_impl.h"  // nogncheck
+#include "content/browser/renderer_host/render_frame_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_frame_host_manager.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
@@ -76,6 +77,7 @@
 #include "content/public/common/child_process_id.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
+#include "content/public/common/url_constants.h"
 #include "content/public/common/webplugininfo.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/mas.h"
@@ -116,6 +118,7 @@
 #include "shell/browser/preload_script.h"
 #include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
+#include "shell/browser/ui/devtools_context_menu.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/file_dialog.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -171,8 +174,10 @@
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+#include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
+#include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "ui/base/cocoa/defaults_utils.h"
@@ -912,6 +917,14 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Whether to enable DevTools.
   options.Get("devTools", &enable_devtools_);
 
+  // Sandbox flags this WebContents must start with, e.g. inherited from a
+  // sandboxed frame that requested the window. Sandbox flags can only be
+  // added this way, never cleared.
+  uint32_t opener_sandbox_flags = 0;
+  options.Get("openerSandboxFlags", &opener_sandbox_flags);
+  const auto starting_sandbox_flags =
+      static_cast<network::mojom::WebSandboxFlags>(opener_sandbox_flags);
+
   const bool initially_shown = options.ValueOrDefault(options::kShow, true);
 
   // Obtain the session.
@@ -962,6 +975,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     bool transparent = bc == SK_ColorTRANSPARENT;
 
     content::WebContents::CreateParams params{browser_context};
+    params.starting_sandbox_flags = starting_sandbox_flags;
     auto* view = new OffScreenWebContentsView(
         transparent, offscreen_use_shared_texture_,
         offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
@@ -973,6 +987,7 @@ WebContents::WebContents(v8::Isolate* isolate,
     view->SetWebContents(web_contents.get());
   } else {
     content::WebContents::CreateParams params{browser_context};
+    params.starting_sandbox_flags = starting_sandbox_flags;
     params.initially_hidden = !initially_shown;
     web_contents = content::WebContents::Create(params);
   }
@@ -1446,28 +1461,40 @@ content::WebContents* WebContents::OpenURLFromTab(
         navigation_handle_callback) {
   auto weak_this = GetWeakPtr();
   if (params.disposition != WindowOpenDisposition::CURRENT_TAB) {
-    content::FrameTreeNode* initiator =
-        params.frame_tree_node_id ? content::FrameTreeNode::GloballyFindByID(
-                                        params.frame_tree_node_id)
-                                  : nullptr;
-    if (initiator && !initiator->IsMainFrame()) {
-      using SandboxFlags = network::mojom::WebSandboxFlags;
+    using SandboxFlags = network::mojom::WebSandboxFlags;
+    SandboxFlags inherited_sandbox_flags = SandboxFlags::kNone;
+    // For non-CURRENT_TAB dispositions params.frame_tree_node_id refers to
+    // the frame to navigate (which doesn't exist yet), so resolve the
+    // initiating frame through the source RenderFrameHost instead.
+    auto* initiator = static_cast<content::RenderFrameHostImpl*>(
+        content::RenderFrameHost::FromID(params.source_render_process_id,
+                                         params.source_render_frame_id));
+    if (initiator && initiator->GetParent()) {
+      // Use the initiating document's active sandboxing flag set (its policy
+      // container flags), which is what
+      // content::WebContentsImpl::CreateWithOpener consults when deciding
+      // whether renderer-created popups must stay sandboxed.
       const SandboxFlags flags = initiator->active_sandbox_flags();
       auto allow = [flags](SandboxFlags flag) {
         return (flags & flag) == SandboxFlags::kNone;
       };
       if (!allow(SandboxFlags::kPopups)) {
-        if (auto* rfh = initiator->current_frame_host()) {
-          rfh->AddMessageToConsole(
-              blink::mojom::ConsoleMessageLevel::kError,
-              "Blocked opening a new window because the iframe is sandboxed "
-              "and the 'allow-popups' keyword is not set.");
-        }
+        initiator->AddMessageToConsole(
+            blink::mojom::ConsoleMessageLevel::kError,
+            "Blocked opening a new window because the iframe is sandboxed "
+            "and the 'allow-popups' keyword is not set.");
         return nullptr;
+      }
+      // A sandboxed frame may create popups, but unless the
+      // 'allow-popups-to-escape-sandbox' keyword is set the new top-level
+      // browsing context must inherit the initiator's sandbox flags. See
+      // https://html.spec.whatwg.org/C/#attr-iframe-sandbox.
+      if (!allow(SandboxFlags::kPropagatesToAuxiliaryBrowsingContexts)) {
+        inherited_sandbox_flags = flags;
       }
     }
     Emit("-new-window", params.url, "", params.disposition, "", params.referrer,
-         params.post_data);
+         params.post_data, static_cast<uint32_t>(inherited_sandbox_flags));
     return nullptr;
   }
 
@@ -1736,6 +1763,28 @@ void WebContents::RendererResponsive(
 
 bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
                                     const content::ContextMenuParams& params) {
+  // A WebContents hosting a DevTools frontend directly (e.g. one passed to
+  // webContents.setDevToolsWebContents()) keeps its own delegate, so menu
+  // requests from InspectorFrontendHost.showContextMenuAtPoint() arrive here
+  // instead of at InspectableWebContents. Such requests are recognizable by
+  // carrying menu items in |params.custom_items| or by the kNone source type
+  // (the request is programmatic, not a user gesture). Show them as a native
+  // menu anchored to whichever widget hosts this WebContents; emitting
+  // 'context-menu' would drop the items and leave the frontend waiting for a
+  // selection forever. Ordinary right-clicks in the frontend still emit
+  // 'context-menu' below.
+  if (render_frame_host.GetMainFrame()->GetLastCommittedURL().SchemeIs(
+          content::kChromeDevToolsScheme) &&
+      (!params.custom_items.empty() ||
+       params.source_type == ui::mojom::MenuSourceType::kNone)) {
+    devtools_context_menu_ =
+        std::make_unique<DevToolsContextMenu>(web_contents(), params);
+    devtools_context_menu_->RunMenuAt(
+        views::Widget::GetTopLevelWidgetForNativeView(
+            web_contents()->GetNativeView()));
+    return true;
+  }
+
   ui::Clipboard::GetForCurrentThread()->ReadAvailableTypes(
       ui::ClipboardBuffer::kCopyPaste, std::nullopt,
       base::BindOnce(&WebContents::OnReadAvailableTypes, GetWeakPtr(), params,
@@ -2058,11 +2107,24 @@ void WebContents::RenderViewDeleted(content::RenderViewHost* render_view_host) {
 
 void WebContents::PrimaryMainFrameRenderProcessGone(
     base::TerminationStatus status) {
+  // This fires while RenderProcessHostImpl is still notifying observers of
+  // the process death. Emit asynchronously so app code (e.g. a synchronous
+  // reload() in the handler) can't re-launch the renderer from inside that
+  // loop, which trips a CHECK in extensions::RendererStartupHelper. The exit
+  // code is captured now because a navigation in the interim could reset it.
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&WebContents::EmitRenderProcessGone,
+                                weak_factory_.GetWeakPtr(), status,
+                                web_contents()->GetCrashedErrorCode()));
+}
+
+void WebContents::EmitRenderProcessGone(base::TerminationStatus status,
+                                        int exit_code) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   auto details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
-  details.Set("exitCode", web_contents()->GetCrashedErrorCode());
+  details.Set("exitCode", exit_code);
   Emit("render-process-gone", details);
 }
 
@@ -2295,12 +2357,13 @@ void WebContents::MaybeSendRendererStartupData(
       preload = web_prefs->GetPreloadPath();
     if (preload && preload->IsAbsolute()) {
       auto ps = mojom::PreloadScriptData::New();
-      ps->id = "preload-" + preload->AsUTF8Unsafe();
+      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
       ps->file_path = preload->AsUTF8Unsafe();
       std::string contents;
       if (asar::ReadFileToString(*preload, &contents)) {
         ps->contents.assign(contents.begin(), contents.end());
-        std::vector<uint8_t> cache = preload_code_cache::Get(ps->id);
+        std::vector<uint8_t> cache =
+            preload_code_cache::Get(ps->id, ps->contents);
         if (!cache.empty())
           ps->code_cache = std::move(cache);
       } else {
@@ -2445,7 +2508,8 @@ void WebContents::TitleWasSet(content::NavigationEntry* entry) {
 
 void WebContents::DidUpdateFaviconURL(
     content::RenderFrameHost* render_frame_host,
-    const std::vector<blink::mojom::FaviconURLPtr>& urls) {
+    const std::vector<blink::mojom::FaviconURLPtr>& urls,
+    blink::mojom::FaviconUpdateReason reason) {
   base::flat_set<GURL> unique_urls;
   unique_urls.reserve(std::size(urls));
   for (const auto& iter : urls) {
@@ -4180,11 +4244,9 @@ void WebContents::SetEmbedder(const WebContents* embedder) {
     if (owner_window)
       SetOwnerWindow(owner_window);
 
-    content::RenderWidgetHostView* rwhv =
-        web_contents()->GetRenderWidgetHostView();
-    if (rwhv) {
-      rwhv->Hide();
-      rwhv->Show();
+    if (web_contents()->GetRenderWidgetHostView()) {
+      web_contents()->WasHidden();
+      web_contents()->WasShown();
     }
   }
 }

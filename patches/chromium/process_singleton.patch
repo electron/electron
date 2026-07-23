@@ -18,10 +18,10 @@ This patch adds a few changes to the Chromium code:
    admin permissions.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index e11ccd361a0837eef71869b65f510830171c3a29..f076d0f783e2c0f6b5444002f756001adf2729bd 100644
+index 6f081c26ca4cffe76104eae5a4130a81a93a539d..7da4c199de1d2721a2e6ba9cb10ba0bc146917b7 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
-@@ -101,12 +101,19 @@ class ProcessSingleton {
+@@ -104,12 +104,19 @@ class ProcessSingleton {
        base::RepeatingCallback<bool(base::CommandLine command_line,
                                     const base::FilePath& current_directory)>;
  
@@ -41,15 +41,15 @@ index e11ccd361a0837eef71869b65f510830171c3a29..f076d0f783e2c0f6b5444002f756001a
    ~ProcessSingleton();
  
    // Notify another process, if available. Otherwise sets ourselves as the
-@@ -175,6 +182,8 @@ class ProcessSingleton {
+@@ -189,6 +196,8 @@ class ProcessSingleton {
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
  
 +  std::string program_name_; // Used for mutexName.
 +  bool is_app_sandboxed_; // Whether the Electron app is sandboxed.
    HWND remote_window_;  // The HWND_MESSAGE of another browser.
-   base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
+ 
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
 index 2448abf73b097f04583aefda1fb1a67b3de67e5b..55f935f38bf05586650e7a83a689347bb41a45a4 100644
 --- a/chrome/browser/process_singleton_posix.cc
@@ -165,10 +165,10 @@ index 2448abf73b097f04583aefda1fb1a67b3de67e5b..55f935f38bf05586650e7a83a689347b
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 026f480ebe1d47af8b949d6a076a2d053022bda2..6687bcd53ab8dca1bc7b96446fdd673ed9d1a5da 100644
+index eddaeacf428650bc4c55498e7560e253a4cdf2f0..b60a546b39b0fe2747e5bbe5716b693b7ffe09bd 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -29,7 +29,9 @@
+@@ -30,7 +30,9 @@
  #include "base/win/wmi.h"
  #include "chrome/browser/process_singleton_internal.h"
  #include "chrome/browser/shell_integration.h"
@@ -178,7 +178,7 @@ index 026f480ebe1d47af8b949d6a076a2d053022bda2..6687bcd53ab8dca1bc7b96446fdd673e
  #include "chrome/browser/win/chrome_process_finder.h"
  #include "chrome/common/chrome_constants.h"
  #include "chrome/common/chrome_paths.h"
-@@ -164,6 +166,7 @@ bool ProcessLaunchNotification(
+@@ -166,6 +168,7 @@ bool ProcessLaunchNotification(
  }
  
  bool DisplayShouldKillMessageBox() {
@@ -186,7 +186,7 @@ index 026f480ebe1d47af8b949d6a076a2d053022bda2..6687bcd53ab8dca1bc7b96446fdd673e
    TRACE_EVENT0("startup", "ProcessSingleton:DisplayShouldKillMessageBox");
  
    // Ensure there is an instance of ResourceBundle that is initialized for
-@@ -174,6 +177,10 @@ bool DisplayShouldKillMessageBox() {
+@@ -176,6 +179,10 @@ bool DisplayShouldKillMessageBox() {
               NULL, l10n_util::GetStringUTF16(IDS_PRODUCT_NAME),
               l10n_util::GetStringUTF16(IDS_BROWSER_HUNGBROWSER_MESSAGE)) !=
           chrome::MESSAGE_BOX_RESULT_NO;
@@ -197,7 +197,21 @@ index 026f480ebe1d47af8b949d6a076a2d053022bda2..6687bcd53ab8dca1bc7b96446fdd673e
  }
  
  // Function was copied from Process::Terminate.
-@@ -251,9 +258,13 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -245,8 +252,12 @@ base::File CreateLockFileWithTimeout(const base::FilePath& lock_file_path,
+           lock_file_path.value().c_str(), GENERIC_WRITE, FILE_SHARE_READ,
+           nullptr, CREATE_ALWAYS,
+           FILE_ATTRIBUTE_NORMAL | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
++      // Capture the error before leaving the scope: the TRACE_EVENT0
++      // destructor that runs at the end of this block can reset the thread's
++      // last-error code to ERROR_SUCCESS. Reading it afterwards and passing 0
++      // to base::File::OSErrorToFileError() trips a DCHECK.
++      error = ::GetLastError();
+     }
+-    error = ::GetLastError();
+ 
+     if (lock_file_handle != INVALID_HANDLE_VALUE) {
+       LOG_IF(WARNING, error == ERROR_ALREADY_EXISTS)
+@@ -327,11 +338,14 @@ bool ProcessSingleton::EscapeVirtualization(
  }
  
  ProcessSingleton::ProcessSingleton(
@@ -209,9 +223,11 @@ index 026f480ebe1d47af8b949d6a076a2d053022bda2..6687bcd53ab8dca1bc7b96446fdd673e
 +      program_name_(program_name),
 +      is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-       lock_file_(INVALID_HANDLE_VALUE),
+-      lock_file_(INVALID_HANDLE_VALUE),
        user_data_dir_(user_data_dir),
-@@ -370,7 +381,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
+       should_kill_remote_process_callback_(
+           base::BindRepeating(&DisplayShouldKillMessageBox)) {}
+@@ -444,7 +458,7 @@ ProcessSingleton::NotifyOtherProcessOrCreate() {
  bool ProcessSingleton::Create() {
    TRACE_EVENT0("startup", "ProcessSingleton::Create");
  
@@ -220,7 +236,7 @@ index 026f480ebe1d47af8b949d6a076a2d053022bda2..6687bcd53ab8dca1bc7b96446fdd673e
  
    remote_window_ = FindRunningChromeWindow(user_data_dir_);
    if (!remote_window_ && !EscapeVirtualization(user_data_dir_)) {
-@@ -379,7 +390,7 @@ bool ProcessSingleton::Create() {
+@@ -453,7 +467,7 @@ bool ProcessSingleton::Create() {
      // access. As documented, it's clearer to NOT request ownership on creation
      // since it isn't guaranteed we will get it. It is better to create it
      // without ownership and explicitly get the ownership afterward.
@@ -229,7 +245,7 @@ index 026f480ebe1d47af8b949d6a076a2d053022bda2..6687bcd53ab8dca1bc7b96446fdd673e
      if (!only_me.is_valid()) {
        DPLOG(FATAL) << "CreateMutex failed";
        return false;
-@@ -418,6 +429,17 @@ bool ProcessSingleton::Create() {
+@@ -484,6 +498,17 @@ bool ProcessSingleton::Create() {
              window_.CreateNamed(base::BindRepeating(&ProcessLaunchNotification,
                                                      notification_callback_),
                                  user_data_dir_.value());

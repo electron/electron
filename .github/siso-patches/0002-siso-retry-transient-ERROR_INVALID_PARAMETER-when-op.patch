@@ -1,4 +1,4 @@
-From 1786f2266cba6a66343e5af2b724214930c8292f Mon Sep 17 00:00:00 2001
+From eb102b86332a676508f9c6c6427b42c47b8a130c Mon Sep 17 00:00:00 2001
 From: Samuel Attard <sam@electronjs.org>
 Date: Wed, 22 Apr 2026 16:27:51 -0700
 Subject: [PATCH] siso: retry transient ERROR_INVALID_PARAMETER when opening
@@ -18,10 +18,10 @@ visible in CI step output where glog warnings are file-only by default.
 Other platforms keep the direct os.Open path.
 
 diff --git a/siso/hashfs/state.go b/siso/hashfs/state.go
-index 1be99639..abe2fbcc 100644
+index 6f010ec..cb8f515 100644
 --- a/siso/hashfs/state.go
 +++ b/siso/hashfs/state.go
-@@ -250,7 +250,7 @@ func loadFile(ctx context.Context, opts Option) ([]byte, error) {
+@@ -264,7 +264,7 @@ func loadFile(ctx context.Context, opts Option) ([]byte, error) {
  	if opts.UseMmap {
  		// Use mmap to read the compressed file. The data is backed by the
  		// OS page cache rather than the Go heap, avoiding a large allocation.
@@ -31,7 +31,7 @@ index 1be99639..abe2fbcc 100644
  			return nil, err
  		}
 diff --git a/siso/mmapfile/mmap_unix.go b/siso/mmapfile/mmap_unix.go
-index 345c02de..9bafe560 100644
+index 345c02d..9bafe56 100644
 --- a/siso/mmapfile/mmap_unix.go
 +++ b/siso/mmapfile/mmap_unix.go
 @@ -7,6 +7,7 @@
@@ -52,7 +52,7 @@ index 345c02de..9bafe560 100644
  	if err != nil {
  		return nil, err
 diff --git a/siso/mmapfile/mmap_windows.go b/siso/mmapfile/mmap_windows.go
-index fc00bc9e..31e16150 100644
+index 46a2cb2..4a0f40b 100644
 --- a/siso/mmapfile/mmap_windows.go
 +++ b/siso/mmapfile/mmap_windows.go
 @@ -7,6 +7,7 @@
@@ -76,7 +76,7 @@ index fc00bc9e..31e16150 100644
  	}
 diff --git a/siso/mmapfile/openfile_windows.go b/siso/mmapfile/openfile_windows.go
 new file mode 100644
-index 00000000..2c71562c
+index 0000000..2c71562
 --- /dev/null
 +++ b/siso/mmapfile/openfile_windows.go
 @@ -0,0 +1,50 @@
@@ -131,7 +131,7 @@ index 00000000..2c71562c
 +	}
 +}
 diff --git a/siso/toolsupport/ninjautil/file_parser.go b/siso/toolsupport/ninjautil/file_parser.go
-index 39ed7af6..a81fc9a5 100644
+index 39ed7af..a81fc9a 100644
 --- a/siso/toolsupport/ninjautil/file_parser.go
 +++ b/siso/toolsupport/ninjautil/file_parser.go
 @@ -110,7 +110,7 @@ func (p *fileParser) parseFile(ctx context.Context, fname string) error {

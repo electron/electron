@@ -1,10 +1,11 @@
 import { expect } from 'chai';
 
 import * as cp from 'node:child_process';
+import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { ifit, waitUntil } from './lib/spec-helpers';
+import { ifit } from './lib/spec-helpers';
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 
@@ -43,17 +44,9 @@ const runFixtureAndEnsureCleanExit = async (args: string[], customEnv: NodeJS.Pr
 
 const shouldRunCase = (crashCase: string) => {
   switch (crashCase) {
-    // TODO(jkleinsc) fix this flaky test on Windows 32-bit
-    case 'quit-on-crashed-event': {
-      return process.platform !== 'win32' || process.arch !== 'ia32';
-    }
-    // TODO(jkleinsc) fix this test on Linux on arm/arm64 and 32bit windows
+    // TODO(jkleinsc) fix this test on Linux on arm64
     case 'js-execute-iframe': {
-      if (process.platform === 'win32') {
-        return process.arch !== 'ia32';
-      } else {
-        return process.platform !== 'linux' || (process.arch !== 'arm64' && process.arch !== 'arm');
-      }
+      return process.platform !== 'linux' || process.arch !== 'arm64';
     }
     default: {
       return true;
@@ -63,10 +56,18 @@ const shouldRunCase = (crashCase: string) => {
 
 describe('crash cases', () => {
   afterEach(async () => {
-    for (const child of children) {
-      child.kill();
-    }
-    await waitUntil(() => children.length === 0);
+    // A wedged crash-case fixture child can ignore the default SIGTERM and
+    // never emit 'exit'. Attach the exit listener first, then force-kill with
+    // SIGKILL, and await each child's real 'exit' rather than polling the
+    // shared `children` array (whose length only drops via that same handler).
+    await Promise.all(
+      children.map((child) => {
+        if (child.exitCode !== null || child.signalCode !== null) return null;
+        const exited = once(child, 'exit');
+        child.kill('SIGKILL');
+        return exited;
+      })
+    );
     children.length = 0;
   });
   const cases = fs.readdirSync(fixturePath);

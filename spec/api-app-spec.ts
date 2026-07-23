@@ -124,6 +124,22 @@ describe('app module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'linux')('app.setDesktopName(name)', () => {
+    it('sets the desktop name to the CHROME_DESKTOP environment variable', () => {
+      const original = process.env.CHROME_DESKTOP;
+      defer(() => {
+        if (original === undefined) {
+          delete process.env.CHROME_DESKTOP;
+        } else {
+          process.env.CHROME_DESKTOP = original;
+        }
+      });
+
+      app.setDesktopName('electron-test-set-desktop-name.desktop');
+      expect(process.env.CHROME_DESKTOP).to.equal('electron-test-set-desktop-name.desktop');
+    });
+  });
+
   describe('app.getLocale()', () => {
     it('should not be empty', () => {
       expect(app.getLocale()).to.not.equal('');
@@ -1914,13 +1930,33 @@ describe('app module', () => {
       expect(device).to.be.an('object').and.to.have.property('deviceId').that.is.a('number').not.lessThan(0);
     };
 
-    it('succeeds with basic GPUInfo', async () => {
-      const gpuInfo = await getGPUInfo('basic');
+    // On a headless runner with no usable GPU
+    // (e.g. CI, where ANGLE is statically linked on Linux), the GPU process
+    // fails to initialize and GPU access is disabled. Treat that as a skip
+    // rather than a failure.
+    const isGpuUnavailable = (error: Error) =>
+      /GPU access (?:not allowed|is disabled)/i.test(error.message) ||
+      /Exiting GPU process due to errors during initialization/i.test(error.message);
+
+    it('succeeds with basic GPUInfo', async function () {
+      let gpuInfo;
+      try {
+        gpuInfo = await getGPUInfo('basic');
+      } catch (error) {
+        if (isGpuUnavailable(error as Error)) return this.skip();
+        throw error;
+      }
       await verifyBasicGPUInfo(gpuInfo);
     });
 
-    it('succeeds with complete GPUInfo', async () => {
-      const completeInfo = await getGPUInfo('complete');
+    it('succeeds with complete GPUInfo', async function () {
+      let completeInfo;
+      try {
+        completeInfo = await getGPUInfo('complete');
+      } catch (error) {
+        if (isGpuUnavailable(error as Error)) return this.skip();
+        throw error;
+      }
       if (process.platform === 'linux') {
         // For linux and macOS complete info is same as basic info
         await verifyBasicGPUInfo(completeInfo);
@@ -1945,93 +1981,90 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(!(process.platform === 'linux' && (process.arch === 'arm64' || process.arch === 'arm')))(
-    'sandbox options',
-    () => {
-      let appProcess: cp.ChildProcess = null as any;
-      let server: net.Server = null as any;
-      const socketPath =
-        process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
+  ifdescribe(!(process.platform === 'linux' && process.arch === 'arm64'))('sandbox options', () => {
+    let appProcess: cp.ChildProcess = null as any;
+    let server: net.Server = null as any;
+    const socketPath =
+      process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
 
-      beforeEach(function (done) {
-        fs.unlink(socketPath, () => {
-          server = net.createServer();
-          server.listen(socketPath);
-          done();
+    beforeEach(function (done) {
+      fs.unlink(socketPath, () => {
+        server = net.createServer();
+        server.listen(socketPath);
+        done();
+      });
+    });
+
+    afterEach((done) => {
+      if (appProcess != null) appProcess.kill();
+
+      if (server) {
+        server.close(() => {
+          if (process.platform === 'win32') {
+            done();
+          } else {
+            fs.unlink(socketPath, () => done());
+          }
         });
-      });
+      } else {
+        done();
+      }
+    });
 
-      afterEach((done) => {
-        if (appProcess != null) appProcess.kill();
+    describe('when app.enableSandbox() is called', () => {
+      it('adds --enable-sandbox to all renderer processes', (done) => {
+        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+        appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
 
-        if (server) {
-          server.close(() => {
-            if (process.platform === 'win32') {
-              done();
-            } else {
-              fs.unlink(socketPath, () => done());
-            }
-          });
-        } else {
-          done();
-        }
-      });
+        server.once('error', (error) => {
+          done(error);
+        });
 
-      describe('when app.enableSandbox() is called', () => {
-        it('adds --enable-sandbox to all renderer processes', (done) => {
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
+        server.on('connection', (client) => {
+          client.once('data', (data) => {
+            const argv = JSON.parse(data.toString());
+            expect(argv.sandbox).to.include('--enable-sandbox');
+            expect(argv.sandbox).to.not.include('--no-sandbox');
 
-          server.once('error', (error) => {
-            done(error);
-          });
+            expect(argv.noSandbox).to.include('--enable-sandbox');
+            expect(argv.noSandbox).to.not.include('--no-sandbox');
 
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).to.include('--enable-sandbox');
-              expect(argv.sandbox).to.not.include('--no-sandbox');
+            expect(argv.noSandboxDevtools).to.equal(true);
+            expect(argv.sandboxDevtools).to.equal(true);
 
-              expect(argv.noSandbox).to.include('--enable-sandbox');
-              expect(argv.noSandbox).to.not.include('--no-sandbox');
-
-              expect(argv.noSandboxDevtools).to.equal(true);
-              expect(argv.sandboxDevtools).to.equal(true);
-
-              done();
-            });
+            done();
           });
         });
       });
+    });
 
-      describe('when the app is launched with --enable-sandbox', () => {
-        it('adds --enable-sandbox to all renderer processes', (done) => {
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
+    describe('when the app is launched with --enable-sandbox', () => {
+      it('adds --enable-sandbox to all renderer processes', (done) => {
+        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+        appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
 
-          server.once('error', (error) => {
-            done(error);
-          });
+        server.once('error', (error) => {
+          done(error);
+        });
 
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).to.include('--enable-sandbox');
-              expect(argv.sandbox).to.not.include('--no-sandbox');
+        server.on('connection', (client) => {
+          client.once('data', (data) => {
+            const argv = JSON.parse(data.toString());
+            expect(argv.sandbox).to.include('--enable-sandbox');
+            expect(argv.sandbox).to.not.include('--no-sandbox');
 
-              expect(argv.noSandbox).to.include('--enable-sandbox');
-              expect(argv.noSandbox).to.not.include('--no-sandbox');
+            expect(argv.noSandbox).to.include('--enable-sandbox');
+            expect(argv.noSandbox).to.not.include('--no-sandbox');
 
-              expect(argv.noSandboxDevtools).to.equal(true);
-              expect(argv.sandboxDevtools).to.equal(true);
+            expect(argv.noSandboxDevtools).to.equal(true);
+            expect(argv.sandboxDevtools).to.equal(true);
 
-              done();
-            });
+            done();
           });
         });
       });
-    }
-  );
+    });
+  });
 
   describe('disableDomainBlockingFor3DAPIs() API', () => {
     it('throws when called after app is ready', () => {
