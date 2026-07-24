@@ -400,7 +400,11 @@ async function main() {
 
         const changedLines = fileDiff.matchAll(/^[-+].*$/gm);
         for (const line of changedLines) {
-          if (!line[0].match(/^[-+](--|\+\+|index|@@) /)) {
+          // Allowed non-content changes: diff metadata (`--- `/`+++ ` file
+          // headers, `index `, `@@ ` hunk headers) and context line changes
+          // (`^[-+] `), which only reflect upstream drift around the patched
+          // region, not changes to what the patch itself adds or removes.
+          if (!line[0].match(/^[-+]( |(--|\+\+|index|@@) )/)) {
             console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit contains content changes in ${filename}`);
             hasErrors = true;
             commitValid = false;
