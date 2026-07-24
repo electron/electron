@@ -37,6 +37,18 @@ std::u16string ElectronMenuModel::GetToolTipAt(size_t index) {
   return iter == std::end(toolTips_) ? std::u16string() : iter->second;
 }
 
+void ElectronMenuModel::SetFontType(size_t index,
+                                    const std::u16string& fontType) {
+  int command_id = GetCommandIdAt(index);
+  fontTypes_[command_id] = fontType;
+}
+
+std::u16string ElectronMenuModel::GetFontTypeAt(size_t index) {
+  const int command_id = GetCommandIdAt(index);
+  const auto iter = fontTypes_.find(command_id);
+  return iter == std::end(fontTypes_) ? std::u16string() : iter->second;
+}
+
 void ElectronMenuModel::SetCustomType(size_t index,
                                       const std::u16string& customType) {
   int command_id = GetCommandIdAt(index);

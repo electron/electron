@@ -170,11 +170,16 @@ Menu.prototype.insert = function (pos, item) {
     throw new RangeError(`Position ${pos} cannot be greater than the total MenuItem count`);
   }
 
+  if (item.fontType && item.fontType !== 'monospaced' && item.fontType !== 'monospacedDigit') {
+    throw new TypeError("fontType must be one of 'monospaced' or 'monospacedDigit'");
+  }
+
   // insert item depending on its type
   insertItemByType.call(this, item, pos);
 
   // set item properties
   if (item.toolTip) this.setToolTip(pos, item.toolTip);
+  if (item.fontType) this.setFontType(pos, item.fontType);
   if (item.icon) this.setIcon(pos, item.icon);
   if (item.role) this.setRole(pos, item.role);
   if (item.type === 'palette' || item.type === 'header') {
