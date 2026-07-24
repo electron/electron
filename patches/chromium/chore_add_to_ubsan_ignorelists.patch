@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Tue, 21 Jul 2026 23:29:10 -0700
+Subject: chore: add to UBSan ignorelists
+
+Add ignores for false positives:
+* `memcpy` with a nullptr dest and zero length is now well-defined per C2y (N3322)
+  but glibc still unilaterally marks the dest parameter as `__nonnull`
+
+Add ignores for build failures:
+* `AutoPipSettingOverlayView` lacks type info but is pulled into the build via chromium_src
+* `Profile` lacks type info but is pulled into the build via chromium_src
+
+Re-enables coverage:
+* `RenderWidgetHostViewMac` is a specific subclass that had coverage removed via a broader ignore
+
+Also adds some ignores for UB from upstream code that has been determined to be benign in practice
+
+Change-Id: Ic70cae72965656e31d957ca3cee85772ded70e42
+
+diff --git a/tools/ubsan/ignorelist.txt b/tools/ubsan/ignorelist.txt
+index 50c4c61efdf3427285071f3f613957b36ed2e51d..575a0f4f4fad56978344fcbcfb96b2d44fc87773 100644
+--- a/tools/ubsan/ignorelist.txt
++++ b/tools/ubsan/ignorelist.txt
+@@ -42,3 +42,17 @@ fun:*find_best_partition_order_*
+ # https://crbug.com/451633108
+ [builtin]
+ fun:*_dispatch_once*
++
++#############################################################################
++# Electron-specific
++#
++
++# memcpy with a NULL dest and 0 write length is well-defined per C2y (N3322),
++# but glibc still marks memcpy's dest parameter as __nonnull
++[nonnull-attribute]
++fun:*StringBytes*Write*
++fun:*Http2Session*OnStreamRead*
++
++# This is a benign alignment UB
++[alignment]
++fun:*v8*internal*Script*Iterator*Next*
+diff --git a/tools/ubsan/vptr_ignorelist.txt b/tools/ubsan/vptr_ignorelist.txt
+index 20c4222c780951af064a10f64264db958b1b8009..993bd090a1d720162da050463dddd76095328c89 100644
+--- a/tools/ubsan/vptr_ignorelist.txt
++++ b/tools/ubsan/vptr_ignorelist.txt
+@@ -126,3 +126,15 @@ type:*StartPageService*
+ # Remove once function attribute level ignorelisting is implemented.
+ # See crbug.com/476063.
+ fun:*forbidGCDuringConstruction*
++
++#############################################################################
++# Electron-specific ignores
++#
++type:*AutoPipSettingOverlayView*
++type:*Profile*
++
++# Re-enable checks for RenderWidgetHostViewMac
++type:*RenderWidgetHostViewMac*=sanitize
++
++# This has a static_cast that is UB but is benign
++fun:*AudioManagerMac*ReleaseInputStream*

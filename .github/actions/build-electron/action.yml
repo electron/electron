@@ -26,6 +26,9 @@ inputs:
   is-asan:
     description: 'The ASan Linux build'
     required: false
+  is-ubsan:
+    description: 'The UBSan build'
+    required: false
   upload-out-gen-artifacts:
     description: 'Whether to upload the out/${dir}/gen artifacts'
     required: false
@@ -74,7 +77,7 @@ runs:
       run: echo "::add-matcher::src/electron/.github/problem-matchers/clang.json"
     - name: Download previous object checksums
       shell: bash
-      if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' }}
+      if: ${{ (github.event_name == 'push' || github.event_name == 'pull_request') && inputs.is-asan != 'true' && inputs.is-ubsan != 'true' }}
       env:
         GITHUB_TOKEN: ${{ github.token }}
         ARTIFACT_NAME: object-checksums.${{ inputs.artifact-platform }}_${{ inputs.target-arch }}.json
@@ -179,7 +182,7 @@ runs:
       shell: bash
       run: |
         cd src        
-        if [ "${{ inputs.is-asan }}" != "true" ]; then
+        if [ "${{ inputs.is-asan }}" != "true" ] && [ "${{ inputs.is-ubsan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
@@ -239,7 +242,7 @@ runs:
         cd src
         QUIET_FLAG=$([ "${ACTIONS_STEP_DEBUG:-}" = "true" ] || [ "${{ inputs.publish }}" = "true" ] || echo -quiet)
         e build --target electron:electron_chromedriver_zip $QUIET_FLAG
-        if [ "${{ inputs.is-asan }}" != "true" ]; then
+        if [ "${{ inputs.is-asan }}" != "true" ] && [ "${{ inputs.is-ubsan }}" != "true" ]; then
           target_os=${{ inputs.target-platform == 'macos' && 'mac' || inputs.target-platform }}
           if [ "${{ inputs.artifact-platform }}" = "mas" ]; then
             target_os="${target_os}_mas"
@@ -267,6 +270,7 @@ runs:
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
     - name: Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
+      if: ${{ inputs.is-ubsan != 'true' }}
       run: |
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
@@ -371,8 +375,13 @@ runs:
       if: always() && !cancelled()
       shell: bash
       run: |
-        if [ "${{ inputs.is-asan }}" = "true" ]; then 
+        if [ "${{ inputs.is-asan }}" = "true" ] && [ "${{ inputs.is-ubsan }}" = "true" ]; then
+          echo "Only one sanitizer build can be enabled at a time (set either is-asan or is-ubsan)."
+          exit 1
+        elif [ "${{ inputs.is-asan }}" = "true" ]; then 
           ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}_asan
+        elif [ "${{ inputs.is-ubsan }}" = "true" ]; then
+          ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}_ubsan
         else
           ARTIFACT_KEY=${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
         fi
@@ -404,7 +413,7 @@ runs:
         name: out_gen_artifacts_${{ env.ARTIFACT_KEY }}
         path: ./src/out/Default/gen
     - name: Upload Object Checksums ${{ inputs.step-suffix }}
-      if: ${{ always() && !cancelled() && inputs.is-asan != 'true' }}
+      if: ${{ always() && !cancelled() && inputs.is-asan != 'true' && inputs.is-ubsan != 'true' }}
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
       with:
         name: object_checksums_${{ inputs.artifact-platform }}_${{ inputs.target-arch }}
