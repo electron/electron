@@ -11,6 +11,11 @@ on:
         type: string
         description: 'Arch to build for, can be x64 or arm64'
         required: true
+      target-variant:
+        type: string
+        description: 'Variant to build for, no effect on non-macOS target platforms. Can be darwin, mas or all.'
+        required: false
+        default: all
       build-runs-on:
         type: string
         description: 'What host to run the build'
@@ -55,7 +60,7 @@ on:
         type: boolean
         default: false
       is-ubsan:
-        description: 'Building the Undefined Behavior Sanitizer (UBSan) Linux build'
+        description: 'Building the Undefined Behavior Sanitizer (UBSan) build'
         required: false
         type: boolean
         default: false
@@ -81,6 +86,7 @@ jobs:
       build-container: ${{ inputs.build-container }}
       target-platform: ${{ inputs.target-platform }}
       target-arch: ${{ inputs.target-arch }}
+      target-variant: ${{ inputs.target-variant }}
       is-release: ${{ inputs.is-release }}
       gn-build-type: ${{ inputs.gn-build-type }}
       generate-symbols: ${{ inputs.generate-symbols }}

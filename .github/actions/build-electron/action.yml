@@ -27,7 +27,7 @@ inputs:
     description: 'The ASan Linux build'
     required: false
   is-ubsan:
-    description: 'The UBSan Linux build'
+    description: 'The UBSan build'
     required: false
   upload-out-gen-artifacts:
     description: 'Whether to upload the out/${dir}/gen artifacts'
@@ -270,6 +270,7 @@ runs:
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
     - name: Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
+      if: ${{ inputs.is-ubsan != 'true' }}
       run: |
         cd src
         export BUILD_PATH="$(pwd)/out/Default"

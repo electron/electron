@@ -67,7 +67,7 @@ on:
         type: boolean
         default: false
       is-ubsan:
-        description: Building the Undefined Behavior Sanitizer (UBSan) Linux build
+        description: Building the Undefined Behavior Sanitizer (UBSan) build
         required: false
         type: boolean
         default: false
@@ -175,6 +175,11 @@ jobs:
           fi
 
           echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
+      - name: Set GN_EXTRA_ARGS for macOS UBSan
+        if: ${{ inputs.target-platform == 'macos' && inputs.is-ubsan }}
+        run: >
+          echo "GN_EXTRA_ARGS=is_ubsan=true is_ubsan_no_recover=true" >>
+          $GITHUB_ENV
       - name: Set Chromium Git Cookie
         uses: ./src/electron/.github/actions/set-chromium-cookie
       - name: Install Build Tools
