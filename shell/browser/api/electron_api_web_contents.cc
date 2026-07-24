@@ -150,7 +150,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
-#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/reply_channel.h"
@@ -203,10 +202,8 @@
 #include "chrome/browser/printing/print_view_manager_base.h"
 #include "components/printing/browser/print_composite_client.h"
 #include "components/printing/browser/print_manager_utils.h"
-#include "components/printing/browser/print_to_pdf/pdf_print_result.h"
-#include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
 #include "printing/mojom/print.mojom.h"  // nogncheck
-#include "printing/page_range.h"
+#include "shell/browser/printing/print_to_pdf.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #include "shell/browser/printing/printing_utils.h"
 
@@ -462,22 +459,6 @@ constexpr char kDpi[] = "dpi";
 constexpr char kMarginType[] = "marginType";
 constexpr char kMargins[] = "margins";
 
-// Constants we use for printToPDF options.
-constexpr char kLandscape[] = "landscape";
-constexpr char kDisplayHeaderFooter[] = "displayHeaderFooter";
-constexpr char kPrintBackground[] = "printBackground";
-constexpr char kScale[] = "scale";
-constexpr char kPaperWidth[] = "paperWidth";
-constexpr char kPaperHeight[] = "paperHeight";
-constexpr char kMarginTop[] = "marginTop";
-constexpr char kMarginBottom[] = "marginBottom";
-constexpr char kMarginLeft[] = "marginLeft";
-constexpr char kMarginRight[] = "marginRight";
-constexpr char kHeaderTemplate[] = "headerTemplate";
-constexpr char kFooterTemplate[] = "footerTemplate";
-constexpr char kPreferCSSPageSize[] = "preferCSSPageSize";
-constexpr char kGenerateTaggedPDF[] = "generateTaggedPDF";
-constexpr char kGenerateDocumentOutline[] = "generateDocumentOutline";
 constexpr char kDpiHorizontal[] = "horizontal";
 constexpr char kDpiVertical[] = "vertical";
 #endif  // BUILDFLAG(ENABLE_PRINTING)
@@ -3433,27 +3414,6 @@ void OnGetDeviceNameToUse(base::WeakPtr<content::WebContents> web_contents,
                                std::move(print_callback));
 }
 
-void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
-                  print_to_pdf::PdfPrintResult print_result,
-                  scoped_refptr<base::RefCountedMemory> data) {
-  if (print_result != print_to_pdf::PdfPrintResult::kPrintSuccess) {
-    promise.RejectWithErrorMessage(
-        "Failed to generate PDF: " +
-        print_to_pdf::PdfPrintResultToString(print_result));
-    return;
-  }
-
-  v8::Isolate* isolate = promise.isolate();
-  gin_helper::Locker locker(isolate);
-  v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(
-      v8::Local<v8::Context>::New(isolate, promise.GetContext()));
-
-  v8::Local<v8::Value> buffer =
-      electron::Buffer::Copy(isolate, *data).ToLocalChecked();
-
-  promise.Resolve(buffer);
-}
 }  // namespace
 
 void WebContents::Print(gin::Arguments* const args) {
@@ -3628,64 +3588,8 @@ void WebContents::Print(gin::Arguments* const args) {
                      std::move(settings), std::move(callback)));
 }
 
-// Partially duplicated and modified from
-// headless/lib/browser/protocol/page_handler.cc;l=41
 v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
-  v8::Local<v8::Promise> handle = promise.GetHandle();
-
-  // This allows us to track headless printing calls.
-  auto unique_id = settings.GetDict().FindInt(printing::kPreviewRequestID);
-  auto landscape = settings.GetDict().FindBool(kLandscape);
-  auto display_header_footer =
-      settings.GetDict().FindBool(kDisplayHeaderFooter);
-  auto print_background = settings.GetDict().FindBool(kPrintBackground);
-  auto scale = settings.GetDict().FindDouble(kScale);
-  auto paper_width = settings.GetDict().FindDouble(kPaperWidth);
-  auto paper_height = settings.GetDict().FindDouble(kPaperHeight);
-  auto margin_top = settings.GetDict().FindDouble(kMarginTop);
-  auto margin_bottom = settings.GetDict().FindDouble(kMarginBottom);
-  auto margin_left = settings.GetDict().FindDouble(kMarginLeft);
-  auto margin_right = settings.GetDict().FindDouble(kMarginRight);
-  auto page_ranges = *settings.GetDict().FindString(kPageRanges);
-  auto header_template = *settings.GetDict().FindString(kHeaderTemplate);
-  auto footer_template = *settings.GetDict().FindString(kFooterTemplate);
-  auto prefer_css_page_size = settings.GetDict().FindBool(kPreferCSSPageSize);
-  auto generate_tagged_pdf = settings.GetDict().FindBool(kGenerateTaggedPDF);
-  auto generate_document_outline =
-      settings.GetDict().FindBool(kGenerateDocumentOutline);
-
-  content::RenderFrameHost* rfh = GetRenderFrameHostToUse(web_contents());
-  absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
-      print_pages_params = print_to_pdf::GetPrintPagesParams(
-          rfh->GetLastCommittedURL(), landscape, display_header_footer,
-          print_background, scale, paper_width, paper_height, margin_top,
-          margin_bottom, margin_left, margin_right,
-          std::make_optional(header_template),
-          std::make_optional(footer_template), prefer_css_page_size,
-          generate_tagged_pdf, generate_document_outline);
-
-  if (absl::holds_alternative<std::string>(print_pages_params)) {
-    auto error = absl::get<std::string>(print_pages_params);
-    promise.RejectWithErrorMessage("Invalid print parameters: " + error);
-    return handle;
-  }
-
-  auto* manager = PrintViewManagerElectron::FromWebContents(web_contents());
-  if (!manager) {
-    promise.RejectWithErrorMessage("Failed to find print manager");
-    return handle;
-  }
-
-  auto params = std::move(
-      absl::get<printing::mojom::PrintPagesParamsPtr>(print_pages_params));
-  params->params->document_cookie = unique_id.value_or(0);
-
-  manager->PrintToPdf(rfh, page_ranges, std::move(params),
-                      base::BindOnce(&OnPDFCreated, std::move(promise)));
-
-  return handle;
+  return PrintFrameToPDF(GetRenderFrameHostToUse(web_contents()), settings);
 }
 #endif
 

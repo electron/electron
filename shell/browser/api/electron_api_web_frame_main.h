@@ -16,6 +16,7 @@
 #include "content/public/browser/global_routing_id.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
+#include "printing/buildflags/buildflags.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_helper/constructible.h"
@@ -118,6 +119,9 @@ class WebFrameMain final : public gin_helper::DeprecatedWrappable<WebFrameMain>,
 
   v8::Local<v8::Promise> ExecuteJavaScript(gin::Arguments* args,
                                            const std::u16string& code);
+#if BUILDFLAG(ENABLE_PRINTING)
+  v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
+#endif
   void CopyVideoFrameAt(int x, int y);
   void SaveVideoFrameAs(int x, int y);
   bool Reload();
