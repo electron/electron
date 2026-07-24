@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "ash/style/rounded_rect_cutout_path_builder.h"
+#include "base/auto_reset.h"
 #include "gin/data_object_builder.h"
 #include "gin/wrappable.h"
 #include "shell/browser/javascript_environment.h"
@@ -23,8 +24,12 @@
 #include "ui/compositor/layer.h"
 #include "ui/views/animation/animation_builder.h"
 #include "ui/views/background.h"
+#include "ui/views/layout/box_layout.h"
+#include "ui/views/layout/fill_layout.h"
 #include "ui/views/layout/flex_layout.h"
+#include "ui/views/layout/flex_layout_types.h"
 #include "ui/views/layout/layout_manager_base.h"
+#include "ui/views/view_class_properties.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "shell/browser/animation_util.h"
@@ -148,6 +153,115 @@ struct Converter<views::SizeBounds> {
 };
 
 template <>
+struct Converter<views::MinimumFlexSizeRule> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     views::MinimumFlexSizeRule* out) {
+    std::string s = base::ToLowerASCII(gin::V8ToString(isolate, val));
+    if (s == "scale-to-zero") {
+      *out = views::MinimumFlexSizeRule::kScaleToZero;
+    } else if (s == "scale-to-minimum-snap-to-zero") {
+      *out = views::MinimumFlexSizeRule::kScaleToMinimumSnapToZero;
+    } else if (s == "preferred-snap-to-zero") {
+      *out = views::MinimumFlexSizeRule::kPreferredSnapToZero;
+    } else if (s == "scale-to-minimum") {
+      *out = views::MinimumFlexSizeRule::kScaleToMinimum;
+    } else if (s == "preferred-snap-to-minimum") {
+      *out = views::MinimumFlexSizeRule::kPreferredSnapToMinimum;
+    } else if (s == "preferred") {
+      *out = views::MinimumFlexSizeRule::kPreferred;
+    } else {
+      return false;
+    }
+    return true;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   views::MinimumFlexSizeRule in) {
+    switch (in) {
+      case views::MinimumFlexSizeRule::kScaleToZero:
+        return gin::StringToV8(isolate, "scale-to-zero");
+      case views::MinimumFlexSizeRule::kScaleToMinimumSnapToZero:
+        return gin::StringToV8(isolate, "scale-to-minimum-snap-to-zero");
+      case views::MinimumFlexSizeRule::kPreferredSnapToZero:
+        return gin::StringToV8(isolate, "preferred-snap-to-zero");
+      case views::MinimumFlexSizeRule::kScaleToMinimum:
+        return gin::StringToV8(isolate, "scale-to-minimum");
+      case views::MinimumFlexSizeRule::kPreferredSnapToMinimum:
+        return gin::StringToV8(isolate, "preferred-snap-to-minimum");
+      case views::MinimumFlexSizeRule::kPreferred:
+        return gin::StringToV8(isolate, "preferred");
+    }
+    return gin::StringToV8(isolate, "preferred");
+  }
+};
+
+template <>
+struct Converter<views::MaximumFlexSizeRule> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     views::MaximumFlexSizeRule* out) {
+    std::string s = base::ToLowerASCII(gin::V8ToString(isolate, val));
+    if (s == "preferred") {
+      *out = views::MaximumFlexSizeRule::kPreferred;
+    } else if (s == "scale-to-maximum") {
+      *out = views::MaximumFlexSizeRule::kScaleToMaximum;
+    } else if (s == "unbounded") {
+      *out = views::MaximumFlexSizeRule::kUnbounded;
+    } else {
+      return false;
+    }
+    return true;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   views::MaximumFlexSizeRule in) {
+    switch (in) {
+      case views::MaximumFlexSizeRule::kPreferred:
+        return gin::StringToV8(isolate, "preferred");
+      case views::MaximumFlexSizeRule::kScaleToMaximum:
+        return gin::StringToV8(isolate, "scale-to-maximum");
+      case views::MaximumFlexSizeRule::kUnbounded:
+        return gin::StringToV8(isolate, "unbounded");
+    }
+    return gin::StringToV8(isolate, "preferred");
+  }
+};
+
+template <>
+struct Converter<views::FlexSpecification> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     views::FlexSpecification* out) {
+    gin_helper::Dictionary dict;
+    if (!gin::ConvertFromV8(isolate, val, &dict))
+      return false;
+    views::MinimumFlexSizeRule min_rule =
+        views::MinimumFlexSizeRule::kPreferred;
+    views::MaximumFlexSizeRule max_rule =
+        views::MaximumFlexSizeRule::kPreferred;
+    dict.Get("minimum", &min_rule);
+    dict.Get("maximum", &max_rule);
+    int weight = 0;
+    int order = 1;
+    dict.Get("weight", &weight);
+    dict.Get("order", &order);
+    *out = views::FlexSpecification(min_rule, max_rule)
+               .WithWeight(weight)
+               .WithOrder(order);
+    return true;
+  }
+
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const views::FlexSpecification& in) {
+    return gin::DataObjectBuilder(isolate)
+        .Set("weight", in.weight())
+        .Set("order", in.order())
+        .Build();
+  }
+};
+
+template <>
 struct Converter<gfx::Tween::Type> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
@@ -180,17 +294,47 @@ class JSLayoutManager : public views::LayoutManagerBase {
       : layout_callback_(std::move(layout_callback)) {}
   ~JSLayoutManager() override = default;
 
+  bool is_dispatching() const { return is_dispatching_; }
+
   // views::LayoutManagerBase
   views::ProposedLayout CalculateProposedLayout(
       const views::SizeBounds& size_bounds) const override {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
+    // is_dispatching_ blocks re-entrant setLayout(): swapping the layout
+    // manager mid-callback would destroy `this` while it is still on the
+    // stack.
+    base::AutoReset<bool> reset(&is_dispatching_, true);
+    // Exceptions thrown from the JS callback are absorbed by gin's
+    // V8FunctionInvoker — it returns a default-constructed ProposedLayout
+    // and leaves the exception pending on the isolate. V8 observes it when
+    // control next returns to JS; Node then decides whether to surface it
+    // via uncaughtException or to swallow at the binding boundary.
     return layout_callback_.Run(size_bounds);
   }
 
  private:
   LayoutCallback layout_callback_;
+  mutable bool is_dispatching_ = false;
 };
+
+namespace {
+std::string AlignmentToString(views::LayoutAlignment a) {
+  switch (a) {
+    case views::LayoutAlignment::kStart:
+      return "start";
+    case views::LayoutAlignment::kCenter:
+      return "center";
+    case views::LayoutAlignment::kEnd:
+      return "end";
+    case views::LayoutAlignment::kStretch:
+      return "stretch";
+    case views::LayoutAlignment::kBaseline:
+      return "baseline";
+  }
+  return "";
+}
+}  // namespace
 
 View::View(views::View* view) : view_(view) {
   view_->set_owned_by_client(views::View::OwnedByClientPassKey{});
@@ -421,49 +565,342 @@ gfx::Rect View::GetBounds() const {
   return view_->bounds();
 }
 
-void View::SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value) {
+void View::SetLayout(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   if (!view_)
     return;
-  gin_helper::Dictionary dict(isolate, value);
+
+  // Re-entrancy guard: setLayout cannot be called from inside a JS layout
+  // callback because it would replace the layout manager mid-dispatch.
+  if (js_layout_manager_ && js_layout_manager_->is_dispatching()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Cannot call setLayout from inside calculateProposedLayout");
+    return;
+  }
+
+  // null/undefined => clear the layout manager.
+  if (value.IsEmpty() || value->IsNullOrUndefined()) {
+    js_layout_manager_ = nullptr;
+    layout_type_ = LayoutType::kNone;
+    view_->SetLayoutManager(nullptr);
+    return;
+  }
+
+  // Reject primitives explicitly (V8's ToObject() auto-wraps Number/String
+  // into objects, which would silently fall through to a default FlexLayout).
+  if (!value->IsObject() || value->IsArray() || value->IsFunction()) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Layout options must be a plain object or null");
+    return;
+  }
+  v8::Local<v8::Object> obj = value.As<v8::Object>();
+  gin_helper::Dictionary dict(isolate, obj);
+
+  // Custom JS layout callback path.
   LayoutCallback calculate_proposed_layout;
   if (dict.Get("calculateProposedLayout", &calculate_proposed_layout)) {
-    view_->SetLayoutManager(std::make_unique<JSLayoutManager>(
-        std::move(calculate_proposed_layout)));
-  } else {
-    auto* layout =
-        view_->SetLayoutManager(std::make_unique<views::FlexLayout>());
-    views::LayoutOrientation orientation;
-    if (dict.Get("orientation", &orientation))
-      layout->SetOrientation(orientation);
-    views::LayoutAlignment main_axis_alignment;
-    if (dict.Get("mainAxisAlignment", &main_axis_alignment))
-      layout->SetMainAxisAlignment(main_axis_alignment);
-    views::LayoutAlignment cross_axis_alignment;
-    if (dict.Get("crossAxisAlignment", &cross_axis_alignment))
-      layout->SetCrossAxisAlignment(cross_axis_alignment);
-    gfx::Insets interior_margin;
-    if (dict.Get("interiorMargin", &interior_margin))
-      layout->SetInteriorMargin(interior_margin);
+    auto lm =
+        std::make_unique<JSLayoutManager>(std::move(calculate_proposed_layout));
+    js_layout_manager_ = lm.get();
+    layout_type_ = LayoutType::kJs;
+    view_->SetLayoutManager(std::move(lm));
+    return;
+  }
+
+  // Replacing any prior JSLayoutManager with a built-in.
+  js_layout_manager_ = nullptr;
+
+  std::string type;
+  dict.Get("type", &type);
+
+  if (type == "fill") {
+    layout_type_ = LayoutType::kFill;
+    auto* fill_layout =
+        view_->SetLayoutManager(std::make_unique<views::FillLayout>());
+    bool minimum_size_enabled;
+    if (dict.Has("minimumSizeEnabled") &&
+        dict.Get("minimumSizeEnabled", &minimum_size_enabled))
+      fill_layout->SetMinimumSizeEnabled(minimum_size_enabled);
+    bool include_insets;
+    if (dict.Has("includeInsets") && dict.Get("includeInsets", &include_insets))
+      fill_layout->SetIncludeInsets(include_insets);
+    return;
+  }
+
+  if (type == "box") {
+    views::LayoutOrientation orientation =
+        views::LayoutOrientation::kHorizontal;
+    dict.Get("orientation", &orientation);
+    layout_type_ = LayoutType::kBox;
+    auto* layout = view_->SetLayoutManager(
+        std::make_unique<views::BoxLayout>(orientation));
+    int between_child_spacing;
+    if (dict.Get("betweenChildSpacing", &between_child_spacing))
+      layout->set_between_child_spacing(between_child_spacing);
+    gfx::Insets inside_border_insets;
+    if (dict.Get("insideBorderInsets", &inside_border_insets))
+      layout->set_inside_border_insets(inside_border_insets);
+    views::LayoutAlignment box_main_axis;
+    if (dict.Get("mainAxisAlignment", &box_main_axis))
+      layout->set_main_axis_alignment(box_main_axis);
+    views::LayoutAlignment box_cross_axis;
+    if (dict.Get("crossAxisAlignment", &box_cross_axis))
+      layout->set_cross_axis_alignment(box_cross_axis);
     int minimum_cross_axis_size;
     if (dict.Get("minimumCrossAxisSize", &minimum_cross_axis_size))
-      layout->SetMinimumCrossAxisSize(minimum_cross_axis_size);
-    bool collapse_margins;
-    if (dict.Has("collapseMargins") &&
-        dict.Get("collapseMargins", &collapse_margins))
-      layout->SetCollapseMargins(collapse_margins);
-    bool include_host_insets_in_layout;
-    if (dict.Has("includeHostInsetsInLayout") &&
-        dict.Get("includeHostInsetsInLayout", &include_host_insets_in_layout))
-      layout->SetIncludeHostInsetsInLayout(include_host_insets_in_layout);
-    bool ignore_default_main_axis_margins;
-    if (dict.Has("ignoreDefaultMainAxisMargins") &&
-        dict.Get("ignoreDefaultMainAxisMargins",
-                 &ignore_default_main_axis_margins))
-      layout->SetIgnoreDefaultMainAxisMargins(ignore_default_main_axis_margins);
-    views::FlexAllocationOrder flex_allocation_order;
-    if (dict.Get("flexAllocationOrder", &flex_allocation_order))
-      layout->SetFlexAllocationOrder(flex_allocation_order);
+      layout->set_minimum_cross_axis_size(minimum_cross_axis_size);
+    int default_flex;
+    if (dict.Get("defaultFlex", &default_flex))
+      layout->SetDefaultFlex(default_flex);
+    return;
   }
+
+  // An explicit `type` we don't recognise is an error. An *absent* `type`
+  // falls through to FlexLayout, preserving backward compatibility with
+  // the legacy setLayout({orientation: ...}) shape from PR #35658.
+  if (!type.empty() && type != "flex") {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Unknown layout type: '" + type +
+        "'. Expected one of 'fill', 'box', 'flex', or omit the field.");
+    return;
+  }
+
+  // type == "flex" or omitted: configure a FlexLayout.
+  layout_type_ = LayoutType::kFlex;
+  auto* layout = view_->SetLayoutManager(std::make_unique<views::FlexLayout>());
+  views::LayoutOrientation orientation;
+  if (dict.Get("orientation", &orientation))
+    layout->SetOrientation(orientation);
+  views::LayoutAlignment main_axis_alignment;
+  if (dict.Get("mainAxisAlignment", &main_axis_alignment))
+    layout->SetMainAxisAlignment(main_axis_alignment);
+  views::LayoutAlignment cross_axis_alignment;
+  if (dict.Get("crossAxisAlignment", &cross_axis_alignment))
+    layout->SetCrossAxisAlignment(cross_axis_alignment);
+  gfx::Insets interior_margin;
+  if (dict.Get("interiorMargin", &interior_margin))
+    layout->SetInteriorMargin(interior_margin);
+  int minimum_cross_axis_size;
+  if (dict.Get("minimumCrossAxisSize", &minimum_cross_axis_size))
+    layout->SetMinimumCrossAxisSize(minimum_cross_axis_size);
+  bool collapse_margins;
+  if (dict.Has("collapseMargins") &&
+      dict.Get("collapseMargins", &collapse_margins))
+    layout->SetCollapseMargins(collapse_margins);
+  bool include_host_insets_in_layout;
+  if (dict.Has("includeHostInsetsInLayout") &&
+      dict.Get("includeHostInsetsInLayout", &include_host_insets_in_layout))
+    layout->SetIncludeHostInsetsInLayout(include_host_insets_in_layout);
+  bool ignore_default_main_axis_margins;
+  if (dict.Has("ignoreDefaultMainAxisMargins") &&
+      dict.Get("ignoreDefaultMainAxisMargins",
+               &ignore_default_main_axis_margins))
+    layout->SetIgnoreDefaultMainAxisMargins(ignore_default_main_axis_margins);
+  views::FlexAllocationOrder flex_allocation_order;
+  if (dict.Get("flexAllocationOrder", &flex_allocation_order))
+    layout->SetFlexAllocationOrder(flex_allocation_order);
+}
+
+void View::SetLayoutFlex(v8::Isolate* isolate, v8::Local<v8::Value> spec) {
+  if (!view_)
+    return;
+  if (spec.IsEmpty() || spec->IsNullOrUndefined()) {
+    view_->ClearProperty(views::kFlexBehaviorKey);
+    last_min_flex_rule_.reset();
+    last_max_flex_rule_.reset();
+    view_->InvalidateLayout();
+    return;
+  }
+  views::FlexSpecification fs;
+  if (!gin::ConvertFromV8(isolate, spec, &fs)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Invalid flex specification");
+    return;
+  }
+  // Cache min/max so getLayoutFlex can return them — FlexSpecification has no
+  // accessor for these once they're baked into its FlexRule closure.
+  gin_helper::Dictionary dict;
+  if (gin::ConvertFromV8(isolate, spec, &dict)) {
+    views::MinimumFlexSizeRule cached_min;
+    if (dict.Get("minimum", &cached_min))
+      last_min_flex_rule_ = cached_min;
+    else
+      last_min_flex_rule_.reset();
+    views::MaximumFlexSizeRule cached_max;
+    if (dict.Get("maximum", &cached_max))
+      last_max_flex_rule_ = cached_max;
+    else
+      last_max_flex_rule_.reset();
+  }
+  view_->SetProperty(views::kFlexBehaviorKey, fs);
+  view_->InvalidateLayout();
+}
+
+void View::SetLayoutMargins(const gfx::Insets& margins) {
+  if (!view_)
+    return;
+  view_->SetProperty(views::kMarginsKey, margins);
+  view_->InvalidateLayout();
+}
+
+void View::Layout() {
+  if (!view_)
+    return;
+  // Force a synchronous layout pass. Useful in tests and for advanced
+  // consumers that have just mutated layout-affecting properties and
+  // want the new bounds reflected immediately.
+  view_->DeprecatedLayoutImmediately();
+}
+
+void View::InvalidateLayout() {
+  if (!view_)
+    return;
+  view_->InvalidateLayout();
+}
+
+void View::SetPreferredSize(const gfx::Size& size) {
+  if (!view_)
+    return;
+  view_->SetPreferredSize(size);
+  view_->InvalidateLayout();
+}
+
+gfx::Size View::GetPreferredSize() const {
+  if (!view_)
+    return {};
+  return view_->GetPreferredSize();
+}
+
+void View::SetUseDefaultFillLayout(bool use_default) {
+  if (!view_)
+    return;
+  view_->SetUseDefaultFillLayout(use_default);
+}
+
+std::string View::GetLayoutManagerType() const {
+  switch (layout_type_) {
+    case LayoutType::kFill:
+      return "fill";
+    case LayoutType::kBox:
+      return "box";
+    case LayoutType::kFlex:
+      return "flex";
+    case LayoutType::kJs:
+      return "js";
+    case LayoutType::kNone:
+    default:
+      return "";
+  }
+}
+
+void View::SetBoxFlex(v8::Isolate* isolate,
+                      gin_helper::Handle<View> child,
+                      int weight,
+                      gin::Arguments* args) {
+  if (!view_ || !child->view())
+    return;
+  if (layout_type_ != LayoutType::kBox) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "setBoxFlex requires a box layout. Call setLayout({type: 'box'}) "
+        "first.");
+    return;
+  }
+  if (child->view()->parent() != view_) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "setBoxFlex target must be a direct child of this view");
+    return;
+  }
+  bool use_min_size = false;
+  args->GetNext(&use_min_size);
+  auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+  if (!layout)
+    return;
+  layout->SetFlexForView(child->view(), weight, use_min_size);
+  view_->InvalidateLayout();
+}
+
+v8::Local<v8::Value> View::GetLayoutFlex(v8::Isolate* isolate) const {
+  if (!view_)
+    return v8::Null(isolate);
+  const views::FlexSpecification* spec =
+      view_->GetProperty(views::kFlexBehaviorKey);
+  if (!spec)
+    return v8::Null(isolate);
+  gin::DataObjectBuilder builder(isolate);
+  builder.Set("weight", spec->weight()).Set("order", spec->order());
+  if (last_min_flex_rule_)
+    builder.Set("minimum", *last_min_flex_rule_);
+  if (last_max_flex_rule_)
+    builder.Set("maximum", *last_max_flex_rule_);
+  return builder.Build();
+}
+
+std::string View::GetOrientation() const {
+  if (!view_)
+    return "";
+  if (layout_type_ == LayoutType::kBox) {
+    auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+    if (!layout)
+      return "";
+    return layout->GetOrientation() ==
+                   views::BoxLayout::Orientation::kHorizontal
+               ? "horizontal"
+               : "vertical";
+  }
+  if (layout_type_ == LayoutType::kFlex) {
+    auto* layout = static_cast<views::FlexLayout*>(view_->GetLayoutManager());
+    if (!layout)
+      return "";
+    return layout->orientation() == views::LayoutOrientation::kHorizontal
+               ? "horizontal"
+               : "vertical";
+  }
+  return "";
+}
+
+std::string View::GetMainAxisAlignment() const {
+  if (!view_)
+    return "";
+  if (layout_type_ == LayoutType::kBox) {
+    auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+    return layout ? AlignmentToString(layout->main_axis_alignment()) : "";
+  }
+  if (layout_type_ == LayoutType::kFlex) {
+    auto* layout = static_cast<views::FlexLayout*>(view_->GetLayoutManager());
+    return layout ? AlignmentToString(layout->main_axis_alignment()) : "";
+  }
+  return "";
+}
+
+std::string View::GetCrossAxisAlignment() const {
+  if (!view_)
+    return "";
+  if (layout_type_ == LayoutType::kBox) {
+    auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+    return layout ? AlignmentToString(layout->cross_axis_alignment()) : "";
+  }
+  if (layout_type_ == LayoutType::kFlex) {
+    auto* layout = static_cast<views::FlexLayout*>(view_->GetLayoutManager());
+    return layout ? AlignmentToString(layout->cross_axis_alignment()) : "";
+  }
+  return "";
+}
+
+int View::GetBetweenChildSpacing() const {
+  if (!view_ || layout_type_ != LayoutType::kBox)
+    return 0;
+  auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+  if (!layout)
+    return 0;
+  return layout->between_child_spacing();
+}
+
+gfx::Insets View::GetInsideBorderInsets() const {
+  if (!view_ || layout_type_ != LayoutType::kBox)
+    return gfx::Insets();
+  auto* layout = static_cast<views::BoxLayout*>(view_->GetLayoutManager());
+  if (!layout)
+    return gfx::Insets();
+  return layout->inside_border_insets();
 }
 
 std::vector<v8::Local<v8::Value>> View::GetChildren() {
@@ -601,6 +1038,21 @@ void View::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setBorderRadius", &View::SetBorderRadius)
       .SetMethod("setBackgroundBlur", &View::SetBackgroundBlur)
       .SetMethod("setLayout", &View::SetLayout)
+      .SetMethod("setLayoutFlex", &View::SetLayoutFlex)
+      .SetMethod("setLayoutMargins", &View::SetLayoutMargins)
+      .SetMethod("getLayoutFlex", &View::GetLayoutFlex)
+      .SetMethod("layout", &View::Layout)
+      .SetMethod("invalidateLayout", &View::InvalidateLayout)
+      .SetMethod("setPreferredSize", &View::SetPreferredSize)
+      .SetMethod("getPreferredSize", &View::GetPreferredSize)
+      .SetMethod("setUseDefaultFillLayout", &View::SetUseDefaultFillLayout)
+      .SetMethod("getLayoutManagerType", &View::GetLayoutManagerType)
+      .SetMethod("getOrientation", &View::GetOrientation)
+      .SetMethod("getMainAxisAlignment", &View::GetMainAxisAlignment)
+      .SetMethod("getCrossAxisAlignment", &View::GetCrossAxisAlignment)
+      .SetMethod("getBetweenChildSpacing", &View::GetBetweenChildSpacing)
+      .SetMethod("getInsideBorderInsets", &View::GetInsideBorderInsets)
+      .SetMethod("setBoxFlex", &View::SetBoxFlex)
       .SetMethod("setVisible", &View::SetVisible)
       .SetMethod("getVisible", &View::GetVisible);
 }
