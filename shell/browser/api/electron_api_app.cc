@@ -110,6 +110,7 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
+#include <gdk/gdk.h>
 #include "base/nix/scoped_xdg_activation_token_injector.h"
 #include "base/nix/xdg_util.h"
 #endif
@@ -621,6 +622,16 @@ void App::OnFinishLaunching(base::DictValue launch_info) {
   // Set the application name for audio streams shown in external
   // applications. Only affects pulseaudio currently.
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
+
+  // Notify the desktop environment that the application has finished starting.
+  // Safe to call unconditionally -- it's a no-op if the first window.show()
+  // already cleared the notification.
+#if GTK_CHECK_VERSION(3, 90, 0)
+  if (GdkDisplay* display = gdk_display_get_default())
+    gdk_display_notify_startup_complete(display, nullptr);
+#else
+  gdk_notify_startup_complete();
+#endif
 #endif
   Emit("ready", base::Value(std::move(launch_info)));
 }
