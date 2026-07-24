@@ -1729,6 +1729,12 @@ void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
           base::UTF8ToUTF16(prompt_reason));
     }
   }
+
+  bool platform_passkeys = false;
+  if (options.Get("platformPasskeys", &platform_passkeys)) {
+    ElectronWebAuthenticationDelegate::SetPlatformPasskeysEnabled(
+        platform_passkeys);
+  }
 }
 
 int DockBounce(gin::Arguments* args) {

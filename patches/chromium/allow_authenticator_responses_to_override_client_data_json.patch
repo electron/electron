@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clifton Hensley <1056824+CliftonH@users.noreply.github.com>
+Date: Thu, 9 Jul 2026 12:29:33 -0500
+Subject: Allow authenticator responses to override client_data_json
+
+Electron's platform passkey authenticator on macOS uses Apple's
+ASAuthorizationController. Apple builds its own clientDataJSON from the
+challenge Electron supplies and signs over that clientDataJSON, not Chromium's
+pre-built one. The page must therefore receive Apple's version for RP
+verification to succeed.
+
+This adds an optional raw_client_data_json field to both
+AuthenticatorGetAssertionResponse and AuthenticatorMakeCredentialResponse.
+When present, authenticator_common_impl uses it in place of the request-
+level client_data_json.
+
+diff --git a/content/browser/webauth/authenticator_common_impl.cc b/content/browser/webauth/authenticator_common_impl.cc
+index a204d6988dca32666f72c223e1e741d0f21ffe61..5e87a0474f8e5bbe7086c0dadc55b01a709a0ddb 100644
+--- a/content/browser/webauth/authenticator_common_impl.cc
++++ b/content/browser/webauth/authenticator_common_impl.cc
+@@ -2875,8 +2875,12 @@ AuthenticatorCommonImpl::CreateMakeCredentialResponse(
+     AttestationErasureOption attestation_erasure) {
+   auto response = blink::mojom::MakeCredentialAuthenticatorResponse::New();
+   auto common_info = blink::mojom::CommonCredentialInfo::New();
+-  common_info->client_data_json.assign(req_state_->client_data_json.begin(),
+-                                       req_state_->client_data_json.end());
++  if (response_data.raw_client_data_json.has_value()) {
++    common_info->client_data_json = *response_data.raw_client_data_json;
++  } else {
++    common_info->client_data_json.assign(req_state_->client_data_json.begin(),
++                                         req_state_->client_data_json.end());
++  }
+   common_info->raw_id = response_data.attestation_object.GetCredentialId();
+   common_info->id = webauthn::Base64UrlEncodeOmitPadding(common_info->raw_id);
+ 
+@@ -3085,8 +3089,12 @@ AuthenticatorCommonImpl::CreateGetAssertionResponse(
+   auto common_info = blink::mojom::CommonCredentialInfo::New();
+   auto response_extensions =
+       blink::mojom::AuthenticationExtensionsClientOutputs::New();
+-  common_info->client_data_json.assign(req_state_->client_data_json.begin(),
+-                                       req_state_->client_data_json.end());
++  if (response_data.raw_client_data_json.has_value()) {
++    common_info->client_data_json = *response_data.raw_client_data_json;
++  } else {
++    common_info->client_data_json.assign(req_state_->client_data_json.begin(),
++                                         req_state_->client_data_json.end());
++  }
+   common_info->raw_id = response_data.credential->id;
+   common_info->id = webauthn::Base64UrlEncodeOmitPadding(common_info->raw_id);
+   response->info = std::move(common_info);
+diff --git a/device/fido/authenticator_get_assertion_response.h b/device/fido/authenticator_get_assertion_response.h
+index 12958766ba17a1af2e5c20beb74eaa25f09c0dae..bbb9c878f2bd4651ae4f3f2cf40868f1d24b2204 100644
+--- a/device/fido/authenticator_get_assertion_response.h
++++ b/device/fido/authenticator_get_assertion_response.h
+@@ -96,6 +96,14 @@ class COMPONENT_EXPORT(DEVICE_FIDO) AuthenticatorGetAssertionResponse {
+ 
+   // Contains the CMTG public key and signature if requested and supported.
+   std::optional<CmtgKeyResponse> cmtg_key;
++
++  // If set, this overrides the client_data_json that would normally be returned
++  // to the relying party. This is used by Electron's platform passkey
++  // authenticator on macOS, where Apple's ASAuthorizationController constructs
++  // its own clientDataJSON from the supplied challenge and signs over it. The
++  // page must receive Apple's JSON so that the RP can verify the signature
++  // against it.
++  std::optional<std::vector<uint8_t>> raw_client_data_json;
+ };
+ 
+ }  // namespace device
+diff --git a/device/fido/authenticator_make_credential_response.h b/device/fido/authenticator_make_credential_response.h
+index 5f2f700e47bd06b875b64600b46dc54dbec92628..4561dac46ce723b6bfaec5b0a5aebe95d4a4523a 100644
+--- a/device/fido/authenticator_make_credential_response.h
++++ b/device/fido/authenticator_make_credential_response.h
+@@ -97,6 +97,11 @@ class COMPONENT_EXPORT(DEVICE_FIDO) AuthenticatorMakeCredentialResponse {
+   // `cmtg_key` is present if the client requested a CMTG key and the
+   // authenticator supported it.
+   std::optional<CmtgKeyResponse> cmtg_key;
++
++  // If set, this overrides the client_data_json that would normally be returned
++  // to the relying party. Used by Electron's platform passkey authenticator on
++  // macOS where Apple constructs its own clientDataJSON.
++  std::optional<std::vector<uint8_t>> raw_client_data_json;
+ };
+ 
+ // Through cbor::Writer, produces a CTAP style CBOR-encoded byte array

@@ -5,6 +5,8 @@
 #include "shell/browser/webauthn/electron_authenticator_request_delegate.h"
 
 #if BUILDFLAG(IS_MAC)
+#include <utility>
+
 #include "base/base64.h"
 #include "base/containers/span.h"
 #include "base/no_destructor.h"
@@ -12,6 +14,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "device/fido/mac/credential_metadata.h"
 #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/webauthn/electron_platform_passkeys_authenticator.h"
 #include "shell/common/electron_constants.h"
 #endif
 
@@ -34,10 +37,33 @@ ElectronWebAuthenticationDelegate::touch_id_keychain_access_group() {
 }
 
 // static
+bool& ElectronWebAuthenticationDelegate::platform_passkeys_enabled() {
+  static bool value = false;
+  return value;
+}
+
+// static
 void ElectronWebAuthenticationDelegate::SetTouchIdKeychainAccessGroup(
     std::string access_group) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
   touch_id_keychain_access_group() = std::move(access_group);
+}
+
+// static
+bool ElectronWebAuthenticationDelegate::IsTouchIdConfigured() {
+  return !touch_id_keychain_access_group().empty();
+}
+
+// static
+void ElectronWebAuthenticationDelegate::SetPlatformPasskeysEnabled(
+    bool enabled) {
+  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+  platform_passkeys_enabled() = enabled;
+}
+
+// static
+bool ElectronWebAuthenticationDelegate::IsPlatformPasskeysEnabled() {
+  return platform_passkeys_enabled();
 }
 
 std::optional<content::WebAuthenticationDelegate::TouchIdAuthenticatorConfig>
@@ -66,6 +92,21 @@ ElectronWebAuthenticationDelegate::GetTouchIdAuthenticatorConfig(
   return TouchIdAuthenticatorConfig{
       .keychain_access_group = access_group,
       .metadata_secret = std::move(metadata_secret)};
+}
+
+void ElectronWebAuthenticationDelegate::
+    IsUserVerifyingPlatformAuthenticatorAvailableOverride(
+        content::RenderFrameHost* render_frame_host,
+        base::OnceCallback<void(std::optional<bool>)> callback) {
+  // When platform passkeys are enabled and available, report `true` so that
+  // isUserVerifyingPlatformAuthenticatorAvailable() reflects the passkey
+  // authenticator, not just Touch ID. Otherwise defer to the default (nullopt).
+  if (IsPlatformPasskeysEnabled() &&
+      ElectronPlatformPasskeysAuthenticator::IsAvailable()) {
+    std::move(callback).Run(true);
+    return;
+  }
+  std::move(callback).Run(std::nullopt);
 }
 #endif  // BUILDFLAG(IS_MAC)
 
