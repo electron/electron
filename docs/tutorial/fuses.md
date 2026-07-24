@@ -43,7 +43,7 @@ standalone Node.js process (e.g. a SQLite server process).
 
 The `cookieEncryption` fuse toggles whether the cookie store on disk is encrypted using OS level
 cryptography keys. By default, the SQLite database that Chromium uses to store cookies stores the
-values in plaintext. If you wish to ensure your app's cookies are encrypted in the same way Chrome
+values in plaintext. If you wish to ensure your app's cookies are encrypted in the same way Chromium
 does, then you should enable this fuse. Please note it is a one-way transition—if you enable this
 fuse, existing unencrypted cookies will be encrypted-on-write, but subsequently disabling the fuse
 later will make your cookie store corrupt and useless. Most apps can safely enable this fuse.
