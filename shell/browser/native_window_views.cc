@@ -634,6 +634,16 @@ void NativeWindowViews::Hide() {
   if (is_modal() && NativeWindow::parent())
     static_cast<NativeWindowViews*>(parent())->DecrementChildModals();
 
+  // Hiding the widget alone does not release activation: on Windows the
+  // widget is hidden with SWP_NOACTIVATE, so the invisible window stays the
+  // system foreground window and keeps reporting a focused accessibility
+  // state, stranding screen readers on a window the user can no longer see.
+  // Linux/at-spi has the equivalent problem. Deactivate first so the OS
+  // hands focus to the next window and emits the corresponding
+  // accessibility events.
+  if (widget()->IsActive())
+    widget()->Deactivate();
+
   widget()->Hide();
 
   NotifyWindowHide();
