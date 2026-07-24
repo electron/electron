@@ -271,6 +271,15 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   const int width = options.ValueOrDefault(options::kWidth, 800);
   const int height = options.ValueOrDefault(options::kHeight, 600);
   gfx::Rect bounds{0, 0, width, height};
+  // If an explicit position is provided, place the HWND on the target monitor
+  // at creation time. On Windows, DesktopWindowTreeHostWin::SetBoundsInDIP
+  // resolves the display from the bounds' DIP position (with a null window),
+  // so the very first DIP->pixel conversion picks up the correct per-monitor
+  // scale factor. Without this, the HWND is created at (0,0) using
+  // primary-monitor DPI and later repositioned, producing the
+  // secondary-creation deflation symptom.
+  if (int x, y; options.Get(options::kX, &x) && options.Get(options::kY, &y))
+    bounds.set_origin({x, y});
   widget_size_ = bounds.size();
 
   has_shadow_ = options.ValueOrDefault(options::kHasShadow, true);
