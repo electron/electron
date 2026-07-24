@@ -4,8 +4,7 @@ v8.setHeapSnapshotNearHeapLimit(1);
 
 const arr = [];
 function runAllocation() {
-  const str = JSON.stringify(process.config).slice(0, 1000);
-  arr.push(str);
+  arr.push('x'.repeat(1024 * 1024));
   setImmediate(runAllocation);
 }
 setImmediate(runAllocation);

@@ -931,7 +931,10 @@ describe('utilityProcess module', () => {
       const tmpDir = await fs.mkdtemp(path.resolve(os.tmpdir(), 'electron-spec-utility-oom-'));
       const child = utilityProcess.fork(path.join(fixturesPath, 'oom-grow.js'), [], {
         stdio: 'ignore',
-        execArgv: [`--diagnostic-dir=${tmpDir}`, '--js-flags=--max-old-space-size=50'],
+        execArgv: [
+          `--diagnostic-dir=${tmpDir}`,
+          '--js-flags=--max-old-space-size=20 --no-late-heap-limit-check --max-semi-space-size=1'
+        ],
         env: {
           NODE_DEBUG_NATIVE: 'diagnostic'
         }
