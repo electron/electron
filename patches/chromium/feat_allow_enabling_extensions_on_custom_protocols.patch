@@ -44,10 +44,10 @@ index 46ba17e5a3d6755a119a91a015a385253d598c52..bc8569fd0fc2c0fa9b12aa138567dcbf
  // Keys of the webRequest.RequestFilter dictionary.
  inline constexpr char kRequestFilterUrlsKey[] = "urls";
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
-index 8e1622f40f939c5cf9e41753cbdf3a3f97626511..bbcdcec0d1a7135e33f8eb1b53947586a0d1ad16 100644
+index 5ff75561005f794d115e51f9ce2b6325f319ef50..0f450d8968a8261433dc20eb93f3de940114a306 100644
 --- a/extensions/common/extension.cc
 +++ b/extensions/common/extension.cc
-@@ -221,7 +221,8 @@ const int Extension::kValidHostPermissionSchemes =
+@@ -218,7 +218,8 @@ const int Extension::kValidHostPermissionSchemes =
      URLPattern::SCHEME_CHROMEUI | URLPattern::SCHEME_HTTP |
      URLPattern::SCHEME_HTTPS | URLPattern::SCHEME_FILE |
      URLPattern::SCHEME_FTP | URLPattern::SCHEME_WS | URLPattern::SCHEME_WSS |

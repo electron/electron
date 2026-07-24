@@ -67,7 +67,7 @@ index ccff9b38717fc59563f75aea8ea502a942717c42..1209f74f28b5d6c642e207c08fd03b00
    return _headless_info.get();
  }
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 9e3a354ffd0ec6def0a3162af885bb5faa50613a..a9d21e99d1614132c759703e4642ae18b2aff669 100644
+index 54df4a85b0feed3528082a8fb35916db0b46a506..3c1a966c90e17a32a56682f88eb59bb6bffcdd9c 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -573,7 +573,7 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -94,10 +94,10 @@ index a41254c1f31654c1326b4bf1f29237bdf44bbe5a..8ca5673a225b69b5630383ed9673653b
    StateRestorationData? state_restoration_data;
  
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 9f2bc6393ad91af7c442e6d2f59dcd6929a0476e..c3d5a8cc3257817ac9a5db6c15a98fb5f8a8d5aa 100644
+index 2aa7592026e6c8e5b1a77a8166cc2e1a9853039a..d87bc9aa1862536135007d0ba927933efe4db09c 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-@@ -572,6 +572,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -571,6 +571,7 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    bool is_miniaturized_ = false;
    bool is_window_key_ = false;
    bool is_mouse_capture_active_ = false;
@@ -106,7 +106,7 @@ index 9f2bc6393ad91af7c442e6d2f59dcd6929a0476e..c3d5a8cc3257817ac9a5db6c15a98fb5
    bool is_visible_on_all_workspaces_ = false;
    gfx::Rect window_bounds_before_fullscreen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 3c8ad7d2f881d76a12b9308eff8f5c2ab48ee6ec..683b46eb7441d73b3dbb379f626de8fd31c6b8d7 100644
+index 7b30391cf1003cbc9d0d2c789b6b848b74797df2..1135fb598ed61e82a5c88d43ad8eb13ce4699c76 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 @@ -486,6 +486,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
@@ -139,10 +139,10 @@ index 3c8ad7d2f881d76a12b9308eff8f5c2ab48ee6ec..683b46eb7441d73b3dbb379f626de8fd
  
    // Register the CGWindowID (used to identify this window for video capture)
 diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
-index 3461abeb31cb07c9d29b10efa21dd48cea203c5f..d7752d52430f859e6ec80526ab8bb023d7880392 100644
+index f2592df1ab7ade499c9b35d3eb2e69c1b4689ff3..e6ea73937736c21854b666ba0c6c6f9a337bebf5 100644
 --- a/ui/views/widget/widget.cc
 +++ b/ui/views/widget/widget.cc
-@@ -239,6 +239,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
+@@ -242,6 +242,18 @@ ui::ZOrderLevel Widget::InitParams::EffectiveZOrderLevel() const {
    }
  }
  
@@ -161,7 +161,7 @@ index 3461abeb31cb07c9d29b10efa21dd48cea203c5f..d7752d52430f859e6ec80526ab8bb023
  void Widget::InitParams::SetParent(Widget* parent_widget) {
    SetParent(parent_widget->GetNativeView());
  }
-@@ -502,6 +514,7 @@ void Widget::Init(InitParams params) {
+@@ -505,6 +517,7 @@ void Widget::Init(InitParams params) {
  
    params.child |= (params.type == InitParams::TYPE_CONTROL);
    is_top_level_ = !params.child;
@@ -170,7 +170,7 @@ index 3461abeb31cb07c9d29b10efa21dd48cea203c5f..d7752d52430f859e6ec80526ab8bb023
  
    if (params.opacity == views::Widget::InitParams::WindowOpacity::kInferred &&
 diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
-index 88d692818323bd02ccabadbe35100accb404a3d5..3f5f270c66dc83432e94f70efdf8fb88f82398d7 100644
+index a12408a89d92712fe58bd1d9c55c3117f9a0e917..d13ad203699fe3a7c3035901262e463eb8e595a9 100644
 --- a/ui/views/widget/widget.h
 +++ b/ui/views/widget/widget.h
 @@ -327,6 +327,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
@@ -195,7 +195,7 @@ index 88d692818323bd02ccabadbe35100accb404a3d5..3f5f270c66dc83432e94f70efdf8fb88
      // If set, the window size will follow the content preferred size.
      bool autosize = false;
  
-@@ -1294,6 +1302,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1301,6 +1309,11 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // with it. TYPE_CONTROL and TYPE_TOOLTIP is not considered top level.
    bool is_top_level() const { return is_top_level_; }
  
@@ -207,7 +207,7 @@ index 88d692818323bd02ccabadbe35100accb404a3d5..3f5f270c66dc83432e94f70efdf8fb88
    // True if the window size will follow the content preferred size.
    bool is_autosized() const { return is_autosized_; }
  
-@@ -1752,6 +1765,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+@@ -1759,6 +1772,9 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
    // If true, the mouse is currently down.
    bool is_mouse_button_pressed_ = false;
  

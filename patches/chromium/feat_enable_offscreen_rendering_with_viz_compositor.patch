@@ -204,10 +204,10 @@ index f49bbc5d568f0cb323a22997a949e2cae8f35d59..c0154ee828e67b197eb2ddb1abf04c0a
    const raw_ptr<GpuServiceImpl> gpu_service_impl_;
  
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
-index 48333324f9beec05573d6f63869872c336b808e3..b233fcb586957fcbe5b7b9a767d86e5cda02bc93 100644
+index eacde6c06a27e97d2731551ac78b6c4c26c52246..b25c776b7347b29a57a038907167f620844fa942 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
 +++ b/components/viz/service/display_embedder/software_output_device_mac.cc
-@@ -109,6 +109,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
+@@ -111,6 +111,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
  
  SkCanvas* SoftwareOutputDeviceMac::BeginPaint(
      const gfx::Rect& new_damage_rect) {
@@ -216,7 +216,7 @@ index 48333324f9beec05573d6f63869872c336b808e3..b233fcb586957fcbe5b7b9a767d86e5c
    // Record the previous paint buffer.
    Buffer* previous_paint_buffer =
        buffer_queue_.empty() ? nullptr : buffer_queue_.back().get();
-@@ -198,6 +200,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
+@@ -202,6 +204,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
      gfx::CALayerParams ca_layer_params;
      ca_layer_params.scale_factor = scale_factor_;
      ca_layer_params.pixel_size = pixel_size_;
