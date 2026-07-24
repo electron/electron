@@ -26,7 +26,7 @@ on:
         type: boolean
         default: false
       is-ubsan:
-        description: 'Building the Undefined Behavior Sanitizer (UBSan) Linux build'
+        description: 'Building the Undefined Behavior Sanitizer (UBSan) build'
         required: false
         type: boolean
         default: false
@@ -70,7 +70,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build-type: ${{ inputs.target-platform == 'macos' && fromJSON('["darwin","mas"]') || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
+        build-type: ${{ inputs.target-platform == 'macos' && (inputs.is-ubsan && fromJSON('["darwin"]') || fromJSON('["darwin","mas"]')) || (inputs.target-platform == 'win' && fromJSON('["win"]') || fromJSON('["linux"]')) }}
         shard: ${{ case(inputs.display-server == 'wayland', fromJSON('[1]'), inputs.target-platform == 'linux', fromJSON('[1, 2, 3]'), inputs.target-platform == 'macos' && inputs.target-arch == 'x64', fromJSON('[1, 2, 3]'), fromJSON('[1, 2]')) }}
     env:
       BUILD_TYPE: ${{ matrix.build-type }}
@@ -328,7 +328,14 @@ jobs:
               export ELECTRON_FORCE_TEST_SUITE_EXIT="true"
             fi
           fi
-          node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+          if [ "${{ inputs.is-ubsan }}" = "true" ]; then
+            export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1"
+            export LLVM_SYMBOLIZER_PATH="$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
+            export MOCHA_TIMEOUT=180000
+            node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
+          else
+            node script/yarn.js test --runners=main --enableRerun=3 --trace-uncaught --enable-logging --files $tests_files
+          fi
         else
           chown :builduser .. && chmod g+w ..
           chown -R :builduser . && chmod -R g+w .
