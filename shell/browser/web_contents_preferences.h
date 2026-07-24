@@ -143,6 +143,7 @@ class WebContentsPreferences
   blink::mojom::V8CacheOptions v8_cache_options_;
   bool deprecated_paste_enabled_ = false;
   bool focus_on_navigation_;
+  bool disable_wake_locks_;
 
 #if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;
