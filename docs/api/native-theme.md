@@ -49,6 +49,12 @@ Settings this property to `light` will have the following effects:
 * The [`prefers-color-scheme`](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-color-scheme) CSS query will match `light` mode.
 * The `updated` event will be emitted
 
+To override the color scheme for an individual view without affecting native UI
+or other views, call [`webContents.setColorScheme`](web-contents.md#contentssetcolorschemecolorscheme)
+on the view's `webContents`. Use
+[`webContents.getColorScheme`](web-contents.md#contentsgetcolorscheme) to read its
+current override.
+
 The usage of this property should align with a classic "dark mode" state machine in your application
 where the user has three options.
 

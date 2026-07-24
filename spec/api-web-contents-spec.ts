@@ -7,7 +7,8 @@ import {
   BrowserView,
   WebContents,
   BaseWindow,
-  WebContentsView
+  WebContentsView,
+  nativeTheme
 } from 'electron/main';
 
 import { assert, expect } from 'chai';
@@ -2294,6 +2295,136 @@ describe('webContents module', () => {
 
       w.webContents.audioMuted = false;
       expect(w.webContents.audioMuted).to.be.false();
+    });
+  });
+
+  describe('color scheme', () => {
+    afterEach(async () => {
+      await closeAllWindows();
+      nativeTheme.themeSource = 'system';
+    });
+
+    const getEffectiveColorScheme = (contents: WebContents) => {
+      return contents.executeJavaScript(
+        "matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'"
+      ) as Promise<'dark' | 'light'>;
+    };
+
+    const waitForColorScheme = async (contents: WebContents, expected: 'dark' | 'light') => {
+      await waitUntil(async () => (await getEffectiveColorScheme(contents)) === expected);
+    };
+
+    it('gets the configured color scheme', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.webContents.getColorScheme()).to.equal('system');
+
+      w.webContents.setColorScheme('dark');
+      expect(w.webContents.getColorScheme()).to.equal('dark');
+
+      w.webContents.setColorScheme('light');
+      expect(w.webContents.getColorScheme()).to.equal('light');
+
+      w.webContents.setColorScheme();
+      expect(w.webContents.getColorScheme()).to.equal('system');
+
+      w.webContents.setColorScheme('dark');
+      w.webContents.setColorScheme('system');
+      expect(w.webContents.getColorScheme()).to.equal('system');
+    });
+
+    it('overrides the color scheme for one WebContents', async () => {
+      const overridden = new BrowserWindow({ show: false });
+      const untouched = new BrowserWindow({ show: false });
+      await Promise.all([
+        overridden.loadURL('about:blank'),
+        untouched.loadURL('about:blank')
+      ]);
+
+      const systemColorScheme = await getEffectiveColorScheme(overridden.webContents);
+      expect(await getEffectiveColorScheme(untouched.webContents)).to.equal(systemColorScheme);
+
+      overridden.webContents.setColorScheme('dark');
+      await waitForColorScheme(overridden.webContents, 'dark');
+      expect(await getEffectiveColorScheme(untouched.webContents)).to.equal(systemColorScheme);
+
+      overridden.webContents.setColorScheme('light');
+      await waitForColorScheme(overridden.webContents, 'light');
+      expect(await getEffectiveColorScheme(untouched.webContents)).to.equal(systemColorScheme);
+
+      overridden.webContents.setColorScheme('system');
+      await waitForColorScheme(overridden.webContents, systemColorScheme);
+    });
+
+    it('takes precedence over nativeTheme.themeSource', async () => {
+      const overridden = new BrowserWindow({ show: false });
+      const followingGlobalTheme = new BrowserWindow({ show: false });
+      await Promise.all([
+        overridden.loadURL('about:blank'),
+        followingGlobalTheme.loadURL('about:blank')
+      ]);
+
+      nativeTheme.themeSource = 'light';
+      await Promise.all([
+        waitForColorScheme(overridden.webContents, 'light'),
+        waitForColorScheme(followingGlobalTheme.webContents, 'light')
+      ]);
+
+      overridden.webContents.setColorScheme('dark');
+      await waitForColorScheme(overridden.webContents, 'dark');
+
+      nativeTheme.themeSource = 'dark';
+      await waitForColorScheme(followingGlobalTheme.webContents, 'dark');
+
+      nativeTheme.themeSource = 'light';
+      await waitForColorScheme(followingGlobalTheme.webContents, 'light');
+      expect(await getEffectiveColorScheme(overridden.webContents)).to.equal('dark');
+
+      overridden.webContents.setColorScheme('system');
+      await waitForColorScheme(overridden.webContents, 'light');
+
+      nativeTheme.themeSource = 'dark';
+      await Promise.all([
+        waitForColorScheme(overridden.webContents, 'dark'),
+        waitForColorScheme(followingGlobalTheme.webContents, 'dark')
+      ]);
+    });
+
+    it('notifies media query listeners when the color scheme changes', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('about:blank');
+
+      const initialColorScheme = await getEffectiveColorScheme(w.webContents);
+      const expectedColorScheme = initialColorScheme === 'dark' ? 'light' : 'dark';
+      await w.webContents.executeJavaScript(`
+        window.colorSchemeChanges = [];
+        matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+          window.colorSchemeChanges.push(event.matches ? 'dark' : 'light');
+        });
+      `);
+
+      w.webContents.setColorScheme(expectedColorScheme);
+      await waitUntil(async () => {
+        const changes = await w.webContents.executeJavaScript('window.colorSchemeChanges');
+        return changes.includes(expectedColorScheme);
+      });
+    });
+
+    it('preserves the override across navigations', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.setColorScheme('dark');
+
+      await w.loadURL('data:text/html,first');
+      expect(await getEffectiveColorScheme(w.webContents)).to.equal('dark');
+
+      await w.loadURL('data:text/html,second');
+      expect(await getEffectiveColorScheme(w.webContents)).to.equal('dark');
+    });
+
+    it('throws for an invalid color scheme', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(() => w.webContents.setColorScheme('sepia' as any)).to.throw(
+        "colorScheme must be one of 'system', 'light', or 'dark'"
+      );
     });
   });
 
