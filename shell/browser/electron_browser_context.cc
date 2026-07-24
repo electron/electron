@@ -377,11 +377,13 @@ ElectronBrowserContext::ElectronBrowserContext(
   if (auto* path_value = std::get_if<std::reference_wrapper<const std::string>>(
           &partition_location)) {
     base::PathService::Get(DIR_SESSION_DATA, &path_);
+    base::PathService::Get(DIR_SESSION_CACHE, &cache_path_);
     const std::string& partition_loc = path_value->get();
     if (!in_memory && !partition_loc.empty()) {
-      path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
-                  .Append(base::FilePath::FromUTF8Unsafe(
-                      MakePartitionName(partition_loc)));
+      base::FilePath subdir = base::FilePath(FILE_PATH_LITERAL("Partitions"))
+        .Append(base::FilePath::FromUTF8Unsafe(MakePartitionName(partition_loc)));
+      path_ = path_.Append(subdir);
+      cache_path_ = cache_path_.Append(subdir);
     }
   } else if (auto* filepath_partition =
                  std::get_if<std::reference_wrapper<const base::FilePath>>(
