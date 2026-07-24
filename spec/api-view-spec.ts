@@ -80,6 +80,48 @@ describe('View', () => {
     v.setBorderRadius(-9999999);
   });
 
+  it('allows setting per-corner border radii', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    v.setBorderRadius({ topLeft: 10, topRight: 8, bottomRight: 6, bottomLeft: 4 });
+    v.setBorderRadius({ topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 });
+  });
+
+  it('defaults missing per-corner keys to zero', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    v.setBorderRadius({ topLeft: 5 });
+    v.setBorderRadius({ bottomRight: 12 });
+    v.setBorderRadius({});
+  });
+
+  it('clamps negative and oversize per-corner radii', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    v.setBorderRadius({ topLeft: -10, topRight: 9999, bottomRight: 0, bottomLeft: 5 });
+    v.setBorderRadius({ topLeft: -9999999, topRight: -1, bottomRight: -1, bottomLeft: -1 });
+  });
+
+  it('allows mixing integer and object forms', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    v.setBorderRadius(8);
+    v.setBorderRadius({ topLeft: 16, topRight: 16, bottomRight: 0, bottomLeft: 0 });
+    v.setBorderRadius(0);
+    v.setBorderRadius({});
+  });
+
+  it('throws on invalid border radius input', () => {
+    w = new BaseWindow({ show: false });
+    const v = new View();
+    w.setContentView(v);
+    expect(() => v.setBorderRadius('not valid' as any)).to.throw(/number or/);
+  });
+
   describe('view.getVisible|setVisible', () => {
     it('is visible by default', () => {
       const v = new View();
