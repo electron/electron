@@ -1066,6 +1066,7 @@ describe('cpp heap', () => {
           const w = new BrowserWindow({ show: false });
           await w.loadURL('about:blank');
 
+          // Access a property to materialize the lazy WebFrameMain wrapper.
           console.log(w.webContents.mainFrame.url);
 
           for (let i = 0; i < 10; i++) {
@@ -1088,9 +1089,10 @@ describe('cpp heap', () => {
     it('should be released after the frame is destroyed', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
       const result = await remotely(
-        async (heap: string) => {
+        async (heap: string, snapshotHelper: string) => {
           const { app, BrowserWindow } = require('electron');
           const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
 
           // Keep the app alive when the window closes so we can snapshot.
@@ -1103,30 +1105,38 @@ describe('cpp heap', () => {
             }
           };
 
-          const countFrames = (snapshot: any[]) =>
-            snapshot.filter((node) => node.name === 'Electron / WebFrameMain' && node.type !== 'string').length;
-
           const w = new BrowserWindow({ show: false });
           await w.loadURL('data:text/html,<iframe src="about:blank"></iframe>');
 
           const mainFrame = w.webContents.mainFrame;
+          // Access a property to materialize the lazy subframe wrappers.
           console.log('subframes:', mainFrame.frames.length);
 
           await collectGarbage();
-          const before = countFrames(recordState().snapshot);
+          const retainingPath = ['C++ Persistent roots', 'Electron / WebFrameMain'];
+          const beforeSnapshot = recordState().snapshot;
+          const beforeHasMultipleFrames =
+            containsRetainingPath(beforeSnapshot, retainingPath) &&
+            !containsRetainingPath(beforeSnapshot, retainingPath, { occurrences: 1 });
 
           await w.loadURL('about:blank');
           await collectGarbage();
-          const after = countFrames(recordState().snapshot);
+          const afterHasOneFrame = containsRetainingPath(recordState().snapshot, retainingPath, {
+            occurrences: 1
+          });
 
           w.destroy();
-          return { before, after };
+          return { beforeHasMultipleFrames, afterHasOneFrame };
         },
-        path.join(__dirname, '../../third_party/electron_node/test/common/heap')
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
       );
-      expect(result.before).to.equal(2, 'main frame and subframe wrappers should both be live before navigation');
-      expect(result.after).to.equal(
-        1,
+      expect(result.beforeHasMultipleFrames).to.equal(
+        true,
+        'multiple WebFrameMain wrappers should be rooted before navigation'
+      );
+      expect(result.afterHasOneFrame).to.equal(
+        true,
         'subframe WebFrameMain should be released after its frame is destroyed by navigation'
       );
     });
@@ -1157,6 +1167,7 @@ describe('cpp heap', () => {
 
           try {
             await w.loadURL(url);
+            // Access a property to materialize the lazy WebFrameMain wrapper.
             console.log(w.webContents.mainFrame.url);
 
             let detachedFrame: Electron.WebFrameMain | null = null;
@@ -1190,6 +1201,45 @@ describe('cpp heap', () => {
         path.join(__dirname, 'fixtures', 'sub-frames', 'preload.js')
       );
       expect(result).to.equal(true, 'only the active WebFrameMain should remain rooted after navigation');
+    });
+
+    it('should settle an in-flight call stack reply after frame disposal', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const result = await remotely(async () => {
+        const { app, BrowserWindow } = require('electron');
+        const { once } = require('node:events');
+        const http = require('node:http');
+        const { setTimeout: delay } = require('node:timers/promises');
+
+        app.on('window-all-closed', () => {});
+
+        const server = http.createServer((request: any, response: any) => {
+          response.setHeader('Document-Policy', 'include-js-call-stacks-in-crash-reports');
+          response.end(request.url === '/child' ? '<body></body>' : '<iframe src="/child"></iframe>');
+        });
+        server.listen(0, '127.0.0.1');
+        await once(server, 'listening');
+
+        const w = new BrowserWindow({ show: false });
+        try {
+          await w.loadURL(`http://127.0.0.1:${server.address().port}`);
+
+          const childFrame = w.webContents.mainFrame.frames[0];
+          const callStackPromise = childFrame.collectJavaScriptCallStack();
+          const settled = callStackPromise.then(
+            () => 'resolved',
+            (error: Error) => `rejected: ${error.message}`
+          );
+
+          childFrame.executeJavaScript('window.frameElement.remove()').catch(() => {});
+          return Promise.race([settled, delay(5000).then(() => 'timeout')]);
+        } finally {
+          w.destroy();
+          server.close();
+        }
+      });
+
+      expect(result).to.equal('rejected: Render frame was disposed before call stack was received');
     });
   });
 

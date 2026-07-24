@@ -196,6 +196,7 @@ void WebFrameMain::Destroyed() {
 void WebFrameMain::MarkRenderFrameDisposed() {
   render_frame_detached_ = true;
   render_frame_disposed_ = true;
+  weak_factory_.Invalidate();
   TeardownMojoConnection();
 
   if (FromFrameTreeNodeId(frame_tree_node_id_) != this) {
@@ -342,8 +343,11 @@ void WebFrameMain::MaybeSetupMojoConnection() {
 
   if (!renderer_api_) {
     pending_receiver_ = renderer_api_.BindNewPipeAndPassReceiver();
-    renderer_api_.set_disconnect_handler(base::BindOnce(
-        &WebFrameMain::OnRendererConnectionError, GetWeakCell()));
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    renderer_api_.set_disconnect_handler(
+        base::BindOnce(&WebFrameMain::OnRendererConnectionError,
+                       gin::WrapPersistent(weak_factory_.GetWeakCell(
+                           isolate->GetCppHeap()->GetAllocationHandle()))));
   }
 
   content::RenderFrameHost* rfh = render_frame_host();
@@ -543,9 +547,23 @@ v8::Local<v8::Promise> WebFrameMain::CollectDocumentJSCallStack(
           render_frame_host()->GetProcess());
 
   rph_impl->GetJavaScriptCallStackGeneratorInterface()
-      ->CollectJavaScriptCallStack(
-          base::BindOnce(&WebFrameMain::CollectedJavaScriptCallStack,
-                         GetWeakCell(), std::move(promise)));
+      ->CollectJavaScriptCallStack(base::BindOnce(
+          [](WebFrameMain* frame, gin_helper::Promise<base::Value> promise,
+             const std::string& untrusted_javascript_call_stack,
+             const std::optional<blink::LocalFrameToken>& remote_frame_token) {
+            if (!frame) {
+              promise.RejectWithErrorMessage(
+                  "Render frame was disposed before call stack was "
+                  "received");
+              return;
+            }
+            frame->CollectedJavaScriptCallStack(std::move(promise),
+                                                untrusted_javascript_call_stack,
+                                                remote_frame_token);
+          },
+          gin::WrapPersistent(weak_factory_.GetWeakCell(
+              args->isolate()->GetCppHeap()->GetAllocationHandle())),
+          std::move(promise)));
 
   return handle;
 }
@@ -591,7 +609,7 @@ WebFrameMain* WebFrameMain::From(v8::Isolate* isolate,
   if (!rfh)
     return nullptr;
 
-  WebFrameMain* web_frame;
+  WebFrameMain* web_frame = nullptr;
   switch (GetLifecycleState(rfh)) {
     case LifecycleState::kSpeculative:
     case LifecycleState::kPendingCommit:
@@ -668,17 +686,17 @@ void WebFrameMain::Trace(cppgc::Visitor* visitor) const {
   visitor->Trace(weak_factory_);
 }
 
-cppgc::Persistent<gin::WeakCell<WebFrameMain>> WebFrameMain::GetWeakCell() {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  return gin::WrapPersistent(
-      weak_factory_.GetWeakCell(isolate->GetCppHeap()->GetAllocationHandle()));
-}
-
 }  // namespace electron::api
 
 namespace {
 
 using electron::api::WebFrameMain;
+
+v8::Local<v8::Value> ToV8OrNull(v8::Isolate* isolate, WebFrameMain* frame) {
+  v8::Local<v8::Value> value;
+  return gin::TryConvertToV8(isolate, frame, &value) ? value
+                                                     : v8::Null(isolate);
+}
 
 v8::Local<v8::Value> FromID(gin_helper::ErrorThrower thrower,
                             int render_process_id,
@@ -693,11 +711,8 @@ v8::Local<v8::Value> FromID(gin_helper::ErrorThrower thrower,
   if (!rfh)
     return v8::Undefined(thrower.isolate());
 
-  v8::Local<v8::Value> value;
-  if (!gin::TryConvertToV8(thrower.isolate(),
-                           WebFrameMain::From(thrower.isolate(), rfh), &value))
-    return v8::Null(thrower.isolate());
-  return value;
+  return ToV8OrNull(thrower.isolate(),
+                    WebFrameMain::From(thrower.isolate(), rfh));
 }
 
 v8::Local<v8::Value> FromFrameToken(gin_helper::ErrorThrower thrower,
@@ -722,11 +737,8 @@ v8::Local<v8::Value> FromFrameToken(gin_helper::ErrorThrower thrower,
   if (!rfh)
     return v8::Null(thrower.isolate());
 
-  v8::Local<v8::Value> value;
-  if (!gin::TryConvertToV8(thrower.isolate(),
-                           WebFrameMain::From(thrower.isolate(), rfh), &value))
-    return v8::Null(thrower.isolate());
-  return value;
+  return ToV8OrNull(thrower.isolate(),
+                    WebFrameMain::From(thrower.isolate(), rfh));
 }
 
 v8::Local<v8::Value> FromIdIfExists(gin_helper::ErrorThrower thrower,
@@ -738,11 +750,7 @@ v8::Local<v8::Value> FromIdIfExists(gin_helper::ErrorThrower thrower,
   }
   content::RenderFrameHost* rfh =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
-  WebFrameMain* web_frame = WebFrameMain::FromRenderFrameHost(rfh);
-  v8::Local<v8::Value> value;
-  if (!gin::TryConvertToV8(thrower.isolate(), web_frame, &value))
-    return v8::Null(thrower.isolate());
-  return value;
+  return ToV8OrNull(thrower.isolate(), WebFrameMain::FromRenderFrameHost(rfh));
 }
 
 v8::Local<v8::Value> FromFtnIdIfExists(gin_helper::ErrorThrower thrower,
@@ -751,12 +759,9 @@ v8::Local<v8::Value> FromFtnIdIfExists(gin_helper::ErrorThrower thrower,
     thrower.ThrowError("WebFrameMain is available only after app ready");
     return v8::Null(thrower.isolate());
   }
-  WebFrameMain* web_frame = WebFrameMain::FromFrameTreeNodeId(
-      content::FrameTreeNodeId(frame_tree_node_id));
-  v8::Local<v8::Value> value;
-  if (!gin::TryConvertToV8(thrower.isolate(), web_frame, &value))
-    return v8::Null(thrower.isolate());
-  return value;
+  return ToV8OrNull(thrower.isolate(),
+                    WebFrameMain::FromFrameTreeNodeId(
+                        content::FrameTreeNodeId(frame_tree_node_id)));
 }
 
 void Initialize(v8::Local<v8::Object> exports,

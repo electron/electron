@@ -73,8 +73,7 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
 
   content::RenderFrameHost* render_frame_host() const;
 
-  cppgc::Persistent<gin::WeakCell<WebFrameMain>> GetWeakCell();
-
+  // Make public for cppgc::MakeGarbageCollected.
   explicit WebFrameMain(content::RenderFrameHost* render_frame);
   ~WebFrameMain() override;
 
@@ -154,9 +153,6 @@ class WebFrameMain final : public gin::Wrappable<WebFrameMain>,
       "Context tracking of the renderer remote is not needed in the browser "
       "process.")
   mojo::Remote<mojom::ElectronRenderer> renderer_api_;
-  GC_PLUGIN_IGNORE(
-      "Context tracking of the pending receiver is not needed in the browser "
-      "process.")
   mojo::PendingReceiver<mojom::ElectronRenderer> pending_receiver_;
 
   content::FrameTreeNodeId frame_tree_node_id_;
