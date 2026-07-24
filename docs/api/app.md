@@ -365,6 +365,9 @@ Returns:
 * `authenticationResponseDetails` Object
   * `url` URL
   * `pid` number
+  * `isRequestForNavigation` boolean - Indicates whether the request is for a navigation.
+  * `firstAuthAttempt` boolean - Indicates whether this is the first authentication attempt.
+  * `responseHeaders` Record\<string, string | string[]\> (optional) - The headers returned in the response.
 * `authInfo` Object
   * `isProxy` boolean
   * `scheme` string
