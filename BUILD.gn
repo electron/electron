@@ -830,6 +830,8 @@ source_set("electron_lib") {
 
   if (enable_printing) {
     sources += [
+      "shell/browser/printing/print_to_pdf.cc",
+      "shell/browser/printing/print_to_pdf.h",
       "shell/browser/printing/print_view_manager_electron.cc",
       "shell/browser/printing/print_view_manager_electron.h",
       "shell/browser/printing/printing_utils.cc",
