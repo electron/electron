@@ -4306,6 +4306,35 @@ describe('BrowserWindow module', () => {
         expect(typeofProcess).to.equal('undefined');
         expect(typeofBuffer).to.equal('undefined');
       });
+
+      // Verify that webPreferences switches are correctly applied to a renderer
+      // process created for a cross-origin navigation. The new SiteInstance may not
+      // have a process at RegisterPendingSiteInstance() time; this exercises the
+      // deferred-registration path through RenderProcessWillLaunch().
+      it('applies webPreferences to renderer after cross-origin navigation', async () => {
+        const server = http.createServer((_req, res) => {
+          res.end('<html><body>ok</body></html>');
+        });
+        const { port } = await listen(server);
+        defer(() => server.close());
+
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: { nodeIntegration: true, contextIsolation: false }
+        });
+
+        // First navigation establishes the initial SiteInstance on 127.0.0.1.
+        await w.loadURL(`http://127.0.0.1:${port}/`);
+
+        // Cross-origin navigation: 'localhost' and '127.0.0.1' are treated as
+        // separate origins by Chromium, so this triggers a new SiteInstance whose
+        // renderer process does not yet exist at the time
+        // RegisterPendingSiteInstance() is called.
+        await w.loadURL(`http://localhost:${port}/`);
+
+        const typeofVersions = await w.webContents.executeJavaScript('typeof process.versions.electron');
+        expect(typeofVersions).to.equal('string');
+      });
     });
 
     describe('"sandbox" option', () => {
