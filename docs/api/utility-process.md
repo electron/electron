@@ -56,9 +56,11 @@ Process: [Main](../glossary.md#main-process)<br />
     requests created via the [net module](net.md) will allow responding to them via the
     [`login`](#event-login) event on the `UtilityProcess` instance when a `session` is provided, or via
     the [`app#login`](app.md#event-login) event in the main process when using the default system network
-    context. Without this flag, auth challenges are handled by the default
-    [`login`](client-request.md#event-login) event on the [`ClientRequest`](client-request.md) object. Default is
-    `false`.
+    context. This flag also routes client-certificate selection to the
+    [`app#select-client-certificate`](app.md#event-select-client-certificate) event in the main process; without
+    it, `net` requests from the utility process proceed without a client certificate. Without this flag, auth
+    challenges are handled by the default [`login`](client-request.md#event-login) event on the
+    [`ClientRequest`](client-request.md) object. Default is `false`.
 
 Returns [`UtilityProcess`](utility-process.md#class-utilityprocess)
 

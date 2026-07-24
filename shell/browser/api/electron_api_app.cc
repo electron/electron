@@ -470,14 +470,8 @@ void OnClientCertificateSelected(
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     std::shared_ptr<net::ClientCertIdentityList> identities,
     gin::Arguments* const args) {
-  if (args->Length() == 2) {
-    delegate->ContinueWithCertificate(nullptr, nullptr);
-    return;
-  }
-
   v8::Local<v8::Value> val;
-  args->GetNext(&val);
-  if (val->IsNull()) {
+  if (!args->GetNext(&val) || val.IsEmpty() || val->IsNullOrUndefined()) {
     delegate->ContinueWithCertificate(nullptr, nullptr);
     return;
   }
@@ -781,15 +775,20 @@ base::OnceClosure App::SelectClientCertificate(
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
+  // |web_contents| is null for requests that did not originate from a renderer
+  // (e.g. net.fetch / utilityProcess); surface those with a null WebContents.
+  v8::Local<v8::Value> web_contents_value =
+      web_contents ? WebContents::FromOrCreate(isolate, web_contents).ToV8()
+                   : v8::Null(isolate).As<v8::Value>();
   bool prevent_default =
-      Emit("select-client-certificate",
-           WebContents::FromOrCreate(isolate, web_contents),
+      Emit("select-client-certificate", web_contents_value,
            cert_request_info->host_and_port.ToString(), std::move(client_certs),
            base::BindOnce(&OnClientCertificateSelected, isolate,
                           shared_delegate, shared_identities));
 
-  // Default to first certificate from the platform store.
-  if (!prevent_default) {
+  // Default to first certificate from the platform store. The JS callback may
+  // have already run synchronously and moved the identity out, so guard for it.
+  if (!prevent_default && (*shared_identities)[0]) {
     scoped_refptr<net::X509Certificate> cert =
         (*shared_identities)[0]->certificate();
     net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
