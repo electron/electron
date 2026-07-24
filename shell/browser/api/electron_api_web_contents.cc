@@ -4289,7 +4289,7 @@ content::RenderFrameHost* WebContents::FocusedFrame() {
 
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
-  if (frame)
+  if (frame && frame->IsRenderFrameLive())
     frame->NotifyUserActivation(
         blink::mojom::UserActivationNotificationType::kInteraction);
 }
