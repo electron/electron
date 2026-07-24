@@ -634,6 +634,11 @@ void NativeWindowViews::Hide() {
   if (is_modal() && NativeWindow::parent())
     static_cast<NativeWindowViews*>(parent())->DecrementChildModals();
 
+#if BUILDFLAG(IS_LINUX)
+  if (widget()->IsActive())
+    widget()->Deactivate();
+#endif
+
   widget()->Hide();
 
   NotifyWindowHide();
