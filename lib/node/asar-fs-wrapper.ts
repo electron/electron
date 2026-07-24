@@ -898,7 +898,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
           nextTick(callback!, [error]);
           return;
         }
-        dirents.push(new fs.Dirent(file, stats.type));
+        dirents.push(getDirent(pathArgument, file, stats.type));
       }
       nextTick(callback!, [null, dirents]);
       return;
@@ -942,7 +942,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         if (!stats) {
           throw createError(AsarError.NOT_FOUND, { asarPath, filePath: childPath });
         }
-        dirents.push(new fs.Dirent(file, stats.type));
+        dirents.push(getDirent(pathArgument, file, stats.type));
       }
       return Promise.resolve(dirents);
     }
@@ -985,7 +985,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
         if (!stats) {
           throw createError(AsarError.NOT_FOUND, { asarPath, filePath: childPath });
         }
-        dirents.push(new fs.Dirent(file, stats.type));
+        dirents.push(getDirent(pathArgument, file, stats.type));
       }
       return dirents;
     }
