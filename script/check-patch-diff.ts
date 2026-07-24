@@ -10,8 +10,19 @@ const proc = spawnSync('python3', [patchExportFnPath, configPath, '--dry-run'], 
   cwd: srcPath
 });
 
-// Fail if patch exporting returned 1, e.g dry run failed.
-if (proc.status === 1) {
-  console.log(proc.stderr.toString('utf8'));
+if (proc.error) {
+  console.error(proc.error.message);
   process.exit(1);
+}
+
+if (proc.signal) {
+  console.error(`Patch export terminated by signal ${proc.signal}`);
+  process.exit(1);
+}
+
+// Fail if patch exporting failed, e.g. dry run found changes.
+if (proc.status !== 0) {
+  console.log(proc.stdout.toString('utf8'));
+  console.error(proc.stderr.toString('utf8'));
+  process.exit(proc.status ?? 1);
 }
