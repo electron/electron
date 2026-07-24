@@ -1110,32 +1110,41 @@ describe('cpp heap', () => {
 
           const mainFrame = w.webContents.mainFrame;
           // Access a property to materialize the lazy subframe wrappers.
-          console.log('subframes:', mainFrame.frames.length);
-
-          await collectGarbage();
-          const retainingPath = ['C++ Persistent roots', 'Electron / WebFrameMain'];
-          const beforeSnapshot = recordState().snapshot;
-          const beforeHasMultipleFrames =
-            containsRetainingPath(beforeSnapshot, retainingPath) &&
-            !containsRetainingPath(beforeSnapshot, retainingPath, { occurrences: 1 });
+          const subframes = mainFrame.frames;
 
           await w.loadURL('about:blank');
           await collectGarbage();
-          const afterHasOneFrame = containsRetainingPath(recordState().snapshot, retainingPath, {
-            occurrences: 1
-          });
+          const mainFrameIsActive = w.webContents.mainFrame === mainFrame && !mainFrame.detached;
+          const remainingSubframeCount = mainFrame.frames.length;
+          const subframeIsDetached = subframes[0]?.detached;
+          const hasOneFrame = containsRetainingPath(
+            recordState().snapshot,
+            ['C++ Persistent roots', 'Electron / WebFrameMain'],
+            {
+              occurrences: 1
+            }
+          );
 
           w.destroy();
-          return { beforeHasMultipleFrames, afterHasOneFrame };
+          return {
+            subframeCount: subframes.length,
+            mainFrameIsActive,
+            remainingSubframeCount,
+            subframeIsDetached,
+            hasOneFrame
+          };
         },
         path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
         path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
       );
-      expect(result.beforeHasMultipleFrames).to.equal(
-        true,
-        'multiple WebFrameMain wrappers should be rooted before navigation'
+      expect(result.subframeCount).to.equal(1, 'a subframe WebFrameMain should be created before navigation');
+      expect(result.mainFrameIsActive).to.equal(true, 'the remaining WebFrameMain should be the active main frame');
+      expect(result.remainingSubframeCount).to.equal(
+        0,
+        'the active main frame should have no subframes after navigation'
       );
-      expect(result.afterHasOneFrame).to.equal(
+      expect(result.subframeIsDetached).to.equal(true, 'the subframe WebFrameMain should be detached after navigation');
+      expect(result.hasOneFrame).to.equal(
         true,
         'subframe WebFrameMain should be released after its frame is destroyed by navigation'
       );
