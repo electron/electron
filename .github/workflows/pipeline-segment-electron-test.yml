@@ -329,8 +329,7 @@ jobs:
             fi
           fi
           if [ "${{ inputs.is-ubsan }}" = "true" ]; then
-            export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1"
-            export LLVM_SYMBOLIZER_PATH="$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
+            export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export MOCHA_TIMEOUT=180000
             node script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
           else
@@ -355,8 +354,7 @@ jobs:
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files | $ASAN_SYMBOLIZE
           elif [ "${{ inputs.is-ubsan }}" == "true" ]; then
             cd ..
-            export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1"
-            export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
+            export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1:external_symbolizer_path=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
             export MOCHA_TIMEOUT=180000
             cd electron
             runuser -u builduser -- xvfb-run script/actions/run-tests.sh script/yarn.js test --runners=main --trace-uncaught --enable-logging --files $tests_files
