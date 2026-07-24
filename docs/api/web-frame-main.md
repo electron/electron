@@ -191,6 +191,13 @@ When executed on a video media element, shows a save dialog and saves the frame 
 
 #### `frame.printToPDF(options)`
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52439
+```
+-->
+
 * `options` Object
   * `landscape` boolean (optional) - Paper orientation.`true` for landscape, `false` for portrait. Defaults to false.
   * `displayHeaderFooter` boolean (optional) - Whether to display header and footer. Defaults to false.
