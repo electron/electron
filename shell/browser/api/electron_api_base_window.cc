@@ -618,7 +618,22 @@ void BaseWindow::MoveTop() {
 }
 
 void BaseWindow::SetTitle(const std::string& title) {
+  title_set_from_api_ = true;
   window_->SetTitle(title);
+}
+
+void BaseWindow::SetTitleFromPage(const std::string& title) {
+  title_set_from_api_ = false;
+  window_->SetTitle(title);
+}
+
+bool BaseWindow::SetTitleFromPageIfNotSetFromApi(const std::string& title) {
+  if (title_set_from_api_) {
+    return false;
+  } else {
+    SetTitleFromPage(title);
+    return true;
+  }
 }
 
 std::string BaseWindow::GetTitle() const {

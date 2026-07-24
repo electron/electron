@@ -136,14 +136,21 @@ void BrowserWindow::OnActivateContents() {
 #endif
 }
 
-void BrowserWindow::OnPageTitleUpdated(const std::u16string& title,
-                                       bool explicit_set) {
+void BrowserWindow::OnPageTitleUpdated(
+    const std::u16string& title,
+    bool explicit_set,
+    bool from_same_document_history_navigation) {
   // Change window title to page title.
   auto self = weak_factory_.GetWeakPtr();
   if (!Emit("page-title-updated", title, explicit_set)) {
     // |this| might be deleted, or marked as destroyed by close().
-    if (self && !IsDestroyed())
-      SetTitle(base::UTF16ToUTF8(title));
+    if (self && !IsDestroyed()) {
+      if (from_same_document_history_navigation) {
+        SetTitleFromPageIfNotSetFromApi(base::UTF16ToUTF8(title));
+      } else {
+        SetTitleFromPage(base::UTF16ToUTF8(title));
+      }
+    }
   }
 }
 
