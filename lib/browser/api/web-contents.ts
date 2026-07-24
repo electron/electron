@@ -637,7 +637,7 @@ WebContents.prototype._init = function () {
       getEntryAtIndex: this._getNavigationEntryAtIndex.bind(this),
       removeEntryAtIndex: this._removeNavigationEntryAtIndex.bind(this),
       getAllEntries: this._getHistory.bind(this),
-      restore: ({ index, entries }: { index?: number; entries: NavigationEntry[] }) => {
+      restore: ({ index, entries, bypassCache = false }: { index?: number; entries: NavigationEntry[]; bypassCache?: boolean }) => {
         if (index === undefined) {
           index = entries.length - 1;
         }
@@ -652,7 +652,7 @@ WebContents.prototype._init = function () {
         p.catch(() => {});
 
         try {
-          this._restoreHistory(index, entries);
+          this._restoreHistory(index, entries, bypassCache);
         } catch (error) {
           return Promise.reject(error);
         }
