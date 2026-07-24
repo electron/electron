@@ -664,6 +664,19 @@ describe('chrome extensions', () => {
       showLastDevToolsPanel(w);
       await winningMessage;
     });
+
+    // Regression test for https://github.com/electron/electron/issues/48705:
+    // when launched with --no-sandbox, the extension's devtools_page runs in a
+    // non-sandboxed renderer. Renderer init must not abort there, otherwise
+    // chrome.devtools.panels.create() never runs and the panel never appears.
+    // The fixture exits 0 once the panel runs, 1 on timeout. Must be a separate
+    // process because --no-sandbox is a process-wide switch.
+    ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads a devtools extension with --no-sandbox', async () => {
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'devtools-extension-no-sandbox');
+      const appProcess = spawn(process.execPath, [appPath, '--no-sandbox']);
+      const [code] = await once(appProcess, 'exit');
+      expect(code).to.equal(0);
+    });
   });
 
   describe('chrome extension content scripts', () => {
