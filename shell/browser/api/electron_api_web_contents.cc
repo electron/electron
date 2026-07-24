@@ -2446,12 +2446,13 @@ void WebContents::DidFinishNavigation(
         http_response_code = http_response->response_code();
       }
       Emit("did-frame-navigate", url, http_response_code, http_status_text,
-           is_main_frame, frame_process_id, frame_routing_id);
+           is_main_frame, frame_process_id, frame_routing_id, http_response);
       if (is_main_frame) {
         // Ensure zoom is updated before JS handlers see the event.
         if (auto* zc = GetZoomController())
           zc->ProcessNavigationZoom(navigation_handle);
-        Emit("did-navigate", url, http_response_code, http_status_text);
+        Emit("did-navigate", url, http_response_code, http_status_text,
+             http_response);
       }
 
       content::NavigationEntry* entry = navigation_handle->GetNavigationEntry();
