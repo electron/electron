@@ -446,18 +446,19 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   if ((has_frame() || has_client_frame()) && use_content_size_)
     size = ContentBoundsToWindowBounds(gfx::Rect(size)).size();
 
-  // Bounds need to be re-applied before centering to account for frame
-  // insets, which weren't available on init.
-  SetSize(size);
-  Center();
-
 #if BUILDFLAG(IS_WIN)
-  // Save initial window state.
+  // Save initial window state. This must happen before the SetSize()/Center()
+  // calls below.
   if (fullscreen)
     last_window_state_ = ui::mojom::WindowShowState::kFullscreen;
   else
     last_window_state_ = ui::mojom::WindowShowState::kNormal;
 #endif
+
+  // Bounds need to be re-applied before centering to account for frame
+  // insets, which weren't available on init.
+  SetSize(size);
+  Center();
 
   // Listen to mouse events.
   aura::Window* window = GetNativeWindow();
@@ -854,6 +855,15 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
   // Note: the following must be after "widget()->SetFullscreen(fullscreen);"
   if (leaving_fullscreen && !IsVisible())
     FlipWindowStyle(GetAcceleratedWidget(), true, WS_VISIBLE);
+
+  // Leaving fullscreen restores the window bounds without going through
+  // SetBounds(), so re-pin a non-resizable window's size constraints to the
+  // restored size here.
+  if (leaving_fullscreen && !CanResize()) {
+    const gfx::Size restored_size = GetSize();
+    SetMaximumSize(restored_size);
+    SetMinimumSize(restored_size);
+  }
 #else
   if (IsVisible())
     widget()->SetFullscreen(fullscreen);
@@ -897,7 +907,17 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   // On Linux and Windows the minimum and maximum size should be updated with
   // window size when window is not resizable.
-  if (!CanResize()) {
+  bool skip_size_lock = false;
+#if BUILDFLAG(IS_WIN)
+  // On Windows, skip the above while the window is (or is being created)
+  // fullscreen: locking min == max to the restored size would clamp the
+  // fullscreen window back to that size via WM_GETMINMAXINFO. The constraints
+  // are re-applied when the window leaves fullscreen (see SetFullScreen).
+  // See https://github.com/electron/electron/issues/51957.
+  skip_size_lock =
+      last_window_state_ == ui::mojom::WindowShowState::kFullscreen;
+#endif
+  if (!CanResize() && !skip_size_lock) {
     SetMaximumSize(bounds.size());
     SetMinimumSize(bounds.size());
   }
