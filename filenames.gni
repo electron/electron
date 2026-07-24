@@ -71,6 +71,7 @@ filenames = {
   lib_sources_posix = [ "shell/browser/electron_browser_main_parts_posix.cc" ]
 
   lib_sources_win = [
+    "shell/browser/api/electron_api_clipboard_win.cc",
     "shell/browser/api/electron_api_power_monitor_win.cc",
     "shell/browser/api/electron_api_system_preferences_win.cc",
     "shell/browser/browser_win.cc",
@@ -130,6 +131,7 @@ filenames = {
     "shell/browser/animation_util_mac.mm",
     "shell/browser/api/electron_api_app_mac.mm",
     "shell/browser/api/electron_api_base_window_mac.mm",
+    "shell/browser/api/electron_api_clipboard_mac.mm",
     "shell/browser/api/electron_api_menu_mac.h",
     "shell/browser/api/electron_api_menu_mac.mm",
     "shell/browser/api/electron_api_native_theme_mac.mm",
@@ -195,7 +197,6 @@ filenames = {
     "shell/browser/ui/message_box_mac.mm",
     "shell/browser/ui/tray_icon_cocoa.h",
     "shell/browser/ui/tray_icon_cocoa.mm",
-    "shell/common/api/electron_api_clipboard_mac.mm",
     "shell/common/api/electron_api_native_image_mac.mm",
     "shell/common/asar/archive_mac.mm",
     "shell/common/asar/integrity_digest.h",
@@ -260,6 +261,10 @@ filenames = {
     "shell/browser/api/electron_api_base_window.h",
     "shell/browser/api/electron_api_browser_window.cc",
     "shell/browser/api/electron_api_browser_window.h",
+    "shell/browser/api/electron_api_clipboard.cc",
+    "shell/browser/api/electron_api_clipboard.h",
+    "shell/browser/api/electron_api_clipboard_item.cc",
+    "shell/browser/api/electron_api_clipboard_item.h",
     "shell/browser/api/electron_api_content_tracing.cc",
     "shell/browser/api/electron_api_cookies.cc",
     "shell/browser/api/electron_api_cookies.h",
@@ -583,8 +588,6 @@ filenames = {
     "shell/browser/zoom_level_delegate.h",
     "shell/common/api/crashpad_support.cc",
     "shell/common/api/electron_api_asar.cc",
-    "shell/common/api/electron_api_clipboard.cc",
-    "shell/common/api/electron_api_clipboard.h",
     "shell/common/api/electron_api_command_line.cc",
     "shell/common/api/electron_api_environment.cc",
     "shell/common/api/electron_api_native_image.cc",
