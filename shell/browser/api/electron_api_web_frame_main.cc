@@ -101,6 +101,9 @@ struct Converter<blink::mojom::PageVisibilityState> {
 
 namespace electron::api {
 
+// These maps are non-owning lookup indices. cppgc objects cannot be stored as
+// raw pointers outside the heap, and strong Persistents would retain frames
+// after their lifecycle ends, so use weak handles that clear on collection.
 // FrameTreeNodeId -> WebFrameMain*
 // Using FrameTreeNode allows us to track frame across navigations. This
 // is most similar to how <iframe> works.
@@ -160,8 +163,14 @@ WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
       render_frame_detached_(IsDetachedFrameHost(rfh)) {
   // Detached RFH should not insert itself in FTN lookup since it has been
   // swapped already.
-  if (!render_frame_detached_)
-    GetFrameTreeNodeIdMap().emplace(frame_tree_node_id_, this);
+  if (!render_frame_detached_) {
+    auto& map = GetFrameTreeNodeIdMap();
+    auto [it, inserted] = map.try_emplace(frame_tree_node_id_, this);
+    if (!inserted) {
+      CHECK(!it->second);
+      it->second = this;
+    }
+  }
 
   const auto [_, inserted] = GetFrameTokenMap().emplace(frame_token_, this);
   DCHECK(inserted);
@@ -171,9 +180,7 @@ WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
          GetLifecycleState(rfh) == LifecycleState::kRunningUnloadHandlers);
 }
 
-WebFrameMain::~WebFrameMain() {
-  Destroyed();
-}
+WebFrameMain::~WebFrameMain() = default;
 
 void WebFrameMain::Destroyed() {
   if (FromFrameTreeNodeId(frame_tree_node_id_) == this) {
@@ -183,9 +190,7 @@ void WebFrameMain::Destroyed() {
     GetFrameTreeNodeIdMap().erase(frame_tree_node_id_);
   }
 
-  GetFrameTokenMap().erase(frame_token_);
   MarkRenderFrameDisposed();
-  keep_alive_.Clear();
 }
 
 void WebFrameMain::MarkRenderFrameDisposed() {
@@ -193,8 +198,10 @@ void WebFrameMain::MarkRenderFrameDisposed() {
   render_frame_disposed_ = true;
   TeardownMojoConnection();
 
-  if (FromFrameTreeNodeId(frame_tree_node_id_) != this)
+  if (FromFrameTreeNodeId(frame_tree_node_id_) != this) {
+    GetFrameTokenMap().erase(frame_token_);
     keep_alive_.Clear();
+  }
 }
 
 // Should only be called when swapping frames.
