@@ -114,7 +114,7 @@ index 45c60dd2c44b05fdd279f759069383479823c7f2..33a2a0337efb9a46293e11d0d09b3fc1
    GenericFontFamilySettings generic_font_family_settings_;
  };
 diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.cc b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
-index b5300dea97f20d72a807543a6da0baf61d21955f..a7030c1ba6851b26c765c7b05cd26e1453866719 100644
+index 2d5d6bb086bb8540af6c229e4b8d8b5fa47af873..483c959bb17c3ceb350d606f709097cb2aa92e38 100644
 --- a/third_party/blink/renderer/core/workers/worklet_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
 @@ -32,6 +32,7 @@

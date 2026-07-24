@@ -677,7 +677,8 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
 
 void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
   if (managed_devtools_web_contents_)
-    view_->SetContentsResizingStrategy(DevToolsContentsResizingStrategy{rect});
+    view_->SetContentsResizingStrategy(
+        DevToolsContentsResizingStrategy{devtools::DockSide::kNone, rect});
 }
 
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
