@@ -15,7 +15,7 @@
     "@electron-ci/uv-dlopen": "*",
     "@electron-ci/virtual-display": "*",
     "@electron/fuses": "^2.1.2",
-    "@electron/packager": "^18.3.2",
+    "@electron/packager": "^20.0.2",
     "@types/basic-auth": "^1.1.8",
     "@types/busboy": "^1.5.4",
     "@types/chai": "^4.3.19",
