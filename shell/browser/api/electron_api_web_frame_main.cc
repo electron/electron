@@ -192,6 +192,9 @@ void WebFrameMain::MarkRenderFrameDisposed() {
   render_frame_detached_ = true;
   render_frame_disposed_ = true;
   TeardownMojoConnection();
+
+  if (FromFrameTreeNodeId(frame_tree_node_id_) != this)
+    keep_alive_.Clear();
 }
 
 // Should only be called when swapping frames.

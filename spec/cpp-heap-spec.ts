@@ -1130,6 +1130,67 @@ describe('cpp heap', () => {
         'subframe WebFrameMain should be released after its frame is destroyed by navigation'
       );
     });
+
+    it('should release the root for a detached frame after navigation', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string, preload: string) => {
+          const { BrowserWindow, ipcMain } = require('electron');
+          const { once } = require('node:events');
+          const http = require('node:http');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          const createServer = async () => {
+            const server = http.createServer((_request: any, response: any) => response.end('<body></body>'));
+            server.listen(0, '127.0.0.1');
+            await once(server, 'listening');
+            return server;
+          };
+
+          const server = await createServer();
+          const getUrl = (server: any) => `http://127.0.0.1:${server.address().port}`;
+          const url = getUrl(server);
+          const crossOriginUrl = url.replace('127.0.0.1', 'localhost');
+          const w = new BrowserWindow({ show: false, webPreferences: { preload } });
+
+          try {
+            await w.loadURL(url);
+            console.log(w.webContents.mainFrame.url);
+
+            let detachedFrame: Electron.WebFrameMain | null = null;
+            const unloaded = new Promise<void>((resolve) => {
+              ipcMain.once('preload-unload', (event: Electron.IpcMainEvent) => {
+                detachedFrame = event.senderFrame;
+                resolve();
+              });
+            });
+
+            const navigated = w.loadURL(crossOriginUrl);
+            await unloaded;
+            await navigated;
+
+            for (let i = 0; i < 10; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+            }
+
+            console.log(detachedFrame!.detached);
+            return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / WebFrameMain'], {
+              occurrences: 1
+            });
+          } finally {
+            w.destroy();
+            server.close();
+          }
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(__dirname, 'fixtures', 'sub-frames', 'preload.js')
+      );
+      expect(result).to.equal(true, 'only the active WebFrameMain should remain rooted after navigation');
+    });
   });
 
   describe('internal event', () => {
