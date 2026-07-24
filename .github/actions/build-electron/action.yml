@@ -27,7 +27,7 @@ inputs:
     description: 'The ASan Linux build'
     required: false
   is-ubsan:
-    description: 'The UBSan Linux build'
+    description: 'The UBSan build'
     required: false
   upload-out-gen-artifacts:
     description: 'Whether to upload the out/${dir}/gen artifacts'
