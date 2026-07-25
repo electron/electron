@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Sat, 25 Jul 2026 14:06:05 -0700
+Subject: 8144667: Add `ScrollbarTheme::IsScrollbarRegistered` to remove
+ invalid cast
+
+https: //chromium-review.googlesource.com/c/chromium/src/+/8144667
+Change-Id: I322a7f6b8d2b58b95a6dee05838247881aa1c04f
+
+diff --git a/third_party/blink/renderer/core/paint/custom_scrollbar_theme.h b/third_party/blink/renderer/core/paint/custom_scrollbar_theme.h
+index 7d9ffc3dccca10d4cab9be784959ba25295252ec..c2eda02cf67186783910972fb2c5036273764cbe 100644
+--- a/third_party/blink/renderer/core/paint/custom_scrollbar_theme.h
++++ b/third_party/blink/renderer/core/paint/custom_scrollbar_theme.h
+@@ -76,6 +76,9 @@ class CustomScrollbarTheme final : public ScrollbarTheme {
+   void RegisterScrollbar(Scrollbar& scrollbar) override {
+     return GetTheme().RegisterScrollbar(scrollbar);
+   }
++  bool IsScrollbarRegistered(Scrollbar& scrollbar) const override {
++    return GetTheme().IsScrollbarRegistered(scrollbar);
++  }
+ 
+   int MinimumThumbLength(const Scrollbar&) const override;
+ 
+diff --git a/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm b/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm
+index e24097e431ca1e29e1a942448257ea286ab020ba..53f9ff7c125eee84be597d7fceb8fdeec7b52632 100644
+--- a/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm
++++ b/third_party/blink/renderer/core/scroll/mac_scrollbar_animator_impl.mm
+@@ -28,21 +28,6 @@
+   return holder->Value();
+ }
+ 
+-blink::ScrollbarThemeMac* MacOverlayScrollbarTheme(
+-    blink::ScrollbarTheme& scrollbar_theme) {
+-  return !scrollbar_theme.IsMockTheme()
+-             ? static_cast<blink::ScrollbarThemeMac*>(&scrollbar_theme)
+-             : nullptr;
+-}
+-
+-bool IsScrollbarRegistered(blink::Scrollbar& scrollbar) {
+-  if (blink::ScrollbarThemeMac* scrollbar_theme =
+-          MacOverlayScrollbarTheme(scrollbar.GetTheme())) {
+-    return scrollbar_theme->IsScrollbarRegistered(scrollbar);
+-  }
+-  return false;
+-}
+-
+ }  // namespace
+ 
+ ///////////////////////////////////////////////////////////////////////////////
+@@ -178,7 +163,7 @@ bool IsScrollbarRegistered(blink::Scrollbar& scrollbar) {
+ }
+ 
+ void MacScrollbarAnimatorV2::DidAddVerticalScrollbar(Scrollbar& scrollbar) {
+-  if (!IsScrollbarRegistered(scrollbar))
++  if (!scrollbar.GetTheme().IsScrollbarRegistered(scrollbar))
+     return;
+   DCHECK(!vertical_scrollbar_);
+   vertical_scrollbar_ =
+@@ -190,7 +175,7 @@ bool IsScrollbarRegistered(blink::Scrollbar& scrollbar) {
+ }
+ 
+ void MacScrollbarAnimatorV2::DidAddHorizontalScrollbar(Scrollbar& scrollbar) {
+-  if (!IsScrollbarRegistered(scrollbar))
++  if (!scrollbar.GetTheme().IsScrollbarRegistered(scrollbar))
+     return;
+   DCHECK(!horizontal_scrollbar_);
+   horizontal_scrollbar_ =
+diff --git a/third_party/blink/renderer/core/scroll/scrollbar_theme.h b/third_party/blink/renderer/core/scroll/scrollbar_theme.h
+index 32eb9a38ef5cc1da230b1cc75c89cc8f4a33e5d1..dd01fc3888cb05c75aee4f3bc79929299982a998 100644
+--- a/third_party/blink/renderer/core/scroll/scrollbar_theme.h
++++ b/third_party/blink/renderer/core/scroll/scrollbar_theme.h
+@@ -191,6 +191,7 @@ class CORE_EXPORT ScrollbarTheme {
+   }
+ 
+   virtual void RegisterScrollbar(Scrollbar&) {}
++  virtual bool IsScrollbarRegistered(Scrollbar&) const { return false; }
+ 
+   virtual bool IsMockTheme() const { return false; }
+ 
+diff --git a/third_party/blink/renderer/core/scroll/scrollbar_theme_mac.h b/third_party/blink/renderer/core/scroll/scrollbar_theme_mac.h
+index 924b19558d7d9a8c59de7985ccd8ce1d4f0a4c67..e79cf3117fb47f1f68a030535321c2feaf837f91 100644
+--- a/third_party/blink/renderer/core/scroll/scrollbar_theme_mac.h
++++ b/third_party/blink/renderer/core/scroll/scrollbar_theme_mac.h
+@@ -37,7 +37,7 @@ class CORE_EXPORT ScrollbarThemeMac : public ScrollbarTheme {
+   ~ScrollbarThemeMac() override;
+ 
+   void RegisterScrollbar(Scrollbar&) override;
+-  bool IsScrollbarRegistered(Scrollbar&) const;
++  bool IsScrollbarRegistered(Scrollbar&) const override;
+ 
+   // On Mac, the painting code itself animates the opacity so there's no need
+   // to disable in order to make the scrollbars invisible. In fact,
