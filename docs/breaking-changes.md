@@ -14,6 +14,11 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (44.0)
 
+### Removed: `openAsHidden`, `restoreState`, and `wasOpenedAsHidden` from `app.getLoginItemSettings` on macOS
+
+The deprecated `openAsHidden`, `restoreState`, and `wasOpenedAsHidden` properties have been removed from the object returned by `app.getLoginItemSettings()` on macOS.
+Additionally, the `openAsHidden` option is no longer supported in `app.setLoginItemSettings()` on macOS.
+
 ### Behavior Changed: `webContents` may be `null` in `select-client-certificate`
 
 The `app` `'select-client-certificate'` event is now also emitted for requests made
