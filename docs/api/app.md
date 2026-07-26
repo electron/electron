@@ -1405,6 +1405,14 @@ Returns `Integer` - The current value displayed in the counter badge.
 
 ### `app.getLoginItemSettings([options])` _macOS_ _Windows_
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/52351
+    description: "Removed `openAsHidden`, `wasOpenedAsHidden` and `restoreState` fields from return value."
+```
+-->
+
 * `options` Object (optional)
   * `type` string (optional) _macOS_ - Can be `mainAppService`, `agentService`, `daemonService`, or `loginItemService`. Defaults to `mainAppService`. See [app.setLoginItemSettings](app.md#appsetloginitemsettingssettings-macos-windows) for more information about each type.
   * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default.
@@ -1428,6 +1436,14 @@ Returns `Object`:
   * `enabled` boolean _Windows_ - `true` if the app registry key is startup approved and therefore shows as `enabled` in Task Manager and Windows settings.
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
+
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/52351
+    description: "Removed `openAsHidden` option."
+```
+-->
 
 > [!IMPORTANT]
 > On macOS, your app should be [code signed and notarized](../tutorial/code-signing.md#macos-apis-that-require-code-signing)
