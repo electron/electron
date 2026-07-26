@@ -348,7 +348,7 @@ async function writeRTF (text, clipboardType) {
 }
 ```
 
-### Removed migration path from pre-macOS 13 login items to the new `SMAppService` API
+### Removed: Migration path from pre-macOS 13 login items to the new `SMAppService` API
 
 On macOS 12 and below, Electron used legacy APIs to power
 [`app.getLoginItemSettings()`](https://www.electronjs.org/docs/latest/api/app#appgetloginitemsettingsoptions-macos-windows)
@@ -364,6 +364,15 @@ Electron no longer performs this migration automatically.
 Most end users should have been migrated by now. Thus, this change should have little
 impact. The benefits are fixing a deadlock in `app.getLoginItemSettings()` (see also PR
 [#48090](https://github.com/electron/electron/pull/48090)) and easier maintenance.
+
+### Removed: Pre-macOS 13 login item attributes
+
+Electron 44 removes the option `openAsHidden` from
+[`app.setLoginItemSettings()`](https://www.electronjs.org/docs/latest/api/app#appsetloginitemsettingssettings-macos-windows)
+and the fields `openAsHidden`, `wasOpenedAsHidden` and `restoreState` from the return value of
+[`app.getLoginItemSettings()`](https://www.electronjs.org/docs/latest/api/app#appgetloginitemsettingsoptions-macos-windows).
+
+These only worked on macOS 12 and below. Support for macOS 12 has been dropped.
 
 ## Planned Breaking API Changes (43.0)
 
