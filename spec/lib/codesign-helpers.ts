@@ -67,8 +67,10 @@ export function spawn(cmd: string, args: string[], opts: any = {}) {
     out += chunk.toString();
   });
   return new Promise<{ code: number; out: string }>((resolve) => {
-    child.on('exit', (code, signal) => {
-      expect(signal).to.equal(null);
+    // Use 'close' rather than 'exit' - 'exit' can fire while the stdio pipes
+    // still have buffered data, truncating the output of a crashing subprocess.
+    child.on('close', (code, signal) => {
+      expect(signal).to.equal(null, `Subprocess exited with signal ${signal}. Output:\n${out}`);
       resolve({
         code: code!,
         out
