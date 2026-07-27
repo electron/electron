@@ -2399,9 +2399,9 @@ added:
 ```
 -->
 
-* `colorScheme` string (optional) - Can be `system`, `light` or `dark`.
-  Defaults to `system` meaning that this `WebContents` will follow the value set
-  by [`nativeTheme.themeSource`](native-theme.md#nativethemethemesource).
+* `colorScheme` string (optional) - Can be `system`, `light` or `dark`. Defaults
+  to `system` meaning that this `WebContents` will follow the value set by
+  [`nativeTheme.themeSource`](native-theme.md#nativethemethemesource).
 
 Overrides the preferred color scheme for this WebContents. Calling this method
 without `colorScheme`, or setting it to `system`, removes the override.
