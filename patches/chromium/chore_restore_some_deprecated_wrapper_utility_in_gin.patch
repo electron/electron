@@ -8,46 +8,6 @@ Restores part of https://chromium-review.googlesource.com/c/chromium/src/+/67991
 Patch can be removed once cppgc migration is complete
 https://github.com/electron/electron/issues/47922
 
-diff --git a/content/services/auction_worklet/shared_storage_bindings.cc b/content/services/auction_worklet/shared_storage_bindings.cc
-index 222ea405c238032e332b14a27ad868d0664c14e5..3df51bf482070455614b0c4dec96c6258480b758 100644
---- a/content/services/auction_worklet/shared_storage_bindings.cc
-+++ b/content/services/auction_worklet/shared_storage_bindings.cc
-@@ -412,6 +412,8 @@ void SharedStorageBindings::AttachToContext(v8::Local<v8::Context> context) {
-         v8::FunctionTemplate::New(v8_helper_->isolate(),
-                                   &SharedStorageBindings::SetMethodConstructor,
-                                   v8_this);
-+    set_method_ctor_template->InstanceTemplate()->SetInternalFieldCount(
-+        gin::kNumberOfInternalFields);
-     set_method_ctor_template->Inherit(base_modifier_method_template);
-     set_method_ctor_template->SetClassName(
-         v8_helper_->CreateStringFromLiteral(kSharedStorageSetMethodName));
-@@ -427,6 +429,8 @@ void SharedStorageBindings::AttachToContext(v8::Local<v8::Context> context) {
-         v8::FunctionTemplate::New(
-             v8_helper_->isolate(),
-             &SharedStorageBindings::AppendMethodConstructor, v8_this);
-+    append_method_ctor_template->InstanceTemplate()->SetInternalFieldCount(
-+        gin::kNumberOfInternalFields);
-     append_method_ctor_template->Inherit(base_modifier_method_template);
-     append_method_ctor_template->SetClassName(
-         v8_helper_->CreateStringFromLiteral(kSharedStorageAppendMethodName));
-@@ -443,6 +447,8 @@ void SharedStorageBindings::AttachToContext(v8::Local<v8::Context> context) {
-         v8::FunctionTemplate::New(
-             v8_helper_->isolate(),
-             &SharedStorageBindings::DeleteMethodConstructor, v8_this);
-+    delete_method_ctor_template->InstanceTemplate()->SetInternalFieldCount(
-+        gin::kNumberOfInternalFields);
-     delete_method_ctor_template->Inherit(base_modifier_method_template);
-     delete_method_ctor_template->SetClassName(
-         v8_helper_->CreateStringFromLiteral(kSharedStorageDeleteMethodName));
-@@ -459,6 +465,8 @@ void SharedStorageBindings::AttachToContext(v8::Local<v8::Context> context) {
-         v8::FunctionTemplate::New(
-             v8_helper_->isolate(),
-             &SharedStorageBindings::ClearMethodConstructor, v8_this);
-+    clear_method_ctor_template->InstanceTemplate()->SetInternalFieldCount(
-+        gin::kNumberOfInternalFields);
-     clear_method_ctor_template->Inherit(base_modifier_method_template);
-     clear_method_ctor_template->SetClassName(
-         v8_helper_->CreateStringFromLiteral(kSharedStorageClearMethodName));
 diff --git a/gin/BUILD.gn b/gin/BUILD.gn
 index ed562a2d424f2c0eed81aa6300644f146b5cb17f..44f8c84563692364346afbd5041aaf4287d78bba 100644
 --- a/gin/BUILD.gn
@@ -260,7 +220,7 @@ index d2b2ce62dc6244b969283c983032c1922ef83e79..3b961ac57bccd14a2284e01a3b800d5f
    std::shared_ptr<V8ForegroundTaskRunnerBase> task_runner_;
    std::shared_ptr<V8ForegroundTaskRunnerBase> user_visible_task_runner_;
 diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
-index 6409d04497fe237e6fb0d57c582b9020d003d382..7af83f96cfd6287507472956359564454db71aef 100644
+index beb1b4282beeed69d169df20fae3a908748c7127..e870a2ca8762cbb1c174fd1d2aa2f8241a03f110 100644
 --- a/gin/public/gin_embedders.h
 +++ b/gin/public/gin_embedders.h
 @@ -25,9 +25,13 @@ enum GinEmbedder : uint16_t {
