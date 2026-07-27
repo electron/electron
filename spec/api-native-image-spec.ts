@@ -321,11 +321,12 @@ describe('nativeImage module', () => {
       expect(image.getSize()).to.deep.equal({ width: 256, height: 256 });
     });
 
-    ifit(process.platform === 'win32')(
-      'cleans up temporary files created for .ico files in ASAR archives',
-      function () {
+    ifdescribe(process.platform === 'win32')('when loading .ico files from ASAR archives', () => {
+      const archivePath = path.join(fixturesPath, 'test.asar', 'icon.asar');
+
+      // Packed cases use distinct members so a reverted implementation cannot reuse a stale extracted path.
+      const withIsolatedTempDirectory = (callback: () => void) => {
         const testDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'electron-native-image-'));
-        const archivePath = path.join(fixturesPath, 'test.asar', 'icon.asar');
         const previousTemp = process.env.TEMP;
         const previousTmp = process.env.TMP;
         try {
@@ -333,9 +334,8 @@ describe('nativeImage module', () => {
           process.env.TMP = testDirectory;
           const entriesBefore = fs.readdirSync(testDirectory).sort();
 
-          const image = nativeImage.createFromPath(path.join(archivePath, 'icon.ico'));
-          expect(image.isEmpty()).to.be.false();
-          expect(image.getSize()).to.deep.equal({ width: 256, height: 256 });
+          callback();
+
           expect(fs.readdirSync(testDirectory).sort()).to.deep.equal(entriesBefore);
         } finally {
           if (previousTemp === undefined) delete process.env.TEMP;
@@ -344,8 +344,58 @@ describe('nativeImage module', () => {
           else process.env.TMP = previousTmp;
           fs.rmSync(testDirectory, { recursive: true, force: true });
         }
-      }
-    );
+      };
+
+      const expectValidIcon = (relativePath: string) => {
+        const image = nativeImage.createFromPath(path.join(archivePath, relativePath));
+        expect(image.isEmpty()).to.be.false();
+        expect(image.getSize()).to.deep.equal({ width: 256, height: 256 });
+      };
+
+      it('removes temporary files after loading a packed ICO', () => {
+        withIsolatedTempDirectory(() => expectValidIcon('icon.ico'));
+      });
+
+      it('does not create temporary files for an unpacked ICO', () => {
+        withIsolatedTempDirectory(() => expectValidIcon('unpacked.ico'));
+      });
+
+      it('does not create temporary files for a missing ICO', () => {
+        withIsolatedTempDirectory(() => {
+          expect(nativeImage.createFromPath(path.join(archivePath, 'missing.ico')).isEmpty()).to.be.true();
+        });
+      });
+
+      it('does not create temporary files for a missing ASAR archive', () => {
+        withIsolatedTempDirectory(() => {
+          const missingArchive = path.join(fixturesPath, 'test.asar', 'missing.asar');
+          expect(nativeImage.createFromPath(path.join(missingArchive, 'icon.ico')).isEmpty()).to.be.true();
+        });
+      });
+
+      it('removes temporary files when a packed ICO is invalid', () => {
+        withIsolatedTempDirectory(() => {
+          expect(nativeImage.createFromPath(path.join(archivePath, 'invalid.ico')).isEmpty()).to.be.true();
+        });
+      });
+
+      it('removes temporary files after repeatedly loading the same packed ICO', () => {
+        withIsolatedTempDirectory(() => {
+          for (let i = 0; i < 3; i++) expectValidIcon('repeated.ico');
+        });
+      });
+
+      it('removes temporary files after loading multiple packed ICOs', () => {
+        withIsolatedTempDirectory(() => {
+          expectValidIcon('multiple-one.ico');
+          expectValidIcon('multiple-two.ico');
+        });
+      });
+
+      it('removes temporary files after loading a linked packed ICO', () => {
+        withIsolatedTempDirectory(() => expectValidIcon('linked.ico'));
+      });
+    });
   });
 
   describe('createFromNamedImage(name)', () => {
