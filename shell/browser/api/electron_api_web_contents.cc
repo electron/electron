@@ -2686,7 +2686,8 @@ std::string WebContents::GetColorScheme() const {
 
 void WebContents::SetColorScheme(gin::Arguments* args) {
   std::string color_scheme = "system";
-  if (args->Length() > 0 && !args->GetNext(&color_scheme)) {
+  if (args->Length() > 0 && !args->PeekNext()->IsUndefined() &&
+      !args->GetNext(&color_scheme)) {
     args->ThrowTypeError(
         "colorScheme must be one of 'system', 'light', or 'dark'");
     return;

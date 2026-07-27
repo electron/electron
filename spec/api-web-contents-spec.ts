@@ -2328,6 +2328,10 @@ describe('webContents module', () => {
       expect(w.webContents.getColorScheme()).to.equal('system');
 
       w.webContents.setColorScheme('dark');
+      w.webContents.setColorScheme(undefined);
+      expect(w.webContents.getColorScheme()).to.equal('system');
+
+      w.webContents.setColorScheme('dark');
       w.webContents.setColorScheme('system');
       expect(w.webContents.getColorScheme()).to.equal('system');
     });
