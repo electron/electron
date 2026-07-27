@@ -4,9 +4,6 @@
 
 #include "shell/browser/ui/views/freedesktop_nav_button_provider.h"
 
-#include <dlfcn.h>
-#include <gtk/gtk.h>
-
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -15,10 +12,10 @@
 #include "base/check.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_util.h"
+#include "shell/browser/ui/gtk/gtk_symbolic_icon_provider.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/core/SkImage.h"
-#include "third_party/skia/include/core/SkPixmap.h"
 #include "third_party/skia/include/core/SkSamplingOptions.h"
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/image/image_skia_rep.h"
@@ -51,106 +48,6 @@ constexpr std::array<const char*, 4> kIconNames = {
     "window-restore-symbolic", "window-close-symbolic"};
 static_assert(static_cast<size_t>(DisplayType::kClose) + 1 ==
               kIconNames.size());
-
-// -------------------------------------------------------------------------
-// GTK API
-//
-// GTK is used only to load glyphs, styles, and user settings.
-// The buttons are rendered entirely with Skia, and the GTK API can be
-// replaced by an abstract provider (e.g. on LinuxUiTheme) in the future.
-// -------------------------------------------------------------------------
-
-// Dynamically-resolved GTK 3 entry points.
-#define RESOLVE(handle, fn) \
-  ((fn = reinterpret_cast<decltype(fn)>(dlsym(handle, #fn))) != nullptr)
-
-struct GtkApi {
-  decltype(&::gtk_settings_get_default) gtk_settings_get_default = nullptr;
-  decltype(&::gtk_icon_theme_get_default) gtk_icon_theme_get_default = nullptr;
-  decltype(&::gtk_icon_theme_lookup_icon_for_scale)
-      gtk_icon_theme_lookup_icon_for_scale = nullptr;
-  decltype(&::gtk_icon_info_load_symbolic) gtk_icon_info_load_symbolic =
-      nullptr;
-  decltype(&::gdk_pixbuf_get_width) gdk_pixbuf_get_width = nullptr;
-  decltype(&::gdk_pixbuf_get_height) gdk_pixbuf_get_height = nullptr;
-  decltype(&::gdk_pixbuf_get_rowstride) gdk_pixbuf_get_rowstride = nullptr;
-  decltype(&::gdk_pixbuf_get_pixels) gdk_pixbuf_get_pixels = nullptr;
-  decltype(&::gdk_pixbuf_get_has_alpha) gdk_pixbuf_get_has_alpha = nullptr;
-  bool valid = false;
-
-  static const GtkApi* Get() {
-    static const GtkApi api;
-    return api.valid ? &api : nullptr;
-  }
-
-  GtkApi() {
-    void* gtk = dlopen("libgtk-3.so.0", RTLD_LAZY | RTLD_NOLOAD);
-    void* pixbuf = dlopen("libgdk_pixbuf-2.0.so.0", RTLD_LAZY | RTLD_NOLOAD);
-    valid = gtk && pixbuf && RESOLVE(gtk, gtk_settings_get_default) &&
-            RESOLVE(gtk, gtk_icon_theme_get_default) &&
-            RESOLVE(gtk, gtk_icon_theme_lookup_icon_for_scale) &&
-            RESOLVE(gtk, gtk_icon_info_load_symbolic) &&
-            RESOLVE(pixbuf, gdk_pixbuf_get_width) &&
-            RESOLVE(pixbuf, gdk_pixbuf_get_height) &&
-            RESOLVE(pixbuf, gdk_pixbuf_get_rowstride) &&
-            RESOLVE(pixbuf, gdk_pixbuf_get_pixels) &&
-            RESOLVE(pixbuf, gdk_pixbuf_get_has_alpha);
-  }
-};
-
-#undef RESOLVE
-
-std::string GetGtkSettingString(const char* property) {
-  const GtkApi* api = GtkApi::Get();
-  GtkSettings* settings = api ? api->gtk_settings_get_default() : nullptr;
-  if (!settings) {
-    return {};
-  }
-  gchar* value = nullptr;
-  g_object_get(settings, property, &value, nullptr);
-  std::string result = value ? value : "";
-  g_free(value);
-  return result;
-}
-
-SkBitmap LoadSymbolicIcon(DisplayType type,
-                          int icon_size,
-                          int scale,
-                          SkColor color) {
-  const GtkApi* api = GtkApi::Get();
-  if (!api) {
-    return {};
-  }
-  GtkIconInfo* icon_info = api->gtk_icon_theme_lookup_icon_for_scale(
-      api->gtk_icon_theme_get_default(), kIconNames[static_cast<size_t>(type)],
-      icon_size, scale,
-      static_cast<GtkIconLookupFlags>(GTK_ICON_LOOKUP_USE_BUILTIN |
-                                      GTK_ICON_LOOKUP_GENERIC_FALLBACK));
-  if (!icon_info) {
-    return {};
-  }
-  GdkRGBA fg = {SkColorGetR(color) / 255.0, SkColorGetG(color) / 255.0,
-                SkColorGetB(color) / 255.0, SkColorGetA(color) / 255.0};
-  GdkPixbuf* pixbuf = api->gtk_icon_info_load_symbolic(
-      icon_info, &fg, nullptr, nullptr, nullptr, nullptr, nullptr);
-  g_object_unref(icon_info);
-  if (!pixbuf) {
-    return {};
-  }
-
-  // Symbolic icons are decoded as unpremultiplied RGBA, so convert with Skia.
-  SkBitmap bitmap;
-  if (api->gdk_pixbuf_get_has_alpha(pixbuf)) {
-    const SkImageInfo pixbuf_info = SkImageInfo::Make(
-        api->gdk_pixbuf_get_width(pixbuf), api->gdk_pixbuf_get_height(pixbuf),
-        kRGBA_8888_SkColorType, kUnpremul_SkAlphaType);
-    bitmap.allocN32Pixels(pixbuf_info.width(), pixbuf_info.height());
-    bitmap.writePixels(SkPixmap(pixbuf_info, api->gdk_pixbuf_get_pixels(pixbuf),
-                                api->gdk_pixbuf_get_rowstride(pixbuf)));
-  }
-  g_object_unref(pixbuf);
-  return bitmap;
-}
 
 // ---------------------------------------------------------------------------
 // Styles.
@@ -221,10 +118,9 @@ ButtonStyle BreezeButtonStyle() {
 // Selects the style from the GTK theme name: Breeze themes get the Breeze
 // treatment; everything else — including an unset or unknown theme — falls
 // back to Adwaita, which is a common convention.
-ButtonStyle DetectButtonStyle() {
-  const bool breeze =
-      base::StartsWith(GetGtkSettingString("gtk-theme-name"), "Breeze",
-                       base::CompareCase::INSENSITIVE_ASCII);
+ButtonStyle DetectButtonStyle(const std::string& theme_name) {
+  const bool breeze = base::StartsWith(theme_name, "Breeze",
+                                       base::CompareCase::INSENSITIVE_ASCII);
   return breeze ? BreezeButtonStyle() : AdwaitaButtonStyle();
 }
 
@@ -234,7 +130,8 @@ ButtonStyle DetectButtonStyle() {
 
 class FreedesktopButtonImageSource : public gfx::ImageSkiaSource {
  public:
-  FreedesktopButtonImageSource(DisplayType type,
+  FreedesktopButtonImageSource(SymbolicIconProvider* icon_provider,
+                               DisplayType type,
                                const StateStyle& spec,
                                bool active,
                                int width,
@@ -243,7 +140,8 @@ class FreedesktopButtonImageSource : public gfx::ImageSkiaSource {
                                int pill_diameter,
                                std::optional<SkColor> background,
                                std::optional<SkColor> symbol)
-      : type_(type),
+      : icon_provider_(icon_provider),
+        type_(type),
         spec_(spec),
         active_(active),
         width_(width),
@@ -289,7 +187,8 @@ class FreedesktopButtonImageSource : public gfx::ImageSkiaSource {
     }
 
     const SkBitmap icon =
-        LoadSymbolicIcon(type_, icon_size_, render_scale, glyph);
+        icon_provider_->LoadIcon(kIconNames[static_cast<size_t>(type_)],
+                                 icon_size_, render_scale, glyph);
 
     const int physical_width = render_scale * width_;
     const int physical_height = render_scale * height_;
@@ -332,6 +231,7 @@ class FreedesktopButtonImageSource : public gfx::ImageSkiaSource {
   bool HasRepresentationAtAllScales() const override { return true; }
 
  private:
+  raw_ptr<SymbolicIconProvider> icon_provider_;
   DisplayType type_;
   StateStyle spec_;
   bool active_;
@@ -348,14 +248,18 @@ class FreedesktopButtonImageSource : public gfx::ImageSkiaSource {
 // static
 std::unique_ptr<FreedesktopNavButtonProvider>
 FreedesktopNavButtonProvider::CreateIfAvailable() {
-  if (!GtkApi::Get()) {
+  // TODO(mitchchn): replace with LinuxUi call if/when available upstream.
+  SymbolicIconProvider* icon_provider = GtkSymbolicIconProvider::GetInstance();
+  if (!icon_provider) {
     return nullptr;
   }
-  return base::WrapUnique(new FreedesktopNavButtonProvider());
+  return base::WrapUnique(new FreedesktopNavButtonProvider(icon_provider));
 }
 
-FreedesktopNavButtonProvider::FreedesktopNavButtonProvider() {
-  style_ = DetectButtonStyle();
+FreedesktopNavButtonProvider::FreedesktopNavButtonProvider(
+    SymbolicIconProvider* icon_provider)
+    : icon_provider_(icon_provider) {
+  style_ = DetectButtonStyle(icon_provider_->GetThemeName());
 }
 
 FreedesktopNavButtonProvider::~FreedesktopNavButtonProvider() = default;
@@ -363,7 +267,7 @@ FreedesktopNavButtonProvider::~FreedesktopNavButtonProvider() = default;
 void FreedesktopNavButtonProvider::RedrawImages(int top_area_height,
                                                 bool maximized,
                                                 bool active) {
-  style_ = DetectButtonStyle();
+  style_ = DetectButtonStyle(icon_provider_->GetThemeName());
 
   // Button bounds are full-height for hit targets when maximized/tiled
   // (Fitts' law) but they are only as wide as the icon pill.
@@ -381,11 +285,12 @@ void FreedesktopNavButtonProvider::RedrawImages(int top_area_height,
         type == DisplayType::kClose ? style_.close_states : style_.states;
     for (auto state : {ButtonState::kNormal, ButtonState::kHovered,
                        ButtonState::kPressed, ButtonState::kDisabled}) {
-      button_images_[type][state] = gfx::ImageSkia(
-          std::make_unique<FreedesktopButtonImageSource>(
-              type, states[Idx(state)], active, width, height, icon_size,
-              style_.pill_diameter, titlebar_background_, symbol_color_),
-          button_size);
+      button_images_[type][state] =
+          gfx::ImageSkia(std::make_unique<FreedesktopButtonImageSource>(
+                             icon_provider_, type, states[Idx(state)], active,
+                             width, height, icon_size, style_.pill_diameter,
+                             titlebar_background_, symbol_color_),
+                         button_size);
     }
   }
 }
