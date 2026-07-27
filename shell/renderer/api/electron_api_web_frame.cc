@@ -12,6 +12,7 @@
 
 #include "base/containers/span.h"
 #include "base/functional/callback.h"
+#include "base/functional/callback_helpers.h"
 #include "base/memory/memory_pressure_listener_registry.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"

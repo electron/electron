@@ -6,6 +6,7 @@
 
 #include <string_view>
 
+#include "base/functional/callback_helpers.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/notimplemented.h"

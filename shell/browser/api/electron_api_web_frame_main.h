@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "base/process/process.h"
+#include "base/process/process_handle.h"
 #include "base/values.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/global_routing_id.h"
