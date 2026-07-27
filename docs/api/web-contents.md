@@ -2388,7 +2388,8 @@ added:
 -->
 
 Returns `string` - The preferred color scheme override. Can be `system`, `light`
-or `dark`.
+or `dark`. Defaults to `system` meaning that this `WebContents` will follow the
+value set by [`nativeTheme.themeSource`](native-theme.md#nativethemethemesource).
 
 #### `contents.setColorScheme([colorScheme])`
 
