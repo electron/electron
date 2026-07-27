@@ -5,6 +5,7 @@
 #include "shell/common/process_util.h"
 
 #include <string>
+#include <string_view>
 
 #include "base/command_line.h"
 #include "base/environment.h"

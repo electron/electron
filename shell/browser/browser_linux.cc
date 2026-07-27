@@ -6,6 +6,8 @@
 
 #include <fcntl.h>
 
+#include <string_view>
+
 #if BUILDFLAG(IS_LINUX)
 #include <gio/gdesktopappinfo.h>
 #include <gio/gio.h>

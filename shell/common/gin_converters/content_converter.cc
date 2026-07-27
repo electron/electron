@@ -4,6 +4,7 @@
 
 #include "shell/common/gin_converters/content_converter.h"
 
+#include <string>
 #include <string_view>
 
 #include "base/containers/fixed_flat_map.h"
