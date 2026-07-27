@@ -69,6 +69,11 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::WebContents* GetWebContentsFromProcessID(
       content::ChildProcessId process_id);
 
+  // Whether the given renderer process was launched with the OS sandbox
+  // enabled. Returns nullopt if the launch state of the process is unknown.
+  std::optional<bool> IsRendererProcessSandboxed(
+      content::ChildProcessId process_id) const;
+
   NotificationPresenter* GetNotificationPresenter();
 
   void WebNotificationAllowed(content::RenderFrameHost* rfh,
@@ -380,6 +385,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       pending_processes_;
 
   base::flat_set<content::ChildProcessId> renderer_is_subframe_;
+
+  // Sandbox state each renderer process was launched with.
+  base::flat_map<content::ChildProcessId, bool> renderer_process_sandboxed_;
 
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;

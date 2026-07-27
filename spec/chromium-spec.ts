@@ -2409,6 +2409,12 @@ describe('chromium features', () => {
           contextIsolation: false
         }
       });
+      // The opener is unsandboxed, so keep the child unsandboxed too or it is
+      // isolated in its own process with no opener.
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
+      }));
       w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
 
       const windowUrl = `file://${fixturesPath}/pages/window-opener.html`;
@@ -2897,7 +2903,11 @@ describe('chromium features', () => {
     describe('when opened from main window', () => {
       for (const { parent, child, nodeIntegration, openerAccessible } of table) {
         for (const sandboxPopup of [false, true]) {
-          const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
+          // The opener runs unsandboxed (nodeIntegration), so a sandboxed
+          // popup can't share its process and is isolated with no opener.
+          const description = sandboxPopup
+            ? `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} sandboxPopup=true, child is isolated from the opener`
+            : `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} sandboxPopup=false, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
           it(description, async () => {
             const w = new BrowserWindow({
               show: true,
@@ -2912,6 +2922,13 @@ describe('chromium features', () => {
               }
             }));
             await w.loadURL(parent);
+            if (sandboxPopup) {
+              const openedNull = await w.webContents.executeJavaScript(
+                `window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}") === null`
+              );
+              expect(openedNull).to.be.true();
+              return;
+            }
             const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
               window.addEventListener('message', function f(e) {
                 resolve(e.data)

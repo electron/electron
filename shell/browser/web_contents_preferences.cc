@@ -307,6 +307,24 @@ WebContentsPreferences* WebContentsPreferences::From(
 }
 
 // static
+bool WebContentsPreferences::IsSandboxed(
+    const gin_helper::Dictionary& web_preferences) {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableSandbox)) {
+    return true;
+  }
+  bool sandbox;
+  if (web_preferences.Get(options::kSandbox, &sandbox))
+    return sandbox;
+  bool node_integration = false;
+  bool node_integration_in_worker = false;
+  web_preferences.Get(options::kNodeIntegration, &node_integration);
+  web_preferences.Get(options::kNodeIntegrationInWorker,
+                      &node_integration_in_worker);
+  return !(node_integration || node_integration_in_worker);
+}
+
+// static
 bool WebContentsPreferences::ShouldUseSandbox(
     content::WebContents* web_contents) {
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
