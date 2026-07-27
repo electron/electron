@@ -4640,6 +4640,15 @@ describe('navigator.hid', () => {
     );
   };
 
+  // A device is only reliably grantable if it exposes both a name and a serial
+  // number. Devices lacking them (e.g. system devices whose reports are all
+  // protected) are dropped by Chromium's WebHID report filtering after
+  // selection, so requestDevice() would resolve empty for them and make the
+  // test flaky. Select such a valid device rather than blindly picking the
+  // first entry in the list.
+  const findValidDevice = (deviceList: Electron.HIDDevice[]) =>
+    deviceList.find((device) => device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '');
+
   after(() => {
     server.close();
     closeAllWindows();
@@ -4675,21 +4684,14 @@ describe('navigator.hid', () => {
     w.webContents.session.on('select-hid-device', (event, details, callback) => {
       expect(details.frame).to.have.property('frameTreeNodeId').that.is.a('number');
       selectFired = true;
-      if (details.deviceList.length > 0) {
+      const foundDevice = findValidDevice(details.deviceList);
+      if (foundDevice) {
         haveDevices = true;
-        callback(details.deviceList[0].deviceId);
+        callback(foundDevice.deviceId);
       } else {
         callback();
       }
     });
-    // Warm up the HID subsystem before requesting a device. The WebHID
-    // blocklist is populated lazily on first access and, as of Chromium's
-    // recursive nested-collection filtering, a composite device can be
-    // enumerated into the `select-hid-device` list before the blocklist is
-    // fully applied and then excluded during the post-selection permission
-    // recheck, causing `requestDevice()` to resolve empty. Enumerating first
-    // ensures the device list is stable before the request is made.
-    await w.webContents.executeJavaScript('navigator.hid.getDevices();', true);
     const device = await requestDevices();
     expect(selectFired).to.be.true();
     if (haveDevices) {
@@ -4718,18 +4720,11 @@ describe('navigator.hid', () => {
     let gotDevicePerms = false;
     w.webContents.session.on('select-hid-device', (event, details, callback) => {
       selectFired = true;
-      if (details.deviceList.length > 0) {
-        const foundDevice = details.deviceList.find((device) => {
-          if (device.name && device.name !== '' && device.serialNumber && device.serialNumber !== '') {
-            haveDevices = true;
-            return true;
-          }
-          return false;
-        });
-        if (foundDevice) {
-          callback(foundDevice.deviceId);
-          return;
-        }
+      const foundDevice = findValidDevice(details.deviceList);
+      if (foundDevice) {
+        haveDevices = true;
+        callback(foundDevice.deviceId);
+        return;
       }
       callback();
     });
