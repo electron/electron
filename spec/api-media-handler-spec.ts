@@ -64,22 +64,24 @@ describe('setDisplayMediaRequestHandler', () => {
 
   // Process-level loopback audio capture (restrictOwnAudio / loopbackWithoutChrome)
   // is not supported on Linux audio backends (PulseAudio / PipeWire).
-  ifit(process.platform !== 'linux')('honors the restrictOwnAudio constraint when granted loopback audio', async function () {
-    if ((await desktopCapturer.getSources({ types: ['screen'] })).length === 0) {
-      return this.skip();
-    }
-    const ses = session.fromPartition('' + Math.random());
-    let requestHandlerCalled = false;
-    ses.setDisplayMediaRequestHandler((request, callback) => {
-      requestHandlerCalled = true;
-      desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
-        callback({ video: sources[0], audio: 'loopback' });
+  ifit(process.platform !== 'linux')(
+    'honors the restrictOwnAudio constraint when granted loopback audio',
+    async function () {
+      if ((await desktopCapturer.getSources({ types: ['screen'] })).length === 0) {
+        return this.skip();
+      }
+      const ses = session.fromPartition('' + Math.random());
+      let requestHandlerCalled = false;
+      ses.setDisplayMediaRequestHandler((request, callback) => {
+        requestHandlerCalled = true;
+        desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+          callback({ video: sources[0], audio: 'loopback' });
+        });
       });
-    });
-    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-    await w.loadURL(serverUrl);
-    const { ok, message, audioTrackCount, restrictOwnAudioSetting } = await w.webContents.executeJavaScript(
-      `
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      const { ok, message, audioTrackCount, restrictOwnAudioSetting } = await w.webContents.executeJavaScript(
+        `
       navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: { restrictOwnAudio: true },
@@ -95,17 +97,17 @@ describe('setDisplayMediaRequestHandler', () => {
         };
       }, e => ({ ok: false, message: e.message, audioTrackCount: 0, restrictOwnAudioSetting: null }))
     `,
-      true
-    );
-    expect(requestHandlerCalled).to.be.true();
-    expect(ok).to.be.true(message);
-    expect(audioTrackCount).to.equal(1);
-    // restrictOwnAudio is only applied on platforms supporting process
-    // loopback capture (Windows 11+, MacOS, ChromeOS); elsewhere the constraint is dropped
-    // and the setting is absent.
-    expect(restrictOwnAudioSetting).to.not.be.false();
-  });
-
+        true
+      );
+      expect(requestHandlerCalled).to.be.true();
+      expect(ok).to.be.true(message);
+      expect(audioTrackCount).to.equal(1);
+      // restrictOwnAudio is only applied on platforms supporting process
+      // loopback capture (Windows 11+, MacOS, ChromeOS); elsewhere the constraint is dropped
+      // and the setting is absent.
+      expect(restrictOwnAudioSetting).to.not.be.false();
+    }
+  );
 
   it('does not crash when using a bogus ID', async () => {
     const ses = session.fromPartition('' + Math.random());
