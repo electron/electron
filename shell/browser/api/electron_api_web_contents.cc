@@ -2675,6 +2675,41 @@ void WebContents::SetBackgroundThrottling(bool allowed) {
   }
 }
 
+std::string WebContents::GetColorScheme() const {
+  if (!preferred_color_scheme_)
+    return "system";
+
+  return *preferred_color_scheme_ == blink::mojom::PreferredColorScheme::kDark
+             ? "dark"
+             : "light";
+}
+
+void WebContents::SetColorScheme(gin::Arguments* args) {
+  std::string color_scheme = "system";
+  if (args->Length() > 0 && !args->GetNext(&color_scheme)) {
+    args->ThrowTypeError(
+        "colorScheme must be one of 'system', 'light', or 'dark'");
+    return;
+  }
+
+  std::optional<blink::mojom::PreferredColorScheme> preferred_color_scheme;
+  if (color_scheme == "light") {
+    preferred_color_scheme = blink::mojom::PreferredColorScheme::kLight;
+  } else if (color_scheme == "dark") {
+    preferred_color_scheme = blink::mojom::PreferredColorScheme::kDark;
+  } else if (color_scheme != "system") {
+    args->ThrowTypeError(
+        "colorScheme must be one of 'system', 'light', or 'dark'");
+    return;
+  }
+
+  if (preferred_color_scheme_ == preferred_color_scheme)
+    return;
+
+  preferred_color_scheme_ = preferred_color_scheme;
+  web_contents()->NotifyPreferencesChanged();
+}
+
 int32_t WebContents::GetProcessID() const {
   return web_contents()
       ->GetPrimaryMainFrame()
@@ -4881,6 +4916,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                  &WebContents::GetBackgroundThrottling)
       .SetMethod("setBackgroundThrottling",
                  &WebContents::SetBackgroundThrottling)
+      .SetMethod("getColorScheme", &WebContents::GetColorScheme)
+      .SetMethod("setColorScheme", &WebContents::SetColorScheme)
       .SetMethod("getProcessId", &WebContents::GetProcessID)
       .SetMethod("getOSProcessId", &WebContents::GetOSProcessID)
       .SetMethod("clone", &WebContents::Clone)

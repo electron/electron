@@ -2378,6 +2378,38 @@ changes:
 Controls whether or not this WebContents will throttle animations and timers
 when the page becomes backgrounded. This also affects the Page Visibility API.
 
+#### `contents.getColorScheme()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52438
+```
+-->
+
+Returns `string` - The preferred color scheme override. Can be `system`, `light`
+or `dark`.
+
+#### `contents.setColorScheme([colorScheme])`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52438
+```
+-->
+
+* `colorScheme` string (optional) - Can be `system`, `light` or `dark`.
+  Defaults to `system` meaning that this `WebContents` will follow the value set
+  by [`nativeTheme.themeSource`](native-theme.md#nativethemethemesource).
+
+Overrides the preferred color scheme for this WebContents. Calling this method
+without `colorScheme`, or setting it to `system`, removes the override.
+
+The override affects CSS media queries such as `prefers-color-scheme` without
+changing the preferred color scheme of other WebContents instances. It persists
+across navigations.
+
 #### `contents.getType()`
 
 Returns `string` - the type of the webContent. Can be `backgroundPage`, `window`, `browserView`, `remote`, `webview` or `offscreen`.

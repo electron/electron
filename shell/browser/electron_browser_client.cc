@@ -367,6 +367,19 @@ void MaybeAppendSecureOriginsAllowlistSwitch(base::CommandLine* cmdline) {
   }
 }
 
+blink::mojom::PreferredColorScheme GetPreferredColorScheme(
+    content::WebContents* web_contents) {
+  if (auto* api_web_contents = api::WebContents::From(web_contents)) {
+    if (auto color_scheme = api_web_contents->preferred_color_scheme())
+      return *color_scheme;
+  }
+
+  return ui::NativeTheme::GetInstanceForNativeUi()->preferred_color_scheme() ==
+                 ui::NativeTheme::PreferredColorScheme::kDark
+             ? blink::mojom::PreferredColorScheme::kDark
+             : blink::mojom::PreferredColorScheme::kLight;
+}
+
 }  // namespace
 
 // static
@@ -465,11 +478,7 @@ void ElectronBrowserClient::OverrideWebPreferences(
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
   prefs->in_forced_colors = native_theme->forced_colors() !=
                             ui::ColorProviderKey::ForcedColors::kNone;
-  prefs->preferred_color_scheme =
-      native_theme->preferred_color_scheme() ==
-              ui::NativeTheme::PreferredColorScheme::kDark
-          ? blink::mojom::PreferredColorScheme::kDark
-          : blink::mojom::PreferredColorScheme::kLight;
+  prefs->preferred_color_scheme = GetPreferredColorScheme(web_contents);
 
   SetFontDefaults(prefs);
 
@@ -486,11 +495,7 @@ bool ElectronBrowserClient::WebPreferencesNeedUpdateForColorRelatedStateChanges(
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
   bool in_forced_colors = native_theme->forced_colors() !=
                           ui::ColorProviderKey::ForcedColors::kNone;
-  blink::mojom::PreferredColorScheme preferred_color_scheme =
-      native_theme->preferred_color_scheme() ==
-              ui::NativeTheme::PreferredColorScheme::kDark
-          ? blink::mojom::PreferredColorScheme::kDark
-          : blink::mojom::PreferredColorScheme::kLight;
+  auto preferred_color_scheme = GetPreferredColorScheme(&web_contents);
   return prefs.in_forced_colors != in_forced_colors ||
          prefs.preferred_color_scheme != preferred_color_scheme;
 }
