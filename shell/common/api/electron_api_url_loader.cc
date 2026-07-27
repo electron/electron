@@ -15,7 +15,6 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
-#include "base/notreached.h"
 #include "base/sequence_checker.h"
 #include "content/public/browser/global_request_id.h"
 #include "content/public/common/url_utils.h"

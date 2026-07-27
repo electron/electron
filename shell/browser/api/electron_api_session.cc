@@ -14,7 +14,6 @@
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/map_util.h"
-#include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/memory/weak_ptr.h"

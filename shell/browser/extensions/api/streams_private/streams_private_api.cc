@@ -20,7 +20,6 @@
 #include "shell/browser/api/electron_api_web_contents.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "base/feature_list.h"
 #include "chrome/browser/pdf/pdf_handler_stream_delegate.h"
 #include "extensions/browser/mime_handler/mime_handler_stream_manager.h"
 #include "extensions/common/constants.h"

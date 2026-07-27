@@ -6,7 +6,6 @@
 
 #include "base/command_line.h"
 #include "base/containers/span.h"
-#include "base/process/process.h"
 #include "base/process/process_metrics.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "shell/common/api/electron_bindings.h"

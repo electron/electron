@@ -10,7 +10,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"

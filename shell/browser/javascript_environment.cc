@@ -8,11 +8,7 @@
 #include <string>
 #include <utility>
 
-#include "base/allocator/partition_alloc_features.h"
-#include "base/allocator/partition_allocator/src/partition_alloc/partition_alloc.h"
-#include "base/bits.h"
 #include "base/command_line.h"
-#include "base/feature_list.h"
 #include "base/task/current_thread.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"

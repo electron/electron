@@ -24,17 +24,14 @@
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/hash/hash.h"
 #include "base/logging.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_number_conversions_win.h"
 #include "base/strings/string_split.h"
-#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_propvariant.h"
-#include "base/win/win_util.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/api/electron_api_notification.h"  // nogncheck - for delegate events

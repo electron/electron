@@ -6,10 +6,9 @@
 
 #include <string_view>
 
+#include "base/check.h"
 #include "base/functional/callback_helpers.h"
-#include "base/logging.h"
 #include "base/no_destructor.h"
-#include "base/notimplemented.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/std_converter.h"

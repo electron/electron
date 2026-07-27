@@ -15,7 +15,6 @@
 #include "base/file_version_info.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
-#include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/win/scoped_hstring.h"
 

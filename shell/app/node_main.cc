@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/environment.h"

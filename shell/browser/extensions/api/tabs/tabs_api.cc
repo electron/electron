@@ -13,7 +13,7 @@
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/strings/pattern.h"
-#include "base/types/expected_macros.h"
+#include "base/types/expected.h"
 #include "chrome/common/url_constants.h"
 #include "components/url_formatter/url_fixer.h"
 #include "content/public/browser/navigation_entry.h"

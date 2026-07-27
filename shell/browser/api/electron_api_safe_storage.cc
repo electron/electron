@@ -7,7 +7,6 @@
 #include "shell/browser/api/electron_api_safe_storage.h"
 
 #include "base/functional/bind.h"
-#include "base/run_loop.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
 #include "components/os_crypt/sync/os_crypt.h"
 #include "gin/object_template_builder.h"
