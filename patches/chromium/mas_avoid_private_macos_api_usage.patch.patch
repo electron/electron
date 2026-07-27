@@ -129,10 +129,10 @@ index 416e541436d201aabca26cdbf7e8477103bd014c..8c5f92b03d67e5f0587b0e9420969061
  }
  
 diff --git a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-index 68d91f46ab04608edded56c3489dc08a10a30d15..8bd6fbddd75c8579b917aac072bb603956c23018 100644
+index ce39b736b5e8649d0b6e47a6086bf0e0cfae1ff5..f796754afc8b02eaeb2c62a5748b74a03d99d798 100644
 --- a/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
 +++ b/base/allocator/partition_allocator/src/partition_alloc/BUILD.gn
-@@ -1032,6 +1032,7 @@ if (is_clang_or_gcc) {
+@@ -1033,6 +1033,7 @@ if (is_clang_or_gcc) {
        ":allocator_base",
        ":allocator_core",
        ":buildflags",
@@ -974,10 +974,10 @@ index f0be251cd9b825d0f8b7cf10d7771467b10a5796..9e8cae1029b289877d600f2937a551aa
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 2abe1b9862d85164ddcc59fea5d48677aeeb2ea2..0dceb9be2000d7762d651a1409f5104749d0debd 100644
+index 115130d5cd1c4530275a28c9b303e300bd9d6d98..c9cae04e0ca96ee15d5b27b30880a1b30db9b144 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -379,6 +379,7 @@ source_set("browser") {
+@@ -381,6 +381,7 @@ source_set("browser") {
      "//ui/webui/resources",
      "//v8",
      "//v8:v8_version",
@@ -1020,7 +1020,7 @@ index c0f7aa1ee03a9d08a7442bbd35041468b260d5a9..eb4870daa0aed0e16bab6e863df0cc8e
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 908804722fac29ef66745e886adc1a25bc0cac45..4e8778e59044997ded6df1d0ef4adb308020ed99 100644
+index 12d27ba4772967145397154b09134c0f269c9eaa..160617ab28f7db16772215c3c03b4edb21a389ed 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -57,6 +57,7 @@
@@ -1095,7 +1095,7 @@ index 908804722fac29ef66745e886adc1a25bc0cac45..4e8778e59044997ded6df1d0ef4adb30
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index b58c131d355763bf0c118d1d87a918785ecf91b8..9a33b7c2c6071a87038335a699619a6bc74b1362 100644
+index 32fb489d62825c584e0cb07acd84e1e043eab490..219fbcff02b9f50f8e4575cc60b838a07164433f 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -278,6 +278,7 @@ source_set("common") {
@@ -1107,10 +1107,10 @@ index b58c131d355763bf0c118d1d87a918785ecf91b8..9a33b7c2c6071a87038335a699619a6b
  
    defines = []
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index beee3668a3588de85a51c40f6068528dd8b9c68d..95b024ce60514c2c62355ea4380d55bc687028af 100644
+index d75dcd39ed8913a94dda9de219f30639c9477c89..f64d4807bba4f3d6aebc80e7cd96616d12e31019 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -323,6 +323,7 @@ target(link_target_type, "renderer") {
+@@ -322,6 +322,7 @@ target(link_target_type, "renderer") {
      "//ui/strings:auto_image_annotation_strings_grit",
      "//url",
      "//v8",
@@ -1189,10 +1189,10 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c5596ac88942a267d7c3624f1bcb07dfaf54a63c..a561a69918d7e0869c0376735ab6efe71b4393d8 100644
+index 9c548ea1224443eabf01e69661612cfd70ff7cac..cf10a8948d5c49f34d904300dccca34df2e3294f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -672,6 +672,7 @@ static_library("test_support") {
+@@ -661,6 +661,7 @@ static_library("test_support") {
      "//url",
      "//url/mojom:url_mojom_gurl",
      "//v8",
@@ -1200,7 +1200,7 @@ index c5596ac88942a267d7c3624f1bcb07dfaf54a63c..a561a69918d7e0869c0376735ab6efe7
    ]
  
    data_deps = [
-@@ -1154,6 +1155,8 @@ static_library("browsertest_support") {
+@@ -1143,6 +1144,8 @@ static_library("browsertest_support") {
    # TODO(crbug.com/40031409): Fix code that adds exit-time destructors and
    # enable the diagnostic by removing this line.
    configs += [ "//build/config/compiler:no_exit_time_destructors" ]
@@ -1209,7 +1209,7 @@ index c5596ac88942a267d7c3624f1bcb07dfaf54a63c..a561a69918d7e0869c0376735ab6efe7
  }
  
  mojom("content_test_mojo_bindings") {
-@@ -2053,6 +2056,7 @@ test("content_browsertests") {
+@@ -2040,6 +2043,7 @@ test("content_browsertests") {
      "//ui/shell_dialogs",
      "//ui/snapshot",
      "//ui/webui:test_support",
@@ -1217,7 +1217,7 @@ index c5596ac88942a267d7c3624f1bcb07dfaf54a63c..a561a69918d7e0869c0376735ab6efe7
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3435,6 +3439,7 @@ test("content_unittests") {
+@@ -3379,6 +3383,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -1226,10 +1226,10 @@ index c5596ac88942a267d7c3624f1bcb07dfaf54a63c..a561a69918d7e0869c0376735ab6efe7
  
    if (is_chromeos) {
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 7a9360beb22370b61d80f8a84f6b1f96d2d77c3b..708c61c16e7baa9fcc2124722714d7d908bd5345 100644
+index 3899c88b9b44a0a81b018d183bc2cebd89c9b63c..134ec2948f521414fa5cd78f35c5d4a8ac4bf5a4 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
-@@ -221,6 +221,7 @@ static_library("web_test_browser") {
+@@ -219,6 +219,7 @@ static_library("web_test_browser") {
      "//ui/gl",
      "//ui/shell_dialogs",
      "//url",
@@ -1330,7 +1330,7 @@ index 6ea6c1130663f04ee766750dde257f3cc701a5b0..355930d10267b8c2c95c320c6d154080
  
  namespace ui {
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 1c0c28defe67ecc22fbcf71e536e73b2b5f17355..ffb69963594288979b39e7c5e4d2d15c1907d721 100644
+index 42f2bcc4ed7bcbb65e7c6e07b8f82b2d8825fd1b..cba135be7f2b4609948c6d52cd067e8c9530e514 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -198,6 +198,7 @@ source_set("audio") {
@@ -1786,7 +1786,7 @@ index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..9921ccb10d3455600eddd85f77f10228
  
  }  // namespace sandbox
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e8d86ff9b4c7bd25030696ca38e913f22de4be50..ee3082ce7b61be60fbd063083c2f2227db9ed71b 100644
+index 8969a71c827f03bfa1b472b2ec30f8b5c6726c1f..1125f05e936054082e5c7ff1664338d7df9fddab 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -444,6 +444,7 @@ component("core") {
@@ -2154,10 +2154,10 @@ index 6ecb9a3c5a3528b98d9fc08f53091336a9fa363f..c823fee13a35704be2787f498e03089f
    // Accessible object
    if (AXElementWrapper::IsValidElement(value)) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index cbcfdfb4ebfdf138b637c9188d5229a5558944cd..a88be7b2fec222a24a3c3d27ddafbbab9a9b94a0 100644
+index 20b2070af5013194a672c733b28f03407ac98758..dfff8365a3aa379730c927a57067d786aa99928e 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -357,6 +357,13 @@ component("base") {
+@@ -356,6 +356,13 @@ component("base") {
      ]
    }
  
@@ -2171,7 +2171,7 @@ index cbcfdfb4ebfdf138b637c9188d5229a5558944cd..a88be7b2fec222a24a3c3d27ddafbbab
    if (is_ios) {
      sources += [
        "device_form_factor_ios.mm",
-@@ -512,6 +519,12 @@ component("base") {
+@@ -511,6 +518,12 @@ component("base") {
      "//url",
    ]
  
@@ -2373,10 +2373,10 @@ index 65ae8170664d15c7884261812400d0ed638a681d..86c937f1e6d03b88803a2ca80abff19c
      // enough.
      return PlatformFontMac::SystemFontType::kGeneral;
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 0cc975c477ea2cc76bebe71884d8e21499432e2f..6c7a68633a3b378d277604bc88091600dfe1bb2d 100644
+index 98ec2baca7b64a936cb6815763a9415afd45f766..2ee6e1def0f41f5199056541f9ecbdb6deb9ea80 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -786,6 +786,8 @@ component("views") {
+@@ -788,6 +788,8 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -2385,7 +2385,7 @@ index 0cc975c477ea2cc76bebe71884d8e21499432e2f..6c7a68633a3b378d277604bc88091600
    }
  
    if (is_win) {
-@@ -1204,6 +1206,8 @@ source_set("test_support") {
+@@ -1208,6 +1210,8 @@ source_set("test_support") {
      "//ui/base/mojom:ui_base_types",
    ]
  
