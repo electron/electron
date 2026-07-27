@@ -4682,6 +4682,14 @@ describe('navigator.hid', () => {
         callback();
       }
     });
+    // Warm up the HID subsystem before requesting a device. The WebHID
+    // blocklist is populated lazily on first access and, as of Chromium's
+    // recursive nested-collection filtering, a composite device can be
+    // enumerated into the `select-hid-device` list before the blocklist is
+    // fully applied and then excluded during the post-selection permission
+    // recheck, causing `requestDevice()` to resolve empty. Enumerating first
+    // ensures the device list is stable before the request is made.
+    await w.webContents.executeJavaScript('navigator.hid.getDevices();', true);
     const device = await requestDevices();
     expect(selectFired).to.be.true();
     if (haveDevices) {
