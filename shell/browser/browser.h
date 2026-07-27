@@ -176,9 +176,6 @@ class Browser : private WindowListObserver {
   v8::Local<v8::Value> GetLoginItemSettings(const LoginItemSettings& options);
 
 #if BUILDFLAG(IS_MAC)
-  // Set the handler which decides whether to shutdown.
-  void SetShutdownHandler(base::RepeatingCallback<bool()> handler);
-
   // Returns whether the application is active.
   bool IsActive();
 
