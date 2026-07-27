@@ -668,23 +668,27 @@ describe('cpp heap', () => {
           const { protocol, net, app } = require('electron');
           const { recordState } = require(heap);
           const { containsRetainingPath } = require(snapshotHelper);
-          const { setTimeout: delay } = require('node:timers/promises');
           const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
-          const withTimeout = <T>(p: Promise<T>, ms: number, label: string) => {
-            const ac = new AbortController();
-            return Promise.race([
-              p.finally(() => ac.abort()),
-              delay(ms, undefined, { signal: ac.signal }).then(() => {
-                throw new Error(`timeout waiting for ${label}`);
-              })
-            ]);
-          };
 
           const gc = async () => {
             for (let i = 0; i < 10; i++) {
               await new Promise((resolve) => setTimeout(resolve, 0));
               v8Util.requestGarbageCollectionForTesting();
             }
+          };
+
+          // Yield to the event loop and run GC until `predicate` becomes true.
+          // This waits on the actual condition instead of a fixed delay,
+          // returning false only if it never settles within a generous attempt
+          // budget. Yielding before collecting lets any pending teardown tasks
+          // run so the collection sees no lingering references.
+          const gcUntil = async (predicate: () => boolean, attempts = 50) => {
+            for (let i = 0; i < attempts; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+              if (predicate()) return true;
+            }
+            return false;
           };
 
           let streamWeakRef: WeakRef<any> | undefined;
@@ -740,7 +744,9 @@ describe('cpp heap', () => {
           request.write(Buffer.from('hello'));
 
           try {
-            await withTimeout(reached, 5000, 'stream upload handler');
+            // Wait until the handler has parked a pending read and dropped its
+            // only JS reference to the stream.
+            await reached;
 
             await gc();
             const state = recordState();
@@ -749,19 +755,21 @@ describe('cpp heap', () => {
               'Electron / ChunkedDataPipeReadableStream'
             ]);
             const refAliveWhilePending = streamWeakRef!.deref() !== undefined;
-            // Settle the pending read by ending the request body.
+            // Settle the pending read by ending the request body, then wait for
+            // the read itself to complete.
             request.end();
-            await withTimeout(
-              pendingRead!.catch(() => {}),
-              5000,
-              'pending read to settle'
-            );
+            await pendingRead!.catch(() => {});
 
-            await gc();
-            const released = streamWeakRef!.deref() === undefined;
-
-            // The handler never produced a response; abort to clean up.
+            // Tear down the request so the network stack drops its reference to
+            // the upload stream; otherwise the live request keeps it reachable
+            // and it can never be collected. The handler never produced a
+            // response, so aborting is also the cleanup path.
             request.abort();
+
+            // Wait until the stream is actually released now that no read is
+            // pending and the request has been torn down.
+            const released = await gcUntil(() => streamWeakRef!.deref() === undefined);
+
             return { ok: true, aliveWhilePending, refAliveWhilePending, released };
           } catch (err) {
             request.abort();
