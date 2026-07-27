@@ -298,7 +298,7 @@ jobs:
 
     - name: Run Electron Tests
       shell: bash
-      timeout-minutes: 60
+      timeout-minutes: ${{ case(inputs.target-platform == 'macos' && inputs.is-ubsan, 120, 60) }}
       env:
         MOCHA_REPORTER: mocha-multi-reporters
         MOCHA_MULTI_REPORTERS: mocha-junit-reporter, tap
