@@ -139,6 +139,7 @@ base::win::ScopedGDIObject<HICON> ReadICOFromPath(int size,
     }
   }
 
+  // Load the icon from file.
   return base::win::ScopedGDIObject<HICON>(
       static_cast<HICON>(LoadImage(nullptr, image_path.value().c_str(),
                                    IMAGE_ICON, size, size, LR_LOADFROMFILE)));
