@@ -86,9 +86,10 @@ ButtonStyle AdwaitaButtonStyle() {
 
 // Breeze style (KDE Plasma). An 18px circle (Plasma's default grid unit),
 // glyph only at rest, inverted colors on hover, and the palette's negative
-// color for the close button (darker when pressed).
+// color for the close button (lightened on hover, darkened when pressed).
 ButtonStyle BreezeButtonStyle() {
-  constexpr SkColor kNegative = SkColorSetRGB(0xDA, 0x44, 0x53);
+  constexpr SkColor kNegativeHover = SkColorSetRGB(0xFF, 0x98, 0xA2);
+  constexpr SkColor kNegativePressed = SkColorSetRGB(0x6D, 0x22, 0x29);
   // KDE's small spacing: max(2px, grid unit / 4).
   constexpr int kSmallSpacing = 4;
 
@@ -108,10 +109,9 @@ ButtonStyle BreezeButtonStyle() {
   }};
   style.close_states = style.states;
   style.close_states[Idx(ButtonState::kHovered)] = {
-      PillColor::kAccent, 1.0, GlyphColor::kContrastWithPill, kNegative};
+      PillColor::kAccent, 1.0, GlyphColor::kInverse, kNegativeHover};
   style.close_states[Idx(ButtonState::kPressed)] = {
-      PillColor::kAccent, 1.0, GlyphColor::kContrastWithPill,
-      color_utils::AlphaBlend(SK_ColorBLACK, kNegative, 0.4f)};
+      PillColor::kAccent, 1.0, GlyphColor::kInverse, kNegativePressed};
   return style;
 }
 
