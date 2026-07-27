@@ -2,12 +2,10 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include <string>
-
+#include "shell/common/keyboard_util.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/logging.h"
 #include "base/strings/string_util.h"
-#include "shell/common/keyboard_util.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "ui/events/event_constants.h"
 

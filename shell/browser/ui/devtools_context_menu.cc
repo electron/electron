@@ -4,7 +4,6 @@
 
 #include "shell/browser/ui/devtools_context_menu.h"
 
-#include <string>
 #include <utility>
 
 #include "base/functional/bind.h"

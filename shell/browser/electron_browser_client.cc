@@ -9,7 +9,6 @@
 #endif
 
 #include <memory>
-#include <string_view>
 #include <utility>
 
 #include "base/base_switches.h"
