@@ -140,7 +140,7 @@ the platform clipboard currently makes available.
 
 * `type` string - mime type to retrieve.
 
-Returns `Promise<import('buffer').Blob> | Promise<ClipboardBookmark>` - Resolves with the payload for the
+Returns `Promise<Blob> | Promise<ClipboardBookmark>` - Resolves with the payload for the
 given MIME type. Modeled after the W3C
 [`ClipboardItem.getType`](https://developer.mozilla.org/en-US/docs/Web/API/ClipboardItem/getType)
 method. The promise resolves to a `Blob` for most MIME types; the one
