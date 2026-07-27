@@ -1,0 +1,32 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Fri, 24 Jul 2026 13:02:49 -0400
+Subject: fix: guard WebstorePrivateApi factory against null delegate
+
+The WebstorePrivate API was moved to //extensions (CL 7874276), and its
+KeyedService factory is now built unconditionally from the shared
+EnsureApiBrowserContextKeyedServiceFactoriesBuilt(). The factory's
+dependencies are obtained from a WebstorePrivateAPIDelegate provided by the
+embedder via ExtensionsAPIClient. Electron does not support the
+webstorePrivate API and does not provide a delegate, so building the factory
+dereferenced a null delegate and crashed at startup.
+
+Skip building the factory when no delegate is available.
+
+diff --git a/extensions/browser/api/webstore_private/webstore_private_api.cc b/extensions/browser/api/webstore_private/webstore_private_api.cc
+index 7702598c7136bb482abaca5d58a84788e2d0469b..fe048d37126c5465a8d8aa8bb2539a86a013bde4 100644
+--- a/extensions/browser/api/webstore_private/webstore_private_api.cc
++++ b/extensions/browser/api/webstore_private/webstore_private_api.cc
+@@ -478,6 +478,12 @@ WebstorePrivateApi::PopApprovalForTesting(  // IN-TEST
+ 
+ // static
+ void WebstorePrivateApi::EnsureAssociatedFactoryBuilt() {
++  // The factory's dependencies are obtained from the embedder-provided
++  // WebstorePrivateAPIDelegate. Embedders that do not support the
++  // webstorePrivate API (e.g. Electron) do not provide a delegate, so skip
++  // building the factory to avoid dereferencing a null delegate.
++  if (!ExtensionsAPIClient::Get()->GetWebstorePrivateAPIDelegate())
++    return;
+   PendingApprovalsShutdownNotifierFactory::GetInstance();
+ }
+ 

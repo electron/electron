@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 2909657199dbeaecfcf2bdba18309fd0a5f7ee7a..d0e3e0dcf9ac9b6ae6795e716c205f7bdef12ec7 100644
+index 69118955433de89b65981275202874c08f59c358..275e62a57e20241bdf5c150e0a903687b047b3e3 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -11,8 +11,10 @@
@@ -26,7 +26,7 @@ index 2909657199dbeaecfcf2bdba18309fd0a5f7ee7a..d0e3e0dcf9ac9b6ae6795e716c205f7b
  
 -#if BUILDFLAG(ENABLE_EXTENSIONS_CORE)
 +#if 0
- #include "chrome/browser/extensions/api/proxy/proxy_api.h"
+ #include "extensions/browser/api/proxy/proxy_api.h"
  #endif // BUILDFLAG(ENABLE_EXTENSIONS_CORE)
  
  using content::BrowserThread;
