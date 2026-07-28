@@ -2339,10 +2339,7 @@ describe('webContents module', () => {
     it('overrides the color scheme for one WebContents', async () => {
       const overridden = new BrowserWindow({ show: false });
       const untouched = new BrowserWindow({ show: false });
-      await Promise.all([
-        overridden.loadURL('about:blank'),
-        untouched.loadURL('about:blank')
-      ]);
+      await Promise.all([overridden.loadURL('about:blank'), untouched.loadURL('about:blank')]);
 
       const systemColorScheme = await getEffectiveColorScheme(overridden.webContents);
       expect(await getEffectiveColorScheme(untouched.webContents)).to.equal(systemColorScheme);
@@ -2362,10 +2359,7 @@ describe('webContents module', () => {
     it('takes precedence over nativeTheme.themeSource', async () => {
       const overridden = new BrowserWindow({ show: false });
       const followingGlobalTheme = new BrowserWindow({ show: false });
-      await Promise.all([
-        overridden.loadURL('about:blank'),
-        followingGlobalTheme.loadURL('about:blank')
-      ]);
+      await Promise.all([overridden.loadURL('about:blank'), followingGlobalTheme.loadURL('about:blank')]);
 
       nativeTheme.themeSource = 'light';
       await Promise.all([
