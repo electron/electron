@@ -4153,7 +4153,7 @@ describe('BrowserWindow module', () => {
         let probeFile: string | undefined;
         await waitFor(() => {
           probeFile = fs.existsSync(cacheDir)
-            ? fs.readdirSync(cacheDir).find(f => f.startsWith(`${probeKey}-`) && f.endsWith('.cache'))
+            ? fs.readdirSync(cacheDir).find((f) => f.startsWith(`${probeKey}-`) && f.endsWith('.cache'))
             : undefined;
           return !!probeFile;
         }, 'probe cache file to be written');
