@@ -1,8 +1,8 @@
 name: Schedule PGO Profile Generation
 
-# Dispatches pgo-generation.yml on every supported release branch once a week
-# so the profiles at https://dev-cdn.electronjs.org/pgo/ stay fresh and the
-# profile-update PRs it opens are ready for review on Monday.
+# Dispatches pgo-generation.yml on main and every supported release branch
+# once a week so the profiles at https://dev-cdn.electronjs.org/pgo/ stay
+# fresh and the profile-update PRs it opens are ready for review on Monday.
 # See https://github.com/electron/electron/issues/52482.
 
 on:
@@ -36,7 +36,7 @@ jobs:
             .github
             .yarn
       - run: yarn workspaces focus @electron/gha-workflows
-      - name: Dispatch PGO generation on supported branches
+      - name: Dispatch PGO generation on main and supported branches
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -50,7 +50,8 @@ jobs:
             // Prerelease majors are included since their branches release
             // (and so consume PGO profiles) just like the stable lines.
             const majors = [...versions.supportedMajors, ...versions.prereleaseMajors];
-            const branches = majors.map((major) => `${major}-x-y`);
+            // main is included so the nightly line's profiles stay fresh too.
+            const branches = ['main', ...majors.map((major) => `${major}-x-y`)];
 
             const dispatched = [];
             const skipped = [];
