@@ -9,7 +9,8 @@ const path = require('node:path');
 
 const archives = [];
 for (const child of fs.readdirSync(__dirname)) {
-  if (child.endsWith('.asar')) {
+  // This generic repacker cannot preserve icon.asar's mixed packed, unpacked, and linked entries.
+  if (child.endsWith('.asar') && child !== 'icon.asar') {
     archives.push(path.resolve(__dirname, child));
   }
 }
