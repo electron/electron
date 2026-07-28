@@ -14,7 +14,6 @@
 #include "base/task/sequenced_task_runner.h"
 #include "content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_mac.h"  // nogncheck
-#include "content/public/browser/browser_task_traits.h"
 #include "gin/persistent.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
