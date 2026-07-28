@@ -1,1 +1,1 @@
-electron-macos-x64-1782779897-76ebfae3ce.profdata
+electron-macos-x64-1782779897-76ebfae3ce.profdata 5ada22605902c215bf7b32930dd8cc90c28cb8a68bd3b23b2ea62a3b79177926

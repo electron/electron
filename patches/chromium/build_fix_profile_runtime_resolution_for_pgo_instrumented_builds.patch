@@ -29,7 +29,7 @@ and Chrome's instrumented Windows builds compile natively on Windows.
 This patch can be upstreamed.
 
 diff --git a/build/config/compiler/pgo/BUILD.gn b/build/config/compiler/pgo/BUILD.gn
-index 7a412483528f4342517c51ba5e07a56c68fea946..46d945f70b2e2b5fb4b17d2f7737e14a80b85c99 100644
+index 25697fa9d070a74bfab874bc5cc80e277ded8f0f..68997593f0fa7a898b32cc6daa50570858fa4b6f 100644
 --- a/build/config/compiler/pgo/BUILD.gn
 +++ b/build/config/compiler/pgo/BUILD.gn
 @@ -42,6 +42,34 @@ config("pgo_instrumentation_flags") {
