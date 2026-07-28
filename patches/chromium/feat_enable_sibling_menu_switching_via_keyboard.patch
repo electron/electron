@@ -9,10 +9,10 @@ Adds MenuDelegate::GetSiblingMenuByDirection, invoked from MenuController when t
 Left/Right at the top level with nothing to open or close in that direction.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 79c89cde2a9dddbe9b2880c1599154b3ba041872..42c9ad0cfc4ac65681d566ce45768fe39b14e38a 100644
+index 2c711631f1ce63dce85291a699b6a31206e61924..e1f75b5072a366b4cbe95ab08980c09fb412e95c 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -1970,9 +1970,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+@@ -1982,9 +1982,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
          break;
        }
        if (base::i18n::IsRTL()) {
@@ -24,7 +24,7 @@ index 79c89cde2a9dddbe9b2880c1599154b3ba041872..42c9ad0cfc4ac65681d566ce45768fe3
        }
        break;
  
-@@ -1981,9 +1981,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
+@@ -1993,9 +1993,9 @@ bool MenuController::OnKeyPressed(const ui::KeyEvent& event) {
          break;
        }
        if (base::i18n::IsRTL()) {
@@ -36,7 +36,7 @@ index 79c89cde2a9dddbe9b2880c1599154b3ba041872..42c9ad0cfc4ac65681d566ce45768fe3
        }
        break;
  
-@@ -3324,6 +3324,52 @@ void MenuController::CloseSubmenu() {
+@@ -3340,6 +3340,52 @@ void MenuController::CloseSubmenu() {
    }
  }
  
