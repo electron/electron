@@ -11,6 +11,7 @@
 
 #include "gin/weak_cell.h"
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace electron {
 class NativeWindow;
