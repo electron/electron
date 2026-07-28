@@ -6,7 +6,6 @@
 
 #include <memory>
 
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/views/menu_bar.h"
 #include "shell/browser/ui/views/menu_model_adapter.h"

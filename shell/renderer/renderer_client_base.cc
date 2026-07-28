@@ -90,7 +90,6 @@
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-#include "content/public/common/webplugininfo.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extensions_client.h"
 #include "extensions/renderer/api/core_extensions_renderer_api_provider.h"

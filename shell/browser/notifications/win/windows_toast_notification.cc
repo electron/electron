@@ -22,7 +22,6 @@
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/thread_pool.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/notifications/win/notification_presenter_win.h"

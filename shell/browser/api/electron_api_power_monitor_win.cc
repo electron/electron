@@ -14,7 +14,6 @@
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
 #include "components/crash/core/common/crash_key.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "ui/gfx/win/hwnd_util.h"
 
