@@ -42,7 +42,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { chdir } = require('node:process');
-            chdir('${{ github.workspace }}/.github/workflows');
+            chdir(`${process.env.GITHUB_WORKSPACE}/.github/workflows`);
 
             const { ElectronVersions } = require('@electron/fiddle-core');
 
@@ -57,6 +57,14 @@ jobs:
             const skipped = [];
 
             for (const branch of branches) {
+              // Defense-in-depth: the majors come from release metadata
+              // fetched from releases.electronjs.org, so refuse to pass
+              // anything but an expected branch name to the GitHub API.
+              if (!/^\d+-x-y$|^main$/.test(branch)) {
+                core.setFailed(`Refusing to dispatch on unexpected branch name: ${JSON.stringify(branch)}`);
+                continue;
+              }
+
               // workflow_dispatch requires the workflow file to exist on the
               // target ref - older release branches may predate the PGO
               // pipeline, and nightly majors have no release branch yet.
