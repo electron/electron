@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
 
-#include <memory>
 #include <string>
 
 #include "base/functional/bind.h"

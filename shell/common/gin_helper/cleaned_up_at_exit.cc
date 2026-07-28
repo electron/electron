@@ -4,7 +4,6 @@
 
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 
-#include <algorithm>
 #include <vector>
 
 #include "base/no_destructor.h"

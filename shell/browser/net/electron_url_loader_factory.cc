@@ -9,7 +9,6 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/memory/self_deleting.h"

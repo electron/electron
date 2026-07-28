@@ -4,8 +4,6 @@
 
 #include "shell/common/node_util.h"
 
-#include <cstdlib>
-
 #include "base/compiler_specific.h"
 #include "base/containers/to_value_list.h"
 #include "base/json/json_writer.h"

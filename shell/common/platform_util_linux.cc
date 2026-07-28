@@ -6,7 +6,6 @@
 
 #include <fcntl.h>
 
-#include <stdio.h>
 #include <memory>
 #include <optional>
 #include <queue>

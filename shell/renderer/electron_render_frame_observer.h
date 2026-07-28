@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_RENDERER_ELECTRON_RENDER_FRAME_OBSERVER_H_
 
 #include <set>
-#include <string>
 #include <vector>
 
 #include "base/functional/callback.h"
