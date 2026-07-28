@@ -21,7 +21,7 @@ consumed by Electron's download hook
 against it - GN only needs the name.
 
 diff --git a/build/config/compiler/pgo/BUILD.gn b/build/config/compiler/pgo/BUILD.gn
-index 37251f8e9ba3848b4f8bd1fc487b54d5905fb705..7a412483528f4342517c51ba5e07a56c68fea946 100644
+index 37251f8e9ba3848b4f8bd1fc487b54d5905fb705..25697fa9d070a74bfab874bc5cc80e277ded8f0f 100644
 --- a/build/config/compiler/pgo/BUILD.gn
 +++ b/build/config/compiler/pgo/BUILD.gn
 @@ -117,6 +117,52 @@ config("pgo_optimization_flags") {
