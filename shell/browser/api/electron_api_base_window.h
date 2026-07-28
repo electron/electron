@@ -12,7 +12,6 @@
 #include <string_view>
 #include <vector>
 
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/electron_api_native_image.h"
