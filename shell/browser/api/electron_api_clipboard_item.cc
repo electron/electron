@@ -104,6 +104,8 @@ void ResolveAsBuffer(gin_helper::Promise<v8::Local<v8::Value>> promise,
                      base::span<const uint8_t> bytes) {
   v8::Isolate* const isolate = promise.isolate();
   v8::HandleScope scope{isolate};
+  v8::Local<v8::Context> context = promise.GetContext();
+  v8::Context::Scope context_scope{context};
   promise.Resolve(electron::Buffer::Copy(isolate, bytes).ToLocalChecked());
 }
 
