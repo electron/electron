@@ -14,11 +14,17 @@ adds to its PGO configuration applies to Electron's profiles unchanged.
 An explicitly set pgo_data_path still takes precedence, preserving the
 existing override behavior.
 
+State files carry "<name> <sha256>" (legacy files carry just "<name>");
+resolution takes the first whitespace-separated field. The sha256 is
+consumed by Electron's download hook
+(electron/script/pgo/download-profiles.py), which verifies profile bytes
+against it - GN only needs the name.
+
 diff --git a/build/config/compiler/pgo/BUILD.gn b/build/config/compiler/pgo/BUILD.gn
 index 37251f8e9ba3848b4f8bd1fc487b54d5905fb705..7a412483528f4342517c51ba5e07a56c68fea946 100644
 --- a/build/config/compiler/pgo/BUILD.gn
 +++ b/build/config/compiler/pgo/BUILD.gn
-@@ -117,6 +117,46 @@ config("pgo_optimization_flags") {
+@@ -117,6 +117,52 @@ config("pgo_optimization_flags") {
        inputs = [ "//chrome/build/android-desktop-x64.pgo.txt" ]
      }
  
@@ -57,8 +63,14 @@ index 37251f8e9ba3848b4f8bd1fc487b54d5905fb705..7a412483528f4342517c51ba5e07a56c
 +        _electron_state_file =
 +            "//electron/build/pgo_profiles/${_electron_pgo_target}.pgo.txt"
 +        inputs += [ _electron_state_file ]
-+        pgo_data_path = "//electron/build/pgo_profiles/" +
-+                        read_file(_electron_state_file, "trim string")
++
++        # State file lines are "<name> <sha256>" (or legacy "<name>"). The
++        # build only needs the name; the sha256 is verified at download time
++        # by //electron/script/pgo/download-profiles.py.
++        _electron_state_line = read_file(_electron_state_file, "trim string")
++        _electron_state_fields = string_split(_electron_state_line)
++        pgo_data_path =
++            "//electron/build/pgo_profiles/" + _electron_state_fields[0]
 +      }
 +    }
 +
