@@ -620,6 +620,11 @@ jobs:
         BRANCH="pgo/update/${BASE_BRANCH}-${GITHUB_RUN_ID}"
 
         # Map every uploaded profile to its state file in build/pgo_profiles.
+        # Each state file records "<name> <sha256>"; the hash is computed here
+        # from the exact bytes this job uploaded to Azure, and verified by
+        # script/pgo/download-profiles.py on every download. The CDN blobs are
+        # mutable, so the hash in the reviewed state file - not the blob - is
+        # what pins the profile a build uses.
         updated=0
         for f in profiles/*; do
           name=$(basename "$f")
@@ -633,10 +638,11 @@ jobs:
               echo "skipping unrecognized profile: $name"
               continue ;;
           esac
-          echo "$state <- $name"
+          sha256=$(sha256sum "$f" | cut -d' ' -f1)
+          echo "$state <- $name $sha256"
           args=(
             --field message="build: update $(basename "$state" .pgo.txt) PGO profile"
-            --field content="$(printf '%s\n' "$name" | base64 -w0)"
+            --field content="$(printf '%s %s\n' "$name" "$sha256" | base64 -w0)"
             --field branch="$BRANCH"
           )
           # Existing files need their current blob sha; absent ones (a state

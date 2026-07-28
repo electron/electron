@@ -24,7 +24,7 @@ builds compile natively on Windows.
 This patch can be upstreamed.
 
 diff --git a/build/config/compiler/pgo/BUILD.gn b/build/config/compiler/pgo/BUILD.gn
-index 7a412483528f4342517c51ba5e07a56c68fea946..10d9c93e7360dac2fcb7dea43ad97ababf0aae40 100644
+index 25697fa9d070a74bfab874bc5cc80e277ded8f0f..f22b3ab7b22713fe1bcfabeaa1b77f47a78ea386 100644
 --- a/build/config/compiler/pgo/BUILD.gn
 +++ b/build/config/compiler/pgo/BUILD.gn
 @@ -42,6 +42,24 @@ config("pgo_instrumentation_flags") {
