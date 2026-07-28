@@ -686,7 +686,7 @@ WebContents.prototype._init = function () {
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
-    this.on('-new-window', (event, url, frameName, disposition, rawFeatures, referrer, postData) => {
+    this.on('-new-window', (event, url, frameName, disposition, rawFeatures, referrer, postData, sandboxFlags) => {
       const postBody = postData
         ? {
             data: postData,
@@ -720,7 +720,8 @@ WebContents.prototype._init = function () {
           overrideBrowserWindowOptions: options || {},
           windowOpenArgs: details,
           outlivesOpener: result.outlivesOpener,
-          createWindow: result.createWindow
+          createWindow: result.createWindow,
+          inheritedSandboxFlags: sandboxFlags
         });
       }
     });
