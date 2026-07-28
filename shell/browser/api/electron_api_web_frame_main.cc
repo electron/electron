@@ -18,6 +18,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/isolated_world_ids.h"
 #include "gin/object_template_builder.h"
+#include "gin/persistent.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
@@ -33,11 +34,14 @@
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/blink/public/mojom/frame/media_player_action.mojom.h"
 #include "ui/gfx/geometry/point.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace {
 
@@ -101,12 +105,13 @@ namespace electron::api {
 // Using FrameTreeNode allows us to track frame across navigations. This
 // is most similar to how <iframe> works.
 using FrameTreeNodeIdMap =
-    absl::flat_hash_map<content::FrameTreeNodeId, WebFrameMain*>;
+    absl::flat_hash_map<content::FrameTreeNodeId,
+                        cppgc::WeakPersistent<WebFrameMain>>;
 
 // Token -> WebFrameMain*
 // Maps exact RFH to a WebFrameMain instance.
-using FrameTokenMap =
-    std::map<content::GlobalRenderFrameHostToken, WebFrameMain*>;
+using FrameTokenMap = std::map<content::GlobalRenderFrameHostToken,
+                               cppgc::WeakPersistent<WebFrameMain>>;
 
 namespace {
 
@@ -146,8 +151,8 @@ content::RenderFrameHost* WebFrameMain::render_frame_host() const {
              : content::RenderFrameHost::FromFrameToken(frame_token_);
 }
 
-gin::DeprecatedWrapperInfo WebFrameMain::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+gin::WrapperInfo WebFrameMain::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronWebFrameMain);
 
 WebFrameMain::WebFrameMain(content::RenderFrameHost* rfh)
     : frame_tree_node_id_(rfh->GetFrameTreeNodeId()),
@@ -180,7 +185,7 @@ void WebFrameMain::Destroyed() {
 
   GetFrameTokenMap().erase(frame_token_);
   MarkRenderFrameDisposed();
-  Unpin();
+  keep_alive_.Clear();
 }
 
 void WebFrameMain::MarkRenderFrameDisposed() {
@@ -328,7 +333,7 @@ void WebFrameMain::MaybeSetupMojoConnection() {
   if (!renderer_api_) {
     pending_receiver_ = renderer_api_.BindNewPipeAndPassReceiver();
     renderer_api_.set_disconnect_handler(base::BindOnce(
-        &WebFrameMain::OnRendererConnectionError, weak_factory_.GetWeakPtr()));
+        &WebFrameMain::OnRendererConnectionError, GetWeakCell()));
   }
 
   content::RenderFrameHost* rfh = render_frame_host();
@@ -530,7 +535,7 @@ v8::Local<v8::Promise> WebFrameMain::CollectDocumentJSCallStack(
   rph_impl->GetJavaScriptCallStackGeneratorInterface()
       ->CollectJavaScriptCallStack(
           base::BindOnce(&WebFrameMain::CollectedJavaScriptCallStack,
-                         weak_factory_.GetWeakPtr(), std::move(promise)));
+                         GetWeakCell(), std::move(promise)));
 
   return handle;
 }
@@ -566,16 +571,15 @@ void WebFrameMain::DOMContentLoaded() {
 }
 
 // static
-gin_helper::Handle<WebFrameMain> WebFrameMain::New(v8::Isolate* isolate) {
-  return {};
+WebFrameMain* WebFrameMain::New(v8::Isolate* isolate) {
+  return nullptr;
 }
 
 // static
-gin_helper::Handle<WebFrameMain> WebFrameMain::From(
-    v8::Isolate* isolate,
-    content::RenderFrameHost* rfh) {
+WebFrameMain* WebFrameMain::From(v8::Isolate* isolate,
+                                 content::RenderFrameHost* rfh) {
   if (!rfh)
-    return {};
+    return nullptr;
 
   WebFrameMain* web_frame;
   switch (GetLifecycleState(rfh)) {
@@ -599,18 +603,14 @@ gin_helper::Handle<WebFrameMain> WebFrameMain::From(
       break;
     case LifecycleState::kReadyToBeDeleted:
       // RFH is gone
-      return {};
+      return nullptr;
   }
 
   if (web_frame)
-    return gin_helper::CreateHandle(isolate, web_frame);
+    return web_frame;
 
-  auto handle = gin_helper::CreateHandle(isolate, new WebFrameMain(rfh));
-
-  // Prevent garbage collection of frame until it has been deleted internally.
-  handle->Pin(isolate);
-
-  return handle;
+  return cppgc::MakeGarbageCollected<WebFrameMain>(
+      isolate->GetCppHeap()->GetAllocationHandle(), rfh);
 }
 
 // static
@@ -645,8 +645,23 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .Build();
 }
 
-const char* WebFrameMain::GetTypeName() {
-  return GetClassName();
+const gin::WrapperInfo* WebFrameMain::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* WebFrameMain::GetHumanReadableName() const {
+  return "Electron / WebFrameMain";
+}
+
+void WebFrameMain::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<WebFrameMain>::Trace(visitor);
+  visitor->Trace(weak_factory_);
+}
+
+cppgc::Persistent<gin::WeakCell<WebFrameMain>> WebFrameMain::GetWeakCell() {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  return gin::WrapPersistent(
+      weak_factory_.GetWeakCell(isolate->GetCppHeap()->GetAllocationHandle()));
 }
 
 }  // namespace electron::api
@@ -668,7 +683,11 @@ v8::Local<v8::Value> FromID(gin_helper::ErrorThrower thrower,
   if (!rfh)
     return v8::Undefined(thrower.isolate());
 
-  return WebFrameMain::From(thrower.isolate(), rfh).ToV8();
+  v8::Local<v8::Value> value;
+  if (!gin::TryConvertToV8(thrower.isolate(),
+                           WebFrameMain::From(thrower.isolate(), rfh), &value))
+    return v8::Null(thrower.isolate());
+  return value;
 }
 
 v8::Local<v8::Value> FromFrameToken(gin_helper::ErrorThrower thrower,
@@ -693,7 +712,11 @@ v8::Local<v8::Value> FromFrameToken(gin_helper::ErrorThrower thrower,
   if (!rfh)
     return v8::Null(thrower.isolate());
 
-  return WebFrameMain::From(thrower.isolate(), rfh).ToV8();
+  v8::Local<v8::Value> value;
+  if (!gin::TryConvertToV8(thrower.isolate(),
+                           WebFrameMain::From(thrower.isolate(), rfh), &value))
+    return v8::Null(thrower.isolate());
+  return value;
 }
 
 v8::Local<v8::Value> FromIdIfExists(gin_helper::ErrorThrower thrower,
@@ -706,9 +729,10 @@ v8::Local<v8::Value> FromIdIfExists(gin_helper::ErrorThrower thrower,
   content::RenderFrameHost* rfh =
       content::RenderFrameHost::FromID(render_process_id, render_frame_id);
   WebFrameMain* web_frame = WebFrameMain::FromRenderFrameHost(rfh);
-  if (!web_frame)
+  v8::Local<v8::Value> value;
+  if (!gin::TryConvertToV8(thrower.isolate(), web_frame, &value))
     return v8::Null(thrower.isolate());
-  return gin_helper::CreateHandle(thrower.isolate(), web_frame).ToV8();
+  return value;
 }
 
 v8::Local<v8::Value> FromFtnIdIfExists(gin_helper::ErrorThrower thrower,
@@ -719,9 +743,10 @@ v8::Local<v8::Value> FromFtnIdIfExists(gin_helper::ErrorThrower thrower,
   }
   WebFrameMain* web_frame = WebFrameMain::FromFrameTreeNodeId(
       content::FrameTreeNodeId(frame_tree_node_id));
-  if (!web_frame)
+  v8::Local<v8::Value> value;
+  if (!gin::TryConvertToV8(thrower.isolate(), web_frame, &value))
     return v8::Null(thrower.isolate());
-  return gin_helper::CreateHandle(thrower.isolate(), web_frame).ToV8();
+  return value;
 }
 
 void Initialize(v8::Local<v8::Object> exports,
@@ -730,7 +755,8 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* const isolate = electron::JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict{isolate, exports};
-  dict.Set("WebFrameMain", WebFrameMain::GetConstructor(isolate, context));
+  dict.Set("WebFrameMain", WebFrameMain::GetConstructor(
+                               isolate, context, &WebFrameMain::kWrapperInfo));
   dict.SetMethod("fromId", &FromID);
   dict.SetMethod("fromFrameToken", &FromFrameToken);
   dict.SetMethod("_fromIdIfExists", &FromIdIfExists);
