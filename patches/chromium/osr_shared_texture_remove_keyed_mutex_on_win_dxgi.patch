@@ -11,7 +11,7 @@ For resolving complex conflict please pin @reitowo
 For more reason please see: https://crrev.com/c/5465148
 
 diff --git a/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc b/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
-index 9361a9fc7c89d7809e5e354db7a2cc5d54270b8e..90892b4607955b4b07f423f94665f927d0ec8ff3 100644
+index 33e9d5979a97a9fa64fb5438bfd763223a7f3f96..ddf24739625acb4ba247c7c2d0fa4ec6fb89565b 100644
 --- a/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
 +++ b/gpu/command_buffer/service/shared_image/d3d_image_backing_factory.cc
 @@ -379,7 +379,8 @@ gfx::GpuMemoryBufferHandle D3DImageBackingFactory::CreateGpuMemoryBufferHandle(

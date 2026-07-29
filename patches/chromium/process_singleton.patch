@@ -51,7 +51,7 @@ index 6f081c26ca4cffe76104eae5a4130a81a93a539d..7da4c199de1d2721a2e6ba9cb10ba0bc
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
  
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 2448abf73b097f04583aefda1fb1a67b3de67e5b..55f935f38bf05586650e7a83a689347bb41a45a4 100644
+index fbbc68caa6b776b17a50a4fbc33044047c8f9e1a..5e7a66aafbbe6c388ac0ec780ef1eb0994bb3976 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -55,6 +55,7 @@
@@ -76,7 +76,7 @@ index 2448abf73b097f04583aefda1fb1a67b3de67e5b..55f935f38bf05586650e7a83a689347b
  
 -#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
 +#if 0
- #include "chrome/browser/ui/process_singleton_dialog_linux.h"
+ #include "chrome/browser/ui/dialogs/process_singleton_dialog_linux.h"
  #endif
  
 @@ -355,6 +357,8 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
