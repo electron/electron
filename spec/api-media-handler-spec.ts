@@ -80,32 +80,31 @@ describe('setDisplayMediaRequestHandler', () => {
       });
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await w.loadURL(serverUrl);
-      const { ok, message, audioTrackCount, restrictOwnAudioSetting } = await w.webContents.executeJavaScript(
-        `
-      navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: { restrictOwnAudio: true },
-      }).then(stream => {
-        const audioTracks = stream.getAudioTracks();
-        return {
-          ok: stream instanceof MediaStream,
-          message: null,
-          audioTrackCount: audioTracks.length,
-          restrictOwnAudioSetting: audioTracks.length
-            ? audioTracks[0].getSettings().restrictOwnAudio ?? null
-            : null
-        };
-      }, e => ({ ok: false, message: e.message, audioTrackCount: 0, restrictOwnAudioSetting: null }))
-    `,
-        true
-      );
+      const { ok, message, audioTrackCount, audioDeviceId, restrictOwnAudioSetting } =
+        await w.webContents.executeJavaScript(
+          `
+        navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: { restrictOwnAudio: true },
+        }).then(stream => {
+          const audioTracks = stream.getAudioTracks();
+          const audioSettings = audioTracks[0]?.getSettings();
+          return {
+            ok: stream instanceof MediaStream,
+            message: null,
+            audioTrackCount: audioTracks.length,
+            audioDeviceId: audioSettings?.deviceId ?? null,
+            restrictOwnAudioSetting: audioSettings?.restrictOwnAudio ?? null
+          };
+        }, e => ({ ok: false, message: e.message, audioTrackCount: 0, audioDeviceId: null, restrictOwnAudioSetting: null }))
+      `,
+          true
+        );
       expect(requestHandlerCalled).to.be.true();
       expect(ok).to.be.true(message);
       expect(audioTrackCount).to.equal(1);
-      // restrictOwnAudio is only applied on platforms supporting process
-      // loopback capture (Windows 11+, MacOS, ChromeOS); elsewhere the constraint is dropped
-      // and the setting is absent.
-      expect(restrictOwnAudioSetting).to.not.be.false();
+      expect(audioDeviceId).to.equal('loopbackWithoutChrome');
+      expect(restrictOwnAudioSetting).to.equal(true);
     }
   );
 
