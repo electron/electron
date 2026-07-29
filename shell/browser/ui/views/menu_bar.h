@@ -11,7 +11,6 @@
 #include "shell/browser/ui/views/menu_delegate.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "ui/base/metadata/metadata_header_macros.h"
-#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/accessible_pane_view.h"
 
 namespace views {

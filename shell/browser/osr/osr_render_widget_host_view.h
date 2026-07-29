@@ -32,15 +32,8 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/ime/text_input_client.h"
 #include "ui/compositor/compositor.h"
-#include "ui/compositor/layer_delegate.h"
-#include "ui/compositor/layer_owner.h"
-#include "ui/gfx/geometry/point.h"
 
 #include "components/viz/host/host_display_client.h"
-
-#if BUILDFLAG(IS_WIN)
-#include "ui/gfx/win/window_impl.h"
-#endif
 
 class SkBitmap;
 
