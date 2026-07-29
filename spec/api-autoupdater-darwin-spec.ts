@@ -145,9 +145,18 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
         await signApp(secondAppPath, identity);
         await mutateAppPostSign?.mutate(secondAppPath);
         updateZipPath = path.resolve(dir, 'update.zip');
-        await spawn('zip', ['-0', '-r', '--symlinks', updateZipPath, './'], {
-          cwd: dir
-        });
+        // Sanitizer builds are multiple gigabytes, so we need to apply actual
+        // compression to avoid having them cause a crash from large memory allocs
+        const zipResult = await spawn(
+          'zip',
+          [process.env.IS_UBSAN ? '-2' : '-0', '-r', '--symlinks', updateZipPath, './'],
+          {
+            cwd: dir
+          }
+        );
+        if (zipResult.code !== 0) {
+          throw new Error(`Failed to build update zip, "zip" exited with code ${zipResult.code}:\n${zipResult.out}`);
+        }
       }, false);
       cachedZips[key] = updateZipPath!;
     }
