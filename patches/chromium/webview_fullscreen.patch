@@ -15,10 +15,10 @@ Note that we also need to manually update embedder's
 `api::WebContents::IsFullscreenForTabOrPending` value.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 3013e19f660af65cc41ff19544bf852cd1f1ea72..d3ffd8605b3bd28648f5a382c8095ea39d6bd44d 100644
+index 18d61b4c4434ffcfc5835d1c65864e6e96d838f1..63c520adcac0bf9df74839d614a6d3b6a0c1cdce 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9456,6 +9456,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -9458,6 +9458,17 @@ void RenderFrameHostImpl::EnterFullscreen(
      }
    }
  
@@ -37,7 +37,7 @@ index 3013e19f660af65cc41ff19544bf852cd1f1ea72..d3ffd8605b3bd28648f5a382c8095ea3
    if (had_fullscreen_token && !GetView()->HasFocus()) {
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 2778a1fa7b97a8b537cd678216db67e7c103f93d..df4e00c33fd2ac623468bdb9d32a820211b84dc9 100644
+index a9dde6bc932896520cacf7c04b893964ce4aca42..ccf32daf4e8a86efdebe1fb28bef245bd26d4c4e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4625,21 +4625,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
