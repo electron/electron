@@ -1,0 +1,125 @@
+name: Issue Template Check
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions: {}
+
+jobs:
+  check-issue-template:
+    if: ${{ github.event.issue.user.type != 'Bot' && !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) }}
+    name: Check Issue Template
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .github/ISSUE_TEMPLATE
+          sparse-checkout-cone-mode: false
+      - name: Check for required sections
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            const TEMPLATE_DIR = '.github/ISSUE_TEMPLATE';
+            const MARKER = '<!-- issue-template-check -->';
+
+            // GitHub renders every non-markdown field of an issue form as a
+            // "### <label>" heading in the created issue body, so the form
+            // field labels are the required sections for that template.
+            const getRequiredSections = (template) => {
+              const sections = [];
+              // Fields are the list items under the form's `body:` key.
+              for (const field of template.split(/^(?=\s*-\s+type:)/m).slice(1)) {
+                const type = field.match(/-\s+type:\s*(\S+)/)?.[1];
+                if (!type || type === 'markdown') {
+                  continue;
+                }
+                // The field label is the first plain `label:` entry - the
+                // option labels of checkboxes fields are list items
+                // (`- label:`) and don't render as headings.
+                const label = field.match(/^\s+label:\s*(.+?)\s*$/m)?.[1];
+                if (label) {
+                  sections.push(`### ${label.replace(/^(["'])(.*)\1$/, '$2')}`);
+                }
+              }
+              return sections;
+            };
+
+            const templateSections = new Map();
+            for (const file of fs.readdirSync(TEMPLATE_DIR)) {
+              if (!/\.ya?ml$/.test(file) || file === 'config.yml') {
+                continue;
+              }
+              const template = fs.readFileSync(path.join(TEMPLATE_DIR, file), 'utf8');
+              const sections = getRequiredSections(template);
+              if (sections.length > 0) {
+                templateSections.set(file, sections);
+              }
+            }
+            if (templateSections.size === 0) {
+              console.log('No issue form templates with labeled fields found');
+              return;
+            }
+
+            const issue = context.payload.issue;
+            const body = issue.body || '';
+            // The issue passes if it contains all sections from at least one template
+            const matchesTemplate = [...templateSections.values()].some(
+              (sections) => sections.every((section) => body.includes(section)),
+            );
+
+            const { owner, repo } = context.repo;
+            const issue_number = issue.number;
+            const hasMarkerComment = async () => {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number,
+                per_page: 100,
+              });
+              return comments.some((comment) => comment.body?.includes(MARKER));
+            };
+
+            if (matchesTemplate) {
+              // Reopen the issue if this check previously closed it and the
+              // author has edited the body to follow a template.
+              if (
+                context.payload.action === 'edited' &&
+                issue.state === 'closed' &&
+                issue.state_reason === 'not_planned' &&
+                (await hasMarkerComment())
+              ) {
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number,
+                  state: 'open',
+                });
+              }
+              return;
+            }
+
+            if (!(await hasMarkerComment())) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: `${MARKER}\n\nHello @${issue.user.login}. Thanks for taking the time to open an issue and helping to make Electron better!\n\nThis issue was automatically closed because its body does not follow any of this repository's issue templates. Maintainers rely on the sections in those templates to triage issues, and issues that are missing them usually cannot be acted upon.\n\nTo get this issue triaged, please either:\n\n* Edit the issue body above to include all of the sections from one of our [issue templates](https://github.com/electron/electron/tree/main/.github/ISSUE_TEMPLATE) - it will be reopened automatically once it does, or\n* File a new issue via https://github.com/electron/electron/issues/new/choose, which will fill in the correct template for you.`,
+              });
+            }
+            if (issue.state === 'open') {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number,
+                state: 'closed',
+                state_reason: 'not_planned',
+              });
+            }
