@@ -1,0 +1,21 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Sanders <dsanders11@ucsbalum.com>
+Date: Sun, 26 Jul 2026 21:06:47 -0700
+Subject: Default initialize should_hide_suggestion_menu in
+ WebTextCheckingResult
+
+Change-Id: Ic76db3317ce667dc2c06893cbeb08c4c24eda366
+
+diff --git a/third_party/blink/public/web/web_text_checking_result.h b/third_party/blink/public/web/web_text_checking_result.h
+index 74b5cd3652c2324b2896a83264338c7a11c58121..adf0d068f09d8f7adf810329c442d717cf14ab3c 100644
+--- a/third_party/blink/public/web/web_text_checking_result.h
++++ b/third_party/blink/public/web/web_text_checking_result.h
+@@ -66,7 +66,7 @@ struct WebTextCheckingResult {
+   int location;
+   int length;
+   std::vector<WebString> replacements;
+-  bool should_hide_suggestion_menu;
++  bool should_hide_suggestion_menu = false;
+ };
+ 
+ }  // namespace blink
