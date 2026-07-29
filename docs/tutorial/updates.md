@@ -173,6 +173,9 @@ Depending on your needs, you can choose from one of these:
 - [Nucleus][nucleus] – A complete update server for Electron apps maintained by
   Atlassian. Supports multiple applications and channels; uses a static file store
   to minify server cost.
+- [faynoSync][faynosync] – Self-hosted update server that stores artifacts in any
+  S3-compatible bucket. Supports multiple applications, release channels and staged
+  rollouts, and collects update statistics and crash reports.
 
 Once you've deployed your update server, you can instrument your app code to receive and
 apply the updates with Electron's [autoUpdater](../api/auto-updater.md) module.
@@ -321,5 +324,6 @@ HTTP response.
 [gh-releases]: https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release
 [electron-release-server]: https://github.com/ArekSredzki/electron-release-server
 [nucleus]: https://github.com/atlassian/nucleus
+[faynosync]: https://github.com/ku9nov/faynoSync
 [update.electronjs.org]: https://github.com/electron/update.electronjs.org
 [update-electron-app]: https://github.com/electron/update-electron-app
