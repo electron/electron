@@ -29,6 +29,7 @@ jobs:
 
             const TEMPLATE_DIR = '.github/ISSUE_TEMPLATE';
             const MARKER = '<!-- issue-template-check -->';
+            const LABEL = 'needs-template';
 
             // GitHub renders every non-markdown field of an issue form as a
             // "### <label>" heading in the created issue body, so the form
@@ -77,6 +78,13 @@ jobs:
 
             const { owner, repo } = context.repo;
             const issue_number = issue.number;
+            // The label is added when this check closes an issue and removed
+            // when it reopens one, so it marks "closed by the template check
+            // and not yet resolved". Other automation (e.g. the stale and
+            // need-repro closes in stale.yml) never sets it, so requiring it
+            // before reopening keeps this check from reopening issues that
+            // were closed for other reasons.
+            const hasLabel = issue.labels?.some((label) => label.name === LABEL) ?? false;
             const hasMarkerComment = async () => {
               const comments = await github.paginate(github.rest.issues.listComments, {
                 owner,
@@ -87,12 +95,14 @@ jobs:
               return comments.some((comment) => comment.body?.includes(MARKER));
             };
 
-            // The most recent close must have been performed by this check
-            // (which acts as github-actions[bot] via the default token) for a
-            // reopen to be safe - if a maintainer closed the issue after an
-            // earlier automatic reopen, their close must stick. The webhook
-            // payload's issue object does not reliably include `closed_by`,
-            // so fetch it fresh.
+            // Belt-and-braces on top of the label: the most recent close must
+            // have been performed via the default token (github-actions[bot],
+            // which this check runs as) for a reopen to be safe - if a
+            // maintainer closed the issue while the label was still present,
+            // their close must stick. Stale/need-repro automation closes act
+            // as the issue triage app, not github-actions[bot], so they never
+            // match either. The webhook payload's issue object does not
+            // reliably include `closed_by`, so fetch it fresh.
             const closedByThisCheck = async () => {
               const { data } = await github.rest.issues.get({
                 owner,
@@ -109,6 +119,7 @@ jobs:
                 context.payload.action === 'edited' &&
                 issue.state === 'closed' &&
                 issue.state_reason === 'not_planned' &&
+                hasLabel &&
                 (await hasMarkerComment()) &&
                 (await closedByThisCheck())
               ) {
@@ -117,6 +128,21 @@ jobs:
                   repo,
                   issue_number,
                   state: 'open',
+                });
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number,
+                  name: LABEL,
+                });
+              } else if (issue.state === 'open' && hasLabel) {
+                // The issue now follows a template but still carries the
+                // label (e.g. a maintainer reopened it manually) - clear it.
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number,
+                  name: LABEL,
                 });
               }
               return;
@@ -131,6 +157,14 @@ jobs:
               });
             }
             if (issue.state === 'open') {
+              if (!hasLabel) {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number,
+                  labels: [LABEL],
+                });
+              }
               await github.rest.issues.update({
                 owner,
                 repo,
