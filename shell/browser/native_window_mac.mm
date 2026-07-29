@@ -41,7 +41,6 @@
 #include "ui/base/hit_test.h"
 #include "ui/display/screen.h"
 #include "ui/gfx/geometry/rect_conversions.h"
-#include "ui/gl/gpu_switching_manager.h"
 #include "ui/views/background.h"
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/view_targeter.h"

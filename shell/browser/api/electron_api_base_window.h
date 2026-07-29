@@ -18,6 +18,12 @@
 #include "shell/common/gin_helper/trackable_object.h"
 #include "v8/include/cppgc/persistent.h"
 
+#if BUILDFLAG(IS_MAC)
+#include <optional>
+
+#include "ui/gfx/geometry/point.h"
+#endif
+
 namespace gin {
 class Arguments;
 }  // namespace gin

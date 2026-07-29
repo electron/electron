@@ -23,7 +23,6 @@
 #include "base/task/thread_pool.h"
 #include "electron/mas.h"
 #include "net/base/apple/url_conversions.h"
-#include "ui/views/widget/widget.h"
 #include "url/gurl.h"
 
 namespace {

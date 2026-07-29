@@ -25,8 +25,6 @@
 #include "third_party/blink/public/common/context_menu_data/untrustworthy_context_menu_params.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
-#include "ui/events/keycodes/dom/keycode_converter.h"
-#include "ui/events/keycodes/keyboard_code_conversion.h"
 
 namespace gin {
 

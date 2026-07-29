@@ -14,7 +14,6 @@
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"
-#include "ui/base/l10n/l10n_util_mac.h"
 
 namespace electron {
 
