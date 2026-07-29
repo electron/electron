@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "base/apple/bundle_locations.h"
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/debug/leak_annotations.h"
 #include "base/debug/stack_trace.h"
@@ -22,7 +21,6 @@
 #include "base/path_service.h"
 #include "base/strings/cstring_view.h"
 #include "base/strings/string_number_conversions.cc"
-#include "base/strings/string_util_internal.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/profiler/process_type.h"

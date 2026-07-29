@@ -6,7 +6,6 @@
 #include <memory>
 #include <vector>
 
-#include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "components/autofill/core/common/autofill_features.h"
 #include "content/public/browser/render_frame_host.h"

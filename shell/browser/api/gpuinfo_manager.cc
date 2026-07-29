@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "base/memory/singleton.h"
 #include "base/task/single_thread_task_runner.h"
 #include "gpu/config/gpu_info_collector.h"
 #include "shell/browser/api/gpu_info_enumerator.h"

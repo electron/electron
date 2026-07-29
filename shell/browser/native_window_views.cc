@@ -20,10 +20,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/fixed_flat_set.h"
 #include "base/memory/raw_ref.h"
-#include "base/numerics/ranges.h"
-#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
@@ -85,6 +82,9 @@
 #endif
 
 #elif BUILDFLAG(IS_WIN)
+#include "base/containers/fixed_flat_map.h"
+#include "base/containers/fixed_flat_set.h"
+#include "base/numerics/ranges.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "shell/browser/ui/views/win_frame_view.h"

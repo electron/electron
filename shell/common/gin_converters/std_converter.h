@@ -17,9 +17,6 @@
 #include "gin/converter.h"
 
 #include "base/strings/string_util.h"
-#if BUILDFLAG(IS_WIN)
-#include "base/strings/string_util_win.h"
-#endif
 
 namespace gin {
 

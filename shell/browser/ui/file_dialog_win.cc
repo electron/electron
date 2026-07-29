@@ -15,10 +15,8 @@
 #include <shobjidl.h>  // NOLINT(build/include_order)
 
 #include "base/files/file_util.h"
-#include "base/i18n/case_conversion.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/win/registry.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/win/dialog_thread.h"
 #include "shell/common/electron_paths.h"
