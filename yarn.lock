@@ -647,6 +647,7 @@ __metadata:
     mdast-util-from-markdown: "npm:^2.0.0"
     semver: "npm:^7.7.2"
     unist-util-select: "npm:^5.1.0"
+    yaml: "npm:^2.9.0"
   languageName: unknown
   linkType: soft
 

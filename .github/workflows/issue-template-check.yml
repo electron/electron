@@ -10,48 +10,49 @@ jobs:
   check-issue-template:
     if: ${{ !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) }}
     name: Check Issue Template
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
+    env:
+      ISSUE_TEMPLATE_DIR: .github/ISSUE_TEMPLATE
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          sparse-checkout: .github/ISSUE_TEMPLATE
-          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .
+            ${{ env.ISSUE_TEMPLATE_DIR }}
+            .github/workflows
+            .yarn
+      - run: yarn workspaces focus @electron/gha-workflows
       - name: Check for required sections
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const fs = require('fs');
-            const path = require('path');
+            const { chdir } = require('node:process');
+            chdir('${{ github.workspace }}/.github/workflows');
 
-            const TEMPLATE_DIR = '.github/ISSUE_TEMPLATE';
+            const fs = require('node:fs');
+            const path = require('node:path');
+
+            const { fromMarkdown } = require('mdast-util-from-markdown');
+            const { selectAll } = require('unist-util-select');
+            const YAML = require('yaml');
+
+            const TEMPLATE_DIR = path.join('${{ github.workspace }}', process.env.ISSUE_TEMPLATE_DIR);
             const MARKER = '<!-- issue-template-check -->';
             const LABEL = 'needs-template';
 
             // GitHub renders every non-markdown field of an issue form as a
             // "### <label>" heading in the created issue body, so the form
-            // field labels are the required sections for that template.
-            const getRequiredSections = (template) => {
-              const sections = [];
-              // Fields are the list items under the form's `body:` key.
-              for (const field of template.split(/^(?=\s*-\s+type:)/m).slice(1)) {
-                const type = field.match(/-\s+type:\s*(\S+)/)?.[1];
-                if (!type || type === 'markdown') {
-                  continue;
-                }
-                // The field label is the first plain `label:` entry - the
-                // option labels of checkboxes fields are list items
-                // (`- label:`) and don't render as headings.
-                const label = field.match(/^\s+label:\s*(.+?)\s*$/m)?.[1];
-                if (label) {
-                  sections.push(`### ${label.replace(/^(["'])(.*)\1$/, '$2')}`);
-                }
-              }
-              return sections;
-            };
+            // field labels are the required sections for that template. The
+            // option labels of checkboxes fields don't render as headings -
+            // only the field-level label does.
+            const getRequiredSections = (template) =>
+              (YAML.parse(template).body ?? [])
+                .filter((field) => field.type !== 'markdown' && typeof field.attributes?.label === 'string')
+                .map((field) => field.attributes.label.trim());
 
             const templateSections = new Map();
             for (const file of fs.readdirSync(TEMPLATE_DIR)) {
@@ -70,10 +71,15 @@ jobs:
             }
 
             const issue = context.payload.issue;
-            const body = issue.body || '';
+            const tree = fromMarkdown(issue.body || '');
+            const headings = new Set(
+              selectAll('heading[depth="3"]', tree).map((heading) =>
+                heading.children.map((child) => child.value ?? '').join('').trim(),
+              ),
+            );
             // The issue passes if it contains all sections from at least one template
             const matchesTemplate = [...templateSections.values()].some(
-              (sections) => sections.every((section) => body.includes(section)),
+              (sections) => sections.every((section) => headings.has(section)),
             );
 
             const { owner, repo } = context.repo;
