@@ -112,6 +112,7 @@ template("electron_extra_paks") {
     if (enable_electron_extensions) {
       sources += [
         "$root_gen_dir/chrome/component_extension_resources.pak",
+        "$root_gen_dir/extensions/extensions_renderer_generated_resources.pak",
         "$root_gen_dir/extensions/extensions_renderer_resources.pak",
         "$root_gen_dir/extensions/extensions_resources.pak",
       ]
