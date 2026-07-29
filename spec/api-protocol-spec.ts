@@ -947,6 +947,15 @@ describe('protocol module', () => {
       await contents.loadURL(`${serviceWorkerScheme}://${v4()}.com`);
       await contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.js', {scope: './'})`);
     });
+
+    it('throws an error for invalid protocol scheme', () => {
+      const appPath = path.join(fixturesPath, 'apps', 'remote-control');
+      const result = ChildProcess.spawnSync(process.execPath, [
+        appPath,
+        '--boot-eval=try { require("electron").protocol.registerSchemesAsPrivileged([{ scheme: "foo,bar", privileges: { standard: true } }]); } catch (e) { console.error(e.message); } process.exit(0);'
+      ]);
+      expect(result.stderr.toString()).to.include('Invalid protocol scheme');
+    });
   });
 
   describe('protocol.registerSchemesAsPrivileged standard', () => {
