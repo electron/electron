@@ -28,6 +28,12 @@ Note that on macOS, access to the system Keychain is required and
 these calls can block the current thread to collect user input.
 The same is true for Linux, if a password management tool is available.
 
+> [!IMPORTANT]
+> On macOS, your app should be [code signed](../tutorial/code-signing.md#macos-apis-that-require-code-signing)
+> for `safeStorage` to behave consistently. Without a valid, consistent signature,
+> macOS may not recognize different builds of your app as the same application,
+> which can cause the Keychain to re-prompt the user for permission on every update.
+
 ### Asynchronous API
 
 The asynchronous API uses pluggable key providers that vary by platform:
