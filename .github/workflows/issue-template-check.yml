@@ -87,6 +87,21 @@ jobs:
               return comments.some((comment) => comment.body?.includes(MARKER));
             };
 
+            // The most recent close must have been performed by this check
+            // (which acts as github-actions[bot] via the default token) for a
+            // reopen to be safe - if a maintainer closed the issue after an
+            // earlier automatic reopen, their close must stick. The webhook
+            // payload's issue object does not reliably include `closed_by`,
+            // so fetch it fresh.
+            const closedByThisCheck = async () => {
+              const { data } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number,
+              });
+              return data.closed_by?.login === 'github-actions[bot]';
+            };
+
             if (matchesTemplate) {
               // Reopen the issue if this check previously closed it and the
               // author has edited the body to follow a template.
@@ -94,7 +109,8 @@ jobs:
                 context.payload.action === 'edited' &&
                 issue.state === 'closed' &&
                 issue.state_reason === 'not_planned' &&
-                (await hasMarkerComment())
+                (await hasMarkerComment()) &&
+                (await closedByThisCheck())
               ) {
                 await github.rest.issues.update({
                   owner,
