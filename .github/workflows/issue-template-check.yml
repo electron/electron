@@ -45,10 +45,10 @@ jobs:
             const LABEL = 'needs-template';
 
             // GitHub renders every non-markdown field of an issue form as a
-            // "### <label>" heading in the created issue body, so the form
-            // field labels are the required sections for that template. The
-            // option labels of checkboxes fields don't render as headings -
-            // only the field-level label does.
+            // heading in the created issue body, so the form field labels
+            // are the required sections for that template. The option
+            // labels of checkboxes fields don't render as headings - only
+            // the field-level label does.
             const getRequiredSections = (template) =>
               (YAML.parse(template).body ?? [])
                 .filter((field) => field.type !== 'markdown' && typeof field.attributes?.label === 'string')
@@ -73,7 +73,7 @@ jobs:
             const issue = context.payload.issue;
             const tree = fromMarkdown(issue.body || '');
             const headings = new Set(
-              selectAll('heading[depth="3"]', tree).map((heading) =>
+              selectAll('heading', tree).map((heading) =>
                 heading.children.map((child) => child.value ?? '').join('').trim(),
               ),
             );
