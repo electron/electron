@@ -21,7 +21,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index 0a47fb58e86d57d6cec3784d3b163c59592b585e..d2877fdd3bcff75248bad6a0462233cde82a104c 100644
+index 78aa9d6bfbb55f6b66faa572ea289fefc3ead74a..a1dc6a14c2594c19095bf2454a9eafd73f413ae8 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -33,6 +33,7 @@
@@ -822,7 +822,7 @@ index f2a826791ff321a68c02cef923fefb1283e246fc..daeb9327d28fab06bcb1375606e18419
      DWORD last_error = GetLastError();
      std::move(result_callback).Run(base::Process(), last_error, result);
 diff --git a/sandbox/policy/win/sandbox_win.h b/sandbox/policy/win/sandbox_win.h
-index 2e8a3a6e5546b125ab111f9f4f4c75975f6fba58..fa63cac620595921da993c531b9ca263595b9600 100644
+index 7bcbec87df27830a997115e00480a60b223ff87c..63a9d7c195c248be46f5282d34952ba4965b2b1b 100644
 --- a/sandbox/policy/win/sandbox_win.h
 +++ b/sandbox/policy/win/sandbox_win.h
 @@ -94,7 +94,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {
