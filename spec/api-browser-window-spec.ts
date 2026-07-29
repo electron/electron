@@ -1925,6 +1925,23 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('explicit x/y at construction', () => {
+      // Regression: on Windows, the HWND was created at (0,0) with
+      // primary-monitor DPI then moved, producing wrong bounds. Now that
+      // the origin is threaded into params.bounds on all platforms, run
+      // the test everywhere. CI is single-display so this only validates
+      // the construction path, not true cross-monitor behaviour.
+      afterEach(closeAllWindows);
+
+      for (const frame of [true, false]) {
+        it(`reports requested bounds when created with explicit x/y (frame: ${frame})`, () => {
+          const requested = { x: 120, y: 140, width: 420, height: 320 };
+          const win = new BrowserWindow({ show: false, frame, ...requested });
+          expectBoundsEqual(win.getBounds(), requested);
+        });
+      }
+    });
+
     describe('BrowserWindow.setAspectRatio(ratio)', () => {
       it('resets the behaviour when passing in 0', async () => {
         const size = [300, 400];

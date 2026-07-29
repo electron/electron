@@ -5,8 +5,6 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_CONTENT_CONVERTER_H_
 
-#include <utility>
-
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/common/referrer.h"

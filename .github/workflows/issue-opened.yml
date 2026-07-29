@@ -9,7 +9,7 @@ permissions: {}
 
 jobs:
   add-to-issue-triage:
-    if: ${{ contains(github.event.issue.labels.*.name, 'bug :beetle:') }}
+    if: ${{ contains(github.event.issue.labels.*.name, 'bug :beetle:') || contains(github.event.issue.body, '# Expected Behavior') }}
     runs-on: ubuntu-latest
     permissions: {}
     steps:
@@ -27,7 +27,7 @@ jobs:
           project-number: 90
           token: ${{ steps.generate-token.outputs.token }}
   set-labels:
-    if: ${{ contains(github.event.issue.labels.*.name, 'bug :beetle:') }}
+    if: ${{ contains(github.event.issue.labels.*.name, 'bug :beetle:') || contains(github.event.issue.body, '# Expected Behavior') }}
     runs-on: ubuntu-latest
     permissions: {}
     steps:

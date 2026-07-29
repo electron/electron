@@ -5,7 +5,6 @@
 #include "shell/browser/usb/usb_chooser_controller.h"
 
 #include <algorithm>
-#include <cstddef>
 #include <utility>
 
 #include "base/command_line.h"

@@ -8,7 +8,6 @@
 #import <Foundation/Foundation.h>
 #import <UserNotifications/UserNotifications.h>
 
-#include <map>
 #include <string>
 
 #include "shell/browser/notifications/notification.h"

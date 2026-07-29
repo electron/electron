@@ -375,7 +375,7 @@ __metadata:
     "@electron/fiddle-core": "npm:^1.3.4"
     "@electron/github-app-auth": "npm:^3.2.0"
     "@electron/lint-roller": "npm:^3.2.0"
-    "@electron/typescript-definitions": "npm:^9.1.5"
+    "@electron/typescript-definitions": "npm:^9.2.0"
     "@hurdlegroup/robotjs": "npm:^0.12.3"
     "@octokit/rest": "npm:^22.0.1"
     "@primer/octicons": "npm:^10.0.0"
@@ -752,19 +752,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@electron/typescript-definitions@npm:^9.1.5":
-  version: 9.1.5
-  resolution: "@electron/typescript-definitions@npm:9.1.5"
+"@electron/typescript-definitions@npm:^9.2.0":
+  version: 9.2.0
+  resolution: "@electron/typescript-definitions@npm:9.2.0"
   dependencies:
     "@types/node": "npm:^20.11.25"
     chalk: "npm:^5.3.0"
     debug: "npm:^4.3.7"
-    lodash: "npm:^4.17.11"
     ora: "npm:^8.1.0"
     pretty-ms: "npm:^9.1.0"
   bin:
     electron-typescript-definitions: dist/bin.js
-  checksum: 10c0/24fe996ff694daa6ea077be0277722594eb7a837083718fc9ac7d2739797264551ac2a44691cb337cddab39ab4dbeb12be967e5980bea6c5826c5c40993c8157
+  checksum: 10c0/e9d84a75f1fd48d066bcb07ccfcb19cc7c4ccf1e99f9239798bcd7b5492c1a4bee38b08bd518e9605e1dd2c4d45323205eb4eb2073448270d3df0c6380c5ac0c
   languageName: node
   linkType: hard
 
@@ -6709,7 +6708,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.0.0, lodash@npm:^4.17.11, lodash@npm:^4.17.15":
+"lodash@npm:^4.0.0, lodash@npm:^4.17.15":
   version: 4.18.1
   resolution: "lodash@npm:4.18.1"
   checksum: 10c0/757228fc68805c59789e82185135cf85f05d0b2d3d54631d680ca79ec21944ec8314d4533639a14b8bcfbd97a517e78960933041a5af17ecb693ec6eecb99a27

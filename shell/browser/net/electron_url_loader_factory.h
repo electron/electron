@@ -9,7 +9,6 @@
 #include <optional>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "base/memory/self_deleting.h"
 #include "base/memory/weak_ptr.h"

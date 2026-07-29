@@ -4,6 +4,9 @@
 
 #include "shell/common/api/electron_api_shared_texture.h"
 
+#include <string>
+#include <vector>
+
 #include "base/base64.h"
 #include "base/command_line.h"
 #include "base/numerics/byte_conversions.h"

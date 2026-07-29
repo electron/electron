@@ -5,9 +5,7 @@
 #include "shell/common/api/electron_bindings.h"
 
 #include <algorithm>
-#include <string>
 #include <utility>
-#include <vector>
 
 #include "base/files/file.h"
 #include "base/process/process.h"

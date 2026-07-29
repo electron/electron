@@ -4,7 +4,6 @@
 
 #include "electron/shell/renderer/electron_api_service_impl.h"
 
-#include <string_view>
 #include <utility>
 #include <vector>
 

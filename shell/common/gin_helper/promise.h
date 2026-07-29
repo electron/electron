@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
 
-#include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>

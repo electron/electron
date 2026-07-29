@@ -1036,6 +1036,222 @@ describe('cpp heap', () => {
     });
   });
 
+  describe('webFrameMain module', () => {
+    it('does not crash on exit with live frame wrappers', async () => {
+      const rc = await startRemoteControlApp();
+      await rc.remotely(async () => {
+        const { app, BrowserWindow } = require('electron');
+
+        const w = new BrowserWindow({ show: false });
+        await w.loadURL('about:blank');
+
+        (globalThis as any).frameRefs = [w.webContents.mainFrame, ...w.webContents.mainFrame.framesInSubtree];
+
+        setTimeout(() => app.quit());
+      });
+
+      const [code] = await once(rc.process, 'exit');
+      expect(code).to.equal(0);
+    });
+
+    it('should be rooted while the frame is live', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { BrowserWindow } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL('about:blank');
+
+          // Access a property to materialize the lazy WebFrameMain wrapper.
+          console.log(w.webContents.mainFrame.url);
+
+          for (let i = 0; i < 10; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            v8Util.requestGarbageCollectionForTesting();
+          }
+
+          const state = recordState();
+          const rooted = containsRetainingPath(state.snapshot, ['C++ Persistent roots', 'Electron / WebFrameMain']);
+
+          w.destroy();
+          return rooted;
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result).to.equal(true, 'WebFrameMain should stay rooted via SelfKeepAlive while the frame is live');
+    });
+
+    it('should be released after the frame is destroyed', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string) => {
+          const { app, BrowserWindow } = require('electron');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          // Keep the app alive when the window closes so we can snapshot.
+          app.on('window-all-closed', () => {});
+
+          const collectGarbage = async () => {
+            for (let i = 0; i < 10; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+            }
+          };
+
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL('data:text/html,<iframe src="about:blank"></iframe>');
+
+          const mainFrame = w.webContents.mainFrame;
+          // Access a property to materialize the lazy subframe wrappers.
+          const subframes = mainFrame.frames;
+
+          await w.loadURL('about:blank');
+          await collectGarbage();
+          const mainFrameIsActive = w.webContents.mainFrame === mainFrame && !mainFrame.detached;
+          const remainingSubframeCount = mainFrame.frames.length;
+          const subframeIsDetached = subframes[0]?.detached;
+          const hasOneFrame = containsRetainingPath(
+            recordState().snapshot,
+            ['C++ Persistent roots', 'Electron / WebFrameMain'],
+            {
+              occurrences: 1
+            }
+          );
+
+          w.destroy();
+          return {
+            subframeCount: subframes.length,
+            mainFrameIsActive,
+            remainingSubframeCount,
+            subframeIsDetached,
+            hasOneFrame
+          };
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js')
+      );
+      expect(result.subframeCount).to.equal(1, 'a subframe WebFrameMain should be created before navigation');
+      expect(result.mainFrameIsActive).to.equal(true, 'the remaining WebFrameMain should be the active main frame');
+      expect(result.remainingSubframeCount).to.equal(
+        0,
+        'the active main frame should have no subframes after navigation'
+      );
+      expect(result.subframeIsDetached).to.equal(true, 'the subframe WebFrameMain should be detached after navigation');
+      expect(result.hasOneFrame).to.equal(
+        true,
+        'subframe WebFrameMain should be released after its frame is destroyed by navigation'
+      );
+    });
+
+    it('should release the root for a detached frame after navigation', async () => {
+      const { remotely } = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const result = await remotely(
+        async (heap: string, snapshotHelper: string, preload: string) => {
+          const { BrowserWindow, ipcMain } = require('electron');
+          const { once } = require('node:events');
+          const http = require('node:http');
+          const { recordState } = require(heap);
+          const { containsRetainingPath } = require(snapshotHelper);
+          const v8Util = (process as any)._linkedBinding('electron_common_v8_util');
+
+          const createServer = async () => {
+            const server = http.createServer((_request: any, response: any) => response.end('<body></body>'));
+            server.listen(0, '127.0.0.1');
+            await once(server, 'listening');
+            return server;
+          };
+
+          const server = await createServer();
+          const getUrl = (server: any) => `http://127.0.0.1:${server.address().port}`;
+          const url = getUrl(server);
+          const crossOriginUrl = url.replace('127.0.0.1', 'localhost');
+          const w = new BrowserWindow({ show: false, webPreferences: { preload } });
+
+          try {
+            await w.loadURL(url);
+            // Access a property to materialize the lazy WebFrameMain wrapper.
+            console.log(w.webContents.mainFrame.url);
+
+            let detachedFrame: Electron.WebFrameMain | null = null;
+            const unloaded = new Promise<void>((resolve) => {
+              ipcMain.once('preload-unload', (event: Electron.IpcMainEvent) => {
+                detachedFrame = event.senderFrame;
+                resolve();
+              });
+            });
+
+            const navigated = w.loadURL(crossOriginUrl);
+            await unloaded;
+            await navigated;
+
+            for (let i = 0; i < 10; i++) {
+              await new Promise((resolve) => setTimeout(resolve, 0));
+              v8Util.requestGarbageCollectionForTesting();
+            }
+
+            console.log(detachedFrame!.detached);
+            return containsRetainingPath(recordState().snapshot, ['C++ Persistent roots', 'Electron / WebFrameMain'], {
+              occurrences: 1
+            });
+          } finally {
+            w.destroy();
+            server.close();
+          }
+        },
+        path.join(__dirname, '../../third_party/electron_node/test/common/heap'),
+        path.join(__dirname, 'lib', 'heapsnapshot-helpers.js'),
+        path.join(__dirname, 'fixtures', 'sub-frames', 'preload.js')
+      );
+      expect(result).to.equal(true, 'only the active WebFrameMain should remain rooted after navigation');
+    });
+
+    it('should settle an in-flight call stack reply after frame disposal', async () => {
+      const { remotely } = await startRemoteControlApp();
+      const result = await remotely(async () => {
+        const { app, BrowserWindow } = require('electron');
+        const { once } = require('node:events');
+        const http = require('node:http');
+        const { setTimeout: delay } = require('node:timers/promises');
+
+        app.on('window-all-closed', () => {});
+
+        const server = http.createServer((request: any, response: any) => {
+          response.setHeader('Document-Policy', 'include-js-call-stacks-in-crash-reports');
+          response.end(request.url === '/child' ? '<body></body>' : '<iframe src="/child"></iframe>');
+        });
+        server.listen(0, '127.0.0.1');
+        await once(server, 'listening');
+
+        const w = new BrowserWindow({ show: false });
+        try {
+          await w.loadURL(`http://127.0.0.1:${server.address().port}`);
+
+          const childFrame = w.webContents.mainFrame.frames[0];
+          const callStackPromise = childFrame.collectJavaScriptCallStack();
+          const settled = callStackPromise.then(
+            () => 'resolved',
+            (error: Error) => `rejected: ${error.message}`
+          );
+
+          childFrame.executeJavaScript('window.frameElement.remove()').catch(() => {});
+          return Promise.race([settled, delay(5000).then(() => 'timeout')]);
+        } finally {
+          w.destroy();
+          server.close();
+        }
+      });
+
+      expect(result).to.equal('rejected: Render frame was disposed before call stack was received');
+    });
+  });
+
   describe('internal event', () => {
     it('should record as node in heap snapshot', async () => {
       const { remotely } = await startRemoteControlApp(['--expose-internals']);
