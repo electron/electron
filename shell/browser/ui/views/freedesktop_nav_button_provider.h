@@ -9,13 +9,31 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <string>
 
+#include "base/memory/raw_ptr.h"
 #include "third_party/skia/include/core/SkColor.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/linux/nav_button_provider.h"
 
+class SkBitmap;
+
 namespace electron {
+
+// Allows toolkit-specific impls to load Freedesktop icons and
+// provide system theme information.
+class SymbolicIconProvider {
+ public:
+  virtual SkBitmap LoadIcon(const std::string& icon_name,
+                            int icon_size,
+                            int scale,
+                            SkColor color) = 0;
+  virtual std::string GetThemeName() = 0;
+
+ protected:
+  ~SymbolicIconProvider() = default;
+};
 
 enum class PillColor { kBase, kAccent };
 enum class GlyphColor { kBase, kInverse, kContrastWithPill };
@@ -64,7 +82,12 @@ class FreedesktopNavButtonProvider : public ui::NavButtonProvider {
                          std::optional<SkColor> symbol);
 
  private:
-  FreedesktopNavButtonProvider();
+  explicit FreedesktopNavButtonProvider(SymbolicIconProvider* icon_provider);
+
+  // Should be process lifetime (ideally provided by the LinuxUi singleton)
+  // since the ImageSkia passed to the caption buttons can call the icon
+  // provider lazily and can outlive the nav button provider.
+  raw_ptr<SymbolicIconProvider> icon_provider_;
 
   std::map<FrameButtonDisplayType, std::map<ButtonState, gfx::ImageSkia>>
       button_images_;
