@@ -103,7 +103,7 @@ jobs:
             // as the issue triage app, not github-actions[bot], so they never
             // match either. The webhook payload's issue object does not
             // reliably include `closed_by`, so fetch it fresh.
-            const closedByThisCheck = async () => {
+            const closedByGitHubActionsBot = async () => {
               const { data } = await github.rest.issues.get({
                 owner,
                 repo,
@@ -121,7 +121,7 @@ jobs:
                 issue.state_reason === 'not_planned' &&
                 hasLabel &&
                 (await hasMarkerComment()) &&
-                (await closedByThisCheck())
+                (await closedByGitHubActionsBot())
               ) {
                 await github.rest.issues.update({
                   owner,
