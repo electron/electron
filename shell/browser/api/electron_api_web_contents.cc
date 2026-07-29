@@ -1183,11 +1183,18 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
-  // DevTools frontend messages use base::Unretained delegate callbacks.
-  // Clear the delegate before other teardown work can trigger callbacks
-  // into this partially destroyed WebContents.
-  if (inspectable_web_contents_)
+  // A queued DevTools embedder-message IPC (e.g. "loadCompleted") can be
+  // dispatched after this WebContents has begun teardown. Both delegate
+  // interfaces it can call back into (DevToolsOpened()/DevToolsClosed() on the
+  // view delegate, and the DevTools*File/FileSystem handlers on the
+  // InspectableWebContents delegate) are bound with base::Unretained(this), so
+  // a late callback would dereference this freed WebContents (a use-after-free
+  // seen as a SIGSEGV probing owner_window_). Clear both delegates up front so
+  // any such late callback becomes a no-op instead of touching freed memory.
+  if (inspectable_web_contents_) {
     inspectable_web_contents_->GetView()->SetDelegate(nullptr);
+    inspectable_web_contents_->SetDelegate(nullptr);
+  }
 
   if (web_contents()) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
