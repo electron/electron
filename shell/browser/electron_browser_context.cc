@@ -812,9 +812,7 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &id)) {
-      const bool should_restrict_own_audio =
-          request.restrict_own_audio || request.suppress_local_audio_playback;
-      if (should_restrict_own_audio &&
+      if (request.restrict_own_audio &&
           id == media::AudioDeviceDescription::kLoopbackInputDeviceId) {
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
         id = media::AudioDeviceDescription::kLoopbackWithoutChromeId;
