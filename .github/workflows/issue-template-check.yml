@@ -8,7 +8,7 @@ permissions: {}
 
 jobs:
   check-issue-template:
-    if: ${{ github.event.issue.user.type != 'Bot' && !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) }}
+    if: ${{ !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) }}
     name: Check Issue Template
     runs-on: ubuntu-slim
     permissions:
