@@ -39,7 +39,9 @@ Each Electron release provides binaries for macOS, Windows, and Linux.
 
 * macOS (Ventura and up): Electron provides 64-bit Intel and Apple Silicon / ARM binaries for macOS.
 * Windows (Windows 10 and up): Electron provides `x64` (`amd64`) and `arm64` binaries for Windows.
-* Linux: Electron supports major distributions (e.g., Ubuntu, Fedora, Arch Linux) in versions that are still supported by the distro makers. The prebuilt binaries are built on Ubuntu.
+* Linux: Electron provides `x64` (`amd64`) and `arm64` binaries for Linux. Electron supports major Linux distributions (e.g., Ubuntu, Fedora, Debian) in versions that are still supported by Chromium and by the distro maker. The prebuilt binaries are built on Ubuntu.
+
+In general, Electron tries to [align with Chromium on platform support](https://support.google.com/chrome/answer/95346).
 
 ## Electron Fiddle
 
