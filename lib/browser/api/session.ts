@@ -5,7 +5,7 @@ import * as deprecate from '@electron/internal/common/deprecate';
 import { net, type UtilityProcess } from 'electron/main';
 
 const { fromPartition, fromPath, Session } = process._linkedBinding('electron_browser_session');
-const { isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
+const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
 
 // Fake video window that activates the native system picker
 // This is used to get around the need for a screen/window
@@ -21,6 +21,25 @@ Object.defineProperty(systemPickerVideoSource, 'id', {
 });
 systemPickerVideoSource.name = '';
 Object.freeze(systemPickerVideoSource);
+
+const getPortalSystemPickerSource = (): Promise<Electron.DesktopCapturerSource | null> => {
+  return new Promise((resolve) => {
+    const capturer: ElectronInternal.DesktopCapturer = createDesktopCapturer();
+    const cleanup = () => {
+      delete capturer._onerror;
+      delete capturer._onfinished;
+    };
+    capturer._onerror = () => {
+      cleanup();
+      resolve(null);
+    };
+    capturer._onfinished = (sources) => {
+      cleanup();
+      resolve(sources.length > 0 ? sources[0] : null);
+    };
+    capturer.startHandling(true, true, { width: 0, height: 0 }, false);
+  });
+};
 
 Session.prototype._init = function () {
   addIpcDispatchListeners(this);
@@ -50,7 +69,14 @@ Session.prototype.setDisplayMediaRequestHandler = function (handler, opts) {
 
   this._setDisplayMediaRequestHandler(async (req, callback) => {
     if (opts && opts.useSystemPicker && isDisplayMediaSystemPickerAvailable()) {
-      return callback({ video: systemPickerVideoSource });
+      if (process.platform === 'darwin') {
+        return callback({ video: systemPickerVideoSource });
+      }
+
+      if (process.platform === 'linux') {
+        const source = await getPortalSystemPickerSource();
+        return callback(source ? { video: source } : {});
+      }
     }
 
     return handler(req, callback);
