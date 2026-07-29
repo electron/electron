@@ -155,7 +155,7 @@ jobs:
         if [ "${{ inputs.target-arch }}" = "arm64" ]; then
           GN_EXTRA_ARGS='target_cpu="arm64" fatal_linker_warnings=false enable_linux_installer=false'
         elif [ "${{ inputs.is-asan }}" = true ]; then
-          GN_EXTRA_ARGS='is_asan=true'
+          GN_EXTRA_ARGS='is_asan=true is_lsan=true v8_enable_verify_heap=true'
         fi
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Set Chromium Git Cookie
