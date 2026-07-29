@@ -1,5 +1,4 @@
-import { clipboard } from 'electron/common';
-import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
+import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents, clipboard } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -12,6 +11,10 @@ import * as url from 'node:url';
 import { emittedNTimes } from './lib/events-helpers';
 import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
+
+async function clipboardHasImageType(): Promise<boolean> {
+  return clipboard.has('image/png');
+}
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -573,7 +576,7 @@ describe('webFrameMain module', () => {
         point.y += framePosition.y;
       }
 
-      expect(clipboard.readImage().isEmpty()).to.be.true();
+      expect(await clipboardHasImageType()).to.be.false();
       // wait for video to load
       await frame.executeJavaScript(
         `(${() => {
@@ -586,8 +589,7 @@ describe('webFrameMain module', () => {
         }})()`
       );
       frame.copyVideoFrameAt(point.x, point.y);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
-      expect(clipboard.readImage().isEmpty()).to.be.false();
+      await waitUntil(clipboardHasImageType);
     };
 
     beforeEach(() => {
@@ -602,7 +604,7 @@ describe('webFrameMain module', () => {
       await w.webContents.loadFile(path.join(fixtures, 'blank.html'));
       await insertVideoInFrame(w.webContents.mainFrame);
       await copyVideoFrameInFrame(w.webContents.mainFrame);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      await waitUntil(clipboardHasImageType);
     });
 
     ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in subframe', async () => {
@@ -612,7 +614,7 @@ describe('webFrameMain module', () => {
       expect(subframe).to.exist();
       await insertVideoInFrame(subframe);
       await copyVideoFrameInFrame(subframe);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      await waitUntil(clipboardHasImageType);
     });
   });
 
