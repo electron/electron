@@ -1,0 +1,1 @@
+GdkPixbuf* gtk_icon_info_load_symbolic(GtkIconInfo* icon_info, const GdkRGBA* fg, const GdkRGBA* success_color, const GdkRGBA* warning_color, const GdkRGBA* error_color, gboolean* was_symbolic, GError** error)
