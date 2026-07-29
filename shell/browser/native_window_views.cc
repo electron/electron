@@ -82,6 +82,9 @@
 #endif
 
 #elif BUILDFLAG(IS_WIN)
+#include "base/containers/fixed_flat_map.h"
+#include "base/containers/fixed_flat_set.h"
+#include "base/numerics/ranges.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "shell/browser/ui/views/win_frame_view.h"
