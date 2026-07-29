@@ -46,6 +46,8 @@ filenames = {
     "shell/browser/ui/views/electron_frame_view_linux.h",
     "shell/browser/ui/views/caption_button_placeholder_container.cc",
     "shell/browser/ui/views/caption_button_placeholder_container.h",
+    "shell/browser/ui/views/freedesktop_nav_button_provider.cc",
+    "shell/browser/ui/views/freedesktop_nav_button_provider.h",
     "shell/browser/ui/views/native_frame_view_linux.cc",
     "shell/browser/ui/views/native_frame_view_linux.h",
     "shell/browser/ui/views/electron_frame_view_layout_linux.cc",
