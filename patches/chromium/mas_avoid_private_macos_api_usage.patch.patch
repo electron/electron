@@ -50,7 +50,7 @@ system font by checking if it's kCTFontPriorityAttribute is set to
 system priority.
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a7e0188f2b6a2059e010caef5852ea8af7ead987..9af2170060e0b509f10cf53fb390c462b23dba07 100644
+index ddcc03bf9bec0c0b8d32eabbf01cddd269c887b7..8b0156bbda258059e58c086c3b334cdb8a4624af 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1138,6 +1138,7 @@ component("base") {
@@ -974,7 +974,7 @@ index f0be251cd9b825d0f8b7cf10d7771467b10a5796..9e8cae1029b289877d600f2937a551aa
    return kAttributes;
  }
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 115130d5cd1c4530275a28c9b303e300bd9d6d98..c9cae04e0ca96ee15d5b27b30880a1b30db9b144 100644
+index 7b194eabd7b0b327e6ffbc148c8809dd9bc0a6e5..8d92fa0f7e6a72e79d2d9c6cb4135b138c5122e6 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -381,6 +381,7 @@ source_set("browser") {
@@ -1189,7 +1189,7 @@ index a1068589ad844518038ee7bc15a3de9bc5cba525..1ff781c49f086ec8015c7d3c44567dbe
  
  }  // namespace content
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9c548ea1224443eabf01e69661612cfd70ff7cac..cf10a8948d5c49f34d904300dccca34df2e3294f 100644
+index 834a842a36fd83cfaacdd72956a0c3fd0b8f81a5..e950333ec3b694a280e8b3abea63e0fe7b5d4175 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -661,6 +661,7 @@ static_library("test_support") {
@@ -1217,7 +1217,7 @@ index 9c548ea1224443eabf01e69661612cfd70ff7cac..cf10a8948d5c49f34d904300dccca34d
    ]
  
    if (!(is_chromeos && target_cpu == "arm64" && current_cpu == "arm")) {
-@@ -3379,6 +3383,7 @@ test("content_unittests") {
+@@ -3383,6 +3387,7 @@ test("content_unittests") {
      "//ui/shell_dialogs",
      "//ui/webui:test_support",
      "//url",
@@ -2072,10 +2072,10 @@ index 040207453f9f95974e8199c31f2d3cf31bb0e29f..64f9d55c10bad8b9f0c347ec42c6e642
  
      if (is_ios) {
 diff --git a/ui/accessibility/platform/browser_accessibility_manager_mac.mm b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-index 59b9ee469eba14bb503a0704e9feb76c063ad811..c9a76fdf660fb223e22d20b3b5b19e9560465a18 100644
+index b56cd5c4d5d6413fbd384a8ef32aee76946ce105..c49b4e940606808132c06cd3e151d187e8fddec3 100644
 --- a/ui/accessibility/platform/browser_accessibility_manager_mac.mm
 +++ b/ui/accessibility/platform/browser_accessibility_manager_mac.mm
-@@ -14,6 +14,7 @@
+@@ -17,6 +17,7 @@
  #include "base/task/single_thread_task_runner.h"
  #include "base/task/task_traits.h"
  #include "base/time/time.h"
@@ -2083,7 +2083,7 @@ index 59b9ee469eba14bb503a0704e9feb76c063ad811..c9a76fdf660fb223e22d20b3b5b19e95
  #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
  #include "ui/accessibility/accessibility_features.h"
  #include "ui/accessibility/ax_role_properties.h"
-@@ -22,7 +23,9 @@
+@@ -25,7 +26,9 @@
  #include "ui/accessibility/platform/ax_private_webkit_constants_mac.h"
  #import "ui/accessibility/platform/browser_accessibility_cocoa.h"
  #import "ui/accessibility/platform/browser_accessibility_mac.h"
@@ -2091,9 +2091,9 @@ index 59b9ee469eba14bb503a0704e9feb76c063ad811..c9a76fdf660fb223e22d20b3b5b19e95
  #include "ui/base/cocoa/remote_accessibility_api.h"
 +#endif
  
- namespace {
+ using base::apple::CFToNSPtrCast;
  
-@@ -241,6 +244,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -247,6 +250,7 @@ void PostAnnouncementNotification(NSString* announcement,
          return;
        }
  
@@ -2101,7 +2101,7 @@ index 59b9ee469eba14bb503a0704e9feb76c063ad811..c9a76fdf660fb223e22d20b3b5b19e95
        BrowserAccessibilityManager* root_manager = GetManagerForRootFrame();
        if (root_manager) {
          BrowserAccessibilityManagerMac* root_manager_mac =
-@@ -263,6 +267,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -269,6 +273,7 @@ void PostAnnouncementNotification(NSString* announcement,
            return;
          }
        }
@@ -2109,7 +2109,7 @@ index 59b9ee469eba14bb503a0704e9feb76c063ad811..c9a76fdf660fb223e22d20b3b5b19e95
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -764,6 +769,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -768,6 +773,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
    }
  
@@ -2117,7 +2117,7 @@ index 59b9ee469eba14bb503a0704e9feb76c063ad811..c9a76fdf660fb223e22d20b3b5b19e95
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -792,6 +798,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -796,6 +802,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
    }
@@ -2126,18 +2126,18 @@ index 59b9ee469eba14bb503a0704e9feb76c063ad811..c9a76fdf660fb223e22d20b3b5b19e95
    return false;
  }
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index 6ecb9a3c5a3528b98d9fc08f53091336a9fa363f..c823fee13a35704be2787f498e03089f330222b9 100644
+index 51e3ede6ca99e04664d1818cfeb96d72a19617da..bd2ccf8900db4ebc692680f33b10222827300242 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-@@ -7,6 +7,7 @@
+@@ -8,6 +8,7 @@
+ 
  #include "base/apple/foundation_util.h"
- #include "base/compiler_specific.h"
  #include "base/strings/sys_string_conversions.h"
 +#include "electron/mas.h"
  #include "ui/accessibility/ax_range.h"
  #include "ui/accessibility/platform/ax_platform_node.h"
  #include "ui/accessibility/platform/ax_platform_node_cocoa.h"
-@@ -107,6 +108,7 @@
+@@ -108,6 +109,7 @@
      }
    }
  
@@ -2145,7 +2145,7 @@ index 6ecb9a3c5a3528b98d9fc08f53091336a9fa363f..c823fee13a35704be2787f498e03089f
    // AXTextMarker
    if (IsAXTextMarker(value)) {
      return AXTextMarkerToBaseValue(value, indexer);
-@@ -116,6 +118,7 @@
+@@ -117,6 +119,7 @@
    if (IsAXTextMarkerRange(value)) {
      return AXTextMarkerRangeToBaseValue(value, indexer);
    }
