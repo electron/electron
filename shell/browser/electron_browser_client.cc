@@ -419,6 +419,24 @@ bool ElectronBrowserClient::IsRendererSubFrame(
   return renderer_is_subframe_.contains(process_id);
 }
 
+void ElectronBrowserClient::RegisterPendingProcess(
+    content::ChildProcessId process_id,
+    content::WebContents* web_contents,
+    bool is_subframe) {
+  pending_processes_[process_id] = web_contents;
+
+  if (is_subframe)
+    renderer_is_subframe_.insert(process_id);
+  else
+    renderer_is_subframe_.erase(process_id);
+}
+
+void ElectronBrowserClient::PruneDeadDeferredProcessRegistrations() {
+  base::EraseIf(deferred_process_registrations_, [](const auto& registration) {
+    return !registration.second.web_contents;
+  });
+}
+
 void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   // Remove in case the host is reused after a crash, otherwise noop.
@@ -498,15 +516,22 @@ bool ElectronBrowserClient::WebPreferencesNeedUpdateForColorRelatedStateChanges(
 void ElectronBrowserClient::RegisterPendingSiteInstance(
     content::RenderFrameHost* rfh,
     content::SiteInstance* pending_site_instance) {
-  // Remember the original web contents for the pending renderer process.
   auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
-  const auto pending_process_id = pending_site_instance->GetProcess()->GetID();
-  pending_processes_[pending_process_id] = web_contents;
+  const bool is_subframe = rfh->GetParent() != nullptr;
 
-  if (rfh->GetParent())
-    renderer_is_subframe_.insert(pending_process_id);
-  else
-    renderer_is_subframe_.erase(pending_process_id);
+  if (!pending_site_instance->HasProcess()) {
+    // Process hasn't been assigned yet. Defer registration until
+    // SiteInstanceGotProcessAndSite fires, which is guaranteed to happen
+    // before AppendExtraCommandLineSwitches. See crbug.com/388998723.
+    PruneDeadDeferredProcessRegistrations();
+    deferred_process_registrations_.insert_or_assign(
+        pending_site_instance->GetId(),
+        DeferredProcessRegistration{web_contents->GetWeakPtr(), is_subframe});
+    return;
+  }
+
+  RegisterPendingProcess(pending_site_instance->GetProcess()->GetID(),
+                         web_contents, is_subframe);
 }
 
 void ElectronBrowserClient::AppendExtraCommandLineSwitches(
@@ -858,6 +883,19 @@ void ElectronBrowserClient::GetAdditionalWebUISchemes(
 
 void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
     content::SiteInstance* site_instance) {
+  DCHECK(site_instance->HasProcess());
+
+  PruneDeadDeferredProcessRegistrations();
+  if (auto it = deferred_process_registrations_.find(site_instance->GetId());
+      it != deferred_process_registrations_.end()) {
+    if (it->second.web_contents) {
+      RegisterPendingProcess(site_instance->GetProcess()->GetID(),
+                             it->second.web_contents.get(),
+                             it->second.is_subframe);
+    }
+    deferred_process_registrations_.erase(it);
+  }
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context =
       static_cast<ElectronBrowserContext*>(site_instance->GetBrowserContext());
@@ -1004,6 +1042,8 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
   content::ChildProcessId process_id = host->GetID();
   pending_processes_.erase(process_id);
   renderer_is_subframe_.erase(process_id);
+  PruneDeadDeferredProcessRegistrations();
+
   host->RemoveObserver(this);
 }
 
