@@ -21,6 +21,7 @@ class GtkSymbolicIconProvider : public SymbolicIconProvider {
 
   GtkSymbolicIconProvider(const GtkSymbolicIconProvider&) = delete;
   GtkSymbolicIconProvider& operator=(const GtkSymbolicIconProvider&) = delete;
+  ~GtkSymbolicIconProvider() = default;
 
   // SymbolicIconProvider:
   SkBitmap LoadIcon(const std::string& icon_name,
@@ -31,7 +32,6 @@ class GtkSymbolicIconProvider : public SymbolicIconProvider {
 
  private:
   GtkSymbolicIconProvider() = default;
-  ~GtkSymbolicIconProvider() = default;
 };
 
 }  // namespace electron
