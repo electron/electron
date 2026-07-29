@@ -355,6 +355,16 @@ jobs:
         python3 src/v8/tools/builtins-pgo/get_hints.py /tmp/v8.builtins.log "src/v8-builtins-profiles/$PROFILE_NAME"
         echo "Profile lines: $(wc -l < "src/v8-builtins-profiles/$PROFILE_NAME")"
 
+        # Sanity check: a real builtins profile is ~4 MB of hint lines. A
+        # collection failure can still produce a well-formed but effectively
+        # empty file - refuse to publish one.
+        MIN_V8_PROFILE_SIZE=262144
+        size=$(wc -c < "src/v8-builtins-profiles/$PROFILE_NAME")
+        if [ "$size" -lt "$MIN_V8_PROFILE_SIZE" ]; then
+          echo "ERROR: $PROFILE_NAME is only $size bytes (minimum $MIN_V8_PROFILE_SIZE) - the builtins profile is suspiciously small"
+          exit 1
+        fi
+
         # Verify the builtins that Chrome's profile cannot cover for Electron.
         for builtin in RunMicrotasks AsyncFunctionAwait FulfillPromise PromiseConstructor PromisePrototypeThen; do
           count=$(grep -c ",$builtin," "src/v8-builtins-profiles/$PROFILE_NAME" || true)
@@ -506,6 +516,13 @@ jobs:
       run: |
         PROFDATA=/tmp/coverage-tools/bin/llvm-profdata
 
+        # A merged profile from a real benchmark run is 200-370 MB. A failed
+        # collection can still yield a valid-but-empty .profdata (a 560-byte
+        # linux-arm profile - just an lprofi header - once reached the CDN
+        # and was pinned by the state files without anything noticing), so
+        # refuse anything implausibly small.
+        MIN_PROFDATA_SIZE=1048576
+
         SHORT_SHA=$(git -C src/electron rev-parse --short HEAD)
         TIMESTAMP=$(date +%s)
         mkdir -p profiles
@@ -522,6 +539,11 @@ jobs:
           echo "Merging $count profraw files for $target"
           # Tolerate truncated profraw from children killed at shutdown.
           "$PROFDATA" merge --failure-mode=all -o "$out" "$dir"*.profraw
+          size=$(wc -c < "$out")
+          if [ "$size" -lt "$MIN_PROFDATA_SIZE" ]; then
+            echo "ERROR: $out is only $size bytes (minimum $MIN_PROFDATA_SIZE) - the $target collection produced an effectively empty profile"
+            exit 1
+          fi
           merged=$((merged+1))
         done
         if [ "$merged" -eq 0 ]; then
@@ -571,6 +593,30 @@ jobs:
       with:
         name: pgo-v8-builtins-profiles
         path: profiles
+    # Belt-and-braces re-check of every artifact about to be published (the
+    # producing jobs already enforce these minimums): an effectively empty
+    # profile must never be uploaded or pinned by the state files again, as
+    # a 560-byte linux-arm .profdata once was.
+    - name: Verify Profile Sizes
+      run: |
+        MIN_PROFDATA_SIZE=1048576   # merged .profdata; real ones are 200-370 MB
+        MIN_V8_PROFILE_SIZE=262144  # v8 builtins .profile; currently ~4 MB
+        failed=0
+        for f in profiles/*; do
+          case "$(basename "$f")" in
+            electron-v8-*.profile) min=$MIN_V8_PROFILE_SIZE ;;
+            electron-*.profdata)   min=$MIN_PROFDATA_SIZE ;;
+            *) echo "skipping unrecognized file: $f"; continue ;;
+          esac
+          size=$(wc -c < "$f")
+          if [ "$size" -lt "$min" ]; then
+            echo "ERROR: $f is only $size bytes (minimum $min) - refusing to upload"
+            failed=1
+          else
+            echo "ok: $f ($size bytes)"
+          fi
+        done
+        exit "$failed"
     - name: Azure Login
       uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43
       with:
