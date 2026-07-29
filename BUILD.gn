@@ -100,6 +100,7 @@ if (is_linux) {
     sigs = [
       "shell/browser/ui/electron_gdk.sigs",
       "shell/browser/ui/electron_gdk_pixbuf.sigs",
+      "shell/browser/ui/electron_gtk.sigs",
     ]
     extra_header = "shell/browser/ui/electron_gtk.fragment"
     output_name = "electron_gtk_stubs"
