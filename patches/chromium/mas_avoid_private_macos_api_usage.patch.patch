@@ -986,10 +986,10 @@ index d8b60778cdb82a56d38ab48c94e4a9f7cd8681a2..6f9b19c1193731b67f2f752140c96b44
  
    public_deps = [
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index b4c218b9ec88255913a63c4f35d20be599258651..ad067ddeec6d8e88eaf4df2efb721f577100c93c 100644
+index a77085269a5c195b1400edd3297b7bc58765a9dc..9766d210b7d8e01a91d7dfbb390d99f403748760 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
-@@ -25,6 +25,7 @@
+@@ -26,6 +26,7 @@
  #include "content/browser/renderer_host/text_input_manager.h"
  #include "content/common/content_export.h"
  #include "content/common/render_widget_host_ns_view.mojom.h"
@@ -997,7 +997,7 @@ index b4c218b9ec88255913a63c4f35d20be599258651..ad067ddeec6d8e88eaf4df2efb721f57
  #include "mojo/public/cpp/bindings/associated_receiver.h"
  #include "mojo/public/cpp/bindings/associated_remote.h"
  #include "third_party/blink/public/common/page/content_to_visible_time_request.h"
-@@ -56,7 +57,9 @@ class CursorManager;
+@@ -57,7 +58,9 @@ class CursorManager;
  
  @protocol RenderWidgetHostViewMacDelegate;
  
@@ -1007,7 +1007,7 @@ index b4c218b9ec88255913a63c4f35d20be599258651..ad067ddeec6d8e88eaf4df2efb721f57
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -712,9 +715,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -713,9 +716,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -1020,7 +1020,7 @@ index b4c218b9ec88255913a63c4f35d20be599258651..ad067ddeec6d8e88eaf4df2efb721f57
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 319b54e28f3022cfac15b6ebb0c779b4fa6ec5b3..4132dc902046ab5945bc8f95c21d90e8e9fc18c6 100644
+index f4f60732d1eb71c6667437270a800581d6a115ca..8f63543023565b215209aba22be10c2711a276e1 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -56,6 +56,7 @@
@@ -1031,7 +1031,7 @@ index 319b54e28f3022cfac15b6ebb0c779b4fa6ec5b3..4132dc902046ab5945bc8f95c21d90e8
  #include "media/base/media_switches.h"
  #include "skia/ext/platform_canvas.h"
  #include "skia/ext/skia_utils_mac.h"
-@@ -283,8 +284,10 @@
+@@ -285,8 +286,10 @@
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -1042,7 +1042,7 @@ index 319b54e28f3022cfac15b6ebb0c779b4fa6ec5b3..4132dc902046ab5945bc8f95c21d90e8
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1780,10 +1783,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1792,10 +1795,12 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -1055,7 +1055,7 @@ index 319b54e28f3022cfac15b6ebb0c779b4fa6ec5b3..4132dc902046ab5945bc8f95c21d90e8
    return gfx::NativeViewAccessible([GetInProcessNSView() window]);
  }
  
-@@ -1835,9 +1840,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1847,9 +1852,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -1067,7 +1067,7 @@ index 319b54e28f3022cfac15b6ebb0c779b4fa6ec5b3..4132dc902046ab5945bc8f95c21d90e8
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2376,20 +2383,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2393,20 +2400,26 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  void RenderWidgetHostViewMac::GetRenderWidgetAccessibilityToken(
      GetRenderWidgetAccessibilityTokenCallback callback) {
    base::ProcessId pid = getpid();
