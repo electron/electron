@@ -264,10 +264,10 @@ index 18e4f43efaae3a60b924e697918867e604513194..7cbaf01235750138c680c8ec2ed5d206
    uint32_t current_chunk_seq_ = 1;
    uint32_t id_;
 diff --git a/src/tracing/node_trace_writer.cc b/src/tracing/node_trace_writer.cc
-index 8f053efe93324b9acbb4e85f7b974b4f7712e200..1801594e727ec7a2ef3b89603975f507078b88a1 100644
+index 6940df51d0f2226e6907d9bd6d03f23e19ff5a38..e5b205bd92bef4c871beae659905da77906a2d4a 100644
 --- a/src/tracing/node_trace_writer.cc
 +++ b/src/tracing/node_trace_writer.cc
-@@ -96,6 +96,7 @@ void NodeTraceWriter::OpenNewFileForStreaming() {
+@@ -102,6 +102,7 @@ void NodeTraceWriter::OpenNewFileForStreaming() {
    }
  }
  
@@ -275,7 +275,7 @@ index 8f053efe93324b9acbb4e85f7b974b4f7712e200..1801594e727ec7a2ef3b89603975f507
  void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
    Mutex::ScopedLock scoped_lock(stream_mutex_);
    // If this is the first trace event, open a new file for streaming.
-@@ -112,6 +113,7 @@ void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
+@@ -118,6 +119,7 @@ void NodeTraceWriter::AppendTraceEvent(TraceObject* trace_event) {
    ++total_traces_;
    json_trace_writer_->AppendTraceEvent(trace_event);
  }
@@ -284,11 +284,11 @@ index 8f053efe93324b9acbb4e85f7b974b4f7712e200..1801594e727ec7a2ef3b89603975f507
  void NodeTraceWriter::FlushPrivate() {
    std::string str;
 diff --git a/src/tracing/node_trace_writer.h b/src/tracing/node_trace_writer.h
-index cd965d77b7859ff2edcf781a934594b5a9b6d251..fe1714ba77fddef693d37eeb8c7a196ddfd15c26 100644
+index 88a802425fcbbe1cdadc05c09d2af2de1eb6109c..d63475977313f2a65c24a71863dda57e661f8945 100644
 --- a/src/tracing/node_trace_writer.h
 +++ b/src/tracing/node_trace_writer.h
-@@ -20,7 +20,9 @@ class NodeTraceWriter : public AsyncTraceWriter {
-   ~NodeTraceWriter() override;
+@@ -23,7 +23,9 @@ class NodeTraceWriter : public AsyncTraceWriter {
+                                  int file_num);
  
    void InitializeOnThread(uv_loop_t* loop) override;
 +#ifndef V8_USE_PERFETTO
