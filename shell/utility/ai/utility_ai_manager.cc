@@ -549,7 +549,8 @@ void UtilityAIManager::CanCreateSemanticEmbedder(
 
 void UtilityAIManager::CreateSemanticEmbedder(
     mojo::PendingRemote<blink::mojom::AIManagerCreateSemanticEmbedderClient>
-        client) {
+        client,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 
