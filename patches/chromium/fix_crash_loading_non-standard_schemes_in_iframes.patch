@@ -28,10 +28,10 @@ The patch should be removed in favor of either:
 Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index c197451f004323b435dfa45d28c733f0e7a99a83..d7bf200f10c6d1f8d12782635c83f4712d7f121f 100644
+index 6a407b0e63070930781ddd8d4b1fe74d9c18690b..e582ef356b240f5e7bf3d62b7249334716bb5bb1 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -12288,6 +12288,11 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
+@@ -12305,6 +12305,11 @@ url::Origin NavigationRequest::GetOriginForURLLoaderFactoryUnchecked() {
              target_rph_id);
    }
  
@@ -44,10 +44,10 @@ index c197451f004323b435dfa45d28c733f0e7a99a83..d7bf200f10c6d1f8d12782635c83f471
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    url::Origin resolved_origin = url::Origin::Resolve(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 56f7d5600cc92dff0e8d13766ab1de3c7ff225f1..c73a4d0c4c49bd8e0b2fa72499f076340cefb9b1 100644
+index 1aa532ba35867554aa48d990e9780aee472fcdc2..c5759e4ade7f420d3eb7601c3a94acb8a0d896a7 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2439,6 +2439,7 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2440,6 +2440,7 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -55,7 +55,7 @@ index 56f7d5600cc92dff0e8d13766ab1de3c7ff225f1..c73a4d0c4c49bd8e0b2fa72499f07634
    // Whether the origin is newly created within this call, instead of copied
    // from an existing document's origin or from `origin_to_commit_`. If this is
    // true, we won't try to compare the nonce of this origin (if it's opaque) to
-@@ -2475,6 +2476,9 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2476,6 +2477,9 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      // non-renderer only origin bits will be the same, which will be asserted at
      // the end of this function.
      origin = origin_to_commit_;
