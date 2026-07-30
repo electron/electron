@@ -93,7 +93,7 @@ dependency itself relied on a module containing information about ports, which
 came in the form of a JSON file with more than 100,000 lines of content.
 Whenever the module was loaded (usually in a `require('module')` statement),
 it would load all its dependencies and eventually read and parse this JSON
-file. Parsing many thousands lines of JSON is a very expensive operation. On
+file. Parsing many thousands of lines of JSON is a very expensive operation. On
 a slow machine it can take up whole seconds of time.
 
 In many server contexts, startup time is virtually irrelevant. A Node.js server
