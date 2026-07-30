@@ -200,15 +200,37 @@ jobs:
         generate-sas-token: 'true'
         target-platform: win
 
-  # Build patched siso binaries for every CI build host (windows-amd64,
-  # linux-amd64, darwin-arm64) in parallel with the checkout jobs. The build
-  # jobs download the host-matching artifact and use it via SISO_PATH.
-  build-siso:
+  # Build the patched siso binary for each CI build host (windows-amd64,
+  # linux-amd64, darwin-arm64) in parallel with the checkout jobs. Each host is
+  # a separate job so a cache miss or re-run for one host only blocks that
+  # host's build jobs. The build jobs download the host-matching artifact and
+  # use it via SISO_PATH.
+  build-siso-macos:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' }}
     uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
+    with:
+      host: darwin-arm64
+
+  build-siso-linux:
+    needs: setup
+    if: ${{ needs.setup.outputs.src == 'true' }}
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+    with:
+      host: linux-amd64
+
+  build-siso-windows:
+    needs: setup
+    if: ${{ needs.setup.outputs.src == 'true' }}
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+    with:
+      host: windows-amd64
 
   # GN Check Jobs
   macos-gn-check:
@@ -257,7 +279,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-macos, build-siso]
+    needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
       test-runs-on: macos-15-large
@@ -276,7 +298,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-macos, build-siso]
+    needs: [checkout-macos, build-siso-macos]
     with:
       build-runs-on: macos-15-xlarge
       test-runs-on: macos-15
@@ -295,7 +317,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test-and-nan.yml
-    needs: [checkout-linux, build-siso]
+    needs: [checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -316,7 +338,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-linux, build-siso]
+    needs: [checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -338,7 +360,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-linux, build-siso]
+    needs: [checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -359,7 +381,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-linux, build-siso]
+    needs: [checkout-linux, build-siso-linux]
     if: ${{ needs.setup.outputs.src == 'true' }}
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
@@ -380,7 +402,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-windows, build-siso]
+    needs: [checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -399,7 +421,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-windows, build-siso]
+    needs: [checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -418,7 +440,7 @@ jobs:
       issues: read
       pull-requests: read
     uses: ./.github/workflows/pipeline-electron-build-and-test.yml
-    needs: [checkout-windows, build-siso]
+    needs: [checkout-windows, build-siso-windows]
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
@@ -436,7 +458,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    needs: [docs-only, checkout-macos, checkout-linux, checkout-windows, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, build-siso, windows-x64, windows-x86, windows-arm64]
+    needs: [docs-only, checkout-macos, checkout-linux, checkout-windows, macos-x64, macos-arm64, linux-x64, linux-x64-asan, linux-arm, linux-arm64, build-siso-macos, build-siso-linux, build-siso-windows, windows-x64, windows-x86, windows-arm64]
     if: always() && github.repository == 'electron/electron'
     steps:
     - name: Fail if any needed job failed or was cancelled
