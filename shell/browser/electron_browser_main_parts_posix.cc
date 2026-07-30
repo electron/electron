@@ -19,7 +19,6 @@
 #include "base/logging.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/threading/platform_thread.h"
-#include "shell/browser/browser.h"
 
 namespace electron {
 

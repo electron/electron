@@ -12,7 +12,6 @@
 #include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/js2c_bundle_ids.h"
-#include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"

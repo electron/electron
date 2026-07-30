@@ -46,7 +46,6 @@
 #include "shell/browser/relauncher.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/logging.h"
-#include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
@@ -82,7 +81,6 @@
 #include "components/crash/core/common/crash_key.h"
 #include "components/crash/core/common/crash_keys.h"
 #include "shell/app/electron_crash_reporter_client.h"
-#include "shell/browser/api/electron_api_crash_reporter.h"
 #include "shell/common/crash_keys.h"
 #endif
 

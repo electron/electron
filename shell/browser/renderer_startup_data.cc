@@ -16,7 +16,6 @@
 #include "shell/browser/session_preferences.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/thread_restrictions.h"
 
 namespace electron::renderer_startup_data {
 

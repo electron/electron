@@ -18,7 +18,6 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
-#include "shell/common/gin_converters/value_converter.h"
 
 using content::BrowserThread;
 
