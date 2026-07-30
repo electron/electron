@@ -85,10 +85,12 @@ ifdescribe(process.arch !== 'arm64' || process.platform !== 'linux')('contentTra
 
       expect(fs.existsSync(outputFilePath)).to.be.true('output exists');
 
-      // If the `categoryFilter` param above is not respected
-      // the file size will be above 60KB.
+      // If the `categoryFilter` param above is not respected the file will
+      // contain actual trace events and be far larger. When the filter is
+      // respected the file only contains metadata, whose size grows slowly as
+      // Chromium adds fields, so keep generous headroom above that baseline.
       const fileSizeInKiloBytes = getFileSizeInKiloBytes(outputFilePath);
-      const expectedMaximumFileSize = 60; // Depends on a platform.
+      const expectedMaximumFileSize = 100; // Depends on a platform.
 
       expect(fileSizeInKiloBytes).to.be.above(0, `the trace output file is empty, check "${outputFilePath}"`);
       expect(fileSizeInKiloBytes).to.be.below(

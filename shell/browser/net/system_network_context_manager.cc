@@ -10,7 +10,6 @@
 
 #include "base/command_line.h"
 #include "base/memory/raw_ptr.h"
-#include "base/path_service.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/net/chrome_mojo_proxy_resolver_factory.h"
 #include "chrome/common/chrome_features.h"
@@ -18,8 +17,6 @@
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/network_service_instance.h"
-#include "content/public/browser/network_service_util.h"
-#include "content/public/common/content_features.h"
 #include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "net/dns/public/dns_over_https_config.h"

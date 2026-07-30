@@ -28,7 +28,8 @@ class ElectronContentClient : public content::ContentClient {
   std::string_view GetDataResource(int resource_id,
                                    ui::ResourceScaleFactor) override;
   gfx::Image& GetNativeImageNamed(int resource_id) override;
-  base::RefCountedMemory* GetDataResourceBytes(int resource_id) override;
+  scoped_refptr<base::RefCountedMemory> GetDataResourceBytes(
+      int resource_id) override;
   void AddAdditionalSchemes(Schemes* schemes) override;
   void AddPlugins(std::vector<content::WebPluginInfo>* plugins) override;
   void AddContentDecryptionModules(

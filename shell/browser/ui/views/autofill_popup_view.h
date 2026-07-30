@@ -13,7 +13,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "ui/base/metadata/metadata_header_macros.h"
-#include "ui/base/metadata/metadata_impl_macros.h"
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/drag_controller.h"
 #include "ui/views/focus/native_view_focus_manager.h"

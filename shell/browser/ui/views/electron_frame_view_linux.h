@@ -6,22 +6,37 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_ELECTRON_FRAME_VIEW_LINUX_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_ELECTRON_FRAME_VIEW_LINUX_H_
 
+#include <memory>
+#include <optional>
+
 #include "base/memory/raw_ptr.h"
+#include "third_party/skia/include/core/SkColor.h"
 #include "ui/base/metadata/metadata_header_macros.h"
-#include "ui/views/window/frame_view_linux.h"
+#include "ui/views/window/native_frame_view_linux.h"
 
 class CaptionButtonPlaceholderContainer;
 
 namespace electron {
 
+class FreedesktopNavButtonProvider;
 class NativeWindowViews;
 class ElectronFrameViewLayoutLinux;
 
-class ElectronFrameViewLinux : public views::FrameViewLinux {
-  METADATA_HEADER(ElectronFrameViewLinux, views::FrameViewLinux)
+// View used for frame: false with optional WCO.
+//
+// TODO(mitchchn): Rebase on FrameViewLinux after it is refactored upstream
+// to accept a nav button provider, since NativeFrameViewLinux
+// is supposed to be used with a frame provider, which we do not need here.
+class ElectronFrameViewLinux : public views::NativeFrameViewLinux {
+  METADATA_HEADER(ElectronFrameViewLinux, views::NativeFrameViewLinux)
 
  public:
-  ElectronFrameViewLinux(NativeWindowViews* window, views::Widget* widget);
+  ElectronFrameViewLinux(
+      NativeWindowViews* window,
+      views::Widget* widget,
+      std::unique_ptr<ui::NavButtonProvider> nav_button_provider,
+      ElectronFrameViewLayoutLinux* layout,
+      FreedesktopNavButtonProvider* freedesktop_provider = nullptr);
   ~ElectronFrameViewLinux() override;
 
   NativeWindowViews* window() const { return window_; }
@@ -49,6 +64,11 @@ class ElectronFrameViewLinux : public views::FrameViewLinux {
   void LayoutWindowControlsOverlay();
 
   raw_ptr<NativeWindowViews> window_;
+
+  raw_ptr<FreedesktopNavButtonProvider> freedesktop_provider_ = nullptr;
+
+  std::optional<SkColor> last_titlebar_background_;
+  std::optional<SkColor> last_symbol_color_;
 
   // Background views behind the leading and trailing caption buttons.
   raw_ptr<CaptionButtonPlaceholderContainer> leading_button_container_ =

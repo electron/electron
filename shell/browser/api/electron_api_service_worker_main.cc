@@ -7,9 +7,9 @@
 #include <string>
 #include <utility>
 
+#include "base/check.h"
 #include "base/containers/flat_map.h"
 #include "base/containers/map_util.h"
-#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "content/browser/service_worker/service_worker_context_wrapper.h"  // nogncheck
 #include "content/browser/service_worker/service_worker_info.h"     // nogncheck

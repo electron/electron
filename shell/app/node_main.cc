@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/environment.h"
@@ -21,7 +20,6 @@
 #include "base/strings/cstring_view.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
-#include "content/public/common/content_switches.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
 #include "gin/array_buffer.h"

@@ -20,10 +20,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/fixed_flat_set.h"
 #include "base/memory/raw_ref.h"
-#include "base/numerics/ranges.h"
-#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
@@ -63,7 +60,9 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
+#include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
 #include "shell/browser/ui/views/electron_frame_view_linux.h"
+#include "shell/browser/ui/views/freedesktop_nav_button_provider.h"
 #include "shell/browser/ui/views/native_frame_view.h"
 #include "shell/browser/ui/views/native_frame_view_linux.h"
 #include "shell/common/platform_util.h"
@@ -85,6 +84,9 @@
 #endif
 
 #elif BUILDFLAG(IS_WIN)
+#include "base/containers/fixed_flat_map.h"
+#include "base/containers/fixed_flat_set.h"
+#include "base/numerics/ranges.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "shell/browser/ui/views/win_frame_view.h"
@@ -1989,8 +1991,24 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 #if BUILDFLAG(IS_WIN)
   return std::make_unique<WinFrameView>(this, widget);
 #else
-  if (!has_frame())
-    return std::make_unique<ElectronFrameViewLinux>(this, widget);
+  if (!has_frame()) {
+    // With WCO enabled, use native-looking self-drawn caption buttons when
+    // the desktop environment supports them; otherwise the frame view falls
+    // back to vector-icon buttons.
+    std::unique_ptr<FreedesktopNavButtonProvider> freedesktop;
+    if (IsWindowControlsOverlayEnabled())
+      freedesktop = FreedesktopNavButtonProvider::CreateIfAvailable();
+    FreedesktopNavButtonProvider* freedesktop_provider = freedesktop.get();
+    std::unique_ptr<ui::NavButtonProvider> nav_button_provider =
+        std::move(freedesktop);
+    // The layout needs the raw provider pointer while the frame view takes
+    // ownership, so construct it first.
+    auto* layout =
+        new ElectronFrameViewLayoutLinux(this, nav_button_provider.get());
+    return std::make_unique<ElectronFrameViewLinux>(
+        this, widget, std::move(nav_button_provider), layout,
+        freedesktop_provider);
+  }
 
   if (has_client_frame()) {
     auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);

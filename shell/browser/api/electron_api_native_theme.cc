@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/dictionary.h"

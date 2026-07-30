@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/trace_event/trace_event.h"
-#include "base/values.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/api.mojom.h"

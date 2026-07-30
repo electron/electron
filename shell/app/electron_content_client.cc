@@ -11,6 +11,7 @@
 #include "base/command_line.h"
 #include "base/containers/extend.h"
 #include "base/files/file_util.h"
+#include "base/memory/ref_counted_memory.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_split.h"
 #include "components/services/heap_profiling/public/cpp/profiling_client.h"
@@ -121,8 +122,8 @@ gfx::Image& ElectronContentClient::GetNativeImageNamed(int resource_id) {
       resource_id);
 }
 
-base::RefCountedMemory* ElectronContentClient::GetDataResourceBytes(
-    int resource_id) {
+scoped_refptr<base::RefCountedMemory>
+ElectronContentClient::GetDataResourceBytes(int resource_id) {
   return ui::ResourceBundle::GetSharedInstance().LoadDataResourceBytes(
       resource_id);
 }

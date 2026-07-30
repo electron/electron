@@ -2381,7 +2381,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       await expect(
-        w.webContents.executeJavaScript("window.open('', '', 'show=no,webPreferences='); null")
+        w.webContents.executeJavaScript("const b = window.open('', '', 'show=no,webPreferences='); b.close(); null")
       ).to.eventually.be.fulfilled();
     });
   });

@@ -21,10 +21,8 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/task/thread_pool.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "electron/mas.h"
 #include "net/base/apple/url_conversions.h"
-#include "ui/views/widget/widget.h"
 #include "url/gurl.h"
 
 namespace {

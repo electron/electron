@@ -130,7 +130,7 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index e1fc6d132fb04d9f85941438060bdafb6b529ab2..e179935457506c8718227c5e0f5240e1e70f2e5b 100644
+index 04d66c394ed9d6c7cb4a9301012ac16e2ca9c6b2..29584bc5691d6e974b1e0a468ba9403dd599d3e3 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 @@ -127,7 +127,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
@@ -142,7 +142,7 @@ index e1fc6d132fb04d9f85941438060bdafb6b529ab2..e179935457506c8718227c5e0f5240e1
  }
  
  bool ClipboardCommands::CanWriteClipboard(LocalFrame& frame,
-@@ -355,7 +355,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
+@@ -352,7 +352,7 @@ bool ClipboardCommands::PasteSupported(LocalFrame* frame) {
      return true;
    }
    return frame->GetContentSettingsClient() &&
@@ -152,10 +152,10 @@ index e1fc6d132fb04d9f85941438060bdafb6b529ab2..e179935457506c8718227c5e0f5240e1
  
  bool ClipboardCommands::ExecuteCopy(LocalFrame& frame,
 diff --git a/third_party/blink/renderer/modules/permissions/permission_utils.cc b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-index 9083019832678a33359c2392df18f4fe26c8f2d3..4a513b552eca4eb740b61fb602c15e3b7f6902a0 100644
+index bed216ff6d4d577d54ecf39c32c1bb1ed48c60fe..490e3bdca2a092cfb98f8a7cda2666ec979d953b 100644
 --- a/third_party/blink/renderer/modules/permissions/permission_utils.cc
 +++ b/third_party/blink/renderer/modules/permissions/permission_utils.cc
-@@ -164,6 +164,8 @@ String PermissionNameToString(PermissionName name) {
+@@ -165,6 +165,8 @@ String PermissionNameToString(PermissionName name) {
        return "web-printing";
      case PermissionName::SMART_CARD:
        return "smart-card";

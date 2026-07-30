@@ -14,7 +14,6 @@
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/map_util.h"
-#include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/memory/weak_ptr.h"
@@ -35,7 +34,6 @@
 #include "components/proxy_config/proxy_prefs.h"
 #include "content/browser/code_cache/generated_code_cache_context.h"  // nogncheck
 #include "content/browser/storage_partition_impl.h"  // nogncheck
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/browsing_data_filter_builder.h"
 #include "content/public/browser/browsing_data_remover.h"

@@ -17,6 +17,10 @@ EXTENSIONS_TO_SKIP = [
   # the PATHS_TO_SKIP is checked with |startswith|.
   'dbgcore.dll',
   'dbghelp.dll',
+  # msdia140.dll is copied to the output dir alongside dbghelp.dll (dbghelp
+  # dynamically loads it to symbolize stack traces). Since we don't ship
+  # dbghelp.dll/dbgcore.dll, msdia140.dll is unneeded in the distribution.
+  'msdia140.dll',
 ]
 
 PATHS_TO_SKIP = [

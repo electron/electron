@@ -15,7 +15,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/synchronization/lock.h"
-#include "base/threading/thread_local.h"
 #include "crypto/hash.h"
 #include "shell/common/asar/archive.h"
 #include "shell/common/thread_restrictions.h"

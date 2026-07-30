@@ -39,7 +39,7 @@ index 57a9f0227b847f608a2a90de3491323f23c844f4..b6341ff8dc1e26dfcffa3a5110e4b556
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 79096f75fb9dddde105775e4c3c04a8dd61ccd6c..cfe8dbf99b99094f138aaf5879ab840bda040ef0 100644
+index b57b208f9fa6b3219c6d7aac4673d2d58bea3195..10909c6c4ac8e26abdcc411abd4adc34062dc75b 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1630,6 +1630,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
@@ -54,7 +54,7 @@ index 79096f75fb9dddde105775e4c3c04a8dd61ccd6c..cfe8dbf99b99094f138aaf5879ab840b
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 114c1284d2b829e970f79efd64c437460f1ddff4..4e0ea09046d125b221b48120c0bdfeeb83f6b36c 100644
+index 21bdcdb0be84d11e693df9783f4e5bbf94deaad2..54cc315d1d23645cc90de2cbdf20c8c02988648a 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4608,6 +4608,12 @@ void WebContentsImpl::RenderWidgetWasResized(
@@ -71,7 +71,7 @@ index 114c1284d2b829e970f79efd64c437460f1ddff4..4e0ea09046d125b221b48120c0bdfeeb
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 73f5b3f93822e2b40610669263db82db15964a20..dc107be0f4288e8305622fff6599d215584f6710 100644
+index 51c9e9a92ef8a325bd3c7dee15f343ea12ce7878..9cd409dc0645dfe0d71dde56a0fd899f16bd68e1 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1147,6 +1147,7 @@ class CONTENT_EXPORT WebContentsImpl

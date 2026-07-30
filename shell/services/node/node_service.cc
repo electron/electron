@@ -10,7 +10,6 @@
 
 #include "base/command_line.h"
 #include "base/no_destructor.h"
-#include "base/process/process.h"
 #include "base/strings/utf_string_conversions.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"

@@ -4,7 +4,9 @@
 
 #include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
 
+#include "base/functional/bind.h"
 #include "shell/browser/native_window_views.h"
+#include "ui/linux/nav_button_provider.h"
 #include "ui/views/layout/layout_provider.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/caption_button_layout_constants.h"
@@ -12,9 +14,22 @@
 
 namespace electron {
 
+namespace {
+
+ui::WindowFrameProvider* NullFrameProvider(bool tiled, bool maximized) {
+  return nullptr;
+}
+
+}  // namespace
+
 ElectronFrameViewLayoutLinux::ElectronFrameViewLayoutLinux(
-    NativeWindowViews* window)
-    : window_(window),
+    NativeWindowViews* window,
+    ui::NavButtonProvider* nav_buttons)
+    : views::NativeFrameViewLayoutLinux(
+          nav_buttons,
+          base::BindRepeating(&NullFrameProvider)),
+      window_(window),
+      nav_buttons_(nav_buttons),
       wants_frame_(
           !window->IsTranslucent() &&
           (window->HasShadow() || window->IsWindowControlsOverlayEnabled())) {}
@@ -25,13 +40,19 @@ gfx::Insets ElectronFrameViewLayoutLinux::GetRestoredFrameBorderInsets() const {
   if (window_->IsTranslucent())
     return gfx::Insets();
 
-  return FrameViewLayoutLinux::GetRestoredFrameBorderInsets();
+  return views::FrameViewLayoutLinux::GetRestoredFrameBorderInsets();
 }
 
 int ElectronFrameViewLayoutLinux::GetWCOContentHeight() const {
   int custom_height = window_->titlebar_overlay_height();
   if (custom_height)
     return custom_height;
+
+  if (nav_buttons_)
+    return nav_buttons_->GetNavButtonHeight(
+               view()->GetWidget()->IsMaximized()) +
+           nav_buttons_->GetTopAreaSpacing().top() +
+           nav_buttons_->GetTopAreaSpacing().bottom();
 
   return views::GetCaptionButtonLayoutSize(
              views::CaptionButtonLayoutSize::kNonBrowserCaption)
@@ -82,13 +103,33 @@ gfx::RoundedCornersF ElectronFrameViewLayoutLinux::GetCornerRadii() const {
 
   // Chrome rounds only the top corners, so mirror its default value to all 4.
   return gfx::RoundedCornersF(
-      FrameViewLayoutLinux::GetCornerRadii().upper_left());
+      views::FrameViewLayoutLinux::GetCornerRadii().upper_left());
 }
 
 bool ElectronFrameViewLayoutLinux::ShouldShowTitlebarAndBorder() const {
   if (window_->IsTranslucent())
     return false;
   return !view()->GetWidget()->IsFullscreen();
+}
+
+gfx::Insets ElectronFrameViewLayoutLinux::GetTopAreaBorderInsets() const {
+  return gfx::Insets();
+}
+
+views::FrameViewLayoutLinux::ButtonLayoutParams
+ElectronFrameViewLayoutLinux::GetButtonLayoutParams(
+    views::FrameButton button_id,
+    views::Button* button) const {
+  return nav_buttons_
+             ? views::NativeFrameViewLayoutLinux::GetButtonLayoutParams(
+                   button_id, button)
+             : views::FrameViewLayoutLinux::GetButtonLayoutParams(button_id,
+                                                                  button);
+}
+
+gfx::Insets ElectronFrameViewLayoutLinux::GetTopAreaSpacing() const {
+  return nav_buttons_ ? views::NativeFrameViewLayoutLinux::GetTopAreaSpacing()
+                      : gfx::Insets();
 }
 
 gfx::Rect ElectronFrameViewLayoutLinux::GetWindowControlsOverlayRect() const {

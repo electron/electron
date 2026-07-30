@@ -1,0 +1,14 @@
+# LeakSanitizer suppressions for the Linux ASan/LSan CI job.
+#
+# Chromium's built-in list (build/sanitizers/lsan_suppressions.cc) is parsed in
+# addition to this file, so only add entries it doesn't already cover.
+
+# Upstream test bots never reach this code at all because they point
+# FONTCONFIG_SYSROOT at a hermetic config with no <include> and no
+# <selectfont>, whereas Electron's tests parse the build container's
+# /etc/fonts.
+leak:third_party/fontconfig
+
+# GLib/GTK process-lifetime state (type system, quarks, theme and settings
+# caches) that is never freed by design.
+leak:libglib-2.0.so

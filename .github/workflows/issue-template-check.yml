@@ -1,0 +1,181 @@
+name: Issue Template Check
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions: {}
+
+jobs:
+  check-issue-template:
+    if: ${{ !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) }}
+    name: Check Issue Template
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    env:
+      ISSUE_TEMPLATE_DIR: .github/ISSUE_TEMPLATE
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .
+            ${{ env.ISSUE_TEMPLATE_DIR }}
+            .github/workflows
+            .yarn
+      - run: yarn workspaces focus @electron/gha-workflows
+      - name: Check for required sections
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const { chdir } = require('node:process');
+            chdir('${{ github.workspace }}/.github/workflows');
+
+            const fs = require('node:fs');
+            const path = require('node:path');
+
+            const { fromMarkdown } = require('mdast-util-from-markdown');
+            const { selectAll } = require('unist-util-select');
+            const YAML = require('yaml');
+
+            const TEMPLATE_DIR = path.join('${{ github.workspace }}', process.env.ISSUE_TEMPLATE_DIR);
+            const MARKER = '<!-- issue-template-check -->';
+            const LABEL = 'needs-template';
+
+            // GitHub renders every non-markdown field of an issue form as a
+            // heading in the created issue body, so the form field labels
+            // are the required sections for that template. The option
+            // labels of checkboxes fields don't render as headings - only
+            // the field-level label does.
+            const getRequiredSections = (template) =>
+              (YAML.parse(template).body ?? [])
+                .filter((field) => field.type !== 'markdown' && typeof field.attributes?.label === 'string')
+                .map((field) => field.attributes.label.trim());
+
+            const templateSections = new Map();
+            for (const file of fs.readdirSync(TEMPLATE_DIR)) {
+              if (!/\.ya?ml$/.test(file) || file === 'config.yml') {
+                continue;
+              }
+              const template = fs.readFileSync(path.join(TEMPLATE_DIR, file), 'utf8');
+              const sections = getRequiredSections(template);
+              if (sections.length > 0) {
+                templateSections.set(file, sections);
+              }
+            }
+            if (templateSections.size === 0) {
+              console.log('No issue form templates with labeled fields found');
+              return;
+            }
+
+            const issue = context.payload.issue;
+            const tree = fromMarkdown(issue.body || '');
+            const headings = new Set(
+              selectAll('heading', tree).map((heading) =>
+                heading.children.map((child) => child.value ?? '').join('').trim(),
+              ),
+            );
+            // The issue passes if it contains all sections from at least one template
+            const matchesTemplate = [...templateSections.values()].some(
+              (sections) => sections.every((section) => headings.has(section)),
+            );
+
+            const { owner, repo } = context.repo;
+            const issue_number = issue.number;
+            // The label is added when this check closes an issue and removed
+            // when it reopens one, so it marks "closed by the template check
+            // and not yet resolved". Other automation (e.g. the stale and
+            // need-repro closes in stale.yml) never sets it, so requiring it
+            // before reopening keeps this check from reopening issues that
+            // were closed for other reasons.
+            const hasLabel = issue.labels?.some((label) => label.name === LABEL) ?? false;
+            const hasMarkerComment = async () => {
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner,
+                repo,
+                issue_number,
+                per_page: 100,
+              });
+              return comments.some((comment) => comment.body?.includes(MARKER));
+            };
+
+            // Belt-and-braces on top of the label: the most recent close must
+            // have been performed via the default token (github-actions[bot],
+            // which this check runs as) for a reopen to be safe - if a
+            // maintainer closed the issue while the label was still present,
+            // their close must stick. Stale/need-repro automation closes act
+            // as the issue triage app, not github-actions[bot], so they never
+            // match either. The webhook payload's issue object does not
+            // reliably include `closed_by`, so fetch it fresh.
+            const closedByGitHubActionsBot = async () => {
+              const { data } = await github.rest.issues.get({
+                owner,
+                repo,
+                issue_number,
+              });
+              return data.closed_by?.login === 'github-actions[bot]';
+            };
+
+            if (matchesTemplate) {
+              // Reopen the issue if this check previously closed it and the
+              // author has edited the body to follow a template.
+              if (
+                context.payload.action === 'edited' &&
+                issue.state === 'closed' &&
+                issue.state_reason === 'not_planned' &&
+                hasLabel &&
+                (await hasMarkerComment()) &&
+                (await closedByGitHubActionsBot())
+              ) {
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number,
+                  state: 'open',
+                });
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number,
+                  name: LABEL,
+                });
+              } else if (issue.state === 'open' && hasLabel) {
+                // The issue now follows a template but still carries the
+                // label (e.g. a maintainer reopened it manually) - clear it.
+                await github.rest.issues.removeLabel({
+                  owner,
+                  repo,
+                  issue_number,
+                  name: LABEL,
+                });
+              }
+              return;
+            }
+
+            if (!(await hasMarkerComment())) {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body: `${MARKER}\n\nHello @${issue.user.login}. Thanks for taking the time to open an issue and helping to make Electron better!\n\nThis issue was automatically closed because its body does not follow any of this repository's issue templates. Maintainers rely on the sections in those templates to triage issues, and issues that are missing them usually cannot be acted upon.\n\nTo get this issue triaged, please either:\n\n* Edit the issue body above to include all of the sections from one of our [issue templates](https://github.com/electron/electron/tree/main/.github/ISSUE_TEMPLATE) - it will be reopened automatically once it does, or\n* File a new issue via https://github.com/electron/electron/issues/new/choose, which will fill in the correct template for you.`,
+              });
+            }
+            if (issue.state === 'open') {
+              if (!hasLabel) {
+                await github.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number,
+                  labels: [LABEL],
+                });
+              }
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number,
+                state: 'closed',
+                state_reason: 'not_planned',
+              });
+            }
