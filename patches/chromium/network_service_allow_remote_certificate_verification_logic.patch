@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 9f3e51d1beeb13c648b085c109740755da6515dc..ecfbfa3240ad82cca13e264e4b57e8b7b48b2132 100644
+index 1e3e76977c9117f9b5ed6c8b021264d882e38019..b5b6f533aee134b7d022afc109538589d0a3cd77 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -186,6 +186,11 @@
@@ -134,7 +134,7 @@ index 9f3e51d1beeb13c648b085c109740755da6515dc..ecfbfa3240ad82cca13e264e4b57e8b7
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -1136,6 +1246,12 @@ void NetworkContext::CreateSocketFactory(
+@@ -1141,6 +1251,12 @@ void NetworkContext::CreateSocketFactory(
    socket_factory_receivers_.Add(socket_factory_.get(), std::move(receiver));
  }
  
@@ -147,7 +147,7 @@ index 9f3e51d1beeb13c648b085c109740755da6515dc..ecfbfa3240ad82cca13e264e4b57e8b7
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2891,6 +3007,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2896,6 +3012,10 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
      cert_verifier = std::make_unique<net::CachingCertVerifier>(
          std::make_unique<net::CoalescingCertVerifier>(
              std::move(cert_verifier)));
@@ -159,7 +159,7 @@ index 9f3e51d1beeb13c648b085c109740755da6515dc..ecfbfa3240ad82cca13e264e4b57e8b7
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index f14cbcd17b7f073ebfa31eebda3906141135be0b..1dc9eef920d0fbb392bac5bab14f7af578efc3fe 100644
+index 5f03183dac3e5f212ae1eb8b5e0aba37a04b173a..5ebfcd69174029c74e8e15dc2d53a546211c1b3d 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -129,6 +129,7 @@ class SimpleUrlPatternMatcher;
@@ -179,7 +179,7 @@ index f14cbcd17b7f073ebfa31eebda3906141135be0b..1dc9eef920d0fbb392bac5bab14f7af5
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -1067,6 +1070,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -1069,6 +1072,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
