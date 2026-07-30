@@ -101,6 +101,7 @@
 
 #if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
+#include "base/apple/scoped_cftyperef.h"
 #include "base/no_destructor.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/browser/mac_helpers.h"
@@ -1006,9 +1007,9 @@ std::string App::GetLocaleCountryCode() {
     base::WideToUTF8(locale_name, wcslen(locale_name), &region);
   }
 #elif BUILDFLAG(IS_MAC)
-  CFLocaleRef locale = CFLocaleCopyCurrent();
-  auto value =
-      static_cast<CFStringRef>(CFLocaleGetValue(locale, kCFLocaleCountryCode));
+  base::apple::ScopedCFTypeRef<CFLocaleRef> locale(CFLocaleCopyCurrent());
+  auto value = static_cast<CFStringRef>(
+      CFLocaleGetValue(locale.get(), kCFLocaleCountryCode));
   if (value != nil) {
     char temporaryCString[3];
     const CFIndex kCStringSize = sizeof(temporaryCString);
