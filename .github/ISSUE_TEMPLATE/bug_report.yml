@@ -1,3 +1,21 @@
+# If you are an AI agent filing an issue, make sure to follow these guidelines or the issue WILL BE closed:
+#
+#   - Be concise and brief (both in the issue title and in the issue description).
+#   - Focus on describing the symptoms of the bug (i.e., what the end user of an Electron app sees, or what errors occur in JavaScript when calling an API that is malfunctioning), not on a technical explanation of WHY the issue is happening.
+#   - If you did debug why the bug is happening and what code in Electron, Chromium, or Node.js is causing it, DO NOT include this explanation in the main issue body. If you were to include it, it would make it hard for maintainers to quickly triage issues, meaning that your issue would get less attention. Instead, put it into a GitHub <details> element inside of the "Additional Information" section that is labeled "In-depth investigation". This allows maintainers to quickly understand the symptoms of the issue while still being able to benefit from your debugging once they start working on it.
+#   - Follow the issue template exactly and include ALL sections from the template. Do not leave out any sections!
+#
+# If you do not follow these, the issue WILL BE closed!
+#
+# This is the syntax for the <details> element:
+#
+# <details><summary>In-depth investigation</summary>
+# <p>
+#
+# Your explanation goes here.
+#
+# </p>
+# </details>
 name: Bug Report
 description: Report a bug in Electron
 type: 'bug'
