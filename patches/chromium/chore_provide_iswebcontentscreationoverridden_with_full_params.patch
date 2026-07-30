@@ -79,11 +79,11 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
    content::WebContents* OpenURLFromTab(
        content::WebContents* source,
        const content::OpenURLParams& params,
-diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 47c68b1f47caa9ff748bfe2f17374699a9ec410d..e4db79e32cd0b44a8c4cddec79c088ef5a0be7dd 100644
---- a/chrome/browser/ui/browser.cc
-+++ b/chrome/browser/ui/browser.cc
-@@ -1631,8 +1631,7 @@ bool Browser::IsWebContentsCreationOverridden(
+diff --git a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
+index f47327e90b5d913606933e33b6461e3497e772b0..6cff4e6f0420b1ac36a1c32cddd9624e34d4dba3 100644
+--- a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
++++ b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
+@@ -868,8 +868,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,20 +93,20 @@ index 47c68b1f47caa9ff748bfe2f17374699a9ec410d..e4db79e32cd0b44a8c4cddec79c088ef
    if (actor::HasActorTaskPreventingNewWebContents(opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -1654,7 +1653,7 @@ bool Browser::IsWebContentsCreationOverridden(
-   return (window_container_type ==
-               content::mojom::WindowContainerType::BACKGROUND &&
-           ShouldCreateBackgroundContents(source_site_instance, opener_url,
--                                         frame_name));
-+                                         params.frame));
+@@ -892,7 +891,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
+       window_container_type ==
+           content::mojom::WindowContainerType::BACKGROUND &&
+       browser_->GetBrowserForMigrationOnly()->ShouldCreateBackgroundContents(
+-          source_site_instance, opener_url, frame_name));
++          source_site_instance, opener_url, params.frame_name));
  }
  
- WebContents* Browser::CreateCustomWebContents(
-diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 324951ceb77a20ed5eb85a736cd087166218b077..c05e59bd8dfc6ee5d90bebef2fff4dae4e3a6852 100644
---- a/chrome/browser/ui/browser.h
-+++ b/chrome/browser/ui/browser.h
-@@ -631,8 +631,7 @@ class Browser : public TabStripModelObserver,
+ content::WebContents* BrowserWebContentsDelegate::CreateCustomWebContents(
+diff --git a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
+index bce625caa12f779aae56a6b846e1beb5da7b69db..f8015232c55c455f0b45fc3b41615b1732f7d509 100644
+--- a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
++++ b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
+@@ -162,8 +162,7 @@ class BrowserWebContentsDelegate : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -251,7 +251,7 @@ index b969f1d97b7e3396119b579cfbe61e19ff7d2dd4..b8d6169652da28266a514938b45b39c5
    content::WebContents* AddNewContents(
        content::WebContents* source,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 95aedb1d0e53841569e8905b808d8266518f753f..792953c3c895c937333a49c3cbfeb14235348ea9 100644
+index c2f8417fe4a3c46f5e473fd281e91d585b2cbb80..707e891e5d9ffc2fc60e7206cdbfee75d1a7327e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -5518,8 +5518,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(

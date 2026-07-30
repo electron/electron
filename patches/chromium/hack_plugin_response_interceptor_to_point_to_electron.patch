@@ -8,7 +8,7 @@ require a largeish patch to get working, so just redirect it to our
 implementation instead.
 
 diff --git a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
-index fe31452047ef201732be90ad467eb70bac1f7600..bcc701d4f4ada5f9103b6106d2b0bbe9ba886e77 100644
+index 5a7aa0924471d1b9a0877ce7dfb481ed790ad1df..670917f1ec7734d6fcce1f8403fe859e833e900c 100644
 --- a/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 +++ b/chrome/browser/plugins/plugin_response_interceptor_url_loader_throttle.cc
 @@ -13,8 +13,8 @@
@@ -22,7 +22,7 @@ index fe31452047ef201732be90ad467eb70bac1f7600..bcc701d4f4ada5f9103b6106d2b0bbe9
  #include "content/public/browser/browser_task_traits.h"
  #include "content/public/browser/browser_thread.h"
  #include "content/public/browser/download_utils.h"
-@@ -420,7 +420,7 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
+@@ -432,7 +432,7 @@ void PluginResponseInterceptorURLLoaderThrottle::WillProcessResponse(
    content::GetUIThreadTaskRunner({})->PostTask(
        FROM_HERE,
        base::BindOnce(
