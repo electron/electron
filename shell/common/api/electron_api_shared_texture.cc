@@ -353,6 +353,8 @@ void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
     if (auto* context_support = GetContextSupport()) {
       context_support->SignalSyncToken(release_sync_token,
                                        std::move(release_callback));
+    } else {
+      std::move(release_callback).Run();
     }
   }
 }
