@@ -130,7 +130,7 @@ the app bundle's entitlements have at least following keys:
 The `TEAM_ID` should be replaced with your Apple Developer account's Team ID,
 and the `your.bundle.id` should be replaced with the App ID of the app.
 
-And the following entitlements must be added to the binaries and helpers in
+And the following entitlements must be added to the executables in
 the app's bundle:
 
 ```xml
