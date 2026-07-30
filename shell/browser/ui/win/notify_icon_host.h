@@ -12,7 +12,7 @@
 
 #include "base/uuid.h"
 
-const GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+inline constexpr GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 namespace electron {
 
