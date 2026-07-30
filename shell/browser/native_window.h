@@ -624,7 +624,6 @@ class NativeWindow : public views::WidgetDelegate {
   const int kMinVisibleWidth = 100;
 
   views::ViewTracker primary_web_contents_view_;
-  bool primary_web_contents_view_initialized_ = false;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };
