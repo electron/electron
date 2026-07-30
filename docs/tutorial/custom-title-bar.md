@@ -18,7 +18,7 @@ You can follow along with this tutorial by opening Fiddle with the following sta
 ### Remove the default title bar
 
 Let’s start by configuring a window with native window controls and a hidden title bar.
-To remove the default title bar, set the [`BaseWindowContructorOptions`][] `titleBarStyle`
+To remove the default title bar, set the [`BaseWindowConstructorOptions`][] `titleBarStyle`
 param in the `BrowserWindow` constructor to `'hidden'`.
 
 ```fiddle docs/fiddles/features/window-customization/custom-title-bar/remove-title-bar
@@ -30,7 +30,7 @@ param in the `BrowserWindow` constructor to `'hidden'`.
 On macOS, setting `titleBarStyle: 'hidden'` removes the title bar while keeping the window’s
 traffic light controls available in the upper left hand corner. However on Windows and Linux,
 you’ll need to add window controls back into your `BrowserWindow` by setting the
-[`BaseWindowContructorOptions`][] `titleBarOverlay` param in the `BrowserWindow` constructor.
+[`BaseWindowConstructorOptions`][] `titleBarOverlay` param in the `BrowserWindow` constructor.
 
 ```fiddle docs/fiddles/features/window-customization/custom-title-bar/native-window-controls
 
@@ -180,7 +180,7 @@ color and dimension values from a renderer using a set of readonly
 :::
 
 [Add native window controls]: #add-native-window-controls-windows-linux
-[`BaseWindowContructorOptions`]: ../api/structures/base-window-options.md
+[`BaseWindowConstructorOptions`]: ../api/structures/base-window-options.md
 [chrome]: https://developer.mozilla.org/en-US/docs/Glossary/Chrome
 [Custom draggable regions]: ./custom-window-interactions.md#custom-draggable-regions
 [Custom traffic lights]: #custom-traffic-lights-macos
