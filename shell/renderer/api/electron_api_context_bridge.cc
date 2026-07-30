@@ -788,8 +788,7 @@ void ExposeAPI(v8::Isolate* isolate,
 // world ID. For service workers, Electron only supports one isolated
 // context and the main worker context. Anything else is invalid.
 v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
-                                             const int world_id,
-                                             v8::Isolate* target_isolate) {
+                                             const int world_id) {
   v8::Local<v8::Context> source_context = isolate->GetCurrentContext();
   v8::MaybeLocal<v8::Context> maybe_target_context;
 
@@ -811,8 +810,8 @@ v8::MaybeLocal<v8::Context> GetTargetContext(v8::Isolate* isolate,
           isolate, "Isolated worlds are not supported in preload realms.")));
       return maybe_target_context;
     }
-    maybe_target_context = electron::preload_realm::GetInitiatorContext(
-        source_context, target_isolate);
+    maybe_target_context =
+        electron::preload_realm::GetInitiatorContext(source_context);
   } else {
     NOTREACHED();
   }
@@ -829,13 +828,12 @@ void ExposeAPIInWorld(v8::Isolate* isolate,
                "worldId", world_id);
   v8::Local<v8::Context> source_context = isolate->GetCurrentContext();
   CHECK(!source_context.IsEmpty());
-  v8::Isolate* target_isolate = isolate;
   v8::MaybeLocal<v8::Context> maybe_target_context =
-      GetTargetContext(isolate, world_id, target_isolate);
-  if (maybe_target_context.IsEmpty() || !target_isolate)
+      GetTargetContext(isolate, world_id);
+  if (maybe_target_context.IsEmpty())
     return;
   v8::Local<v8::Context> target_context = maybe_target_context.ToLocalChecked();
-  ExposeAPI(isolate, source_context, target_isolate, target_context, key, api);
+  ExposeAPI(isolate, source_context, isolate, target_context, key, api);
 }
 
 std::optional<gin_helper::Dictionary> TraceKeyPath(
@@ -991,9 +989,8 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* const isolate,
   }
 
   // Get the target context
-  v8::Isolate* target_isolate = isolate;
   v8::MaybeLocal<v8::Context> maybe_target_context =
-      GetTargetContext(isolate, world_id, target_isolate);
+      GetTargetContext(isolate, world_id);
   v8::Local<v8::Context> target_context;
   if (!maybe_target_context.ToLocal(&target_context)) {
     isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
@@ -1079,7 +1076,7 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* const isolate,
       }
 
       auto proxied_arg = PassValueToOtherContext(
-          isolate, source_context, target_isolate, target_context, arg,
+          isolate, source_context, isolate, target_context, arg,
           source_context->Global(), support_dynamic_properties,
           BridgeErrorTarget::kSource, &object_cache);
       if (proxied_arg.IsEmpty()) {
@@ -1126,7 +1123,7 @@ v8::Local<v8::Value> ExecuteInWorld(v8::Isolate* const isolate,
       v8::TryCatch try_catch(isolate);
       // Pass value from target context back to source context
       maybe_cloned_result = PassValueToOtherContext(
-          target_isolate, target_context, isolate, source_context, result,
+          isolate, target_context, isolate, source_context, result,
           target_context->Global(), false, BridgeErrorTarget::kSource);
       if (try_catch.HasCaught()) {
         v8::String::Utf8Value utf8(isolate, try_catch.Exception());
