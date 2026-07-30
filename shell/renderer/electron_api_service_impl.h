@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/memory/weak_ptr.h"
-#include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_observer_tracker.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
@@ -16,6 +15,10 @@
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "shell/common/api/api.mojom.h"
+
+namespace content {
+class RenderFrame;
+}
 
 namespace electron {
 

@@ -10,6 +10,7 @@
 #include "content/public/browser/browser_thread.h"
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
+#include "net/http/http_response_headers.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"

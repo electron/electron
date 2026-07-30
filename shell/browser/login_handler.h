@@ -7,7 +7,6 @@
 
 #include "base/process/process_handle.h"
 #include "content/public/browser/login_delegate.h"
-#include "net/http/http_response_headers.h"
 
 namespace content {
 class WebContents;
@@ -15,6 +14,10 @@ class WebContents;
 
 namespace gin {
 class Arguments;
+}
+
+namespace net {
+class HttpResponseHeaders;
 }
 
 namespace electron {
