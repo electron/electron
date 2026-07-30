@@ -192,11 +192,9 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
   gfx::Rect value_rect = entry_rect;
   value_rect.Inset(gfx::Insets::VH(0, kEndPadding));
 
-  int x_align_left = value_rect.x();
   const int value_width = gfx::GetStringWidth(
       popup_->value_at(index), popup_->GetValueFontListForRow(index));
-  int value_x_align_left = x_align_left;
-  value_x_align_left =
+  int value_x_align_left =
       is_rtl ? value_rect.right() - value_width : value_rect.x();
 
   canvas->DrawStringRectWithFlags(
@@ -210,8 +208,7 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
   if (auto const& label = popup_->label_at(index); !label.empty()) {
     const int label_width =
         gfx::GetStringWidth(label, popup_->GetLabelFontListForRow(index));
-    int label_x_align_left = x_align_left;
-    label_x_align_left =
+    int label_x_align_left =
         is_rtl ? value_rect.x() : value_rect.right() - label_width;
 
     canvas->DrawStringRectWithFlags(
