@@ -73,29 +73,19 @@ ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching',
       }
     ]);
 
-  const createWindow = async () => {
-    const w = new BrowserWindow({
-      x: 0,
-      y: 0,
-      width: Math.round(display.bounds.width / 2),
-      height: Math.round(display.bounds.height / 2),
-      autoHideMenuBar: false
-    });
-    w.setMenu(buildMenu());
-    await w.loadURL('about:blank');
+  let w: BrowserWindow;
+
+  // Brings the shared window to the OS foreground so robotjs key events route to
+  // it. A programmatic focus() isn't treated as real activation by every window
+  // manager, so we also click the content area, then wait for focus.
+  const focusWindow = async () => {
     w.show();
     w.moveTop();
     w.focus();
-    // Give the compositor/window manager a moment to make the window active so
-    // that robotjs key events are routed to it.
-    await setTimeout(500);
-    // Click the window's content area to force real foreground activation before we
-    // start sending keys.
     const bounds = w.getContentBounds();
     robot.moveMouse(Math.round(bounds.x + bounds.width / 2), Math.round(bounds.y + bounds.height / 2));
     robot.mouseClick();
-    await setTimeout(300);
-    return w;
+    await waitUntil(() => w.isFocused());
   };
 
   // Presses a sequence of keys with a delay between each so the native menu can
@@ -117,30 +107,42 @@ ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching',
       return;
     }
 
-    // The first window may not properly receive events due to UI transitions or
-    // focus management. Warm up with a throwaway open/close cycle.
-    const w = await createWindow();
+    w = new BrowserWindow({
+      x: 0,
+      y: 0,
+      width: Math.round(display.bounds.width / 2),
+      height: Math.round(display.bounds.height / 2),
+      autoHideMenuBar: false
+    });
+    w.setMenu(buildMenu());
+    await w.loadURL('about:blank');
+    await focusWindow();
+
+    // The first interaction may be dropped due to UI transitions or focus
+    // management. Warm up with a throwaway open/close cycle.
     await pressKeys([['a', ['alt']], 'escape', 'escape']);
-    w.destroy();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     lastClicked = null;
+    // Re-establish foreground focus so keystrokes are routed to the shared window.
+    await focusWindow();
   });
 
   afterEach(async () => {
-    // Ensure any open menu is dismissed before the window is destroyed
+    // Dismiss any open menu so the next test starts from a clean state.
     if (robot && robot.keyTap) {
       robot.keyTap('escape');
       robot.keyTap('escape');
       await setTimeout(KEY_DELAY);
     }
+  });
+
+  after(async () => {
     await closeAllWindows();
   });
 
   it('switches to the next sibling menu when Right is pressed on a top-level leaf item', async () => {
-    await createWindow();
-
     await pressKeys([
       ['a', ['alt']], // open Alpha (Alpha Item selected)
       'right', // switch to Beta (next sibling)
@@ -152,8 +154,6 @@ ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching',
   });
 
   it('wraps to the last sibling menu when Left is pressed on the first menu', async () => {
-    await createWindow();
-
     await pressKeys([
       ['a', ['alt']], // open Alpha (Alpha Item selected)
       'left', // switch to Gamma (previous sibling, wrapping)
@@ -165,8 +165,6 @@ ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching',
   });
 
   it('wraps to the first sibling menu when Right is pressed on the last menu', async () => {
-    await createWindow();
-
     await pressKeys([
       ['g', ['alt']], // open Gamma (Gamma Item selected)
       'right', // switch to Alpha (next sibling, wrapping)
@@ -178,8 +176,6 @@ ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching',
   });
 
   it('opens a nested submenu instead of switching siblings when Right is pressed on a submenu item', async () => {
-    await createWindow();
-
     await pressKeys([
       ['b', ['alt']], // open Beta (Beta Leaf selected)
       'down', // select Beta More (has a submenu)
@@ -192,8 +188,6 @@ ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching',
   });
 
   it('does not switch to a sibling menu when Left is pressed on a top-level submenu item', async () => {
-    await createWindow();
-
     await pressKeys([
       ['b', ['alt']], // open Beta (Beta Leaf selected)
       'down', // select Beta More (a submenu item)
@@ -207,8 +201,6 @@ ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching',
   });
 
   it('does not switch to a sibling menu when Right is pressed inside a nested submenu', async () => {
-    await createWindow();
-
     await pressKeys([
       ['b', ['alt']], // open Beta (Beta Leaf selected)
       'down', // select Beta More (a submenu item)
