@@ -7,8 +7,6 @@
 
 #include "chrome/browser/ui/webui/accessibility/accessibility_ui.h"
 #include "content/public/browser/web_ui_controller.h"
-#include "content/public/browser/web_ui_data_source.h"
-#include "content/public/browser/web_ui_message_handler.h"
 
 // Controls the accessibility web UI page.
 class ElectronAccessibilityUI : public content::WebUIController {

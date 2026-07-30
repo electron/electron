@@ -32,7 +32,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
 #include "base/win/scoped_propvariant.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/api/electron_api_notification.h"  // nogncheck - for delegate events
 #include "shell/browser/electron_browser_client.h"

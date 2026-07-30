@@ -11,7 +11,6 @@
 #include "shell/common/node_includes.h"
 #include "ui/gfx/animation/animation.h"
 #if BUILDFLAG(IS_LINUX)
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
 #include "shell/common/color_util.h"

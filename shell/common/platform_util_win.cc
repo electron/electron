@@ -29,7 +29,6 @@
 #include "base/threading/scoped_blocking_call.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_com_initializer.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/electron_paths.h"
 #include "ui/base/win/shell.h"

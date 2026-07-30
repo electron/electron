@@ -9,7 +9,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
-#include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 
