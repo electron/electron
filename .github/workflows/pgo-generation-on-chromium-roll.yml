@@ -1,0 +1,118 @@
+name: PGO Generation on Chromium Roll
+
+# Dispatches pgo-generation.yml on a release branch as soon as a Chromium roll
+# lands there, so fresh profiles are being generated for the new Chromium
+# rather than waiting for the next weekly pgo-generation-schedule.yml run.
+# See https://github.com/electron/electron/issues/52482.
+#
+# The push trigger runs the workflow file from the release branch itself, so
+# this only takes effect on a branch once it has been backported there.
+
+on:
+  push:
+    branches:
+      - '*-x-y'
+    paths:
+      - DEPS
+
+permissions: {}
+
+jobs:
+  dispatch-pgo-generation:
+    name: Dispatch PGO Generation
+    if: github.repository == 'electron/electron'
+    runs-on: ubuntu-latest
+    # Rapid successive DEPS pushes to the same branch supersede each other so
+    # only the newest push dispatches. Note this only cancels this detector
+    # job - a pgo-generation.yml run it already dispatched is not cancelled.
+    concurrency:
+      group: pgo-roll-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      # Required for createWorkflowDispatch on pgo-generation.yml.
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch PGO generation if chromium_version changed
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const branch = context.ref.replace(/^refs\/heads\//, '');
+
+            // Defense-in-depth: the push filter only matches *-x-y, but
+            // refuse to pass anything except a release branch name on to
+            // the GitHub API.
+            if (!/^\d+-x-y$/.test(branch)) {
+              core.warning(`Skipping unexpected branch name: ${JSON.stringify(branch)}`);
+              return;
+            }
+
+            // A push that creates the branch has an all-zeros `before` SHA;
+            // there is no baseline to compare against, and the weekly
+            // schedule covers new branches soon enough.
+            const { before, after } = context.payload;
+            if (!before || /^0+$/.test(before)) {
+              core.info(`Skipping branch-creation push (before=${before})`);
+              return;
+            }
+
+            const chromiumVersionAt = async (ref) => {
+              const { data } = await github.rest.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: 'DEPS',
+                ref,
+              });
+              const deps = Buffer.from(data.content, data.encoding).toString('utf8');
+              // Matches the vars entry in DEPS, where the value is on the
+              // line after the key:
+              //   'chromium_version':
+              //     '152.0.7969.0',
+              const match = deps.match(/'chromium_version':\s*'([^']+)'/);
+              if (!match) {
+                throw new Error(`Could not find chromium_version in DEPS at ${ref}`);
+              }
+              return match[1];
+            };
+
+            const oldVersion = await chromiumVersionAt(before);
+            const newVersion = await chromiumVersionAt(after);
+            if (oldVersion === newVersion) {
+              core.info(`chromium_version unchanged (${oldVersion}) - not a Chromium roll, skipping`);
+              return;
+            }
+
+            // workflow_dispatch requires the workflow file to exist on the
+            // target ref - guard against branches where the PGO pipeline
+            // has not been backported.
+            try {
+              await github.rest.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: '.github/workflows/pgo-generation.yml',
+                ref: branch,
+              });
+            } catch (error) {
+              if (error.status === 404) {
+                core.warning(`Skipping ${branch} - it has no pgo-generation.yml`);
+                return;
+              }
+              throw error;
+            }
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'pgo-generation.yml',
+              ref: branch,
+            });
+            core.info(`Chromium rolled ${oldVersion} -> ${newVersion}; dispatched PGO generation on ${branch}`);
+
+            core.summary.addHeading('PGO Generation Dispatch');
+            core.summary.addList([
+              `branch: ${branch}`,
+              `chromium_version: ${oldVersion} -> ${newVersion}`,
+              'pgo-generation.yml: dispatched',
+            ]);
+            await core.summary.write();
