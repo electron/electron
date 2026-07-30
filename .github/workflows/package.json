@@ -8,6 +8,7 @@
     "@electron/fiddle-core": "^2.0.1",
     "mdast-util-from-markdown": "^2.0.0",
     "semver": "^7.7.2",
-    "unist-util-select": "^5.1.0"
+    "unist-util-select": "^5.1.0",
+    "yaml": "^2.9.0"
   }
 }
