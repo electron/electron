@@ -135,7 +135,7 @@ default to appropriate values for each platform.
 
 #### Window roles
 
-* `about` - Trigger a native about panel (custom message box on Window, which does not provide its own).
+* `about` - Trigger a native about panel (custom message box on Windows, which does not provide its own).
 * `minimize` - Minimize current window.
 * `close` - Close current window.
 * `quit` - Quit the application.
