@@ -8,6 +8,8 @@
 #include <utility>
 #include <vector>
 
+#include "shell/browser/mac/in_app_purchase.h"
+#include "shell/browser/mac/in_app_purchase_product.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"

@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "content/public/browser/browser_thread.h"
+#include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/menu_bar.h"
 #include "shell/browser/ui/views/menu_model_adapter.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"

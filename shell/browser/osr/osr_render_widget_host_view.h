@@ -24,8 +24,7 @@
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
-#include "shell/browser/osr/osr_host_display_client.h"
-#include "shell/browser/osr/osr_video_consumer.h"
+#include "shell/browser/osr/osr_paint_event.h"
 #include "shell/browser/osr/osr_view_proxy.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/blink/public/common/page/content_to_visible_time_request.h"
@@ -53,6 +52,7 @@ class ElectronBeginFrameTimer;
 class ElectronCopyFrameGenerator;
 class ElectronDelegatedFrameHostClient;
 class OffScreenHostDisplayClient;
+class OffScreenVideoConsumer;
 
 using OnPopupPaintCallback = base::RepeatingCallback<void(const gfx::Rect&)>;
 

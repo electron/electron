@@ -7,9 +7,7 @@
 
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/native_window_observer.h"
-#include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/views/menu_delegate.h"
-#include "shell/browser/ui/views/root_view.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/views/accessible_pane_view.h"
 
@@ -18,6 +16,10 @@ class MenuButton;
 }
 
 namespace electron {
+
+class ElectronMenuModel;
+class NativeWindow;
+class RootView;
 
 class MenuBar : public views::AccessiblePaneView,
                 private MenuDelegate::Observer,

@@ -9,7 +9,6 @@
 
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/api/electron_api_web_contents.h"
-#include "shell/browser/ui/drag_util.h"
 
 namespace gin_helper {
 class ErrorThrower;
