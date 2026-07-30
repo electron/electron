@@ -9,7 +9,8 @@
 #include <string>
 #include <string_view>
 
-#include "ui/base/clipboard/clipboard.h"
+#include "ui/base/clipboard/clipboard_buffer.h"
+#include "ui/base/clipboard/clipboard_format_type.h"
 #include "v8/include/cppgc/persistent.h"
 #include "v8/include/v8-forward.h"
 
