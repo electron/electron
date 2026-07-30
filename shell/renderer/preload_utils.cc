@@ -20,6 +20,7 @@
 #include "crypto/hash.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/electron_version.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/common/gin_helper/dictionary.h"
