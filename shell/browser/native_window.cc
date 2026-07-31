@@ -158,8 +158,7 @@ InspectableWebContentsView* NativeWindow::primary_web_contents_view() {
 void NativeWindow::InitPrimaryWebContentsView(
     InspectableWebContentsView* view) {
   CHECK(view);
-  CHECK(!primary_web_contents_view_initialized_);
-  primary_web_contents_view_initialized_ = true;
+  CHECK(!primary_web_contents_view_);
   primary_web_contents_view_.SetView(view);
 }
 
