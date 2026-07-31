@@ -1,0 +1,70 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Micah Alpern <malpern@gmail.com>
+Date: Fri, 31 Jul 2026 13:00:08 -0700
+Subject: fix: preserve contenteditable block boundaries in macOS AX selections
+
+When an AXSelectedTextRange ends on the synthetic newline between two
+contenteditable block nodes, downstream affinity maps the range endpoint to
+the start of the second block. The AX APIs still report the expected text,
+but replacing the selection also deletes the block boundary.
+
+Use upstream affinity for the end of non-empty ranges so exact-boundary
+offsets resolve to the end of the preceding block. Keep downstream affinity
+for collapsed ranges so caret placement remains unchanged.
+
+This change should be upstreamed to Chromium and the Electron patch removed
+after Electron rolls the accepted upstream change.
+
+diff --git a/content/test/data/accessibility/mac/selection/set-selectedtextrange-contenteditable-expected.txt b/content/test/data/accessibility/mac/selection/set-selectedtextrange-contenteditable-expected.txt
+index 3fb95a7e3b1bb450553d8ccf223e92f7d7eed2e3..2cbd3b34f2f1bdfa312422a280f0178a8110b62d 100644
+--- a/content/test/data/accessibility/mac/selection/set-selectedtextrange-contenteditable-expected.txt
++++ b/content/test/data/accessibility/mac/selection/set-selectedtextrange-contenteditable-expected.txt
+@@ -13,3 +13,8 @@ ce.AXSelectedTextRange={loc: 24, len: 15}
+ AXSelectedTextChanged on AXTextArea AXValue='The quick brown foxes jumps over the lazy dog' AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
+ ce.AXSelectedText=NULL
+ ce.accessibilitySelectedText='mps over the la'
++// Replace text ending at a block boundary without deleting the line break.
++ce2.AXSelectedTextRange={loc: 6, len: 4}
++AXSelectedTextChanged on AXTextArea AXValue='First line<newline>Second line' AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeUnknown
++press Backspace
++ce2.AXValue='First <newline>Second line'
+diff --git a/content/test/data/accessibility/mac/selection/set-selectedtextrange-contenteditable.html b/content/test/data/accessibility/mac/selection/set-selectedtextrange-contenteditable.html
+index 2d87a7bb7d0ee917ab43f7592f1d64a459c526f5..38d36e7f4927effe2468546c6aea64c7e98c7866 100644
+--- a/content/test/data/accessibility/mac/selection/set-selectedtextrange-contenteditable.html
++++ b/content/test/data/accessibility/mac/selection/set-selectedtextrange-contenteditable.html
+@@ -19,6 +19,13 @@
+   wait for AXSelectedTextChanged on AXTextArea
+   ce.AXSelectedText
+   ce.accessibilitySelectedText
++
++@SCRIPT:
++  // Replace text ending at a block boundary without deleting the line break.
++  ce2.AXSelectedTextRange = {loc: 6, len: 4}
++  wait for AXSelectedTextChanged on AXTextArea
++  press Backspace
++  ce2.AXValue
+ -->
+ <!DOCTYPE html>
+ <html>
+@@ -26,5 +33,6 @@
+   <div id="ce" contenteditable="true">
+     <p>The quick brown foxes <span aria-invalid="grammar">jumps</span> over the <em>lazy</em> dog</p>
+   </div>
++  <div id="ce2" contenteditable="true">First line<div>Second line</div></div>
+ </body>
+ </html>
+diff --git a/ui/accessibility/platform/browser_accessibility_cocoa.mm b/ui/accessibility/platform/browser_accessibility_cocoa.mm
+index 03984bef47201fa252573231a91164bb830b8f4b..d2f691ea40961963674481490b5372068c32b451 100644
+--- a/ui/accessibility/platform/browser_accessibility_cocoa.mm
++++ b/ui/accessibility/platform/browser_accessibility_cocoa.mm
+@@ -1618,6 +1618,9 @@ - (void)setAccessibilitySelectedTextRange:(NSRange)range {
+   BrowserAccessibilityManager* manager = _owner->manager();
++  const ax::mojom::TextAffinity end_affinity =
++      range.length > 0 ? ax::mojom::TextAffinity::kUpstream
++                       : ax::mojom::TextAffinity::kDownstream;
+   manager->SetSelection(BrowserAccessibility::AXRange(
+       _owner->CreateTextPositionAt(range.location)->AsDomSelectionPosition(),
+-      _owner->CreateTextPositionAt(NSMaxRange(range))
++      _owner->CreateTextPositionAt(NSMaxRange(range), end_affinity)
+           ->AsDomSelectionPosition()));
+ }
