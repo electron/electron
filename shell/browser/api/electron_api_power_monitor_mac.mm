@@ -6,10 +6,14 @@
 
 #include <vector>
 
+#include "base/functional/bind.h"
+#include "base/functional/callback.h"
 #include "shell/common/gc_plugin.h"
 
 #import <ApplicationServices/ApplicationServices.h>
 #import <Cocoa/Cocoa.h>
+
+#import "shell/browser/mac/electron_application.h"
 
 @interface MacLockMonitor : NSObject {
  @private
@@ -104,11 +108,22 @@ void PowerMonitor::InitPlatformSpecificMonitors() {
   if (!g_lock_monitor)
     g_lock_monitor = [[MacLockMonitor alloc] init];
   [g_lock_monitor addEmitter:this];
+
+  [[AtomApplication sharedApplication]
+      setShutdownHandler:base::BindRepeating(&PowerMonitor::ShouldShutdown,
+                                             base::Unretained(this))];
 }
 
 void PowerMonitor::DestroyPlatformSpecificMonitors() {
   if (g_lock_monitor)
     [g_lock_monitor removeEmitter:this];
+
+  // The NSApplication singleton outlives this object, so the handler must be
+  // cleared or it would retain a dangling pointer to us. Note this runs during
+  // cppgc heap teardown, so it must not depend on anything torn down earlier in
+  // ElectronBrowserMainParts::PostMainMessageLoopRun (such as the Browser).
+  [[AtomApplication sharedApplication]
+      setShutdownHandler:base::RepeatingCallback<bool()>()];
 }
 
 }  // namespace electron::api
