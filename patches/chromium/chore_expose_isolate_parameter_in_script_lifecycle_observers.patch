@@ -8,10 +8,10 @@ where callsites that deal with multiple contexts need to distinguish
 the current isolate.
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index cde924d79c67e9312f393c54c45bd6fc92509d0f..72c4d2f042afd428f2bf945bf54de873f256ca21 100644
+index 66439a8449d214e9b526d4e139324ce68ec04149..56009a9640f31f71fc3e939d38b601587b164148 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
-@@ -381,6 +381,7 @@ class CONTENT_EXPORT ContentRendererClient {
+@@ -377,6 +377,7 @@ class CONTENT_EXPORT ContentRendererClient {
    // WillDestroyServiceWorkerContextOnWorkerThread() is called.
    virtual void WillEvaluateServiceWorkerOnWorkerThread(
        blink::WebServiceWorkerContextProxy* context_proxy,
@@ -34,23 +34,23 @@ index 166ff5e568018a86f6b8dc9465bb0fc313eec2d9..73b747c9fd0a7e2f671b49fab4ad24f6
    virtual void DidClearWindowObject() {}
    virtual void DidChangeScrollOffset() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 9449a80dab8327f94fca6462f6bc104db4f56378..e8a1197892c88ce7107aa2e05a914355ac1b0f0a 100644
+index a16dc0be8d219eb2c180a97574473a9aa7af5360..1523d314df5458a889a190d30a61003d5da9a27f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4886,10 +4886,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
-     observer.DidInstallConditionalFeatures(context, world_id);
+@@ -4968,10 +4968,11 @@ void RenderFrameImpl::DidInstallConditionalFeatures(
+   }
  }
  
 -void RenderFrameImpl::WillReleaseScriptContext(v8::Local<v8::Context> context,
 +void RenderFrameImpl::WillReleaseScriptContext(v8::Isolate* const isolate,
 +                                               v8::Local<v8::Context> context,
                                                 int world_id) {
-   for (auto& observer : observers_)
+   for (auto& observer : observers_) {
 -    observer.WillReleaseScriptContext(context, world_id);
 +    observer.WillReleaseScriptContext(isolate, context, world_id);
+   }
  }
  
- void RenderFrameImpl::DidChangeScrollOffset() {
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
 index a37bb8c3bd10fb74f56132bc6e05810efa6b6693..b47ac6e7005b3e0fd437252fb77b94d6692747fd 100644
 --- a/content/renderer/render_frame_impl.h
@@ -181,10 +181,10 @@ index 37e2f923db17076e3d090d29f9a140c90267c10b..363670519d039ee158d18f320230ddd7
  
    // Geometry notifications ----------------------------------------------
 diff --git a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-index 5fe1d03901d0f56daee4717bee738337db60114b..9221cb9909b0b0ee736e03f04839e653f6b3c7fd 100644
+index 1a0181acf8900dc54c4f2e5f1b1da7595ad1e098..5000990bfd9d056109daa65695a26e080fe9c591 100644
 --- a/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/local_window_proxy.cc
-@@ -185,11 +185,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
+@@ -184,11 +184,12 @@ void LocalWindowProxy::DisposeContext(Lifecycle next_status,
  
    ScriptState::Scope scope(script_state_);
    v8::Local<v8::Context> context = script_state_->GetContext();
@@ -200,7 +200,7 @@ index 5fe1d03901d0f56daee4717bee738337db60114b..9221cb9909b0b0ee736e03f04839e653
        ->ContextWillBeDestroyed(script_state_);
    if (next_status == Lifecycle::kV8MemoryIsForciblyPurged ||
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client.h b/third_party/blink/renderer/core/frame/local_frame_client.h
-index 7552453bfdb737d94ef0363b4f791eb7bdb4ed04..5268faebf90c9e9daf40a0b52d1598cfbc87d507 100644
+index 87e36aef900c7e8eb3b4b3944fcf8a4b2c558d57..68f260054231b1fc3013ff271798967e42dbd721 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client.h
 @@ -313,7 +313,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
@@ -211,10 +211,10 @@ index 7552453bfdb737d94ef0363b4f791eb7bdb4ed04..5268faebf90c9e9daf40a0b52d1598cf
 +  virtual void WillReleaseScriptContext(v8::Isolate* const isolate,
 +                                        v8::Local<v8::Context>,
                                          int32_t world_id) = 0;
-   virtual bool AllowScriptExtensions() = 0;
  
+   virtual void DidChangeScrollOffset() {}
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index 7939a3246f4e828eac3cfbcc295983d25ff18bd1..634a9f2c2ff7430f22a1b92e8858b37814b21792 100644
+index 83ea53861316a457fbe4d8a64a6af3ad5f3c94b4..66cbd2cc5ca0bd309b1b3b7d4372f5f4e84ce4d5 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -309,10 +309,11 @@ void LocalFrameClientImpl::DidInstallConditionalFeatures(
@@ -231,7 +231,7 @@ index 7939a3246f4e828eac3cfbcc295983d25ff18bd1..634a9f2c2ff7430f22a1b92e8858b378
  }
  
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.h b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
-index a0d55066ab6fd2a505a258865ac2d784b58a67cf..e0316eee2150be443f428f7fe6a289f29c25d080 100644
+index 94b6ce2e91a70f7fef49a22c22a1490de396e60a..e2b8af5c59de53c16423cc2ad813c28bb9796e76 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 @@ -80,7 +80,8 @@ class CORE_EXPORT LocalFrameClientImpl final : public LocalFrameClient {
@@ -243,9 +243,9 @@ index a0d55066ab6fd2a505a258865ac2d784b58a67cf..e0316eee2150be443f428f7fe6a289f2
 +                                v8::Local<v8::Context>,
                                  int32_t world_id) override;
  
-   // Returns true if we should allow register V8 extensions to be added.
+   bool HasWebView() const override;
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index c209f2ae57b8f762af8298bbe23d494c0a8fccff..105c80bbfb28fcc84c2368af1a7b4dc5f4625628 100644
+index ea274beb66b2fb2260272b404f87f5508e23504d..82df3297ee67cd65325115c690b36c7f5108917c 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -428,7 +428,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
@@ -256,8 +256,8 @@ index c209f2ae57b8f762af8298bbe23d494c0a8fccff..105c80bbfb28fcc84c2368af1a7b4dc5
 +  void WillReleaseScriptContext(v8::Isolate* const isolate,
 +                                v8::Local<v8::Context>,
                                  int32_t world_id) override {}
-   bool AllowScriptExtensions() override { return false; }
  
+   AssociatedInterfaceProvider* GetRemoteNavigationAssociatedInterfaces()
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
 index 4bc189549d5ab61afdf62fdd327c43b7e393c245..22b8e5873e4abbb2439d84e336fd9a210e1912f6 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope_proxy.cc
