@@ -77,7 +77,6 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/environment.h"
-#include "chrome/browser/ui/views/dark_mode_manager_linux.h"
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/bluez_dbus_manager.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
@@ -86,6 +85,7 @@
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
+#include "ui/linux/dark_mode_manager_linux.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/linux_ui_factory.h"
 #include "ui/linux/linux_ui_getter.h"
