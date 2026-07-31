@@ -23,6 +23,7 @@
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/native_window_observer.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
+#include "ui/views/view_tracker.h"
 #include "ui/views/widget/widget_delegate.h"
 
 class SkRegion;
@@ -413,12 +414,8 @@ class NativeWindow : public views::WidgetDelegate {
 
   [[nodiscard]] constexpr int32_t window_id() const { return window_id_; }
 
-  InspectableWebContentsView* primary_web_contents_view() const {
-    return primary_web_contents_view_;
-  }
-  void set_primary_web_contents_view(InspectableWebContentsView* view) {
-    primary_web_contents_view_ = view;
-  }
+  InspectableWebContentsView* primary_web_contents_view();
+  void InitPrimaryWebContentsView(InspectableWebContentsView* view);
 
   void add_child_window(NativeWindow* child) {
     child_windows_.push_back(child);
@@ -626,7 +623,7 @@ class NativeWindow : public views::WidgetDelegate {
   // Minimum width of the visible part of a window.
   const int kMinVisibleWidth = 100;
 
-  raw_ptr<InspectableWebContentsView> primary_web_contents_view_ = nullptr;
+  views::ViewTracker primary_web_contents_view_;
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };

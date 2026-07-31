@@ -68,7 +68,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
       WebContentsView::Create(isolate, web_preferences);
   DCHECK(web_contents_view.get());
   window()->AddDraggableRegionProvider(web_contents_view.get());
-  window()->set_primary_web_contents_view(
+  window()->InitPrimaryWebContentsView(
       static_cast<InspectableWebContentsView*>(web_contents_view->view()));
   web_contents_view_.Reset(isolate, web_contents_view.ToV8());
 
@@ -100,8 +100,6 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 }
 
 BrowserWindow::~BrowserWindow() {
-  window()->set_primary_web_contents_view(nullptr);
-
   if (api_web_contents_) {
     // Cleanup the observers if user destroyed this instance directly instead of
     // gracefully closing content::WebContents.
@@ -115,7 +113,6 @@ void BrowserWindow::BeforeUnloadDialogCancelled() {
 }
 
 void BrowserWindow::WebContentsDestroyed() {
-  window()->set_primary_web_contents_view(nullptr);
   api_web_contents_ = nullptr;
   CloseImmediately();
 }
