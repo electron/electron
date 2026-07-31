@@ -494,15 +494,6 @@ void RendererClientBase::RunScriptsAtDocumentEnd(
 #endif
 }
 
-bool RendererClientBase::AllowScriptExtensionForServiceWorker(
-    const url::Origin& script_origin) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  return script_origin.scheme() == extensions::kExtensionScheme;
-#else
-  return false;
-#endif
-}
-
 void RendererClientBase::DidInitializeServiceWorkerContextOnWorkerThread(
     blink::WebServiceWorkerContextProxy* context_proxy,
     const GURL& service_worker_scope,

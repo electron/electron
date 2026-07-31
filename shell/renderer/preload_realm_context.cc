@@ -16,7 +16,6 @@
 #include "shell/common/node_util.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
-#include "third_party/blink/renderer/bindings/core/v8/script_controller.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 #include "third_party/blink/renderer/core/inspector/worker_thread_debugger.h"  // nogncheck
 #include "third_party/blink/renderer/core/shadow_realm/shadow_realm_global_scope.h"  // nogncheck
@@ -301,18 +300,14 @@ void OnCreatePreloadableV8Context(
       shadow_realm_global_scope->GetWrapperTypeInfo();
 
   // Create a new v8::Context.
-  // Initialize V8 extensions before creating the context.
-  v8::ExtensionConfiguration extension_configuration =
-      blink::ScriptController::ExtensionsFor(shadow_realm_global_scope);
-
   v8::Local<v8::ObjectTemplate> global_template =
       wrapper_type_info->GetV8ClassTemplate(isolate, *world)
           .As<v8::FunctionTemplate>()
           ->InstanceTemplate();
   v8::Local<v8::Object> global_proxy;  // Will request a new global proxy.
   v8::Local<v8::Context> context =
-      v8::Context::New(isolate, &extension_configuration, global_template,
-                       global_proxy, v8::DeserializeInternalFieldsCallback(),
+      v8::Context::New(isolate, nullptr, global_template, global_proxy,
+                       v8::DeserializeInternalFieldsCallback(),
                        initiator_execution_context->GetMicrotaskQueue());
   context->UseDefaultSecurityToken();
 
