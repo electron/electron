@@ -462,6 +462,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     BridgeErrorTarget error_target,
     context_bridge::ObjectCache* existing_object_cache) {
   TRACE_EVENT0("electron", "ContextBridge::PassValueToOtherContext");
+  CHECK_EQ(isolate, source_context->GetIsolate());
+  CHECK_EQ(isolate, destination_context->GetIsolate());
 
   context_bridge::ObjectCache local_object_cache;
   context_bridge::ObjectCache* object_cache =
