@@ -5,7 +5,9 @@ import * as deprecate from '@electron/internal/common/deprecate';
 import { net, type UtilityProcess } from 'electron/main';
 
 const { fromPartition, fromPath, Session } = process._linkedBinding('electron_browser_session');
-const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable } = process._linkedBinding('electron_browser_desktop_capturer');
+const { createDesktopCapturer, isDisplayMediaSystemPickerAvailable } = process._linkedBinding(
+  'electron_browser_desktop_capturer'
+);
 
 // Fake video window that activates the native system picker
 // This is used to get around the need for a screen/window
