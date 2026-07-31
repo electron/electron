@@ -157,7 +157,7 @@ index b7062241d590e36f797babffb5945060ef759322..853c1ef5512ce4476b96cef67b53da84
            .IsNothing()) {
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 522d3c24cfba70c448bef5319268504c52694150..9b8fef3a2246e6133abb0930390aa3ea1bfbdb1a 100644
+index f661cb8066f5a82ebf01dcf4d31ce98ab2ce49de..b57a83c1d869d018db6212d8d9ff115c266b109a 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -758,7 +758,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
