@@ -20,6 +20,7 @@
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/electron_browser_main_parts.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
