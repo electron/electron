@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "base/functional/callback.h"
 #include "shell/browser/notifications/notification.h"
 
 namespace electron {

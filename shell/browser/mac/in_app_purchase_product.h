@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "base/functional/callback.h"
+#include "base/functional/callback_forward.h"
 
 namespace in_app_purchase {
 

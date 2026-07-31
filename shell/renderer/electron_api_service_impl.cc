@@ -19,6 +19,7 @@
 #include "shell/renderer/electron_ipc_native.h"
 
 #include "base/no_destructor.h"
+#include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_thread.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
