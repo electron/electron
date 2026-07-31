@@ -8,12 +8,11 @@
 
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
+#import "shell/browser/mac/electron_application.h"
 #include "shell/common/gc_plugin.h"
 
 #import <ApplicationServices/ApplicationServices.h>
 #import <Cocoa/Cocoa.h>
-
-#import "shell/browser/mac/electron_application.h"
 
 @interface MacLockMonitor : NSObject {
  @private
