@@ -1281,10 +1281,9 @@ added:
       with the relying party ID (e.g. `example.com`) of the request being
       authenticated. Defaults to `verify your identity on $1`.
   * `platformPasskeys` boolean (optional) - Enables passkeys via Apple's
-    `ASAuthorizationController`. Requires macOS 13.0 (Ventura) or later. When
-    enabled, passkey operations present the system credential provider sheet
-    (iCloud Keychain, 1Password, Bitwarden, etc.) and credentials sync across
-    the user's devices.
+    `ASAuthorizationController`. When enabled, passkey operations present the
+    system credential provider sheet (iCloud Keychain, 1Password, Bitwarden,
+    etc.) and credentials sync across the user's devices.
 
 Configures platform authenticators for the Web Authentication API
 (`navigator.credentials.create()` / `navigator.credentials.get()`). Until this
@@ -1300,7 +1299,7 @@ When `platformPasskeys` is `true`, passkey operations use Apple's
 `ASAuthorizationController` which delegates to the system's configured
 Credential Provider Extensions. This enables the same passkey experience as
 Safari — credentials are available across all devices signed into the same
-account. Requires macOS 13.0+.
+account.
 
 ```js
 const { app } = require('electron')
@@ -1394,11 +1393,6 @@ the embedded development provisioning profile described above:
 > Touch ID WebAuthn credentials are device-bound and are not synced via iCloud
 > Keychain. They are only available on Macs with a Secure Enclave (Apple
 > silicon, or Intel Macs with a T2 chip).
-
-> [!NOTE]
-> On macOS versions below 13.0, the `platformPasskeys` option is accepted but
-> the passkey flow is unavailable and requests fall back to the Touch ID
-> authenticator (if configured).
 
 ### `app.disableHardwareAcceleration()`
 
