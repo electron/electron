@@ -62,6 +62,9 @@ struct Converter<CustomScheme> {
       return false;
     if (!dict.Get("scheme", &(out->scheme)))
       return false;
+    if (!electron::Browser::IsValidProtocolScheme(out->scheme))
+      return false;
+
     gin::Dictionary opt(isolate);
     // options are optional. Default values specified in SchemeOptions are used
     if (dict.Get("privileges", &opt)) {
@@ -120,13 +123,6 @@ void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
   }
 
   for (const auto& custom_scheme : custom_schemes) {
-    if (!electron::Browser::IsValidProtocolScheme(custom_scheme.scheme)) {
-      thrower.ThrowError(
-          "Invalid protocol scheme \"" + custom_scheme.scheme +
-          "\". Schemes cannot contain commas, spaces, or special characters.");
-      return;
-    }
-
     if (custom_scheme.options.codeCache && !custom_scheme.options.standard) {
       thrower.ThrowError(
           "Code cache can only be enabled when the custom scheme is registered "
