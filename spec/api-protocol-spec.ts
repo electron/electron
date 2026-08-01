@@ -954,7 +954,9 @@ describe('protocol module', () => {
         appPath,
         '--boot-eval=try { require("electron").protocol.registerSchemesAsPrivileged([{ scheme: "foo,bar", privileges: { standard: true } }]); } catch (e) { console.error(e.message); } process.exit(0);'
       ]);
-      expect(result.stderr.toString()).to.include('Invalid protocol scheme');
+      const stderr = result.stderr.toString();
+      expect(stderr).to.match(/invalid character/i);
+      expect(result.status).to.equal(0);
     });
   });
 
