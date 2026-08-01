@@ -96,17 +96,6 @@ InspectableWebContentsView::InspectableWebContentsView(
   if (!inspectable_web_contents_->is_guest() &&
       inspectable_web_contents_->GetWebContents()->GetNativeView()) {
     auto* contents_web_view = new views::WebView(nullptr);
-#if defined(USE_AURA)
-    // Chromium's NativeViewHostAura defaults to managing the hosted native
-    // view's layer via views crrev.com/c/8013273. Under that
-    // path the web contents' aura window layer is reparented out of its aura
-    // parent window's layer, which breaks occlusion-based visibility tracking
-    // (document.visibilityState) for WebContentsViews nested inside another
-    // View. Opt back into the legacy parent-managed layer path so occlusion is
-    // computed correctly. This must run before the WebView is attached to a
-    // Widget.
-    contents_web_view->holder()->SetLayerManagedByViews(false);
-#endif
     contents_web_view->SetWebContents(
         inspectable_web_contents_->GetWebContents());
     contents_web_view_ = contents_web_view;
