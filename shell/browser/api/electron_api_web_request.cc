@@ -490,9 +490,8 @@ void WebRequest::OnBeforeSendHeadersListenerResult(
       if (dict.Get("requestHeaders", &value) && value->IsObject()) {
         if (!gin::Converter<net::HttpRequestHeaders>::FromV8(isolate, value,
                                                              &new_headers)) {
-          util::EmitWarning(isolate,
-                            "Invalid header provided in requestHeaders",
-                            "Warning");
+          util::EmitWarning(
+              isolate, "Invalid header provided in requestHeaders", "Warning");
         } else {
           user_modified_headers = true;
         }
@@ -593,9 +592,8 @@ void WebRequest::OnHeadersReceivedListenerResult(
         override_headers->ReplaceStatusLine(status_line);
         if (!gin::Converter<net::HttpResponseHeaders*>::FromV8(
                 isolate, value, override_headers.get())) {
-          util::EmitWarning(isolate,
-                            "Invalid header provided in responseHeaders",
-                            "Warning");
+          util::EmitWarning(
+              isolate, "Invalid header provided in responseHeaders", "Warning");
         } else {
           user_modified_headers = true;
         }
