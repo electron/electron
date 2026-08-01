@@ -289,9 +289,11 @@ bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
     if (!gin::ConvertFromV8(isolate, v8key, &key) ||
         !gin::ConvertFromV8(isolate, v8value, &value))
       return false;
-    if (net::HttpUtil::IsValidHeaderName(key) &&
-        net::HttpUtil::IsValidHeaderValue(value))
-      out->SetHeader(key, std::move(value));
+    if (!net::HttpUtil::IsValidHeaderName(key) ||
+        !net::HttpUtil::IsValidHeaderValue(value)) {
+      return false;
+    }
+    out->SetHeader(key, std::move(value));
   }
   return true;
 }
