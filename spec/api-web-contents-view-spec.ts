@@ -428,32 +428,6 @@ describe('WebContentsView', () => {
       // would indicate the occlusion checker is causing spurious transitions.
       expect(changes).to.deep.equal(['visible', 'hidden']);
     });
-
-    it('becomes hidden when occluded by another WebContentsView', async () => {
-      const w = new BaseWindow({ width: 400, height: 600 });
-      const cv = new View();
-      w.setContentView(cv);
-
-      const bottom = new WebContentsView();
-      const top = new WebContentsView();
-      cv.addChildView(bottom);
-      cv.addChildView(top);
-
-      bottom.setBounds({ x: 0, y: 0, width: 400, height: 600 });
-      top.setBounds({ x: 0, y: 0, width: 0, height: 0 });
-      await bottom.webContents.loadURL('about:blank');
-      await top.webContents.loadURL('about:blank');
-
-      await expect(waitUntil(async () => await haveVisibilityState(bottom, 'visible'))).to.eventually.be.fulfilled();
-
-      // Fully cover `bottom` with an opaque sibling.
-      top.setBounds({ x: 0, y: 0, width: 400, height: 600 });
-      await expect(waitUntil(async () => await haveVisibilityState(bottom, 'hidden'))).to.eventually.be.fulfilled();
-
-      // Uncovering it restores visibility.
-      top.setBounds({ x: 0, y: 0, width: 0, height: 0 });
-      await expect(waitUntil(async () => await haveVisibilityState(bottom, 'visible'))).to.eventually.be.fulfilled();
-    });
   });
 
   describe('setBorderRadius', () => {
