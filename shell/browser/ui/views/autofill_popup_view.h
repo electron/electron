@@ -11,7 +11,6 @@
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/render_widget_host.h"
 #include "electron/buildflags/buildflags.h"
-#include "shell/browser/osr/osr_view_proxy.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/drag_controller.h"
@@ -33,6 +32,7 @@ constexpr int kPopupBorderThickness = 1;
 constexpr int kEndPadding = 8;
 
 class AutofillPopup;
+class OffscreenViewProxy;
 
 // Child view only for triggering accessibility events. Rendering is handled
 // by |AutofillPopupViewViews|.

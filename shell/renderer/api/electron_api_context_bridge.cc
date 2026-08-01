@@ -18,7 +18,6 @@
 #include "gin/converter.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"

@@ -10,7 +10,6 @@
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_helper/callback.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/v8_util.h"
 

@@ -10,6 +10,7 @@
 #include "base/logging.h"
 #include "base/strings/string_util_win.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/ui/electron_menu_model.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
 #include "ui/display/screen.h"

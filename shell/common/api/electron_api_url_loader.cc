@@ -46,7 +46,6 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"

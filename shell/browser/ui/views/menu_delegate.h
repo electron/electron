@@ -9,7 +9,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
-#include "shell/browser/ui/electron_menu_model.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 
 namespace gfx {
@@ -23,6 +22,7 @@ class Button;
 
 namespace electron {
 
+class ElectronMenuModel;
 class MenuBar;
 
 class MenuDelegate : public views::MenuDelegate {
