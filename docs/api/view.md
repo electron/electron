@@ -110,9 +110,23 @@ Examples of valid `color` values:
 > [!NOTE]
 > Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBAA` or `RGB`.
 
-#### `view.setBorderRadius(radius)`
+#### `view.setBorderRadius(borderRadius)`
 
-* `radius` Integer - Border radius size in pixels.
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/51472
+    description: "`setBorderRadius` now accepts an object with per-corner radii."
+```
+-->
+
+* `borderRadius` Integer | Object - Border radius. When an `Integer`, it is applied
+  uniformly to all four corners. When an `Object`, it can contain the following
+  properties (all optional, default `0`):
+  * `topLeft` Integer (optional) - Radius of the top-left corner, in pixels.
+  * `topRight` Integer (optional) - Radius of the top-right corner, in pixels.
+  * `bottomRight` Integer (optional) - Radius of the bottom-right corner, in pixels.
+  * `bottomLeft` Integer (optional) - Radius of the bottom-left corner, in pixels.
 
 > [!NOTE]
 > The area cutout of the view's border still captures clicks.

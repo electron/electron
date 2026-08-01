@@ -10,11 +10,13 @@
 #include "base/memory/raw_ptr.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/event_emitter.h"
+#include "ui/gfx/geometry/rounded_corners_f.h"
 #include "ui/views/view.h"
 #include "ui/views/view_observer.h"
 #include "v8/include/v8-value.h"
 
 namespace gin_helper {
+class ErrorThrower;
 template <typename T>
 class Handle;
 }  // namespace gin_helper
@@ -42,13 +44,16 @@ class View : public gin_helper::EventEmitter<View>,
   void SetLayout(v8::Isolate* isolate, v8::Local<v8::Object> value);
   std::vector<v8::Local<v8::Value>> GetChildren();
   void SetBackgroundColor(std::optional<WrappedSkColor> color);
-  void SetBorderRadius(int radius);
+  void SetBorderRadius(gin_helper::ErrorThrower thrower,
+                       v8::Local<v8::Value> value);
   void SetBackgroundBlur(int blur_radius);
   void SetVisible(bool visible);
   bool GetVisible() const;
 
   views::View* view() const { return view_; }
-  std::optional<int> border_radius() const { return border_radius_; }
+  const std::optional<gfx::RoundedCornersF>& border_radii() const {
+    return border_radii_;
+  }
 
   // disable copy
   View(const View&) = delete;
@@ -76,7 +81,7 @@ class View : public gin_helper::EventEmitter<View>,
   void ReorderChildView(gin_helper::Handle<View> child, size_t index);
 
   std::vector<ChildPair> child_views_;
-  std::optional<int> border_radius_;
+  std::optional<gfx::RoundedCornersF> border_radii_;
 
   bool delete_view_ = true;
   raw_ptr<views::View> view_ = nullptr;
