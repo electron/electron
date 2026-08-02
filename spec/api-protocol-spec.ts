@@ -916,6 +916,19 @@ describe('protocol module', () => {
       expect(stdout).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
       expect(stderr).to.not.contain('VALIDATION_ERROR_DESERIALIZATION_FAILED');
     });
+
+    it('throws an error for invalid protocol scheme', () => {
+      const appPath = path.join(fixturesPath, 'apps', 'remote-control');
+      const result = ChildProcess.spawnSync(process.execPath, [
+        appPath,
+        '--boot-eval=try { require("electron").protocol.registerSchemesAsPrivileged([{ scheme: "foo,bar", privileges: { standard: true } }]); } catch (e) { console.log(e.message); } process.exit(0);'
+      ]);
+
+      const stdout = result.stdout.toString();
+
+      expect(result.status).to.equal(0);
+      expect(stdout).to.include("Invalid scheme name 'foo,bar'");
+    });
   });
 
   describe('protocol.registerSchemesAsPrivileged allowServiceWorkers', () => {
@@ -946,17 +959,6 @@ describe('protocol module', () => {
     it('should be able to register service worker for custom scheme', async () => {
       await contents.loadURL(`${serviceWorkerScheme}://${v4()}.com`);
       await contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.js', {scope: './'})`);
-    });
-
-    it('throws an error for invalid protocol scheme', () => {
-      const appPath = path.join(fixturesPath, 'apps', 'remote-control');
-      const result = ChildProcess.spawnSync(process.execPath, [
-        appPath,
-        '--boot-eval=try { require("electron").protocol.registerSchemesAsPrivileged([{ scheme: "foo,bar", privileges: { standard: true } }]); } catch (e) { console.error(e.message); } process.exit(0);'
-      ]);
-      const stderr = result.stderr.toString();
-      expect(stderr).to.match(/invalid character/i);
-      expect(result.status).to.equal(0);
     });
   });
 

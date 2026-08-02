@@ -62,8 +62,11 @@ struct Converter<CustomScheme> {
       return false;
     if (!dict.Get("scheme", &(out->scheme)))
       return false;
-    if (!electron::Browser::IsValidProtocolScheme(out->scheme))
+    if (!electron::Browser::IsValidProtocolScheme(out->scheme)) {
+      isolate->ThrowException(v8::Exception::Error(gin::StringToV8(
+          isolate, "Invalid scheme name '" + out->scheme + "'")));
       return false;
+    }
 
     gin::Dictionary opt(isolate);
     // options are optional. Default values specified in SchemeOptions are used
@@ -116,9 +119,14 @@ void AddServiceWorkerScheme(const std::string& scheme) {
 
 void RegisterSchemesAsPrivileged(gin_helper::ErrorThrower thrower,
                                  v8::Local<v8::Value> val) {
+  v8::TryCatch try_catch(thrower.isolate());
   std::vector<CustomScheme> custom_schemes;
   if (!gin::ConvertFromV8(thrower.isolate(), val, &custom_schemes)) {
-    thrower.ThrowError("Argument must be an array of custom schemes.");
+    if (try_catch.HasCaught()) {
+      try_catch.ReThrow();
+    } else {
+      thrower.ThrowError("Argument must be an array of custom schemes.");
+    }
     return;
   }
 
