@@ -13,15 +13,18 @@
 # a pass: Electron skips the umbrella check when a required upstream job fails,
 # so classification falls back to the full check set to find the real status.
 #
+# Draft PRs are skipped, as are PRs whose "PR Triage" board Status contains WIP
+# (--no-triage skips the board lookup, so WIP PRs are included when it is set).
+#
 # Requires the `gh` CLI, authenticated via `gh auth login`, and `jq`.
 #
 # Usage:
-#   ./script/triage-prs.sh                      # green PRs (default)
-#   ./script/triage-prs.sh --status failing
-#   ./script/triage-prs.sh --status none
-#   ./script/triage-prs.sh --status all --limit 100
-#   ./script/triage-prs.sh --check "GitHub Actions Completed"
-#   ./script/triage-prs.sh --check "faraday/cage" --status pending
+#   .claude/skills/triage-prs/triage-prs.sh                      # green PRs (default)
+#   .claude/skills/triage-prs/triage-prs.sh --status failing
+#   .claude/skills/triage-prs/triage-prs.sh --status none
+#   .claude/skills/triage-prs/triage-prs.sh --status all --limit 100
+#   .claude/skills/triage-prs/triage-prs.sh --check "GitHub Actions Completed"
+#   .claude/skills/triage-prs/triage-prs.sh --check "faraday/cage" --status pending
 #
 # Options:
 #   --status <s>          Which PRs to show: green | failing | pending | none | all
@@ -49,8 +52,11 @@ STATUS="${STATUS:-green}"
 TRIAGE="${TRIAGE:-1}"
 TRIAGE_PROJECT="${TRIAGE_PROJECT:-PR Triage}"
 
+# Print the header comment block (everything between the shebang and the first
+# non-comment line) as help text. Deriving the range this way keeps --help in
+# sync when the header grows, unlike a hard-coded line range.
 usage() {
-  sed -n '2,38p' "$0" | sed 's/^# \{0,1\}//'
+  awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0"
 }
 
 while [[ $# -gt 0 ]]; do

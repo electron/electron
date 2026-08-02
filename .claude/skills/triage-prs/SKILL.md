@@ -1,12 +1,12 @@
 ---
 name: triage-prs
-description: Find open electron/electron pull requests by their CI status — PRs with green (passing) checks, failing checks, still-pending checks, or no checks running at all, optionally annotated with their Status on the "PR Triage" project board. Also scopes to a single named check (e.g. find PRs whose "faraday/cage" check is pending or failing). Use when asked to list PRs with passing/green CI, find mergeable PRs, find PRs with failing CI, find PRs with no checks running, find PRs with a pending/failing faraday/cage (or other named) check, classify open PRs by their check status, or show each PR's triage/board status. When the request is simply "faraday", run the faraday shortcut described below; when it is simply "failing", run the failing shortcut described below.
+description: Triage open electron/electron pull requests by CI check status — lists PRs that are green/passing, failing, still pending, or have no checks at all, annotated with their Status on the "PR Triage" project board and with the new-pr label. Can scope to a single named check, e.g. PRs whose "faraday/cage" check is pending. Use when asked to triage PRs or do PR triage, list green/passing or mergeable PRs, find PRs with failing or pending CI, find PRs with no checks running, check faraday/cage status, or show each PR's triage board status. Also triggers on the bare words "faraday" or "failing prs".
 ---
 
-# Find PRs By CI Status
+# Triage PRs By CI Status
 
-Lists open (non-draft) pull requests filtered by their GitHub checks. Backed by
-the bundled script [`script/triage-prs.sh`](../../../script/triage-prs.sh).
+Lists open pull requests filtered by their GitHub checks. Backed by the bundled
+script [`triage-prs.sh`](./triage-prs.sh), which lives alongside this file.
 
 ## Shortcuts
 
@@ -14,16 +14,16 @@ the bundled script [`script/triage-prs.sh`](../../../script/triage-prs.sh).
   "pending faraday", etc.), run:
 
   ```bash
-  ./script/triage-prs.sh --check "faraday/cage" --status pending
+  .claude/skills/triage-prs/triage-prs.sh --check "faraday/cage" --status pending
   ```
 
   This lists open PRs whose `faraday/cage` check is still pending.
 
-- **`failing`** — when the user says just "failing" (or "failing prs",
-  "failing ci", etc.), run:
+- **`failing`** — when the user says just "failing prs" (or "failing ci" in the
+  context of PR triage), run:
 
   ```bash
-  ./script/triage-prs.sh --status failing
+  .claude/skills/triage-prs/triage-prs.sh --status failing
   ```
 
   This lists open PRs whose checks are failing.
@@ -42,7 +42,7 @@ Each PR is classified as one of:
 | `pending` | 🟡   | Checks exist but some are still running (`PENDING`/`IN_PROGRESS`/…). |
 | `none`    | ⚪   | No checks are running at all. |
 
-Each listed PR can also be annotated with its **Status** on the **"PR Triage"**
+Each listed PR is also annotated with its **Status** on the **"PR Triage"**
 GitHub project board (e.g. `[PR Triage: Needs Review]`). This is shown by
 default and requires the `gh` token to have the `read:project` scope; if the
 scope is missing the script prints a one-time note and omits the column.
@@ -58,75 +58,59 @@ scope is missing the script prints a one-time note and omits the column.
   gh auth refresh -s read:project
   ```
 
+## Runtime
+
+The script makes up to two `gh` calls per PR, sequentially, so a full scan at
+the default `--limit 200` takes **several minutes** and consumes a few hundred
+API requests. Run it with an explicit long timeout (10 minutes is safe), or
+lower `--limit` for a quicker partial scan. Do not assume it has hung.
+
 ## Usage
 
 Run the script from the repo root:
 
 ```bash
 # Green PRs (default), 200 most recent open PRs in electron/electron
-./script/triage-prs.sh
+.claude/skills/triage-prs/triage-prs.sh
 
 # Filter by a different status
-./script/triage-prs.sh --status failing
-./script/triage-prs.sh --status none
-./script/triage-prs.sh --status pending
+.claude/skills/triage-prs/triage-prs.sh --status failing
+.claude/skills/triage-prs/triage-prs.sh --status none
+.claude/skills/triage-prs/triage-prs.sh --status pending
 
 # Classify every scanned PR and show its status
-./script/triage-prs.sh --status all
+.claude/skills/triage-prs/triage-prs.sh --status all
 
-# Scan more PRs
-./script/triage-prs.sh --status failing --limit 100
+# Scan fewer PRs for a faster result
+.claude/skills/triage-prs/triage-prs.sh --status failing --limit 50
 
 # Target another repo, or change the check scope
-./script/triage-prs.sh --repo electron/electron --limit 100
-./script/triage-prs.sh --check ""          # evaluate all checks
-./script/triage-prs.sh --check "macos-x64 / build / build"
+.claude/skills/triage-prs/triage-prs.sh --repo electron/forge --limit 50
+.claude/skills/triage-prs/triage-prs.sh --check ""          # evaluate all checks
+.claude/skills/triage-prs/triage-prs.sh --check "macos-x64 / build / build"
 
 # Scope to a single named check, e.g. find PRs whose faraday/cage is pending
-./script/triage-prs.sh --check "faraday/cage" --status pending
-./script/triage-prs.sh --check "faraday/cage" --status failing
+.claude/skills/triage-prs/triage-prs.sh --check "faraday/cage" --status pending
+.claude/skills/triage-prs/triage-prs.sh --check "faraday/cage" --status failing
 
 # Triage board Status column
-./script/triage-prs.sh --no-triage                  # hide the Status column
-./script/triage-prs.sh --triage-project "PR Triage" # read a different board
+.claude/skills/triage-prs/triage-prs.sh --no-triage                  # hide the Status column
+.claude/skills/triage-prs/triage-prs.sh --triage-project "PR Triage" # read a different board
 ```
 
 Environment variables `REPO`, `LIMIT`, `CHECK_NAME`, `STATUS`, `TRIAGE`, and
 `TRIAGE_PROJECT` are honored as defaults and can be overridden by the
 corresponding flags.
 
-## How it works
+Output is one entry per PR — an icon, a clickable
+[OSC 8 hyperlink](https://gist.github.com/egmontkob/eb114294efdcfddb1b38f3714a0de4d6)
+on the PR number, the title, and any markers — with the raw URL on the next
+line:
 
-1. `gh pr list --state open` enumerates open PR numbers (capped by `--limit`).
-   Draft PRs are skipped.
-2. For each PR, `gh pr view --json statusCheckRollup,title,url` returns the
-   checks on the PR head commit plus its title and URL (one API call per PR).
-3. The rollup mixes two shapes, both handled:
-   - **GitHub Actions** `CheckRun` entries expose `.name`, `.status`, and
-     `.conclusion`.
-   - **Legacy** `StatusContext` entries expose `.context` + `.state`.
-   By default only the **"GitHub Actions Completed"** check is considered;
-   `--check ""` widens evaluation to every check, and `--check <name>` scopes to
-   a different single check. The collected states are reduced to one
-   classification (`none` → `failing` → `pending` → `green`, in priority order).
-4. PRs matching the requested `--status` (or all of them, for `--status all`)
-   are printed as a clickable link followed by the title, with the raw PR URL on
-   the next line:
-
-   ```text
-   ✅ #52533  feat: support `restrictOwnAudio` constraint  [PR Triage: Needs Review]
-        https://github.com/electron/electron/pull/52533
-   ```
-
-   The `#<number>` is emitted as an [OSC 8 hyperlink](https://gist.github.com/egmontkob/eb114294efdcfddb1b38f3714a0de4d6)
-   pointing at the PR URL, so terminals that support it render it clickable; the
-   raw URL is always printed too for plain terminals and for easy copying. The
-   icon reflects the PR's classification (useful with `--status all`).
-5. Unless `--no-triage` is passed, a second call
-   (`gh api graphql … projectItems … fieldValueByName(name:"Status")`) fetches
-   the PR's Status on the **"PR Triage"** board and appends it as
-   `[PR Triage: <status>]`. PRs not on the board show no suffix. If the token
-   lacks the `read:project` scope, the column is skipped with a one-time note.
+```text
+✅ #52533  feat: support `restrictOwnAudio` constraint  [PR Triage: Needs Review]
+     https://github.com/electron/electron/pull/52533
+```
 
 ## Reporting results
 
@@ -140,6 +124,13 @@ indicate it in the summary with the plain text `[new-pr]` rather than an emoji.
 
 ## Interpreting results
 
+- Two categories of PR are **silently excluded** from every run, and neither is
+  reported in the totals. Say so when summarizing, so the output is not read as
+  the complete set of open PRs:
+  - **Draft** PRs.
+  - PRs whose **"PR Triage" board Status contains `WIP`** — these are treated as
+    not ready for review. Note that `--no-triage` skips the board lookup
+    entirely, so WIP PRs _are_ included when it is passed.
 - With a status filter (the default is `green`), only PRs whose classification
   matches are listed; all others are omitted.
 - `none` means the PR genuinely has no checks at all (nothing has been
@@ -150,15 +141,6 @@ indicate it in the summary with the plain text `[new-pr]` rather than an emoji.
   been posted yet, then flips to `green`/`failing` once the umbrella check
   reports. A PR is only `none` when it has zero checks whatsoever. Use
   `--check ""` to judge by all checks instead.
-
-## Adjusting the criteria
-
-- Use `--status green|failing|pending|none|all` to choose which PRs to show.
-- Use `--check "<check name>"` to evaluate a different single check, or
-  `--check ""` to evaluate every check on the PR instead of the default
-  `"GitHub Actions Completed"`.
-- Use `--no-triage` to omit the board Status column, or `--triage-project`
-  `"<name>"` to read Status from a project other than `"PR Triage"`.
-- The classification buckets are defined by the `jq` expression in the script;
-  edit the `any($s[]; …)` clauses to change which conclusions count as failing
-  or pending.
+- A `SKIPPED` umbrella check is not treated as a pass: Electron skips
+  "GitHub Actions Completed" when a required upstream job fails, so the script
+  falls back to the full check set to find the real status.
