@@ -271,7 +271,7 @@ deprecated:
 ```
 -->
 
-* `position` [Point](structures/point.md)
+* `position` [Point](docs/api/structures/point.md)
 
 Set a custom position for the traffic light buttons. Can only be used with `titleBarStyle` set to `hidden`.
 `````
