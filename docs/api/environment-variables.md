@@ -125,6 +125,14 @@ Options:
 * `kioclient5`
 * `kioclient`
 
+### `ELECTRON_DISABLE_GPU`
+
+Disables GPU hardware acceleration across the application during early process startup (equivalent to passing `--disable-gpu`). Can be set to `1`, `true`, or `yes`.
+
+### `ELECTRON_ENABLE_GPU`
+
+Overrides `ELECTRON_DISABLE_GPU` to ensure GPU hardware acceleration remains enabled. Can be set to `1`, `true`, or `yes`.
+
 ## Development Variables
 
 The following environment variables are intended primarily for development and

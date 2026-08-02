@@ -2260,6 +2260,30 @@ describe('app module', () => {
     });
   });
 
+  describe('ELECTRON_DISABLE_GPU / ELECTRON_ENABLE_GPU environment variables', () => {
+    it('disables GPU acceleration when ELECTRON_DISABLE_GPU=1', async () => {
+      const { hasDisableGpu } = await runTestApp('command-line', { env: { ELECTRON_DISABLE_GPU: '1' } });
+      expect(hasDisableGpu).to.equal(true);
+    });
+
+    it('disables GPU acceleration when ELECTRON_DISABLE_GPU=TrUe (case-insensitive)', async () => {
+      const { hasDisableGpu } = await runTestApp('command-line', { env: { ELECTRON_DISABLE_GPU: 'TrUe' } });
+      expect(hasDisableGpu).to.equal(true);
+    });
+
+    it('disables GPU acceleration when ELECTRON_DISABLE_GPU=yes', async () => {
+      const { hasDisableGpu } = await runTestApp('command-line', { env: { ELECTRON_DISABLE_GPU: 'yes' } });
+      expect(hasDisableGpu).to.equal(true);
+    });
+
+    it('does not disable GPU acceleration when ELECTRON_ENABLE_GPU=1 overrides ELECTRON_DISABLE_GPU=1', async () => {
+      const { hasDisableGpu } = await runTestApp('command-line', {
+        env: { ELECTRON_DISABLE_GPU: '1', ELECTRON_ENABLE_GPU: '1' }
+      });
+      expect(hasDisableGpu).to.equal(false);
+    });
+  });
+
   describe('commandLine.getSwitchValue', () => {
     afterEach(() => {
       app.commandLine.removeSwitch('foobar');
@@ -2653,10 +2677,24 @@ describe('default behavior', () => {
   });
 });
 
-async function runTestApp(name: string, ...args: any[]) {
+async function runTestApp(name: string, optionsOrArg?: any, ...extraArgs: any[]) {
   const appPath = path.join(fixturesPath, 'api', name);
   const electronPath = process.execPath;
-  const appProcess = cp.spawn(electronPath, [appPath, ...args]);
+  let args: string[] = [];
+  let spawnEnv = process.env;
+
+  if (typeof optionsOrArg === 'object' && optionsOrArg !== null && !Array.isArray(optionsOrArg)) {
+    if (optionsOrArg.env) {
+      spawnEnv = { ...process.env, ...optionsOrArg.env };
+    }
+    if (optionsOrArg.args) {
+      args = optionsOrArg.args;
+    }
+  } else if (optionsOrArg !== undefined) {
+    args = [optionsOrArg, ...extraArgs];
+  }
+
+  const appProcess = cp.spawn(electronPath, [appPath, ...args], { env: spawnEnv });
 
   let output = '';
   appProcess.stdout.on('data', (data) => {

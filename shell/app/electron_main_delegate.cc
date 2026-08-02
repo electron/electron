@@ -21,6 +21,7 @@
 #include "base/path_service.h"
 #include "base/strings/cstring_view.h"
 #include "base/strings/string_number_conversions.cc"
+#include "base/strings/string_util.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/profiler/process_type.h"
@@ -94,6 +95,10 @@ constexpr base::cstring_view kElectronDisableSandbox{
     "ELECTRON_DISABLE_SANDBOX"};
 constexpr base::cstring_view kElectronEnableStackDumping{
     "ELECTRON_ENABLE_STACK_DUMPING"};
+constexpr base::cstring_view kElectronDisableGPU{
+    "ELECTRON_DISABLE_GPU"};
+constexpr base::cstring_view kElectronEnableGPU{
+    "ELECTRON_ENABLE_GPU"};
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.
@@ -194,6 +199,24 @@ std::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 
   if (env->HasVar(kElectronDisableSandbox))
     command_line->AppendSwitch(sandbox::policy::switches::kNoSandbox);
+
+  auto is_env_true = [](const std::string& val) {
+    return val == "1" || base::EqualsCaseInsensitiveASCII(val, "true") ||
+           base::EqualsCaseInsensitiveASCII(val, "yes");
+  };
+
+  std::string disable_gpu_val;
+  std::string enable_gpu_val;
+  if (env->GetVar(kElectronDisableGPU, &disable_gpu_val) &&
+      is_env_true(disable_gpu_val)) {
+    bool enable_gpu = command_line->HasSwitch("enable-gpu");
+    if (!enable_gpu && env->GetVar(kElectronEnableGPU, &enable_gpu_val)) {
+      enable_gpu = is_env_true(enable_gpu_val);
+    }
+    if (!enable_gpu && !command_line->HasSwitch(::switches::kDisableGpu)) {
+      command_line->AppendSwitch(::switches::kDisableGpu);
+    }
+  }
 
   tracing_sampler_profiler_ =
       tracing::TracingSamplerProfiler::CreateOnMainThread();
