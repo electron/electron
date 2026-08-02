@@ -4080,17 +4080,18 @@ describe('BrowserWindow module', () => {
 
     describe('preload code cache', () => {
       // Sandboxed preload scripts are compiled with a persistent V8 code cache
-      // stored as `${sha256(scriptId)}-${sha256(site)}.cache` under
-      // userData/Code Cache/electron-preload/, where `site` is the consuming
-      // frame's site — entries are only served back to same-site documents.
-      // The id for a webPreferences.preload is `preload-${absolutePath}`.
+      // stored as `${sha256(scriptId)}-${sha256(processLock)}.cache` under the
+      // session's `Code Cache/electron-preload/` dir, where `processLock` is
+      // the consuming frame's renderer process lock — entries are only served
+      // back to documents of the same principal. The id for a
+      // webPreferences.preload is `preload-${absolutePath}`.
       //
       // The cache has an in-memory tier that lives for the browser process's
       // lifetime and shadows the disk tier, so each test gets a fresh preload
       // *path* (a unique temp copy of the fixture) → fresh cache key → no
       // cross-test in-memory contamination.
       const fixture = path.join(fixtures, 'module', 'preload-code-cache.js');
-      const cacheDir = path.join(app.getPath('userData'), 'Code Cache', 'electron-preload');
+      const cacheDir = path.join(app.getPath('sessionData'), 'Code Cache', 'electron-preload');
 
       let preload: string;
       let cacheFile: string;
@@ -4098,7 +4099,7 @@ describe('BrowserWindow module', () => {
         preload = path.join(os.tmpdir(), `preload-code-cache-${crypto.randomUUID()}.js`);
         fs.copyFileSync(fixture, preload);
         const cacheKey = crypto.createHash('sha256').update(`preload-${preload}`).digest('hex').toUpperCase();
-        cacheFile = path.join(cacheDir, `${cacheKey}-${siteHash}.cache`);
+        cacheFile = path.join(cacheDir, `${cacheKey}-${fileLockHash}.cache`);
       });
       const waitFor = async (predicate: () => boolean, what: string, timeoutMs = 5000) => {
         const start = Date.now();
@@ -4134,11 +4135,16 @@ describe('BrowserWindow module', () => {
           webPreferences: { sandbox: true, contextIsolation: true, preload }
         });
 
-      // The `${sha256(site)}` half of the filename is an implementation detail
-      // of the browser process (the consuming frame's SiteInstance site URL).
-      // Every test here loads file:// documents, so learn the suffix once by
-      // producing a probe entry and reading the name of the file it creates.
-      let siteHash: string;
+      const cacheFilesFor = (cacheKey: string) =>
+        fs.existsSync(cacheDir)
+          ? fs.readdirSync(cacheDir).filter((f) => f.startsWith(`${cacheKey}-`) && f.endsWith('.cache'))
+          : [];
+
+      // The `${sha256(processLock)}` half of the filename is an implementation
+      // detail of the browser process. Most tests here load file:// documents,
+      // so learn that suffix once by producing a probe entry and reading the
+      // name of the file it creates.
+      let fileLockHash: string;
       before(async () => {
         const probePreload = path.join(os.tmpdir(), `preload-code-cache-probe-${crypto.randomUUID()}.js`);
         fs.copyFileSync(fixture, probePreload);
@@ -4150,17 +4156,20 @@ describe('BrowserWindow module', () => {
         const ran = once(ipcMain, 'preload-code-cache-ran');
         await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
         await ran;
-        let probeFile: string | undefined;
-        await waitFor(() => {
-          probeFile = fs.existsSync(cacheDir)
-            ? fs.readdirSync(cacheDir).find((f) => f.startsWith(`${probeKey}-`) && f.endsWith('.cache'))
-            : undefined;
-          return !!probeFile;
-        }, 'probe cache file to be written');
-        siteHash = probeFile!.slice(probeKey.length + 1, -'.cache'.length);
-        w.destroy();
-        fs.rmSync(probePreload, { force: true });
-        fs.rmSync(path.join(cacheDir, probeFile!), { force: true });
+        try {
+          let probeFile: string | undefined;
+          await waitFor(() => {
+            probeFile = cacheFilesFor(probeKey)[0];
+            return !!probeFile && fs.statSync(path.join(cacheDir, probeFile)).size > 0;
+          }, 'probe cache file to be written');
+          fileLockHash = probeFile!.slice(probeKey.length + 1, -'.cache'.length);
+        } finally {
+          w.destroy();
+          await removeFile(probePreload);
+          for (const f of cacheFilesFor(probeKey)) {
+            await removeFile(path.join(cacheDir, f));
+          }
+        }
       });
 
       it('produces and persists a code cache after the first compile', async () => {
@@ -4218,6 +4227,36 @@ describe('BrowserWindow module', () => {
         // blobs are several hundred bytes minimum.
         await waitFor(() => fs.statSync(cacheFile).size > 100, 'cache file to be overwritten');
         expect(fs.statSync(cacheFile).size).to.be.greaterThan(100);
+      });
+
+      it('keeps a separate entry for each principal that consumes the preload', async () => {
+        // The same preload on two different-site documents is two principals,
+        // so it must produce two entries rather than one site's blob being
+        // served to (or clobbered by) the other's.
+        const server = http.createServer((_req, res) => {
+          res.setHeader('Content-Type', 'text/html');
+          res.end('<title>blank</title>');
+        });
+        const { port } = await listen(server);
+        try {
+          for (const host of ['127.0.0.1', 'localhost']) {
+            const w = makeWindow();
+            const ran = once(ipcMain, 'preload-code-cache-ran');
+            await w.loadURL(`http://${host}:${port}/`);
+            await ran;
+            w.destroy();
+          }
+          const cacheKey = crypto.createHash('sha256').update(`preload-${preload}`).digest('hex').toUpperCase();
+          await waitFor(
+            () => cacheFilesFor(cacheKey).filter((f) => fs.statSync(path.join(cacheDir, f)).size > 0).length === 2,
+            'a cache file per site'
+          );
+          for (const f of cacheFilesFor(cacheKey)) {
+            await removeFile(path.join(cacheDir, f));
+          }
+        } finally {
+          server.close();
+        }
       });
 
       it('does not consume a cache produced from different source of the same length', async () => {

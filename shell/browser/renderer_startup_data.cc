@@ -23,7 +23,6 @@
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/node_includes.h"
-#include "url/gurl.h"
 
 namespace electron::renderer_startup_data {
 
@@ -56,14 +55,14 @@ base::FilePath GetHelperExecPath() {
 
 // Reads one preload script into a PreloadScriptData. When |served| is
 // non-null the script participates in the preload code cache: the source is
-// hashed once, the hash both gates the (same-site) cache lookup and is
+// hashed once, the hash both gates the same-Scope cache lookup and is
 // appended to |served| so it can be recorded as the trust anchor that
 // SetPreloadCodeCache writes from the frame are validated against. Service
 // worker realms pass null — they have no code-cache producer.
 mojom::PreloadScriptDataPtr ReadPreloadScript(
     const std::string& id,
     const base::FilePath& path,
-    const GURL& site,
+    const preload_code_cache::Scope& scope,
     std::vector<preload_code_cache::ServedPreload>* served) {
   auto ps = mojom::PreloadScriptData::New();
   ps->id = id;
@@ -78,7 +77,7 @@ mojom::PreloadScriptDataPtr ReadPreloadScript(
   if (served) {
     const preload_code_cache::SourceHash hash =
         crypto::hash::Sha256(ps->contents);
-    std::vector<uint8_t> cache = preload_code_cache::Get(id, site, hash);
+    std::vector<uint8_t> cache = preload_code_cache::Get(scope, id, hash);
     if (!cache.empty())
       ps->code_cache = std::move(cache);
     served->emplace_back(id, hash);
@@ -90,7 +89,7 @@ mojom::PreloadScriptDataPtr ReadPreloadScript(
 mojom::RendererStartupDataPtr BuildInternal(
     content::BrowserContext* browser_context,
     PreloadScript::ScriptType type,
-    const GURL& site,
+    const preload_code_cache::Scope& scope,
     std::vector<preload_code_cache::ServedPreload>* served) {
   auto data = mojom::RendererStartupData::New();
 
@@ -102,7 +101,7 @@ mojom::RendererStartupDataPtr BuildInternal(
       if (!script.file_path.IsAbsolute())
         continue;
       data->preload_scripts.push_back(
-          ReadPreloadScript(script.id, script.file_path, site, served));
+          ReadPreloadScript(script.id, script.file_path, scope, served));
     }
   }
 
@@ -115,15 +114,17 @@ mojom::RendererStartupDataPtr BuildInternal(
 
 mojom::RendererStartupDataPtr Build(content::BrowserContext* browser_context,
                                     PreloadScript::ScriptType type) {
-  return BuildInternal(browser_context, type, GURL(), nullptr);
+  return BuildInternal(browser_context, type, preload_code_cache::Scope(),
+                       nullptr);
 }
 
 mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh) {
-  const GURL site = preload_code_cache::SiteForFrame(rfh);
+  const preload_code_cache::Scope scope =
+      preload_code_cache::ScopeForFrame(rfh);
   std::vector<preload_code_cache::ServedPreload> served;
   auto data =
       BuildInternal(rfh->GetBrowserContext(),
-                    PreloadScript::ScriptType::kWebFrame, site, &served);
+                    PreloadScript::ScriptType::kWebFrame, scope, &served);
 
   // The per-WebContents webPreferences.preload runs last. May be absent for a
   // WebContents that never went through a BrowserWindow/webContents
@@ -137,7 +138,7 @@ mojom::RendererStartupDataPtr BuildForFrame(content::RenderFrameHost* rfh) {
   if (preload && preload->IsAbsolute()) {
     data->preload_scripts.push_back(ReadPreloadScript(
         preload_code_cache::IdForWebPreferencesPreload(*preload), *preload,
-        site, &served));
+        scope, &served));
   }
 
   // Remember exactly what was served to this frame; SetPreloadCodeCache()

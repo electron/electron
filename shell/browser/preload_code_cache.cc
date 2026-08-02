@@ -15,19 +15,17 @@
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/no_destructor.h"
-#include "base/path_service.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/thread_pool.h"
-#include "chrome/common/chrome_paths.h"
+#include "content/browser/process_lock.h"  // nogncheck
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/render_frame_host.h"
-#include "content/public/browser/security_principal.h"
-#include "content/public/browser/site_instance.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "content/public/browser/web_contents_user_data.h"
-#include "url/gurl.h"
 
 namespace electron::preload_code_cache {
 
@@ -42,8 +40,8 @@ struct Entry {
   std::vector<uint8_t> blob;
 };
 
-// In-memory tier, keyed by (id, site). The optional<> memoizes a disk miss so
-// it isn't re-tried per navigation. UI-thread only: both Get() (from the
+// In-memory tier, keyed by (scope, id). The optional<> memoizes a disk miss
+// so it isn't re-tried per navigation. UI-thread only: both Get() (from the
 // navigation push paths) and SetFromRenderer() (from the
 // ElectronWebContentsUtility associated receiver on the RenderFrameHost) are
 // dispatched on the UI thread, so the map needs no lock and concurrent
@@ -116,24 +114,22 @@ class ServedPreloadTracker final
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(ServedPreloadTracker);
 
-// One slot per (id, producing site): different-site consumers of the same
-// preload keep separate entries instead of evicting each other's.
-std::string CacheKey(const std::string& id, const GURL& site) {
-  return site.possibly_invalid_spec() + '\n' + id;
+// One slot per (scope, id): different principals consuming the same preload
+// keep separate entries instead of evicting each other's.
+std::string CacheKey(const Scope& scope, const std::string& id) {
+  return scope.context_id + '\n' + scope.process_lock + '\n' + id;
 }
 
-base::FilePath PathForEntry(const std::string& id, const GURL& site) {
-  base::FilePath dir;
-  if (!base::PathService::Get(chrome::DIR_USER_DATA, &dir))
+// sha256(id)-sha256(process lock) keeps the filename filesystem-safe and
+// bounded while giving each (preload, principal) pair its own file. The
+// BrowserContext is implied by |scope.dir|.
+base::FilePath PathForEntry(const Scope& scope, const std::string& id) {
+  if (scope.dir.empty())
     return {};
-  // sha256(id)-sha256(site) keeps the filename filesystem-safe and bounded
-  // while giving each (preload, site) pair its own file.
   std::string digest =
       base::HexEncode(crypto::hash::Sha256(id)) + "-" +
-      base::HexEncode(crypto::hash::Sha256(site.possibly_invalid_spec()));
-  return dir.AppendASCII("Code Cache")
-      .AppendASCII("electron-preload")
-      .AppendASCII(digest + ".cache");
+      base::HexEncode(crypto::hash::Sha256(scope.process_lock));
+  return scope.dir.AppendASCII(digest + ".cache");
 }
 
 std::optional<Entry> ParseDiskEntry(const std::string& file_contents) {
@@ -164,24 +160,42 @@ std::string IdForWebPreferencesPreload(const base::FilePath& path) {
   return "preload-" + path.AsUTF8Unsafe();
 }
 
-GURL SiteForFrame(content::RenderFrameHost* rfh) {
-  return rfh ? rfh->GetSiteInstance()
-                   ->GetSecurityPrincipal()
-                   .GetDeprecatedSiteURL()
-             : GURL();
+Scope::Scope() = default;
+Scope::Scope(const Scope&) = default;
+Scope::Scope(Scope&&) = default;
+Scope::~Scope() = default;
+
+// ProcessLock::ToString() is a //content-internal debug string with no
+// format contract; it is used only as opaque bytes to hash into the entry's
+// filename. If a Chromium roll changes its formatting the old files simply
+// stop matching and the cache re-warms (one cold compile), which is the
+// intended failure mode rather than a bug.
+Scope ScopeForFrame(content::RenderFrameHost* rfh) {
+  Scope scope;
+  if (!rfh)
+    return scope;
+  auto* browser_context = rfh->GetBrowserContext();
+  scope.context_id = browser_context->UniqueId();
+  scope.process_lock = rfh->GetProcess()->GetProcessLock().ToString();
+  if (!browser_context->IsOffTheRecord()) {
+    scope.dir = browser_context->GetPath()
+                    .AppendASCII("Code Cache")
+                    .AppendASCII("electron-preload");
+  }
+  return scope;
 }
 
-std::vector<uint8_t> Get(const std::string& id,
-                         const GURL& site,
+std::vector<uint8_t> Get(const Scope& scope,
+                         const std::string& id,
                          const SourceHash& source_hash) {
   auto& cache = GetMemoryCache();
-  const std::string key = CacheKey(id, site);
+  const std::string key = CacheKey(scope, id);
   auto it = cache.find(key);
   if (it == cache.end()) {
     // Cold lookup: read disk once and memoize (including misses).
     std::optional<Entry> entry;
     std::string file_contents;
-    base::FilePath path = PathForEntry(id, site);
+    base::FilePath path = PathForEntry(scope, id);
     if (!path.empty() && base::ReadFileToString(path, &file_contents))
       entry = ParseDiskEntry(file_contents);
     it = cache.insert_or_assign(it, key, std::move(entry));
@@ -250,8 +264,8 @@ void SetFromRenderer(content::RenderFrameHost* rfh,
                  entry.source_hash.end());
   payload.insert(payload.end(), entry.blob.begin(), entry.blob.end());
 
-  const GURL site = SiteForFrame(rfh);
-  GetMemoryCache().insert_or_assign(CacheKey(id, site), std::move(entry));
+  const Scope scope = ScopeForFrame(rfh);
+  GetMemoryCache().insert_or_assign(CacheKey(scope, id), std::move(entry));
   // Fire-and-forget; a lost write just costs one cold compile next launch.
   // SKIP_ON_SHUTDOWN so an in-flight write finishes (no torn cache file)
   // rather than being abandoned mid-write during teardown.
@@ -259,7 +273,8 @@ void SetFromRenderer(content::RenderFrameHost* rfh,
       FROM_HERE,
       {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
        base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
-      base::BindOnce(&WriteToDisk, PathForEntry(id, site), std::move(payload)));
+      base::BindOnce(&WriteToDisk, PathForEntry(scope, id),
+                     std::move(payload)));
 }
 
 }  // namespace electron::preload_code_cache
