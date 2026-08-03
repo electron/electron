@@ -8,7 +8,12 @@ import { hasCapturableScreen } from './lib/screen-helpers';
 import { ifdescribe, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
-// These tests are skipped when robotjs or a capturable screen is unavailable
+//TODO(@mlaurencin): These tests can't run on CI yet, as they need a
+// capturable screen (unavailable for Windows/Linux, the relevant platforms).
+// Find a robotjs-free approach that avoids flakes and works on CI.
+
+// robotjs is an optional native dependency; if it fails to load the suite is
+// skipped in the before hook below.
 let robot: typeof import('@hurdlegroup/robotjs');
 try {
   robot = require('@hurdlegroup/robotjs');
@@ -18,9 +23,8 @@ try {
 
 const display = screen.getPrimaryDisplay();
 
-// Delay between key presses to give the native menu run loop time to process
-// each event before the next one is sent. Kept generous because robotjs can
-// drop keystrokes that arrive too quickly for the nested menu message loop.
+// Delay between key presses. robotjs can drop keystrokes that arrive 
+// too quickly for the nested menu message loop.
 const KEY_DELAY = 350;
 
 // The sibling-menu switching feature only exists on the Views menu
@@ -102,6 +106,7 @@ ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching',
   };
 
   before(async function () {
+    // Skip when robotjs is unavailable or there's no capturable screen
     if (!robot || !robot.keyTap || !hasCapturableScreen()) {
       this.skip();
       return;
@@ -118,19 +123,18 @@ ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching',
     await w.loadURL('about:blank');
     await focusWindow();
 
-    // The first interaction may be dropped due to UI transitions or focus
-    // management. Warm up with a throwaway open/close cycle.
+    //  Warm up with a throwaway open/close cycle.
     await pressKeys([['a', ['alt']], 'escape', 'escape']);
   });
 
   beforeEach(async () => {
     lastClicked = null;
-    // Re-establish foreground focus so keystrokes are routed to the shared window.
+    // Re-establish foreground focus
     await focusWindow();
   });
 
   afterEach(async () => {
-    // Dismiss any open menu so the next test starts from a clean state.
+    // Dismiss any open menu for a clean state.
     if (robot && robot.keyTap) {
       robot.keyTap('escape');
       robot.keyTap('escape');
