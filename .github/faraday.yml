@@ -7,6 +7,12 @@ trusted-bots:
   # Backport PRs to release branches.
   - login: trop[bot]
     id: 37223003
+  # PGO profile roll PRs; trusted only when every changed file is
+  # under build/pgo_profiles/.
+  - login: electron-pgo-updater[bot]
+    id: 290827142
+    paths:
+      - build/pgo_profiles/**
   # Chromium / Node.js roll PRs.
   - login: electron-roller[bot]
     id: 84116207
