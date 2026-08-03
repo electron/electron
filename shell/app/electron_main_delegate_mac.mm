@@ -62,8 +62,10 @@ void ElectronMainDelegate::OverrideChildProcessPath() {
       GetHelperAppPath(frameworks_path, ELECTRON_PRODUCT_NAME);
   if (!base::PathExists(helper_path))
     helper_path = GetHelperAppPath(frameworks_path, GetApplicationName());
+  // The helper can be missing when the bundle is replaced or deleted while
+  // running; child launches will fail cleanly, so don't crash this process.
   if (!base::PathExists(helper_path))
-    LOG(FATAL) << "Unable to find helper app";
+    LOG(ERROR) << "Unable to find helper app at " << helper_path;
   base::PathService::OverrideAndCreateIfNeeded(
       content::CHILD_PROCESS_EXE, helper_path, /*is_absolute=*/true,
       /*create=*/false);

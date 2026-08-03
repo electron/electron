@@ -525,6 +525,11 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     base::FilePath child_path;
     base::FilePath program =
         base::MakeAbsoluteFilePath(command_line->GetProgram());
+    // realpath() fails if the helper is no longer on disk (e.g. the app bundle
+    // was replaced or removed while running). Such a path cannot be exec'd, so
+    // compare it literally and let the launch fail instead of crashing here.
+    if (program.empty())
+      program = command_line->GetProgram();
 #if BUILDFLAG(IS_MAC)
     auto renderer_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_RENDERER);
