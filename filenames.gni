@@ -619,6 +619,8 @@ filenames = {
     "shell/common/color_util.h",
     "shell/common/crash_keys.cc",
     "shell/common/crash_keys.h",
+    "shell/common/v8_oom_diagnostics.cc",
+    "shell/common/v8_oom_diagnostics.h",
     "shell/common/electron_command_line.cc",
     "shell/common/electron_command_line.h",
     "shell/common/electron_constants.h",
