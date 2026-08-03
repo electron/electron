@@ -245,7 +245,8 @@ bool Archive::Init() {
     // more below ensure we read them in preference order from most secure to
     // least
     if (integrity->algorithm != HashAlgorithm::kNone) {
-      ValidateIntegrityOrDie(base::as_byte_span(header), *integrity);
+      ValidateIntegrityOrDie(base::as_byte_span(header), *integrity,
+                             "<header>");
     } else {
       LOG(FATAL) << "No eligible hash for validatable asar archive: "
                  << RelativePath().value();
