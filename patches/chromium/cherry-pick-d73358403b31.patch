@@ -21,7 +21,7 @@ Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1618677}
 
 diff --git a/third_party/blink/renderer/core/inspector/dev_tools_emulator.cc b/third_party/blink/renderer/core/inspector/dev_tools_emulator.cc
-index f771c0c..46e3b46 100644
+index f771c0c1fb6ff726d9ca42df9ddbb4ccb93b8d0e..46e3b466cab6074fc09daa9351ef47cca7df88f3 100644
 --- a/third_party/blink/renderer/core/inspector/dev_tools_emulator.cc
 +++ b/third_party/blink/renderer/core/inspector/dev_tools_emulator.cc
 @@ -393,11 +393,12 @@ void DevToolsEmulator::DisableDeviceEmulation() {
