@@ -103,6 +103,7 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/child_web_contents_tracker.h"
 #include "shell/browser/electron_autofill_driver_factory.h"
+#include "shell/browser/electron_browser_client.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
@@ -1342,19 +1343,64 @@ void WebContents::WebContentsCreatedWithFullParams(
   new WebContentsPreferences(new_contents, dict);
 }
 
-bool WebContents::IsWebContentsCreationOverridden(
+bool WebContents::OnWillCreateWindow(
     content::RenderFrameHost* opener,
-    content::SiteInstance* source_site_instance,
-    content::mojom::WindowContainerType window_container_type,
-    const GURL& opener_url,
-    const content::mojom::CreateNewWindowParams& params) {
-  bool default_prevented = Emit(
-      "-will-add-new-contents", params.target_url, params.frame_name,
-      params.raw_features, params.disposition, *params.referrer, params.body);
-  // If the app prevented the default, redirect to CreateCustomWebContents,
-  // which always returns nullptr, which will result in the window open being
-  // prevented (window.open() will return null in the renderer).
-  return default_prevented;
+    const GURL& target_url,
+    const std::string& frame_name,
+    const std::string& raw_features,
+    WindowOpenDisposition disposition,
+    const content::Referrer& referrer,
+    const scoped_refptr<network::ResourceRequestBody>& body,
+    bool opener_suppressed,
+    bool* no_javascript_access) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  pending_child_web_preferences_.Reset();
+
+  // If the app prevents the default the window open is denied and
+  // window.open() will return null in the renderer.
+  if (Emit("-will-add-new-contents", target_url, frame_name, raw_features,
+           disposition, referrer, body)) {
+    pending_child_web_preferences_.Reset();
+    return false;
+  }
+
+  // A suppressed opener (e.g. noopener) already puts the child in its own
+  // BrowsingInstance and process, so its sandbox state is honoured either way.
+  if (opener_suppressed)
+    return true;
+
+  // The OS sandbox is fixed when a renderer process launches, so a child whose
+  // sandbox state differs from the opener's process must not share it.
+  std::optional<bool> opener_sandboxed =
+      ElectronBrowserClient::Get()->IsRendererProcessSandboxed(
+          opener->GetProcess()->GetID());
+  if (!opener_sandboxed) {
+    opener_sandboxed = WebContentsPreferences::ShouldUseSandbox(
+        content::WebContents::FromRenderFrameHost(opener));
+  }
+
+  gin_helper::Dictionary child_web_preferences =
+      gin::Dictionary::CreateEmpty(isolate);
+  if (!pending_child_web_preferences_.IsEmpty()) {
+    gin::ConvertFromV8(isolate, pending_child_web_preferences_.Get(isolate),
+                       &child_web_preferences);
+  }
+
+  if (WebContentsPreferences::IsSandboxed(child_web_preferences) !=
+      *opener_sandboxed) {
+    opener->AddMessageToConsole(
+        blink::mojom::ConsoleMessageLevel::kWarning,
+        "window.open(): the new window's sandbox setting differs from the "
+        "sandbox state of the opener's renderer process, so it was created in "
+        "a separate process without an opener relationship and window.open() "
+        "returned null. Set `sandbox` (or `nodeIntegration`) explicitly in "
+        "webContents.setWindowOpenHandler() to match the opener if the "
+        "windows need to share a process.");
+    *no_javascript_access = true;
+  }
+  return true;
 }
 
 void WebContents::SetNextChildWebPreferences(
@@ -1364,20 +1410,6 @@ void WebContents::SetNextChildWebPreferences(
   // Store these prefs for when Chrome calls WebContentsCreatedWithFullParams
   // with the new child contents.
   pending_child_web_preferences_.Reset(isolate, preferences.GetHandle());
-}
-
-content::WebContents* WebContents::CreateCustomWebContents(
-    content::RenderFrameHost* opener,
-    content::SiteInstance* source_site_instance,
-    bool is_new_browsing_instance,
-    const GURL& opener_url,
-    const std::string& frame_name,
-    const GURL& target_url,
-    WindowOpenDisposition disposition,
-    const blink::mojom::WindowFeatures& window_features,
-    const content::StoragePartitionConfig& partition_config,
-    content::SessionStorageNamespace* session_storage_namespace) {
-  return nullptr;
 }
 
 void WebContents::MaybeOverrideCreateParamsForNewWindow(

@@ -667,6 +667,14 @@ describe('<webview> tag', function () {
         show: false,
         webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false }
       });
+      // Cross-scripting the popup requires it to share the webview's
+      // unsandboxed process, so opt the child out of the default sandbox.
+      w.webContents.on('did-attach-webview', (_event, webviewContents) => {
+        webviewContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
+        }));
+      });
       await w.loadURL('about:blank');
     });
     afterEach(closeAllWindows);

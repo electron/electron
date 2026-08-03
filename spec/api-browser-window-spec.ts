@@ -4746,6 +4746,12 @@ describe('BrowserWindow module', () => {
             contextIsolation: false
           }
         });
+        // Cross-scripting the popup requires it to share the (unsandboxed)
+        // opener's process, so opt the child out of the default sandbox.
+        w.webContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
+        }));
       });
 
       it('opens window of about:blank with cross-scripting enabled', async () => {
