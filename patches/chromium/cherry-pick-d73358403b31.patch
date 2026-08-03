@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Wed, 22 Apr 2026 06:29:20 +0000
+Subject: Fix null dereference in DevToolsEmulator::DisableDeviceEmulation
+
+DevToolsEmulator::DisableDeviceEmulation() calls
+WebViewImpl::SetPageScaleFactor(1.f) without checking if
+MainFrameImpl() is null. WebViewImpl::SetPageScaleFactor assumes
+MainFrameImpl() is non-null and attempts to access it, leading to a
+crash when it is null (which can happen during cleanup or remote <->
+local frame swaps).
+
+This CL adds a null check for MainFrameImpl() before calling
+SetPageScaleFactor, consistent with other checks in the same method.
+
+Fixed: 411541676
+Change-Id: Ie3e5bddff1d738d64456046c4d9f10d644589f7d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7784850
+Reviewed-by: Alex Rudenko <alexrudenko@chromium.org>
+Commit-Queue: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1618677}
+
+diff --git a/third_party/blink/renderer/core/inspector/dev_tools_emulator.cc b/third_party/blink/renderer/core/inspector/dev_tools_emulator.cc
+index f771c0c..46e3b46 100644
+--- a/third_party/blink/renderer/core/inspector/dev_tools_emulator.cc
++++ b/third_party/blink/renderer/core/inspector/dev_tools_emulator.cc
+@@ -393,11 +393,12 @@ void DevToolsEmulator::DisableDeviceEmulation() {
+   DisableMobileEmulation();
+   SetForceAndroidOverlayScrollbar(false);
+   web_view_->SetCompositorDeviceScaleFactorOverride(0.f);
+-  web_view_->SetPageScaleFactor(1.f);
+ 
+-  // TODO(wjmaclean): Tell all local frames in the WebView's frame tree, not
+-  // just a local main frame.
+   if (web_view_->MainFrameImpl()) {
++    web_view_->SetPageScaleFactor(1.f);
++
++    // TODO(wjmaclean): Tell all local frames in the WebView's frame tree,
++    // not just a local main frame.
+     if (Document* document =
+             web_view_->MainFrameImpl()->GetFrame()->GetDocument())
+       document->MediaQueryAffectingValueChanged(MediaValueChange::kOther);
