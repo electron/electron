@@ -23,7 +23,7 @@ try {
 
 const display = screen.getPrimaryDisplay();
 
-// Delay between key presses. robotjs can drop keystrokes that arrive 
+// Delay between key presses. robotjs can drop keystrokes that arrive
 // too quickly for the nested menu message loop.
 const KEY_DELAY = 350;
 
