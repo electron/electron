@@ -43,7 +43,7 @@ index dd48ee2a99aeeddad66c95e7c61b17580bb523e5..1d7fa6c4a7956b9a356e4203e8c61eb7
    //  When the enterprise policy is not set, use finch/feature flag choice.
    return base::FeatureList::IsEnabled(chrome_pdf::features::kPdfXfaSupport);
 diff --git a/chrome/browser/pdf/pdf_extension_util.cc b/chrome/browser/pdf/pdf_extension_util.cc
-index be7433c4b42d0e3e5369dbf84baeab283fbdd8a2..d5cdaf4e086e7aa21f95959d197625d6dfd7469f 100644
+index dc70c7a569c4fb32249b6eb484ad795c302bf78a..8001d32ff36f7336083f532814393e2addb315c7 100644
 --- a/chrome/browser/pdf/pdf_extension_util.cc
 +++ b/chrome/browser/pdf/pdf_extension_util.cc
 @@ -16,7 +16,6 @@
@@ -54,7 +54,7 @@ index be7433c4b42d0e3e5369dbf84baeab283fbdd8a2..d5cdaf4e086e7aa21f95959d197625d6
  #include "chrome/common/chrome_features.h"
  #include "chrome/common/extensions/api/pdf_viewer_private.h"
  #include "chrome/common/url_constants.h"
-@@ -280,10 +279,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
+@@ -284,10 +283,13 @@ bool IsPrintingEnabled(content::BrowserContext* context) {
  
  #if BUILDFLAG(ENABLE_PDF_INK2)
  bool IsPdfAnnotationsEnabledByPolicy(content::BrowserContext* context) {
@@ -68,7 +68,7 @@ index be7433c4b42d0e3e5369dbf84baeab283fbdd8a2..d5cdaf4e086e7aa21f95959d197625d6
  }
  
  bool IsPdfInk2AnnotationsEnabled(content::BrowserContext* context) {
-@@ -498,11 +500,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
+@@ -502,11 +504,13 @@ bool ShouldShowGlicSummarizeButton(content::WebContents* web_contents) {
      }
    }
  
@@ -162,17 +162,17 @@ index 50011dcf2b2b6f5d99fd59556ef8f9bbafb84c4e..eb92410b15a3828f60d1c0c94edf7a62
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
  
 diff --git a/chrome/browser/win/titlebar_config.cc b/chrome/browser/win/titlebar_config.cc
-index 7898ea88ca529660e52c1f9e2517d6f016b740a5..114046912999f4ca9d21f7d5859d14ecaaab9f56 100644
+index 65b591832e02d3b41d0768bb250e548386878a87..3e97329c584e9d28d5d73e9cb43590ce8568c19b 100644
 --- a/chrome/browser/win/titlebar_config.cc
 +++ b/chrome/browser/win/titlebar_config.cc
-@@ -12,8 +12,10 @@
- 
+@@ -13,8 +13,10 @@
  bool ShouldBrowserCustomDrawTitlebar(BrowserView* browser_view) {
+   const BrowserWindowInterface::Type type = browser_view->browser()->GetType();
    return !ShouldDefaultThemeUseMicaTitlebar() ||
 +#if 0
           !ThemeServiceFactory::GetForProfile(browser_view->GetProfile())
                ->UsingSystemTheme() ||
 +#endif
-          (!browser_view->browser()->is_type_normal() &&
-           !browser_view->browser()->is_type_popup() &&
-           !browser_view->browser()->is_type_devtools());
+          (type != BrowserWindowInterface::Type::TYPE_NORMAL &&
+           type != BrowserWindowInterface::Type::TYPE_POPUP &&
+           type != BrowserWindowInterface::Type::TYPE_DEVTOOLS);

@@ -26,10 +26,10 @@ hook called before the new RenderFrame is created so it can be picked up
 by RenderFrameCreated() on the same call stack.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index d6734f2e996f3bb171678383fadf3ff61fde3139..2d722147d0bbe469b624e48ca5e18eeec0ba1dbe 100644
+index f6bf7af98e4d09334a926b0de0915f3b352b3fae..edcadd068bfd008d649b6ae89732ff9fbabd7a6b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10677,7 +10677,12 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10711,7 +10711,12 @@ void RenderFrameHostImpl::CreateNewWindow(
        new_main_rfh->GetSiteInstance()->browsing_instance_token(),
        delegate_->GetColorProviderColorMaps(),
        /*widget_screen_rect=*/std::nullopt,
@@ -71,10 +71,10 @@ index 4fba4300c9ac22f2937b080e518f723a4fc1a4a7..b475f17c360a04cfc3750c0e2cb5fa21
  
  // A per-navigation interface passed along with the BeginNavigation call, used
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 51982fc96bd68d7f607cc5840ac1ed8843dcbdf9..e56ac39e75a5e8e346a1b18845a4e6f94307194f 100644
+index f88dfd2bf057701c1b84d83b89c88c3037f9f15e..39bf28cbf1e108200b31b42e210ea6e5cd8bdcf2 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -829,6 +829,13 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -830,6 +830,13 @@ bool ContentBrowserClient::CanCreateWindow(
    return true;
  }
  
@@ -89,7 +89,7 @@ index 51982fc96bd68d7f607cc5840ac1ed8843dcbdf9..e56ac39e75a5e8e346a1b18845a4e6f9
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a2826e27c0d51be9d736d19c03168079a7cbc466..70a74861db48c9683dcbbcbb2ecf46441769a1f0 100644
+index 175522eafcff19f078374335c3df98fe2cce2d99..fe8f7876e49fdf4362c4bd5f0bbb8355ec76c814 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -61,6 +61,7 @@
@@ -100,7 +100,7 @@ index a2826e27c0d51be9d736d19c03168079a7cbc466..70a74861db48c9683dcbbcbb2ecf4644
  #include "mojo/public/cpp/bindings/pending_remote.h"
  #include "mojo/public/cpp/bindings/remote.h"
  #include "mojo/public/cpp/system/message_pipe.h"
-@@ -1310,6 +1311,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1311,6 +1312,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        bool opener_suppressed,
        bool* no_javascript_access);
  
@@ -119,7 +119,7 @@ index a2826e27c0d51be9d736d19c03168079a7cbc466..70a74861db48c9683dcbbcbb2ecf4644
    // The delegate will be owned by the manager. It's valid to return nullptr.
    virtual SpeechRecognitionManagerDelegate*
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 72c4d2f042afd428f2bf945bf54de873f256ca21..492694475e63e441a09a264cbbb2fc4fd585c3f1 100644
+index 56009a9640f31f71fc3e939d38b601587b164148..3342362452fe9228cfba3920ad178127194e56d5 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -24,6 +24,7 @@
@@ -148,10 +148,10 @@ index 72c4d2f042afd428f2bf945bf54de873f256ca21..492694475e63e441a09a264cbbb2fc4f
    // `outermost_origin` is only set if it is an extension scheme, otherwise
    // it will be null. It is null to avoid leaking unnecessary information into
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index e8a1197892c88ce7107aa2e05a914355ac1b0f0a..016147c1bf12984efa687acba7af98d6da22b46e 100644
+index 1523d314df5458a889a190d30a61003d5da9a27f..82c65ff65bc56977c0818e9781c5e6c2946ff2e3 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -7070,6 +7070,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -7181,6 +7181,14 @@ WebView* RenderFrameImpl::CreateNewWindow(
      return nullptr;
    }
  
