@@ -319,7 +319,8 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       if (axState && axState->GetAccessibilityMode() != ui::kAXModeComplete) {
         scoped_accessibility_mode_ =
             content::BrowserAccessibilityState::GetInstance()
-                ->CreateScopedModeForProcess(ui::kAXModeComplete);
+                ->CreateScopedModeForProcess(ui::kAXModeComplete |
+                                             ui::AXMode::kFromPlatform);
         Browser::Get()->OnAccessibilitySupportChanged();
       }
 
