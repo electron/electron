@@ -367,6 +367,33 @@ describe('webRequest module', () => {
       await ajax(defaultURL + 'serverRedirect');
     });
 
+    it('does not crash when redirecting a CORS preflight OPTIONS request', async () => {
+      const target = http.createServer((req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Headers', 'x-trigger');
+        res.setHeader('Access-Control-Allow-Methods', 'POST');
+        res.end('ok');
+      });
+      const targetPort = (await listen(target)).port;
+      defer(() => target.close());
+
+      ses.webRequest.onBeforeRequest(
+        { urls: ['http://127.0.0.1/*'] },
+        (details, callback) => {
+          if (details.method === 'OPTIONS' && details.url.endsWith('/data')) {
+            callback({ redirectURL: `http://127.0.0.1:${targetPort}/noop` });
+            return;
+          }
+          callback({});
+        }
+      );
+
+      await ajax(`http://127.0.0.1:${targetPort}/data`, {
+        method: 'POST',
+        headers: { 'X-Trigger': '1' }
+      }).catch(() => {});
+    });
+
     it('works with file:// protocol', async () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         callback({ cancel: true });
