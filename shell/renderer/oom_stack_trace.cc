@@ -12,7 +12,6 @@
 #include "base/logging.h"
 #include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/threading/thread_local.h"
 #include "electron/mas.h"
 #include "gin/per_isolate_data.h"
@@ -175,10 +174,7 @@ size_t NearHeapLimitCallback(void* data,
   if (current_heap_limit >= kCageLimit - kHeapBump) {
     // The bump will be clamped by V8 to the cage ceiling, leaving no
     // headroom for the interrupt to fire. Record what we can now.
-#if !IS_MAS_BUILD()
-    crash_keys::SetCrashKey("electron.v8-oom.stack",
-                            heap_info + " (at cage limit, stack unavailable)");
-#endif
+    v8_oom::RecordJsStack(isolate, heap_info + " (at cage limit, stack unavailable)");
     LOG(INFO) << "Near V8 cage limit; stack trace capture may not succeed";
   }
 
