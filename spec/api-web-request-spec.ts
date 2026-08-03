@@ -388,11 +388,10 @@ describe('webRequest module', () => {
         }
       );
 
-      await ajax(`http://127.0.0.1:${targetPort}/data`, {
+      await expect(ajax(`http://127.0.0.1:${targetPort}/data`, {
         method: 'POST',
         headers: { 'X-Trigger': '1' }
-      }).catch(() => {});
-    });
+      })).to.eventually.be.rejected();
 
     it('works with file:// protocol', async () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
