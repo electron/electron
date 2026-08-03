@@ -142,9 +142,9 @@ void ValidateIntegrityOrDie(base::span<const uint8_t> input,
     const std::string hex_hash =
         base::ToLowerASCII(base::HexEncode(crypto::hash::Sha256(input)));
     if (integrity.hash != hex_hash) {
-      LOG(FATAL) << "Integrity check failed for asar entry '" << what
-                 << "' (" << integrity.hash << " vs " << hex_hash
-                 << ", " << input.size() << " bytes)";
+      LOG(FATAL) << "Integrity check failed for asar archive entry '" << what
+                 << "' (" << integrity.hash << " vs " << hex_hash << ", "
+                 << input.size() << " bytes)";
     }
   } else {
     LOG(FATAL) << "Unsupported hashing algorithm in ValidateIntegrityOrDie";
