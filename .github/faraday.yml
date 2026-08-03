@@ -10,3 +10,11 @@ trusted-bots:
   # Chromium / Node.js roll PRs.
   - login: electron-roller[bot]
     id: 84116207
+
+trusted-reviewers:
+  # Docs reviewer app — counts as at most one approval, and only
+  # when every changed file is under docs/.
+  - login: electron-docs-reviewer[bot]
+    id: 114909645
+    paths:
+      - docs/**
