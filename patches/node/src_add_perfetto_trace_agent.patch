@@ -782,10 +782,10 @@ index 0000000000000000000000000000000000000000..87227b95fd56162a9f577bed4d44bafd
 +#endif
 diff --git a/src/tracing/trace_event_perfetto.h b/src/tracing/trace_event_perfetto.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..998a8b43933e03ca84a0c5d7fbf7a067f214ff88
+index 0000000000000000000000000000000000000000..3765d931f8e17b33e2201ff3a0e4be84a3216356
 --- /dev/null
 +++ b/src/tracing/trace_event_perfetto.h
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,51 @@
 +#ifndef SRC_TRACING_TRACE_EVENT_PERFETTO_H_
 +#define SRC_TRACING_TRACE_EVENT_PERFETTO_H_
 +
@@ -804,6 +804,7 @@ index 0000000000000000000000000000000000000000..998a8b43933e03ca84a0c5d7fbf7a067
 +#define TRACING_CATEGORY_NODE1(one) TRACING_CATEGORY_NODE "." #one
 +#define TRACING_CATEGORY_NODE2(one, two) TRACING_CATEGORY_NODE "." #one "." #two
 +
++#ifndef BASE_TRACE_EVENT_BUILTIN_CATEGORIES_H_
 +// List of categories used by built-in Node.js trace events.
 +// clang-format off
 +PERFETTO_DEFINE_CATEGORIES_IN_NAMESPACE(
@@ -833,6 +834,7 @@ index 0000000000000000000000000000000000000000..998a8b43933e03ca84a0c5d7fbf7a067
 +// clang-format on
 +
 +PERFETTO_USE_CATEGORIES_FROM_NAMESPACE(node);
++#endif
 +
 +#endif  // SRC_TRACING_TRACE_EVENT_PERFETTO_H_
 diff --git a/src/tracing/traced_value.cc b/src/tracing/traced_value.cc
