@@ -17,6 +17,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/content_switches.h"
+#include "electron/buildflags/buildflags.h"
 #include "net/base/filename_util.h"
 #include "sandbox/policy/switches.h"
 #include "shell/browser/api/electron_api_web_contents.h"

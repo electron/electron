@@ -10,7 +10,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/render_widget_host.h"
-#include "electron/buildflags/buildflags.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/views/accessibility/view_accessibility.h"
 #include "ui/views/drag_controller.h"
