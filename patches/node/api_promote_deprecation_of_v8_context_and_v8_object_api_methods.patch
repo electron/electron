@@ -44,7 +44,7 @@ index 37d83e41b618a07aca98118260abe9618f11256d..26d5c1bd3c8191fce1d22b969996b6bf
  
  template <typename T>
 diff --git a/src/base_object.cc b/src/base_object.cc
-index 8a14a8c32626f98c2afa402786e1b6b2fbbb0988..946e60ea2d0ffe984328185a0e7762603be8e0dd 100644
+index ba31d56b3077838ae89d830ea1ccdda6e4e019f4..a495a4d559bbe2a7319887a0e1019b0eca73d9e8 100644
 --- a/src/base_object.cc
 +++ b/src/base_object.cc
 @@ -45,7 +45,8 @@ BaseObject::~BaseObject() {
@@ -72,10 +72,10 @@ index 74bbb9fb83246a90bc425e259150f0868020ac9e..a4b3a1c0907c9d50baf6c8cd473cb4c7
  
  inline Environment* Environment::GetCurrent(
 diff --git a/src/histogram.cc b/src/histogram.cc
-index 2bcfcbdd9547db136c5992335a76dd3190886d6d..c34a83c9ccc83ec2973228a32cf0a51d29b4d681 100644
+index a676d302466605bbbd2d1a90e71ef5d9f640fe30..8be2fee3db9b6d64ace6eda58dd3dc06685ded12 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
-@@ -136,7 +136,8 @@ HistogramBase::HistogramBase(
+@@ -154,7 +154,8 @@ HistogramBase::HistogramBase(
    MakeWeak();
    wrap->SetAlignedPointerInInternalField(
        HistogramImpl::InternalFields::kImplField,
@@ -85,7 +85,7 @@ index 2bcfcbdd9547db136c5992335a76dd3190886d6d..c34a83c9ccc83ec2973228a32cf0a51d
  }
  
  HistogramBase::HistogramBase(
-@@ -148,7 +149,8 @@ HistogramBase::HistogramBase(
+@@ -166,7 +167,8 @@ HistogramBase::HistogramBase(
    MakeWeak();
    wrap->SetAlignedPointerInInternalField(
        HistogramImpl::InternalFields::kImplField,
@@ -95,7 +95,7 @@ index 2bcfcbdd9547db136c5992335a76dd3190886d6d..c34a83c9ccc83ec2973228a32cf0a51d
  }
  
  void HistogramBase::MemoryInfo(MemoryTracker* tracker) const {
-@@ -362,7 +364,8 @@ IntervalHistogram::IntervalHistogram(
+@@ -380,7 +382,8 @@ IntervalHistogram::IntervalHistogram(
    MakeWeak();
    wrap->SetAlignedPointerInInternalField(
        HistogramImpl::InternalFields::kImplField,
@@ -105,7 +105,7 @@ index 2bcfcbdd9547db136c5992335a76dd3190886d6d..c34a83c9ccc83ec2973228a32cf0a51d
    uv_timer_init(env->event_loop(), &timer_);
  }
  
-@@ -601,7 +604,8 @@ HistogramImpl* HistogramImpl::FromJSObject(Local<Value> value) {
+@@ -746,7 +749,8 @@ HistogramImpl* HistogramImpl::FromJSObject(Local<Value> value) {
    auto obj = value.As<Object>();
    DCHECK_GE(obj->InternalFieldCount(), HistogramImpl::kInternalFieldCount);
    return static_cast<HistogramImpl*>(
@@ -114,7 +114,7 @@ index 2bcfcbdd9547db136c5992335a76dd3190886d6d..c34a83c9ccc83ec2973228a32cf0a51d
 +                                              v8::kEmbedderDataTypeTagDefault));
  }
  
- std::unique_ptr<worker::TransferData>
+ std::unique_ptr<worker::TransferData> IterationHistogram::CloneForMessaging()
 diff --git a/src/js_udp_wrap.cc b/src/js_udp_wrap.cc
 index 6b35871d92ceb1b1eead21e328088cf87a10fa6e..57c96645fa0fdb7ed77c0a36c877b2628b7f0571 100644
 --- a/src/js_udp_wrap.cc
@@ -156,10 +156,10 @@ index d81c75daaae47b8b0b489cf357a32e437e7a6cf7..b0aab2f7b2538b6e2cacc9ffd52473b7
        return false;
      }
 diff --git a/src/node_object_wrap.h b/src/node_object_wrap.h
-index cb13d84388bcc6806d3b038a51e1cc2d1feccda1..687b2cf3e63b2a3306e2cbac67e3e216dac49aa6 100644
+index 1897a199e24c2a3e8e1279e6c5b105764ccedfc3..97ea07668edd546f39af99729fc7a228a65ff73a 100644
 --- a/src/node_object_wrap.h
 +++ b/src/node_object_wrap.h
-@@ -49,7 +49,7 @@ class ObjectWrap {
+@@ -50,7 +50,7 @@ class ObjectWrap {
      assert(handle->InternalFieldCount() > 0);
      // Cast to ObjectWrap before casting to T.  A direct cast from void
      // to T won't work right when T has more than one base class.
@@ -168,7 +168,7 @@ index cb13d84388bcc6806d3b038a51e1cc2d1feccda1..687b2cf3e63b2a3306e2cbac67e3e216
      ObjectWrap* wrap = static_cast<ObjectWrap*>(ptr);
      return static_cast<T*>(wrap);
    }
-@@ -75,7 +75,7 @@ class ObjectWrap {
+@@ -76,7 +76,7 @@ class ObjectWrap {
    inline void Wrap(v8::Local<v8::Object> handle) {
      assert(persistent().IsEmpty());
      assert(handle->InternalFieldCount() > 0);

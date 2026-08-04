@@ -10,7 +10,7 @@ Will be removed when Node.js bumps to version of V8 that contains
 the API change.
 
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 808e28db0f4c1d410fdf97013eaa65ed0c15fd78..ef4075729539cb0c53f7f2cabfcf435c4f76f4e2 100644
+index f572f009f9df2607c437fde24dd1dfa6edc10aff..b34026bb088ca966cf4a0752ed4dbd80d13f016a 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -127,7 +127,11 @@ ContextifyContext* ContextifyContext::New(Environment* env,
