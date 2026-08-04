@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Min Qin <qinmin@chromium.org>
+Date: Fri, 5 Jun 2026 15:41:18 -0700
+Subject: Open and copy temporary file atomically in MakeCopyOfDownloadFile.
+
+This CL does the following:
+1. Create and open the temporary file atomically using
+   base::CreateAndOpenTemporaryFileInDir, which returns an open
+   base::File.
+2. Open the source file.
+3. Copy the contents using base::CopyFileContents, which operates
+   directly on the open file descriptors.
+
+This prevents the path-reopening race condition and is secure on all
+platforms.
+
+Bug: 519981494
+Test: components_unittests --gtest_filter=DownloadItemTest.CopyDownload
+Change-Id: I48e908ae4711653e76c08f0ccafe3dfeda01163c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7905881
+Reviewed-by: Yaw Frempong <yawfrempong@google.com>
+Reviewed-by: Lily Chen <chlily@chromium.org>
+Commit-Queue: Min Qin <qinmin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1642651}
+
+diff --git a/components/download/internal/common/download_item_impl.cc b/components/download/internal/common/download_item_impl.cc
+index 2c2d4e8f098ff991cdff1a927a896ed1adf07513..dc0666cee212537ccee1c4ebbc903f7fed839702 100644
+--- a/components/download/internal/common/download_item_impl.cc
++++ b/components/download/internal/common/download_item_impl.cc
+@@ -29,6 +29,7 @@
+ #include <vector>
+ 
+ #include "base/check_is_test.h"
++#include "base/files/file.h"
+ #include "base/files/file_util.h"
+ #include "base/format_macros.h"
+ #include "base/functional/bind.h"
+@@ -101,11 +102,26 @@ base::FilePath DownloadFileDetach(std::unique_ptr<DownloadFile> download_file) {
+ 
+ base::FilePath MakeCopyOfDownloadFile(DownloadFile* download_file) {
+   DCHECK(GetDownloadTaskRunner()->RunsTasksInCurrentSequence());
++  base::FilePath temp_dir;
++  if (!base::GetTempDir(&temp_dir)) {
++    return base::FilePath();
++  }
++
+   base::FilePath temp_file_path;
+-  if (!base::CreateTemporaryFile(&temp_file_path))
++  base::File temp_file =
++      base::CreateAndOpenTemporaryFileInDir(temp_dir, &temp_file_path);
++  if (!temp_file.IsValid()) {
++    return base::FilePath();
++  }
++
++  base::File source_file(download_file->FullPath(),
++                         base::File::FLAG_OPEN | base::File::FLAG_READ);
++  if (!source_file.IsValid()) {
++    DeleteDownloadedFile(temp_file_path);
+     return base::FilePath();
++  }
+ 
+-  if (!base::CopyFile(download_file->FullPath(), temp_file_path)) {
++  if (!base::CopyFileContents(source_file, temp_file)) {
+     DeleteDownloadedFile(temp_file_path);
+     return base::FilePath();
+   }

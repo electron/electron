@@ -1,0 +1,137 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Thu, 4 Jun 2026 19:33:11 +0800
+Subject: [m149] Metal: enable EGL_EXT_create_context_robustness
+
+Element array's OOB indices are already prevented by the front-end
+as long as a context is created with
+EGL_CONTEXT_OPENGL_ROBUST_ACCESS_EXT attrib.
+
+The only incomplete implementation of this extension is that the
+extension expects OOB access in buffers to execute silently or trigger
+context loss. However, because the Metal backend doesn't implement
+GL_KHR_robust_buffer_access_behavior, the front-end will simply throw
+GL_INVALID_OPERATION in those cases. This is reflected in these dEQP
+tests:
+- EGL.functional.robustness.reset_context.fixed_function_pipeline.\
+reset_status.index_buffer_out_of_bounds
+- EGL.functional.robustness.reset_context.fixed_function_pipeline.\
+reset_status.vertex_buffer_out_of_bounds
+
+Bug: chromium:517972648
+Fixed: chromium:521230338
+Change-Id: Ia7b6e07d3f8b34f7a1669c5e576f168ad6deb159
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7901455
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+(cherry picked from commit bf459445a71f5a0a33f5b20289169cda3ef4333e)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7929192
+
+diff --git a/src/libANGLE/renderer/metal/DisplayMtl.mm b/src/libANGLE/renderer/metal/DisplayMtl.mm
+index cdfd06b3f782e19b5d691f3e3a44b9847a0100d8..9beda72a62c19471a9513bb8216a7edfe8b52c52 100644
+--- a/src/libANGLE/renderer/metal/DisplayMtl.mm
++++ b/src/libANGLE/renderer/metal/DisplayMtl.mm
+@@ -468,6 +468,7 @@ bool IsMetalDisplayAvailable()
+ 
+ void DisplayMtl::generateExtensions(egl::DisplayExtensions *outExtensions) const
+ {
++    outExtensions->createContextRobustness    = true;
+     outExtensions->iosurfaceClientBuffer      = true;
+     outExtensions->surfacelessContext         = true;
+     outExtensions->noConfigContext            = true;
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 6c0bad7387038009c2e4ec390b95441aa75140e1..9404f54c86b5b1f1f040f3d497cb78c4a747af14 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -2806,6 +2806,10 @@
+ 
+ // Fails test on Metal
+ 499091328 MAC AMD METAL : Texture2DArrayTestES3.ReformatStagedBufferUpdatesLayerCountOOB/* = SKIP
++
++// This test fails because of incorrect GLX MakeCurrent calls in other tests
++520248049 LINUX OPENGL : EGLSurfacelessContextTest.CheckFramebufferStatus/* = SKIP
++
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ // Slow tests, should appear last in this file
+ // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+diff --git a/src/tests/deqp_support/deqp_egl_test_expectations.txt b/src/tests/deqp_support/deqp_egl_test_expectations.txt
+index 5a07de517a80d528d10ccc2f78bf165a229929c5..d49bbc881fad71010bb6410cd413bedd9550efac 100644
+--- a/src/tests/deqp_support/deqp_egl_test_expectations.txt
++++ b/src/tests/deqp_support/deqp_egl_test_expectations.txt
+@@ -293,6 +293,10 @@ b/328156792 PINEAPPLE VULKAN : dEQP-EGL.functional.image.render_multiple_context
+ // New crash since VK-GL-CTS roller on 2023-05-03
+ 42266606 MAC METAL : dEQP-EGL.functional.fence_sync.valid.egl_fence_persistent_buffer = SKIP
+ 
++// On Metal, these OOB draws will simply throw GL_INVALID_OPERATION instead of causing context loss or being ignored silently
++519942256 METAL : dEQP-EGL.functional.robustness.reset_context.fixed_function_pipeline.reset_status.index_buffer_out_of_bounds = SKIP
++519942256 METAL : dEQP-EGL.functional.robustness.reset_context.fixed_function_pipeline.reset_status.vertex_buffer_out_of_bounds = SKIP
++
+ 42265027 PIXEL4ORXL GLES : dEQP-EGL.functional.get_frame_timestamps.* = FAIL
+ 42265027 PIXEL4ORXL GLES : dEQP-EGL.functional.wide_color.* = FAIL
+ 42265027 PIXEL4ORXL GLES : dEQP-EGL.functional.choose_config.simple.selection_only.transparent_red_value = FAIL
+diff --git a/src/tests/egl_tests/EGLRobustnessTest.cpp b/src/tests/egl_tests/EGLRobustnessTest.cpp
+index 6c7a7894fd6b32c44989d9dabd3c2cb43f64c0f5..3645eb5eacb5aa5a454636437564ee201ef50964 100644
+--- a/src/tests/egl_tests/EGLRobustnessTest.cpp
++++ b/src/tests/egl_tests/EGLRobustnessTest.cpp
+@@ -865,6 +865,44 @@ void main() {
+     }
+ }
+ 
++// Test drawing with an out-of-bounds index in an index buffer.
++// Under robust access, we only expect that the draw call doesn't crash.
++TEST_P(EGLRobustnessTestES3, DrawElementsWithOutOfBoundsIndex)
++{
++    ANGLE_SKIP_TEST_IF(!mInitialized);
++
++    ANGLE_SKIP_TEST_IF(
++        !IsEGLDisplayExtensionEnabled(mDisplay, "EGL_KHR_create_context") ||
++        !IsEGLDisplayExtensionEnabled(mDisplay, "EGL_EXT_create_context_robustness"));
++
++    createRobustContext(EGL_NO_RESET_NOTIFICATION_EXT, EGL_NO_CONTEXT);
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), essl3_shaders::fs::Red());
++    glUseProgram(program);
++
++    // Provide only 3 vertices (indices 0, 1, 2)
++    const GLfloat vertices[] = {
++        -1.0f, -1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, 0.0f,
++    };
++    GLBuffer vertexBuffer;
++    glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
++    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
++
++    GLint posLocation = glGetAttribLocation(program, essl3_shaders::PositionAttrib());
++    ASSERT_NE(-1, posLocation);
++    glVertexAttribPointer(posLocation, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
++    glEnableVertexAttribArray(posLocation);
++
++    // Index buffer containing an OOB index (e.g. 100)
++    const GLushort indices[] = {0, 1, 100};
++    GLBuffer indexBuffer;
++    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBuffer);
++    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
++
++    // Draw. Under robustness, this must not crash the GPU/driver.
++    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_SHORT, nullptr);
++}
++
+ // Test context destruction after recovering from a long running task.
+ TEST_P(EGLRobustnessTest, DISABLED_LongRunningTaskVulkanShutdown)
+ {
+@@ -880,6 +918,7 @@ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(EGLRobustnessTestES3);
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(EGLRobustnessTestES31);
+ ANGLE_INSTANTIATE_TEST(EGLRobustnessTest,
+                        WithNoFixture(ES2_VULKAN()),
++                       WithNoFixture(ES2_METAL()),
+                        WithNoFixture(ES2_D3D9()),
+                        WithNoFixture(ES2_D3D11()),
+                        WithNoFixture(ES2_OPENGL()),
+@@ -887,6 +926,7 @@ ANGLE_INSTANTIATE_TEST(EGLRobustnessTest,
+                        WithNoFixture(ES2_VULKAN_SWIFTSHADER()));
+ ANGLE_INSTANTIATE_TEST(EGLRobustnessTestES3,
+                        WithNoFixture(ES3_VULKAN()),
++                       WithNoFixture(ES3_METAL()),
+                        WithNoFixture(ES3_D3D11()),
+                        WithNoFixture(ES3_OPENGL()),
+                        WithNoFixture(ES3_OPENGLES()),

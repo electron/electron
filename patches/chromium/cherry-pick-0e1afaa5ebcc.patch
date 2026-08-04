@@ -1,0 +1,100 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joel Hockey <joelhockey@chromium.org>
+Date: Sat, 13 Jun 2026 02:44:27 -0700
+Subject: [M149] Do not trust row_bytes from untrusted sources
+
+Original change's description:
+> Do not trust row_bytes from untrusted sources
+>
+> Always use minRowBytes() to avoid potential buffer overflows.
+> Serialization was changed in crrev.com/c/5238400 to use minRowBytes.
+>
+> Bug: 516486611
+> Change-Id: If09820e9611a22bd33c24e9e005bdc24d9f2e78d
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7882750
+> Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+> Reviewed-by: Tom Sepez <tsepez@chromium.org>
+> Commit-Queue: Joel Hockey <joelhockey@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1642189}
+
+(cherry picked from commit 3f23ed7b52702b5051697ccd3e4e1fbd59dad04d)
+
+Bug: 520437114,516486611
+Change-Id: If09820e9611a22bd33c24e9e005bdc24d9f2e78d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7907502
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Joel Hockey <joelhockey@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7827@{#3089}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc b/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
+index 9d6bdd42622dffd90d39d6977bdec169baf98170..252dceab05ba2b228fec4c445e94090e6bea3cff 100644
+--- a/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
++++ b/services/viz/public/cpp/compositing/bitmap_in_shared_memory_mojom_traits.cc
+@@ -27,14 +27,6 @@ const SkImageInfo StructTraits<viz::mojom::BitmapInSharedMemoryDataView,
+   return sk_bitmap.info();
+ }
+ 
+-// static
+-uint64_t StructTraits<viz::mojom::BitmapInSharedMemoryDataView,
+-                      viz::CopyOutputResult::ScopedSkBitmap>::
+-    row_bytes(const viz::CopyOutputResult::ScopedSkBitmap& scoped_bitmap) {
+-  auto sk_bitmap = scoped_bitmap.bitmap();
+-  return sk_bitmap.info().minRowBytes();
+-}
+-
+ // static
+ std::optional<base::WritableSharedMemoryRegion>
+ StructTraits<viz::mojom::BitmapInSharedMemoryDataView,
+@@ -91,8 +83,6 @@ bool StructTraits<viz::mojom::BitmapInSharedMemoryDataView, SkBitmap>::Read(
+   SkImageInfo image_info;
+   if (!data.ReadImageInfo(&image_info))
+     return false;
+-  if (!image_info.validRowBytes(data.row_bytes()))
+-    return false;
+ 
+   std::optional<base::WritableSharedMemoryRegion> region_opt;
+   if (!data.ReadPixels(&region_opt))
+@@ -100,23 +90,24 @@ bool StructTraits<viz::mojom::BitmapInSharedMemoryDataView, SkBitmap>::Read(
+ 
+   *sk_bitmap = SkBitmap();
+   if (!region_opt)
+-    return sk_bitmap->setInfo(image_info, data.row_bytes());
++    return sk_bitmap->setInfo(image_info, image_info.minRowBytes());
+ 
+   auto mapping_ptr =
+       std::make_unique<base::WritableSharedMemoryMapping>(region_opt->Map());
+   if (!mapping_ptr->IsValid())
+     return false;
+ 
+-  if (mapping_ptr->size() < image_info.computeByteSize(data.row_bytes())) {
++  if (mapping_ptr->size() <
++      image_info.computeByteSize(image_info.minRowBytes())) {
+     return false;
+   }
+ 
+   // Skia guarantees that it will call release proc, so we pass release()'ed
+   // pointer into it.
+   void* bitmap_memory = mapping_ptr->memory();
+-  if (!sk_bitmap->installPixels(image_info, bitmap_memory,
+-                                data.row_bytes(), &DeleteSharedMemoryMapping,
+-                                mapping_ptr.release())) {
++  if (!sk_bitmap->installPixels(
++          image_info, bitmap_memory, image_info.minRowBytes(),
++          &DeleteSharedMemoryMapping, mapping_ptr.release())) {
+     return false;
+   }
+   return true;
+diff --git a/services/viz/public/mojom/compositing/bitmap_in_shared_memory.mojom b/services/viz/public/mojom/compositing/bitmap_in_shared_memory.mojom
+index 291b188862f68a65eccd32549d458c5f118b73df..902ed165cb363af4668e096a86d4089a35ee74ff 100644
+--- a/services/viz/public/mojom/compositing/bitmap_in_shared_memory.mojom
++++ b/services/viz/public/mojom/compositing/bitmap_in_shared_memory.mojom
+@@ -13,7 +13,6 @@ import "skia/public/mojom/image_info.mojom";
+ // shared memory however.
+ struct BitmapInSharedMemory {
+   skia.mojom.ImageInfo image_info;
+-  uint64 row_bytes;
+   // Null indicates SkBitmap does not have pixels allocated.
+   mojo_base.mojom.WritableSharedMemoryRegion? pixels;
+ };

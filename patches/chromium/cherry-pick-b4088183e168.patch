@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Achuith Bhandarkar <achuith@chromium.org>
+Date: Sat, 20 Jun 2026 17:01:49 -0700
+Subject: wm: Prevent UAF in WindowModalityController with base::WeakPtr
+
+Synchronous touch cancellation during modal visibility changes can
+destroy the modal window, causing a UAF when control returns. We use a
+weak ptr check to return early in this case. We don't need a similar
+check in OnWindowPropertyChanged because it is already guarded by an
+active ScopedDeleteBlocker in the caller.
+
+Bug: 517785292
+Change-Id: I19a4ed2cca81c33f0ead528db4bbf01819dea327
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7904996
+Reviewed-by: Mitsuru Oshima <oshima@chromium.org>
+Commit-Queue: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1649974}
+
+diff --git a/ash/wm/window_modality_controller_unittest.cc b/ash/wm/window_modality_controller_unittest.cc
+index 4b6593c003dde82e6e0ddf95279130e2e24041c8..17e78f0972906e58e47dddd4bb6a00efed4cac4f 100644
+--- a/ash/wm/window_modality_controller_unittest.cc
++++ b/ash/wm/window_modality_controller_unittest.cc
+@@ -44,6 +44,34 @@ bool ValidateStacking(aura::Window* parent, base::span<const int> ids) {
+   return true;
+ }
+ 
++class DeleteWindowOnTouchCancelDelegate
++    : public aura::test::TestWindowDelegate {
++ public:
++  DeleteWindowOnTouchCancelDelegate() = default;
++  ~DeleteWindowOnTouchCancelDelegate() override = default;
++  DeleteWindowOnTouchCancelDelegate(const DeleteWindowOnTouchCancelDelegate&) =
++      delete;
++  DeleteWindowOnTouchCancelDelegate& operator=(
++      const DeleteWindowOnTouchCancelDelegate&) = delete;
++
++  void SetWindowToDelete(std::unique_ptr<aura::Window> w) {
++    window_to_delete_ = std::move(w);
++  }
++
++  bool IsWindowDeleted() const { return !window_to_delete_; }
++
++  // Overridden from aura::test::TestWindowDelegate.
++  void OnTouchEvent(ui::TouchEvent* event) override {
++    if (event->type() == ui::EventType::kTouchCancelled) {
++      window_to_delete_.reset();
++    }
++    aura::test::TestWindowDelegate::OnTouchEvent(event);
++  }
++
++ private:
++  std::unique_ptr<aura::Window> window_to_delete_;
++};
++
+ }  // namespace
+ 
+ // Creates three windows, w1, w11, and w12. w11 is a non-modal transient, w12 is
+@@ -726,4 +754,30 @@ TEST_F(WindowModalityControllerTest, ChildModalAncestor) {
+   EXPECT_TRUE(wm::IsActiveWindow(w4.get()));
+ }
+ 
++// Verifies that destroying a modal window during the touch cancellation
++// (dispatched synchronously when the modal window becomes visible) is handled
++// gracefully and does not cause a UAF crash.
++TEST_F(WindowModalityControllerTest, DeleteModalWindowDuringTouchCancel) {
++  DeleteWindowOnTouchCancelDelegate d1;
++  std::unique_ptr<aura::Window> w1(
++      CreateTestWindowInShell({.delegate = &d1, .bounds = {100, 100}}));
++
++  aura::test::TestWindowDelegate d2;
++  std::unique_ptr<aura::Window> w2(CreateTestWindowInShell(
++      {.delegate = &d2, .bounds = {20, 20, 20, 20}, .show = false}));
++  w2->SetProperty(aura::client::kModalKey, ui::mojom::ModalType::kWindow);
++  ::wm::AddTransientChild(w1.get(), w2.get());
++
++  ui::test::EventGenerator generator(Shell::GetPrimaryRootWindow(),
++                                     gfx::Point(10, 10));
++  generator.PressTouch();
++
++  aura::Window* w2_ptr = w2.get();
++  d1.SetWindowToDelete(std::move(w2));
++
++  w2_ptr->Show();
++
++  EXPECT_TRUE(d1.IsWindowDeleted());
++}
++
+ }  // namespace ash
+diff --git a/ui/wm/core/window_modality_controller.cc b/ui/wm/core/window_modality_controller.cc
+index 3ad8c1e2ad80ba6b73ed8c3fe7d2bac3a1ee31ad..0b289015beb2c48ec2c911ac6783f0c871aa8410 100644
+--- a/ui/wm/core/window_modality_controller.cc
++++ b/ui/wm/core/window_modality_controller.cc
+@@ -170,7 +170,14 @@ void WindowModalityController::OnWindowVisibilityChanged(aura::Window* window,
+                                                          bool visible) {
+   if (visible && window->GetProperty(aura::client::kModalKey) !=
+                      ui::mojom::ModalType::kNone) {
++    // CancelTouchesOnTransientWindowTree() dispatches touch cancellation events
++    // synchronously, which can run arbitrary handlers that destroy the window.
++    // Use base::WeakPtr to check if the window is still alive.
++    base::WeakPtr<aura::Window> weak_window = window->GetWeakPtrAsWindow();
+     CancelTouchesOnTransientWindowTree(window);
++    if (!weak_window) {
++      return;
++    }
+ 
+     // Make sure no other window has capture, otherwise |window| won't get mouse
+     // events.

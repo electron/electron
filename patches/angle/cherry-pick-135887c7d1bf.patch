@@ -1,0 +1,147 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Amirali Abdolrashidi <abdolrashidi@google.com>
+Date: Tue, 16 Jun 2026 18:04:22 -0700
+Subject: [M148] Vulkan: Fix layer index/count for update from FBO
+
+  Currently, if glCopyTexSubImage3D() is called with a non-zero
+z-offset and the CanCopyWithDraw() path (in copySubImageImpl()) is
+not taken, stageSubresourceUpdateFromFramebuffer() in ImageHelper is
+called, in which the buffer-to-image struct `copyToImage` is used to
+stage an update. However, since the baseLayer in the ImageIndex object
+(`index`) for the 3D texture has been initialized to the z-offset,
+the related values in the struct (baseArrayLayer and layerCount) are
+set up incorrectly.
+
+* Updated stageSubresourceUpdateFromFramebuffer() so baseArrayLayer
+  and layerCount are set to 0 and 1 unless the image is an array type,
+  in which case the data from `index` is applied.
+
+* Added unit test to CopyTexImageTestES3: Snorm3DTextureNonZeroOffset
+  * It copies from an FBO bound to an RGBA8 SNORM texture to a non-zero
+    z-offset of a 3D RGB8 SNORM texture.
+    * The SNORM formats take the CPU readback path on some platforms.
+      (stageSubresourceUpdateFromFramebuffer())
+
+Bug: chromium:523495723
+Fixed: chromium:528588321
+Change-Id: I08bf787dca05d74a5ab22983dfd0563a0eff002d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7966117
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Amirali Abdolrashidi <abdolrashidi@google.com>
+(cherry picked from commit a4eea1fbedace7a03bae52cd1bb9d6ebdfffb0f7)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8021015
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index 7da2856f6a67fa584a077c718a29bb396710301e..79643c2b8a7bb8c71e2a08680cc5b2353a42affd 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -9471,6 +9471,17 @@ angle::Result ImageHelper::stageSubresourceUpdateFromFramebuffer(
+ 
+     gl::LevelIndex updateLevelGL(index.getLevelIndex());
+ 
++    // If the image is not an array type, the base layer index and layer count should be 0 and 1
++    // respectively.
++    uint32_t layerIndex = index.hasLayer() ? index.getLayerIndex() : 0;
++    uint32_t layerCount = index.getLayerCount();
++    if (index.getType() == gl::TextureType::_3D)
++    {
++        ASSERT(static_cast<uint32_t>(dstOffset.z) == layerIndex);
++        layerIndex = 0;
++        layerCount = 1;
++    }
++
+     // 3- enqueue the destination image subresource update
+     VkBufferImageCopy copyToImage               = {};
+     copyToImage.bufferOffset                    = static_cast<VkDeviceSize>(stagingOffset);
+@@ -9478,8 +9489,8 @@ angle::Result ImageHelper::stageSubresourceUpdateFromFramebuffer(
+     copyToImage.bufferImageHeight               = clippedRectangle.height;
+     copyToImage.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+     copyToImage.imageSubresource.mipLevel       = updateLevelGL.get();
+-    copyToImage.imageSubresource.baseArrayLayer = index.hasLayer() ? index.getLayerIndex() : 0;
+-    copyToImage.imageSubresource.layerCount     = index.getLayerCount();
++    copyToImage.imageSubresource.baseArrayLayer = layerIndex;
++    copyToImage.imageSubresource.layerCount     = layerCount;
+     gl_vk::GetOffset(dstOffset, &copyToImage.imageOffset);
+     gl_vk::GetExtent(dstExtent, &copyToImage.imageExtent);
+ 
+diff --git a/src/tests/gl_tests/CopyTexImageTest.cpp b/src/tests/gl_tests/CopyTexImageTest.cpp
+index 65f8e0c673b3e9eb43c338a21aabb2d37fac7a34..f045aab3c98e128a10f657b260ac65aa7972e0bd 100644
+--- a/src/tests/gl_tests/CopyTexImageTest.cpp
++++ b/src/tests/gl_tests/CopyTexImageTest.cpp
+@@ -1694,6 +1694,75 @@ TEST_P(CopyTexImageTestES3, RedefineSameLevel)
+                          GLColor::yellow);
+ }
+ 
++// Test glCopyTexSubImage3D() for an SNORM 3D texture to make sure it updates the correct depth.
++TEST_P(CopyTexImageTestES3, Snorm3DTextureNonZeroOffset)
++{
++    ANGLE_SKIP_TEST_IF(!IsGLExtensionEnabled("GL_EXT_render_snorm"));
++
++    constexpr size_t kWidth   = 9;
++    constexpr size_t kHeight  = 4;
++    constexpr size_t kDepth   = 8;
++    constexpr size_t kZOffset = 3;
++    static_assert(kZOffset < kDepth);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++
++    // Bind an RGBA SNORM texture to the framebuffer and clear it to a single color.
++    GLTexture srcTexture;
++    glBindTexture(GL_TEXTURE_2D, srcTexture);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8_SNORM, kWidth, kHeight);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, srcTexture, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    ASSERT_GL_NO_ERROR();
++
++    // The destination texture is defined as 3D with RGB SNORM format and cleared. Then the bound
++    // framebuffer is copied into a non-zero depth of this texture.
++    GLTexture dstTexture;
++    glBindTexture(GL_TEXTURE_3D, dstTexture);
++    glTexStorage3D(GL_TEXTURE_3D, 1, GL_RGB8_SNORM, kWidth, kHeight, kDepth);
++
++    std::vector<uint8_t> colorWhiteRGB8Snorm(kWidth * kHeight * kDepth * 3, 0x7F);
++    glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, kWidth, kHeight, kDepth, GL_RGB, GL_BYTE,
++                    colorWhiteRGB8Snorm.data());
++    glCopyTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, kZOffset, 0, 0, kWidth, kHeight);
++    ASSERT_GL_NO_ERROR();
++
++    // Verify that the correct depth of the 3D texture has been copied into and the rest of it
++    // remains intact. This is done through sampling from each depth of the 3D texture and drawing
++    // to the FBO which is bound to an RGBA8 texture.
++    GLTexture outTexture;
++    glBindTexture(GL_TEXTURE_2D, outTexture);
++    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, kWidth, kHeight);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, outTexture, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    constexpr char k3DSampleFromDepthFS[] = R"(#version 300 es
++precision highp float;
++uniform highp sampler3D tex3D;
++uniform int u_depth;
++out vec4 fragColor;
++void main() {
++    fragColor = texelFetch(tex3D, ivec3(0, 0, u_depth), 0);
++})";
++    ANGLE_GL_PROGRAM(tex3DProgram, essl3_shaders::vs::Simple(), k3DSampleFromDepthFS);
++    glUseProgram(tex3DProgram);
++    glUniform1i(glGetUniformLocation(tex3DProgram, "tex3D"), 0);
++
++    for (size_t z = 0; z < kDepth; z++)
++    {
++        glUniform1i(glGetUniformLocation(tex3DProgram, "u_depth"), z);
++        drawQuad(tex3DProgram, std::string(essl3_shaders::PositionAttrib()), 0.0f);
++        ASSERT_GL_NO_ERROR();
++
++        GLColor expectedColor = z == kZOffset ? GLColor::green : GLColor::white;
++        EXPECT_PIXEL_RECT_EQ(0, 0, kWidth, kHeight, expectedColor);
++    }
++}
++
+ // Based on the WebGL conformance test copy-texture-image-same-texture.html.
+ TEST_P(CopyTexImageLumaWorkaroundTestES3, SameTextureDifferentLevelLuminanceAlpha)
+ {

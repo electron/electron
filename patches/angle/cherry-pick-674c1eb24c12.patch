@@ -1,0 +1,201 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Mon, 15 Jun 2026 12:16:38 -0400
+Subject: M150: Translator: Disallow constructing too-large variables.
+
+Validate at construction-time that a too-large variable is invalid. This
+covers the case of temporary variables instead of just variable
+declarations.
+
+Add a cache of validated TTypes. The previous logic which checked if an
+error had already been generated was fragile. It would return that the
+type was valid immediately after any error, if there were two variables
+that were too large, the second one would be accepted and instatiated.
+
+Fixed: chromium:522556145
+Fixed: chromium:522811428
+Fixed: chromium:525661293
+Change-Id: Ie0f6d4b940cd06bc9426bdeaf3371b3c9cbf756c
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7939998
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+(cherry picked from commit d2c3236e24be3e35b80d87de7a1148cc26237f01)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8119696
+
+diff --git a/src/compiler/translator/ParseContext.cpp b/src/compiler/translator/ParseContext.cpp
+index 9852c0c9cdf695f80603e2d12c7c82aa2d7be9f8..015347d70ac5f96ed4a354d2f8e816d665aa98bc 100644
+--- a/src/compiler/translator/ParseContext.cpp
++++ b/src/compiler/translator/ParseContext.cpp
+@@ -1743,11 +1743,19 @@ bool TParseContext::checkVariableSize(const TSourceLoc &line,
+     // For example, if previously an error is generated due to too-deep struct nesting the
+     // calculation here could overflow the stack if performed.
+     if (!mCompileOptions.rejectWebglShadersWithLargeVariables || numErrors() > 0 ||
+-        (mShaderType != GL_VERTEX_SHADER && mShaderType != GL_FRAGMENT_SHADER))
++        (mShaderType != GL_VERTEX_SHADER && mShaderType != GL_FRAGMENT_SHADER &&
++         mShaderType != GL_COMPUTE_SHADER))
+     {
+         return true;
+     }
+ 
++    // Check the cache of validated types first.
++    auto preValidatedIter = mValidatedVariableTypeSizes.find(*type);
++    if (preValidatedIter != mValidatedVariableTypeSizes.end())
++    {
++        return preValidatedIter->second;
++    }
++
+     // Note: the only allowed interface block in webgl shaders is UBOs in std140 mode, so the size
+     // is unconditionally calculated with std140 rules if the variable is an interface block.
+     // Uniform variables are treated the same way as UBOs, as they are often packed the same way
+@@ -1758,6 +1766,7 @@ bool TParseContext::checkVariableSize(const TSourceLoc &line,
+     if (variableSize > kWebGLMaxVariableSizeInBytes)
+     {
+         error(line, "Size of declared variable exceeds implementation-defined limit", identifier);
++        mValidatedVariableTypeSizes[*type] = false;
+         return false;
+     }
+ 
+@@ -1804,6 +1813,7 @@ bool TParseContext::checkVariableSize(const TSourceLoc &line,
+                 error(line,
+                       "Size of declared private variable exceeds implementation-defined limit",
+                       identifier);
++                mValidatedVariableTypeSizes[*type] = false;
+                 return false;
+             }
+             mTotalPrivateVariablesSize += variableSize;
+@@ -1811,6 +1821,8 @@ bool TParseContext::checkVariableSize(const TSourceLoc &line,
+         default:
+             break;
+     }
++
++    mValidatedVariableTypeSizes[*type] = true;
+     return true;
+ }
+ 
+@@ -6287,7 +6299,9 @@ bool TParseContext::checkUnsizedArrayConstructorArgumentDimensionality(
+ //
+ TIntermTyped *TParseContext::addConstructor(TFunctionLookup *fnCall, const TSourceLoc &line)
+ {
+-    TType type                 = fnCall->constructorType();
++    TType type = fnCall->constructorType();
++    checkVariableSize(line, ImmutableString(""), &type);
++
+     TIntermSequence &arguments = fnCall->arguments();
+     if (type.isUnsizedArray())
+     {
+diff --git a/src/compiler/translator/ParseContext.h b/src/compiler/translator/ParseContext.h
+index 1f83d31c869ae944b6a5bc6daf70c854c0b6a166..c4ac5bc01d6c17833d4dbeeb1445d1e32f4e634c 100644
+--- a/src/compiler/translator/ParseContext.h
++++ b/src/compiler/translator/ParseContext.h
+@@ -912,6 +912,8 @@ class TParseContext : angle::NonCopyable
+     // Keeps track of the total size of shader-private variables, if validating that this size
+     // should not exceed a sensible threshold.
+     angle::base::CheckedNumeric<size_t> mTotalPrivateVariablesSize;
++    // Tracks if a type has been validated as safe in checkVariableSize.
++    TMap<TType, bool> mValidatedVariableTypeSizes;
+ 
+     // Track state related to control flow, used for various validation:
+     //
+diff --git a/src/tests/gl_tests/GLSLValidationTest.cpp b/src/tests/gl_tests/GLSLValidationTest.cpp
+index 8831f9ccdda9bb10d5c0562c38fa6ace44907313..ff20e1287a3b836331248b648e68b1fb69b43eff 100644
+--- a/src/tests/gl_tests/GLSLValidationTest.cpp
++++ b/src/tests/gl_tests/GLSLValidationTest.cpp
+@@ -2918,12 +2918,8 @@ TEST_P(WebGL2GLSLValidationTest, LargeConstantVariableWithInitializer)
+                   "Size of declared private variable exceeds implementation-defined limit");
+ }
+ 
+-// Test using a large constant that is declared inline, without using variable space that would
+-// exceed the implementation-defined limit.  Because of the variable limit, the shader would have to
+-// either inline an extremely large constant, which would practically take forever to construct and
+-// parse, or use near-limit private variables.  In the latter case, the constant array constructor
+-// does not cause any 32-bit overflows, so the shader succeeds compilation just fine.  If the large
+-// constant is indexed, it can get constant folded, but at that point the constant is small.
++// Test using a large constant that is declared inline. Construction of such a large object, even if
++// it may be constant folded is not allowed.
+ TEST_P(WebGL2GLSLValidationTest, InlineLargeConstant)
+ {
+     const int N1 = 256;
+@@ -2972,7 +2968,82 @@ TEST_P(WebGL2GLSLValidationTest, InlineLargeConstant)
+        << "const S2 sB = S2(b);\n"
+        << "void main(){ " << s2.str() << "[0].b[0].a[0]; }\n";
+ 
+-    validateSuccess(GL_FRAGMENT_SHADER, fs.str().c_str());
++    validateError(GL_FRAGMENT_SHADER, fs.str().c_str(),
++                  "'' : Size of declared variable exceeds implementation-defined limit");
++}
++
++// Validate that too-large structures cannot be instantiated as temporaries.
++TEST_P(WebGL2GLSLValidationTest, LargeStructConstructorOnly)
++{
++    const int N1 = 1024;
++    const int N2 = 1024;
++    const int N3 = 64;
++
++    std::ostringstream fs;
++    fs << "#version 300 es\n";
++    fs << "precision highp float;\n";
++    fs << "struct S1 { mat4 m[" << N1 << "]; };\n";
++    fs << "struct S2 {\n";
++    for (int i = 0; i < N2; i++)
++    {
++        fs << "    S1 m" << i << ";\n";
++    }
++    fs << "};\n";
++    fs << "struct S3 {\n";
++    for (int i = 0; i < N3; i++)
++    {
++        fs << "    S2 m" << i << ";\n";
++    }
++    fs << "};\n";
++    fs << "out vec4 color;\n";
++    fs << "void main() {\n";
++    fs << "    S1 s1;\n";
++    fs << "    color = S3(";
++    for (int i = 0; i < N3; i++)
++    {
++        fs << "S2(";
++        for (int j = 0; j < N2; j++)
++        {
++            fs << "s1";
++            if (j != N2 - 1)
++            {
++                fs << ",";
++            }
++        }
++        fs << ")";
++        if (i != N3 - 1)
++        {
++            fs << ",";
++        }
++    }
++    fs << ").m0.m0.m[0][0];\n";
++    fs << "}\n";
++
++    validateError(GL_FRAGMENT_SHADER, fs.str().c_str(),
++                  "'' : Size of declared private variable exceeds implementation-defined limit");
++}
++
++// Validate that too-large structures cannot be used as function return types
++TEST_P(WebGL2GLSLValidationTest, LargeVariableFunctionReturnType)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++
++struct largestruct {
++    mat4 m[1000000000u];
++};
++
++largestruct func() {
++    largestruct s;
++    return s;
++}
++
++void main() {
++    func();
++})";
++
++    validateError(GL_FRAGMENT_SHADER, kFS,
++                  "'s' : Size of declared variable exceeds implementation-defined limit");
+ }
+ 
+ // Test that too large color outputs are rejected

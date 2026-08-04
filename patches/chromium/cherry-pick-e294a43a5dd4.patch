@@ -1,0 +1,2520 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Emmanuele Bassi <ebassi@igalia.com>
+Date: Thu, 4 Jun 2026 23:20:12 -0700
+Subject: Roll libxml2 to v2.15.0-114-g962bd10d
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+* Drop fix-xmlEscapeText-integer-overflow.patch: fix included upstream
+* Update roll.py and README.chromium
+* CVE fixes: CVE-2025-7425, CVE-2025-49794, CVE-2025-49796,
+  CVE-2025-49795, CVE-2025-6170, CVE-2025-32415, CVE-2025-32414
+
+https://gitlab.gnome.org/GNOME/libxml2/-/compare/962bd10d01151d29190567e2d15ccf641be55063...d23960a130c5bb82779c9405fbbf85e65fb3c57c
+
+Bug: 519665978
+Change-Id: I2bb7dcb54f1513c0ccc6568cca0b86291aeb857d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7899458
+Reviewed-by: Dominik Röttsches <drott@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: Dominik Röttsches <drott@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1642164}
+
+diff --git a/third_party/libxml/README.chromium b/third_party/libxml/README.chromium
+index 1172eab8da088e252a33b41bbccd58b54e02a96f..4c92e0f004dc90b1ea6f1fdb945f4a53c8939421 100644
+--- a/third_party/libxml/README.chromium
++++ b/third_party/libxml/README.chromium
+@@ -1,7 +1,7 @@
+ Name: libxml
+ URL: http://xmlsoft.org
+-Version: 22f9d730898d2dfcc03a484e65e1f8fc3675225f
+-Revision: 22f9d730898d2dfcc03a484e65e1f8fc3675225f
++Version: 962bd10d01151d29190567e2d15ccf641be55063
++Revision: 962bd10d01151d29190567e2d15ccf641be55063
+ Update Mechanism: Manual
+ CPEPrefix: cpe:/a:xmlsoft:libxml2:2.14.6
+ License: MIT
+diff --git a/third_party/libxml/chromium/roll.py b/third_party/libxml/chromium/roll.py
+index 40cb99d5cacc71bd25c68afaf0c6ce0f76612444..dfb975397ab59edc6af65ef81a0bd926c8f4cb41 100755
+--- a/third_party/libxml/chromium/roll.py
++++ b/third_party/libxml/chromium/roll.py
+@@ -75,7 +75,6 @@ PATCHES = [
+     'remove-getentropy.patch',
+     'xml-attr-extra.patch',
+     'widen-extra-field-in-_xmlNode-to-an-int.patch',
+-    'fix-xmlEscapeText-integer-overflow.patch',
+ ]
+ 
+ 
+diff --git a/third_party/libxml/linux/include/libxml/xmlversion.h b/third_party/libxml/linux/include/libxml/xmlversion.h
+index 0d7aa7d5b854a504a08bbaac2b3edf8fd358ea0f..eac2eb754d346d9289b50399beca2bba3d933960 100644
+--- a/third_party/libxml/linux/include/libxml/xmlversion.h
++++ b/third_party/libxml/linux/include/libxml/xmlversion.h
+@@ -141,6 +141,13 @@
+ #define LIBXML_SGML_CATALOG_ENABLED
+ #endif
+ 
++#if 0
++/**
++ * Whether the Windows path support is configured in
++ */
++#define LIBXML_WINPATH_ENABLED
++#endif
++
+ #if 1
+ /**
+  * Whether XPath is configured in
+diff --git a/third_party/libxml/linux/xml2-config b/third_party/libxml/linux/xml2-config
+index d03bf270d0fb9282b65c54c212ea0b3b62147658..a88238277aa2b0f882ad63a5815bab0e04415d44 100755
+--- a/third_party/libxml/linux/xml2-config
++++ b/third_party/libxml/linux/xml2-config
+@@ -86,7 +86,7 @@ while test $# -gt 0; do
+             shift
+             libs="-lxml2 "
+         else
+-            libs="-lxml2   -licuuc -licudata  -lm "
++            libs="-lxml2   -licuuc -lm "
+         fi
+ 
+         if [ "${exec_prefix}/lib" != "/usr/lib" -a "${exec_prefix}/lib" != "/usr/lib64" ]; then
+diff --git a/third_party/libxml/src/Makefile.am b/third_party/libxml/src/Makefile.am
+index 19ec305500f0efe858abe0042af6066fac86880c..0a2a7298bd6a37bb1a56a10afdab5cf777c3a43d 100644
+--- a/third_party/libxml/src/Makefile.am
++++ b/third_party/libxml/src/Makefile.am
+@@ -23,6 +23,7 @@ check_PROGRAMS = \
+ 	runxmlconf \
+ 	testModule \
+ 	testapi \
++	testcatalog \
+ 	testchar \
+ 	testdict \
+ 	testlimits \
+@@ -110,7 +111,7 @@ LDADDS = libxml2.la
+ 
+ runtest_SOURCES=runtest.c
+ runtest_DEPENDENCIES = $(DEPS)
+-runtest_LDADD= $(THREAD_LIBS) $(LDADDS)
++runtest_LDADD= $(THREAD_LIBS) $(Z_LIBS) $(LDADDS)
+ 
+ testrecurse_SOURCES=testrecurse.c
+ testrecurse_DEPENDENCIES = $(DEPS)
+@@ -120,6 +121,10 @@ testlimits_SOURCES=testlimits.c
+ testlimits_DEPENDENCIES = $(DEPS)
+ testlimits_LDADD= $(LDADDS)
+ 
++testcatalog_SOURCES=testcatalog.c
++testcatalog_DEPENDENCIES = $(DEPS)
++testcatalog_LDADD= $(LDADDS)
++
+ testchar_SOURCES=testchar.c
+ testchar_DEPENDENCIES = $(DEPS)
+ testchar_LDADD= $(LDADDS)
+@@ -137,9 +142,9 @@ runsuite_DEPENDENCIES = $(DEPS)
+ runsuite_LDADD= $(LDADDS)
+ 
+ xmllint_SOURCES = xmllint.c shell.c lintmain.c
+-xmllint_CFLAGS = $(AM_CFLAGS) $(RDL_CFLAGS)
++xmllint_CFLAGS = $(AM_CFLAGS) $(RDL_CFLAGS) $(Z_CFLAGS)
+ xmllint_DEPENDENCIES = $(DEPS)
+-xmllint_LDADD=  $(RDL_LIBS) $(LDADDS)
++xmllint_LDADD = $(RDL_LIBS) $(Z_LIBS) $(LDADDS)
+ 
+ testModule_SOURCES=testModule.c
+ testModule_DEPENDENCIES = $(DEPS)
+@@ -167,6 +172,7 @@ check-local:
+ 	$(CHECKER) ./runtest$(EXEEXT)
+ 	$(CHECKER) ./testrecurse$(EXEEXT)
+ 	$(CHECKER) ./testapi$(EXEEXT)
++	$(CHECKER) ./testcatalog$(EXEEXT)
+ 	$(CHECKER) ./testchar$(EXEEXT)
+ 	$(CHECKER) ./testdict$(EXEEXT)
+ 	$(CHECKER) ./testparser$(EXEEXT)
+@@ -186,10 +192,12 @@ endif
+ # Compatibility name of the check target
+ runtests: check
+ 
++VALGRIND = valgrind -q --leak-check=full --error-exitcode=1
++
+ check-valgrind valgrind:
+ 	@echo '## Running the regression tests under Valgrind'
+ 	@echo '## Go get a cup of coffee it is gonna take a while ...'
+-	$(MAKE) CHECKER='valgrind -q' check
++	$(MAKE) check CHECKER="$(LIBTOOL) --mode=execute $(VALGRIND)"
+ 
+ dist-hook:
+ 	(cd $(srcdir) ; tar -cf - --exclude .git win32 test result) | (cd $(distdir); tar xf -)
+diff --git a/third_party/libxml/src/README.md b/third_party/libxml/src/README.md
+index d71113751e8c6493fcecb8f274d16dcecfd83796..2d959444bcb05e1389320aaf055c0e15c28c9073 100644
+--- a/third_party/libxml/src/README.md
++++ b/third_party/libxml/src/README.md
+@@ -21,11 +21,29 @@ This code is released under the MIT License, see the Copyright file.
+ 
+ ## Security
+ 
+-This is open-source software written by hobbyists, maintained by a single
+-volunteer, badly tested, written in a memory-unsafe language and full of
+-security bugs. It is foolish to use this software to process untrusted data.
+-As such, we treat security issues like any other bug. Each security report
+-we receive will be made public immediately and won't be prioritized.
++This is open-source software written by hobbyists and maintained by
++volunteers.
++
++It's NOT recommended to use this software to process **untrusted data**.
++There is a lot of ways that a malicious crafted xml could exploit a
++hidden vulnerability in the software.
++
++The software is provided "as is", without warranty of any kind,
++express or implied. Use this software at your own risk.
++
++To **report security bugs**, you can create a confidential issue with
++the "security" label. We will review and work on it as a best effort.
++But remember that this is a community project, maintained by volunteer
++developers, so if you are concern about any important security bug
++that's critical for you, feel free to collaborate and provide a patch.
++
++The main rule is to be kind. Do not pressure developers to fix a CVE
++or to work on a functionality that you need, because that won't work.
++This is a community project, developers will work in the issues that
++they consider interesting and when they want. All contributions are
++welcome, so if something is important for you, you can always get
++involved, implement it yourself and be part of the open source
++community.
+ 
+ ## Build instructions
+ 
+@@ -75,6 +93,7 @@ The following options disable or enable code modules and relevant symbols:
+     --with-threads          multithreading support (on)
+     --with-thread-alloc     per-thread malloc hooks (off)
+     --with-valid            DTD validation support (on)
++    --with-winpath          Windows path support (on for Windows)
+     --with-writer           xmlWriter serialization interface (on)
+     --with-xinclude         XInclude 1.0 support (on)
+     --with-xpath            XPath 1.0 support (on)
+@@ -171,6 +190,18 @@ is by creating issues and merge requests on GitLab.
+ All code must conform to C89 and pass the GitLab CI tests. Add regression
+ tests if possible.
+ 
++### Strict No LLM / No AI Policy
++
++No LLMs for issues.
++
++No LLMs for patches / pull requests.
++
++No LLMs for comments on the bug tracker, including translation.
++
++English is encouraged, but not required. You are welcome to post in
++your native language and rely on others to have their own translation
++tools of choice to interpret your words.
++
+ ## Authors
+ 
+ - Daniel Veillard
+diff --git a/third_party/libxml/src/buf.c b/third_party/libxml/src/buf.c
+index 8fd848225bd1cea1659d5aaca1031876a185c27c..340ededb0021181b3c781126a2ac6d8cf4c2cb10 100644
+--- a/third_party/libxml/src/buf.c
++++ b/third_party/libxml/src/buf.c
+@@ -128,6 +128,9 @@ xmlBufCreateMem(const xmlChar *mem, size_t size, int isStatic) {
+     if (mem == NULL)
+         return(NULL);
+ 
++    if (size == SIZE_MAX)
++        return(NULL);
++
+     ret = xmlMalloc(sizeof(*ret));
+     if (ret == NULL)
+         return(NULL);
+@@ -754,8 +757,13 @@ xmlBufferDetach(xmlBuffer *buf) {
+ xmlBuffer *
+ xmlBufferCreateStatic(void *mem, size_t size) {
+     xmlBufferPtr buf = xmlBufferCreateSize(size);
++    if (buf == NULL)
++        return(NULL);
+ 
+-    xmlBufferAdd(buf, mem, size);
++    if (xmlBufferAdd(buf, mem, size) != XML_ERR_OK) {
++        xmlBufferFree(buf);
++        return(NULL);
++    }
+     return(buf);
+ }
+ 
+diff --git a/third_party/libxml/src/configure.ac b/third_party/libxml/src/configure.ac
+index 4eb629bb3a0bddac16e8e8e571c0804f79b08dd6..d5887018ee198874a37c25957a51767f51f5e8c9 100644
+--- a/third_party/libxml/src/configure.ac
++++ b/third_party/libxml/src/configure.ac
+@@ -114,6 +114,8 @@ AC_ARG_WITH(thread-alloc,
+ [  --with-thread-alloc     per-thread malloc hooks (off)])
+ AC_ARG_WITH(valid,
+ [  --with-valid            DTD validation support (on)])
++AC_ARG_WITH(winpath,
++[  --with-winpath          Windows-styled path support (auto)])
+ AC_ARG_WITH(writer,
+ [  --with-writer           xmlWriter serialization interface (on)])
+ AC_ARG_WITH(xinclude,
+@@ -400,6 +402,24 @@ fi
+ AC_SUBST(WITH_READER)
+ AM_CONDITIONAL(WITH_READER_SOURCES, test "$WITH_READER" = "1")
+ 
++if test "$with_winpath" = "yes" ; then
++    echo Enabling Windows path support
++    WITH_WINPATH=1
++elif test "$with_winpath" = "no" ; then
++    WITH_WINPATH=0
++else
++    case "$host" in
++        *-*-mingw* | *-*-cygwin* | *-*-msys* )
++            echo "Enabling Windows path support (default for Windows)"
++            WITH_WINPATH=1
++            ;;
++        *)
++            WITH_WINPATH=0
++            ;;
++    esac
++fi
++AC_SUBST(WITH_WINPATH)
++
+ if test "$with_writer" = "no" ; then
+     echo Disabling the xmlWriter saving interface
+     WITH_WRITER=0
+@@ -838,6 +858,8 @@ if test "$with_zlib" != "no" && test "$with_zlib" != ""; then
+     XML_PRIVATE_LIBS="${XML_PRIVATE_LIBS} ${Z_LIBS}"
+ fi
+ AC_SUBST(WITH_ZLIB)
++AC_SUBST(Z_CFLAGS)
++AC_SUBST(Z_LIBS)
+ 
+ dnl
+ dnl Checks for iconv library.
+diff --git a/third_party/libxml/src/dict.c b/third_party/libxml/src/dict.c
+index 3867bd81b529951f675b46bb2935e40205938fe5..fdef39247fd00eb8d43d0eb61c4c178fe6e6b63c 100644
+--- a/third_party/libxml/src/dict.c
++++ b/third_party/libxml/src/dict.c
+@@ -218,10 +218,21 @@ xmlDictAddQString(xmlDictPtr dict, const xmlChar *prefix, unsigned int plen,
+             return(NULL);
+         }
+ 
+-        if (size == 0) size = 1000;
+-	else size *= 4; /* exponential growth */
+-        if (size < 4 * (namelen + plen + 1))
+-	    size = 4 * (namelen + plen + 1); /* just in case ! */
++        if (size == 0) {
++            size = 1000;
++        } else {
++            if (size < (SIZE_MAX - sizeof(xmlDictStrings)) / 4)
++                size *= 4; /* exponential growth */
++            else
++                size = SIZE_MAX - sizeof(xmlDictStrings);
++        }
++        if (size / 4 < namelen + plen + 1) {
++            if ((size_t) namelen + plen + 1 <
++                    (SIZE_MAX - sizeof(xmlDictStrings)) / 4)
++                size = 4 * ((size_t) namelen + plen + 1); /* just in case ! */
++            else
++                return(NULL);
++        }
+ 	pool = (xmlDictStringsPtr) xmlMalloc(sizeof(xmlDictStrings) + size);
+ 	if (pool == NULL)
+ 	    return(NULL);
+diff --git a/third_party/libxml/src/entities.c b/third_party/libxml/src/entities.c
+index a81530f4587e6e20c0d5768f9bfaa26028645330..906a4c948a2b9c76045e96d3d1a22e7e58b55142 100644
+--- a/third_party/libxml/src/entities.c
++++ b/third_party/libxml/src/entities.c
+@@ -29,6 +29,7 @@
+ #include "private/entities.h"
+ #include "private/error.h"
+ #include "private/io.h"
++#include "private/tree.h"
+ 
+ #ifndef SIZE_MAX
+   #define SIZE_MAX ((size_t) -1)
+@@ -637,6 +638,14 @@ xmlCopyEntity(void *payload, const xmlChar *name ATTRIBUTE_UNUSED) {
+         if (cur->URI == NULL)
+             goto error;
+     }
++    /* Handle XML_TEXT_NODE children for XML_ENTITY_DECL */
++    if (ent->children != NULL) {
++        cur->children = xmlStaticCopyNodeList(ent->children, cur->doc, (xmlNodePtr)cur);
++        /* Update last pointers */
++        cur->last = cur->children;
++        while (cur->last && cur->last->next) cur->last = cur->last->next;
++    }
++
+     return(cur);
+ 
+ error:
+diff --git a/third_party/libxml/src/globals.c b/third_party/libxml/src/globals.c
+index 8306f94e926cebe4796defe1c5ea6ca1ccecf228..366b5dc7159781d71de3dba11d72bf0273bc4769 100644
+--- a/third_party/libxml/src/globals.c
++++ b/third_party/libxml/src/globals.c
+@@ -400,6 +400,28 @@ void xmlCleanupGlobalsInternal(void) {
+ #elif defined(HAVE_WIN32_THREADS)
+ #if defined(USE_WAIT_DTOR) && !defined(USE_TLS)
+     if (globalkey != TLS_OUT_OF_INDEXES) {
++        xmlGlobalState* gs = (xmlGlobalState*)TlsGetValue(globalkey);
++        if (gs) {
++            /* Unregister the waiter for the thread to terminate, then go ahead
++               and free the global state. This avoids false positive reports of
++               memory leaks in applications where the main thread created the
++               global state; if the registered callback is waiting for the main
++               thread to terminate to free the global state, it won't get a
++               chance to run.
++            */
++            if (gs->waitHandle != NULL) {
++                UnregisterWait(gs->waitHandle);
++                gs->waitHandle = NULL;
++            }
++
++            if (gs->threadHandle != NULL) {
++                CloseHandle(gs->threadHandle);
++                gs->threadHandle = NULL;
++            }
++
++            xmlFreeGlobalState(gs);
++            TlsSetValue(globalkey, NULL);
++        }
+         TlsFree(globalkey);
+         globalkey = TLS_OUT_OF_INDEXES;
+     }
+diff --git a/third_party/libxml/src/include/libxml/catalog.h b/third_party/libxml/src/include/libxml/catalog.h
+index 88a7483cdc53540d2de7526ad5c199a713490691..e1bc5feb7639e4c900c471a0bfc6fe308f6d991f 100644
+--- a/third_party/libxml/src/include/libxml/catalog.h
++++ b/third_party/libxml/src/include/libxml/catalog.h
+@@ -138,6 +138,8 @@ XMLPUBFUN void
+ #ifdef LIBXML_OUTPUT_ENABLED
+ XMLPUBFUN void
+ 		xmlCatalogDump		(FILE *out);
++XMLPUBFUN xmlDocPtr
++		xmlCatalogDumpDoc	(void);
+ #endif /* LIBXML_OUTPUT_ENABLED */
+ XMLPUBFUN xmlChar *
+ 		xmlCatalogResolve	(const xmlChar *pubID,
+diff --git a/third_party/libxml/src/include/libxml/relaxng.h b/third_party/libxml/src/include/libxml/relaxng.h
+index eafc6604d0f61098c827fb497becf1e01f5fdce0..099dacd80a294f9f8e6c20c97122073a23c5d186 100644
+--- a/third_party/libxml/src/include/libxml/relaxng.h
++++ b/third_party/libxml/src/include/libxml/relaxng.h
+@@ -136,6 +136,10 @@ XMLPUBFUN int
+ 		    xmlRelaxParserSetFlag	(xmlRelaxNGParserCtxt *ctxt,
+ 						 int flag);
+ 
++XMLPUBFUN int
++		    xmlRelaxParserSetIncLImit	(xmlRelaxNGParserCtxt *ctxt,
++						 int limit);
++
+ XMLPUBFUN void
+ 		    xmlRelaxNGFreeParserCtxt	(xmlRelaxNGParserCtxt *ctxt);
+ XMLPUBFUN void
+diff --git a/third_party/libxml/src/include/libxml/xmlversion.h.in b/third_party/libxml/src/include/libxml/xmlversion.h.in
+index 107707bb83e9b58ed50b87f07e9b1386da6b788a..f7ed8a93703f613ea21ecfbde622bbe92e878ddf 100644
+--- a/third_party/libxml/src/include/libxml/xmlversion.h.in
++++ b/third_party/libxml/src/include/libxml/xmlversion.h.in
+@@ -141,6 +141,13 @@
+ #define LIBXML_SGML_CATALOG_ENABLED
+ #endif
+ 
++#if @WITH_WINPATH@
++/**
++ * Whether the Windows path support is configured in
++ */
++#define LIBXML_WINPATH_ENABLED
++#endif
++
+ #if @WITH_XPATH@
+ /**
+  * Whether XPath is configured in
+diff --git a/third_party/libxml/src/include/private/Makefile.in b/third_party/libxml/src/include/private/Makefile.in
+index f75f1c7d15a2b8cef6be3818ddbcb5a2e18a2395..117c395837c0de21dea1d03748dd3a53bc0f49ca 100644
+--- a/third_party/libxml/src/include/private/Makefile.in
++++ b/third_party/libxml/src/include/private/Makefile.in
+@@ -1,7 +1,7 @@
+-# Makefile.in generated by automake 1.17 from Makefile.am.
++# Makefile.in generated by automake 1.18.1 from Makefile.am.
+ # @configure_input@
+ 
+-# Copyright (C) 1994-2024 Free Software Foundation, Inc.
++# Copyright (C) 1994-2025 Free Software Foundation, Inc.
+ 
+ # This Makefile.in is free software; the Free Software Foundation
+ # gives unlimited permission to copy and/or distribute it,
+@@ -246,6 +246,7 @@ WITH_SCHEMATRON = @WITH_SCHEMATRON@
+ WITH_THREADS = @WITH_THREADS@
+ WITH_THREAD_ALLOC = @WITH_THREAD_ALLOC@
+ WITH_VALID = @WITH_VALID@
++WITH_WINPATH = @WITH_WINPATH@
+ WITH_WRITER = @WITH_WRITER@
+ WITH_XINCLUDE = @WITH_XINCLUDE@
+ WITH_XPATH = @WITH_XPATH@
+@@ -385,6 +386,7 @@ ctags CTAGS:
+ 
+ cscope cscopelist:
+ 
++
+ distdir: $(BUILT_SOURCES)
+ 	$(MAKE) $(AM_MAKEFLAGS) distdir-am
+ 
+diff --git a/third_party/libxml/src/include/private/memory.h b/third_party/libxml/src/include/private/memory.h
+index 68a2e6d6a3583ca3c7c06912da3c9ff2ecf53c10..851b53eccc2cb08a5b61d949cdd220d484f05744 100644
+--- a/third_party/libxml/src/include/private/memory.h
++++ b/third_party/libxml/src/include/private/memory.h
+@@ -54,4 +54,7 @@ xmlGrowCapacity(int capacity, size_t elemSize, int min, int max) {
+     return(capacity + extra);
+ }
+ 
++XML_HIDDEN void *
++xmlGrowArray(void *array, size_t elemSize, int *capacity, int min, int max);
++
+ #endif /* XML_MEMORY_H_PRIVATE__ */
+diff --git a/third_party/libxml/src/include/private/threads.h b/third_party/libxml/src/include/private/threads.h
+index bb187869c76271c527598bdd7e8a1f5bd0bb0b5d..823e325ee1f7fb52589744532ede75e2a14e87f3 100644
+--- a/third_party/libxml/src/include/private/threads.h
++++ b/third_party/libxml/src/include/private/threads.h
+@@ -7,9 +7,16 @@
+   #ifdef _WIN32
+     #define WIN32_LEAN_AND_MEAN
+     #ifdef _WIN32_WINNT
+-      #undef _WIN32_WINNT
++      #if _WIN32_WINNT < 0x0600
++        #undef _WIN32_WINNT
++      #endif
++    #else
++      /* get the default version of the SDK */
++      #include <sdkddkver.h>
++    #endif
++    #ifndef _WIN32_WINNT
++      #define _WIN32_WINNT 0x0600
+     #endif
+-    #define _WIN32_WINNT 0x0600
+     #include <windows.h>
+     #define HAVE_WIN32_THREADS
+   #else
+diff --git a/third_party/libxml/src/nanohttp.c b/third_party/libxml/src/nanohttp.c
+index c87ce445199708720f637c6186e61b97a8bc25d7..a7c04de750cfd8dc1d2048880dbe36451c92095c 100644
+--- a/third_party/libxml/src/nanohttp.c
++++ b/third_party/libxml/src/nanohttp.c
+@@ -294,6 +294,7 @@ xmlIOHTTPClose (void *context ATTRIBUTE_UNUSED) {
+     return 0;
+ }
+ 
++#ifdef LIBXML_OUTPUT_ENABLED
+ /**
+  * @deprecated HTTP support was removed in 2.15.
+  */
+@@ -301,5 +302,6 @@ void
+ xmlRegisterHTTPPostCallbacks(void) {
+     xmlRegisterDefaultOutputCallbacks();
+ }
++#endif
+ 
+ #endif /* LIBXML_HTTP_STUBS_ENABLED */
+diff --git a/third_party/libxml/src/parser.c b/third_party/libxml/src/parser.c
+index c7f46a31a7394b2bb6719909a66baed4028c3f25..6966cc740daec73566334d5a8f09c85942bb3542 100644
+--- a/third_party/libxml/src/parser.c
++++ b/third_party/libxml/src/parser.c
+@@ -7261,10 +7261,10 @@ xmlParseReference(xmlParserCtxt *ctxt) {
+             if ((cur->type == XML_TEXT_NODE) ||
+                 (ctxt->options & XML_PARSE_NOCDATA)) {
+                 if (ctxt->sax->characters != NULL)
+-                    ctxt->sax->characters(ctxt, cur->content, len);
++                    ctxt->sax->characters(ctxt->userData, cur->content, len);
+             } else {
+                 if (ctxt->sax->cdataBlock != NULL)
+-                    ctxt->sax->cdataBlock(ctxt, cur->content, len);
++                    ctxt->sax->cdataBlock(ctxt->userData, cur->content, len);
+             }
+ 
+             cur = cur->next;
+@@ -7284,10 +7284,12 @@ xmlParseReference(xmlParserCtxt *ctxt) {
+                 if ((cur->type == XML_TEXT_NODE) ||
+                     (ctxt->options & XML_PARSE_NOCDATA)) {
+                     if (ctxt->sax->characters != NULL)
+-                        ctxt->sax->characters(ctxt, cur->content, len);
++                        ctxt->sax->characters(ctxt->userData, cur->content,
++                                              len);
+                 } else {
+                     if (ctxt->sax->cdataBlock != NULL)
+-                        ctxt->sax->cdataBlock(ctxt, cur->content, len);
++                        ctxt->sax->cdataBlock(ctxt->userData, cur->content,
++                                              len);
+                 }
+ 
+                 break;
+@@ -11566,7 +11568,6 @@ xmlIOParseDTD(xmlSAXHandler *sax, xmlParserInputBuffer *input,
+ 
+     pinput = xmlNewIOInputStream(ctxt, input, XML_CHAR_ENCODING_NONE);
+     if (pinput == NULL) {
+-        xmlFreeParserInputBuffer(input);
+ 	xmlFreeParserCtxt(ctxt);
+ 	return(NULL);
+     }
+@@ -12033,7 +12034,7 @@ xmlCtxtParseContent(xmlParserCtxt *ctxt, xmlParserInput *input,
+         case XML_ENTITY_REF_NODE:
+         case XML_PI_NODE:
+         case XML_COMMENT_NODE:
+-            for (cur = node->parent; cur != NULL; cur = node->parent) {
++            for (cur = node->parent; cur != NULL; cur = cur->parent) {
+                 if ((cur->type == XML_ELEMENT_NODE) ||
+                     (cur->type == XML_DOCUMENT_NODE) ||
+                     (cur->type == XML_HTML_DOCUMENT_NODE)) {
+diff --git a/third_party/libxml/src/py-compile b/third_party/libxml/src/py-compile
+index c9d4fde94fb91f6210e6b021c47adf4a85df3639..f42443f8bdede63518377bb6320abf08651137f4 100755
+--- a/third_party/libxml/src/py-compile
++++ b/third_party/libxml/src/py-compile
+@@ -1,9 +1,9 @@
+ #!/bin/sh
+ # py-compile - Compile a Python program
+ 
+-scriptversion=2024-06-19.01; # UTC
++scriptversion=2025-06-18.21; # UTC
+ 
+-# Copyright (C) 2000-2024 Free Software Foundation, Inc.
++# Copyright (C) 2000-2025 Free Software Foundation, Inc.
+ 
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+@@ -33,6 +33,23 @@ fi
+ 
+ me=py-compile
+ 
++# People apparently set PYTHON=: and expect the result to be true.
++# For the same reason, we output to stdout instead of stderr. Bizarre.
++if $PYTHON -V 2>/dev/null | grep -i python >/dev/null; then :; else
++  echo "$me: Invalid python executable (according to -V): $PYTHON"
++  echo "$me: Python support disabled"
++  if test x"$PYTHON" = xfalse; then
++    # But, as a special case, make PYTHON=false exit unsuccessfully,
++    # since that was the traditional behavior.
++    exit 1
++    # In the past, setting PYTHON to any command that exited unsuccessfully
++    # caused py-compile to exit unsuccessfully. Let's not try to
++    # replicate that unless and until needed.
++  else
++   exit 0
++  fi
++fi
++
+ usage_error ()
+ {
+   echo "$me: $*" >&2
+@@ -64,7 +81,7 @@ while test $# -ne 0; do
+       cat <<\EOF
+ Usage: py-compile [options] FILES...
+ 
+-Byte compile some python scripts FILES.  Use --destdir to specify any
++Byte compile FILES as Python scripts.  Use --destdir to specify a
+ leading directory path to the FILES that you don't want to include in the
+ byte compiled file.  Specify --basedir for any additional path information you
+ do want to be shown in the byte compiled file.
+@@ -78,6 +95,14 @@ Options:
+ Example:
+   py-compile --destdir /tmp/pkg-root --basedir /usr/share/test test.py test2.py
+ 
++The Python interpreter to use is taken from the environment variable
++PYTHON, or "python" by default.
++
++For compatibility: as a special case, if PYTHON=false (that is, the
++command named "false"), this script will exit unsuccessfully. Otherwise,
++if $PYTHON -V does not include the string "Python", this script will
++emit a message to standard output and exit successfully.
++
+ Report bugs to <bug-automake@gnu.org>.
+ GNU Automake home page: <https://www.gnu.org/software/automake/>.
+ General help using GNU software: <https://www.gnu.org/gethelp/>.
+@@ -236,9 +261,9 @@ esac
+ # Local Variables:
+ # mode: shell-script
+ # sh-indentation: 2
+-# eval: (add-hook 'before-save-hook 'time-stamp)
++# eval: (add-hook 'before-save-hook 'time-stamp nil t)
+ # time-stamp-start: "scriptversion="
+-# time-stamp-format: "%:y-%02m-%02d.%02H"
++# time-stamp-format: "%Y-%02m-%02d.%02H"
+ # time-stamp-time-zone: "UTC0"
+ # time-stamp-end: "; # UTC"
+ # End:
+diff --git a/third_party/libxml/src/runtest.c b/third_party/libxml/src/runtest.c
+index 49519aef3b8ea56a8a2c1f8477f306f33fa791a0..6961f648d51e2e3fa18e3e32d5afce397ad5a398 100644
+--- a/third_party/libxml/src/runtest.c
++++ b/third_party/libxml/src/runtest.c
+@@ -28,6 +28,10 @@
+   #include <unistd.h>
+ #endif
+ 
++#ifdef LIBXML_ZLIB_ENABLED
++#include <zlib.h>
++#endif
++
+ #include <libxml/parser.h>
+ #include <libxml/parserInternals.h>
+ #include <libxml/tree.h>
+@@ -2473,6 +2477,75 @@ noentParseTest(const char *filename, const char *result,
+     return(res);
+ }
+ 
++#ifdef LIBXML_XINCLUDE_ENABLED
++/**
++ * Parse a file and run xmlXIncludeProcess() to verify that doc->parseFlags
++ * is propagated properly.
++ *
++ * @param filename  the file to parse
++ * @param result  the file with expected result
++ * @param err  the file with error messages
++ * @returns 0 in case of success, an error code otherwise
++ */
++static int
++xincludeProcessTest(const char *filename, const char *result, const char *err,
++                    int options) {
++    xmlParserCtxtPtr ctxt;
++    xmlDocPtr doc;
++    xmlChar *base = NULL;
++    int size, res;
++    int ret = 0;
++
++    nb_tests++;
++
++    /* Create a new parser context */
++    ctxt = xmlNewParserCtxt();
++    if (ctxt == NULL)
++        return(-1);
++
++    /* Load the data from `filename` into a parser context */
++    xmlCtxtSetErrorHandler(ctxt, testStructuredErrorHandler, NULL);
++    doc = xmlCtxtReadFile(ctxt, filename, NULL, options);
++    xmlFreeParserCtxt(ctxt);
++
++    /* Check if `doc` was created successfully */
++    if (doc == NULL) {
++        testErrorHandler(NULL, "%s : failed to parse\n", filename);
++        return(-1);
++    }
++
++    /*
++     * Run xmlXIncludeProcess() with a structured error handler to check that
++     * the parse flags are propagated.
++     */
++    xmlSetStructuredErrorFunc(NULL, testStructuredErrorHandler);
++    xmlXIncludeProcess(doc);
++    xmlSetStructuredErrorFunc(NULL, NULL);
++
++    /* Check the result and for any errors */
++    if (result) {
++        xmlDocDumpMemory(doc, &base, &size);
++        res = compareFileMem(result, (char *) base, size);
++        xmlFree(base);
++        if (res != 0) {
++            fprintf(stderr, "Result for %s failed in %s\n", filename, result);
++            ret = -1;
++        }
++    }
++
++    if ((ret == 0) && (err != NULL)) {
++        res = compareFileMem(err, testErrors, testErrorsSize);
++        if (res != 0) {
++            fprintf(stderr, "Error for %s failed\n", filename);
++            ret = -1;
++        }
++    }
++
++    xmlFreeDoc(doc);
++    return(ret);
++}
++#endif
++
+ /**
+  * Parse a file using the #xmlReadFile API and check for errors.
+  *
+@@ -2745,6 +2818,185 @@ streamProcessTest(const char *filename, const char *result, const char *err,
+     return(0);
+ }
+ 
++#ifdef __linux__
++
++/**
++ * Parse a file using the reader for Fd and checks that the corresponding fd is
++ * correctly closed and there's no memory leak
++ *
++ * @param filename  the file to parse
++ * @param result  the file with expected result
++ * @param err  the file with error messages
++ * @returns 0 in case of success, an error code otherwise
++ */
++static int
++xmlReaderForFdTest(const char *filename, const char *result ATTRIBUTE_UNUSED,
++                   const char *err ATTRIBUTE_UNUSED, int options ATTRIBUTE_UNUSED) {
++    xmlTextReaderPtr reader;
++    int fd = 0;
++    int ret;
++
++    fd = open(filename, O_RDONLY, 0);
++    if (fd == -1) {
++        fprintf(stderr, "Error opening test file %s\n", filename);
++        return 1;
++    }
++
++    reader = xmlReaderForFd(fd, filename, NULL, 0);
++    if (reader) {
++        xmlFreeTextReader(reader);
++    } else {
++        fprintf(stderr, "Error creating reader for file %s\n", filename);
++        ret = 1;
++    }
++
++    /* Ensure that no new fd was created and never closed */
++    ret = fcntl(fd + 1, F_GETFD);
++    if (ret != -1) {
++        fprintf(stderr, "File descriptor %d was not closed correctly %s\n", fd + 1, filename);
++    } else {
++        ret = 0;
++    }
++
++    /* Ensure that the manual open fd is still open */
++    ret = fcntl(fd, F_GETFD);
++    if (ret != 0) {
++        fprintf(stderr, "File descriptor %d was early closed correctly %s\n", fd, filename);
++    }
++
++    close(fd);
++
++    /* Check if we close the fd correctly */
++    ret = fcntl(fd, F_GETFD);
++    if (ret != -1) {
++        fprintf(stderr, "File descriptor %d was not closed correctly %s\n", fd, filename);
++    } else {
++        ret = 0;
++    }
++
++    return(ret);
++}
++
++#if defined(LIBXML_ZLIB_ENABLED) && defined(LIBXML_OUTPUT_ENABLED)
++static int
++xmllintGzWrite(void *ctxt, const char *buf, int len) {
++    return gzwrite(ctxt, buf, len);
++}
++
++static int
++xmllintGzClose(void *ctxt) {
++    if (gzclose(ctxt) != Z_OK)
++        return -1;
++
++    return 0;
++}
++
++/**
++ * Parse a file using the reader for Fd and checks that the corresponding fd is
++ * correctly closed and there's no memory leak
++ *
++ * @param filename  the file to parse
++ * @param result  the file with expected result
++ * @param err  the file with error messages
++ * @returns 0 in case of success, an error code otherwise
++ */
++static int
++xmlReaderForFdGzTest(const char *filename, const char *result ATTRIBUTE_UNUSED,
++                     const char *err ATTRIBUTE_UNUSED, int options ATTRIBUTE_UNUSED) {
++    /** Gzip the file and test again to verify the zipper branch */
++    char tmp[500] = {0};
++    gzFile gz = NULL;
++    xmlSaveCtxtPtr ctxt = NULL;
++    xmlDocPtr doc = NULL;
++    int ret = 0;
++
++    if (snprintf(tmp, 499, "%s.gz", baseFilename(filename)) >= 499) {
++        tmp[499] = 0;
++    }
++
++    gz = gzopen(tmp, "wb9");
++    if (gz == NULL) {
++        fprintf(stderr, "Error creating gz file %s\n", tmp);
++        return 1;
++    }
++
++    doc = xmlReadFile(filename, NULL, 0);
++    if (doc == NULL) {
++        fprintf(stderr, "Error reading test doc %s\n", filename);
++        gzclose(gz);
++        return 1;
++    }
++    ctxt = xmlSaveToIO(xmllintGzWrite, xmllintGzClose, gz, NULL, 0);
++    if (ctxt == NULL) {
++        fprintf(stderr, "Error creating save contxt %s\n", tmp);
++        xmlFreeDoc(doc);
++        gzclose(gz);
++        return 1;
++    }
++
++    if (xmlSaveDoc(ctxt, doc) < 0) {
++        fprintf(stderr, "Error saving file %s\n", tmp);
++        xmlSaveClose(ctxt);
++        xmlFreeDoc(doc);
++        return 1;
++    }
++
++    xmlSaveClose(ctxt);
++    xmlFreeDoc(doc);
++
++    ret = xmlReaderForFdTest(tmp, NULL, NULL, 0);
++    unlink(tmp);
++
++    return(ret);
++}
++#endif
++
++#endif
++
++#ifdef LIBXML_READER_ENABLED
++/**
++ * Checking that xmlTextReaderReadOuterXml copy the XML_DTD_NODE
++ *
++ * xmlTextReaderReadOuterXml does not copy XML_DTD_NODE since libxml2 2.13.0
++ * https://gitlab.gnome.org/GNOME/libxml2/-/issues/1108
++ */
++static int
++xmlTextReaderReadOuterXmlTest(const char *filename ATTRIBUTE_UNUSED,
++                              const char *result ATTRIBUTE_UNUSED,
++                              const char *err ATTRIBUTE_UNUSED,
++                              int options ATTRIBUTE_UNUSED) {
++    xmlTextReaderPtr reader = NULL;
++    int ret = 0;
++    int res = 1;
++    xmlChar *out = NULL;
++
++    const char *doc = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
++                      "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\""
++                      "  \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">"
++                      "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400\" height=\"300\">"
++                      "  <rect width=\"400\" height=\"300\" fill=\"white\"/>"
++                      "</svg>";
++
++    reader = xmlReaderForMemory(doc, strlen(doc), "doc.svg", NULL, XML_PARSE_NOENT);
++
++    while (res == 1) {
++        res = xmlTextReaderRead(reader);
++        if (xmlTextReaderNodeType(reader) == XML_READER_TYPE_DOCUMENT_TYPE) {
++            out = xmlTextReaderReadOuterXml(reader);
++            ret = xmlStrEqual(out, BAD_CAST "<!DOCTYPE svg PUBLIC \"-//W3C//DTD //SVG //1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">") == 1;
++            if (out != NULL) {
++                xmlFree(out);
++                out = NULL;
++            }
++            break;
++        }
++    }
++
++    xmlFreeTextReader(reader);
++    return(ret);
++}
++#endif
++
+ /**
+  * Parse a file using the reader API and check for errors.
+  *
+@@ -3480,9 +3732,6 @@ schemasOneTest(const char *sch,
+         testErrorsSize = parseErrorsSize;
+         testErrors[parseErrorsSize] = 0;
+ 
+-        if (schemas == NULL)
+-            goto done;
+-
+         ctxt = xmlSchemaNewValidCtxt(schemas);
+         xmlSchemaSetValidStructuredErrors(ctxt, testStructuredErrorHandler,
+                                           NULL);
+@@ -3493,6 +3742,7 @@ schemasOneTest(const char *sch,
+             doc = xmlReadFile(filename, NULL, options);
+             if (doc == NULL) {
+                 fprintf(stderr, "failed to parse instance %s for %s\n", filename, sch);
++                xmlSchemaFreeValidCtxt(ctxt);
+                 return(-1);
+             }
+             validResult = xmlSchemaValidateDoc(ctxt, doc);
+@@ -3512,9 +3762,9 @@ schemasOneTest(const char *sch,
+ 
+         xmlSchemaFreeValidCtxt(ctxt);
+ 
+-done:
+         if (compareFileMem(err, testErrors, testErrorsSize)) {
+-            fprintf(stderr, "Error for %s on %s failed\n", filename, sch);
++            fprintf(stderr, "Error for %s on %s failed in round %d: %s\n",
++                filename, sch, i, testErrors);
+             ret = 1;
+         }
+     }
+@@ -3603,15 +3853,58 @@ schemasTest(const char *filename,
+ 	}
+ 
+         nb_tests++;
+-        ret = schemasOneTest(filename, instance, err, options, schemas);
+-        if (ret != 0)
+-            res = ret;
++        if (schemas == NULL) {
++            /* schema load failed, verify the error message*/
++            if (compareFileMem(err, testErrors, testErrorsSize)) {
++                fprintf(stderr, "Error for %s failed\n", filename);
++                res = 1;
++            }
++        } else {
++            ret = schemasOneTest(filename, instance, err, options, schemas);
++            if (ret != 0)
++                res = ret;
++        }
+     }
+     globfree(&globbuf);
+     xmlSchemaFree(schemas);
+ 
+     return(res);
+ }
++
++/**
++ * Validate an XML instance using XSI-based dynamic schema assembly.
++ * The validation context is created with a NULL schema, so the schema
++ * is discovered from xsi:schemaLocation in the instance document.
++ *
++ * @param filename  the XML instance file
++ * @param result  unused
++ * @param err  unused
++ * @param options  parser options
++ * @returns 0 in case of success, an error code otherwise
++ */
++static int
++schemasXsiTest(const char *filename,
++               const char *resul ATTRIBUTE_UNUSED,
++               const char *errr ATTRIBUTE_UNUSED,
++               int options) {
++    const char *base = baseFilename(filename);
++    int len, ret;
++    char err[500];
++    char prefix[500];
++
++    len = strlen(base);
++    if ((len > 499) || (len < 5))
++        return(-1);
++    memcpy(prefix, base, len - 4); /* remove .xml */
++    prefix[len - 4] = 0;
++
++    ret = snprintf(err, 499, "result/schemas/%s_0.err", prefix);
++    if (ret >= 499)
++        err[499] = 0;
++
++    nb_tests++;
++    return(schemasOneTest(filename, filename, err, options, NULL));
++}
+ #endif /* LIBXML_SCHEMAS_ENABLED */
+ 
+ /************************************************************************
+@@ -3741,6 +4034,70 @@ rngTest(const char *filename,
+     return(ret);
+ }
+ 
++/**
++ * Parse an RNG schemas with a custom RNG_INCLUDE_LIMIT
++ *
++ * @param filename  the schemas file
++ * @param result  the file with expected result
++ * @param err  the file with error messages
++ * @returns 0 in case of success, an error code otherwise
++ */
++static int
++rngIncludeTest(const char *filename,
++               const char *resul ATTRIBUTE_UNUSED,
++               const char *errr ATTRIBUTE_UNUSED,
++               int options ATTRIBUTE_UNUSED) {
++    xmlRelaxNGParserCtxtPtr ctxt;
++    xmlRelaxNGPtr schemas;
++    int ret = 0;
++
++    /* first compile the schemas if possible */
++    ctxt = xmlRelaxNGNewParserCtxt(filename);
++    xmlRelaxNGSetParserStructuredErrors(ctxt, testStructuredErrorHandler,
++                                        NULL);
++
++    /* Should work */
++    schemas = xmlRelaxNGParse(ctxt);
++    if (schemas == NULL) {
++        testErrorHandler(NULL, "Relax-NG schema %s failed to compile\n",
++                         filename);
++        ret = -1;
++        goto done;
++    }
++    xmlRelaxNGFree(schemas);
++    xmlRelaxNGFreeParserCtxt(ctxt);
++
++    ctxt = xmlRelaxNGNewParserCtxt(filename);
++    /* Should fail */
++    xmlRelaxParserSetIncLImit(ctxt, 2);
++    xmlRelaxNGSetParserStructuredErrors(ctxt, testStructuredErrorHandler,
++                                        NULL);
++    schemas = xmlRelaxNGParse(ctxt);
++    if (schemas != NULL) {
++        ret = -1;
++        xmlRelaxNGFree(schemas);
++    }
++    xmlRelaxNGFreeParserCtxt(ctxt);
++
++    ctxt = xmlRelaxNGNewParserCtxt(filename);
++    /* Should work */
++    xmlRelaxParserSetIncLImit(ctxt, 3);
++    xmlRelaxNGSetParserStructuredErrors(ctxt, testStructuredErrorHandler,
++                                        NULL);
++    schemas = xmlRelaxNGParse(ctxt);
++    if (schemas == NULL) {
++        testErrorHandler(NULL, "Relax-NG schema %s failed to compile\n",
++                         filename);
++        ret = -1;
++        goto done;
++    }
++    xmlRelaxNGFree(schemas);
++
++done:
++    xmlRelaxNGFreeParserCtxt(ctxt);
++    return(ret);
++}
++
+ #ifdef LIBXML_READER_ENABLED
+ /**
+  * Parse a set of files with streaming, applying an RNG schemas
+@@ -5028,6 +5385,57 @@ automataTest(const char *filename, const char *result,
+ 
+ #endif /* LIBXML_REGEXP_ENABLED */
+ 
++/************************************************************************
++ *                                                                      *
++ *                      xmlCopy Tests                                   *
++ *                                                                      *
++ ************************************************************************/
++static int
++xmlCopyEntityTest(const char *filename ATTRIBUTE_UNUSED,
++                  const char *result ATTRIBUTE_UNUSED,
++                  const char *err ATTRIBUTE_UNUSED,
++                  int options ATTRIBUTE_UNUSED) {
++
++    int ret = 0;
++    xmlDocPtr doc = NULL;
++    xmlDocPtr copy = NULL;
++    xmlChar *before = NULL;
++    xmlChar *after = NULL;
++    const char *xml =
++        "<!DOCTYPE x [<!ENTITY e \"AAAA\">]>"
++        "<r ID=\"&e;_suffix\"/>";
++
++    doc = xmlReadMemory(xml, (int)strlen(xml), "doc.xml", NULL, 0);
++    if (!doc) {
++        fprintf(stderr, "xmlReadMemory failed\n");
++        ret = 1;
++        goto done;
++    }
++    copy = xmlCopyDoc(doc, 1);
++    if (!copy) {
++        fprintf(stderr, "xmlCopyDoc failed\n");
++        ret = 1;
++        goto done;
++    }
++
++    before = xmlGetProp(xmlDocGetRootElement(doc), BAD_CAST "ID");
++    after = xmlGetProp(xmlDocGetRootElement(copy), BAD_CAST "ID");
++
++    if (xmlStrcmp(before, after) != 0) {
++        fprintf(stderr, "RESET Attribute value changed after copy!\n");
++        ret = 1;
++    }
++
++done:
++    xmlFree(before);
++    xmlFree(after);
++    xmlFreeDoc(doc);
++    xmlFreeDoc(copy);
++
++    return ret;
++}
++
++
+ /************************************************************************
+  *									*
+  *			Tests Descriptions				*
+@@ -5163,6 +5571,12 @@ testDesc testDescriptions[] = {
+     { "XInclude regression tests without reader",
+       errParseTest, "./test/XInclude/without-reader/*", "result/XInclude/", "",
+       ".err", XML_PARSE_XINCLUDE },
++    { "XInclude issue1120 regression tests",
++      errParseTest, "./test/XInclude/issue1120/*", "result/XInclude/", "",
++      ".err", XML_PARSE_XINCLUDE | XML_PARSE_NONET },
++    { "XInclude xmlXIncludeProcess() issue1120 regression tests",
++      xincludeProcessTest, "./test/XInclude/issue1120/*", "result/XInclude/",
++      "", ".err", XML_PARSE_NONET },
+ #endif
+ #ifdef LIBXML_XPATH_ENABLED
+ #ifdef LIBXML_DEBUG_ENABLED
+@@ -5197,11 +5611,17 @@ testDesc testDescriptions[] = {
+     { "Schemas regression tests" ,
+       schemasTest, "./test/schemas/*_*.xsd", NULL, NULL, NULL,
+       0 },
++    { "Schemas XSI assembly tests" ,
++      schemasXsiTest, "./test/schemas/any1_0.xml", "result/schemas/",  NULL, NULL,
++      0 },
+ #endif
+ #ifdef LIBXML_RELAXNG_ENABLED
+     { "Relax-NG regression tests" ,
+       rngTest, "./test/relaxng/*.rng", NULL, NULL, NULL,
+       XML_PARSE_DTDATTR | XML_PARSE_NOENT },
++    { "Relax-NG include limit tests" ,
++      rngIncludeTest, "./test/relaxng/include/include-limit.rng", NULL, NULL, NULL,
++      0 },
+ #ifdef LIBXML_READER_ENABLED
+     { "Relax-NG streaming regression tests" ,
+       rngStreamTest, "./test/relaxng/*.rng", NULL, NULL, NULL,
+@@ -5250,6 +5670,21 @@ testDesc testDescriptions[] = {
+       automataTest, "./test/automata/*", "result/automata/", "", NULL,
+       0 },
+ #endif
++
++#if defined(LIBXML_READER_ENABLED) && defined(__linux__)
++    { "xmlReaderForFd memory leak tests",
++      xmlReaderForFdTest, "./test/slashdot.xml", NULL, NULL, NULL, 0 },
++#if defined(LIBXML_OUTPUT_ENABLED) && defined(LIBXML_ZLIB_ENABLED)
++    { "xmlReaderForFdGz memory leak tests",
++      xmlReaderForFdGzTest, "./test/slashdot.xml", NULL, NULL, NULL, 0 },
++#endif
++#endif
++#if defined(LIBXML_OUTPUT_ENABLED) && defined(LIBXML_READER_ENABLED)
++    { "xmlTextReaderReadOuterXml copy XML_DTD_NODE",
++      xmlTextReaderReadOuterXmlTest, NULL, NULL, NULL, NULL, 0 },
++#endif
++    { "xmlCopyEntity children test" , xmlCopyEntityTest, NULL, NULL, NULL, NULL, 0 },
++
+     {NULL, NULL, NULL, NULL, NULL, NULL, 0}
+ };
+ 
+diff --git a/third_party/libxml/src/shell.c b/third_party/libxml/src/shell.c
+index 43024b089d012121910fc0ddbb02c65d1a8656bc..67f61c30709960edd174fdb4b98585ed6980e6cb 100644
+--- a/third_party/libxml/src/shell.c
++++ b/third_party/libxml/src/shell.c
+@@ -1138,8 +1138,11 @@ xmllintShell(xmlDoc *doc, const char *filename, FILE * output)
+             command[i++] = *cur++;
+         }
+         command[i] = 0;
+-        if (i == 0)
++        if (i == 0) {
++            free(cmdline);
++            cmdline = NULL;
+             continue;
++        }
+ 
+         /*
+          * Parse the argument
+diff --git a/third_party/libxml/src/testcatalog.c b/third_party/libxml/src/testcatalog.c
+new file mode 100644
+index 0000000000000000000000000000000000000000..56c9bef659c08dc0dcd674540996f6f00a58ef5e
+--- /dev/null
++++ b/third_party/libxml/src/testcatalog.c
+@@ -0,0 +1,148 @@
++/*
++ * testcatalog.c: C program to run libxml2 catalog.c unit tests
++ *
++ * To compile on Unixes:
++ * cc -o testcatalog `xml2-config --cflags` testcatalog.c `xml2-config --libs` -lpthread
++ *
++ * See Copyright for the status of this software.
++ *
++ * Author: Daniel Garcia <dani@danigm.net>
++ */
++
++
++#include "libxml.h"
++#include <stdio.h>
++#include <string.h>
++
++#ifdef LIBXML_CATALOG_ENABLED
++#include <libxml/catalog.h>
++
++/* Test catalog resolve uri with recursive catalog */
++static int
++testRecursiveDelegateUri(void) {
++    int ret = 0;
++    const char *cat = "test/catalogs/catalog-recursive.xml";
++    const char *entity = "/foo.ent";
++    xmlChar *resolved = NULL;
++
++    xmlInitParser();
++    xmlLoadCatalog(cat);
++
++    /* This should trigger recursive error */
++    resolved = xmlCatalogResolveURI(BAD_CAST entity);
++    if (resolved != NULL) {
++        fprintf(stderr, "CATALOG-FAILURE: Catalog %s entity should fail to resolve\n", entity);
++        ret = 1;
++    }
++    xmlCatalogCleanup();
++
++    return ret;
++}
++
++/* Test parsing repeated NextCatalog */
++static int
++testRepeatedNextCatalog(void) {
++    int ret = 0;
++    int i = 0;
++    const char *cat = "test/catalogs/repeated-next-catalog.xml";
++    const char *entity = "/foo.ent";
++    xmlDocPtr doc = NULL;
++    xmlNodePtr node = NULL;
++
++    xmlInitParser();
++
++    xmlLoadCatalog(cat);
++    /* To force the complete recursive load */
++    xmlCatalogResolveURI(BAD_CAST entity);
++    /**
++     * Ensure that the doc doesn't contain the same nextCatalog
++     */
++    doc = xmlCatalogDumpDoc();
++    xmlCatalogCleanup();
++
++    if (doc == NULL) {
++        fprintf(stderr, "CATALOG-FAILURE: Failed to dump the catalog\n");
++        return 1;
++    }
++
++    /* Just the root "catalog" node with a series of nextCatalog */
++    node = xmlDocGetRootElement(doc);
++    node = node->children;
++    for (i=0; node != NULL; node=node->next, i++) {}
++    if (i > 1) {
++        fprintf(stderr, "CATALOG-FAILURE: Found %d nextCatalog entries and should be 1\n", i);
++        ret = 1;
++    }
++
++    xmlFreeDoc(doc);
++
++    return ret;
++}
++
++/*
++ * Test repeated call to xmlCatalogResolveURI
++ * See https://gitlab.gnome.org/GNOME/libxml2/-/work_items/1125
++ */
++static int
++testRepeatedResolveURI(void) {
++    int ret = 0;
++    const char *cat = "test/catalogs/stylesheet.xml";
++    const char *uri = "http://www.oasis-open.org/committes/tr.xsl";
++    xmlDocPtr doc = NULL;
++
++    xmlChar *call1 = NULL;
++    xmlChar *call2 = NULL;
++
++    xmlInitParser();
++    xmlLoadCatalog(cat);
++
++    call1 = xmlCatalogResolveURI(BAD_CAST uri);
++    call2 = xmlCatalogResolveURI(BAD_CAST uri);
++
++    xmlCatalogCleanup();
++    xmlFreeDoc(doc);
++
++    /* Ensure that both calls returns the same */
++
++    if (call1 == NULL && call2 == NULL) {
++        ret = 0;
++    } else if (call1 == NULL || call2 == NULL) {
++        fprintf(stderr,
++                "CATALOG-FAILURE: Different output for the "
++                "same resolve call %s != %s\n",
++                call1, call2);
++        ret = 1;
++    } else if (strcmp((char*)call1, (char*)call2) != 0) {
++        fprintf(stderr,
++                "CATALOG-FAILURE: Different output for the "
++                "same resolve call %s != %s\n",
++                call1, call2);
++        ret = 1;
++    }
++
++
++    if (call1)
++        xmlFree(call1);
++    if (call2)
++        xmlFree(call2);
++
++    return ret;
++}
++
++int
++main(void) {
++    int err = 0;
++
++    err |= testRecursiveDelegateUri();
++    err |= testRepeatedNextCatalog();
++    err |= testRepeatedResolveURI();
++
++    return err;
++}
++#else
++/* No catalog, so everything okay */
++int
++main(void) {
++    return 0;
++}
++#endif
+diff --git a/third_party/libxml/src/testlimits.c b/third_party/libxml/src/testlimits.c
+index 695cbf483c375e19db14c72094c8f0fc1ab9c95c..a54c85bdff6308f31b949ac0586fbb336095f285 100644
+--- a/third_party/libxml/src/testlimits.c
++++ b/third_party/libxml/src/testlimits.c
+@@ -35,9 +35,10 @@ static int tests_quiet = 0;
+  *									*
+  ************************************************************************/
+ 
+-/* maximum time for one parsing before declaring a timeout */
+-#define MAX_TIME 2 /* seconds */
++/* default maximum time for one parsing before declaring a timeout */
++#define DEFAULT_MAX_TIME 2 /* seconds */
+ 
++static clock_t max_time = DEFAULT_MAX_TIME;
+ static clock_t t0;
+ static int timeout = 0;
+ 
+@@ -48,7 +49,7 @@ static void reset_timout(void) {
+ 
+ static int check_time(void) {
+     clock_t tnow = clock();
+-    if (((tnow - t0) / CLOCKS_PER_SEC) > MAX_TIME) {
++    if (((tnow - t0) / CLOCKS_PER_SEC) > max_time) {
+         timeout = 1;
+         return(0);
+     }
+@@ -1228,22 +1229,40 @@ runcrazy(void) {
+     return(ret);
+ }
+ 
+-
+ int
+ main(int argc ATTRIBUTE_UNUSED, char **argv ATTRIBUTE_UNUSED) {
+     int i, a, ret = 0;
+     int subset = 0;
++    char *endptr;
++    long val;
+ 
+     fillFilling();
+     initializeLibxml2();
+ 
+     for (a = 1; a < argc;a++) {
+         if (!strcmp(argv[a], "-v"))
+-	    verbose = 1;
++            verbose = 1;
+         else if (!strcmp(argv[a], "-quiet"))
+-	    tests_quiet = 1;
++            tests_quiet = 1;
+         else if (!strcmp(argv[a], "-crazy"))
+-	    subset = 1;
++            subset = 1;
++        else if (!strcmp(argv[a], "-timeout")) {
++            if (a + 1 >= argc) {
++                fprintf(stderr, "Error: -timeout requires a value in seconds\n");
++                return 1;
++            }
++            val = strtol(argv[a + 1], &endptr, 10);
++            if (endptr == argv[a + 1] || *endptr != '\0') {
++                fprintf(stderr, "Error: -timeout value '%s' is not a valid number\n", argv[a + 1]);
++                return 1;
++            }
++            if (val <= 0 || val > INT_MAX) {
++                fprintf(stderr, "Error: -timeout must be a positive integer (got %s)\n", argv[a + 1]);
++                return 1;
++            }
++            max_time = (int)val;
++            a++;
++        }
+     }
+     if (subset == 0) {
+ 	for (i = 0; testDescriptions[i].func != NULL; i++) {
+diff --git a/third_party/libxml/src/testparser.c b/third_party/libxml/src/testparser.c
+index 36b950e62af82a41e12c5b2289da86ad6f9a25d7..30b4eaa421526bf094c5565e31d970e3d4f1550d 100644
+--- a/third_party/libxml/src/testparser.c
++++ b/third_party/libxml/src/testparser.c
+@@ -15,6 +15,7 @@
+ #include <libxml/xmlwriter.h>
+ #include <libxml/HTMLparser.h>
+ #include <libxml/HTMLtree.h>
++#include <libxml/xmlschemas.h>
+ 
+ #include <string.h>
+ 
+@@ -399,6 +400,49 @@ testCtxtParseContent(void) {
+     return err;
+ }
+ 
++/*
++ * Test that xmlParseInNodeContext doesn't hang when called on a node
++ * whose parent is an entity reference (not an element).
++ * Regression test for infinite loop bug in xmlCtxtParseContent.
++ */
++static int
++testParseInNodeContextEntityParent(void) {
++    xmlDocPtr doc;
++    xmlNodePtr root, entRef, textNode, result = NULL;
++    int err = 0;
++
++    doc = xmlNewDoc(BAD_CAST "1.0");
++    root = xmlNewNode(NULL, BAD_CAST "root");
++    xmlDocSetRootElement(doc, root);
++
++    /* Create an entity reference node */
++    entRef = xmlNewReference(doc, BAD_CAST "testentity");
++    xmlAddChild(root, entRef);
++
++    /* Create a text node as child of the entity reference */
++    textNode = xmlNewText(BAD_CAST "content");
++    xmlAddChild(entRef, textNode);
++
++    /*
++     * This used to hang in an infinite loop because the code walked
++     * up parents with "cur = node->parent" instead of "cur = cur->parent".
++     */
++    xmlParseInNodeContext(textNode, "<x/>", 4, 0, &result);
++
++    if (result != NULL)
++        xmlFreeNodeList(result);
++
++    /*
++     * Entity reference children aren't freed automatically by xmlFreeDoc,
++     * so we need to unlink and free the text node manually.
++     */
++    xmlUnlinkNode(textNode);
++    xmlFreeNode(textNode);
++    xmlFreeDoc(doc);
++
++    return err;
++}
++
+ static int
+ testNoBlanks(void) {
+     const xmlChar xml[] =
+@@ -1003,6 +1047,202 @@ testReader(void) {
+     return err;
+ }
+ 
++#if defined(LIBXML_SCHEMAS_ENABLED) || defined(LIBXML_RELAXNG_ENABLED)
++typedef struct {
++    int sawRemote;
++} testReaderResourceLoaderCtxt;
++#endif
++
++#ifdef LIBXML_SCHEMAS_ENABLED
++static xmlParserErrors
++testReaderResourceLoader(void *ctxt, const char *url,
++                         const char *publicId ATTRIBUTE_UNUSED,
++                         xmlResourceType type ATTRIBUTE_UNUSED,
++                         xmlParserInputFlags flags,
++                         xmlParserInputPtr *out) {
++    testReaderResourceLoaderCtxt *loaderCtxt = ctxt;
++    static const char importedXsd[] =
++        "<?xml version='1.0'?>\n"
++        "<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'\n"
++        "           targetNamespace='urn:remote'\n"
++        "           xmlns='urn:remote'\n"
++        "           elementFormDefault='qualified'>\n"
++        "  <xs:simpleType name='RemoteType'>\n"
++        "    <xs:restriction base='xs:string'/>\n"
++        "  </xs:simpleType>\n"
++        "</xs:schema>\n";
++
++    if ((url == NULL) ||
++        (strcmp(url, "http://example.invalid/imported.xsd") != 0)) {
++        return xmlNewInputFromUrl(url, flags, out);
++    }
++
++    loaderCtxt->sawRemote = 1;
++    *out = xmlNewInputFromString(url, importedXsd, flags);
++    if (*out == NULL)
++        return XML_ERR_NO_MEMORY;
++
++    return XML_ERR_OK;
++}
++
++static int
++testReaderSchemaResourceLoader(void) {
++    const char *doc = "<doc>ok</doc>";
++    const char *xsd = "test/schemas/v012-reader-schema-main.xsd";
++    testReaderResourceLoaderCtxt loaderCtxt;
++    xmlTextReader *reader;
++    int err = 0;
++    int ret;
++
++    reader = xmlReaderForDoc(BAD_CAST doc, "test://doc.xml", NULL, 0);
++    if (reader == NULL) {
++        fprintf(stderr, "xmlReaderForDoc failed without resource loader\n");
++        return 1;
++    }
++    ret = xmlTextReaderSchemaValidate(reader, xsd);
++    if (ret == 0) {
++        fprintf(stderr, "xmlTextReaderSchemaValidate unexpectedly succeeded\n");
++        err = 1;
++    }
++    xmlFreeTextReader(reader);
++
++    loaderCtxt.sawRemote = 0;
++    reader = xmlReaderForDoc(BAD_CAST doc, "test://doc.xml", NULL, 0);
++    if (reader == NULL) {
++        fprintf(stderr, "xmlReaderForDoc failed with resource loader\n");
++        return 1;
++    }
++    xmlTextReaderSetResourceLoader(reader, testReaderResourceLoader,
++                                   &loaderCtxt);
++    ret = xmlTextReaderSchemaValidate(reader, xsd);
++    if (ret != 0 || loaderCtxt.sawRemote == 0) {
++        fprintf(stderr,
++                "xmlTextReaderSetResourceLoader was not used for schema imports\n");
++        err = 1;
++    }
++    xmlFreeTextReader(reader);
++
++    return err;
++}
++
++/*
++ * Regression test for a type confusion in xmlParseReference that crashed
++ * a schema-validating xmlTextReader whenever the document expanded an
++ * internal entity.
++ */
++static int
++testReaderSchemaEntityExpansion(void) {
++    static const char xsd[] =
++        "<?xml version='1.0'?>\n"
++        "<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema'>\n"
++        "  <xs:element name='e' type='xs:integer'/>\n"
++        "</xs:schema>\n";
++    static const char xml[] =
++        "<!DOCTYPE e [<!ENTITY n \"not-an-int\">]>\n"
++        "<e>&n;</e>";
++    xmlSchemaParserCtxtPtr spc;
++    xmlSchemaPtr schema;
++    xmlTextReaderPtr reader;
++    int err = 0;
++    int ret;
++
++    spc = xmlSchemaNewMemParserCtxt(xsd, (int) sizeof(xsd) - 1);
++    schema = xmlSchemaParse(spc);
++    xmlSchemaFreeParserCtxt(spc);
++    if (schema == NULL) {
++        fprintf(stderr, "xmlSchemaParse failed\n");
++        return 1;
++    }
++
++    reader = xmlReaderForMemory(xml, (int) sizeof(xml) - 1, "doc.xml", NULL,
++                                XML_PARSE_NOENT | XML_PARSE_DTDLOAD);
++    xmlTextReaderSetSchema(reader, schema);
++
++    while ((ret = xmlTextReaderRead(reader)) == 1)
++        ;
++    if (ret != 0) {
++        fprintf(stderr, "reader failed on entity-expanded document\n");
++        err = 1;
++    }
++    if (xmlTextReaderIsValid(reader) != 0) {
++        fprintf(stderr, "schema missed invalid entity-expanded text\n");
++        err = 1;
++    }
++
++    xmlFreeTextReader(reader);
++    xmlSchemaFree(schema);
++    return err;
++}
++#endif
++
++#ifdef LIBXML_RELAXNG_ENABLED
++static xmlParserErrors
++testReaderRelaxNGResourceLoader(void *ctxt, const char *url,
++                                const char *publicId ATTRIBUTE_UNUSED,
++                                xmlResourceType type ATTRIBUTE_UNUSED,
++                                xmlParserInputFlags flags,
++                                xmlParserInputPtr *out) {
++    testReaderResourceLoaderCtxt *loaderCtxt = ctxt;
++    static const char importedRng[] =
++        "<grammar xmlns='http://relaxng.org/ns/structure/1.0'>\n"
++        "  <define name='docdef'>\n"
++        "    <element name='doc'><text/></element>\n"
++        "  </define>\n"
++        "</grammar>\n";
++
++    if ((url != NULL) &&
++        (strcmp(url, "http://example.invalid/imported.rng") == 0)) {
++        loaderCtxt->sawRemote = 1;
++        *out = xmlNewInputFromString(url, importedRng, flags);
++        if (*out == NULL)
++            return XML_ERR_NO_MEMORY;
++        return XML_ERR_OK;
++    }
++
++    return xmlNewInputFromUrl(url, flags, out);
++}
++
++static int
++testReaderRelaxNGResourceLoaderCtxt(void) {
++    const char *doc = "<doc>ok</doc>";
++    const char *rng = "test/relaxng/v012-reader-main.rng";
++    testReaderResourceLoaderCtxt loaderCtxt;
++    xmlTextReader *reader;
++    int err = 0;
++    int ret;
++
++    reader = xmlReaderForDoc(BAD_CAST doc, "test://doc.xml", NULL, 0);
++    if (reader == NULL) {
++        fprintf(stderr, "xmlReaderForDoc failed without Relax NG loader\n");
++        return 1;
++    }
++    ret = xmlTextReaderRelaxNGValidate(reader, rng);
++    if (ret == 0) {
++        fprintf(stderr, "xmlTextReaderRelaxNGValidate unexpectedly succeeded\n");
++        err = 1;
++    }
++    xmlFreeTextReader(reader);
++
++    loaderCtxt.sawRemote = 0;
++    reader = xmlReaderForDoc(BAD_CAST doc, "test://doc.xml", NULL, 0);
++    if (reader == NULL) {
++        fprintf(stderr, "xmlReaderForDoc failed with Relax NG loader\n");
++        return 1;
++    }
++    xmlTextReaderSetResourceLoader(reader, testReaderRelaxNGResourceLoader,
++                                   &loaderCtxt);
++    ret = xmlTextReaderRelaxNGValidate(reader, rng);
++    if (ret != 0 || loaderCtxt.sawRemote == 0) {
++        fprintf(stderr,
++                "xmlTextReaderSetResourceLoader was not used for Relax NG includes\n");
++        err = 1;
++    }
++    xmlFreeTextReader(reader);
++
++    return err;
++}
++#endif
++
+ #ifdef LIBXML_XINCLUDE_ENABLED
+ typedef struct {
+     char *message;
+@@ -1188,7 +1428,7 @@ testBuildRelativeUri(void) {
+             "/b2/c2",
+             "with%20space/x%20x/y%20y"
+         }
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+         , {
+             "\\a\\b1\\c1",
+             "\\a\\b2\\c2",
+@@ -1255,7 +1495,7 @@ testBuildRelativeUri(void) {
+     return err;
+ }
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+ static int
+ testWindowsUri(void) {
+     const char *url = "c:/a%20b/file.txt";
+@@ -1328,7 +1568,7 @@ testWindowsUri(void) {
+ 
+     return err;
+ }
+-#endif /* WIN32 */
++#endif /* LIBXML_WINPATH_ENABLED */
+ 
+ #if defined(LIBXML_ICONV_ENABLED) || defined(LIBXML_ICU_ENABLED)
+ static int
+@@ -1487,6 +1727,68 @@ testCharEncConvImpl(void) {
+     return err;
+ }
+ 
++static int
++testRemoveParamEntityIntSubset(void) {
++    xmlDocPtr doc;
++    xmlEntityPtr ent;
++    int err = 0;
++
++    doc = xmlNewDoc(BAD_CAST "1.0");
++    xmlCreateIntSubset(doc, BAD_CAST "doc", NULL, NULL);
++
++    xmlAddDocEntity(doc, BAD_CAST "param1", XML_INTERNAL_PARAMETER_ENTITY,
++                    NULL, NULL, BAD_CAST "value");
++    ent = xmlGetParameterEntity(doc, BAD_CAST "param1");
++    if (ent == NULL) {
++        fprintf(stderr, "testRemoveParamEntityIntSubset: "
++                "entity not found after add\n");
++        xmlFreeDoc(doc);
++        return 1;
++    }
++    xmlUnlinkNode((xmlNodePtr) ent);
++    if (xmlGetParameterEntity(doc, BAD_CAST "param1") != NULL) {
++        fprintf(stderr, "testRemoveParamEntityIntSubset: "
++                "parameter entity still in pentities after unlink\n");
++        err = 1;
++    } else {
++        xmlFreeNode((xmlNodePtr) ent);
++    }
++    xmlFreeDoc(doc);
++
++    return err;
++}
++
++static int
++testRemoveParamEntityExtSubset(void) {
++    xmlDocPtr doc;
++    xmlEntityPtr ent;
++    int err = 0;
++
++    doc = xmlNewDoc(BAD_CAST "1.0");
++    xmlNewDtd(doc, BAD_CAST "doc", NULL, BAD_CAST "doc.dtd");
++
++    xmlAddDtdEntity(doc, BAD_CAST "param2", XML_EXTERNAL_PARAMETER_ENTITY,
++                    NULL, NULL, BAD_CAST "value");
++    ent = xmlGetParameterEntity(doc, BAD_CAST "param2");
++    if (ent == NULL) {
++        fprintf(stderr, "testRemoveParamEntityExtSubset: "
++                "entity not found after add\n");
++        xmlFreeDoc(doc);
++        return 1;
++    }
++    xmlUnlinkNode((xmlNodePtr) ent);
++    if (xmlGetParameterEntity(doc, BAD_CAST "param2") != NULL) {
++        fprintf(stderr, "testRemoveParamEntityExtSubset: "
++                "parameter entity still in pentities after unlink\n");
++        err = 1;
++    } else {
++        xmlFreeNode((xmlNodePtr) ent);
++    }
++    xmlFreeDoc(doc);
++
++    return err;
++}
++
+ int
+ main(void) {
+     int err = 0;
+@@ -1504,6 +1806,7 @@ main(void) {
+ #endif
+ #ifdef LIBXML_OUTPUT_ENABLED
+     err |= testCtxtParseContent();
++    err |= testParseInNodeContextEntityParent();
+     err |= testNoBlanks();
+     err |= testSaveNullEnc();
+     err |= testDocDumpFormatMemoryEnc();
+@@ -1532,6 +1835,13 @@ main(void) {
+     err |= testReaderContent();
+ #endif
+     err |= testReader();
++#ifdef LIBXML_SCHEMAS_ENABLED
++    err |= testReaderSchemaResourceLoader();
++    err |= testReaderSchemaEntityExpansion();
++#endif
++#ifdef LIBXML_RELAXNG_ENABLED
++    err |= testReaderRelaxNGResourceLoaderCtxt();
++#endif
+ #ifdef LIBXML_XINCLUDE_ENABLED
+     err |= testReaderXIncludeError();
+ #endif
+@@ -1540,14 +1850,15 @@ main(void) {
+     err |= testWriterClose();
+ #endif
+     err |= testBuildRelativeUri();
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+     err |= testWindowsUri();
+ #endif
+ #if defined(LIBXML_ICONV_ENABLED) || defined(LIBXML_ICU_ENABLED)
+     err |= testTruncatedMultiByte();
+ #endif
+     err |= testCharEncConvImpl();
++    err |= testRemoveParamEntityIntSubset();
++    err |= testRemoveParamEntityExtSubset();
+ 
+     return err;
+ }
+-
+diff --git a/third_party/libxml/src/tree.c b/third_party/libxml/src/tree.c
+index e4fd0d6e587f3b74498251ee57ecc16f186d872d..dafdb9a7032f5bb299a36c816a6fe71de791a621 100644
+--- a/third_party/libxml/src/tree.c
++++ b/third_party/libxml/src/tree.c
+@@ -2445,11 +2445,11 @@ xmlRemoveEntity(xmlEntityPtr ent) {
+                (ent->etype == XML_EXTERNAL_PARAMETER_ENTITY)) {
+         if (intSubset != NULL) {
+             if (xmlHashLookup(intSubset->pentities, ent->name) == ent)
+-                xmlHashRemoveEntry(intSubset->entities, ent->name, NULL);
++                xmlHashRemoveEntry(intSubset->pentities, ent->name, NULL);
+         }
+         if (extSubset != NULL) {
+             if (xmlHashLookup(extSubset->pentities, ent->name) == ent)
+-                xmlHashRemoveEntry(extSubset->entities, ent->name, NULL);
++                xmlHashRemoveEntry(extSubset->pentities, ent->name, NULL);
+         }
+     }
+ }
+@@ -3110,6 +3110,7 @@ xmlAddChild(xmlNode *parent, xmlNode *cur) {
+     if (parent->type == XML_TEXT_NODE) {
+         if (xmlTextAddContent(parent, cur->content, -1) < 0)
+             return(NULL);
++        xmlUnlinkNodeInternal(cur);
+         xmlFreeNode(cur);
+         return(parent);
+     }
+@@ -3876,7 +3877,8 @@ xmlStaticCopyNode(xmlNode *node, xmlDoc *doc, xmlNode *parent,
+ 		return((xmlNodePtr) xmlCopyPropInternal(doc, parent, (xmlAttrPtr) node));
+         case XML_NAMESPACE_DECL:
+ 	    return((xmlNodePtr) xmlCopyNamespaceList((xmlNsPtr) node));
+-
++        case XML_DTD_NODE:
++            return((xmlNodePtr) xmlCopyDtd((xmlDtdPtr) node));
+         case XML_DOCUMENT_NODE:
+         case XML_HTML_DOCUMENT_NODE:
+ 	    return((xmlNodePtr) xmlCopyDoc((xmlDocPtr) node, extended));
+diff --git a/third_party/libxml/src/uri.c b/third_party/libxml/src/uri.c
+index cfeca1e0120c5ed68aa039616d29f719ceb262d7..14ad94eca8105ebe2d8efef81cb85ae3a042236d 100644
+--- a/third_party/libxml/src/uri.c
++++ b/third_party/libxml/src/uri.c
+@@ -229,7 +229,7 @@ xmlParse3986Scheme(xmlURIPtr uri, const char **str) {
+ 	return(1);
+     cur++;
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+     /*
+      * Don't treat Windows drive letters as scheme.
+      */
+@@ -580,7 +580,7 @@ xmlParse3986Segment(xmlURIPtr uri, const char **str, char forbid, int empty)
+     }
+     NEXT(cur);
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+     /*
+      * Allow Windows drive letters.
+      */
+@@ -1437,7 +1437,7 @@ xmlIsPathSeparator(int c, int isFile) {
+     if (c == '/')
+         return(1);
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+     if (isFile && (c == '\\'))
+         return(1);
+ #endif
+@@ -1477,7 +1477,7 @@ xmlNormalizePath(char *path, int isFile) {
+          * Collapse multiple separators first.
+          */
+         while (xmlIsPathSeparator(*cur, isFile)) {
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+             /* Allow two separators at start of path */
+             if ((isFile) && (out == path + 1))
+                 *out++ = '/';
+@@ -1644,6 +1644,8 @@ xmlURIEscapeStr(const xmlChar *str, const xmlChar *list) {
+     if (str[0] == 0)
+ 	return(xmlStrdup(str));
+     len = xmlStrlen(str);
++    if (len == 0)
++        return(NULL);
+ 
+     len += 20;
+     ret = xmlMalloc(len);
+@@ -1838,7 +1840,7 @@ xmlIsAbsolutePath(const xmlChar *path) {
+     if (xmlIsPathSeparator(c, 1))
+         return(1);
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+     if ((((c >= 'A') && (c <= 'Z')) ||
+          ((c >= 'a') && (c <= 'z'))) &&
+         (path[1] == ':'))
+@@ -2022,7 +2024,7 @@ xmlBuildURISafe(const xmlChar *URI, const xmlChar *base, xmlChar **valPtr) {
+         return(xmlResolvePath(URI, base, valPtr));
+     }
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+     /*
+      * Resolve paths with a Windows drive letter as filesystem path
+      * even if base has a scheme.
+@@ -2368,12 +2370,12 @@ xmlParseUriOrPath(const char *str, xmlURIPtr *out, int *drive) {
+         path = buf;
+ 
+         if (xmlIsAbsolutePath(BAD_CAST buf)) {
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+             const char *server = NULL;
+             int isFileScheme = 0;
+ #endif
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+             if (strncmp(buf, "//?/UNC/", 8) == 0) {
+                 server = buf + 8;
+                 isFileScheme = 1;
+@@ -2442,7 +2444,7 @@ xmlParseUriOrPath(const char *str, xmlURIPtr *out, int *drive) {
+         xmlNormalizePath(uri->path, /* isFile */ 0);
+     }
+ 
+-#if defined(_WIN32) || defined(__CYGWIN__)
++#if defined(LIBXML_WINPATH_ENABLED)
+     if ((uri->path[0] == '/') &&
+         (((uri->path[1] >= 'A') && (uri->path[1] <= 'Z')) ||
+          ((uri->path[1] >= 'a') && (uri->path[1] <= 'z'))) &&
+@@ -2491,9 +2493,9 @@ xmlBuildRelativeURISafe(const xmlChar * URI, const xmlChar * base,
+ {
+     xmlChar *val = NULL;
+     int ret = 0;
+-    int ix;
+-    int nbslash = 0;
+-    int len;
++    size_t ix = 0;
++    size_t nbslash = 0;
++    size_t len = 0;
+     xmlURIPtr ref = NULL;
+     xmlURIPtr bas = NULL;
+     const xmlChar *bptr, *uptr, *rptr;
+@@ -2574,7 +2576,7 @@ xmlBuildRelativeURISafe(const xmlChar * URI, const xmlChar * base,
+      * At this point we can compare the two paths
+      */
+     {
+-        int pos = 0;
++        size_t pos = 0;
+ 
+         /*
+          * Next we compare the two strings and find where they first differ
+@@ -2618,7 +2620,7 @@ xmlBuildRelativeURISafe(const xmlChar * URI, const xmlChar * base,
+ 	    goto done;
+ 	}
+ 
+-	len = xmlStrlen (uptr) + 1;
++	len = (size_t) xmlStrlen (uptr) + 1;
+     }
+ 
+     if (nbslash == 0) {
+@@ -2636,6 +2638,10 @@ xmlBuildRelativeURISafe(const xmlChar * URI, const xmlChar * base,
+      * length of the remainder of the URI, plus enough space
+      * for the "../" groups, plus one for the terminator
+      */
++    if (len + 3 * nbslash > SIZE_MAX) {
++        ret = -1;
++        goto done;
++    }
+     val = (xmlChar *) xmlMalloc (len + 3 * nbslash);
+     if (val == NULL) {
+         ret = -1;
+diff --git a/third_party/libxml/src/valid.c b/third_party/libxml/src/valid.c
+index 9dbace65121addd305d013c17f4c02c4272be629..774f51a3d3e7a2780ca9168061eb9b9a21336dc2 100644
+--- a/third_party/libxml/src/valid.c
++++ b/third_party/libxml/src/valid.c
+@@ -4625,7 +4625,15 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+     int len;
+ 
+     if (node == NULL) return;
+-    if (glob) strcat(buf, "(");
++    len = strlen(buf);
++    if (glob) {
++        if (size - len < 50) {
++            if ((size - len > 4) && (buf[len - 1] != '.'))
++                strcat(buf, " ...");
++            return;
++        }
++        strcat(buf, "(");
++    }
+     cur = node;
+     while (cur != NULL) {
+ 	len = strlen(buf);
+@@ -4689,7 +4697,11 @@ xmlSnprintfElements(char *buf, int size, xmlNodePtr node, int glob) {
+ 	}
+ 	cur = cur->next;
+     }
+-    if (glob) strcat(buf, ")");
++    if (glob) {
++        len = strlen(buf);
++        if (size - len > 1)
++            strcat(buf, ")");
++    }
+ }
+ 
+ /**
+diff --git a/third_party/libxml/src/xmlIO.c b/third_party/libxml/src/xmlIO.c
+index d1fb6934df8a54d23d2074b7d8e6049c77b1c87d..416743b26829ecc97c99d463d3ab14fe34311ad8 100644
+--- a/third_party/libxml/src/xmlIO.c
++++ b/third_party/libxml/src/xmlIO.c
+@@ -681,23 +681,31 @@ static int
+ xmlConvertUriToPath(const char *uri, char **out) {
+     const char *escaped;
+     char *unescaped;
++#ifdef LIBXML_WINPATH_ENABLED
++    xmlChar ch;
++#endif
+ 
+     *out = NULL;
+ 
+     if (!xmlStrncasecmp(BAD_CAST uri, BAD_CAST "file://localhost/", 17)) {
+-	escaped = &uri[16];
++        escaped = &uri[16];
+     } else if (!xmlStrncasecmp(BAD_CAST uri, BAD_CAST "file:///", 8)) {
+-	escaped = &uri[7];
++        escaped = &uri[7];
+     } else if (!xmlStrncasecmp(BAD_CAST uri, BAD_CAST "file:/", 6)) {
+         /* lots of generators seems to lazy to read RFC 1738 */
+-	escaped = &uri[5];
++        escaped = &uri[5];
+     } else {
+         return(1);
+     }
+ 
+-#ifdef _WIN32
++#ifdef LIBXML_WINPATH_ENABLED
+     /* Ignore slash like in file:///C:/file.txt */
+-    escaped += 1;
++    if (escaped[0] == '/') {
++        ch = escaped[1];
++        if (((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'))
++            && escaped[2] == ':')
++            escaped += 1;
++    }
+ #endif
+ 
+     unescaped = xmlURIUnescapeString(escaped, 0, NULL);
+@@ -1824,9 +1832,12 @@ xmlOutputBufferCreateBuffer(xmlBuffer *buffer,
+  */
+ const xmlChar *
+ xmlOutputBufferGetContent(xmlOutputBuffer *out) {
+-    if ((out == NULL) || (out->buffer == NULL) || (out->error != 0))
++    if ((out == NULL) || (out->buffer == NULL) || ((out->encoder != NULL) && (out->conv == NULL)) || (out->error != 0))
+         return(NULL);
+ 
++    if (out->encoder != NULL)
++        return(xmlBufContent(out->conv));
++
+     return(xmlBufContent(out->buffer));
+ }
+ 
+@@ -1838,9 +1849,12 @@ xmlOutputBufferGetContent(xmlOutputBuffer *out) {
+  */
+ size_t
+ xmlOutputBufferGetSize(xmlOutputBuffer *out) {
+-    if ((out == NULL) || (out->buffer == NULL) || (out->error != 0))
++    if ((out == NULL) || (out->buffer == NULL) || ((out->encoder != NULL) && (out->conv == NULL)) || (out->error != 0))
+         return(0);
+ 
++    if (out->encoder != NULL)
++        return(xmlBufUse(out->conv));
++
+     return(xmlBufUse(out->buffer));
+ }
+ 
+@@ -2449,6 +2463,11 @@ xmlOutputBufferWrite(xmlOutputBuffer *out, int len, const char *data) {
+             if (nbchars < MINLEN)
+                 break;
+ 
++            if (nbchars >= INT_MAX) {
++                out->error = XML_ERR_INTERNAL_ERROR;
++                return(-1);
++            }
++
+             ret = out->writecallback(out->context,
+                        (const char *)xmlBufContent(buf), nbchars);
+             if (ret < 0) {
+@@ -2656,15 +2675,25 @@ xmlOutputBufferFlush(xmlOutputBuffer *out) {
+      */
+     if ((out->conv != NULL) && (out->encoder != NULL) &&
+ 	(out->writecallback != NULL)) {
++        size_t bufsize = xmlBufUse(out->conv);
++        if (bufsize >= INT_MAX) {
++            out->error = XML_ERR_INTERNAL_ERROR;
++            return(-1);
++        }
+ 	ret = out->writecallback(out->context,
+                                  (const char *)xmlBufContent(out->conv),
+-                                 xmlBufUse(out->conv));
++                                 bufsize);
+ 	if (ret >= 0)
+ 	    xmlBufShrink(out->conv, ret);
+     } else if (out->writecallback != NULL) {
++        size_t bufsize = xmlBufUse(out->buffer);
++        if (bufsize >= INT_MAX) {
++            out->error = XML_ERR_INTERNAL_ERROR;
++            return(-1);
++        }
+ 	ret = out->writecallback(out->context,
+                                  (const char *)xmlBufContent(out->buffer),
+-                                 xmlBufUse(out->buffer));
++                                 bufsize);
+ 	if (ret >= 0)
+ 	    xmlBufShrink(out->buffer, ret);
+     }
+@@ -2695,7 +2724,7 @@ xmlParserGetDirectory(const char *filename) {
+ 
+     if (filename == NULL) return(NULL);
+ 
+-#if defined(_WIN32)
++#if defined(LIBXML_WINPATH_ENABLED)
+ #   define IS_XMLPGD_SEP(ch) ((ch=='/')||(ch=='\\'))
+ #else
+ #   define IS_XMLPGD_SEP(ch) (ch=='/')
+diff --git a/third_party/libxml/src/xmlmemory.c b/third_party/libxml/src/xmlmemory.c
+index 90c8b9c1cfee71826776f4269d6a9046260a1731..0875a7985f3a4f5ba6c289429fdee07fd9bfbe8d 100644
+--- a/third_party/libxml/src/xmlmemory.c
++++ b/third_party/libxml/src/xmlmemory.c
+@@ -344,6 +344,44 @@ xmlMemoryDump(void)
+ }
+ 
+ 
++/****************************************************************
++ *								*
++ *		Array growth helper				*
++ *								*
++ ****************************************************************/
++
++/**
++ * Grow an array, combining overflow-checked capacity growth with
++ * reallocation.
++ *
++ * @param array  pointer to the array (may be NULL for first allocation)
++ * @param elemSize  size of each element in bytes
++ * @param capacity  pointer to current capacity (updated on success)
++ * @param min  initial allocation size
++ * @param max  maximum number of elements
++ * @returns the new pointer on success, or NULL on failure with the
++ *          original array and capacity preserved.
++ */
++void *
++xmlGrowArray(void *array, size_t elemSize, int *capacity, int min, int max) {
++    void *tmp;
++    int newSize;
++
++    if (capacity == NULL)
++        return(NULL);
++
++    newSize = xmlGrowCapacity(*capacity, elemSize, min, max);
++    if (newSize < 0)
++        return(NULL);
++
++    tmp = xmlRealloc(array, (size_t) newSize * elemSize);
++    if (tmp == NULL)
++        return(NULL);
++
++    *capacity = newSize;
++    return(tmp);
++}
++
+ /****************************************************************
+  *								*
+  *		Initialization Routines				*
+diff --git a/third_party/libxml/src/xmlreader.c b/third_party/libxml/src/xmlreader.c
+index ca655f1bb5f55b5e4de0f48bbfcb5be3dc5ae6df..2878615f9ce5db454971f1c1d1132ca3d90216a4 100644
+--- a/third_party/libxml/src/xmlreader.c
++++ b/third_party/libxml/src/xmlreader.c
+@@ -1617,8 +1617,7 @@ xmlTextReaderNext(xmlTextReader *reader) {
+ static void
+ xmlTextReaderDumpCopy(xmlTextReaderPtr reader, xmlOutputBufferPtr output,
+                       xmlNodePtr node) {
+-    if ((node->type == XML_DTD_NODE) ||
+-        (node->type == XML_ELEMENT_DECL) ||
++    if ((node->type == XML_ELEMENT_DECL) ||
+         (node->type == XML_ATTRIBUTE_DECL) ||
+         (node->type == XML_ENTITY_DECL))
+         return;
+@@ -4149,6 +4148,9 @@ xmlTextReaderRelaxNGValidateInternal(xmlTextReaderPtr reader,
+ 	if ((reader->errorFunc != NULL) || (reader->sErrorFunc != NULL))
+ 	    xmlRelaxNGSetParserStructuredErrors(pctxt,
+                     xmlTextReaderStructuredRelay, reader);
++        if (reader->resourceLoader != NULL)
++            xmlRelaxNGSetResourceLoader(pctxt, reader->resourceLoader,
++                                        reader->resourceCtxt);
+ 	reader->rngSchemas = xmlRelaxNGParse(pctxt);
+ 	xmlRelaxNGFreeParserCtxt(pctxt);
+ 	if (reader->rngSchemas == NULL)
+@@ -4239,6 +4241,9 @@ xmlTextReaderSchemaValidateInternal(xmlTextReaderPtr reader,
+ 	if ((reader->errorFunc != NULL) || (reader->sErrorFunc != NULL))
+ 	    xmlSchemaSetParserStructuredErrors(pctxt,
+                     xmlTextReaderStructuredRelay, reader);
++        if (reader->resourceLoader != NULL)
++            xmlSchemaSetResourceLoader(pctxt, reader->resourceLoader,
++                                       reader->resourceCtxt);
+ 	reader->xsdSchemas = xmlSchemaParse(pctxt);
+ 	xmlSchemaFreeParserCtxt(pctxt);
+ 	if (reader->xsdSchemas == NULL)
+@@ -5096,8 +5101,6 @@ xmlReaderForFd(int fd, const char *URL, const char *encoding, int options)
+         xmlTextReaderErr(code, "failed to open fd");
+         return(NULL);
+     }
+-    input->closecallback = NULL;
+-
+     reader = xmlNewTextReader(input, URL);
+     if (reader == NULL) {
+         xmlTextReaderErrMemory(NULL);
+@@ -5353,8 +5356,6 @@ xmlReaderNewFd(xmlTextReader *reader, int fd,
+         xmlTextReaderErr(code, "failed to open fd");
+         return(-1);
+     }
+-    input->closecallback = NULL;
+-
+     if (xmlTextReaderSetup(reader, input, URL, encoding, options) < 0) {
+         xmlTextReaderErrMemory(NULL);
+         return(-1);
+diff --git a/third_party/libxml/src/xmlstring.c b/third_party/libxml/src/xmlstring.c
+index 6a598c611dfbe4db86d2ff94be3abb6269e60562..9fd0dcf4bcf7d41e12645eecb1f7e70bbb8b9397 100644
+--- a/third_party/libxml/src/xmlstring.c
++++ b/third_party/libxml/src/xmlstring.c
+@@ -426,14 +426,21 @@ xmlStrncat(xmlChar *cur, const xmlChar *add, int len) {
+ 
+     if ((add == NULL) || (len == 0))
+         return(cur);
+-    if (len < 0)
+-	return(NULL);
++
++    if (len < 0) {
++        if (cur != NULL)
++            xmlFree(cur);
++        return(NULL);
++    }
++
+     if (cur == NULL)
+         return(xmlStrndup(add, len));
+ 
+     size = xmlStrlen(cur);
+-    if ((size < 0) || (size > INT_MAX - len))
++    if ((size < 0) || (size > INT_MAX - len)) {
++        xmlFree(cur);
+         return(NULL);
++    }
+     ret = (xmlChar *) xmlRealloc(cur, (size_t) size + len + 1);
+     if (ret == NULL) {
+         xmlFree(cur);
+@@ -517,7 +524,7 @@ xmlStrPrintf(xmlChar *buf, int len, const char *msg, ...) {
+     va_list args;
+     int ret;
+ 
+-    if((buf == NULL) || (msg == NULL)) {
++    if((buf == NULL) || (msg == NULL) || (len <= 0)) {
+         return(-1);
+     }
+ 
+@@ -542,7 +549,7 @@ int
+ xmlStrVPrintf(xmlChar *buf, int len, const char *msg, va_list ap) {
+     int ret;
+ 
+-    if((buf == NULL) || (msg == NULL)) {
++    if((buf == NULL) || (msg == NULL) || (len <= 0)) {
+         return(-1);
+     }
+ 
+diff --git a/third_party/libxml/src/xmlwriter.c b/third_party/libxml/src/xmlwriter.c
+index 35dfd46895eef0c9f174aab9d83f9a7afc2bd5ae..225d3a0ad8f7b266ad55f1a365bb7f2a33777f02 100644
+--- a/third_party/libxml/src/xmlwriter.c
++++ b/third_party/libxml/src/xmlwriter.c
+@@ -1014,7 +1014,7 @@ xmlTextWriterStartElementNS(xmlTextWriter *writer,
+     int sum;
+     xmlChar *buf;
+ 
+-    if ((writer == NULL) || (name == NULL) || (*name == '\0'))
++    if ((writer == NULL) || (writer->nsstack == NULL) || (name == NULL) || (*name == '\0'))
+         return -1;
+ 
+     buf = NULL;
+@@ -1051,6 +1051,7 @@ xmlTextWriterStartElementNS(xmlTextWriter *writer,
+         if (p->uri == 0) {
+             xmlWriterErrMsg(writer, XML_ERR_NO_MEMORY,
+                             "xmlTextWriterStartElementNS : out of memory!\n");
++            xmlFree(p->prefix);
+             xmlFree(p);
+             return -1;
+         }
+@@ -1551,6 +1552,11 @@ xmlOutputBufferWriteBase64(xmlOutputBufferPtr out, int len,
+  * @param start  the position within the data of the first byte to encode
+  * @param len  the number of bytes to encode
+  * @returns the bytes written (may be 0 because of buffering) or -1 in case of error
++ *
++ * NOTE: No safety check is done on the length of data. This check is
++ *       something that should happen outside of this call, the caller
++ *       should know better the actual data and if it's reaching the end
++ *       of the buffer or not.
+  */
+ int
+ xmlTextWriterWriteBase64(xmlTextWriter *writer, const char *data,
+@@ -1758,7 +1764,7 @@ xmlTextWriterStartAttributeNS(xmlTextWriter *writer,
+     xmlChar *buf;
+     xmlTextWriterNsStackEntry *p;
+ 
+-    if ((writer == NULL) || (name == NULL) || (*name == '\0'))
++    if ((writer == NULL) || (writer->nsstack == NULL) || (name == NULL) || (*name == '\0'))
+         return -1;
+ 
+     /* Handle namespace first in case of error */
+@@ -1795,6 +1801,7 @@ xmlTextWriterStartAttributeNS(xmlTextWriter *writer,
+             if (p == 0) {
+                 xmlWriterErrMsg(writer, XML_ERR_NO_MEMORY,
+ 								        "xmlTextWriterStartAttributeNS : out of memory!\n");
++                xmlFree(buf);
+                 return -1;
+             }
+ 
+@@ -1803,12 +1810,20 @@ xmlTextWriterStartAttributeNS(xmlTextWriter *writer,
+             if (p->uri == 0) {
+                 xmlWriterErrMsg(writer, XML_ERR_NO_MEMORY,
+                         "xmlTextWriterStartAttributeNS : out of memory!\n");
++                xmlFree(p->prefix);
+                 xmlFree(p);
+                 return -1;
+             }
+             p->elem = xmlListFront(writer->nodes);
+ 
+-            xmlListPushFront(writer->nsstack, p);
++            if (xmlListPushFront(writer->nsstack, p) == 0) {
++                xmlWriterErrMsg(writer, XML_ERR_NO_MEMORY,
++                        "xmlTextWriterStartAttributeNS : out of memory!\n");
++                xmlFree(p->uri);
++                xmlFree(p->prefix);
++                xmlFree(p);
++                return -1;
++            }
+         }
+     }
+ 
+@@ -4166,6 +4181,9 @@ xmlTextWriterOutputNSDecl(xmlTextWriterPtr writer)
+     int count;
+     int sum;
+ 
++    if ((writer == NULL) || (writer->nsstack == NULL))
++        return -1;
++
+     sum = 0;
+     while (!xmlListEmpty(writer->nsstack)) {
+         xmlChar *namespaceURI = NULL;
+@@ -4326,9 +4344,14 @@ xmlTextWriterVSprintf(const char *format, va_list argptr)
+ 
+     va_copy(locarg, argptr);
+     while (((count = vsnprintf((char *) buf, size, format, locarg)) < 0)
+-           || (count == size - 1) || (count == size) || (count > size)) {
++           || (count >= size - 1)) {
+ 	va_end(locarg);
+         xmlFree(buf);
++        if (size > INT_MAX - BUFSIZ) {
++           xmlWriterErrMsg(NULL, XML_ERR_ARGUMENT,
++                           "xmlTextWriterVSprintf : invalid format / argument!\n");
++           return NULL;
++        }
+         size += BUFSIZ;
+         buf = (xmlChar *) xmlMalloc(size);
+         if (buf == NULL) {
+diff --git a/third_party/libxml/src/xpath.c b/third_party/libxml/src/xpath.c
+index 9f92055dfae77a42831e76b351bc91fe42595a35..442ce02f82054e6adea01c2b51ccd6ebf7ccdd9b 100644
+--- a/third_party/libxml/src/xpath.c
++++ b/third_party/libxml/src/xpath.c
+@@ -6558,12 +6558,18 @@ xmlNode *
+ xmlXPathNextFollowingSibling(xmlXPathParserContext *ctxt, xmlNode *cur) {
+     if ((ctxt == NULL) || (ctxt->context == NULL)) return(NULL);
+     if ((ctxt->context->node->type == XML_ATTRIBUTE_NODE) ||
+-	(ctxt->context->node->type == XML_NAMESPACE_DECL))
+-	return(NULL);
++        (ctxt->context->node->type == XML_NAMESPACE_DECL))
++        return(NULL);
++
+     if (cur == (xmlNodePtr) ctxt->context->doc)
+         return(NULL);
++
+     if (cur == NULL)
+-        return(ctxt->context->node->next);
++        cur = ctxt->context->node;
++
++    if (cur->type == XML_DOCUMENT_NODE)
++        return(NULL);
++
+     return(cur->next);
+ }
+ 
+@@ -6581,17 +6587,23 @@ xmlNode *
+ xmlXPathNextPrecedingSibling(xmlXPathParserContext *ctxt, xmlNode *cur) {
+     if ((ctxt == NULL) || (ctxt->context == NULL)) return(NULL);
+     if ((ctxt->context->node->type == XML_ATTRIBUTE_NODE) ||
+-	(ctxt->context->node->type == XML_NAMESPACE_DECL))
+-	return(NULL);
++        (ctxt->context->node->type == XML_NAMESPACE_DECL))
++        return(NULL);
++
+     if (cur == (xmlNodePtr) ctxt->context->doc)
+         return(NULL);
+-    if (cur == NULL)
+-        return(ctxt->context->node->prev);
+-    if ((cur->prev != NULL) && (cur->prev->type == XML_DTD_NODE)) {
+-	cur = cur->prev;
+-	if (cur == NULL)
+-	    return(ctxt->context->node->prev);
++
++    if (cur == NULL) {
++        cur = ctxt->context->node;
++    } else if ((cur->prev != NULL) && (cur->prev->type == XML_DTD_NODE)) {
++        cur = cur->prev;
++        if (cur == NULL)
++            cur = ctxt->context->node;
+     }
++
++    if (cur->type == XML_DOCUMENT_NODE)
++        return(NULL);
++
+     return(cur->prev);
+ }
+ 
+@@ -6626,14 +6638,27 @@ xmlXPathNextFollowing(xmlXPathParserContext *ctxt, xmlNode *cur) {
+             cur = (xmlNodePtr) ns->next;
+         }
+     }
+-    if (cur == NULL) return(NULL) ; /* ERROR */
+-    if (cur->next != NULL) return(cur->next) ;
++
++    /* ERROR */
++    if (cur == NULL)
++        return(NULL);
++
++    if (cur->type == XML_DOCUMENT_NODE)
++        return(NULL);
++
++    if (cur->next != NULL)
++        return(cur->next);
++
+     do {
+         cur = cur->parent;
+-        if (cur == NULL) break;
+-        if (cur == (xmlNodePtr) ctxt->context->doc) return(NULL);
+-        if (cur->next != NULL) return(cur->next);
++        if (cur == NULL)
++            break;
++        if (cur == (xmlNodePtr) ctxt->context->doc)
++            return(NULL);
++        if (cur->next != NULL && cur->type != XML_DOCUMENT_NODE)
++            return(cur->next);
+     } while (cur != NULL);
++
+     return(cur);
+ }
+ 
+@@ -6746,10 +6771,13 @@ xmlXPathNextPrecedingInternal(xmlXPathParserContextPtr ctxt,
+         }
+         ctxt->ancestor = cur->parent;
+     }
+-    if (cur->type == XML_NAMESPACE_DECL)
++
++    if (cur->type == XML_NAMESPACE_DECL || cur->type == XML_DOCUMENT_NODE)
+         return(NULL);
++
+     if ((cur->prev != NULL) && (cur->prev->type == XML_DTD_NODE))
+ 	cur = cur->prev;
++
+     while (cur->prev == NULL) {
+         cur = cur->parent;
+         if (cur == NULL)
+@@ -6760,6 +6788,10 @@ xmlXPathNextPrecedingInternal(xmlXPathParserContextPtr ctxt,
+             return (cur);
+         ctxt->ancestor = cur->parent;
+     }
++
++    if (cur->type == XML_DOCUMENT_NODE)
++        return(NULL);
++
+     cur = cur->prev;
+     while (cur->last != NULL)
+         cur = cur->last;
+@@ -7910,7 +7942,7 @@ void
+ xmlXPathLangFunction(xmlXPathParserContext *ctxt, int nargs) {
+     xmlXPathObjectPtr val;
+     xmlNodePtr cur;
+-    xmlChar *theLang;
++    xmlChar *theLang = NULL;
+     const xmlChar *lang;
+     int ret = 0;
+     int i;

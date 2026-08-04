@@ -1,0 +1,372 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen White <senorblanco@chromium.org>
+Date: Tue, 9 Jun 2026 16:17:16 -0400
+Subject: [m150] Modify validation of depth/stencil feedback loops
+
+Allow depth/stencil read-only feedback loops on non-WebGL contexts.
+
+Bug: angleproject:521861813
+Bug: chromium:517307966
+Change-Id: Ie6a3cc7460d59541941d30ff8a4d270fa26b9ead
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7914428
+Commit-Queue: Stephen White <senorblanco@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Charlie Lao <cclao@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+(cherry picked from commit 8903f2cc0bcade7cc296cc7518e6c0a2bf4d3e1c)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7972984
+
+diff --git a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp
+index b89fcd0039115fccbc4e175c99501d9faf80551f..979aaab53721367cf544441c6524c9ed5e04c206 100644
+--- a/src/libANGLE/Framebuffer.cpp
++++ b/src/libANGLE/Framebuffer.cpp
+@@ -2335,7 +2335,8 @@ FramebufferAttachment *Framebuffer::getAttachmentFromSubjectIndex(angle::Subject
+     }
+ }
+ 
+-bool Framebuffer::formsRenderingFeedbackLoopWith(const Context *context) const
++bool Framebuffer::formsRenderingFeedbackLoopWith(const Context *context,
++                                                 AllowedFeedbackLoop allowedFeedbackLoop) const
+ {
+     const State &glState                = context->getState();
+     const ProgramExecutable *executable = glState.getLinkedProgramExecutable(context);
+@@ -2370,12 +2371,22 @@ bool Framebuffer::formsRenderingFeedbackLoopWith(const Context *context) const
+ 
+             if (AttachmentOverlapsWithTexture(mState.mDepthAttachment, texture, sampler))
+             {
+-                return true;
++                if (allowedFeedbackLoop != AllowedFeedbackLoop::ReadOnlyDepthStencil ||
++                    (glState.isDepthWriteEnabled() && !texture->getState().isStencilMode()))
++                {
++                    return true;
++                }
+             }
+ 
+             if (AttachmentOverlapsWithTexture(mState.mStencilAttachment, texture, sampler))
+             {
+-                return true;
++                if (allowedFeedbackLoop != AllowedFeedbackLoop::ReadOnlyDepthStencil ||
++                    (glState.isStencilWriteEnabled(
++                         glState.getDrawFramebuffer()->getStencilBitCount()) &&
++                     texture->getState().isStencilMode()))
++                {
++                    return true;
++                }
+             }
+ 
+             if (pls != nullptr)
+diff --git a/src/libANGLE/Framebuffer.h b/src/libANGLE/Framebuffer.h
+index 199bf7efda69a3e5176816736bc5dfd8c25f6bfb..97e95e690fe200c962537867e4e0db4631a6f919 100644
+--- a/src/libANGLE/Framebuffer.h
++++ b/src/libANGLE/Framebuffer.h
+@@ -455,7 +455,14 @@ class Framebuffer final : public angle::ObserverInterface,
+     // Observer implementation
+     void onSubjectStateChange(angle::SubjectIndex index, angle::SubjectMessage message) override;
+ 
+-    bool formsRenderingFeedbackLoopWith(const Context *context) const;
++    enum class AllowedFeedbackLoop : bool
++    {
++        NoneAllowed,
++        ReadOnlyDepthStencil,
++    };
++
++    bool formsRenderingFeedbackLoopWith(const Context *context,
++                                        AllowedFeedbackLoop allowedFeedbackLoop) const;
+     bool formsCopyingFeedbackLoopWith(TextureID copyTextureID,
+                                       GLint copyTextureLevel,
+                                       GLint copyTextureLayer) const;
+diff --git a/src/libANGLE/validationES.cpp b/src/libANGLE/validationES.cpp
+index 540284f9c30a633c0135617ea5d852a2120a15ab..72fc9d885f6e9dcaf75210ee5c3efa70169bf3ac 100644
+--- a/src/libANGLE/validationES.cpp
++++ b/src/libANGLE/validationES.cpp
+@@ -4306,12 +4306,6 @@ const char *ValidateDrawStates(const Context *context, GLenum *outErrorCode)
+                 return kTransformFeedbackBufferDoubleBound;
+             }
+ 
+-            // Detect rendering feedback loops for WebGL.
+-            if (framebuffer->formsRenderingFeedbackLoopWith(context))
+-            {
+-                return kFeedbackLoop;
+-            }
+-
+             // Detect that the vertex shader input types match the attribute types
+             if (!ValidateVertexShaderAttributeTypeMatch(context))
+             {
+@@ -4347,6 +4341,18 @@ const char *ValidateDrawStates(const Context *context, GLenum *outErrorCode)
+             }
+         }
+ 
++        if (ANGLE_UNLIKELY(context->isWebGL() || context->isHardenedContext()))
++        {
++            // UB: Detect rendering feedback loops for WebGL or hardened context.
++            if (framebuffer->formsRenderingFeedbackLoopWith(
++                    context, context->isWebGL()
++                                 ? Framebuffer::AllowedFeedbackLoop::NoneAllowed
++                                 : Framebuffer::AllowedFeedbackLoop::ReadOnlyDepthStencil))
++            {
++                return kFeedbackLoop;
++            }
++        }
++
+         // The QCOM_framebuffer_foveated spec:
+         if (ANGLE_UNLIKELY(framebuffer->isFoveationEnabled()))
+         {
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index a0f29677235687d538e8af97dbb13d63614e4ee6..d94efd44b4ae14a56fda2a895a011bd0f864b11d 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -112,6 +112,14 @@
+ 524406308 WIN D3D11 : HardenedContextTest.RenderingFeedbackLoopWithStencilOnlyStencil8/* = SKIP
+ 524406308 WIN D3D11 : HardenedContextTest.RenderingFeedbackLoopWithStencilOnlyANGLE/* = SKIP
+ 
++// Causes a write-after-write hazard on Linux/Vk
++524405499 VULKAN : HardenedContextTest.RenderingFeedbackLoopWithStencilOnlyStencil8/* = SKIP
++524405499 VULKAN : HardenedContextTest.RenderingFeedbackLoopWithStencilOnlyANGLE/* = SKIP
++
++// Asserts on Win/D3D11
++524406308 WIN D3D11 : HardenedContextTest.RenderingFeedbackLoopWithStencilOnlyStencil8/* = SKIP
++524406308 WIN D3D11 : HardenedContextTest.RenderingFeedbackLoopWithStencilOnlyANGLE/* = SKIP
++
+ // Windows
+ 42262429 WIN NVIDIA D3D11 : BufferDataOverflowTest.VertexBufferIntegerOverflow/* = SKIP
+ 40096654 WIN VULKAN : BufferDataOverflowTest.VertexBufferIntegerOverflow/* = SKIP
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index 51d14640401120e189517f764694e363ee6a785a..fbd7f06070855423ba7e2088e52d5f622b9ae0bf 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -4574,6 +4574,235 @@ void main() {
+     EXPECT_GL_ERROR(GL_INVALID_OPERATION) << "Stencil test disabled should still fail";
+ }
+ 
++// This test covers detection of rendering feedback loops between the FBO and a depth Texture.
++// Read-only depth/stencil feedback loops are allowed in hardened contexts and
++// should not generate an error.
++TEST_P(HardenedContextTest, RenderingFeedbackLoopWithDepthStencil)
++{
++    constexpr char kVS[] =
++        R"(#version 300 es
++in vec4 aPosition;
++out vec2 texCoord;
++void main() {
++    gl_Position = aPosition;
++    texCoord = (aPosition.xy * 0.5) + 0.5;
++})";
++
++    constexpr char kFS[] =
++        R"(#version 300 es
++precision mediump float;
++uniform sampler2D tex;
++in vec2 texCoord;
++out vec4 oColor;
++void main() {
++    oColor = texture(tex, texCoord);
++})";
++
++    GLsizei width  = 8;
++    GLsizei height = 8;
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++
++    glViewport(0, 0, width, height);
++
++    GLint texLoc = glGetUniformLocation(program, "tex");
++    glUniform1i(texLoc, 0);
++
++    // Create textures and allocate storage
++    GLTexture tex0;
++    GLTexture tex1;
++    FillTexture2D(tex0, width, height, GLColor::black, 0, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
++    FillTexture2D(tex1, width, height, 0x80, 0, GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT,
++                  GL_UNSIGNED_INT);
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex0, 0);
++
++    // Test rendering and sampling feedback loop for depth buffer
++    glBindTexture(GL_TEXTURE_2D, tex1);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex1, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    // The same image is used as depth buffer during rendering.
++    // This should be an error in hardened contexts.
++    glEnable(GL_DEPTH_TEST);
++    drawQuad(program, "aPosition", 0.5f, 1.0f, true);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION) << "Same image as depth buffer should fail";
++
++    // The same image is used as depth buffer. But depth mask is false.
++    glDepthMask(GL_FALSE);
++    drawQuad(program, "aPosition", 0.5f, 1.0f, true);
++    EXPECT_GL_NO_ERROR();
++
++    // The same image is used as depth buffer. But depth test is not enabled during rendering.
++    glDepthMask(GL_TRUE);
++    glDisable(GL_DEPTH_TEST);
++    drawQuad(program, "aPosition", 0.5f, 1.0f, true);
++    EXPECT_GL_NO_ERROR();
++}
++
++// This test covers detection of rendering feedback loops between the FBO and a stencil texture with
++// GL_OES_texture_stencil8. Read-only stencil feedback loops are allowed in hardened contexts and
++// should not generate an error.
++TEST_P(HardenedContextTest, RenderingFeedbackLoopWithStencilOnlyStencil8)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_OES_texture_stencil8"));
++
++    constexpr char kVS[] =
++        R"(#version 300 es
++in vec4 aPosition;
++out vec2 texCoord;
++void main() {
++    gl_Position = aPosition;
++    texCoord = (aPosition.xy * 0.5) + 0.5;
++})";
++
++    constexpr char kFS[] =
++        R"(#version 300 es
++precision mediump float;
++precision mediump usampler2D;
++uniform usampler2D tex;
++in vec2 texCoord;
++out vec4 oColor;
++void main() {
++    oColor = vec4(texture(tex, texCoord)) / 256.0;
++})";
++
++    GLsizei width  = 8;
++    GLsizei height = 8;
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++
++    glViewport(0, 0, width, height);
++
++    GLint texLoc = glGetUniformLocation(program, "tex");
++    glUniform1i(texLoc, 0);
++
++    // Create textures and allocate storage
++    GLTexture tex0;
++    GLTexture tex1;
++    FillTexture2D(tex0, width, height, GLColor::black, 0, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
++    FillTexture2D(tex1, width, height, 0x40, 0, GL_STENCIL_INDEX8, GL_STENCIL_INDEX,
++                  GL_UNSIGNED_BYTE);
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex0, 0);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, tex1, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glBindTexture(GL_TEXTURE_2D, tex1);
++
++    // The same image is used as stencil buffer during rendering.
++    // Ensure that the stencil func and op are not no-ops, so that there can
++    // be stencil writes.
++    glEnable(GL_STENCIL_TEST);
++    glStencilFunc(GL_GREATER, 0x0000, 0xFFFFFFFF);
++    glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
++    drawQuad(program, "aPosition", 0.5f, 1.0f, true);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION) << "Same image as stencil buffer should fail";
++
++    // The same image is used as stencil buffer. But stencil mask is zero.
++    glStencilMask(0x0);
++    drawQuad(program, "aPosition", 0.5f, 1.0f, true);
++    EXPECT_GL_NO_ERROR();
++
++    // The same image is used as stencil buffer. But stencil test is not enabled during rendering.
++    glStencilMask(0xffff);
++    glDisable(GL_STENCIL_TEST);
++    drawQuad(program, "aPosition", 0.5f, 1.0f, true);
++    EXPECT_GL_NO_ERROR();
++}
++
++// This test covers detection of rendering feedback loops between the FBO and a stencil texture with
++// GL_ANGLE_stencil_texturing. Read-only stencil feedback loops are allowed in hardened contexts and
++// should not generate an error.
++TEST_P(HardenedContextTest, RenderingFeedbackLoopWithStencilOnlyANGLE)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_ANGLE_stencil_texturing"));
++
++    constexpr char kVS[] =
++        R"(#version 300 es
++in vec4 aPosition;
++out vec2 texCoord;
++void main() {
++    gl_Position = aPosition;
++    texCoord = (aPosition.xy * 0.5) + 0.5;
++})";
++
++    constexpr char kFS[] =
++        R"(#version 300 es
++precision mediump float;
++precision mediump usampler2D;
++uniform usampler2D tex;
++in vec2 texCoord;
++out vec4 oColor;
++void main() {
++    oColor = vec4(texture(tex, texCoord)) / 256.0;
++})";
++
++    GLsizei width  = 8;
++    GLsizei height = 8;
++
++    ANGLE_GL_PROGRAM(program, kVS, kFS);
++    glUseProgram(program);
++
++    glViewport(0, 0, width, height);
++
++    GLint texLoc = glGetUniformLocation(program, "tex");
++    glUniform1i(texLoc, 0);
++
++    // Create textures and allocate storage
++    GLTexture tex0;
++    GLTexture tex1;
++    FillTexture2D(tex0, width, height, GLColor::black, 0, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
++    FillTexture2D(tex1, width, height, 0x40, 0, GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL,
++                  GL_UNSIGNED_INT_24_8);
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex0, 0);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, tex1, 0);
++    ASSERT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++
++    glBindTexture(GL_TEXTURE_2D, tex1);
++    glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_STENCIL_INDEX);
++
++    // The same image is used as stencil buffer during rendering.
++    // Ensure that the stencil func and op are not no-ops, so that there can
++    // be stencil writes.
++    glEnable(GL_STENCIL_TEST);
++    glStencilFunc(GL_GREATER, 0x0000, 0xFFFFFFFF);
++    glStencilOp(GL_KEEP, GL_REPLACE, GL_REPLACE);
++    drawQuad(program, "aPosition", 0.5f, 1.0f, true);
++    EXPECT_GL_ERROR(GL_INVALID_OPERATION) << "Same image as stencil buffer should fail";
++
++    // The same image is used as stencil buffer. But stencil mask is zero.
++    glStencilMask(0x0);
++    drawQuad(program, "aPosition", 0.5f, 1.0f, true);
++    EXPECT_GL_NO_ERROR();
++
++    // The same image is used as stencil buffer. But stencil test is not enabled during rendering.
++    glStencilMask(0xffff);
++    glDisable(GL_STENCIL_TEST);
++    drawQuad(program, "aPosition", 0.5f, 1.0f, true);
++    EXPECT_GL_NO_ERROR();
++
++    // The same image is used as stencil buffer. But only the depth component of the texture is
++    // being read.
++    glStencilMask(0xffff);
++    glEnable(GL_STENCIL_TEST);
++    glTexParameteri(GL_TEXTURE_2D, GL_DEPTH_STENCIL_TEXTURE_MODE, GL_DEPTH_COMPONENT);
++    drawQuad(program, "aPosition", 0.5f, 1.0f, true);
++    EXPECT_GL_NO_ERROR();
++}
++
+ // The source and the target for CopyTexSubImage3D are the same 3D texture.
+ // But the level of the 3D texture != the level of the read attachment.
+ TEST_P(WebGL2CompatibilityTest, NoTextureCopyingFeedbackLoopBetween3DLevels)

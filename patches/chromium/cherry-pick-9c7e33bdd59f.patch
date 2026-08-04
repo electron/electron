@@ -1,0 +1,358 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Buchanan <kenrb@chromium.org>
+Date: Mon, 22 Jun 2026 07:32:16 -0700
+Subject: [WebAuthn] Prevent WebAuthn requests from inactive frames
+
+WebAuthn calls should not be possible from inactive frames, such as
+those in the process of navigation or in BFCache. This is currently
+enforced in the desktop WebAuthn implementation and treated as a
+non-focused frame, but there is no check in the Android implementation.
+
+This change adds an explicit check when binding the interface, for
+both Android and desktop.
+
+It also adds checks at the time of invocation of makeCredential
+and getAssertion, in case an interface bound on a live frame
+is used while the frame is later inactive.
+
+Fixed: 516813184
+Change-Id: I1ede1544bcdbb4b090b1feb777d9e6dc58436a73
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7969319
+Reviewed-by: Nina Satragno <nsatragno@chromium.org>
+Commit-Queue: Ken Buchanan <kenrb@chromium.org>
+Auto-Submit: Ken Buchanan <kenrb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1650300}
+
+diff --git a/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java b/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java
+index 6c246f002c745c8598deb9a96cea085b0cc05f05..de0bfc14bc062d92a851a8114cb1a0c2a136cc6f 100644
+--- a/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java
++++ b/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java
+@@ -31,6 +31,7 @@ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.build.annotations.Nullable;
+ import org.chromium.components.password_manager.BrowserAssistedLoginType;
+ import org.chromium.components.ukm.UkmRecorder;
++import org.chromium.content_public.browser.LifecycleState;
+ import org.chromium.content_public.browser.RenderFrameHost;
+ import org.chromium.content_public.browser.Visibility;
+ import org.chromium.content_public.browser.WebContents;
+@@ -162,6 +163,13 @@ public final class AuthenticatorImpl implements Authenticator, AuthenticationCon
+                             new RequestMetrics.Builder().build()));
+             return;
+         }
++        if (mRenderFrameHost.getLifecycleState() != LifecycleState.ACTIVE) {
++            requestCallback.onComplete(
++                    WebauthnRequestResponse.forFailedMakeCredential(
++                            AuthenticatorStatus.NOT_ALLOWED_ERROR,
++                            new RequestMetrics.Builder().build()));
++            return;
++        }
+         log(TAG, "makeCredential");
+ 
+         mIsPaymentRequest = options.isPaymentCredentialCreation;
+@@ -239,6 +247,13 @@ public final class AuthenticatorImpl implements Authenticator, AuthenticationCon
+                             new RequestMetrics.Builder().build()));
+             return;
+         }
++        if (mRenderFrameHost.getLifecycleState() != LifecycleState.ACTIVE) {
++            requestCallback.onComplete(
++                    WebauthnRequestResponse.forFailedGetCredential(
++                            AuthenticatorStatus.NOT_ALLOWED_ERROR,
++                            new RequestMetrics.Builder().build()));
++            return;
++        }
+         log(TAG, "getCredential");
+ 
+         mRequestCallback = requestCallback;
+diff --git a/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java b/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java
+index 90bd545ec324753272c7e9107808ede9fba93b8b..7b3b53748349cb6ce4c862ae4bd50638e8145bcc 100644
+--- a/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java
++++ b/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java
+@@ -30,6 +30,7 @@ import org.chromium.blink.mojom.Authenticator;
+ import org.chromium.blink.mojom.GetCredentialOptions;
+ import org.chromium.blink.mojom.Mediation;
+ import org.chromium.blink.mojom.PublicKeyCredentialRequestOptions;
++import org.chromium.content_public.browser.LifecycleState;
+ import org.chromium.content_public.browser.RenderFrameHost;
+ import org.chromium.content_public.browser.Visibility;
+ import org.chromium.content_public.browser.WebContents;
+@@ -65,6 +66,7 @@ public class AuthenticatorImplPasswordOnlyTest {
+         mTopOrigin = Origin.create(new GURL("https://example.com"));
+ 
+         when(mRenderFrameHost.getLastCommittedOrigin()).thenReturn(mOrigin);
++        when(mRenderFrameHost.getLifecycleState()).thenReturn(LifecycleState.ACTIVE);
+ 
+         WebauthnModeProvider.setInstanceForTesting(mModeProviderMock);
+         when(mModeProviderMock.getWebauthnMode(any())).thenReturn(WebauthnMode.CHROME);
+diff --git a/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplTest.java b/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplTest.java
+index 6c036c8d849e4e789c9c0de8757b19c2bafe7f5f..5bd9aba084bd07b477bd5e269f5652b79c71a95a 100644
+--- a/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplTest.java
++++ b/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplTest.java
+@@ -33,6 +33,9 @@ import org.chromium.base.test.util.Batch;
+ import org.chromium.base.test.util.Features.EnableFeatures;
+ import org.chromium.blink.mojom.Authenticator;
+ import org.chromium.blink.mojom.WebAuthnClientCapability;
++import org.chromium.components.ukm.UkmRecorder;
++import org.chromium.components.ukm.UkmRecorderJni;
++import org.chromium.content_public.browser.LifecycleState;
+ import org.chromium.content_public.browser.RenderFrameHost;
+ import org.chromium.content_public.browser.WebContents;
+ import org.chromium.device.DeviceFeatureList;
+@@ -81,6 +84,7 @@ public class AuthenticatorImplTest {
+         mTopOrigin = Origin.create(new GURL("https://example.com"));
+ 
+         when(mRenderFrameHost.getLastCommittedOrigin()).thenReturn(mOrigin);
++        when(mRenderFrameHost.getLifecycleState()).thenReturn(LifecycleState.ACTIVE);
+ 
+         WebauthnModeProvider.setInstanceForTesting(mModeProviderMock);
+         when(mModeProviderMock.getWebauthnMode(any())).thenReturn(WebauthnMode.CHROME);
+@@ -305,4 +309,39 @@ public class AuthenticatorImplTest {
+                     authenticator.getCredential(/* options= */ null, /* callback= */ null);
+                 });
+     }
++
++    @Test
++    public void testMakeCredential_inactiveFrame() {
++        when(mRenderFrameHost.getLifecycleState()).thenReturn(LifecycleState.IN_BACK_FORWARD_CACHE);
++
++        Authenticator.MakeCredential_Response callback =
++                mock(Authenticator.MakeCredential_Response.class);
++        PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions();
++        mAuthenticator.makeCredential(options, callback);
++
++        verify(callback).call(eq(AuthenticatorStatus.NOT_ALLOWED_ERROR), any(), any());
++        verify(mFido2CredentialRequestMock, never())
++                .handleMakeCredentialRequest(any(), any(), any(), any(), any());
++    }
++
++    @Test
++    public void testGetCredential_inactiveFrame() {
++        when(mRenderFrameHost.getLifecycleState()).thenReturn(LifecycleState.IN_BACK_FORWARD_CACHE);
++
++        Authenticator.GetCredential_Response callback =
++                mock(Authenticator.GetCredential_Response.class);
++        GetCredentialOptions options = new GetCredentialOptions();
++        options.publicKey = new PublicKeyCredentialRequestOptions();
++        mAuthenticator.getCredential(options, callback);
++
++        ArgumentCaptor<GetCredentialResponse> captor =
++                ArgumentCaptor.forClass(GetCredentialResponse.class);
++        verify(callback).call(captor.capture());
++        assertEquals(
++                AuthenticatorStatus.NOT_ALLOWED_ERROR,
++                captor.getValue().getGetAssertionResponse().status);
++
++        verify(mFido2CredentialRequestMock, never())
++                .handleGetCredentialRequest(any(), any(), any(), any());
++    }
+ }
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 8bf1dac46f79a681ef68c01b93e285304b5221c5..7a4d9078ecb039b124b1b33465e0589105e37855 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -15273,6 +15273,10 @@ void RenderFrameHostImpl::CreatePermissionService(
+ 
+ void RenderFrameHostImpl::GetWebAuthenticationService(
+     mojo::PendingReceiver<blink::mojom::Authenticator> receiver) {
++  if (!IsActive()) {
++    return;
++  }
++
+ #if !BUILDFLAG(IS_ANDROID)
+   AuthenticatorImpl::Create(this, std::move(receiver));
+ #else
+diff --git a/content/browser/webauth/authenticator_impl_unittest.cc b/content/browser/webauth/authenticator_impl_unittest.cc
+index 1c99d7ffa70422c9f116f5f807c0ab920582e4ab..0e4aee7c71a1330d62f1b5cda6f7fe6f394d3788 100644
+--- a/content/browser/webauth/authenticator_impl_unittest.cc
++++ b/content/browser/webauth/authenticator_impl_unittest.cc
+@@ -10607,4 +10607,191 @@ TEST_F(AuthenticatorImplWithRequestProxyTest,
+   EXPECT_EQ(request_proxy().observations().num_isuvpaa, 0u);
+ }
+ 
++TEST_F(AuthenticatorImplTest, CrossDeviceFallbackUrl_Valid) {
++  base::test::ScopedFeatureList feature_list(
++      device::kWebAuthnCrossDeviceFallbackUrl);
++  NavigateAndCommit(GURL(kTestOrigin1));
++
++  device::VirtualCtap2Device::Config config;
++  virtual_device_factory_->SetCtap2Config(config);
++  virtual_device_factory_->mutable_state()->transport =
++      device::FidoTransportProtocol::kHybrid;
++
++  auto options = GetTestGetCredentialOptions();
++  options->public_key->extensions->cross_device_fallback_url =
++      GURL("https://a.google.com/fallback");
++
++  ASSERT_TRUE(virtual_device_factory_->mutable_state()->InjectRegistration(
++      options->public_key->allow_credentials[0].id, kTestRelyingPartyId));
++
++  GetAssertionResult result = AuthenticatorGetCredential(std::move(options));
++  EXPECT_EQ(result.status, AuthenticatorStatus::SUCCESS);
++  ASSERT_TRUE(result.response);
++  ASSERT_TRUE(result.response->extensions);
++  ASSERT_TRUE(
++      result.response->extensions->cross_device_fallback_url.has_value());
++  EXPECT_TRUE(*result.response->extensions->cross_device_fallback_url);
++
++  auto last_request =
++      virtual_device_factory_->mutable_state()->last_get_assertion_request;
++  ASSERT_TRUE(last_request.has_value());
++  ASSERT_TRUE(last_request->cross_device_fallback_url.has_value());
++  EXPECT_EQ(*last_request->cross_device_fallback_url,
++            "https://a.google.com/fallback");
++}
++
++TEST_F(AuthenticatorImplTest, CrossDeviceFallbackUrl_InvalidOrigin) {
++  base::test::ScopedFeatureList feature_list(
++      device::kWebAuthnCrossDeviceFallbackUrl);
++  NavigateAndCommit(GURL(kTestOrigin1));
++
++  device::VirtualCtap2Device::Config config;
++  virtual_device_factory_->SetCtap2Config(config);
++  virtual_device_factory_->mutable_state()->transport =
++      device::FidoTransportProtocol::kHybrid;
++
++  auto options = GetTestGetCredentialOptions();
++  options->public_key->extensions->cross_device_fallback_url =
++      GURL("https://other.com/fallback");
++
++  ASSERT_TRUE(virtual_device_factory_->mutable_state()->InjectRegistration(
++      options->public_key->allow_credentials[0].id, kTestRelyingPartyId));
++
++  AuthenticatorGetCredential(std::move(options));
++
++  auto last_request =
++      virtual_device_factory_->mutable_state()->last_get_assertion_request;
++  ASSERT_TRUE(last_request.has_value());
++  EXPECT_FALSE(last_request->cross_device_fallback_url.has_value());
++}
++
++TEST_F(AuthenticatorImplTest, CrossDeviceFallbackUrl_InvalidScheme) {
++  base::test::ScopedFeatureList feature_list(
++      device::kWebAuthnCrossDeviceFallbackUrl);
++  NavigateAndCommit(GURL(kTestOrigin1));
++
++  device::VirtualCtap2Device::Config config;
++  virtual_device_factory_->SetCtap2Config(config);
++  virtual_device_factory_->mutable_state()->transport =
++      device::FidoTransportProtocol::kHybrid;
++
++  auto options = GetTestGetCredentialOptions();
++  options->public_key->extensions->cross_device_fallback_url =
++      GURL("http://a.google.com/fallback");
++
++  ASSERT_TRUE(virtual_device_factory_->mutable_state()->InjectRegistration(
++      options->public_key->allow_credentials[0].id, kTestRelyingPartyId));
++
++  AuthenticatorGetCredential(std::move(options));
++
++  auto last_request =
++      virtual_device_factory_->mutable_state()->last_get_assertion_request;
++  ASSERT_TRUE(last_request.has_value());
++  EXPECT_FALSE(last_request->cross_device_fallback_url.has_value());
++}
++
++TEST_F(AuthenticatorImplTest, CrossDeviceFallbackUrl_BlockedByCSP) {
++  base::test::ScopedFeatureList feature_list(
++      device::kWebAuthnCrossDeviceFallbackUrl);
++  NavigateAndCommit(GURL(kTestOrigin1));
++
++  // Set CSP to block the fallback URL.
++  auto policies = network::ParseContentSecurityPolicies(
++      "connect-src https://allowed.com",
++      network::mojom::ContentSecurityPolicyType::kEnforce,
++      network::mojom::ContentSecurityPolicySource::kHTTP, GURL(kTestOrigin1));
++  static_cast<RenderFrameHostImpl*>(main_rfh())
++      ->policy_container_host()
++      ->AddContentSecurityPolicies(std::move(policies));
++
++  device::VirtualCtap2Device::Config config;
++  virtual_device_factory_->SetCtap2Config(config);
++  virtual_device_factory_->mutable_state()->transport =
++      device::FidoTransportProtocol::kHybrid;
++
++  auto options = GetTestGetCredentialOptions();
++  options->public_key->extensions->cross_device_fallback_url =
++      GURL("https://a.google.com/fallback");
++
++  ASSERT_TRUE(virtual_device_factory_->mutable_state()->InjectRegistration(
++      options->public_key->allow_credentials[0].id, kTestRelyingPartyId));
++
++  AuthenticatorGetCredential(std::move(options));
++
++  auto last_request =
++      virtual_device_factory_->mutable_state()->last_get_assertion_request;
++  ASSERT_TRUE(last_request.has_value());
++  EXPECT_FALSE(last_request->cross_device_fallback_url.has_value());
++}
++
++TEST_F(AuthenticatorImplTest, CrossDeviceFallbackUrl_FlagDisabled) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitAndDisableFeature(device::kWebAuthnCrossDeviceFallbackUrl);
++  NavigateAndCommit(GURL(kTestOrigin1));
++
++  device::VirtualCtap2Device::Config config;
++  virtual_device_factory_->SetCtap2Config(config);
++  virtual_device_factory_->mutable_state()->transport =
++      device::FidoTransportProtocol::kHybrid;
++
++  auto options = GetTestGetCredentialOptions();
++  options->public_key->extensions->cross_device_fallback_url =
++      GURL("https://a.google.com/fallback");
++
++  ASSERT_TRUE(virtual_device_factory_->mutable_state()->InjectRegistration(
++      options->public_key->allow_credentials[0].id, kTestRelyingPartyId));
++
++  mojo::Remote<blink::mojom::Authenticator> authenticator =
++      ConnectToAuthenticator();
++
++  mojo::test::BadMessageObserver bad_message_observer;
++  authenticator->GetCredential(std::move(options), base::DoNothing());
++  EXPECT_EQ(bad_message_observer.WaitForBadMessage(),
++            "crossDeviceFallbackUrl extension sent but feature disabled");
++}
++
++TEST_F(AuthenticatorImplTest, CrossDeviceFallbackUrl_Processed) {
++  base::test::ScopedFeatureList feature_list(
++      device::kWebAuthnCrossDeviceFallbackUrl);
++  NavigateAndCommit(GURL(kTestOrigin1));
++
++  device::VirtualCtap2Device::Config config;
++  config.override_response_map
++      [device::CtapRequestCommand::kAuthenticatorGetAssertion] = std::make_pair(
++      device::CtapDeviceResponseCode::kCtap2ErrFallbackUrlProcessed,
++      std::nullopt);
++  virtual_device_factory_->SetCtap2Config(config);
++  virtual_device_factory_->mutable_state()->transport =
++      device::FidoTransportProtocol::kHybrid;
++
++  auto options = GetTestGetCredentialOptions();
++  options->public_key->extensions->cross_device_fallback_url =
++      GURL("https://a.google.com/fallback");
++
++  GetAssertionResult result = AuthenticatorGetCredential(std::move(options));
++  EXPECT_EQ(result.status, AuthenticatorStatus::CROSS_DEVICE_FALLBACK);
++}
++
++TEST_F(AuthenticatorImplTest, InactiveRenderFrameHost) {
++  NavigateAndCommit(GURL(kTestOrigin1));
++
++  // Set the lifecycle state to `kInBackForwardCache` so the RenderFrameHost is
++  // inactive.
++  static_cast<RenderFrameHostImpl*>(main_rfh())
++      ->SetLifecycleState(
++          RenderFrameHostImpl::LifecycleStateImpl::kInBackForwardCache);
++  ASSERT_FALSE(main_rfh()->IsActive());
++
++  // Try to connect to the authenticator service.
++  mojo::Remote<blink::mojom::Authenticator> authenticator =
++      ConnectToAuthenticator();
++
++  // The receiver should be dropped immediately, causing the remote to be
++  // disconnected.
++  base::RunLoop run_loop;
++  authenticator.set_disconnect_handler(run_loop.QuitClosure());
++  run_loop.Run();
++  EXPECT_FALSE(authenticator.is_connected());
++}
++
+ }  // namespace content

@@ -1,0 +1,154 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sunny Sachanandani <sunnyps@chromium.org>
+Date: Tue, 16 Jun 2026 08:46:50 -0700
+Subject: [viz] [gpu] Validate YCbCr info in Ganesh Vulkan path on Android
+
+A compromised renderer can supply unvalidated Vulkan YCbCr conversion
+metadata (VulkanYCbCrInfo) via a TransferableResource. If the
+Ganesh-Vulkan backend fails to verify this metadata against the actual
+backing texture, Skia can bind mismatched Vulkan samplers and image
+views, leading to driver-level memory corruption and potential sandbox
+escape.
+
+This CL introduces a new helper `gpu::IsYCbCrInfoCompatible` in
+`skia_utils` to validate that the promised YCbCr info matches the
+actual Vulkan image info. We then call this validation helper in the
+Ganesh-Vulkan path of `ImageContextImpl::BeginAccessIfNecessaryInternal`
+on Android.
+
+If a mismatch is detected, we generate a non-fatal crash report via
+`DumpWithoutCrashing` and cleanly reject access, failing the draw.
+
+Bug: 500225310
+Change-Id: I3b5fce3547090c7fb292e32a5b454fda6a6a6964
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7876653
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Auto-Submit: Sunny Sachanandani <sunnyps@chromium.org>
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1647601}
+
+diff --git a/components/viz/service/display_embedder/image_context_impl.cc b/components/viz/service/display_embedder/image_context_impl.cc
+index a6aa23009b56387bf8886e89a8f7ba23390bb7c2..41624fd53023f14ff80a025fb89d0bf50e2a7aba 100644
+--- a/components/viz/service/display_embedder/image_context_impl.cc
++++ b/components/viz/service/display_embedder/image_context_impl.cc
+@@ -8,6 +8,9 @@
+ 
+ #include "base/check.h"
+ #include "base/check_op.h"
++#include "base/debug/crash_logging.h"
++#include "base/debug/dump_without_crashing.h"
++#include "base/feature_list.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/trace_event/trace_event.h"
+ #include "components/viz/common/resources/shared_image_format_utils.h"
+@@ -31,8 +34,20 @@
+ #include "third_party/skia/include/gpu/graphite/dawn/DawnTypes.h"
+ #include "third_party/skia/include/private/chromium/GrPromiseImageTexture.h"
+ 
++#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(ENABLE_VULKAN)
++#include "components/viz/common/gpu/vulkan_context_provider.h"
++#include "third_party/skia/include/gpu/ganesh/vk/GrVkBackendSurface.h"
++#include "third_party/skia/include/gpu/ganesh/vk/GrVkTypes.h"
++#endif
++
+ namespace {
+ 
++#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(ENABLE_VULKAN)
++BASE_FEATURE(kValidateGaneshVulkanYcbcrInfo,
++             "ValidateGaneshVulkanYcbcrInfo",
++             base::FEATURE_ENABLED_BY_DEFAULT);
++#endif
++
+ // These values are persisted to logs. Entries should not be renumbered and
+ // numeric values should never be reused.
+ // LINT.IfChange(CreateFallbackImageResult)
+@@ -468,6 +483,47 @@ bool ImageContextImpl::BeginAccessIfNecessaryInternal(
+     }
+   } else {
+     CHECK(context_state->gr_context());
++#if BUILDFLAG(IS_ANDROID) && BUILDFLAG(ENABLE_VULKAN)
++    if (base::FeatureList::IsEnabled(kValidateGaneshVulkanYcbcrInfo) &&
++        context_state->gr_context()->backend() == GrBackendApi::kVulkan) {
++      auto* promise_texture =
++          representation_scoped_read_access_->promise_image_texture(0);
++      if (promise_texture) {
++        GrVkImageInfo image_info;
++        if (GrBackendTextures::GetVkImageInfo(promise_texture->backendTexture(),
++                                              &image_info)) {
++          VkPhysicalDevice physical_device =
++              context_state->vk_context_provider()
++                  ->GetDeviceQueue()
++                  ->GetVulkanPhysicalDevice();
++          skgpu::VulkanYcbcrConversionInfo expected_ycbcr_info =
++              gpu::CreateVulkanYcbcrConversionInfo(
++                  physical_device, image_info.fImageTiling, image_info.fFormat,
++                  format(), color_space(), ycbcr_info());
++
++          const auto& retrieved_ycbcr_info = image_info.fYcbcrConversionInfo;
++
++          if (retrieved_ycbcr_info != expected_ycbcr_info) {
++            SCOPED_CRASH_KEY_STRING32("viz", "image_format",
++                                      format().ToString());
++            SCOPED_CRASH_KEY_STRING64("viz", "color_space",
++                                      color_space().ToString());
++            SCOPED_CRASH_KEY_STRING32("viz", "image_size", size().ToString());
++            SCOPED_CRASH_KEY_STRING256(
++                "viz", "expected_ycbcr_info",
++                gpu::VulkanYcbcrConversionInfoToString(expected_ycbcr_info));
++            SCOPED_CRASH_KEY_STRING256(
++                "viz", "retrieved_ycbcr_info",
++                gpu::VulkanYcbcrConversionInfoToString(retrieved_ycbcr_info));
++
++            base::debug::DumpWithoutCrashing();
++            representation_scoped_read_access_.reset();
++            return false;
++          }
++        }
++      }
++    }
++#endif
+     for (int plane_index = 0; plane_index < num_planes; plane_index++) {
+       promise_image_textures_.push_back(
+           representation_scoped_read_access_->promise_image_texture(
+diff --git a/gpu/command_buffer/service/skia_utils.cc b/gpu/command_buffer/service/skia_utils.cc
+index 4016c69a5a82237a5e69df996cff16bb88ad2c8f..b1be6163e5dee8216246fe4ef1f4d77b31c0200d 100644
+--- a/gpu/command_buffer/service/skia_utils.cc
++++ b/gpu/command_buffer/service/skia_utils.cc
+@@ -535,6 +535,23 @@ CreateVulkanYcbcrConversionInfo(
+   }
+ }
+ 
++std::string VulkanYcbcrConversionInfoToString(
++    const skgpu::VulkanYcbcrConversionInfo& info) {
++  if (!info.isValid()) {
++    return "invalid";
++  }
++  return base::StringPrintf(
++      "fmt:%u,ext:0x%" PRIx64
++      ",model:%u,range:%u,x:%u,y:%u,filter:%u,"
++      "force:%u,must_match:%u,linear:%u",
++      static_cast<uint32_t>(info.format()), info.externalFormat(),
++      static_cast<uint32_t>(info.model()), static_cast<uint32_t>(info.range()),
++      static_cast<uint32_t>(info.xChromaOffset()),
++      static_cast<uint32_t>(info.yChromaOffset()),
++      static_cast<uint32_t>(info.chromaFilter()),
++      static_cast<uint32_t>(info.forceExplicitReconstruction()),
++      info.samplerFilterMustMatchChromaFilter(), info.supportsLinearFilter());
++}
+ #endif  // BUILDFLAG(ENABLE_VULKAN)
+ 
+ bool ShouldVulkanSyncCpuForSkiaSubmit(
+diff --git a/gpu/command_buffer/service/skia_utils.h b/gpu/command_buffer/service/skia_utils.h
+index a6dc57a83c0778cc436e6ce61cd21b61aef66e7b..391e1b42fbda303a3c447ca64ccfc61b606d231a 100644
+--- a/gpu/command_buffer/service/skia_utils.h
++++ b/gpu/command_buffer/service/skia_utils.h
+@@ -142,6 +142,9 @@ CreateVulkanYcbcrConversionInfo(
+     const viz::SharedImageFormat& si_format,
+     const gfx::ColorSpace& color_space,
+     const std::optional<VulkanYCbCrInfo>& ycbcr_info);
++
++GPU_GLES2_EXPORT std::string VulkanYcbcrConversionInfoToString(
++    const skgpu::VulkanYcbcrConversionInfo& info);
+ #endif  // BUILDFLAG(ENABLE_VULKAN)
+ 
+ // Helper that returns true when Vulkan memory usage is high enough

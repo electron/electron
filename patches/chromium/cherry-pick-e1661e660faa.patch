@@ -1,0 +1,588 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sangbaek Park <sangbaekpark@google.com>
+Date: Wed, 17 Jun 2026 14:02:06 -0700
+Subject: media: Drop frames on keyed mutex WAIT_TIMEOUT in Media Foundation
+
+When acquiring a keyed mutex for a shared texture during D3D copy or
+scaling operations, the code previously tolerated WAIT_TIMEOUT. However,
+if AcquireSync returns WAIT_TIMEOUT (or WAIT_ABANDONED), the lock is not
+acquired and any subsequent Direct3D commands (such as CopySubresourceRegion
+or VideoProcessorBlt) will be silently dropped by the runtime.
+
+Since the destination texture is allocated without initial data, proceeding
+with the encoding would cause uninitialized GPU memory to be passed to the
+hardware video encoder and compressed into the bitstream, leading to a
+potential VRAM disclosure.
+
+This CL updates the keyed mutex acquisition check to convert synchronization
+timeouts into proper failure HRESULTs. Instead of failing the entire
+encoding session, the encoder now catches these specific timeout errors and
+safely drops the affected frame. This prevents the VRAM disclosure while
+ensuring the encoder remains in a healthy state for subsequent frames.
+
+Unit tests updated: {
+MediaFoundationVideoEncodeAcceleratorKeyedMutexTimeoutTest.RejectFrameOnKeyedMutexTimeout
+}
+
+Bug: 519701233
+Change-Id: I30764b3cb20371bfd766e6970a73e0e62e709a2e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7905603
+Commit-Queue: Sangbaek Park <sangbaekpark@chromium.org>
+Reviewed-by: Rafael Cintron <rafael.cintron@microsoft.com>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1648572}
+
+diff --git a/media/base/win/d3d11_mocks.cc b/media/base/win/d3d11_mocks.cc
+index 5247e122a180567ae3f292a88e5698b668c88fa0..f974332ca066b381be546fa1585394934241246f 100644
+--- a/media/base/win/d3d11_mocks.cc
++++ b/media/base/win/d3d11_mocks.cc
+@@ -6,6 +6,9 @@
+ 
+ namespace media {
+ 
++DXGIKeyedMutexMock::DXGIKeyedMutexMock() = default;
++DXGIKeyedMutexMock::~DXGIKeyedMutexMock() = default;
++
+ D3D11Texture2DMock::D3D11Texture2DMock() = default;
+ D3D11Texture2DMock::~D3D11Texture2DMock() = default;
+ 
+diff --git a/media/base/win/d3d11_mocks.h b/media/base/win/d3d11_mocks.h
+index 3afb76f1051fdf166422265f69c9fc99cf0a167c..ae8b298cb33b1375b86ecc2d8edadbf30339ef24 100644
+--- a/media/base/win/d3d11_mocks.h
++++ b/media/base/win/d3d11_mocks.h
+@@ -16,6 +16,24 @@
+ 
+ namespace media {
+ 
++class DXGIKeyedMutexMock
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          IDXGIKeyedMutex> {
++ public:
++  DXGIKeyedMutexMock();
++  ~DXGIKeyedMutexMock() override;
++
++  MOCK_STDCALL_METHOD2(AcquireSync, HRESULT(UINT64, DWORD));
++  MOCK_STDCALL_METHOD1(ReleaseSync, HRESULT(UINT64));
++  MOCK_STDCALL_METHOD2(GetDevice, HRESULT(REFIID, void**));
++  MOCK_STDCALL_METHOD2(GetParent, HRESULT(REFIID, void**));
++  MOCK_STDCALL_METHOD3(GetPrivateData, HRESULT(REFGUID, UINT*, void*));
++  MOCK_STDCALL_METHOD3(SetPrivateData, HRESULT(REFGUID, UINT, const void*));
++  MOCK_STDCALL_METHOD2(SetPrivateDataInterface,
++                       HRESULT(REFGUID, const IUnknown*));
++};
++
+ class D3D11Texture2DMock
+     : public Microsoft::WRL::RuntimeClass<
+           Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
+@@ -23,6 +41,7 @@ class D3D11Texture2DMock
+  public:
+   D3D11Texture2DMock();
+   ~D3D11Texture2DMock() override;
++  MOCK_STDCALL_METHOD2(QueryInterface, HRESULT(REFIID riid, void** ppv));
+   MOCK_STDCALL_METHOD1(GetDevice, void(ID3D11Device**));
+   MOCK_STDCALL_METHOD3(GetPrivateData, HRESULT(const GUID&, UINT*, void*));
+   MOCK_STDCALL_METHOD3(SetPrivateData, HRESULT(const GUID&, UINT, const void*));
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+index e4b138832128e2ebecff10db894be8b5af27487f..d2af64586ae6d36e2b3f7f896ab0adca7d9bfec6 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+@@ -211,6 +211,22 @@ bool IsOdd(int value) {
+   return (value & 1) != 0;
+ }
+ 
++// Returns true if the HRESULT indicates a timeout or abandoned mutex.
++bool IsKeyedMutexTimeout(HRESULT hr) {
++  return hr == HRESULT_FROM_WIN32(WAIT_TIMEOUT) ||
++         hr == HRESULT_FROM_WIN32(WAIT_ABANDONED);
++}
++
++HRESULT AcquireKeyedMutexSync(IDXGIKeyedMutex* keyed_mutex,
++                              uint64_t key,
++                              uint32_t timeout_ms) {
++  HRESULT hr = keyed_mutex->AcquireSync(key, timeout_ms);
++  if (hr == WAIT_TIMEOUT || hr == WAIT_ABANDONED) {
++    return HRESULT_FROM_WIN32(hr);
++  }
++  return hr;
++}
++
+ }  // namespace
+ 
+ // A proxy class that implements IMFAsyncCallback and routes the events back to
+@@ -876,6 +892,11 @@ void MediaFoundationVideoEncodeAccelerator::QueueInput(
+   }
+ 
+   hr = PopulateInputSampleBuffer(result, std::move(frame));
++  if (IsKeyedMutexTimeout(hr)) {
++    DVLOG(1) << "Frame dropped because of keyed mutex timeout";
++    DropFrame(result.timestamp);
++    return;
++  }
+   if (FAILED(hr)) {
+     NotifyErrorStatus({EncoderStatus::Codes::kEncoderFailedEncode,
+                        "Failed to populate input sample buffer"});
+@@ -1932,6 +1953,20 @@ HRESULT MediaFoundationVideoEncodeAccelerator::ProcessInput(
+       quantizer = max_quantizer;
+     }
+ 
++    if (is_drop_frame) {
++      DVLOG(3) << "Frame dropped by software rate control";
++      DropFrame(input.timestamp);
++      VideoRateControlWrapper::FrameParams drop_frame_params{};
++      drop_frame_params.frame_type =
++          input.options.key_frame
++              ? VideoRateControlWrapper::FrameParams::FrameType::kKeyFrame
++              : VideoRateControlWrapper::FrameParams::FrameType::kInterFrame;
++      drop_frame_params.temporal_layer_id = temporal_id;
++      drop_frame_params.timestamp = input.timestamp.InMilliseconds();
++      rate_ctrl_->PostEncodeUpdate(0, drop_frame_params);
++      return S_OK;
++    }
++
+     if (quantizer.has_value()) {
+       VARIANT var;
+       var.vt = VT_UI4;
+@@ -2734,6 +2769,56 @@ void MediaFoundationVideoEncodeAccelerator::SetState(State state) {
+   state_ = state;
+ }
+ 
++void MediaFoundationVideoEncodeAccelerator::SendOutputBuffer(
++    const BitstreamBufferMetadata& metadata,
++    base::span<uint8_t> output_buffer_span) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++
++  if (bitstream_buffer_queue_.empty()) {
++    DVLOG(3) << "No bitstream buffers available.";
++
++    // We need to copy the output so that encoding can continue.
++    auto encode_output =
++        std::make_unique<EncodeOutput>(output_buffer_span.size(), metadata);
++    if (!metadata.dropped_frame()) {
++      encode_output->as_span().copy_from(output_buffer_span);
++    }
++    encoder_output_queue_.push_back(std::move(encode_output));
++    return;
++  }
++
++  // If `bitstream_buffer_queue_` is not empty,
++  // meaning we have output buffers to spare, `encoder_output_queue_` must
++  // be empty, otherwise outputs should've already been returned using those
++  // buffers.
++  DCHECK(encoder_output_queue_.empty());
++
++  // Immediately return encoded buffer with BitstreamBuffer to client.
++  auto buffer_ref = std::move(bitstream_buffer_queue_.back());
++  bitstream_buffer_queue_.pop_back();
++
++  if (!metadata.dropped_frame()) {
++    if (!buffer_ref->mapping.IsValid() ||
++        buffer_ref->mapping.size() < output_buffer_span.size()) {
++      NotifyErrorStatus({EncoderStatus::Codes::kInvalidOutputBuffer,
++                         "Failed to copy bitstream media buffer."});
++      return;
++    }
++
++    buffer_ref->mapping.GetMemoryAsSpan<uint8_t>().copy_prefix_from(
++        output_buffer_span);
++  }
++
++  client_->BitstreamBufferReady(buffer_ref->id, metadata);
++}
++
++void MediaFoundationVideoEncodeAccelerator::DropFrame(
++    base::TimeDelta timestamp) {
++  BitstreamBufferMetadata md =
++      BitstreamBufferMetadata::CreateForDropFrame(timestamp);
++  SendOutputBuffer(md, base::span<uint8_t>());
++}
++
+ HRESULT MediaFoundationVideoEncodeAccelerator::InitializeD3DVideoProcessing(
+     ID3D11Texture2D* input_texture) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+@@ -2856,12 +2941,15 @@ HRESULT MediaFoundationVideoEncodeAccelerator::PerformD3DScaling(
+       // hardware decoder acquired the mutex to decode into a different array
+       // level then it still may block here temporarily.
+       constexpr int kMaxSyncTimeMs = 100;
+-      hr = keyed_mutex->AcquireSync(0, kMaxSyncTimeMs);
+-      // Can't check for FAILED(hr) because AcquireSync may return e.g.
+-      // WAIT_ABANDONED.
+-      if (hr != S_OK && hr != WAIT_TIMEOUT) {
++      hr = AcquireKeyedMutexSync(keyed_mutex.Get(), 0, kMaxSyncTimeMs);
++
++      // If the lock is not acquired, the D3D runtime will silently fail the
++      // subsequent D3D operations, leaving the destination texture with
++      // uninitialized GPU memory. Compressing and outputting this memory can
++      // lead to a GPU memory disclosure.
++      if (FAILED(hr)) {
+         LOG(ERROR) << "Failed to acquire mutex: " << PrintHr(hr);
+-        return E_FAIL;
++        return hr;
+       }
+       release_keyed_mutex.emplace(std::move(keyed_mutex), 0);
+     }
+@@ -2968,12 +3056,15 @@ HRESULT MediaFoundationVideoEncodeAccelerator::PerformD3DCopy(
+     hr = input_texture->QueryInterface(IID_PPV_ARGS(&keyed_mutex));
+     if (SUCCEEDED(hr)) {
+       constexpr int kMaxSyncTimeMs = 100;
+-      hr = keyed_mutex->AcquireSync(0, kMaxSyncTimeMs);
+-      // Can't check for FAILED(hr) because AcquireSync may return e.g.
+-      // WAIT_ABANDONED.
+-      if (hr != S_OK && hr != WAIT_TIMEOUT) {
++      hr = AcquireKeyedMutexSync(keyed_mutex.Get(), 0, kMaxSyncTimeMs);
++
++      // If the lock is not acquired, the D3D runtime will silently drop the
++      // subsequent CopySubresourceRegion command, leaving the destination
++      // texture with uninitialized GPU memory. Compressing and outputting this
++      // memory can lead to a GPU memory disclosure.
++      if (FAILED(hr)) {
+         LOG(ERROR) << "Failed to acquire mutex: " << PrintHr(hr);
+-        return E_FAIL;
++        return hr;
+       }
+       release_keyed_mutex.emplace(std::move(keyed_mutex), 0);
+     }
+@@ -3074,7 +3165,11 @@ void MediaFoundationVideoEncodeAccelerator::OnSharedImageResourceAvailable(
+   DCHECK(it != pending_input_queue_.end());
+ 
+   HRESULT hr = PopulateInputSampleBuffer(*it, std::move(frame));
+-  if (FAILED(hr)) {
++  if (IsKeyedMutexTimeout(hr)) {
++    DVLOG(1) << "Frame dropped because of keyed mutex timeout";
++    DropFrame(it->timestamp);
++    pending_input_queue_.erase(it);
++  } else if (FAILED(hr)) {
+     NotifyErrorStatus({EncoderStatus::Codes::kEncoderFailedEncode,
+                        "Failed to populate input sample buffer"});
+     return;
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+index c12661ef35152d0156b7e17599e77864cf769ea1..f77b05c28180737e68f04a0228531324ed228724 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+@@ -191,6 +191,11 @@ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator
+   // Set the encoder state to |state|.
+   void SetState(State state);
+ 
++  void SendOutputBuffer(const BitstreamBufferMetadata& metadata,
++                        base::span<uint8_t> output_buffer_span);
++
++  void DropFrame(base::TimeDelta timestamp);
++
+   // Processes the input video frame for the encoder.
+   HRESULT ProcessInput(const PendingInput& input);
+ 
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win_unittest.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win_unittest.cc
+index 70059b5e5748767ff8cc18d5800218a777bdd8e2..a2bf2a13b4a77ff6655dc7e69b7d01a616b84d06 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win_unittest.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win_unittest.cc
+@@ -5,6 +5,7 @@
+ #include "media/gpu/windows/media_foundation_video_encode_accelerator_win.h"
+ 
+ #include <d3d11.h>
++#include <dxgi.h>
+ #include <wrl/client.h>
+ 
+ #include <memory>
+@@ -16,17 +17,24 @@
+ #include "base/win/scoped_handle.h"
+ #include "components/viz/common/resources/shared_image_format.h"
+ #include "gpu/command_buffer/client/test_shared_image_interface.h"
++#include "media/base/bitstream_buffer.h"
+ #include "media/base/encoder_status.h"
+ #include "media/base/media_log.h"
+ #include "media/base/media_util.h"
+ #include "media/base/video_codecs.h"
+ #include "media/base/video_frame.h"
++#include "media/base/win/d3d11_mocks.h"
+ #include "media/base/win/dxgi_device_manager.h"
++#include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "ui/gfx/geometry/rect.h"
+ #include "ui/gfx/geometry/size.h"
+ #include "ui/gfx/gpu_memory_buffer_handle.h"
+ 
++using ::testing::_;
++using ::testing::Property;
++using ::testing::Return;
++
+ namespace media {
+ 
+ namespace {
+@@ -49,6 +57,98 @@ class MockEncoderClient : public VideoEncodeAccelerator::Client {
+   EncoderStatus status_ = EncoderStatus::Codes::kOk;
+ };
+ 
++class MockD3D11Texture2D
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          ID3D11Texture2D> {
++ public:
++  MockD3D11Texture2D() = default;
++  explicit MockD3D11Texture2D(Microsoft::WRL::ComPtr<ID3D11Device> device)
++      : device_(std::move(device)) {}
++
++  HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid,
++                                           void** ppvObject) override {
++    if (riid == __uuidof(IDXGIKeyedMutex) && keyed_mutex_) {
++      return keyed_mutex_.CopyTo(
++          reinterpret_cast<IDXGIKeyedMutex**>(ppvObject));
++    }
++    return RuntimeClass::QueryInterface(riid, ppvObject);
++  }
++
++  void SetKeyedMutex(Microsoft::WRL::ComPtr<IDXGIKeyedMutex> keyed_mutex) {
++    keyed_mutex_ = std::move(keyed_mutex);
++  }
++
++  MOCK_METHOD(void,
++              GetDesc,
++              (D3D11_TEXTURE2D_DESC * pDesc),
++              (override, Calltype(STDMETHODCALLTYPE)));
++
++  // Dummy implementations for ID3D11Texture2D pure virtuals.
++  void STDMETHODCALLTYPE GetDevice(ID3D11Device** ppDevice) override {
++    if (device_) {
++      device_.CopyTo(ppDevice);
++    }
++  }
++  HRESULT STDMETHODCALLTYPE GetPrivateData(REFGUID guid,
++                                           UINT* pDataSize,
++                                           void* pData) override {
++    return E_NOTIMPL;
++  }
++  HRESULT STDMETHODCALLTYPE SetPrivateData(REFGUID guid,
++                                           UINT DataSize,
++                                           const void* pData) override {
++    return S_OK;
++  }
++  HRESULT STDMETHODCALLTYPE
++  SetPrivateDataInterface(REFGUID guid, const IUnknown* pData) override {
++    return E_NOTIMPL;
++  }
++  void STDMETHODCALLTYPE
++  GetType(D3D11_RESOURCE_DIMENSION* pResourceDimension) override {}
++  void STDMETHODCALLTYPE SetEvictionPriority(UINT EvictionPriority) override {}
++  UINT STDMETHODCALLTYPE GetEvictionPriority() override { return 0; }
++
++ private:
++  Microsoft::WRL::ComPtr<IDXGIKeyedMutex> keyed_mutex_;
++  Microsoft::WRL::ComPtr<ID3D11Device> device_;
++};
++
++class MockVideoEncodeAcceleratorClient : public VideoEncodeAccelerator::Client {
++ public:
++  MOCK_METHOD(void,
++              RequireBitstreamBuffers,
++              (unsigned int, const gfx::Size&, size_t),
++              (override));
++  MOCK_METHOD(void,
++              BitstreamBufferReady,
++              (int32_t, const BitstreamBufferMetadata&),
++              (override));
++  MOCK_METHOD(void, NotifyErrorStatus, (const EncoderStatus&), (override));
++  MOCK_METHOD(void,
++              NotifyEncoderInfoChange,
++              (const VideoEncoderInfo&),
++              (override));
++};
++
++class TestDXGIDeviceManager : public DXGIDeviceManager {
++ public:
++  explicit TestDXGIDeviceManager(
++      Microsoft::WRL::ComPtr<ID3D11Device> d3d_device)
++      : DXGIDeviceManager(nullptr, 0, CHROME_LUID{0, 0}),
++        d3d_device_(std::move(d3d_device)) {}
++
++  Microsoft::WRL::ComPtr<ID3D11Device> GetDevice() override {
++    return d3d_device_;
++  }
++
++ protected:
++  ~TestDXGIDeviceManager() override = default;
++
++ private:
++  Microsoft::WRL::ComPtr<ID3D11Device> d3d_device_;
++};
++
+ class TestMediaFoundationVideoEncodeAccelerator
+     : public MediaFoundationVideoEncodeAccelerator {
+  public:
+@@ -62,6 +162,12 @@ class TestMediaFoundationVideoEncodeAccelerator
+                                               gpu_workarounds,
+                                               luid) {}
+   ~TestMediaFoundationVideoEncodeAccelerator() override = default;
++
++  void SetupForTesting(Client* client,
++                       scoped_refptr<DXGIDeviceManager> dxgi_device_manager) {
++    InitializeForTesting(client, std::make_unique<NullMediaLog>(),
++                         gfx::Size(1280, 720), std::move(dxgi_device_manager));
++  }
+ };
+ 
+ }  // namespace
+@@ -186,6 +292,165 @@ TEST_P(MediaFoundationVideoEncodeAcceleratorAlignmentTest,
+             EncoderStatus::Codes::kInvalidInputFrame);
+ }
+ 
++class MediaFoundationVideoEncodeAcceleratorKeyedMutexTimeoutTest
++    : public ::testing::Test {
++ public:
++  MediaFoundationVideoEncodeAcceleratorKeyedMutexTimeoutTest() = default;
++
++  void SetUp() override {
++    mock_d3d11_device_ = Microsoft::WRL::Make<D3D11DeviceMock>();
++    mock_d3d11_device_context_ = Microsoft::WRL::Make<D3D11DeviceContextMock>();
++    mock_d3d11_video_device_ = Microsoft::WRL::Make<D3D11VideoDeviceMock>();
++    mock_d3d11_video_context_ = Microsoft::WRL::Make<D3D11VideoContextMock>();
++
++    ON_CALL(*mock_d3d11_device_.Get(), QueryInterface)
++        .WillByDefault([this](REFIID riid, void** ppv) {
++          if (riid == __uuidof(ID3D11Device1)) {
++            mock_d3d11_device_->AddRef();
++            *ppv = static_cast<ID3D11Device*>(mock_d3d11_device_.Get());
++            return S_OK;
++          } else if (riid == __uuidof(ID3D11VideoDevice)) {
++            mock_d3d11_video_device_->AddRef();
++            *ppv =
++                static_cast<ID3D11VideoDevice*>(mock_d3d11_video_device_.Get());
++            return S_OK;
++          }
++          return mock_d3d11_device_->RuntimeClass::QueryInterface(riid, ppv);
++        });
++    ON_CALL(*mock_d3d11_device_.Get(), CreateTexture2D)
++        .WillByDefault([](const D3D11_TEXTURE2D_DESC*,
++                          const D3D11_SUBRESOURCE_DATA*,
++                          ID3D11Texture2D** ppTexture2D) {
++          if (ppTexture2D) {
++            auto texture = Microsoft::WRL::Make<D3D11Texture2DMock>();
++            ON_CALL(*texture.Get(), QueryInterface)
++                .WillByDefault([texture_ptr = texture.Get()](REFIID riid,
++                                                             void** ppv) {
++                  return texture_ptr->RuntimeClass::QueryInterface(riid, ppv);
++                });
++            *ppTexture2D = texture.Detach();
++          }
++          return S_OK;
++        });
++    ON_CALL(*mock_d3d11_device_.Get(), GetImmediateContext)
++        .WillByDefault([this](ID3D11DeviceContext** ppImmediateContext) {
++          if (ppImmediateContext) {
++            mock_d3d11_device_context_.CopyTo(ppImmediateContext);
++          }
++        });
++    ON_CALL(*mock_d3d11_device_context_.Get(), QueryInterface)
++        .WillByDefault([this](REFIID riid, void** ppv) {
++          if (riid == __uuidof(ID3D11VideoContext)) {
++            mock_d3d11_video_context_->AddRef();
++            *ppv = static_cast<ID3D11VideoContext*>(
++                mock_d3d11_video_context_.Get());
++            return S_OK;
++          }
++          return mock_d3d11_device_context_->RuntimeClass::QueryInterface(riid,
++                                                                          ppv);
++        });
++    gpu::GpuPreferences gpu_preferences;
++    gpu::GpuDriverBugWorkarounds gpu_workarounds;
++    encoder_ = std::make_unique<TestMediaFoundationVideoEncodeAccelerator>(
++        gpu_preferences, gpu_workarounds, CHROME_LUID{0, 0});
++
++    encoder_->SetupForTesting(
++        &client_,
++        base::MakeRefCounted<TestDXGIDeviceManager>(mock_d3d11_device_));
++  }
++
++  void TearDown() override {
++    if (encoder_) {
++      encoder_.release()->Destroy();
++    }
++  }
++
++ protected:
++  base::test::TaskEnvironment task_environment_;
++  MockVideoEncodeAcceleratorClient client_;
++  Microsoft::WRL::ComPtr<D3D11DeviceMock> mock_d3d11_device_;
++  Microsoft::WRL::ComPtr<D3D11DeviceContextMock> mock_d3d11_device_context_;
++  Microsoft::WRL::ComPtr<D3D11VideoDeviceMock> mock_d3d11_video_device_;
++  Microsoft::WRL::ComPtr<D3D11VideoContextMock> mock_d3d11_video_context_;
++  std::unique_ptr<TestMediaFoundationVideoEncodeAccelerator> encoder_;
++};
++
++// Tests that if the keyed mutex cannot be acquired (e.g. returns WAIT_TIMEOUT),
++// the encoder drops the frame and signals an error instead of silently
++// proceeding and encoding uninitialized GPU VRAM.
++TEST_F(MediaFoundationVideoEncodeAcceleratorKeyedMutexTimeoutTest,
++       RejectFrameOnKeyedMutexTimeout) {
++  // 1. Set up a mock keyed mutex that simulates a WAIT_TIMEOUT scenario.
++  auto mock_keyed_mutex = Microsoft::WRL::Make<DXGIKeyedMutexMock>();
++  EXPECT_CALL(*mock_keyed_mutex.Get(), AcquireSync(0, _))
++      .WillOnce(Return(WAIT_TIMEOUT));
++
++  // 2. Set up a mock texture that returns the mock keyed mutex when queried.
++  auto mock_texture =
++      Microsoft::WRL::Make<MockD3D11Texture2D>(mock_d3d11_device_);
++  mock_texture->SetKeyedMutex(mock_keyed_mutex);
++
++  // Give the texture a valid description so the encoder doesn't fail early.
++  D3D11_TEXTURE2D_DESC desc = {};
++  gfx::Size input_visible_size(1280, 720);
++  desc.Width = input_visible_size.width();
++  desc.Height = input_visible_size.height();
++  desc.Format = DXGI_FORMAT_NV12;
++  EXPECT_CALL(*mock_texture.Get(), GetDesc(_))
++      .WillRepeatedly([desc](D3D11_TEXTURE2D_DESC* pDesc) { *pDesc = desc; });
++
++  // 3. Setup the mock D3D11 device to return our mock texture when opening the
++  // shared resource.
++  EXPECT_CALL(*mock_d3d11_device_.Get(), OpenSharedResource1(_, _, _))
++      .WillOnce([&mock_texture](HANDLE, REFIID riid, void** ppv) {
++        return mock_texture.CopyTo(riid, ppv);
++      });
++
++  // 4. Create a dummy Native Texture backed VideoFrame.
++  auto test_sii = base::MakeRefCounted<gpu::TestSharedImageInterface>();
++  gfx::GpuMemoryBufferHandle gmb_handle{gfx::DXGIHandle::CreateFakeForTest()};
++  const auto si_usage = gpu::SHARED_IMAGE_USAGE_CPU_WRITE_ONLY |
++                        gpu::SHARED_IMAGE_USAGE_DISPLAY_READ;
++
++  auto shared_image = test_sii->CreateSharedImage(
++      {viz::MultiPlaneFormat::kNV12, input_visible_size, gfx::ColorSpace(),
++       gpu::SharedImageUsageSet(si_usage),
++       "MediaFoundationVideoEncodeAcceleratorTest"},
++      gpu::kNullSurfaceHandle, gfx::BufferUsage::GPU_READ,
++      std::move(gmb_handle));
++
++  scoped_refptr<VideoFrame> frame = VideoFrame::WrapMappableSharedImage(
++      std::move(shared_image), test_sii->GenVerifiedSyncToken(),
++      base::NullCallback(), gfx::Rect(input_visible_size), input_visible_size,
++      base::TimeDelta());
++
++  VideoEncoder::EncodeOptions options(false);
++
++  // 5. We expect that encoding the frame drops the frame because the texture
++  // couldn't be safely acquired, calling BitstreamBufferReady with
++  // dropped_frame == true.
++  EXPECT_CALL(client_, NotifyErrorStatus(_)).Times(0);
++  EXPECT_CALL(client_,
++              BitstreamBufferReady(
++                  1, Property(&BitstreamBufferMetadata::dropped_frame, true)));
++
++  EXPECT_CALL(*mock_d3d11_device_context_.Get(), CopySubresourceRegion)
++      .Times(0);
++  EXPECT_CALL(*mock_d3d11_video_device_.Get(), CreateVideoProcessorInputView)
++      .Times(0);
++  EXPECT_CALL(*mock_d3d11_video_device_.Get(), CreateVideoProcessorOutputView)
++      .Times(0);
++  EXPECT_CALL(*mock_d3d11_video_context_.Get(), VideoProcessorBlt).Times(0);
++
++  // Provide a bitstream buffer for the encoder to return the dropped frame.
++  auto shmem = base::UnsafeSharedMemoryRegion::Create(100);
++  encoder_->UseOutputBitstreamBuffer(BitstreamBuffer(1, std::move(shmem), 100));
++
++  // 6. Act: Attempt to encode.
++  encoder_->Encode(frame, options);
++  task_environment_.RunUntilIdle();
++}
++
+ INSTANTIATE_TEST_SUITE_P(All,
+                          MediaFoundationVideoEncodeAcceleratorAlignmentTest,
+                          ::testing::Values(PIXEL_FORMAT_NV12,

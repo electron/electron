@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Mon, 29 Jun 2026 11:15:40 +0200
+Subject: [maglev] Skip stale maps in StoreMap alias invalidation
+
+Fixed: 528501127
+Change-Id: Icce0566468bb46dfd352e05a105646ba3f3b9ad4
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8019002
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#108302}
+
+diff --git a/src/maglev/maglev-known-node-aspects.cc b/src/maglev/maglev-known-node-aspects.cc
+index cbca8d02b652548ccb484b1beedc20163430a847..a523d0b340beefd4a1d9263ec6f691e9d760a18b 100644
+--- a/src/maglev/maglev-known-node-aspects.cc
++++ b/src/maglev/maglev-known-node-aspects.cc
+@@ -344,7 +344,7 @@ void KnownNodeAspects::ClearUnstableNodeAspectsForStoreMap(
+   if (!node->is_transitioning()) return;
+ 
+   if (NodeInfo* node_info = TryGetInfoFor(node->ValueInput().node())) {
+-    if (node_info->possible_maps_are_known() &&
++    if (node_info->possible_maps_are_known() && !node_info->maps_are_stale() &&
+         node_info->possible_maps().size() == 1) {
+       compiler::MapRef old_map = node_info->possible_maps().at(0);
+       auto MaybeAliases = [&](compiler::MapRef map) -> bool {
+diff --git a/test/mjsunit/turbolev/regress-528501127.js b/test/mjsunit/turbolev/regress-528501127.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..8a8e17d1b8a8e3c210f9828a57d09d42f64281a1
+--- /dev/null
++++ b/test/mjsunit/turbolev/regress-528501127.js
+@@ -0,0 +1,25 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --turbolev
++
++function f(a, b) {
++  let tr = (a.w * 1.5) | 0;
++  a.x = 1.1;
++  let t1 = b.x;
++  a.y = 2.2;
++  let t2 = b.x;
++  b.z = 3.3;
++  return tr + t1 + t2;
++}
++%PrepareFunctionForOptimization(f);
++{ let a = {w: 0.5}; let b = {w: 0.5}; b.x = 1.1; f(a, b); }
++%OptimizeFunctionOnNextCall(f);
++{ let a = {w: 0.5}; let b = {w: 0.5}; b.x = 1.1; f(a, b); }
++
++let o = {w: 0.5};
++f(o, o);
++assertEquals("w,x,y,z", Object.keys(o).join(","));
++assertEquals(2.2, o.y);
++assertEquals(3.3, o.z);

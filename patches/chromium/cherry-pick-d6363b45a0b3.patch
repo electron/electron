@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kramer Ge <fangzhoug@chromium.org>
+Date: Mon, 22 Jun 2026 14:59:24 -0700
+Subject: [M149] [Ozone/Wayland]Fix Use-After-Free in OnPointerFrameEvent
+
+Original change's description:
+> [Ozone/Wayland]Fix Use-After-Free in OnPointerFrameEvent
+>
+> In WaylandEventSource::OnPointerFrameEvent, a raw pointer to the
+> focused WaylandWindow was cached outside the loop that drains
+> pointer_frames_. If the window is synchronously closed during event
+> dispatch, subsequent events in the same frame would use the dangling
+> pointer, leading to a Use-After-Free.
+>
+> This CL fixes the issue by caching the target window as a WeakPtr
+> and verifying its validity before each event dispatch.
+>
+> BUG=523725277
+> TAG=agy
+> CONV=600e2394-2a5e-4d13-93b9-91470f489eeb
+>
+> Change-Id: I8cd33570342fc1592ef5f78c5a2ec72064af1ea7
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7958261
+> Reviewed-by: Jonathan Ross <jonross@chromium.org>
+> Commit-Queue: Kramer Ge <fangzhoug@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1649050}
+
+(cherry picked from commit 45daaa0cb895d8e01f34b3138316bcb83bb7a845)
+
+Bug: 525660026
+Change-Id: I8cd33570342fc1592ef5f78c5a2ec72064af1ea7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7980383
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7827@{#3676}
+Cr-Branched-From: 9f3e9aaccba63bd2ec30334e45e0bfd07ebcc8f1-refs/heads/main@{#1625079}
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_event_source.cc b/ui/ozone/platform/wayland/host/wayland_event_source.cc
+index 86213b37758710c37066b80f3bf99f72ce7ebfe1..7212b0178902863d1aed5313e3dd10ce71ae41c9 100644
+--- a/ui/ozone/platform/wayland/host/wayland_event_source.cc
++++ b/ui/ozone/platform/wayland/host/wayland_event_source.cc
+@@ -543,17 +543,22 @@ void WaylandEventSource::OnPointerFrameEvent() {
+ 
+   last_pointer_frame_time_ = now;
+ 
+-  auto* target = window_manager_->GetCurrentPointerFocusedWindow();
+-  if (!target) {
++  auto* target_window = window_manager_->GetCurrentPointerFocusedWindow();
++  if (!target_window) {
+     return;
+   }
++  // Dispatching an event may synchronously destroy the focused window (e.g. a
++  // popup closing on click), so hold a WeakPtr and re-check on each iteration.
++  base::WeakPtr<WaylandWindow> target = target_window->AsWeakPtr();
+ 
+   while (!pointer_frames_.empty()) {
+     // It is safe to pop the first queued event for processing.
+     auto pointer_frame = std::move(pointer_frames_.front());
+     pointer_frames_.pop_front();
+ 
+-    SetTargetAndDispatchEvent(pointer_frame->event.get(), target);
++    if (target) {
++      SetTargetAndDispatchEvent(pointer_frame->event.get(), target.get());
++    }
+     if (!pointer_frame->completion_cb.is_null()) {
+       std::move(pointer_frame->completion_cb).Run();
+     }
+@@ -732,6 +737,7 @@ void WaylandEventSource::OnTouchReleaseInternal(PointerId id) {
+ 
+ void WaylandEventSource::SetTargetAndDispatchEvent(Event* event,
+                                                    EventTarget* target) {
++  CHECK(target);
+   Event::DispatcherApi(event).set_target(target);
+   if (event->IsLocatedEvent()) {
+     auto* located_event = event->AsLocatedEvent();
+diff --git a/ui/ozone/platform/wayland/host/wayland_pointer_unittest.cc b/ui/ozone/platform/wayland/host/wayland_pointer_unittest.cc
+index 7e2cd4a741c85dfe133c7462013ebcaae9fbd9ac..26d87aa59504648e53bd9b4b2094aa314abcf268 100644
+--- a/ui/ozone/platform/wayland/host/wayland_pointer_unittest.cc
++++ b/ui/ozone/platform/wayland/host/wayland_pointer_unittest.cc
+@@ -721,6 +721,41 @@ TEST_F(WaylandPointerTest, FlingVelocityWithoutLeadingAxis) {
+   EXPECT_EQ(0.0f, scroll_event->y_offset_ordinal());
+ }
+ 
++TEST_F(WaylandPointerTest, FrameTargetUseAfterFreeOnSyncWindowClose) {
++  SendEnter(50, 50);
++
++  // Frame 1: axis_stop -> FlingStart is queued and drained (1 event). This
++  // sets is_fling_active_=true so the next finger-scroll frame will queue 2
++  // events (FlingCancel + Scroll).
++  SendAxisStopEvents();
++
++  // Simulate a popup widget closing from inside its own event handler.
++  bool destroyed = false;
++  EXPECT_CALL(delegate_, DispatchEvent(_))
++      .WillRepeatedly([this, &destroyed](Event* event) {
++        if (!destroyed) {
++          destroyed = true;
++          window_.reset();
++        }
++      });
++
++  // Frame 2: finger axis -> ProcessPointerScrollData() pushes 2 events
++  // [FlingCancel, Scroll] into pointer_frames_, then OnPointerFrameEvent()
++  // drains both against the cached `target`. The first dispatch frees
++  // `target`; the second dispatch should be dismissed.
++  PostToServerAndWait([](wl::TestWaylandServerThread* server) {
++    auto* const pointer = server->seat()->pointer()->resource();
++    SendAxisEvents(pointer, server->GetNextTime(),
++                   WL_POINTER_AXIS_SOURCE_FINGER,
++                   WL_POINTER_AXIS_VERTICAL_SCROLL, 10);
++  });
++
++  EXPECT_TRUE(destroyed);
++
++  // The test fixture's window has been torn down mid-test.
++  DisableSyncOnTearDown();
++}
++
+ TEST_F(WaylandPointerTest, FlingVelocityWithSingleLeadingAxis) {
+   SendEnter(50, 75);
+ 
