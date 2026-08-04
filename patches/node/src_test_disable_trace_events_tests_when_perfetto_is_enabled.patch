@@ -1,0 +1,526 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Chengzhong Wu <cwu631@bloomberg.net>
+Date: Mon, 27 Jul 2026 14:27:49 -0400
+Subject: src,test: disable trace events tests when perfetto is enabled
+
+Signed-off-by: Chengzhong Wu <cwu631@bloomberg.net>
+PR-URL: https://github.com/nodejs/node/pull/64721
+Fixes: https://github.com/nodejs/diagnostics/issues/654
+Refs: https://github.com/nodejs/node/pull/64565
+Reviewed-By: Aviv Keller <me@aviv.sh>
+Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
+Reviewed-By: James M Snell <jasnell@gmail.com>
+
+diff --git a/benchmark/misc/trace.js b/benchmark/misc/trace.js
+index f308232804352a72f81aa75dc42487b7a0697a47..077b8bff2c29cf35291e30b1bbfc8bdb6c433d70 100644
+--- a/benchmark/misc/trace.js
++++ b/benchmark/misc/trace.js
+@@ -14,13 +14,13 @@ const bench = common.createBenchmark(main, {
+ });
+ 
+ const {
+-  TRACE_EVENT_PHASE_NESTABLE_ASYNC_BEGIN: kBeforeEvent,
++  TRACE_EVENT_PHASE_BEGIN: kBeginEvent,
+ } = common.binding('constants').trace;
+ 
+ function doTrace(n, trace) {
+   bench.start();
+   for (let i = 0; i < n; i++) {
+-    trace(kBeforeEvent, 'foo', 'test', 0, 'test');
++    trace(kBeginEvent, 'foo', 'test', 0, 'test');
+   }
+   bench.end(n);
+ }
+diff --git a/src/debug_utils.h b/src/debug_utils.h
+index ffb8fe270018ee6d05b179c80fb52602350fafbf..724696f9e27fa7577518f587f05a28510281ef9b 100644
+--- a/src/debug_utils.h
++++ b/src/debug_utils.h
+@@ -60,6 +60,7 @@ void NODE_EXTERN_PRIVATE FWrite(FILE* file, const std::string& str);
+   V(MODULE)                                                                    \
+   V(MKSNAPSHOT)                                                                \
+   V(SNAPSHOT_SERDES)                                                           \
++  V(PERFETTO)                                                                  \
+   V(PERMISSION_MODEL)                                                          \
+   V(PLATFORM_MINIMAL)                                                          \
+   V(PLATFORM_VERBOSE)                                                          \
+diff --git a/src/tracing/agent_perfetto.cc b/src/tracing/agent_perfetto.cc
+index dc5d5d941d4179c6888763d0f42494525444e5e0..289b73e8c0ffcd3522e724744fce5bb25e2a4ed9 100644
+--- a/src/tracing/agent_perfetto.cc
++++ b/src/tracing/agent_perfetto.cc
+@@ -30,6 +30,30 @@ std::set<std::string> flatten(
+   return result;
+ }
+ 
++void perfetto_log_callback(perfetto::LogMessageCallbackArgs args) {
++  const char* level_str = "UNKNOWN";
++  switch (args.level) {
++    case perfetto::base::kLogDebug:
++      level_str = "DEBUG";
++      break;
++    case perfetto::base::kLogInfo:
++      level_str = "INFO";
++      break;
++    case perfetto::base::kLogImportant:
++      level_str = "IMPORTANT";
++      break;
++    case perfetto::base::kLogError:
++      level_str = "ERROR";
++      break;
++  }
++  per_process::Debug(DebugCategory::PERFETTO,
++                     "[%s] %s:%d: %s\n",
++                     level_str,
++                     args.filename,
++                     args.line,
++                     args.message);
++}
++
+ }  // namespace
+ 
+ // Writes trace chunks to a file, rotating by size. It deliberately uses the
+@@ -252,6 +276,7 @@ PerfettoTracingAgent::PerfettoTracingAgent() {
+   // Set up the in-process backend that the tracing controller will connect
+   // to.
+   perfetto::TracingInitArgs init_args;
++  init_args.log_message_callback = perfetto_log_callback;
+   init_args.backends = perfetto::BackendType::kInProcessBackend;
+   perfetto::Tracing::Initialize(init_args);
+ 
+diff --git a/test/common/index.js b/test/common/index.js
+index 6cfebae8f4998961fd94050b8dfc17be42ec6e1e..8692b50a8ed6923e2a839ad15506dea542994d8d 100755
+--- a/test/common/index.js
++++ b/test/common/index.js
+@@ -56,6 +56,7 @@ const hasCrypto = Boolean(process.versions.openssl) &&
+ 
+ const hasInspector = Boolean(process.features.inspector);
+ const hasSQLite = Boolean(process.versions.sqlite);
++const hasPerfetto = Boolean(process.config.variables.v8_use_perfetto);
+ 
+ const hasQuic = hasCrypto && !!process.features.quic;
+ 
+@@ -732,6 +733,18 @@ function skipIfSQLiteMissing() {
+   }
+ }
+ 
++function skipIfPerfettoEnabled() {
++  if (hasPerfetto) {
++    skip('Perfetto is enabled');
++  }
++}
++
++function skipIfPerfettoDisabled() {
++  if (!hasPerfetto) {
++    skip('Perfetto is disabled');
++  }
++}
++
+ function getArrayBufferViews(buf) {
+   const { buffer, byteOffset, byteLength } = buf;
+ 
+@@ -973,6 +986,8 @@ const common = {
+   skipIfEslintMissing,
+   skipIfInspectorDisabled,
+   skipIfSQLiteMissing,
++  skipIfPerfettoEnabled,
++  skipIfPerfettoDisabled,
+   spawnPromisified,
+   sleepSync,
+ 
+diff --git a/test/common/index.mjs b/test/common/index.mjs
+index a9704d83c2b91dd5b012ba7dfe85a6917784c4bb..e2fa37e8ffecc120891abd27811bd423777ca353 100644
+--- a/test/common/index.mjs
++++ b/test/common/index.mjs
+@@ -49,6 +49,7 @@ const {
+   skipIfEslintMissing,
+   skipIfInspectorDisabled,
+   skipIfSQLiteMissing,
++  skipIfPerfettoEnabled,
+   spawnPromisified,
+   sleepSync,
+ } = common;
+@@ -103,6 +104,7 @@ export {
+   skipIfEslintMissing,
+   skipIfInspectorDisabled,
+   skipIfSQLiteMissing,
++  skipIfPerfettoEnabled,
+   spawnPromisified,
+   sleepSync,
+ };
+diff --git a/test/parallel/test-inspector-tracing-domain.js b/test/parallel/test-inspector-tracing-domain.js
+index aa31d63a01577d01af12abbd6c94241b69117dda..b9e62a483e837152aa165ca3f8271f257daed4fd 100644
+--- a/test/parallel/test-inspector-tracing-domain.js
++++ b/test/parallel/test-inspector-tracing-domain.js
+@@ -3,6 +3,7 @@
+ const common = require('../common');
+ 
+ common.skipIfInspectorDisabled();
++common.skipIfPerfettoEnabled();
+ 
+ const { isMainThread } = require('worker_threads');
+ 
+diff --git a/test/parallel/test-module-print-timing.mjs b/test/parallel/test-module-print-timing.mjs
+index eb957742b2efa04ee2532569ba0cad40164059a6..6b0bfee8431b5817d98d31037db3e1bb06dd8887 100644
+--- a/test/parallel/test-module-print-timing.mjs
++++ b/test/parallel/test-module-print-timing.mjs
+@@ -1,4 +1,4 @@
+-import { isWindows } from '../common/index.mjs';
++import { isWindows, skipIfPerfettoEnabled } from '../common/index.mjs';
+ import assert from 'node:assert';
+ import { writeFileSync } from 'node:fs';
+ import { readFile } from 'node:fs/promises';
+@@ -7,6 +7,7 @@ import tmpdir from '../common/tmpdir.js';
+ import { spawnSyncAndAssert } from '../common/child_process.js';
+ import fixtures from '../common/fixtures.js';
+ 
++skipIfPerfettoEnabled();
+ tmpdir.refresh();
+ 
+ it('should print the timing information for cjs', () => {
+diff --git a/test/parallel/test-permission-fs-write-trace-events.js b/test/parallel/test-permission-fs-write-trace-events.js
+index 66204d498b3923f91974a6c2c102a0a010e952a9..7bc3e454f0c2ccd8a2c2d76d577eea83fb22ce36 100644
+--- a/test/parallel/test-permission-fs-write-trace-events.js
++++ b/test/parallel/test-permission-fs-write-trace-events.js
+@@ -5,6 +5,7 @@ const common = require('../common');
+ const { spawnSyncAndExitWithoutError } = require('../common/child_process');
+ const { isMainThread } = require('worker_threads');
+ 
++common.skipIfPerfettoEnabled();
+ if (!isMainThread) {
+   common.skip('This test only works on a main thread');
+ }
+diff --git a/test/parallel/test-trace-events-all.js b/test/parallel/test-trace-events-all.js
+index 9b0549eeb8bef02628fc45e3a3961773a5facc6b..107a9ca3a00a035d806a182deef281be4742ed16 100644
+--- a/test/parallel/test-trace-events-all.js
++++ b/test/parallel/test-trace-events-all.js
+@@ -4,6 +4,8 @@ const assert = require('assert');
+ const cp = require('child_process');
+ const fs = require('fs');
+ 
++common.skipIfPerfettoEnabled();
++
+ const CODE =
+   'setTimeout(() => { for (let i = 0; i < 100000; i++) { "test" + i } }, 1)';
+ 
+diff --git a/test/parallel/test-trace-events-api.js b/test/parallel/test-trace-events-api.js
+index 9bffb3b78c4ba3f960c3ac3c089d5bc6395eceda..dcbc0ac237e3e24737a62945dd90534d7d8891e3 100644
+--- a/test/parallel/test-trace-events-api.js
++++ b/test/parallel/test-trace-events-api.js
+@@ -4,6 +4,8 @@
+ const common = require('../common');
+ const { isMainThread } = require('worker_threads');
+ 
++common.skipIfPerfettoEnabled();
++
+ if (!isMainThread) {
+   // https://github.com/nodejs/node/issues/22767
+   common.skip('This test only works on a main thread');
+diff --git a/test/parallel/test-trace-events-async-hooks-dynamic.js b/test/parallel/test-trace-events-async-hooks-dynamic.js
+index 8144632a71381c1a62601009cf967d1eeb2ca922..b64582633fb00b8a6925ca2d52da9e134c954d2d 100644
+--- a/test/parallel/test-trace-events-async-hooks-dynamic.js
++++ b/test/parallel/test-trace-events-async-hooks-dynamic.js
+@@ -10,6 +10,8 @@ try {
+   common.skip('missing trace events');
+ }
+ 
++common.skipIfPerfettoEnabled();
++
+ const assert = require('assert');
+ const cp = require('child_process');
+ const fs = require('fs');
+diff --git a/test/parallel/test-trace-events-async-hooks-worker.js b/test/parallel/test-trace-events-async-hooks-worker.js
+index 5204a50e3e159cb060781bd4ee068d6d0d52b842..f4c56653e280ac6266af09eb96ccfe1f2135d4b5 100644
+--- a/test/parallel/test-trace-events-async-hooks-worker.js
++++ b/test/parallel/test-trace-events-async-hooks-worker.js
+@@ -10,6 +10,8 @@ try {
+   common.skip('missing trace events');
+ }
+ 
++common.skipIfPerfettoEnabled();
++
+ const assert = require('assert');
+ const cp = require('child_process');
+ const fs = require('fs');
+diff --git a/test/parallel/test-trace-events-async-hooks.js b/test/parallel/test-trace-events-async-hooks.js
+index 90d4fbc8b7aaa05462784d636396971925159e0c..e81d686c22883e10dfaf6bd30183e6aeb595aca6 100644
+--- a/test/parallel/test-trace-events-async-hooks.js
++++ b/test/parallel/test-trace-events-async-hooks.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const util = require('util');
+ 
++common.skipIfPerfettoEnabled();
++
+ const CODE =
+   'setTimeout(() => { for (let i = 0; i < 100000; i++) { "test" + i } }, 1)';
+ 
+diff --git a/test/parallel/test-trace-events-binding.js b/test/parallel/test-trace-events-binding.js
+index 0f14614994085e52f9000c57f9d6b8389fd73a51..b4cba883024b29e92a309207a93e07b37ca70bdf 100644
+--- a/test/parallel/test-trace-events-binding.js
++++ b/test/parallel/test-trace-events-binding.js
+@@ -4,6 +4,8 @@ const assert = require('assert');
+ const cp = require('child_process');
+ const fs = require('fs');
+ 
++common.skipIfPerfettoEnabled();
++
+ const CODE = `
+   const { internalBinding } = require('internal/test/binding');
+   const { trace } = internalBinding('trace_events');
+diff --git a/test/parallel/test-trace-events-bootstrap.js b/test/parallel/test-trace-events-bootstrap.js
+index 0ad9c33800d799de0fa7e9dc103e3a50f75879c7..56a35ee8c7599010edddb94547bdbda693d09ac5 100644
+--- a/test/parallel/test-trace-events-bootstrap.js
++++ b/test/parallel/test-trace-events-bootstrap.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const tmpdir = require('../common/tmpdir');
+ 
++common.skipIfPerfettoEnabled();
++
+ const names = [
+   'environment',
+   'nodeStart',
+diff --git a/test/parallel/test-trace-events-console.js b/test/parallel/test-trace-events-console.js
+index 745ca77f5b946c2c4d19de7f732a1b5eb27bcf48..4b48695c56881b9cf0d29f8c36d0adef380b46b8 100644
+--- a/test/parallel/test-trace-events-console.js
++++ b/test/parallel/test-trace-events-console.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const tmpdir = require('../common/tmpdir');
+ 
++common.skipIfPerfettoEnabled();
++
+ // Tests that node.console trace events for counters and time methods are
+ // emitted as expected.
+ 
+diff --git a/test/parallel/test-trace-events-dynamic-enable.js b/test/parallel/test-trace-events-dynamic-enable.js
+index bf65f80eef530ab95724a048a12baccdcfa01dd3..af8f9095b00b4717f093f599103eb86c3b67cc17 100644
+--- a/test/parallel/test-trace-events-dynamic-enable.js
++++ b/test/parallel/test-trace-events-dynamic-enable.js
+@@ -4,6 +4,7 @@
+ const common = require('../common');
+ 
+ common.skipIfInspectorDisabled();
++common.skipIfPerfettoEnabled();
+ 
+ const { isMainThread } = require('worker_threads');
+ 
+diff --git a/test/parallel/test-trace-events-environment.js b/test/parallel/test-trace-events-environment.js
+index 13127cb494ddaca81a68b598089af3315e1f9a66..46de418caf134c5b69bcbdaf7dbfaccc9a6261c5 100644
+--- a/test/parallel/test-trace-events-environment.js
++++ b/test/parallel/test-trace-events-environment.js
+@@ -7,6 +7,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const tmpdir = require('../common/tmpdir');
+ 
++common.skipIfPerfettoEnabled();
++
+ // This tests the emission of node.environment trace events
+ 
+ const names = new Set([
+diff --git a/test/parallel/test-trace-events-file-pattern.js b/test/parallel/test-trace-events-file-pattern.js
+index d1b02c2e49c163f1963d04ae134370fb30a954c4..3e6e339173f68d19be50fa8432b0d838584f9148 100644
+--- a/test/parallel/test-trace-events-file-pattern.js
++++ b/test/parallel/test-trace-events-file-pattern.js
+@@ -5,6 +5,8 @@ const assert = require('assert');
+ const cp = require('child_process');
+ const fs = require('fs');
+ 
++common.skipIfPerfettoEnabled();
++
+ tmpdir.refresh();
+ 
+ const CODE =
+diff --git a/test/parallel/test-trace-events-fs-async.js b/test/parallel/test-trace-events-fs-async.js
+index 848d0e5f558870575b963193f812db666121e49a..04149dae2e724c6b8fe3bc22de710d84c6c91472 100644
+--- a/test/parallel/test-trace-events-fs-async.js
++++ b/test/parallel/test-trace-events-fs-async.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const util = require('util');
+ 
++common.skipIfPerfettoEnabled();
++
+ const tests = { __proto__: null };
+ 
+ let gid = 1;
+diff --git a/test/parallel/test-trace-events-fs-sync.js b/test/parallel/test-trace-events-fs-sync.js
+index a8a6aa11c765332de5f8b350e0d78ca7c6a29b6f..800d1a83b64f6501c595c846a3be234d08ab0eaf 100644
+--- a/test/parallel/test-trace-events-fs-sync.js
++++ b/test/parallel/test-trace-events-fs-sync.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const util = require('util');
+ 
++common.skipIfPerfettoEnabled();
++
+ const tests = { __proto__: null };
+ 
+ let gid = 1;
+diff --git a/test/parallel/test-trace-events-get-category-enabled-buffer.js b/test/parallel/test-trace-events-get-category-enabled-buffer.js
+index 3017b8e6dc87d76b58765b93c0da19c2a45ce8ea..79d2a1cf30dae590ddcdfbb57ee64a4a18985da4 100644
+--- a/test/parallel/test-trace-events-get-category-enabled-buffer.js
++++ b/test/parallel/test-trace-events-get-category-enabled-buffer.js
+@@ -10,6 +10,8 @@ try {
+   common.skip('missing trace events');
+ }
+ 
++common.skipIfPerfettoEnabled();
++
+ const { createTracing, getEnabledCategories } = require('trace_events');
+ const assert = require('assert');
+ 
+diff --git a/test/parallel/test-trace-events-http.js b/test/parallel/test-trace-events-http.js
+index 07a6b28fa5b2736cc20bfdeeb0b1abf2f83d5be5..47ac4dff9b33927c35b516e85fd685aad64cfe47 100644
+--- a/test/parallel/test-trace-events-http.js
++++ b/test/parallel/test-trace-events-http.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const tmpdir = require('../common/tmpdir');
+ 
++common.skipIfPerfettoEnabled();
++
+ const CODE = `
+   const http = require('http');
+   const server = http.createServer((req, res) => {
+diff --git a/test/parallel/test-trace-events-metadata.js b/test/parallel/test-trace-events-metadata.js
+index 3a86698e1f7db64dec5dab21384e6607d1bcd383..d92615fb94ec2476e330d7fedc0c07dad5db1275 100644
+--- a/test/parallel/test-trace-events-metadata.js
++++ b/test/parallel/test-trace-events-metadata.js
+@@ -4,6 +4,8 @@ const assert = require('assert');
+ const cp = require('child_process');
+ const fs = require('fs');
+ 
++common.skipIfPerfettoEnabled();
++
+ const CODE =
+   'setTimeout(() => { for (let i = 0; i < 100000; i++) { "test" + i } }, 1);' +
+   'process.title = "foo"';
+diff --git a/test/parallel/test-trace-events-net-abstract-socket.js b/test/parallel/test-trace-events-net-abstract-socket.js
+index d2e1546743c958cee049277f3ab259408a95fe01..9505fb214ad4f91c7e69da1ec4fbd03af8f0f65c 100644
+--- a/test/parallel/test-trace-events-net-abstract-socket.js
++++ b/test/parallel/test-trace-events-net-abstract-socket.js
+@@ -6,6 +6,7 @@ const fs = require('fs');
+ const tmpdir = require('../common/tmpdir');
+ 
+ if (!common.isLinux) common.skip();
++common.skipIfPerfettoEnabled();
+ 
+ const CODE = `
+   const net = require('net');
+diff --git a/test/parallel/test-trace-events-net.js b/test/parallel/test-trace-events-net.js
+index a1a93b19080b8af0f0e9b9e0272a3838f6ce266c..98a5167f957c01cc6db35d48e766ce1222a9d055 100644
+--- a/test/parallel/test-trace-events-net.js
++++ b/test/parallel/test-trace-events-net.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const tmpdir = require('../common/tmpdir');
+ 
++common.skipIfPerfettoEnabled();
++
+ const CODE = `
+   const net = require('net');
+   const socket = net.connect('${common.PIPE}');
+diff --git a/test/parallel/test-trace-events-none.js b/test/parallel/test-trace-events-none.js
+index 53121ac7df056fc7318f65b9d8da49e970657d43..641787b3b56df3fef4203024ee0a325512cdf21d 100644
+--- a/test/parallel/test-trace-events-none.js
++++ b/test/parallel/test-trace-events-none.js
+@@ -4,6 +4,8 @@ const assert = require('assert');
+ const cp = require('child_process');
+ const fs = require('fs');
+ 
++common.skipIfPerfettoEnabled();
++
+ const CODE =
+   'setTimeout(() => { for (let i = 0; i < 100000; i++) { "test" + i } }, 1)';
+ 
+diff --git a/test/parallel/test-trace-events-process-exit.js b/test/parallel/test-trace-events-process-exit.js
+index fc81c1eb7ce4661fe2570adc1fa97631fb2ef4d0..c4066809f3f294b3b19ff0ef44f9359cc5893def 100644
+--- a/test/parallel/test-trace-events-process-exit.js
++++ b/test/parallel/test-trace-events-process-exit.js
+@@ -4,6 +4,8 @@ const assert = require('assert');
+ const cp = require('child_process');
+ const fs = require('fs');
+ 
++common.skipIfPerfettoEnabled();
++
+ const tmpdir = require('../common/tmpdir');
+ tmpdir.refresh();
+ const FILE_NAME = tmpdir.resolve('node_trace.1.log');
+diff --git a/test/parallel/test-trace-events-promises.js b/test/parallel/test-trace-events-promises.js
+index 91e3c4fcda71045d8cba9a9bcc02eb59dafe120e..4626ed9f08a32e114f359fd7f9e2269be27a05b8 100644
+--- a/test/parallel/test-trace-events-promises.js
++++ b/test/parallel/test-trace-events-promises.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const tmpdir = require('../common/tmpdir');
+ 
++common.skipIfPerfettoEnabled();
++
+ if (process.argv[2] === 'child') {
+   const p = Promise.reject(1);  // Handled later
+   Promise.reject(2);  // Unhandled
+diff --git a/test/parallel/test-trace-events-threadpool.js b/test/parallel/test-trace-events-threadpool.js
+index 52d5a65c6035a3e2a654c89d9ba0d36fead52aaa..36d3b306d0e50faa728a0d5cf777c25b54ceaff5 100644
+--- a/test/parallel/test-trace-events-threadpool.js
++++ b/test/parallel/test-trace-events-threadpool.js
+@@ -6,6 +6,8 @@ const fs = require('fs');
+ const tmpdir = require('../common/tmpdir');
+ const { scheduler } = require('timers/promises');
+ 
++common.skipIfPerfettoEnabled();
++
+ if (!common.hasCrypto)
+   common.skip('missing crypto');
+ 
+diff --git a/test/parallel/test-trace-events-v8.js b/test/parallel/test-trace-events-v8.js
+index f3724ce6df44c6f678a56bbfbd352bf4f4761232..f71c4a057afe2de43597ca26e9b917c15dd84605 100644
+--- a/test/parallel/test-trace-events-v8.js
++++ b/test/parallel/test-trace-events-v8.js
+@@ -4,6 +4,8 @@ const assert = require('assert');
+ const cp = require('child_process');
+ const fs = require('fs');
+ 
++common.skipIfPerfettoEnabled();
++
+ const CODE =
+   'setTimeout(() => { for (let i = 0; i < 100000; i++) { "test" + i } }, 1)';
+ 
+diff --git a/test/parallel/test-trace-events-vm.js b/test/parallel/test-trace-events-vm.js
+index d85a2cefd645af514e53505bfbfd129358d9be31..d2156245ab5d2be4d6724062943c6b7d84140f54 100644
+--- a/test/parallel/test-trace-events-vm.js
++++ b/test/parallel/test-trace-events-vm.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const tmpdir = require('../common/tmpdir');
+ 
++common.skipIfPerfettoEnabled();
++
+ const names = [
+   'ContextifyScript::New',
+   'RunInContext',
+diff --git a/test/parallel/test-trace-events-worker-metadata-with-name.js b/test/parallel/test-trace-events-worker-metadata-with-name.js
+index bf6e1005aa458f40bb26dff244da13525bc39bfb..0140d08a5f01068e95462365d7d9b93b8ba4a8d1 100644
+--- a/test/parallel/test-trace-events-worker-metadata-with-name.js
++++ b/test/parallel/test-trace-events-worker-metadata-with-name.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const { isMainThread } = require('worker_threads');
+ 
++common.skipIfPerfettoEnabled();
++
+ if (isMainThread) {
+   const CODE = 'const { Worker } = require(\'worker_threads\'); ' +
+                `new Worker(${JSON.stringify(__filename)}, { name: 'foo' })`;
+diff --git a/test/parallel/test-trace-events-worker-metadata.js b/test/parallel/test-trace-events-worker-metadata.js
+index 844b3769ce201c615b2daaaaa85c8dd01a13c8f1..2e6c20255ce75f94c83e9238bc90a50b55910041 100644
+--- a/test/parallel/test-trace-events-worker-metadata.js
++++ b/test/parallel/test-trace-events-worker-metadata.js
+@@ -5,6 +5,8 @@ const cp = require('child_process');
+ const fs = require('fs');
+ const { isMainThread } = require('worker_threads');
+ 
++common.skipIfPerfettoEnabled();
++
+ if (isMainThread) {
+   const CODE = 'const { Worker } = require(\'worker_threads\'); ' +
+                `new Worker(${JSON.stringify(__filename)})`;
