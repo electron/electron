@@ -12,7 +12,6 @@
 #include "gin/converter.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 #include "third_party/blink/public/mojom/choosers/popup_menu.mojom.h"
-#include "third_party/blink/public/mojom/permissions/permission_status.mojom-forward.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
 
 namespace content {

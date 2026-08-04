@@ -19,7 +19,6 @@
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
-#include "third_party/blink/public/mojom/serial/serial.mojom.h"
 #include "url/gurl.h"
 #include "url/origin.h"
 

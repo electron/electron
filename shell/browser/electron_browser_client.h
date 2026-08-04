@@ -20,7 +20,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
-#include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
 
 namespace base {
 class FilePath;

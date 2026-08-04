@@ -9,7 +9,6 @@
 #include "base/values.h"
 #include "content/public/browser/media_stream_request.h"
 #include "content/public/browser/web_contents_user_data.h"
-#include "third_party/blink/public/common/mediastream/media_stream_request.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 
 namespace electron {

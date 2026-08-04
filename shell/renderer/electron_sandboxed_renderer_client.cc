@@ -24,6 +24,7 @@
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_document.h"
+#include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/electron_node/src/node_binding.h"
 
 namespace electron {
