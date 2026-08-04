@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ben Greenstein <bengr@google.com>
+Date: Mon, 29 Jun 2026 16:51:15 -0700
+Subject: [WebMCP] Take pending execution before running completion
+
+ModelContext::OnToolExecuted held an iterator into pending_executions_
+while invoking probe::WebMCPToolFailed / WebMCPToolResponded and the
+stored completion callback. Both of these can re-enter ModelContext (via
+DevTools wrapping the thrown error, or via the caller's callback) and
+mutate pending_executions_, which can rehash the table and invalidate
+the iterator before it is erased.
+
+Use HashMap::Take() to move the entry out of the map before making any
+potentially re-entrant calls, matching the existing handling in
+CancelTool.
+
+Bug: 522064153
+Change-Id: I4a439c4f9c93984f0164a63814c3c576b7e7bcf1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7987973
+Reviewed-by: Dominic Farolino <dom@chromium.org>
+Commit-Queue: Ben Greenstein <bengr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1654471}
+(cherry picked from commit 4e58c2cff37c50c6b6298bb514d0a8d6cb256484)
+
+diff --git a/third_party/blink/renderer/core/script_tools/model_context.cc b/third_party/blink/renderer/core/script_tools/model_context.cc
+index 5c9375f6ed5437a0f47652d1bd59d90e0b4d8b05..2c5aedf76510dcf48c1b3de90aada26948a9e9fe 100644
+--- a/third_party/blink/renderer/core/script_tools/model_context.cc
++++ b/third_party/blink/renderer/core/script_tools/model_context.cc
+@@ -268,16 +268,15 @@ void ModelContext::CancelTool(uint32_t execution_id) {
+   }
+ 
+   // The pending_executions_ map might have been rehashed during DispatchEvent.
+-  auto pending_execution = pending_executions_.find(execution_id);
+-  if (pending_execution == pending_executions_.end()) {
++  auto pending_execution = pending_executions_.Take(execution_id);
++  if (pending_execution.callback.is_null()) {
+     return;
+   }
+   task_runner_->PostTask(
+       FROM_HERE,
+-      blink::BindOnce(std::move(pending_execution->value.callback),
++      blink::BindOnce(std::move(pending_execution.callback),
+                       base::unexpected(WebDocument::ScriptToolError(
+                           WebDocument::ScriptToolError::kToolCancelled))));
+-  pending_executions_.erase(pending_execution);
+ }
+ 
+ void ModelContext::GetCrossDocumentScriptToolResult(
+@@ -475,19 +474,18 @@ void ModelContext::RegisterDeclarativeTool(String name,
+ 
+ void ModelContext::OnToolExecuted(uint32_t execution_id,
+                                   std::optional<String> result) {
+-  auto it = pending_executions_.find(execution_id);
+-  if (it == pending_executions_.end()) {
++  auto pending_execution = pending_executions_.Take(execution_id);
++  if (pending_execution.callback.is_null()) {
+     return;
+   }
+ 
+   if (result) {
+-    std::move(it->value.callback).Run(*result);
++    std::move(pending_execution.callback).Run(*result);
+   } else {
+-    std::move(it->value.callback)
++    std::move(pending_execution.callback)
+         .Run(base::unexpected(WebDocument::ScriptToolError(
+             WebDocument::ScriptToolError::kToolInvocationFailed)));
+   }
+-  pending_executions_.erase(it);
+ }
+ 
+ void ModelContext::OnToolsChanged() {

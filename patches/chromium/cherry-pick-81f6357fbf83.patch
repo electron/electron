@@ -1,0 +1,171 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bo Liu <boliu@chromium.org>
+Date: Mon, 20 Jul 2026 05:26:04 -0700
+Subject: content: Post OnOverscrollComplete
+
+To avoid reentrancy issues.
+
+Fixed: 524721670
+Change-Id: Ibb60766beba22d1cc64d29505cbeb1860b00dc5d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8102902
+Commit-Queue: Bo Liu <boliu@chromium.org>
+Reviewed-by: Kartar Singh <kartarsingh@google.com>
+Cr-Commit-Position: refs/heads/main@{#1664626}
+(cherry picked from commit 81f6357fbf8386022422e8f88ef3547f91a89f75)
+
+diff --git a/content/browser/renderer_host/overscroll_controller.cc b/content/browser/renderer_host/overscroll_controller.cc
+index cbd2d1aed0afe8e9595e69118b5030fc52c4e8f0..cdfbcb85c993e782d99f39e45b4190163b96915c 100644
+--- a/content/browser/renderer_host/overscroll_controller.cc
++++ b/content/browser/renderer_host/overscroll_controller.cc
+@@ -9,11 +9,17 @@
+ #include "base/check_op.h"
+ #include "base/command_line.h"
+ #include "base/notreached.h"
++#include "base/task/single_thread_task_runner.h"
+ #include "content/browser/renderer_host/overscroll_controller_delegate.h"
+ #include "content/public/browser/overscroll_configuration.h"
+ #include "content/public/common/content_features.h"
+ #include "content/public/common/content_switches.h"
+ 
++namespace features {
++BASE_FEATURE(kOverscrollPostDelegateCompleteKillSwitch,
++             base::FEATURE_ENABLED_BY_DEFAULT);
++}  // namespace features
++
+ namespace content {
+ 
+ namespace {
+@@ -561,16 +567,27 @@ bool OverscrollController::ProcessOverscroll(float delta_x,
+ void OverscrollController::CompleteAction() {
+   ignore_following_inertial_events_ = true;
+   if (delegate_) {
+-    // The delegate call can lead to the destruction of |this|.
+-    // Get a weak pointer to |this| before making the call.
+-    base::WeakPtr<OverscrollController> weak_this = weak_factory_.GetWeakPtr();
++    if (base::FeatureList::IsEnabled(
++            features::kOverscrollPostDelegateCompleteKillSwitch)) {
++      // The delegate call can lead to the destruction of |this|. So post it
++      // instead.
++      base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++          FROM_HERE,
++          base::BindOnce(&OverscrollControllerDelegate::OnOverscrollComplete,
++                         delegate_, overscroll_mode_));
++    } else {
++      // The delegate call can lead to the destruction of |this|.
++      // Get a weak pointer to |this| before making the call.
++      base::WeakPtr<OverscrollController> weak_this =
++          weak_factory_.GetWeakPtr();
+ 
+-    delegate_->OnOverscrollComplete(overscroll_mode_);
++      delegate_->OnOverscrollComplete(overscroll_mode_);
+ 
+-    // If |this| was destroyed, the weak pointer will now be invalid.
+-    // Return immediately to avoid the UAF on the call to Reset().
+-    if (!weak_this) {
+-      return;
++      // If |this| was destroyed, the weak pointer will now be invalid.
++      // Return immediately to avoid the UAF on the call to Reset().
++      if (!weak_this) {
++        return;
++      }
+     }
+   }
+   Reset();
+diff --git a/content/browser/renderer_host/overscroll_controller_delegate.h b/content/browser/renderer_host/overscroll_controller_delegate.h
+index 53882d463e255f1d18c13bf55e6f1ca80cea6ae7..b1f3506917323f132de0fdc0c22c58fcd153ba51 100644
+--- a/content/browser/renderer_host/overscroll_controller_delegate.h
++++ b/content/browser/renderer_host/overscroll_controller_delegate.h
+@@ -35,7 +35,7 @@ class CONTENT_EXPORT OverscrollControllerDelegate {
+   // the delegate consumed the event.
+   virtual bool OnOverscrollUpdate(float delta_x, float delta_y) = 0;
+ 
+-  // This is called when the overscroll completes.
++  // This is called asynchronously when the overscroll completes.
+   virtual void OnOverscrollComplete(OverscrollMode overscroll_mode) = 0;
+ 
+   // This is called when the direction of the overscroll changes. When a new
+diff --git a/content/browser/renderer_host/overscroll_controller_unittest.cc b/content/browser/renderer_host/overscroll_controller_unittest.cc
+index e1a9c01f3da712ba1a16d984b4190a80f5970b82..99bb6c5b88a6226d48bc5d4afe8ec70f93812e3b 100644
+--- a/content/browser/renderer_host/overscroll_controller_unittest.cc
++++ b/content/browser/renderer_host/overscroll_controller_unittest.cc
+@@ -10,6 +10,7 @@
+ #include "base/functional/callback.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/test/scoped_feature_list.h"
++#include "base/test/task_environment.h"
+ #include "content/browser/renderer_host/overscroll_controller_delegate.h"
+ #include "content/common/features.h"
+ #include "content/public/browser/overscroll_configuration.h"
+@@ -26,9 +27,12 @@ class OverscrollControllerTest : public ::testing::Test {
+   OverscrollControllerTest(const OverscrollControllerTest&) = delete;
+   OverscrollControllerTest& operator=(const OverscrollControllerTest&) = delete;
+ 
+-  void ResetController() {
++  void ResetController(base::OnceClosure closure) {
+     controller_.reset();
+     controller_reset_ = true;
++    if (closure) {
++      std::move(closure).Run();
++    }
+   }
+ 
+  protected:
+@@ -137,6 +141,8 @@ class OverscrollControllerTest : public ::testing::Test {
+ 
+   base::test::ScopedFeatureList scoped_feature_list_;
+ 
++  base::test::SingleThreadTaskEnvironment task_environment_;
++
+   // This must be the last member.
+   base::WeakPtrFactory<OverscrollControllerTest> weak_factory_{this};
+ };
+@@ -205,9 +211,13 @@ TEST_F(OverscrollControllerTest,
+   EXPECT_EQ(OVERSCROLL_NONE, delegate()->completed_mode());
+ 
+   // Inertial update event complete the overscroll action.
++  base::RunLoop run_loop;
+   EXPECT_FALSE(SimulateGestureScrollUpdate(
+       100, 0, blink::WebGestureDevice::kTouchpad, timestamp, true));
++  delegate()->set_delete_controller_on_complete(true);
++  delegate()->set_on_complete_callback(run_loop.QuitClosure());
+   SimulateAck(false);
++  run_loop.Run();
+   EXPECT_EQ(OVERSCROLL_NONE, controller_mode());
+   EXPECT_EQ(OverscrollSource::NONE, controller_source());
+   EXPECT_EQ(OVERSCROLL_NONE, delegate()->current_mode());
+@@ -818,10 +828,12 @@ TEST_F(OverscrollControllerTest, DelegateDeletesControllerOnComplete) {
+   EXPECT_EQ(OVERSCROLL_SOUTH, delegate()->current_mode());
+   EXPECT_EQ(OVERSCROLL_NONE, delegate()->completed_mode());
+ 
++  base::RunLoop run_loop;
+   // Set up the delegate to invoke a callback that deletes the controller.
+   delegate()->set_delete_controller_on_complete(true);
+-  delegate()->set_on_complete_callback(base::BindOnce(
+-      &OverscrollControllerTest::ResetController, weak_factory_.GetWeakPtr()));
++  delegate()->set_on_complete_callback(
++      base::BindOnce(&OverscrollControllerTest::ResetController,
++                     weak_factory_.GetWeakPtr(), run_loop.QuitClosure()));
+ 
+   timestamp += base::Seconds(1);
+ 
+@@ -831,6 +843,8 @@ TEST_F(OverscrollControllerTest, DelegateDeletesControllerOnComplete) {
+                            blink::WebGestureDevice::kTouchscreen, timestamp));
+   SimulateAck(false);
+ 
++  run_loop.Run();
++
+   // The callback should have been run, deleting the controller.
+   EXPECT_TRUE(controller_reset_);
+   EXPECT_EQ(nullptr, controller());
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+index 2e6487f29a74843a2dd970e31c28392c469dd03d..0854cfde67674a4da43de96e0ff1d84595386bcf 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura_unittest.cc
+@@ -3928,6 +3928,7 @@ TEST_F(RenderWidgetHostViewAuraOverscrollTest,
+     base::TimeTicks progress_time =
+         base::TimeTicks::Now() + base::Milliseconds(17);
+     widget_host_->ProgressFlingIfNeeded(progress_time);
++    base::RunLoop().RunUntilIdle();
+     EXPECT_EQ(OVERSCROLL_NONE, overscroll_delegate()->current_mode());
+     ReleaseAndResetDispatchedMessages();
+   }
