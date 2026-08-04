@@ -96,10 +96,7 @@ void WebWorkerObserver::InitializeNewEnvironment(
   node_bindings_->PrepareEmbedThread();
 
   // Setup node tracing controller.
-  if (!node::tracing::TraceEventHelper::GetAgent()) {
-    auto* tracing_agent = new node::tracing::Agent();
-    node::tracing::TraceEventHelper::SetAgent(tracing_agent);
-  }
+  NodeBindings::InitializeTracingAgent();
 
   // The renderer main thread normally installed the process-wide builtin code
   // cache already (NodeBindings::Initialize); make sure before this thread's
