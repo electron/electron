@@ -52,6 +52,18 @@ describe('dialog module', () => {
     });
   });
 
+  describe('<input type="file">', () => {
+    afterEach(closeAllWindows);
+
+    it('does not crash when triggering file chooser multiple times', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('data:text/html,<input type="file" id="file">');
+      for (let i = 0; i < 5; i++) {
+        await w.webContents.executeJavaScript('document.getElementById("file").click()');
+      }
+    });
+  });
+
   describe('showSaveDialog', () => {
     afterEach(closeAllWindows);
     ifit(process.platform !== 'win32')('should not throw for valid cases', () => {

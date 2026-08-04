@@ -393,8 +393,10 @@ void FileSelectHelper::RunFileChooserOnUIThread(
   DCHECK(params);
 
   select_file_dialog_ = ui::SelectFileDialog::Create(this, nullptr);
-  if (!select_file_dialog_.get())
+  if (!select_file_dialog_.get()) {
+    RunFileChooserEnd();
     return;
+  }
 
   dialog_mode_ = params->mode;
   switch (params->mode) {
@@ -418,8 +420,10 @@ void FileSelectHelper::RunFileChooserOnUIThread(
 
   auto* web_contents = electron::api::WebContents::From(
       content::WebContents::FromRenderFrameHost(render_frame_host_));
-  if (!web_contents || !web_contents->owner_window())
+  if (!web_contents || !web_contents->owner_window()) {
+    RunFileChooserEnd();
     return;
+  }
 
   // Never consider the current scope as hung. The hang watching deadline (if
   // any) is not valid since the user can take unbounded time to choose the
@@ -451,6 +455,7 @@ void FileSelectHelper::RunFileChooserEnd() {
     listener_->FileSelectionCanceled();
   render_frame_host_ = nullptr;
   web_contents_ = nullptr;
+  content::WebContentsObserver::Observe(nullptr);
   // If the dialog was actually opened, dispose of our reference.
   if (select_file_dialog_) {
     select_file_dialog_->ListenerDestroyed();
