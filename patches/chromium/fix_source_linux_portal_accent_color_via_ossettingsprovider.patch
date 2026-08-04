@@ -1,0 +1,201 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eric Newport <kethinov@gmail.com>
+Date: Fri, 31 Jul 2026 19:04:09 -0400
+Subject: fix: source the Linux portal accent color via OsSettingsProvider
+
+Cherry-pick of the merged upstream Chromium fix, backported ahead of the
+Chromium roll that will carry it into Electron main.
+
+On Linux the system accent color (org.freedesktop.portal.Settings
+"accent-color") had two independent writers to NativeTheme::user_color():
+DarkModeManagerLinux::SetAccentColor() wrote it directly, while
+NativeTheme::UpdateVariablesForToolkitSettings() wrote it from
+OsSettingsProvider::AccentColor(), which was unimplemented on Linux and
+returned nullopt. Whichever ran last won, so the toolkit-settings update
+intermittently clobbered the real accent color back to nullopt. This was
+observable via systemPreferences.getAccentColor() returning an empty
+string on some launches.
+
+The fix gives the toolkit OsSettingsProviders a real accent color, making
+UpdateVariablesForToolkitSettings() the single source of truth, and drops
+the direct write in DarkModeManagerLinux.
+
+This patch can be removed once Electron rolls to a Chromium that includes
+the upstream change.
+
+Upstream: https://chromium-review.googlesource.com/c/chromium/src/+/8178167
+Bug: https://issues.chromium.org/issues/536445418
+
+diff --git a/chrome/browser/ui/views/dark_mode_manager_linux.cc b/chrome/browser/ui/views/dark_mode_manager_linux.cc
+index 01e5f00d3387966963c3b4619a3039556fadd43a..759902dcb37122c467f80326dc205ba609b1b815 100644
+--- a/chrome/browser/ui/views/dark_mode_manager_linux.cc
++++ b/chrome/browser/ui/views/dark_mode_manager_linux.cc
+@@ -227,13 +227,15 @@ void DarkModeManagerLinux::SetAccentColor(dbus_utils::Variant variant) {
+     accent_color = SkColorSetRGB(r * 255, g * 255, b * 255);
+   }
+ 
++  // Push the accent color into the toolkit UI. Each toolkit routes it through
++  // its `OsSettingsProvider` (`OsSettingsProviderGtk`/`OsSettingsProviderQt`),
++  // which updates `NativeTheme::user_color()` via
++  // `UpdateVariablesForToolkitSettings()` and notifies observers. Writing
++  // `user_color` directly here would race with that provider-sourced write and
++  // could be clobbered back to `nullopt` (crbug.com/536445418).
+   for (ui::LinuxUiTheme* linux_ui_theme : *linux_ui_themes_) {
+     linux_ui_theme->SetAccentColor(accent_color);
+   }
+-
+-  auto* const native_theme = NativeTheme::GetInstanceForNativeUi();
+-  native_theme->set_user_color(accent_color);
+-  native_theme->NotifyOnNativeThemeUpdated();
+ }
+ 
+ }  // namespace ui
+diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
+index 441a77db1f20138fff05c877382a00b9f36af56d..794823a482d082967298937c563b4dd123596998 100644
+--- a/ui/gtk/gtk_ui.cc
++++ b/ui/gtk/gtk_ui.cc
+@@ -693,7 +693,11 @@ void GtkUi::SetDarkTheme(bool dark) {
+ 
+ void GtkUi::SetAccentColor(std::optional<SkColor> accent_color) {
+   accent_color_ = accent_color;
+-  native_theme_->NotifyOnNativeThemeUpdated();
++  // Route the accent color through the OS settings provider. This updates
++  // `NativeTheme::user_color()` (via `UpdateVariablesForToolkitSettings()`) and
++  // notifies all observing native themes, which re-runs the native color mixer
++  // using the freshly-set `accent_color_`.
++  os_settings_provider_->SetAccentColor(accent_color);
+ }
+ 
+ bool GtkUi::AnimationsEnabled() const {
+diff --git a/ui/gtk/os_settings_provider_gtk.cc b/ui/gtk/os_settings_provider_gtk.cc
+index 2bbc4f519d9d87287bd0a4366700d046aba7a5e9..217eea6e7e4ad0c5f2178dbdc068c7d009d86eed 100644
+--- a/ui/gtk/os_settings_provider_gtk.cc
++++ b/ui/gtk/os_settings_provider_gtk.cc
+@@ -65,6 +65,18 @@ base::TimeDelta OsSettingsProviderGtk::CaretBlinkInterval() const {
+                       : base::TimeDelta();
+ }
+ 
++std::optional<SkColor> OsSettingsProviderGtk::AccentColor() const {
++  return accent_color_;
++}
++
++void OsSettingsProviderGtk::SetAccentColor(std::optional<SkColor> accent_color) {
++  if (accent_color_ == accent_color) {
++    return;
++  }
++  accent_color_ = accent_color;
++  NotifyOnSettingsChanged();
++}
++
+ ScopedGSignal OsSettingsProviderGtk::ConnectSignal(const gchar* name) {
+   return ScopedGSignal(gtk_settings_get_default(), name,
+                        base::BindRepeating(&OsSettingsProviderGtk::OnSignal,
+diff --git a/ui/gtk/os_settings_provider_gtk.h b/ui/gtk/os_settings_provider_gtk.h
+index d0180ea7379b27bf22c79db81d804ce2b88e2e8f..eb6c8a40eb1f66d10a901403fc05688e10c4bfc7 100644
+--- a/ui/gtk/os_settings_provider_gtk.h
++++ b/ui/gtk/os_settings_provider_gtk.h
+@@ -8,7 +8,9 @@
+ #include <glib-object.h>
+ 
+ #include <array>
++#include <optional>
+ 
++#include "third_party/skia/include/core/SkColor.h"
+ #include "ui/base/glib/glib_integers.h"
+ #include "ui/base/glib/scoped_gsignal.h"
+ #include "ui/native_theme/os_settings_provider.h"
+@@ -28,14 +30,21 @@ class OsSettingsProviderGtk : public ui::OsSettingsProvider {
+   // ui::OsSettingsProvider:
+   ui::NativeTheme::PreferredColorScheme PreferredColorScheme() const override;
+   ui::NativeTheme::PreferredContrast PreferredContrast() const override;
++  std::optional<SkColor> AccentColor() const override;
+   base::TimeDelta CaretBlinkInterval() const override;
+ 
++  // Sets the system accent color (sourced from the xdg-desktop-portal and
++  // pushed in via GtkUi::SetAccentColor) and notifies observers.
++  void SetAccentColor(std::optional<SkColor> accent_color);
++
+  private:
+   ScopedGSignal ConnectSignal(const gchar* name);
+ 
+   // Trampoline that invokes `NotifyOnSettingsChanged()`.
+   void OnSignal(GtkSettings*, GtkParamSpec*);
+ 
++  std::optional<SkColor> accent_color_;
++
+   // Have to explicitly give template params instead of using `std::to_array()`,
+   // since CTAD is banned in non-static member declarations :(
+   std::array<ScopedGSignal, 4> signals_{
+diff --git a/ui/qt/os_settings_provider_qt.cc b/ui/qt/os_settings_provider_qt.cc
+index 958079ed56a9a3994ad3be0c946017af4a12268e..13ccd371718ce126a6ae357982bc90e4111bb613 100644
+--- a/ui/qt/os_settings_provider_qt.cc
++++ b/ui/qt/os_settings_provider_qt.cc
+@@ -35,4 +35,16 @@ base::TimeDelta OsSettingsProviderQt::CaretBlinkInterval() const {
+   return base::Milliseconds(shim_->GetCursorBlinkIntervalMs());
+ }
+ 
++std::optional<SkColor> OsSettingsProviderQt::AccentColor() const {
++  return accent_color_;
++}
++
++void OsSettingsProviderQt::SetAccentColor(std::optional<SkColor> accent_color) {
++  if (accent_color_ == accent_color) {
++    return;
++  }
++  accent_color_ = accent_color;
++  NotifyOnSettingsChanged();
++}
++
+ }  // namespace qt
+diff --git a/ui/qt/os_settings_provider_qt.h b/ui/qt/os_settings_provider_qt.h
+index 1f8ddb34f9295f869b20914c6a2eab7f95af094d..fd6133197fb1293f7639e01bff0bf1130c9f5968 100644
+--- a/ui/qt/os_settings_provider_qt.h
++++ b/ui/qt/os_settings_provider_qt.h
+@@ -5,7 +5,10 @@
+ #ifndef UI_QT_OS_SETTINGS_PROVIDER_QT_H_
+ #define UI_QT_OS_SETTINGS_PROVIDER_QT_H_
+ 
++#include <optional>
++
+ #include "base/memory/raw_ptr.h"
++#include "third_party/skia/include/core/SkColor.h"
+ #include "ui/native_theme/os_settings_provider.h"
+ #include "ui/qt/qt_interface.h"
+ 
+@@ -20,12 +23,19 @@ class OsSettingsProviderQt : public ui::OsSettingsProvider {
+ 
+   // ui::OsSettingsProvider:
+   ui::NativeTheme::PreferredColorScheme PreferredColorScheme() const override;
++  std::optional<SkColor> AccentColor() const override;
+   base::TimeDelta CaretBlinkInterval() const override;
+ 
++  // Sets the system accent color (sourced from the xdg-desktop-portal and
++  // pushed in via QtUi::SetAccentColor) and notifies observers.
++  void SetAccentColor(std::optional<SkColor> accent_color);
++
+  private:
+   // IMPORTANT NOTE: All members that use `shim_` must be decorated with
+   // `DISABLE_CFI_VCALL`.
+   raw_ptr<QtInterface> shim_;
++
++  std::optional<SkColor> accent_color_;
+ };
+ 
+ }  // namespace qt
+diff --git a/ui/qt/qt_ui.cc b/ui/qt/qt_ui.cc
+index 5576a64459abec2781f24c59a4dc65db9a6fbf46..475a3033f0b4937ea2369f6dca1d9a1b1e60e3d7 100644
+--- a/ui/qt/qt_ui.cc
++++ b/ui/qt/qt_ui.cc
+@@ -386,7 +386,11 @@ void QtUi::SetDarkTheme(bool dark) {
+ DISABLE_CFI_VCALL
+ void QtUi::SetAccentColor(std::optional<SkColor> accent_color) {
+   accent_color_ = accent_color;
+-  native_theme_->NotifyOnNativeThemeUpdated();
++  // Route the accent color through the OS settings provider. This updates
++  // `NativeTheme::user_color()` (via `UpdateVariablesForToolkitSettings()`) and
++  // notifies all observing native themes, which re-runs the native color mixer
++  // above using the freshly-set `accent_color_`.
++  os_settings_provider_->SetAccentColor(accent_color);
+ }
+ 
+ DISABLE_CFI_VCALL
