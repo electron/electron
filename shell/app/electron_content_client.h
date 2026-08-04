@@ -9,7 +9,10 @@
 #include <vector>
 
 #include "content/public/common/content_client.h"
-#include "url/origin.h"
+
+namespace url {
+class Origin;
+}  // namespace url
 
 namespace electron {
 

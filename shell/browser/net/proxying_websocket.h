@@ -21,8 +21,11 @@
 #include "services/network/public/mojom/websocket.mojom.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "url/gurl.h"
-#include "url/origin.h"
 #include "v8/include/cppgc/persistent.h"
+
+namespace url {
+class Origin;
+}  // namespace url
 
 namespace electron {
 
