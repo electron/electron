@@ -30,6 +30,19 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
   ElectronDesktopWindowTreeHostWin& operator=(
       const ElectronDesktopWindowTreeHostWin&) = delete;
 
+  // Dispatches a synthetic mouse message (WM_MOUSEMOVE / WM_MOUSELEAVE) into
+  // the aura window tree; see NativeWindowViews::FlushForwardedMouseEvent()
+  // for the caller.
+  //
+  // |client_point| is in physical pixels relative to the client area, like the
+  // lParam of a real mouse message. For a WM_MOUSELEAVE, |ui::MouseEvent| takes
+  // the position from the live cursor instead (ui::EventLocationFromMSG).
+  //
+  // The dispatch runs renderer and page code synchronously, so callers must not
+  // touch the window after calling this.
+  void DispatchSyntheticMouseMessage(UINT message,
+                                     const gfx::Point& client_point);
+
  protected:
   // views::DesktopWindowTreeHostWin:
   void OnWidgetInitDone() override;
