@@ -12,8 +12,6 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
-#include "third_party/blink/public/web/blink.h"
-#include "third_party/blink/public/web/web_message_port_converter.h"
 
 namespace electron::ipc_native {
 

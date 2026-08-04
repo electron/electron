@@ -20,12 +20,9 @@
 #include "shell/renderer/preload_realm_context.h"
 #include "shell/renderer/preload_utils.h"
 #include "shell/renderer/service_worker_data.h"
-#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
-#include "third_party/blink/public/web/blink.h"
-#include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
-#include "third_party/electron_node/src/node_binding.h"
+#include "v8/include/v8-function.h"
 
 namespace electron {
 
