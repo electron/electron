@@ -121,6 +121,7 @@ class NodeBindings {
   static std::unique_ptr<NodeBindings> Create(BrowserEnvironment browser_env,
                                               uv_loop_t* loop);
   static void RegisterBuiltinBindings();
+  static void InitializeTracingAgent();
   static bool IsInitialized();
 
   // Undo node::InitializeOncePerProcess() for this process. Must run before
