@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include "gin/data_object_builder.h"
+#include "gin/converter.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/heap_snapshot.h"
