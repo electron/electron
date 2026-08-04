@@ -120,6 +120,7 @@ class NodeBindings {
 
   static std::unique_ptr<NodeBindings> Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinBindings();
+  static void InitializeTracingAgent();
   static bool IsInitialized();
 
   virtual ~NodeBindings();
