@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Tue, 4 Aug 2026 18:21:28 -0500
+Subject: test: account for libc++ rm error on Electron Linux
+
+Node's fs.rmSync() delegates recursive deletion to
+std::filesystem::remove_all(). Electron's Linux build uses libc++, which
+reports ENOTEMPTY here while Node's libstdc++ build reports EACCES.
+
+Refs: https://github.com/nodejs/node/pull/57103
+
+diff --git a/test/parallel/test-fs-rm.js b/test/parallel/test-fs-rm.js
+index e92bf8c079715fc97f491f83be09a606769eba18..b15118fc9aa0d63688cdac07e8004f452d86d08e 100644
+--- a/test/parallel/test-fs-rm.js
++++ b/test/parallel/test-fs-rm.js
+@@ -491,7 +491,8 @@ if (isGitPresent) {
+   if (!common.isIBMi && (common.isWindows || process.getuid() !== 0)) {
+     function makeDirectoryReadOnly(dir, allowExecute) {
+       let accessErrorCode = 'EACCES';
+-      if (common.isMacOS && allowExecute) {
++      if (allowExecute &&
++          (common.isMacOS || (common.isLinux && process.versions.electron))) {
+         accessErrorCode = 'ENOTEMPTY';
+       }
+       if (common.isWindows) {
