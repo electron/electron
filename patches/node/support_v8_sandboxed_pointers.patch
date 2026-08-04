@@ -204,6 +204,27 @@ index 3c4f419aa29470b3280174b58680b9421b0340b5..3b24ad2a2316f89d98b067e2c13988f8
  }
  
  constexpr const char* EncodingName(const enum encoding encoding) {
+diff --git a/src/node_ipc_serdes.cc b/src/node_ipc_serdes.cc
+index 05d5ae7ccffeb2fa7e9b4bb79c6d397186e264fd..00a8bcddd37cd10812ad8ddc8345912c813e47ee 100644
+--- a/src/node_ipc_serdes.cc
++++ b/src/node_ipc_serdes.cc
+@@ -333,8 +333,14 @@ static void Serialize(const FunctionCallbackInfo<Value>& args) {
+   buf[2] = (payload_length >> 8) & 0xFF;
+   buf[3] = payload_length & 0xFF;
+ 
+-  Local<Object> out;
+-  if (Buffer::New(env, reinterpret_cast<char*>(buf), size).ToLocal(&out)) {
++  std::shared_ptr<BackingStore> backing_store =
++      ArrayBuffer::NewBackingStore(isolate, size);
++  memcpy(backing_store->Data(), buf, size);
++  free(buf);
++  Local<ArrayBuffer> array_buffer =
++      ArrayBuffer::New(isolate, std::move(backing_store));
++  Local<Uint8Array> out;
++  if (Buffer::New(env, array_buffer, 0, size).ToLocal(&out)) {
+     args.GetReturnValue().Set(out);
+   }
+ }
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
 index 00fcd4b6afccce47ff21c4447d9cd60f25c11835..5f96ee2051e5339456185efddb149c4d43093f31 100644
 --- a/src/node_serdes.cc
