@@ -607,6 +607,16 @@ void NodeBindings::RegisterBuiltinBindings() {
 #undef V
 }
 
+// static
+void NodeBindings::InitializeTracingAgent() {
+  if (node::tracing::Agent::GetInstance())
+    return;
+
+  static const node::tracing::Agent* const tracing_agent =
+      node::tracing::Agent::CreateDefault().release();
+  CHECK_EQ(tracing_agent, node::tracing::Agent::GetInstance());
+}
+
 bool NodeBindings::IsInitialized() {
   return g_is_initialized;
 }
