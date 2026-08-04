@@ -72,6 +72,26 @@ index a26577b36a6f6c22e7bd68de691352d0ba7c64c1..60ec48a68abeac1ef2a5ca7b54be71cf
      X509* ca = sk_X509_value(extra_certs.get(), i);
  
      X509_STORE_add_cert(sc->GetCertStoreOwnedByThisSecureContext(), ca);
+diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
+index 81ec6c8f928829fde54aaaacd5de72264b072e03..e5d75b3c27cabaa0c67e95afe56190c4f17c439b 100644
+--- a/src/crypto/crypto_dh.cc
++++ b/src/crypto/crypto_dh.cc
+@@ -449,11 +449,12 @@ EVPKeyCtxPointer DhKeyGenTraits::Setup(DhKeyPairGenConfig* params) {
+     if (!dh) return {};
+ 
+     key_params = EVPKeyPointer::NewDH(std::move(dh));
+-  } else if (int* prime_size = std::get_if<int>(&params->params.prime)) {
+-    auto param_ctx = EVPKeyCtxPointer::NewFromID(EVP_PKEY_DH);
++  } else if (std::holds_alternative<int>(params->params.prime)) {
+ #ifndef OPENSSL_IS_BORINGSSL
++    auto param_ctx = EVPKeyCtxPointer::NewFromID(EVP_PKEY_DH);
+     if (!param_ctx.initForParamgen() ||
+-        !param_ctx.setDhParameters(*prime_size, params->params.generator)) {
++        !param_ctx.setDhParameters(std::get<int>(params->params.prime),
++                                  params->params.generator)) {
+       return {};
+     }
+ 
 diff --git a/src/crypto/crypto_hash.cc b/src/crypto/crypto_hash.cc
 index 946f6850d5e68f0c9197e05625e100b323889a35..bb7ed07f19593ce4c33e602b1881fea85b2a471b 100644
 --- a/src/crypto/crypto_hash.cc
