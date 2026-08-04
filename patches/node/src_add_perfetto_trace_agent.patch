@@ -24,6 +24,25 @@ index 9c88bbfb8d3f1847b58f35de5b4da4d1b27536be..953007fc24875ca35db54ac4cdd31f5e
      ],
      'node_tracing_legacy_sources': [
        'src/tracing/agent_legacy.cc',
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index c81ef82c5a23d30ec7430b8726bd28e1be2f225e..75fc97a581b79c87a51adcbe999b937262b422db 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -759,14 +759,6 @@ MultiIsolatePlatform* GetMultiIsolatePlatform(IsolateData* env) {
+   return env->platform();
+ }
+ 
+-MultiIsolatePlatform* CreatePlatform(
+-    int thread_pool_size,
+-    node::tracing::TracingController* tracing_controller) {
+-  return CreatePlatform(
+-      thread_pool_size,
+-      static_cast<v8::TracingController*>(tracing_controller));
+-}
+-
+ MultiIsolatePlatform* CreatePlatform(
+     int thread_pool_size,
+     v8::TracingController* tracing_controller) {
 diff --git a/src/inspector/node_inspector.gypi b/src/inspector/node_inspector.gypi
 index a493f59465d207b4b89d8941807d4ff6acff82ac..88e8a2f401cac75810e3b0fdb776b41ecccf43d0 100644
 --- a/src/inspector/node_inspector.gypi
