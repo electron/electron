@@ -1,0 +1,217 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sangbaek Park <sangbaekpark@google.com>
+Date: Wed, 17 Jun 2026 14:02:06 -0700
+Subject: media: Drop frames on keyed mutex WAIT_TIMEOUT in Media Foundation
+
+When acquiring a keyed mutex for a shared texture during D3D copy or
+scaling operations, the code previously tolerated WAIT_TIMEOUT. However,
+if AcquireSync returns WAIT_TIMEOUT (or WAIT_ABANDONED), the lock is not
+acquired and any subsequent Direct3D commands (such as CopySubresourceRegion
+or VideoProcessorBlt) will be silently dropped by the runtime.
+
+Since the destination texture is allocated without initial data, proceeding
+with the encoding would cause uninitialized GPU memory to be passed to the
+hardware video encoder and compressed into the bitstream, leading to a
+potential VRAM disclosure.
+
+This CL updates the keyed mutex acquisition check to convert synchronization
+timeouts into proper failure HRESULTs. Instead of failing the entire
+encoding session, the encoder now catches these specific timeout errors and
+safely drops the affected frame. This prevents the VRAM disclosure while
+ensuring the encoder remains in a healthy state for subsequent frames.
+
+Unit tests updated: {
+MediaFoundationVideoEncodeAcceleratorKeyedMutexTimeoutTest.RejectFrameOnKeyedMutexTimeout
+}
+
+Bug: 519701233
+Change-Id: I30764b3cb20371bfd766e6970a73e0e62e709a2e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7905603
+Commit-Queue: Sangbaek Park <sangbaekpark@chromium.org>
+Reviewed-by: Rafael Cintron <rafael.cintron@microsoft.com>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1648572}
+
+diff --git a/media/base/win/d3d11_mocks.cc b/media/base/win/d3d11_mocks.cc
+index 5247e122a180567ae3f292a88e5698b668c88fa0..f974332ca066b381be546fa1585394934241246f 100644
+--- a/media/base/win/d3d11_mocks.cc
++++ b/media/base/win/d3d11_mocks.cc
+@@ -6,6 +6,9 @@
+ 
+ namespace media {
+ 
++DXGIKeyedMutexMock::DXGIKeyedMutexMock() = default;
++DXGIKeyedMutexMock::~DXGIKeyedMutexMock() = default;
++
+ D3D11Texture2DMock::D3D11Texture2DMock() = default;
+ D3D11Texture2DMock::~D3D11Texture2DMock() = default;
+ 
+diff --git a/media/base/win/d3d11_mocks.h b/media/base/win/d3d11_mocks.h
+index 3afb76f1051fdf166422265f69c9fc99cf0a167c..ae8b298cb33b1375b86ecc2d8edadbf30339ef24 100644
+--- a/media/base/win/d3d11_mocks.h
++++ b/media/base/win/d3d11_mocks.h
+@@ -16,6 +16,24 @@
+ 
+ namespace media {
+ 
++class DXGIKeyedMutexMock
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          IDXGIKeyedMutex> {
++ public:
++  DXGIKeyedMutexMock();
++  ~DXGIKeyedMutexMock() override;
++
++  MOCK_STDCALL_METHOD2(AcquireSync, HRESULT(UINT64, DWORD));
++  MOCK_STDCALL_METHOD1(ReleaseSync, HRESULT(UINT64));
++  MOCK_STDCALL_METHOD2(GetDevice, HRESULT(REFIID, void**));
++  MOCK_STDCALL_METHOD2(GetParent, HRESULT(REFIID, void**));
++  MOCK_STDCALL_METHOD3(GetPrivateData, HRESULT(REFGUID, UINT*, void*));
++  MOCK_STDCALL_METHOD3(SetPrivateData, HRESULT(REFGUID, UINT, const void*));
++  MOCK_STDCALL_METHOD2(SetPrivateDataInterface,
++                       HRESULT(REFGUID, const IUnknown*));
++};
++
+ class D3D11Texture2DMock
+     : public Microsoft::WRL::RuntimeClass<
+           Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
+@@ -23,6 +41,7 @@ class D3D11Texture2DMock
+  public:
+   D3D11Texture2DMock();
+   ~D3D11Texture2DMock() override;
++  MOCK_STDCALL_METHOD2(QueryInterface, HRESULT(REFIID riid, void** ppv));
+   MOCK_STDCALL_METHOD1(GetDevice, void(ID3D11Device**));
+   MOCK_STDCALL_METHOD3(GetPrivateData, HRESULT(const GUID&, UINT*, void*));
+   MOCK_STDCALL_METHOD3(SetPrivateData, HRESULT(const GUID&, UINT, const void*));
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+index 64bc05560c1721aa28887f55c5c509bfe8ccdb82..0c9a746d9aacdbdf58ab7427ccb045b303c48f87 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+@@ -211,6 +211,22 @@ bool IsOdd(int value) {
+   return (value & 1) != 0;
+ }
+ 
++// Returns true if the HRESULT indicates a timeout or abandoned mutex.
++bool IsKeyedMutexTimeout(HRESULT hr) {
++  return hr == HRESULT_FROM_WIN32(WAIT_TIMEOUT) ||
++         hr == HRESULT_FROM_WIN32(WAIT_ABANDONED);
++}
++
++HRESULT AcquireKeyedMutexSync(IDXGIKeyedMutex* keyed_mutex,
++                              uint64_t key,
++                              uint32_t timeout_ms) {
++  HRESULT hr = keyed_mutex->AcquireSync(key, timeout_ms);
++  if (hr == WAIT_TIMEOUT || hr == WAIT_ABANDONED) {
++    return HRESULT_FROM_WIN32(hr);
++  }
++  return hr;
++}
++
+ }  // namespace
+ 
+ // A proxy class that implements IMFAsyncCallback and routes the events back to
+@@ -885,6 +901,11 @@ void MediaFoundationVideoEncodeAccelerator::QueueInput(
+   }
+ 
+   hr = PopulateInputSampleBuffer(result, std::move(frame));
++  if (IsKeyedMutexTimeout(hr)) {
++    DVLOG(1) << "Frame dropped because of keyed mutex timeout";
++    DropFrame(result.timestamp);
++    return;
++  }
+   if (FAILED(hr)) {
+     NotifyErrorStatus({EncoderStatus::Codes::kEncoderFailedEncode,
+                        "Failed to populate input sample buffer"});
+@@ -1957,9 +1978,7 @@ HRESULT MediaFoundationVideoEncodeAccelerator::ProcessInput(
+ 
+     if (is_drop_frame) {
+       DVLOG(3) << "Frame dropped by software rate control";
+-      BitstreamBufferMetadata md =
+-          BitstreamBufferMetadata::CreateForDropFrame(input.timestamp);
+-      SendOutputBuffer(md, base::span<uint8_t>());
++      DropFrame(input.timestamp);
+       VideoRateControlWrapper::FrameParams drop_frame_params{};
+       drop_frame_params.frame_type =
+           input.options.key_frame
+@@ -2815,6 +2834,13 @@ void MediaFoundationVideoEncodeAccelerator::SendOutputBuffer(
+   client_->BitstreamBufferReady(buffer_ref->id, metadata);
+ }
+ 
++void MediaFoundationVideoEncodeAccelerator::DropFrame(
++    base::TimeDelta timestamp) {
++  BitstreamBufferMetadata md =
++      BitstreamBufferMetadata::CreateForDropFrame(timestamp);
++  SendOutputBuffer(md, base::span<uint8_t>());
++}
++
+ HRESULT MediaFoundationVideoEncodeAccelerator::InitializeD3DVideoProcessing(
+     ID3D11Texture2D* input_texture) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+@@ -2937,12 +2963,15 @@ HRESULT MediaFoundationVideoEncodeAccelerator::PerformD3DScaling(
+       // hardware decoder acquired the mutex to decode into a different array
+       // level then it still may block here temporarily.
+       constexpr int kMaxSyncTimeMs = 100;
+-      hr = keyed_mutex->AcquireSync(0, kMaxSyncTimeMs);
+-      // Can't check for FAILED(hr) because AcquireSync may return e.g.
+-      // WAIT_ABANDONED.
+-      if (hr != S_OK && hr != WAIT_TIMEOUT) {
++      hr = AcquireKeyedMutexSync(keyed_mutex.Get(), 0, kMaxSyncTimeMs);
++
++      // If the lock is not acquired, the D3D runtime will silently fail the
++      // subsequent D3D operations, leaving the destination texture with
++      // uninitialized GPU memory. Compressing and outputting this memory can
++      // lead to a GPU memory disclosure.
++      if (FAILED(hr)) {
+         LOG(ERROR) << "Failed to acquire mutex: " << PrintHr(hr);
+-        return E_FAIL;
++        return hr;
+       }
+       release_keyed_mutex.emplace(std::move(keyed_mutex), 0);
+     }
+@@ -3060,12 +3089,15 @@ HRESULT MediaFoundationVideoEncodeAccelerator::PerformD3DCopy(
+     hr = input_texture->QueryInterface(IID_PPV_ARGS(&keyed_mutex));
+     if (SUCCEEDED(hr)) {
+       constexpr int kMaxSyncTimeMs = 100;
+-      hr = keyed_mutex->AcquireSync(0, kMaxSyncTimeMs);
+-      // Can't check for FAILED(hr) because AcquireSync may return e.g.
+-      // WAIT_ABANDONED.
+-      if (hr != S_OK && hr != WAIT_TIMEOUT) {
++      hr = AcquireKeyedMutexSync(keyed_mutex.Get(), 0, kMaxSyncTimeMs);
++
++      // If the lock is not acquired, the D3D runtime will silently drop the
++      // subsequent CopySubresourceRegion command, leaving the destination
++      // texture with uninitialized GPU memory. Compressing and outputting this
++      // memory can lead to a GPU memory disclosure.
++      if (FAILED(hr)) {
+         LOG(ERROR) << "Failed to acquire mutex: " << PrintHr(hr);
+-        return E_FAIL;
++        return hr;
+       }
+       release_keyed_mutex.emplace(std::move(keyed_mutex), 0);
+     }
+@@ -3185,7 +3217,11 @@ void MediaFoundationVideoEncodeAccelerator::OnSharedImageResourceAvailable(
+   DCHECK(it != pending_input_queue_.end());
+ 
+   hr = PopulateInputSampleBuffer(*it, std::move(frame));
+-  if (FAILED(hr)) {
++  if (IsKeyedMutexTimeout(hr)) {
++    DVLOG(1) << "Frame dropped because of keyed mutex timeout";
++    DropFrame(it->timestamp);
++    pending_input_queue_.erase(it);
++  } else if (FAILED(hr)) {
+     NotifyErrorStatus({EncoderStatus::Codes::kEncoderFailedEncode,
+                        "Failed to populate input sample buffer"});
+     return;
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+index 849fc2cb135ea1d1defb8d5e6d13df66d0fbfa00..09da8489d436ed71204657fcfcf1b91d1e4f83c1 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+@@ -196,6 +196,8 @@ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator
+   void SendOutputBuffer(const BitstreamBufferMetadata& metadata,
+                         base::span<uint8_t> output_buffer_span);
+ 
++  void DropFrame(base::TimeDelta timestamp);
++
+   // Processes the input video frame for the encoder.
+   HRESULT ProcessInput(const PendingInput& input, bool& is_drop_frame);
+ 

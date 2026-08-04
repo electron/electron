@@ -1,0 +1,423 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 10 Jun 2026 22:42:53 -0400
+Subject: Use uintptr_t instead of GLintptr for vertex binding offsets
+
+In glBindVertexBuffer, the offset is GLintptr, but is required to be
+non-negative.  In glVertexAttribPointer, the offset is a pointer cast to
+integer.  In the latter case, if the pointer value is large, the offset
+shouldn't be interpreted as negative.
+
+Bug: chromium:515452019
+Change-Id: I9fc934b8723a8294593058a791e937f651a63546
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7921635
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Charlie Lao <cclao@google.com>
+
+diff --git a/src/libANGLE/VertexArray.cpp b/src/libANGLE/VertexArray.cpp
+index fcc2d7277997f68c27285438968230aaed82fafd..d56d38ac5193436749732abac040f147cffe8397 100644
+--- a/src/libANGLE/VertexArray.cpp
++++ b/src/libANGLE/VertexArray.cpp
+@@ -475,7 +475,7 @@ void VertexArray::bindElementBuffer(const Context *context, Buffer *boundBuffer)
+ ANGLE_INLINE VertexArray::DirtyBindingBits VertexArray::bindVertexBufferImpl(const Context *context,
+                                                                              size_t bindingIndex,
+                                                                              Buffer *boundBuffer,
+-                                                                             GLintptr offset,
++                                                                             uintptr_t offset,
+                                                                              GLsizei stride)
+ {
+     ASSERT(bindingIndex < getMaxBindings());
+@@ -556,8 +556,10 @@ void VertexArray::bindVertexBuffer(const Context *context,
+                                    GLintptr offset,
+                                    GLsizei stride)
+ {
+-    const VertexArray::DirtyBindingBits dirtyBindingBits =
+-        bindVertexBufferImpl(context, bindingIndex, boundBuffer, offset, stride);
++    // |offset| must be non-negative per validation rules of glBindVertexBuffer.
++    ASSERT(offset >= 0);
++    const VertexArray::DirtyBindingBits dirtyBindingBits = bindVertexBufferImpl(
++        context, bindingIndex, boundBuffer, static_cast<uintptr_t>(offset), stride);
+ 
+     if (!dirtyBindingBits.test(DIRTY_BINDING_BUFFER) && context->isSharedContext() &&
+         boundBuffer != nullptr)
+@@ -627,7 +629,7 @@ ANGLE_INLINE void VertexArray::setVertexAttribPointerImpl(const Context *context
+     // Change of attrib.pointer is not part of attribDirty. Pointer is actually the buffer offset
+     // which is handled within bindVertexBufferImpl and reflected in bufferDirty.
+     attrib.pointer  = pointer;
+-    GLintptr offset = boundBuffer ? reinterpret_cast<GLintptr>(pointer) : 0;
++    uintptr_t offset = boundBuffer ? reinterpret_cast<uintptr_t>(pointer) : 0;
+     const VertexArray::DirtyBindingBits dirtyBindingBits =
+         bindVertexBufferImpl(context, attribIndex, boundBuffer, offset, effectiveStride);
+ 
+diff --git a/src/libANGLE/VertexArray.h b/src/libANGLE/VertexArray.h
+index 413cbdd2fbd6a1179775164573df519e8913eeca..78c6705789de1d3acd3bab1fb7d89e036d007139 100644
+--- a/src/libANGLE/VertexArray.h
++++ b/src/libANGLE/VertexArray.h
+@@ -413,7 +413,7 @@ class VertexArray final : public VertexArrayPrivate, public LabeledObject, publi
+     DirtyBindingBits bindVertexBufferImpl(const Context *context,
+                                           size_t bindingIndex,
+                                           Buffer *boundBuffer,
+-                                          GLintptr offset,
++                                          uintptr_t offset,
+                                           GLsizei stride);
+ 
+     void onBind(const Context *context);
+diff --git a/src/libANGLE/VertexAttribute.cpp b/src/libANGLE/VertexAttribute.cpp
+index faef8fe01a92ab11b92ec760d1db16a84cb67c3a..49f6f5418fbff4a1bd8c67cae5987fe50a0069aa 100644
+--- a/src/libANGLE/VertexAttribute.cpp
++++ b/src/libANGLE/VertexAttribute.cpp
+@@ -135,7 +135,7 @@ size_t ComputeVertexAttributeStride(const VertexAttribute &attrib, const VertexB
+ }
+ 
+ // Warning: you should ensure binding really matches attrib.bindingIndex before using this function.
+-GLintptr ComputeVertexAttributeOffset(const VertexAttribute &attrib, const VertexBinding &binding)
++uintptr_t ComputeVertexAttributeOffset(const VertexAttribute &attrib, const VertexBinding &binding)
+ {
+     return attrib.relativeOffset + binding.getOffset();
+ }
+diff --git a/src/libANGLE/VertexAttribute.h b/src/libANGLE/VertexAttribute.h
+index cbea773f49b2b891cfeb968842e50581063742d2..95931695a7123a005bac1ef5337326cf8198619b 100644
+--- a/src/libANGLE/VertexAttribute.h
++++ b/src/libANGLE/VertexAttribute.h
+@@ -37,8 +37,8 @@ class VertexBinding final : angle::NonCopyable
+     GLuint getDivisor() const { return mDivisor; }
+     void setDivisor(GLuint divisorIn) { mDivisor = divisorIn; }
+ 
+-    GLintptr getOffset() const { return mOffset; }
+-    void setOffset(GLintptr offsetIn) { mOffset = offsetIn; }
++    uintptr_t getOffset() const { return mOffset; }
++    void setOffset(uintptr_t offsetIn) { mOffset = offsetIn; }
+ 
+     const AttributesMask &getBoundAttributesMask() const { return mBoundAttributesMask; }
+ 
+@@ -49,7 +49,7 @@ class VertexBinding final : angle::NonCopyable
+   private:
+     GLuint mStride;
+     GLuint mDivisor;
+-    GLintptr mOffset;
++    uintptr_t mOffset;
+ 
+     // Mapping from this binding to all of the attributes that are using this binding.
+     AttributesMask mBoundAttributesMask;
+@@ -98,7 +98,7 @@ ANGLE_INLINE size_t ComputeVertexAttributeTypeSize(const VertexAttribute &attrib
+ size_t ComputeVertexAttributeStride(const VertexAttribute &attrib, const VertexBinding &binding);
+ 
+ // Warning: you should ensure binding really matches attrib.bindingIndex before using this function.
+-GLintptr ComputeVertexAttributeOffset(const VertexAttribute &attrib, const VertexBinding &binding);
++uintptr_t ComputeVertexAttributeOffset(const VertexAttribute &attrib, const VertexBinding &binding);
+ 
+ size_t ComputeVertexBindingElementCount(GLuint divisor,
+                                         uint64_t drawCount,
+diff --git a/src/libANGLE/capture/FrameCapture.cpp b/src/libANGLE/capture/FrameCapture.cpp
+index 75d5b37f764e225eab4f91ff5a10e7d5cad04d41..edead0b7430ae9f8214a7628a16df411e7118c61 100644
+--- a/src/libANGLE/capture/FrameCapture.cpp
++++ b/src/libANGLE/capture/FrameCapture.cpp
+@@ -2963,7 +2963,8 @@ void CaptureVertexArrayState(std::vector<CallCapture> *setupCalls,
+             }
+             else if (attrib.bindingIndex == attribIndex &&
+                      VertexBindingMatchesAttribStride(attrib, binding) &&
+-                     (!buffer || binding.getOffset() == reinterpret_cast<GLintptr>(attrib.pointer)))
++                     (!buffer ||
++                      binding.getOffset() == reinterpret_cast<uintptr_t>(attrib.pointer)))
+             {
+                 // Check if we can use strictly ES2 semantics, and track indexes that do.
+                 vertexPointerBindings.set(attribIndex);
+@@ -3059,9 +3060,10 @@ void CaptureVertexArrayState(std::vector<CallCapture> *setupCalls,
+ 
+         if (buffer)
+         {
+-            Capture(setupCalls, CaptureBindVertexBuffer(
+-                                    *replayState, true, static_cast<GLuint>(bindingIndex),
+-                                    buffer->id(), binding.getOffset(), binding.getStride()));
++            Capture(setupCalls,
++                    CaptureBindVertexBuffer(
++                        *replayState, true, static_cast<GLuint>(bindingIndex), buffer->id(),
++                        static_cast<GLintptr>(binding.getOffset()), binding.getStride()));
+         }
+ 
+         if (binding.getDivisor() != 0)
+diff --git a/src/libANGLE/renderer/d3d/VertexBuffer.cpp b/src/libANGLE/renderer/d3d/VertexBuffer.cpp
+index c8891f6dd3c78b948e9e0c1b42a68ea53ac1e8eb..1262e1447bd22764d03ed393e6d6064b98ffac27 100644
+--- a/src/libANGLE/renderer/d3d/VertexBuffer.cpp
++++ b/src/libANGLE/renderer/d3d/VertexBuffer.cpp
+@@ -249,7 +249,7 @@ bool StaticVertexBufferInterface::AttributeSignature::matchesAttribute(
+     }
+ 
+     size_t attribOffset =
+-        (static_cast<size_t>(ComputeVertexAttributeOffset(attrib, binding)) % attribStride);
++        static_cast<size_t>(ComputeVertexAttributeOffset(attrib, binding) % attribStride);
+     return (offset == attribOffset);
+ }
+ 
+@@ -257,9 +257,9 @@ void StaticVertexBufferInterface::AttributeSignature::set(const gl::VertexAttrib
+                                                           const gl::VertexBinding &binding)
+ {
+     formatID = attrib.format->id;
+-    offset = stride = static_cast<GLuint>(ComputeVertexAttributeStride(attrib, binding));
+-    offset          = static_cast<size_t>(ComputeVertexAttributeOffset(attrib, binding)) %
+-             ComputeVertexAttributeStride(attrib, binding);
++    stride   = static_cast<GLuint>(ComputeVertexAttributeStride(attrib, binding));
++    offset   = static_cast<size_t>(ComputeVertexAttributeOffset(attrib, binding) %
++                                   ComputeVertexAttributeStride(attrib, binding));
+ }
+ 
+ StaticVertexBufferInterface::StaticVertexBufferInterface(BufferFactoryD3D *factory)
+diff --git a/src/libANGLE/renderer/d3d/VertexDataManager.cpp b/src/libANGLE/renderer/d3d/VertexDataManager.cpp
+index 729e1ebced8f6cb527ed3c002f9c10bbb92fea93..a2181a7571acc117a0eb986baa7f2dfbce2418e7 100644
+--- a/src/libANGLE/renderer/d3d/VertexDataManager.cpp
++++ b/src/libANGLE/renderer/d3d/VertexDataManager.cpp
+@@ -122,10 +122,10 @@ bool DirectStoragePossible(const gl::Context *context,
+         alignment = std::min<size_t>(elementSize, 4);
+     }
+ 
+-    GLintptr offset = ComputeVertexAttributeOffset(attrib, binding);
++    uintptr_t offset = ComputeVertexAttributeOffset(attrib, binding);
+     // Final alignment check - unaligned data must be converted.
+-    return (static_cast<size_t>(ComputeVertexAttributeStride(attrib, binding)) % alignment == 0) &&
+-           (static_cast<size_t>(offset) % alignment == 0);
++    return (ComputeVertexAttributeStride(attrib, binding) % alignment == 0) &&
++           (offset % alignment == 0);
+ }
+ }  // anonymous namespace
+ 
+@@ -370,13 +370,13 @@ angle::Result VertexDataManager::StoreStaticAttrib(const gl::Context *context,
+     // Compute source data pointer
+     const uint8_t *sourceData = nullptr;
+ 
+-    angle::CheckedNumeric<GLintptr> offset = ComputeVertexAttributeOffset(attrib, binding);
++    angle::CheckedNumeric<uintptr_t> offset = ComputeVertexAttributeOffset(attrib, binding);
+ 
+     ANGLE_TRY(bufferD3D->getData(context, &sourceData));
+ 
+     if (sourceData)
+     {
+-        sourceData += GLintptr{offset.ValueOrDie()};
++        sourceData += uintptr_t{offset.ValueOrDie()};
+     }
+ 
+     translated->storage = nullptr;
+@@ -561,7 +561,7 @@ angle::Result VertexDataManager::storeDynamicAttrib(const gl::Context *context,
+     if (buffer)
+     {
+         ANGLE_TRY(storage->getData(context, &sourceData));
+-        sourceData += static_cast<size_t>(ComputeVertexAttributeOffset(attrib, binding));
++        sourceData += ComputeVertexAttributeOffset(attrib, binding);
+     }
+     else
+     {
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.h b/src/libANGLE/renderer/gl/StateManagerGL.h
+index b81ef6b92b363e18ae46c00b52349352cbb85e21..7f0c7c1b5fe6ec13847b58a4349aa118afc37dd1 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.h
++++ b/src/libANGLE/renderer/gl/StateManagerGL.h
+@@ -152,7 +152,7 @@ struct VertexBindingGL
+ {
+     GLuint stride   = 16;
+     GLuint divisor  = 0;
+-    GLintptr offset = 0;
++    uintptr_t offset = 0;
+ 
+     GLuint buffer = 0;
+ };
+diff --git a/src/libANGLE/renderer/gl/VertexArrayGL.cpp b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+index 6ed3fa5a12d4d235ba15e2d290a04c6dbed063ec..81c41022bd94773a77830c4fc21a000e7b79d0fc 100644
+--- a/src/libANGLE/renderer/gl/VertexArrayGL.cpp
++++ b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+@@ -528,7 +528,7 @@ angle::Result VertexArrayGL::streamAttributes(
+                     // Validate if there is OOB access of the input buffer.
+                     angle::CheckedNumeric<GLint64> inputRequiredSize;
+                     inputRequiredSize = copySize;
+-                    inputRequiredSize += static_cast<unsigned int>(binding.getOffset());
++                    inputRequiredSize += binding.getOffset();
+                     ANGLE_CHECK(GetImplAs<ContextGL>(context),
+                                 inputRequiredSize.IsValid() && inputRequiredSize.ValueOrDie() <=
+                                                                    bindingBufferPointer->getSize(),
+@@ -574,7 +574,7 @@ angle::Result VertexArrayGL::streamAttributes(
+ 
+             ANGLE_TRY(callVertexAttribPointer(context, static_cast<GLuint>(idx), attrib,
+                                               static_cast<GLsizei>(destStride),
+-                                              static_cast<GLintptr>(vertexStartOffset)));
++                                              static_cast<uintptr_t>(vertexStartOffset)));
+ 
+             // Update the state to track the streamed attribute
+             mNativeState->attributes[idx].format = attrib.format;
+@@ -583,7 +583,7 @@ angle::Result VertexArrayGL::streamAttributes(
+             mNativeState->attributes[idx].bindingIndex   = static_cast<GLuint>(idx);
+ 
+             mNativeState->bindings[idx].stride = static_cast<GLsizei>(destStride);
+-            mNativeState->bindings[idx].offset = static_cast<GLintptr>(vertexStartOffset);
++            mNativeState->bindings[idx].offset = static_cast<uintptr_t>(vertexStartOffset);
+             mArrayBuffers[idx].set(context, nullptr);
+             mNativeState->bindings[idx].buffer = mStreamingArrayBuffer;
+ 
+@@ -635,7 +635,7 @@ angle::Result VertexArrayGL::recoverForcedStreamingAttributesForDrawArraysInstan
+ 
+         ANGLE_TRY(callVertexAttribPointer(context, static_cast<GLuint>(idx), attrib,
+                                           static_cast<GLsizei>(binding.getStride()),
+-                                          static_cast<GLintptr>(binding.getOffset())));
++                                          binding.getOffset()));
+ 
+         // Restore the state to track their original buffers
+         mNativeState->attributes[idx].format = attrib.format;
+@@ -760,7 +760,7 @@ angle::Result VertexArrayGL::updateAttribPointer(const gl::Context *context, siz
+         stateManager->bindBuffer(gl::BufferBinding::Array, 0);
+         ANGLE_TRY(callVertexAttribPointer(context, static_cast<GLuint>(attribIndex), attrib,
+                                           binding.getStride(),
+-                                          reinterpret_cast<GLintptr>(attrib.pointer)));
++                                          reinterpret_cast<uintptr_t>(attrib.pointer)));
+     }
+ 
+     mNativeState->attributes[attribIndex].format = attrib.format;
+@@ -785,7 +785,7 @@ angle::Result VertexArrayGL::callVertexAttribPointer(const gl::Context *context,
+                                                      GLuint attribIndex,
+                                                      const VertexAttribute &attrib,
+                                                      GLsizei stride,
+-                                                     GLintptr offset) const
++                                                     uintptr_t offset) const
+ {
+     const FunctionsGL *functions = GetFunctionsGL(context);
+     const GLvoid *pointer        = reinterpret_cast<const GLvoid *>(offset);
+diff --git a/src/libANGLE/renderer/gl/VertexArrayGL.h b/src/libANGLE/renderer/gl/VertexArrayGL.h
+index b018e80e48170664d973391bad7b52ee741f82d6..f8e2fe1da81364bade05432ce9f3605209936756 100644
+--- a/src/libANGLE/renderer/gl/VertexArrayGL.h
++++ b/src/libANGLE/renderer/gl/VertexArrayGL.h
+@@ -128,7 +128,7 @@ class VertexArrayGL : public VertexArrayImpl
+                                           GLuint attribIndex,
+                                           const gl::VertexAttribute &attrib,
+                                           GLsizei stride,
+-                                          GLintptr offset) const;
++                                          uintptr_t offset) const;
+ 
+     angle::Result recoverForcedStreamingAttributesForDrawArraysInstanced(
+         const gl::Context *context,
+diff --git a/src/libANGLE/renderer/metal/VertexArrayMtl.mm b/src/libANGLE/renderer/metal/VertexArrayMtl.mm
+index 66f6f8ba4d29905e87c4afc1ad11082e8935e13f..fddf601cb28616f19d053ecb06188f3130785280 100644
+--- a/src/libANGLE/renderer/metal/VertexArrayMtl.mm
++++ b/src/libANGLE/renderer/metal/VertexArrayMtl.mm
+@@ -129,7 +129,7 @@ size_t GetVertexCountWithConversion(BufferMtl *srcBuffer,
+ {
+     // Bytes usable for vertex data.
+     GLint64 bytes = srcBuffer->size() -
+-                    MIN(static_cast<GLintptr>(conversionBuffer->offset), binding.getOffset());
++                    MIN(static_cast<uintptr_t>(conversionBuffer->offset), binding.getOffset());
+     if (bytes < srcFormatSize)
+         return 0;
+ 
+@@ -1073,7 +1073,7 @@ inline MTLVertexFormat GetCurrentAttribFormat(GLenum type)
+ {
+     VertexConversionBufferMtl *vertexConverison =
+         static_cast<VertexConversionBufferMtl *>(conversion);
+-    size_t srcOffset = MIN(binding.getOffset(), static_cast<GLintptr>(vertexConverison->offset));
++    size_t srcOffset = MIN(binding.getOffset(), static_cast<uintptr_t>(vertexConverison->offset));
+     angle::Span<const uint8_t> srcBytes = srcBuffer->getBufferDataReadOnly(contextMtl, srcOffset);
+     ANGLE_CHECK_GL_ALLOC(contextMtl, !srcBytes.empty());
+     mtl::BufferSlice convertedBuffer;
+@@ -1108,7 +1108,7 @@ inline MTLVertexFormat GetCurrentAttribFormat(GLenum type)
+         static_cast<VertexConversionBufferMtl *>(conversion);
+     params.srcBuffer            = srcBuffer->getCurrentBuffer();
+     params.srcBufferStartOffset = static_cast<uint32_t>(
+-        MIN(static_cast<GLintptr>(vertexConversion->offset), binding.getOffset()));
++        MIN(static_cast<uintptr_t>(vertexConversion->offset), binding.getOffset()));
+     params.srcStride           = binding.getStride();
+     params.srcDefaultAlphaData = convertedFormat.defaultAlpha;
+ 
+diff --git a/src/libANGLE/renderer/vulkan/UtilsVk.cpp b/src/libANGLE/renderer/vulkan/UtilsVk.cpp
+index 8317f1be7289a6d3e17164c4eb2c51d168fd5072..639df9f408dcbb02275179f350ce62391d0cd2ea 100644
+--- a/src/libANGLE/renderer/vulkan/UtilsVk.cpp
++++ b/src/libANGLE/renderer/vulkan/UtilsVk.cpp
+@@ -5295,7 +5295,7 @@ angle::Result LineLoopHelper::getIndexBufferForElementArrayBuffer(ContextVk *con
+                                                                   BufferVk *elementArrayBufferVk,
+                                                                   gl::DrawElementsType glIndexType,
+                                                                   int indexCount,
+-                                                                  intptr_t elementArrayOffset,
++                                                                  uintptr_t elementArrayOffset,
+                                                                   vk::BufferHelper **bufferOut,
+                                                                   uint32_t *indexCountOut)
+ {
+diff --git a/src/libANGLE/renderer/vulkan/UtilsVk.h b/src/libANGLE/renderer/vulkan/UtilsVk.h
+index 5c7ec307a5b4de12ac557b3d9669215a3998f5e6..f17f00e43088f850c2e35b2fdbdf8d36c9467836 100644
+--- a/src/libANGLE/renderer/vulkan/UtilsVk.h
++++ b/src/libANGLE/renderer/vulkan/UtilsVk.h
+@@ -799,7 +799,7 @@ class LineLoopHelper final : angle::NonCopyable
+                                                       BufferVk *elementArrayBufferVk,
+                                                       gl::DrawElementsType glIndexType,
+                                                       int indexCount,
+-                                                      intptr_t elementArrayOffset,
++                                                      uintptr_t elementArrayOffset,
+                                                       vk::BufferHelper **bufferOut,
+                                                       uint32_t *indexCountOut);
+ 
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+index bfc22397dcdb17186b3b451395187b773f4412ea..48ad8283f91b232caf6cfde4638ddc5ea9b2f3ff 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+@@ -59,7 +59,7 @@ ANGLE_INLINE bool ClientBindingAligned(const gl::VertexAttribute &attrib,
+                                        GLuint stride,
+                                        size_t alignment)
+ {
+-    return reinterpret_cast<intptr_t>(attrib.pointer) % alignment == 0 && stride % alignment == 0;
++    return reinterpret_cast<uintptr_t>(attrib.pointer) % alignment == 0 && stride % alignment == 0;
+ }
+ 
+ bool ShouldCombineAttributes(vk::Renderer *renderer,
+@@ -547,7 +547,7 @@ angle::Result VertexArrayVk::convertIndexBufferGPU(ContextVk *contextVk,
+                                                    BufferVk *bufferVk,
+                                                    const void *indices)
+ {
+-    intptr_t offsetIntoSrcData = reinterpret_cast<intptr_t>(indices);
++    uintptr_t offsetIntoSrcData = reinterpret_cast<uintptr_t>(indices);
+     size_t srcDataSize         = static_cast<size_t>(bufferVk->getSize()) - offsetIntoSrcData;
+ 
+     // Allocate buffer for results
+@@ -1172,8 +1172,10 @@ ANGLE_INLINE void VertexArrayVk::syncDirtyEnabledNonStreamingAttrib(
+     mVertexInputAttribDescs[attribIndex].offset     = attrib.relativeOffset;
+     gl::Buffer *bufferGL                            = getVertexArrayBuffer(attrib.bindingIndex);
+     const angle::Format &srcFormat                  = vertexFormat.getIntendedFormat();
+-    unsigned srcFormatSize                          = srcFormat.pixelBytes;
+-    bool hasAtLeastOneVertex = (bufferGL->getSize() - binding.getOffset()) >= srcFormatSize;
++    const unsigned srcFormatSize                    = srcFormat.pixelBytes;
++    const uint64_t bufferGLSize                     = bufferGL->getSize();
++    bool hasAtLeastOneVertex =
++        binding.getOffset() < bufferGLSize && (bufferGLSize - binding.getOffset()) >= srcFormatSize;
+     // If buffer size is 0, hasAtLeastOneVertex must be false
+     ASSERT(bufferGL->getSize() > 0 || !hasAtLeastOneVertex);
+ 
+@@ -1213,7 +1215,7 @@ ANGLE_INLINE void VertexArrayVk::syncDirtyEnabledNonStreamingAttrib(
+ 
+         // Vulkan requires the offset is within the buffer. We use robust access
+         // behaviour to reset the offset if it starts outside the buffer.
+-        ASSERT(binding.getOffset() < static_cast<GLint64>(bufferSize));
++        ASSERT(binding.getOffset() < bufferSize);
+         mCurrentArrayBufferOffsets[attribIndex]      = bufferOffset + binding.getOffset();
+         mCurrentArrayBufferSizes[attribIndex]        = bufferSize - binding.getOffset();
+         mVertexInputBindingDescs[attribIndex].stride = binding.getStride();
+@@ -1580,7 +1582,7 @@ angle::Result VertexArrayVk::updateStreamedAttribs(const gl::Context *context,
+                                            stride, nullptr));
+             }
+             vertexDataBuffer = attribBufferHelper[mergedAttribIdx];
+-            startOffset      = (uintptr_t)attrib.pointer - range.startAddr;
++            startOffset      = reinterpret_cast<uintptr_t>(attrib.pointer) - range.startAddr;
+         }
+         else
+         {
+@@ -1680,7 +1682,7 @@ angle::Result VertexArrayVk::handleLineLoop(ContextVk *contextVk,
+             else
+             {
+                 // When using an element array buffer, 'indices' is an offset to the first element.
+-                intptr_t offset                = reinterpret_cast<intptr_t>(indices);
++                uintptr_t offset               = reinterpret_cast<uintptr_t>(indices);
+                 BufferVk *elementArrayBufferVk = vk::GetImpl(elementArrayBuffer);
+                 ANGLE_TRY(mLineLoopHelper.getIndexBufferForElementArrayBuffer(
+                     contextVk, elementArrayBufferVk, indexTypeOrInvalid, vertexOrIndexCount, offset,
+diff --git a/src/tests/capture_replay_tests/capture_replay_expectations.txt b/src/tests/capture_replay_tests/capture_replay_expectations.txt
+index d09bc3ce03ffebfe225924fb40ea703910145d0e..8a6a8a7c59420a7a4f22e1f6015913132201190d 100644
+--- a/src/tests/capture_replay_tests/capture_replay_expectations.txt
++++ b/src/tests/capture_replay_tests/capture_replay_expectations.txt
+@@ -83,6 +83,7 @@
+ 42264831 : FramebufferTest_ES3.RenderAndInvalidateImmutableTextureWithBeyondMaxLevel/* = SKIP_FOR_CAPTURE
+ 490170083 : CopyTextureTestES3.SRGBWithPackParameters/* = SKIP_FOR_CAPTURE
+ 498904293 : CopyTextureTestES3.PBOSynchronization/* = SKIP_FOR_CAPTURE
++42264706 : VertexAttributeTestES3.LargeAttribPointerOffsetNoCrash/* = SKIP_FOR_CAPTURE
+ 
+ # The following tests fail with forceRobustResourceInit
+ # They were accidentally passing until http://crrev/c/5588816

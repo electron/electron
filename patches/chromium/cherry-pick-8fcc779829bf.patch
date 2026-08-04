@@ -1,0 +1,145 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Minoru Chikamune <chikamune@chromium.org>
+Date: Tue, 2 Jun 2026 17:48:48 -0700
+Subject: Bugfix: This CL fixes a bug reported in crbug.com/500554346
+
+[analysis]
+https://docs.google.com/document/d/1Eo_0xvh-g7x0f_DyNhbYTSWbW1Gpdb3JQOv6XKqGtkU/edit?resourcekey=0-x0nLWecQ0NBc05J76n592g&tab=t.0#heading=h.4ouk0evxdnbl
+
+[reasoning]
+https://docs.google.com/document/d/116U7-f0JMNXnubCLB2t2duFOkpOFyM3Mm9t5Dqw0Ppg/edit?resourcekey=0-LhL0UerWZJhm0HDpLv9zmg&tab=t.0
+
+Bug: 500554346
+Change-Id: Icdd5a534474c03b1050d4b5521e74f29f614ec86
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7894356
+Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
+Commit-Queue: Minoru Chikamune <chikamune@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1640599}
+
+diff --git a/content/browser/web_package/subresource_signed_exchange_url_loader_factory.cc b/content/browser/web_package/subresource_signed_exchange_url_loader_factory.cc
+index 776e0f0bc33cdfe30f485a519ad8203e9315a074..a5abe67a45aba5ca22c83f5c7665b6342348cfa2 100644
+--- a/content/browser/web_package/subresource_signed_exchange_url_loader_factory.cc
++++ b/content/browser/web_package/subresource_signed_exchange_url_loader_factory.cc
+@@ -73,6 +73,17 @@ void SubresourceSignedExchangeURLLoaderFactory::CreateLoaderAndStart(
+     const network::ResourceRequest& request,
+     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
++  if (request.mode == network::mojom::RequestMode::kNavigate) {
++    network::debug::ScopedResourceRequestCrashKeys request_crash_keys(request);
++    mojo::ReportBadMessage(
++        "SubresourceSignedExchangeURLLoaderFactory: "
++        "kNavigate mode is forbidden for subresources");
++    mojo::Remote<network::mojom::URLLoaderClient>(std::move(client))
++        ->OnComplete(
++            network::URLLoaderCompletionStatus(net::ERR_INVALID_ARGUMENT));
++    return;
++  }
++
+   if (!IsValidRequestInitiator(request, request_initiator_origin_lock_)) {
+     network::debug::ScopedResourceRequestCrashKeys request_crash_keys(request);
+     network::debug::ScopedRequestInitiatorOriginLockCrashKey lock_crash_keys(
+diff --git a/content/browser/web_package/subresource_signed_exchange_url_loader_factory_unittest.cc b/content/browser/web_package/subresource_signed_exchange_url_loader_factory_unittest.cc
+index 87ba06010319d515a85fa27921b8f634c130f654..c05f36d0a2e76ccfc7fbf5eaf30c243ba12138c5 100644
+--- a/content/browser/web_package/subresource_signed_exchange_url_loader_factory_unittest.cc
++++ b/content/browser/web_package/subresource_signed_exchange_url_loader_factory_unittest.cc
+@@ -12,12 +12,14 @@
+ #include "base/test/bind.h"
+ #include "content/browser/web_package/prefetched_signed_exchange_cache.h"
+ #include "content/public/test/browser_task_environment.h"
++#include "mojo/public/cpp/system/data_pipe_utils.h"
+ #include "mojo/public/cpp/system/functions.h"
+ #include "net/traffic_annotation/network_traffic_annotation_test_helper.h"
+ #include "services/network/public/cpp/resource_request.h"
+ #include "services/network/public/mojom/url_loader.mojom.h"
+ #include "services/network/public/mojom/url_loader_factory.mojom.h"
+ #include "services/network/test/test_url_loader_client.h"
++#include "storage/browser/blob/blob_data_builder.h"
+ #include "storage/browser/blob/blob_data_handle.h"
+ #include "storage/browser/blob/blob_storage_context.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+@@ -172,5 +174,85 @@ TEST(SubresourceSignedExchangeURLLoaderFactoryTest,
+   mojo::SetDefaultProcessErrorHandler(base::NullCallback());
+ }
+ 
++std::unique_ptr<PrefetchedSignedExchangeCacheEntry> CreateWorkingCacheEntry(
++    const GURL& outer_url,
++    const GURL& inner_url,
++    const std::string& inner_body,
++    storage::BlobStorageContext* blob_context) {
++  auto entry = std::make_unique<PrefetchedSignedExchangeCacheEntry>();
++  auto status = std::make_unique<network::URLLoaderCompletionStatus>();
++  entry->SetCompletionStatus(std::move(status));
++  entry->SetOuterUrl(outer_url);
++  entry->SetInnerUrl(inner_url);
++  auto headers = base::MakeRefCounted<net::HttpResponseHeaders>(
++      net::HttpUtil::AssembleRawHeaders(
++          "HTTP/1.1 200 OK\nContent-type: application/custom\n\n"));
++  auto outer_response = network::mojom::URLResponseHead::New();
++  outer_response->headers = headers;
++  entry->SetOuterResponse(std::move(outer_response));
++  auto header_integrity = std::make_unique<net::SHA256HashValue>();
++  entry->SetHeaderIntegrity(std::move(header_integrity));
++  auto inner_response = network::mojom::URLResponseHead::New();
++  inner_response->headers = headers;
++  entry->SetInnerResponse(std::move(inner_response));
++
++  auto builder = std::make_unique<storage::BlobDataBuilder>("working_uuid");
++  builder->AppendData(inner_body);
++  std::unique_ptr<storage::BlobDataHandle> blob_handle =
++      blob_context->AddFinishedBlob(std::move(builder));
++
++  entry->SetBlobDataHandle(std::move(blob_handle));
++  entry->SetSignatureExpireTime(base::Time::Now() + base::Days(1));
++  return entry;
++}
++
++TEST(SubresourceSignedExchangeURLLoaderFactoryTest, CorsBypassViaKNavigate) {
++  BrowserTaskEnvironment task_environment;
++  GURL inner_url("https://target.com/secret.json");
++  GURL outer_url("https://target.com/outer");
++  auto attacker_origin = url::Origin::Create(GURL("https://attacker.com"));
++
++  storage::BlobStorageContext blob_context;
++  std::string secret_data = "flag{bypass}";
++  auto entry =
++      CreateWorkingCacheEntry(outer_url, inner_url, secret_data, &blob_context);
++
++  mojo::Remote<network::mojom::URLLoaderFactory> factory;
++  new content::SubresourceSignedExchangeURLLoaderFactory(
++      factory.BindNewPipeAndPassReceiver(), std::move(entry),
++      /*request_initiator_origin_lock=*/attacker_origin);
++
++  std::string received_error;
++  mojo::SetDefaultProcessErrorHandler(base::BindLambdaForTesting(
++      [&](const std::string& error) { received_error = error; }));
++
++  mojo::Remote<network::mojom::URLLoader> loader;
++  network::TestURLLoaderClient client;
++  network::ResourceRequest request;
++  request.url = inner_url;
++  request.request_initiator = attacker_origin;
++
++  // Using kNavigate bypasses CORS and ORB checks in
++  // SignedExchangeInnerResponseURLLoader
++  request.mode = network::mojom::RequestMode::kNavigate;
++
++  factory->CreateLoaderAndStart(
++      loader.BindNewPipeAndPassReceiver(), 123,
++      network::mojom::kURLLoadOptionNone, request, client.CreateRemote(),
++      net::MutableNetworkTrafficAnnotationTag(TRAFFIC_ANNOTATION_FOR_TESTS));
++
++  client.RunUntilComplete();
++
++  // The request should be rejected with net::ERR_INVALID_ARGUMENT.
++  EXPECT_EQ(net::ERR_INVALID_ARGUMENT, client.completion_status().error_code);
++
++  factory.FlushForTesting();
++  EXPECT_EQ(received_error,
++            "SubresourceSignedExchangeURLLoaderFactory: "
++            "kNavigate mode is forbidden for subresources");
++
++  mojo::SetDefaultProcessErrorHandler(base::NullCallback());
++}
++
+ }  // namespace
+ }  // namespace content

@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 23 Jun 2026 10:51:44 -0400
+Subject: MSL/AST: Handle non-unary/binary expr in loop-forward-progress
+
+Bug: chromium:517543052
+Change-Id: Idf3bb42ea56e9fd62cad2bd914f9221ff32226e0
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7977471
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+index 7997879860f0aeefe619922e954331f77001cf56..93d603f0dfd75193a58b230b1a0c0dfa62107d0a 100644
+--- a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
++++ b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+@@ -158,6 +158,10 @@ const TVariable *computeFiniteLoopVariable(TIntermLoop *loop)
+                 return nullptr;
+         }
+     }
++    else
++    {
++        return nullptr;
++    }
+     return variable;
+ }
+ 
+diff --git a/src/tests/gl_tests/GLSLOutputTest.cpp b/src/tests/gl_tests/GLSLOutputTest.cpp
+index c961069da9b403c3e17dbe4c5518a194d2e081d1..95afc54a624cc5a7c8a219a3e8578dc564cfc4bd 100644
+--- a/src/tests/gl_tests/GLSLOutputTest.cpp
++++ b/src/tests/gl_tests/GLSLOutputTest.cpp
+@@ -600,6 +600,7 @@ TEST_P(GLSLOutputMSLTest_EnsureLoopForwardProgress, InfiniteFors)
+ precision highp int;
+ uniform int a;
+ uniform uint b;
++int f() { return 0; }
+ void main() {
+ 
+ )";
+@@ -621,6 +622,8 @@ void main() {
+         "for (int i = 0; i < 10; i++) { for (int j = 0; i = 0, j < 10; j++) { } }",
+         "for (int i = 0; i < 10; i++) { for (int j = 0; j < 10; i = 0, j++) { } }",
+         "for (int i = 0; i < 10; i++) { for (int j = 0; j < 10; i--, j++) { } }",
++        "for (int i = 0; i < 10; f()) { }",
++        "for (int i = 0; i < 10; a == 0 ? i++ : i = 0) { }",
+     };
+ 
+     for (const char *test : kTests)

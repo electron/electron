@@ -1,0 +1,253 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Min Qin <qinmin@chromium.org>
+Date: Mon, 15 Jun 2026 17:51:23 -0700
+Subject: [base] Create temp download file in an atomic operation
+
+This CL fixes an issue that currently the temporary file are created
+through create->close->reopen-by-path patten. As a result of this CL,
+the file is no longer closed during the process.
+
+Splitted the CreateAndOpenTemporaryFileInDir() into 2 separate methods.
+For download, it needs to remove the default FLAG_WIN_EXCLUSIVE_READ
+flag as downloaded file needs to allow antivirus software to scan them.
+So it cannot use the current additional_flags param.
+
+Bug: 519996040
+Change-Id: I4897c465d6e6804f213ae66bd0962e9954a168dd
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7906416
+Reviewed-by: Wez <wez@chromium.org>
+Commit-Queue: Min Qin <qinmin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1647223}
+
+diff --git a/base/files/file_util.h b/base/files/file_util.h
+index 3691d2ade799d128a01d5f1f5c597a22ae2f5ce5..f9e72c7e88b5d9354b6515f57eaf388d32b5a162 100644
+--- a/base/files/file_util.h
++++ b/base/files/file_util.h
+@@ -414,6 +414,19 @@ BASE_EXPORT File CreateAndOpenTemporaryFileInDir(const FilePath& dir,
+                                                  FilePath* temp_file,
+                                                  uint32_t additional_flags = 0);
+ 
++#if BUILDFLAG(IS_WIN)
++// Similar to `CreateAndOpenTemporaryFileInDir`, but allows the caller to
++// specify custom `base::File::Flags` (defined in base/files/file.h) when
++// opening the file.
++// The `base::File::FLAG_CREATE` flag is automatically added to ensure atomic
++// creation (i.e. it will fail if the file already exists).
++// These custom |flags| completely replace the default flags used by
++// `CreateAndOpenTemporaryFileInDir`.
++BASE_EXPORT File CreateAndOpenTemporaryFileInDirWithFlags(const FilePath& dir,
++                                                          FilePath* temp_file,
++                                                          uint32_t flags);
++#endif
++
+ // Creates a temporary file. The full path is placed in `path`, and the
+ // function returns true if was successful in creating the file. The file will
+ // be empty and all handles closed after this function returns.
+diff --git a/base/files/file_util_unittest.cc b/base/files/file_util_unittest.cc
+index a57bbd36412815e8923e8489898aecd7d0143048..d9fa92fe73011fabcbf41b3c2bb1f9dd381f2aec 100644
+--- a/base/files/file_util_unittest.cc
++++ b/base/files/file_util_unittest.cc
+@@ -3368,6 +3368,26 @@ TEST_F(FileUtilTest, CreateAndOpenTemporaryFileInDir) {
+ #endif
+ }
+ 
++#if BUILDFLAG(IS_WIN)
++TEST_F(FileUtilTest, CreateAndOpenTemporaryFileInDirWithFlags) {
++  // Create a temporary file with flags that allow sharing for read and delete.
++  FilePath path;
++  uint32_t flags = File::FLAG_READ | File::FLAG_WRITE |
++                   File::FLAG_WIN_EXCLUSIVE_WRITE | File::FLAG_WIN_SHARE_DELETE;
++  File file = CreateAndOpenTemporaryFileInDirWithFlags(temp_dir_.GetPath(),
++                                                       &path, flags);
++  ASSERT_TRUE(file.IsValid());
++  EXPECT_FALSE(path.empty());
++
++  // Try to open another handle to it for reading.
++  File file2(path,
++             File::FLAG_OPEN | File::FLAG_READ | File::FLAG_WIN_SHARE_DELETE);
++  // On all platforms (including Windows), this should succeed because we
++  // did not set FLAG_WIN_EXCLUSIVE_READ.
++  EXPECT_TRUE(file2.IsValid());
++}
++#endif
++
+ TEST_F(FileUtilTest, CreateTemporaryFileTest) {
+   std::array<FilePath, 3> temp_files;
+   for (auto& i : temp_files) {
+diff --git a/base/files/file_util_win.cc b/base/files/file_util_win.cc
+index ffb6b3ebb35ddde713da716b890241c9ac84789d..3f621b42d65a65c58f09563a4e1e353dc189606a 100644
+--- a/base/files/file_util_win.cc
++++ b/base/files/file_util_win.cc
+@@ -779,24 +779,12 @@ FilePath GetHomeDir() {
+   return FilePath(FILE_PATH_LITERAL("C:\\"));
+ }
+ 
+-File CreateAndOpenTemporaryFileInDir(const FilePath& dir,
+-                                     FilePath* temp_file,
+-                                     uint32_t additional_flags) {
++File CreateAndOpenTemporaryFileInDirWithFlags(const FilePath& dir,
++                                              FilePath* temp_file,
++                                              uint32_t flags) {
+   ScopedBlockingCall scoped_blocking_call(FROM_HERE, BlockingType::MAY_BLOCK);
+ 
+-  // Open the file with exclusive r/w/d access, and allow the caller to decide
+-  // to mark it for deletion upon close after the fact.
+-  uint32_t flags = File::FLAG_CREATE | File::FLAG_READ | File::FLAG_WRITE |
+-                   File::FLAG_WIN_EXCLUSIVE_READ |
+-                   File::FLAG_WIN_EXCLUSIVE_WRITE |
+-                   File::FLAG_CAN_DELETE_ON_CLOSE | additional_flags;
+-
+-  // Use GUID instead of ::GetTempFileName() to generate unique file names.
+-  // "Due to the algorithm used to generate file names, GetTempFileName can
+-  // perform poorly when creating a large number of files with the same prefix.
+-  // In such cases, it is recommended that you construct unique file names based
+-  // on GUIDs."
+-  // https://msdn.microsoft.com/library/windows/desktop/aa364991.aspx
++  flags |= File::FLAG_CREATE;
+ 
+   FilePath temp_name;
+   File file;
+@@ -831,6 +819,16 @@ File CreateAndOpenTemporaryFileInDir(const FilePath& dir,
+   return file;
+ }
+ 
++File CreateAndOpenTemporaryFileInDir(const FilePath& dir,
++                                     FilePath* temp_file,
++                                     uint32_t additional_flags) {
++  constexpr uint32_t default_flags =
++      File::FLAG_READ | File::FLAG_WRITE | File::FLAG_WIN_EXCLUSIVE_READ |
++      File::FLAG_WIN_EXCLUSIVE_WRITE | File::FLAG_CAN_DELETE_ON_CLOSE;
++  return CreateAndOpenTemporaryFileInDirWithFlags(
++      dir, temp_file, default_flags | additional_flags);
++}
++
+ bool CreateTemporaryFileInDir(const FilePath& dir, FilePath* temp_file) {
+   return CreateAndOpenTemporaryFileInDir(dir, temp_file).IsValid();
+ }
+diff --git a/components/download/internal/common/base_file.cc b/components/download/internal/common/base_file.cc
+index fc570b5d32d357cc0b24e2151839660f045b4231..185b2b86e3d8a30c8c564d3e1fae349f7a505877 100644
+--- a/components/download/internal/common/base_file.cc
++++ b/components/download/internal/common/base_file.cc
+@@ -131,17 +131,48 @@ DownloadInterruptReason BaseFile::Initialize(
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   DCHECK(!detached_);
+ 
++#if BUILDFLAG(IS_WIN)
++  constexpr uint32_t kTempFileFlags =
++      base::File::FLAG_READ | base::File::FLAG_WRITE |
++      base::File::FLAG_WIN_EXCLUSIVE_WRITE | base::File::FLAG_WIN_SHARE_DELETE;
++#endif
++
+   if (full_path.empty()) {
+     base::FilePath temp_file;
+-    if ((default_directory.empty() ||
+-         !base::CreateTemporaryFileInDir(default_directory, &temp_file)) &&
+-        !base::CreateTemporaryFile(&temp_file)) {
+-      return LogInterruptReason("Unable to create", 0,
+-                                DOWNLOAD_INTERRUPT_REASON_FILE_FAILED);
++    base::File temp_base_file;
++    if (!default_directory.empty()) {
++#if BUILDFLAG(IS_WIN)
++      temp_base_file = base::CreateAndOpenTemporaryFileInDirWithFlags(
++          default_directory, &temp_file, kTempFileFlags);
++#else
++      temp_base_file =
++          base::CreateAndOpenTemporaryFileInDir(default_directory, &temp_file);
++#endif
++    }
++
++    if (!temp_base_file.IsValid()) {
++      base::FilePath system_temp_dir;
++      if (!base::GetTempDir(&system_temp_dir)) {
++        return LogInterruptReason("Unable to find temp directory", 0,
++                                  DOWNLOAD_INTERRUPT_REASON_FILE_FAILED);
++      }
++#if BUILDFLAG(IS_WIN)
++      temp_base_file = base::CreateAndOpenTemporaryFileInDirWithFlags(
++          system_temp_dir, &temp_file, kTempFileFlags);
++#else
++      temp_base_file =
++          base::CreateAndOpenTemporaryFileInDir(system_temp_dir, &temp_file);
++#endif
++      if (!temp_base_file.IsValid()) {
++        return LogInterruptReason("Unable to create temporary file", 0,
++                                  DOWNLOAD_INTERRUPT_REASON_FILE_FAILED);
++      }
+     }
+     full_path_ = temp_file;
++    file_ = std::move(temp_base_file);
+   } else {
+     full_path_ = full_path;
++    file_ = std::move(file);
+   }
+ 
+   bytes_so_far_ = bytes_so_far;
+@@ -150,7 +181,6 @@ DownloadInterruptReason BaseFile::Initialize(
+   // Sparse file doesn't validate hash.
+   if (is_sparse_file_)
+     secure_hash_.reset();
+-  file_ = std::move(file);
+ 
+   return Open(hash_so_far, bytes_wasted);
+ }
+diff --git a/components/download/internal/common/base_file_unittest.cc b/components/download/internal/common/base_file_unittest.cc
+index 001f9805ef767d58fb609fbc747d3f2e5bc92d9f..5ed6bf95b73ba5cc54fa856e89f333fa3fd2ee8d 100644
+--- a/components/download/internal/common/base_file_unittest.cc
++++ b/components/download/internal/common/base_file_unittest.cc
+@@ -745,6 +745,56 @@ TEST_F(BaseFileTest, CreatedInDefaultDirectory) {
+   base_file_->Finish();
+ }
+ 
++// Test that a temporary file is created in the system temporary directory
++// when no default directory is provided.
++TEST_F(BaseFileTest, CreatedInSystemTempDirectory) {
++  ASSERT_TRUE(base_file_->full_path().empty());
++  DownloadInterruptReason result = base_file_->Initialize(
++      base::FilePath(), base::FilePath(), base::File(), 0, std::string(),
++      std::unique_ptr<crypto::SecureHash>(), false, &kTestDataBytesWasted);
++  ASSERT_EQ(DOWNLOAD_INTERRUPT_REASON_NONE, result);
++  EXPECT_FALSE(base_file_->full_path().empty());
++  EXPECT_TRUE(base_file_->in_progress());
++
++  base::FilePath system_temp_dir;
++  ASSERT_TRUE(base::GetTempDir(&system_temp_dir));
++  EXPECT_TRUE(system_temp_dir.IsParent(base_file_->full_path()));
++  base_file_->Finish();
++}
++
++// Test that a temporary file is created in the system temporary directory
++// when the default directory is unwritable (fallback mechanism).
++#if BUILDFLAG(IS_FUCHSIA)
++// TODO(crbug.com/40221266): Re-enable when MakeFileUnwritable works on Fuchsia.
++#define MAYBE_CreatedInSystemTempDirectoryFallback \
++  DISABLED_CreatedInSystemTempDirectoryFallback
++#else
++#define MAYBE_CreatedInSystemTempDirectoryFallback \
++  CreatedInSystemTempDirectoryFallback
++#endif
++TEST_F(BaseFileTest, MAYBE_CreatedInSystemTempDirectoryFallback) {
++  base::FilePath unwritable_dir(
++      temp_dir_.GetPath().AppendASCII("UnwritableDir"));
++  ASSERT_TRUE(base::CreateDirectory(unwritable_dir));
++
++  base::FilePermissionRestorer restore_permissions(unwritable_dir);
++  ASSERT_TRUE(base::MakeFileUnwritable(unwritable_dir));
++
++  ASSERT_TRUE(base_file_->full_path().empty());
++  DownloadInterruptReason result = base_file_->Initialize(
++      base::FilePath(), unwritable_dir, base::File(), 0, std::string(),
++      std::unique_ptr<crypto::SecureHash>(), false, &kTestDataBytesWasted);
++  ASSERT_EQ(DOWNLOAD_INTERRUPT_REASON_NONE, result);
++  EXPECT_FALSE(base_file_->full_path().empty());
++  EXPECT_TRUE(base_file_->in_progress());
++
++  EXPECT_FALSE(unwritable_dir.IsParent(base_file_->full_path()));
++  base::FilePath system_temp_dir;
++  ASSERT_TRUE(base::GetTempDir(&system_temp_dir));
++  EXPECT_TRUE(system_temp_dir.IsParent(base_file_->full_path()));
++  base_file_->Finish();
++}
++
+ TEST_F(BaseFileTest, NoDoubleDeleteAfterCancel) {
+   ASSERT_TRUE(InitializeFile());
+   base::FilePath full_path = base_file_->full_path();

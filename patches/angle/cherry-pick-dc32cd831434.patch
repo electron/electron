@@ -1,0 +1,243 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Fri, 5 Jun 2026 10:02:50 -0400
+Subject: Vulkan: Fix cubemap base-level change vs redefinition
+
+If any face of the cubemap was redefined, the entire level was dropped
+instead of just that face.
+
+Fix credit zmo@chromium.org
+
+Bug: chromium:513134019
+Change-Id: I870dd23ba3ca791a9456d00984b75290d361b315
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7901643
+Reviewed-by: Charlie Lao <cclao@google.com>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index c6411b8a5658b907580b047d82d13b66e4bed062..9f2ad97b6de8d8ced129bb426e08bbe0d52f86d3 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -416,12 +416,28 @@ bool IsAnyLayout(VkImageLayout needle, const VkImageLayout *haystack, uint32_t h
+     return std::find(haystack, haystackEnd, needle) != haystackEnd;
+ }
+ 
+-gl::TexLevelMask AggregateSkipLevels(const gl::CubeFaceArray<gl::TexLevelMask> &skipLevels)
++gl::TexLevelMask AggregateSkipLevelsAnyFaceSkipped(
++    const gl::CubeFaceArray<gl::TexLevelMask> &skipLevels)
+ {
+-    gl::TexLevelMask skipLevelsAllFaces = skipLevels[0];
++    gl::TexLevelMask skipLevelsAnyFace = skipLevels[0];
+     for (size_t face = 1; face < gl::kCubeFaceCount; ++face)
+     {
+-        skipLevelsAllFaces |= skipLevels[face];
++        skipLevelsAnyFace |= skipLevels[face];
++    }
++    return skipLevelsAnyFace;
++}
++
++gl::TexLevelMask AggregateSkipLevelsAllFacesSkipped(
++    const gl::CubeFaceArray<gl::TexLevelMask> &skipLevels,
++    gl::TextureType textureType)
++{
++    gl::TexLevelMask skipLevelsAllFaces = skipLevels[0];
++    if (textureType == gl::TextureType::CubeMap)
++    {
++        for (size_t face = 1; face < gl::kCubeFaceCount; ++face)
++        {
++            skipLevelsAllFaces &= skipLevels[face];
++        }
+     }
+     return skipLevelsAllFaces;
+ }
+@@ -9900,7 +9916,8 @@ void ImageHelper::stageSelfAsSubresourceUpdates(
+     // Nothing to do if every level must be skipped
+     const gl::TexLevelMask levelsMask(angle::BitMask<uint32_t>(levelCount)
+                                       << mFirstAllocatedLevel.get());
+-    const gl::TexLevelMask skipLevelsAllFaces = AggregateSkipLevels(skipLevels);
++    const gl::TexLevelMask skipLevelsAllFaces =
++        AggregateSkipLevelsAllFacesSkipped(skipLevels, textureType);
+ 
+     if ((~skipLevelsAllFaces & levelsMask).none())
+     {
+@@ -10074,7 +10091,7 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+                                                   gl::LevelIndex levelGLEnd,
+                                                   uint32_t layerStart,
+                                                   uint32_t layerEnd,
+-                                                  const gl::TexLevelMask &skipLevelsAllFaces)
++                                                  const gl::TexLevelMask &skipLevels)
+ {
+     Renderer *renderer = contextVk->getRenderer();
+ 
+@@ -10116,7 +10133,7 @@ angle::Result ImageHelper::flushStagedUpdatesImpl(ContextVk *contextVk,
+         // them. This can happen when recreating an image that has been partially incompatibly
+         // redefined, in which case only updates to the levels that haven't been redefined
+         // should be flushed.
+-        if (skipLevelsAllFaces.test(updateMipLevelGL.get()))
++        if (skipLevels.test(updateMipLevelGL.get()))
+         {
+             continue;
+         }
+@@ -10420,8 +10437,8 @@ angle::Result ImageHelper::flushStagedUpdates(ContextVk *contextVk,
+         return angle::Result::Continue;
+     }
+ 
+-    const gl::TexLevelMask skipLevelsAllFaces = AggregateSkipLevels(skipLevels);
+-    removeSupersededUpdates(contextVk, skipLevelsAllFaces);
++    const gl::TexLevelMask skipLevelsAnyFace = AggregateSkipLevelsAnyFaceSkipped(skipLevels);
++    removeSupersededUpdates(contextVk, skipLevelsAnyFace);
+ 
+     // If a clear is requested and we know it was previously cleared with the same value, we drop
+     // the clear.
+@@ -10461,7 +10478,7 @@ angle::Result ImageHelper::flushStagedUpdates(ContextVk *contextVk,
+     if (otherUpdatesToFlushOut)
+     {
+         ANGLE_TRY(flushStagedUpdatesImpl(contextVk, levelGLStart, levelGLEnd, layerStart, layerEnd,
+-                                         skipLevelsAllFaces));
++                                         skipLevelsAnyFace));
+     }
+ 
+     // Compact mSubresourceUpdates, then check if there are any updates left.
+@@ -10860,8 +10877,7 @@ void ImageHelper::pruneSupersededUpdatesForLevelImpl(ContextVk *contextVk,
+     assertSubresourceUpdateRefCountsConsistent();
+ }
+ 
+-void ImageHelper::removeSupersededUpdates(ContextVk *contextVk,
+-                                          const gl::TexLevelMask skipLevelsAllFaces)
++void ImageHelper::removeSupersededUpdates(ContextVk *contextVk, const gl::TexLevelMask skipLevels)
+ {
+     assertSubresourceUpdateRefCountsConsistent();
+ 
+@@ -10869,8 +10885,7 @@ void ImageHelper::removeSupersededUpdates(ContextVk *contextVk,
+     {
+         gl::LevelIndex levelGL                       = toGLLevel(levelVk);
+         SubresourceUpdates *levelUpdates             = getLevelUpdates(levelGL);
+-        if (levelUpdates == nullptr || levelUpdates->size() == 0 ||
+-            skipLevelsAllFaces.test(levelGL.get()))
++        if (levelUpdates == nullptr || levelUpdates->size() == 0 || skipLevels.test(levelGL.get()))
+         {
+             // There are no valid updates to process, continue.
+             continue;
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
+index 8b23c4d2f5f9dfd4f55c9f62945267993c8c4039..d61818b5a53340081689926fd3240cfa6678e649 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.h
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
+@@ -3163,7 +3163,7 @@ class ImageHelper final : public Resource, public angle::Subject
+     // Called from flushStagedUpdates, removes updates that are later superseded by another.  This
+     // cannot be done at the time the updates were staged, as the image is not created (and thus the
+     // extents are not known).
+-    void removeSupersededUpdates(ContextVk *contextVk, const gl::TexLevelMask skipLevelsAllFaces);
++    void removeSupersededUpdates(ContextVk *contextVk, const gl::TexLevelMask skipLevels);
+ 
+     void initImageMemoryBarrierStruct(Renderer *renderer,
+                                       VkImageAspectFlags aspectMask,
+@@ -3275,7 +3275,7 @@ class ImageHelper final : public Resource, public angle::Subject
+                                          gl::LevelIndex levelGLEnd,
+                                          uint32_t layerStart,
+                                          uint32_t layerEnd,
+-                                         const gl::TexLevelMask &skipLevelsAllFaces);
++                                         const gl::TexLevelMask &skipLevels);
+ 
+     // Limit the input level to the number of levels in subresource update list.
+     void clipLevelToUpdateListUpperLimit(gl::LevelIndex *level) const;
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 6cd4699b675fe4fb16163ec4ec0765b21d5f6c0a..518dd8c46501140f8bc7bafe0af64416953dab90 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -569,6 +569,7 @@
+ 1456243 WIN D3D11 : WebGL2CompatibilityTest.DrawWithZeroSizedBuffer/* = SKIP
+ 42266836 WIN D3D9 : GLSLValidationTest.VectorScalarArithmeticWithSideEffectInLoop/* = SKIP
+ 42267092 WIN D3D11 : BlitFramebufferTest.FlippedBlits/* = SKIP
++520277980 WIN D3D11 : TextureCubeTestES3.CubeMapRedefinedWithBaseLevelChange/* = SKIP
+ 432303915 WIN D3D11 : GLSLTest.VerifyMaxFragmentUniformVectorsWithSamplers/* = SKIP
+ 432303915 WIN D3D11 : GLSLTest.VerifyMaxVertexUniformVectors/* = SKIP
+ 432303915 WIN D3D11 : GLSLTest.VerifyMaxVertexUniformVectorsWithSamplers/* = SKIP
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index d361c9beaf592354d97e64795899727984bdcec3..2569d5a4abfad84f40ff37775e19bab780eef5b5 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -15377,6 +15377,84 @@ TEST_P(TextureCubeTestES3,
+     incompatibleCubeFacesThenSingleFaceCompatibleUploadAndIncompatibleAgain(GL_ALPHA);
+ }
+ 
++// Test cube map redefinition vs changing the base level.
++TEST_P(TextureCubeTestES3, CubeMapRedefinedWithBaseLevelChange)
++{
++    constexpr GLuint kSize = 4;
++
++    const std::vector<GLColor> kRed(kSize * kSize, GLColor::red);
++    const std::vector<GLColor> kGreen(kSize * kSize, GLColor::green);
++
++    // Create a cubemap at level 1
++    GLTexture cube;
++    glBindTexture(GL_TEXTURE_CUBE_MAP, cube);
++    for (GLenum face = 0; face < 6; face++)
++    {
++        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 1, GL_RGBA, kSize / 2, kSize / 2, 0,
++                     GL_RGBA, GL_UNSIGNED_BYTE, kRed.data());
++    }
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 1);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    // Make sure the texture is synced.
++    constexpr char kFS[] = R"(precision highp float;
++uniform samplerCube texCube;
++void main()
++{
++    gl_FragColor = textureCube(texCube, vec3(0));
++})";
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 1.0f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++
++    // Define level 0 in a way that is mip-compatible with level 1, then set base level to 0.  While
++    // level 0 is being defined, it's outside the [base, max] levels of the texture.
++    for (GLenum face = 0; face < 6; face++)
++    {
++        const GLenum cubeFace = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        glTexImage2D(cubeFace, 0, GL_RGBA, kSize, kSize, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                     kGreen.data());
++    }
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_BASE_LEVEL, 0);
++
++    // Incompatibly redefine a face of level 1
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 1, GL_RGBA, kSize, kSize, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, kGreen.data());
++
++    // Attach a framebuffer to level 0.  This should work despite the invalid definition of level 1.
++    // Note also that MIN_FILTER does not enable mipmapping.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X,
++                           cube, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, kSize, kSize, GLColor::green);
++
++    // Redefine the face of level 1 to be compatible, then make sure that none of the data to the
++    // other levels are lost.
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 1, GL_RGBA, kSize / 2, kSize / 2, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, kGreen.data());
++    for (GLenum face = 0; face < 6; face++)
++    {
++        const GLenum cubeFace = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubeFace, cube, 1);
++        EXPECT_PIXEL_RECT_EQ(
++            0, 0, kSize / 2, kSize / 2,
++            cubeFace == GL_TEXTURE_CUBE_MAP_NEGATIVE_X ? GLColor::green : GLColor::red);
++    }
++
++    // For completeness, verify that level 0 is also intact.
++    for (GLenum face = 0; face < 6; face++)
++    {
++        const GLenum cubeFace = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, cubeFace, cube, 0);
++        EXPECT_PIXEL_RECT_EQ(0, 0, kSize, kSize, GLColor::green);
++    }
++
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Test that glCopyImageSubData works with GL_TEXTURE_CUBE_MAP_ARRAY layers unique to array cubes
+ TEST_P(TextureCubeTestES32, CopyImageSubDataCubeMapArray)
+ {
