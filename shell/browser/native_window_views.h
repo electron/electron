@@ -251,6 +251,7 @@ class NativeWindowViews : public NativeWindow,
   void ResetWindowControls();
   void SetRoundedCorners(bool rounded);
   void SetForwardMouseMessages(bool forward);
+  static BOOL GetPointInRectAndToClient(HWND hwnd, POINT* pt);
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
                                        UINT msg,
                                        WPARAM w_param,
@@ -340,6 +341,7 @@ class NativeWindowViews : public NativeWindow,
       forwarding_windows_;
   static HHOOK mouse_hook_;
   bool forwarding_mouse_messages_ = false;
+  bool was_forwarded_mouse_in_legacy_window_ = false;
   HWND legacy_window_ = nullptr;
   bool layered_ = false;
 
