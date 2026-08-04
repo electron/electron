@@ -119,7 +119,7 @@ index 79a309661aff7ebb18f96e64d0d2b860ab80dc57..168b6a812a87cf2d700afc71c205493c
    UntrackContext(context);
  }
 diff --git a/src/histogram.cc b/src/histogram.cc
-index a676d302466605bbbd2d1a90e71ef5d9f640fe30..8be2fee3db9b6d64ace6eda58dd3dc06685ded12 100644
+index a676d302466605bbbd2d1a90e71ef5d9f640fe30..943edd53e06a34ae2175808af12b037d09812371 100644
 --- a/src/histogram.cc
 +++ b/src/histogram.cc
 @@ -154,7 +154,8 @@ HistogramBase::HistogramBase(
@@ -152,7 +152,17 @@ index a676d302466605bbbd2d1a90e71ef5d9f640fe30..8be2fee3db9b6d64ace6eda58dd3dc06
    uv_timer_init(env->event_loop(), &timer_);
  }
  
-@@ -746,7 +749,8 @@ HistogramImpl* HistogramImpl::FromJSObject(Local<Value> value) {
+@@ -488,7 +491,8 @@ IterationHistogram::IterationHistogram(Environment* env,
+   MakeWeak();
+   wrap->SetAlignedPointerInInternalField(
+       HistogramImpl::InternalFields::kImplField,
+-      static_cast<HistogramImpl*>(this));
++      static_cast<HistogramImpl*>(this),
++      v8::kEmbedderDataTypeTagDefault);
+   uv_check_init(env->event_loop(), &check_handle_);
+   uv_prepare_init(env->event_loop(), &prepare_handle_);
+   uv_unref(reinterpret_cast<uv_handle_t*>(&check_handle_));
+@@ -746,7 +750,8 @@ HistogramImpl* HistogramImpl::FromJSObject(Local<Value> value) {
    auto obj = value.As<Object>();
    DCHECK_GE(obj->InternalFieldCount(), HistogramImpl::kInternalFieldCount);
    return static_cast<HistogramImpl*>(
