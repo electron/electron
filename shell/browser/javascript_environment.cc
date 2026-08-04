@@ -132,9 +132,9 @@ std::unique_ptr<gin::IsolateHolder> CreateIsolateHolder(
 
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
                                              bool setup_wasm_streaming)
-    : isolate_holder_{CreateIsolateHolder(
-          Initialize(event_loop, setup_wasm_streaming),
-          &max_young_generation_size_)},
+    : isolate_holder_{
+          CreateIsolateHolder(Initialize(event_loop, setup_wasm_streaming),
+                              &max_young_generation_size_)},
       locker_{std::make_unique<v8::Locker>(isolate())} {
   v8::Isolate* const isolate = this->isolate();
   isolate->Enter();
@@ -190,12 +190,11 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
 
   // The V8Platform of gin relies on Chromium's task schedule, which has not
   // been started at this point, so we have to rely on Node's V8Platform.
-  auto* tracing_agent = new node::tracing::Agent();
-  auto* tracing_controller = tracing_agent->GetTracingController();
-  node::tracing::TraceEventHelper::SetAgent(tracing_agent);
+  tracing_agent_ = node::tracing::Agent::CreateDefault();
   platform_ = node::MultiIsolatePlatform::Create(
       base::RecommendedMaxNumberOfThreadsInThreadGroup(3, 8, 0.1, 0),
-      tracing_controller, gin::V8Platform::Get()->GetPageAllocator());
+      tracing_agent_->GetTracingController(),
+      gin::V8Platform::Get()->GetPageAllocator());
 
   v8::V8::InitializePlatform(platform_.get());
   gin::IsolateHolder::Initialize(

@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "shell/common/uv_includes.h"
+#include "third_party/electron_node/src/tracing/agent.h"
 
 namespace gin {
 class IsolateHolder;
@@ -61,6 +62,8 @@ class JavascriptEnvironment {
 
  private:
   v8::Isolate* Initialize(uv_loop_t* event_loop, bool setup_wasm_streaming);
+  std::unique_ptr<node::tracing::Agent, node::tracing::Agent::Deleter>
+      tracing_agent_;
   std::unique_ptr<node::MultiIsolatePlatform> platform_;
 
   size_t max_young_generation_size_ = 0;
