@@ -1,0 +1,576 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Qiu Jianlin <jianlin.qiu@intel.com>
+Date: Fri, 26 Jun 2026 16:17:11 -0700
+Subject: Fix GPU UAF in D3D12VideoProcessorWrapper teardown.
+
+D3D12VideoEncodeDelegate::Encode() submits asynchronous video
+processing work to D3D12VideoProcessorWrapper::ProcessFrames() and
+relies on the CPU sync inside D3D12VideoEncoderWrapper::Encode() to
+wait on it later. If a codec-specific EncodeImpl() bails between those
+two steps (e.g. with kBadReferenceBuffer for a manual reference buffer
+that was never populated), that sync is skipped and the subsequent
+teardown releases the wrapper's command allocator, command list and
+processed input frame while the video processor queue is still using
+them.
+Wait for in-flight video-processor work whenever EncodeImpl() errors
+after ProcessFrames() may have submitted work, so the delegate's
+resources are safe by the time NotifyError() begins teardown.
+
+Bug: 523718303
+Change-Id: Ifded931b5381a76ed3b3d4c3baae2f8cb703a983
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7976180
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Commit-Queue: Qiu, Jianlin <jianlin.qiu@intel.com>
+Auto-Submit: Qiu, Jianlin <jianlin.qiu@intel.com>
+Cr-Commit-Position: refs/heads/main@{#1653518}
+
+diff --git a/media/base/win/d3d12_mocks.cc b/media/base/win/d3d12_mocks.cc
+index f3c459f75380c86aede601a79122876373411a69..ac35d365f38eea86dfc09af130460192d96a6091 100644
+--- a/media/base/win/d3d12_mocks.cc
++++ b/media/base/win/d3d12_mocks.cc
+@@ -15,6 +15,12 @@ D3D12ResourceMock::~D3D12ResourceMock() = default;
+ D3D12GraphicsCommandListMock::D3D12GraphicsCommandListMock() = default;
+ D3D12GraphicsCommandListMock::~D3D12GraphicsCommandListMock() = default;
+ 
++D3D12CommandQueueMock::D3D12CommandQueueMock() = default;
++D3D12CommandQueueMock::~D3D12CommandQueueMock() = default;
++
++D3D12CommandAllocatorMock::D3D12CommandAllocatorMock() = default;
++D3D12CommandAllocatorMock::~D3D12CommandAllocatorMock() = default;
++
+ D3D12FenceMock::D3D12FenceMock() = default;
+ D3D12FenceMock::~D3D12FenceMock() = default;
+ 
+diff --git a/media/base/win/d3d12_mocks.h b/media/base/win/d3d12_mocks.h
+index c0e2c6326960af378d6b34e90e1ecbdffc25d106..dd645768c8a84bca3409a3be033e0182cef7858d 100644
+--- a/media/base/win/d3d12_mocks.h
++++ b/media/base/win/d3d12_mocks.h
+@@ -417,6 +417,116 @@ class D3D12GraphicsCommandListMock
+                             UINT64 CountBufferOffset));
+ };
+ 
++class D3D12CommandQueueMock
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          ID3D12CommandQueue> {
++ public:
++  D3D12CommandQueueMock();
++  ~D3D12CommandQueueMock() override;
++
++  MOCK_METHOD(HRESULT,
++              GetPrivateData,
++              (REFGUID, UINT*, void*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              SetPrivateData,
++              (REFGUID, UINT, const void*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              SetPrivateDataInterface,
++              (REFGUID, const IUnknown*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT, SetName, (LPCWSTR), (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              GetDevice,
++              (REFIID, void**),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              UpdateTileMappings,
++              (ID3D12Resource*,
++               UINT,
++               const D3D12_TILED_RESOURCE_COORDINATE*,
++               const D3D12_TILE_REGION_SIZE*,
++               ID3D12Heap*,
++               UINT,
++               const D3D12_TILE_RANGE_FLAGS*,
++               const UINT*,
++               const UINT*,
++               D3D12_TILE_MAPPING_FLAGS),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              CopyTileMappings,
++              (ID3D12Resource*,
++               const D3D12_TILED_RESOURCE_COORDINATE*,
++               ID3D12Resource*,
++               const D3D12_TILED_RESOURCE_COORDINATE*,
++               const D3D12_TILE_REGION_SIZE*,
++               D3D12_TILE_MAPPING_FLAGS),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              ExecuteCommandLists,
++              (UINT, ID3D12CommandList* const*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              SetMarker,
++              (UINT, const void*, UINT),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              BeginEvent,
++              (UINT, const void*, UINT),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void, EndEvent, (), (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              Signal,
++              (ID3D12Fence*, UINT64),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              Wait,
++              (ID3D12Fence*, UINT64),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              GetTimestampFrequency,
++              (UINT64*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              GetClockCalibration,
++              (UINT64*, UINT64*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(D3D12_COMMAND_QUEUE_DESC,
++              GetDesc,
++              (),
++              (Calltype(STDMETHODCALLTYPE)));
++};
++
++class D3D12CommandAllocatorMock
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          ID3D12CommandAllocator> {
++ public:
++  D3D12CommandAllocatorMock();
++  ~D3D12CommandAllocatorMock() override;
++
++  MOCK_METHOD(HRESULT,
++              GetPrivateData,
++              (REFGUID, UINT*, void*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              SetPrivateData,
++              (REFGUID, UINT, const void*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              SetPrivateDataInterface,
++              (REFGUID, const IUnknown*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT, SetName, (LPCWSTR), (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              GetDevice,
++              (REFIID, void**),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT, Reset, (), (Calltype(STDMETHODCALLTYPE)));
++};
++
+ class D3D12FenceMock
+     : public Microsoft::WRL::RuntimeClass<
+           Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
+diff --git a/media/base/win/d3d12_video_mocks.cc b/media/base/win/d3d12_video_mocks.cc
+index ad76d226f676f805c39f82761a9f93194cfa5fd0..8768db1a801a719dd8d6dbc7556df48e95d759f4 100644
+--- a/media/base/win/d3d12_video_mocks.cc
++++ b/media/base/win/d3d12_video_mocks.cc
+@@ -9,4 +9,10 @@ namespace media {
+ D3D12VideoDevice3Mock::D3D12VideoDevice3Mock() = default;
+ D3D12VideoDevice3Mock::~D3D12VideoDevice3Mock() = default;
+ 
++D3D12VideoProcessorMock::D3D12VideoProcessorMock() = default;
++D3D12VideoProcessorMock::~D3D12VideoProcessorMock() = default;
++
++D3D12VideoProcessCommandListMock::D3D12VideoProcessCommandListMock() = default;
++D3D12VideoProcessCommandListMock::~D3D12VideoProcessCommandListMock() = default;
++
+ }  // namespace media
+diff --git a/media/base/win/d3d12_video_mocks.h b/media/base/win/d3d12_video_mocks.h
+index 9902adb686918839a4f851fd9c9c09a895b9e82a..29a369535141e66b40c3060b37c68eaf0130e35a 100644
+--- a/media/base/win/d3d12_video_mocks.h
++++ b/media/base/win/d3d12_video_mocks.h
+@@ -118,6 +118,127 @@ class D3D12VideoDevice3Mock
+                                void** ppVideoEncoderHeap));
+ };
+ 
++class D3D12VideoProcessorMock
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          ID3D12VideoProcessor> {
++ public:
++  D3D12VideoProcessorMock();
++  ~D3D12VideoProcessorMock() override;
++
++  MOCK_METHOD(HRESULT,
++              GetPrivateData,
++              (REFGUID, UINT*, void*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              SetPrivateData,
++              (REFGUID, UINT, const void*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              SetPrivateDataInterface,
++              (REFGUID, const IUnknown*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT, SetName, (LPCWSTR), (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              GetDevice,
++              (REFIID, void**),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(UINT, GetNodeMask, (), (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(UINT, GetNumInputStreamDescs, (), (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              GetInputStreamDescs,
++              (UINT, D3D12_VIDEO_PROCESS_INPUT_STREAM_DESC*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(D3D12_VIDEO_PROCESS_OUTPUT_STREAM_DESC,
++              GetOutputStreamDesc,
++              (),
++              (Calltype(STDMETHODCALLTYPE)));
++};
++
++class D3D12VideoProcessCommandListMock
++    : public Microsoft::WRL::RuntimeClass<
++          Microsoft::WRL::RuntimeClassFlags<Microsoft::WRL::ClassicCom>,
++          ID3D12VideoProcessCommandList> {
++ public:
++  D3D12VideoProcessCommandListMock();
++  ~D3D12VideoProcessCommandListMock() override;
++
++  MOCK_METHOD(HRESULT,
++              GetPrivateData,
++              (REFGUID, UINT*, void*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              SetPrivateData,
++              (REFGUID, UINT, const void*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              SetPrivateDataInterface,
++              (REFGUID, const IUnknown*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT, SetName, (LPCWSTR), (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              GetDevice,
++              (REFIID, void**),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(D3D12_COMMAND_LIST_TYPE,
++              GetType,
++              (),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT, Close, (), (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(HRESULT,
++              Reset,
++              (ID3D12CommandAllocator*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void, ClearState, (), (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              ResourceBarrier,
++              (UINT, const D3D12_RESOURCE_BARRIER*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              DiscardResource,
++              (ID3D12Resource*, const D3D12_DISCARD_REGION*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              BeginQuery,
++              (ID3D12QueryHeap*, D3D12_QUERY_TYPE, UINT),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              EndQuery,
++              (ID3D12QueryHeap*, D3D12_QUERY_TYPE, UINT),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(
++      void,
++      ResolveQueryData,
++      (ID3D12QueryHeap*, D3D12_QUERY_TYPE, UINT, UINT, ID3D12Resource*, UINT64),
++      (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              SetPredication,
++              (ID3D12Resource*, UINT64, D3D12_PREDICATION_OP),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              SetMarker,
++              (UINT, const void*, UINT),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              BeginEvent,
++              (UINT, const void*, UINT),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void, EndEvent, (), (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              ProcessFrames,
++              (ID3D12VideoProcessor*,
++               const D3D12_VIDEO_PROCESS_OUTPUT_STREAM_ARGUMENTS*,
++               UINT,
++               const D3D12_VIDEO_PROCESS_INPUT_STREAM_ARGUMENTS*),
++              (Calltype(STDMETHODCALLTYPE)));
++  MOCK_METHOD(void,
++              WriteBufferImmediate,
++              (UINT,
++               const D3D12_WRITEBUFFERIMMEDIATE_PARAMETER*,
++               const D3D12_WRITEBUFFERIMMEDIATE_MODE*),
++              (Calltype(STDMETHODCALLTYPE)));
++};
++
+ }  // namespace media
+ 
+ #endif  // MEDIA_BASE_WIN_D3D12_VIDEO_MOCKS_H_
+diff --git a/media/gpu/BUILD.gn b/media/gpu/BUILD.gn
+index f67f1e9dfc6e1ab6b8a764decc8fcee3424f20b6..06adf4a53de3b804cba3ff315e348b5c7463f206 100644
+--- a/media/gpu/BUILD.gn
++++ b/media/gpu/BUILD.gn
+@@ -689,6 +689,7 @@ source_set("unit_tests") {
+       "windows/d3d12_video_encode_delegate_unittest.cc",
+       "windows/d3d12_video_encode_delegate_unittest.h",
+       "windows/d3d12_video_encode_h264_delegate_unittest.cc",
++      "windows/d3d12_video_processor_wrapper_unittest.cc",
+       "windows/media_foundation_video_encode_accelerator_win_unittest.cc",
+       "windows/mf_audio_encoder_unittest.cc",
+       "windows/mf_video_processor_accelerator_unittest.cc",
+diff --git a/media/gpu/windows/d3d12_video_encode_delegate.cc b/media/gpu/windows/d3d12_video_encode_delegate.cc
+index 6c2c1eba12818d416b49712358d2ba2475b2d26b..f993dfe699f18ff310e27fec3f55fcb4b8ba5d8b 100644
+--- a/media/gpu/windows/d3d12_video_encode_delegate.cc
++++ b/media/gpu/windows/d3d12_video_encode_delegate.cc
+@@ -327,6 +327,18 @@ D3D12VideoEncodeDelegate::Encode(D3D12PictureBuffer picture_buffer,
+       EncodeImpl(picture_buffer.resource.Get(), picture_buffer.subresource,
+                  options, output_color_space);
+   if (!impl_result.is_ok()) {
++    // EncodeImpl() may bail (e.g. kBadReferenceBuffer) after
++    // D3D12VideoProcessorWrapper::ProcessFrames() has already submitted work
++    // to the video processor queue but before D3D12VideoEncoderWrapper::Encode
++    // would have CPU-synced it. Sync now so resources referenced by that
++    // command list are not released while the GPU is still using them when
++    // teardown follows this error.
++    if (auto status = video_processor_wrapper_->WaitForInFlightWork();
++        !status.is_ok()) {
++      DLOG(ERROR) << "Waiting for in-flight video processing after encode "
++                     "error failed: "
++                  << static_cast<int>(status.code());
++    }
+     return std::move(impl_result);
+   }
+ 
+diff --git a/media/gpu/windows/d3d12_video_encode_delegate.h b/media/gpu/windows/d3d12_video_encode_delegate.h
+index d21d95cd70b41572ef2ba170ba6723ffa255a314..b76c561c306b1ccfd817e55599cb856b27640ac3 100644
+--- a/media/gpu/windows/d3d12_video_encode_delegate.h
++++ b/media/gpu/windows/d3d12_video_encode_delegate.h
+@@ -190,10 +190,10 @@ class MEDIA_GPU_EXPORT D3D12VideoEncodeDelegate {
+       video_processor_wrapper_factory_ = base::BindRepeating(
+           &std::make_unique<D3D12VideoProcessorWrapper,
+                             Microsoft::WRL::ComPtr<ID3D12VideoDevice>>);
++  Microsoft::WRL::ComPtr<ID3D12Resource> processed_input_frame_;
+   // The video processor used for possible resolution, format, or color space
+   // conversion.
+   std::unique_ptr<D3D12VideoProcessorWrapper> video_processor_wrapper_;
+-  Microsoft::WRL::ComPtr<ID3D12Resource> processed_input_frame_;
+ };
+ 
+ // A class to manage the decoded picture buffers for D3D12 video encode and
+diff --git a/media/gpu/windows/d3d12_video_processor_wrapper.cc b/media/gpu/windows/d3d12_video_processor_wrapper.cc
+index a66e30507cea29d12ff79f86044337ae88eeba35..0e43eac8657801129aab393c5ecd1cea1175c55a 100644
+--- a/media/gpu/windows/d3d12_video_processor_wrapper.cc
++++ b/media/gpu/windows/d3d12_video_processor_wrapper.cc
+@@ -18,7 +18,15 @@ D3D12VideoProcessorWrapper::D3D12VideoProcessorWrapper(
+   CHECK_EQ(video_device.As(&device_), S_OK);
+ }
+ 
+-D3D12VideoProcessorWrapper::~D3D12VideoProcessorWrapper() = default;
++D3D12VideoProcessorWrapper::~D3D12VideoProcessorWrapper() {
++  // Ensure any in-flight video processing work has completed before releasing
++  // resources that may still be referenced by the GPU.
++  if (auto status = WaitForInFlightWorkImpl(); !status.is_ok()) {
++    DLOG(ERROR) << "Waiting for in-flight video processing during teardown "
++                   "failed: "
++                << static_cast<int>(status.code());
++  }
++}
+ 
+ bool D3D12VideoProcessorWrapper::Init() {
+   D3D12_COMMAND_QUEUE_DESC command_queue_desc{
+@@ -64,6 +72,17 @@ bool D3D12VideoProcessorWrapper::Init() {
+   return true;
+ }
+ 
++D3D11Status D3D12VideoProcessorWrapper::WaitForInFlightWork() {
++  return WaitForInFlightWorkImpl();
++}
++
++D3D11Status D3D12VideoProcessorWrapper::WaitForInFlightWorkImpl() {
++  if (!fence_ || fence_->GetCompletedValue() >= fence_->Value()) {
++    return D3D11StatusCode::kOk;
++  }
++  return fence_->WaitCPU(fence_->Value());
++}
++
+ bool D3D12VideoProcessorWrapper::Wait(D3D12FenceAndValue fence_and_value) {
+   auto [fence, value] = fence_and_value;
+   CHECK(fence);
+@@ -147,6 +166,17 @@ D3D12FenceAndValue D3D12VideoProcessorWrapper::ProcessFrames(
+     output_stream_desc_ = output_stream_desc;
+   }
+ 
++  // Ensure the GPU has finished executing previous commands before resetting
++  // the allocator. Without this guard, a downstream error could leave the
++  // allocator in use when Reset() is called.
++  // An alternative approach is to reuse the allocator without resetting it.
++  // However, this could potentially cause the allocator to grow unboundedly.
++  if (auto status = WaitForInFlightWork(); !status.is_ok()) {
++    DLOG(ERROR) << "Waiting for previous video processing failed: "
++                << static_cast<int>(status.code());
++    return {};
++  }
++
+   hr = command_allocator_->Reset();
+   if (FAILED(hr)) {
+     DLOG(ERROR) << "Reset video process command allocator failed:"
+diff --git a/media/gpu/windows/d3d12_video_processor_wrapper.h b/media/gpu/windows/d3d12_video_processor_wrapper.h
+index aa221ad951b4ee70e03e14326a8c2193357b1f2b..e3bd62877322a0babe37584c61f3d5c15a0ff8c6 100644
+--- a/media/gpu/windows/d3d12_video_processor_wrapper.h
++++ b/media/gpu/windows/d3d12_video_processor_wrapper.h
+@@ -32,6 +32,16 @@ class MEDIA_GPU_EXPORT D3D12VideoProcessorWrapper {
+   // must not be null. Returns whether the wait was successful.
+   virtual bool Wait(D3D12FenceAndValue fence_and_value);
+ 
++  // CPU-wait until any work this wrapper has previously submitted to its
++  // video process queue has completed on the GPU. Returns kOk when there is
++  // nothing to wait on (e.g. after a failed Init() or before any
++  // ProcessFrames() call). Used both internally before reusing the command
++  // allocator and externally when downstream code errors out after
++  // ProcessFrames() but before its own fence wait, so resources referenced by
++  // the in-flight command list are not released while the GPU is still using
++  // them.
++  virtual D3D11Status WaitForInFlightWork();
++
+   // Processes the |input_texture| and writes the result to |output_texture|.
+   // Returns {nullptr, 0} on failure, otherwise returns a valid fence and value.
+   virtual D3D12FenceAndValue ProcessFrames(
+@@ -45,6 +55,8 @@ class MEDIA_GPU_EXPORT D3D12VideoProcessorWrapper {
+       const gfx::Rect& output_rectangle);
+ 
+  private:
++  D3D11Status WaitForInFlightWorkImpl();
++
+   ComD3D12Device device_;
+   ComD3D12VideoDevice video_device_;
+   D3D12_VIDEO_PROCESS_INPUT_STREAM_DESC input_stream_desc_{};
+diff --git a/media/gpu/windows/d3d12_video_processor_wrapper_unittest.cc b/media/gpu/windows/d3d12_video_processor_wrapper_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..dbc0cb54a6ab3f7300fb32efea8fc7f3a99e5cdd
+--- /dev/null
++++ b/media/gpu/windows/d3d12_video_processor_wrapper_unittest.cc
+@@ -0,0 +1,121 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "media/gpu/windows/d3d12_video_processor_wrapper.h"
++
++#include <memory>
++
++#include "media/base/win/d3d12_mocks.h"
++#include "media/base/win/d3d12_video_mocks.h"
++#include "testing/gmock/include/gmock/gmock.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++using ::testing::_;
++using ::testing::NiceMock;
++using ::testing::Return;
++
++namespace media {
++
++class D3D12VideoProcessorWrapperTest : public ::testing::Test {
++ protected:
++  void SetUp() override {
++    device_ = MakeComPtr<NiceMock<D3D12DeviceMock>>();
++    video_device_ = MakeComPtr<NiceMock<D3D12VideoDevice3Mock>>();
++    command_queue_ = MakeComPtr<NiceMock<D3D12CommandQueueMock>>();
++    command_allocator_ = MakeComPtr<NiceMock<D3D12CommandAllocatorMock>>();
++    command_list_ = MakeComPtr<NiceMock<D3D12VideoProcessCommandListMock>>();
++    video_processor_ = MakeComPtr<NiceMock<D3D12VideoProcessorMock>>();
++    fence_ = MakeComPtr<NiceMock<D3D12FenceMock>>();
++
++    ON_CALL(*video_device_.Get(), QueryInterface(IID_ID3D12Device, _))
++        .WillByDefault(SetComPointeeAndReturnOk<1>(device_.Get()));
++    ON_CALL(*device_.Get(), CreateCommandQueue(_, _, _))
++        .WillByDefault(SetComPointeeAndReturnOk<2>(command_queue_.Get()));
++    ON_CALL(*device_.Get(), CreateCommandAllocator(_, _, _))
++        .WillByDefault(SetComPointeeAndReturnOk<2>(command_allocator_.Get()));
++    ON_CALL(*device_.Get(), CreateCommandList(_, _, _, _, _, _))
++        .WillByDefault(SetComPointeeAndReturnOk<5>(command_list_.Get()));
++    ON_CALL(*device_.Get(), CreateFence(_, _, _, _))
++        .WillByDefault(SetComPointeeAndReturnOk<3>(fence_.Get()));
++    ON_CALL(*command_list_.Get(), Close()).WillByDefault(Return(S_OK));
++    ON_CALL(*command_list_.Get(), Reset(_)).WillByDefault(Return(S_OK));
++    ON_CALL(*command_allocator_.Get(), Reset()).WillByDefault(Return(S_OK));
++    ON_CALL(*command_queue_.Get(), Signal(_, _)).WillByDefault(Return(S_OK));
++    ON_CALL(*fence_.Get(), GetCompletedValue()).WillByDefault(Return(0));
++    ON_CALL(*fence_.Get(), SetEventOnCompletion(_, _))
++        .WillByDefault([](UINT64, HANDLE event) {
++          ::SetEvent(event);
++          return S_OK;
++        });
++    ON_CALL(*video_device_.Get(),
++            CheckFeatureSupport(D3D12_FEATURE_VIDEO_PROCESS_SUPPORT, _, _))
++        .WillByDefault([](D3D12_FEATURE_VIDEO, void* data, UINT) {
++          static_cast<D3D12_FEATURE_DATA_VIDEO_PROCESS_SUPPORT*>(data)
++              ->SupportFlags = D3D12_VIDEO_PROCESS_SUPPORT_FLAG_SUPPORTED;
++          return S_OK;
++        });
++    ON_CALL(*video_device_.Get(), CreateVideoProcessor(_, _, _, _, _, _))
++        .WillByDefault(SetComPointeeAndReturnOk<5>(video_processor_.Get()));
++
++    wrapper_ = std::make_unique<D3D12VideoProcessorWrapper>(video_device_);
++  }
++
++  Microsoft::WRL::ComPtr<ID3D12Resource> CreateInputResource() {
++    auto resource = MakeComPtr<NiceMock<D3D12ResourceMock>>();
++    ON_CALL(*resource.Get(), GetDesc())
++        .WillByDefault(Return(D3D12_RESOURCE_DESC{
++            .Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D,
++            .Width = 1280,
++            .Height = 720,
++            .DepthOrArraySize = 1,
++            .MipLevels = 1,
++            .Format = DXGI_FORMAT_NV12,
++        }));
++    return resource;
++  }
++
++  Microsoft::WRL::ComPtr<D3D12DeviceMock> device_;
++  Microsoft::WRL::ComPtr<D3D12VideoDevice3Mock> video_device_;
++  Microsoft::WRL::ComPtr<D3D12CommandQueueMock> command_queue_;
++  Microsoft::WRL::ComPtr<D3D12CommandAllocatorMock> command_allocator_;
++  Microsoft::WRL::ComPtr<D3D12VideoProcessCommandListMock> command_list_;
++  Microsoft::WRL::ComPtr<D3D12VideoProcessorMock> video_processor_;
++  Microsoft::WRL::ComPtr<D3D12FenceMock> fence_;
++
++  std::unique_ptr<D3D12VideoProcessorWrapper> wrapper_;
++};
++
++TEST_F(D3D12VideoProcessorWrapperTest, DestructorWaitsForPendingWork) {
++  ASSERT_TRUE(wrapper_->Init());
++
++  auto input = CreateInputResource();
++  auto output = CreateInputResource();
++  gfx::Rect rect(0, 0, 1280, 720);
++  EXPECT_CALL(*command_queue_.Get(), ExecuteCommandLists(1, _));
++  auto fence_and_value = wrapper_->ProcessFrames(
++      input.Get(), 0, gfx::ColorSpace::CreateSRGB(), rect, output.Get(), 0,
++      gfx::ColorSpace::CreateREC709(), rect);
++  ASSERT_TRUE(fence_and_value.first);
++  EXPECT_EQ(fence_and_value.second, 1u);
++
++  // The work submitted above has not yet completed on the GPU. Destroying the
++  // wrapper must block until it does so that resources referenced by the
++  // command list are not released early.
++  EXPECT_CALL(*fence_.Get(), SetEventOnCompletion(1, _))
++      .WillOnce([](UINT64, HANDLE event) {
++        ::SetEvent(event);
++        return S_OK;
++      });
++  wrapper_.reset();
++}
++
++TEST_F(D3D12VideoProcessorWrapperTest,
++       DestructorDoesNotWaitWithoutPendingWork) {
++  ASSERT_TRUE(wrapper_->Init());
++
++  EXPECT_CALL(*fence_.Get(), SetEventOnCompletion(_, _)).Times(0);
++  wrapper_.reset();
++}
++
++}  // namespace media

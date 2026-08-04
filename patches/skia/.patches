@@ -9,3 +9,6 @@ cherry-pick-2e4a568f6f0d.patch
 cherry-pick-20f9bc7df3af.patch
 reject_slugs_that_have_creationmatrix_with_perspective.patch
 avoid_improper_mask_formats_for_sdft_runs.patch
+cherry-pick-6a4be3addd0a.patch
+cherry-pick-ba3ee9b265f0.patch
+cherry-pick-04dbd15284b8.patch

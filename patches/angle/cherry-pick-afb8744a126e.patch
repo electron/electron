@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 23 Jun 2026 10:51:44 -0400
+Subject: MSL/AST: Handle non-unary/binary expr in loop-forward-progress
+
+Bug: chromium:517543052
+Change-Id: Idf3bb42ea56e9fd62cad2bd914f9221ff32226e0
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7977471
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+index 98a4c8ca63918659ad0133f80101c0625a069baf..24688eb383795851ffdeaaecb56d8c0e28caaaaf 100644
+--- a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
++++ b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+@@ -157,6 +157,10 @@ const TVariable *computeFiniteLoopVariable(TIntermLoop *loop)
+                 return nullptr;
+         }
+     }
++    else
++    {
++        return nullptr;
++    }
+     return variable;
+ }
+ 
+diff --git a/src/tests/gl_tests/GLSLOutputTest.cpp b/src/tests/gl_tests/GLSLOutputTest.cpp
+index 092b7b6194ae5e5320139b0f0b29e8d8f04cc372..221481b219fd33b9df721c326ee28d842face403 100644
+--- a/src/tests/gl_tests/GLSLOutputTest.cpp
++++ b/src/tests/gl_tests/GLSLOutputTest.cpp
+@@ -490,22 +490,27 @@ TEST_P(GLSLOutputMSLTest_EnsureLoopForwardProgress, InfiniteFors)
+ precision highp int;
+ uniform int a;
+ uniform uint b;
++int f() { return 0; }
+ void main() {
+ 
+ )";
+     const char kShaderSuffix[] = "}\n";
+-    const char *kTests[]{"for (;;) { }",
+-                         "for (bool b = true; b; b = false) { }",
+-                         "for (int i = 0; i < 10;) { }",
+-                         "int i = 101; for (; i < 10; i+=2) { }",
+-                         "int i = 101; for (; i < 10; i-=2) { }",
+-                         "int z = 7; for (int i = 0; i < z; i++) { }",
+-                         "for (int i = 0; i < 10; i++) { i++; }",
+-                         "for (int i = 0; i < 10;) { i++; }",
+-                         "for (int i = 0; i < a/2; i++) { }",
+-                         "for (int i = 0; float(i) < 10e10; ++i) { }",
+-                         "for (int i = 0; i < 10; i++) { for (int j = 0; j < 1000; ++i) { }}",
+-                         "for (int i = 0; i != 1; i+=2) { }"};
++    const char *kTests[]{
++        "for (;;) { }",
++        "for (bool b = true; b; b = false) { }",
++        "for (int i = 0; i < 10;) { }",
++        "int i = 101; for (; i < 10; i+=2) { }",
++        "int i = 101; for (; i < 10; i-=2) { }",
++        "int z = 7; for (int i = 0; i < z; i++) { }",
++        "for (int i = 0; i < 10; i++) { i++; }",
++        "for (int i = 0; i < 10;) { i++; }",
++        "for (int i = 0; i < a/2; i++) { }",
++        "for (int i = 0; float(i) < 10e10; ++i) { }",
++        "for (int i = 0; i < 10; i++) { for (int j = 0; j < 1000; ++i) { }}",
++        "for (int i = 0; i != 1; i+=2) { }",
++        "for (int i = 0; i < 10; f()) { }",
++        "for (int i = 0; i < 10; a == 0 ? i++ : i = 0) { }",
++    };
+ 
+     for (const char *test : kTests)
+     {

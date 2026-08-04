@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stephen White <senorblanco@chromium.org>
+Date: Wed, 17 Jun 2026 09:39:41 -0700
+Subject: GL: enable ANGLE's EGLContext hardening.
+
+This is a subset of EGL_CONTEXT_WEBGL_COMPATIBILITY_ANGLE that
+should improve robustness but not limit functionality.
+
+Bug: 517307966
+Change-Id: Iae5a10f7aa628cb993e7209802c74087b44fe127
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/313135
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Stephen White <senorblanco@chromium.org>
+
+diff --git a/src/dawn/native/opengl/ContextEGL.cpp b/src/dawn/native/opengl/ContextEGL.cpp
+index 5713eb69bac87da68a5996321fc08834d89fa927..04957a97c4ef7131c5a90aab8b3e2189e6a1680f 100644
+--- a/src/dawn/native/opengl/ContextEGL.cpp
++++ b/src/dawn/native/opengl/ContextEGL.cpp
+@@ -50,10 +50,15 @@
+ #endif
+ 
+ // https://chromium.googlesource.com/angle/angle/+/main/extensions/EGL_ANGLE_context_virtualization.txt
+-#ifndef EGL_ANGLE_context_virtualization
++#ifndef EGL_CONTEXT_VIRTUALIZATION_GROUP_ANGLE
+ #define EGL_CONTEXT_VIRTUALIZATION_GROUP_ANGLE 0x3481
+ #endif
+ 
++// https://chromium.googlesource.com/angle/angle/+/main/extensions/EGL_ANGLE_create_context_webgl_compatibility.txt
++#ifndef EGL_CONTEXT_HARDENED_ANGLE
++#define EGL_CONTEXT_HARDENED_ANGLE 0x34F8
++#endif
++
+ namespace dawn::native::opengl {
+ 
+ namespace {
+@@ -191,6 +196,10 @@ MaybeError ContextEGL::Initialize(wgpu::BackendType backend,
+         AddAttrib(EGL_CONTEXT_VIRTUALIZATION_GROUP_ANGLE, angleVirtualizationGroup);
+     }
+ 
++    if (egl.HasExt(EGLExt::ANGLECreateContextWebGLCompatibility)) {
++        AddAttrib(EGL_CONTEXT_HARDENED_ANGLE, EGL_TRUE);
++    }
++
+     // The attrib list is finished with an EGL_NONE tag.
+     attribs.push_back(EGL_NONE);
+ 
+diff --git a/src/dawn/native/opengl/EGLFunctions.cpp b/src/dawn/native/opengl/EGLFunctions.cpp
+index 3e1c7e670d52699656e9dd6e3d728b803714ad67..e8577d0c954da8a18d5f5a223961e6ae2990a11d 100644
+--- a/src/dawn/native/opengl/EGLFunctions.cpp
++++ b/src/dawn/native/opengl/EGLFunctions.cpp
+@@ -97,6 +97,8 @@ static constexpr std::array<ExtensionInfo, kExtensionCount> kExtensionInfos{{
+      NeverPromoted, ExtType::Display},
+     {EGLExt::ANGLEContextVirtualization, "EGL_ANGLE_context_virtualization", NeverPromoted,
+      ExtType::Display},
++    {EGLExt::ANGLECreateContextWebGLCompatibility, "EGL_ANGLE_create_context_webgl_compatibility",
++     NeverPromoted, ExtType::Display},
+     //
+ }};
+ 
+diff --git a/src/dawn/native/opengl/EGLFunctions.h b/src/dawn/native/opengl/EGLFunctions.h
+index 49f91d19495ff4319001f58691d3bdc807de298a..d7b3992e70d749394e46034fbaf795b66173dadb 100644
+--- a/src/dawn/native/opengl/EGLFunctions.h
++++ b/src/dawn/native/opengl/EGLFunctions.h
+@@ -70,6 +70,7 @@ enum class EGLExt {
+     ANGLECreateContextBackwardsCompatible,  // EGL_ANGLE_create_context_backwards_compatible
+     ANGLECreateContextExtensionsEnabled,    // EGL_ANGLE_create_context_extensions_enabled
+     ANGLEContextVirtualization,             // EGL_ANGLE_context_virtualization
++    ANGLECreateContextWebGLCompatibility,   // EGL_ANGLE_create_context_webgl_compatibility
+ 
+     EnumCount,
+ };

@@ -1,0 +1,248 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Wed, 17 Jun 2026 12:57:28 -0700
+Subject: Update WidgetInputHandlerManager to use strong refs
+
+This updates the class to use strong refs in the disconnect
+callbacks, and clears it when clearing clients. It also
+ensures that destruction is bound to the input task runner
+to ensure it's destroyed on the appropriate thread
+
+R=jonross@chromium.org
+
+Bug: 522304853
+Change-Id: I10d217c1c031f1a54870ddedd3474b5e99428074
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7951580
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Commit-Queue: Vladimir Levin <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1648530}
+
+diff --git a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc
+index c1ba9198014a35f9f9439a310ac6de6f5464c4db..1cd0599b656446c5100d61b164d9d74d28a27aa9 100644
+--- a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc
++++ b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc
+@@ -372,14 +372,14 @@ void WidgetInputHandlerManager::SetVizHost(
+         std::move(viz_host), compositor_thread_default_task_runner_);
+     viz_host_.set_disconnect_handler(
+         base::BindOnce(&WidgetInputHandlerManager::OnVizHostDisconnected,
+-                       AsWeakPtr()),
++                       scoped_refptr<WidgetInputHandlerManager>(this)),
+         compositor_thread_default_task_runner_);
+   } else {
+     viz_host_ = mojo::SharedRemote<mojom::blink::WidgetInputHandlerHost>(
+         std::move(viz_host));
+     viz_host_.set_disconnect_handler(
+         base::BindOnce(&WidgetInputHandlerManager::OnVizHostDisconnected,
+-                       AsWeakPtr()),
++                       scoped_refptr<WidgetInputHandlerManager>(this)),
+         base::SequencedTaskRunner::GetCurrentDefault());
+   }
+ }
+@@ -409,12 +409,16 @@ void WidgetInputHandlerManager::InitInputHandler() {
+   uses_input_handler_ = true;
+   base::OnceClosure init_closure = base::BindOnce(
+       &WidgetInputHandlerManager::InitOnInputHandlingThread,
+-      weak_ptr_factory_.GetWeakPtr(),
++      scoped_refptr<WidgetInputHandlerManager>(this),
+       widget_->LayerTreeHost()->GetDelegateForInput(), sync_compositing);
+   InputThreadTaskRunner()->PostTask(FROM_HERE, std::move(init_closure));
+ }
+ 
+-WidgetInputHandlerManager::~WidgetInputHandlerManager() = default;
++WidgetInputHandlerManager::~WidgetInputHandlerManager() {
++  if (destruction_callback_for_testing_) {
++    std::move(destruction_callback_for_testing_).Run();
++  }
++}
+ 
+ void WidgetInputHandlerManager::AddInterface(
+     mojo::PendingReceiver<mojom::blink::WidgetInputHandler> receiver) {
+@@ -600,13 +604,13 @@ void WidgetInputHandlerManager::ObserveGestureEventOnMainThread(
+ void WidgetInputHandlerManager::PostHandwritingRadiusToInputThread(
+     int handwriting_radius) {
+   base::OnceClosure init_closure = base::BindOnce(
+-      [](base::WeakPtr<WidgetInputHandlerManager> weak_ptr, int radius) {
+-        if (weak_ptr && weak_ptr->input_handler_proxy_) {
+-          weak_ptr->input_handler_proxy_->SetHandwritingRadiusOnInputThread(
++      [](scoped_refptr<WidgetInputHandlerManager> manager, int radius) {
++        if (manager->input_handler_proxy_) {
++          manager->input_handler_proxy_->SetHandwritingRadiusOnInputThread(
+               radius);
+         }
+       },
+-      weak_ptr_factory_.GetWeakPtr(), handwriting_radius);
++      scoped_refptr<WidgetInputHandlerManager>(this), handwriting_radius);
+   InputThreadTaskRunner()->PostTask(FROM_HERE, std::move(init_closure));
+ }
+ 
+@@ -924,7 +928,7 @@ static void WaitForInputProcessedFromMain(base::WeakPtr<WidgetBase> widget) {
+ 
+   auto redraw_complete_callback =
+       base::BindOnce(&WidgetInputHandlerManager::InvokeInputProcessedCallback,
+-                     manager->AsWeakPtr());
++                     scoped_refptr<WidgetInputHandlerManager>(manager));
+ 
+   // Since wheel-events can kick off animations, we can not consider
+   // all observable effects of an input gesture to be processed
+@@ -1357,6 +1361,14 @@ void WidgetInputHandlerManager::ClearClient() {
+   first_paint_max_delay_timer_.reset();
+   recorded_event_metric_for_paint_timing_ = false;
+   input_event_queue_->ClearClient();
++  {
++    base::AutoLock lock(viz_host_lock_);
++    if (viz_host_) {
++      viz_host_.Disconnect();
++    }
++    viz_host_.reset();
++  }
++  host_.reset();
+ }
+ 
+ void WidgetInputHandlerManager::UpdateBrowserControlsState(
+diff --git a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h
+index 4c7685793ce48ed6ea69c539e01fe9a7bbe8df7c..6d5d8066063d0ad4f4132f9c76e43c713e6c4ed2 100644
+--- a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h
++++ b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h
+@@ -207,8 +207,8 @@ class PLATFORM_EXPORT WidgetInputHandlerManager final
+   void SetInputHandlerProxyForTesting(
+       std::unique_ptr<InputHandlerProxy> input_handler_proxy);
+ 
+-  base::WeakPtr<WidgetInputHandlerManager> AsWeakPtr() {
+-    return weak_ptr_factory_.GetWeakPtr();
++  void set_destruction_callback_for_testing(base::OnceClosure callback) {
++    destruction_callback_for_testing_ = std::move(callback);
+   }
+ 
+   uint16_t suppressing_input_events_state() const {
+@@ -225,6 +225,7 @@ class PLATFORM_EXPORT WidgetInputHandlerManager final
+   ~WidgetInputHandlerManager() override;
+ 
+   void InitInputHandler();
++
+   void InitOnInputHandlingThread(
+       const base::WeakPtr<cc::CompositorDelegateForInput>& compositor_delegate,
+       bool sync_compositing);
+@@ -450,7 +451,7 @@ class PLATFORM_EXPORT WidgetInputHandlerManager final
+   // hidden state.
+   base::TimeTicks hidden_received_;
+ 
+-  base::WeakPtrFactory<WidgetInputHandlerManager> weak_ptr_factory_{this};
++  base::OnceClosure destruction_callback_for_testing_;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager_unittest.cc b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager_unittest.cc
+index 46f2f34d55540e6838708ab7760c54a006f38af3..bb0f4e68c081de4413d23a3c8eadd182eaf3f2e0 100644
+--- a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager_unittest.cc
++++ b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager_unittest.cc
+@@ -9,6 +9,11 @@
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/memory/weak_ptr.h"
++#include "base/run_loop.h"
++#include "base/synchronization/waitable_event.h"
++#include "base/task/thread_pool.h"
++#include "base/test/bind.h"
++#include "base/test/run_until.h"
+ #include "base/test/scoped_feature_list.h"
+ #include "base/test/task_environment.h"
+ #include "cc/test/fake_impl_task_runner_provider.h"
+@@ -30,8 +35,7 @@
+ #include "third_party/blink/renderer/platform/widget/input/mock_input_handler_proxy_client.h"
+ #include "third_party/blink/renderer/platform/widget/widget_base.h"
+ #include "third_party/blink/renderer/platform/wtf/functional.h"
+-
+-namespace blink ::test {
++namespace blink::test {
+ 
+ class WidgetInputHandlerManagerTest : public testing::Test,
+                                       public testing::WithParamInterface<bool> {
+@@ -145,14 +149,14 @@ void WidgetInputHandlerManagerTest::SetUp() {
+           /*input_event_queue=*/nullptr),
+       std::move(frame_widget_input_handler_receiver));
+ 
+-  // WidgetBase isn't setup with full mocks. Were we to call this with
+-  // `uses_input_hanlder_=true` we'd attempt to access `LayerHostTree` which
+-  // we can't mock in WidgetBase. So we set to false, and use test override
+-  // to enable the desired dispach mode.
++  // WidgetBase isn't setup with full mocks. Were we to call `InitInputHandler`
++  // we'd attempt to access `LayerHostTree` which we can't mock in WidgetBase.
++  // So we do not call it, but we set needs_input_handler=true to satisfy
++  // DCHECKs.
+   widget_input_handler_manager_ = WidgetInputHandlerManager::Create(
+       widget_base_->GetWeakPtr(), frame_widget_input_handler_, never_composited,
+       /*compositor_thread_scheduler=*/nullptr, widget_scheduler_,
+-      /*needs_input_handler=*/false,
++      /*uses_input_handler=*/false,
+       /*allow_scroll_resampling=*/false,
+       /*io_thread_id=*/base::kInvalidThreadId,
+       /*main_thread_id=*/base::PlatformThread::CurrentId());
+@@ -226,4 +230,68 @@ INSTANTIATE_TEST_SUITE_P(,
+                            return info.param ? "IgnoreInputWhileHidden"
+                                              : "ProcessInputWhileHidden";
+                          });
++
++TEST_F(WidgetInputHandlerManagerTest, NoLeakWithoutDisconnect) {
++  scoped_refptr<WidgetInputHandlerManager> manager =
++      WidgetInputHandlerManager::Create(
++          widget_base_->GetWeakPtr(), frame_widget_input_handler_,
++          /*never_composited=*/false,
++          /*compositor_thread_scheduler=*/nullptr, widget_scheduler_,
++          /*uses_input_handler=*/false,
++          /*allow_scroll_resampling=*/false,
++          /*io_thread_id=*/base::kInvalidThreadId,
++          /*main_thread_id=*/base::PlatformThread::CurrentId());
++
++  mojo::PendingRemote<mojom::blink::WidgetInputHandlerHost> viz_host_remote;
++  auto receiver = viz_host_remote.InitWithNewPipeAndPassReceiver();
++
++  manager->SetVizHost(std::move(viz_host_remote));
++
++  base::RunLoop run_loop;
++  manager->set_destruction_callback_for_testing(run_loop.QuitClosure());
++
++  // Clear client (simulating shutdown) which should break the ref cycle.
++  manager->ClearClient();
++
++  // Drop the main reference.
++  manager = nullptr;
++
++  // Wait until the manager is destroyed.
++  run_loop.Run();
++}
++
++TEST_F(WidgetInputHandlerManagerTest, ClearClientBreaksCycleEvenIfCopiesExist) {
++  scoped_refptr<WidgetInputHandlerManager> manager =
++      WidgetInputHandlerManager::Create(
++          widget_base_->GetWeakPtr(), frame_widget_input_handler_,
++          /*never_composited=*/false,
++          /*compositor_thread_scheduler=*/nullptr, widget_scheduler_,
++          /*uses_input_handler=*/false,
++          /*allow_scroll_resampling=*/false,
++          /*io_thread_id=*/base::kInvalidThreadId,
++          /*main_thread_id=*/base::PlatformThread::CurrentId());
++
++  mojo::PendingRemote<mojom::blink::WidgetInputHandlerHost> viz_host_remote;
++  auto receiver = viz_host_remote.InitWithNewPipeAndPassReceiver();
++
++  manager->SetVizHost(std::move(viz_host_remote));
++
++  // Get a copy of the SharedRemote and keep it alive in the test.
++  auto viz_host_copy = manager->GetVizWidgetInputHandlerHost();
++
++  base::RunLoop run_loop;
++  manager->set_destruction_callback_for_testing(run_loop.QuitClosure());
++
++  // Call ClearClient(). If the fix is active, this should call
++  // viz_host_.Disconnect() and break the cycle even though viz_host_copy is
++  // still alive.
++  manager->ClearClient();
++
++  // Drop the main reference.
++  manager = nullptr;
++
++  // The manager should be destroyed.
++  run_loop.Run();
++}
++
+ }  // namespace blink::test

@@ -1,0 +1,227 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Wed, 24 Jun 2026 10:12:22 -0700
+Subject: Avoid sentinel hash keys in ElementDataCache
+
+This patch avoids sentinel has key values (0 and 0xFFFFFFFF) by flipping
+the top bit. This pattern was already being done in multiple places, so
+it has been moved into a common helper method.
+
+Fixed: 517511796
+Change-Id: Idebb9cc6e187df4e7f49f4299cfab911ba5cf68b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7883969
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1651801}
+
+diff --git a/third_party/blink/renderer/core/css/css_property_value_set.cc b/third_party/blink/renderer/core/css/css_property_value_set.cc
+index b69b53ce51afc7e8251a7653680d1eabecc5e011..19c795f3b4f9573c4428264745603ebdc26d2501 100644
+--- a/third_party/blink/renderer/core/css/css_property_value_set.cc
++++ b/third_party/blink/renderer/core/css/css_property_value_set.cc
+@@ -83,14 +83,7 @@ unsigned CSSPropertyValueSet::ComputeHash() const {
+     AddIntToHash(hash, property.Value().Hash());
+   }
+ 
+-  static_assert((HashTraits<unsigned>::EmptyValue() ^ 0x80000000) !=
+-                    HashTraits<unsigned>::DeletedValue(),
+-                "We assume below that flipping the top bit will not turn "
+-                "EmptyValue into DeletedValue or vice versa");
+-  if (hash == HashTraits<unsigned>::EmptyValue() ||
+-      hash == HashTraits<unsigned>::DeletedValue()) {
+-    hash ^= 0x80000000;
+-  }
++  hash = EnsureValidHash(hash);
+ 
+   return hash;
+ }
+diff --git a/third_party/blink/renderer/core/css/resolver/matched_properties_cache.cc b/third_party/blink/renderer/core/css/resolver/matched_properties_cache.cc
+index 22c38eead0c6975b2386cc12447d980c29fffdf4..ec7d51d6982556dc0fe7d7bb13002b54d0832687 100644
+--- a/third_party/blink/renderer/core/css/resolver/matched_properties_cache.cc
++++ b/third_party/blink/renderer/core/css/resolver/matched_properties_cache.cc
+@@ -56,15 +56,7 @@ static unsigned ComputeMatchedPropertiesHash(const MatchResult& result,
+                       }))
+       << "This should have been checked in AddMatchedProperties()";
+   unsigned hash = StringHasher::HashMemory(base::as_byte_span(hashes));
+-  hash = HashInts(hash, additional_hash);
+-
+-  // See CSSPropertyValueSet::ComputeHash() for asserts that this is safe.
+-  if (hash == HashTraits<unsigned>::EmptyValue() ||
+-      hash == HashTraits<unsigned>::DeletedValue()) {
+-    hash ^= 0x80000000;
+-  }
+-
+-  return hash;
++  return EnsureValidHash(HashInts(hash, additional_hash));
+ }
+ 
+ CachedMatchedProperties::CachedMatchedProperties(
+diff --git a/third_party/blink/renderer/core/dom/build.gni b/third_party/blink/renderer/core/dom/build.gni
+index b94bd2afb7bad77fb10931187acf8be5e8102ae1..154ba0268655242e835db04cde06242ecc61ba6a 100644
+--- a/third_party/blink/renderer/core/dom/build.gni
++++ b/third_party/blink/renderer/core/dom/build.gni
+@@ -322,6 +322,7 @@ blink_core_tests_dom = [
+   "document_statistics_collector_test.cc",
+   "document_test.cc",
+   "dom_node_ids_test.cc",
++  "element_data_cache_test.cc",
+   "form_control_range_test.cc",
+   "element_test.cc",
+   "events/event_path_test.cc",
+diff --git a/third_party/blink/renderer/core/dom/element_data.h b/third_party/blink/renderer/core/dom/element_data.h
+index ae9b4de7d563da441ac5faaa13d32814fbc6f2fe..d504a1e3fcc6bacf97172fc48a7d8ca963e17c04 100644
+--- a/third_party/blink/renderer/core/dom/element_data.h
++++ b/third_party/blink/renderer/core/dom/element_data.h
+@@ -53,7 +53,7 @@ class UniqueElementData;
+ 
+ // ElementData represents very common, but not necessarily unique to an element,
+ // data such as attributes, inline style, and parsed class names and ids.
+-class ElementData : public GarbageCollected<ElementData> {
++class CORE_EXPORT ElementData : public GarbageCollected<ElementData> {
+  public:
+   // Override GarbageCollected's finalizeGarbageCollectedObject to
+   // dispatch to the correct subclass destructor.
+@@ -173,7 +173,7 @@ struct ThreadingTrait<T> {
+ // the parser during page load for elements that have identical attributes. This
+ // is a memory optimization since it's very common for many elements to have
+ // duplicate sets of attributes (ex. the same classes).
+-class ShareableElementData final : public ElementData {
++class CORE_EXPORT ShareableElementData final : public ElementData {
+  public:
+   static ShareableElementData* CreateWithAttributes(
+       const Vector<Attribute, kAttributePrealloc>&);
+diff --git a/third_party/blink/renderer/core/dom/element_data_cache.cc b/third_party/blink/renderer/core/dom/element_data_cache.cc
+index 51579fdab6db37e072d2cf993f5d5b2ff7798afe..134648de3e921be3da596399f929f631a889499e 100644
+--- a/third_party/blink/renderer/core/dom/element_data_cache.cc
++++ b/third_party/blink/renderer/core/dom/element_data_cache.cc
+@@ -46,9 +46,17 @@ ShareableElementData*
+ ElementDataCache::CachedShareableElementDataWithAttributes(
+     const StringImpl* tag_name,
+     const Vector<Attribute, kAttributePrealloc>& attributes) {
++  unsigned hash = HashInts(tag_name->GetHash(), AttributeHash(attributes));
++  return CachedElementData(tag_name, attributes, hash);
++}
++
++ShareableElementData* ElementDataCache::CachedElementData(
++    const StringImpl* tag_name,
++    const Vector<Attribute, kAttributePrealloc>& attributes,
++    unsigned hash) {
+   DCHECK(!attributes.empty());
+ 
+-  unsigned hash = HashInts(tag_name->GetHash(), AttributeHash(attributes));
++  hash = EnsureValidHash(hash);
+   ShareableElementDataCache::ValueType* it =
+       shareable_element_data_cache_.insert(hash, std::pair(nullptr, nullptr))
+           .stored_value;
+diff --git a/third_party/blink/renderer/core/dom/element_data_cache.h b/third_party/blink/renderer/core/dom/element_data_cache.h
+index 643807f114d7091ff89f1ebfd57501adf86ba339..7481f136e730af6785176e8b060ae64156685a95 100644
+--- a/third_party/blink/renderer/core/dom/element_data_cache.h
++++ b/third_party/blink/renderer/core/dom/element_data_cache.h
+@@ -36,7 +36,8 @@ namespace blink {
+ 
+ class ShareableElementData;
+ 
+-class ElementDataCache final : public GarbageCollected<ElementDataCache> {
++class CORE_EXPORT ElementDataCache final
++    : public GarbageCollected<ElementDataCache> {
+  public:
+   ElementDataCache();
+ 
+@@ -47,9 +48,23 @@ class ElementDataCache final : public GarbageCollected<ElementDataCache> {
+       const StringImpl* tag_name,
+       const Vector<Attribute, kAttributePrealloc>&);
+ 
++  // This is the same as CachedShareableElementDataWithoutAttributes, but uses
++  // the provided hash instead of generating one from the arguments.
++  ShareableElementData* CachedElementDataWithHashForTesting(
++      const StringImpl* tag_name,
++      const Vector<Attribute, kAttributePrealloc>& attributes,
++      unsigned hash) {
++    return CachedElementData(tag_name, attributes, hash);
++  }
++
+   void Trace(Visitor*) const;
+ 
+  private:
++  ShareableElementData* CachedElementData(
++      const StringImpl* tag_name,
++      const Vector<Attribute, kAttributePrealloc>&,
++      unsigned hash);
++
+   using ShareableElementDataCache =
+       HeapHashMap<unsigned,
+                   std::pair<const StringImpl*, Member<ShareableElementData>>,
+diff --git a/third_party/blink/renderer/core/dom/element_data_cache_test.cc b/third_party/blink/renderer/core/dom/element_data_cache_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..15f4b671819b7d239447aa4f822b674e47957fc4
+--- /dev/null
++++ b/third_party/blink/renderer/core/dom/element_data_cache_test.cc
+@@ -0,0 +1,48 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "third_party/blink/renderer/core/dom/element_data_cache.h"
++
++#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/blink/renderer/core/dom/attribute.h"
++#include "third_party/blink/renderer/core/dom/element_data.h"
++#include "third_party/blink/renderer/core/html_names.h"
++#include "third_party/blink/renderer/platform/heap/garbage_collected.h"
++#include "third_party/blink/renderer/platform/heap/heap_test_utilities.h"
++#include "third_party/blink/renderer/platform/heap/persistent.h"
++
++namespace blink {
++
++namespace {
++
++class ElementDataCacheTest : public TestSupportingGC {};
++
++TEST_F(ElementDataCacheTest, SentinelKeyWithFixDoesNotCauseUAF) {
++  Persistent<ElementDataCache> cache = MakeGarbageCollected<ElementDataCache>();
++
++  String tag_name = "div";
++  Vector<Attribute, kAttributePrealloc> attributes;
++  attributes.push_back(Attribute(html_names::kIdAttr, AtomicString("foo")));
++
++  // Call the method with a sentinel hash. We expect it to be XOR'd.
++  unsigned sentinel_hash = 0xFFFFFFFFu;
++
++  WeakPersistent<ShareableElementData> witness;
++
++  {
++    ShareableElementData* data = cache->CachedElementDataWithHashForTesting(
++        tag_name.Impl(), attributes, sentinel_hash);
++    ASSERT_NE(nullptr, data);
++    witness = data;
++  }
++
++  // The object should be traced and survive this GC.
++  PreciselyCollectGarbage();
++
++  ASSERT_NE(nullptr, witness.Get())
++      << "ShareableElementData was swept; trace skipped the bucket despite fix";
++}
++
++}  // namespace
++}  // namespace blink
+diff --git a/third_party/blink/renderer/platform/wtf/hash_traits.h b/third_party/blink/renderer/platform/wtf/hash_traits.h
+index 9c54faa0de475d12d3f8b220a5aede1599fd1c49..eeda8d2a0791249a03883c5b4d600ffe84d3f10b 100644
+--- a/third_party/blink/renderer/platform/wtf/hash_traits.h
++++ b/third_party/blink/renderer/platform/wtf/hash_traits.h
+@@ -389,6 +389,15 @@ struct GenericHashTraits<std::unique_ptr<T>>
+ template <typename T>
+ struct HashTraits : GenericHashTraits<T> {};
+ 
++// Helper to avoid HashTraits<unsigned> sentinel values (0 and 0xFFFFFFFF)
++// by turning them into 1.
++constexpr unsigned EnsureValidHash(unsigned hash) {
++  return (hash == HashTraits<unsigned>::EmptyValue() ||
++          hash == HashTraits<unsigned>::DeletedValue())
++             ? 1
++             : hash;
++}
++
+ // This hash traits type requires the following methods in class T, unless
+ // the corresponding hash traits method is overridden:
+ //   // Computes the hash code, for GetHash().

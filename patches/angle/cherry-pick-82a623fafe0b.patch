@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Thu, 25 Jun 2026 13:21:21 +0200
+Subject: D3D: Handle uniforms that are optimized out by TranslatorHLSL
+
+If a uniform is dead code eliminated during HLSL generation, it will not
+be in the list of uniforms in ShaderD3D. Handle this case by skipping
+uniform generation in ProgramExecutableD3D.
+
+Fixed: chromium:517321292
+Change-Id: Ibbba686c28fee3bafa235ff64dbee456eac7c2cf
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8004731
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/ProgramExecutableD3D.cpp b/src/libANGLE/renderer/d3d/ProgramExecutableD3D.cpp
+index 5d545a61bfc85712434439510d23e38c4353bade..c5ff19f17726a0df6c53a7ea28a77cffa1f6319e 100644
+--- a/src/libANGLE/renderer/d3d/ProgramExecutableD3D.cpp
++++ b/src/libANGLE/renderer/d3d/ProgramExecutableD3D.cpp
+@@ -1800,7 +1800,15 @@ void ProgramExecutableD3D::defineUniformBase(gl::ShaderType shaderType,
+         return;
+     }
+ 
+-    if (uniform.isBuiltIn() && !uniform.isEmulatedBuiltIn())
++    const SharedCompiledShaderStateD3D &shaderD3D = mAttachedShaders[shaderType];
++
++    bool skipUniformEncoding =
++        // Uniform is a real builtin in HLSL
++        (uniform.isBuiltIn() && !uniform.isEmulatedBuiltIn()) ||
++        // Uniform ended up as unreferenced during HLSL generation.
++        !shaderD3D->hasUniform(uniform.name);
++
++    if (skipUniformEncoding)
+     {
+         UniformEncodingVisitorD3D visitor(shaderType, HLSLRegisterType::None, &stubEncoder,
+                                           uniformMap);
+@@ -1808,9 +1816,8 @@ void ProgramExecutableD3D::defineUniformBase(gl::ShaderType shaderType,
+         return;
+     }
+ 
+-    const SharedCompiledShaderStateD3D &shaderD3D = mAttachedShaders[shaderType];
+-    unsigned int startRegister                    = shaderD3D->getUniformRegister(uniform.name);
+-    ShShaderOutput outputType                     = shaderD3D->compilerOutputType;
++    unsigned int startRegister = shaderD3D->getUniformRegister(uniform.name);
++    ShShaderOutput outputType  = shaderD3D->compilerOutputType;
+     sh::HLSLBlockEncoder encoder(sh::HLSLBlockEncoder::GetStrategyFor(outputType), true);
+     encoder.skipRegisters(startRegister);
+ 
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index a9db86bd3fe66066c51be946651bfd63e42b78dc..4732a06816176e8a000dbcc2ee00fb712c21ae11 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -3227,6 +3227,28 @@ void main() {
+     ASSERT_TRUE(program1.valid());
+ }
+ 
++// Test linking and using a program where a uniform is referenced only as a side-effect-free
++// argument of an array constructor that is used as a statement.  The other constructor argument
++// has a side effect that the program output depends on.
++TEST_P(GLSLTest_ES3, UniformReferencedOnlyInArrayConstructorStatement)
++{
++    constexpr char kFS[] = R"(#version 300 es
++precision highp float;
++uniform int u_zero;
++out vec4 my_FragColor;
++void main()
++{
++    int i = 0;
++    int[2](u_zero, i++);
++    my_FragColor = (i == 1) ? vec4(0, 1, 0, 1) : vec4(1, 0, 0, 1);
++})";
++
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), kFS);
++    glUseProgram(program);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
++}
++
+ // Test that == and != for structs and array types work.
+ TEST_P(GLSLTest_ES31, StructAndArrayEqualOperator)
+ {

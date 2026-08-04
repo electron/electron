@@ -1,0 +1,255 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charlie Lao <cclao@google.com>
+Date: Thu, 25 Jun 2026 18:19:25 -0700
+Subject: Vulkan: Fix Uninitialized GPU memory leak in reinitImageAsRenderable
+
+This change fixes a bug in the Vulkan backend where reformatting a cube
+map texture (e.g., during a fallback to a renderable format) could lead
+to uninitialized GPU memory. This CL modified reinitImageAsRenderable()
+to handle cube map faces individually. Previously, the logic handled
+redefinition on a per-level basis. Now, it iterates through each face
+(layer) of a cube map to determine if it should be preserved or skipped
+based on whether that specific face was redefined. The code now
+correctly preserves data for faces that have not been redefined, while
+skipping those that have. This prevents using uninitialized memory for
+the non-redefined faces in the new image.
+
+New Regression Test added.
+
+Bug: b/521293438
+Change-Id: Ifd180472e0c9226ecd10b607a58f0bc061858ab0
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8008155
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Charlie Lao <cclao@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 6f5085c5c00ef01532e4c23d8d08e18479196818..9c03903c545adb686d2b263bc77d4eecddda05ff 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -3139,67 +3139,80 @@ angle::Result TextureVk::reinitImageAsRenderable(ContextVk *contextVk, const vk:
+                                         &getCopyImageView(), SurfaceRotation::Identity);
+     }
+ 
++    const bool isCubeMap = mState.getType() == gl::TextureType::CubeMap;
++
+     for (vk::LevelIndex levelVk(0); levelVk < vk::LevelIndex(levelCount); ++levelVk)
+     {
+         gl::LevelIndex levelGL = mImage->toGLLevel(levelVk);
+-        if (IsTextureLevelRedefined(mRedefinedLevels, mState.getType(), levelGL))
++
++        // For cube maps, faces are tracked individually and only the non-redefined faces of this
++        // level should be preserved.  For all other texture types, redefinition is tracked
++        // per-level so the whole level is either reformatted or skipped.
++        const uint32_t copyBatchCount = isCubeMap ? gl::kCubeFaceCount : 1;
++        for (uint32_t copyBatch = 0; copyBatch < copyBatchCount; ++copyBatch)
+         {
+-            continue;
+-        }
++            const uint32_t copyBaseLayer  = isCubeMap ? copyBatch : 0;
++            const uint32_t copyLayerCount = isCubeMap ? 1 : layerCount;
+ 
+-        ANGLE_VK_PERF_WARNING(contextVk, GL_DEBUG_SEVERITY_HIGH,
+-                              "GPU stall due to texture format fallback");
++            if (mRedefinedLevels[copyBaseLayer].test(levelGL.get()))
++            {
++                continue;
++            }
+ 
+-        gl::Box sourceBox(gl::kOffsetZero, mImage->getLevelExtents(levelVk));
+-        // copy and stage entire layer
+-        const gl::ImageIndex index =
+-            gl::ImageIndex::MakeFromType(mState.getType(), levelGL.get(), 0, layerCount);
+-
+-        // Read back the requested region of the source texture
+-        vk::RendererScoped<vk::BufferHelper> bufferHelper(renderer);
+-        vk::BufferHelper *srcBuffer = &bufferHelper.get();
+-        uint8_t *srcData            = nullptr;
+-        ANGLE_TRY(mImage->copyImageDataToBuffer(contextVk, levelGL, layerCount, 0, sourceBox,
+-                                                srcBuffer, &srcData));
+-
+-        // Explicitly finish. If new use cases arise where we don't want to block we can change
+-        // this.
+-        ANGLE_TRY(contextVk->finishImpl(QueueSubmitReason::TextureReformatToRenderable));
+-        // invalidate must be called after wait for finish.
+-        ANGLE_TRY(srcBuffer->invalidate(renderer));
+-
+-        size_t dstBufferSize =
+-            static_cast<size_t>(sourceBox.width) * static_cast<size_t>(sourceBox.height) *
+-            static_cast<size_t>(sourceBox.depth) * dstFormat.pixelBytes * layerCount;
+-
+-        // Allocate memory in the destination texture for the copy/conversion.
+-        uint8_t *dstData = nullptr;
+-        ANGLE_TRY(mImage->stageSubresourceUpdateAndGetData(
+-            contextVk, dstBufferSize, index, mImage->getLevelExtents(levelVk), gl::kOffsetZero,
+-            &dstData, dstFormat.id));
++            ANGLE_VK_PERF_WARNING(contextVk, GL_DEBUG_SEVERITY_HIGH,
++                                  "GPU stall due to texture format fallback");
+ 
+-        // Source and destination data is tightly packed
+-        GLuint srcDataRowPitch = sourceBox.width * srcFormat.pixelBytes;
+-        GLuint dstDataRowPitch = sourceBox.width * dstFormat.pixelBytes;
++            gl::Box sourceBox(gl::kOffsetZero, mImage->getLevelExtents(levelVk));
++            // copy and stage entire layer
++            const gl::ImageIndex index = gl::ImageIndex::MakeFromType(
++                mState.getType(), levelGL.get(), copyBaseLayer, copyLayerCount);
+ 
+-        GLuint srcDataDepthPitch = srcDataRowPitch * sourceBox.height;
+-        GLuint dstDataDepthPitch = dstDataRowPitch * sourceBox.height;
++            // Read back the requested region of the source texture
++            vk::RendererScoped<vk::BufferHelper> bufferHelper(renderer);
++            vk::BufferHelper *srcBuffer = &bufferHelper.get();
++            uint8_t *srcData            = nullptr;
++            ANGLE_TRY(mImage->copyImageDataToBuffer(contextVk, levelGL, copyLayerCount,
++                                                    copyBaseLayer, sourceBox, srcBuffer, &srcData));
+ 
+-        GLuint srcDataLayerPitch = srcDataDepthPitch * sourceBox.depth;
+-        GLuint dstDataLayerPitch = dstDataDepthPitch * sourceBox.depth;
++            // Explicitly finish. If new use cases arise where we don't want to block we can change
++            // this.
++            ANGLE_TRY(contextVk->finishImpl(QueueSubmitReason::TextureReformatToRenderable));
++            // invalidate must be called after wait for finish.
++            ANGLE_TRY(srcBuffer->invalidate(renderer));
+ 
+-        rx::PixelReadFunction pixelReadFunction   = srcFormat.pixelReadFunction;
+-        rx::PixelWriteFunction pixelWriteFunction = dstFormat.pixelWriteFunction;
++            size_t dstBufferSize =
++                static_cast<size_t>(sourceBox.width) * static_cast<size_t>(sourceBox.height) *
++                static_cast<size_t>(sourceBox.depth) * dstFormat.pixelBytes * copyLayerCount;
+ 
+-        const gl::InternalFormat &dstFormatInfo = *mState.getImageDesc(index).format.info;
+-        for (uint32_t layer = 0; layer < layerCount; layer++)
+-        {
+-            CopyImageCHROMIUM(srcData + layer * srcDataLayerPitch, srcDataRowPitch,
+-                              srcFormat.pixelBytes, srcDataDepthPitch, pixelReadFunction,
+-                              dstData + layer * dstDataLayerPitch, dstDataRowPitch,
+-                              dstFormat.pixelBytes, dstDataDepthPitch, pixelWriteFunction,
+-                              dstFormatInfo.format, dstFormatInfo.componentType, sourceBox.width,
+-                              sourceBox.height, sourceBox.depth, false, false, false);
++            // Allocate memory in the destination texture for the copy/conversion.
++            uint8_t *dstData = nullptr;
++            ANGLE_TRY(mImage->stageSubresourceUpdateAndGetData(
++                contextVk, dstBufferSize, index, mImage->getLevelExtents(levelVk), gl::kOffsetZero,
++                &dstData, dstFormat.id));
++
++            // Source and destination data is tightly packed
++            GLuint srcDataRowPitch = sourceBox.width * srcFormat.pixelBytes;
++            GLuint dstDataRowPitch = sourceBox.width * dstFormat.pixelBytes;
++
++            GLuint srcDataDepthPitch = srcDataRowPitch * sourceBox.height;
++            GLuint dstDataDepthPitch = dstDataRowPitch * sourceBox.height;
++
++            GLuint srcDataLayerPitch = srcDataDepthPitch * sourceBox.depth;
++            GLuint dstDataLayerPitch = dstDataDepthPitch * sourceBox.depth;
++
++            rx::PixelReadFunction pixelReadFunction   = srcFormat.pixelReadFunction;
++            rx::PixelWriteFunction pixelWriteFunction = dstFormat.pixelWriteFunction;
++
++            const gl::InternalFormat &dstFormatInfo = *mState.getImageDesc(index).format.info;
++            for (uint32_t layer = 0; layer < copyLayerCount; layer++)
++            {
++                CopyImageCHROMIUM(
++                    srcData + layer * srcDataLayerPitch, srcDataRowPitch, srcFormat.pixelBytes,
++                    srcDataDepthPitch, pixelReadFunction, dstData + layer * dstDataLayerPitch,
++                    dstDataRowPitch, dstFormat.pixelBytes, dstDataDepthPitch, pixelWriteFunction,
++                    dstFormatInfo.format, dstFormatInfo.componentType, sourceBox.width,
++                    sourceBox.height, sourceBox.depth, false, false, false);
++            }
+         }
+     }
+ 
+diff --git a/src/tests/gl_tests/FramebufferTest.cpp b/src/tests/gl_tests/FramebufferTest.cpp
+index 020a0416881e85ebff9a6fa2f902e61f899477b9..5c7f058018ee5591b84b9a18592930a8e3abe51c 100644
+--- a/src/tests/gl_tests/FramebufferTest.cpp
++++ b/src/tests/gl_tests/FramebufferTest.cpp
+@@ -2708,6 +2708,90 @@ TEST_P(FramebufferTestWithFormatFallback, R4G4B4A4_CubeTexImage)
+     cubeTexImageFollowedByFBORead(GL_RGBA4, GL_UNSIGNED_SHORT_4_4_4_4);
+ }
+ 
++// Test cube map texture format fallback after one face of a non-base level is incompatibly
++// redefined.  When the image is reformatted, the other faces of that level must be preserved.
++TEST_P(FramebufferTestWithFormatFallback, R4G4B4A4_CubeTexImageRedefinedFace)
++{
++    constexpr GLenum kInternalFormat = GL_RGBA4;
++    constexpr GLenum kType           = GL_UNSIGNED_SHORT_4_4_4_4;
++    const GLColor kColors[6]         = {GLColor::red,  GLColor::green,  GLColor::blue,
++                                        GLColor::cyan, GLColor::yellow, GLColor::magenta};
++
++    // Create a two-level cube map and upload distinct colors to every face.
++    GLTexture cube;
++    glBindTexture(GL_TEXTURE_CUBE_MAP, cube);
++    for (GLenum face = 0; face < 6; ++face)
++    {
++        const GLenum target     = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        const GLushort u16Color = convertGLColorToUShort(kInternalFormat, kColors[face]);
++        std::vector<GLushort> pixels(kTexWidth * kTexHeight, u16Color);
++        glTexImage2D(target, 0, kInternalFormat, kTexWidth, kTexHeight, 0, GL_RGBA, kType,
++                     pixels.data());
++        glTexImage2D(target, 1, kInternalFormat, kTexWidth / 2, kTexHeight / 2, 0, GL_RGBA, kType,
++                     pixels.data());
++    }
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAX_LEVEL, 1);
++    ASSERT_GL_NO_ERROR();
++
++    // Sample from the cube map so the backing image is allocated and committed.
++    constexpr char kFS[] = R"(precision highp float;
++    uniform samplerCube texCube;
++    void main()
++    {
++          gl_FragColor = textureCube(texCube, vec3(0, 0, 1));
++    })";
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    drawQuad(program, essl1_shaders::PositionAttrib(), 0.5f);
++    ASSERT_GL_NO_ERROR();
++
++    // Incompatibly redefine one face of level 1 with a different size.
++    {
++        const GLushort u16Color = convertGLColorToUShort(kInternalFormat, GLColor::white);
++        std::vector<GLushort> pixels(kTexWidth * kTexHeight, u16Color);
++        glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 1, kInternalFormat, kTexWidth, kTexHeight, 0,
++                     GL_RGBA, kType, pixels.data());
++    }
++
++    // Attach a face of level 0 to a framebuffer and read it back.  This is the point at which the
++    // image may be reformatted.
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X,
++                           cube, 0);
++    EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++    EXPECT_PIXEL_COLOR_EQ(kTexWidth / 4, kTexHeight / 4, kColors[0]);
++
++    // Restore the redefined face to a compatible size, then verify every face of level 1.  The
++    // other five faces must still hold the data that was originally uploaded.
++    {
++        const GLushort u16Color = convertGLColorToUShort(kInternalFormat, GLColor::white);
++        std::vector<GLushort> pixels((kTexWidth / 2) * (kTexHeight / 2), u16Color);
++        glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 1, kInternalFormat, kTexWidth / 2,
++                     kTexHeight / 2, 0, GL_RGBA, kType, pixels.data());
++    }
++    for (GLenum face = 0; face < 6; ++face)
++    {
++        const GLenum target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, cube, 1);
++        EXPECT_GL_FRAMEBUFFER_COMPLETE(GL_FRAMEBUFFER);
++        const GLColor expected =
++            target == GL_TEXTURE_CUBE_MAP_NEGATIVE_X ? GLColor::white : kColors[face];
++        EXPECT_PIXEL_COLOR_EQ(kTexWidth / 4, kTexHeight / 4, expected) << "face " << face;
++    }
++
++    // Verify level 0 is also intact.
++    for (GLenum face = 0; face < 6; ++face)
++    {
++        const GLenum target = GL_TEXTURE_CUBE_MAP_POSITIVE_X + face;
++        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, cube, 0);
++        EXPECT_PIXEL_COLOR_EQ(kTexWidth / 4, kTexHeight / 4, kColors[face]) << "face " << face;
++    }
++    ASSERT_GL_NO_ERROR();
++}
++
+ // Tests that the out-of-range staged update is reformatted when mipmapping is enabled, but not
+ // before it.
+ TEST_P(FramebufferTestWithFormatFallback, R4G4B4A4_OutOfRangeStagedUpdateReformated)

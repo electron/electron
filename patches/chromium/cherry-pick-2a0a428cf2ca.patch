@@ -1,0 +1,1268 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jonathan Ross <jonross@chromium.org>
+Date: Fri, 12 Jun 2026 10:52:54 -0700
+Subject: Harden Touch handling: Refcount FilteredGestureProvider
+
+This CL converts FilteredGestureProvider to be held by scoped_refptr to
+prevent any Use-After-Free if its parent class is destroyed during
+gesture dispatch.
+
+This CL also adds WeakPtr checks in the input stack (RenderWidgetHostInputEventRouter,
+TouchEmulator) to detect self-destruction during dispatch.
+
+Bug: 517016413
+Change-Id: I6099fef0805bcdc7c120fc90eb4aaabfb49158e6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7919026
+Reviewed-by: Aman Verma <amanvr@google.com>
+Commit-Queue: Jonathan Ross <jonross@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1646088}
+
+diff --git a/components/input/android_input_helper.cc b/components/input/android_input_helper.cc
+index ba8884b553a7bcfb059cd249eec8967e563f1ab9..47e5f718f73bf7ac971556dfd191c2126613a519 100644
+--- a/components/input/android_input_helper.cc
++++ b/components/input/android_input_helper.cc
+@@ -12,6 +12,7 @@
+ #include "ui/events/blink/blink_event_util.h"
+ #include "ui/events/blink/web_input_event_traits.h"
+ #include "ui/events/event_utils.h"
++#include "ui/events/gesture_detection/filtered_gesture_provider.h"
+ 
+ namespace input {
+ 
+@@ -57,20 +58,20 @@ bool AndroidInputHelper::ShouldRouteEvents() const {
+ }
+ 
+ void AndroidInputHelper::ResetGestureDetection() {
+-  ui::FilteredGestureProvider& gesture_provider =
+-      delegate_->GetGestureProvider();
++  scoped_refptr<ui::FilteredGestureProvider> gesture_provider =
++      view_->GetGestureProvider();
+ 
+   const ui::MotionEvent* current_down_event =
+-      gesture_provider.GetCurrentDownEvent();
++      gesture_provider->GetCurrentDownEvent();
+   if (!current_down_event) {
+     // A hard reset ensures prevention of any timer-based events that might fire
+     // after a touch sequence has ended.
+-    gesture_provider.ResetDetection();
++    gesture_provider->ResetDetection();
+     return;
+   }
+ 
+   const ui::MotionEvent* last_event =
+-      gesture_provider.GetLastEventWithoutHistory();
++      gesture_provider->GetLastEventWithoutHistory();
+   CHECK(last_event);
+ 
+   std::unique_ptr<ui::MotionEvent> cancel_event;
+@@ -82,7 +83,7 @@ void AndroidInputHelper::ResetGestureDetection() {
+   } else {
+     cancel_event = last_event->Cancel();
+   }
+-  if (gesture_provider.OnTouchEvent(*cancel_event).succeeded) {
++  if (gesture_provider->OnTouchEvent(*cancel_event).succeeded) {
+     blink::WebTouchEvent web_event = ui::CreateWebTouchEventFromMotionEvent(
+         *cancel_event, false /* may_cause_scrolling */, false /* hovering */);
+     RouteOrForwardTouchEvent(web_event);
+@@ -127,12 +128,18 @@ void AndroidInputHelper::ProcessAckedTouchEvent(
+   // blocking to the Renderer.
+   const bool was_touch_blocked =
+       ui::WebInputEventTraits::ShouldBlockEventStream(touch.event);
+-  delegate_->GetGestureProvider().OnTouchEventAck(
++  auto weak_this = weak_factory_.GetWeakPtr();
++  scoped_refptr<ui::FilteredGestureProvider> gesture_provider =
++      view_->GetGestureProvider();
++  gesture_provider->OnTouchEventAck(
+       touch.event.unique_touch_event_id, event_consumed,
+       is_source_touch_event_set_non_blocking,
+       was_touch_blocked
+           ? std::make_optional(touch.event.GetEventLatencyMetadata())
+           : std::nullopt);
++  if (!weak_this) {
++    return;
++  }
+   if (touch.event.touch_start_or_first_touch_move && event_consumed &&
+       view_->GetViewRenderInputRouter()->delegate() &&
+       view_->GetViewRenderInputRouter()->delegate()->GetInputEventRouter()) {
+diff --git a/components/input/android_input_helper.h b/components/input/android_input_helper.h
+index aca4671476d1c74cff80ce467cebe7e2a472ff79..ad063ffb6b077c0312bb75f016a6f52a94297386 100644
+--- a/components/input/android_input_helper.h
++++ b/components/input/android_input_helper.h
+@@ -5,9 +5,9 @@
+ #ifndef COMPONENTS_INPUT_ANDROID_INPUT_HELPER_H_
+ #define COMPONENTS_INPUT_ANDROID_INPUT_HELPER_H_
+ 
++#include "base/memory/weak_ptr.h"
+ #include "components/input/render_widget_host_view_input.h"
+ #include "ui/events/android/motion_event_android.h"
+-#include "ui/events/gesture_detection/filtered_gesture_provider.h"
+ 
+ namespace input {
+ 
+@@ -19,7 +19,6 @@ class COMPONENT_EXPORT(INPUT) AndroidInputHelper {
+    public:
+     virtual ~Delegate() = default;
+     virtual void SendGestureEvent(const blink::WebGestureEvent& event) = 0;
+-    virtual ui::FilteredGestureProvider& GetGestureProvider() = 0;
+   };
+ 
+   explicit AndroidInputHelper(RenderWidgetHostViewInput* view,
+@@ -57,6 +56,8 @@ class COMPONENT_EXPORT(INPUT) AndroidInputHelper {
+   raw_ref<RenderWidgetHostViewInput> view_;
+   // |delegate_| is supposed to outlive |this|.
+   raw_ref<Delegate> delegate_;
++
++  base::WeakPtrFactory<AndroidInputHelper> weak_factory_{this};
+ };
+ 
+ }  // namespace input
+diff --git a/components/input/render_widget_host_input_event_router.cc b/components/input/render_widget_host_input_event_router.cc
+index 4f2bf4867a8ae0628835a1d775d071d36200297b..650cd75ba331d0b67c44a5af33d2205306951080 100644
+--- a/components/input/render_widget_host_input_event_router.cc
++++ b/components/input/render_widget_host_input_event_router.cc
+@@ -185,22 +185,38 @@ void TouchEventAckQueue::ProcessAckedTouchEvents() {
+   if (ack_queue_.empty())
+     return;
+ 
++  base::WeakPtr<RenderWidgetHostInputEventRouter> weak_client =
++      client_->GetWeakPtr();
+   TouchEmulator* touch_emulator =
+       client_->GetTouchEmulator(/*create_if_necessary=*/false);
++  base::WeakPtr<TouchEmulator> weak_touch_emulator =
++      touch_emulator ? touch_emulator->GetWeakPtr() : nullptr;
++
+   while (!ack_queue_.empty() && ack_queue_.front().touch_event_ack_status ==
+                                     TouchEventAckStatus::TouchEventAcked) {
+-    TouchEventAckQueue::AckData ack_data = ack_queue_.front();
++    if (!weak_client) {
++      return;
++    }
++    // Extract values and bare pointers to avoid holding raw_ptrs on the stack
++    // across synchronous view destruction boundaries.
++    TouchEventWithLatencyInfo touch_event = ack_queue_.front().touch_event;
++    blink::mojom::InputEventResultState ack_result =
++        ack_queue_.front().ack_result;
++    RenderWidgetHostViewInput* root_view = ack_queue_.front().root_view;
+     ack_queue_.pop_front();
+ 
+-    if ((!touch_emulator ||
+-         !touch_emulator->HandleTouchEventAck(ack_data.touch_event.event,
+-                                              ack_data.ack_result)) &&
+-        (client_->IsViewInMap(ack_data.root_view) ||
+-         client_->ViewMapIsEmpty())) {
+-      // Forward acked event and result to the root view associated with the
+-      // event. The view map is only empty for AndroidWebView.
+-      ack_data.root_view->ProcessAckedTouchEvent(ack_data.touch_event,
+-                                                 ack_data.ack_result);
++    bool handled_by_emulator = false;
++    if (weak_touch_emulator) {
++      handled_by_emulator = weak_touch_emulator->HandleTouchEventAck(
++          touch_event.event, ack_result);
++    }
++
++    if (!handled_by_emulator && weak_client) {
++      if (client_->IsViewInMap(root_view) || client_->ViewMapIsEmpty()) {
++        // Forward acked event and result to the root view associated with the
++        // event. The view map is only empty for AndroidWebView.
++        root_view->ProcessAckedTouchEvent(touch_event, ack_result);
++      }
+     }
+   }
+ }
+@@ -2066,6 +2082,11 @@ TouchEmulator* RenderWidgetHostInputEventRouter::GetTouchEmulator(
+   return delegate_->GetTouchEmulator(create_if_necessary);
+ }
+ 
++base::WeakPtr<RenderWidgetHostInputEventRouter>
++RenderWidgetHostInputEventRouter::GetWeakPtr() {
++  return weak_ptr_factory_.GetWeakPtr();
++}
++
+ void RenderWidgetHostInputEventRouter::ForwardEmulatedGestureEvent(
+     const blink::WebGestureEvent& event) {
+   TRACE_EVENT0("input",
+diff --git a/components/input/render_widget_host_input_event_router.h b/components/input/render_widget_host_input_event_router.h
+index b10dd41639203cacce01f5bf2b450d1c3e53cb2f..d024abded9f6e2d4407c3a8b2718afac0f2c6798 100644
+--- a/components/input/render_widget_host_input_event_router.h
++++ b/components/input/render_widget_host_input_event_router.h
+@@ -164,6 +164,8 @@ class COMPONENT_EXPORT(INPUT) RenderWidgetHostInputEventRouter final
+   // creates a touch emulator.
+   TouchEmulator* GetTouchEmulator(bool create_if_necessary);
+ 
++  base::WeakPtr<RenderWidgetHostInputEventRouter> GetWeakPtr();
++
+   float last_device_scale_factor() { return last_device_scale_factor_; }
+ 
+   // Returns the RenderWidgetHostViewInput inside the |root_view| at |point|
+diff --git a/components/input/render_widget_host_view_input.cc b/components/input/render_widget_host_view_input.cc
+index a70fc357ea0addeb45e4554ea60568f30deab734..4e492730b4063c19ad7839a3959cb896ba61d672 100644
+--- a/components/input/render_widget_host_view_input.cc
++++ b/components/input/render_widget_host_view_input.cc
+@@ -351,4 +351,9 @@ bool RenderWidgetHostViewInput::TransformPointToTargetCoordSpace(
+   return true;
+ }
+ 
++scoped_refptr<ui::FilteredGestureProvider>
++RenderWidgetHostViewInput::GetGestureProvider() {
++  return nullptr;
++}
++
+ }  // namespace input
+diff --git a/components/input/render_widget_host_view_input.h b/components/input/render_widget_host_view_input.h
+index db2e94f57b3280a0cd2f8afc6fcf0984f7b69017..061277b1f8e583c82bb3fbbd2e884bb486309957 100644
+--- a/components/input/render_widget_host_view_input.h
++++ b/components/input/render_widget_host_view_input.h
+@@ -10,6 +10,7 @@
+ #include <string>
+ 
+ #include "base/component_export.h"
++#include "base/memory/scoped_refptr.h"
+ #include "base/observer_list.h"
+ #include "components/input/event_with_latency_info.h"
+ #include "components/input/render_input_router.h"
+@@ -27,6 +28,7 @@ class WebMouseWheelEvent;
+ 
+ namespace ui {
+ class Cursor;
++class FilteredGestureProvider;
+ class LatencyInfo;
+ }  // namespace ui
+ 
+@@ -197,6 +199,8 @@ class COMPONENT_EXPORT(INPUT) RenderWidgetHostViewInput
+       const blink::WebGestureEvent& event,
+       blink::mojom::InputEventResultState ack_result);
+ 
++  virtual scoped_refptr<ui::FilteredGestureProvider> GetGestureProvider();
++
+   virtual void SetLastPointerType(ui::EventPointerType last_pointer_type) {}
+ 
+   // Sets the cursor for this view to the one specified.
+diff --git a/components/input/touch_emulator.h b/components/input/touch_emulator.h
+index 3d600d683561cb66a17f6c38bf04486f9901bf17..781396b6b057729cb94a6a2eb116050e2076b28a 100644
+--- a/components/input/touch_emulator.h
++++ b/components/input/touch_emulator.h
+@@ -6,6 +6,7 @@
+ #define COMPONENTS_INPUT_TOUCH_EMULATOR_H_
+ 
+ #include "base/component_export.h"
++#include "base/memory/weak_ptr.h"
+ #include "third_party/blink/public/common/input/web_gesture_event.h"
+ #include "third_party/blink/public/common/input/web_touch_event.h"
+ #include "third_party/blink/public/mojom/input/input_event_result.mojom-shared.h"
+@@ -18,6 +19,8 @@ class RenderWidgetHostViewInput;
+ // Emulates touch input. See TouchEmulator::Mode for more details.
+ class COMPONENT_EXPORT(INPUT) TouchEmulator : public ui::GestureProviderClient {
+  public:
++  virtual base::WeakPtr<TouchEmulator> GetWeakPtr() = 0;
++
+   enum class Mode {
+     // Emulator will consume incoming mouse events and transform them
+     // into touches and gestures.
+diff --git a/components/viz/service/input/render_input_router_support_android.cc b/components/viz/service/input/render_input_router_support_android.cc
+index 1dcb4ceeb635b9bb0ad1e948d92a95560b4fe183..244adb3b802c5e41e34a963d99c014a59111fcb0 100644
+--- a/components/viz/service/input/render_input_router_support_android.cc
++++ b/components/viz/service/input/render_input_router_support_android.cc
+@@ -12,7 +12,9 @@
+ 
+ namespace viz {
+ 
+-RenderInputRouterSupportAndroid::~RenderInputRouterSupportAndroid() = default;
++RenderInputRouterSupportAndroid::~RenderInputRouterSupportAndroid() {
++  gesture_provider_->Shutdown();
++}
+ 
+ RenderInputRouterSupportAndroid::RenderInputRouterSupportAndroid(
+     input::RenderInputRouter* rir,
+@@ -20,10 +22,11 @@ RenderInputRouterSupportAndroid::RenderInputRouterSupportAndroid(
+     const FrameSinkId& frame_sink_id,
+     GpuServiceImpl* gpu_service)
+     : RenderInputRouterSupportBase(rir, delegate, frame_sink_id),
+-      gesture_provider_(ui::GetGestureProviderConfig(
+-                            ui::GestureProviderConfigType::CURRENT_PLATFORM,
+-                            base::SingleThreadTaskRunner::GetCurrentDefault()),
+-                        this),
++      gesture_provider_(base::MakeRefCounted<ui::FilteredGestureProvider>(
++          ui::GetGestureProviderConfig(
++              ui::GestureProviderConfigType::CURRENT_PLATFORM,
++              base::SingleThreadTaskRunner::GetCurrentDefault()),
++          this)),
+       gpu_service_(gpu_service) {
+   CHECK(gpu_service_);
+   input_helper_ = std::make_unique<input::AndroidInputHelper>(this, this);
+@@ -39,8 +42,15 @@ bool RenderInputRouterSupportAndroid::OnTouchEvent(
+         event, /*processing_time=*/base::TimeTicks::Now());
+   }
+ 
++  auto weak_this = GetWeakPtr();
++  // Keep the gesture provider alive during event dispatch as it can trigger
++  // synchronous view destruction.
++  scoped_refptr<ui::FilteredGestureProvider> protector(gesture_provider_);
+   ui::FilteredGestureProvider::TouchHandlingResult result =
+-      gesture_provider_.OnTouchEvent(event);
++      protector->OnTouchEvent(event);
++  if (!weak_this) {
++    return false;
++  }
+   if (!result.succeeded) {
+     return false;
+   }
+@@ -76,7 +86,7 @@ bool RenderInputRouterSupportAndroid::IsRenderInputRouterSupportChildFrame()
+ 
+ void RenderInputRouterSupportAndroid::NotifySiteIsMobileOptimized(
+     bool is_mobile_optimized) {
+-  gesture_provider_.SetDoubleTapSupportForPageEnabled(!is_mobile_optimized);
++  gesture_provider_->SetDoubleTapSupportForPageEnabled(!is_mobile_optimized);
+ }
+ 
+ void RenderInputRouterSupportAndroid::OnGestureEvent(
+@@ -95,7 +105,7 @@ void RenderInputRouterSupportAndroid::SendGestureEvent(
+   input_helper_->RouteOrForwardGestureEvent(event);
+ }
+ 
+-ui::FilteredGestureProvider&
++scoped_refptr<ui::FilteredGestureProvider>
+ RenderInputRouterSupportAndroid::GetGestureProvider() {
+   return gesture_provider_;
+ }
+diff --git a/components/viz/service/input/render_input_router_support_android.h b/components/viz/service/input/render_input_router_support_android.h
+index 66349d27324d59cf66ec3cc1fba457e4c7230a46..e43a427447e326e66454eb7565bb595c2dbdf51f 100644
+--- a/components/viz/service/input/render_input_router_support_android.h
++++ b/components/viz/service/input/render_input_router_support_android.h
+@@ -81,7 +81,7 @@ class VIZ_SERVICE_EXPORT RenderInputRouterSupportAndroid
+ 
+   // AndroidInputHelper::Delegate implementation.
+   void SendGestureEvent(const blink::WebGestureEvent& event) override;
+-  ui::FilteredGestureProvider& GetGestureProvider() override;
++  scoped_refptr<ui::FilteredGestureProvider> GetGestureProvider() override;
+ 
+   base::WeakPtr<RenderInputRouterSupportAndroid> GetWeakPtr();
+ 
+@@ -90,7 +90,7 @@ class VIZ_SERVICE_EXPORT RenderInputRouterSupportAndroid
+ 
+   // Provides gesture synthesis given a stream of touch events (derived from
+   // Android MotionEvent's) and touch event acks.
+-  ui::FilteredGestureProvider gesture_provider_;
++  scoped_refptr<ui::FilteredGestureProvider> gesture_provider_;
+ 
+   // FrameSinkManager owns InputManager which in turn owns
+   // RenderInputRouterSupportAndroid. GpuServiceImpl is destroyed only after
+diff --git a/content/browser/renderer_host/input/touch_emulator_impl.cc b/content/browser/renderer_host/input/touch_emulator_impl.cc
+index 3ec0aeba6ec66216439e70f5530dbe6b5d25c786..71f8d4481767cb05efd53cf06a8f1b6f78e8d768 100644
+--- a/content/browser/renderer_host/input/touch_emulator_impl.cc
++++ b/content/browser/renderer_host/input/touch_emulator_impl.cc
+@@ -89,6 +89,9 @@ TouchEmulatorImpl::~TouchEmulatorImpl() {
+   // We cannot cleanup properly in destructor, as we need roundtrip to the
+   // renderer for ack. Instead, the owner should call Disable, and only
+   // destroy this object when renderer is dead.
++  if (gesture_provider_) {
++    gesture_provider_->Shutdown();
++  }
+ }
+ 
+ void TouchEmulatorImpl::ResetState() {
+@@ -110,7 +113,10 @@ void TouchEmulatorImpl::Enable(Mode mode,
+       mode_ != mode) {
+     mode_ = mode;
+     gesture_provider_config_type_ = config_type;
+-    gesture_provider_ = std::make_unique<ui::FilteredGestureProvider>(
++    if (gesture_provider_) {
++      gesture_provider_->Shutdown();
++    }
++    gesture_provider_ = base::MakeRefCounted<ui::FilteredGestureProvider>(
+         GetEmulatorGestureProviderConfig(config_type, mode), this);
+     gesture_provider_->SetDoubleTapSupportForPageEnabled(double_tap_enabled_);
+     // TODO(dgozman): Use synthetic secondary touch to support multi-touch.
+@@ -127,13 +133,20 @@ void TouchEmulatorImpl::Disable() {
+ 
+   mode_ = Mode::kEmulatingTouchFromMouse;
+   CancelTouch();
+-  gesture_provider_.reset();
++  if (gesture_provider_) {
++    gesture_provider_->Shutdown();
++    gesture_provider_ = nullptr;
++  }
+   base::queue<base::OnceClosure> empty;
+   injected_touch_completion_callbacks_.swap(empty);
+   client_->SetCursor(ui::mojom::CursorType::kPointer);
+   ResetState();
+ }
+ 
++base::WeakPtr<input::TouchEmulator> TouchEmulatorImpl::GetWeakPtr() {
++  return weak_ptr_factory_.GetWeakPtr();
++}
++
+ void TouchEmulatorImpl::SetDeviceScaleFactor(float device_scale_factor) {
+   // Make sure the scale factor corresponds to the one of the available cursor
+   // images.
+@@ -287,27 +300,31 @@ bool TouchEmulatorImpl::HandleEmulatedTouchEvent(
+     blink::WebTouchEvent event,
+     input::RenderWidgetHostViewInput* target_view) {
+   DCHECK(gesture_provider_);
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  scoped_refptr<ui::FilteredGestureProvider> gesture_provider(
++      gesture_provider_);
+   event.unique_touch_event_id = ui::GetNextTouchEventId();
+-  auto result = gesture_provider_->OnTouchEvent(MotionEventWeb(event));
+-  if (!result.succeeded)
++  auto result = gesture_provider->OnTouchEvent(MotionEventWeb(event));
++  if (!result.succeeded || !weak_this) {
+     return true;
++  }
+ 
+   const bool event_consumed = true;
+   const bool is_source_touch_event_set_blocking = false;
+   // Block emulated event when emulated native stream is active.
+   if (native_stream_active_sequence_count_) {
+-    gesture_provider_->OnTouchEventAck(event.unique_touch_event_id,
+-                                       event_consumed,
+-                                       is_source_touch_event_set_blocking);
++    gesture_provider->OnTouchEventAck(event.unique_touch_event_id,
++                                      event_consumed,
++                                      is_source_touch_event_set_blocking);
+     return true;
+   }
+ 
+   bool is_sequence_start = event.IsTouchSequenceStart();
+   // Do not allow middle-sequence event to pass through, if start was blocked.
+   if (!emulated_stream_active_sequence_count_ && !is_sequence_start) {
+-    gesture_provider_->OnTouchEventAck(event.unique_touch_event_id,
+-                                       event_consumed,
+-                                       is_source_touch_event_set_blocking);
++    gesture_provider->OnTouchEventAck(event.unique_touch_event_id,
++                                      event_consumed,
++                                      is_source_touch_event_set_blocking);
+     return true;
+   }
+ 
+@@ -333,9 +350,15 @@ bool TouchEmulatorImpl::HandleTouchEventAck(
+     const bool event_consumed =
+         ack_result == blink::mojom::InputEventResultState::kConsumed;
+     if (gesture_provider_) {
+-      gesture_provider_->OnTouchEventAck(
++      auto weak_this = weak_ptr_factory_.GetWeakPtr();
++      scoped_refptr<ui::FilteredGestureProvider> gesture_provider(
++          gesture_provider_);
++      gesture_provider->OnTouchEventAck(
+           event.unique_touch_event_id, event_consumed,
+           input::InputEventResultStateIsSetBlocking(ack_result));
++      if (!weak_this) {
++        return true;
++      }
+     }
+     if (pending_taps_count_ == taps_count_before)
+       OnInjectedTouchCompleted();
+@@ -463,8 +486,10 @@ void TouchEmulatorImpl::InjectTouchEvent(
+   DCHECK(IsEnabled() && mode_ == Mode::kInjectingTouchEvents);
+   touch_event_ = event;
+   injected_touch_completion_callbacks_.push(std::move(callback));
+-  if (HandleEmulatedTouchEvent(touch_event_, target_view))
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  if (HandleEmulatedTouchEvent(touch_event_, target_view) && weak_this) {
+     OnInjectedTouchCompleted();
++  }
+ }
+ 
+ void TouchEmulatorImpl::OnInjectedTouchCompleted() {
+diff --git a/content/browser/renderer_host/input/touch_emulator_impl.h b/content/browser/renderer_host/input/touch_emulator_impl.h
+index 130e38568bbfb760dd05716ae000519ef36893ce..a295b34992f1c7472cd7ab1aab6de1002e70bbea 100644
+--- a/content/browser/renderer_host/input/touch_emulator_impl.h
++++ b/content/browser/renderer_host/input/touch_emulator_impl.h
+@@ -5,11 +5,10 @@
+ #ifndef CONTENT_BROWSER_RENDERER_HOST_INPUT_TOUCH_EMULATOR_IMPL_H_
+ #define CONTENT_BROWSER_RENDERER_HOST_INPUT_TOUCH_EMULATOR_IMPL_H_
+ 
+-#include <memory>
+-
+ #include "base/containers/queue.h"
+ #include "base/functional/callback.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/time/time.h"
+ #include "components/input/touch_emulator.h"
+ #include "components/input/touch_emulator_client.h"
+@@ -42,6 +41,7 @@ class CONTENT_EXPORT TouchEmulatorImpl : public input::TouchEmulator {
+   ~TouchEmulatorImpl() override;
+ 
+   // TouchEmulator implementation.
++  base::WeakPtr<input::TouchEmulator> GetWeakPtr() override;
+   void SetDeviceScaleFactor(float device_scale_factor) override;
+   void SetDoubleTapSupportForPageEnabled(bool enabled) override;
+   bool IsEnabled() const override;
+@@ -123,7 +123,7 @@ class CONTENT_EXPORT TouchEmulatorImpl : public input::TouchEmulator {
+   // Emulator is enabled iff gesture provider is created.
+   // Disabled emulator does only process touch acks left from previous
+   // emulation. It does not intercept any events.
+-  std::unique_ptr<ui::FilteredGestureProvider> gesture_provider_;
++  scoped_refptr<ui::FilteredGestureProvider> gesture_provider_;
+   ui::GestureProviderConfigType gesture_provider_config_type_;
+   Mode mode_;
+   bool double_tap_enabled_;
+@@ -165,6 +165,8 @@ class CONTENT_EXPORT TouchEmulatorImpl : public input::TouchEmulator {
+   bool pinch_gesture_active_;
+ 
+   base::queue<base::OnceClosure> injected_touch_completion_callbacks_;
++
++  base::WeakPtrFactory<TouchEmulatorImpl> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace content
+diff --git a/content/browser/renderer_host/render_widget_host_view_android.cc b/content/browser/renderer_host/render_widget_host_view_android.cc
+index fd7eb3e435f744bde1508e5fd6a8004be2e690ac..6bf4e3f773904e9a43d9c679b8b4fd850f076da9 100644
+--- a/content/browser/renderer_host/render_widget_host_view_android.cc
++++ b/content/browser/renderer_host/render_widget_host_view_android.cc
+@@ -652,11 +652,11 @@ RenderWidgetHostViewAndroid::RenderWidgetHostViewAndroid(
+       text_suggestion_host_(nullptr),
+       gesture_listener_manager_(nullptr),
+       view_(ui::ViewAndroid::LayoutType::kMatchParent),
+-      gesture_provider_(
++      gesture_provider_(base::MakeRefCounted<ui::FilteredGestureProvider>(
+           ui::GetGestureProviderConfig(
+               ui::GestureProviderConfigType::CURRENT_PLATFORM,
+               GetUIThreadTaskRunner({BrowserTaskType::kUserInput})),
+-          this),
++          this)),
+       stylus_text_selector_(this),
+       using_browser_compositor_(CompositorImpl::IsInitialized()),
+       synchronous_compositor_client_(nullptr),
+@@ -753,6 +753,7 @@ RenderWidgetHostViewAndroid::RenderWidgetHostViewAndroid(
+ }
+ 
+ RenderWidgetHostViewAndroid::~RenderWidgetHostViewAndroid() {
++  gesture_provider_->Shutdown();
+   UpdateNativeViewTree(/*parent_native_view=*/nullptr,
+                        /*parent_layer=*/nullptr);
+   view_.set_event_handler(nullptr);
+@@ -937,7 +938,7 @@ void RenderWidgetHostViewAndroid::OnRenderFrameMetadataChangedBeforeActivation(
+     is_transparent = false;
+   }
+ 
+-  gesture_provider_.SetDoubleTapSupportForPageEnabled(
++  gesture_provider_->SetDoubleTapSupportForPageEnabled(
+       !metadata.is_mobile_optimized);
+ 
+   float dip_scale = view_.GetDipScale();
+@@ -1640,8 +1641,15 @@ bool RenderWidgetHostViewAndroid::OnTouchEvent(
+     }
+   }
+ 
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  // Keep the gesture provider alive during event dispatch as it can trigger
++  // synchronous view destruction.
++  scoped_refptr<ui::FilteredGestureProvider> protector(gesture_provider_);
+   ui::FilteredGestureProvider::TouchHandlingResult result =
+-      gesture_provider_.OnTouchEvent(event);
++      protector->OnTouchEvent(event);
++  if (!weak_this) {
++    return false;
++  }
+   if (!result.succeeded)
+     return false;
+ 
+@@ -1745,12 +1753,12 @@ void RenderWidgetHostViewAndroid::ActivatedOrEvictedFromBackForwardCache() {
+ }
+ 
+ void RenderWidgetHostViewAndroid::SetDoubleTapSupportEnabled(bool enabled) {
+-  gesture_provider_.SetDoubleTapSupportForPlatformEnabled(enabled);
++  gesture_provider_->SetDoubleTapSupportForPlatformEnabled(enabled);
+ }
+ 
+ void RenderWidgetHostViewAndroid::SetMultiTouchZoomSupportEnabled(
+     bool enabled) {
+-  gesture_provider_.SetMultiTouchZoomSupportEnabled(enabled);
++  gesture_provider_->SetMultiTouchZoomSupportEnabled(enabled);
+ }
+ 
+ void RenderWidgetHostViewAndroid::FocusedNodeChanged(
+@@ -1913,7 +1921,7 @@ void RenderWidgetHostViewAndroid::CopyFromSurface(
+ 
+ ui::FilteredGestureProvider*
+ RenderWidgetHostViewAndroid::GetFilteredGestureProviderForTesting() {
+-  return &gesture_provider_;
++  return gesture_provider_.get();
+ }
+ 
+ void RenderWidgetHostViewAndroid::CopyFromExactSurface(
+@@ -2130,7 +2138,7 @@ void RenderWidgetHostViewAndroid::OnSelectionEvent(
+           InputTransferHandlerAndroid::RequestInputBackReason::
+               kStartTouchSelectionDragGesture);
+     }
+-    if (gesture_provider_.GetCurrentDownEvent()) {
++    if (gesture_provider_->GetCurrentDownEvent()) {
+       ResetGestureDetection();
+     }
+   }
+@@ -2785,7 +2793,8 @@ void RenderWidgetHostViewAndroid::SendGestureEvent(
+   input_helper_->RouteOrForwardGestureEvent(event);
+ }
+ 
+-ui::FilteredGestureProvider& RenderWidgetHostViewAndroid::GetGestureProvider() {
++scoped_refptr<ui::FilteredGestureProvider>
++RenderWidgetHostViewAndroid::GetGestureProvider() {
+   return gesture_provider_;
+ }
+ 
+@@ -3814,7 +3823,7 @@ void RenderWidgetHostViewAndroid::SetTouchpadOverscrollHistoryNavigation(
+ }
+ 
+ void RenderWidgetHostViewAndroid::OnUnconfirmedTapConvertedToTap() {
+-  gesture_provider_.OnUnconfirmedTapConvertedToTap();
++  gesture_provider_->OnUnconfirmedTapConvertedToTap();
+ }
+ 
+ CompositorImpl* RenderWidgetHostViewAndroid::GetCompositorImpl() {
+diff --git a/content/browser/renderer_host/render_widget_host_view_android.h b/content/browser/renderer_host/render_widget_host_view_android.h
+index 997caf62ac3945f540d27dcfc27d89642a868d85..2e5578443784cc2d1b114da96f1d37178a300e70 100644
+--- a/content/browser/renderer_host/render_widget_host_view_android.h
++++ b/content/browser/renderer_host/render_widget_host_view_android.h
+@@ -18,6 +18,7 @@
+ #include "base/gtest_prod_util.h"
+ #include "base/i18n/rtl.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/scoped_refptr.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/process/process.h"
+ #include "base/scoped_observation.h"
+@@ -351,7 +352,7 @@ class CONTENT_EXPORT RenderWidgetHostViewAndroid
+ 
+   // AndroidInputHelper::Delegate implementation.
+   void SendGestureEvent(const blink::WebGestureEvent& event) override;
+-  ui::FilteredGestureProvider& GetGestureProvider() override;
++  scoped_refptr<ui::FilteredGestureProvider> GetGestureProvider() override;
+ 
+   void set_ime_adapter(ImeAdapterAndroid* ime_adapter) {
+     ime_adapter_android_ = ime_adapter;
+@@ -717,7 +718,7 @@ class CONTENT_EXPORT RenderWidgetHostViewAndroid
+ 
+   // Provides gesture synthesis given a stream of touch events (derived from
+   // Android MotionEvent's) and touch event acks.
+-  ui::FilteredGestureProvider gesture_provider_;
++  scoped_refptr<ui::FilteredGestureProvider> gesture_provider_;
+ 
+   // Handles gesture based text selection
+   StylusTextSelector stylus_text_selector_;
+diff --git a/content/browser/renderer_host/render_widget_host_view_android_unittest.cc b/content/browser/renderer_host/render_widget_host_view_android_unittest.cc
+index bc3e4e7b4186d7279b7a7161691833c9cedcf472..4fd2a410b34c9bb4a09fa3f3f631c3873c842ff5 100644
+--- a/content/browser/renderer_host/render_widget_host_view_android_unittest.cc
++++ b/content/browser/renderer_host/render_widget_host_view_android_unittest.cc
+@@ -472,7 +472,7 @@ TEST_F(RenderWidgetHostViewAndroidTest,
+   MockInputTransferHandler* handler = new MockInputTransferHandler();
+   rwhva->SetInputTransferHandlerForTesting(handler);
+ 
+-  auto& gesture_provider = rwhva->GetGestureProvider();
++  auto gesture_provider = rwhva->GetGestureProvider();
+ 
+   gfx::Point point(/*x=*/100, /*y=*/100);
+   ui::MotionEventAndroid::Pointer p(0, point.x(), point.y(), 10, 0, 0, 0, 0, 0);
+@@ -505,13 +505,13 @@ TEST_F(RenderWidgetHostViewAndroidTest,
+       /*pointer1=*/nullptr);
+ 
+   EXPECT_CALL(*handler, OnTouchEventImpl(_, _)).WillOnce(Return(true));
+-  EXPECT_EQ(gesture_provider.GetCurrentDownEvent(), nullptr);
++  EXPECT_EQ(gesture_provider->GetCurrentDownEvent(), nullptr);
+   rwhva->OnTouchEvent(*touch_down);
+-  EXPECT_EQ(gesture_provider.GetCurrentDownEvent(), nullptr);
++  EXPECT_EQ(gesture_provider->GetCurrentDownEvent(), nullptr);
+ 
+   EXPECT_CALL(*handler, OnTouchEventImpl(_, _)).WillOnce(Return(false));
+   rwhva->OnTouchEvent(*touch_down);
+-  EXPECT_NE(gesture_provider.GetCurrentDownEvent(), nullptr);
++  EXPECT_NE(gesture_provider->GetCurrentDownEvent(), nullptr);
+ }
+ 
+ TEST_F(RenderWidgetHostViewAndroidTest, ResetGestureDetectionGeneratesCancel) {
+@@ -548,14 +548,14 @@ TEST_F(RenderWidgetHostViewAndroidTest, ResetGestureDetectionGeneratesCancel) {
+       /*pointer1=*/nullptr);
+   rwhva->OnTouchEvent(*touch_down);
+ 
+-  auto& gesture_provider = rwhva->GetGestureProvider();
+-  EXPECT_NE(gesture_provider.GetCurrentDownEvent(), nullptr);
++  auto gesture_provider = rwhva->GetGestureProvider();
++  EXPECT_NE(gesture_provider->GetCurrentDownEvent(), nullptr);
+ 
+   rwhva->ResetGestureDetection();
+ 
+   // The current down should have been reset as a result of processing cancel
+   // generated from `ResetGestureDetection` call.
+-  EXPECT_EQ(gesture_provider.GetCurrentDownEvent(), nullptr);
++  EXPECT_EQ(gesture_provider->GetCurrentDownEvent(), nullptr);
+ 
+   MockRenderWidgetHost* mock_widget =
+       static_cast<MockRenderWidgetHost*>(rwhva->host());
+diff --git a/content/browser/renderer_host/render_widget_host_view_ios.h b/content/browser/renderer_host/render_widget_host_view_ios.h
+index 1514dd7573550257b66afb1f5c38745dc26deb87..cb48107944a9cad220a54b25c6401a1457707794 100644
+--- a/content/browser/renderer_host/render_widget_host_view_ios.h
++++ b/content/browser/renderer_host/render_widget_host_view_ios.h
+@@ -8,6 +8,7 @@
+ #include <string>
+ #include <vector>
+ 
++#include "base/memory/scoped_refptr.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/time/time.h"
+ #include "components/viz/common/surfaces/surface_id.h"
+@@ -258,7 +259,7 @@ class CONTENT_EXPORT RenderWidgetHostViewIOS
+ 
+   // Provides gesture synthesis given a stream of touch events and touch event
+   // acks. This is for generating gesture events from injected touch events.
+-  ui::FilteredGestureProvider gesture_provider_;
++  scoped_refptr<ui::FilteredGestureProvider> gesture_provider_;
+   bool is_first_responder_ = false;
+   bool is_getting_focus_ = false;
+   bool is_visible_ = false;
+diff --git a/content/browser/renderer_host/render_widget_host_view_ios.mm b/content/browser/renderer_host/render_widget_host_view_ios.mm
+index b14f5fd8c4502cc602fc510d2dca4f02bfec3b99..d4a26ba3081439dc9065b4e74fa80552ab3564ef 100644
+--- a/content/browser/renderer_host/render_widget_host_view_ios.mm
++++ b/content/browser/renderer_host/render_widget_host_view_ios.mm
+@@ -91,11 +91,11 @@ bool IsTesting() {
+ 
+ RenderWidgetHostViewIOS::RenderWidgetHostViewIOS(RenderWidgetHost* widget)
+     : RenderWidgetHostViewBase(widget),
+-      gesture_provider_(
++      gesture_provider_(base::MakeRefCounted<ui::FilteredGestureProvider>(
+           ui::GetGestureProviderConfig(
+               ui::GestureProviderConfigType::CURRENT_PLATFORM,
+               GetUIThreadTaskRunner({BrowserTaskType::kUserInput})),
+-          this) {
++          this)) {
+   ui_view_ = std::make_unique<UIViewHolder>();
+   ui_view_->view_ =
+       [[RenderWidgetUIView alloc] initWithWidget:weak_factory_.GetWeakPtr()];
+@@ -134,7 +134,9 @@ bool IsTesting() {
+   host()->SetView(this);
+ }
+ 
+-RenderWidgetHostViewIOS::~RenderWidgetHostViewIOS() = default;
++RenderWidgetHostViewIOS::~RenderWidgetHostViewIOS() {
++  gesture_provider_->Shutdown();
++}
+ 
+ void RenderWidgetHostViewIOS::Destroy() {
+   [ui_view_->view_ removeView];
+@@ -171,7 +173,7 @@ bool IsTesting() {
+ 
+ ui::FilteredGestureProvider*
+ RenderWidgetHostViewIOS::GetFilteredGestureProviderForTesting() {
+-  return &gesture_provider_;
++  return gesture_provider_.get();
+ }
+ 
+ void RenderWidgetHostViewIOS::InitAsChild(gfx::NativeView parent_view) {
+@@ -466,11 +468,11 @@ bool IsTesting() {
+ void RenderWidgetHostViewIOS::OnOldViewDidNavigatePreCommit() {
+   CHECK(browser_compositor_) << "Shouldn't be called during destruction!";
+   browser_compositor_->DidNavigateMainFramePreCommit();
+-  gesture_provider_.ResetDetection();
++  gesture_provider_->ResetDetection();
+ }
+ 
+ void RenderWidgetHostViewIOS::OnNewViewDidNavigatePostCommit() {
+-  gesture_provider_.ResetDetection();
++  gesture_provider_->ResetDetection();
+ }
+ 
+ void RenderWidgetHostViewIOS::DidEnterBackForwardCache() {
+@@ -593,8 +595,13 @@ bool IsTesting() {
+ }
+ 
+ void RenderWidgetHostViewIOS::OnTouchEvent(blink::WebTouchEvent web_event) {
++  auto weak_this = weak_factory_.GetWeakPtr();
++  scoped_refptr<ui::FilteredGestureProvider> protector(gesture_provider_);
+   ui::FilteredGestureProvider::TouchHandlingResult result =
+-      gesture_provider_.OnTouchEvent(MotionEventWeb(web_event));
++      protector->OnTouchEvent(MotionEventWeb(web_event));
++  if (!weak_this) {
++    return;
++  }
+   if (!result.succeeded) {
+     return;
+   }
+@@ -616,9 +623,14 @@ bool IsTesting() {
+     blink::mojom::InputEventResultState ack_result) {
+   const bool event_consumed =
+       ack_result == blink::mojom::InputEventResultState::kConsumed;
+-  gesture_provider_.OnTouchEventAck(
++  auto weak_this = weak_factory_.GetWeakPtr();
++  scoped_refptr<ui::FilteredGestureProvider> protector(gesture_provider_);
++  protector->OnTouchEventAck(
+       touch.event.unique_touch_event_id, event_consumed,
+       input::InputEventResultStateIsSetBlocking(ack_result));
++  if (!weak_this) {
++    return;
++  }
+   if (touch.event.touch_start_or_first_touch_move && event_consumed &&
+       ShouldRouteEvents()) {
+     host()
+@@ -655,8 +667,13 @@ bool IsTesting() {
+ void RenderWidgetHostViewIOS::InjectTouchEvent(
+     const blink::WebTouchEvent& event,
+     const ui::LatencyInfo& latency_info) {
++  auto weak_this = weak_factory_.GetWeakPtr();
++  scoped_refptr<ui::FilteredGestureProvider> protector(gesture_provider_);
+   ui::FilteredGestureProvider::TouchHandlingResult result =
+-      gesture_provider_.OnTouchEvent(MotionEventWeb(event));
++      protector->OnTouchEvent(MotionEventWeb(event));
++  if (!weak_this) {
++    return;
++  }
+   if (!result.succeeded) {
+     return;
+   }
+@@ -895,7 +912,7 @@ bool IsTesting() {
+ }
+ 
+ void RenderWidgetHostViewIOS::OnUnconfirmedTapConvertedToTap() {
+-  gesture_provider_.OnUnconfirmedTapConvertedToTap();
++  gesture_provider_->OnUnconfirmedTapConvertedToTap();
+ }
+ 
+ void RenderWidgetHostViewIOS::UpdateFrameBounds() {
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
+index c97fb8f0411b45c1a01e4fab8dc40cc3778d1d09..d913c5255eb659cdce374d5b59f8de16bd6568b5 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac.h
++++ b/content/browser/renderer_host/render_widget_host_view_mac.h
+@@ -13,6 +13,7 @@
+ 
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/scoped_refptr.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/time/time.h"
+ #include "base/timer/timer.h"
+@@ -647,7 +648,7 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+ 
+   // Provides gesture synthesis given a stream of touch events and touch event
+   // acks. This is for generating gesture events from injected touch events.
+-  ui::FilteredGestureProvider gesture_provider_;
++  scoped_refptr<ui::FilteredGestureProvider> gesture_provider_;
+ 
+   // Used to ensure that a consistent RenderWidgetHost is targeted throughout
+   // the duration of a keyboard event.
+diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
+index 9f345d0da8bcc8f2818f71347a2eab7675ad544a..9987e98580311bdc4be596200a915c202402d32c 100644
+--- a/content/browser/renderer_host/render_widget_host_view_mac.mm
++++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
+@@ -204,9 +204,10 @@
+       is_loading_(false),
+       popup_parent_host_view_(nullptr),
+       popup_child_host_view_(nullptr),
+-      gesture_provider_(ui::GetGestureProviderConfig(
+-                            ui::GestureProviderConfigType::CURRENT_PLATFORM),
+-                        this),
++      gesture_provider_(base::MakeRefCounted<ui::FilteredGestureProvider>(
++          ui::GetGestureProviderConfig(
++              ui::GestureProviderConfigType::CURRENT_PLATFORM),
++          this)),
+       accessibility_focus_overrider_(this),
+       ns_view_id_(remote_cocoa::GetNewNSViewId()),
+       weak_factory_(this) {
+@@ -258,6 +259,7 @@
+ }
+ 
+ RenderWidgetHostViewMac::~RenderWidgetHostViewMac() {
++  gesture_provider_->Shutdown();
+   if (popup_parent_host_view_) {
+     DCHECK(!popup_parent_host_view_->popup_child_host_view_ ||
+            popup_parent_host_view_->popup_child_host_view_ == this);
+@@ -675,11 +677,11 @@
+ void RenderWidgetHostViewMac::OnOldViewDidNavigatePreCommit() {
+   CHECK(browser_compositor_) << "Shouldn't be called during destruction!";
+   browser_compositor_->DidNavigateMainFramePreCommit();
+-  gesture_provider_.ResetDetection();
++  gesture_provider_->ResetDetection();
+ }
+ 
+ void RenderWidgetHostViewMac::OnNewViewDidNavigatePostCommit() {
+-  gesture_provider_.ResetDetection();
++  gesture_provider_->ResetDetection();
+ }
+ 
+ void RenderWidgetHostViewMac::DidEnterBackForwardCache() {
+@@ -1101,7 +1103,7 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+ 
+ ui::FilteredGestureProvider*
+ RenderWidgetHostViewMac::GetFilteredGestureProviderForTesting() {
+-  return &gesture_provider_;
++  return gesture_provider_.get();
+ }
+ 
+ void RenderWidgetHostViewMac::OnDidUpdateVisualPropertiesComplete(
+@@ -1366,7 +1368,7 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+ }
+ 
+ void RenderWidgetHostViewMac::OnUnconfirmedTapConvertedToTap() {
+-  gesture_provider_.OnUnconfirmedTapConvertedToTap();
++  gesture_provider_->OnUnconfirmedTapConvertedToTap();
+ }
+ 
+ bool RenderWidgetHostViewMac::RequestRepaintOnNewSurface() {
+@@ -1495,9 +1497,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+     blink::mojom::InputEventResultState ack_result) {
+   const bool event_consumed =
+       ack_result == blink::mojom::InputEventResultState::kConsumed;
+-  gesture_provider_.OnTouchEventAck(
++  auto weak_this = weak_factory_.GetWeakPtr();
++  scoped_refptr<ui::FilteredGestureProvider> protector(gesture_provider_);
++  protector->OnTouchEventAck(
+       touch.event.unique_touch_event_id, event_consumed,
+       input::InputEventResultStateIsSetBlocking(ack_result));
++  if (!weak_this) {
++    return;
++  }
+   if (touch.event.touch_start_or_first_touch_move && event_consumed &&
+       host()->delegate() && host()->delegate()->GetInputEventRouter()) {
+     host()
+@@ -1566,8 +1573,13 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+ void RenderWidgetHostViewMac::InjectTouchEvent(
+     const WebTouchEvent& event,
+     const ui::LatencyInfo& latency_info) {
++  auto weak_this = weak_factory_.GetWeakPtr();
++  scoped_refptr<ui::FilteredGestureProvider> protector(gesture_provider_);
+   ui::FilteredGestureProvider::TouchHandlingResult result =
+-      gesture_provider_.OnTouchEvent(MotionEventWeb(event));
++      protector->OnTouchEvent(MotionEventWeb(event));
++  if (!weak_this) {
++    return;
++  }
+   if (!result.succeeded)
+     return;
+ 
+@@ -1922,8 +1934,13 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+ void RenderWidgetHostViewMac::RouteOrProcessTouchEvent(
+     const blink::WebTouchEvent& const_web_event) {
+   blink::WebTouchEvent web_event = const_web_event;
++  auto weak_this = weak_factory_.GetWeakPtr();
++  scoped_refptr<ui::FilteredGestureProvider> protector(gesture_provider_);
+   ui::FilteredGestureProvider::TouchHandlingResult result =
+-      gesture_provider_.OnTouchEvent(MotionEventWeb(web_event));
++      protector->OnTouchEvent(MotionEventWeb(web_event));
++  if (!weak_this) {
++    return;
++  }
+   if (!result.succeeded)
+     return;
+ 
+diff --git a/ui/events/gesture_detection/filtered_gesture_provider.cc b/ui/events/gesture_detection/filtered_gesture_provider.cc
+index 20139d1fe9f3569f215bfd2e59516d9251138260..8b33e582b29c756bc8df7c0c6f4556e37da2f327 100644
+--- a/ui/events/gesture_detection/filtered_gesture_provider.cc
++++ b/ui/events/gesture_detection/filtered_gesture_provider.cc
+@@ -27,6 +27,11 @@ FilteredGestureProvider::FilteredGestureProvider(
+ 
+ FilteredGestureProvider::~FilteredGestureProvider() = default;
+ 
++void FilteredGestureProvider::Shutdown() {
++  client_ = nullptr;
++  gesture_filter_.Shutdown();
++}
++
+ void FilteredGestureProvider::UpdateConfig(
+     const GestureProvider::Config& config) {
+   gesture_provider_ = std::make_unique<ui::GestureProvider>(config, this);
+@@ -128,12 +133,14 @@ void FilteredGestureProvider::OnGestureEvent(const GestureEventData& event) {
+ }
+ 
+ bool FilteredGestureProvider::RequiresDoubleTapGestureEvents() const {
+-  return client_->RequiresDoubleTapGestureEvents();
++  return client_ ? client_->RequiresDoubleTapGestureEvents() : false;
+ }
+ 
+ void FilteredGestureProvider::ForwardGestureEvent(
+     const GestureEventData& event) {
+-  client_->OnGestureEvent(event);
++  if (client_) {
++    client_->OnGestureEvent(event);
++  }
+ }
+ 
+ }  // namespace ui
+diff --git a/ui/events/gesture_detection/filtered_gesture_provider.h b/ui/events/gesture_detection/filtered_gesture_provider.h
+index 5c98c5fafdf8be20dcffb120d0186b133d2d48dc..13f31e2e1b6f14057a5150aea49abf5a3732a4a0 100644
+--- a/ui/events/gesture_detection/filtered_gesture_provider.h
++++ b/ui/events/gesture_detection/filtered_gesture_provider.h
+@@ -10,6 +10,7 @@
+ #include <memory>
+ 
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/ref_counted.h"
+ #include "ui/events/gesture_detection/gesture_event_data_packet.h"
+ #include "ui/events/gesture_detection/gesture_provider.h"
+ #include "ui/events/gesture_detection/touch_disposition_gesture_filter.h"
+@@ -19,7 +20,8 @@ namespace ui {
+ // Provides filtered gesture detection and dispatch given a sequence of touch
+ // events and touch event acks.
+ class GESTURE_DETECTION_EXPORT FilteredGestureProvider final
+-    : public ui::TouchDispositionGestureFilterClient,
++    : public base::RefCounted<FilteredGestureProvider>,
++      public ui::TouchDispositionGestureFilterClient,
+       public ui::GestureProviderClient {
+  public:
+   // |client| will be offered all gestures detected by the |gesture_provider_|
+@@ -30,7 +32,7 @@ class GESTURE_DETECTION_EXPORT FilteredGestureProvider final
+   FilteredGestureProvider(const FilteredGestureProvider&) = delete;
+   FilteredGestureProvider& operator=(const FilteredGestureProvider&) = delete;
+ 
+-  ~FilteredGestureProvider() final;
++  void Shutdown();
+ 
+   void UpdateConfig(const GestureProvider::Config& config);
+ 
+@@ -76,6 +78,9 @@ class GESTURE_DETECTION_EXPORT FilteredGestureProvider final
+   GestureDetector* GetGestureDetectorForTesting();
+ 
+  private:
++  friend class base::RefCounted<FilteredGestureProvider>;
++  ~FilteredGestureProvider() override;
++
+   // GestureProviderClient implementation.
+   void OnGestureEvent(const ui::GestureEventData& event) override;
+   bool RequiresDoubleTapGestureEvents() const override;
+@@ -83,7 +88,7 @@ class GESTURE_DETECTION_EXPORT FilteredGestureProvider final
+   // TouchDispositionGestureFilterClient implementation.
+   void ForwardGestureEvent(const ui::GestureEventData& event) override;
+ 
+-  const raw_ptr<GestureProviderClient> client_;
++  raw_ptr<GestureProviderClient> client_;
+ 
+   std::unique_ptr<ui::GestureProvider> gesture_provider_;
+   ui::TouchDispositionGestureFilter gesture_filter_;
+diff --git a/ui/events/gesture_detection/filtered_gesture_provider_unittest.cc b/ui/events/gesture_detection/filtered_gesture_provider_unittest.cc
+index efeac12a803d6e94851292d60671fc209a2276eb..b9e675143d0c1c97454d81dcced2b6083cd24e3e 100644
+--- a/ui/events/gesture_detection/filtered_gesture_provider_unittest.cc
++++ b/ui/events/gesture_detection/filtered_gesture_provider_unittest.cc
+@@ -32,7 +32,9 @@ class FilteredGestureProviderTest : public GestureProviderClient,
+ // set until (incl) touch-end.
+ TEST_F(FilteredGestureProviderTest, TouchMovedBeyondSlopRegion_SingleTouch) {
+   GestureProvider::Config config;
+-  FilteredGestureProvider provider(config, this);
++  auto provider_ptr =
++      base::MakeRefCounted<FilteredGestureProvider>(config, this);
++  FilteredGestureProvider& provider = *provider_ptr;
+ 
+   const float kSlopRegion = config.gesture_detector_config.touch_slop;
+ 
+@@ -96,7 +98,9 @@ TEST_F(FilteredGestureProviderTest, TouchMovedBeyondSlopRegion_SingleTouch) {
+ // first movement in any touch-point.
+ TEST_F(FilteredGestureProviderTest, TouchMovedBeyondSlopRegion_MultiTouch) {
+   GestureProvider::Config config;
+-  FilteredGestureProvider provider(config, this);
++  auto provider_ptr =
++      base::MakeRefCounted<FilteredGestureProvider>(config, this);
++  FilteredGestureProvider& provider = *provider_ptr;
+ 
+   const float kSlopRegion = config.gesture_detector_config.touch_slop;
+ 
+@@ -158,7 +162,9 @@ TEST_F(FilteredGestureProviderTest, TouchMovedBeyondSlopRegion_MultiTouch) {
+ // Extra cancel events should be handled gracefully: https://crbug.com/1407442
+ TEST_F(FilteredGestureProviderTest, ExtraCancel) {
+   GestureProvider::Config config;
+-  FilteredGestureProvider provider(config, this);
++  auto provider_ptr =
++      base::MakeRefCounted<FilteredGestureProvider>(config, this);
++  FilteredGestureProvider& provider = *provider_ptr;
+ 
+   test::MockMotionEvent event(MotionEvent::Action::CANCEL, base::TimeTicks(), 0,
+                               0);
+diff --git a/ui/events/gesture_detection/touch_disposition_gesture_filter.cc b/ui/events/gesture_detection/touch_disposition_gesture_filter.cc
+index 5431bf9f26ce94b05c77c7f2018041382957258a..fc78a8a3042e4a9ad30814dd0fa98b36722fe194 100644
+--- a/ui/events/gesture_detection/touch_disposition_gesture_filter.cc
++++ b/ui/events/gesture_detection/touch_disposition_gesture_filter.cc
+@@ -161,7 +161,9 @@ TouchDispositionGestureFilter::TouchDispositionGestureFilter(
+   DCHECK(client_);
+ }
+ 
+-TouchDispositionGestureFilter::~TouchDispositionGestureFilter() {
++TouchDispositionGestureFilter::~TouchDispositionGestureFilter() = default;
++void TouchDispositionGestureFilter::Shutdown() {
++  client_ = nullptr;
+ }
+ 
+ TouchDispositionGestureFilter::PacketResult
+@@ -244,7 +246,7 @@ void TouchDispositionGestureFilter::SendAckedEvents(
+   // Dispatch all packets corresponding to ack'ed touches, as well as
+   // any pending timeout-based packets.
+   bool touch_packet_for_current_ack_handled = false;
+-  while (!IsEmpty() && (!Head().empty() || sequences_.size() != 1)) {
++  while (!IsEmpty() && client_ && (!Head().empty() || sequences_.size() != 1)) {
+     if (Head().empty())
+       PopGestureSequence();
+     GestureSequence& sequence = Head();
+@@ -289,7 +291,7 @@ void TouchDispositionGestureFilter::SendAckedEvents(
+ 
+     FilterAndSendPacket(packet);
+   }
+-  DCHECK(touch_packet_for_current_ack_handled);
++  DCHECK(touch_packet_for_current_ack_handled || !client_);
+ }
+ 
+ bool TouchDispositionGestureFilter::IsEmpty() const {
+@@ -459,6 +461,9 @@ void TouchDispositionGestureFilter::SendGesture(
+     default:
+       break;
+   }
++  if (!client_) {
++    return;
++  }
+   client_->ForwardGestureEvent(event);
+ }
+ 
+diff --git a/ui/events/gesture_detection/touch_disposition_gesture_filter.h b/ui/events/gesture_detection/touch_disposition_gesture_filter.h
+index a5aa4ebd3f04bca1dcbc3c69b1d835ed825a6df0..81cb7caab25a9ab128e1c7271af5a0c0ba23f5f3 100644
+--- a/ui/events/gesture_detection/touch_disposition_gesture_filter.h
++++ b/ui/events/gesture_detection/touch_disposition_gesture_filter.h
+@@ -69,6 +69,8 @@ class GESTURE_DETECTION_EXPORT TouchDispositionGestureFilter {
+                        const std::optional<EventLatencyMetadata>&
+                            event_latency_metadata = std::nullopt);
+ 
++  void Shutdown();
++
+   // Whether there are any active gesture sequences still queued in the filter.
+   bool IsEmpty() const;
+ 
+diff --git a/ui/events/gestures/gesture_provider_aura.cc b/ui/events/gestures/gesture_provider_aura.cc
+index 0be516572f042d78475151a41ddffd079df34f29..fe5b2cd23f986c714964d71627b490e829c4fc54 100644
+--- a/ui/events/gestures/gesture_provider_aura.cc
++++ b/ui/events/gestures/gesture_provider_aura.cc
+@@ -29,16 +29,17 @@ constexpr bool kDoubleTapPlatformSupport = false;
+ GestureProviderAura::GestureProviderAura(GestureConsumer* consumer,
+                                          GestureProviderAuraClient* client)
+     : client_(client),
+-      filtered_gesture_provider_(
++      filtered_gesture_provider_(base::MakeRefCounted<FilteredGestureProvider>(
+           GetGestureProviderConfig(GestureProviderConfigType::CURRENT_PLATFORM),
+-          this),
++          this)),
+       handling_event_(false),
+       gesture_consumer_(consumer) {
+-  filtered_gesture_provider_.SetDoubleTapSupportForPlatformEnabled(
++  filtered_gesture_provider_->SetDoubleTapSupportForPlatformEnabled(
+       kDoubleTapPlatformSupport);
+ }
+ 
+ GestureProviderAura::~GestureProviderAura() {
++  filtered_gesture_provider_->Shutdown();
+   client_->OnGestureProviderAuraWillBeDestroyed(this);
+ }
+ 
+@@ -46,7 +47,13 @@ bool GestureProviderAura::OnTouchEvent(TouchEvent* event) {
+   if (!pointer_state_.OnTouch(*event))
+     return false;
+ 
+-  auto result = filtered_gesture_provider_.OnTouchEvent(pointer_state_);
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  scoped_refptr<FilteredGestureProvider> gesture_provider(
++      filtered_gesture_provider_);
++  auto result = gesture_provider->OnTouchEvent(pointer_state_);
++  if (!weak_this) {
++    return false;
++  }
+   pointer_state_.CleanupRemovedTouchPoints(*event);
+ 
+   if (!result.succeeded)
+@@ -62,18 +69,22 @@ void GestureProviderAura::OnTouchEventAck(
+     bool is_source_touch_event_set_blocking) {
+   DCHECK(pending_gestures_.empty());
+   DCHECK(!handling_event_);
+-  base::AutoReset<bool> handling_event(&handling_event_, true);
+-  filtered_gesture_provider_.OnTouchEventAck(
+-      unique_touch_event_id, event_consumed,
+-      is_source_touch_event_set_blocking);
++  handling_event_ = true;
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
++  scoped_refptr<FilteredGestureProvider> gesture_provider(
++      filtered_gesture_provider_);
++  gesture_provider->OnTouchEventAck(unique_touch_event_id, event_consumed,
++                                    is_source_touch_event_set_blocking);
++  if (weak_this) {
++    handling_event_ = false;
++  }
+ }
+ 
+ void GestureProviderAura::ResetGestureHandlingState() {
+-  filtered_gesture_provider_.ResetGestureHandlingState();
++  filtered_gesture_provider_->ResetGestureHandlingState();
+ }
+-
+ void GestureProviderAura::SendSynthesizedEndEvents() {
+-  filtered_gesture_provider_.SendSynthesizedEndEvents();
++  filtered_gesture_provider_->SendSynthesizedEndEvents();
+ }
+ 
+ void GestureProviderAura::OnGestureEvent(const GestureEventData& gesture) {
+@@ -95,7 +106,7 @@ bool GestureProviderAura::RequiresDoubleTapGestureEvents() const {
+ }
+ 
+ void GestureProviderAura::OnUnconfirmedTapConvertedToTap() {
+-  filtered_gesture_provider_.OnUnconfirmedTapConvertedToTap();
++  filtered_gesture_provider_->OnUnconfirmedTapConvertedToTap();
+ }
+ 
+ std::vector<std::unique_ptr<GestureEvent>>
+@@ -118,4 +129,8 @@ void GestureProviderAura::OnTouchEnter(const ui::TouchEvent& event) {
+                   false /* is_source_touch_event_set_blocking */);
+ }
+ 
++base::WeakPtr<GestureProviderAura> GestureProviderAura::GetWeakPtr() {
++  return weak_ptr_factory_.GetWeakPtr();
++}
++
+ }  // namespace ui
+diff --git a/ui/events/gestures/gesture_provider_aura.h b/ui/events/gestures/gesture_provider_aura.h
+index ce654af5f3e8b5a01bc0ed29e5180de8301a0c3d..55accf67efa441bdf3ccc215c37705e65746f1d2 100644
+--- a/ui/events/gestures/gesture_provider_aura.h
++++ b/ui/events/gestures/gesture_provider_aura.h
+@@ -11,6 +11,7 @@
+ #include <vector>
+ 
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "ui/events/event.h"
+ #include "ui/events/events_export.h"
+ #include "ui/events/gesture_detection/filtered_gesture_provider.h"
+@@ -50,7 +51,7 @@ class EVENTS_EXPORT GestureProviderAura : public GestureProviderClient {
+   }
+ 
+   FilteredGestureProvider& filtered_gesture_provider() {
+-    return filtered_gesture_provider_;
++    return *filtered_gesture_provider_;
+   }
+ 
+   bool OnTouchEvent(TouchEvent* event);
+@@ -71,16 +72,20 @@ class EVENTS_EXPORT GestureProviderAura : public GestureProviderClient {
+   bool RequiresDoubleTapGestureEvents() const override;
+   void OnUnconfirmedTapConvertedToTap();
+ 
++  base::WeakPtr<GestureProviderAura> GetWeakPtr();
++
+  private:
+   raw_ptr<GestureProviderAuraClient> client_;
+   MotionEventAura pointer_state_;
+-  FilteredGestureProvider filtered_gesture_provider_;
++  scoped_refptr<FilteredGestureProvider> filtered_gesture_provider_;
+ 
+   bool handling_event_;
+   std::vector<std::unique_ptr<GestureEvent>> pending_gestures_;
+ 
+   // The |gesture_consumer_| owns this provider.
+   raw_ptr<GestureConsumer> gesture_consumer_;
++
++  base::WeakPtrFactory<GestureProviderAura> weak_ptr_factory_{this};
+ };
+ 
+ }  // namespace ui
+diff --git a/ui/events/gestures/gesture_recognizer_impl.cc b/ui/events/gestures/gesture_recognizer_impl.cc
+index c52c7cad465e850d34b45662c4e0c0d7262b4b99..e95d8733fcd8de3d70dc555de07e24681dfae01a 100644
+--- a/ui/events/gestures/gesture_recognizer_impl.cc
++++ b/ui/events/gestures/gesture_recognizer_impl.cc
+@@ -333,9 +333,12 @@ GestureRecognizer::Gestures GestureRecognizerImpl::AckTouchEvent(
+   } else {
+     gesture_provider = GetGestureProviderForConsumer(consumer);
+   }
++  base::WeakPtr<GestureProviderAura> weak_provider =
++      gesture_provider->GetWeakPtr();
+   gesture_provider->OnTouchEventAck(unique_event_id, result != ER_UNHANDLED,
+                                     is_source_touch_event_set_blocking);
+-  return gesture_provider->GetAndResetPendingGestures();
++  return weak_provider ? weak_provider->GetAndResetPendingGestures()
++                       : Gestures();
+ }
+ 
+ void GestureRecognizerImpl::CancelActiveTouchesExceptImpl(

@@ -1,0 +1,218 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ming-Ying Chung <mych@chromium.org>
+Date: Mon, 8 Jun 2026 22:28:44 -0700
+Subject: [FSA] Require read access for `createWritable({keepExistingData:
+ true})`
+
+Currently, when calling `createWritable({keepExistingData: true})`, the
+browser only checks if the origin has write permission to the file.
+
+However, `keepExistingData=true` requires the browser to copy the
+current on-disk file contents to a swap file via a browser-side copy.
+If the origin's read permission has been revoked, e.g. via the
+kFileSystemAccessRevokeReadOnRemove mitigation after the file was
+deleted, the browser **still copies the file** to a swap.
+
+On close, the read permission is automatically restored since the file
+was modified, allowing the site to read the new contents of the file
+that it should not have access to.
+
+This CL fixes the issue by requiring both read and write permissions,
+`kReadWrite` mode, in `CreateFileWriter`, when keepExistingData is true.
+
+Bug: 517448723
+Change-Id: I1b743ab23c9a256b8e037d61c2ecfcdd001ce592
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7901791
+Commit-Queue: Ming-Ying Chung <mych@chromium.org>
+Reviewed-by: Fergal Daly <fergal@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1643698}
+
+diff --git a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_browsertest.cc b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_browsertest.cc
+index 7b4d0020e1ba0b3259246418540492838a4d3da3..ae7980640acad53ab9ce3d2f62755a2457588604 100644
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context_browsertest.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context_browsertest.cc
+@@ -464,6 +464,87 @@ IN_PROC_BROWSER_TEST_F(
+   ui::SelectFileDialog::SetFactory(nullptr);
+ }
+ 
++// Tests that recreation of a removed file and calling createWritable with
++// keepExistingData fails and preserves read permission revocation.
++IN_PROC_BROWSER_TEST_F(
++    ChromeFileSystemAccessPermissionContextRevokeAndRestoreBrowserTest,
++    BypassRevocationViaCreateWritableWithKeepExistingData) {
++  const base::FilePath test_file = CreateTestFile("test file contents");
++  ui::SelectFileDialog::SetFactory(
++      std::make_unique<content::FakeSelectFileDialogFactory>(
++          std::vector<base::FilePath>{test_file}));
++
++  // Auto-grant permissions.
++  FileSystemAccessPermissionRequestManager::FromWebContents(GetWebContents())
++      ->set_auto_response_for_test(permissions::PermissionAction::GRANTED);
++
++  // Navigate to a test page.
++  const GURL url = embedded_test_server()->GetURL("/empty.html");
++  ASSERT_TRUE(ui_test_utils::NavigateToURL(browser(), url));
++
++  // Get a handle via showSaveFilePicker. This should grant read/write.
++  ASSERT_TRUE(content::ExecJs(GetWebContents(),
++                              "(async () => {"
++                              "  self.handle = await self.showSaveFilePicker();"
++                              "})()"));
++
++  // Verify initial permissions are granted, including extended permissions.
++  EXPECT_EQ("granted", content::EvalJs(GetWebContents(), R"((async () => {
++             return await self.handle.queryPermission({mode: 'readwrite'});
++            })())"));
++  const url::Origin origin = GetOrigin();
++  permission_context()->SetOriginHasExtendedPermissionForTesting(origin);
++  VerifyPermissions(origin, test_file,
++                    ChromeFileSystemAccessPermissionContext::HandleType::kFile,
++                    content::PermissionStatus::GRANTED,
++                    content::PermissionStatus::GRANTED,
++                    /*expected_extended_read=*/true,
++                    /*expected_extended_write=*/true);
++
++  // Remove the file via the handle.
++  ASSERT_TRUE(content::ExecJs(GetWebContents(), "self.handle.remove()"));
++
++  // Verify read permission is revoked, and it's in downgraded read paths.
++  VerifyPermissions(origin, test_file,
++                    ChromeFileSystemAccessPermissionContext::HandleType::kFile,
++                    content::PermissionStatus::DENIED,
++                    content::PermissionStatus::GRANTED,
++                    /*expected_extended_read=*/false,
++                    /*expected_extended_write=*/true);
++  EXPECT_TRUE(permission_context()->IsPathInDowngradedReadPathsForTesting(
++      origin, test_file));
++
++  // Recreate the file on disk using base::WriteFile.
++  {
++    base::ScopedAllowBlockingForTesting allow_blocking;
++    ASSERT_TRUE(base::WriteFile(test_file, "secret data"));
++  }
++
++  // Attempt to call self.handle.createWritable({keepExistingData: true}).
++  // It should fail with NotAllowedError DOMException.
++  auto result = content::EvalJs(GetWebContents(), R"((async () => {
++    try {
++      await self.handle.createWritable({keepExistingData: true});
++      return 'success';
++    } catch (e) {
++      return e.name;
++    }
++  })())");
++  EXPECT_EQ("NotAllowedError", result.ExtractString());
++
++  // Verify that the read permission remains denied and is in downgraded paths.
++  VerifyPermissions(origin, test_file,
++                    ChromeFileSystemAccessPermissionContext::HandleType::kFile,
++                    content::PermissionStatus::DENIED,
++                    content::PermissionStatus::GRANTED,
++                    /*expected_extended_read=*/false,
++                    /*expected_extended_write=*/true);
++  EXPECT_TRUE(permission_context()->IsPathInDowngradedReadPathsForTesting(
++      origin, test_file));
++
++  ui::SelectFileDialog::SetFactory(nullptr);
++}
++
+ // Tests that after fileHandle.remove() is called, both the initial file handle
+ // and a copy of the handle retrieved from IndexedDB have their read permissions
+ // revoked.
+diff --git a/content/browser/file_system_access/file_system_access_file_handle_impl.cc b/content/browser/file_system_access/file_system_access_file_handle_impl.cc
+index 09601272011a138ebcaafa2ab3a7f2c5a7e2efd4..395c932edcf7c124b8594807f167696e671e1e88 100644
+--- a/content/browser/file_system_access/file_system_access_file_handle_impl.cc
++++ b/content/browser/file_system_access/file_system_access_file_handle_impl.cc
+@@ -192,7 +192,9 @@ void FileSystemAccessFileHandleImpl::CreateFileWriter(
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+   RunWithPermission(
+-      FileSystemAccessManagerImpl::GetEffectiveWritePermissionMode(),
++      keep_existing_data
++          ? blink::mojom::FileSystemAccessPermissionMode::kReadWrite
++          : FileSystemAccessManagerImpl::GetEffectiveWritePermissionMode(),
+       base::BindOnce(&FileSystemAccessFileHandleImpl::CreateFileWriterImpl,
+                      weak_factory_.GetWeakPtr(), keep_existing_data, auto_close,
+                      mode),
+@@ -534,7 +536,8 @@ void FileSystemAccessFileHandleImpl::CreateFileWriterImpl(
+     blink::mojom::FileSystemAccessWritableFileStreamLockMode mode,
+     CreateFileWriterCallback callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  DCHECK_EQ(GetEffectiveWritePermissionStatus(),
++  DCHECK_EQ(keep_existing_data ? GetReadWritePermissionStatus()
++                               : GetEffectiveWritePermissionStatus(),
+             blink::mojom::PermissionStatus::GRANTED);
+ 
+   // TODO(crbug.com/40194651): Expand this check to all backends.
+@@ -610,7 +613,9 @@ void FileSystemAccessFileHandleImpl::StartCreateSwapFile(
+     return;
+   }
+ 
+-  if (GetEffectiveWritePermissionStatus() != PermissionStatus::GRANTED) {
++  if ((keep_existing_data ? GetReadWritePermissionStatus()
++                          : GetEffectiveWritePermissionStatus()) !=
++      PermissionStatus::GRANTED) {
+     std::move(callback).Run(file_system_access_error::FromStatus(
+                                 FileSystemAccessStatus::kPermissionDenied),
+                             mojo::NullRemote());
+diff --git a/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc b/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
+index af67a768daae19e2c31b08f83604d652e3a7db49..89b1483f6e515aeb70c6dba95cee952dcbbc12d7 100644
+--- a/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_file_handle_impl_unittest.cc
+@@ -530,6 +530,56 @@ TEST_F(FileSystemAccessFileHandleImplCreateFileWriterTest, WithAutoClose) {
+       FileWriterCreationIs(FileSystemAccessStatus::kOk));
+ }
+ 
++// Verifies that creating a file writer with `keep_existing_data = true`
++// requires read permission in addition to write permission.
++// This prevents a site from bypassing read permission revocation, e.g. after a
++// file is removed and recreated, by reading the existing file contents into a
++// swap file via `createWritable`.
++TEST_F(FileSystemAccessFileHandleImplCreateFileWriterTest,
++       CreateWritableWithKeepExistingDataRequiresReadAccess) {
++  base::FilePath file;
++  ASSERT_TRUE(base::CreateTemporaryFileInDir(dir_.GetPath(), &file));
++
++  auto handle = GetHandleWithPermissions(
++      file,
++      /*read_grant=*/deny_grant_,
++      /*write_grant=*/allow_grant_);
++
++  // When keep_existing_data is true, we should get kPermissionDenied because
++  // we don't have read access.
++  base::test::TestFuture<
++      blink::mojom::FileSystemAccessErrorPtr,
++      mojo::PendingRemote<blink::mojom::FileSystemAccessFileWriter>>
++      future;
++  handle->CreateFileWriter(
++      /*keep_existing_data=*/true,
++      /*auto_close=*/false,
++      blink::mojom::FileSystemAccessWritableFileStreamLockMode::kSiloed,
++      future.GetCallback());
++  std::pair<blink::mojom::FileSystemAccessErrorPtr,
++            mojo::PendingRemote<blink::mojom::FileSystemAccessFileWriter>>
++      writer_pair = future.Take();
++  EXPECT_THAT(writer_pair,
++              FileWriterCreationIs(FileSystemAccessStatus::kPermissionDenied));
++
++  // When keep_existing_data is false, the call should succeed because we
++  // have write access.
++  base::test::TestFuture<
++      blink::mojom::FileSystemAccessErrorPtr,
++      mojo::PendingRemote<blink::mojom::FileSystemAccessFileWriter>>
++      future_no_keep;
++  handle->CreateFileWriter(
++      /*keep_existing_data=*/false,
++      /*auto_close=*/false,
++      blink::mojom::FileSystemAccessWritableFileStreamLockMode::kSiloed,
++      future_no_keep.GetCallback());
++  std::pair<blink::mojom::FileSystemAccessErrorPtr,
++            mojo::PendingRemote<blink::mojom::FileSystemAccessFileWriter>>
++      writer_pair_no_keep = future_no_keep.Take();
++  EXPECT_THAT(writer_pair_no_keep,
++              FileWriterCreationIs(FileSystemAccessStatus::kOk));
++}
++
+ // TODO(crbug.com/40276567): Add test to cover that swap file is truncated when
+ // `keep_existing_data` is false.
+ 

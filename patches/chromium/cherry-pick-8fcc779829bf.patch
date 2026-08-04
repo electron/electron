@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Minoru Chikamune <chikamune@chromium.org>
+Date: Tue, 2 Jun 2026 17:48:48 -0700
+Subject: Bugfix: This CL fixes a bug reported in crbug.com/500554346
+
+[analysis]
+https://docs.google.com/document/d/1Eo_0xvh-g7x0f_DyNhbYTSWbW1Gpdb3JQOv6XKqGtkU/edit?resourcekey=0-x0nLWecQ0NBc05J76n592g&tab=t.0#heading=h.4ouk0evxdnbl
+
+[reasoning]
+https://docs.google.com/document/d/116U7-f0JMNXnubCLB2t2duFOkpOFyM3Mm9t5Dqw0Ppg/edit?resourcekey=0-LhL0UerWZJhm0HDpLv9zmg&tab=t.0
+
+Bug: 500554346
+Change-Id: Icdd5a534474c03b1050d4b5521e74f29f614ec86
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7894356
+Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
+Commit-Queue: Minoru Chikamune <chikamune@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1640599}
+
+diff --git a/content/browser/web_package/subresource_signed_exchange_url_loader_factory.cc b/content/browser/web_package/subresource_signed_exchange_url_loader_factory.cc
+index 212710215243afefba5fc6e6d4cbd52ee43e2a6c..337a3b65e4fbeac42c1de6fb52756e700a9a1693 100644
+--- a/content/browser/web_package/subresource_signed_exchange_url_loader_factory.cc
++++ b/content/browser/web_package/subresource_signed_exchange_url_loader_factory.cc
+@@ -88,6 +88,17 @@ void SubresourceSignedExchangeURLLoaderFactory::CreateLoaderAndStart(
+     const network::ResourceRequest& request,
+     mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
++  if (request.mode == network::mojom::RequestMode::kNavigate) {
++    network::debug::ScopedResourceRequestCrashKeys request_crash_keys(request);
++    mojo::ReportBadMessage(
++        "SubresourceSignedExchangeURLLoaderFactory: "
++        "kNavigate mode is forbidden for subresources");
++    mojo::Remote<network::mojom::URLLoaderClient>(std::move(client))
++        ->OnComplete(
++            network::URLLoaderCompletionStatus(net::ERR_INVALID_ARGUMENT));
++    return;
++  }
++
+   if (!IsValidRequestInitiator(request, request_initiator_origin_lock_)) {
+     network::debug::ScopedResourceRequestCrashKeys request_crash_keys(request);
+     network::debug::ScopedRequestInitiatorOriginLockCrashKey lock_crash_keys(

@@ -1,0 +1,117 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Fri, 29 May 2026 11:07:06 -0400
+Subject: GL: Fix `invariant gl_FragColor;` + draw buffers
+
+When GL_EXT_draw_buffers is enabled, gl_FragColor is replaced by
+gl_FragData.  If it was globally qualified as `invariant`, the relevant
+transformation did not handle it.
+
+Bug: chromium:517575864
+Change-Id: I3ec2a6629940a69070e5327abd8ce37c55d0efcd
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7883926
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+
+diff --git a/src/compiler/translator/tree_ops/EmulateGLFragColorBroadcast.cpp b/src/compiler/translator/tree_ops/EmulateGLFragColorBroadcast.cpp
+index 280d49376e56d3443b38cffe0135baadf66655ab..5f4909993e8d518da34eca87774887b2e174aafd 100644
+--- a/src/compiler/translator/tree_ops/EmulateGLFragColorBroadcast.cpp
++++ b/src/compiler/translator/tree_ops/EmulateGLFragColorBroadcast.cpp
+@@ -51,6 +51,8 @@ class GLFragColorBroadcastTraverser : public TIntermTraverser
+     bool isGLSecondaryFragColorUsed() const { return mGLSecondaryFragColorUsed; }
+ 
+   protected:
++    bool visitGlobalQualifierDeclaration(Visit visit,
++                                         TIntermGlobalQualifierDeclaration *node) override;
+     void visitSymbol(TIntermSymbol *node) override;
+ 
+     TIntermBinary *constructGLFragDataNode(int index, bool secondary) const;
+@@ -84,6 +86,31 @@ TIntermBinary *GLFragColorBroadcastTraverser::constructGLFragDataAssignNode(int
+     return new TIntermBinary(EOpAssign, fragDataIndex, fragDataZero);
+ }
+ 
++bool GLFragColorBroadcastTraverser::visitGlobalQualifierDeclaration(
++    Visit visit,
++    TIntermGlobalQualifierDeclaration *node)
++{
++    TIntermSymbol *symbol = node->getSymbol();
++    if (symbol->variable().symbolType() == SymbolType::BuiltIn)
++    {
++        if (symbol->getName() == "gl_FragColor")
++        {
++            queueReplacementWithParent(
++                node, node->getSymbol(),
++                ReferenceBuiltInVariable(kGlFragDataString, *mSymbolTable, mShaderVersion),
++                OriginalNode::IS_DROPPED);
++        }
++        else if (symbol->getName() == "gl_SecondaryFragColorEXT")
++        {
++            queueReplacementWithParent(
++                node, node->getSymbol(),
++                ReferenceBuiltInVariable(kGlSecondaryFragDataString, *mSymbolTable, mShaderVersion),
++                OriginalNode::IS_DROPPED);
++        }
++    }
++    return false;
++}
++
+ void GLFragColorBroadcastTraverser::visitSymbol(TIntermSymbol *node)
+ {
+     if (node->variable().symbolType() == SymbolType::BuiltIn)
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index dbd3abb57de0aa2c180d13c8d62b5ac2cf0c497b..177c580d857482d158e2978c88d67224f7a2ed33 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -459,6 +459,8 @@
+ 42266214 MAC APPLE METAL : Texture2DTest.ManySupersedingTextureUpdates/* = SKIP
+ 494392011 MAC METAL : MipmapTestES3.MismatchingLevelFormats/* = SKIP
+ 494341324 MAC OPENGL : MipmapTestES3.MismatchingLevelFormats/* = SKIP
++518849408 MAC OPENGL : GLSLTest.EmulateGLFragColorBroadcastInvariantFragColor/* = SKIP
++518849408 MAC OPENGL : GLSLTest.EmulateGLFragColorBroadcastInvariantFragColorUnused/* = SKIP
+ 
+ // The workaround is not intended to be enabled in this configuration so
+ // skip it as the failure is likely a driver bug.
+diff --git a/src/tests/gl_tests/GLSLTest.cpp b/src/tests/gl_tests/GLSLTest.cpp
+index 30161c88c1379844d48279a2c758ab61b3a10e1d..09d0619e473a5eb9f56c2fce0ff629b22e170f2c 100644
+--- a/src/tests/gl_tests/GLSLTest.cpp
++++ b/src/tests/gl_tests/GLSLTest.cpp
+@@ -22325,6 +22325,39 @@ void main()
+     EXPECT_GL_NO_ERROR();
+ }
+ 
++// Make sure gl_FragColor can be marked invariant in presence of GL_EXT_draw_buffers.
++TEST_P(GLSLTest, EmulateGLFragColorBroadcastInvariantFragColor)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_EXT_draw_buffers"));
++
++    constexpr char kFS[] = R"(#extension GL_EXT_draw_buffers : require
++        invariant gl_FragColor;
++        void main() {
++            gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
++        }
++    )";
++
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++    drawQuad(program, essl3_shaders::PositionAttrib(), 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++}
++
++// Make sure gl_FragColor can be marked invariant in presence of GL_EXT_draw_buffers, even if
++// gl_FragColor is unused.
++TEST_P(GLSLTest, EmulateGLFragColorBroadcastInvariantFragColorUnused)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_EXT_draw_buffers"));
++
++    constexpr char kFS[] = R"(#extension GL_EXT_draw_buffers : require
++        invariant gl_FragColor;
++        void main() {
++            // gl_FragColor is unused
++        }
++    )";
++
++    // Verify compilation only, as output is not written to.
++    ANGLE_GL_PROGRAM(program, essl1_shaders::vs::Simple(), kFS);
++}
+ }  // anonymous namespace
+ 
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3_AND_ES31_AND_ES32(
