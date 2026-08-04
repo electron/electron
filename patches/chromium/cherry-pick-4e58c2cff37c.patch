@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ben Greenstein <bengr@google.com>
+Date: Mon, 29 Jun 2026 16:51:15 -0700
+Subject: [WebMCP] Take pending execution before running completion
+
+ModelContext::OnToolExecuted held an iterator into pending_executions_
+while invoking probe::WebMCPToolFailed / WebMCPToolResponded and the
+stored completion callback. Both of these can re-enter ModelContext (via
+DevTools wrapping the thrown error, or via the caller's callback) and
+mutate pending_executions_, which can rehash the table and invalidate
+the iterator before it is erased.
+
+Use HashMap::Take() to move the entry out of the map before making any
+potentially re-entrant calls, matching the existing handling in
+CancelTool.
+
+Bug: 522064153
+Change-Id: I4a439c4f9c93984f0164a63814c3c576b7e7bcf1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7987973
+Reviewed-by: Dominic Farolino <dom@chromium.org>
+Commit-Queue: Ben Greenstein <bengr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1654471}
+(cherry picked from commit 4e58c2cff37c50c6b6298bb514d0a8d6cb256484)
+
+Backported to M148: CancelTool() there returns void and uses the
+execution_id parameter name (as does OnToolExecuted), so the hunks
+were adjusted accordingly; no functional deviation from upstream.
+
+diff --git a/third_party/blink/renderer/core/script_tools/model_context.cc b/third_party/blink/renderer/core/script_tools/model_context.cc
+index 6b64bdbf35bf0f83c0cd0b7380aeb2233c53f2e5..6464dfd23a4fc51a3f59efee8a40cf8cae389d6c 100644
+--- a/third_party/blink/renderer/core/script_tools/model_context.cc
++++ b/third_party/blink/renderer/core/script_tools/model_context.cc
+@@ -403,13 +403,12 @@ void ModelContext::CancelTool(const base::UnguessableToken& execution_id) {
+ 
+   // The pending_executions_ map might have been rehashed during DispatchEvent.
+   auto pending_execution =
+-      pending_executions_.find(String(execution_id.ToString()));
+-  if (pending_execution == pending_executions_.end()) {
++      pending_executions_.Take(String(execution_id.ToString()));
++  if (pending_execution.callback.is_null()) {
+     return;
+   }
+-  OnToolFailed(std::move(pending_execution->value.callback), execution_id,
++  OnToolFailed(std::move(pending_execution.callback), execution_id,
+                ScriptToolError(ScriptToolErrorCode::kToolCancelled));
+-  pending_executions_.erase(pending_execution);
+ }
+ 
+ void ModelContext::GetCrossDocumentScriptToolResult(
+@@ -574,20 +573,20 @@ void ModelContext::RegisterDeclarativeTool(
+ void ModelContext::OnToolExecuted(
+     const base::UnguessableToken& execution_id,
+     base::expected<String, std::pair<ScriptValue, ScriptState*>> result) {
+-  auto it = pending_executions_.find(String(execution_id.ToString()));
+-  if (it == pending_executions_.end()) {
++  auto pending_execution =
++      pending_executions_.Take(String(execution_id.ToString()));
++  if (pending_execution.callback.is_null()) {
+     return;
+   }
+ 
+   if (result.has_value()) {
+     probe::WebMCPToolResponded(document_, result.value(), execution_id);
+-    std::move(it->value.callback).Run(result.value());
++    std::move(pending_execution.callback).Run(result.value());
+   } else {
+     ScriptToolError error(ScriptToolErrorCode::kToolInvocationFailed);
+     probe::WebMCPToolFailed(document_, error, execution_id, result.error());
+-    std::move(it->value.callback).Run(base::unexpected(error));
++    std::move(pending_execution.callback).Run(base::unexpected(error));
+   }
+-  pending_executions_.erase(it);
+ }
+ 
+ void ModelContext::OnToolChange() {

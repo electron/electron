@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Koji Ishii <kojii@chromium.org>
+Date: Fri, 17 Jul 2026 06:41:19 -0700
+Subject: Add validity checks after `CompositionRange()`
+
+Following up crrev.com/c/7840643, this patch adds validity
+checks after calls to `CompositionRange()`, which invokes
+`Document::UpdateStyleAndLayout()`.
+
+Also change `FrameSelection::RootEditableElementOrDocumentElement()`
+to return `nullptr` when the selection is no longer available
+after the layout it forces, instead of dereferencing a cleared
+`document_`.
+
+Bug: 523292588
+Change-Id: I4a82a3b57fb00137dd45be946fd8e045ed46be2f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8106916
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Auto-Submit: Koji Ishii <kojii@chromium.org>
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1663857}
+(cherry picked from commit 9fb841bf28c373fccf20a546545ed581e45031d7)
+
+diff --git a/third_party/blink/renderer/core/editing/frame_selection.cc b/third_party/blink/renderer/core/editing/frame_selection.cc
+index 7e04f16fba5fb0b10ac28528c4dc60ac62b7a910..b2db60f4fb6a439b714e5c2640f192ef4b3f866a 100644
+--- a/third_party/blink/renderer/core/editing/frame_selection.cc
++++ b/third_party/blink/renderer/core/editing/frame_selection.cc
+@@ -146,9 +146,15 @@ const SelectionInDOMTree& FrameSelection::GetSelectionInDOMTree() const {
+ }
+ 
+ Element* FrameSelection::RootEditableElementOrDocumentElement() const {
++  if (!IsAvailable()) {
++    return nullptr;
++  }
+   // TODO(editing-dev): The use of UpdateStyleAndLayout
+   // needs to be audited.  See http://crbug.com/590369 for more details.
+   GetDocument().UpdateStyleAndLayout(DocumentUpdateReason::kSelection);
++  if (!IsAvailable()) {
++    return nullptr;
++  }
+ 
+   Element* selection_root =
+       ComputeVisibleSelectionInDOMTree().RootEditableElement();
+diff --git a/third_party/blink/renderer/platform/widget/widget_base.cc b/third_party/blink/renderer/platform/widget/widget_base.cc
+index 75e8e3a6827be2b3e38339719d606570017747d8..02444d3fb20304a0334a9d1c998e128f139b2e63 100644
+--- a/third_party/blink/renderer/platform/widget/widget_base.cc
++++ b/third_party/blink/renderer/platform/widget/widget_base.cc
+@@ -1327,8 +1327,15 @@ void WidgetBase::UpdateCompositionInfo(bool immediate_request) {
+     // Composition information is only available on editable node.
+     range = gfx::Range::InvalidRange();
+   } else {
++    base::WeakPtr<WidgetBase> weak_this = weak_ptr_factory_.GetWeakPtr();
+     GetCompositionRange(&range);
++    if (!weak_this) {
++      return;
++    }
+     GetCompositionCharacterBounds(&character_bounds);
++    if (!weak_this) {
++      return;
++    }
+   }
+ 
+   if (!immediate_request &&
