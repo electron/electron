@@ -130,19 +130,22 @@ bool ReadFileToString(const base::FilePath& path, std::string* contents) {
     return false;
 
   if (info.integrity)
-    ValidateIntegrityOrDie(base::as_byte_span(*contents), *info.integrity);
+    ValidateIntegrityOrDie(base::as_byte_span(*contents), *info.integrity,
+                           relative_path.AsUTF8Unsafe());
 
   return true;
 }
 
 void ValidateIntegrityOrDie(base::span<const uint8_t> input,
-                            const IntegrityPayload& integrity) {
+                            const IntegrityPayload& integrity,
+                            std::string_view what) {
   if (integrity.algorithm == HashAlgorithm::kSHA256) {
     const std::string hex_hash =
         base::ToLowerASCII(base::HexEncode(crypto::hash::Sha256(input)));
     if (integrity.hash != hex_hash) {
-      LOG(FATAL) << "Integrity check failed for asar archive ("
-                 << integrity.hash << " vs " << hex_hash << ")";
+      LOG(FATAL) << "Integrity check failed for asar archive entry '" << what
+                 << "' (" << integrity.hash << " vs " << hex_hash << ", "
+                 << input.size() << " bytes)";
     }
   } else {
     LOG(FATAL) << "Unsupported hashing algorithm in ValidateIntegrityOrDie";
