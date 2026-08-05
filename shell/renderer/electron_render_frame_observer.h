@@ -11,7 +11,7 @@
 #include "base/functional/callback.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_observer_tracker.h"
-#include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/public/web/web_meaningful_layout.h"
 
 namespace electron {
 

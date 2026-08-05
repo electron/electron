@@ -13,7 +13,6 @@
 #include "shell/common/thread_restrictions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
-#include "third_party/skia/include/core/SkPixelRef.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/geometry/size.h"

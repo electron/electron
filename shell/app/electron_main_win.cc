@@ -30,7 +30,6 @@
 #include "components/crash/core/app/run_as_crashpad_handler_win.h"
 #include "content/public/app/content_main.h"
 #include "content/public/app/sandbox_helper_win.h"
-#include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "sandbox/win/src/sandbox_types.h"
 #include "shell/app/command_line_args.h"

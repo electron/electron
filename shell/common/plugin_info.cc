@@ -4,8 +4,10 @@
 
 #include "shell/common/plugin_info.h"
 
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "base/strings/utf_string_conversions.h"
+#include "electron/buildflags/buildflags.h"
+
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/common/constants.h"
 #include "extensions/common/constants.h"
 #include "shell/common/electron_constants.h"

@@ -25,7 +25,6 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/skia_util.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
-#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/clipboard/clipboard_constants.h"
 #include "ui/base/clipboard/clipboard_format_type.h"
 #include "ui/base/clipboard/clipboard_url_info.h"

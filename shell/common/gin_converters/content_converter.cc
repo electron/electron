@@ -12,6 +12,7 @@
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/permission_result.h"
 #include "content/public/browser/web_contents.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/data_object_builder.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/common/gin_converters/blink_converter.h"
