@@ -66,6 +66,8 @@ jobs:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
+      # depot_tools' unbootstrapped python3 wrapper (crrev.com/c/8162440) breaks system python3 resolution; bypass it
+      DEPOT_TOOLS_PYTHON_BYPASS: 1
     steps:
     - name: Fix node20 on arm32 runners
       if: ${{ inputs.target-arch == 'arm' && inputs.target-platform == 'linux' }}
