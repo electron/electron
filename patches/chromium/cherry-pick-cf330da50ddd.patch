@@ -1,0 +1,133 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vladimir Levin <vmpstr@chromium.org>
+Date: Wed, 17 Jun 2026 12:57:28 -0700
+Subject: Update WidgetInputHandlerManager to use strong refs
+
+This updates the class to use strong refs in the disconnect
+callbacks, and clears it when clearing clients. It also
+ensures that destruction is bound to the input task runner
+to ensure it's destroyed on the appropriate thread
+
+R=jonross@chromium.org
+
+Bug: 522304853
+Change-Id: I10d217c1c031f1a54870ddedd3474b5e99428074
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7951580
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Commit-Queue: Vladimir Levin <vmpstr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1648530}
+
+diff --git a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc
+index 3e5c67461d642d6ce345f8f9924f97fced79ad65..d4daf056ef3bff11a0c84045f278ccbc2273307c 100644
+--- a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc
++++ b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.cc
+@@ -364,14 +364,14 @@ void WidgetInputHandlerManager::SetVizHost(
+         std::move(viz_host), compositor_thread_default_task_runner_);
+     viz_host_.set_disconnect_handler(
+         base::BindOnce(&WidgetInputHandlerManager::OnVizHostDisconnected,
+-                       AsWeakPtr()),
++                       scoped_refptr<WidgetInputHandlerManager>(this)),
+         compositor_thread_default_task_runner_);
+   } else {
+     viz_host_ = mojo::SharedRemote<mojom::blink::WidgetInputHandlerHost>(
+         std::move(viz_host));
+     viz_host_.set_disconnect_handler(
+         base::BindOnce(&WidgetInputHandlerManager::OnVizHostDisconnected,
+-                       AsWeakPtr()),
++                       scoped_refptr<WidgetInputHandlerManager>(this)),
+         base::SequencedTaskRunner::GetCurrentDefault());
+   }
+ }
+@@ -401,12 +401,16 @@ void WidgetInputHandlerManager::InitInputHandler() {
+   uses_input_handler_ = true;
+   base::OnceClosure init_closure = base::BindOnce(
+       &WidgetInputHandlerManager::InitOnInputHandlingThread,
+-      weak_ptr_factory_.GetWeakPtr(),
++      scoped_refptr<WidgetInputHandlerManager>(this),
+       widget_->LayerTreeHost()->GetDelegateForInput(), sync_compositing);
+   InputThreadTaskRunner()->PostTask(FROM_HERE, std::move(init_closure));
+ }
+ 
+-WidgetInputHandlerManager::~WidgetInputHandlerManager() = default;
++WidgetInputHandlerManager::~WidgetInputHandlerManager() {
++  if (destruction_callback_for_testing_) {
++    std::move(destruction_callback_for_testing_).Run();
++  }
++}
+ 
+ void WidgetInputHandlerManager::AddInterface(
+     mojo::PendingReceiver<mojom::blink::WidgetInputHandler> receiver) {
+@@ -594,13 +598,13 @@ void WidgetInputHandlerManager::ObserveGestureEventOnMainThread(
+ void WidgetInputHandlerManager::PostHandwritingRadiusToInputThread(
+     int handwriting_radius) {
+   base::OnceClosure init_closure = base::BindOnce(
+-      [](base::WeakPtr<WidgetInputHandlerManager> weak_ptr, int radius) {
+-        if (weak_ptr && weak_ptr->input_handler_proxy_) {
+-          weak_ptr->input_handler_proxy_->SetHandwritingRadiusOnInputThread(
++      [](scoped_refptr<WidgetInputHandlerManager> manager, int radius) {
++        if (manager->input_handler_proxy_) {
++          manager->input_handler_proxy_->SetHandwritingRadiusOnInputThread(
+               radius);
+         }
+       },
+-      weak_ptr_factory_.GetWeakPtr(), handwriting_radius);
++      scoped_refptr<WidgetInputHandlerManager>(this), handwriting_radius);
+   InputThreadTaskRunner()->PostTask(FROM_HERE, std::move(init_closure));
+ }
+ 
+@@ -826,7 +830,7 @@ static void WaitForInputProcessedFromMain(base::WeakPtr<WidgetBase> widget) {
+ 
+   auto redraw_complete_callback =
+       base::BindOnce(&WidgetInputHandlerManager::InvokeInputProcessedCallback,
+-                     manager->AsWeakPtr());
++                     scoped_refptr<WidgetInputHandlerManager>(manager));
+ 
+   // Since wheel-events can kick off animations, we can not consider
+   // all observable effects of an input gesture to be processed
+@@ -1245,6 +1249,14 @@ WidgetInputHandlerManager::GetSynchronousCompositorRegistry() {
+ 
+ void WidgetInputHandlerManager::ClearClient() {
+   input_event_queue_->ClearClient();
++  {
++    base::AutoLock lock(viz_host_lock_);
++    if (viz_host_) {
++      viz_host_.Disconnect();
++    }
++    viz_host_.reset();
++  }
++  host_.reset();
+ }
+ 
+ void WidgetInputHandlerManager::UpdateBrowserControlsState(
+diff --git a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h
+index 31c072f0ad03272ff934592236434b1da55e445c..ca72e284599e97633d9ad78cf2398882dcddf3eb 100644
+--- a/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h
++++ b/third_party/blink/renderer/platform/widget/input/widget_input_handler_manager.h
+@@ -214,8 +214,8 @@ class PLATFORM_EXPORT WidgetInputHandlerManager final
+   void SetInputHandlerProxyForTesting(
+       std::unique_ptr<InputHandlerProxy> input_handler_proxy);
+ 
+-  base::WeakPtr<WidgetInputHandlerManager> AsWeakPtr() {
+-    return weak_ptr_factory_.GetWeakPtr();
++  void set_destruction_callback_for_testing(base::OnceClosure callback) {
++    destruction_callback_for_testing_ = std::move(callback);
+   }
+ 
+   uint16_t suppressing_input_events_state() const {
+@@ -232,6 +232,7 @@ class PLATFORM_EXPORT WidgetInputHandlerManager final
+   ~WidgetInputHandlerManager() override;
+ 
+   void InitInputHandler();
++
+   void InitOnInputHandlingThread(
+       const base::WeakPtr<cc::CompositorDelegateForInput>& compositor_delegate,
+       bool sync_compositing);
+@@ -411,7 +412,7 @@ class PLATFORM_EXPORT WidgetInputHandlerManager final
+   // hidden state.
+   base::TimeTicks hidden_received_;
+ 
+-  base::WeakPtrFactory<WidgetInputHandlerManager> weak_ptr_factory_{this};
++  base::OnceClosure destruction_callback_for_testing_;
+ };
+ 
+ }  // namespace blink

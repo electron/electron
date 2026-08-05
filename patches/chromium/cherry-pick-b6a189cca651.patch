@@ -1,0 +1,505 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jayson Chen <jaysonchen@microsoft.com>
+Date: Mon, 27 Jul 2026 22:41:07 -0700
+Subject: [M150] Fix cross-world isolation bypass via Scoped Custom Element
+ Registry
+
+Original change's description:
+> Fix cross-world isolation bypass via Scoped Custom Element Registry
+>
+> The SCER feature introduced document.customElementRegistry and
+> element.customElementRegistry web-exposed accessors that lack
+> DOMWrapperWorld isolation guards. This allows isolated worlds (e.g.,
+> extension content scripts) to obtain custom element registries from
+> other worlds and leak cross-world JavaScript objects (constructors,
+> promises) through methods like get() and whenDefined(), breaking
+> world isolation and enabling arbitrary cross-world code execution.
+>
+> Changes:
+>
+> Add [CallWith=ScriptState] to the customElementRegistry attribute
+> on DocumentOrShadowRoot and Element IDLs, and implement
+> ScriptState-aware overloads in TreeScope and Element that enforce
+> world isolation.
+>
+> Store a world_id_ on each CustomElementRegistry at construction
+> time. Web-exposed accessor paths verify the caller's world
+> matches the registry's world. Internal calls (null ScriptState) bypass
+> the check, preserving behavior for cloning, parsing, and innerHTML.
+>
+> This closes two attack vectors:
+>
+>  - Global registry: isolated worlds can no longer obtain it through
+>  the new SCER accessors (previously only guarded on
+>  window.customElements).
+>  - Scoped registries: world-ID comparison prevents cross-world access
+>  regardless of how elements are organized in the DOM
+>
+> Bug: 513791232
+> Change-Id: Iebbec810f29559f68c466a8d888e9422f7bec347
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7855219
+> Reviewed-by: David Baron <dbaron@chromium.org>
+> Reviewed-by: Mason Freed <masonf@chromium.org>
+> Commit-Queue: Jayson Chen <jaysonchen@microsoft.com>
+> Reviewed-by: Dominic Farolino <dom@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1642691}
+
+(cherry picked from commit 40b2818870e8acc4d968e4ea966decc9b5c8c020)
+
+Bug: 537167604,513791232
+Change-Id: Iebbec810f29559f68c466a8d888e9422f7bec347
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8158919
+Reviewed-by: Dominic Farolino <dom@chromium.org>
+Commit-Queue: Jayson Chen <jaysonchen@microsoft.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Reviewed-by: David Baron <dbaron@chromium.org>
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#4197}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/third_party/blink/renderer/core/dom/document_or_shadow_root.idl b/third_party/blink/renderer/core/dom/document_or_shadow_root.idl
+index 236d632c79ecf4a68162648e49a00d2a5f315b62..54b9a5181703979327d6b2eff858da657252b3a4 100644
+--- a/third_party/blink/renderer/core/dom/document_or_shadow_root.idl
++++ b/third_party/blink/renderer/core/dom/document_or_shadow_root.idl
+@@ -27,6 +27,6 @@ interface mixin DocumentOrShadowRoot {
+     // https://w3c.github.io/picture-in-picture/#documentorshadowroot-extension
+     [Measure] readonly attribute Element? pictureInPictureElement;
+ 
+-    [RuntimeEnabled=ScopedCustomElementRegistry]
++    [CallWith=ScriptState, RuntimeEnabled=ScopedCustomElementRegistry]
+     readonly attribute CustomElementRegistry? customElementRegistry;
+ };
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 19def24e3d684150be87acc921b3f58c0c0888fe..f8376b740289fb19c1b4d54c4a22a5576beede0e 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -285,6 +285,7 @@
+ #include "third_party/blink/renderer/core/xlink_names.h"
+ #include "third_party/blink/renderer/core/xml_names.h"
+ #include "third_party/blink/renderer/platform/bindings/dom_data_store.h"
++#include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
+ #include "third_party/blink/renderer/platform/bindings/script_state.h"
+ #include "third_party/blink/renderer/platform/bindings/v8_dom_activity_logger.h"
+@@ -7364,7 +7365,8 @@ CustomElementDefinition* Element::GetCustomElementDefinition() const {
+   return nullptr;
+ }
+ 
+-CustomElementRegistry* Element::customElementRegistry() const {
++CustomElementRegistry* Element::customElementRegistry(
++    ScriptState* script_state) const {
+   // If scoped registry is not exercised at all in the document,
+   // we can avoid the rare data lookup and just return the tree scope's
+   // registry.
+@@ -7372,11 +7374,18 @@ CustomElementRegistry* Element::customElementRegistry() const {
+       GetDocument().ScopedCustomElementRegistryUsed()) {
+     if (const ElementRareDataVector* data = RareData()) {
+       if (data->HasCustomElementRegistrySet()) {
+-        return data->GetCustomElementRegistry();
++        CustomElementRegistry* registry = data->GetCustomElementRegistry();
++        // A null script_state indicates an internal call that bypasses the
++        // world check.
++        if (script_state && registry &&
++            script_state->World().GetWorldId() != registry->GetWorldId()) {
++          return nullptr;
++        }
++        return registry;
+       }
+     }
+   }
+-  return GetTreeScope().customElementRegistry();
++  return GetTreeScope().customElementRegistry(script_state);
+ }
+ 
+ void Element::SetCustomElementRegistry(CustomElementRegistry* registry,
+diff --git a/third_party/blink/renderer/core/dom/element.h b/third_party/blink/renderer/core/dom/element.h
+index 63b2e6b8dab9a81e25483aeb5424526201a6200c..347a4e49a204a2159d4755cbe1459bd00eec69c5 100644
+--- a/third_party/blink/renderer/core/dom/element.h
++++ b/third_party/blink/renderer/core/dom/element.h
+@@ -1648,7 +1648,13 @@ class CORE_EXPORT Element : public ContainerNode {
+   CustomElementDefinition* GetCustomElementDefinition() const;
+ 
+   // Scoped Custom Elements
+-  CustomElementRegistry* customElementRegistry() const;
++  //
++  // Returns the custom element registry associated with this element.
++  // See TreeScope::customElementRegistry() for the rule about when to
++  // pass `script_state` (in short: any caller that will hand the registry
++  // to script must pass it).
++  CustomElementRegistry* customElementRegistry(
++      ScriptState* script_state = nullptr) const;
+   // When it comes to storing an element's custom element registry, we have an
+   // optimization where if the registry to be set is the same as element's tree
+   // scope's registry, we don't store it in the element itself and rely on tree
+diff --git a/third_party/blink/renderer/core/dom/element.idl b/third_party/blink/renderer/core/dom/element.idl
+index 51f29e18f378f9bddc4c8dd43202e962a40b591d..f1454075f670d6bb3eb434b3a43d8073177d271f 100644
+--- a/third_party/blink/renderer/core/dom/element.idl
++++ b/third_party/blink/renderer/core/dom/element.idl
+@@ -196,7 +196,7 @@ dictionary ParseHTMLUnsafeOptions {
+     [CEReactions, RuntimeEnabled=HeadingOffset] attribute boolean headingReset;
+ 
+     // Scoped Custom Element Registries
+-    [RuntimeEnabled=ScopedCustomElementRegistry] readonly attribute CustomElementRegistry? customElementRegistry;
++    [CallWith=ScriptState, RuntimeEnabled=ScopedCustomElementRegistry] readonly attribute CustomElementRegistry? customElementRegistry;
+ };
+ 
+ Element includes ParentNode;
+diff --git a/third_party/blink/renderer/core/dom/tree_scope.cc b/third_party/blink/renderer/core/dom/tree_scope.cc
+index 66fe7b3ebedf185509fea05726328910ac250f3c..811ad9f71144b8e5d8ead4336742ac68e6efde6f 100644
+--- a/third_party/blink/renderer/core/dom/tree_scope.cc
++++ b/third_party/blink/renderer/core/dom/tree_scope.cc
+@@ -64,7 +64,9 @@
+ #include "third_party/blink/renderer/core/probe/core_probes.h"
+ #include "third_party/blink/renderer/core/svg/svg_text_content_element.h"
+ #include "third_party/blink/renderer/core/svg/svg_tree_scope_resources.h"
++#include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"
+ #include "third_party/blink/renderer/platform/bindings/script_forbidden_scope.h"
++#include "third_party/blink/renderer/platform/bindings/script_state.h"
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
+ #include "third_party/blink/renderer/platform/wtf/vector.h"
+ #include "ui/gfx/geometry/point_conversions.h"
+@@ -299,10 +301,17 @@ Element* TreeScope::ElementForHitTest(Node* node, HitTestPointType type) const {
+   return element;
+ }
+ 
+-CustomElementRegistry* TreeScope::customElementRegistry() const {
++CustomElementRegistry* TreeScope::customElementRegistry(
++    ScriptState* script_state) const {
+   if (custom_element_registry_) {
+     CHECK(RuntimeEnabledFeatures::ScopedCustomElementRegistryEnabled());
+     DCHECK(!waiting_for_registry_);
++    // A null script_state indicates an internal call that bypasses the check.
++    if (script_state &&
++        script_state->World().GetWorldId() !=
++            custom_element_registry_->GetWorldId()) {
++      return nullptr;
++    }
+     return custom_element_registry_;
+   }
+ 
+@@ -311,6 +320,12 @@ CustomElementRegistry* TreeScope::customElementRegistry() const {
+     return nullptr;
+   }
+ 
++  // The global registry must only be accessible from the main world.
++  // A null script_state indicates an internal call that bypasses the check.
++  if (script_state && !script_state->World().IsMainWorld()) {
++    return nullptr;
++  }
++
+   if (LocalDOMWindow* window = GetDocument().domWindow()) {
+     return window->customElements();
+   }
+diff --git a/third_party/blink/renderer/core/dom/tree_scope.h b/third_party/blink/renderer/core/dom/tree_scope.h
+index 8d02cc0fac96766a33e651c69ddb4df53cfb911d..30aac206829cb9bd6c46bd345c3565181c0dd041 100644
+--- a/third_party/blink/renderer/core/dom/tree_scope.h
++++ b/third_party/blink/renderer/core/dom/tree_scope.h
+@@ -188,7 +188,24 @@ class CORE_EXPORT TreeScope : public GarbageCollectedMixin {
+   void ClearAdoptedStyleSheets();
+ 
+ 
+-  CustomElementRegistry* customElementRegistry() const;
++  // Returns the custom element registry associated with this tree scope.
++  //
++  // DOMWrapperWorld rule: any caller that will hand the returned registry
++  // to script must pass the caller's ScriptState. Without it, an isolated
++  // world (e.g., an extension content script) can reach a registry created
++  // in a different world (typically the main world) and leak raw cross-
++  // world v8 objects -- e.g., custom-element constructors handed out via
++  // the shared `when_defined_promise_map_`. When ScriptState is supplied,
++  // this method returns nullptr if the registry's creation world differs
++  // from the caller's world (or, for the global registry, if the caller is
++  // not in the main world).
++  //
++  // Callers that only use the registry for blink-internal work (creating
++  // elements, managing element<->registry associations, serialization,
++  // etc.) may omit `script_state` (or pass nullptr) to bypass the world
++  // check.
++  CustomElementRegistry* customElementRegistry(
++      ScriptState* script_state = nullptr) const;
+   // Return true when custom element registry was set successfully, return false
+   // otherwise.
+   bool SetCustomElementRegistry(CustomElementRegistry*);
+diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
+index b8cec53c03b8e4f9be2d9178a150d926b1b9115b..2af2b8795d5700a1764aabc5ab3fbf9c6eb5184e 100644
+--- a/third_party/blink/renderer/core/frame/local_dom_window.cc
++++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
+@@ -147,6 +147,7 @@
+ #include "third_party/blink/renderer/core/trustedtypes/trusted_types_util.h"
+ #include "third_party/blink/renderer/core/view_transition/view_transition_supplement.h"
+ #include "third_party/blink/renderer/platform/back_forward_cache_buffer_limit_tracker.h"
++#include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_messages.h"
+ #include "third_party/blink/renderer/platform/bindings/script_state.h"
+ #include "third_party/blink/renderer/platform/bindings/source_location.h"
+@@ -2102,7 +2103,8 @@ CustomElementRegistry* LocalDOMWindow::customElements(
+ 
+ CustomElementRegistry* LocalDOMWindow::customElements() const {
+   if (!custom_elements_ && document_) {
+-    custom_elements_ = MakeGarbageCollected<CustomElementRegistry>(this);
++    custom_elements_ = MakeGarbageCollected<CustomElementRegistry>(
++        this, DOMWrapperWorld::kMainWorldId);
+     custom_elements_->MarkAsGlobalRegistry();
+     custom_elements_->AssociatedWith(*document_);
+     document_->SetCustomElementRegistry(custom_elements_);
+diff --git a/third_party/blink/renderer/core/frame/local_dom_window.h b/third_party/blink/renderer/core/frame/local_dom_window.h
+index 0f25d444cddd0865b4a2bdd14e573ab925b420ef..8d3b6b5a4b3134032426bf187d437698c47f993e 100644
+--- a/third_party/blink/renderer/core/frame/local_dom_window.h
++++ b/third_party/blink/renderer/core/frame/local_dom_window.h
+@@ -386,6 +386,13 @@ class CORE_EXPORT LocalDOMWindow final : public DOMWindow,
+   bool originAgentCluster() const;
+ 
+   // Custom elements
++  //
++  // `window.customElements`. The ScriptState* overload is the web-exposed
++  // accessor and returns nullptr in non-main worlds (window.customElements
++  // only ever exposes the global registry, which is owned by the main
++  // world). See TreeScope::customElementRegistry() for the broader rule
++  // about when to pass ScriptState -- in short, any caller that will hand
++  // the registry to script must pass it.
+   CustomElementRegistry* customElements(ScriptState*) const;
+   CustomElementRegistry* customElements() const;
+   CustomElementRegistry* MaybeCustomElements() const;
+diff --git a/third_party/blink/renderer/core/html/custom/custom_element_registry.cc b/third_party/blink/renderer/core/html/custom/custom_element_registry.cc
+index dc28a838076f5b6064097c836c93b9020598f8a0..075523aa952980175916e19d1abc81422dab1215 100644
+--- a/third_party/blink/renderer/core/html/custom/custom_element_registry.cc
++++ b/third_party/blink/renderer/core/html/custom/custom_element_registry.cc
+@@ -27,6 +27,8 @@
+ #include "third_party/blink/renderer/core/html/custom/custom_element_upgrade_sorter.h"
+ #include "third_party/blink/renderer/core/html_element_type_helpers.h"
+ #include "third_party/blink/renderer/platform/bindings/exception_state.h"
++#include "third_party/blink/renderer/platform/bindings/script_state.h"
++#include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"
+ #include "third_party/blink/renderer/platform/instrumentation/tracing/trace_event.h"
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
+ #include "third_party/blink/renderer/platform/wtf/text/strcat.h"
+@@ -88,7 +90,8 @@ CustomElementRegistry* CustomElementRegistry::Create(
+   DCHECK(RuntimeEnabledFeatures::ScopedCustomElementRegistryEnabled());
+   auto* window = LocalDOMWindow::From(script_state);
+   window->document()->SetScopedCustomElementRegistryUsed();
+-  return MakeGarbageCollected<CustomElementRegistry>(window);
++  return MakeGarbageCollected<CustomElementRegistry>(
++      window, script_state->World().GetWorldId());
+ }
+ 
+ CustomElementRegistry* CustomElementRegistry::DefaultRegistry(
+@@ -96,8 +99,10 @@ CustomElementRegistry* CustomElementRegistry::DefaultRegistry(
+   return document.customElementRegistry();
+ }
+ 
+-CustomElementRegistry::CustomElementRegistry(const LocalDOMWindow* owner)
++CustomElementRegistry::CustomElementRegistry(const LocalDOMWindow* owner,
++                                             int32_t world_id)
+     : element_definition_is_running_(false),
++      world_id_(world_id),
+       owner_(owner),
+       upgrade_candidates_(MakeGarbageCollected<UpgradeCandidateMap>()),
+       associated_documents_(MakeGarbageCollected<AssociatedDocumentSet>()) {}
+diff --git a/third_party/blink/renderer/core/html/custom/custom_element_registry.h b/third_party/blink/renderer/core/html/custom/custom_element_registry.h
+index 43c997d6b9514ddf3a0e2f53e1e4aa2c45174b83..a992c31440a429f8009beb337c15cb52b480f1f3 100644
+--- a/third_party/blink/renderer/core/html/custom/custom_element_registry.h
++++ b/third_party/blink/renderer/core/html/custom/custom_element_registry.h
+@@ -13,6 +13,7 @@
+ #include "third_party/blink/renderer/core/core_export.h"
+ #include "third_party/blink/renderer/core/dom/element_rare_data_field.h"
+ #include "third_party/blink/renderer/core/html/custom/custom_element_definition.h"
++#include "third_party/blink/renderer/platform/bindings/dom_wrapper_world.h"
+ #include "third_party/blink/renderer/platform/bindings/script_wrappable.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_hash_map.h"
+ #include "third_party/blink/renderer/platform/heap/collection_support/heap_hash_set.h"
+@@ -41,7 +42,7 @@ class CORE_EXPORT CustomElementRegistry final : public ScriptWrappable,
+   static CustomElementRegistry* Create(ScriptState*);
+   static CustomElementRegistry* DefaultRegistry(Document& document);
+ 
+-  explicit CustomElementRegistry(const LocalDOMWindow*);
++  CustomElementRegistry(const LocalDOMWindow*, int32_t world_id);
+   CustomElementRegistry(const CustomElementRegistry&) = delete;
+   CustomElementRegistry& operator=(const CustomElementRegistry&) = delete;
+   ~CustomElementRegistry() override = default;
+@@ -81,6 +82,8 @@ class CORE_EXPORT CustomElementRegistry final : public ScriptWrappable,
+   bool IsGlobalRegistry() const { return is_global_registry_; }
+   void MarkAsGlobalRegistry() { is_global_registry_ = true; }
+ 
++  int32_t GetWorldId() const { return world_id_; }
++
+   void AssociatedWith(Document& document);
+ 
+   void initialize(Node* root, ExceptionState&);
+@@ -99,6 +102,7 @@ class CORE_EXPORT CustomElementRegistry final : public ScriptWrappable,
+ 
+   bool element_definition_is_running_;
+   bool is_global_registry_ = false;
++  int32_t world_id_ = DOMWrapperWorld::kInvalidWorldId;
+ 
+   using ConstructorMap = HeapHashMap<Member<V8CustomElementConstructor>,
+                                      Member<CustomElementDefinition>,
+diff --git a/third_party/blink/web_tests/custom-elements/scoped-registry-isolated-worlds.html b/third_party/blink/web_tests/custom-elements/scoped-registry-isolated-worlds.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..368a5bf856fb2cc0874d5f023ba546eb211ec013
+--- /dev/null
++++ b/third_party/blink/web_tests/custom-elements/scoped-registry-isolated-worlds.html
+@@ -0,0 +1,147 @@
++<!DOCTYPE html>
++<script src="../resources/testharness.js"></script>
++<script src="../resources/testharnessreport.js"></script>
++<script src="spec/resources/custom-elements-helpers.js"></script>
++<body>
++<script>
++'use strict';
++(() => {
++
++promise_test((t) => {
++  assert_true(!!window.testRunner, 'Requires testRunner.evaluateScriptInIsolatedWorld');
++  return create_window_in_test(t)
++  .then((w) => {
++    function in_isolated_world() {
++      let f = document.querySelector('iframe');
++      let w = f.contentWindow;
++      let docRegistry = w.document.customElementRegistry;
++      w.postMessage(
++          `document.customElementRegistry=${docRegistry}`,
++          '*');
++    }
++
++    var p = new Promise((resolve) => {
++      w.addEventListener('message', t.step_func((event) => {
++        assert_equals(event.data,
++                      'document.customElementRegistry=null',
++                      'document.customElementRegistry should be null ' +
++                      'in isolated worlds');
++        resolve();
++      }));
++    });
++
++    testRunner.evaluateScriptInIsolatedWorld(
++      1,
++      `(${in_isolated_world.toString()})();`);
++
++    return p;
++  });
++}, 'No document.customElementRegistry in isolated worlds');
++
++promise_test((t) => {
++  assert_true(!!window.testRunner, 'Requires testRunner.evaluateScriptInIsolatedWorld');
++  return create_window_in_test(t)
++  .then((w) => {
++    function in_isolated_world() {
++      let f = document.querySelector('iframe');
++      let w = f.contentWindow;
++      let el = w.document.createElement('div');
++      w.document.body.appendChild(el);
++      let elRegistry = el.customElementRegistry;
++      w.postMessage(
++          `element.customElementRegistry=${elRegistry}`,
++          '*');
++    }
++
++    var p = new Promise((resolve) => {
++      w.addEventListener('message', t.step_func((event) => {
++        assert_equals(event.data,
++                      'element.customElementRegistry=null',
++                      'element.customElementRegistry should be null ' +
++                      'in isolated worlds');
++        resolve();
++      }));
++    });
++
++    testRunner.evaluateScriptInIsolatedWorld(
++      1,
++      `(${in_isolated_world.toString()})();`);
++
++    return p;
++  });
++}, 'No element.customElementRegistry in isolated worlds');
++
++promise_test((t) => {
++  return create_window_in_test(t)
++  .then((w) => {
++    // In the main world, document.customElementRegistry should still work.
++    assert_not_equals(w.document.customElementRegistry, null,
++        'document.customElementRegistry should be accessible in main world');
++    assert_equals(w.document.customElementRegistry,
++                  w.customElements,
++                  'document.customElementRegistry should equal ' +
++                  'window.customElements in main world');
++  });
++}, 'document.customElementRegistry accessible in main world');
++
++promise_test((t) => {
++  assert_true(!!window.testRunner, 'Requires testRunner.evaluateScriptInIsolatedWorld');
++  return create_window_in_test(t)
++  .then((w) => {
++    // Create a scoped registry and attach it to a shadow root in main world.
++    let scopedRegistry = new w.CustomElementRegistry();
++    let host = w.document.createElement('div');
++    w.document.body.appendChild(host);
++    let shadow = host.attachShadow({
++      mode: 'open',
++      customElementRegistry: scopedRegistry
++    });
++    let innerEl = w.document.createElement('span', {
++      customElementRegistry: scopedRegistry
++    });
++    shadow.appendChild(innerEl);
++
++    // Sanity check: verify scoped registry is actually attached in main world
++    // before testing isolation.
++    assert_equals(shadow.customElementRegistry, scopedRegistry,
++        'shadow root should have the scoped registry in main world');
++    assert_equals(innerEl.customElementRegistry, scopedRegistry,
++        'element created with scoped registry should use it in main world');
++
++    function in_isolated_world() {
++      let f = document.querySelector('iframe');
++      let w = f.contentWindow;
++      // Find the shadow host we created in main world.
++      let host = w.document.body.querySelector('div');
++      let shadow = host.shadowRoot;
++      let innerEl = shadow.querySelector('span');
++      // Try to access scoped registry from isolated world.
++      let shadowRegistry = shadow.customElementRegistry;
++      let elRegistry = innerEl.customElementRegistry;
++      w.postMessage(
++          `shadow.customElementRegistry=${shadowRegistry}` +
++          `|element.customElementRegistry=${elRegistry}`,
++          '*');
++    }
++
++    var p = new Promise((resolve) => {
++      w.addEventListener('message', t.step_func((event) => {
++        assert_equals(event.data,
++                      'shadow.customElementRegistry=null' +
++                      '|element.customElementRegistry=null',
++                      'scoped registry should not be accessible ' +
++                      'from isolated worlds');
++        resolve();
++      }));
++    });
++
++    testRunner.evaluateScriptInIsolatedWorld(
++      1,
++      `(${in_isolated_world.toString()})();`);
++
++    return p;
++  });
++}, 'No scoped customElementRegistry in isolated worlds');
++
++})();
++</script>
+diff --git a/third_party/blink/web_tests/virtual/scoped-custom-element-registry-disabled/custom-elements/scoped-registry-isolated-worlds-expected.txt b/third_party/blink/web_tests/virtual/scoped-custom-element-registry-disabled/custom-elements/scoped-registry-isolated-worlds-expected.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..1e4fcf2be6b016f8a221685da1c0d7628f036eaf
+--- /dev/null
++++ b/third_party/blink/web_tests/virtual/scoped-custom-element-registry-disabled/custom-elements/scoped-registry-isolated-worlds-expected.txt
+@@ -0,0 +1,11 @@
++This is a testharness.js-based test.
++[FAIL] No document.customElementRegistry in isolated worlds
++  assert_equals: document.customElementRegistry should be null in isolated worlds expected "document.customElementRegistry=null" but got "document.customElementRegistry=undefined"
++[FAIL] No element.customElementRegistry in isolated worlds
++  assert_equals: element.customElementRegistry should be null in isolated worlds expected "element.customElementRegistry=null" but got "element.customElementRegistry=undefined"
++[FAIL] document.customElementRegistry accessible in main world
++  assert_equals: document.customElementRegistry should equal window.customElements in main world expected (object) object "[object CustomElementRegistry]" but got (undefined) undefined
++[FAIL] No scoped customElementRegistry in isolated worlds
++  promise_test: Unhandled rejection with value: object "TypeError: Failed to construct 'CustomElementRegistry': Illegal constructor"
++Harness: the test ran to completion.
++

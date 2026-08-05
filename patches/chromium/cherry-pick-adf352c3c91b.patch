@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Saifuddin Hitawala <hitawala@chromium.org>
+Date: Wed, 15 Jul 2026 08:04:55 -0700
+Subject: [M151] [viz] Fix UAF through surface re-entrancy for referenced
+ surfaces
+
+Original change's description:
+> [viz] Fix UAF through surface re-entrancy for referenced surfaces
+>
+> Guard against UAF through vector modification over sync re-entrancy
+> in Surface::RecomputeActiveReferencedSurfaces. This can happen when
+> a dependent surface gets activated which causes referenced surfaces
+> to be recomputed and a pending surface on same frame to be activated
+> which overwrites the currently active frame's data and leads to
+> dangling refs. This change makes a local copy and adds unittest to
+> verify this.
+>
+> Bug: 514442821
+> Change-Id: I5093537dbb0f627265c715ca326629db4f417d7f
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8085883
+> Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+> Commit-Queue: Saifuddin Hitawala <hitawala@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1661877}
+
+(cherry picked from commit 4c246406e3da54bcb173894181a664b84450dcd9)
+
+Bug: 534850267,514442821
+Change-Id: I5093537dbb0f627265c715ca326629db4f417d7f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8098163
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7922@{#1260}
+Cr-Branched-From: 059c884787b1bc15faa5afe5250f7d3a7e0ef64a-refs/heads/main@{#1654411}
+
+diff --git a/components/viz/service/frame_sinks/surface_synchronization_unittest.cc b/components/viz/service/frame_sinks/surface_synchronization_unittest.cc
+index 8ae9bdf037eccbd15a6d2535a66608f0ed588abc..d98140b6b2d5b5e6e99307ec49a88619cb0bcddb 100644
+--- a/components/viz/service/frame_sinks/surface_synchronization_unittest.cc
++++ b/components/viz/service/frame_sinks/surface_synchronization_unittest.cc
+@@ -3575,6 +3575,70 @@ TEST_F(SurfaceSynchronizationTestDrawImmediatelyWithActivationAck,
+   EXPECT_TRUE(child_surface1()->HasUnackedActiveFrame());
+ }
+ 
++// Tests that the parent's active frame can be replaced by a pending frame while
++// the parent is recomputing its referenced surfaces. This happens when
++// processing a referenced surface causes a child to activate, which in turn
++// resolves the activation dependency of the parent's pending frame.
++TEST_F(SurfaceSynchronizationTest,
++       PendingFrameActivatesWhileRecomputingReferences) {
++  const SurfaceId parent_id = MakeSurfaceId(kParentFrameSink, 1);
++  // Two SurfaceIds in the same allocation group with incomparable sequence
++  // numbers so that neither is considered newer than the other.
++  const SurfaceId child_id1a = MakeSurfaceId(kChildFrameSink1, 1, 2);
++  const SurfaceId child_id1b = MakeSurfaceId(kChildFrameSink1, 2, 1);
++  const SurfaceId child_id2 = MakeSurfaceId(kChildFrameSink2, 1);
++  const SurfaceId arbitrary_id = MakeSurfaceId(kArbitraryFrameSink, 1);
++
++  // Submit the first parent frame referencing both child allocation groups.
++  // Neither child exists yet so the frame activates immediately and the parent
++  // becomes an active embedder of both groups.
++  parent_support().SubmitCompositorFrame(
++      parent_id.local_surface_id(),
++      MakeCompositorFrame(empty_surface_ids(),
++                          {SurfaceRange(std::nullopt, child_id1a),
++                           SurfaceRange(std::nullopt, child_id2),
++                           SurfaceRange(std::nullopt, child_id1b),
++                           SurfaceRange(std::nullopt, arbitrary_id)},
++                          std::vector<TransferableResource>()));
++  EXPECT_TRUE(parent_surface()->HasActiveFrame());
++  EXPECT_FALSE(parent_surface()->HasPendingFrame());
++  // Submit a second parent frame that depends on |child_id1a|. It stays
++  // pending and the parent becomes a blocked embedder of |child_id1a|'s
++  // allocation group.
++  parent_support().SubmitCompositorFrame(
++      parent_id.local_surface_id(),
++      MakeCompositorFrame({child_id1a}, empty_surface_ranges(),
++                          std::vector<TransferableResource>(),
++                          MakeDefaultDeadline()));
++  EXPECT_TRUE(parent_surface()->HasActiveFrame());
++  EXPECT_TRUE(parent_surface()->HasPendingFrame());
++  EXPECT_THAT(parent_surface()->activation_dependencies(),
++              UnorderedElementsAre(child_id1a));
++  // Submit a frame to |child_id1a| that depends on a surface that will never
++  // exist. It stays pending.
++  child_support1().SubmitCompositorFrame(
++      child_id1a.local_surface_id(),
++      MakeCompositorFrame({arbitrary_id}, empty_surface_ranges(),
++                          std::vector<TransferableResource>(),
++                          MakeDefaultDeadline()));
++  EXPECT_FALSE(child_surface1()->HasActiveFrame());
++  EXPECT_TRUE(child_surface1()->HasPendingFrame());
++  // Submit a frame to |child_id2| with no dependencies. Its activation
++  // notifies the parent, which recomputes its referenced surfaces. While
++  // processing the |child_id1a| reference, that child is force-activated which
++  // in turn resolves the dependency of the parent's pending frame, replacing
++  // the parent's active frame mid-iteration. This must not crash.
++  child_support2().SubmitCompositorFrame(
++      child_id2.local_surface_id(),
++      MakeCompositorFrame(empty_surface_ids(), empty_surface_ranges(),
++                          std::vector<TransferableResource>()));
++
++  EXPECT_TRUE(child_surface1()->HasActiveFrame());
++  EXPECT_TRUE(parent_surface()->HasActiveFrame());
++  EXPECT_FALSE(parent_surface()->HasPendingFrame());
++  EXPECT_THAT(parent_surface()->activation_dependencies(), IsEmpty());
++}
++
+ // Tests that when a CompositorFrame for an Embedded Surface arrives after its
+ // Embedder has submitted new ActivationDependencies, that it is immediately
+ // ACKed, even if normally it would not be due to damage. This way we don't have
+diff --git a/components/viz/service/surfaces/surface.cc b/components/viz/service/surfaces/surface.cc
+index 237c71c0d01abd122c7cfd0ec758f7961ccf1f5e..ae6755d55a121dad7261cae28153260cba1b0c49 100644
+--- a/components/viz/service/surfaces/surface.cc
++++ b/components/viz/service/surfaces/surface.cc
+@@ -620,8 +620,13 @@ void Surface::RecomputeActiveReferencedSurfaces() {
+   // notify SurfaceManager of the new references.
+   active_referenced_surfaces_.clear();
+   std::vector<SurfaceAllocationGroup*> new_referenced_allocation_groups;
+-  for (const SurfaceRange& surface_range :
+-       active_frame_data_->frame.metadata.referenced_surfaces) {
++  // Iterate over a copy because UpdateLastActiveReferenceAndMaybeActivate()
++  // can synchronously activate a referenced surface, which can resolve a
++  // dependency of this surface's pending frame and replace
++  // |active_frame_data_| while we're iterating over it.
++  const std::vector<SurfaceRange> referenced_surfaces =
++      active_frame_data_->frame.metadata.referenced_surfaces;
++  for (const SurfaceRange& surface_range : referenced_surfaces) {
+     // Figure out what surface in the |surface_range| needs to be referenced.
+     Surface* surface =
+         surface_manager_->GetLatestInFlightSurface(surface_range);
