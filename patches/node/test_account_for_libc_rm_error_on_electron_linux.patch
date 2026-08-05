@@ -3,9 +3,18 @@ From: Charles Kerr <charles@charleskerr.com>
 Date: Tue, 4 Aug 2026 18:21:28 -0500
 Subject: test: account for libc++ rm error on Electron Linux
 
-Node's fs.rmSync() delegates recursive deletion to
-std::filesystem::remove_all(). Electron's Linux build uses libc++, which
-reports ENOTEMPTY here while Node's libstdc++ build reports EACCES.
+Patch a test that attempts a rimraf-style recursive removal on a subtree
+where a subdirectory isn't writable. Uses std::filesystem::remove_all(),
+which reports `permission_denied` on libstdc++ but `directory_not_empty`
+on libc++. Node exposes these as `EACCES` and `ENOTEMPTY.
+
+The test assumes libstdc++ on Linux; but since we're using Chromium's
+libc++, we get a different error code. This patch adjusts the test's
+expectation.
+
+CI doesn't hit this since we run tests as root and the block only runs
+iff `process.getuid() !== 0`. But it does fail if run on Linux by a
+user with ordinary permissions.
 
 Refs: https://github.com/nodejs/node/pull/57103
 
