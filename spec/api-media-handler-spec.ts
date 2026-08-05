@@ -62,6 +62,52 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(ok).to.be.true(message);
   });
 
+  // Process-level loopback audio capture (restrictOwnAudio / loopbackWithoutChrome)
+  // is not supported on Linux audio backends (PulseAudio / PipeWire).
+  ifit(process.platform !== 'linux')(
+    'honors the restrictOwnAudio constraint when granted loopback audio',
+    async function () {
+      if ((await desktopCapturer.getSources({ types: ['screen'] })).length === 0) {
+        return this.skip();
+      }
+      const ses = session.fromPartition('' + Math.random());
+      let requestHandlerCalled = false;
+      ses.setDisplayMediaRequestHandler((request, callback) => {
+        requestHandlerCalled = true;
+        desktopCapturer.getSources({ types: ['screen'] }).then((sources) => {
+          callback({ video: sources[0], audio: 'loopback' });
+        });
+      });
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      const { ok, message, audioTrackCount, audioDeviceId, restrictOwnAudioSetting } =
+        await w.webContents.executeJavaScript(
+          `
+        navigator.mediaDevices.getDisplayMedia({
+          video: true,
+          audio: { restrictOwnAudio: true },
+        }).then(stream => {
+          const audioTracks = stream.getAudioTracks();
+          const audioSettings = audioTracks[0]?.getSettings();
+          return {
+            ok: stream instanceof MediaStream,
+            message: null,
+            audioTrackCount: audioTracks.length,
+            audioDeviceId: audioSettings?.deviceId ?? null,
+            restrictOwnAudioSetting: audioSettings?.restrictOwnAudio ?? null
+          };
+        }, e => ({ ok: false, message: e.message, audioTrackCount: 0, audioDeviceId: null, restrictOwnAudioSetting: null }))
+      `,
+          true
+        );
+      expect(requestHandlerCalled).to.be.true();
+      expect(ok).to.be.true(message);
+      expect(audioTrackCount).to.equal(1);
+      expect(audioDeviceId).to.equal('loopbackWithoutChrome');
+      expect(restrictOwnAudioSetting).to.equal(true);
+    }
+  );
+
   it('does not crash when using a bogus ID', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;

@@ -812,6 +812,14 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &id)) {
+      if (request.restrict_own_audio &&
+          id == media::AudioDeviceDescription::kLoopbackInputDeviceId) {
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
+        id = media::AudioDeviceDescription::kLoopbackWithoutChromeId;
+#else
+        id = media::AudioDeviceDescription::kLoopbackInputDeviceId;
+#endif
+      }
       blink::MediaStreamDevice audio_device(request.audio_type, id,
                                             "System audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
