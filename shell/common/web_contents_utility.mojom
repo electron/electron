@@ -22,11 +22,15 @@ interface ElectronWebContentsUtility {
       blink.mojom.LocalFrameToken frame_token) => (blink.mojom.PermissionStatus status);
 
   // Reports a V8 code cache produced by compiling a preload script, plus the
-  // sha256 of the source that was compiled. The browser persists both and
-  // only ships the blob while the preload's contents still match (V8's own
-  // CachedData source check is length-only, so it cannot reject a
-  // same-length source change). Sent off the FCP critical path, after the
-  // preload runs.
+  // sha256 of the source that was compiled. The browser only accepts the
+  // write if |id| names a preload it served to this exact frame and
+  // |source_hash| matches the hash it recorded for the bytes it served — the
+  // hash here is a cross-check, never the validation authority. The entry is
+  // persisted under the browser-recorded hash and the producing frame's
+  // site, and only shipped back to same-site documents while the preload's
+  // contents still match (V8's own CachedData source check is length-only,
+  // so it cannot reject a same-length source change). Sent off the FCP
+  // critical path, after the preload runs.
   SetPreloadCodeCache(string id, array<uint8, 32> source_hash,
                       mojo_base.mojom.BigBuffer cache);
 };
