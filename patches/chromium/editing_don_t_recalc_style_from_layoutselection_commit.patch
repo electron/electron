@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 6 Aug 2026 18:24:32 +0000
+Subject: editing: don't recalc style from LayoutSelection::Commit()
+
+LayoutSelection::Commit() runs from the compositing-inputs lifecycle
+phase (the lifecycle is already at kInCompositingInputsUpdate) and
+reaches FrameSelection::SelectionHasFocus() through IsHidden(), which
+unconditionally forces Document::UpdateStyleAndLayout(). If style is
+still dirty there - only DCHECKed in Commit() - the recalc
+runs in a state where tree mutations are disallowed and the renderer
+dies on CHECK(Lifecycle().StateAllowsTreeMutations()) in
+Document::UpdateStyleAndLayoutTreeForThisDocument. In the field this is
+a plain drag-select mouse-up crash (renderer, all desktop platforms).
+
+Style can be dirty at that point without the lifecycle having rewound -
+for example DocumentAnimations::NeedsAnimationTimingUpdate() becomes
+true as soon as the animation clock has moved past the last style update
+- and the lifecycle explicitly allows kVisualUpdatePending ->
+kInCompositingInputsUpdate. Commit() only DCHECKed the assumption. When
+the document needs a layout tree update, keep the selection pending and
+schedule another frame so the next compositing-inputs step commits it
+against clean style; the forced update inside SelectionHasFocus() is
+then a guaranteed no-op on this path, and the clean path is unchanged.
+
+Backport of https://chromium-review.googlesource.com/c/chromium/src/+/8187581.
+
+Bug: 541952000
+Test: LayoutSelectionTest.CommitWithDirtyStyleRetriesNextFrame
+
+(cherry picked from commit 3efe38516862c58899724803cde99db413589462)
+
+diff --git a/third_party/blink/renderer/core/editing/layout_selection.cc b/third_party/blink/renderer/core/editing/layout_selection.cc
+index 2ba06840c9ff94577a7dd6b90977809b8f83ce56..2e597ff938ee66bd107219279aa5810133905abf 100644
+--- a/third_party/blink/renderer/core/editing/layout_selection.cc
++++ b/third_party/blink/renderer/core/editing/layout_selection.cc
+@@ -29,6 +29,7 @@
+ #include "third_party/blink/renderer/core/editing/selection_template.h"
+ #include "third_party/blink/renderer/core/editing/visible_position.h"
+ #include "third_party/blink/renderer/core/editing/visible_units.h"
++#include "third_party/blink/renderer/core/frame/local_frame_view.h"
+ #include "third_party/blink/renderer/core/html/forms/text_control_element.h"
+ #include "third_party/blink/renderer/core/html/html_wbr_element.h"
+ #include "third_party/blink/renderer/core/layout/block_node.h"
+@@ -951,11 +952,21 @@ void LayoutSelection::SetHasPendingSelection() {
+ void LayoutSelection::Commit() {
+   if (!has_pending_selection_)
+     return;
++
++  // CalcSelectionRangeAndSetSelectionState() reaches
++  // FrameSelection::SelectionHasFocus(), which updates style and layout. That
++  // is only safe as a no-op here: this runs in the compositing-inputs phase,
++  // where a real recalc CHECK-fails on StateAllowsTreeMutations(). Style can
++  // be dirty at this point without the lifecycle having rewound (e.g. an
++  // animation timing update became due), so commit on the next frame instead.
++  Document& document = frame_selection_->GetDocument();
++  if (document.NeedsLayoutTreeUpdate()) {
++    document.View()->ScheduleAnimation();
++    return;
++  }
+   has_pending_selection_ = false;
+ 
+-  DCHECK(!frame_selection_->GetDocument().NeedsLayoutTreeUpdate());
+-  DCHECK_GE(frame_selection_->GetDocument().Lifecycle().GetState(),
+-            DocumentLifecycle::kLayoutClean);
++  DCHECK_GE(document.Lifecycle().GetState(), DocumentLifecycle::kLayoutClean);
+   DocumentLifecycle::DisallowTransitionScope disallow_transition(
+       frame_selection_->GetDocument().Lifecycle());
+ 
