@@ -42,10 +42,10 @@ index bb79678001ec66d27b1fb710c99d2a7778f8a034..9fb0a8d4e23f7ebbdbd350095391a3d9
  const kMaxGroupIndentation = 1000;
  
 diff --git a/lib/internal/constants.js b/lib/internal/constants.js
-index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..c635272dc6cf6a0d58607ab7b8b56c682987b288 100644
+index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..8ddb8ba81e6c4536f5d9c3042e3a0cbb1533c7a2 100644
 --- a/lib/internal/constants.js
 +++ b/lib/internal/constants.js
-@@ -9,7 +9,9 @@ module.exports = {
+@@ -9,8 +9,11 @@ module.exports = {
    CHAR_UPPERCASE_Z: 90, /* Z */
    CHAR_LOWERCASE_Z: 122, /* z */
    CHAR_UPPERCASE_C: 67, /* C */
@@ -53,8 +53,10 @@ index 8d7204f6cb48f783adc4d1c1eb2de0c83b7fffe2..c635272dc6cf6a0d58607ab7b8b56c68
    CHAR_LOWERCASE_B: 98, /* b */
 +  CHAR_UPPERCASE_E: 69, /* E */
    CHAR_LOWERCASE_E: 101, /* e */
++  CHAR_UPPERCASE_I: 73, /* I */
    CHAR_LOWERCASE_N: 110, /* n */
  
+   // Non-alphabetic chars.
 diff --git a/lib/internal/http.js b/lib/internal/http.js
 index 116d699f505a4f53ec816ccb83b634cccdf2a67c..304ef04d663826adc70e874c6d32f4acee4d55a6 100644
 --- a/lib/internal/http.js
@@ -95,6 +97,58 @@ index 116d699f505a4f53ec816ccb83b634cccdf2a67c..304ef04d663826adc70e874c6d32f4ac
  }
  
  function ipToInt(ip) {
+diff --git a/lib/internal/perf/usertiming.js b/lib/internal/perf/usertiming.js
+index 88bb63ead2d3d620dea6b54db043a404b484ead9..4eac195eb14d219e0b1539e5db3b3075e65b42f4 100644
+--- a/lib/internal/perf/usertiming.js
++++ b/lib/internal/perf/usertiming.js
+@@ -13,6 +13,12 @@ const { PerformanceEntry, kSkipThrow } = require('internal/perf/performance_entr
+ const { now } = require('internal/perf/utils');
+ const { enqueue, bufferUserTiming } = require('internal/perf/observe');
+ const nodeTiming = require('internal/perf/nodetiming');
++const { isTraceCategoryEnabled, trace } = internalBinding('trace_events');
++const {
++  CHAR_LOWERCASE_B,
++  CHAR_LOWERCASE_E,
++  CHAR_UPPERCASE_I,
++} = require('internal/constants');
+ 
+ const {
+   validateNumber,
+@@ -41,6 +47,9 @@ const kDetail = Symbol('kDetail');
+ 
+ const markTimings = new SafeMap();
+ 
++const traceEventCategory = 'node.perf.usertiming';
++let traceEventId = 0;
++
+ const nodeTimingReadOnlyAttributes = new SafeSet(new SafeArrayIterator([
+   'nodeStart',
+   'v8Start',
+@@ -168,6 +177,10 @@ function mark(name, options) {
+   const mark = new PerformanceMark(name, options);
+   enqueue(mark);
+   bufferUserTiming(mark);
++  if (isTraceCategoryEnabled(traceEventCategory)) {
++    trace(CHAR_UPPERCASE_I, traceEventCategory, name, undefined,
++          { startTime: mark.startTime });
++  }
+   return mark;
+ }
+ 
+@@ -233,6 +246,13 @@ function measure(name, startOrMeasureOptions, endMark) {
+   const measure = createPerformanceMeasure(name, start, duration, detail);
+   enqueue(measure);
+   bufferUserTiming(measure);
++  if (isTraceCategoryEnabled(traceEventCategory)) {
++    const id = ++traceEventId;
++    trace(CHAR_LOWERCASE_B, traceEventCategory, name, id,
++          { startTime: start });
++    trace(CHAR_LOWERCASE_E, traceEventCategory, name, id,
++          { startTime: start, duration });
++  }
+   return measure;
+ }
+ 
 diff --git a/lib/internal/trace_events.js b/lib/internal/trace_events.js
 new file mode 100644
 index 0000000000000000000000000000000000000000..d240f4ad589e746b2cf398df98ddb2a23ef6b70f
