@@ -382,6 +382,15 @@ async function writeRTF (text, clipboardType) {
 }
 ```
 
+### Removed: Pre-macOS 13 login item attributes
+
+Electron 44 removes the option `openAsHidden` from
+[`app.setLoginItemSettings()`](https://www.electronjs.org/docs/latest/api/app#appsetloginitemsettingssettings-macos-windows)
+and the fields `openAsHidden`, `wasOpenedAsHidden` and `restoreState` from the return value of
+[`app.getLoginItemSettings()`](https://www.electronjs.org/docs/latest/api/app#appgetloginitemsettingsoptions-macos-windows).
+
+These only worked on macOS 12 and below. Support for macOS 12 has been dropped.
+
 ## Planned Breaking API Changes (43.0)
 
 ### Behavior Changed: Rounded corners on Linux

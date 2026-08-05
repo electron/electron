@@ -67,10 +67,7 @@ struct LaunchItem {
 
 struct LoginItemSettings {
   bool open_at_login = false;
-  bool open_as_hidden = false;
-  bool restore_state = false;
   bool opened_at_login = false;
-  bool opened_as_hidden = false;
   std::u16string path;
   std::vector<std::u16string> args;
 

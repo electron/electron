@@ -323,7 +323,7 @@ app.setJumpList([
 if (app.isAccessibilitySupportEnabled()) {
   console.log('a11y running');
 }
-app.setLoginItemSettings({ openAtLogin: true, openAsHidden: false });
+app.setLoginItemSettings({ openAtLogin: true });
 console.log(app.getLoginItemSettings().wasOpenedAtLogin);
 app.setAboutPanelOptions({
   applicationName: 'Test',
