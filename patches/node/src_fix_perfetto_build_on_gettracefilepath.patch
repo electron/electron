@@ -11,8 +11,32 @@ Reviewed-By: Aviv Keller <me@aviv.sh>
 Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
 Reviewed-By: James M Snell <jasnell@gmail.com>
 
+diff --git a/node.gyp b/node.gyp
+index 8fbb5a6a0986584390d086454a2e3e565a656fca..904958120ed1e94d9cb006adc5b468baff6161a3 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -192,8 +192,6 @@
+       'src/timer_wrap.cc',
+       'src/tracing/agent.cc',
+       'src/tracing/agent_perfetto.cc',
+-      'src/tracing/node_trace_buffer.cc',
+-      'src/tracing/node_trace_writer.cc',
+       'src/tracing/trace_event.cc',
+       'src/tracing/trace_event_perfetto.cc',
+       'src/tracing/traced_value.cc',
+@@ -330,10 +328,7 @@
+       'src/timers.h',
+       'src/tracing/agent.h',
+       'src/tracing/agent_perfetto.h',
+-      'src/tracing/node_trace_buffer.h',
+-      'src/tracing/node_trace_writer.h',
+       'src/tracing/trace_event.h',
+-      'src/tracing/trace_event_common.h',
+       'src/tracing/trace_event_perfetto.h',
+       'src/tracing/traced_value.h',
+       'src/timer_wrap.h',
 diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
-index 73ef9f99167154f6fbb3ef857b8ce3b5a94a1431..9c9c1b5ff00b542acc276536a237fad839f5822d 100644
+index 73ef9f99167154f6fbb3ef857b8ce3b5a94a1431..412b5b67b35dfd192af04485e9c858f9862e9e0a 100644
 --- a/src/node_trace_events.cc
 +++ b/src/node_trace_events.cc
 @@ -7,7 +7,7 @@
@@ -20,7 +44,7 @@ index 73ef9f99167154f6fbb3ef857b8ce3b5a94a1431..9c9c1b5ff00b542acc276536a237fad8
  #include "permission/permission.h"
  #include "tracing/agent.h"
 -#include "tracing/node_trace_writer.h"
-+#include "tracing/trace_event_helper.h"
++#include "tracing/trace_event.h"
  #include "util-inl.h"
  
  #include <set>
@@ -34,24 +58,16 @@ index 73ef9f99167154f6fbb3ef857b8ce3b5a94a1431..9c9c1b5ff00b542acc276536a237fad8
          category_set->env(),
          permission::PermissionScope::kFileSystemWrite,
 -        filepath);
-+      tracing::GetTraceFilePath(
-+        per_process::cli_options->trace_event_file_pattern, 1));
++        tracing::GetTraceFilePath(
++            per_process::cli_options->trace_event_file_pattern, 1));
      // Starts the Tracing Agent if it wasn't started already (e.g. through
      // a command line flag.)
      auto* agent = tracing::Agent::GetInstance();
 diff --git a/src/tracing/agent_perfetto.cc b/src/tracing/agent_perfetto.cc
-index 1b1f3852a634919716b9a6760d982a03c8049a75..dc5d5d941d4179c6888763d0f42494525444e5e0 100644
+index 1b1f3852a634919716b9a6760d982a03c8049a75..2193cfa48c9b8a2971de01ab1dee26ea0a152781 100644
 --- a/src/tracing/agent_perfetto.cc
 +++ b/src/tracing/agent_perfetto.cc
-@@ -6,6 +6,7 @@
- #include "env-inl.h"
- #include "node_options.h"
- #include "trace_event.h"
-+#include "trace_event_helper.h"
- 
- #include "trace_event_perfetto.h"
- 
-@@ -21,16 +22,6 @@ constexpr uint64_t kReadPeriodMs = 5000;
+@@ -21,16 +21,6 @@ constexpr uint64_t kReadPeriodMs = 5000;
  // trace file grows without bound.
  constexpr uint64_t kMaxFileSizeBytes = 64 * 1024 * 1024;  // 64 MiB
  
@@ -68,7 +84,7 @@ index 1b1f3852a634919716b9a6760d982a03c8049a75..dc5d5d941d4179c6888763d0f4249452
  std::set<std::string> flatten(
      const std::unordered_map<int, std::multiset<std::string>>& map) {
    std::set<std::string> result;
-@@ -104,9 +95,7 @@ class SimpleWriter : public TraceWriter {
+@@ -104,9 +94,7 @@ class SimpleWriter : public TraceWriter {
      ++file_num_;
      uv_fs_t req;
  
@@ -79,75 +95,12 @@ index 1b1f3852a634919716b9a6760d982a03c8049a75..dc5d5d941d4179c6888763d0f4249452
  
      if (fd_ >= 0) {
        uv_fs_close(loop_, &req, fd_, nullptr);
-diff --git a/src/tracing/node_trace_writer.cc b/src/tracing/node_trace_writer.cc
-index 6940df51d0f2226e6907d9bd6d03f23e19ff5a38..4c711fcd938ee16cc9113469c861855094fe1df5 100644
---- a/src/tracing/node_trace_writer.cc
-+++ b/src/tracing/node_trace_writer.cc
-@@ -1,4 +1,5 @@
- #include "tracing/node_trace_writer.h"
-+#include "tracing/trace_event_helper.h"
- 
- #include "util-inl.h"
- 
-@@ -8,27 +9,9 @@
- namespace node {
- namespace tracing {
- 
--void replace_substring(std::string* target,
--                       const std::string& search,
--                       const std::string& insert) {
--  size_t pos = target->find(search);
--  for (; pos != std::string::npos; pos = target->find(search, pos)) {
--    target->replace(pos, search.size(), insert);
--    pos += insert.size();
--  }
--}
--
- NodeTraceWriter::NodeTraceWriter(const std::string& log_file_pattern)
-     : log_file_pattern_(log_file_pattern) {}
- 
--std::string NodeTraceWriter::GetFilePath(const std::string& log_file_pattern,
--                                         int file_num) {
--  std::string filepath(log_file_pattern);
--  replace_substring(&filepath, "${pid}", std::to_string(uv_os_getpid()));
--  replace_substring(&filepath, "${rotation}", std::to_string(file_num));
--  return filepath;
--}
--
- void NodeTraceWriter::InitializeOnThread(uv_loop_t* loop) {
-   CHECK_NULL(tracing_loop_);
-   tracing_loop_ = loop;
-@@ -82,9 +65,7 @@ void NodeTraceWriter::OpenNewFileForStreaming() {
-   ++file_num_;
-   uv_fs_t req;
- 
--  // Evaluate a JS-style template string, it accepts the values ${pid} and
--  // ${rotation}
--  std::string filepath(GetFilePath(log_file_pattern_, file_num_));
-+  std::string filepath = GetTraceFilePath(log_file_pattern_, file_num_);
- 
-   if (fd_ != -1) {
-     CHECK_EQ(uv_fs_close(nullptr, &req, fd_, nullptr), 0);
-diff --git a/src/tracing/node_trace_writer.h b/src/tracing/node_trace_writer.h
-index 6138374bf981d8f6175fb815dd49e1982132686c..02efb2c75a84a47812a20c494a505abbeab9e2bf 100644
---- a/src/tracing/node_trace_writer.h
-+++ b/src/tracing/node_trace_writer.h
-@@ -21,9 +21,6 @@ class NodeTraceWriter : public AsyncTraceWriter {
-   explicit NodeTraceWriter(const std::string& log_file_pattern);
-   ~NodeTraceWriter() override;
- 
--  static std::string GetFilePath(const std::string& log_file_pattern,
--                                 int file_num);
--
-   void InitializeOnThread(uv_loop_t* loop) override;
-   void AppendTraceEvent(TraceObject* trace_event) override;
-   void Flush(bool blocking) override;
-diff --git a/src/tracing/trace_event_helper.cc b/src/tracing/trace_event_helper.cc
-index 9a23b25c1782b86138ea97d005d12177609415e5..8b0b712ebb9c7655971aada07346cc10b5c0d297 100644
---- a/src/tracing/trace_event_helper.cc
-+++ b/src/tracing/trace_event_helper.cc
+diff --git a/src/tracing/trace_event.cc b/src/tracing/trace_event.cc
+index 59306fafb3a10d0f2737426541ece29c76053bf2..f325d648e650b755fa77d13236dadf8167cb7162 100644
+--- a/src/tracing/trace_event.cc
++++ b/src/tracing/trace_event.cc
 @@ -1,5 +1,9 @@
- #include "tracing/trace_event_helper.h"
+ #include "tracing/trace_event.h"
  #include "node.h"
 +#include "uv.h"
 +
@@ -183,21 +136,22 @@ index 9a23b25c1782b86138ea97d005d12177609415e5..8b0b712ebb9c7655971aada07346cc10
  }  // namespace tracing
  
  v8::TracingController* GetTracingController() {
-diff --git a/src/tracing/trace_event_helper.h b/src/tracing/trace_event_helper.h
-index a4c01a66e70f7972fb483b530d9d6c72bef9d149..8cec89a20429d067efea6fb0fcf18b5e23f9765c 100644
---- a/src/tracing/trace_event_helper.h
-+++ b/src/tracing/trace_event_helper.h
-@@ -5,8 +5,15 @@
+diff --git a/src/tracing/trace_event.h b/src/tracing/trace_event.h
+index 81608796814522863ff2d9d0a085638729c7960f..4b2f21bec17c05cf7bbc6f7ae4aed48f35ec82b8 100644
+--- a/src/tracing/trace_event.h
++++ b/src/tracing/trace_event.h
+@@ -7,11 +7,16 @@
  
- #include "v8-platform.h"
+ #if defined(V8_USE_PERFETTO)
  
 +#include <string>
 +#include <string_view>
 +
+ #include "v8-platform.h"
+ #include "tracing/agent.h"
+ 
  namespace node::tracing {
  
-+// Expands a trace log file pattern into a concrete path, substituting ${pid}
-+// and ${rotation}.
 +std::string GetTraceFilePath(std::string_view log_file_pattern, int file_num);
 +
  class TraceEventHelper {

@@ -44,10 +44,10 @@ index ffb8fe270018ee6d05b179c80fb52602350fafbf..724696f9e27fa7577518f587f05a2851
    V(PLATFORM_MINIMAL)                                                          \
    V(PLATFORM_VERBOSE)                                                          \
 diff --git a/src/tracing/agent_perfetto.cc b/src/tracing/agent_perfetto.cc
-index dc5d5d941d4179c6888763d0f42494525444e5e0..289b73e8c0ffcd3522e724744fce5bb25e2a4ed9 100644
+index 2193cfa48c9b8a2971de01ab1dee26ea0a152781..98d70037777a28910239aac866ebd41636b351fd 100644
 --- a/src/tracing/agent_perfetto.cc
 +++ b/src/tracing/agent_perfetto.cc
-@@ -30,6 +30,30 @@ std::set<std::string> flatten(
+@@ -29,6 +29,30 @@ std::set<std::string> flatten(
    return result;
  }
  
@@ -78,7 +78,7 @@ index dc5d5d941d4179c6888763d0f42494525444e5e0..289b73e8c0ffcd3522e724744fce5bb2
  }  // namespace
  
  // Writes trace chunks to a file, rotating by size. It deliberately uses the
-@@ -252,6 +276,7 @@ PerfettoTracingAgent::PerfettoTracingAgent() {
+@@ -251,6 +275,7 @@ PerfettoTracingAgent::PerfettoTracingAgent() {
    // Set up the in-process backend that the tracing controller will connect
    // to.
    perfetto::TracingInitArgs init_args;
