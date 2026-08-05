@@ -513,7 +513,11 @@ describe('cpp heap', () => {
     });
 
     it('keeps a ChunkedDataPipeReadableStream alive while a read is pending and releases it after', async () => {
-      const rc = await startRemoteControlApp(['--expose-internals', '--js-flags=--expose-gc']);
+      const rc = await startRemoteControlApp([
+        '--expose-internals',
+        '--js-flags=--expose-gc',
+        '--remote-app-timeout=120000'
+      ]);
       const result = await rc.remotely(
         async (heap: string, snapshotHelper: string) => {
           const { protocol, net, app } = require('electron');
