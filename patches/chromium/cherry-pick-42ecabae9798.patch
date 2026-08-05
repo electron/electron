@@ -1,0 +1,664 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Liam Brady <lbrady@google.com>
+Date: Tue, 26 May 2026 15:27:08 -0700
+Subject: [Disabled] Sanitize more commit params for cross-origin redirects.
+
+The `NavigationRequest::SanitizeRedirectsForCommit` method was
+introduced to prevent sensitive cross-site URL information (such as
+query parameters) from making it to a committed navigation's renderer if
+the navigation was the result of a redirect or redirect chain. This
+method sanitized the commit params' `redirects` and `redirect_infos`
+fields. However, it did not account for information being in either the
+`original_url` field or in "Location" headers in `redirect_response`.
+This CL sanitizes those fields.
+
+This CL is behind two new default-disabled feature flags, so this will
+essentially be a no-op. This is done because we expect some features to
+break with the feature enabled. They will need to be modified to work
+with these changes. That will be done in follow-up CLs. Landing this CL
+will not actively break anything since the features will be turned off.
+
+The end goal is to fully replace `original_url` with an Origin type
+`original_origin` field, which will happen once all features are working
+as expected with this change.
+
+Bug: 495463654
+Change-Id: I87a086725cf8b3acbdfea94cacbbb72e56033f23
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7851593
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Commit-Queue: Liam Brady <lbrady@google.com>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1636524}
+
+diff --git a/content/browser/renderer_host/navigation_controller_impl.cc b/content/browser/renderer_host/navigation_controller_impl.cc
+index 6d4ccb0f2a07438b59c2d3865887dbe3ca90a953..6c44f8c865ba2fa41ebb2762249db0903c9aed71 100644
+--- a/content/browser/renderer_host/navigation_controller_impl.cc
++++ b/content/browser/renderer_host/navigation_controller_impl.cc
+@@ -83,6 +83,7 @@
+ #include "content/browser/site_instance_impl.h"
+ #include "content/common/content_constants_internal.h"
+ #include "content/common/content_navigation_policy.h"
++#include "content/common/features.h"
+ #include "content/common/navigation_params_utils.h"
+ #include "content/common/trace_utils.h"
+ #include "content/public/browser/back_forward_transition_animation_manager.h"
+@@ -4618,6 +4619,16 @@ NavigationControllerImpl::CreateNavigationRequestFromLoadParams(
+           false /* is_history_navigation_in_new_child_frame */,
+           params.input_start, network::mojom::RequestDestination::kEmpty);
+ 
++  // It is safe to convert GURL to an Origin and back in the code below because
++  // we only want to discard the rest of the URL (e.g., path and params). The
++  // actual underlying Origin is not needed, which could be inherited or opaque
++  // in sandbox cases.
++  const GURL original_url_for_renderer =
++      base::FeatureList::IsEnabled(
++          features::kSanitizeOriginalUrlDuringNavigation)
++          ? common_params->url.DeprecatedGetOriginAsURL()
++          : common_params->url;
++
+   blink::mojom::CommitNavigationParamsPtr commit_params =
+       blink::mojom::CommitNavigationParams::New(
+           url::Origin(),
+@@ -4626,7 +4637,7 @@ NavigationControllerImpl::CreateNavigationRequestFromLoadParams(
+           blink::StorageKey(), override_user_agent, params.redirect_chain,
+           std::vector<network::mojom::URLResponseHeadPtr>(),
+           std::vector<net::RedirectInfo>(), params.post_content_type,
+-          common_params->url, common_params->method,
++          original_url_for_renderer, common_params->method,
+           params.can_load_local_resources, page_state_data,
+           entry->GetUniqueID(), entry->GetSubframeUniqueNames(node),
+           /*intended_as_new_entry=*/true,
+@@ -4826,12 +4837,22 @@ NavigationControllerImpl::CreateNavigationRequestFromEntry(
+   common_params->is_history_navigation_in_new_child_frame =
+       is_history_navigation_in_new_child_frame;
+ 
++  // It is safe to convert GURL to an Origin and back in the code below because
++  // we only want to discard the rest of the URL (e.g., path and params). The
++  // actual underlying Origin is not needed, which could be inherited or opaque
++  // in sandbox cases.
++  const GURL original_url_for_renderer =
++      base::FeatureList::IsEnabled(
++          features::kSanitizeOriginalUrlDuringNavigation)
++          ? common_params->url.DeprecatedGetOriginAsURL()
++          : common_params->url;
++
+   // TODO(clamy): |intended_as_new_entry| below should always be false once
+   // Reload no longer leads to this being called for a pending NavigationEntry
+   // of index -1.
+   blink::mojom::CommitNavigationParamsPtr commit_params =
+       entry->ConstructCommitNavigationParams(
+-          *frame_entry, common_params->url, common_params->method,
++          *frame_entry, original_url_for_renderer, common_params->method,
+           entry->GetSubframeUniqueNames(frame_tree_node),
+           GetPendingEntryIndex() == -1 /* intended_as_new_entry */,
+           GetIndexOfEntry(entry), GetLastCommittedEntryIndex(), GetEntryCount(),
+@@ -5703,7 +5724,15 @@ NavigationControllerImpl::CreateNavigationRequestForErrorPage(
+ 
+   blink::mojom::CommitNavigationParamsPtr commit_params =
+       blink::CreateCommitNavigationParams();
+-  commit_params->original_url = common_params->url;
++  // It is safe to convert GURL to an Origin and back in the code below because
++  // we only want to discard the rest of the URL (e.g., path and params). The
++  // actual underlying Origin is not needed, which could be inherited or opaque
++  // in sandbox cases.
++  commit_params->original_url =
++      base::FeatureList::IsEnabled(
++          features::kSanitizeOriginalUrlDuringNavigation)
++          ? common_params->url.DeprecatedGetOriginAsURL()
++          : common_params->url;
+ 
+   // TODO(arthursonzogni): Consider providing the minimal capabilities to the
+   // error pages.
+diff --git a/content/browser/renderer_host/navigation_entry_impl.cc b/content/browser/renderer_host/navigation_entry_impl.cc
+index ce2f66ca3d87370eb6afb322ed65ed4bc048815c..a3fa715631b0bd3992643048c786394d1a63c73a 100644
+--- a/content/browser/renderer_host/navigation_entry_impl.cc
++++ b/content/browser/renderer_host/navigation_entry_impl.cc
+@@ -12,6 +12,7 @@
+ #include <utility>
+ 
+ #include "base/containers/queue.h"
++#include "base/feature_list.h"
+ #include "base/files/file_path.h"
+ #include "base/i18n/rtl.h"
+ #include "base/memory/ptr_util.h"
+@@ -28,6 +29,7 @@
+ #include "content/browser/renderer_host/navigation_entry_restore_context_impl.h"
+ #include "content/browser/renderer_host/navigation_request.h"
+ #include "content/common/content_constants_internal.h"
++#include "content/common/features.h"
+ #include "content/public/browser/reload_type.h"
+ #include "content/public/common/content_constants.h"
+ #include "content/public/common/url_constants.h"
+@@ -1016,6 +1018,12 @@ NavigationEntryImpl::ConstructCommitNavigationParams(
+     current_length_to_send = 0;
+   }
+ 
++  const GURL original_url_for_renderer =
++      base::FeatureList::IsEnabled(
++          features::kSanitizeOriginalUrlDuringNavigation)
++          ? original_url.DeprecatedGetOriginAsURL()
++          : original_url;
++
+   blink::mojom::CommitNavigationParamsPtr commit_params =
+       blink::mojom::CommitNavigationParams::New(
+           url::Origin(),
+@@ -1023,12 +1031,12 @@ NavigationEntryImpl::ConstructCommitNavigationParams(
+           // navigation.
+           blink::StorageKey(), GetIsOverridingUserAgent(), redirects,
+           std::vector<network::mojom::URLResponseHeadPtr>(),
+-          std::vector<net::RedirectInfo>(), std::string(), original_url,
+-          original_method, GetCanLoadLocalResources(),
+-          frame_entry.page_state().ToEncodedData(), GetUniqueID(),
+-          subframe_unique_names, intended_as_new_entry, pending_index_to_send,
+-          current_index_to_send, current_length_to_send, false,
+-          IsViewSourceMode(), should_clear_history_list(),
++          std::vector<net::RedirectInfo>(), std::string(),
++          original_url_for_renderer, original_method,
++          GetCanLoadLocalResources(), frame_entry.page_state().ToEncodedData(),
++          GetUniqueID(), subframe_unique_names, intended_as_new_entry,
++          pending_index_to_send, current_index_to_send, current_length_to_send,
++          false, IsViewSourceMode(), should_clear_history_list(),
+           blink::mojom::NavigationTiming::New(),
+           blink::mojom::WasActivatedOption::kUnknown,
+           base::UnguessableToken::Create(),
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index 6a97b305959dc75d396ab63bb52c1be3ef6d0502..c1610b6bd5ac08eee79df3735a723efbeb951b2b 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -1432,6 +1432,16 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
+   common_params->request_destination =
+       GetDestinationFromFrameTreeNode(frame_tree_node);
+ 
++  GURL original_url = common_params->url;
++  if (base::FeatureList::IsEnabled(
++          features::kSanitizeOriginalUrlDuringNavigation)) {
++    // It is safe to convert GURL to an Origin and back in the code below
++    // because we only want to discard the rest of the URL (e.g., path and
++    // params). The actual underlying Origin is not needed, which could be
++    // inherited or opaque in sandbox cases.
++    original_url = common_params->url.DeprecatedGetOriginAsURL();
++  }
++
+   // TODO(clamy): See if the navigation start time should be measured in the
+   // renderer and sent to the browser instead of being measured here.
+   blink::mojom::CommitNavigationParamsPtr commit_params =
+@@ -1444,7 +1454,7 @@ std::unique_ptr<NavigationRequest> NavigationRequest::CreateRendererInitiated(
+           /*redirect_response=*/
+           std::vector<network::mojom::URLResponseHeadPtr>(),
+           /*redirect_infos=*/std::vector<net::RedirectInfo>(),
+-          /*post_content_type=*/std::string(), common_params->url,
++          /*post_content_type=*/std::string(), original_url,
+           common_params->method,
+           /*can_load_local_resources=*/false,
+           /*page_state=*/std::string(),
+@@ -1594,6 +1604,15 @@ NavigationRequest::CreateForSynchronousRendererCommit(
+   // by navigations that went through the browser (e.g. page_state is only
+   // set in CommitNavigationParams of history navigations) or these values are
+   // not used by the browser after commit.
++  // It is safe to convert GURL to an Origin and back in the code below because
++  // we only want to discard the rest of the URL (e.g., path and params). The
++  // actual underlying Origin is not needed, which could be inherited or opaque
++  // in sandbox cases.
++  const GURL original_url_for_renderer =
++      base::FeatureList::IsEnabled(
++          features::kSanitizeOriginalUrlDuringNavigation)
++          ? original_url.DeprecatedGetOriginAsURL()
++          : original_url;
+   blink::mojom::CommitNavigationParamsPtr commit_params =
+       blink::mojom::CommitNavigationParams::New(
+           url::Origin(),
+@@ -1603,7 +1622,7 @@ NavigationRequest::CreateForSynchronousRendererCommit(
+           /*redirect_response=*/
+           std::vector<network::mojom::URLResponseHeadPtr>(),
+           /*redirect_infos=*/std::vector<net::RedirectInfo>(),
+-          /*post_content_type=*/std::string(), original_url,
++          /*post_content_type=*/std::string(), original_url_for_renderer,
+           /*original_method=*/method,
+           /*can_load_local_resources=*/false,
+           /*page_state=*/std::string(),
+@@ -1811,7 +1830,13 @@ NavigationRequest::NavigationRequest(
+         !common_params_->initiator_base_url->is_empty());
+   CHECK(!blink::IsRendererDebugURL(common_params_->url));
+   CHECK(common_params_->method == "POST" || !common_params_->post_data);
+-  CHECK_EQ(common_params_->url, commit_params_->original_url);
++  if (base::FeatureList::IsEnabled(
++          features::kSanitizeOriginalUrlDuringNavigation)) {
++    CHECK_EQ(common_params_->url.DeprecatedGetOriginAsURL(),
++             commit_params_->original_url);
++  } else {
++    CHECK_EQ(common_params_->url, commit_params_->original_url);
++  }
+   // Navigations can't be a replacement and a reload at the same time.
+   CHECK(!common_params_->should_replace_current_entry ||
+         !NavigationTypeUtils::IsReload(common_params_->navigation_type));
+@@ -2812,7 +2837,16 @@ void NavigationRequest::OnFencedFrameURLMappingComplete(
+   const GURL& mapped_url_value =
+       properties->mapped_url()->GetValueIgnoringVisibility();
+   common_params_->url = mapped_url_value;
+-  commit_params_->original_url = mapped_url_value;
++  if (base::FeatureList::IsEnabled(
++          features::kSanitizeOriginalUrlDuringNavigation)) {
++    // It is safe to convert GURL to an Origin and back in the code below
++    // because we only want to discard the rest of the URL (e.g., path and
++    // params). The actual underlying Origin is not needed, which could be
++    // inherited or opaque in sandbox cases.
++    commit_params_->original_url = mapped_url_value.DeprecatedGetOriginAsURL();
++  } else {
++    commit_params_->original_url = mapped_url_value;
++  }
+ 
+   // Store the browser's view of the fenced frame properties along with any
+   // embedder context for shared storage in the`NavigationRequest`. Upon commit,
+@@ -7761,7 +7795,17 @@ net::Error NavigationRequest::CheckContentSecurityPolicy(
+       network::UpgradeInsecureRequest(&common_params_->url);
+       common_params_->referrer = Referrer::SanitizeForRequest(
+           common_params_->url, *common_params_->referrer);
+-      commit_params_->original_url = common_params_->url;
++      if (base::FeatureList::IsEnabled(
++              features::kSanitizeOriginalUrlDuringNavigation)) {
++        // It is safe to convert GURL to an Origin and back in the code below
++        // because we only want to discard the rest of the URL (e.g., path and
++        // params). The actual underlying Origin is not needed, which could be
++        // inherited or opaque in sandbox cases.
++        commit_params_->original_url =
++            common_params_->url.DeprecatedGetOriginAsURL();
++      } else {
++        commit_params_->original_url = common_params_->url;
++      }
+     }
+   }
+ 
+@@ -8018,6 +8062,31 @@ void NavigationRequest::SanitizeRedirectsForCommit(
+       redirect.new_url = redirect.new_url.DeprecatedGetOriginAsURL();
+     }
+   }
++
++  if (base::FeatureList::IsEnabled(
++          features::kSanitizeLocationHeadersDuringNavigation)) {
++    url::Origin final_origin = url::Origin::Create(common_params_->url);
++
++    // Sanitize the "Location" headers for redirects that are cross-origin to
++    // the final committed URL.
++    // TODO(crbug.com/495463654): Consider if we need to handle cases that
++    // inherit an origin (e.g. about:blank), or if we cross a CSP sandbox
++    // boundary where the origin becomes unique/opaque.
++    for (size_t i = 0; i < commit_params->redirect_response.size(); ++i) {
++      auto& response_head = commit_params->redirect_response[i];
++      if (!response_head || !response_head->headers ||
++          !response_head->headers->HasHeader("Location")) {
++        continue;
++      }
++
++      const GURL& target_url = commit_params->redirect_infos[i].new_url;
++      const url::Origin target_origin = url::Origin::Create(target_url);
++      if (!target_origin.IsSameOriginWith(final_origin)) {
++        response_head->headers->SetHeader("Location",
++                                          target_origin.GetURL().spec());
++      }
++    }
++  }
+ }
+ 
+ void NavigationRequest::RendererRequestedNavigationCancellationForTesting() {
+diff --git a/content/browser/renderer_host/navigation_request.h b/content/browser/renderer_host/navigation_request.h
+index 9150b151e3d59b38ea384f82529795821191d899..abd0e8d9c9989aaaaa510a927e6af39239a65622 100644
+--- a/content/browser/renderer_host/navigation_request.h
++++ b/content/browser/renderer_host/navigation_request.h
+@@ -1799,6 +1799,14 @@ class CONTENT_EXPORT NavigationRequest
+  private:
+   friend class NavigationRequestTest;
+   FRIEND_TEST_ALL_PREFIXES(NavigationRequestTest, SanitizeRedirectsForCommit);
++  FRIEND_TEST_ALL_PREFIXES(NavigationRequestTest,
++                           SanitizeRedirectsForCommitRelativeLocation);
++  FRIEND_TEST_ALL_PREFIXES(NavigationRequestTest,
++                           SanitizeRedirectsForCommitNonStandardRelative);
++  FRIEND_TEST_ALL_PREFIXES(NavigationRequestTest,
++                           SanitizeRedirectsForCommitHostlessNonStandard);
++  FRIEND_TEST_ALL_PREFIXES(NavigationRequestTest,
++                           SanitizeRedirectsForCommitErrorPage);
+   FRIEND_TEST_ALL_PREFIXES(NavigationRequestTest,
+                            ShouldRecordNavigationTimelineUkmForChromeUI);
+ 
+diff --git a/content/browser/renderer_host/navigation_request_unittest.cc b/content/browser/renderer_host/navigation_request_unittest.cc
+index 0defdb6c8d01b2f6ecc8b45b3b5e05253a71763e..8a8acf35cbaa740d0e03b3f6bb0ea333f444ed8f 100644
+--- a/content/browser/renderer_host/navigation_request_unittest.cc
++++ b/content/browser/renderer_host/navigation_request_unittest.cc
+@@ -15,6 +15,7 @@
+ #include "base/test/scoped_feature_list.h"
+ #include "build/build_config.h"
+ #include "content/browser/renderer_host/navigation_throttle_runner.h"
++#include "content/common/features.h"
+ #include "content/public/browser/navigation_throttle.h"
+ #include "content/public/browser/origin_trials_controller_delegate.h"
+ #include "content/public/browser/process_selection_user_data.h"
+@@ -890,9 +891,216 @@ TEST_F(NavigationRequestTest, SanitizeRedirectsForCommit) {
+   EXPECT_EQ(GURL("https://c.com"), commit_params->redirects[2]);
+ }
+ 
++// Test to ensure that relative Location headers are handled correctly during
++// sanitization (not cleared if same-origin, and sanitized to origin if
++// cross-origin).
++TEST_F(NavigationRequestTest, SanitizeRedirectsForCommitRelativeLocation) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitWithFeatures(
++      /*enabled_features=*/{features::kSanitizeLocationHeadersDuringNavigation,
++                            features::kSanitizeOriginalUrlDuringNavigation},
++      /*disabled_features=*/{});
++  const GURL start_url("https://a.com/start");
++  const GURL url_2("https://a.com/foo");
++  const GURL url_3("https://b.com/bar");
++  const GURL url_4("https://b.com/baz");
++  const GURL final_url("https://b.com/final");
++
++  std::unique_ptr<NavigationSimulator> navigation =
++      NavigationSimulator::CreateRendererInitiated(start_url, main_test_rfh());
++  navigation->Start();
++
++  // 1. Redirect to same-site (relative). Cross-origin to final URL.
++  auto headers1 =
++      base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 302 Found");
++  headers1->SetHeader("Location", "/foo");
++  navigation->SetRedirectHeaders(headers1);
++  navigation->Redirect(url_2);
++
++  // 2. Redirect to cross-site (absolute). Same-origin to final URL.
++  auto headers2 =
++      base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 302 Found");
++  headers2->SetHeader("Location", "https://b.com/bar");
++  navigation->SetRedirectHeaders(headers2);
++  navigation->Redirect(url_3);
++
++  // 3. Redirect to same-site (relative). Same-origin to final URL.
++  auto headers3 =
++      base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 302 Found");
++  headers3->SetHeader("Location", "/baz");
++  navigation->SetRedirectHeaders(headers3);
++  navigation->Redirect(url_4);
++
++  // Final navigation to D.
++  navigation->Redirect(final_url);
++
++  NavigationRequest* request =
++      NavigationRequest::From(navigation->GetNavigationHandle());
++  auto commit_params = request->commit_params().Clone();
++
++  request->SanitizeRedirectsForCommit(commit_params);
++
++  EXPECT_EQ(4u, commit_params->redirect_response.size());
++
++  size_t iter = 0;
++  std::optional<std::string_view> location;
++
++  // 1. "Location: /foo" resolves to cross-origin URL. Should be sanitized to
++  // origin.
++  location = commit_params->redirect_response[0]->headers->EnumerateHeader(
++      &iter, "Location");
++  ASSERT_TRUE(location.has_value());
++  EXPECT_EQ("https://a.com/", location.value());
++
++  // 2. "Location: https://b.com/bar" is same-origin to final URL. Should be
++  // left alone.
++  iter = 0;
++  location = commit_params->redirect_response[1]->headers->EnumerateHeader(
++      &iter, "Location");
++  ASSERT_TRUE(location.has_value());
++  EXPECT_EQ("https://b.com/bar", location.value());
++
++  // 3. "Location: /baz" resolves to same-origin URL. Should be left alone as
++  // relative URL.
++  iter = 0;
++  location = commit_params->redirect_response[2]->headers->EnumerateHeader(
++      &iter, "Location");
++  ASSERT_TRUE(location.has_value());
++  EXPECT_EQ("/baz", location.value());
++
++  // The original navigation URL should be sanitized to origin when
++  // kSanitizeOriginalUrlDuringNavigation is enabled.
++  EXPECT_EQ(GURL("https://a.com/"), commit_params->original_url);
++}
++
++// Test to ensure that relative Location headers on non-standard schemes are
++// handled correctly during sanitization.
++TEST_F(NavigationRequestTest, SanitizeRedirectsForCommitNonStandardRelative) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitWithFeatures(
++      /*enabled_features=*/{features::kSanitizeLocationHeadersDuringNavigation,
++                            features::kSanitizeOriginalUrlDuringNavigation},
++      /*disabled_features=*/{});
++
++  url::ScopedSchemeRegistryForTests scoped_registry;
++  url::AddStandardScheme("chrome-foo", url::SCHEME_WITH_HOST);
++
++  const GURL start_url("chrome-foo://history/start");
++  const GURL url_2("chrome-foo://history/foo");
++  const GURL url_3("chrome-foo://newtab/bar");
++  const GURL final_url("chrome-foo://newtab/final");
++
++  std::unique_ptr<NavigationSimulator> navigation =
++      NavigationSimulator::CreateRendererInitiated(start_url, main_test_rfh());
++  navigation->Start();
++
++  // 1. Redirect to same-site (relative). Cross-origin to final URL.
++  auto headers1 =
++      base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 302 Found");
++  headers1->SetHeader("Location", "/foo");
++  navigation->SetRedirectHeaders(headers1);
++  navigation->Redirect(url_2);
++
++  // 2. Redirect to cross-site (absolute). Same-origin to final URL.
++  auto headers2 =
++      base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 302 Found");
++  headers2->SetHeader("Location", "chrome-foo://newtab/bar");
++  navigation->SetRedirectHeaders(headers2);
++  navigation->Redirect(url_3);
++
++  // Final navigation to D.
++  navigation->Redirect(final_url);
++
++  NavigationRequest* request =
++      NavigationRequest::From(navigation->GetNavigationHandle());
++  auto commit_params = request->commit_params().Clone();
++
++  request->SanitizeRedirectsForCommit(commit_params);
++
++  EXPECT_EQ(3u, commit_params->redirect_response.size());
++
++  size_t iter = 0;
++  std::optional<std::string_view> location;
++
++  // 1. "Location: /foo" resolves to cross-origin URL. Should be sanitized to
++  // origin.
++  location = commit_params->redirect_response[0]->headers->EnumerateHeader(
++      &iter, "Location");
++  ASSERT_TRUE(location.has_value());
++  EXPECT_EQ("chrome-foo://history/", location.value());
++
++  // 2. "Location: chrome-foo://newtab/bar" is same-origin to final URL.
++  // Should be left alone.
++  iter = 0;
++  location = commit_params->redirect_response[1]->headers->EnumerateHeader(
++      &iter, "Location");
++  ASSERT_TRUE(location.has_value());
++  EXPECT_EQ("chrome-foo://newtab/bar", location.value());
++
++  // The original navigation URL should be sanitized to origin when
++  // kSanitizeOriginalUrlDuringNavigation is enabled.
++  EXPECT_EQ(GURL("chrome-foo://history/"), commit_params->original_url);
++}
++
++// Test to ensure that hostless non-standard schemes (like data:) are handled
++// safely and treated as cross-origin during sanitization.
++TEST_F(NavigationRequestTest, SanitizeRedirectsForCommitHostlessNonStandard) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitWithFeatures(
++      /*enabled_features=*/{features::kSanitizeLocationHeadersDuringNavigation,
++                            features::kSanitizeOriginalUrlDuringNavigation},
++      /*disabled_features=*/{});
++
++  const GURL start_url("https://a.com/start");
++  const GURL url_2("data:text/html,foo");
++  const GURL final_url("https://a.com/final");
++
++  std::unique_ptr<NavigationSimulator> navigation =
++      NavigationSimulator::CreateRendererInitiated(start_url, main_test_rfh());
++  navigation->Start();
++
++  // 1. Redirect to data: URL.
++  auto headers =
++      base::MakeRefCounted<net::HttpResponseHeaders>("HTTP/1.1 302 Found");
++  headers->SetHeader("Location", "data:text/html,foo");
++  navigation->SetRedirectHeaders(headers);
++  navigation->Redirect(url_2);
++
++  // Final navigation to D.
++  navigation->Redirect(final_url);
++
++  NavigationRequest* request =
++      NavigationRequest::From(navigation->GetNavigationHandle());
++  auto commit_params = request->commit_params().Clone();
++
++  request->SanitizeRedirectsForCommit(commit_params);
++
++  EXPECT_EQ(2u, commit_params->redirect_response.size());
++
++  size_t iter = 0;
++  std::optional<std::string_view> location;
++
++  // "Location: data:text/html,foo" resolves to cross-origin URL (since data:
++  // has no origin). Should be sanitized to empty string because
++  // GetOriginForSanitization returns empty!
++  location = commit_params->redirect_response[0]->headers->EnumerateHeader(
++      &iter, "Location");
++  ASSERT_TRUE(location.has_value());
++  EXPECT_EQ("", location.value());
++
++  // The original navigation URL should be sanitized to origin when
++  // kSanitizeOriginalUrlDuringNavigation is enabled.
++  EXPECT_EQ(GURL("https://a.com/"), commit_params->original_url);
++}
++
+ // Test to ensure that SanitizeRedirectsForCommit is called when a navigation
+ // fails and commits an error page.
+ TEST_F(NavigationRequestTest, SanitizeRedirectsForCommitErrorPage) {
++  base::test::ScopedFeatureList feature_list;
++  feature_list.InitWithFeatures(
++      /*enabled_features=*/{features::kSanitizeOriginalUrlDuringNavigation},
++      /*disabled_features=*/{});
++
+   const GURL start_url("https://a.com?param=1");
+   const GURL url_2("https://b.com?param=2#foo");
+   const GURL final_url("https://d.com?param=4");
+@@ -921,6 +1129,10 @@ TEST_F(NavigationRequestTest, SanitizeRedirectsForCommitErrorPage) {
+   EXPECT_EQ(2u, commit_params.redirect_infos.size());
+   EXPECT_EQ(GURL("https://b.com"), commit_params.redirect_infos[0].new_url);
+   EXPECT_EQ(final_url, commit_params.redirect_infos[1].new_url);
++
++  // The original navigation URL should be sanitized to origin when
++  // kSanitizeOriginalUrlDuringNavigation is enabled.
++  EXPECT_EQ(GURL("https://a.com/"), commit_params.original_url);
+ }
+ 
+ TEST_F(NavigationRequestTest, AbortsDeletedNavigationInProgress) {
+diff --git a/content/common/features.cc b/content/common/features.cc
+index 7f7ddf3355d18e8a9cb845d89d05cbe1dc39f76e..0ca6c8c16fb36f5425c4dfad543b6413e9640b88 100644
+--- a/content/common/features.cc
++++ b/content/common/features.cc
+@@ -671,6 +671,18 @@ BASE_FEATURE(kScrollAfterOSKViewportShrinkFix,
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ #endif
+ 
++// Controls whether redirect Location headers are sanitized during navigation
++// to only include the origin when cross-origin to the final URL.
++// See https://crbug.com/495463654.
++BASE_FEATURE(kSanitizeLocationHeadersDuringNavigation,
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
++// Controls whether the `original_url` contains the full URL or just the
++// sanitized origin when sent to the renderer on commit.
++// See https://crbug.com/495463654.
++BASE_FEATURE(kSanitizeOriginalUrlDuringNavigation,
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
+ BASE_FEATURE(kServiceWorkerAvoidMainThreadForInitialization,
+              base::FEATURE_ENABLED_BY_DEFAULT);
+ 
+diff --git a/content/common/features.h b/content/common/features.h
+index 8062d494f0313fb92424276facdf21ec3d52fdda..c7003ca9e977499e5eb2687a6c38d4148f299639 100644
+--- a/content/common/features.h
++++ b/content/common/features.h
+@@ -208,6 +208,8 @@ CONTENT_EXPORT BASE_DECLARE_FEATURE(
+ #if BUILDFLAG(IS_ANDROID)
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kScrollAfterOSKViewportShrinkFix);
+ #endif
++CONTENT_EXPORT BASE_DECLARE_FEATURE(kSanitizeLocationHeadersDuringNavigation);
++CONTENT_EXPORT BASE_DECLARE_FEATURE(kSanitizeOriginalUrlDuringNavigation);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(kSendBeaconThrowForBlobWithNonSimpleType);
+ CONTENT_EXPORT BASE_DECLARE_FEATURE(
+     kServiceWorkerAvoidMainThreadForInitialization);
+diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
+index c8b680342e586f7a99a621591cb93ff8f65a8166..5bcf2f89b207985c6b5959c890355172d9e5a7e2 100644
+--- a/content/renderer/render_frame_impl.cc
++++ b/content/renderer/render_frame_impl.cc
+@@ -490,11 +490,18 @@ void FillNavigationParamsRequest(
+     const blink::mojom::CommonNavigationParams& common_params,
+     const blink::mojom::CommitNavigationParams& commit_params,
+     blink::WebNavigationParams* navigation_params) {
+-  // Use the original navigation url to start with. We'll replay the redirects
+-  // afterwards and will eventually arrive to the final url.
+-  navigation_params->url = !commit_params.original_url.is_empty()
+-                               ? commit_params.original_url
+-                               : common_params.url;
++  // Use the original navigation URL to start with. Note that when the browser
++  // enables redirect sanitization (via
++  // `features::kSanitizeOriginalUrlDuringNavigation`), it populates
++  // `commit_params->original_url` with only the sanitized origin of the
++  // original URL instead of the full URL by calling DeprecatedGetOriginAsURL().
++  // We'll replay the redirects afterwards and will eventually arrive at the
++  // final URL. For non-redirecting navigations, use the final URL to be
++  // committed (as that is the same as the original URL).
++  const bool should_use_original_url = !commit_params.redirect_infos.empty() &&
++                                       !commit_params.original_url.is_empty();
++  navigation_params->url =
++      should_use_original_url ? commit_params.original_url : common_params.url;
+   navigation_params->http_method = WebString::FromAscii(
+       !commit_params.original_method.empty() ? commit_params.original_method
+                                              : common_params.method);
+diff --git a/third_party/blink/public/mojom/navigation/navigation_params.mojom b/third_party/blink/public/mojom/navigation/navigation_params.mojom
+index c9ae6c4c5b2320ebc3101a8716c00f7f7ee9ba97..1c35f202bee47f97d09d3f9e392053e1b1305f58 100644
+--- a/third_party/blink/public/mojom/navigation/navigation_params.mojom
++++ b/third_party/blink/public/mojom/navigation/navigation_params.mojom
+@@ -417,7 +417,8 @@ struct CommitNavigationParams {
+   // The content type from the request headers for POST requests.
+   string post_content_type;
+ 
+-  // The original URL & method for this navigation.
++  // The original URL and method for this navigation.
++  // TODO(crbug.com/495463654): Replace original_url with original_origin.
+   url.mojom.Url original_url;
+   string original_method;
+ 
+diff --git a/third_party/blink/renderer/platform/loader/fetch/url_loader/navigation_body_loader.cc b/third_party/blink/renderer/platform/loader/fetch/url_loader/navigation_body_loader.cc
+index e6f71abcc801d741b9c9f65ae63990477664f1b4..9bfc001dbecb239227afe0b34e7f52982990518d 100644
+--- a/third_party/blink/renderer/platform/loader/fetch/url_loader/navigation_body_loader.cc
++++ b/third_party/blink/renderer/platform/loader/fetch/url_loader/navigation_body_loader.cc
+@@ -620,9 +620,17 @@ void WebNavigationBodyLoader::FillNavigationParamsResponseAndBodyLoader(
+     bool is_main_frame,
+     WebNavigationParams* navigation_params,
+     bool is_ad_frame) {
+-  // Use the original navigation url to start with. We'll replay the
+-  // redirects afterwards and will eventually arrive to the final url.
+-  const KURL original_url = !commit_params->original_url.is_empty()
++  // Use the original navigation URL to start with. Note that when the browser
++  // enables redirect sanitization (via
++  // `features::kSanitizeOriginalUrlDuringNavigation`), it populates
++  // `commit_params->original_url` with only the sanitized origin of the
++  // original URL instead of the full URL by calling DeprecatedGetOriginAsURL().
++  // We'll replay the redirects afterwards and will eventually arrive at the
++  // final URL. For non-redirecting navigations, use the final URL to be
++  // committed (as that is the same as the original URL).
++  const bool should_use_original_url = !commit_params->redirect_infos.empty() &&
++                                       !commit_params->original_url.is_empty();
++  const KURL original_url = should_use_original_url
+                                 ? KURL(commit_params->original_url)
+                                 : KURL(common_params->url);
+   KURL url = original_url;
