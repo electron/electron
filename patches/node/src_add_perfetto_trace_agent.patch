@@ -95,6 +95,42 @@ index ea75cca72d8c4cf247828414dc08dd0082d3e93c..793ce8fb269ab10b7770d0df54be2b9f
    int64_t v8_thread_pool_size = 4;
    bool zero_fill_all_buffers = false;
    bool debug_arraybuffer_allocations = false;
+diff --git a/src/node_platform.cc b/src/node_platform.cc
+index 4815e8acd99c2f0430b2943d50dd8a71cdb350f4..946bfe4328c94affad99c0d5f4072835856a955d 100644
+--- a/src/node_platform.cc
++++ b/src/node_platform.cc
+@@ -459,7 +459,8 @@ NodePlatform::NodePlatform(int thread_pool_size,
+   if (tracing_controller != nullptr) {
+     tracing_controller_ = tracing_controller;
+   } else {
+-    tracing_controller_ = new v8::TracingController();
++    owned_tracing_controller_ = std::make_unique<v8::TracingController>();
++    tracing_controller_ = owned_tracing_controller_.get();
+   }
+ 
+   // V8 will default to its built in allocator if none is provided.
+@@ -478,6 +479,9 @@ NodePlatform::NodePlatform(int thread_pool_size,
+ 
+ NodePlatform::~NodePlatform() {
+   Shutdown();
++  if (node::GetTracingController() == tracing_controller_) {
++    node::SetTracingController(nullptr);
++  }
+ }
+ 
+ void NodePlatform::RegisterIsolate(Isolate* isolate, uv_loop_t* loop) {
+diff --git a/src/node_platform.h b/src/node_platform.h
+index f47e2a46b66b84938bcbf5b34ffc4a4a4a39af3f..665d2a467e08084837217482f65bb62673e4ebbe 100644
+--- a/src/node_platform.h
++++ b/src/node_platform.h
+@@ -272,6 +272,7 @@ class NodePlatform : public MultiIsolatePlatform {
+                                  std::shared_ptr<PerIsolatePlatformData>>;
+   std::unordered_map<v8::Isolate*, DelegatePair> per_isolate_;
+ 
++  std::unique_ptr<v8::TracingController> owned_tracing_controller_;
+   v8::TracingController* tracing_controller_;
+   v8::PageAllocator* page_allocator_;
+   std::shared_ptr<WorkerThreadsTaskRunner> worker_thread_task_runner_;
 diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
 index 69b956e9bc9d68cab6076dff661b8f8877007ec8..2ffc49f31e6ad9c447491d2c005cf1d90e40a61a 100644
 --- a/src/tracing/agent.cc
