@@ -10,20 +10,36 @@ Reviewed-By: James M Snell <jasnell@gmail.com>
 Reviewed-By: Ryuhei Shima <shimaryuhei@gmail.com>
 
 diff --git a/node.gyp b/node.gyp
-index 9c88bbfb8d3f1847b58f35de5b4da4d1b27536be..953007fc24875ca35db54ac4cdd31f5e3b9449c5 100644
+index 54ee17622bc979af7c55336206a272852a13ebdd..8fbb5a6a0986584390d086454a2e3e565a656fca 100644
 --- a/node.gyp
 +++ b/node.gyp
-@@ -434,6 +434,10 @@
-       'src/node_crypto.h',
-     ],
-     'node_tracing_perfetto_sources': [
+@@ -191,10 +191,11 @@
+       'src/timers.cc',
+       'src/timer_wrap.cc',
+       'src/tracing/agent.cc',
+-      'src/tracing/agent_legacy.cc',
 +      'src/tracing/agent_perfetto.cc',
-+      'src/tracing/agent_perfetto.h',
+       'src/tracing/node_trace_buffer.cc',
+       'src/tracing/node_trace_writer.cc',
+       'src/tracing/trace_event.cc',
 +      'src/tracing/trace_event_perfetto.cc',
+       'src/tracing/traced_value.cc',
+       'src/tty_wrap.cc',
+       'src/udp_wrap.cc',
+@@ -328,11 +329,12 @@
+       'src/tcp_wrap.h',
+       'src/timers.h',
+       'src/tracing/agent.h',
+-      'src/tracing/agent_legacy.h',
++      'src/tracing/agent_perfetto.h',
+       'src/tracing/node_trace_buffer.h',
+       'src/tracing/node_trace_writer.h',
+       'src/tracing/trace_event.h',
+       'src/tracing/trace_event_common.h',
 +      'src/tracing/trace_event_perfetto.h',
-     ],
-     'node_tracing_legacy_sources': [
-       'src/tracing/agent_legacy.cc',
+       'src/tracing/traced_value.h',
+       'src/timer_wrap.h',
+       'src/timer_wrap-inl.h',
 diff --git a/src/api/environment.cc b/src/api/environment.cc
 index c81ef82c5a23d30ec7430b8726bd28e1be2f225e..75fc97a581b79c87a51adcbe999b937262b422db 100644
 --- a/src/api/environment.cc
@@ -79,6 +95,73 @@ index a493f59465d207b4b89d8941807d4ff6acff82ac..88e8a2f401cac75810e3b0fdb776b41e
 +    }],
 +  ],
  }
+diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
+index a9e14e53bb6e3f5082a3cf6a0786cf63d9381b5b..3a7fe419cac1d5cec60596ef10a507611a5da9ee 100644
+--- a/src/inspector_agent.cc
++++ b/src/inspector_agent.cc
+@@ -14,7 +14,9 @@
+ #include "inspector/runtime_agent.h"
+ #include "inspector/storage_agent.h"
+ #include "inspector/target_agent.h"
++#if !defined(V8_USE_PERFETTO)
+ #include "inspector/tracing_agent.h"
++#endif  // !defined(V8_USE_PERFETTO)
+ #include "inspector/worker_agent.h"
+ #include "inspector/worker_inspector.h"
+ #include "inspector_io.h"
+@@ -238,9 +240,11 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+                                   StringView(),
+                                   V8Inspector::ClientTrustLevel::kFullyTrusted);
+     node_dispatcher_ = std::make_unique<UberDispatcher>(this);
++#if !defined(V8_USE_PERFETTO)
+     tracing_agent_ =
+         std::make_unique<protocol::TracingAgent>(env, main_thread_);
+     tracing_agent_->Wire(node_dispatcher_.get());
++#endif  // !defined(V8_USE_PERFETTO)
+     if (worker_manager) {
+       worker_agent_ = std::make_unique<protocol::WorkerAgent>(worker_manager);
+       worker_agent_->Wire(node_dispatcher_.get());
+@@ -274,8 +278,10 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+   }
+ 
+   ~ChannelImpl() override {
++#if !defined(V8_USE_PERFETTO)
+     tracing_agent_->disable();
+     tracing_agent_.reset();  // Dispose before the dispatchers
++#endif  // !defined(V8_USE_PERFETTO)
+     if (worker_agent_) {
+       worker_agent_->disable();
+       worker_agent_.reset();  // Dispose before the dispatchers
+@@ -424,7 +430,9 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+   }
+ 
+   std::unique_ptr<protocol::RuntimeAgent> runtime_agent_;
++#if !defined(V8_USE_PERFETTO)
+   std::unique_ptr<protocol::TracingAgent> tracing_agent_;
++#endif  // !defined(V8_USE_PERFETTO)
+   std::unique_ptr<protocol::WorkerAgent> worker_agent_;
+   std::shared_ptr<protocol::TargetAgent> target_agent_;
+   std::unique_ptr<NetworkInspector> network_inspector_;
+diff --git a/src/node_internals.h b/src/node_internals.h
+index 8e930a6fecd6589b858293d91b2454ea14ae7c73..24c5dbe405d69ceb0e515aeaa6b26233bb2943a9 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -315,6 +315,7 @@ class ThreadPoolWork {
+   const char* type_;
+ };
+ 
++#if !defined(V8_USE_PERFETTO)
+ #define TRACING_CATEGORY_NODE "node"
+ #define TRACING_CATEGORY_NODE1(one)                                           \
+     TRACING_CATEGORY_NODE ","                                                 \
+@@ -323,6 +324,7 @@ class ThreadPoolWork {
+     TRACING_CATEGORY_NODE ","                                                 \
+     TRACING_CATEGORY_NODE "." #one ","                                        \
+     TRACING_CATEGORY_NODE "." #one "." #two
++  #endif  // !defined(V8_USE_PERFETTO)
+ 
+ // Functions defined in node.cc that are exposed via the bootstrapper object
+ 
 diff --git a/src/node_options.h b/src/node_options.h
 index ea75cca72d8c4cf247828414dc08dd0082d3e93c..793ce8fb269ab10b7770d0df54be2b9ff90e0960 100644
 --- a/src/node_options.h
@@ -132,37 +215,27 @@ index f47e2a46b66b84938bcbf5b34ffc4a4a4a39af3f..665d2a467e08084837217482f65bb626
    v8::PageAllocator* page_allocator_;
    std::shared_ptr<WorkerThreadsTaskRunner> worker_thread_task_runner_;
 diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
-index 69b956e9bc9d68cab6076dff661b8f8877007ec8..2ffc49f31e6ad9c447491d2c005cf1d90e40a61a 100644
+index 69b956e9bc9d68cab6076dff661b8f8877007ec8..6d80a4797461683315f9f51266a34a2c00e4c937 100644
 --- a/src/tracing/agent.cc
 +++ b/src/tracing/agent.cc
-@@ -1,6 +1,12 @@
+@@ -1,5 +1,5 @@
  #include "tracing/agent.h"
-+
-+#ifdef V8_USE_PERFETTO
+-#include "tracing/agent_legacy.h"
 +#include "tracing/agent_perfetto.h"
-+#else
- #include "tracing/agent_legacy.h"
--#include "tracing/trace_event.h"
-+#endif
-+
-+#include "tracing/trace_event_helper.h"
+ #include "tracing/trace_event.h"
  
  namespace node {
- namespace tracing {
-@@ -23,7 +29,11 @@ void Agent::Deleter::operator()(Agent* agent) {
+@@ -23,7 +23,7 @@ void Agent::Deleter::operator()(Agent* agent) {
  std::unique_ptr<Agent, Agent::Deleter> Agent::CreateDefault() {
    CHECK_NULL(g_agent);
  
-+#ifdef V8_USE_PERFETTO
+-  auto agent = new LegacyTracingAgent();
 +  auto agent = new PerfettoTracingAgent();
-+#else
-   auto agent = new LegacyTracingAgent();
-+#endif
  
    g_agent = agent;
    TraceEventHelper::SetTracingController(agent->GetTracingController());
 diff --git a/src/tracing/agent.h b/src/tracing/agent.h
-index 78203154c099a56d0d9256f9cade9742dffb141c..60ed6ebf5a8d29552b8dc418fb397fe19dab89ce 100644
+index 78203154c099a56d0d9256f9cade9742dffb141c..51d8a992342b54addd892fb77b21a66d09ada486 100644
 --- a/src/tracing/agent.h
 +++ b/src/tracing/agent.h
 @@ -43,9 +43,9 @@ class Agent {
@@ -177,10 +250,11 @@ index 78203154c099a56d0d9256f9cade9742dffb141c..60ed6ebf5a8d29552b8dc418fb397fe1
  
    struct Deleter {
      void operator()(Agent* agent);
-@@ -88,6 +88,7 @@ class AgentWriterHandle {
+@@ -87,7 +87,7 @@ class AgentWriterHandle {
+   int id_ = 0;
  
    friend class Agent;
-   friend class LegacyTracingAgent;
+-  friend class LegacyTracingAgent;
 +  friend class PerfettoTracingAgent;
  };
  
@@ -785,26 +859,51 @@ index 0000000000000000000000000000000000000000..0d74ca5332b018e28182f7181289099e
 +
 +#endif  // SRC_TRACING_AGENT_PERFETTO_H_
 diff --git a/src/tracing/trace_event.h b/src/tracing/trace_event.h
-index 21d158fb16fbdb42681f8f1aa7108dfeee3d62fa..3169505626c05da462ccdd0b1b4e61325d77ee69 100644
+index a0f8c695ea0160e5282679e2a15905863731fffe..81608796814522863ff2d9d0a085638729c7960f 100644
 --- a/src/tracing/trace_event.h
 +++ b/src/tracing/trace_event.h
-@@ -1,9 +1,15 @@
+@@ -5,10 +5,33 @@
  #ifndef SRC_TRACING_TRACE_EVENT_H_
  #define SRC_TRACING_TRACE_EVENT_H_
  
++#if defined(V8_USE_PERFETTO)
++
+ #include "v8-platform.h"
 +#include "tracing/agent.h"
 +
- #if defined(V8_USE_PERFETTO)
- 
--#error "Perfetto is not supported"
++namespace node::tracing {
++
++class TraceEventHelper {
++ public:
++  static v8::TracingController* GetTracingController();
++  static void SetTracingController(v8::TracingController* controller);
++};
++
++}  // namespace node::tracing
++
 +#define TRACING_CATEGORY_NODE "node"
 +#define TRACING_CATEGORY_NODE1(one) TRACING_CATEGORY_NODE "." #one
 +#define TRACING_CATEGORY_NODE2(one, two) TRACING_CATEGORY_NODE "." #one "." #two
 +
 +#include "tracing/trace_event_perfetto.h"
++
++#else
++
++#include <atomic>
++
+ #include "tracing/agent_legacy.h"
+ #include "trace_event_common.h"
+-#include <atomic>
  
- #else  // defined(V8_USE_PERFETTO)
+ // This header file defines implementation details of how the trace macros in
+ // trace_event_common.h collect and store trace events. Anything not
+@@ -717,4 +740,6 @@ class ScopedTracer {
+ }  // namespace tracing
+ }  // namespace node
  
++#endif  // defined(V8_USE_PERFETTO)
++
+ #endif  // SRC_TRACING_TRACE_EVENT_H_
 diff --git a/src/tracing/trace_event_perfetto.cc b/src/tracing/trace_event_perfetto.cc
 new file mode 100644
 index 0000000000000000000000000000000000000000..87227b95fd56162a9f577bed4d44bafd0f6a8701
@@ -1011,7 +1110,7 @@ index 0000000000000000000000000000000000000000..8cfcb52182df9a600e5cf2c1466e9ffa
 +  assert(stat.size > 0);
 +}));
 diff --git a/unofficial.gni b/unofficial.gni
-index 6af570a3b9742533903438b71b74cf34cfd5179f..8a6d8cc76d56d093bfd1884a0b1fa18e41abfb38 100644
+index 6af570a3b9742533903438b71b74cf34cfd5179f..f54840a3cf67c9fe3c016ac830deb21c6880e7c9 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
 @@ -156,6 +156,7 @@ template("node_gn_build") {
@@ -1030,11 +1129,3 @@ index 6af570a3b9742533903438b71b74cf34cfd5179f..8a6d8cc76d56d093bfd1884a0b1fa18e
      ]
  
      cflags_cc = [
-@@ -202,6 +204,7 @@ template("node_gn_build") {
-       "$root_gen_dir/electron_natives.cc",
-       "$target_gen_dir/node_javascript.cc",
-     ] + gypi_values.node_sources
-+    sources += gypi_values.node_tracing_perfetto_sources
- 
-     if (is_win) {
-       libs = [ "psapi.lib" ]
