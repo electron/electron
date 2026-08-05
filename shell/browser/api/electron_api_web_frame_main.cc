@@ -19,6 +19,7 @@
 #include "content/public/common/isolated_world_ids.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "printing/buildflags/buildflags.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
 #include "shell/browser/api/message_port.h"
 #include "shell/browser/browser.h"
@@ -37,6 +38,10 @@
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
+
+#if BUILDFLAG(ENABLE_PRINTING)
+#include "shell/browser/printing/print_to_pdf.h"
+#endif
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/blink/public/mojom/frame/media_player_action.mojom.h"
 #include "ui/gfx/geometry/point.h"
@@ -277,6 +282,20 @@ v8::Local<v8::Promise> WebFrameMain::ExecuteJavaScript(
 
   return handle;
 }
+
+#if BUILDFLAG(ENABLE_PRINTING)
+v8::Local<v8::Promise> WebFrameMain::PrintToPDF(const base::Value& settings) {
+  if (!HasRenderFrame()) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+    v8::Local<v8::Promise> handle = promise.GetHandle();
+    promise.RejectWithErrorMessage(
+        "Render frame was disposed before WebFrameMain could be accessed");
+    return handle;
+  }
+  return PrintFrameToPDF(render_frame_host(), settings);
+}
+#endif
 
 void WebFrameMain::CopyVideoFrameAt(int x, int y) {
   if (!CheckRenderFrame())
@@ -648,6 +667,9 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
       .SetMethod("collectJavaScriptCallStack",
                  &WebFrameMain::CollectDocumentJSCallStack)
+#if BUILDFLAG(ENABLE_PRINTING)
+      .SetMethod("_printToPDF", &WebFrameMain::PrintToPDF)
+#endif
       .SetMethod("copyVideoFrameAt", &WebFrameMain::CopyVideoFrameAt)
       .SetMethod("saveVideoFrameAs", &WebFrameMain::SaveVideoFrameAs)
       .SetMethod("reload", &WebFrameMain::Reload)
