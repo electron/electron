@@ -71,6 +71,8 @@ jobs:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
+      # depot_tools' unbootstrapped python3 wrapper (crrev.com/c/8162440) breaks system python3 resolution; bypass it
+      DEPOT_TOOLS_PYTHON_BYPASS: 1
     steps:
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
