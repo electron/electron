@@ -477,7 +477,7 @@ action("electron_generate_node_defines") {
   script = "build/generate_node_defines.py"
 
   inputs = [
-    "//third_party/electron_node/src/tracing/trace_event_legacy.h",
+    "//third_party/electron_node/src/tracing/trace_event_common.h",
     "//third_party/electron_node/src/tracing/trace_event.h",
     "//third_party/electron_node/src/util.h",
   ]
