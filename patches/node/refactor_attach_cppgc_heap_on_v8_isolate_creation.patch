@@ -75,6 +75,24 @@ index 745ecab746f7c7540733d31a94f52809dcddd5be..0e52bf5a6f4837d0f4bfed83987c6903
    return ptr;
  }
  
+diff --git a/src/cppgc_helpers.cc b/src/cppgc_helpers.cc
+index 7c557a822d2028aa88adbdca63677a44afd1a120..ae7e45fbc26317a53207c267865ea4db553f5a8a 100644
+--- a/src/cppgc_helpers.cc
++++ b/src/cppgc_helpers.cc
+@@ -4,11 +4,12 @@
+ namespace node {
+ 
+ void CppgcWrapperList::Cleanup() {
+-  for (auto node : *this) {
++  while (CppgcWrapperListNode* node = PopFront()) {
+     CppgcMixin* ptr = node->persistent.Get();
+     if (ptr != nullptr) {
+       ptr->Finalize();
+     }
++    delete node;
+   }
+ }
+ 
 diff --git a/src/cppgc_helpers.h b/src/cppgc_helpers.h
 index fb2af584a4ae777022c9ef8c20ada1edcbbbefdc..fe6300a5d5d2d6602a84cbd33736c2133041d1b0 100644
 --- a/src/cppgc_helpers.h
