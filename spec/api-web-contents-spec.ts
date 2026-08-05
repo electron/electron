@@ -2030,23 +2030,22 @@ describe('webContents module', () => {
 
     const wakeLockCode = `
       (async () => {
-        let wakeLockAvailable = true;
+        let wakeLockAvailability = true;
 
-        // It shouldn't fail even if disabled.
         try {
           const lock = await navigator.wakeLock.request("screen");
-          wakeLockAvailable = (wakeLock !== null && !wakeLock.released);
+          wakeLockAvailability = (wakeLock !== null && !wakeLock.released);
           lock.addEventListener("release", () => {
-            wakeLockAvailable = false;
+            wakeLockAvailability = false;
           });
         } catch () {
-          wakeLockAvailable = false;
+          wakeLockAvailability = false;
         }
         
         // Brief pause to ensure the state stabilizes
         await new Promise((resolve) => setTimeout(resolve, 100));
         
-        return wakeLockAvailable;
+        return wakeLockAvailability;
       })();
     `;
 
