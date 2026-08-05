@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Buchanan <kenrb@chromium.org>
+Date: Mon, 22 Jun 2026 07:32:16 -0700
+Subject: [WebAuthn] Prevent WebAuthn requests from inactive frames
+
+WebAuthn calls should not be possible from inactive frames, such as
+those in the process of navigation or in BFCache. This is currently
+enforced in the desktop WebAuthn implementation and treated as a
+non-focused frame, but there is no check in the Android implementation.
+
+This change adds an explicit check when binding the interface, for
+both Android and desktop.
+
+It also adds checks at the time of invocation of makeCredential
+and getAssertion, in case an interface bound on a live frame
+is used while the frame is later inactive.
+
+Fixed: 516813184
+Change-Id: I1ede1544bcdbb4b090b1feb777d9e6dc58436a73
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7969319
+Reviewed-by: Nina Satragno <nsatragno@chromium.org>
+Commit-Queue: Ken Buchanan <kenrb@chromium.org>
+Auto-Submit: Ken Buchanan <kenrb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1650300}
+
+diff --git a/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java b/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java
+index 1aa534f2015837a54640d76ed41d91d7bce73008..bd5c9085c0c4781968e7cfd8060891c21e755102 100644
+--- a/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java
++++ b/components/webauthn/android/java/src/org/chromium/components/webauthn/AuthenticatorImpl.java
+@@ -31,6 +31,7 @@ import org.chromium.build.annotations.NullMarked;
+ import org.chromium.build.annotations.Nullable;
+ import org.chromium.components.password_manager.BrowserAssistedLoginType;
+ import org.chromium.components.ukm.UkmRecorder;
++import org.chromium.content_public.browser.LifecycleState;
+ import org.chromium.content_public.browser.RenderFrameHost;
+ import org.chromium.content_public.browser.Visibility;
+ import org.chromium.content_public.browser.WebContents;
+@@ -162,6 +163,13 @@ public final class AuthenticatorImpl implements Authenticator, AuthenticationCon
+                             new RequestMetrics.Builder().build()));
+             return;
+         }
++        if (mRenderFrameHost.getLifecycleState() != LifecycleState.ACTIVE) {
++            requestCallback.onComplete(
++                    WebauthnRequestResponse.forFailedMakeCredential(
++                            AuthenticatorStatus.NOT_ALLOWED_ERROR,
++                            new RequestMetrics.Builder().build()));
++            return;
++        }
+         log(TAG, "makeCredential");
+ 
+         mIsPaymentRequest = options.isPaymentCredentialCreation;
+@@ -251,6 +259,13 @@ public final class AuthenticatorImpl implements Authenticator, AuthenticationCon
+                             new RequestMetrics.Builder().build()));
+             return;
+         }
++        if (mRenderFrameHost.getLifecycleState() != LifecycleState.ACTIVE) {
++            requestCallback.onComplete(
++                    WebauthnRequestResponse.forFailedGetCredential(
++                            AuthenticatorStatus.NOT_ALLOWED_ERROR,
++                            new RequestMetrics.Builder().build()));
++            return;
++        }
+         log(TAG, "getCredential");
+ 
+         mRequestCallback = requestCallback;
+diff --git a/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java b/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java
+index 666befeb78f562015a1d2027a5af44ecffc237f2..352ea8add97af180caa831cc98bce3f3da61aea1 100644
+--- a/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java
++++ b/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplPasswordOnlyTest.java
+@@ -30,6 +30,7 @@ import org.chromium.blink.mojom.Authenticator;
+ import org.chromium.blink.mojom.GetCredentialOptions;
+ import org.chromium.blink.mojom.Mediation;
+ import org.chromium.blink.mojom.PublicKeyCredentialRequestOptions;
++import org.chromium.content_public.browser.LifecycleState;
+ import org.chromium.content_public.browser.RenderFrameHost;
+ import org.chromium.content_public.browser.Visibility;
+ import org.chromium.content_public.browser.WebContents;
+@@ -63,6 +64,7 @@ public class AuthenticatorImplPasswordOnlyTest {
+         mTopOrigin = Origin.create(new GURL("https://example.com"));
+ 
+         when(mRenderFrameHost.getLastCommittedOrigin()).thenReturn(mOrigin);
++        when(mRenderFrameHost.getLifecycleState()).thenReturn(LifecycleState.ACTIVE);
+ 
+         WebauthnModeProvider.setInstanceForTesting(mModeProviderMock);
+         when(mModeProviderMock.getWebauthnMode(any())).thenReturn(WebauthnMode.CHROME);
+diff --git a/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplTest.java b/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplTest.java
+index 1216f497fc87388b8ad7d2a349935ab3f4d18493..abc7d2470705f0ca5fe653775c1ea4fdcdf0f78d 100644
+--- a/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplTest.java
++++ b/components/webauthn/android/junit/src/org/chromium/components/webauthn/AuthenticatorImplTest.java
+@@ -42,6 +42,7 @@ import org.chromium.blink.mojom.PublicKeyCredentialRequestOptions;
+ import org.chromium.blink.mojom.WebAuthnClientCapability;
+ import org.chromium.components.ukm.UkmRecorder;
+ import org.chromium.components.ukm.UkmRecorderJni;
++import org.chromium.content_public.browser.LifecycleState;
+ import org.chromium.content_public.browser.RenderFrameHost;
+ import org.chromium.content_public.browser.Visibility;
+ import org.chromium.content_public.browser.WebContents;
+@@ -93,6 +94,7 @@ public class AuthenticatorImplTest {
+         mTopOrigin = Origin.create(new GURL("https://example.com"));
+ 
+         when(mRenderFrameHost.getLastCommittedOrigin()).thenReturn(mOrigin);
++        when(mRenderFrameHost.getLifecycleState()).thenReturn(LifecycleState.ACTIVE);
+ 
+         WebauthnModeProvider.setInstanceForTesting(mModeProviderMock);
+         when(mModeProviderMock.getWebauthnMode(any())).thenReturn(WebauthnMode.CHROME);
+@@ -426,4 +428,39 @@ public class AuthenticatorImplTest {
+         verify(callback, never()).call(any());
+         verify(mFido2CredentialRequestMock).handleGetCredentialRequest(any(), any(), any(), any());
+     }
++
++    @Test
++    public void testMakeCredential_inactiveFrame() {
++        when(mRenderFrameHost.getLifecycleState()).thenReturn(LifecycleState.IN_BACK_FORWARD_CACHE);
++
++        Authenticator.MakeCredential_Response callback =
++                mock(Authenticator.MakeCredential_Response.class);
++        PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions();
++        mAuthenticator.makeCredential(options, callback);
++
++        verify(callback).call(eq(AuthenticatorStatus.NOT_ALLOWED_ERROR), any(), any());
++        verify(mFido2CredentialRequestMock, never())
++                .handleMakeCredentialRequest(any(), any(), any(), any(), any());
++    }
++
++    @Test
++    public void testGetCredential_inactiveFrame() {
++        when(mRenderFrameHost.getLifecycleState()).thenReturn(LifecycleState.IN_BACK_FORWARD_CACHE);
++
++        Authenticator.GetCredential_Response callback =
++                mock(Authenticator.GetCredential_Response.class);
++        GetCredentialOptions options = new GetCredentialOptions();
++        options.publicKey = new PublicKeyCredentialRequestOptions();
++        mAuthenticator.getCredential(options, callback);
++
++        ArgumentCaptor<GetCredentialResponse> captor =
++                ArgumentCaptor.forClass(GetCredentialResponse.class);
++        verify(callback).call(captor.capture());
++        assertEquals(
++                AuthenticatorStatus.NOT_ALLOWED_ERROR,
++                captor.getValue().getGetAssertionResponse().status);
++
++        verify(mFido2CredentialRequestMock, never())
++                .handleGetCredentialRequest(any(), any(), any(), any());
++    }
+ }
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 9d74fd6c9fdfae857d9dc575e92a0149aa68b3de..bf2bd04f4d6a9e6518cdeaae03f7c6c40f7d578f 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -15158,6 +15158,10 @@ void RenderFrameHostImpl::CreatePermissionService(
+ 
+ void RenderFrameHostImpl::GetWebAuthenticationService(
+     mojo::PendingReceiver<blink::mojom::Authenticator> receiver) {
++  if (!IsActive()) {
++    return;
++  }
++
+ #if !BUILDFLAG(IS_ANDROID)
+   AuthenticatorImpl::Create(this, std::move(receiver));
+ #else
+diff --git a/content/browser/webauth/authenticator_impl_unittest.cc b/content/browser/webauth/authenticator_impl_unittest.cc
+index 73c91774758b17692468fa1ffaf4bf9474a652d3..0e1dbf401a94026ad7d387504957ac4b88324760 100644
+--- a/content/browser/webauth/authenticator_impl_unittest.cc
++++ b/content/browser/webauth/authenticator_impl_unittest.cc
+@@ -10709,4 +10709,26 @@ TEST_F(AuthenticatorImplTest, CrossDeviceFallbackUrl_Processed) {
+   EXPECT_EQ(result.status, AuthenticatorStatus::CROSS_DEVICE_FALLBACK);
+ }
+ 
++TEST_F(AuthenticatorImplTest, InactiveRenderFrameHost) {
++  NavigateAndCommit(GURL(kTestOrigin1));
++
++  // Set the lifecycle state to `kInBackForwardCache` so the RenderFrameHost is
++  // inactive.
++  static_cast<RenderFrameHostImpl*>(main_rfh())
++      ->SetLifecycleState(
++          RenderFrameHostImpl::LifecycleStateImpl::kInBackForwardCache);
++  ASSERT_FALSE(main_rfh()->IsActive());
++
++  // Try to connect to the authenticator service.
++  mojo::Remote<blink::mojom::Authenticator> authenticator =
++      ConnectToAuthenticator();
++
++  // The receiver should be dropped immediately, causing the remote to be
++  // disconnected.
++  base::RunLoop run_loop;
++  authenticator.set_disconnect_handler(run_loop.QuitClosure());
++  run_loop.Run();
++  EXPECT_FALSE(authenticator.is_connected());
++}
++
+ }  // namespace content
