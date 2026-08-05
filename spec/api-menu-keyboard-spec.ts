@@ -4,13 +4,10 @@ import { expect } from 'chai';
 
 import { setTimeout } from 'node:timers/promises';
 
-import { hasCapturableScreen } from './lib/screen-helpers';
 import { ifdescribe, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
-//TODO(@mlaurencin): These tests can't run on CI yet, as they need a
-// capturable screen (unavailable for Windows/Linux, the relevant platforms).
-// Find a robotjs-free approach that avoids flakes and works on CI.
+// TODO(@mlaurencin): Find a robotjs-free approach that avoids flakes and works on CI.
 
 // robotjs is an optional native dependency; if it fails to load the suite is
 // skipped in the before hook below.
@@ -106,8 +103,8 @@ ifdescribe(process.platform !== 'darwin')('menu bar keyboard sibling switching',
   };
 
   before(async function () {
-    // Skip when robotjs is unavailable or there's no capturable screen
-    if (!robot || !robot.keyTap || !hasCapturableScreen()) {
+    // Skip when robotjs is unavailable
+    if (!robot || !robot.keyTap) {
       this.skip();
       return;
     }
