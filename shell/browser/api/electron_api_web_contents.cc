@@ -114,7 +114,6 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/osr/osr_render_widget_host_view.h"
 #include "shell/browser/osr/osr_web_contents_view.h"
-#include "shell/browser/preload_code_cache.h"
 #include "shell/browser/preload_script.h"
 #include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/session_preferences.h"
@@ -2290,10 +2289,6 @@ void WebContents::MaybeSendRendererStartupData(
   if (!rfh || !rfh->IsRenderFrameLive())
     return;
 
-  // Build the ordered preload list: session-registered preloads of type
-  // 'frame' first (in registration order), then the per-WebContents
-  // webPreferences.preload last — same order as the legacy
-  // BROWSER_SANDBOX_LOAD handler's getPreloadScriptsFromEvent().
   mojom::RendererStartupDataPtr data;
   {
     // We're on the UI thread. The asar is mmap'd and offset-indexed so warm
@@ -2301,29 +2296,7 @@ void WebContents::MaybeSendRendererStartupData(
     // parked waiting on us here — we haven't sent CommitNavigation yet — so
     // unlike the old sync IPC handler this can't amplify under contention.
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::Build(rfh->GetBrowserContext(),
-                                        PreloadScript::ScriptType::kWebFrame);
-    std::optional<base::FilePath> preload;
-    if (web_prefs)
-      preload = web_prefs->GetPreloadPath();
-    if (preload && preload->IsAbsolute()) {
-      auto ps = mojom::PreloadScriptData::New();
-      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
-      ps->file_path = preload->AsUTF8Unsafe();
-      std::string contents;
-      if (asar::ReadFileToString(*preload, &contents)) {
-        ps->contents.assign(contents.begin(), contents.end());
-        std::vector<uint8_t> cache =
-            preload_code_cache::Get(ps->id, ps->contents);
-        if (!cache.empty())
-          ps->code_cache = std::move(cache);
-      } else {
-        ps->contents.clear();
-        ps->error =
-            "ENOENT: no such file or directory, open '" + ps->file_path + "'";
-      }
-      data->preload_scripts.push_back(std::move(ps));
-    }
+    data = renderer_startup_data::BuildForFrame(rfh);
   }
 
   // GetRemoteAssociatedInterfaces() routes over the same channel as
