@@ -62,7 +62,7 @@ jobs:
         generate-sas-token: 'true'
         target-platform: macos
 
-  # Build the patched siso binaries in parallel with checkout-macos; the
+  # Build the patched siso binary in parallel with checkout-macos; the
   # publish jobs consume the darwin-arm64 artifact via SISO_PATH (macOS builds,
   # x64 and arm64, run on arm64 hosts).
   build-siso:
@@ -70,6 +70,8 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
+    with:
+      host: darwin-arm64
 
   publish-x64-darwin:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
