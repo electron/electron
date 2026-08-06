@@ -44,7 +44,7 @@ index 46ba17e5a3d6755a119a91a015a385253d598c52..bc8569fd0fc2c0fa9b12aa138567dcbf
  // Keys of the webRequest.RequestFilter dictionary.
  inline constexpr char kRequestFilterUrlsKey[] = "urls";
 diff --git a/extensions/common/extension.cc b/extensions/common/extension.cc
-index 5ff75561005f794d115e51f9ce2b6325f319ef50..0f450d8968a8261433dc20eb93f3de940114a306 100644
+index 9413abec978e122b83a2f144d26e62187c33412c..d32e116803a6fe48e8fb674884d18d2d5516a3f8 100644
 --- a/extensions/common/extension.cc
 +++ b/extensions/common/extension.cc
 @@ -218,7 +218,8 @@ const int Extension::kValidHostPermissionSchemes =
