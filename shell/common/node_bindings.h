@@ -18,6 +18,7 @@
 #include "base/types/to_address.h"
 #include "gin/public/context_holder.h"
 #include "gin/public/gin_embedders.h"
+#include "third_party/electron_node/src/tracing/agent.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8-forward.h"
 
@@ -120,7 +121,8 @@ class NodeBindings {
 
   static std::unique_ptr<NodeBindings> Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinBindings();
-  static void InitializeTracingAgent();
+  static std::unique_ptr<node::tracing::Agent, node::tracing::Agent::Deleter>
+  InitializeTracingAgent(bool use_standalone_perfetto_client);
   static bool IsInitialized();
 
   virtual ~NodeBindings();
