@@ -1532,6 +1532,30 @@ Returns `boolean` - Whether this page has been muted.
 
 Returns `boolean` - Whether audio is currently playing.
 
+#### `contents.setCaretBrowsingEnabled(enabled)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52696
+```
+-->
+
+* `enabled` boolean
+
+Sets whether caret browsing is enabled on the current web page.
+
+#### `contents.isCaretBrowsingEnabled()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52696
+```
+-->
+
+Returns `boolean` - Whether caret browsing is enabled for this page.
+
 #### `contents.setZoomFactor(factor)`
 
 * `factor` Double - Zoom factor; default is 1.0.
@@ -2413,6 +2437,19 @@ register handlers on the appropriate frame directly using the
 #### `contents.audioMuted`
 
 A `boolean` property that determines whether this page is muted.
+
+#### `contents.caretBrowsingEnabled`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52696
+```
+-->
+
+A `boolean` property that determines whether caret browsing is enabled for this page.
+
+When enabled, a movable cursor is placed in the page's text, allowing the user to navigate and select content with the keyboard. Changes take effect immediately without reloading the page.
 
 #### `contents.userAgent`
 

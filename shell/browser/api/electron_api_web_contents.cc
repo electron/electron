@@ -2998,6 +2998,18 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   web_contents()->SyncRendererPrefs();
 }
 
+bool WebContents::IsCaretBrowsingEnabled() const {
+  return web_contents()->GetMutableRendererPrefs()->caret_browsing_enabled;
+}
+
+void WebContents::SetCaretBrowsingEnabled(bool enabled) {
+  auto* prefs = web_contents()->GetMutableRendererPrefs();
+  if (prefs->caret_browsing_enabled == enabled)
+    return;
+  prefs->caret_browsing_enabled = enabled;
+  web_contents()->SyncRendererPrefs();
+}
+
 v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRange(
     v8::Isolate* isolate) const {
   auto* prefs = web_contents()->GetMutableRendererPrefs();
@@ -4841,6 +4853,9 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setAudioMuted", &WebContents::SetAudioMuted)
       .SetMethod("isAudioMuted", &WebContents::IsAudioMuted)
       .SetMethod("isCurrentlyAudible", &WebContents::IsCurrentlyAudible)
+      .SetMethod("setCaretBrowsingEnabled",
+                 &WebContents::SetCaretBrowsingEnabled)
+      .SetMethod("isCaretBrowsingEnabled", &WebContents::IsCaretBrowsingEnabled)
       .SetMethod("undo", &WebContents::Undo)
       .SetMethod("redo", &WebContents::Redo)
       .SetMethod("cut", &WebContents::Cut)

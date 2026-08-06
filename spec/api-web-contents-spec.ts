@@ -2297,6 +2297,106 @@ describe('webContents module', () => {
     });
   });
 
+  describe('caretBrowsingEnabled', () => {
+    afterEach(closeAllWindows);
+
+    it('defaults to false', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('can be toggled via the property', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+
+      w.webContents.caretBrowsingEnabled = false;
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('stays enabled when set to the same value repeatedly', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    it('persists across navigation', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.caretBrowsingEnabled = true;
+
+      await w.loadURL('about:blank');
+
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    describe('renderer-side caret movement', () => {
+      const pressRight = (w: BrowserWindow, times: number) => {
+        for (let i = 0; i < times; i++) {
+          w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Right' });
+          w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
+        }
+      };
+
+      // Blink needs a starting selection to move away from
+      const collapseSelectionToStart = (w: BrowserWindow) =>
+        w.webContents.executeJavaScript(`
+        {
+          const textNode = document.getElementById('prose').firstChild;
+          getSelection().collapse(textNode, 0);
+        }
+      `);
+
+      it('moves the caret through non-editable text when enabled', async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'caret-browsing.html'));
+        w.focus();
+        w.webContents.focus();
+
+        w.webContents.caretBrowsingEnabled = true;
+
+        let offset = 0;
+        await waitUntil(
+          async () => {
+            await collapseSelectionToStart(w);
+            pressRight(w, 3);
+            offset = await w.webContents.executeJavaScript('getSelection().anchorOffset');
+            return offset === 3;
+          },
+          { rate: 100, timeout: 3000 }
+        );
+
+        expect(offset).to.equal(3);
+      });
+
+      it('does not move the caret through non-editable text when disabled', async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'caret-browsing.html'));
+        w.focus();
+        w.webContents.focus();
+
+        w.webContents.caretBrowsingEnabled = false;
+
+        // Initialize to something other than 0 to ensure the awaited code actually gets
+        // a selection.
+        let offset = -1;
+        await waitUntil(
+          async () => {
+            await collapseSelectionToStart(w);
+            pressRight(w, 3);
+            offset = await w.webContents.executeJavaScript('getSelection().anchorOffset');
+            return offset === 3;
+          },
+          { rate: 100, timeout: 3000 }
+        ).catch(() => {});
+
+        expect(offset).to.equal(0);
+      });
+    });
+  });
+
   describe('zoom api', () => {
     const hostZoomMap: Record<string, number> = {
       host1: 0.3,
