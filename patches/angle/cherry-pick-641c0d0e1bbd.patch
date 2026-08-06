@@ -1,0 +1,149 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Antonio Maiorano <amaiorano@google.com>
+Date: Tue, 15 Jul 2025 12:00:00 -0400
+Subject: D3D11: Fix potential OOB read in StoreStaticAttrib
+
+Bug: b/489369089
+Change-Id: Ieda5e911ed0b122af49af15f52eb938787346143
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7736785
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Antonio Maiorano <amaiorano@google.com>
+
+diff --git a/src/libANGLE/renderer/d3d/VertexDataManager.cpp b/src/libANGLE/renderer/d3d/VertexDataManager.cpp
+index 6031eabd7964b9f085b103471e401680ab903a58..b40c465c75c23de91fa1c45945681470170d1c17 100644
+--- a/src/libANGLE/renderer/d3d/VertexDataManager.cpp
++++ b/src/libANGLE/renderer/d3d/VertexDataManager.cpp
+@@ -369,17 +369,16 @@ angle::Result VertexDataManager::StoreStaticAttrib(const gl::Context *context,
+ 
+     // Compute source data pointer
+     const uint8_t *sourceData = nullptr;
+-    const int offset          = static_cast<int>(ComputeVertexAttributeOffset(attrib, binding));
++
++    angle::CheckedNumeric<GLintptr> offset = ComputeVertexAttributeOffset(attrib, binding);
+ 
+     ANGLE_TRY(bufferD3D->getData(context, &sourceData));
+ 
+     if (sourceData)
+     {
+-        sourceData += offset;
++        sourceData += GLintptr{offset.ValueOrDie()};
+     }
+ 
+-    unsigned int streamOffset = 0;
+-
+     translated->storage = nullptr;
+     ANGLE_TRY(bufferD3D->getFactory()->getVertexSpaceRequired(context, attrib, binding, 1, 0, 0,
+                                                               &translated->stride));
+@@ -387,35 +386,32 @@ angle::Result VertexDataManager::StoreStaticAttrib(const gl::Context *context,
+     auto *staticBuffer = bufferD3D->getStaticVertexBuffer(attrib, binding);
+     ASSERT(staticBuffer);
+ 
++    angle::CheckedNumeric<size_t> attribStride = ComputeVertexAttributeStride(attrib, binding);
++
+     if (staticBuffer->empty())
+     {
+         // Convert the entire buffer
+         int totalCount =
+             ElementsInBuffer(attrib, binding, static_cast<unsigned int>(bufferD3D->getSize()));
+-        int startIndex = offset / static_cast<int>(ComputeVertexAttributeStride(attrib, binding));
+-
+         if (totalCount > 0)
+         {
+-            ANGLE_TRY(staticBuffer->storeStaticAttribute(context, attrib, binding, -startIndex,
+-                                                         totalCount, 0, sourceData));
++            angle::CheckedNumeric<size_t> startIndex = offset / attribStride;
++            ANGLE_CHECK_GL_MATH(GetImplAs<ContextD3D>(context), startIndex.IsValid());
++            size_t si = startIndex.ValueOrDie();
++            ANGLE_TRY(staticBuffer->storeStaticAttribute(context, attrib, binding, -si, totalCount,
++                                                         0, sourceData));
+         }
+     }
+ 
+-    unsigned int firstElementOffset =
+-        (static_cast<unsigned int>(offset) /
+-         static_cast<unsigned int>(ComputeVertexAttributeStride(attrib, binding))) *
+-        translated->stride;
++    CheckedNumeric<size_t> firstElementOffset = (offset / attribStride) * translated->stride;
+ 
+     VertexBuffer *vertexBuffer = staticBuffer->getVertexBuffer();
+ 
+-    CheckedNumeric<unsigned int> checkedOffset(streamOffset);
+-    checkedOffset += firstElementOffset;
+-
+-    ANGLE_CHECK_GL_MATH(GetImplAs<ContextD3D>(context), checkedOffset.IsValid());
++    ANGLE_CHECK_GL_MATH(GetImplAs<ContextD3D>(context), firstElementOffset.IsValid<unsigned int>());
+ 
+     translated->vertexBuffer.set(vertexBuffer);
+     translated->serial     = vertexBuffer->getSerial();
+-    translated->baseOffset = streamOffset + firstElementOffset;
++    translated->baseOffset = firstElementOffset.ValueOrDie<unsigned int>();
+ 
+     // Instanced vertices do not apply the 'start' offset
+     translated->usesFirstVertexOffset = (binding.getDivisor() == 0);
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 21c3631bfa792169cd97208961c68284a890fb67..d9a6f260b15b8f9c9a119216c45b7d045ed4fb95 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -101,6 +101,8 @@
+ 42266900 VULKAN : EGLContextSharingTestNoFixture.*/*ForceDelayedDeviceCreationForTesting* = SKIP
+ 42266900 VULKAN : EGLSurfacelessContextTest.*/*ForceDelayedDeviceCreationForTesting* = SKIP
+ 
++500721361 VULKAN SWIFTSHADER : VertexAttributeTestES3.storeStaticAttribWithLargeOffset/* = SKIP
++
+ // Windows
+ 42262429 WIN NVIDIA D3D11 : BufferDataOverflowTest.VertexBufferIntegerOverflow/* = SKIP
+ 40096654 WIN VULKAN : BufferDataOverflowTest.VertexBufferIntegerOverflow/* = SKIP
+diff --git a/src/tests/gl_tests/VertexAttributeTest.cpp b/src/tests/gl_tests/VertexAttributeTest.cpp
+index bf95e774a53196087b9eb4237e7e60dbc798ceb2..ef74d2cd83e0ca59119dfe7973f6ef762582846f 100644
+--- a/src/tests/gl_tests/VertexAttributeTest.cpp
++++ b/src/tests/gl_tests/VertexAttributeTest.cpp
+@@ -5432,6 +5432,49 @@ TEST_P(VertexAttributeTestES3, emptyBuffer)
+     swapBuffers();
+ }
+ 
++// Test that setting a large offset on glVertexAttribPointer doesn't OOB when going
++// through StoreStaticAttrib. See http://crbug.com/489369089
++TEST_P(VertexAttributeTestES3, storeStaticAttribWithLargeOffset)
++{
++    constexpr char vs2[] =
++        R"(#version 300 es
++            layout(location = 0) in vec3 a;
++            void main() {
++                gl_Position = vec4(a, 1.0);
++                gl_PointSize = 1.0;
++            })";
++    constexpr char fs[] =
++        R"(#version 300 es
++            precision mediump float;
++            layout(location = 0) out vec4 FragColor;
++            void main() {
++                FragColor = vec4(1.0, 0.0, 0.0, 1.0);
++            })";
++
++    GLuint program2 = CompileProgram(vs2, fs);
++    GLBuffer buf;
++    glBindBuffer(GL_ARRAY_BUFFER, buf);
++    std::array<uint8_t, 256> data;
++    glBufferData(GL_ARRAY_BUFFER, data.size(), data.data(), GL_STATIC_DRAW);
++
++    // From the original bug report:
++    // GL_BYTE normalized size=3 triggers VERTEX_CONVERT_CPU on D3D11 (R8G8B8_SNORM),
++    // routing through StoreStaticAttrib instead of StoreDirectAttrib.
++    // offset 0x80000000 passes through the compromised renderer without validation.
++    // In StoreStaticAttrib, static_cast<int>(0x80000000) wraps to -2147483648,
++    // causing sourceData to point backward past the buffer allocation.
++    glVertexAttribPointer(0, 3, GL_BYTE, GL_TRUE, 3, reinterpret_cast<void *>(0x80000000));
++    glEnableVertexAttribArray(0);
++
++    glUseProgram(program2);
++    glDrawArrays(GL_POINTS, 0, 1);
++
++    swapBuffers();
++
++    std::array<uint8_t, 4> px;
++    glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, px.data());
++}
++
+ // This is a test for use with ANGLE's Capture/Replay.
+ // It emulates a situation we see in some apps, where attribs are passed in but may not be used.
+ // In particular, that test asks for all active attributes and iterates through each one. Before any

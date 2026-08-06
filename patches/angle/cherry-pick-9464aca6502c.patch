@@ -164,7 +164,7 @@ index 051fc7f994fb81a93fd4f7a98c80d287270523b3..27e04725f011b6781bdad8398b2ad6fb
  
  StaticVertexBufferInterface::StaticVertexBufferInterface(BufferFactoryD3D *factory)
 diff --git a/src/libANGLE/renderer/d3d/VertexDataManager.cpp b/src/libANGLE/renderer/d3d/VertexDataManager.cpp
-index 6031eabd7964b9f085b103471e401680ab903a58..03c1e8b4b3c008fb4d9675e11f72a21699d0a0d4 100644
+index b40c465c75c23de91fa1c45945681470170d1c17..21762b57987bd8ad4024de005e3989b0f07e27a6 100644
 --- a/src/libANGLE/renderer/d3d/VertexDataManager.cpp
 +++ b/src/libANGLE/renderer/d3d/VertexDataManager.cpp
 @@ -122,10 +122,10 @@ bool DirectStoragePossible(const gl::Context *context,
@@ -181,16 +181,23 @@ index 6031eabd7964b9f085b103471e401680ab903a58..03c1e8b4b3c008fb4d9675e11f72a216
  }
  }  // anonymous namespace
  
-@@ -369,7 +369,7 @@ angle::Result VertexDataManager::StoreStaticAttrib(const gl::Context *context,
- 
+@@ -370,13 +370,13 @@ angle::Result VertexDataManager::StoreStaticAttrib(const gl::Context *context,
      // Compute source data pointer
      const uint8_t *sourceData = nullptr;
--    const int offset          = static_cast<int>(ComputeVertexAttributeOffset(attrib, binding));
-+    const uintptr_t offset    = ComputeVertexAttributeOffset(attrib, binding);
+ 
+-    angle::CheckedNumeric<GLintptr> offset = ComputeVertexAttributeOffset(attrib, binding);
++    angle::CheckedNumeric<uintptr_t> offset = ComputeVertexAttributeOffset(attrib, binding);
  
      ANGLE_TRY(bufferD3D->getData(context, &sourceData));
  
-@@ -574,7 +574,7 @@ angle::Result VertexDataManager::storeDynamicAttrib(const gl::Context *context,
+     if (sourceData)
+     {
+-        sourceData += GLintptr{offset.ValueOrDie()};
++        sourceData += uintptr_t{offset.ValueOrDie()};
+     }
+ 
+     translated->storage = nullptr;
+@@ -570,7 +570,7 @@ angle::Result VertexDataManager::storeDynamicAttrib(const gl::Context *context,
      if (buffer)
      {
          ANGLE_TRY(storage->getData(context, &sourceData));
@@ -403,18 +410,20 @@ index 2f439959244261da5c82ae375819550177736946..673f766b089d75e72e42630ee7864e73
                  ANGLE_TRY(mLineLoopHelper.getIndexBufferForElementArrayBuffer(
                      contextVk, elementArrayBufferVk, indexTypeOrInvalid, vertexOrIndexCount, offset,
 diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
-index 21c3631bfa792169cd97208961c68284a890fb67..dae43331148b007eba2f522fd5a32eb695628b38 100644
+index d9a6f260b15b8f9c9a119216c45b7d045ed4fb95..dae43331148b007eba2f522fd5a32eb695628b38 100644
 --- a/src/tests/angle_end2end_tests_expectations.txt
 +++ b/src/tests/angle_end2end_tests_expectations.txt
-@@ -100,6 +100,7 @@
+@@ -100,8 +100,7 @@
  // ANGLE is broken if a context is made current before a surface is created in the presence of multiple queue families
  42266900 VULKAN : EGLContextSharingTestNoFixture.*/*ForceDelayedDeviceCreationForTesting* = SKIP
  42266900 VULKAN : EGLSurfacelessContextTest.*/*ForceDelayedDeviceCreationForTesting* = SKIP
+-
+-500721361 VULKAN SWIFTSHADER : VertexAttributeTestES3.storeStaticAttribWithLargeOffset/* = SKIP
 +500721361 VULKAN SWIFTSHADER : VertexAttributeTestES3.StoreStaticAttribWithLargeOffset/* = SKIP
  
  // Windows
  42262429 WIN NVIDIA D3D11 : BufferDataOverflowTest.VertexBufferIntegerOverflow/* = SKIP
-@@ -378,7 +379,7 @@
+@@ -380,7 +379,7 @@
  42265138 MAC AMD OPENGL : TransformFeedbackTest.TransformFeedbackQueryPausedDrawThenResume/* = SKIP
  42265138 MAC AMD OPENGL : TransformFeedbackTest.TransformFeedbackPausedDrawThenResume/* = SKIP
  40050013 MAC AMD OPENGL : Texture3DTestES3.PixelUnpackStateTex* = SKIP
@@ -423,7 +432,7 @@ index 21c3631bfa792169cd97208961c68284a890fb67..dae43331148b007eba2f522fd5a32eb6
  42265677 MAC INTEL OPENGL : CopyTextureTest.CopyToMipmap/* = SKIP
  42265680 MAC NVIDIA OPENGL : CopyTextureTest.CubeMap*/* = SKIP
  42265680 MAC NVIDIA OPENGL : CopyTextureTest.CopyToMipmap/* = SKIP
-@@ -486,6 +487,7 @@
+@@ -488,6 +487,7 @@
  496604559 MAC METAL : RobustResourceInitTestES3.DrawThenInvalidateThenVerifyDepthStencil/* = SKIP
  518849408 MAC OPENGL : GLSLTest.EmulateGLFragColorBroadcastInvariantFragColor/* = SKIP
  518849408 MAC OPENGL : GLSLTest.EmulateGLFragColorBroadcastInvariantFragColorUnused/* = SKIP
@@ -431,7 +440,7 @@ index 21c3631bfa792169cd97208961c68284a890fb67..dae43331148b007eba2f522fd5a32eb6
  
  // The workaround is not intended to be enabled in this configuration so
  // skip it as the failure is likely a driver bug.
-@@ -801,7 +803,7 @@
+@@ -803,7 +803,7 @@
  42264692 PIXEL4ORXL GLES : DepthStencilTestES3.FramebufferClearThenStencilAttachedThenStencilTestState/* = SKIP
  42264692 PIXEL4ORXL GLES : DepthStencilTestES3.FramebufferClearThenStencilTestStateThenStencilAttached/* = SKIP
  42264692 PIXEL4ORXL GLES : DepthStencilTestES3.StencilTestStateThenFramebufferClearThenStencilAttached/* = SKIP
@@ -453,7 +462,7 @@ index 5623896357538e62b89ca560a633ac3437b9d31d..63a832dd414f8e4ccd6eefdf0c7d6acf
  # The following tests fail with forceRobustResourceInit
  # They were accidentally passing until http://crrev/c/5588816
 diff --git a/src/tests/gl_tests/VertexAttributeTest.cpp b/src/tests/gl_tests/VertexAttributeTest.cpp
-index bf95e774a53196087b9eb4237e7e60dbc798ceb2..8363441b18c863d3d5186ea3c2a59426ee1a7427 100644
+index ef74d2cd83e0ca59119dfe7973f6ef762582846f..8363441b18c863d3d5186ea3c2a59426ee1a7427 100644
 --- a/src/tests/gl_tests/VertexAttributeTest.cpp
 +++ b/src/tests/gl_tests/VertexAttributeTest.cpp
 @@ -5284,7 +5284,7 @@ TEST_P(VertexAttributeTestES3, InvalidAttribPointer)
@@ -485,7 +494,7 @@ index bf95e774a53196087b9eb4237e7e60dbc798ceb2..8363441b18c863d3d5186ea3c2a59426
          R"(#version 300 es
              precision highp float;
              out vec4 color;
-@@ -5420,18 +5420,61 @@ TEST_P(VertexAttributeTestES3, emptyBuffer)
+@@ -5420,13 +5420,13 @@ TEST_P(VertexAttributeTestES3, emptyBuffer)
              {
                  color = vec4(1.0, 0.0, 0.0, 1.0);
              })";
@@ -501,55 +510,45 @@ index bf95e774a53196087b9eb4237e7e60dbc798ceb2..8363441b18c863d3d5186ea3c2a59426
      glDrawArrays(GL_POINTS, 0, 1);
  
      swapBuffers();
- }
+@@ -5434,16 +5434,16 @@ TEST_P(VertexAttributeTestES3, emptyBuffer)
  
-+// Test that setting a large offset on glVertexAttribPointer doesn't OOB when going
-+// through StoreStaticAttrib. See http://crbug.com/489369089
+ // Test that setting a large offset on glVertexAttribPointer doesn't OOB when going
+ // through StoreStaticAttrib. See http://crbug.com/489369089
+-TEST_P(VertexAttributeTestES3, storeStaticAttribWithLargeOffset)
 +TEST_P(VertexAttributeTestES3, StoreStaticAttribWithLargeOffset)
-+{
+ {
+-    constexpr char vs2[] =
 +    constexpr char kVS[] =
-+        R"(#version 300 es
-+            layout(location = 0) in vec3 a;
-+            void main() {
-+                gl_Position = vec4(a, 1.0);
-+                gl_PointSize = 1.0;
-+            })";
+         R"(#version 300 es
+             layout(location = 0) in vec3 a;
+             void main() {
+                 gl_Position = vec4(a, 1.0);
+                 gl_PointSize = 1.0;
+             })";
+-    constexpr char fs[] =
 +    constexpr char kFS[] =
-+        R"(#version 300 es
-+            precision mediump float;
-+            layout(location = 0) out vec4 FragColor;
-+            void main() {
-+                FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-+            })";
-+
+         R"(#version 300 es
+             precision mediump float;
+             layout(location = 0) out vec4 FragColor;
+@@ -5451,7 +5451,7 @@ TEST_P(VertexAttributeTestES3, storeStaticAttribWithLargeOffset)
+                 FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+             })";
+ 
+-    GLuint program2 = CompileProgram(vs2, fs);
 +    ANGLE_GL_PROGRAM(program, kVS, kFS);
-+    GLBuffer buf;
-+    glBindBuffer(GL_ARRAY_BUFFER, buf);
-+    std::array<uint8_t, 256> data;
-+    glBufferData(GL_ARRAY_BUFFER, data.size(), data.data(), GL_STATIC_DRAW);
-+
-+    // From the original bug report:
-+    // GL_BYTE normalized size=3 triggers VERTEX_CONVERT_CPU on D3D11 (R8G8B8_SNORM),
-+    // routing through StoreStaticAttrib instead of StoreDirectAttrib.
-+    // offset 0x80000000 passes through the compromised renderer without validation.
-+    // In StoreStaticAttrib, static_cast<int>(0x80000000) wraps to -2147483648,
-+    // causing sourceData to point backward past the buffer allocation.
-+    glVertexAttribPointer(0, 3, GL_BYTE, GL_TRUE, 3, reinterpret_cast<void *>(0x80000000));
-+    glEnableVertexAttribArray(0);
-+
+     GLBuffer buf;
+     glBindBuffer(GL_ARRAY_BUFFER, buf);
+     std::array<uint8_t, 256> data;
+@@ -5466,7 +5466,7 @@ TEST_P(VertexAttributeTestES3, storeStaticAttribWithLargeOffset)
+     glVertexAttribPointer(0, 3, GL_BYTE, GL_TRUE, 3, reinterpret_cast<void *>(0x80000000));
+     glEnableVertexAttribArray(0);
+ 
+-    glUseProgram(program2);
 +    glUseProgram(program);
-+    glDrawArrays(GL_POINTS, 0, 1);
-+
-+    swapBuffers();
-+
-+    std::array<uint8_t, 4> px;
-+    glReadPixels(0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, px.data());
-+}
-+
- // This is a test for use with ANGLE's Capture/Replay.
- // It emulates a situation we see in some apps, where attribs are passed in but may not be used.
- // In particular, that test asks for all active attributes and iterates through each one. Before any
-@@ -6300,6 +6343,31 @@ TEST_P(VertexAttributeResizeDefaultTest, ResizeAndSwitchWithNoDefaultAttribsActi
+     glDrawArrays(GL_POINTS, 0, 1);
+ 
+     swapBuffers();
+@@ -6343,6 +6343,31 @@ TEST_P(VertexAttributeResizeDefaultTest, ResizeAndSwitchWithNoDefaultAttribsActi
      EXPECT_PIXEL_COLOR_EQ(54, 54, GLColor::green);
  }
  
