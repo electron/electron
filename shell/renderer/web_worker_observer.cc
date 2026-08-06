@@ -90,7 +90,11 @@ void WebWorkerObserver::InitializeNewEnvironment(
   node_bindings_->PrepareEmbedThread();
 
   // Setup node tracing controller.
-  NodeBindings::InitializeTracingAgent();
+  static const node::tracing::Agent* const tracing_agent =
+      NodeBindings::InitializeTracingAgent(
+          /*use_standalone_perfetto_client=*/false)
+          .release();
+  CHECK_EQ(tracing_agent, nullptr);
 
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(worker_context);

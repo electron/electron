@@ -23,6 +23,7 @@ class MultiIsolatePlatform;
 
 namespace v8 {
 class Isolate;
+class TracingController;
 }  // namespace v8
 
 namespace electron {
@@ -32,7 +33,8 @@ class MicrotasksRunner;
 class JavascriptEnvironment {
  public:
   JavascriptEnvironment(uv_loop_t* event_loop,
-                        bool setup_wasm_streaming = false);
+                        bool setup_wasm_streaming = false,
+                        v8::TracingController* tracing_controller = nullptr);
   ~JavascriptEnvironment();
 
   // disable copy
@@ -52,9 +54,9 @@ class JavascriptEnvironment {
   [[nodiscard]] static v8::Isolate* GetIsolate();
 
  private:
-  v8::Isolate* Initialize(uv_loop_t* event_loop, bool setup_wasm_streaming);
-  std::unique_ptr<node::tracing::Agent, node::tracing::Agent::Deleter>
-      tracing_agent_;
+  v8::Isolate* Initialize(uv_loop_t* event_loop,
+                          bool setup_wasm_streaming,
+                          v8::TracingController* tracing_controller);
   std::unique_ptr<node::MultiIsolatePlatform> platform_;
 
   size_t max_young_generation_size_ = 0;

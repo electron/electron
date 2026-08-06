@@ -262,7 +262,11 @@ int NodeMain() {
     // Initialize gin::IsolateHolder.
     // Node.js now exposes fetch unconditionally, so WASM streaming (which
     // relies on the fetch Response object) is always set up here.
-    JavascriptEnvironment gin_env(loop, /*setup_wasm_streaming=*/true);
+    auto tracing_agent = NodeBindings::InitializeTracingAgent(
+        /*use_standalone_perfetto_client=*/true);
+    CHECK(tracing_agent);
+    JavascriptEnvironment gin_env(loop, /*setup_wasm_streaming=*/true,
+                                  tracing_agent->GetTracingController());
 
     v8::Isolate* isolate = gin_env.isolate();
 
