@@ -2451,6 +2451,12 @@ A `boolean` property that determines whether caret browsing is enabled for this 
 
 When enabled, a movable cursor is placed in the page's text, allowing the user to navigate and select content with the keyboard. Changes take effect immediately without reloading the page.
 
+While any `WebContents` in the process has caret browsing enabled, assistive
+technology is notified process-wide that caret browsing is active, so that screen
+readers report the caret's position as it moves. That notification is only
+withdrawn once every `WebContents` that enabled caret browsing has either
+disabled it or been destroyed.
+
 #### `contents.userAgent`
 
 A `string` property that determines the user agent for this web page.

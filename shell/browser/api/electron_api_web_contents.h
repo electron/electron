@@ -520,6 +520,8 @@ class WebContents final : public ExclusiveAccessContext,
                              extensions::mojom::ViewType view_type);
 #endif
 
+  void ReconcileCaretBrowsingCount(bool enabled);
+
   // content::WebContentsDelegate:
   void WebContentsCreatedWithFullParams(
       content::WebContents* source_contents,
@@ -830,6 +832,10 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
+
+  // Whether this WebContents currently contributes to the process-wide caret
+  // browsing refcount.
+  bool caret_browsing_counted_ = false;
 
   // Whether to enable devtools.
   bool enable_devtools_ = true;

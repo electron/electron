@@ -2323,6 +2323,32 @@ describe('webContents module', () => {
       expect(w.webContents.caretBrowsingEnabled).to.be.true();
     });
 
+    // Test that repeated calls aren't incorrectly incrementing/decrementing the underlying refcount
+    it('can be enabled repeatedly without poisoning future calls', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+
+      w.webContents.caretBrowsingEnabled = false;
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    // Test that repeated calls aren't incorrectly decrementing the underlying refcount
+    it('can be disabled repeatedly without poisoning future calls', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+
+      w.webContents.caretBrowsingEnabled = false;
+      w.webContents.caretBrowsingEnabled = false;
+      w.webContents.caretBrowsingEnabled = false;
+
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
     it('persists across navigation', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.caretBrowsingEnabled = true;
@@ -2330,6 +2356,38 @@ describe('webContents module', () => {
       await w.loadURL('about:blank');
 
       expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    it('tracks each WebContents independently', () => {
+      const w1 = new BrowserWindow({ show: false });
+      const w2 = new BrowserWindow({ show: false });
+
+      w1.webContents.caretBrowsingEnabled = true;
+      w2.webContents.caretBrowsingEnabled = true;
+
+      w1.webContents.caretBrowsingEnabled = false;
+
+      expect(w1.webContents.caretBrowsingEnabled).to.be.false();
+      expect(w2.webContents.caretBrowsingEnabled).to.be.true();
+
+      w2.webContents.caretBrowsingEnabled = false;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('can be enabled again after a WebContents is destroyed with it enabled', async () => {
+      const w1 = new BrowserWindow({ show: false });
+      w1.webContents.caretBrowsingEnabled = true;
+
+      const destroyed = once(w1.webContents, 'destroyed');
+      w1.close();
+      await destroyed;
+
+      const w2 = new BrowserWindow({ show: false });
+      w2.webContents.caretBrowsingEnabled = true;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.true();
+
+      w2.webContents.caretBrowsingEnabled = false;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.false();
     });
 
     describe('renderer-side caret movement', () => {
@@ -2393,6 +2451,38 @@ describe('webContents module', () => {
         ).catch(() => {});
 
         expect(offset).to.equal(0);
+      });
+    });
+
+    describe('guest preference inheritance', () => {
+      it('inherits caretBrowsingEnabled in a guest webview', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+        w.webContents.caretBrowsingEnabled = true;
+
+        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+        const [, guest] = await created;
+
+        expect(guest.getType()).to.equal('webview');
+        expect(guest.caretBrowsingEnabled).to.be.true();
+      });
+
+      it('releases exactly one reference when an inherited preference is disabled', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+        w.webContents.caretBrowsingEnabled = true;
+
+        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+        const [, guest] = await created;
+
+        expect(guest.caretBrowsingEnabled).to.be.true();
+
+        w.webContents.caretBrowsingEnabled = false;
+
+        // The setter updates the process-wide refcount as a side effect. Improper
+        // book-keeping would take the count below zero, which aborts the process
+        // under dcheck_always_on rather than failing an assertion here.
+        guest.caretBrowsingEnabled = false;
       });
     });
   });

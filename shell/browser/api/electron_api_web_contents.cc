@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_web_contents.h"
 
+#include <algorithm>
 #include <limits>
 #include <list>
 #include <memory>
@@ -166,6 +167,7 @@
 #include "third_party/blink/public/mojom/frame/fullscreen.mojom.h"
 #include "third_party/blink/public/mojom/messaging/transferable_message.mojom.h"
 #include "third_party/blink/public/mojom/renderer_preferences.mojom.h"
+#include "ui/accessibility/platform/ax_platform.h"
 #include "ui/base/cursor/cursor.h"
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/base/mojom/menu_source_type.mojom.h"
@@ -439,6 +441,18 @@ namespace {
 
 // Global toggle for disabling draggable regions checks.
 bool g_disable_draggable_regions = false;
+
+// Number of WebContents with caret browsing enabled.
+int g_caret_browsing_count = 0;
+
+void AdjustCaretBrowsingCount(int delta) {
+  // g_caret_browsing_count should never be negative. This shouldn't be
+  // possible, but it's cheap to ensure and log in dev.
+  DCHECK_GE(g_caret_browsing_count + delta, 0);
+  g_caret_browsing_count = std::max(0, g_caret_browsing_count + delta);
+  const bool any_enabled = g_caret_browsing_count > 0;
+  ui::AXPlatform::GetInstance().SetCaretBrowsingState(any_enabled);
+}
 
 #if BUILDFLAG(ENABLE_PRINTING)
 // Constants we use for printing.
@@ -804,6 +818,11 @@ WebContents::WebContents(v8::Isolate* isolate,
       print_task_runner_(CreatePrinterHandlerTaskRunner())
 #endif
 {
+  // A Type::kRemote WebContents returns from InitWithExtensionView() before the
+  // funnel below, so it takes its caret browsing reference here instead.
+  ReconcileCaretBrowsingCount(
+      web_contents->GetMutableRendererPrefs()->caret_browsing_enabled);
+
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebContents created by extension host will have valid ViewType set.
   extensions::mojom::ViewType view_type = extensions::GetViewType(web_contents);
@@ -1139,6 +1158,12 @@ void WebContents::InitWithWebContents(
   browser_context_ = browser_context;
   web_contents->SetDelegate(this);
 
+  // A <webview> guest is created with a copy of its embedder's renderer
+  // preferences, so caret browsing may already be enabled. Every path that
+  // adopts a content::WebContents funnels through here.
+  ReconcileCaretBrowsingCount(
+      web_contents->GetMutableRendererPrefs()->caret_browsing_enabled);
+
   // TODO: This works for main frames, but does not work for child frames.
   // See: https://github.com/electron/electron/issues/49256
   web_contents->SetSupportsDraggableRegions(true);
@@ -1159,6 +1184,12 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  // Release this instance's contribution to the process-wide caret browsing
+  // refcount. Runs before any of the early returns below so a WebContents
+  // destroyed with caret browsing on cannot leak a count and pin the platform
+  // state on forever.
+  ReconcileCaretBrowsingCount(false);
+
   // A queued DevTools embedder-message IPC (e.g. "loadCompleted") can be
   // dispatched after this WebContents has begun teardown. Both delegate
   // interfaces it can call back into (DevToolsOpened()/DevToolsClosed() on the
@@ -3002,9 +3033,27 @@ bool WebContents::IsCaretBrowsingEnabled() const {
   return web_contents()->GetMutableRendererPrefs()->caret_browsing_enabled;
 }
 
+// The renderer preference alone only makes Blink draw the caret; a screen
+// reader reports its position only while ui::AXPlatform is told too. AXPlatform
+// is process-wide, so a count drives it: mirroring one instance's value would
+// let one window disabling caret browsing degrade accessibility in another.
+void WebContents::ReconcileCaretBrowsingCount(bool enabled) {
+  if (caret_browsing_counted_ == enabled)
+    return;
+  caret_browsing_counted_ = enabled;
+  AdjustCaretBrowsingCount(enabled ? 1 : -1);
+}
+
 void WebContents::SetCaretBrowsingEnabled(bool enabled) {
   auto* prefs = web_contents()->GetMutableRendererPrefs();
-  if (prefs->caret_browsing_enabled == enabled)
+  const bool pref_changed = prefs->caret_browsing_enabled != enabled;
+
+  // Reconcile before the early return below. An inherited-but-uncounted
+  // preference (see InitWithWebContents) means the preference and the
+  // count can disagree, so a no-op for the preference is not one for the count.
+  ReconcileCaretBrowsingCount(enabled);
+
+  if (!pref_changed)
     return;
   prefs->caret_browsing_enabled = enabled;
   web_contents()->SyncRendererPrefs();
