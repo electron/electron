@@ -5,12 +5,17 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_CLIENT_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_AUTHENTICATOR_REQUEST_CLIENT_DELEGATE_H_
 
+#include <memory>
+#include <string>
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "base/scoped_observation.h"
+#include "build/build_config.h"
 #include "content/public/browser/authenticator_request_client_delegate.h"
 #include "content/public/browser/global_routing_id.h"
+#include "device/fido/fido_discovery_base.h"
+#include "device/fido/fido_request_handler_base.h"
 
 namespace content {
 class RenderFrameHost;
@@ -55,14 +60,33 @@ class ElectronAuthenticatorRequestClientDelegate
       std::vector<device::AuthenticatorGetAssertionResponse> responses,
       base::OnceCallback<void(device::AuthenticatorGetAssertionResponse)>
           callback) override;
+  bool EmbedderControlsAuthenticatorDispatch(
+      const device::FidoAuthenticator& authenticator) override;
+  void FidoAuthenticatorAdded(
+      const device::FidoAuthenticator& authenticator) override;
+  void OnTransportAvailabilityEnumerated(
+      device::FidoRequestHandlerBase::TransportAvailabilityInfo data) override;
+#if BUILDFLAG(IS_MAC)
+  std::vector<std::unique_ptr<device::FidoDiscoveryBase>>
+  CreatePlatformDiscoveries() override;
+#endif
 
  private:
+  struct PendingAuthenticator {
+    std::string id;
+    std::string display_name;
+  };
+
   void OnAccountSelected(gin::Arguments* args);
   void CancelPendingAccountSelection();
+  void MaybeEmitSelectAuthenticatorEvent();
+  void DispatchDefaultAuthenticator();
+  void OnAuthenticatorSelected(gin::Arguments* args);
 
   const content::GlobalRenderFrameHostId render_frame_host_id_;
   std::string relying_party_id_;
   base::OnceClosure cancel_callback_;
+  device::FidoRequestHandlerBase::RequestCallback request_callback_;
 
   base::ScopedObservation<device::FidoRequestHandlerBase,
                           device::FidoRequestHandlerBase::Observer>
@@ -71,6 +95,9 @@ class ElectronAuthenticatorRequestClientDelegate
   std::vector<device::AuthenticatorGetAssertionResponse> pending_responses_;
   base::OnceCallback<void(device::AuthenticatorGetAssertionResponse)>
       select_account_callback_;
+
+  std::vector<PendingAuthenticator> pending_authenticators_;
+  bool controls_dispatch_ = false;
 
   base::WeakPtrFactory<ElectronAuthenticatorRequestClientDelegate>
       weak_factory_{this};
