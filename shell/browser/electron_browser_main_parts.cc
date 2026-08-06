@@ -536,8 +536,6 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
     watchdog->Arm();
     if (Browser* browser = Browser::Get())
       browser->ExitWithCode(content::RESULT_CODE_NORMAL_EXIT);
-    else
-      LOG(FATAL) << "Failed to shutdown.";
   });
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
       std::move(shutdown_cb),
