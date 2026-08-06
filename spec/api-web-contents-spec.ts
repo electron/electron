@@ -2034,11 +2034,11 @@ describe('webContents module', () => {
 
         try {
           const lock = await navigator.wakeLock.request("screen");
-          wakeLockAvailability = (wakeLock !== null && !wakeLock.released);
+          wakeLockAvailability = (lock !== null && !lock.released);
           lock.addEventListener("release", () => {
             wakeLockAvailability = false;
           });
-        } catch () {
+        } catch {
           wakeLockAvailability = false;
         }
         
