@@ -50,6 +50,9 @@ class ElectronRendererClient : public RendererClientBase {
   void WillDestroyWorkerContextOnWorkerThread(
       v8::Local<v8::Context> context) override;
   void SetUpWebAssemblyTrapHandler() override;
+  std::unique_ptr<media::KeySystemSupportRegistration> GetSupportedKeySystems(
+      content::RenderFrame* render_frame,
+      media::GetSupportedKeySystemsCB cb) override;
 
   node::Environment* GetEnvironment(content::RenderFrame* frame) const;
 
