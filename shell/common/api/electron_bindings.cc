@@ -32,7 +32,9 @@
 namespace electron {
 
 ElectronBindings::ElectronBindings(uv_loop_t* loop) {
-  uv_async_init(loop, call_next_tick_async_.get(), OnCallNextTick);
+  call_next_tick_async_.Init([loop](uv_async_t* handle) {
+    return uv_async_init(loop, handle, OnCallNextTick);
+  });
   call_next_tick_async_.get()->data = this;
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }

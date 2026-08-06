@@ -64,13 +64,17 @@ class UvHandle {
 
   explicit UvHandle(UvHandle&& that) {
     t_ = that.t_;
+    initialized_ = that.initialized_;
     that.t_ = nullptr;
+    that.initialized_ = false;
   }
 
   UvHandle& operator=(UvHandle&& that) {
     reset();
     t_ = that.t_;
+    initialized_ = that.initialized_;
     that.t_ = nullptr;
+    that.initialized_ = false;
     return *this;
   }
 
@@ -87,12 +91,27 @@ class UvHandle {
   // compare by handle pointer address
   auto operator<=>(const UvHandle& that) const = default;
 
+  // Record whether libuv successfully initialized the handle so reset() can
+  // choose the matching cleanup path.
+  template <typename InitCallback>
+  int Init(InitCallback init_callback) {
+    const int result = init_callback(t_);
+    initialized_ = result == 0;
+    return result;
+  }
+
   void reset() {
     auto* h = handle();
     if (h != nullptr) {
+      if (!initialized_) {
+        delete t_;
+        t_ = nullptr;
+        return;
+      }
       DCHECK_EQ(0, uv_is_closing(h));
       uv_close(h, OnClosed);
       t_ = nullptr;
+      initialized_ = false;
     }
   }
 
@@ -102,6 +121,9 @@ class UvHandle {
   }
 
   RAW_PTR_EXCLUSION T* t_ = {};
+  // Uninitialized handle memory is not owned by libuv and must not be passed
+  // to uv_close().
+  bool initialized_ = false;
 };
 
 // Helper for comparing UvHandles and raw uv pointers, e.g. as map keys

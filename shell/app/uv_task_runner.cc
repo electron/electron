@@ -26,7 +26,8 @@ bool UvTaskRunner::PostDelayedTask(const base::Location& from_here,
 
   auto timer = UvHandle<uv_timer_t>{};
   timer->data = this;
-  uv_timer_init(loop_, timer.get());
+  timer.Init(
+      [this](uv_timer_t* handle) { return uv_timer_init(loop_, handle); });
   uv_timer_start(timer.get(), on_timeout, delay.InMilliseconds(), 0);
   tasks_.insert_or_assign(std::move(timer), std::move(task));
   return true;

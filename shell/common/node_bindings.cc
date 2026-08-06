@@ -1065,7 +1065,9 @@ void NodeBindings::PrepareEmbedThread() {
   if (!embed_thread_prepared_) {
     // Add dummy handle for libuv, otherwise libuv would quit when there is
     // nothing to do.
-    uv_async_init(uv_loop_, dummy_uv_handle_.get(), nullptr);
+    dummy_uv_handle_.Init([this](uv_async_t* handle) {
+      return uv_async_init(uv_loop_, handle, nullptr);
+    });
 
     // Start worker that will interrupt main loop when having uv events.
     uv_sem_init(&embed_sem_, 0);
