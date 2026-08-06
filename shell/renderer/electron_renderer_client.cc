@@ -146,7 +146,11 @@ void ElectronRendererClient::DidCreateScriptContext(
   NodeBindings* node_bindings = frame_env->node_bindings;
 
   // Setup node tracing controller.
-  NodeBindings::InitializeTracingAgent();
+  static const node::tracing::Agent* const tracing_agent =
+      NodeBindings::InitializeTracingAgent(
+          /*use_standalone_perfetto_client=*/false)
+          .release();
+  CHECK_EQ(tracing_agent, nullptr);
 
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);

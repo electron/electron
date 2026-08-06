@@ -264,10 +264,14 @@ int NodeMain() {
     // Initialize gin::IsolateHolder.
     // Node.js now exposes fetch unconditionally, so WASM streaming (which
     // relies on the fetch Response object) is always set up here.
+    auto tracing_agent = NodeBindings::InitializeTracingAgent(
+        /*use_standalone_perfetto_client=*/true);
+    CHECK(tracing_agent);
     // When this build embeds a Node startup snapshot (native builds) the
     // isolate is created from it and no context exists yet; otherwise a fresh
     // context was created and entered.
-    JavascriptEnvironment gin_env(loop, /*setup_wasm_streaming=*/true);
+    JavascriptEnvironment gin_env(loop, /*setup_wasm_streaming=*/true,
+                                  tracing_agent->GetTracingController());
     const node::SnapshotData* const snapshot =
         JavascriptEnvironment::NodeSnapshot();
 

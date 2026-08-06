@@ -1,0 +1,365 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 7 Aug 2026 01:16:07 +0900
+Subject: fix: use embedder perfetto client when available
+
+Node.js v24.19.0 introduces a standalone perfetto SDK tracing agent which
+initializes an in-process backend, creates independent tracing sessions,
+and writes pftrace files. Electron already owns a process wide perfetto
+client through Chromium, so creating Node.js owned clients in browser,
+renderer processes duplicates tracing infrastructure and produces recording
+state independent of contentTracing.
+
+Keep Node.js standalone SDK capability behind `node_use_perfetto_sdk` for
+ELECTRON_RUN_AS_NODE.
+
+For embedded Electron processes, do not create Node.js tracing Agent.
+Instead, register Node.js TrackEvent data source with Chromium
+perfetto client. This preserves node.* event emission while
+allowing contentTracing to remain the sole owner of category filtering,
+recording sessions, output, and lifecycle.
+
+diff --git a/node.gni b/node.gni
+index fb7462cc0c7c2e267847c54e7e1ff4db1559b338..f66d9699c7e77ffaa7c6fa706e36f7000360b892 100644
+--- a/node.gni
++++ b/node.gni
+@@ -50,6 +50,10 @@ declare_args() {
+   # Initialize v8 platform during node.js startup.
+   node_use_v8_platform = false
+ 
++  # Include Node's standalone Perfetto client. Electron retains it for
++  # ELECTRON_RUN_AS_NODE while regular Electron processes use Chromium's client.
++  node_use_perfetto_sdk = true
++
+   # Custom build tag.
+   node_tag = ""
+ 
+diff --git a/src/async_wrap.cc b/src/async_wrap.cc
+index b7d0041d0737f7e0315216748e3a5908428c7d1c..b48efd7e1a611dddb5724d65d623c8a20168d252 100644
+--- a/src/async_wrap.cc
++++ b/src/async_wrap.cc
+@@ -110,8 +110,7 @@ void AsyncWrap::EmitPromiseResolve(Environment* env, double async_id) {
+ }
+ 
+ void AsyncWrap::EmitTraceAsyncStart() const {
+-  if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-          TRACING_CATEGORY_NODE1(async_hooks))) {
++  if (NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(async_hooks))) {
+     tracing::AsyncWrapArgs data(env()->execution_async_id(),
+                                 get_trigger_async_id());
+     TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(async_hooks),
+diff --git a/src/env.cc b/src/env.cc
+index 0d55a07a01519718098ac1b041ff984f68a6087b..4494eea9c108b96e1edb7352c88417751cc960ce 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -647,8 +647,8 @@ void TrackingTraceStateObserver::UpdateTraceCategoryState() {
+     return;
+   }
+ 
+-  bool async_hooks_enabled = (*(TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-                                 TRACING_CATEGORY_NODE1(async_hooks)))) != 0;
++  bool async_hooks_enabled =
++      NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(async_hooks));
+ 
+   Isolate* isolate = env_->isolate();
+   HandleScope handle_scope(isolate);
+@@ -889,8 +889,7 @@ Environment::Environment(IsolateData* isolate_data,
+       time_origin_timestamp_,
+       MAYBE_FIELD_PTR(env_info, performance_state));
+ 
+-  if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-          TRACING_CATEGORY_NODE1(environment)) != 0) {
++  if (NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE1(environment))) {
+     tracing::EnvironmentArgs traced_value(args, exec_args);
+     TRACE_EVENT_NESTABLE_ASYNC_BEGIN1(TRACING_CATEGORY_NODE1(environment),
+                                       "Environment",
+diff --git a/src/node_contextify.cc b/src/node_contextify.cc
+index b34026bb088ca966cf4a0752ed4dbd80d13f016a..ef4075729539cb0c53f7f2cabfcf435c4f76f4e2 100644
+--- a/src/node_contextify.cc
++++ b/src/node_contextify.cc
+@@ -1050,8 +1050,7 @@ void ContextifyScript::New(const FunctionCallbackInfo<Value>& args) {
+ 
+   ContextifyScript* contextify_script = New(env, args.This());
+ 
+-  if (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
+-          TRACING_CATEGORY_NODE2(vm, script)) != 0) {
++  if (NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(vm, script))) {
+     Utf8Value fn(isolate, filename);
+     TRACE_EVENT_BEGIN1(TRACING_CATEGORY_NODE2(vm, script),
+                        "ContextifyScript::New",
+diff --git a/src/node_dir.cc b/src/node_dir.cc
+index 952161d9e2cf1c92c3600fc2da0af594cc3f53bd..17976d01e4f4f2bf87a38a4fdb36fc70dbb6bec3 100644
+--- a/src/node_dir.cc
++++ b/src/node_dir.cc
+@@ -61,8 +61,7 @@ static const char* get_dir_func_name_by_type(uv_fs_type req_type) {
+ 
+ #define TRACE_NAME(name) "fs_dir.sync." #name
+ #define GET_TRACE_ENABLED                                                      \
+-  (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(                                \
+-       TRACING_CATEGORY_NODE2(fs_dir, sync)) != 0)
++  NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(fs_dir, sync))
+ #define FS_DIR_SYNC_TRACE(syscall)                                             \
+   if (GET_TRACE_ENABLED) {                                                     \
+     TRACE_EVENT0(TRACING_CATEGORY_NODE2(fs_dir, sync), TRACE_NAME(syscall));   \
+diff --git a/src/node_file.cc b/src/node_file.cc
+index 396654cef717c5c1cb67fb290b570ea9e015ff6f..854c7396d97c94cf6655f8a19e75065e8541e82f 100644
+--- a/src/node_file.cc
++++ b/src/node_file.cc
+@@ -147,8 +147,7 @@ static const char* get_fs_func_name_by_type(uv_fs_type req_type) {
+ 
+ #define TRACE_NAME(name) "fs.sync." #name
+ #define GET_TRACE_ENABLED                                                      \
+-  (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(                                \
+-       TRACING_CATEGORY_NODE2(fs, sync)) != 0)
++  NODE_TRACE_CATEGORY_ENABLED(TRACING_CATEGORY_NODE2(fs, sync))
+ #define FS_SYNC_TRACE_BEGIN(syscall, ...)                                      \
+   if (GET_TRACE_ENABLED)                                                       \
+     TRACE_EVENT_BEGIN(                                                         \
+diff --git a/src/node_internals.h b/src/node_internals.h
+index 24c5dbe405d69ceb0e515aeaa6b26233bb2943a9..3504c170e0c335274166a5666695b49d4a06c957 100644
+--- a/src/node_internals.h
++++ b/src/node_internals.h
+@@ -315,7 +315,14 @@ class ThreadPoolWork {
+   const char* type_;
+ };
+ 
+-#if !defined(V8_USE_PERFETTO)
++#if defined(V8_USE_PERFETTO)
++#define TRACING_CATEGORY_NODE "node"
++#define TRACING_CATEGORY_NODE1(one) TRACING_CATEGORY_NODE "." #one
++#define TRACING_CATEGORY_NODE2(one, two) \
++  TRACING_CATEGORY_NODE "." #one "." #two
++#define NODE_TRACE_CATEGORY_ENABLED(category) \
++  TRACE_EVENT_CATEGORY_ENABLED(category)
++#else
+ #define TRACING_CATEGORY_NODE "node"
+ #define TRACING_CATEGORY_NODE1(one)                                           \
+     TRACING_CATEGORY_NODE ","                                                 \
+@@ -324,7 +331,9 @@ class ThreadPoolWork {
+     TRACING_CATEGORY_NODE ","                                                 \
+     TRACING_CATEGORY_NODE "." #one ","                                        \
+     TRACING_CATEGORY_NODE "." #one "." #two
+-  #endif  // !defined(V8_USE_PERFETTO)
++#define NODE_TRACE_CATEGORY_ENABLED(category) \
++  (*TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(category) != 0)
++#endif
+ 
+ // Functions defined in node.cc that are exposed via the bootstrapper object
+ 
+diff --git a/src/node_trace_events.cc b/src/node_trace_events.cc
+index 412b5b67b35dfd192af04485e9c858f9862e9e0a..2fc6f4d338ffcbdb57236af5d121279e61156299 100644
+--- a/src/node_trace_events.cc
++++ b/src/node_trace_events.cc
+@@ -75,7 +75,6 @@ void NodeCategorySet::New(const FunctionCallbackInfo<Value>& args) {
+     if (!*val) return;
+     categories.emplace(*val);
+   }
+-  CHECK_NOT_NULL(tracing::Agent::GetInstance());
+   new NodeCategorySet(env, args.This(), std::move(categories));
+ }
+ 
+@@ -85,17 +84,20 @@ void NodeCategorySet::Enable(const FunctionCallbackInfo<Value>& args) {
+   CHECK_NOT_NULL(category_set);
+   const auto& categories = category_set->GetCategories();
+   if (!category_set->enabled_ && !categories.empty()) {
+-    THROW_IF_INSUFFICIENT_PERMISSIONS(
+-        category_set->env(),
+-        permission::PermissionScope::kFileSystemWrite,
+-        tracing::GetTraceFilePath(
+-            per_process::cli_options->trace_event_file_pattern, 1));
+-    // Starts the Tracing Agent if it wasn't started already (e.g. through
+-    // a command line flag.)
+     auto* agent = tracing::Agent::GetInstance();
+-    agent->StartTracing(per_process::cli_options->trace_event_categories);
+-    tracing::AgentWriterHandle* writer = agent->GetDefaultWriterHandle();
+-    writer->Enable(categories);
++    if (agent != nullptr) {
++      THROW_IF_INSUFFICIENT_PERMISSIONS(
++          category_set->env(),
++          permission::PermissionScope::kFileSystemWrite,
++          tracing::GetTraceFilePath(
++              per_process::cli_options->trace_event_file_pattern, 1));
++
++      // Starts the Tracing Agent if it wasn't started already (e.g. through
++      // a command line flag.)
++      agent->StartTracing(per_process::cli_options->trace_event_categories);
++      tracing::AgentWriterHandle* writer = agent->GetDefaultWriterHandle();
++      writer->Enable(categories);
++    }
+     category_set->enabled_ = true;
+   }
+ }
+@@ -107,16 +109,19 @@ void NodeCategorySet::Disable(const FunctionCallbackInfo<Value>& args) {
+   const auto& categories = category_set->GetCategories();
+   if (category_set->enabled_ && !categories.empty()) {
+     auto* agent = tracing::Agent::GetInstance();
+-    tracing::AgentWriterHandle* writer = agent->GetDefaultWriterHandle();
+-    writer->Disable(categories);
++    if (agent != nullptr) {
++      tracing::AgentWriterHandle* writer = agent->GetDefaultWriterHandle();
++      writer->Disable(categories);
++    }
+     category_set->enabled_ = false;
+   }
+ }
+ 
+ void GetEnabledCategories(const FunctionCallbackInfo<Value>& args) {
+   Environment* env = Environment::GetCurrent(args);
++  auto* agent = tracing::Agent::GetInstance();
+   std::string categories =
+-      tracing::Agent::GetInstance()->GetEnabledCategories();
++      agent == nullptr ? std::string() : agent->GetEnabledCategories();
+   Local<Value> ret;
+   if (!categories.empty() &&
+       ToV8Value(env->context(), categories, env->isolate()).ToLocal(&ret)) {
+@@ -137,8 +142,12 @@ static void GetCategoryEnabledBuffer(const FunctionCallbackInfo<Value>& args) {
+   Isolate* isolate = args.GetIsolate();
+   node::Utf8Value category_name(isolate, args[0]);
+ 
++  static const uint8_t disabled = 0;
++  auto* agent = tracing::Agent::GetInstance();
+   const uint8_t* enabled_pointer =
+-      TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(category_name.out());
++      agent == nullptr ? &disabled
++                       : TRACE_EVENT_API_GET_CATEGORY_GROUP_ENABLED(
++                             category_name.out());
+   uint8_t* enabled_pointer_cast = const_cast<uint8_t*>(enabled_pointer);
+   uint8_t size = sizeof(*enabled_pointer_cast);
+ 
+diff --git a/src/tracing/agent.cc b/src/tracing/agent.cc
+index 6d80a4797461683315f9f51266a34a2c00e4c937..eeab4d3b37419e647f212ce6886feaa20fe0a1e4 100644
+--- a/src/tracing/agent.cc
++++ b/src/tracing/agent.cc
+@@ -23,11 +23,15 @@ void Agent::Deleter::operator()(Agent* agent) {
+ std::unique_ptr<Agent, Agent::Deleter> Agent::CreateDefault() {
+   CHECK_NULL(g_agent);
+ 
+-  auto agent = new PerfettoTracingAgent();
+-
++#if NODE_USE_PERFETTO_SDK
++  Agent* agent = new PerfettoTracingAgent();
+   g_agent = agent;
+   TraceEventHelper::SetTracingController(agent->GetTracingController());
+   return std::unique_ptr<Agent, Agent::Deleter>(agent);
++#else
++  CHECK(false) << "Node was built without its standalone Perfetto client";
++  return nullptr;
++#endif
+ }
+ 
+ }  // namespace tracing
+diff --git a/src/tracing/agent.h b/src/tracing/agent.h
+index 51d8a992342b54addd892fb77b21a66d09ada486..0818751892fca402c6ae2bd1aead09cc408e6471 100644
+--- a/src/tracing/agent.h
++++ b/src/tracing/agent.h
+@@ -3,6 +3,10 @@
+ 
+ #if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
+ 
++#ifndef NODE_USE_PERFETTO_SDK
++#define NODE_USE_PERFETTO_SDK 1
++#endif
++
+ // This defines a compatible agent interface for both the legacy V8
+ // tracing and the Perfetto tracing. The interface is designed to be
+ // used by the rest of the Node.js codebase that only generates
+@@ -50,6 +54,7 @@ class Agent {
+   struct Deleter {
+     void operator()(Agent* agent);
+   };
++
+   static std::unique_ptr<Agent, Deleter> CreateDefault();
+   static Agent* GetInstance();
+ 
+diff --git a/src/tracing/agent_perfetto.cc b/src/tracing/agent_perfetto.cc
+index 98d70037777a28910239aac866ebd41636b351fd..9f675b1e72dce492ac1f868d269e64a87a4dd4f6 100644
+--- a/src/tracing/agent_perfetto.cc
++++ b/src/tracing/agent_perfetto.cc
+@@ -1,5 +1,7 @@
+ #include "tracing/agent_perfetto.h"
+ 
++#if NODE_USE_PERFETTO_SDK
++
+ #include <cstdio>
+ #include <string>
+ #include "debug_utils-inl.h"
+@@ -451,3 +453,5 @@ perfetto::TraceConfig PerfettoTracingAgent::CreateTraceConfig(
+ 
+ }  // namespace tracing
+ }  // namespace node
++
++#endif  // NODE_USE_PERFETTO_SDK
+diff --git a/src/tracing/agent_perfetto.h b/src/tracing/agent_perfetto.h
+index 0d74ca5332b018e28182f7181289099ee8bc75d5..a8ffa932482efa3a895e9db550ca81bc43fc524a 100644
+--- a/src/tracing/agent_perfetto.h
++++ b/src/tracing/agent_perfetto.h
+@@ -3,10 +3,13 @@
+ 
+ #if defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
+ 
++#include "tracing/agent.h"
++
++#if NODE_USE_PERFETTO_SDK
++
+ #include "perfetto/tracing.h"
+ #include "perfetto/tracing/core/trace_config.h"
+ #include "node_mutex.h"
+-#include "tracing/agent.h"
+ #include "tracing/trace_event_perfetto.h"
+ #include "util.h"
+ #include "uv.h"
+@@ -142,6 +145,8 @@ class PerfettoTracingAgent final : public Agent {
+ 
+ }  // namespace node::tracing
+ 
++#endif  // NODE_USE_PERFETTO_SDK
++
+ #endif  // defined(NODE_WANT_INTERNALS) && NODE_WANT_INTERNALS
+ 
+ #endif  // SRC_TRACING_AGENT_PERFETTO_H_
+diff --git a/src/tracing/trace_event_perfetto.cc b/src/tracing/trace_event_perfetto.cc
+index 87227b95fd56162a9f577bed4d44bafd0f6a8701..158708f7797ac67c9ac49778b15d61e2ccba3487 100644
+--- a/src/tracing/trace_event_perfetto.cc
++++ b/src/tracing/trace_event_perfetto.cc
+@@ -2,4 +2,12 @@
+ 
+ #if defined(V8_USE_PERFETTO)
+ PERFETTO_TRACK_EVENT_STATIC_STORAGE_IN_NAMESPACE(node);
++
++namespace node::tracing {
++
++void RegisterPerfettoTrackEvent() {
++  node::TrackEvent::Register();
++}
++
++}  // namespace node::tracing
+ #endif
+diff --git a/src/tracing/trace_event_perfetto.h b/src/tracing/trace_event_perfetto.h
+index 3765d931f8e17b33e2201ff3a0e4be84a3216356..17b990455e7d6a791998ab304418c2566df2ceaa 100644
+--- a/src/tracing/trace_event_perfetto.h
++++ b/src/tracing/trace_event_perfetto.h
+@@ -48,4 +48,8 @@ PERFETTO_DEFINE_CATEGORIES_IN_NAMESPACE(
+ PERFETTO_USE_CATEGORIES_FROM_NAMESPACE(node);
+ #endif
+ 
++namespace node::tracing {
++void RegisterPerfettoTrackEvent();
++}  // namespace node::tracing
++
+ #endif  // SRC_TRACING_TRACE_EVENT_PERFETTO_H_
+diff --git a/unofficial.gni b/unofficial.gni
+index f54840a3cf67c9fe3c016ac830deb21c6880e7c9..a47f5ffeeaba20660742c632a6c839e783142a9b 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -42,6 +42,11 @@ template("node_gn_build") {
+     } else {
+       defines += [ "NODE_USE_V8_PLATFORM=0" ]
+     }
++    if (node_use_perfetto_sdk) {
++      defines += [ "NODE_USE_PERFETTO_SDK=1" ]
++    } else {
++      defines += [ "NODE_USE_PERFETTO_SDK=0" ]
++    }
+     if (node_enable_inspector) {
+       defines += [ "HAVE_INSPECTOR=1" ]
+     } else {
