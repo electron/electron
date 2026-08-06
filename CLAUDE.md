@@ -267,12 +267,12 @@ GitHub Actions workflows in `.github/workflows/`:
 
 ### Reading audit findings
 
-These workflows upload their findings as a build artifact named `audit-results` because GitHub Actions step summaries cannot be read via the API:
+These workflows upload their findings as a build artifact named `audit-results.md` because GitHub Actions step summaries cannot be read via the API:
 
 - `.github/workflows/audit-branch-ci.yml` - Table of release-branch CI runs that errored
 - `.github/workflows/archaeologist-dig.yml` - The `electron.d.ts` diff report ("Changes Detected" patch, or a no-changes note)
 
-Agents should download the `audit-results` artifact from the workflow run (`GET /repos/electron/electron/actions/runs/{run_id}/artifacts`) to read the findings.
+The artifact is uploaded unarchived (`archive: false`), so it downloads as raw markdown — no unzipping needed. Agents should list the run's artifacts (`GET /repos/electron/electron/actions/runs/{run_id}/artifacts`), find the one named `audit-results.md`, and fetch its `archive_download_url` to read the findings directly.
 
 ## Common Issues
 
