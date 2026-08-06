@@ -79,7 +79,9 @@ The commit message MUST be exactly `chore: update patches` — no qualifier, no 
 
 ## Atomic Commits
 
-Each patch conflict fix gets its own commit with its own Ref.
+Each patch conflict fix gets its own commit with its own Ref — one commit per upstream CL.
+
+Never combine unrelated upstream CLs into one commit. Two CLs touching the same `.patch` file is NOT a relationship: when a single patch file contains hunks caused by different upstream CLs (e.g., a formatting CL and an API-removal CL that both drifted the same patch), stage per CL with `git add -p` and commit each CL's hunks separately, so each commit contains only the changes its own CL caused. Multiple `Ref:` lines in one commit are only for changes genuinely motivated by those CLs together (such as the grouped `chore: remove upstreamed patches` case above).
 
 IMPORTANT: Try really hard to find the CL reference per the instructions below. Each change you made should in theory have been in response to a change made in Chromium that you identified or can identify. Try for a while to identify and include the ref in the commit message. Do not give up easily.
 
