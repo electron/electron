@@ -19,8 +19,6 @@
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/serial.mojom-forward.h"
-#include "url/gurl.h"
-#include "url/origin.h"
 
 namespace base {
 class Value;
@@ -30,6 +28,10 @@ namespace mojo {
 template <typename T>
 class PendingRemote;
 }  // namespace mojo
+
+namespace url {
+class Origin;
+}  // namespace url
 
 namespace electron {
 
