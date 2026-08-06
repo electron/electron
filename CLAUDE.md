@@ -265,7 +265,14 @@ GitHub Actions workflows in `.github/workflows/`:
 - `pipeline-electron-lint.yml` - Linting
 - `pipeline-segment-electron-test.yml` - Testing
 
-Audit/CI workflows upload their findings as an `audit-results` artifact on each run because step summaries are not API-accessible; agents should download that artifact for details.
+### Reading audit findings
+
+These workflows upload their findings as a build artifact named `audit-results` because GitHub Actions step summaries cannot be read via the API:
+
+- `.github/workflows/audit-branch-ci.yml` - Table of release-branch CI runs that errored
+- `.github/workflows/archaeologist-dig.yml` - The `electron.d.ts` diff report ("Changes Detected" patch, or a no-changes note)
+
+Agents should download the `audit-results` artifact from the workflow run (`GET /repos/electron/electron/actions/runs/{run_id}/artifacts`) to read the findings.
 
 ## Common Issues
 
