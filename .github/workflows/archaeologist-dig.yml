@@ -70,4 +70,12 @@ jobs:
             echo "## No Changes" > $GITHUB_STEP_SUMMARY
             echo "We couldn't see any changes in the \`electron.d.ts\` artifact" >> $GITHUB_STEP_SUMMARY
           fi
+          cp "$GITHUB_STEP_SUMMARY" "$GITHUB_WORKSPACE/audit-results.md"
         working-directory: ./electron/artifacts
+      - name: Upload audit results artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+        with:
+          name: audit-results
+          path: audit-results.md
+          if-no-files-found: warn

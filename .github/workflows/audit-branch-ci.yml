@@ -154,7 +154,15 @@ jobs:
               core.summary.addRaw('🎉 No runs with errors');
             }
 
+            require('fs').writeFileSync(`${process.env.GITHUB_WORKSPACE}/audit-results.md`, core.summary.stringify());
             await core.summary.write();
+      - name: Upload audit results artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: audit-results
+          path: audit-results.md
+          if-no-files-found: warn
       - name: Send Slack message if errors
         if: ${{ always() && steps.audit-errors.outputs.errorsFound && github.ref == 'refs/heads/main' }}
         uses: slackapi/slack-github-action@dcb1066f776dd043e64d0e8ba94ca15cc7e1875d # v4.0.0

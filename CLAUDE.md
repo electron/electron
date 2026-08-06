@@ -265,6 +265,8 @@ GitHub Actions workflows in `.github/workflows/`:
 - `pipeline-electron-lint.yml` - Linting
 - `pipeline-segment-electron-test.yml` - Testing
 
+Audit/CI workflows upload their findings as an `audit-results` artifact on each run because step summaries are not API-accessible; agents should download that artifact for details.
+
 ## Common Issues
 
 **Patch conflict during sync:**
