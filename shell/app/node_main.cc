@@ -266,10 +266,14 @@ int NodeMain() {
         node::per_process::cli_options->get_per_isolate_options()
             ->get_per_env_options()
             ->experimental_fetch;
+    auto tracing_agent = NodeBindings::InitializeTracingAgent(
+        /*use_standalone_perfetto_client=*/true);
+    CHECK(tracing_agent);
     // When this build embeds a Node startup snapshot (native builds) the
     // isolate is created from it and no context exists yet; otherwise a fresh
     // context was created and entered.
-    JavascriptEnvironment gin_env(loop, setup_wasm_streaming);
+    JavascriptEnvironment gin_env(loop, setup_wasm_streaming,
+                                  tracing_agent->GetTracingController());
     const node::SnapshotData* const snapshot =
         JavascriptEnvironment::NodeSnapshot();
 

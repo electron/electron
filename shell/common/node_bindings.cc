@@ -53,6 +53,7 @@
 #include "third_party/electron_node/src/debug_utils.h"
 #include "third_party/electron_node/src/module_wrap.h"
 #include "third_party/electron_node/src/node_snapshot_builder.h"
+#include "third_party/electron_node/src/tracing/trace_event_perfetto.h"
 #include "v8/include/v8-statistics.h"
 
 #if !IS_MAS_BUILD()
@@ -607,13 +608,13 @@ void NodeBindings::RegisterBuiltinBindings() {
 }
 
 // static
-void NodeBindings::InitializeTracingAgent() {
-  if (node::tracing::Agent::GetInstance())
-    return;
-
-  static const node::tracing::Agent* const tracing_agent =
-      node::tracing::Agent::CreateDefault().release();
-  CHECK_EQ(tracing_agent, node::tracing::Agent::GetInstance());
+std::unique_ptr<node::tracing::Agent, node::tracing::Agent::Deleter>
+NodeBindings::InitializeTracingAgent(bool use_standalone_perfetto_client) {
+  if (!use_standalone_perfetto_client) {
+    node::tracing::RegisterPerfettoTrackEvent();
+    return nullptr;
+  }
+  return node::tracing::Agent::CreateDefault();
 }
 
 bool NodeBindings::IsInitialized() {
