@@ -85,6 +85,24 @@ Never combine unrelated upstream CLs into one commit. Two CLs touching the same 
 
 IMPORTANT: Try really hard to find the CL reference per the instructions below. Each change you made should in theory have been in response to a change made in Chromium that you identified or can identify. Try for a while to identify and include the ref in the commit message. Do not give up easily.
 
+## Self-Contained Commits Help Bisecting (Advisory)
+
+Maintainers bisect rolls with build-tools' `e rcv`, which reconstructs intermediate
+Chromium versions by cherry-picking this branch's commits, keyed on the Gerrit CL URL(s)
+in each commit message. Commits without a CL URL are skipped during reconstruction.
+
+The preferences below make reconstructions more accurate. They are nice-to-haves, not
+requirements — completing the roll always comes first:
+
+- Keep the `Ref:` on any commit that changes code or patch content. Reserve Ref-less
+  `chore: update patches` for metadata-only changes (index hashes, line numbers, hunk
+  headers).
+- When practical, fold a CL's patch-file fixes into that CL's own commit rather than a
+  later catch-all `chore: update patches` commit.
+- Squash any `fixup!` commits (e.g. `git rebase --autosquash`) before finishing.
+- Prefer one CL per commit. A commit spanning multiple CLs is fine when the changes are
+  genuinely coupled — include a `Ref:` line for every CL involved.
+
 ## Finding CL References
 
 Use `git log` or `git blame` on Chromium source files. Look for:
