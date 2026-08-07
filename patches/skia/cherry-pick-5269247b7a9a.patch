@@ -1,0 +1,73 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christopher Cameron <ccameron@chromium.org>
+Date: Fri, 10 Apr 2026 08:22:48 +0000
+Subject: skhdr::AdaptiveGlobalToneMap: Fix OOB write
+
+In MakeGainCurveXYMImage we:
+- compute the number of control points used
+- allocate an image of the spec's maximum number of control points
+- write data for the number of control points used
+
+If a gain curve is longer than the spec's maximum number of control
+points, then this will write out of bounds.
+
+This will be fixed in two ways.
+
+The first fix is to allocate the image size to be the size that will be
+written.
+
+The second fix is to surface a AdaptiveGlobalToneMap::isValid function.
+This will be called when the metadata comes over IPC, to reject any
+metadata that is not spec compliant. This will need to be fixed on the
+Chromium side.
+
+Bug: 497439141
+Change-Id: I854b83b004523471d0e06c9bb4a05b8a1bd20fd7
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1207416
+Commit-Queue: Christopher Cameron <ccameron@google.com>
+Reviewed-by: Christopher Cameron <ccameron@google.com>
+Reviewed-by: Kaylee Lubick <kjlubick@google.com>
+(cherry picked from commit 5269247b7a9a0dd2e085e9f43e52402b47f34f6a)
+
+Prerequisite for the Chromium-side hdr_metadata_mojom_traits backport,
+which calls skhdr::AdaptiveGlobalToneMap::isValid().
+
+diff --git a/include/private/SkHdrMetadata.h b/include/private/SkHdrMetadata.h
+index 3e8561abe0f983ade3b060783a003396b8d7a732..aae345df94ff582975fb4a5945e969e1b7071d48 100644
+--- a/include/private/SkHdrMetadata.h
++++ b/include/private/SkHdrMetadata.h
+@@ -258,6 +258,11 @@ struct SK_API AdaptiveGlobalToneMap {
+      */
+     SkString toString() const;
+ 
++    /**
++     * Return true if this metadata satisfies all normative constraints.
++     */
++    bool isValid() const;
++
+     bool operator==(const AdaptiveGlobalToneMap& other) const {
+         return fHdrReferenceWhite == other.fHdrReferenceWhite &&
+                fHeadroomAdaptiveToneMap == other.fHeadroomAdaptiveToneMap;
+diff --git a/src/codec/SkHdrAgtm.cpp b/src/codec/SkHdrAgtm.cpp
+index decf347a0049ec5264be72dfd7cbde72cc3d4003..d6d938d89354fd5b77b411cd99da210bc87f487c 100644
+--- a/src/codec/SkHdrAgtm.cpp
++++ b/src/codec/SkHdrAgtm.cpp
+@@ -314,7 +314,7 @@ MakeGainCurveXYMImage(const AdaptiveGlobalToneMap::HeadroomAdaptiveToneMap& hatm
+     // Write the X, Y, and M values of the control points into the colors of the rows.
+     SkBitmap bm32;
+     bm32.allocPixels(SkImageInfo::Make(
+-            AdaptiveGlobalToneMap::GainCurve::kMaxNumControlPoints, hatm.fAlternateImages.size(),
++            maxNumControlPoints, hatm.fAlternateImages.size(),
+             kRGBA_F32_SkColorType, kPremul_SkAlphaType));
+     for (size_t a = 0; a < hatm.fAlternateImages.size(); ++a) {
+         const auto& alt = hatm.fAlternateImages[a];
+@@ -825,5 +825,9 @@ SkString AdaptiveGlobalToneMap::toString() const {
+     return result;
+ }
+ 
++bool AdaptiveGlobalToneMap::isValid() const {
++    return AgtmHelpers::Validate(*this);
++}
++
+ }  // namespace skhdr
+ 

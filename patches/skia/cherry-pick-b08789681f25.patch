@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Thomas Smith <thomsmit@google.com>
+Date: Mon, 20 Jul 2026 15:42:34 -0400
+Subject: [ganesh][gl] Imagination FBO deletion workaround
+
+* Adds workaround for driver level bug where a context retains a
+reference to a deleted FBO, resulting in a UAF hazard.
+
+Bug: b/532941869
+Change-Id: Ie6a1fb23fa0a72fd5da98489b1daced3409d9bd4
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1298697
+Reviewed-by: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Thomas Smith <thomsmit@google.com>
+(cherry picked from commit b08789681f25af07a9b8ff639b1f6bf53953e54a)
+
+diff --git a/include/gpu/ganesh/GrDriverBugWorkaroundsAutogen.h b/include/gpu/ganesh/GrDriverBugWorkaroundsAutogen.h
+index ab6db1c22605cc93153cf91cbdeb7bc5ab652947..cdc05461ab1460adb96330aa93612ab40cf5406f 100644
+--- a/include/gpu/ganesh/GrDriverBugWorkaroundsAutogen.h
++++ b/include/gpu/ganesh/GrDriverBugWorkaroundsAutogen.h
+@@ -21,6 +21,8 @@
+          disallow_large_instanced_draw)                 \
+   GPU_OP(EMULATE_ABS_INT_FUNCTION,                      \
+          emulate_abs_int_function)                      \
++  GPU_OP(ENSURE_PREVIOUS_FRAMEBUFFER_NOT_DELETED,       \
++         ensure_previous_framebuffer_not_deleted)       \
+   GPU_OP(FLUSH_ON_FRAMEBUFFER_CHANGE,                   \
+          flush_on_framebuffer_change)                   \
+   GPU_OP(FORCE_UPDATE_SCISSOR_STATE_WHEN_BINDING_FBO0,  \
+diff --git a/src/gpu/ganesh/gl/GrGLCaps.cpp b/src/gpu/ganesh/gl/GrGLCaps.cpp
+index 61f4c84aec68d984f080c41c0e8d75876845c102..c1c7c035a8e2b76740ebab3db17fe14552637f01 100644
+--- a/src/gpu/ganesh/gl/GrGLCaps.cpp
++++ b/src/gpu/ganesh/gl/GrGLCaps.cpp
+@@ -4772,6 +4772,12 @@ void GrGLCaps::applyDriverCorrectnessWorkarounds(const GrGLContextInfo& ctxInfo,
+         fShaderCaps->fShaderDerivativeSupport = false;
+     }
+ 
++    // b/532941869
++    if (ctxInfo.vendor() == GrGLVendor::kImagination ||
++        ctxInfo.driver() == GrGLDriver::kImagination) {
++        fDriverBugWorkarounds.ensure_previous_framebuffer_not_deleted = true;
++    }
++
+     if (ctxInfo.driver() == GrGLDriver::kFreedreno) {
+         formatWorkarounds->fDisallowUnorm16Transfers = true;
+     }
+diff --git a/src/gpu/ganesh/gl/GrGLGpu.cpp b/src/gpu/ganesh/gl/GrGLGpu.cpp
+index a080eec57ede8eccb1eea103f5fed895d7108e52..de3893acadec362df17903e7f53bbd1d25f6968b 100644
+--- a/src/gpu/ganesh/gl/GrGLGpu.cpp
++++ b/src/gpu/ganesh/gl/GrGLGpu.cpp
+@@ -3228,18 +3228,25 @@ void GrGLGpu::deleteFramebuffer(GrGLuint fboid) {
+     // We're relying on the GL state shadowing being correct in the workaround code below so we
+     // need to handle a dirty context.
+     this->handleDirtyContext();
+-    if (fboid == fBoundDrawFramebuffer &&
+-        this->caps()->workarounds().unbind_attachments_on_bound_render_fbo_delete) {
+-        // This workaround only applies to deleting currently bound framebuffers
+-        // on Adreno 420.  Because this is a somewhat rare case, instead of
+-        // tracking all the attachments of every framebuffer instead just always
+-        // unbind all attachments.
+-        GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_COLOR_ATTACHMENT0,
+-                                        GR_GL_RENDERBUFFER, 0));
+-        GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_STENCIL_ATTACHMENT,
+-                                        GR_GL_RENDERBUFFER, 0));
+-        GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_DEPTH_ATTACHMENT,
+-                                        GR_GL_RENDERBUFFER, 0));
++    if (fboid == fBoundDrawFramebuffer) {
++        if (this->caps()->workarounds().unbind_attachments_on_bound_render_fbo_delete) {
++            // This workaround only applies to deleting currently bound framebuffers
++            // on Adreno 420.  Because this is a somewhat rare case, instead of
++            // tracking all the attachments of every framebuffer instead just always
++            // unbind all attachments.
++            GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_COLOR_ATTACHMENT0,
++                                            GR_GL_RENDERBUFFER, 0));
++            GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_STENCIL_ATTACHMENT,
++                                            GR_GL_RENDERBUFFER, 0));
++            GL_CALL(FramebufferRenderbuffer(GR_GL_FRAMEBUFFER, GR_GL_DEPTH_ATTACHMENT,
++                                            GR_GL_RENDERBUFFER, 0));
++        }
++
++        if (this->caps()->workarounds().ensure_previous_framebuffer_not_deleted) {
++            // Some drivers keep an internal reference to the previously bound
++            // framebuffer, so make sure it isn't the one being deleted.
++            this->bindFramebuffer(GR_GL_FRAMEBUFFER, 0);
++        }
+     }
+ 
+     GL_CALL(DeleteFramebuffers(1, &fboid));
+diff --git a/src/gpu/gpu_workaround_list.txt b/src/gpu/gpu_workaround_list.txt
+index b0b38cf977953feb485e54e60608e3d2bff014e8..a4c83b1c68d9daed8fdf2ba9dcd93eb95d7a16be 100644
+--- a/src/gpu/gpu_workaround_list.txt
++++ b/src/gpu/gpu_workaround_list.txt
+@@ -4,6 +4,7 @@ disable_discard_framebuffer
+ disable_texture_storage
+ disallow_large_instanced_draw
+ emulate_abs_int_function
++ensure_previous_framebuffer_not_deleted
+ flush_on_framebuffer_change
+ force_update_scissor_state_when_binding_fbo0
+ gl_clear_broken

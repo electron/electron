@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Saifuddin Hitawala <hitawala@chromium.org>
+Date: Tue, 21 Jul 2026 13:24:29 -0700
+Subject: [media] Reorder CommandBufferHelper member in MediaFoundationVEAWin
+
+Reorder CommandBufferHelper member declaration in
+MediaFoundationVideoEncodeAcceleratorWin so that it gets destroyed
+after pending_input_queue_ which needs helper's MemoryTracker on
+destruction. Also clear the queue proactively on destruction.
+
+Bug: 536449742
+Change-Id: Ieb79852aefc62ef262410bdfcb6af6e480b72e97
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8130565
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Saifuddin Hitawala <hitawala@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1665731}
+(cherry picked from commit 83b9159adc9de65630b00dc86d9722b68227dca7)
+
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+index 693bbf4bc8311caf9600fffef71e021f690f2d32..f335df665a7e678f37dafee9bfe509f258b528e2 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
+@@ -342,6 +342,7 @@ MediaFoundationVideoEncodeAccelerator::
+     ~MediaFoundationVideoEncodeAccelerator() {
+   DVLOG(3) << __func__;
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
++  pending_input_queue_.clear();
+ }
+ 
+ VideoEncodeAccelerator::SupportedProfiles
+diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+index 746b4cd68f847544ed75ec37fb6e1ee7e71f8cf7..3e0cc7ab16dbcaf60d4d3f8b34833ee8c9d77f6b 100644
+--- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
++++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
+@@ -255,6 +255,9 @@ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator
+ 
+   std::unique_ptr<MediaLog> media_log_;
+ 
++  // Helper for accessing shared textures
++  scoped_refptr<CommandBufferHelper> command_buffer_helper_;
++
+   // Bitstream buffers ready to be used to return encoded output as a FIFO.
+   base::circular_deque<std::unique_ptr<BitstreamBufferRef>>
+       bitstream_buffer_queue_;
+@@ -360,9 +363,6 @@ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator
+   // Preferred adapter for DXGIDeviceManager.
+   const CHROME_LUID luid_;
+ 
+-  // Helper for accessing shared textures
+-  scoped_refptr<CommandBufferHelper> command_buffer_helper_;
+-
+   // Used for frame format conversion.
+   VideoFrameConverter frame_converter_;
+ 

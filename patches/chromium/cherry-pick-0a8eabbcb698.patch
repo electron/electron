@@ -1,0 +1,166 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eriko Kurimoto <elkurin@chromium.org>
+Date: Mon, 27 Jul 2026 21:14:29 -0700
+Subject: Guard ResourceBundle::resource_handles_ with a lock
+
+ResourceBundle::GetRawDataResourceForScale() and HasDataResource() may
+run on a worker thread (e.g. via WebUIDataSourceImpl serving WebUI
+subresources) while AddResourceHandle() appends to resource_handles_ on
+the main thread when a feature module data pack is loaded after startup
+on Android. Iterating the vector while it reallocates is undefined.
+
+Add resource_handles_lock_ mirroring the existing
+locale_resources_data_lock_ and acquire it in AddResourceHandle() and
+the readers that may run off the main sequence.
+
+Bug: 513602949
+Change-Id: I3ea13fed9a5e975c9a04627c9121bc2d8b3733aa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8137184
+Auto-Submit: Eriko Kurimoto <elkurin@chromium.org>
+Reviewed-by: Dana Fried <dfried@chromium.org>
+Commit-Queue: Eriko Kurimoto <elkurin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1669194}
+(cherry picked from commit 0a8eabbcb698270bf142d74f4616f7228c0f6bf8)
+
+diff --git a/ui/base/resource/resource_bundle.cc b/ui/base/resource/resource_bundle.cc
+index 383cc1e628603f8de2bbaf2f19659560123dc9d8..432a14f39c27a17b6e82e1c77b863c85642f0e5e 100644
+--- a/ui/base/resource/resource_bundle.cc
++++ b/ui/base/resource/resource_bundle.cc
+@@ -729,6 +729,7 @@ bool ResourceBundle::HasDataResource(int resource_id) const {
+   if (delegate_ && delegate_->HasDataResource(resource_id)) {
+     return true;
+   }
++  base::AutoLock lock_scope(*resource_handles_lock_);
+   for (const auto& resource_handle : resource_handles_) {
+     if (resource_handle->HasResource(static_cast<uint16_t>(resource_id))) {
+       return true;
+@@ -792,6 +793,8 @@ std::string_view ResourceBundle::GetRawDataResourceForScale(
+     }
+   }
+ 
++  base::AutoLock lock_scope(*resource_handles_lock_);
++
+   if (scale_factor != ui::k100Percent) {
+     for (const auto& resource_handle : resource_handles_) {
+       if (resource_handle->GetResourceScaleFactor() == scale_factor) {
+@@ -1013,6 +1016,7 @@ void ResourceBundle::CheckCanOverrideStringResources() {
+ ResourceBundle::ResourceBundle(Delegate* delegate)
+     : delegate_(delegate),
+       locale_resources_data_lock_(new base::Lock),
++      resource_handles_lock_(new base::Lock),
+       max_scale_factor_(k100Percent) {
+   mangle_localized_strings_ = base::CommandLine::ForCurrentProcess()->HasSwitch(
+       switches::kMangleLocalizedStrings);
+@@ -1104,6 +1108,7 @@ void ResourceBundle::AddDataPackFromPathInternal(
+ 
+ void ResourceBundle::AddResourceHandle(
+     std::unique_ptr<ResourceHandle> resource_handle) {
++  base::AutoLock lock_scope(*resource_handles_lock_);
+ #if DCHECK_IS_ON()
+   resource_handle->CheckForDuplicateResources(resource_handles_);
+ #endif
+@@ -1137,7 +1142,13 @@ void ResourceBundle::InitDefaultFontList() {
+ }
+ 
+ gfx::ImageSkia ResourceBundle::CreateImageSkia(int resource_id) {
+-  DCHECK(!resource_handles_.empty()) << "Missing call to SetResourcesDataDLL?";
++#if DCHECK_IS_ON()
++  {
++    base::AutoLock lock_scope(*resource_handles_lock_);
++    DCHECK(!resource_handles_.empty())
++        << "Missing call to SetResourcesDataDLL?";
++  }
++#endif
+ 
+   std::optional<LottieData> data = GetLottieData(resource_id);
+   if (data) {
+@@ -1196,6 +1207,7 @@ bool ResourceBundle::LoadBitmap(int resource_id,
+                                 SkBitmap* bitmap,
+                                 bool* fell_back_to_1x) const {
+   DCHECK(fell_back_to_1x);
++  base::AutoLock lock_scope(*resource_handles_lock_);
+   for (const auto& pack : resource_handles_) {
+     if (pack->GetResourceScaleFactor() == ui::kScaleFactorNone &&
+         LoadBitmap(*pack, resource_id, bitmap, fell_back_to_1x)) {
+diff --git a/ui/base/resource/resource_bundle.h b/ui/base/resource/resource_bundle.h
+index cb3cb9ae8c0c01d59ac4035e5a9603eab65c1ed1..c742164e29ab9898a73c3070bf83fe474ca3ba5f 100644
+--- a/ui/base/resource/resource_bundle.h
++++ b/ui/base/resource/resource_bundle.h
+@@ -569,6 +569,9 @@ class COMPONENT_EXPORT(UI_BASE) ResourceBundle {
+   // Protects |locale_resources_data_|.
+   std::unique_ptr<base::Lock> locale_resources_data_lock_;
+ 
++  // Protects |resource_handles_|.
++  std::unique_ptr<base::Lock> resource_handles_lock_;
++
+   // Handles for data sources.
+   std::vector<std::unique_ptr<ResourceHandle>> locale_resources_data_;
+   std::vector<std::unique_ptr<ResourceHandle>> resource_handles_;
+diff --git a/ui/base/resource/resource_bundle_unittest.cc b/ui/base/resource/resource_bundle_unittest.cc
+index f0e06826eb82790c003c08d518bac5e871bf7721..0d84831fa0c1d6257124189c2a9878cf597ee9e3 100644
+--- a/ui/base/resource/resource_bundle_unittest.cc
++++ b/ui/base/resource/resource_bundle_unittest.cc
+@@ -8,6 +8,8 @@
+ #include <stdint.h>
+ 
+ #include <algorithm>
++#include <array>
++#include <atomic>
+ #include <map>
+ #include <memory>
+ #include <string>
+@@ -25,6 +27,8 @@
+ #include "base/numerics/byte_conversions.h"
+ #include "base/strings/string_view_util.h"
+ #include "base/strings/utf_string_conversions.h"
++#include "base/test/bind.h"
++#include "base/threading/thread.h"
+ #include "build/build_config.h"
+ #include "skia/buildflags.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+@@ -604,6 +608,45 @@ TEST_F(ResourceBundleImageTest, GetRawDataResource) {
+             resource_bundle->GetRawDataResourceForScale(6, k200Percent));
+ }
+ 
++// Data resources may be looked up on a worker thread while a data pack is
++// being added on the main thread. Verify that this is supported.
++TEST_F(ResourceBundleImageTest, GetRawDataResourceWhileAddingDataPack) {
++  base::FilePath empty_path = dir_path().Append(FILE_PATH_LITERAL("empty.pak"));
++  constexpr std::array<uint8_t, 15> kEmptyPakData = {
++      0x04, 0x00, 0x00, 0x00,             // header(version
++      0x00, 0x00, 0x00, 0x00,             //        no. entries
++      0x01,                               //        encoding)
++      0x00, 0x00, 0x0f, 0x00, 0x00, 0x00  // extra entry for the size of last
++  };
++  ASSERT_TRUE(base::WriteFile(empty_path, kEmptyPakData));
++
++  ResourceBundle* resource_bundle = CreateResourceBundleWithEmptyLocalePak();
++  resource_bundle->AddDataPackFromPath(empty_path, kScaleFactorNone);
++
++  constexpr int kIterations = 256;
++  constexpr int kMissingResourceId = 42;
++
++  std::atomic<bool> done = false;
++  base::Thread reader_thread("ResourceReader");
++  ASSERT_TRUE(reader_thread.Start());
++  reader_thread.task_runner()->PostTask(
++      FROM_HERE, base::BindLambdaForTesting([&]() {
++        while (!done.load()) {
++          EXPECT_FALSE(resource_bundle->HasDataResource(kMissingResourceId));
++          EXPECT_TRUE(
++              resource_bundle->GetRawDataResource(kMissingResourceId).empty());
++        }
++      }));
++
++  for (int i = 0; i < kIterations; ++i) {
++    resource_bundle->AddDataPackFromPath(empty_path, kScaleFactorNone);
++  }
++  done.store(true);
++  reader_thread.Stop();
++
++  EXPECT_FALSE(resource_bundle->HasDataResource(kMissingResourceId));
++}
++
+ // Test requesting image reps at various scale factors from the image returned
+ // via ResourceBundle::GetImageNamed().
+ TEST_F(ResourceBundleImageTest, GetImageNamed) {
