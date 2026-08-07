@@ -137,6 +137,8 @@ void NodeService::Initialize(
   }
 #endif
 
+  NodeBindings::InitializeTracingAgent(
+      /*use_standalone_perfetto_client=*/false);
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
   v8::Isolate* const isolate = js_env_->isolate();
