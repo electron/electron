@@ -42,6 +42,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
+#include "third_party/blink/public/mojom/css/preferred_color_scheme.mojom.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "v8/include/cppgc/persistent.h"
 
@@ -198,6 +199,12 @@ class WebContents final : public ExclusiveAccessContext,
   bool GetBackgroundThrottling() const override;
 
   void SetBackgroundThrottling(bool allowed);
+  std::string GetColorScheme() const;
+  void SetColorScheme(gin::Arguments* args);
+  const std::optional<blink::mojom::PreferredColorScheme>&
+  preferred_color_scheme() const {
+    return preferred_color_scheme_;
+  }
   int32_t GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
   [[nodiscard]] Type type() const { return type_; }
@@ -828,6 +835,8 @@ class WebContents final : public ExclusiveAccessContext,
 
   // Whether background throttling is disabled.
   bool background_throttling_ = true;
+
+  std::optional<blink::mojom::PreferredColorScheme> preferred_color_scheme_;
 
   // Whether to enable devtools.
   bool enable_devtools_ = true;
