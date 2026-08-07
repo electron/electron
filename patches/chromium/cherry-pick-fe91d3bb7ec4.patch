@@ -1,0 +1,282 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Russell <kbr@chromium.org>
+Date: Thu, 23 Jul 2026 18:16:03 -0700
+Subject: [M150] gpu: Unbind unpack buffer for CopyTextureCHROMIUM intermediate
+
+Original change's description:
+> gpu: Unbind unpack buffer for CopyTextureCHROMIUM intermediate
+>
+> When Copy{Sub}TextureCHROMIUM takes the DRAW_AND_COPY or
+> DRAW_AND_READBACK path, the validating decoder allocates an intermediate
+> GL_TEXTURE_2D via glTexImage2D(..., nullptr). The client's
+> GL_PIXEL_UNPACK_BUFFER binding is still applied to the driver at this
+> point, so the driver sources the intermediate texture from the client's
+> buffer instead of allocating fresh storage. With an undersized client
+> buffer this fails with GL_INVALID_OPERATION, leaving the intermediate
+> texture without storage and the subsequent draw / readback operating on
+> an incomplete framebuffer.
+>
+> Unbind GL_PIXEL_UNPACK_BUFFER before allocating the intermediate texture
+> in DoCopyTexture and DoCopySubTexture, gated on IsES3Capable() to match
+> the condition under which RestoreBufferBindings() restores the binding
+> afterwards.
+>
+> Add a gl_tests regression test that binds a tiny unpack buffer, performs
+> a copy that requires an intermediate texture, verifies the destination
+> receives the source pixels, and checks that the client binding is
+> preserved.
+>
+> Fixed: 523713150
+> Change-Id: I42989c54ecb1a71be228bd457a1378d003feb1e4
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8088997
+> Reviewed-by: Zhenyao Mo <zmo@chromium.org>
+> Commit-Queue: Kenneth Russell <kbr@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1662326}
+
+(cherry picked from commit 870caf4d48738256593ab12d80db2f0d8012b116)
+
+Bug: 535458590,523713150
+Change-Id: I42989c54ecb1a71be228bd457a1378d003feb1e4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8137848
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#3978}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_copy_texture_chromium.cc b/gpu/command_buffer/service/gles2_cmd_copy_texture_chromium.cc
+index 9ad0757aa48c67fe435b7dc1bc360bd5cb2488ec..8951e76a4add4575e320ef5fc8045a2d76b8b78d 100644
+--- a/gpu/command_buffer/service/gles2_cmd_copy_texture_chromium.cc
++++ b/gpu/command_buffer/service/gles2_cmd_copy_texture_chromium.cc
+@@ -1071,7 +1071,11 @@ void CopyTextureResourceManagerImpl::DoCopySubTexture(
+         adjusted_internal_format);
+     GLenum type =
+         TextureManager::ExtractTypeFromStorageFormat(adjusted_internal_format);
+-
++    // Allocate from client memory, not from any currently bound unpack
++    // buffer. The binding is restored by the calls below.
++    if (decoder->GetFeatureInfo()->IsES3Capable()) {
++      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
++    }
+     glTexImage2D(dest_target, 0, adjusted_internal_format, width, height, 0,
+                  format, type, nullptr);
+     dest_texture = intermediate_texture;
+@@ -1156,6 +1160,11 @@ void CopyTextureResourceManagerImpl::DoCopyTexture(
+         adjusted_internal_format);
+     GLenum type =
+         TextureManager::ExtractTypeFromStorageFormat(adjusted_internal_format);
++    // Allocate from client memory, not from any currently bound unpack
++    // buffer. The binding is restored by the calls below.
++    if (decoder->GetFeatureInfo()->IsES3Capable()) {
++      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
++    }
+     glTexImage2D(dest_target, 0, adjusted_internal_format, width, height, 0,
+                  format, type, nullptr);
+     dest_texture = intermediate_texture;
+diff --git a/gpu/command_buffer/tests/gl_copy_texture_CHROMIUM_unittest.cc b/gpu/command_buffer/tests/gl_copy_texture_CHROMIUM_unittest.cc
+index 700017928495888509b0e4956c584b82db5cf08a..50052ad583349edf56f3ce11131be01ea9e871bf 100644
+--- a/gpu/command_buffer/tests/gl_copy_texture_CHROMIUM_unittest.cc
++++ b/gpu/command_buffer/tests/gl_copy_texture_CHROMIUM_unittest.cc
+@@ -1812,4 +1812,202 @@ TEST_F(GLCopyTextureCHROMIUMTest, CopySubTextureOffset) {
+   glDeleteFramebuffers(1, &framebuffer_id_);
+ }
+ 
++TEST_P(GLCopyTextureCHROMIUMES3Test, RasterizerDiscardDoesNotInterfere) {
++#if !BUILDFLAG(ENABLE_VALIDATING_COMMAND_DECODER)
++  GTEST_SKIP() << "Test only reproduces with validating decoder";
++#else
++  if (gl_.gpu_preferences().use_passthrough_cmd_decoder) {
++    GTEST_SKIP() << "Skipping test because it's run with the passthrough "
++                    "command decoder";
++  }
++
++  if (!gl_.IsInitialized()) {
++    GTEST_SKIP() << "ES3 context unavailable";
++  }
++
++  constexpr GLsizei kW = 64, kH = 64;
++
++  // --- Step 1: prime VRAM with a recognisable pattern, then free it. ---
++  {
++    GLuint prime;
++    glGenTextures(1, &prime);
++    glBindTexture(GL_TEXTURE_2D, prime);
++    std::vector<uint8_t> pat(kW * kH * 4, 0xCA);
++    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kW, kH, 0, GL_RGBA,
++                 GL_UNSIGNED_BYTE, pat.data());
++    glFinish();
++    glDeleteTextures(1, &prime);
++  }
++
++  // --- Step 2: dest texture, allocated WITHOUT data → uninitialized VRAM. ---
++  GLuint dest;
++  glGenTextures(1, &dest);
++  glBindTexture(GL_TEXTURE_2D, dest);
++  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kW, kH, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++               nullptr);
++
++  // --- Step 3: trivial source texture (contents irrelevant). ---
++  GLuint src;
++  glGenTextures(1, &src);
++  glBindTexture(GL_TEXTURE_2D, src);
++  std::vector<uint8_t> green(kW * kH * 4, 0);
++  for (size_t i = 0; i < green.size(); i += 4) {
++    green[i + 1] = 0xFF;  // G
++    green[i + 3] = 0xFF;  // A
++  }
++  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kW, kH, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++               green.data());
++
++  // --- Step 4: enable RASTERIZER_DISCARD on the command-buffer context. ---
++  glEnable(GL_RASTERIZER_DISCARD);
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  // --- Step 5: issue the copy. flip_y=GL_TRUE forces a draw-based path ---
++  CopyType copy_type = GetParam();
++  if (copy_type == TexImage) {
++    glCopyTextureCHROMIUM(src, 0, GL_TEXTURE_2D, dest, 0, GL_RGBA8,
++                          GL_UNSIGNED_BYTE, GL_TRUE, GL_FALSE, GL_FALSE);
++  } else {
++    glCopySubTextureCHROMIUM(src, 0, GL_TEXTURE_2D, dest, 0, 0, 0, 0, 0, kW, kH,
++                             GL_TRUE, GL_FALSE, GL_FALSE);
++  }
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  glDisable(GL_RASTERIZER_DISCARD);
++
++  // --- Step 6: read back. ---
++  GLuint fbo;
++  glGenFramebuffers(1, &fbo);
++  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
++                         dest, 0);
++  ASSERT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++            glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++  std::vector<uint8_t> pixels(kW * kH * 4, 0);
++  glReadPixels(0, 0, kW, kH, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  // --- Step 7: prove the leak is gone (copy succeeded). ---
++  size_t nonzero = 0, green_px = 0;
++  for (size_t i = 0; i < pixels.size(); i += 4) {
++    if (pixels[i] || pixels[i + 1] || pixels[i + 2] || pixels[i + 3]) {
++      ++nonzero;
++    }
++    if (pixels[i] == 0x00 && pixels[i + 1] == 0xFF && pixels[i + 2] == 0x00 &&
++        pixels[i + 3] == 0xFF) {
++      ++green_px;
++    }
++  }
++
++  // Expect all pixels to be green.
++  EXPECT_EQ(green_px, static_cast<size_t>(kW * kH));
++  EXPECT_GT(nonzero, 0u);
++
++  glDeleteFramebuffers(1, &fbo);
++  glDeleteTextures(1, &src);
++  glDeleteTextures(1, &dest);
++#endif  // !BUILDFLAG(ENABLE_VALIDATING_COMMAND_DECODER)
++}
++
++// A bound GL_PIXEL_UNPACK_BUFFER must not be picked up when allocating the
++// intermediate texture used by the DRAW_AND_COPY / DRAW_AND_READBACK paths.
++TEST_P(GLCopyTextureCHROMIUMES3Test, PixelUnpackBufferDoesNotInterfere) {
++#if !BUILDFLAG(ENABLE_VALIDATING_COMMAND_DECODER)
++  GTEST_SKIP() << "Test only reproduces with validating decoder";
++#else
++  if (gl_.gpu_preferences().use_passthrough_cmd_decoder) {
++    GTEST_SKIP() << "Skipping test because it's run with the passthrough "
++                    "command decoder";
++  }
++
++  if (!gl_.IsInitialized()) {
++    GTEST_SKIP() << "ES3 context unavailable";
++  }
++
++#if BUILDFLAG(IS_ANDROID) && defined(ARCH_CPU_X86_FAMILY)
++  GTEST_SKIP() << "Skipping test on Android x86/x64";
++#else
++
++  constexpr GLsizei kW = 8, kH = 8;
++  const uint8_t kGreen[4] = {0u, 255u, 0u, 255u};
++
++  GLuint src;
++  glGenTextures(1, &src);
++  glBindTexture(GL_TEXTURE_2D, src);
++  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++  std::vector<uint8_t> green(kW * kH * 4);
++  for (size_t i = 0; i < green.size(); i += 4) {
++    green[i + 0] = kGreen[0];
++    green[i + 1] = kGreen[1];
++    green[i + 2] = kGreen[2];
++    green[i + 3] = kGreen[3];
++  }
++  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, kW, kH, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++               green.data());
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  // Cube-map destination so the copy goes through an intermediate texture.
++  GLuint dest;
++  glGenTextures(1, &dest);
++  glBindTexture(GL_TEXTURE_CUBE_MAP, dest);
++  glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
++  glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
++  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++  glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++  std::vector<uint8_t> zeros(kW * kH * 4, 0);
++  for (int face = 0; face < 6; ++face) {
++    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, 0, GL_RGBA8, kW, kH, 0,
++                 GL_RGBA, GL_UNSIGNED_BYTE, zeros.data());
++  }
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  // Bind a tiny pixel-unpack buffer and leave it bound across the copy. The
++  // copy must not source the intermediate texture's storage from it.
++  GLuint pbo;
++  glGenBuffers(1, &pbo);
++  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
++  const uint8_t kByte = 0;
++  glBufferData(GL_PIXEL_UNPACK_BUFFER, sizeof(kByte), &kByte, GL_STATIC_DRAW);
++  ASSERT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  // flip_y forces a draw-based path; cube-map dest requires an intermediate.
++  CopyType copy_type = GetParam();
++  if (copy_type == TexImage) {
++    glCopyTextureCHROMIUM(src, 0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, dest, 0,
++                          GL_RGBA8, GL_UNSIGNED_BYTE, GL_TRUE, GL_FALSE,
++                          GL_FALSE);
++  } else {
++    glCopySubTextureCHROMIUM(src, 0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, dest, 0, 0,
++                             0, 0, 0, kW, kH, GL_TRUE, GL_FALSE, GL_FALSE);
++  }
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  // The client binding must be preserved.
++  GLint bound_pbo = 0;
++  glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING, &bound_pbo);
++  EXPECT_EQ(pbo, static_cast<GLuint>(bound_pbo));
++
++  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
++
++  GLuint fbo;
++  glGenFramebuffers(1, &fbo);
++  glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
++                         GL_TEXTURE_CUBE_MAP_POSITIVE_X, dest, 0);
++  ASSERT_EQ(static_cast<GLenum>(GL_FRAMEBUFFER_COMPLETE),
++            glCheckFramebufferStatus(GL_FRAMEBUFFER));
++
++  EXPECT_TRUE(GLTestHelper::CheckPixels(0, 0, kW, kH, 0, kGreen, nullptr));
++  EXPECT_EQ(static_cast<GLenum>(GL_NO_ERROR), glGetError());
++
++  glDeleteFramebuffers(1, &fbo);
++  glDeleteBuffers(1, &pbo);
++  glDeleteTextures(1, &src);
++  glDeleteTextures(1, &dest);
++#endif  // BUILDFLAG(IS_ANDROID) && defined(ARCH_CPU_X86_FAMILY)
++#endif  // !BUILDFLAG(ENABLE_VALIDATING_COMMAND_DECODER)
++}
++
+ }  // namespace gpu

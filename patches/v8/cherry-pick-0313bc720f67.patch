@@ -1,0 +1,177 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Fri, 24 Jul 2026 14:13:13 +0200
+Subject: [M144-LTS][maglev] Bound the stack frame size of generated code
+
+Maglev grows its frame with a single stack pointer decrement, before
+FunctionEntryStackCheck runs, so frames have to stay within the size.
+
+Maglev now bails out on max_optimized_bytecode_size like TurboFan.
+It also bails out if the number of stack slots is bigger than
+an OS page.
+
+(cherry picked from commit d6a92ca4858786aef57a8cf49b359742ea1194aa)
+
+Fixed: 536945254
+Change-Id: I7355d2257bebcf62b756a7f57c327d4f27677685
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8137738
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#108869}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8165541
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/branch-heads/14.4@{#133}
+Cr-Branched-From: 80acc26727d5a34e77dabeebe7c9213ec1bd4768-refs/heads/14.4.258@{#1}
+Cr-Branched-From: ce7e597e90f6df3fa4b6df224bc613b80c635450-refs/heads/main@{#104020}
+
+diff --git a/src/codegen/compiler.cc b/src/codegen/compiler.cc
+index 2dc782458e5f34f17bcc2aff8c99cb7566ce0bb3..254b34d650aed385a3edf7e902b4235c4144f5e6 100644
+--- a/src/codegen/compiler.cc
++++ b/src/codegen/compiler.cc
+@@ -1256,7 +1256,7 @@ MaybeHandle<Code> CompileMaglev(Isolate* isolate, Handle<JSFunction> function,
+     CompilerTracer::TraceStartMaglevCompile(isolate, function, job->is_osr(),
+                                             mode);
+     CompilationJob::Status status = job->PrepareJob(isolate);
+-    CHECK_EQ(status, CompilationJob::SUCCEEDED);  // TODO(v8:7700): Use status.
++    if (status != CompilationJob::SUCCEEDED) return {};
+   }
+ 
+   if (IsSynchronous(mode)) {
+diff --git a/src/maglev/maglev-compiler.cc b/src/maglev/maglev-compiler.cc
+index c167a5498ab892743cb0db07db75fe65d0a0a114..9f95196e80c3346dffc6ac122325b574b9ab60c6 100644
+--- a/src/maglev/maglev-compiler.cc
++++ b/src/maglev/maglev-compiler.cc
+@@ -47,6 +47,9 @@ namespace internal {
+ namespace maglev {
+ 
+ namespace {
++
++constexpr uint32_t kMaxStackSlots = 4 * KB / kSystemPointerSize;
++
+ void PrintGraph(Graph* graph, bool condition, const char* message,
+                 bool has_regalloc_data = false) {
+   if (V8_UNLIKELY(condition &&
+@@ -204,6 +207,15 @@ bool MaglevCompiler::Compile(LocalIsolate* local_isolate,
+     }
+   }
+ 
++  // The prologue grows the frame with a single stack pointer decrement, before
++  // FunctionEntryStackCheck runs. A frame no larger than the smallest OS page
++  // cannot step over a guard page, so bail out rather than emit an unchecked
++  // stack pointer jump of arbitrary size.
++  if (graph->tagged_stack_slots() + graph->untagged_stack_slots() >
++      kMaxStackSlots) {
++    return false;
++  }
++
+   {
+     TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("v8.compile"),
+                  "V8.Maglev.CodeAssembly");
+diff --git a/src/maglev/maglev-concurrent-dispatcher.cc b/src/maglev/maglev-concurrent-dispatcher.cc
+index 4c6e8148f6b6bc505f2aa5cf48ede282f74aef74..2c76b9c593b986946415022a5caf758a0a668efb 100644
+--- a/src/maglev/maglev-concurrent-dispatcher.cc
++++ b/src/maglev/maglev-concurrent-dispatcher.cc
+@@ -113,7 +113,20 @@ MaglevCompilationJob::MaglevCompilationJob(
+ 
+ MaglevCompilationJob::~MaglevCompilationJob() = default;
+ 
++CompilationJob::Status MaglevCompilationJob::AbortOptimization(
++    Isolate* isolate, BailoutReason reason) {
++  DCHECK_EQ(ThreadId::Current(), isolate->thread_id());
++  bailout_reason_ = reason;
++  DirectHandle<SharedFunctionInfo> shared(function()->shared(), isolate);
++  shared->DisableOptimization(isolate, reason);
++  return UpdateState(FAILED, State::kFailed);
++}
++
+ CompilationJob::Status MaglevCompilationJob::PrepareJobImpl(Isolate* isolate) {
++  if (function()->shared()->GetBytecodeArray(isolate)->length() >
++      v8_flags.max_optimized_bytecode_size) {
++    return AbortOptimization(isolate, BailoutReason::kFunctionTooBig);
++  }
+   BeginPhaseKind("V8.MaglevPrepareJob");
+   if (info()->collect_source_positions()) {
+     SharedFunctionInfo::EnsureSourcePositionsAvailable(
+diff --git a/src/maglev/maglev-concurrent-dispatcher.h b/src/maglev/maglev-concurrent-dispatcher.h
+index 5f339731d3bab45b6dc028711bbccdc48686e290..aa71cea3640f3d25418154613d3aeb01d4fcee73 100644
+--- a/src/maglev/maglev-concurrent-dispatcher.h
++++ b/src/maglev/maglev-concurrent-dispatcher.h
+@@ -35,6 +35,8 @@ class MaglevCompilationJob final : public OptimizedCompilationJob {
+                         LocalIsolate* local_isolate) override;
+   Status FinalizeJobImpl(Isolate* isolate) override;
+ 
++  Status AbortOptimization(Isolate* isolate, BailoutReason reason);
++
+   IndirectHandle<JSFunction> function() const;
+   MaybeIndirectHandle<Code> code() const;
+   BytecodeOffset osr_offset() const;
+diff --git a/test/mjsunit/maglev/regress-536945254.js b/test/mjsunit/maglev/regress-536945254.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..522bcfd8ff2f20a9932803b38825c71ce0bc8733
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-536945254.js
+@@ -0,0 +1,62 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --maglev --no-turbofan
++
++// Keeps `count` Int32 and Float64 values live at once, so Maglev needs roughly
++// two stack slots per value while the bytecode stays small.
++function buildWideFrame(count, osr) {
++  let preload = '';
++  let integerFold = '';
++  let doubleFold = '';
++  for (let i = 0; i < count; ++i) {
++    preload += `0.5 + (input ^ ${i});`;
++    integerFold += `integer ^= (input ^ ${i});`;
++    doubleFold += `double += (input ^ ${i});`;
++  }
++  return Function(`
++    return function wide(input) {
++      input |= 0;
++      let result = 0;
++      for (let iteration = 0; iteration < 20; ++iteration) {
++        ${osr ? 'if (iteration === 5) %OptimizeOsr();' : ''}
++        ${preload}
++        let integer = 0;
++        ${integerFold}
++        let double = 0.5;
++        ${doubleFold}
++        result = (integer + double) | 0;
++      }
++      return result;
++    };
++  `)();
++}
++
++// ~750 stack slots, ~16KB of bytecode.
++const kWideValueCount = 400;
++
++const wide = buildWideFrame(kWideValueCount, false);
++%PrepareFunctionForOptimization(wide);
++const expected = wide(1);
++%OptimizeMaglevOnNextCall(wide);
++assertEquals(expected, wide(1));
++assertFalse(isOptimized(wide));
++
++const wideOsr = buildWideFrame(kWideValueCount, true);
++%PrepareFunctionForOptimization(wideOsr);
++assertEquals(expected, wideOsr(1));
++
++// One live value, but more bytecode than Maglev is willing to compile.
++function buildLongBytecode(count) {
++  let body = '';
++  for (let i = 0; i < count; ++i) body += `sum += ${i};`;
++  return Function(`return function long(sum) { ${body} return sum; };`)();
++}
++
++const long = buildLongBytecode(12000);
++%PrepareFunctionForOptimization(long);
++const expectedLong = long(0);
++%OptimizeMaglevOnNextCall(long);
++assertEquals(expectedLong, long(0));
++assertFalse(isOptimized(long));

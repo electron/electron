@@ -1,0 +1,69 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Thu, 23 Jul 2026 10:54:48 -0700
+Subject: [M150] Compute XShmImagePool size including row bytes
+
+Original change's description:
+> Compute XShmImagePool size including row bytes
+>
+> XShmImagePool::Resize() was checking if a shared memory region was big
+> enough using computeMinByteSize() which assumes the minimum possible
+> stride. The shared memory region is used with the scanline padded stride
+> which could be larger than the minimum. Compute the required size using
+> the scanline padded stride to avoid potential OOB access past end of the
+> shared memory region.
+>
+> Bug: 524460000
+> Change-Id: Iabe795c6fac7487fd4addd1ecf2e07ca7026e763
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8128799
+> Reviewed-by: Kramer Ge <fangzhoug@chromium.org>
+> Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1665713}
+
+(cherry picked from commit fe6faaabfe75a5ea9c4f2383ffc07ff80fdc3a74)
+
+Bug: 537609499,524460000
+Change-Id: Iabe795c6fac7487fd4addd1ecf2e07ca7026e763
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8137620
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#3959}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/ui/base/x/x11_shm_image_pool.cc b/ui/base/x/x11_shm_image_pool.cc
+index 8e418acfdb66022514c7e9b78d6141d3392a4aae..dfab3aa134f786ef376f929ba50e4e5f26d4e4ba 100644
+--- a/ui/base/x/x11_shm_image_pool.cc
++++ b/ui/base/x/x11_shm_image_pool.cc
+@@ -154,9 +154,18 @@ bool XShmImagePool::Resize(const gfx::Size& pixel_size) {
+   if (color_type == kUnknown_SkColorType)
+     return false;
+ 
++  const auto* visual_info = connection_->GetVisualInfoFromId(visual_);
++  if (!visual_info) {
++    return false;
++  }
++  size_t row_bytes = RowBytesForVisualWidth(*visual_info, pixel_size.width());
++
+   SkImageInfo image_info = SkImageInfo::Make(
+       pixel_size.width(), pixel_size.height(), color_type, kPremul_SkAlphaType);
+-  std::size_t needed_frame_bytes = image_info.computeMinByteSize();
++  std::size_t needed_frame_bytes = image_info.computeByteSize(row_bytes);
++  if (SkImageInfo::ByteSizeOverflowed(needed_frame_bytes)) {
++    return false;
++  }
+ 
+   if (needed_frame_bytes > frame_bytes_ ||
+       needed_frame_bytes < frame_bytes_ * kShmResizeShrinkThreshold) {
+@@ -209,11 +218,6 @@ bool XShmImagePool::Resize(const gfx::Size& pixel_size) {
+     }
+   }
+ 
+-  const auto* visual_info = connection_->GetVisualInfoFromId(visual_);
+-  if (!visual_info)
+-    return false;
+-  size_t row_bytes = RowBytesForVisualWidth(*visual_info, pixel_size.width());
+-
+   for (FrameState& state : frame_states_) {
+     state.bitmap = SkBitmap();
+     if (!state.bitmap.installPixels(image_info, state.shmaddr, row_bytes))
