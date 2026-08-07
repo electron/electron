@@ -83,7 +83,7 @@ index 5ab30502fd232196739ca2b450e35cc995f02d74..b394d25d8d4f957f04ad8ef31c00c7a9
    Local<Module> module = obj->module_.Get(isolate);
    if (module->GetStatus() < Module::kInstantiated) {
 diff --git a/src/node_buffer.cc b/src/node_buffer.cc
-index c3e4ea6e7cb7782561e9a2f1283bffd6c1be2637..2d1752edffc66003554810142099e18dfff0be6e 100644
+index 9d8d2005b7f40710470a2cce7763080b8568ace6..5508d55ed12b49366d433830877e7e480a8bc6b1 100644
 --- a/src/node_buffer.cc
 +++ b/src/node_buffer.cc
 @@ -279,7 +279,7 @@ MaybeLocal<Uint8Array> New(Environment* env,
@@ -109,7 +109,7 @@ index c9588880d05435ab9f4e23fcff74c93309664270..ee4bc2bc270831cf057ddec0896a92dc
    Local<Object> os_constants =
        Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 17d820b567f395eaf6479404236b650bbfe233df..808e28db0f4c1d410fdf97013eaa65ed0c15fd78 100644
+index a9cf726d260cf13a741997f434409d747d7342f0..f572f009f9df2607c437fde24dd1dfa6edc10aff 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
 @@ -453,7 +453,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
@@ -135,10 +135,10 @@ index 34ced47c7142be3ab8d97840ea88770c18b0742b..d12bf33f2f6b15a0f571d1dd43252758
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_options.cc b/src/node_options.cc
-index b7062241d590e36f797babffb5945060ef759322..853c1ef5512ce4476b96cef67b53da84dc42a7d0 100644
+index a3660223bb93493c64c7b0c77d5eb1558fb461c9..357269ffc9aa98af82d2294eaeb356bac0a46c8e 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1782,7 +1782,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+@@ -1791,7 +1791,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
  
    Local<Map> options = Map::New(isolate);
    if (options
@@ -147,7 +147,7 @@ index b7062241d590e36f797babffb5945060ef759322..853c1ef5512ce4476b96cef67b53da84
                             env->primordials_safe_map_prototype_object())
            .IsNothing()) {
      return;
-@@ -1823,7 +1823,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
+@@ -1832,7 +1832,7 @@ void GetCLIOptionsInfo(const FunctionCallbackInfo<Value>& args) {
    if (!ToV8Value(context, _ppop_instance.aliases_).ToLocal(&aliases)) return;
  
    if (aliases.As<Object>()
@@ -157,7 +157,7 @@ index b7062241d590e36f797babffb5945060ef759322..853c1ef5512ce4476b96cef67b53da84
            .IsNothing()) {
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index f661cb8066f5a82ebf01dcf4d31ce98ab2ce49de..b57a83c1d869d018db6212d8d9ff115c266b109a 100644
+index f68e986b18e24aceca0848efb17ed88a0db17c5d..5d61435c1f525a6c48f8c564c997ca15983c87a8 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -758,7 +758,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(
@@ -178,7 +178,7 @@ index f661cb8066f5a82ebf01dcf4d31ce98ab2ce49de..b57a83c1d869d018db6212d8d9ff115c
  
    Environment* env = limits->env();
    Isolate* isolate = env->isolate();
-@@ -2951,9 +2951,9 @@ BaseObjectPtr<StatementSyncIterator> StatementExecutionHelper::Iterate(
+@@ -2967,9 +2967,9 @@ BaseObjectPtr<StatementSyncIterator> StatementExecutionHelper::Iterate(
    }
  
    if (iter->object()
@@ -204,10 +204,10 @@ index 8be8a8b5726a265a838841a21bb023fa41ceeb13..bf8391694f662d34bcf4da72f81f2e52
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_webstorage.cc b/src/node_webstorage.cc
-index 8e3b6cea9501334376aaafd895acfac6acbe38d6..be5dccc2ac77799ae249ed388f9ebce000207ef3 100644
+index 8a058f19834134ca65b7a763b7c41fe850642980..3856e9cdaa305f4919c315060bae8d1a5f17cb80 100644
 --- a/src/node_webstorage.cc
 +++ b/src/node_webstorage.cc
-@@ -564,7 +564,7 @@ template <typename T>
+@@ -565,7 +565,7 @@ template <typename T>
  static bool ShouldIntercept(Local<Name> property,
                              const PropertyCallbackInfo<T>& info) {
    Environment* env = Environment::GetCurrent(info);
@@ -216,7 +216,7 @@ index 8e3b6cea9501334376aaafd895acfac6acbe38d6..be5dccc2ac77799ae249ed388f9ebce0
  
    if (proto->IsObject()) {
      bool has_prop;
-@@ -588,7 +588,7 @@ static Intercepted StorageGetter(Local<Name> property,
+@@ -589,7 +589,7 @@ static Intercepted StorageGetter(Local<Name> property,
    }
  
    Storage* storage;
@@ -225,7 +225,7 @@ index 8e3b6cea9501334376aaafd895acfac6acbe38d6..be5dccc2ac77799ae249ed388f9ebce0
    Local<Value> result;
  
    if (storage->Load(property).ToLocal(&result) && !result->IsNull()) {
-@@ -602,7 +602,7 @@ static Intercepted StorageSetter(Local<Name> property,
+@@ -603,7 +603,7 @@ static Intercepted StorageSetter(Local<Name> property,
                                   Local<Value> value,
                                   const PropertyCallbackInfo<void>& info) {
    Storage* storage;
@@ -234,7 +234,7 @@ index 8e3b6cea9501334376aaafd895acfac6acbe38d6..be5dccc2ac77799ae249ed388f9ebce0
  
    if (storage->Store(property, value).IsNothing()) {
      info.GetReturnValue().SetFalse();
-@@ -618,7 +618,7 @@ static Intercepted StorageQuery(Local<Name> property,
+@@ -619,7 +619,7 @@ static Intercepted StorageQuery(Local<Name> property,
    }
  
    Storage* storage;
@@ -243,7 +243,7 @@ index 8e3b6cea9501334376aaafd895acfac6acbe38d6..be5dccc2ac77799ae249ed388f9ebce0
    Local<Value> result;
    if (!storage->Load(property).ToLocal(&result) || result->IsNull()) {
      return Intercepted::kNo;
-@@ -631,7 +631,7 @@ static Intercepted StorageQuery(Local<Name> property,
+@@ -632,7 +632,7 @@ static Intercepted StorageQuery(Local<Name> property,
  static Intercepted StorageDeleter(Local<Name> property,
                                    const PropertyCallbackInfo<Boolean>& info) {
    Storage* storage;
@@ -252,7 +252,7 @@ index 8e3b6cea9501334376aaafd895acfac6acbe38d6..be5dccc2ac77799ae249ed388f9ebce0
  
    info.GetReturnValue().Set(storage->Remove(property).IsJust());
  
-@@ -640,7 +640,7 @@ static Intercepted StorageDeleter(Local<Name> property,
+@@ -641,7 +641,7 @@ static Intercepted StorageDeleter(Local<Name> property,
  
  static void StorageEnumerator(const PropertyCallbackInfo<Array>& info) {
    Storage* storage;
@@ -261,7 +261,7 @@ index 8e3b6cea9501334376aaafd895acfac6acbe38d6..be5dccc2ac77799ae249ed388f9ebce0
    Local<Array> result;
    if (!storage->Enumerate().ToLocal(&result)) {
      return;
-@@ -652,7 +652,7 @@ static Intercepted StorageDefiner(Local<Name> property,
+@@ -653,7 +653,7 @@ static Intercepted StorageDefiner(Local<Name> property,
                                    const PropertyDescriptor& desc,
                                    const PropertyCallbackInfo<void>& info) {
    Storage* storage;

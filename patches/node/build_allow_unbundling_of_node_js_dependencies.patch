@@ -14,10 +14,10 @@ We don't need to do this for zlib, as the existing gn workflow uses the same
 Upstreamed at https://github.com/nodejs/node/pull/55903
 
 diff --git a/unofficial.gni b/unofficial.gni
-index eeffbafa4023ed68f56410c858e459f569ed6344..d7c717d5c2799692c7ea4537d7faea234faefaa2 100644
+index df0ae804a5338d8f2ec4d331a1e2ed053c3c3955..07ebc4706c6b3208dc9136e6ba0e4d795c238d61 100644
 --- a/unofficial.gni
 +++ b/unofficial.gni
-@@ -203,7 +203,17 @@ template("node_gn_build") {
+@@ -199,7 +199,17 @@ template("node_gn_build") {
        configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
        configs += [ "//build/config/gcc:symbol_visibility_default" ]
      }
@@ -36,7 +36,7 @@ index eeffbafa4023ed68f56410c858e459f569ed6344..d7c717d5c2799692c7ea4537d7faea23
      if (v8_enable_i18n_support) {
        deps += [ "//third_party/icu" ]
      }
-@@ -236,6 +246,19 @@ template("node_gn_build") {
+@@ -232,6 +242,19 @@ template("node_gn_build") {
        sources += node_inspector.node_inspector_sources +
                   node_inspector.node_inspector_generated_sources
      }
