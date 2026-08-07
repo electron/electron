@@ -108,7 +108,7 @@ index 29da5a0c5dc5f7e9ab0fd7ee7dd1a5288f20c051..9c264c8382d1c7e516e1668a0439a979
      vk::ImageViewHelper &getImageViews() { return mImageView; }
      const vk::ImageViewHelper &getImageViews() const { return mImageView; }
 diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
-index 6cd4699b675fe4fb16163ec4ec0765b21d5f6c0a..b7b80533c4a9875b35b3a6b39e69e2c2c957644e 100644
+index b971acfafaf0ada7ffb78244398ce728e4b5f283..5d5b68c20bdd7d88dcc725db1112a0cdd92f632e 100644
 --- a/src/tests/angle_end2end_tests_expectations.txt
 +++ b/src/tests/angle_end2end_tests_expectations.txt
 @@ -139,6 +139,7 @@
