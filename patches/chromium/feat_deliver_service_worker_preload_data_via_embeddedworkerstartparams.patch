@@ -16,10 +16,10 @@ WebServiceWorkerContextProxy::ElectronPreloadData() getter backed by
 WorkerGlobalScope.
 
 diff --git a/content/browser/service_worker/service_worker_version.cc b/content/browser/service_worker/service_worker_version.cc
-index e8d3e3f7a6105924208e94c24217ef129b3b4b70..b5d110fd5aa4a06359e13a9d516a443fe73909a2 100644
+index 397a23dd7d79f0c56d24dee57333757e510cf80e..8839579b994b84ebd2817df8b001bf1b11c22216 100644
 --- a/content/browser/service_worker/service_worker_version.cc
 +++ b/content/browser/service_worker/service_worker_version.cc
-@@ -2730,6 +2730,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
+@@ -2836,6 +2836,12 @@ void ServiceWorkerVersion::StartWorkerInternal() {
    params->ukm_source_id = ukm_source_id_;
    params->storage_key = key_;
  
@@ -33,7 +33,7 @@ index e8d3e3f7a6105924208e94c24217ef129b3b4b70..b5d110fd5aa4a06359e13a9d516a443f
    if (policy_container_host_) {
      params->policy_container =
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 39bf28cbf1e108200b31b42e210ea6e5cd8bdcf2..141d1f695abdcfc29c06655d2df63b61b3169c74 100644
+index bbca572c408eabcd74d4926a2489f34df6f87b5d..eca22966a0dc83fc15bddd64384fcb1fc31fc4af 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -837,6 +837,13 @@ ContentBrowserClient::GetExtraCreateNewWindowReplyData(
@@ -51,10 +51,10 @@ index 39bf28cbf1e108200b31b42e210ea6e5cd8bdcf2..141d1f695abdcfc29c06655d2df63b61
  ContentBrowserClient::CreateSpeechRecognitionManagerDelegate() {
    return nullptr;
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index fe8f7876e49fdf4362c4bd5f0bbb8355ec76c814..4c67dd8bc41a92f0539caaaab8eacd3fdb89dc79 100644
+index 943d303702915c04667362e804ee137cbbeae7db..3d52b78101fc8d476ca125b4e99a69fdec8a8a71 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -1323,6 +1323,17 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1324,6 +1324,17 @@ class CONTENT_EXPORT ContentBrowserClient {
        RenderFrameHost* new_window_main_frame,
        const GURL& target_url);
  
@@ -193,10 +193,10 @@ index f7f92a38ff6e4fac76dec40b62131af36c3675f4..74f49dd992caa27d2dd751fd21389d50
    const net::StorageAccessApiStatus parent_storage_access_api_status;
  
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.cc b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-index 7f316f0913a93e197960e98fa66e6cf244d67a88..719676878e573ab685c13460bead2c787731e167 100644
+index 275a8e94fdf401e7430a28d0f741866ab29f814f..552038ee43382703af3ef4f538ffa4cd6fd59a67 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worker_global_scope.cc
-@@ -757,6 +757,9 @@ WorkerGlobalScope::WorkerGlobalScope(
+@@ -758,6 +758,9 @@ WorkerGlobalScope::WorkerGlobalScope(
            std::move(creation_params->top_level_frame_security_origin)) {
    // Workers should always maintain the default world of an isolate.
    CHECK(creation_params->is_default_world_of_isolate);
@@ -204,8 +204,8 @@ index 7f316f0913a93e197960e98fa66e6cf244d67a88..719676878e573ab685c13460bead2c78
 +  // is consumed, so the service worker thread can read it later.
 +  electron_preload_data_ = std::move(creation_params->electron_preload_data);
    TRACE_EVENT("blink.worker", "WorkerGlobalScope::WorkerGlobalScope");
-   TRACE_EVENT_BEGIN("blink.worker", "WorkerGlobalScope setup",
-                     perfetto::Track::FromPointer(this));
+   TRACE_EVENT_BEGIN(
+       "blink.worker", "WorkerGlobalScope setup",
 diff --git a/third_party/blink/renderer/core/workers/worker_global_scope.h b/third_party/blink/renderer/core/workers/worker_global_scope.h
 index 44d8d345f15cc54c509e965757819dc0ee9f841d..719b4b3833dc202745d8591e40cea7b9e7b677fc 100644
 --- a/third_party/blink/renderer/core/workers/worker_global_scope.h
