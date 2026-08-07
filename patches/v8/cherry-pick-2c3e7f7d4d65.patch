@@ -1,0 +1,148 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Tue, 28 Jul 2026 12:51:35 +0200
+Subject: [arm64] Fix write barrier register aliasing
+
+Use `r1.Aliases(r2)` to handle W and X registers correctly.
+
+Fixed: 530663440
+Change-Id: Ib17e8f186bbea17d2b845202399ce39d21dbf107
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8158501
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Manos Koukoutos <manoskouk@chromium.org>
+Commit-Queue: Manos Koukoutos <manoskouk@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#108911}
+(cherry picked from commit 2c3e7f7d4d65f274951d58eec078b2aacdfba58e)
+
+diff --git a/src/codegen/arm64/macro-assembler-arm64.cc b/src/codegen/arm64/macro-assembler-arm64.cc
+index e52364d80af4055002a0f0bc567b703f20538457..9f4209c8f5d8e29b4682720e2f8a0a58a3e5f844 100644
+--- a/src/codegen/arm64/macro-assembler-arm64.cc
++++ b/src/codegen/arm64/macro-assembler-arm64.cc
+@@ -4296,7 +4296,7 @@ void MacroAssembler::MoveObjectAndSlot(Register dst_object, Register dst_slot,
+   ASM_CODE_COMMENT(this);
+   DCHECK_NE(dst_object, dst_slot);
+   // If `offset` is a register, it cannot overlap with `object`.
+-  DCHECK_IMPLIES(!offset.IsImmediate(), offset.reg() != object);
++  DCHECK_IMPLIES(!offset.IsImmediate(), !offset.reg().Aliases(object));
+ 
+   // If the slot register does not overlap with the object register, we can
+   // overwrite it.
+@@ -4310,19 +4310,19 @@ void MacroAssembler::MoveObjectAndSlot(Register dst_object, Register dst_slot,
+ 
+   // If the destination object register does not overlap with the offset
+   // register, we can overwrite it.
+-  if (offset.IsImmediate() || (offset.reg() != dst_object)) {
++  if (offset.IsImmediate() || !offset.reg().Aliases(dst_object)) {
+     Mov(dst_object, dst_slot);
+     Add(dst_slot, dst_slot, offset);
+     return;
+   }
+ 
+-  DCHECK_EQ(dst_object, offset.reg());
++  DCHECK(dst_object.Aliases(offset.reg()));
+ 
+   // We only have `dst_slot` and `dst_object` left as distinct registers so we
+   // have to swap them. We write this as a add+sub sequence to avoid using a
+   // scratch register.
+-  Add(dst_slot, dst_slot, dst_object);
+-  Sub(dst_object, dst_slot, dst_object);
++  Add(dst_slot, dst_slot, offset);
++  Sub(dst_object, dst_slot, offset);
+ }
+ 
+ // If lr_status is kLRHasBeenSaved, lr will be clobbered.
+diff --git a/test/mjsunit/regress/wasm/regress-530663440.js b/test/mjsunit/regress/wasm/regress-530663440.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..6e6742385a23080c5eef9a4e806d2ac263292cff
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-530663440.js
+@@ -0,0 +1,36 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --expose-gc
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++const builder = new WasmModuleBuilder();
++const arrT = builder.addArray(kWasmAnyRef);
++
++let fill_sig = makeSig(
++    [kWasmI32, kWasmI32, kWasmI32, kWasmI32, wasmRefType(arrT), kWasmAnyRef],
++    []);
++builder.addFunction('fill', fill_sig).exportFunc().addBody([
++    kExprLocalGet, 4,
++    kExprLocalGet, 0,
++    kExprI32Eqz,
++    kExprLocalGet, 5,
++    kExprI32Const, 1,
++    kGCPrefix, kExprArrayFill, arrT,
++  ]);
++
++builder.addFunction('mkarr', makeSig([kWasmI32], [kWasmAnyRef])).exportFunc()
++  .addBody([
++    kExprLocalGet, 0,
++    kGCPrefix, kExprArrayNewDefault, arrT,
++  ]);
++
++const instance = builder.instantiate();
++
++const arr = instance.exports.mkarr(4);
++gc();  // Promote {arr} to old space.
++gc();
++
++instance.exports.fill(1, 0, 0, 0, arr, {});
+diff --git a/test/unittests/assembler/macro-assembler-arm64-unittest.cc b/test/unittests/assembler/macro-assembler-arm64-unittest.cc
+index 9ae126cba5ea9f57c74ecc55fe72e9f53e8b9e61..ce1ed02d16727d61046007616b9b50b8bb13c836 100644
+--- a/test/unittests/assembler/macro-assembler-arm64-unittest.cc
++++ b/test/unittests/assembler/macro-assembler-arm64-unittest.cc
+@@ -141,25 +141,33 @@ struct MoveObjectAndSlotTestCase {
+   Register dst_slot;
+   Register object;
+   Register offset_register = no_reg;
++  Extend offset_extend = NO_EXTEND;
+ };
+ 
+ const MoveObjectAndSlotTestCase kMoveObjectAndSlotTestCases[] = {
+     {"no overlap", x0, x1, x2},
+     {"no overlap", x0, x1, x2, x3},
++    {"no overlap", x0, x1, x2, w3, UXTW},
+ 
+     {"object == dst_object", x2, x1, x2},
+     {"object == dst_object", x2, x1, x2, x3},
++    {"object == dst_object", x2, x1, x2, w3, UXTW},
+ 
+     {"object == dst_slot", x1, x2, x2},
+     {"object == dst_slot", x1, x2, x2, x3},
++    {"object == dst_slot", x1, x2, x2, w3, UXTW},
+ 
+     {"offset == dst_object", x0, x1, x2, x0},
++    {"offset == dst_object", x0, x1, x2, w0, UXTW},
+ 
+     {"offset == dst_object && object == dst_slot", x0, x1, x1, x0},
++    {"offset == dst_object && object == dst_slot", x0, x1, x1, w0, UXTW},
+ 
+     {"offset == dst_slot", x0, x1, x2, x1},
++    {"offset == dst_slot", x0, x1, x2, w1, UXTW},
+ 
+-    {"offset == dst_slot && object == dst_object", x0, x1, x0, x1}};
++    {"offset == dst_slot && object == dst_object", x0, x1, x0, x1},
++    {"offset == dst_slot && object == dst_object", x0, x1, x0, w1, UXTW}};
+ 
+ // Make sure we include offsets that cannot be encoded in an add instruction.
+ const int kOffsets[] = {0, 42, kMaxRegularHeapObjectSize, 0x101001};
+@@ -194,7 +202,12 @@ TEST_P(MacroAssemblerTestMoveObjectAndSlot, MoveObjectAndSlot) {
+         offset_operand = Operand(offset);
+       } else {
+         __ Mov(test_case.offset_register, Operand(offset));
+-        offset_operand = Operand(test_case.offset_register);
++        if (test_case.offset_extend == NO_EXTEND) {
++          offset_operand = Operand(test_case.offset_register);
++        } else {
++          offset_operand =
++              Operand(test_case.offset_register, test_case.offset_extend);
++        }
+       }
+ 
+       std::stringstream comment;

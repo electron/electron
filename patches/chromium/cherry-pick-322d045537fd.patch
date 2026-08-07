@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Wed, 27 May 2026 01:52:30 -0700
+Subject: Add ScopedDeleteBlocker to aura::Window
+
+This CL adds the ScopedDeleteBlocker definition and the basic check in the Window destructor.
+
+See crrev.com/c/7872952 for full CL.
+
+Bug: 516276225
+Test: coverted by unit test
+Change-Id: I133ff5f8bbb0b315a15be95ad311f0d270133e14
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7873492
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Reviewed-by: Thomas Lukaszewicz <tluk@chromium.org>
+Reviewed-by: Keren Zhu <kerenzhu@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1636763}
+(cherry picked from commit 322d045537fdcce303892f7ae47c6965c48a3e18)
+
+Prerequisite for the capture-window weak pointer backport; that change
+uses Window::ScopedDeleteBlocker, which is not in 148.
+
+diff --git a/ui/aura/window.cc b/ui/aura/window.cc
+index 91ef981a6984acfbd8aab82daa8cba09c167da96..1409dad4b6c773ff8a2e1c80e70d8c4638e705c7 100644
+--- a/ui/aura/window.cc
++++ b/ui/aura/window.cc
+@@ -199,6 +199,8 @@ Window::Window(WindowDelegate* delegate, client::WindowType type)
+ }
+ 
+ Window::~Window() {
++  CHECK_EQ(delete_block_count_, 0u);
++
+   // TODO(crbug.com/461127606): Crash on re-entrant destruction.
+   // TODO(crbug.com/497548912): Continue crashing on re-entrant destruction
+   // on Chrome M149 or newer.
+diff --git a/ui/aura/window.h b/ui/aura/window.h
+index e0a2cf4d2f41781573d9ffa4b6437997cd83d13f..4762eb3ecc315e30566e268afde8d2e061b825bf 100644
+--- a/ui/aura/window.h
++++ b/ui/aura/window.h
+@@ -124,6 +124,21 @@ class AURA_EXPORT Window : public ui::LayerDelegate,
+  public:
+   METADATA_HEADER_BASE(Window);
+ 
++  // A helper class to ensure that the Window is not deleted while it is
++  // notifying observers or doing other operations where re-entrant deletion
++  // would be problematic. Attempting to delete the Window while a
++  // ScopedDeleteBlocker is active will cause a crash.
++  class ScopedDeleteBlocker {
++   public:
++    explicit ScopedDeleteBlocker(aura::Window* window) : window_(window) {
++      window_->delete_block_count_++;
++    }
++    ScopedDeleteBlocker(const ScopedDeleteBlocker&) = delete;
++    ScopedDeleteBlocker& operator=(const ScopedDeleteBlocker&) = delete;
++    ~ScopedDeleteBlocker() { window_->delete_block_count_--; }
++    raw_ptr<aura::Window> window_;
++  };
++
+   // Initial value of id() for newly created windows.
+   static constexpr int kInitialId = -1;
+ 
+@@ -868,6 +883,8 @@ class AURA_EXPORT Window : public ui::LayerDelegate,
+   // Used when this is embedding external content.
+   base::WeakPtr<cc::LayerTreeFrameSink> frame_sink_;
+ 
++  size_t delete_block_count_ = 0;
++
+   base::WeakPtrFactory<Window> weak_factory_{this};
+ };
+ 
+diff --git a/ui/aura/window_unittest.cc b/ui/aura/window_unittest.cc
+index 0c21e77e810f5680b8af352fda08673565906969..938bead3295d3e793f39c9347fd9e112537ce987 100644
+--- a/ui/aura/window_unittest.cc
++++ b/ui/aura/window_unittest.cc
+@@ -3162,6 +3162,51 @@ TEST_F(WindowTest, DeleteWindowFromOnWindowDestroyed) {
+   parent.reset();
+ }
+ 
++// WindowObserver implementation that deletes a window in
++// OnWindowBoundsChanged().
++class DeleteOnBoundsChangedObserver : public WindowObserver {
++ public:
++  explicit DeleteOnBoundsChangedObserver(Window* window) : window_(window) {
++    window_->AddObserver(this);
++  }
++
++  DeleteOnBoundsChangedObserver(const DeleteOnBoundsChangedObserver&) = delete;
++  DeleteOnBoundsChangedObserver& operator=(
++      const DeleteOnBoundsChangedObserver&) = delete;
++
++  ~DeleteOnBoundsChangedObserver() override {
++    CHECK(window_);
++    window_->RemoveObserver(this);
++  }
++
++  // WindowObserver:
++  void OnWindowBoundsChanged(Window* window,
++                             const gfx::Rect& old_bounds,
++                             const gfx::Rect& new_bounds,
++                             ui::PropertyChangeReason reason) override {
++    // This will fail with CHECK.
++    delete window_;
++    NOTREACHED();
++  }
++
++  void OnWindowDestroyed(Window* window) override { NOTREACHED(); }
++
++ private:
++  raw_ptr<Window> window_;
++};
++
++using WindowDeathTest = WindowTest;
++
++TEST_F(WindowDeathTest, DeleteWindowInBoundsChange) {
++  std::unique_ptr<Window> window = std::make_unique<Window>(nullptr);
++  window->Init(ui::LAYER_NOT_DRAWN);
++  auto weak_window = window->GetWeakPtr();
++  DeleteOnBoundsChangedObserver observer(window.get());
++  EXPECT_DEATH(window->SetBounds(gfx::Rect(10, 10, 300, 300)), "");
++  // Deletion fails with CHECK.
++  EXPECT_TRUE(weak_window);
++}
++
+ // WindowObserver implementation that deletes a window in
+ // OnWindowVisibilityChanged().
+ class DeleteOnVisibilityChangedObserver : public WindowObserver {

@@ -1,0 +1,234 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Thu, 23 Jul 2026 16:23:44 -0400
+Subject: [ganesh] Check results of internal flushes for internalWritePixels
+ success
+
+This moves the caps' dependent pre-flush out of newWritePixelsTask and
+performs the flush inside internalWritePixels. Also checks for the
+success of the flush at the end of internalWritePixels when the source
+pixel data isn't owned. These use a shared helper function.
+
+Adds a unit test that can trigger writing stale scratch texture contents
+if the internalWritePixels' flush failed when performing an upload to
+the scratch texture when taking a write-as-draw path for the primary
+writePixels target.
+
+Bug: 536068737
+Fixed: 536068737
+Change-Id: I75c01c1db94c3c38ba302473a0ba502e5cff2c94
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1302397
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+Reviewed-by: Nathan Sanchez <nathanasanchez@google.com>
+(cherry picked from commit cee83412c5b59f9406ddc2e7147290ea9ac9d9aa)
+
+diff --git a/src/gpu/ganesh/GrDrawingManager.cpp b/src/gpu/ganesh/GrDrawingManager.cpp
+index 8b30af1d253de4e2083fb28e4eddfb103f3ac21d..6aa1644e2ad3e3684ca130f90c5b4d298a904e2c 100644
+--- a/src/gpu/ganesh/GrDrawingManager.cpp
++++ b/src/gpu/ganesh/GrDrawingManager.cpp
+@@ -987,16 +987,6 @@ bool GrDrawingManager::newWritePixelsTask(sk_sp<GrSurfaceProxy> dst,
+     SkASSERT(fContext);
+ 
+     this->closeActiveOpsTask();
+-    const GrCaps& caps = *fContext->priv().caps();
+-
+-    // On platforms that prefer flushes over VRAM use (i.e., ANGLE) we're better off forcing a
+-    // complete flush here.
+-    if (!caps.preferVRAMUseOverFlushes()) {
+-        this->flushSurfaces(SkSpan<GrSurfaceProxy*>{},
+-                            SkSurfaces::BackendSurfaceAccess::kNoAccess,
+-                            GrFlushInfo{},
+-                            nullptr);
+-    }
+ 
+     GrRenderTask* task = this->appendTask(GrWritePixelsTask::Make(this,
+                                                                   std::move(dst),
+diff --git a/src/gpu/ganesh/SurfaceContext.cpp b/src/gpu/ganesh/SurfaceContext.cpp
+index 2394cbe9761649d2f4c30ae29dcc92f31e1adae4..5bee6e07ade153ca8fb16c35044f8eb40de54d3b 100644
+--- a/src/gpu/ganesh/SurfaceContext.cpp
++++ b/src/gpu/ganesh/SurfaceContext.cpp
+@@ -566,6 +566,22 @@ bool SurfaceContext::internalWritePixels(GrDirectContext* dContext,
+     }
+     pt.fY = flip ? dstSurface->height() - pt.fY - src[0].height() : pt.fY;
+ 
++    auto flushSurfaceAndCheckSuccess = [dContext](GrSurfaceProxy* dstProxy, bool expectsTasks) {
++        const bool hasPendingTasks =
++                dContext->priv().drawingManager()->getLastRenderTask(dstProxy) != nullptr;
++        SkASSERT(!expectsTasks || hasPendingTasks);
++        GrSemaphoresSubmitted flushResult = dContext->priv().flushSurface(dstProxy);
++        return flushResult == GrSemaphoresSubmitted::kYes || !hasPendingTasks;
++    };
++
++    // On platforms that prefer flushes over VRAM use (i.e., ANGLE) we're better off forcing a
++    // complete flush here.
++    if (!caps->preferVRAMUseOverFlushes()) {
++        if (!flushSurfaceAndCheckSuccess(dstProxy, /*expectsTasks=*/false)) {
++            return false;
++        }
++    }
++
+     if (!dContext->priv().drawingManager()->newWritePixelsTask(
+                 sk_ref_sp(dstProxy),
+                 SkIRect::MakePtSize(pt, src[0].dimensions()),
+@@ -581,7 +597,9 @@ bool SurfaceContext::internalWritePixels(GrDirectContext* dContext,
+     if (!ownAllStorage) {
+         // If any pixmap doesn't own its pixels then we must flush so that the pixels are pushed to
+         // the GPU before we return.
+-        dContext->priv().flushSurface(dstProxy);
++        if (!flushSurfaceAndCheckSuccess(dstProxy, /*expectsTasks=*/true)) {
++            return false;
++        }
+     }
+     return true;
+ }
+diff --git a/tests/ReadWritePixelsGpuTest.cpp b/tests/ReadWritePixelsGpuTest.cpp
+index b0520fee9a442a43ab959da05e0cd60aa980c2b9..1ce0cca2a97b66d5516996d82bb153094e81a112 100644
+--- a/tests/ReadWritePixelsGpuTest.cpp
++++ b/tests/ReadWritePixelsGpuTest.cpp
+@@ -1504,3 +1504,145 @@ DEF_GANESH_TEST_FOR_GL_CONTEXT(GLReadPixelsUnbindPBO,
+ 
+     ComparePixels(syncResult.pixmap(), asyncResult, tol, error);
+ }
++
++// readPixels() that uses an intermediate scratch surface should not return stale recycled scratch
++// contents if the implicit flush of the queued draw into that surface drops its render tasks.
++DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(ReadPixelsIntermediateFailedFlush,
++                                       reporter,
++                                       ctxInfo,
++                                       CtsEnforcement::kNextRelease) {
++    auto dContext = ctxInfo.directContext();
++    if (dContext->supportsProtectedContent()) {
++        return;
++    }
++
++    static constexpr int kSize = 100;
++    static constexpr SkColor kStaleColor = 0xFF112233;
++    static constexpr SkColor kSrcColor = 0xFF008800;
++
++    auto srcII = SkImageInfo::Make({kSize, kSize}, kRGBA_8888_SkColorType, kPremul_SkAlphaType);
++    auto dstII = srcII.makeAlphaType(kUnpremul_SkAlphaType);
++    auto surf = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes, srcII);
++    if (!surf) {
++        return;
++    }
++
++    SkAutoPixmapStorage pixels;
++    pixels.alloc(dstII);
++
++    // Reading the unpremul destination from the premul source draws through an intermediate
++    // approx-fit surface. Do this once so a matching scratch surface lands in the resource cache
++    // with known stale contents.
++    surf->getCanvas()->clear(kStaleColor);
++    if (!surf->readPixels(pixels, 0, 0)) {
++        return;
++    }
++
++    surf->getCanvas()->clear(kSrcColor);
++    dContext->flushAndSubmit(GrSyncCpu::kYes);
++
++    // From here on the flush-time callback fails so any queued render tasks are discarded.
++    FailingFlushCallback failingCallback;
++    dContext->priv().addOnFlushCallbackObject(&failingCallback);
++
++    pixels.erase(SkColors::kTransparent);
++    bool ok = surf->readPixels(pixels, 0, 0);
++
++    dContext->priv().drawingManager()->testingOnly_removeOnFlushCallbackObject(&failingCallback);
++
++    if (ok) {
++        SkColor result = pixels.getColor(0, 0);
++        REPORTER_ASSERT(reporter,
++                        result == kSrcColor,
++                        "readPixels reported success but returned 0x%08x, expected 0x%08x",
++                        result,
++                        kSrcColor);
++    } else {
++        REPORTER_ASSERT(reporter, failingCallback.count() > 0);
++    }
++}
++
++DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(WritePixelsFailedFlushLeaksScratch,
++                                       reporter,
++                                       ctxInfo,
++                                       CtsEnforcement::kNextRelease) {
++    auto dContext = ctxInfo.directContext();
++    if (dContext->supportsProtectedContent()) {
++        return; // This test performs readbacks
++    }
++
++    // internalWritePixels() calls this function, which flushes work the first time it's called. We
++    // don't want that to happen while the test's FailOnceCallback is installed, so trigger it now.
++    (void) dContext->priv().validPMUPMConversionExists();
++
++    static constexpr int kSize = 16;
++    // alpha=0xFF so the unpremul->premul shader is a no-op and we can compare exact bytes.
++    static constexpr SkColor kStalePixel = SkColorSetARGB(0xFF, 0x33, 0x22, 0x11);
++    static constexpr SkColor kSrcPixel   = SkColorSetARGB(0xFF, 0x00, 0x88, 0x44);
++
++    auto dstII = SkImageInfo::Make({kSize, kSize}, kRGBA_8888_SkColorType, kPremul_SkAlphaType);
++    auto srcII = dstII.makeAlphaType(kUnpremul_SkAlphaType);
++    auto surf = SkSurfaces::RenderTarget(dContext, skgpu::Budgeted::kYes, dstII);
++    if (!surf) {
++        return;
++    }
++
++    SkBitmap srcBM;
++    srcBM.allocPixels(srcII, srcII.minRowBytes());
++    srcBM.eraseColor(kStalePixel);
++
++    // Prime: writePixels(unpremul kStalePixel). canvas2DFastPath uploads kStalePixel into a
++    // fresh kApprox scratch texture and draws it into |surf|. After the flush the scratch
++    // texture (still holding kStalePixel) is returned to the resource cache.
++    if (!surf->getCanvas()->writePixels(srcBM, 0, 0)) {
++        return;
++    }
++    dContext->flushAndSubmit(GrSyncCpu::kYes);
++
++    // Arm a preFlush() that fails exactly once. When it fires on the flush for uploading to a
++    // temporary texture, we should propagate the failure and not use the temporary texture as the
++    // input for the draw that performs the final "write".
++    class FailOnceFlushCallback : public GrOnFlushCallbackObject {
++    public:
++        bool preFlush(GrOnFlushResourceProvider*) override { return ++fCount > 1; }
++        int count() const { return fCount; }
++    private:
++        int fCount = 0;
++    };
++    FailOnceFlushCallback cb;
++    dContext->priv().addOnFlushCallbackObject(&cb);
++
++    // writePixels(unpremul kSrcPixel): tempProxy is instantiated from the recycled
++    // scratch texture (still kStalePixel). The GrWritePixelsTask that would overwrite it with
++    // kSrcPixel is queued and then dropped by the failed flush, leaving the tempProxy stale.
++    srcBM.eraseColor(kSrcPixel);
++    bool ok = surf->getCanvas()->writePixels(srcBM, 0, 0);
++
++    dContext->priv().drawingManager()->testingOnly_removeOnFlushCallbackObject(&cb);
++
++    if (!ok) {
++        // Assuming the various branches are taken inside internalWritePixels to trigger the
++        // FailOnceFlushCallback, it should be propagated as a failure of the overall writePixels().
++        REPORTER_ASSERT(reporter, cb.count() > 0);
++        return;
++    }
++
++    // If none of the code paths triggered an internal flush from the write pixels, it should
++    // execute successfully when we flush here.
++    dContext->flushAndSubmit(GrSyncCpu::kYes);
++
++    SkBitmap readback;
++    readback.allocPixels(dstII);
++    if (!surf->readPixels(readback, 0, 0)) {
++        ERRORF(reporter, "readback failed");
++        return;
++    }
++
++    SkColor got = readback.getColor(0, 0);
++    // Bug: |got| == kStalePixel (recycled scratch contents) instead of kSrcPixel.
++    REPORTER_ASSERT(reporter,
++                    got == kSrcPixel,
++                    "writePixels reported success but destination holds stale scratch "
++                    "contents 0x%08x (expected 0x%08x, stale=0x%08x, preFlush hits=%d)",
++                    got, kSrcPixel, kStalePixel, cb.count());
++}

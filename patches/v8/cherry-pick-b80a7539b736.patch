@@ -1,0 +1,143 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Wed, 29 Jul 2026 11:28:40 +0200
+Subject: [scopes] Check parameter semantics when reusing a cached ScopeInfo
+
+The reuse check only compared scope type and context layout, so a cached
+ScopeInfo describing non-simple parameters could be attached to a
+function that was compiled with simple parameters. The mapped arguments
+path then allocated a strict arguments object and installed the larger
+fast aliased arguments map on it.
+
+Fixed: 536271629
+Change-Id: I625c3add35f8e9324ce3f54a5bf46ff4a7d69e86
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8159583
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#108933}
+(cherry picked from commit b80a7539b736c985e0fb9790ec76006f6f1d801f)
+
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index d6a4533a20fe2d885f9c279e77717a8b80913dba..899370cae3ecd6cbc7b73a2da3b40277bbe750f8 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -2854,6 +2854,12 @@ void Scope::AllocateScopeInfosRecursively(
+     CHECK_EQ(scope_info_->scope_type(), scope_type_);
+     CHECK_EQ(scope_info_->HasContext(), NeedsContext());
+     CHECK_EQ(scope_info_->ContextLength(), num_heap_slots_);
++    if (is_function_scope()) {
++      DeclarationScope* function_scope = AsDeclarationScope();
++      CHECK_EQ(scope_info_->HasSimpleParameters(),
++               function_scope->has_simple_parameters());
++      CHECK_EQ(scope_info_->ParameterCount(), function_scope->num_parameters());
++    }
+ #ifdef DEBUG
+     // Consume the scope info.
+     it->second = {};
+diff --git a/src/objects/scope-info.h b/src/objects/scope-info.h
+index 7f743652f3c71d07819cf3ce4fbeda6f0ea55ec4..0e486d6fbd84a7d89b0c31b1a078da2889910175 100644
+--- a/src/objects/scope-info.h
++++ b/src/objects/scope-info.h
+@@ -123,8 +123,8 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
+ 
+   V8_EXPORT_PRIVATE bool HasInferredFunctionName() const;
+ 
+-  void SetFunctionName(Tagged<UnionOf<Smi, String>> name);
+-  void SetInferredFunctionName(Tagged<String> name);
++  V8_EXPORT_PRIVATE void SetFunctionName(Tagged<UnionOf<Smi, String>> name);
++  V8_EXPORT_PRIVATE void SetInferredFunctionName(Tagged<String> name);
+ 
+   // Does this scope belong to a function?
+   bool HasPositionInfo() const;
+diff --git a/src/runtime/runtime-scopes.cc b/src/runtime/runtime-scopes.cc
+index 7e575393b434bbcc040bcb2d36d1d1b6d27a3bc4..77ca41cfc9d833bb93e00fc9cafa3d40adde3781 100644
+--- a/src/runtime/runtime-scopes.cc
++++ b/src/runtime/runtime-scopes.cc
+@@ -553,7 +553,7 @@ DirectHandle<JSObject> NewSloppyArguments(Isolate* isolate,
+                                           T parameters,
+                                           uint32_t argument_count) {
+   CHECK(!IsDerivedConstructor(callee->shared()->kind()));
+-  DCHECK(callee->shared()->has_simple_parameters());
++  CHECK(callee->shared()->has_simple_parameters());
+   DirectHandle<JSObject> result =
+       isolate->factory()->NewArgumentsObject(callee, argument_count);
+ 
+diff --git a/test/unittests/BUILD.gn b/test/unittests/BUILD.gn
+index 9a53d5cd6a00c65c0744a43de842a9b7cd2c3863..03e62b774beba423a972027142ae881ee4c39f8d 100644
+--- a/test/unittests/BUILD.gn
++++ b/test/unittests/BUILD.gn
+@@ -501,6 +501,7 @@ v8_cluster_source_set("v8_unittests_sources") {
+     "profiler/heap-snapshot-utils.h",
+     "profiler/strings-storage-unittest.cc",
+     "regexp/regexp-unittest.cc",
++    "regress/regress-536271629-unittest.cc",
+     "regress/regress-crbug-1041240-unittest.cc",
+     "regress/regress-crbug-1056054-unittest.cc",
+     "regress/regress-crbug-938251-unittest.cc",
+diff --git a/test/unittests/regress/regress-536271629-unittest.cc b/test/unittests/regress/regress-536271629-unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..57c944dfdb11f70fadeaa4f97559d9ef9bf79030
+--- /dev/null
++++ b/test/unittests/regress/regress-536271629-unittest.cc
+@@ -0,0 +1,60 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "src/execution/isolate.h"
++#include "src/objects/js-function-inl.h"
++#include "src/objects/scope-info.h"
++#include "src/objects/shared-function-info-inl.h"
++#include "test/unittests/test-utils.h"
++
++namespace v8 {
++namespace internal {
++
++using SloppyArgumentsScopeInfoTest = TestWithContext;
++
++namespace {
++
++DirectHandle<JSFunction> GetFunction(v8::Local<v8::Context> context,
++                                     v8::Local<v8::Object> global,
++                                     v8::Local<v8::String> name) {
++  return Cast<JSFunction>(v8::Utils::OpenDirectHandle(
++      *global->Get(context, name).ToLocalChecked()));
++}
++
++}  // namespace
++
++// A SharedFunctionInfo whose ScopeInfo says that the parameters are not simple
++// must never end up on the mapped arguments path: the arguments object would be
++// allocated with the strict arguments map and then be given the larger fast
++// aliased arguments map.
++TEST_F(SloppyArgumentsScopeInfoTest, MappedArgumentsWithNonSimpleScopeInfo) {
++  v8::HandleScope scope(isolate());
++
++  RunJS(
++      "function nonSimple(a, b = 0) { var g = () => a; return arguments[0]; }"
++      "function duplicate(a, a) { var g = () => a; return arguments[0]; }"
++      "nonSimple(1, 2);"
++      "duplicate(1, 2);");
++
++  v8::Local<v8::Object> global = context()->Global();
++  DirectHandle<JSFunction> non_simple =
++      GetFunction(context(), global, NewString("nonSimple"));
++  DirectHandle<JSFunction> duplicate =
++      GetFunction(context(), global, NewString("duplicate"));
++
++  DirectHandle<ScopeInfo> non_simple_scope_info(
++      non_simple->shared()->scope_info(), i_isolate());
++  CHECK(!non_simple_scope_info->HasSimpleParameters());
++  CHECK(duplicate->shared()->scope_info()->HasSimpleParameters());
++  CHECK(duplicate->shared()->has_duplicate_parameters());
++
++  // Emulate the incompatible ScopeInfo that a mismatched code cache can install
++  // on an otherwise simple-parameter function.
++  duplicate->shared()->SetScopeInfo(*non_simple_scope_info);
++
++  EXPECT_DEATH_IF_SUPPORTED(RunJS("duplicate(1, 2)"), "");
++}
++
++}  // namespace internal
++}  // namespace v8
