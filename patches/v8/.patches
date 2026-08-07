@@ -6,3 +6,8 @@ cherry-pick-b9013994f341.patch
 maglev_fix_scope_tracking_at_dead_merge_points_in_resumable.patch
 interpreter_elide_unreachable_catch_blocks_and_consider.patch
 cherry-pick-a90507bd38f7.patch
+cherry-pick-2c3e7f7d4d65.patch
+cherry-pick-c3ea7757b190.patch
+cherry-pick-b80a7539b736.patch
+cherry-pick-2a21c7560310.patch
+cherry-pick-d6a92ca48587.patch

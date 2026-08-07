@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Dominic=20Battr=C3=A9?= <battre@chromium.org>
+Date: Tue, 14 Jul 2026 01:33:47 -0700
+Subject: Fix heap-buffer-overflow in SubstringSetMatcher
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+SubstringSetMatcher::AhoCorasickNode::SetEdge could overflow its
+allocated edge capacity when duplicate patterns are provided in release
+builds. In release builds (without DCHECKs), duplicate patterns are not
+rejected and can result in multiple kMatchIDLabel edges being added to
+the same node. This can exceed the maximum capacity of 260 edges and
+cause an out-of-bounds write when subsequent edges (like failure edges)
+are added.
+
+This CL makes SetMatchID idempotent. If a node is already marked as the
+end of a pattern, we return early and do not add a duplicate
+kMatchIDLabel edge.
+
+This behavior is now documented in Build(), and a regression test has
+been added to verify that duplicate patterns are handled safely by
+ignoring subsequent duplicates in release builds.
+
+Bug: 533331920
+
+TAG=agy
+CONV=95405c0a-c9e1-4622-aefd-20ac03e2cd86
+
+Change-Id: I68933c463aa1a37e210002529c67116aece19523
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8076938
+Commit-Queue: Dominic Battré <battre@chromium.org>
+Reviewed-by: Jan Keitel <jkeitel@google.com>
+Cr-Commit-Position: refs/heads/main@{#1661676}
+(cherry picked from commit 6ed29677f1d437e8acb732da6e86b19a3209294b)
+
+diff --git a/base/substring_set_matcher/substring_set_matcher.h b/base/substring_set_matcher/substring_set_matcher.h
+index cd7d488e1f66bd0ff8e6714afd32b964641cc4db..356e2f1ab2b9c351963cb77c1a6b0e1eead8d566 100644
+--- a/base/substring_set_matcher/substring_set_matcher.h
++++ b/base/substring_set_matcher/substring_set_matcher.h
+@@ -31,8 +31,11 @@ class BASE_EXPORT SubstringSetMatcher {
+   ~SubstringSetMatcher();
+ 
+   // Registers all |patterns|. Each pattern needs to have a unique ID and all
+-  // pattern strings must be unique. Build() should be called exactly once
+-  // (before it is called, the tree is empty).
++  // pattern strings must be unique. If duplicate pattern strings are passed,
++  // it will trigger a CHECK failure in DCHECK-enabled builds. In release
++  // builds, duplicate patterns are silently ignored (only the first one is
++  // registered) to prevent memory corruption. Build() should be called
++  // exactly once (before it is called, the tree is empty).
+   //
+   // Complexity:
+   //    Let n = number of patterns.
+@@ -202,7 +205,11 @@ class BASE_EXPORT SubstringSetMatcher {
+     void SetFailure(NodeID failure);
+ 
+     void SetMatchID(MatcherStringPattern::ID id) {
+-      DCHECK(!IsEndOfPattern());
++      // A node ends at most one pattern; a duplicate would add a second
++      // kMatchIDLabel edge that can overflow the node's storage in SetEdge().
++      if (IsEndOfPattern()) {
++        return;
++      }
+       DCHECK(id < kInvalidNodeID);  // This is enforced by Build().
+       SetEdge(kMatchIDLabel, static_cast<NodeID>(id));
+       has_outputs_ = true;
+diff --git a/base/substring_set_matcher/substring_set_matcher_unittest.cc b/base/substring_set_matcher/substring_set_matcher_unittest.cc
+index a253fc80f6906ed8551651e97b8d7c677a841d8a..bb51fa247d03aabee678e76cb00e3c93b9197230 100644
+--- a/base/substring_set_matcher/substring_set_matcher_unittest.cc
++++ b/base/substring_set_matcher/substring_set_matcher_unittest.cc
+@@ -228,4 +228,47 @@ TEST(SubstringSetMatcherTest, LotsOfEdges) {
+   matcher.Build(patterns);
+ }
+ 
++// In DCHECK-enabled builds, duplicate patterns trigger a CHECK failure as they
++// violate the API contract. In release builds, duplicate patterns are silently
++// ignored (only the first one is registered) to prevent memory corruption.
++#if !DCHECK_IS_ON()
++TEST(SubstringSetMatcherTest, DuplicatePatterns) {
++  std::vector<MatcherStringPattern> patterns;
++  MatcherStringPattern::ID id = 0;
++
++  // "a" is a pattern so node "ba" gets a non-root failure edge.
++  patterns.emplace_back("a", id++); // ID 0
++
++  // Four identical "ba" patterns.
++  patterns.emplace_back("ba", id++); // ID 1
++  patterns.emplace_back("ba", id++); // ID 2
++  patterns.emplace_back("ba", id++); // ID 3
++  patterns.emplace_back("ba", id++); // ID 4
++
++  // 256 character children on node "ba" to fill capacity.
++  for (int i = 0; i < 256; ++i) {
++    std::string str;
++    str.push_back('b');
++    str.push_back('a');
++    str.push_back(static_cast<char>(i));
++    patterns.emplace_back(str, id++);
++  }
++
++  SubstringSetMatcher matcher;
++  ASSERT_TRUE(matcher.Build(patterns));
++
++  std::set<MatcherStringPattern::ID> matches;
++  matcher.Match("ba", &matches);
++
++  // We expect to match "a" (ID 0) and the first "ba" pattern (ID 1).
++  // Duplicate "ba" patterns (IDs 2-4) should be ignored.
++  EXPECT_EQ(2u, matches.size());
++  EXPECT_TRUE(matches.find(0) != matches.end());
++  EXPECT_TRUE(matches.find(1) != matches.end());
++  EXPECT_TRUE(matches.find(2) == matches.end());
++  EXPECT_TRUE(matches.find(3) == matches.end());
++  EXPECT_TRUE(matches.find(4) == matches.end());
++}
++#endif  // !DCHECK_IS_ON()
++
+ }  // namespace base

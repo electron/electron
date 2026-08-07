@@ -1,0 +1,437 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Thu, 16 Jul 2026 11:41:08 -0700
+Subject: GL: Recreate PowerVR immutable texture on BASE_LEVEL increase
+
+PowerVR drivers size the sparse page map for NPOT immutable
+textures at initial residency based on level 0 dimensions.
+Increasing TEXTURE_BASE_LEVEL afterwards causes
+GetTwiddledMiptreeSparsePageMap to calculate indices using the
+original mip-chain offsets from the new effective base level,
+resulting in an out-of-bounds write into the Scudo heap.
+
+This change adds a workaround feature
+recreateImmutableTextureOnBaseLevelIncrease for PowerVR GPUs.
+When TEXTURE_BASE_LEVEL is increased on an immutable texture,
+the native storage is recreated and existing levels are preserved,
+forcing the driver to calculate sparse page map sizes correctly
+from scratch.
+
+Bug: chromium:534903095
+Change-Id: I0329da469ab3e6b267f30f6ea10fdc1d574bf6a8
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8106040
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+(cherry picked from commit 764bb891d3b8f4d3c06151d95deb5e70878cc9c5)
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index dea89ff2a3ec7f47e56e8fe743b02d031a2c711f..2ca8e20f727fb617315bcd7adac2dcaa43143a27 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -248,6 +248,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo recreateImmutableTextureOnBaseLevelIncrease = {
++        "recreateImmutableTextureOnBaseLevelIncrease",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+     FeatureInfo limitMax3dArrayTextureSizeTo1024 = {
+         "limitMax3dArrayTextureSizeTo1024",
+         FeatureCategory::OpenGLWorkarounds,
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 0e7d8776d8d66cf9de7b3b55573efa4620dd2353..c5fba518aeb1a7632a7e6af72bc4c7e1ef91ac8d 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -299,6 +299,15 @@
+             ],
+             "issue": "https://crbug.com/705865"
+         },
++        {
++            "name": "recreate_immutable_texture_on_base_level_increase",
++            "category": "Workarounds",
++            "description": [
++                "Recreate native storage for immutable textures when TEXTURE_BASE_LEVEL is increased to ",
++                "work around PowerVR sparse page map OOB driver bug."
++            ],
++            "issue": "https://crbug.com/528131119"
++        },
+         {
+             "name": "limit_max_3d_array_texture_size_to_1024",
+             "category": "Workarounds",
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index 178cee349bb8723136a519371fff39b1876d41d2..5ad88c3f39f78748a228632a6d310f96a3d66e00 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -14,6 +14,7 @@
+ 
+ #include "common/bitset_utils.h"
+ #include "common/debug.h"
++#include "common/mathutil.h"
+ #include "common/utilities.h"
+ #include "libANGLE/Context.h"
+ #include "libANGLE/MemoryObject.h"
+@@ -1769,6 +1770,24 @@ angle::Result TextureGL::syncState(const gl::Context *context,
+         return angle::Result::Continue;
+     }
+ 
++    if (dirtyBits[gl::Texture::DIRTY_BIT_BASE_LEVEL] &&
++        GetFeaturesGL(context).recreateImmutableTextureOnBaseLevelIncrease.enabled &&
++        mState.getImmutableFormat() && getType() == gl::TextureType::_2D)
++    {
++        const GLuint newBase = mState.getEffectiveBaseLevel();
++        if (mAppliedBaseLevel != newBase)
++        {
++            const gl::Extents &levelZeroSize = mState.getLevelZeroDesc().size;
++            const bool isNPOT =
++                !gl::isPow2(levelZeroSize.width) || !gl::isPow2(levelZeroSize.height);
++            const FunctionsGL *functions = GetFunctionsGL(context);
++            if (functions->copyImageSubData && isNPOT)
++            {
++                ANGLE_TRY(recreateNativeStoragePreservingLevels(context));
++            }
++        }
++    }
++
+     const FunctionsGL *functions = GetFunctionsGL(context);
+     StateManagerGL *stateManager = GetStateManagerGL(context);
+ 
+@@ -2225,6 +2244,59 @@ angle::Result TextureGL::recreateTexture(const gl::Context *context)
+     return angle::Result::Continue;
+ }
+ 
++angle::Result TextureGL::copyTextureLevels(const gl::Context *context,
++                                           GLuint srcTexture,
++                                           GLuint dstTexture)
++{
++    const FunctionsGL *functions = GetFunctionsGL(context);
++    ASSERT(functions->copyImageSubData);
++
++    const GLuint immutableLevels = mState.getImmutableLevels();
++    for (GLuint level = 0; level < immutableLevels; ++level)
++    {
++        const gl::Extents levelSize = mState.getImageDesc(gl::TextureTarget::_2D, level).size;
++        ASSERT(!levelSize.empty());
++        ANGLE_GL_TRY(context, functions->copyImageSubData(
++                                  srcTexture, GL_TEXTURE_2D, static_cast<GLint>(level), 0, 0, 0,
++                                  dstTexture, GL_TEXTURE_2D, static_cast<GLint>(level), 0, 0, 0,
++                                  levelSize.width, levelSize.height, 1));
++    }
++    return angle::Result::Continue;
++}
++
++angle::Result TextureGL::recreateNativeStoragePreservingLevels(const gl::Context *context)
++{
++    ASSERT(getType() == gl::TextureType::_2D);
++    ASSERT(mState.getImmutableFormat());
++    ASSERT(!gl::isPow2(mState.getLevelZeroDesc().size.width) ||
++           !gl::isPow2(mState.getLevelZeroDesc().size.height));
++
++    const FunctionsGL *functions = GetFunctionsGL(context);
++    StateManagerGL *stateManager = GetStateManagerGL(context);
++
++    GLuint oldTextureID = mTextureID;
++
++    functions->genTextures(1, &mTextureID);
++    stateManager->bindTexture(getType(), mTextureID);
++
++    mAppliedSwizzle   = gl::SwizzleState();
++    mAppliedSampler   = gl::SamplerState::CreateDefaultForTarget(getType());
++    mAppliedBaseLevel = 0;
++    mAppliedMaxLevel  = gl::kInitialMaxLevel;
++
++    const gl::ImageDesc &levelZeroDesc = mState.getLevelZeroDesc();
++    ANGLE_TRY(setStorage(context, getType(), mState.getImmutableLevels(),
++                         levelZeroDesc.format.info->sizedInternalFormat, levelZeroDesc.size));
++    ANGLE_TRY(copyTextureLevels(context, oldTextureID, mTextureID));
++
++    stateManager->deleteTexture(oldTextureID);
++
++    mLocalDirtyBits = mAllModifiedDirtyBits;
++    onStateChange(angle::SubjectMessage::SubjectChanged);
++
++    return angle::Result::Continue;
++}
++
+ angle::Result TextureGL::syncTextureStateSwizzle(const gl::Context *context,
+                                                  const FunctionsGL *functions,
+                                                  GLenum name,
+diff --git a/src/libANGLE/renderer/gl/TextureGL.h b/src/libANGLE/renderer/gl/TextureGL.h
+index 42e40e57a5e697aa5f765cc7367d062899bddade..b3fbafb231eedb425d0ffd25db317373912ed263 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.h
++++ b/src/libANGLE/renderer/gl/TextureGL.h
+@@ -230,6 +230,10 @@ class TextureGL : public TextureImpl
+ 
+   private:
+     angle::Result recreateTexture(const gl::Context *context);
++    angle::Result copyTextureLevels(const gl::Context *context,
++                                    GLuint srcTexture,
++                                    GLuint dstTexture);
++    angle::Result recreateNativeStoragePreservingLevels(const gl::Context *context);
+ 
+     angle::Result setImageHelper(const gl::Context *context,
+                                  gl::TextureTarget target,
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 90240bdf367eeb36cc6067b908960835dfc1b240..dfaf0052020bf98168f10eff2062c3e3bc85168f 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2435,6 +2435,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     ANGLE_FEATURE_CONDITION(features, resetTexImage2DBaseLevel,
+                             IsApple() && isIntel && GetMacOSVersion() >= OSVersion(10, 12, 4));
+ 
++    ANGLE_FEATURE_CONDITION(features, recreateImmutableTextureOnBaseLevelIncrease,
++                            IsPowerVR(vendor));
++
+     ANGLE_FEATURE_CONDITION(features, adjustSrcDstRegionForBlitFramebuffer,
+                             IsLinux() || (IsAndroid() && isNvidia) || (IsWindows() && isNvidia) ||
+                                 (IsApple() && functions->standard == STANDARD_GL_ES));
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index 481eb2caa1394da43c5f209e29ea0626a7bdc465..2c2ea40cd0bc62b47f688a21d84466b82f76adad 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -7393,6 +7393,218 @@ TEST_P(Texture2DTestES3, DrawWithBaseLevel1)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
+ }
+ 
++class Texture2DTestES3_RecreateImmutableOnBaseLevelIncrease : public Texture2DTestES3
++{
++  protected:
++    void testSetUp() override
++    {
++        Texture2DTestES3::testSetUp();
++        setUpProgram();
++        glUseProgram(mProgram);
++        glUniform1i(mTexture2DUniformLocation, 0);
++    }
++
++    void setUpNPOT5LevelImmutableTexture(GLTexture &tex, uint32_t *widthOut, uint32_t *heightOut)
++    {
++        glActiveTexture(GL_TEXTURE0);
++        glBindTexture(GL_TEXTURE_2D, tex);
++
++        // 17x17 is NPOT. 5 levels (17x17, 8x8, 4x4, 2x2, 1x1)
++        glTexStorage2D(GL_TEXTURE_2D, 5, GL_RGBA8, 17, 17);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
++        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++        std::vector<GLColor> level0Data(17 * 17, GLColor::red);
++        std::vector<GLColor> level1Data(8 * 8, GLColor::blue);
++        std::vector<GLColor> level2Data(4 * 4, GLColor::green);
++        std::vector<GLColor> level3Data(2 * 2, GLColor::yellow);
++        std::vector<GLColor> level4Data(1 * 1, GLColor::magenta);
++
++        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 17, 17, GL_RGBA, GL_UNSIGNED_BYTE,
++                        level0Data.data());
++        glTexSubImage2D(GL_TEXTURE_2D, 1, 0, 0, 8, 8, GL_RGBA, GL_UNSIGNED_BYTE, level1Data.data());
++        glTexSubImage2D(GL_TEXTURE_2D, 2, 0, 0, 4, 4, GL_RGBA, GL_UNSIGNED_BYTE, level2Data.data());
++        glTexSubImage2D(GL_TEXTURE_2D, 3, 0, 0, 2, 2, GL_RGBA, GL_UNSIGNED_BYTE, level3Data.data());
++        glTexSubImage2D(GL_TEXTURE_2D, 4, 0, 0, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, level4Data.data());
++
++        *widthOut  = getWindowWidth();
++        *heightOut = getWindowHeight();
++        ASSERT_GE(*widthOut, 17u);
++        ASSERT_GE(*heightOut, 17u);
++    }
++};
++
++// Test that changing TEXTURE_BASE_LEVEL on an NPOT immutable texture after sampling it works
++// correctly.
++TEST_P(Texture2DTestES3_RecreateImmutableOnBaseLevelIncrease, ImmutableNPOTTextureBaseLevelIncrease)
++{
++    GLTexture tex;
++    uint32_t w, h;
++    setUpNPOT5LevelImmutableTexture(tex, &w, &h);
++
++    // Sample at base level 0 first
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::red);
++
++    // Limit max level to 2
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 2);
++
++    // Set base level to 1 and sample
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::blue);
++
++    // Set base level to 2 and sample
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 2);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::green);
++
++    // Set base level back to 1 and sample
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::blue);
++
++    // Sample at base level 0 again, its data should not be lost.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::red);
++
++    // Restore max level to 3, set base level to 3, and verify level 3 data
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 3);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 3);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::yellow);
++
++    EXPECT_GL_NO_ERROR();
++}
++
++// Test that changing TEXTURE_BASE_LEVEL on an NPOT immutable texture after sampling it works
++// correctly when TEXTURE_MAX_LEVEL is also set and updated.
++TEST_P(Texture2DTestES3_RecreateImmutableOnBaseLevelIncrease,
++       ImmutableNPOTTextureBaseLevelIncreaseMaxLevel)
++{
++    GLTexture tex;
++    uint32_t w, h;
++    setUpNPOT5LevelImmutableTexture(tex, &w, &h);
++
++    // Set MAX level to 1
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1);
++
++    // Draw to sync everything (BASE level = 0, MAX level = 1)
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::red);
++
++    // Set BASE level to 1.
++    // This triggers the workaround, recreating the texture.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++
++    // Draw such that the texture is minimized.
++    glViewport(0, 0, 1, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::blue);
++
++    // Restore viewport
++    glViewport(0, 0, w, h);
++
++    // Set MAX level to 1000
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 1000);
++
++    // Draw again with minification
++    glViewport(0, 0, 1, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::magenta);
++
++    // Restore viewport
++    glViewport(0, 0, w, h);
++
++    EXPECT_GL_NO_ERROR();
++}
++
++// Test that changing TEXTURE_BASE_LEVEL on an NPOT immutable texture after sampling it works
++// correctly when texture swizzle is also set and updated.
++TEST_P(Texture2DTestES3_RecreateImmutableOnBaseLevelIncrease,
++       ImmutableNPOTTextureBaseLevelIncreaseSwizzle)
++{
++    GLTexture tex;
++    uint32_t w, h;
++    setUpNPOT5LevelImmutableTexture(tex, &w, &h);
++
++    // Set swizzle: R->B, B->R
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
++
++    // Draw to sync everything (BASE level = 0, swizzled).
++    // Level 0 is red (1, 0, 0, 1). Swizzled: R gets B (0), B gets R (1).
++    // So output should be blue (0, 0, 1, 1).
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::blue);
++
++    // Set BASE level to 1.
++    // This triggers the workaround, recreating the texture.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++
++    // Draw again. Level 1 is blue (0, 0, 1, 1). Swizzled: R gets B (1), B gets R (0).
++    // So output should be red (1, 0, 0, 1).
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::red);
++
++    // Set swizzle back to identity
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_RED);
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_BLUE);
++
++    // Draw again. Level 1 is blue. Output should be blue.
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::blue);
++
++    EXPECT_GL_NO_ERROR();
++}
++
++// Test that changing TEXTURE_BASE_LEVEL on an NPOT immutable texture after sampling it works
++// correctly when sampler parameters like TEXTURE_MIN_LOD are also set and updated.
++TEST_P(Texture2DTestES3_RecreateImmutableOnBaseLevelIncrease,
++       ImmutableNPOTTextureBaseLevelIncreaseMinLOD)
++{
++    GLTexture tex;
++    uint32_t w, h;
++    setUpNPOT5LevelImmutableTexture(tex, &w, &h);
++
++    // Set MIN_LOD to 2.0.
++    // Since BASE_LEVEL = 0, this should clamp LOD to 2.0, sampling level 2 (green).
++    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 2.0f);
++
++    // Draw to sync everything
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::green);
++
++    // Set BASE level to 1.
++    // This triggers the workaround, recreating the texture.
++    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 1);
++
++    // Draw again.
++    // BASE_LEVEL is 1. MIN_LOD is 2.0f.
++    // So the sampled level is BASE_LEVEL + MIN_LOD = 1 + 2 = 3 (yellow).
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::yellow);
++
++    // Set MIN_LOD to 0.0f.
++    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0.0f);
++
++    // Draw again.
++    // BASE_LEVEL is 1. MIN_LOD is 0.0f.
++    // Under magnification, it should sample BASE_LEVEL = 1 (blue).
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, w, h, GLColor::blue);
++
++    EXPECT_GL_NO_ERROR();
++}
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(
++    Texture2DTestES3_RecreateImmutableOnBaseLevelIncrease);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture2DTestES3_RecreateImmutableOnBaseLevelIncrease,
++    ES3_OPENGLES().enable(Feature::RecreateImmutableTextureOnBaseLevelIncrease));
++
+ void Texture2DTestES3::testCopyImage(const APIExtensionVersion usedExtension)
+ {
+     ASSERT(usedExtension == APIExtensionVersion::EXT || usedExtension == APIExtensionVersion::OES);
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index 9e3aa6a9db26b0c584eeea9b0c48469d14d6fd15..76294a512c9ab3f5e5184d5cb980ff2a5580627d 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -286,6 +286,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::ReapplyUBOBindingsAfterUsingBinaryProgram, "reapplyUBOBindingsAfterUsingBinaryProgram"},
+     {Feature::ReattachFboDepthStencilOnReallocation, "reattachFboDepthStencilOnReallocation"},
+     {Feature::RecreateFboUponFlush, "recreateFboUponFlush"},
++    {Feature::RecreateImmutableTextureOnBaseLevelIncrease, "recreateImmutableTextureOnBaseLevelIncrease"},
+     {Feature::RecreateMipmapLevelsBeforeGenerate, "recreateMipmapLevelsBeforeGenerate"},
+     {Feature::RecycleVkEvent, "recycleVkEvent"},
+     {Feature::RegenerateStructNames, "regenerateStructNames"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index 5b7a199efca4f3644fc1e9d98f7bbc22d3e932e4..768ec5a785e1d51410c442b28417ffbf91e3ae91 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -286,6 +286,7 @@ enum class Feature
+     ReapplyUBOBindingsAfterUsingBinaryProgram,
+     ReattachFboDepthStencilOnReallocation,
+     RecreateFboUponFlush,
++    RecreateImmutableTextureOnBaseLevelIncrease,
+     RecreateMipmapLevelsBeforeGenerate,
+     RecycleVkEvent,
+     RegenerateStructNames,
