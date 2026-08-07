@@ -6223,6 +6223,123 @@ describe('BrowserWindow module', () => {
         w.setResizable(true);
         expectBoundsEqual(w.getBounds(), bounds);
       });
+
+      ifit(process.platform !== 'darwin')('opens fullscreen when resizable and frame are false', async () => {
+        const w = new BrowserWindow({
+          resizable: false,
+          frame: false,
+          fullscreen: true
+        });
+
+        if (!w.isFullScreen()) await once(w, 'enter-full-screen');
+        await setTimeout();
+
+        expect(w.isFullScreen()).to.be.true('isFullScreen');
+
+        const { bounds } = screen.getDisplayMatching(w.getBounds());
+        expectBoundsEqual(w.getSize(), [bounds.width, bounds.height]);
+
+        const leaveFullScreen = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+        await setTimeout();
+
+        expect(w.isFullScreen()).to.be.false('isFullScreen');
+        expect(w.isResizable()).to.be.false('isResizable');
+      });
+
+      ifit(process.platform !== 'darwin')('enters fullscreen via setFullScreen() when resizable and frame are false', async () => {
+        const w = new BrowserWindow({
+          width: 400,
+          height: 300,
+          resizable: false,
+          frame: false
+        });
+
+        const enterFullScreen = once(w, 'enter-full-screen');
+        w.show();
+        w.setFullScreen(true);
+        await enterFullScreen;
+        await setTimeout();
+
+        expect(w.isFullScreen()).to.be.true('isFullScreen');
+
+        const { bounds } = screen.getDisplayMatching(w.getBounds());
+        expectBoundsEqual(w.getSize(), [bounds.width, bounds.height]);
+
+        const leaveFullScreen = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+        await setTimeout();
+
+        expect(w.isFullScreen()).to.be.false('isFullScreen');
+        expect(w.isResizable()).to.be.false('isResizable');
+      });
+
+      ifit(process.platform !== 'darwin')('restores the size lock when resizable is toggled while fullscreen', async () => {
+        const w = new BrowserWindow({
+          width: 400,
+          height: 300,
+          resizable: false,
+          frame: false,
+          fullscreen: true
+        });
+
+        if (!w.isFullScreen()) await once(w, 'enter-full-screen');
+        await setTimeout();
+
+        // Becoming resizable while fullscreen must not leave the suspended
+        // size constraints stuck once fullscreen ends.
+        w.setResizable(true);
+
+        const leaveFullScreen = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+        await setTimeout();
+
+        w.setResizable(false);
+
+        // The size lock has to follow the new bounds; if it were still
+        // suspended it would stay pinned to the pre-resize size. Race the
+        // resize against a timeout: a suspended lock clamps the window to its
+        // current size, so no 'resize' arrives and the assertion below reports
+        // the stale size rather than hanging.
+        const resized = once(w, 'resize');
+        w.setSize(500, 400);
+        await Promise.race([resized, setTimeout(2000)]);
+
+        expectBoundsEqual(w.getSize(), [500, 400]);
+      });
+
+      ifit(process.platform !== 'darwin')('does not lock to the fullscreen size when made non-resizable while fullscreen', async () => {
+        const w = new BrowserWindow({
+          width: 400,
+          height: 300,
+          frame: false,
+          fullscreen: true
+        });
+
+        if (!w.isFullScreen()) await once(w, 'enter-full-screen');
+        await setTimeout();
+
+        // Pinning min == max to the current size here would lock the window to
+        // the fullscreen size, leaving it unable to shrink back on the way out.
+        w.setResizable(false);
+
+        const leaveFullScreen = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await leaveFullScreen;
+        await setTimeout();
+
+        expect(w.isFullScreen()).to.be.false('isFullScreen');
+        expect(w.isResizable()).to.be.false('isResizable');
+
+        // The window has to have shrunk back, not stayed at fullscreen size.
+        const { bounds } = screen.getDisplayMatching(w.getBounds());
+        const [width, height] = w.getSize();
+        expect(width).to.be.below(bounds.width, 'width');
+        expect(height).to.be.below(bounds.height, 'height');
+      });
     });
 
     describe('loading main frame state', () => {

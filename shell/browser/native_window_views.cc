@@ -824,6 +824,19 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     return;
 
   bool leaving_fullscreen = IsFullscreen() && !fullscreen;
+
+  // A non-resizable window pins min == max to its bounds (see SetBounds), which
+  // would also stop it filling the screen. Suspend the constraints while
+  // fullscreen and re-pin on leaving (below); a member is used because
+  // IsFullscreen() is unreliable mid-transition. Always assign it, so leaving
+  // fullscreen clears the flag even if the window became resizable in between.
+  const bool suspend_size_constraints = fullscreen && !CanResize();
+  fullscreen_size_constraints_suspended_ = suspend_size_constraints;
+  if (suspend_size_constraints) {
+    SetSizeConstraints({});
+    NotifySizeConstraintsChanged();
+  }
+
 #if BUILDFLAG(IS_WIN)
   // There is no native fullscreen state on Windows.
   if (fullscreen) {
@@ -871,6 +884,16 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
     widget()->native_widget_private()->Show(
         ui::mojom::WindowShowState::kFullscreen, gfx::Rect());
 #endif
+
+  // The widget restores bounds without going through SetBounds(), so re-pin the
+  // suspended constraints here.
+  if (leaving_fullscreen && !CanResize()) {
+    const gfx::Size restored_size = GetSize();
+    SetSizeConstraints(
+        extensions::SizeConstraints(restored_size, restored_size));
+    NotifySizeConstraintsChanged();
+  }
+
   // Auto-hide menubar when in fullscreen.
   if (fullscreen) {
     menu_bar_visible_before_fullscreen_ = IsMenuBarVisible();
@@ -905,9 +928,10 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #endif
 
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-  // On Linux and Windows the minimum and maximum size should be updated with
-  // window size when window is not resizable.
-  if (!CanResize()) {
+  // On Linux and Windows the minimum and maximum size should be set to
+  // window size when window is not resizable. Skip while fullscreen, where the
+  // constraints are suspended.
+  if (!CanResize() && !fullscreen_size_constraints_suspended_) {
     SetMaximumSize(bounds.size());
     SetMinimumSize(bounds.size());
   }
@@ -1005,23 +1029,38 @@ void NativeWindowViews::SetResizable(bool resizable) {
       SetSizeConstraints(old_size_constraints_);
     } else {
       old_size_constraints_ = GetSizeConstraints();
-      gfx::Size window_size = GetSize();
-      SetSizeConstraints(extensions::SizeConstraints(window_size, window_size));
+      if (IsFullscreen()) {
+        // Pinning min == max to the current size would lock the window to the
+        // fullscreen size and stop it shrinking back on the way out. Suspend
+        // the constraints instead; SetFullScreen re-pins them to the restored
+        // size when the window leaves fullscreen.
+        fullscreen_size_constraints_suspended_ = true;
+        SetSizeConstraints({});
+      } else {
+        const gfx::Size window_size = GetSize();
+        SetSizeConstraints(
+            extensions::SizeConstraints(window_size, window_size));
+      }
     }
-    // Forcing OnSizeConstraintsChanged on Windows when !thick_frame_ would
-    // cause HWNDMessageHandler::SizeConstraintsChanged() to add WS_THICKFRAME
-    // based on CanResize(), which destroys transparency on layered windows.
-    // Min/max are still enforced through WM_GETMINMAXINFO directly from the
-    // widget delegate.
+    NotifySizeConstraintsChanged();
 #if BUILDFLAG(IS_WIN)
-    if (thick_frame_ && widget() && widget()->widget_delegate())
-      widget()->OnSizeConstraintsChanged();
     UpdateThickFrame();
-#else
-    if (widget() && widget()->widget_delegate())
-      widget()->OnSizeConstraintsChanged();
 #endif
   }
+}
+
+void NativeWindowViews::NotifySizeConstraintsChanged() {
+  // Forcing OnSizeConstraintsChanged on Windows when !thick_frame_ would cause
+  // HWNDMessageHandler::SizeConstraintsChanged() to add WS_THICKFRAME based on
+  // CanResize(), which destroys transparency on layered windows. Min/max are
+  // still enforced through WM_GETMINMAXINFO directly from the widget delegate.
+#if BUILDFLAG(IS_WIN)
+  if (thick_frame_ && widget() && widget()->widget_delegate())
+    widget()->OnSizeConstraintsChanged();
+#else
+  if (widget() && widget()->widget_delegate())
+    widget()->OnSizeConstraintsChanged();
+#endif
 }
 
 bool NativeWindowViews::MoveAbove(const std::string& sourceId) {
