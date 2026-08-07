@@ -291,7 +291,7 @@ index b018e80e48170664d973391bad7b52ee741f82d6..f8e2fe1da81364bade05432ce9f36052
      angle::Result recoverForcedStreamingAttributesForDrawArraysInstanced(
          const gl::Context *context,
 diff --git a/src/libANGLE/renderer/metal/VertexArrayMtl.mm b/src/libANGLE/renderer/metal/VertexArrayMtl.mm
-index 66f6f8ba4d29905e87c4afc1ad11082e8935e13f..fddf601cb28616f19d053ecb06188f3130785280 100644
+index c0c53afe2abe2cd75a4967d18fbaa99108e54356..bafb21532d88109cb5a374a921b4eff920306ca8 100644
 --- a/src/libANGLE/renderer/metal/VertexArrayMtl.mm
 +++ b/src/libANGLE/renderer/metal/VertexArrayMtl.mm
 @@ -129,7 +129,7 @@ size_t GetVertexCountWithConversion(BufferMtl *srcBuffer,
@@ -303,7 +303,7 @@ index 66f6f8ba4d29905e87c4afc1ad11082e8935e13f..fddf601cb28616f19d053ecb06188f31
      if (bytes < srcFormatSize)
          return 0;
  
-@@ -1073,7 +1073,7 @@ inline MTLVertexFormat GetCurrentAttribFormat(GLenum type)
+@@ -1135,7 +1135,7 @@ void AppendSimpleDrawCommandRanges(std::vector<DrawCommandRange> &drawCommands,
  {
      VertexConversionBufferMtl *vertexConverison =
          static_cast<VertexConversionBufferMtl *>(conversion);
@@ -312,7 +312,7 @@ index 66f6f8ba4d29905e87c4afc1ad11082e8935e13f..fddf601cb28616f19d053ecb06188f31
      angle::Span<const uint8_t> srcBytes = srcBuffer->getBufferDataReadOnly(contextMtl, srcOffset);
      ANGLE_CHECK_GL_ALLOC(contextMtl, !srcBytes.empty());
      mtl::BufferSlice convertedBuffer;
-@@ -1108,7 +1108,7 @@ inline MTLVertexFormat GetCurrentAttribFormat(GLenum type)
+@@ -1170,7 +1170,7 @@ void AppendSimpleDrawCommandRanges(std::vector<DrawCommandRange> &drawCommands,
          static_cast<VertexConversionBufferMtl *>(conversion);
      params.srcBuffer            = srcBuffer->getCurrentBuffer();
      params.srcBufferStartOffset = static_cast<uint32_t>(
