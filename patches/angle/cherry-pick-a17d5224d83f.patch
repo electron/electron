@@ -1,0 +1,597 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Thu, 30 Jul 2026 19:25:57 -0700
+Subject: [m151] ANGLE: Reattach texture layer to FBO after layer count
+ increase
+
+On PowerVR Android GPUs, when a layer of a layered texture (e.g.,
+GL_TEXTURE_2D_ARRAY) is attached to a framebuffer and later TexImage3D
+is called on the texture to increase its layer count, the framebuffer
+remains attached to the old memory instead of the newly allocated
+texture storage.
+
+This CL adds the reattachTextureToFboAfterLayerIncrease workaround,
+enabled on PowerVR Android. When enabled:
+- When TextureGL::setImageHelper detects a layer count increase on a
+  GL_TEXTURE_2D_ARRAY texture, it sends a TextureLayerCountIncreased
+  subject message before reallocating texture storage via TexImage3D.
+- When Framebuffer::onSubjectStateChange receives this message, it
+  calls FramebufferGL::onAttachmentLayerCountChange to detach the
+  attachment point on the GL driver (calling glFramebufferTextureLayer
+  with texture id 0) and sets the attachment dirty bit.
+- Re-attachment happens lazily: when the Framebuffer is next bound and
+  used, ANGLE's normal state synchronization processes the dirty bit
+  and automatically re-attaches the texture layer to the GL framebuffer.
+- Adds unit tests verifying correct layer re-attachment behavior across
+  single-context and shared multi-context scenarios, instantiated with
+  the workaround enabled and disabled.
+
+Bug: chromium:499602793,chromium:537729021
+Fixed: 541748549
+Change-Id: I84899b963d8e8683b5998d281c12263415c709a8
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8162364
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit b8352abce0383b26af32415c1d0f4a6912f665ae)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8180899
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+
+diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
+index 70f97545d81862773e922568b7eca43227115560..a28684f0a4478684946810aaeac7a99f322cbb4d 100644
+--- a/include/platform/autogen/FeaturesGL_autogen.h
++++ b/include/platform/autogen/FeaturesGL_autogen.h
+@@ -674,6 +674,12 @@ struct FeaturesGL : FeatureSetBase
+         &members,
+     };
+ 
++    FeatureInfo reattachTextureToFboAfterLayerIncrease = {
++        "reattachTextureToFboAfterLayerIncrease",
++        FeatureCategory::OpenGLWorkarounds,
++        &members,
++    };
++
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 8e6b5ada1624545d05ff34defbe60463ddd001da..e841489cd21cc5a137f717aa05dbac2c9d512208 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -877,6 +877,14 @@
+                 "supposed to recreate to work around driver bugs."
+             ],
+             "issue": "http://crbug.com/491732188"
++        },
++        {
++            "name": "reattach_texture_to_fbo_after_layer_increase",
++            "category": "Workarounds",
++            "description": [
++                "Reattach texture layer to framebuffer after calling TexImage3D to increase layer count on PowerVR Android."
++            ],
++            "issue": "http://crbug.com/499602793"
+         }
+     ]
+ }
+diff --git a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp
+index e373a1f13bbaa13509067f5a88f012ef31e927bc..a99d68140acfdc510fa7d758fdce9853db46b196 100644
+--- a/src/libANGLE/Framebuffer.cpp
++++ b/src/libANGLE/Framebuffer.cpp
+@@ -2278,6 +2278,18 @@ void Framebuffer::onSubjectStateChange(angle::SubjectIndex index, angle::Subject
+             return;
+         }
+ 
++        if (message == angle::SubjectMessage::TextureLayerCountIncreased)
++        {
++            FramebufferAttachment *attachment = getAttachmentFromSubjectIndex(index);
++            if (attachment)
++            {
++                (void)mImpl->onAttachmentLayerCountChange(attachment);
++            }
++            mDirtyBits.set(index);
++            onStateChange(angle::SubjectMessage::DirtyBitsFlagged);
++            return;
++        }
++
+         // This can be triggered by the GL back-end TextureGL class.
+         ASSERT(message == angle::SubjectMessage::DirtyBitsFlagged ||
+                message == angle::SubjectMessage::TextureIDDeleted);
+diff --git a/src/libANGLE/Observer.h b/src/libANGLE/Observer.h
+index e8ef628e0256d0d3c33efa12eb1a7bfe13b0e940..fffca8ace2c73433b475b78a5c2d4dbf51fbb3c8 100644
+--- a/src/libANGLE/Observer.h
++++ b/src/libANGLE/Observer.h
+@@ -88,6 +88,9 @@ enum class SubjectMessage
+     // Indicates that all pending updates are complete in the subject.
+     InitializationComplete,
+ 
++    // Indicates a layered texture's layer count has increased.
++    TextureLayerCountIncreased,
++
+     // Indicates a change in foveated rendering state in the subject.
+     FoveatedRenderingStateChanged,
+ };
+diff --git a/src/libANGLE/Texture.cpp b/src/libANGLE/Texture.cpp
+index 452d66becf74f00b84dd4bbfc9d9388de6ccfc0c..a9b282a86388493d26832d7125ea7c9743503d32 100644
+--- a/src/libANGLE/Texture.cpp
++++ b/src/libANGLE/Texture.cpp
+@@ -2658,6 +2658,9 @@ void Texture::onSubjectStateChange(angle::SubjectIndex index, angle::SubjectMess
+ {
+     switch (message)
+     {
++        case angle::SubjectMessage::TextureLayerCountIncreased:
++            onStateChange(angle::SubjectMessage::TextureLayerCountIncreased);
++            break;
+         case angle::SubjectMessage::DirtyBitsFlagged:
+             signalDirtyState(DIRTY_BIT_IMPLEMENTATION);
+ 
+diff --git a/src/libANGLE/renderer/FramebufferImpl.h b/src/libANGLE/renderer/FramebufferImpl.h
+index dbace39b76c19c0416ab02335236c613dde2a43b..d7ecc897d8c1d1a068cee11cf4e939844e788b5e 100644
+--- a/src/libANGLE/renderer/FramebufferImpl.h
++++ b/src/libANGLE/renderer/FramebufferImpl.h
+@@ -105,6 +105,8 @@ class FramebufferImpl : angle::NonCopyable
+ 
+     virtual angle::Result onLabelUpdate(const gl::Context *context);
+ 
++    virtual angle::Result onAttachmentLayerCountChange(gl::FramebufferAttachment *attachment);
++
+     const gl::FramebufferState &getState() const { return mState; }
+ 
+   protected:
+@@ -116,6 +118,12 @@ inline bool FramebufferImpl::shouldSyncStateBeforeCheckStatus() const
+     return false;
+ }
+ 
++inline angle::Result FramebufferImpl::onAttachmentLayerCountChange(
++    gl::FramebufferAttachment *attachment)
++{
++    return angle::Result::Continue;
++}
++
+ // Default implementation returns the format specified in the attachment.
+ inline const gl::InternalFormat &FramebufferImpl::getImplementationColorReadFormat(
+     const gl::Context *context) const
+diff --git a/src/libANGLE/renderer/gl/ContextGL.cpp b/src/libANGLE/renderer/gl/ContextGL.cpp
+index fdfa3b100f0e23659b92ff1b6a1fc594bda324f2..9b799b03214400239aeec4fbf489e5720b1163c4 100644
+--- a/src/libANGLE/renderer/gl/ContextGL.cpp
++++ b/src/libANGLE/renderer/gl/ContextGL.cpp
+@@ -109,7 +109,7 @@ FramebufferImpl *ContextGL::createFramebuffer(const gl::FramebufferState &data)
+         funcs->genFramebuffers(1, &fbo);
+     }
+ 
+-    return new FramebufferGL(data, fbo, false);
++    return new FramebufferGL(data, fbo, false, funcs, getStateManager());
+ }
+ 
+ TextureImpl *ContextGL::createTexture(const gl::TextureState &state)
+diff --git a/src/libANGLE/renderer/gl/FramebufferGL.cpp b/src/libANGLE/renderer/gl/FramebufferGL.cpp
+index ecea51f64e2a1dab3dba6b8ec29dc6de9cfe9f00..2ed662025257b7698d23f7f1712c5f4cb8e91aac 100644
+--- a/src/libANGLE/renderer/gl/FramebufferGL.cpp
++++ b/src/libANGLE/renderer/gl/FramebufferGL.cpp
+@@ -451,11 +451,17 @@ bool IsNonTrivialClearColor(const GLuint *color)
+ 
+ }  // namespace
+ 
+-FramebufferGL::FramebufferGL(const gl::FramebufferState &data, GLuint id, bool emulatedAlpha)
++FramebufferGL::FramebufferGL(const gl::FramebufferState &data,
++                             GLuint id,
++                             bool emulatedAlpha,
++                             const FunctionsGL *functions,
++                             StateManagerGL *stateManager)
+     : FramebufferImpl(data),
+       mFramebufferID(id),
+       mHasEmulatedAlphaAttachment(emulatedAlpha),
+-      mAppliedEnabledDrawBuffers(1)
++      mAppliedEnabledDrawBuffers(1),
++      mFunctions(functions),
++      mStateManager(stateManager)
+ {
+     ASSERT((isDefault() && id == 0) || !isDefault());
+ }
+@@ -1337,6 +1343,15 @@ angle::Result FramebufferGL::ensureAttachmentsInitialized(
+     return blitter->clearFramebuffer(context, colorAttachments, depth, stencil, this);
+ }
+ 
++angle::Result FramebufferGL::onAttachmentLayerCountChange(gl::FramebufferAttachment *attachment)
++{
++    ASSERT(!isDefault() && attachment && attachment->isAttached() &&
++           attachment->type() == GL_TEXTURE && mFunctions->framebufferTextureLayer);
++    mStateManager->bindFramebuffer(GL_FRAMEBUFFER, mFramebufferID);
++    mFunctions->framebufferTextureLayer(GL_FRAMEBUFFER, attachment->getBinding(), 0, 0, 0);
++    return angle::Result::Continue;
++}
++
+ angle::Result FramebufferGL::syncState(const gl::Context *context,
+                                        GLenum binding,
+                                        const gl::Framebuffer::DirtyBits &dirtyBits,
+diff --git a/src/libANGLE/renderer/gl/FramebufferGL.h b/src/libANGLE/renderer/gl/FramebufferGL.h
+index d2f7c1768009494c2007033bcd25ece0407c5174..1274b480112efc685de98ba03f4558ae1323a827 100644
+--- a/src/libANGLE/renderer/gl/FramebufferGL.h
++++ b/src/libANGLE/renderer/gl/FramebufferGL.h
+@@ -23,7 +23,11 @@ class StateManagerGL;
+ class FramebufferGL : public FramebufferImpl
+ {
+   public:
+-    FramebufferGL(const gl::FramebufferState &data, GLuint id, bool emulatedAlpha);
++    FramebufferGL(const gl::FramebufferState &data,
++                  GLuint id,
++                  bool emulatedAlpha,
++                  const FunctionsGL *functions,
++                  StateManagerGL *stateManager);
+     ~FramebufferGL() override;
+ 
+     void destroy(const gl::Context *context) override;
+@@ -79,6 +83,8 @@ class FramebufferGL : public FramebufferImpl
+     // The GL back-end requires a full sync state before we call checkStatus.
+     bool shouldSyncStateBeforeCheckStatus() const override;
+ 
++    angle::Result onAttachmentLayerCountChange(gl::FramebufferAttachment *attachment) override;
++
+     gl::FramebufferStatus checkStatus(const gl::Context *context) const override;
+ 
+     angle::Result ensureAttachmentsInitialized(const gl::Context *context,
+@@ -147,6 +153,8 @@ class FramebufferGL : public FramebufferImpl
+     GLuint mFramebufferID;
+     bool mHasEmulatedAlphaAttachment;
+     gl::DrawBufferMask mAppliedEnabledDrawBuffers;
++    const FunctionsGL *mFunctions;
++    StateManagerGL *mStateManager;
+ };
+ }  // namespace rx
+ 
+diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
+index 93c6854644e14d25d17ad0d121fa0f3420d84508..50f5378d4a84a0d6161e6b6f6c77c0c357199b99 100644
+--- a/src/libANGLE/renderer/gl/TextureGL.cpp
++++ b/src/libANGLE/renderer/gl/TextureGL.cpp
+@@ -257,6 +257,16 @@ angle::Result TextureGL::setImageHelper(const gl::Context *context,
+     StateManagerGL *stateManager      = GetStateManagerGL(context);
+     const angle::FeaturesGL &features = GetFeaturesGL(context);
+ 
++    if (features.reattachTextureToFboAfterLayerIncrease.enabled &&
++        getType() == gl::TextureType::_2DArray)
++    {
++        const gl::ImageDesc &desc = mState.getImageDesc(target, level);
++        if (size.depth > desc.size.depth)
++        {
++            onStateChange(angle::SubjectMessage::TextureLayerCountIncreased);
++        }
++    }
++
+     const gl::InternalFormat &originalInternalFormatInfo =
+         gl::GetInternalFormatInfo(internalFormat, type);
+     nativegl::TexImageFormat texImageFormat =
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 5e61a84c2e1e125d214e3d46d84f783745c5fb15..a5332c95afade9e3185adc60443bbc2cef7b20c0 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2759,6 +2759,10 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
+     // IMG GL drivers crash while compiling shaders with more than the limit of uniform blocks.
+     ANGLE_FEATURE_CONDITION(features, validateMaxPerStageUniformBlocksAtCompileTime,
+                             IsPowerVR(vendor));
++    // http://crbug.com/499602793
++    ANGLE_FEATURE_CONDITION(features, reattachTextureToFboAfterLayerIncrease,
++                            IsPowerVR(vendor) && IsAndroid());
++
+ }
+ 
+ void InitializeFrontendFeatures(const FunctionsGL *functions, angle::FrontendFeatures *features)
+diff --git a/src/tests/capture_replay_tests/capture_replay_expectations.txt b/src/tests/capture_replay_tests/capture_replay_expectations.txt
+index 201c64ab200def996ffd7d0f8f85a60446e3ba5b..07b1abf82c3c8d9b4825dbace6db51ef6749226f 100644
+--- a/src/tests/capture_replay_tests/capture_replay_expectations.txt
++++ b/src/tests/capture_replay_tests/capture_replay_expectations.txt
+@@ -269,3 +269,6 @@
+ 
+ # Crashes on win and linux trace bots
+ 372059358 : MultisampleTestES3.CopyTexImage2DFromMsaaDefaultFbo/* = SKIP_FOR_CAPTURE
++
++# Fails on win and linux trace bots
++499602793 : Texture2DArrayTestES3_ReattachTextureToFbo.IncreaseLayersWithFramebufferAttachedMultiContext/* = SKIP_FOR_CAPTURE
+diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
+index ea78e32538855c8e37dfb1a5e462133a0e2d31cb..aec7a403d9c99888ec8add8e031e17992566f565 100644
+--- a/src/tests/gl_tests/TextureTest.cpp
++++ b/src/tests/gl_tests/TextureTest.cpp
+@@ -7930,6 +7930,135 @@ TEST_P(Texture2DArrayTestES3, RedefineLevelData)
+     EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
+ }
+ 
++class Texture2DArrayTestES3_ReattachTextureToFbo : public Texture2DArrayTestES3
++{};
++
++// Test increasing layer count of a 2D array texture when one of its layers is attached to a
++// framebuffer. http://crbug.com/499602793
++TEST_P(Texture2DArrayTestES3_ReattachTextureToFbo, IncreaseLayersWithFramebufferAttached)
++{
++    // http://crbug.com/499602793 - Metal backend does not support redefining 2D array texture
++    // layer count without releasing storage.
++    ANGLE_SKIP_TEST_IF(IsMetal());
++
++    glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    std::vector<GLColor> pixelsRed(4 * 4 * 1, GLColor::red);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 4, 4, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixelsRed.data());
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 0, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::red);
++
++    // Increase layer count to 2.
++    std::vector<GLColor> pixelsGreen(4 * 4 * 2, GLColor::green);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 4, 4, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixelsGreen.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify layer 0 points to the new memory (green).
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::green);
++
++    // Verify layer 1 is also green.
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 0, 1);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::green);
++
++    // Clear layer 1 to blue and verify.
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::blue);
++
++    // Now sample from layer 0 and layer 1 using a shader to ensure texture memory matches FBO
++    // memory.
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 0);
++    glUseProgram(mProgram);
++    glUniform1i(mTextureArrayLocation, 0);
++
++    // Verify layer 0 is green.
++    glUniform1i(mTextureArraySliceUniformLocation, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::green);
++
++    // Verify layer 1 is blue.
++    glUniform1i(mTextureArraySliceUniformLocation, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::blue);
++}
++
++// Test increasing layer count of a 2D array texture when one of its layers is attached to a
++// framebuffer in one context, and the texture is redefined in another shared context.
++// http://crbug.com/499602793
++TEST_P(Texture2DArrayTestES3_ReattachTextureToFbo,
++       IncreaseLayersWithFramebufferAttachedMultiContext)
++{
++    // http://crbug.com/499602793 - Metal backend does not support redefining 2D array texture
++    // layer count without releasing storage.
++    ANGLE_SKIP_TEST_IF(IsMetal());
++
++    glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    std::vector<GLColor> pixelsRed(4 * 4 * 1, GLColor::red);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 4, 4, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixelsRed.data());
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 0, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::red);
++
++    // Set up and switch to a secondary context sharing resources with the current context.
++    EGLWindow *window          = getEGLWindow();
++    EGLDisplay display         = window->getDisplay();
++    EGLConfig config           = window->getConfig();
++    EGLSurface surface         = window->getSurface();
++    EGLint contextAttributes[] = {
++        EGL_CONTEXT_MAJOR_VERSION_KHR,
++        GetParam().majorVersion,
++        EGL_CONTEXT_MINOR_VERSION_KHR,
++        GetParam().minorVersion,
++        EGL_NONE,
++    };
++    EGLContext context1 = eglGetCurrentContext();
++    EGLContext context2 = eglCreateContext(display, config, context1, contextAttributes);
++    ASSERT_NE(context2, EGL_NO_CONTEXT);
++    eglMakeCurrent(display, surface, surface, context2);
++
++    // In the secondary context, bind the texture and increase layer count to 2.
++    glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
++    std::vector<GLColor> pixelsGreen(4 * 4 * 2, GLColor::green);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 4, 4, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixelsGreen.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Switch back to the primary context.
++    eglMakeCurrent(display, surface, surface, context1);
++
++    // Verify layer 0 points to the new memory (green).
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::green);
++
++    // Attach layer 1 to the FBO in context1 and verify. Explicitly calling
++    // glFramebufferTextureLayer attaches to the newly allocated texture storage.
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 0, 1);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::green);
++
++    // Clear layer 1 to blue and verify.
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::blue);
++
++    // Clean up secondary context.
++    eglDestroyContext(display, context2);
++}
++
+ // Create a 3D texture, use it, then redefine one level without changing dimensions.
+ TEST_P(Texture3DTestES3, RedefineLevelData)
+ {
+@@ -19176,4 +19305,143 @@ ANGLE_INSTANTIATE_TEST_ES31(RGBTextureBufferTestES31);
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(MultisampleTexture2DTestES31);
+ ANGLE_INSTANTIATE_TEST_ES31(MultisampleTexture2DTestES31);
+ 
++class Texture2DArrayTestES3_ReattachTextureToFbo : public Texture2DArrayTestES3
++{};
++
++// Test increasing layer count of a 2D array texture when one of its layers is attached to a
++// framebuffer. http://crbug.com/499602793
++TEST_P(Texture2DArrayTestES3_ReattachTextureToFbo, IncreaseLayersWithFramebufferAttached)
++{
++    // http://crbug.com/499602793 - Metal backend does not support redefining 2D array texture
++    // layer count without releasing storage.
++    ANGLE_SKIP_TEST_IF(IsMetal());
++
++    glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    std::vector<GLColor> pixelsRed(4 * 4 * 1, GLColor::red);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 4, 4, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixelsRed.data());
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 0, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::red);
++
++    // Increase layer count to 2.
++    std::vector<GLColor> pixelsGreen(4 * 4 * 2, GLColor::green);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 4, 4, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixelsGreen.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Verify layer 0 points to the new memory (green).
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::green);
++
++    // Verify layer 1 is also green.
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 0, 1);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::green);
++
++    // Clear layer 1 to blue and verify.
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::blue);
++
++    // Now sample from layer 0 and layer 1 using a shader to ensure texture memory matches FBO
++    // memory.
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 0);
++    glUseProgram(mProgram);
++    glUniform1i(mTextureArrayLocation, 0);
++
++    // Verify layer 0 is green.
++    glUniform1i(mTextureArraySliceUniformLocation, 0);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::green);
++
++    // Verify layer 1 is blue.
++    glUniform1i(mTextureArraySliceUniformLocation, 1);
++    drawQuad(mProgram, "position", 0.5f);
++    EXPECT_PIXEL_RECT_EQ(0, 0, getWindowWidth(), getWindowHeight(), GLColor::blue);
++}
++
++// Test increasing layer count of a 2D array texture when one of its layers is attached to a
++// framebuffer in one context, and the texture is redefined in another shared context.
++// http://crbug.com/499602793
++TEST_P(Texture2DArrayTestES3_ReattachTextureToFbo,
++       IncreaseLayersWithFramebufferAttachedMultiContext)
++{
++    // http://crbug.com/499602793 - Metal backend does not support redefining 2D array texture
++    // layer count without releasing storage.
++    ANGLE_SKIP_TEST_IF(IsMetal());
++
++    glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
++    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
++
++    std::vector<GLColor> pixelsRed(4 * 4 * 1, GLColor::red);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 4, 4, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixelsRed.data());
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 0, 0);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::red);
++
++    // Set up and switch to a secondary context sharing resources with the current context.
++    EGLWindow *window          = getEGLWindow();
++    EGLDisplay display         = window->getDisplay();
++    EGLConfig config           = window->getConfig();
++    EGLSurface surface         = window->getSurface();
++    EGLint contextAttributes[] = {
++        EGL_CONTEXT_MAJOR_VERSION_KHR,
++        GetParam().majorVersion,
++        EGL_CONTEXT_MINOR_VERSION_KHR,
++        GetParam().minorVersion,
++        EGL_NONE,
++    };
++    EGLContext context1 = eglGetCurrentContext();
++    EGLContext context2 = eglCreateContext(display, config, context1, contextAttributes);
++    ASSERT_NE(context2, EGL_NO_CONTEXT);
++    eglMakeCurrent(display, surface, surface, context2);
++
++    // In the secondary context, bind the texture and increase layer count to 2.
++    glBindTexture(GL_TEXTURE_2D_ARRAY, m2DArrayTexture);
++    std::vector<GLColor> pixelsGreen(4 * 4 * 2, GLColor::green);
++    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, 4, 4, 2, 0, GL_RGBA, GL_UNSIGNED_BYTE,
++                 pixelsGreen.data());
++    ASSERT_GL_NO_ERROR();
++
++    // Switch back to the primary context.
++    eglMakeCurrent(display, surface, surface, context1);
++
++    // Verify layer 0 points to the new memory (green).
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::green);
++
++    // Attach layer 1 to the FBO in context1 and verify. Explicitly calling
++    // glFramebufferTextureLayer attaches to the newly allocated texture storage.
++    glFramebufferTextureLayer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m2DArrayTexture, 0, 1);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::green);
++
++    // Clear layer 1 to blue and verify.
++    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++    EXPECT_PIXEL_RECT_EQ(0, 0, 4, 4, GLColor::blue);
++
++    // Clean up secondary context.
++    eglDestroyContext(display, context2);
++}
++
++GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(Texture2DArrayTestES3_ReattachTextureToFbo);
++ANGLE_INSTANTIATE_TEST_ES3_AND(
++    Texture2DArrayTestES3_ReattachTextureToFbo,
++    ES3_OPENGL().enable(Feature::ReattachTextureToFboAfterLayerIncrease),
++    ES3_OPENGL().disable(Feature::ReattachTextureToFboAfterLayerIncrease),
++    ES3_OPENGLES().enable(Feature::ReattachTextureToFboAfterLayerIncrease),
++    ES3_OPENGLES().disable(Feature::ReattachTextureToFboAfterLayerIncrease),
++    ES3_VULKAN().enable(Feature::ReattachTextureToFboAfterLayerIncrease),
++    ES3_VULKAN().disable(Feature::ReattachTextureToFboAfterLayerIncrease));
++
+ }  // anonymous namespace
+diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
+index e809fe16d1db5b0bd2cf65e1cd449f5fb94020c5..8eb055a61c3901bf66290f372aa5bab96e379e7f 100644
+--- a/util/autogen/angle_features_autogen.cpp
++++ b/util/autogen/angle_features_autogen.cpp
+@@ -278,6 +278,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+     {Feature::QueryCounterBitsGeneratesErrors, "queryCounterBitsGeneratesErrors"},
+     {Feature::ReadPixelsUsingImplementationColorReadFormatForNorm16, "readPixelsUsingImplementationColorReadFormatForNorm16"},
+     {Feature::ReapplyUBOBindingsAfterUsingBinaryProgram, "reapplyUBOBindingsAfterUsingBinaryProgram"},
++    {Feature::ReattachTextureToFboAfterLayerIncrease, "reattachTextureToFboAfterLayerIncrease"},
+     {Feature::RecreateMipmapLevelsBeforeGenerate, "recreateMipmapLevelsBeforeGenerate"},
+     {Feature::RecycleVkEvent, "recycleVkEvent"},
+     {Feature::RegenerateStructNames, "regenerateStructNames"},
+diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
+index b24a4810faa89d6920d5a6b783441efe6fdfc152..b7add0a9c4784ef0b446f05be7a23135691751c6 100644
+--- a/util/autogen/angle_features_autogen.h
++++ b/util/autogen/angle_features_autogen.h
+@@ -278,6 +278,7 @@ enum class Feature
+     QueryCounterBitsGeneratesErrors,
+     ReadPixelsUsingImplementationColorReadFormatForNorm16,
+     ReapplyUBOBindingsAfterUsingBinaryProgram,
++    ReattachTextureToFboAfterLayerIncrease,
+     RecreateMipmapLevelsBeforeGenerate,
+     RecycleVkEvent,
+     RegenerateStructNames,

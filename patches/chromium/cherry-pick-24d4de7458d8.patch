@@ -1,0 +1,321 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Thu, 23 Jul 2026 22:02:41 -0700
+Subject: [M150] ui/gfx/x: Peek at X11 responses in
+ GeometryCache::GetBoundsPx()
+
+Original change's description:
+> ui/gfx/x: Peek at X11 responses in GeometryCache::GetBoundsPx()
+>
+> GeometryCache::GetBoundsPx() previously called DispatchNow() to wait for
+> and process parent/geometry responses. This triggered synchronous
+> callbacks, causing out-of-order event dispatch and re-entrancy issues
+> (crbug.com/524439798, crbug.com/524824288, crbug.com/532966375).
+>
+> This change adds a Peek() method to x11::Future and x11::FutureImpl
+> which blocks until the reply is available from the X server without
+> taking the response from the connection queue or clearing/dispatching
+> the response callback.
+>
+> GeometryCache::GetBoundsPx() now uses Peek() to synchronously read the
+> parent window and geometry data for bounds calculation without
+> dispatching events or calling bounds-changed callbacks. The callbacks
+> are invoked in order when the event loop processes the responses from
+> the connection queue.
+>
+> Fixed: 524439798, 524824288, 532966375
+> Change-Id: I44d459c8fe3fffd052d7380598c9b4d98d3d3a11
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8128859
+> Reviewed-by: Lei Zhang <thestig@chromium.org>
+> Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1665486}
+
+(cherry picked from commit afcbd943b2ea21437f86d357eeff2e906a2bbe42)
+
+Bug: 537609360,524439798,524824288,532966375
+Change-Id: I44d459c8fe3fffd052d7380598c9b4d98d3d3a11
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8135157
+Reviewed-by: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+Owners-Override: Lei Zhang <thestig@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#3985}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/ui/gfx/x/future.cc b/ui/gfx/x/future.cc
+index a0d2ec39f28969580ef1fbcd0ae10dc075dc7d09..0524b2260e573f748f3819632da9218c1fd158fa 100644
+--- a/ui/gfx/x/future.cc
++++ b/ui/gfx/x/future.cc
+@@ -36,6 +36,17 @@ void FutureImpl::Sync(RawReply* raw_reply, std::unique_ptr<Error>* error) {
+   TakeResponse(raw_reply, error);
+ }
+ 
++void FutureImpl::Peek(RawReply* raw_reply, std::unique_ptr<Error>* error) {
++  DCHECK_CALLED_ON_VALID_SEQUENCE(connection_->sequence_checker_);
++  Wait();
++
++  auto* request = connection_->GetRequestForFuture(this);
++  CHECK(request->have_response);
++
++  *raw_reply = request->reply;
++  *error = nullptr;
++}
++
+ void FutureImpl::OnResponse(ResponseCallback callback) {
+   UpdateRequestHandler(std::move(callback));
+ }
+diff --git a/ui/gfx/x/future.h b/ui/gfx/x/future.h
+index 2141a2905edcb29b046166cbf6c16f9aa7810271..6be59a21e0910c8a637927ead2de65ef6057e9fb 100644
+--- a/ui/gfx/x/future.h
++++ b/ui/gfx/x/future.h
+@@ -28,6 +28,10 @@ class COMPONENT_EXPORT(X11) FutureImpl {
+ 
+   void Sync(RawReply* raw_reply, std::unique_ptr<Error>* error);
+ 
++  // Similar to Sync(), but does not remove the response from the connection's
++  // queue or clear the response callback.
++  void Peek(RawReply* raw_reply, std::unique_ptr<Error>* error);
++
+   void OnResponse(ResponseCallback callback);
+ 
+   // Update an existing Request with a new handler.  |sequence| must
+@@ -102,7 +106,8 @@ class Future : public FutureBase {
+                   "to FutureBase");
+   }
+ 
+-  // Blocks until we receive the response from the server. Returns the response.
++  // Blocks until the response is received from the server. Returns the
++  // response, removing it from the request queue.
+   Response<Reply> Sync() {
+     if (!impl()) {
+       return {nullptr, nullptr};
+@@ -114,7 +119,29 @@ class Future : public FutureBase {
+ 
+     std::unique_ptr<Reply> reply;
+     if (raw_reply) {
+-      auto buf = ReadBuffer(raw_reply);
++      ReadBuffer buf(raw_reply);
++      reply = detail::ReadReply<Reply>(&buf);
++    }
++
++    return {std::move(reply), std::move(error)};
++  }
++
++  // Blocks until the response is received from the server. Returns the response
++  // without taking it from the request queue or clearing the response callback.
++  // Unlike Sync(), this method does not remove the response from the request
++  // queue.
++  Response<Reply> Peek() {
++    if (!impl()) {
++      return {nullptr, nullptr};
++    }
++
++    RawReply raw_reply;
++    std::unique_ptr<Error> error;
++    impl()->Peek(&raw_reply, &error);
++
++    std::unique_ptr<Reply> reply;
++    if (raw_reply) {
++      ReadBuffer buf(raw_reply);
+       reply = detail::ReadReply<Reply>(&buf);
+     }
+ 
+@@ -185,4 +212,4 @@ inline void Future<void>::OnResponse(Callback callback) {
+ 
+ }  // namespace x11
+ 
+-#endif  //  UI_GFX_X_FUTURE_H_
++#endif  // UI_GFX_X_FUTURE_H_
+diff --git a/ui/gfx/x/geometry_cache.cc b/ui/gfx/x/geometry_cache.cc
+index 2549838706c7e454cb7d37d37f6edf3eee073d93..a36c897ed2ef4383520867a855b47c32d58b0b2a 100644
+--- a/ui/gfx/x/geometry_cache.cc
++++ b/ui/gfx/x/geometry_cache.cc
+@@ -34,21 +34,43 @@ GeometryCache::GeometryCache(Connection* connection,
+ GeometryCache::~GeometryCache() = default;
+ 
+ gfx::Rect GeometryCache::GetBoundsPx() {
++  auto get_local_geometry = [this]() {
++    if (have_geometry_) {
++      return geometry_;
++    }
++    if (auto response = geometry_future_.Peek()) {
++      return response ? gfx::Rect(response->x, response->y, response->width,
++                                  response->height)
++                      : gfx::Rect();
++    }
++    return geometry_;
++  };
++
+   if (!have_parent_) {
+-    parent_future_.DispatchNow();
+-  }
+-  CHECK(have_parent_);
+-  if (!have_geometry_) {
+-    geometry_future_.DispatchNow();
++    auto response = parent_future_.Peek();
++    if (!response) {
++      return get_local_geometry();
++    }
++    Window parent_window = response ? response->parent : Window::None;
++    if (parent_window == Window::None) {
++      parent_.reset();
++      return get_local_geometry();
++    }
++    if (!parent_ || parent_->window_ != parent_window) {
++      parent_ = std::make_unique<GeometryCache>(
++          connection_, parent_window,
++          base::BindRepeating(&GeometryCache::OnParentGeometryChanged,
++                              weak_ptr_factory_.GetWeakPtr()));
++    }
+   }
+-  CHECK(have_geometry_);
+ 
++  gfx::Rect geometry = get_local_geometry();
+   if (!parent_) {
+-    return geometry_;
++    return geometry;
+   }
+   auto parent_bounds = parent_->GetBoundsPx();
+   gfx::Vector2d offset(parent_bounds.x(), parent_bounds.y());
+-  return geometry_ + offset;
++  return geometry + offset;
+ }
+ 
+ void GeometryCache::OnQueryTreeResponse(QueryTreeResponse response) {
+diff --git a/ui/gfx/x/geometry_cache_unittest.cc b/ui/gfx/x/geometry_cache_unittest.cc
+index b37a9fe16d4a34499297c0d4cb4f206c1c1ffff3..5affd868f8ccb6d8c6718e74cab078e57502aa7e 100644
+--- a/ui/gfx/x/geometry_cache_unittest.cc
++++ b/ui/gfx/x/geometry_cache_unittest.cc
+@@ -101,8 +101,11 @@ TEST(GeometryCacheTest, BoundsChangedCallback) {
+   EXPECT_FALSE(last_bounds.has_value());
+   EXPECT_EQ(geometry_cache.GetBoundsPx(), bounds);
+ 
+-  // `last_bounds` should have gotten set after the call to GetBoundsPx().
+-  // Reset it for the next part of the test.
++  // Calling GetBoundsPx() should not trigger the callback synchronously.
++  EXPECT_FALSE(last_bounds.has_value());
++
++  // Dispatching responses/events will invoke the callback.
++  connection->DispatchAll();
+   EXPECT_TRUE(last_bounds.has_value());
+   last_bounds = std::nullopt;
+ 
+@@ -161,4 +164,23 @@ TEST(GeometryCacheTest, NestedWindows) {
+       new_child_bounds + gfx::Vector2d(parent_bounds.x(), parent_bounds.y()));
+ }
+ 
++TEST(GeometryCacheTest, DestroyInCallback) {
++  Connection* connection = Connection::Get();
++  ScopedWindow window(connection, connection->default_root(),
++                      gfx::Rect(12, 34, 56, 78));
++
++  std::unique_ptr<GeometryCache> geometry_cache;
++  auto bounds_changed_callback =
++      [](std::unique_ptr<GeometryCache>* geometry_cache_ptr,
++         const std::optional<gfx::Rect>& old_bounds,
++         const gfx::Rect& new_bounds) { geometry_cache_ptr->reset(); };
++
++  geometry_cache = std::make_unique<GeometryCache>(
++      connection, window.id(),
++      base::BindRepeating(bounds_changed_callback, &geometry_cache));
++
++  geometry_cache->GetBoundsPx();
++  connection->DispatchAll();
++}
++
+ }  // namespace x11
+diff --git a/ui/ozone/platform/x11/x11_window_ozone_unittest.cc b/ui/ozone/platform/x11/x11_window_ozone_unittest.cc
+index 37e99ce9aeedb71b2703310262258099c60eaf6d..ab1d500f38f3f2c44fbfb6238a8dfc89e563daac 100644
+--- a/ui/ozone/platform/x11/x11_window_ozone_unittest.cc
++++ b/ui/ozone/platform/x11/x11_window_ozone_unittest.cc
+@@ -2,24 +2,27 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-#include "ui/ozone/platform/x11/x11_window.h"
+-#include "ui/platform_window/extensions/x11_extension_delegate.h"
+-
+ #include <memory>
+ #include <utility>
+ 
++#include "base/nix/xdg_util.h"
+ #include "base/run_loop.h"
++#include "base/test/run_until.h"
+ #include "base/test/task_environment.h"
+ #include "testing/gtest/include/gtest/gtest.h"
++#include "ui/base/x/x11_util.h"
+ #include "ui/display/display.h"
+ #include "ui/display/screen_base.h"
+ #include "ui/events/devices/x11/touch_factory_x11.h"
+ #include "ui/events/event.h"
+ #include "ui/events/platform/x11/x11_event_source.h"
+ #include "ui/events/test/events_test_utils_x11.h"
++#include "ui/gfx/x/atom_cache.h"
+ #include "ui/gfx/x/event.h"
++#include "ui/ozone/platform/x11/x11_window.h"
+ #include "ui/ozone/platform/x11/x11_window_manager.h"
+ #include "ui/ozone/test/mock_platform_window_delegate.h"
++#include "ui/platform_window/extensions/x11_extension_delegate.h"
+ #include "ui/platform_window/platform_window_delegate.h"
+ #include "ui/platform_window/platform_window_init_properties.h"
+ 
+@@ -394,10 +397,11 @@ TEST_F(X11WindowOzoneTest, OnWindowMappedUseAfterFreeAfterMaximize) {
+   x11::Event map_event(/*send_event=*/false, std::move(map_notify));
+   connection->DispatchEvent(map_event);
+ 
+-  // The synchronous-free path must have been exercised; otherwise the test
+-  // didn't reach the vulnerable frame.
+-  EXPECT_TRUE(freed) << "delegate->OnBoundsChanged() was not invoked "
+-                        "synchronously from OnWindowMapped/Maximize";
++  EXPECT_TRUE(base::test::RunUntil([&]() {
++    connection->DispatchAll();
++    return freed;
++  })) << "delegate->OnBoundsChanged() was not invoked from "
++         "OnWindowMapped/Maximize";
+ 
+   connection->DestroyWindow({new_parent});
+ }
+@@ -467,10 +471,10 @@ TEST_F(X11WindowOzoneTest, SetOverrideRedirectSelfDeleteUaf) {
+   auto* x11_window_raw = static_cast<X11Window*>(window.get());
+   x11_window_raw->SetOverrideRedirect(true);
+ 
+-  // The synchronous-free path must have been exercised; otherwise the test
+-  // didn't reach the vulnerable frame.
+-  EXPECT_TRUE(freed) << "delegate->OnBoundsChanged() was not invoked "
+-                        "synchronously from SetOverrideRedirect";
++  EXPECT_TRUE(base::test::RunUntil([&]() {
++    connection->DispatchAll();
++    return freed;
++  })) << "delegate->OnBoundsChanged() was not invoked from SetOverrideRedirect";
+ 
+   connection->DestroyWindow({new_parent});
+ }
+@@ -548,9 +552,10 @@ TEST_F(X11WindowOzoneTest, DispatchUiEventGrabberFreedDuringGeometryFetch) {
+   // Dispatch the event to window2.
+   DispatchXEvent(xi_event, widget2);
+ 
+-  // Verify that window1 was indeed synchronously freed during the geometry
+-  // fetch.
+-  EXPECT_TRUE(freed) << "grabber delegate was never invoked synchronously";
++  EXPECT_TRUE(base::test::RunUntil([&]() {
++    connection->DispatchAll();
++    return freed;
++  })) << "grabber delegate was never invoked";
+ 
+   connection->DestroyWindow({new_parent});
+ }
+@@ -625,9 +630,10 @@ TEST_F(X11WindowOzoneTest, DispatchEventSelfFreedDuringMouseOnWindow) {
+   // Step 7: Dispatch the event to widget. This will trigger DispatchEvent.
+   DispatchXEvent(xi_event, widget);
+ 
+-  // If we got here without ASAN/crash tripping, verify the window was indeed
+-  // freed.
+-  EXPECT_TRUE(freed) << "delegate was never invoked synchronously";
++  EXPECT_TRUE(base::test::RunUntil([&]() {
++    connection->DispatchAll();
++    return freed;
++  })) << "delegate was never invoked";
+ 
+   connection->DestroyWindow({new_parent});
+ }

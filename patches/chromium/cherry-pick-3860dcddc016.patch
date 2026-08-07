@@ -1,0 +1,177 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Devlin Cronin <rdevlin.cronin@chromium.org>
+Date: Wed, 5 Aug 2026 17:24:27 -0700
+Subject: [M144] [Extensions] Handle context destruction during event dispatch
+
+Original change's description:
+> [Extensions] Handle context destruction during event dispatch
+>
+> Theoretically, malicious script could run as part of event dispatch,
+> and could trigger context invalidation.
+>
+> Fix this and add a regression test.
+>
+> Bug: 536512612
+> Change-Id: Iaf2436a2413af78489583d7b758fb80c08f6472c
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8178928
+> Commit-Queue: Devlin Cronin <rdevlin.cronin@chromium.org>
+> Reviewed-by: Justin Lulejian <jlulejian@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1672149}
+
+(cherry picked from commit 6fb5bf539857775c56dbbf57a7e11abd1683c6e8)
+
+Bug: 542409382,536512612
+Change-Id: Iaf2436a2413af78489583d7b758fb80c08f6472c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8207762
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7559@{#5226}
+Cr-Branched-From: 223dfbac1c7542a06b422390d954afe5b560b607-refs/heads/main@{#1552494}
+
+diff --git a/extensions/renderer/bindings/api_event_handler.cc b/extensions/renderer/bindings/api_event_handler.cc
+index ec5ba3b17d6af56c6b606c5adc537ed2bd1958fd..a1045281288deff83d649fe00c90b017163fce35 100644
+--- a/extensions/renderer/bindings/api_event_handler.cc
++++ b/extensions/renderer/bindings/api_event_handler.cc
+@@ -19,6 +19,7 @@
+ #include "base/values.h"
+ #include "content/public/renderer/v8_value_converter.h"
+ #include "extensions/common/mojom/event_dispatcher.mojom.h"
++#include "extensions/renderer/bindings/api_binding_util.h"
+ #include "extensions/renderer/bindings/api_response_validator.h"
+ #include "extensions/renderer/bindings/event_emitter.h"
+ #include "extensions/renderer/bindings/get_per_context_data.h"
+@@ -103,15 +104,24 @@ void DispatchEvent(const v8::FunctionCallbackInfo<v8::Value>& info) {
+   if (iter == data->emitters.end()) {
+     return;
+   }
+-  v8::Global<v8::Object>& v8_emitter = iter->second;
++  v8::Local<v8::Object> v8_emitter = iter->second.Get(isolate);
+ 
++  // Converting `info[0]` to a vector of arguments can fail if script execution
++  // (such as running getters during property conversion) throws an exception.
+   v8::LocalVector<v8::Value> args(isolate);
+-  CHECK(gin::Converter<v8::LocalVector<v8::Value>>::FromV8(isolate, info[0],
+-                                                           &args));
++  if (!gin::Converter<v8::LocalVector<v8::Value>>::FromV8(isolate, info[0],
++                                                          &args)) {
++    return;
++  }
++
++  // The conversion above re-enters JS (e.g., via getters on array properties)
++  // which can synchronously invalidate the context (e.g., detaching an iframe).
++  if (!binding::IsContextValid(context)) {
++    return;
++  }
+ 
+   EventEmitter* emitter = nullptr;
+-  gin::Converter<EventEmitter*>::FromV8(isolate, v8_emitter.Get(isolate),
+-                                        &emitter);
++  gin::Converter<EventEmitter*>::FromV8(isolate, v8_emitter, &emitter);
+   CHECK(emitter);
+   // Note: It's safe to use EventEmitter::FireSync() here because this should
+   // only be triggered from a JS call, so we know JS is running.
+diff --git a/extensions/renderer/bindings/api_event_handler_unittest.cc b/extensions/renderer/bindings/api_event_handler_unittest.cc
+index 82b4ae4c1f12d5bb59a4e719334f3cbdb97334bd..0d145c419a082db8218449d7eeb21bad95d98fe9 100644
+--- a/extensions/renderer/bindings/api_event_handler_unittest.cc
++++ b/extensions/renderer/bindings/api_event_handler_unittest.cc
+@@ -15,11 +15,13 @@
+ #include "extensions/common/mojom/event_dispatcher.mojom.h"
+ #include "extensions/renderer/bindings/api_binding_test.h"
+ #include "extensions/renderer/bindings/api_binding_test_util.h"
++#include "extensions/renderer/bindings/api_binding_util.h"
+ #include "extensions/renderer/bindings/exception_handler.h"
+ #include "extensions/renderer/bindings/test_js_runner.h"
+ #include "gin/arguments.h"
+ #include "gin/converter.h"
+ #include "gin/public/context_holder.h"
++#include "gin/public/gin_embedders.h"
+ #include "testing/gmock/include/gmock/gmock.h"
+ #include "v8/include/v8-object.h"
+ #include "v8/include/v8-primitive.h"
+@@ -1340,4 +1342,85 @@ TEST_F(APIEventHandlerTest,
+   ::testing::Mock::VerifyAndClearExpectations(&change_handler);
+ }
+ 
++// Tests the behavior of a context getting invalidated during event dispatch.
++// Regression test for https://crbug.com/536512612.
++TEST_F(APIEventHandlerTest, ContextInvalidationDuringEventDispatch) {
++  TestJSRunner::AllowErrors allow_errors;
++  v8::HandleScope handle_scope(isolate());
++  v8::Local<v8::Context> context = MainContext();
++  v8::Context::Scope context_scope(context);
++
++  const char kEventName[] = "alpha";
++  v8::Local<v8::Object> event = handler()->CreateEventInstance(
++      kEventName, /*supports_filters=*/false, /*supports_lazy_listeners=*/true,
++      binding::kNoListenerMax, /*notify_on_change=*/true, context);
++  ASSERT_FALSE(event.IsEmpty());
++
++  // Craft a JS function to invalidate the context directly and expose it on
++  // the global.
++  auto invalidate_context =
++      [](const v8::FunctionCallbackInfo<v8::Value>& info) {
++        v8::Local<v8::Context> context = info.GetIsolate()->GetCurrentContext();
++        APIEventHandler* handler =
++            static_cast<APIEventHandler*>(info.Data().As<v8::External>()->Value(
++                gin::kExternalPointerTypeTagDefaultTag));
++        handler->InvalidateContext(context);
++        binding::InvalidateContext(context);
++      };
++  v8::Local<v8::Function> invalidate_func =
++      v8::Function::New(
++          context, invalidate_context,
++          v8::External::New(isolate(), handler(),
++                            gin::kExternalPointerTypeTagDefaultTag))
++          .ToLocalChecked();
++  context->Global()
++      ->Set(context, gin::StringToSymbol(isolate(), "invalidateContext"),
++            invalidate_func)
++      .Check();
++
++  // An attacker script that defines a sneaky getter on index '0' for all
++  // objects in an effort to inject itself into our bindings. It then
++  // invalidates the context.
++  const char kAttackerScript[] = R"(
++    (function() {
++      Object.defineProperty(Object.prototype, '0', {
++        get: function() {
++          globalThis.invalidateContext();
++          return 'foo';
++        },
++        configurable: true
++      });
++    })
++  )";
++  v8::Local<v8::Function> attacker_script =
++      FunctionFromString(context, kAttackerScript);
++  RunFunction(attacker_script, context, 0, nullptr);
++
++  // An unsuspecting argument massager that accidentally triggers the attacker
++  // getter.
++  const char kArgumentMassager[] = R"(
++    (function(originalArgs, dispatch) {
++        let args = [];
++        args.length = 1;
++        dispatch(args);
++    });
++    )";
++  v8::Local<v8::Function> massager =
++      FunctionFromString(context, kArgumentMassager);
++  handler()->RegisterArgumentMassager(context, kEventName, massager);
++
++  v8::Local<v8::Function> listener_function =
++      FunctionFromString(context, "(function() {})");
++  AddListener(context, listener_function, event);
++
++  const char kArguments[] = "[{}]";
++  base::ListValue event_args = ListValueFromString(kArguments);
++  // Dispatching the event will invoke the massager, which calls `dispatch()`.
++  // `dispatch` attempts to convert `args` via `FromV8()`, which triggers the
++  // getter on index '0'. The getter calls `invalidateContext()`, invalidating
++  // the context and clearing emitters.
++  handler()->FireEventInContext(kEventName, context, event_args, nullptr);
++  EXPECT_FALSE(binding::IsContextValid(context));
++}
++
+ }  // namespace extensions

@@ -1,0 +1,656 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Fri, 31 Jul 2026 13:15:49 -0700
+Subject: [M150] Sanitize cursor theme name and size in GTK and Wayland
+
+Original change's description:
+> Sanitize cursor theme name and size in GTK and Wayland
+>
+> This change extends GtkSettingsSetProperty interceptor and GtkUi to
+> sanitize gtk-cursor-theme-name and gtk-cursor-theme-size at write-time,
+> preventing unsanitized cursor theme names from being set in GTK
+> settings.
+>
+> It also introduces unified ui::IsValidCursorThemeName and
+> ui::IsValidCursorThemeSize validation helpers in //ui/base/cursor, and
+> adds validation to WaylandCursorFactory to ensure invalid or
+> path-traversing cursor theme names are rejected before calling
+> wl_cursor_theme_load.
+>
+> Change-Id: Ibe8a3ce208d76d2e724902424491a6116d4352f6
+> Fixed: 540289900
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8164559
+> Reviewed-by: Yichen Zhou <yichenz@chromium.org>
+> Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1670761}
+
+(cherry picked from commit 283ac1ef12df16eb0256a4d5ce83477b5afba061)
+
+Bug: 541110657,540289900
+Change-Id: Ibe8a3ce208d76d2e724902424491a6116d4352f6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8183108
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7871@{#4234}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/ui/base/cursor/cursor_factory.cc b/ui/base/cursor/cursor_factory.cc
+index 70fc265335a43da91abd55cf3526e73b74168a16..17edd0d5c55e7169f013cb26e8cdc71e4cfa2c0a 100644
+--- a/ui/base/cursor/cursor_factory.cc
++++ b/ui/base/cursor/cursor_factory.cc
+@@ -8,6 +8,7 @@
+ 
+ #include "base/check.h"
+ #include "base/check_op.h"
++#include "base/files/file_path.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/notimplemented.h"
+ #include "base/notreached.h"
+@@ -99,6 +100,19 @@ void CursorFactory::ObserveThemeChanges() {
+ 
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+ 
++bool IsValidCursorThemeName(std::string_view name) {
++  if (name.empty() || name == ".") {
++    return false;
++  }
++  base::FilePath theme_path(name);
++  return !theme_path.IsAbsolute() && !theme_path.ReferencesParent() &&
++         theme_path.BaseName() == theme_path;
++}
++
++bool IsValidCursorThemeSize(int size) {
++  return size > 0 && size <= 512;
++}
++
+ // Returns a cursor name compatible with either X11 or the FreeDesktop.org
+ // cursor spec ([1] and [2]), followed by fallbacks that can work as
+ // replacements in some environments where the original may not be available
+diff --git a/ui/base/cursor/cursor_factory.h b/ui/base/cursor/cursor_factory.h
+index abcc292e0af1ef0f03f3c6a5dc97b9c15de649b0..3fcfcdf37285d88e2f59544c1279d1c68325bc48 100644
+--- a/ui/base/cursor/cursor_factory.h
++++ b/ui/base/cursor/cursor_factory.h
+@@ -7,6 +7,7 @@
+ 
+ #include <optional>
+ #include <string>
++#include <string_view>
+ #include <vector>
+ 
+ #include "base/component_export.h"
+@@ -96,6 +97,12 @@ class COMPONENT_EXPORT(UI_BASE_CURSOR) CursorFactory {
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+ COMPONENT_EXPORT(UI_BASE_CURSOR)
+ std::vector<std::string> CursorNamesFromType(mojom::CursorType type);
++
++COMPONENT_EXPORT(UI_BASE_CURSOR)
++bool IsValidCursorThemeName(std::string_view name);
++
++COMPONENT_EXPORT(UI_BASE_CURSOR)
++bool IsValidCursorThemeSize(int size);
+ #endif
+ 
+ }  // namespace ui
+diff --git a/ui/base/cursor/cursor_unittest.cc b/ui/base/cursor/cursor_unittest.cc
+index 446a68986cc1e88b57dcab78803dcd42505be980..df9bd3bac06d94f53bf09fab21f50da1c1535598 100644
+--- a/ui/base/cursor/cursor_unittest.cc
++++ b/ui/base/cursor/cursor_unittest.cc
+@@ -4,8 +4,10 @@
+ 
+ #include "ui/base/cursor/cursor.h"
+ 
++#include "build/build_config.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ #include "third_party/skia/include/core/SkBitmap.h"
++#include "ui/base/cursor/cursor_factory.h"
+ #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
+ #include "ui/gfx/geometry/point.h"
+ #include "ui/gfx/image/image_unittest_util.h"
+@@ -70,5 +72,27 @@ TEST(CursorTest, ClampHotspot) {
+   EXPECT_EQ(gfx::Point(4, 6), cursor.custom_hotspot());
+ }
+ 
++#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
++TEST(CursorTest, IsValidCursorThemeName) {
++  EXPECT_TRUE(IsValidCursorThemeName("Adwaita"));
++  EXPECT_TRUE(IsValidCursorThemeName("DMZ-White"));
++  EXPECT_FALSE(IsValidCursorThemeName(""));
++  EXPECT_FALSE(IsValidCursorThemeName("."));
++  EXPECT_FALSE(IsValidCursorThemeName("../invalid"));
++  EXPECT_FALSE(IsValidCursorThemeName("/absolute/invalid"));
++  EXPECT_FALSE(IsValidCursorThemeName("sub/dir"));
++  EXPECT_FALSE(IsValidCursorThemeName("../../../../tmp/evil"));
++}
++
++TEST(CursorTest, IsValidCursorThemeSize) {
++  EXPECT_TRUE(IsValidCursorThemeSize(16));
++  EXPECT_TRUE(IsValidCursorThemeSize(24));
++  EXPECT_TRUE(IsValidCursorThemeSize(512));
++  EXPECT_FALSE(IsValidCursorThemeSize(0));
++  EXPECT_FALSE(IsValidCursorThemeSize(-1));
++  EXPECT_FALSE(IsValidCursorThemeSize(513));
++}
++#endif
++
+ }  // namespace
+ }  // namespace ui
+diff --git a/ui/base/x/x11_cursor_loader.cc b/ui/base/x/x11_cursor_loader.cc
+index 150a4f1b5b1dfa8df9153489f55b970faa1ef76c..0bb60cb886a065aec7e6b637cc82c563c60c7060 100644
+--- a/ui/base/x/x11_cursor_loader.cc
++++ b/ui/base/x/x11_cursor_loader.cc
+@@ -32,6 +32,7 @@
+ #include "base/task/task_traits.h"
+ #include "base/task/thread_pool.h"
+ #include "base/time/time.h"
++#include "ui/base/cursor/cursor_factory.h"
+ #include "ui/base/x/x11_util.h"
+ #include "ui/gfx/x/atom_cache.h"
+ #include "ui/gfx/x/connection.h"
+@@ -152,9 +153,7 @@ base::FilePath CanonicalizePath(base::FilePath path) {
+ }
+ 
+ bool IsValidCursorThemeName(const std::string& theme) {
+-  base::FilePath theme_path(theme);
+-  return !theme.empty() && theme != "." && !theme_path.IsAbsolute() &&
+-         !theme_path.ReferencesParent() && theme_path.BaseName() == theme_path;
++  return ui::IsValidCursorThemeName(theme);
+ }
+ 
+ scoped_refptr<base::RefCountedMemory> ReadCursorFromThemeImpl(
+diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
+index 5f419e3cfab4d8adda8c2c54509cae0f217db5c0..8d963bb510b502a5d4c0ca5581f8d71af927aa02 100644
+--- a/ui/gtk/gtk_ui.cc
++++ b/ui/gtk/gtk_ui.cc
+@@ -35,6 +35,7 @@
+ #include "third_party/skia/include/core/SkBitmap.h"
+ #include "third_party/skia/include/core/SkColor.h"
+ #include "third_party/skia/include/core/SkShader.h"
++#include "ui/base/cursor/cursor_factory.h"
+ #include "ui/base/glib/glib_cast.h"
+ #include "ui/base/ime/input_method.h"
+ #include "ui/base/ime/linux/fake_input_method_context.h"
+@@ -307,6 +308,17 @@ std::string GetIconThemeName() {
+   return theme_string;
+ }
+ 
++std::string GetThemeName() {
++  gchar* theme = nullptr;
++  g_object_get(gtk_settings_get_default(), "gtk-theme-name", &theme, nullptr);
++  std::string theme_string;
++  if (theme) {
++    theme_string = theme;
++    g_free(theme);
++  }
++  return theme_string;
++}
++
+ }  // namespace
+ 
+ GtkUi::GtkUi() : window_frame_actions_() {}
+@@ -365,6 +377,16 @@ bool GtkUi::Initialize() {
+ 
+   GtkSettings* settings = gtk_settings_get_default();
+   SanitizeIconThemeName();
++  SanitizeThemeName();
++  SanitizeCursorThemeName();
++  SanitizeCursorThemeSize();
++  InstallGtkSettingsInterceptor();
++
++  if (!GtkCheckVersion(4)) {
++    SanitizeKeyThemeName();
++    connect(settings, "notify::gtk-key-theme-name",
++            &GtkUi::OnKeyThemeNameChanged);
++  }
+   connect(settings, "notify::gtk-theme-name", &GtkUi::OnThemeChanged);
+   connect(settings, "notify::gtk-icon-theme-name", &GtkUi::OnThemeChanged);
+   connect(settings, "notify::gtk-application-prefer-dark-theme",
+@@ -803,6 +825,57 @@ bool GtkUi::SanitizeIconThemeName() {
+   return false;
+ }
+ 
++bool GtkUi::SanitizeThemeName() {
++  std::string theme = GetThemeName();
++  if (!IsValidThemeName(ThemeProperty::kThemeName, theme.c_str())) {
++    g_object_set(gtk_settings_get_default(), "gtk-theme-name", "Adwaita",
++                 nullptr);
++    return true;
++  }
++  return false;
++}
++
++bool GtkUi::SanitizeKeyThemeName() {
++  gchar* name = nullptr;
++  g_object_get(gtk_settings_get_default(), "gtk-key-theme-name", &name,
++               nullptr);
++  std::string name_str;
++  if (name) {
++    name_str = name;
++    g_free(name);
++  }
++  if (!IsValidThemeName(ThemeProperty::kKeyThemeName, name_str.c_str())) {
++    g_object_set(gtk_settings_get_default(), "gtk-key-theme-name", nullptr,
++                 nullptr);
++    return true;
++  }
++  return false;
++}
++
++bool GtkUi::SanitizeCursorThemeName() {
++  std::string theme = GetCursorThemeName();
++  if (!IsValidThemeName(ThemeProperty::kCursorThemeName, theme.c_str())) {
++    g_object_set(gtk_settings_get_default(), "gtk-cursor-theme-name", "Adwaita",
++                 nullptr);
++    return true;
++  }
++  return false;
++}
++
++bool GtkUi::SanitizeCursorThemeSize() {
++  int size = GetCursorThemeSize();
++  if (!ui::IsValidCursorThemeSize(size)) {
++    g_object_set(gtk_settings_get_default(), "gtk-cursor-theme-size", 24,
++                 nullptr);
++    return true;
++  }
++  return false;
++}
++
++void GtkUi::OnKeyThemeNameChanged(GtkSettings* settings, GtkParamSpec* param) {
++  SanitizeKeyThemeName();
++}
++
+ int GtkUi::GetCursorThemeSize() {
+   gint size = 0;
+   g_object_get(gtk_settings_get_default(), "gtk-cursor-theme-size", &size,
+@@ -865,6 +938,9 @@ void GtkUi::OnThemeChanged(GtkSettings* settings, GtkParamSpec* param) {
+ 
+ void GtkUi::OnCursorThemeNameChanged(GtkSettings* settings,
+                                      GtkParamSpec* param) {
++  if (SanitizeCursorThemeName()) {
++    return;
++  }
+   std::string cursor_theme_name = GetCursorThemeName();
+   if (cursor_theme_name.empty()) {
+     return;
+@@ -876,6 +952,9 @@ void GtkUi::OnCursorThemeNameChanged(GtkSettings* settings,
+ 
+ void GtkUi::OnCursorThemeSizeChanged(GtkSettings* settings,
+                                      GtkParamSpec* param) {
++  if (SanitizeCursorThemeSize()) {
++    return;
++  }
+   int cursor_theme_size = GetCursorThemeSize();
+   if (!cursor_theme_size) {
+     return;
+diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
+index 5591eee854f66e4b89351f693d334cdce053c17c..d98c716c08abfca10c0fde172c7ece8c91187a4d 100644
+--- a/ui/gtk/gtk_ui.h
++++ b/ui/gtk/gtk_ui.h
+@@ -121,6 +121,24 @@ class GtkUi : public ui::LinuxUiAndTheme {
+   // Returns true if the setting was modified.
+   bool SanitizeIconThemeName();
+ 
++  // Sanitizes the "gtk-theme-name" setting in GtkSettings if it is unsafe.
++  // Returns true if the setting was modified.
++  bool SanitizeThemeName();
++
++  // Sanitizes the "gtk-key-theme-name" setting in GtkSettings if it is unsafe.
++  // Returns true if the setting was modified.
++  bool SanitizeKeyThemeName();
++
++  // Sanitizes the "gtk-cursor-theme-name" setting in GtkSettings if it is
++  // unsafe. Returns true if the setting was modified.
++  bool SanitizeCursorThemeName();
++
++  // Sanitizes the "gtk-cursor-theme-size" setting in GtkSettings if it is
++  // unsafe. Returns true if the setting was modified.
++  bool SanitizeCursorThemeSize();
++
++  void OnKeyThemeNameChanged(GtkSettings* settings, GtkParamSpec* param);
++
+   void OnCursorThemeNameChanged(GtkSettings* settings, GtkParamSpec* param);
+ 
+   void OnCursorThemeSizeChanged(GtkSettings* settings, GtkParamSpec* param);
+diff --git a/ui/gtk/gtk_util.cc b/ui/gtk/gtk_util.cc
+index 6e5ddad561df9260ebaaad10bf7e5d0127472481..1cc6989ac0bd879727eb8c7d90e9c87738f6a048 100644
+--- a/ui/gtk/gtk_util.cc
++++ b/ui/gtk/gtk_util.cc
+@@ -19,6 +19,7 @@
+ #include "third_party/skia/include/core/SkBitmap.h"
+ #include "ui/aura/window_tree_host.h"
+ #include "ui/base/accelerators/accelerator.h"
++#include "ui/base/cursor/cursor_factory.h"
+ #include "ui/gfx/color_palette.h"
+ #include "ui/gfx/color_utils.h"
+ #include "ui/gfx/geometry/size.h"
+@@ -731,4 +732,104 @@ double GetOpacityFromContext(GtkStyleContext* context) {
+   return opacity;
+ }
+ 
++bool IsValidThemeName(ThemeProperty property, const char* theme) {
++  const bool is_key_theme = property == ThemeProperty::kKeyThemeName;
++  if (!theme) {
++    return is_key_theme;
++  }
++  std::string_view theme_str(theme);
++  if (theme_str.empty()) {
++    return is_key_theme;
++  }
++  return ui::IsValidCursorThemeName(theme_str);
++}
++
++const char* GetThemeFallback(ThemeProperty property) {
++  switch (property) {
++    case ThemeProperty::kIconThemeName:
++      return "hicolor";
++    case ThemeProperty::kThemeName:
++    case ThemeProperty::kCursorThemeName:
++      return "Adwaita";
++    case ThemeProperty::kKeyThemeName:
++      return nullptr;
++  }
++  NOTREACHED();
++}
++
++namespace {
++
++void (*g_orig_set_property)(GObject* object,
++                            guint property_id,
++                            const GValue* value,
++                            GParamSpec* pspec) = nullptr;
++
++DISABLE_CFI_ICALL
++void GtkSettingsSetProperty(GObject* object,
++                            guint property_id,
++                            const GValue* value,
++                            GParamSpec* pspec) {
++  if (pspec && pspec->name) {
++    std::string_view prop_name(pspec->name);
++    std::optional<ThemeProperty> property;
++    if (prop_name == "gtk-theme-name") {
++      property = ThemeProperty::kThemeName;
++    } else if (prop_name == "gtk-icon-theme-name") {
++      property = ThemeProperty::kIconThemeName;
++    } else if (prop_name == "gtk-key-theme-name") {
++      property = ThemeProperty::kKeyThemeName;
++    } else if (prop_name == "gtk-cursor-theme-name") {
++      property = ThemeProperty::kCursorThemeName;
++    } else if (prop_name == "gtk-cursor-theme-size") {
++      int size = g_value_get_int(value);
++      if (!ui::IsValidCursorThemeSize(size)) {
++        GValue sanitized_value = G_VALUE_INIT;
++        g_value_init(&sanitized_value, G_TYPE_INT);
++        g_value_set_int(&sanitized_value, 24);
++        g_orig_set_property(object, property_id, &sanitized_value, pspec);
++        g_value_unset(&sanitized_value);
++        return;
++      }
++    }
++    if (property) {
++      const gchar* name = g_value_get_string(value);
++      if (!IsValidThemeName(*property, name)) {
++        GValue sanitized_value = G_VALUE_INIT;
++        g_value_init(&sanitized_value, G_TYPE_STRING);
++        g_value_set_string(&sanitized_value, GetThemeFallback(*property));
++        g_orig_set_property(object, property_id, &sanitized_value, pspec);
++        g_value_unset(&sanitized_value);
++        return;
++      }
++    }
++  }
++  g_orig_set_property(object, property_id, value, pspec);
++}
++
++}  // namespace
++
++void InstallGtkSettingsInterceptor() {
++  if (!g_orig_set_property) {
++    GObjectClass* gobject_class =
++        G_OBJECT_CLASS(g_type_class_ref(GTK_TYPE_SETTINGS));
++    g_orig_set_property = gobject_class->set_property;
++    gobject_class->set_property = GtkSettingsSetProperty;
++    g_type_class_unref(gobject_class);
++  }
++}
++
++void UninstallGtkSettingsInterceptor() {
++  if (g_orig_set_property) {
++    GObjectClass* gobject_class =
++        G_OBJECT_CLASS(g_type_class_ref(GTK_TYPE_SETTINGS));
++    gobject_class->set_property = g_orig_set_property;
++    g_orig_set_property = nullptr;
++    g_type_class_unref(gobject_class);
++  }
++}
++
++GtkSettings* GetDefaultGtkSettings() {
++  return gtk_settings_get_default();
++}
++
+ }  // namespace gtk
+diff --git a/ui/gtk/gtk_util.h b/ui/gtk/gtk_util.h
+index 72679e0fb557885886cd1092ab76299e1034b782..d1b01c6f324ba35bb8870182149c5908397fbca3 100644
+--- a/ui/gtk/gtk_util.h
++++ b/ui/gtk/gtk_util.h
+@@ -196,6 +196,34 @@ GdkTexture* GetTextureFromRenderNode(GskRenderNode* node);
+ 
+ double GetOpacityFromContext(GtkStyleContext* context);
+ 
++enum class ThemeProperty {
++  kThemeName,
++  kIconThemeName,
++  kKeyThemeName,
++  kCursorThemeName,
++};
++
++// Returns true if `theme` is a safe, valid theme name for `property`.
++// If `theme` is null, returns true only for kKeyThemeName.
++COMPONENT_EXPORT(GTK)
++bool IsValidThemeName(ThemeProperty property, const char* theme);
++
++// Returns the safe fallback value for the given theme-related property.
++COMPONENT_EXPORT(GTK)
++const char* GetThemeFallback(ThemeProperty property);
++
++// Hook the `GtkSettings` `set_property` method to sanitize theme names.
++COMPONENT_EXPORT(GTK) void InstallGtkSettingsInterceptor();
++
++// Unhook the `GtkSettings` `set_property` method.
++COMPONENT_EXPORT(GTK) void UninstallGtkSettingsInterceptor();
++
++// Returns the default `GtkSettings` instance. This wrapper is required because
++// in component builds, raw GTK symbols loaded via stubs (including
++// `gtk_settings_get_default`) are not exported, preventing direct usage in
++// non-component targets like tests.
++COMPONENT_EXPORT(GTK) GtkSettings* GetDefaultGtkSettings();
++
+ }  // namespace gtk
+ 
+ #endif  // UI_GTK_GTK_UTIL_H_
+diff --git a/ui/gtk/gtk_util_unittest.cc b/ui/gtk/gtk_util_unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..cae5814c27c92c2fe246991b5bc418778c5c3d6f
+--- /dev/null
++++ b/ui/gtk/gtk_util_unittest.cc
+@@ -0,0 +1,145 @@
++// Copyright 2026 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ui/gtk/gtk_util.h"
++
++#include <string>
++
++#include "base/functional/bind.h"
++#include "base/functional/callback.h"
++#include "testing/gtest/include/gtest/gtest.h"
++#include "ui/base/glib/scoped_gsignal.h"
++#include "ui/gtk/gtk_compat.h"
++
++namespace gtk {
++
++TEST(GtkUtilTest, IsValidThemeName) {
++  EXPECT_TRUE(IsValidThemeName(ThemeProperty::kThemeName, "Adwaita"));
++  EXPECT_TRUE(IsValidThemeName(ThemeProperty::kIconThemeName, "hicolor"));
++  EXPECT_TRUE(IsValidThemeName(ThemeProperty::kCursorThemeName, "Adwaita"));
++  EXPECT_TRUE(IsValidThemeName(ThemeProperty::kKeyThemeName, ""));
++  EXPECT_FALSE(IsValidThemeName(ThemeProperty::kThemeName, ""));
++  EXPECT_FALSE(IsValidThemeName(ThemeProperty::kCursorThemeName, ""));
++  EXPECT_FALSE(IsValidThemeName(ThemeProperty::kThemeName, "../invalid"));
++  EXPECT_FALSE(
++      IsValidThemeName(ThemeProperty::kThemeName, "/absolute/invalid"));
++  EXPECT_FALSE(IsValidThemeName(ThemeProperty::kThemeName, "."));
++}
++
++TEST(GtkUtilTest, GetThemeFallback) {
++  EXPECT_STREQ(GetThemeFallback(ThemeProperty::kIconThemeName), "hicolor");
++  EXPECT_STREQ(GetThemeFallback(ThemeProperty::kThemeName), "Adwaita");
++  EXPECT_STREQ(GetThemeFallback(ThemeProperty::kCursorThemeName), "Adwaita");
++  EXPECT_EQ(GetThemeFallback(ThemeProperty::kKeyThemeName), nullptr);
++}
++
++class GtkUtilInterceptorTest : public testing::Test {
++ protected:
++  void SetUp() override { InstallGtkSettingsInterceptor(); }
++  void TearDown() override { UninstallGtkSettingsInterceptor(); }
++};
++
++TEST_F(GtkUtilInterceptorTest, ThemeNamesSanitizedAtWriteTime) {
++  GtkSettings* settings = GetDefaultGtkSettings();
++  ASSERT_TRUE(settings);
++
++  std::string observed_theme_name;
++  auto callback = base::BindRepeating(
++      [](std::string* out_str, GtkSettings* settings, GParamSpec* pspec) {
++        gchar* name = nullptr;
++        g_object_get(settings, "gtk-theme-name", &name, nullptr);
++        if (name) {
++          *out_str = name;
++          g_free(name);
++        }
++      },
++      base::Unretained(&observed_theme_name));
++
++  ScopedGSignal signal(settings, "notify::gtk-theme-name", callback);
++
++  // Set to an invalid value (path traversal)
++  g_object_set(settings, "gtk-theme-name", "../../../invalid-theme", nullptr);
++
++  // The interceptor should have triggered and sanitized the theme name to
++  // "Adwaita" before the notify callback ran!
++  EXPECT_EQ(observed_theme_name, "Adwaita");
++}
++
++TEST_F(GtkUtilInterceptorTest, IconThemeNamesSanitizedAtWriteTime) {
++  GtkSettings* settings = GetDefaultGtkSettings();
++  ASSERT_TRUE(settings);
++
++  std::string observed_theme_name;
++  auto callback = base::BindRepeating(
++      [](std::string* out_str, GtkSettings* settings, GParamSpec* pspec) {
++        gchar* name = nullptr;
++        g_object_get(settings, "gtk-icon-theme-name", &name, nullptr);
++        if (name) {
++          *out_str = name;
++          g_free(name);
++        }
++      },
++      base::Unretained(&observed_theme_name));
++
++  ScopedGSignal signal(settings, "notify::gtk-icon-theme-name", callback);
++
++  // Set to an invalid value (path traversal)
++  g_object_set(settings, "gtk-icon-theme-name", "../../../invalid-theme",
++               nullptr);
++
++  // The interceptor should have triggered and sanitized the theme name to
++  // "hicolor" before the notify callback ran!
++  EXPECT_EQ(observed_theme_name, "hicolor");
++}
++
++TEST_F(GtkUtilInterceptorTest, CursorThemeNamesSanitizedAtWriteTime) {
++  GtkSettings* settings = GetDefaultGtkSettings();
++  ASSERT_TRUE(settings);
++
++  std::string observed_theme_name;
++  auto callback = base::BindRepeating(
++      [](std::string* out_str, GtkSettings* settings, GParamSpec* pspec) {
++        gchar* name = nullptr;
++        g_object_get(settings, "gtk-cursor-theme-name", &name, nullptr);
++        if (name) {
++          *out_str = name;
++          g_free(name);
++        }
++      },
++      base::Unretained(&observed_theme_name));
++
++  ScopedGSignal signal(settings, "notify::gtk-cursor-theme-name", callback);
++
++  // Set to an invalid value (path traversal)
++  g_object_set(settings, "gtk-cursor-theme-name",
++               "../../../../tmp/w8_evil_cursor", nullptr);
++
++  // The interceptor should have triggered and sanitized the cursor theme name
++  // to "Adwaita" before the notify callback ran!
++  EXPECT_EQ(observed_theme_name, "Adwaita");
++}
++
++TEST_F(GtkUtilInterceptorTest, CursorThemeSizeSanitizedAtWriteTime) {
++  GtkSettings* settings = GetDefaultGtkSettings();
++  ASSERT_TRUE(settings);
++
++  int observed_size = 0;
++  auto callback = base::BindRepeating(
++      [](int* out_size, GtkSettings* settings, GParamSpec* pspec) {
++        gint size = 0;
++        g_object_get(settings, "gtk-cursor-theme-size", &size, nullptr);
++        *out_size = size;
++      },
++      base::Unretained(&observed_size));
++
++  ScopedGSignal signal(settings, "notify::gtk-cursor-theme-size", callback);
++
++  // Set to an invalid value (-1)
++  g_object_set(settings, "gtk-cursor-theme-size", -1, nullptr);
++
++  // The interceptor should have triggered and sanitized the cursor size to 24.
++  EXPECT_EQ(observed_size, 24);
++}
++
++}  // namespace gtk
+diff --git a/ui/ozone/platform/wayland/host/wayland_cursor_factory.cc b/ui/ozone/platform/wayland/host/wayland_cursor_factory.cc
+index 19d66b1f16a71ab33297130677dd1e67ad811960..9002d9a8c82fe4a8e08b163455ddf5e382e430d1 100644
+--- a/ui/ozone/platform/wayland/host/wayland_cursor_factory.cc
++++ b/ui/ozone/platform/wayland/host/wayland_cursor_factory.cc
+@@ -190,6 +190,9 @@ wl_cursor* WaylandCursorFactory::GetCursorFromTheme(wl_cursor_theme* theme,
+ void WaylandCursorFactory::OnCursorThemeNameChanged(
+     const std::string& cursor_theme_name) {
+   CHECK(!cursor_theme_name.empty());
++  if (!IsValidCursorThemeName(cursor_theme_name)) {
++    return;
++  }
+ 
+   if (name_ == cursor_theme_name)
+     return;
+@@ -199,6 +202,9 @@ void WaylandCursorFactory::OnCursorThemeNameChanged(
+ }
+ 
+ void WaylandCursorFactory::OnCursorThemeSizeChanged(int cursor_theme_size) {
++  if (!IsValidCursorThemeSize(cursor_theme_size)) {
++    return;
++  }
+   size_ = cursor_theme_size;
+ }
+ 
+@@ -244,7 +250,9 @@ WaylandCursorFactory::ThemeData* WaylandCursorFactory::GetThemeForScale(
+       FROM_HERE,
+       {base::MayBlock(), base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
+       base::BindOnce(
+-          wl_cursor_theme_load, name_.empty() ? nullptr : name_.c_str(),
++          wl_cursor_theme_load,
++          (!name_.empty() && IsValidCursorThemeName(name_)) ? name_.c_str()
++                                                            : nullptr,
+           GetScaledSize(scale), connection_->buffer_factory()->shm()),
+       base::BindOnce(&WaylandCursorFactory::FinishThemeLoad,
+                      weak_factory_.GetWeakPtr(), cache_entry->GetWeakPtr()));

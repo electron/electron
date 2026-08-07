@@ -1,0 +1,131 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mitsuru Oshima <oshima@chromium.org>
+Date: Mon, 27 Jul 2026 12:11:59 -0700
+Subject: Fix Use-After-Free in TransientWindowManager hide cascade
+
+TransientWindowManager could be freed while updating child visibility
+during parent hide cascade. This happens if the child has an observer
+that synchronously deletes the parent. This adds weak ptr check inside
+the iteration to prevent use after free.
+
+TAG=agy
+CONV=6a632318-b810-4c6e-a0e2-1135bf67758d
+
+Fixed: 537838324
+Change-Id: Ic5f4b3c32a03f75e95ce7c26dd2bc7f41b9ae097
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8143759
+Commit-Queue: Mitsuru Oshima <oshima@chromium.org>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1668869}
+
+diff --git a/ui/wm/core/transient_window_manager.cc b/ui/wm/core/transient_window_manager.cc
+index dee2eb350778368ca1da94703b555d3de5693203..caa21088450fc4d39159df9c04989f4be5d61c4e 100644
+--- a/ui/wm/core/transient_window_manager.cc
++++ b/ui/wm/core/transient_window_manager.cc
+@@ -230,6 +230,9 @@ void TransientWindowManager::OnWindowVisibilityChanged(Window* window,
+   if (window_ != window)
+     return;
+ 
++  // Hiding transient children may delete parent as well.
++  base::WeakPtr<TransientWindowManager> weak_this = weak_factory_.GetWeakPtr();
++
+   // If the window has transient children, updates the transient children's
+   // visiblity as well.
+   // WindowTracker is used because child window
+@@ -238,6 +241,10 @@ void TransientWindowManager::OnWindowVisibilityChanged(Window* window,
+   while (!tracker.windows().empty())
+     GetOrCreate(tracker.Pop())->UpdateTransientChildVisibility(visible);
+ 
++  if (!weak_this) {
++    return;
++  }
++
+   // Remember the show request in |show_on_parent_visible_| and hide it again
+   // if the following conditions are met
+   // - |parent_controls_visibility| is set to true.
+diff --git a/ui/wm/core/transient_window_manager.h b/ui/wm/core/transient_window_manager.h
+index 06dc34f92987e183511e4342fa7b9d9c55fe200f..416eff0390b7872d935f8d167b47159f1616e93d 100644
+--- a/ui/wm/core/transient_window_manager.h
++++ b/ui/wm/core/transient_window_manager.h
+@@ -9,6 +9,7 @@
+ 
+ #include "base/component_export.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/observer_list.h"
+ #include "ui/aura/window_observer.h"
+ 
+@@ -118,6 +119,8 @@ class COMPONENT_EXPORT(UI_WM) TransientWindowManager
+   bool pause_transient_descendants_restacking_ = false;
+ 
+   base::ObserverList<TransientWindowObserver>::Unchecked observers_;
++
++  base::WeakPtrFactory<TransientWindowManager> weak_factory_{this};
+ };
+ 
+ }  // namespace wm
+diff --git a/ui/wm/core/transient_window_manager_unittest.cc b/ui/wm/core/transient_window_manager_unittest.cc
+index 5701732ac900d6877fb635b306ede5ce2aa53934..44a3741ad18fde6c259add9406fd83e047792b0a 100644
+--- a/ui/wm/core/transient_window_manager_unittest.cc
++++ b/ui/wm/core/transient_window_manager_unittest.cc
+@@ -666,4 +666,60 @@ TEST_F(TransientWindowManagerTest, RemoveWindowDuringRestack) {
+   t2->RemoveObserver(&observer);
+ }
+ 
++namespace {
++
++class DeleteParentOnHideObserver : public aura::WindowObserver {
++ public:
++  DeleteParentOnHideObserver(aura::Window* child,
++                             std::unique_ptr<aura::Window> parent)
++      : child_(child), parent_(std::move(parent)) {
++    child_->AddObserver(this);
++  }
++  ~DeleteParentOnHideObserver() override {
++    if (child_) {
++      child_->RemoveObserver(this);
++    }
++  }
++  // WindowObserver:
++  void OnWindowVisibilityChanged(aura::Window* window,
++                                 bool visible) override {
++    if (window == child_ && !visible) {
++      parent_.reset();
++    }
++  }
++  void OnWindowDestroyed(aura::Window* window) override {
++    if (window == child_) {
++      child_ = nullptr;
++    }
++  }
++
++ private:
++  raw_ptr<aura::Window> child_;
++  std::unique_ptr<aura::Window> parent_;
++};
++
++}  // namespace
++
++// Tests that there is no UAF if a window is destroyed while its transient
++// children are being hidden in a cascade update.
++TEST_F(TransientWindowManagerTest,
++       ParentDestroyedDuringTransientChildHideCascade) {
++  std::unique_ptr<aura::Window> parent = CreateTestWindow(
++      {.parent = root_window(), .bounds = {100, 100}, .window_id = 0});
++  aura::Window* parent_ptr = parent.get();
++
++  std::unique_ptr<aura::Window> child_ptr = CreateTestWindow(
++      {.parent = root_window(), .bounds = {100, 100}, .window_id = 1});
++  aura::Window* child = child_ptr.release();
++
++  TransientWindowManager::GetOrCreate(child)->set_parent_controls_visibility(
++      true);
++  AddTransientChild(parent_ptr, child);
++
++  auto observer =
++      std::make_unique<DeleteParentOnHideObserver>(child, std::move(parent));
++
++  parent_ptr->Hide();
++}
++
+ }  // namespace wm

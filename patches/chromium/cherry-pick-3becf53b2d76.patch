@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Date: Mon, 27 Jul 2026 17:13:15 -0700
+Subject: [M144] Fix release fence vkSemaphore destruction
+
+Original change's description:
+> Fix release fence vkSemaphore destruction
+>
+> There is no reason to handle fail case and success case differently, we
+> should always use VulkanFenceHelper.
+>
+> Bug: 513044017
+> Change-Id: I00c0f359494fa81d129396a0ed9fa9070d831e59
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8102907
+> Reviewed-by: Saifuddin Hitawala <hitawala@chromium.org>
+> Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1663840}
+
+(cherry picked from commit 7247631764e0dc6dd1ec83912b0e05081b25bddc)
+
+Bug: 539350251,513044017
+Change-Id: I00c0f359494fa81d129396a0ed9fa9070d831e59
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8156406
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7559@{#5160}
+Cr-Branched-From: 223dfbac1c7542a06b422390d954afe5b560b607-refs/heads/main@{#1552494}
+
+diff --git a/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc b/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
+index 442660adac189eb2d917c7c7aa90c1978cba3dac..6de9b1ba62afed6ce8a9101492fc59ac9cc21f1f 100644
+--- a/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
++++ b/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.cc
+@@ -2347,13 +2347,20 @@ void SkiaOutputSurfaceImplOnGpu::PostSubmit(
+   semaphores.reserve(pending_release_fence_cbs_.size());
+ 
+   while (!pending_release_fence_cbs_.empty()) {
++    gfx::GpuFenceHandle release_fence;
++
+     auto& item = pending_release_fence_cbs_.front();
+-    auto release_fence = CreateReleaseFenceForVulkan(item.first);
+-    if (release_fence.is_null()) {
+-      LOG(ERROR) << "Unable to create a release fence for Vulkan.";
+-    } else {
+-      semaphores.emplace_back(GrBackendSemaphores::GetVkSemaphore(item.first));
++    VkSemaphore semaphore = GrBackendSemaphores::GetVkSemaphore(item.first);
++
++    if (semaphore != VK_NULL_HANDLE) {
++      semaphores.emplace_back(semaphore);
++
++      release_fence = CreateReleaseFenceForVulkan(semaphore);
++      if (release_fence.is_null()) {
++        LOG(ERROR) << "Unable to create a release fence for Vulkan.";
++      }
+     }
++
+     std::move(item.second).Run(std::move(release_fence));
+     pending_release_fence_cbs_.pop_front();
+   }
+@@ -2619,25 +2626,14 @@ void SkiaOutputSurfaceImplOnGpu::DiscardBackbuffer() {
+ 
+ #if BUILDFLAG(ENABLE_VULKAN)
+ gfx::GpuFenceHandle SkiaOutputSurfaceImplOnGpu::CreateReleaseFenceForVulkan(
+-    const GrBackendSemaphore& semaphore) {
++    VkSemaphore semaphore) {
+   DCHECK(is_using_vulkan());
+ 
+-  if (GrBackendSemaphores::GetVkSemaphore(semaphore) == VK_NULL_HANDLE) {
+-    return {};
+-  }
+-
+   auto* implementation = vulkan_context_provider_->GetVulkanImplementation();
+   VkDevice device =
+       vulkan_context_provider_->GetDeviceQueue()->GetVulkanDevice();
+ 
+-  auto handle = implementation->GetSemaphoreHandle(
+-      device, GrBackendSemaphores::GetVkSemaphore(semaphore));
+-  if (!handle.is_valid()) {
+-    vkDestroySemaphore(device, GrBackendSemaphores::GetVkSemaphore(semaphore),
+-                       /*pAllocator=*/nullptr);
+-    LOG(ERROR) << "Failed to create a release fence for Vulkan.";
+-    return {};
+-  }
++  auto handle = implementation->GetSemaphoreHandle(device, semaphore);
+   return std::move(handle).ToGpuFenceHandle();
+ }
+ 
+diff --git a/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.h b/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.h
+index dfe125cfd807da4d14a49654e3cf767ddd4ae176..703a4334f565d12254897c83c570119e0fac8c93 100644
+--- a/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.h
++++ b/components/viz/service/display_embedder/skia_output_surface_impl_on_gpu.h
+@@ -465,8 +465,7 @@ class SkiaOutputSurfaceImplOnGpu
+   // by CreateAndStoreExternalSemaphoreVulkan(). May destroy VkSemaphore that
+   // the |semaphore| stores if creation of a release fence fails. In this case,
+   // invalid fence handle is returned.
+-  gfx::GpuFenceHandle CreateReleaseFenceForVulkan(
+-      const GrBackendSemaphore& semaphore);
++  gfx::GpuFenceHandle CreateReleaseFenceForVulkan(VkSemaphore semaphore);
+   // Returns true if succeess.
+   bool CreateAndStoreExternalSemaphoreVulkan(
+       std::vector<GrBackendSemaphore>& end_semaphores);

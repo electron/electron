@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kaylee Lubick <kjlubick@google.com>
+Date: Wed, 29 Jul 2026 17:34:47 +0000
+Subject: [M144] Address incorrect handling of a map pointer in SkRP
+
+Original change's description:
+> Address incorrect handling of a map pointer in SkRP
+>
+> In pushChildCall, we held on to a pointer from a fChildEffectMap
+> and then later dereferenced it. However, in between those
+> points was a code path that could grow the map, invalidating
+> the pointer. This is demonstrated in the newly added test.
+>
+> To fix it, we just dereference it earlier. While tracking this
+> down, I found a suspicious other usage of the map which works
+> in newer C++, but could break in older versions. It's trivial
+> to fix Generator::writeFunction, so I handled that as well.
+>
+> Bug: b/540157141
+> Fixed: 540157141
+> Change-Id: I149b070c31d4cfefa65b30972f0b8b94441e66db
+> Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1308776
+> Reviewed-by: Jorge Betancourt <jmbetancourt@google.com>
+> Commit-Queue: Kaylee Lubick <kjlubick@google.com>
+
+(cherry picked from commit 5b90a364a9693ed275ba5a99c7ce35f9ea3243b4)
+
+Bug: 541931350,b/540157141,540157141
+Change-Id: I149b070c31d4cfefa65b30972f0b8b94441e66db
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1313396
+Auto-Submit: Chrome Cherry Picker <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+
+diff --git a/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp b/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp
+index 5588f5f0df79657a2532778ee2260b7a62e35fa8..e4ea4e1dba5c9096fba8c91959720054d3b12e04 100644
+--- a/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp
++++ b/src/sksl/codegen/SkSLRasterPipelineCodeGenerator.cpp
+@@ -1422,10 +1422,13 @@ std::optional<SlotRange> Generator::writeFunction(
+             // If we are passing a child effect to a function, we need to add its mapping to our
+             // child map.
+             if (arg.type().isEffectChild()) {
+-                if (int* childIndex = fChildEffectMap.find(arg.as<VariableReference>()
+-                                                              .variable())) {
++                if (int* childIndexPtr =
++                            fChildEffectMap.find(arg.as<VariableReference>().variable())) {
++                    // In earlier C++ versions, the map assignment could cause the map to be
++                    // resized, invalidating the pointer.
++                    int childIndex = *childIndexPtr;
+                     SkASSERT(!fChildEffectMap.find(&param));
+-                    fChildEffectMap[&param] = *childIndex;
++                    fChildEffectMap[&param] = childIndex;
+                 }
+                 continue;
+             }
+@@ -2809,8 +2812,9 @@ bool Generator::pushConstructorCompound(const AnyConstructor& c) {
+ }
+ 
+ bool Generator::pushChildCall(const ChildCall& c) {
+-    int* childIdx = fChildEffectMap.find(&c.child());
+-    SkASSERT(childIdx != nullptr);
++    int* childIdxPtr = fChildEffectMap.find(&c.child());
++    SkASSERT(childIdxPtr != nullptr);
++    int childIdx = *childIdxPtr;  // Save this in case pushExpression changes fChildEffectMap
+     SkASSERT(!c.arguments().empty());
+ 
+     // All child calls have at least one argument.
+@@ -2832,7 +2836,7 @@ bool Generator::pushChildCall(const ChildCall& c) {
+ 
+             // Move the argument into src.rgba while also preserving the execution mask.
+             fBuilder.exchange_src();
+-            fBuilder.invoke_shader(*childIdx);
++            fBuilder.invoke_shader(childIdx);
+             break;
+         }
+         case Type::TypeKind::kColorFilter: {
+@@ -2843,7 +2847,7 @@ bool Generator::pushChildCall(const ChildCall& c) {
+ 
+             // Move the argument into src.rgba while also preserving the execution mask.
+             fBuilder.exchange_src();
+-            fBuilder.invoke_color_filter(*childIdx);
++            fBuilder.invoke_color_filter(childIdx);
+             break;
+         }
+         case Type::TypeKind::kBlender: {
+@@ -2861,7 +2865,7 @@ bool Generator::pushChildCall(const ChildCall& c) {
+             }
+             fBuilder.pop_dst_rgba();
+             fBuilder.exchange_src();
+-            fBuilder.invoke_blender(*childIdx);
++            fBuilder.invoke_blender(childIdx);
+             break;
+         }
+         default: {
+diff --git a/tests/RasterPipelineCodeGeneratorTest.cpp b/tests/RasterPipelineCodeGeneratorTest.cpp
+index 6766a7ad651305481a62944df942efbc2b37e71a..617ae808f0280d1c09413e4ff4ec982fffbe77b8 100644
+--- a/tests/RasterPipelineCodeGeneratorTest.cpp
++++ b/tests/RasterPipelineCodeGeneratorTest.cpp
+@@ -328,3 +328,31 @@ DEF_TEST(SkSLRasterPipelineSlotOverflow_355465305, r) {
+     bool success = rasterProg->appendStages(&pipeline, &alloc, /*callbacks=*/nullptr, {});
+     REPORTER_ASSERT(r, !success, "appendStages should fail for very large program");
+ }
++
++DEF_TEST(SkSLRasterPipeline_ConvertProgram_b540157141, r) {
++    const char* src = R"__SkSL__(
++        uniform shader c0;
++        uniform shader c1;
++        uniform shader c2;
++        // The noinline is important for reproduction. It is also important that
++        // one of the args be an "EffectChild" to cause fChildEffectMap to grow.
++        noinline half4 f(shader s, float2 p) {
++            return s.eval(p);
++        }
++        half4 main(float2 p) {
++            return c0.eval(float2(f(c1, p).xy) + p);
++        }
++    )__SkSL__";
++
++    SkSL::Compiler compiler;
++    SkSL::ProgramSettings settings;
++    std::unique_ptr<SkSL::Program> program = compiler.convertProgram(
++            SkSL::ProgramKind::kPrivateRuntimeShader, std::string(src), settings);
++    SkASSERTF_RELEASE(program, "Unexpected error compiling %s", compiler.errorText().c_str());
++    const SkSL::FunctionDeclaration* main = program->getFunction("main");
++    SkASSERTF_RELEASE(main, "main is missing!?");
++    // With the buggy code, this triggered a UAF
++    std::unique_ptr<SkSL::RP::Program> rasterProg =
++            SkSL::MakeRasterPipelineProgram(*program, *main->definition());
++    REPORTER_ASSERT(r, rasterProg);
++}

@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mark Mentovai <mark@chromium.org>
+Date: Tue, 28 Jul 2026 11:32:41 -0400
+Subject: =?UTF-8?q?Fix=20MemorySnapshotSanitized=20for=2032-bit=20builds,?=
+ =?UTF-8?q?=20where=20size=5Ft=20=E2=89=A0=20VMAddress?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+By explicitly requesting the desired specialization of std::min, this
+fixes a compile-time error encountered with 526fd4a0352b at
+https://ci.chromium.org/ui/p/chromium/builders/try/android-binary-size/2851684/
+→ 33. compile → stdout:
+
+../../third_party/crashpad/crashpad/snapshot/sanitized/memory_snapshot_sanitized.cc:60:35: error: no matching function for call to 'min'
+   60 |     const size_t aligned_offset = std::min(
+      |                                   ^~~~~~~~
+../../third_party/libc++/src/include/__algorithm/min.h:35:1: note: candidate template ignored: deduced conflicting types for parameter '_Tp' ('size_t' (aka 'unsigned int') vs. 'VMAddress' (aka 'unsigned long long'))
+   35 | min(_LIBCPP_LIFETIMEBOUND const _Tp& __a, _LIBCPP_LIFETIMEBOUND const _Tp& __b) {
+      | ^
+../../third_party/libc++/src/include/__algorithm/min.h:43:1: note: candidate template ignored: could not match 'initializer_list<_Tp>' against 'size_t' (aka 'unsigned int')
+   43 | min(initializer_list<_Tp> __t, _Compare __comp) {
+      | ^
+../../third_party/libc++/src/include/__algorithm/min.h:48:82: note: candidate function template not viable: requires single argument '__t', but 2 arguments were provided
+   48 | [[__nodiscard__]] inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_SINCE_CXX14 _Tp min(initializer_list<_Tp> __t) {
+      |                                                                                  ^   ~~~~~~~~~~~~~~~~~~~~~~~~~
+../../third_party/libc++/src/include/__algorithm/min.h:29:1: note: candidate function template not viable: requires 3 arguments, but 2 were provided
+   29 | min(_LIBCPP_LIFETIMEBOUND const _Tp& __a, _LIBCPP_LIFETIMEBOUND const _Tp& __b, _Compare __comp) {
+      | ^                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Bug: 500097298
+Change-Id: I782169d71c020cd52c5d4a7c1312364487e44904
+Reviewed-on: https://chromium-review.googlesource.com/c/crashpad/crashpad/+/8164800
+Reviewed-by: Joshua Peraza <jperaza@chromium.org>
+Commit-Queue: Mark Mentovai <mark@chromium.org>
+
+diff --git a/third_party/crashpad/crashpad/snapshot/sanitized/memory_snapshot_sanitized.cc b/third_party/crashpad/crashpad/snapshot/sanitized/memory_snapshot_sanitized.cc
+index 5f02e0d2d4aa1b9bcc10112513a5b21bcce5219a..632d0109719243077412fd2370529a2eae354677 100644
+--- a/third_party/crashpad/crashpad/snapshot/sanitized/memory_snapshot_sanitized.cc
++++ b/third_party/crashpad/crashpad/snapshot/sanitized/memory_snapshot_sanitized.cc
+@@ -57,7 +57,7 @@ class MemorySanitizer : public MemorySnapshot::Delegate {
+         static_cast<Pointer>(MemorySnapshotSanitized::kDefaced);
+ 
+     // Sanitize up to a word-aligned address.
+-    const size_t aligned_offset = std::min(
++    const size_t aligned_offset = std::min<VMAddress>(
+         size,
+         ((address_ + sizeof(Pointer) - 1) & ~(sizeof(Pointer) - 1)) - address_);
+     memcpy(data, &defaced, aligned_offset);

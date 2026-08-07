@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Fri, 31 Jul 2026 16:27:53 -0700
+Subject: [M150] media: Reject HEVC non-first slice segment when prior slice is
+ missing
+
+Original change's description:
+> media: Reject HEVC non-first slice segment when prior slice is missing
+>
+> Disallow non-first slice segments (first_slice_segment_in_pic_flag == 0)
+> when no prior slice header exists (e.g. after mid-stream SPS/PPS
+> updates). Enforce this in H265Parser::ParseSliceHeader() when
+> validate_extended_bitstream_ is set, and in
+> H265Decoder::PreprocessCurrentSlice() when curr_pic_ is null.
+>
+> Bug: 536470854
+> Change-Id: Ie7f159fbb9cdb229f516f0e46699a22aedefa184
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8160680
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1669582}
+
+(cherry picked from commit 5dc7ba4f4e4770e36b567afbf457740e227d9edb)
+
+Bug: 540247931,536470854
+Change-Id: Ie7f159fbb9cdb229f516f0e46699a22aedefa184
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8169242
+Reviewed-by: Eugene Zemtsov <eugene@chromium.org>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Cr-Commit-Position: refs/branch-heads/7871@{#4237}
+Cr-Branched-From: f542126b8c1b3e80104b26bb05ec830bd1206f29-refs/heads/main@{#1639810}
+
+diff --git a/media/gpu/h265_decoder.cc b/media/gpu/h265_decoder.cc
+index 28b47ed69a0cea044875e8cbc0b7d6308a2df448..35113071f66fbf31af89d93f9aa4ca526d152329 100644
+--- a/media/gpu/h265_decoder.cc
++++ b/media/gpu/h265_decoder.cc
+@@ -667,6 +667,10 @@ H265Decoder::H265Accelerator::Status H265Decoder::PreprocessCurrentSlice() {
+       return result;
+ 
+     DCHECK(!curr_pic_);
++  } else if (!curr_pic_) {
++    DVLOG(1) << "Received slice segment with first_slice_segment_in_pic_flag "
++             << "equal to 0 without an active picture";
++    return H265Accelerator::Status::kFail;
+   }
+ 
+   return H265Accelerator::Status::kOk;
+diff --git a/media/parsers/h265_parser.cc b/media/parsers/h265_parser.cc
+index 82185456053157b234f98a97451f2088d7b22781..59e1468b20c08a1040ec7ca9e6b002195699c325 100644
+--- a/media/parsers/h265_parser.cc
++++ b/media/parsers/h265_parser.cc
+@@ -1140,6 +1140,11 @@ H265Parser::Result H265Parser::ParseSliceHeader(const H265NALU& nalu,
+       std::min(shdr->temporal_id, sps->sps_max_sub_layers_minus1);
+ 
+   if (!shdr->first_slice_segment_in_pic_flag) {
++    if (!prior_shdr) {
++      DVLOG(1) << "First slice segment in picture must have "
++               << "first_slice_segment_in_pic_flag equal to 1";
++      return kInvalidStream;
++    }
+     if (pps->dependent_slice_segments_enabled_flag)
+       READ_BOOL_OR_RETURN(&shdr->dependent_slice_segment_flag);
+     READ_BITS_OR_RETURN(base::bits::Log2Ceiling(sps->pic_size_in_ctbs_y),
