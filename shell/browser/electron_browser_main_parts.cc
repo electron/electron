@@ -530,13 +530,14 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   // exit like Chrome's SessionEnding(), with an off-thread watchdog that
   // crashes us if exiting hangs on the dead display connection.
   auto shutdown_cb = base::BindOnce([] {
-    class ShutdownWatchdog : public base::Watchdog {
+    class ShutdownWatchdogDelegate : public base::Watchdog::Delegate {
      public:
-      ShutdownWatchdog()
-          : base::Watchdog(base::Seconds(10), "OzoneShutdown", true) {}
       void Alarm() override { LOG(FATAL) << "Failed to shutdown."; }
     };
-    static base::NoDestructor<ShutdownWatchdog> watchdog;
+    static base::NoDestructor<ShutdownWatchdogDelegate> delegate;
+    static base::NoDestructor<base::Watchdog> watchdog(
+        base::Seconds(10), "OzoneShutdown", /*enabled=*/true,
+        delegate.get());
     watchdog->Arm();
     if (Browser* browser = Browser::Get())
       browser->ExitWithCode(content::RESULT_CODE_NORMAL_EXIT);
