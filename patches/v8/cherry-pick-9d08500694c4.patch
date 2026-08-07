@@ -1,0 +1,165 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Tue, 28 Jul 2026 15:31:57 +0200
+Subject: [M152] [wasm] Fix integer overflow in deserializer
+
+Original change's description:
+> [wasm] Fix integer overflow in deserializer
+>
+> For sufficiently large x, `x*9/10` can overflow the intermediate
+> result. Switching to `size_t` would not help on 32-bit, so flip
+> the order of operations instead.
+> Bonus: increase strictness of CFI-related checking to catch this.
+>
+> Fixed: 538378084
+> Change-Id: Iae60310d567881601be643d2b79df9071111356b
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8159441
+> Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+> Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+> Reviewed-by: Daniel Lehmann <dlehmann@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#108914}
+
+(cherry picked from commit c3ea7757b1906586207c05766e1070ea20266ea8)
+
+Bug: 540698339,538378084
+Change-Id: Iae60310d567881601be643d2b79df9071111356b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8177428
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.2@{#5}
+Cr-Branched-From: a8fe17c242678787f03a8a2b77424aa06cf865c4-refs/heads/15.2.124@{#1}
+Cr-Branched-From: 0e6ea09ef6f15ebd7f78555c0648c8b632ce3013-refs/heads/main@{#108894}
+
+diff --git a/src/common/code-memory-access.cc b/src/common/code-memory-access.cc
+index 81189abb2ea9f47bb71bd24d5f3f894e5dcbee2c..7af7f4ac188d9532bf3b44bfbfa0a5104c43db85 100644
+--- a/src/common/code-memory-access.cc
++++ b/src/common/code-memory-access.cc
+@@ -431,6 +431,14 @@ ThreadIsolation::JitPageReference::AllocationContaining(
+   return {it->first, it->second};
+ }
+ 
++base::Address ThreadIsolation::JitPageReference::EndOfLastAllocation() {
++  if (jit_page_->allocations_.empty()) {
++    return address_;
++  }
++  auto last = jit_page_->allocations_.rbegin();
++  return last->first + last->second.Size();
++}
++
+ // static
+ void ThreadIsolation::RegisterJitPage(Address address, size_t size) {
+   CFIMetadataWriteScope write_scope("Adding new executable memory.");
+@@ -586,6 +594,8 @@ ThreadIsolation::JitPageReference ThreadIsolation::SplitJitPageLocked(
+     JitPage* mid;
+     ConstructNew(&mid, size);
+     jit_page.Shrink(mid);
++    // Defense in depth: the cut should not be in the middle of a code object.
++    CHECK(jit_page.EndOfLastAllocation() <= jit_page.End());
+     trusted_data_.jit_pages_->emplace(addr, mid);
+     return JitPageReference(mid, addr);
+   }
+diff --git a/src/common/code-memory-access.h b/src/common/code-memory-access.h
+index 0c16621f59ff06b01ce473d7b1244a20950dcb3f..cb649b5582601d1d7a94e8e7d3b1dd056f0fce79 100644
+--- a/src/common/code-memory-access.h
++++ b/src/common/code-memory-access.h
+@@ -282,6 +282,7 @@ class V8_EXPORT ThreadIsolation {
+     base::Address StartOfAllocationAt(base::Address inner_pointer);
+     std::pair<base::Address, JitAllocation&> AllocationContaining(
+         base::Address addr);
++    base::Address EndOfLastAllocation();
+ 
+     bool Empty() const { return jit_page_->allocations_.empty(); }
+     void Shrink(class JitPage* tail);
+diff --git a/src/wasm/wasm-serialization.cc b/src/wasm/wasm-serialization.cc
+index 11c66b11e89fd424f766e5c1cdec0f8f35414ae5..83cd5af3dcb01cbb088edc9a28eae7ae9da4d6b5 100644
+--- a/src/wasm/wasm-serialization.cc
++++ b/src/wasm/wasm-serialization.cc
+@@ -1016,12 +1016,14 @@ DeserializationUnit NativeModuleDeserializer::ReadCode(int fn_index,
+   if (current_code_space_.size() < static_cast<size_t>(code_size)) {
+     // Allocate the next code space. Don't allocate more than 90% of
+     // {kMaxCodeSpaceSize}, to leave some space for jump tables.
++    // Perform the division first to avoid overflow.
+     size_t max_reservation = RoundUp<kCodeAlignment>(
+-        v8_flags.wasm_max_code_space_size_mb * MB * 9 / 10);
++        v8_flags.wasm_max_code_space_size_mb * MB / 10 * 9);
+     size_t code_space_size = std::min(max_reservation, remaining_code_size_);
+     std::tie(current_code_space_, current_jump_tables_) =
+         native_module_->AllocateForDeserializedCode(code_space_size);
+     DCHECK_EQ(current_code_space_.size(), code_space_size);
++    CHECK_LE(code_size, current_code_space_.size());
+     CHECK(current_jump_tables_.is_valid());
+   }
+ 
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index d256a71c10ec5b74055659ebaec33936d82ade61..3efca2026276db8f9f1db6857183e63c51092ab0 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -277,6 +277,9 @@
+   # Disabled since v8_flags.always_use_string_forwarding_table is now READONLY.
+   'string-forwarding-table': [SKIP],
+ 
++  # Requires a large --wasm-max-code-space-size-mb.
++  'regress/wasm/regress-538378084': [PASS, ['arch not in (x64, ia32) or no_simd_hardware', SKIP]],
++
+   # Slow tests in the lower_limits_mode.
+   # The lower limits makes EphemeronHashTables more inefficient by making hashes
+   # collide more. This tests adds many objects to a WeakMap and that is very
+diff --git a/test/mjsunit/regress/wasm/regress-538378084.js b/test/mjsunit/regress/wasm/regress-538378084.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..30253655ff5630ac146b4588222195586e4ab661
+--- /dev/null
++++ b/test/mjsunit/regress/wasm/regress-538378084.js
+@@ -0,0 +1,52 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --wasm-max-code-space-size-mb=456 --expose-gc
++
++d8.file.execute('test/mjsunit/wasm/wasm-module-builder.js');
++
++const kMaxReservation = 838912;
++
++const instr = SimdInstr(kExprI32x4TruncSatF64x2UZero);
++const chain = n => {
++  const b = [kExprLocalGet, 0, ...SimdInstr(kExprI32x4Splat)];
++  for (let i = 0; i < n; i++) b.push(...instr);
++  b.push(...SimdInstr(kExprI32x4ExtractLane), 0);
++  return b;
++};
++
++const builder = new WasmModuleBuilder();
++let chain_6k = chain(6000);
++builder.addFunction('big', kSig_i_i).addBody(chain(18300)).exportFunc();
++builder.addFunction('small', kSig_i_i).addBody(chain_6k).exportFunc();
++// Never called, so never compiled. These only inflate the initial reservation,
++// via EstimateNativeModuleCodeSize = 3*body+24 per declared function, which is
++// where the free slack for {small} comes from.
++for (let i = 0; i < 24; i++) {
++  builder.addFunction('pad' + i, kSig_i_i).addBody(chain_6k).exportFunc();
++}
++const wire = builder.toBuffer();
++
++// Only 'big' is tiered up, so only it serializes as real code; everything else
++// stays a 1-byte marker and is compiled after deserialization.
++let module = new WebAssembly.Module(wire);
++let inst0 = new WebAssembly.Instance(module);
++inst0.exports.big(3);
++%WasmTierUpFunction(inst0.exports.big);
++const blob = d8.wasm.serializeModule(module);
++// We want to achieve blob.byteLength > kMaxReservation here, but can't
++// assert it because in the no-AVX configuration the generated code is smaller.
++// That's fine, the default config provides enough coverage.
++
++// This is load bearing for some reason.
++print("" + blob.byteLength);
++
++// Clear the NativeModuleCache to force real deserialization.
++module = null; inst0 = null;
++gc();
++
++const inst = new WebAssembly.Instance(d8.wasm.deserializeModule(blob, wire));
++assertEquals(0, inst.exports.big(3));
++assertEquals(0, inst.exports.small(5));
++assertEquals(0, inst.exports.big(3));
