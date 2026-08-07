@@ -1287,6 +1287,28 @@ describe('webContents module', () => {
       return await w.webContents.executeJavaScript('({ width: window.innerWidth, height: window.innerHeight })');
     }
 
+    // Classify the dock side by which viewport axis shrank vs a devtools-closed
+    // baseline. Scale-independent because it compares the same page to itself.
+    function classifyDock(baseline: { width: number; height: number }, open: { width: number; height: number }) {
+      const widthShrank = open.width < baseline.width - 50;
+      const heightShrank = open.height < baseline.height - 50;
+      if (widthShrank && !heightShrank) return 'right'; // docked left/right
+      if (heightShrank && !widthShrank) return 'bottom'; // docked bottom
+      if (!widthShrank && !heightShrank) return 'none'; // detached / undocked
+      return 'both';
+    }
+
+    async function primeLastUsedDockState(w: BrowserWindow) {
+      const baseline = await getViewportSize(w);
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'bottom', activate: false });
+      await opened;
+      await waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom');
+      const closed = once(w.webContents, 'devtools-closed');
+      w.webContents.closeDevTools();
+      await closed;
+    }
+
     it('can show window with activation', async () => {
       const w = new BrowserWindow({ show: false });
       const focused = once(w, 'focus');
@@ -1390,6 +1412,75 @@ describe('webContents module', () => {
       await devtoolsClosed;
 
       expect(w.webContents.isDevToolsOpened()).to.be.false();
+    });
+
+    it('docks (not detached) when openDevTools() is called from web-contents-created', async () => {
+      // Example 1: open DevTools at WebContents creation time (owner_window still null).
+      app.once('web-contents-created', (_e, contents) => contents.openDevTools());
+      const w = new BrowserWindow({ show: true, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      await waitUntil(async () => w.webContents.isDevToolsOpened());
+      await setTimeout(1000);
+      const withDevTools = await getViewportSize(w);
+      const closed = once(w.webContents, 'devtools-closed');
+      w.webContents.closeDevTools();
+      await closed;
+      const baseline = await getViewportSize(w);
+
+      // Docked to some side => one axis was smaller while DevTools were open.
+      expect(classifyDock(baseline, withDevTools)).to.not.equal('none');
+    });
+
+    it('docks bottom (last-used) when openDevTools() is called from dom-ready', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      w.show();
+      await primeLastUsedDockState(w); // last-used = 'bottom'
+      const baseline = await getViewportSize(w);
+
+      const opened = once(w.webContents, 'devtools-opened');
+      w.webContents.once('dom-ready', () => w.webContents.openDevTools());
+      await w.loadURL('about:blank'); // reload triggers a fresh dom-ready
+      await opened;
+
+      await expect(
+        waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom')
+      ).to.eventually.be.fulfilled();
+    });
+
+    it('docks bottom (last-used) when openDevTools() is called with an empty mode string', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      w.show();
+      console.log('mode: "bottom"');
+      await primeLastUsedDockState(w); // last-used = 'bottom'
+      const baseline = await getViewportSize(w);
+
+      const opened = once(w.webContents, 'devtools-opened');
+      console.log('mode empty');
+      // @ts-expect-error — '' is not part of the mode type; testing runtime behavior
+      w.webContents.openDevTools({ mode: '' });
+      await opened;
+
+      await expect(
+        waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'bottom')
+      ).to.eventually.be.fulfilled();
+    });
+
+    it('falls back to the right dock when given an invalid mode', async () => {
+      const w = new BrowserWindow({ show: false, width: 800, height: 600 });
+      await w.loadURL('about:blank');
+      w.show();
+      const baseline = await getViewportSize(w); // devtools closed
+
+      const opened = once(w.webContents, 'devtools-opened');
+      // @ts-expect-error — 'koala' is not a valid mode; resolved to "right" at runtime
+      w.webContents.openDevTools({ mode: 'koala' });
+      await opened;
+
+      await expect(
+        waitUntil(async () => classifyDock(baseline, await getViewportSize(w)) === 'right')
+      ).to.eventually.be.fulfilled();
     });
   });
 
