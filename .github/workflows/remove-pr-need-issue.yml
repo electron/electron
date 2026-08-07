@@ -1,0 +1,50 @@
+name: Remove blocked/need-issue Label
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+
+permissions: {}
+
+jobs:
+  remove-need-issue:
+    name: Remove blocked/need-issue label
+    if: github.repository == 'electron/electron'
+    runs-on: ubuntu-slim
+    permissions: {}
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          org: electron
+      - name: Remove label from pull requests with linked issues
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          GH_REPO: electron/electron
+        run: |
+          set -euo pipefail
+
+          gh api graphql --paginate \
+            -f searchQuery='repo:electron/electron is:pr is:open label:"blocked/need-issue"' \
+            -f query='query($searchQuery: String!, $endCursor: String) {
+              search(query: $searchQuery, type: ISSUE, first: 100, after: $endCursor) {
+                nodes {
+                  ... on PullRequest {
+                    number
+                    closingIssuesReferences(first: 1) {
+                      totalCount
+                    }
+                  }
+                }
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+              }
+            }' \
+            --jq '.data.search.nodes[] | select(.closingIssuesReferences.totalCount > 0) | .number' |
+            while read -r pr_number; do
+              gh pr edit "$pr_number" --remove-label 'blocked/need-issue'
+            done
