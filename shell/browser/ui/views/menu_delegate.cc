@@ -156,8 +156,8 @@ void MenuDelegate::ScheduleSwitchToButton(views::MenuButton* button) {
   // Switching menu asynchronously to avoid crash.
   if (!switch_in_progress) {
     content::GetUIThreadTaskRunner({})->PostTask(
-        FROM_HERE, base::BindOnce(&views::MenuRunner::Cancel,
-                                  base::Unretained(menu_runner_.get())));
+        FROM_HERE,
+        base::BindOnce(&MenuDelegate::CancelSelf, weak_factory_.GetWeakPtr()));
   }
 }
 
