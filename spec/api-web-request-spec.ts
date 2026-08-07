@@ -999,5 +999,75 @@ describe('webRequest module', () => {
 
       expect(message).to.equal('Authenticated!');
     });
+
+    it('can redirect a WebSocket connection via onBeforeRequest', async () => {
+      // Set up two WebSocket servers: portA (the original target) and portB (the redirect target).
+      const serverA = http.createServer();
+      const serverB = http.createServer();
+      const wssA = new WebSocket.Server({ noServer: true });
+      const wssB = new WebSocket.Server({ noServer: true });
+
+      let connectedToA = false;
+      let connectedToB = false;
+
+      wssA.on('connection', () => {
+        connectedToA = true;
+      });
+      wssB.on('connection', (ws) => {
+        connectedToB = true;
+        ws.send('connected-to-B');
+      });
+
+      serverA.on('upgrade', (req, socket, head) => {
+        wssA.handleUpgrade(req, socket as Socket, head, (ws) => wssA.emit('connection', ws, req));
+      });
+      serverB.on('upgrade', (req, socket, head) => {
+        wssB.handleUpgrade(req, socket as Socket, head, (ws) => wssB.emit('connection', ws, req));
+      });
+
+      const { port: portA } = await listen(serverA);
+      const { port: portB } = await listen(serverB);
+
+      const ses = session.fromPartition(`WebRequestWSRedirect-${Date.now()}`);
+
+      const beforeRedirectDetails: Electron.OnBeforeRedirectListenerDetails[] = [];
+      ses.webRequest.onBeforeRedirect((details) => {
+        beforeRedirectDetails.push(details);
+      });
+      ses.webRequest.onBeforeRequest({ urls: [`ws://localhost:${portA}/*`] }, (details, callback) => {
+        callback({ redirectURL: `ws://localhost:${portB}/` });
+      });
+
+      const contents = (webContents as typeof ElectronInternal.WebContents).create({
+        session: ses,
+        sandbox: true
+      });
+
+      defer(() => {
+        contents.destroy();
+        serverA.close();
+        serverB.close();
+        wssA.close();
+        wssB.close();
+        ses.webRequest.onBeforeRequest(null);
+        ses.webRequest.onBeforeRedirect(null);
+      });
+
+      await contents.loadFile(path.join(fixturesPath, 'blank.html'));
+
+      const message = await contents.executeJavaScript(`new Promise((resolve, reject) => {
+        const ws = new WebSocket('ws://localhost:${portA}/');
+        ws.onmessage = e => resolve(e.data);
+        ws.onerror = (err) => reject(new Error('WebSocket error'));
+        setTimeout(() => reject(new Error('timeout')), 5000);
+      });`);
+
+      expect(message).to.equal('connected-to-B');
+      expect(connectedToA).to.equal(false, 'server A should not have received the connection');
+      expect(connectedToB).to.equal(true, 'server B should have received the redirected connection');
+      expect(beforeRedirectDetails).to.have.lengthOf(1);
+      expect(beforeRedirectDetails[0].url).to.equal(`ws://localhost:${portA}/`);
+      expect(beforeRedirectDetails[0].redirectURL).to.equal(`ws://localhost:${portB}/`);
+    });
   });
 });

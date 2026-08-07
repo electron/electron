@@ -251,12 +251,47 @@ void ProxyingWebSocket::StartProxying(
   proxy->Start();
 }
 
+void ProxyingWebSocket::HandleBeforeRequestRedirect() {
+  // The WebRequest API requested a redirect. Update the target URL and fire
+  // the OnBeforeRedirect event before proceeding with the new URL.
+  //
+  // Unlike ProxyingURLLoaderFactory, there is no URLLoaderClient to notify via
+  // OnReceiveRedirect, and the receivers are not yet bound at this point, so
+  // no connections need to be torn down. We simply update the URL and
+  // continue to ContinueToStartRequest.
+
+  // Cross-origin redirects must clear |request_initiator| to simulate the
+  // tainted-origin flag per step 10 of "HTTP-redirect fetch":
+  // https://fetch.spec.whatwg.org/#http-redirect-fetch
+  if (request_.request_initiator &&
+      (!url::Origin::Create(redirect_url_)
+            .IsSameOriginWith(url::Origin::Create(request_.url)) &&
+       !request_.request_initiator->IsSameOriginWith(
+           url::Origin::Create(request_.url)))) {
+    request_.request_initiator = url::Origin();
+  }
+
+  // Keep a copy of the redirect URL but unset the property to avoid loops
+  const GURL redirect_url = redirect_url_;
+  redirect_url_ = GURL();
+
+  web_request_->OnBeforeRedirect(&info_, request_, redirect_url);
+
+  request_.url = redirect_url;
+  ContinueToStartRequest(net::OK);
+}
+
 void ProxyingWebSocket::OnBeforeRequestComplete(int error_code) {
   DCHECK(receiver_as_header_client_.is_bound() ||
          !receiver_as_handshake_client_.is_bound());
   DCHECK(info_.url.SchemeIsWSOrWSS());
   if (error_code != net::OK) {
     OnError(error_code);
+    return;
+  }
+
+  if (!redirect_url_.is_empty()) {
+    HandleBeforeRequestRedirect();
     return;
   }
 
@@ -311,6 +346,11 @@ void ProxyingWebSocket::ContinueToStartRequest(int error_code) {
     return;
   }
 
+  if (!redirect_url_.is_empty()) {
+    HandleBeforeRequestRedirect();
+    return;
+  }
+
   base::flat_set<std::string> used_header_names;
   std::vector<network::mojom::HttpHeaderPtr> additional_headers;
   for (net::HttpRequestHeaders::Iterator it(request_headers_); it.GetNext();) {
@@ -333,7 +373,7 @@ void ProxyingWebSocket::ContinueToStartRequest(int error_code) {
   }
 
   std::move(factory_).Run(
-      info_.url, std::move(additional_headers),
+      request_.url, std::move(additional_headers),
       receiver_as_handshake_client_.BindNewPipeAndPassRemote(),
       receiver_as_auth_handler_.BindNewPipeAndPassRemote(),
       std::move(trusted_header_client));
