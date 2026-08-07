@@ -125,7 +125,10 @@ void Browser::Quit() {
 void Browser::Exit(gin::Arguments* args) {
   int code = 0;
   args->GetNext(&code);
+  ExitWithCode(code);
+}
 
+void Browser::ExitWithCode(int code) {
   if (!ElectronBrowserMainParts::Get()->SetExitCode(code)) {
     // Message loop is not ready, quit directly.
     exit(code);

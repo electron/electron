@@ -105,6 +105,9 @@ class Browser : private WindowListObserver {
   // Exit the application immediately and set exit code.
   void Exit(gin::Arguments* args);
 
+  // Same as Exit() but callable from native code (no gin arguments).
+  void ExitWithCode(int code);
+
   // Cleanup everything and shutdown the application gracefully.
   void Shutdown();
 
