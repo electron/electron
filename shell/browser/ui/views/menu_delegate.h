@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 
@@ -74,6 +75,7 @@ class MenuDelegate : public views::MenuDelegate {
  private:
   void ScheduleSwitchToButton(views::MenuButton* button);
 
+  void CancelSelf();
   raw_ptr<MenuBar> menu_bar_;
   int id_ = -1;
   std::unique_ptr<views::MenuDelegate> adapter_;
@@ -84,6 +86,7 @@ class MenuDelegate : public views::MenuDelegate {
   bool hold_first_switch_ = false;
 
   base::ObserverList<Observer>::Unchecked observers_;
+  base::WeakPtrFactory<MenuDelegate> weak_factory_{this};
 };
 
 }  // namespace electron

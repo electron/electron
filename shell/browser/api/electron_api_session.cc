@@ -44,6 +44,7 @@
 #include "content/public/browser/preconnect_request.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"

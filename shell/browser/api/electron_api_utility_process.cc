@@ -19,6 +19,7 @@
 #include "content/public/browser/service_process_host.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/common/result_codes.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"

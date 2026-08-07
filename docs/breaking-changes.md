@@ -14,6 +14,40 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (44.0)
 
+### Behavior Changed: `window.open()` children of unsandboxed windows get their own sandboxed process
+
+A `window.open()` child normally shares its opener's renderer process, and the OS sandbox
+of a renderer process is fixed when it launches. Previously a child opened from an
+unsandboxed (e.g. `nodeIntegration: true`) window silently ran in that unsandboxed process
+even though `webContents.getLastWebPreferences()` reported `sandbox: true` for it.
+
+Now the child's own web preferences decide the sandbox state, and when that state differs
+from the opener's process the child is created in a new process with no opener
+relationship: `window.open()` returns `null` in the opener and `window.opener` is `null`
+in the child, matching the behavior of `window.open(url, '_blank', 'noopener')`. A
+warning is logged to the opener's console when this happens.
+
+Child windows default to sandboxed, so a child opened from an unsandboxed window is now
+isolated in its own sandboxed process by default. To restore the previous behavior of
+sharing the opener's unsandboxed process (and the scriptable `window.opener` / returned
+`WindowProxy` that comes with it), opt in explicitly from
+[`webContents.setWindowOpenHandler`](api/web-contents.md#contentssetwindowopenhandlerhandler):
+
+```js
+win.webContents.setWindowOpenHandler(() => ({
+  action: 'allow',
+  overrideBrowserWindowOptions: {
+    webPreferences: {
+      // Match the (unsandboxed) opener so the child shares its process.
+      sandbox: false
+    }
+  }
+}))
+```
+
+Setting `nodeIntegration: true` in the override also makes the child unsandboxed and has
+the same effect.
+
 ### Behavior Changed: `webContents` may be `null` in `select-client-certificate`
 
 The `app` `'select-client-certificate'` event is now also emitted for requests made
@@ -347,6 +381,15 @@ async function writeRTF (text, clipboardType) {
   return writeClipboard(RTF_MIME_TYPE, text, clipboardType)
 }
 ```
+
+### Removed: Pre-macOS 13 login item attributes
+
+Electron 44 removes the option `openAsHidden` from
+[`app.setLoginItemSettings()`](https://www.electronjs.org/docs/latest/api/app#appsetloginitemsettingssettings-macos-windows)
+and the fields `openAsHidden`, `wasOpenedAsHidden` and `restoreState` from the return value of
+[`app.getLoginItemSettings()`](https://www.electronjs.org/docs/latest/api/app#appgetloginitemsettingsoptions-macos-windows).
+
+These only worked on macOS 12 and below. Support for macOS 12 has been dropped.
 
 ## Planned Breaking API Changes (43.0)
 

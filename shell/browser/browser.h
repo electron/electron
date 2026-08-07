@@ -67,10 +67,7 @@ struct LaunchItem {
 
 struct LoginItemSettings {
   bool open_at_login = false;
-  bool open_as_hidden = false;
-  bool restore_state = false;
   bool opened_at_login = false;
-  bool opened_as_hidden = false;
   std::u16string path;
   std::vector<std::u16string> args;
 
@@ -113,6 +110,9 @@ class Browser : private WindowListObserver {
 
   // Exit the application immediately and set exit code.
   void Exit(gin::Arguments* args);
+
+  // Same as Exit() but callable from native code (no gin arguments).
+  void ExitWithCode(int code);
 
   // Cleanup everything and shutdown the application gracefully.
   void Shutdown();

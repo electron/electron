@@ -2409,6 +2409,12 @@ describe('chromium features', () => {
           contextIsolation: false
         }
       });
+      // The opener is unsandboxed, so keep the child unsandboxed too or it is
+      // isolated in its own process with no opener.
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
+      }));
       w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
 
       const windowUrl = `file://${fixturesPath}/pages/window-opener.html`;
@@ -2439,19 +2445,43 @@ describe('chromium features', () => {
     });
 
     it('supports windows opened from a <webview>', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
-      w.loadURL('about:blank');
-      const childWindowUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'webview-opener-postMessage.html'));
-      childWindowUrl.searchParams.set('p', `${fixturesPath}/pages/window-opener-postMessage.html`);
-      const message = await w.webContents.executeJavaScript(`
+      // The test needs an unsandboxed embedder so the guest can opt out of
+      // the sandbox with the `nodeintegration` attribute, and a dedicated
+      // partition so the guest gets a fresh renderer process whose
+      // launch-time sandbox state matches the guest's own preferences
+      // (process reuse across tests could otherwise flip it).
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { webviewTag: true, nodeIntegration: true, contextIsolation: false }
+      });
+      const webviewReady = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
+      await w.loadURL('about:blank');
+      await w.webContents.executeJavaScript(`
         const webview = new WebView();
-        webview.allowpopups = true;
+        webview.setAttribute('allowpopups', 'on');
+        webview.setAttribute('nodeintegration', 'on');
         webview.setAttribute('webpreferences', 'contextIsolation=no');
-        webview.src = ${JSON.stringify(childWindowUrl)}
-        const consoleMessage = new Promise(resolve => webview.addEventListener('console-message', resolve, {once: true}));
+        webview.setAttribute('partition', 'webview-opener-match');
+        webview.src = 'about:blank';
         document.body.appendChild(webview);
-        consoleMessage.then(e => e.message)
+        null
       `);
+      const [, webviewContents] = await webviewReady;
+      if (webviewContents.isLoading()) await once(webviewContents, 'did-finish-load');
+
+      // Match the child's sandbox state to the unsandboxed guest so the
+      // opener relationship is preserved.
+      webviewContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: { show: false, webPreferences: { sandbox: false } }
+      }));
+
+      const message = await webviewContents.executeJavaScript(`new Promise(resolve => {
+        window.addEventListener('message', e => resolve(e.data), { once: true });
+        const child = window.open('about:blank', '', 'show=no');
+        child.document.write('<script>window.opener.postMessage("message", "*")<\\/script>');
+        child.document.close();
+      })`);
 
       expect(message).to.equal('message');
     });
@@ -2897,7 +2927,11 @@ describe('chromium features', () => {
     describe('when opened from main window', () => {
       for (const { parent, child, nodeIntegration, openerAccessible } of table) {
         for (const sandboxPopup of [false, true]) {
-          const description = `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} sandboxPopup=${sandboxPopup}, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
+          // The opener runs unsandboxed (nodeIntegration), so a sandboxed
+          // popup can't share its process and is isolated with no opener.
+          const description = sandboxPopup
+            ? `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} sandboxPopup=true, child is isolated from the opener`
+            : `when parent=${s(parent)} opens child=${s(child)} with nodeIntegration=${nodeIntegration} sandboxPopup=false, child should ${openerAccessible ? '' : 'not '}be able to access opener`;
           it(description, async () => {
             const w = new BrowserWindow({
               show: true,
@@ -2912,6 +2946,13 @@ describe('chromium features', () => {
               }
             }));
             await w.loadURL(parent);
+            if (sandboxPopup) {
+              const openedNull = await w.webContents.executeJavaScript(
+                `window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}") === null`
+              );
+              expect(openedNull).to.be.true();
+              return;
+            }
             const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
               window.addEventListener('message', function f(e) {
                 resolve(e.data)

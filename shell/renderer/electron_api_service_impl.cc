@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include "gin/data_object_builder.h"
+#include "gin/converter.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/heap_snapshot.h"
@@ -20,9 +20,7 @@
 #include "content/public/renderer/render_thread.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
-#include "third_party/blink/public/mojom/frame/user_activation_notification_type.mojom-shared.h"
 #include "third_party/blink/public/platform/scheduler/web_agent_group_scheduler.h"
-#include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/public/web/web_message_port_converter.h"
 #include "v8/include/v8-context.h"

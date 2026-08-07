@@ -30,7 +30,6 @@
 #include "components/crash/core/app/run_as_crashpad_handler_win.h"
 #include "content/public/app/content_main.h"
 #include "content/public/app/sandbox_helper_win.h"
-#include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "sandbox/win/src/sandbox_types.h"
 #include "shell/app/command_line_args.h"
@@ -209,6 +208,12 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
       exit_code_watcher->StopWatching();
     }
     return crashpad_status;
+  }
+
+  if (!process_type.empty()) {
+    // Have Windows shut child processes down after the browser at logoff and
+    // shutdown, as Chrome does, so the browser never watches them die.
+    ::SetProcessShutdownParameters(0x280 - 1, SHUTDOWN_NORETRY);
   }
 
   // access ui native theme here to prevent blocking calls later

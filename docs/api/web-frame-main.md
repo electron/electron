@@ -189,6 +189,57 @@ When executed on a video media element, copies the frame at (x, y) to the clipbo
 
 When executed on a video media element, shows a save dialog and saves the frame at (x, y) to disk.
 
+#### `frame.printToPDF(options)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/52439
+```
+-->
+
+* `options` [PrintToPDFOptions](structures/print-to-pdf-options.md?inline)
+
+Returns `Promise<Buffer>` - Resolves with the generated PDF data.
+
+Prints the frame's web page as PDF.
+
+Unlike [`webContents.printToPDF`](web-contents.md#contentsprinttopdfoptions),
+this method prints only the contents of the frame it is called on. This can be
+used to print an individual `<iframe>` from the main process.
+
+The `landscape` will be ignored if `@page` CSS at-rule is used in the web page.
+
+An example of printing an iframe to PDF:
+
+```js
+const { app, BrowserWindow } = require('electron')
+
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow()
+  win.loadFile('page-with-iframe.html')
+
+  win.webContents.on('did-finish-load', () => {
+    const pdfPath = path.join(os.homedir(), 'Desktop', 'iframe.pdf')
+    const iframe = win.webContents.mainFrame.frames[0]
+    iframe.printToPDF({}).then(data => {
+      fs.writeFile(pdfPath, data, (error) => {
+        if (error) throw error
+        console.log(`Wrote PDF successfully to ${pdfPath}`)
+      })
+    }).catch(error => {
+      console.log(`Failed to write PDF to ${pdfPath}: `, error)
+    })
+  })
+})
+```
+
+See [Page.printToPdf](https://chromedevtools.github.io/devtools-protocol/tot/Page/#method-printToPDF) for more information.
+
 ### Instance Properties
 
 #### `frame.ipc` _Readonly_

@@ -20,7 +20,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
-#include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
 
 namespace base {
 class FilePath;
@@ -68,6 +67,11 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // Returns the WebContents for pending render processes.
   content::WebContents* GetWebContentsFromProcessID(
       content::ChildProcessId process_id);
+
+  // Whether the given renderer process was launched with the OS sandbox
+  // enabled. Returns nullopt if the launch state of the process is unknown.
+  std::optional<bool> IsRendererProcessSandboxed(
+      content::ChildProcessId process_id) const;
 
   NotificationPresenter* GetNotificationPresenter();
 
@@ -380,6 +384,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       pending_processes_;
 
   base::flat_set<content::ChildProcessId> renderer_is_subframe_;
+
+  // Sandbox state each renderer process was launched with.
+  base::flat_map<content::ChildProcessId, bool> renderer_process_sandboxed_;
 
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;
