@@ -250,6 +250,8 @@ class NativeWindowViews : public NativeWindow,
   void HandleSizeEvent(WPARAM w_param, LPARAM l_param);
   void ResetWindowControls();
   void SetRoundedCorners(bool rounded);
+  void EnsureLegacyWindowSubclass(HWND legacy_window);
+  HWND GetPrimaryWebContentsViewLegacyWindow();
   void SetForwardMouseMessages(bool forward);
   static LRESULT CALLBACK SubclassProc(HWND hwnd,
                                        UINT msg,
@@ -339,8 +341,8 @@ class NativeWindowViews : public NativeWindow,
   static inline base::NoDestructor<absl::flat_hash_set<NativeWindowViews*>>
       forwarding_windows_;
   static HHOOK mouse_hook_;
+  HWND active_legacy_window_ = nullptr;
   bool forwarding_mouse_messages_ = false;
-  HWND legacy_window_ = nullptr;
   bool layered_ = false;
 
   // Set to true if the window is always on top and behind the task bar.

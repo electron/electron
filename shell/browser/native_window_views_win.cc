@@ -12,10 +12,13 @@
 #include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
 #include "base/win/windows_version.h"
+#include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/public/browser/browser_accessibility_state.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/ui/inspectable_web_contents.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/window_list.h"
@@ -451,19 +454,6 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
         base::Process::TerminateCurrentProcessImmediately(0);
       return false;
     }
-    case WM_PARENTNOTIFY: {
-      if (LOWORD(w_param) == WM_CREATE) {
-        // Because of reasons regarding legacy drivers and stuff, a window that
-        // matches the client area is created and used internally by Chromium.
-        // This is used when forwarding mouse messages. We only cache the first
-        // occurrence (the webview window) because dev tools also cause this
-        // message to be sent.
-        if (!legacy_window_) {
-          legacy_window_ = reinterpret_cast<HWND>(l_param);
-        }
-      }
-      return false;
-    }
     case WM_CONTEXTMENU: {
       // We don't want to trigger system-context-menu here if we have a
       // frameless window as it'll already be emitted in
@@ -675,15 +665,49 @@ void NativeWindowViews::SetRoundedCorners(bool rounded) {
     LOG(WARNING) << "Failed to set rounded corners to " << rounded;
 }
 
+void NativeWindowViews::EnsureLegacyWindowSubclass(HWND legacy_window) {
+  // Subclassing is used to fix some issues when forwarding mouse messages;
+  // see comments in |SubclassProc|.
+  //
+  // Subclass will be set for the legacy windows, but the actual legacy window
+  // being used can be changed at any time (due to reloading, navigations and
+  // renderer crashes), this function will check if subclass should be updated,
+  // and updates it if so.
+  if (legacy_window != active_legacy_window_) {
+    if (active_legacy_window_) {
+      // Subclass was set for a previous legacy window, remove it first.
+      RemoveWindowSubclass(legacy_window, SubclassProc, 1);
+    }
+    if (legacy_window) {
+      // We have a new legacy window coming, set subclass for it.
+      SetWindowSubclass(legacy_window, SubclassProc, 1,
+                        reinterpret_cast<DWORD_PTR>(this));
+    }
+    active_legacy_window_ = legacy_window;
+  }
+}
+
+HWND NativeWindowViews::GetPrimaryWebContentsViewLegacyWindow() {
+  auto* view = primary_web_contents_view()
+                   ->inspectable_web_contents()
+                   ->GetWebContents()
+                   ->GetRenderWidgetHostView();
+  if (view) {
+    HWND hwnd = static_cast<content::RenderWidgetHostViewBase*>(view)
+                    ->AccessibilityGetAcceleratedWidget();
+    if (hwnd)
+      return hwnd;
+  }
+
+  return nullptr;
+}
+
 void NativeWindowViews::SetForwardMouseMessages(bool forward) {
   if (forward && !forwarding_mouse_messages_) {
     forwarding_mouse_messages_ = true;
     forwarding_windows_->insert(this);
 
-    // Subclassing is used to fix some issues when forwarding mouse messages;
-    // see comments in |SubclassProc|.
-    SetWindowSubclass(legacy_window_, SubclassProc, 1,
-                      reinterpret_cast<DWORD_PTR>(this));
+    EnsureLegacyWindowSubclass(GetPrimaryWebContentsViewLegacyWindow());
 
     if (!mouse_hook_) {
       mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, MouseHookProc, nullptr, 0);
@@ -692,7 +716,9 @@ void NativeWindowViews::SetForwardMouseMessages(bool forward) {
     forwarding_mouse_messages_ = false;
     forwarding_windows_->erase(this);
 
-    RemoveWindowSubclass(legacy_window_, SubclassProc, 1);
+    // Give it a nullptr so we can clear the current legacy window and remove
+    // the current subclass in one call.
+    EnsureLegacyWindowSubclass(nullptr);
 
     if (forwarding_windows_->empty()) {
       // If UnhookWindowsHookEx fails, the hook is still installed in the
@@ -755,18 +781,27 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
   // mouse input.
   if (w_param == WM_MOUSEMOVE) {
     for (auto* window : *forwarding_windows_) {
+      HWND legacy_window = window->GetPrimaryWebContentsViewLegacyWindow();
+      // If forwarding is set before the window is actually shown,
+      // `SetForwardMouseMessages` wouldn't be able to set the subclass, so we
+      // check it here every time (here because subclass is for fixing mouse
+      // move glitches). This will also catch the cases when legacy window is
+      // changed for any other reason after `setIgnoreMouseEvents`.
+      window->EnsureLegacyWindowSubclass(legacy_window);
+      if (!legacy_window)
+        continue;
       // At first I considered enumerating windows to check whether the cursor
       // was directly above the window, but since nothing bad seems to happen
       // if we post the message even if some other window occludes it I have
       // just left it as is.
       RECT client_rect;
-      GetClientRect(window->legacy_window_, &client_rect);
+      GetClientRect(legacy_window, &client_rect);
       POINT p = reinterpret_cast<MSLLHOOKSTRUCT*>(l_param)->pt;
-      ScreenToClient(window->legacy_window_, &p);
+      ScreenToClient(legacy_window, &p);
       if (PtInRect(&client_rect, p)) {
         WPARAM w = 0;  // No virtual keys pressed for our purposes
         LPARAM l = MAKELPARAM(p.x, p.y);
-        PostMessage(window->legacy_window_, WM_MOUSEMOVE, w, l);
+        PostMessage(legacy_window, WM_MOUSEMOVE, w, l);
       }
     }
   }
