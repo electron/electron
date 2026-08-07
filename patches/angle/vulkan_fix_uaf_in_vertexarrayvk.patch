@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@google.com>
+Date: Fri, 26 Jun 2026 10:59:44 -0400
+Subject: vulkan: Fix UAF in VertexArrayVk
+
+VertexArrayVk::mCurrentArrayBuffers caches pointer for streaming
+attributes but the pointed to BufferHelper can be destroyed when a
+different VAO is bound. The stale pointer is dereferenced, even if the
+attribute isn't used by the current program, leading to a UAF. Ensure
+that cache pointers are reset for all streaming attributes when binding
+a VAO.
+
+Bug: chromium:522079372
+Change-Id: I71999b9455ab632affd3fdf8bbdf16aae472a78b
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7955406
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Charlie Lao <cclao@google.com>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Reviewed-by: Charlie Lao <cclao@google.com>
+Auto-Submit: Kyle Charbonneau <kylechar@chromium.org>
+
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index de1a556c20e60e046c5fae029f3f4313df2d882d..a8b0bdcd03930687173ee864887f21d8cb28c12c 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -5611,6 +5611,7 @@ angle::Result ContextVk::syncState(const gl::Context *context,
+                 invalidateDefaultAttributes(context->getActiveDefaultAttribsMask());
+                 ANGLE_TRY(onVertexArrayChange(vertexArrayVk->getCurrentEnabledAttribsMask()));
+                 ANGLE_TRY(onIndexBufferChange(vertexArrayVk->getCurrentElementArrayBuffer()));
++                vertexArrayVk->resetInactiveStreamedAttribs(context);
+                 break;
+             }
+             case gl::state::DIRTY_BIT_DRAW_INDIRECT_BUFFER_BINDING:
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+index 5b2e7fd2977152df46f690f5a6105a3968f51af2..4a85d3e99d2e125db58215ccca7226fb7f0d7edd 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+@@ -1616,6 +1616,29 @@ angle::Result VertexArrayVk::updateStreamedAttribs(const gl::Context *context,
+     return angle::Result::Continue;
+ }
+ 
++void VertexArrayVk::resetInactiveStreamedAttribs(const gl::Context *context)
++{
++    ContextVk *contextVk = vk::GetImpl(context);
++    const gl::AttributesMask activeAttribs =
++        context->getActiveClientAttribsMask() | context->getActiveBufferedAttribsMask();
++    const gl::AttributesMask inactiveStreamedAttribs = mStreamingVertexAttribsMask & ~activeAttribs;
++    if (inactiveStreamedAttribs.any())
++    {
++        vk::BufferHelper &emptyBuffer = contextVk->getEmptyBuffer();
++        for (size_t attribIndex : inactiveStreamedAttribs)
++        {
++            if (mCurrentArrayBuffers[attribIndex] != &emptyBuffer)
++            {
++                mCurrentArrayBuffers[attribIndex]       = &emptyBuffer;
++                mCurrentArrayBufferSerial[attribIndex]  = emptyBuffer.getBufferSerial();
++                mCurrentArrayBufferHandles[attribIndex] = emptyBuffer.getBuffer().getHandle();
++                mCurrentArrayBufferOffsets[attribIndex] = emptyBuffer.getOffset();
++                mCurrentArrayBufferSizes[attribIndex]   = emptyBuffer.getSize();
++            }
++        }
++    }
++}
++
+ angle::Result VertexArrayVk::handleLineLoop(ContextVk *contextVk,
+                                             GLint firstVertex,
+                                             GLsizei vertexOrIndexCount,
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.h b/src/libANGLE/renderer/vulkan/VertexArrayVk.h
+index 9849eaac5be583608fbebcf8a78556e8e3ab2687..d59a657146fa5c96160afd3fe550cb26c8813d18 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.h
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.h
+@@ -52,6 +52,8 @@ class VertexArrayVk : public VertexArrayImpl
+                                         const void *indices,
+                                         gl::AttributesMask *strideDirtyAttribMaskOut);
+ 
++    void resetInactiveStreamedAttribs(const gl::Context *context);
++
+     angle::Result handleLineLoop(ContextVk *contextVk,
+                                  GLint firstVertex,
+                                  GLsizei vertexOrIndexCount,

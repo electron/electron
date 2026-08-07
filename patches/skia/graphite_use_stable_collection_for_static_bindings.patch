@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Ludwig <michaelludwig@google.com>
+Date: Fri, 12 Jun 2026 11:24:39 -0400
+Subject: [graphite] Use stable collection for static bindings
+
+Since the layouts are passed by pointer in the `nextInChain` field,
+their addresses need to stay valid until the BindGroupLayout is created.
+With vector, if it ever grew, that would not remain the case. Since
+there are usually only 0 to 1 immutable samplers, this likely never
+happened (and also why it uses a built-in storage for 1).
+
+Also removes the include for vector and uses TArray (we had been mixing
+both throughout the file).
+
+Bug: 520514458
+Fixed: 520514458
+Change-Id: I44c9566c68ab0e6c6d659ea77a423ddc50d53c76
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1264157
+Reviewed-by: Thomas Smith <thomsmit@google.com>
+Auto-Submit: Michael Ludwig <michaelludwig@google.com>
+Commit-Queue: Michael Ludwig <michaelludwig@google.com>
+
+diff --git a/src/gpu/graphite/dawn/DawnGraphicsPipeline.cpp b/src/gpu/graphite/dawn/DawnGraphicsPipeline.cpp
+index 27e66d8efb29ffb6e8716d841de658de4c343c62..9eb59bcc00e57b97678f0fce60d3eaafa625d83b 100644
+--- a/src/gpu/graphite/dawn/DawnGraphicsPipeline.cpp
++++ b/src/gpu/graphite/dawn/DawnGraphicsPipeline.cpp
+@@ -9,7 +9,9 @@
+ 
+ #include "include/gpu/graphite/TextureInfo.h"
+ #include "include/gpu/graphite/dawn/DawnGraphiteTypes.h"
+-#include "include/private/base/SkTemplates.h"
++#include "include/private/base/SkLog.h"
++#include "include/private/base/SkTArray.h"
++#include "src/base/SkTBlockList.h"
+ #include "src/core/SkTraceEvent.h"
+ #include "src/gpu/SkSLToBackend.h"
+ #include "src/gpu/Swizzle.h"
+@@ -34,7 +36,8 @@
+ #include "src/sksl/ir/SkSLProgram.h"
+ 
+ #include <atomic>
+-#include <vector>
++
++using namespace skia_private;
+ 
+ namespace skgpu::graphite {
+ 
+@@ -152,7 +155,7 @@ wgpu::StencilFaceState stencil_face_to_dawn(DepthStencilSettings::Face face) {
+ 
+ size_t create_vertex_attributes(SkSpan<const Attribute> attrs,
+                                 int shaderLocationOffset,
+-                                std::vector<wgpu::VertexAttribute>* out) {
++                                TArray<wgpu::VertexAttribute>* out) {
+     SkASSERT(out && out->empty());
+     out->resize(attrs.size());
+     size_t vertexAttributeOffset = 0;
+@@ -499,12 +502,16 @@ sk_sp<DawnGraphicsPipeline> DawnGraphicsPipeline::Make(
+                 !(samplerDescArrPtr && samplerDescArrPtr->at(0).isImmutable())) {
+                 groupLayouts[1] = sharedContext->getSingleTextureSamplerBindGroupLayout();
+             } else {
+-                std::vector<wgpu::BindGroupLayoutEntry> entries(numTexturesAndSamplers);
++                TArray<wgpu::BindGroupLayoutEntry> entries;
++                entries.reset(numTexturesAndSamplers);
++
+ #if !defined(__EMSCRIPTEN__)
+                 // Static sampler layouts are passed into Dawn by address and therefore must stay
+                 // alive until the BindGroupLayoutDescriptor is created. So, store them outside of
+-                // the loop that iterates over each BindGroupLayoutEntry.
+-                skia_private::TArray<wgpu::StaticSamplerBindingLayout> staticSamplerLayouts;
++                // the loop that iterates over each BindGroupLayoutEntry. Use a TBlockList so that
++                // any append StaticSamplerBindingLayouts have a stable address in case we have to
++                // grow the collection.
++                SkTBlockList<wgpu::StaticSamplerBindingLayout, 1> staticSamplerLayouts;
+ 
+                 // Note that the number of samplers is equivalent to numTexturesAndSamplers / 2. So,
+                 // a sampler's index within any container that only pertains to sampler information
+@@ -598,7 +605,7 @@ sk_sp<DawnGraphicsPipeline> DawnGraphicsPipeline::Make(
+     // Vertex state
+     std::array<wgpu::VertexBufferLayout, kNumVertexBuffers> vertexBufferLayouts;
+     // Static data buffer layout
+-    std::vector<wgpu::VertexAttribute> staticDataAttributes;
++    TArray<wgpu::VertexAttribute> staticDataAttributes;
+     {
+         auto arrayStride = create_vertex_attributes(step->staticAttributes(),
+                                                     0,
+@@ -622,7 +629,7 @@ sk_sp<DawnGraphicsPipeline> DawnGraphicsPipeline::Make(
+     }
+ 
+     // Append data buffer layout
+-    std::vector<wgpu::VertexAttribute> appendDataAttributes;
++    TArray<wgpu::VertexAttribute> appendDataAttributes;
+     {
+         // Note: the shaderLocationOffset in this function call needs to be the staticAttributeSize
+         auto arrayStride = create_vertex_attributes(step->appendAttributes(),
