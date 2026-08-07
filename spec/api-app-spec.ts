@@ -344,6 +344,20 @@ describe('app module', () => {
       });
     });
 
+    it('sends and receives data larger than the singleton message buffer', async () => {
+      await testArgumentPassing({
+        args: ['--send-data', '--data-size=300000'],
+        expectedAdditionalData: 'x'.repeat(300000)
+      });
+    });
+
+    ifit(process.platform !== 'win32')('passes long arguments to the second-instance event', async () => {
+      await testArgumentPassing({
+        args: [`--long-arg=${'a'.repeat(50000)}`],
+        expectedAdditionalData: null
+      });
+    });
+
     it('sends and receives numerical data', async () => {
       await testArgumentPassing({
         args: ['--send-data', '--data-content=2'],
