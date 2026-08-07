@@ -19,6 +19,8 @@
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/single_thread_task_runner.h"
+#include "base/no_destructor.h"
+#include "base/threading/watchdog.h"
 #include "base/time/time.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
@@ -524,14 +526,22 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   std::string app_name = electron::Browser::Get()->GetName();
 #endif
 #if BUILDFLAG(IS_LINUX)
-  // The display server connection is gone (X IO error / compositor lost).
-  // Exit like Chrome's SessionEnding() and only crash if that hangs.
+  // The display server connection is gone (X IO error / compositor lost):
+  // exit like Chrome's SessionEnding(), with an off-thread watchdog that
+  // crashes us if exiting hangs on the dead display connection.
   auto shutdown_cb = base::BindOnce([] {
+    class ShutdownWatchdog : public base::Watchdog {
+     public:
+      ShutdownWatchdog()
+          : base::Watchdog(base::Seconds(10), "OzoneShutdown", true) {}
+      void Alarm() override { LOG(FATAL) << "Failed to shutdown."; }
+    };
+    static base::NoDestructor<ShutdownWatchdog> watchdog;
+    watchdog->Arm();
     if (Browser* browser = Browser::Get())
       browser->ExitWithCode(content::RESULT_CODE_NORMAL_EXIT);
-    content::GetUIThreadTaskRunner({})->PostDelayedTask(
-        FROM_HERE, base::BindOnce([] { LOG(FATAL) << "Failed to shutdown."; }),
-        base::Seconds(10));
+    else
+      LOG(FATAL) << "Failed to shutdown.";
   });
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
       std::move(shutdown_cb),
