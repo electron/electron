@@ -5,10 +5,12 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_PLATFORM_PASSKEYS_AUTHENTICATOR_H_
 #define ELECTRON_SHELL_BROWSER_WEBAUTHN_ELECTRON_PLATFORM_PASSKEYS_AUTHENTICATOR_H_
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
 
+#include "base/containers/span.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/global_routing_id.h"
 #include "device/fido/fido_authenticator.h"
@@ -49,6 +51,8 @@ class ElectronPlatformPasskeysAuthenticator : public device::FidoAuthenticator {
   device::AuthenticatorType GetType() const override;
   std::string GetId() const override;
   const device::AuthenticatorSupportedOptions& Options() const override;
+  // ES256 only: the public ASAuthorization API cannot honor other algorithms.
+  std::optional<base::span<const int32_t>> GetAlgorithms() override;
   std::optional<device::FidoTransportProtocol> AuthenticatorTransport()
       const override;
   base::WeakPtr<FidoAuthenticator> GetWeakPtr() override;
@@ -63,6 +67,9 @@ class ElectronPlatformPasskeysAuthenticator : public device::FidoAuthenticator {
   // error 1004 (no application-identifier / association), which surfaces to the
   // page as a bare NotAllowedError. Called from the completion handlers.
   void MaybeLogUnconfiguredError();
+
+  // Console error when Apple's response fails parsing or validation.
+  void LogInvalidResponse();
 
   const content::GlobalRenderFrameHostToken render_frame_host_token_;
   std::unique_ptr<ObjCStorage> objc_storage_;

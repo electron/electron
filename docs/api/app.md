@@ -1283,7 +1283,9 @@ added:
   * `platformPasskeys` boolean (optional) - Enables passkeys via Apple's
     `ASAuthorizationController`. When enabled, passkey operations present the
     system credential provider sheet (iCloud Keychain, 1Password, Bitwarden,
-    etc.) and credentials sync across the user's devices.
+    etc.) and credentials sync across the user's devices. Defaults to `false`.
+    Passing `null`/`undefined` (or omitting the key) leaves the previous
+    setting unchanged.
 
 Configures platform authenticators for the Web Authentication API
 (`navigator.credentials.create()` / `navigator.credentials.get()`). Until this
@@ -1299,7 +1301,15 @@ When `platformPasskeys` is `true`, passkey operations use Apple's
 `ASAuthorizationController` which delegates to the system's configured
 Credential Provider Extensions. This enables the same passkey experience as
 Safari — credentials are available across all devices signed into the same
-account.
+account. Unlike Touch ID credentials, platform passkeys are stored by the
+credential provider and scoped to the relying party, not to Electron: they are
+shared across all [`session`](session.md) partitions and with any other app or
+browser associated with the same domain. Platform passkeys cannot serve
+cross-origin (iframe) requests; those requests are left to the other available
+authenticators (Touch ID supports iframes) and a warning is logged to the
+DevTools console. The `prf` and `largeBlob` WebAuthn extensions are not
+currently supported by this authenticator — `prf` inputs are ignored, and a
+`create()` call with `largeBlob: { support: 'required' }` fails.
 
 ```js
 const { app } = require('electron')
@@ -1387,7 +1397,9 @@ the embedded development provisioning profile described above:
 > browser), the `clientDataJSON` returned to the page reports
 > `origin: "https://<rpId>"` — the associated domain — rather than the page's
 > own origin. Relying-party servers that enforce a strict `expectedOrigin`
-> allowlist must include `https://<rpId>` for verification to succeed.
+> allowlist must include `https://<rpId>` for verification to succeed. This
+> also means the relying party cannot distinguish which subdomain of the
+> associated domain initiated the ceremony.
 
 > [!NOTE]
 > Touch ID WebAuthn credentials are device-bound and are not synced via iCloud
