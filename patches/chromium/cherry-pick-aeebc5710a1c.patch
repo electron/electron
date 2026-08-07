@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christopher Cameron <ccameron@chromium.org>
+Date: Wed, 5 Aug 2026 11:01:48 -0700
+Subject: [M152] skhdr::AdaptiveGlobalToneMap: Reject invalid metadata
+
+Original change's description:
+> skhdr::AdaptiveGlobalToneMap: Reject invalid metadata
+>
+> Validate metadata after receiving it. Reject IPCs with invalid metadata.
+>
+> Update a test that was specifying invalid metadata, add tests of various
+> types of invalid metadata.
+>
+> Bug: 538332338
+> Change-Id: Icdada0edf15d51fce2fe22af88f55e00d1dba65d
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8157200
+> Reviewed-by: Tom Sepez <tsepez@chromium.org>
+> Commit-Queue: ccameron chromium <ccameron@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1669050}
+
+(cherry picked from commit 36e3c8b0d681b51b59b71238630c97d291639c95)
+
+Bug: 541111607,538332338
+Change-Id: Icdada0edf15d51fce2fe22af88f55e00d1dba65d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8205584
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#694}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/skia/public/mojom/hdr_metadata_mojom_traits.h b/skia/public/mojom/hdr_metadata_mojom_traits.h
+index eb4d4afba68ab2f6d43e5a3bcc808280de3228c4..875ac1e9d233799d58a074c35d81cfa4697914ad 100644
+--- a/skia/public/mojom/hdr_metadata_mojom_traits.h
++++ b/skia/public/mojom/hdr_metadata_mojom_traits.h
+@@ -2,8 +2,8 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-#ifndef SKIA_PUBLIC_MOJOM_HDR_METADATA_MO_TRAITS_H_
+-#define SKIA_PUBLIC_MOJOM_HDR_METADATA_MO_TRAITS_H_
++#ifndef SKIA_PUBLIC_MOJOM_HDR_METADATA_MOJOM_TRAITS_H_
++#define SKIA_PUBLIC_MOJOM_HDR_METADATA_MOJOM_TRAITS_H_
+ 
+ #include <cmath>
+ 
+@@ -265,6 +265,9 @@ struct StructTraits<skia::mojom::SkHdrAdaptiveGlobalToneMapDataView,
+     if (!data.ReadHeadroomAdaptiveToneMap(&out->fHeadroomAdaptiveToneMap)) {
+       return false;
+     }
++    if (!out->isValid()) {
++      return false;
++    }
+     return true;
+   }
+ };
+diff --git a/skia/public/mojom/test/mojom_traits_unittest.cc b/skia/public/mojom/test/mojom_traits_unittest.cc
+index dc2af641f20141dbf4c53f1ff52f0292bf47b7ee..6fc5019a05186d55184769722a6f99fb18fdd851 100644
+--- a/skia/public/mojom/test/mojom_traits_unittest.cc
++++ b/skia/public/mojom/test/mojom_traits_unittest.cc
+@@ -722,8 +722,8 @@ TEST(StructTraitsTest, SkHdrAdaptiveGlobalToneMap) {
+                           .fGreen = 0.2f,
+                           .fBlue = 0.3f,
+                           .fMax = 0.4f,
+-                          .fMin = 0.5f,
+-                          .fComponent = 0.6f,
++                          .fMin = 0.0f,
++                          .fComponent = 0.0f,
+                       },
+                   .fGainCurve =
+                       {
+@@ -872,6 +872,30 @@ TEST(StructTraitsTest, SkHdrAdaptiveGlobalToneMap_InvalidFloats) {
+     EXPECT_FALSE(mojo::test::SerializeAndDeserialize<
+                  skia::mojom::SkHdrAdaptiveGlobalToneMap>(bad, out));
+   }
++  {
++    skhdr::AdaptiveGlobalToneMap bad = in;
++    bad.fHeadroomAdaptiveToneMap->fAlternateImages[0]
++        .fColorGainFunction.fGainCurve.fControlPoints.clear();
++    EXPECT_FALSE(mojo::test::SerializeAndDeserialize<
++                 skia::mojom::SkHdrAdaptiveGlobalToneMap>(bad, out));
++  }
++  {
++    skhdr::AdaptiveGlobalToneMap bad = in;
++    bad.fHeadroomAdaptiveToneMap->fAlternateImages[0]
++        .fColorGainFunction.fGainCurve.fControlPoints.resize(33);
++    EXPECT_FALSE(mojo::test::SerializeAndDeserialize<
++                 skia::mojom::SkHdrAdaptiveGlobalToneMap>(bad, out));
++  }
++  {
++    skhdr::AdaptiveGlobalToneMap bad = in;
++    for (size_t i = 0; i < 4; ++i) {
++      auto alt = bad.fHeadroomAdaptiveToneMap->fAlternateImages.front();
++      alt.fHdrHeadroom += static_cast<float>(i);
++      bad.fHeadroomAdaptiveToneMap->fAlternateImages.push_back(alt);
++    }
++    EXPECT_FALSE(mojo::test::SerializeAndDeserialize<
++                 skia::mojom::SkHdrAdaptiveGlobalToneMap>(bad, out));
++  }
+ }
+ 
+ }  // namespace
