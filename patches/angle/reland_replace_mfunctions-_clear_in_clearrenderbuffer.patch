@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Stacy Gaikovaia <gaiko@google.com>
+Date: Tue, 4 Aug 2026 10:50:20 -0700
+Subject: Reland "Replace mFunctions->clear in clearRenderbuffer"
+
+Refactor to only use specialized functions for int and uint.
+
+This reverts commit fc174c46a1377375945c0f855f256e524288f55e.
+
+Reason for revert: Pixel11 driver fix went in
+
+Original change's description:
+> Revert "Replace mFunctions->clear in clearRenderbuffer"
+>
+> This reverts commit ac2ad595b9508f8de80e7c80a36d8ad31c6cf11c.
+>
+> Reason for revert: Speculative fix for Pixel device lockup.
+>
+> Original change's description:
+> > Replace mFunctions->clear in clearRenderbuffer
+> >
+> > Bug: angleproject:517045160
+> > Change-Id: Ie38d168d96544e9fd549118cfec9ff03d0e0540d
+> > Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7909294
+> > Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+> > Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+> > Reviewed-by: Geoff Lang <geofflang@chromium.org>
+> > Commit-Queue: Stacy Gaikovaia <gaiko@google.com>
+>
+> Bug: angleproject:517045160
+> Bug: b/531119456
+> Change-Id: I3e3b4b5d5db8a106a8005849f4275e1d79253bf5
+> Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8063001
+> Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+> Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+Bug: angleproject:517045160
+Bug: b/531119456
+Change-Id: I6b4f4de76fc43f93be8fab114a206d14ca0114bb
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/8196626
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Geoff Lang <geofflang@chromium.org>
+Commit-Queue: Stacy Gaikovaia <gaiko@google.com>
+Auto-Submit: Stacy Gaikovaia <gaiko@google.com>
+
+diff --git a/src/libANGLE/renderer/gl/BlitGL.cpp b/src/libANGLE/renderer/gl/BlitGL.cpp
+index 787405f204c3adf773b96e943c5f70e8e2aa7e5e..10d79fe9722a105e28d350cb1efd4f67a44e323c 100644
+--- a/src/libANGLE/renderer/gl/BlitGL.cpp
++++ b/src/libANGLE/renderer/gl/BlitGL.cpp
+@@ -1069,7 +1069,36 @@ angle::Result BlitGL::clearRenderbuffer(const gl::Context *context,
+                      mFunctions->framebufferRenderbuffer(
+                          GL_FRAMEBUFFER, bindTarget, GL_RENDERBUFFER, source->getRenderbufferID()));
+     }
+-    ANGLE_GL_TRY(context, mFunctions->clear(clearMask));
++    const gl::InternalFormat &internalFormatInfo =
++        gl::GetSizedInternalFormatInfo(sizedInternalFormat);
++    if ((clearMask & GL_COLOR_BUFFER_BIT) != 0 && internalFormatInfo.isInt())
++    {
++        ASSERT(clearMask == GL_COLOR_BUFFER_BIT);
++        switch (internalFormatInfo.componentType)
++        {
++            case GL_INT:
++            {
++                constexpr GLint clearValue[] = {0, 0, 0, 0};
++                ANGLE_GL_TRY(context, mFunctions->clearBufferiv(GL_COLOR, 0, clearValue));
++            }
++            break;
++
++            case GL_UNSIGNED_INT:
++            {
++                constexpr GLuint clearValue[] = {0, 0, 0, 0};
++                ANGLE_GL_TRY(context, mFunctions->clearBufferuiv(GL_COLOR, 0, clearValue));
++            }
++            break;
++
++            default:
++                UNREACHABLE();
++                break;
++        }
++    }
++    else
++    {
++        ANGLE_GL_TRY(context, mFunctions->clear(clearMask));
++    }
+ 
+     // Unbind
+     for (GLenum bindTarget : bindTargets)
+diff --git a/src/tests/gl_tests/RobustResourceInitTest.cpp b/src/tests/gl_tests/RobustResourceInitTest.cpp
+index f2bcc1545fc9fad3acb36f1aff703b82ee7cebbd..9c7594062a15c72d2fa4cd0e5a7ff157f2c6b6cc 100644
+--- a/src/tests/gl_tests/RobustResourceInitTest.cpp
++++ b/src/tests/gl_tests/RobustResourceInitTest.cpp
+@@ -308,6 +308,10 @@ class RobustResourceInitTestES3 : public RobustResourceInitTest
+                                 GLenum internalFormatRGBA,
+                                 GLenum internalFormatRGB,
+                                 GLenum type);
++    template <typename PixelT>
++    void testIntegerRenderbufferInit(GLenum internalFormat, GLenum type);
++    template <typename PixelT>
++    void testFloatRenderbufferInit(GLenum internalFormat, GLenum type);
+ };
+ 
+ class RobustResourceInitTestES31 : public RobustResourceInitTest
+@@ -1241,6 +1245,93 @@ void RobustResourceInitTestES3::testIntegerTextureInit(const char *samplerType,
+     EXPECT_EQ(0, incorrectPixels);
+ }
+ 
++template <typename PixelT>
++void RobustResourceInitTestES3::testIntegerRenderbufferInit(GLenum internalFormat, GLenum type)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    GLRenderbuffer renderbuffer;
++    glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
++    glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, kWidth, kHeight);
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer framebuffer;
++    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, renderbuffer);
++    ASSERT_GL_NO_ERROR();
++
++    std::array<PixelT, kWidth * kHeight * 4> data;
++    glReadPixels(0, 0, kWidth, kHeight, GL_RGBA_INTEGER, type, data.data());
++    ASSERT_GL_NO_ERROR();
++
++    int incorrectPixels = 0;
++    for (int y = 0; y < kHeight; ++y)
++    {
++        for (int x = 0; x < kWidth; ++x)
++        {
++            int index    = (y * kWidth + x) * 4;
++            bool correct = (data[index] == 0 && data[index + 1] == 0 && data[index + 2] == 0 &&
++                            data[index + 3] == 0);
++            incorrectPixels += (!correct ? 1 : 0);
++        }
++    }
++
++    EXPECT_EQ(0, incorrectPixels);
++}
++
++template <typename PixelT>
++void RobustResourceInitTestES3::testFloatRenderbufferInit(GLenum internalFormat, GLenum type)
++{
++    ANGLE_SKIP_TEST_IF(!hasGLExtension());
++
++    GLRenderbuffer renderbuffer;
++    glBindRenderbuffer(GL_RENDERBUFFER, renderbuffer);
++    glRenderbufferStorage(GL_RENDERBUFFER, internalFormat, kWidth, kHeight);
++    ASSERT_GL_NO_ERROR();
++
++    GLFramebuffer framebuffer;
++    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
++    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, renderbuffer);
++    ASSERT_GL_NO_ERROR();
++
++    std::array<PixelT, kWidth * kHeight * 4> data;
++    glReadPixels(0, 0, kWidth, kHeight, GL_RGBA, type, data.data());
++    ASSERT_GL_NO_ERROR();
++
++    int incorrectPixels = 0;
++    for (int y = 0; y < kHeight; ++y)
++    {
++        for (int x = 0; x < kWidth; ++x)
++        {
++            int index    = (y * kWidth + x) * 4;
++            bool correct = (data[index] == 0.0f && data[index + 1] == 0.0f &&
++                            data[index + 2] == 0.0f && data[index + 3] == 0.0f);
++            incorrectPixels += (!correct ? 1 : 0);
++        }
++    }
++
++    EXPECT_EQ(0, incorrectPixels);
++}
++
++// Test that integer renderbuffers are initialized to zero.
++TEST_P(RobustResourceInitTestES3, RenderbufferInit_IntRGBA8)
++{
++    testIntegerRenderbufferInit<int32_t>(GL_RGBA8I, GL_INT);
++}
++
++// Test that unsigned integer renderbuffers are initialized to zero.
++TEST_P(RobustResourceInitTestES3, RenderbufferInit_UIntRGBA8)
++{
++    testIntegerRenderbufferInit<uint32_t>(GL_RGBA8UI, GL_UNSIGNED_INT);
++}
++
++// Test that floating point renderbuffers are initialized to zero.
++TEST_P(RobustResourceInitTestES3, RenderbufferInit_FloatRGBA32F)
++{
++    ANGLE_SKIP_TEST_IF(!EnsureGLExtensionEnabled("GL_EXT_color_buffer_float"));
++    testFloatRenderbufferInit<GLfloat>(GL_RGBA32F, GL_FLOAT);
++}
++
+ // Simple tests for integer formats that ANGLE must emulate on D3D11.
+ TEST_P(RobustResourceInitTestES3, TextureInit_UIntRGB8)
+ {

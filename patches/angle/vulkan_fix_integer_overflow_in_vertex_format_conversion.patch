@@ -1,0 +1,217 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: wangra <wangra@google.com>
+Date: Thu, 11 Jun 2026 19:18:20 -0400
+Subject: Vulkan: Fix integer overflow in vertex format conversion
+
+Prevents out-of-bounds GPU writes during format conversion of large
+vertex buffers by using angle::CheckedNumeric to check for 32-bit
+overflows in size and offset math.
+
+Test: angle_end2end_tests --gtest_filter="*VertexBufferConversionOverflow*"
+Bug: chromium:522063116
+Change-Id: Ibf79610acedf2005f71b21ed52aa2809dbca7aea
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7957125
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Ran Wang <wangra@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+index ab9c1efe1e409ac5c1b34e903bbd9baaf0072ac4..5b2e7fd2977152df46f690f5a6105a3968f51af2 100644
+--- a/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
++++ b/src/libANGLE/renderer/vulkan/VertexArrayVk.cpp
+@@ -292,7 +292,7 @@ angle::Result StreamVertexDataWithDivisor(ContextVk *contextVk,
+     return angle::Result::Continue;
+ }
+ 
+-size_t GetVertexCountForRange(GLint64 srcBufferBytes,
++size_t GetVertexCountForRange(uint64_t srcBufferBytes,
+                               uint32_t srcFormatSize,
+                               uint32_t srcVertexStride)
+ {
+@@ -311,8 +311,20 @@ size_t GetVertexCountForRange(GLint64 srcBufferBytes,
+ 
+ size_t GetVertexCount(BufferVk *srcBuffer, const gl::VertexBinding &binding, uint32_t srcFormatSize)
+ {
++    GLint64 size = srcBuffer->getSize();
++    if (size < 0)
++    {
++        return 0;
++    }
++
++    uintptr_t unsignedSize = static_cast<uintptr_t>(size);
++    uintptr_t offset       = binding.getOffset();
++    if (unsignedSize < offset)
++    {
++        return 0;
++    }
+     // Bytes usable for vertex data.
+-    GLint64 bytes = srcBuffer->getSize() - binding.getOffset();
++    uint64_t bytes = unsignedSize - offset;
+     GLuint stride = binding.getStride();
+     if (stride == 0)
+     {
+@@ -344,7 +356,11 @@ angle::Result CalculateMaxVertexCountForConversion(ContextVk *contextVk,
+     // with the dirtyRange.
+     VkDeviceSize srcBufferSize = srcBuffer->getSize();
+     size_t srcOffset  = conversion->getCacheKey().offset;
+-    GLint64 srcLength          = static_cast<GLint64>(srcBufferSize) - srcOffset;
++    if (srcBufferSize < srcOffset)
++    {
++        return angle::Result::Continue;
++    }
++    uint64_t srcLength = srcBufferSize - srcOffset;
+ 
+     // The max number of vertices from binding to the end of the buffer
+     size_t maxNumVertices = GetVertexCountForRange(srcLength, srcFormatSize, srcStride);
+@@ -367,8 +383,12 @@ angle::Result CalculateMaxVertexCountForConversion(ContextVk *contextVk,
+     vk::MemoryHostVisibility hostVisible = conversion->getCacheKey().hostVisible
+                                                ? vk::MemoryHostVisibility::Visible
+                                                : vk::MemoryHostVisibility::NonVisible;
+-    ANGLE_TRY(contextVk->initBufferForVertexConversion(conversion, maxNumVertices * dstStride,
+-                                                       hostVisible));
++
++    uint64_t dstBufferSize = static_cast<uint64_t>(maxNumVertices) * dstStride;
++    ANGLE_VK_CHECK_MATH(contextVk, dstBufferSize <= std::numeric_limits<size_t>::max());
++
++    ANGLE_TRY(contextVk->initBufferForVertexConversion(
++        conversion, static_cast<size_t>(dstBufferSize), hostVisible));
+ 
+     // Calculate numVertices to convert
+     *maxNumVerticesOut = maxNumVertices;
+@@ -376,14 +396,15 @@ angle::Result CalculateMaxVertexCountForConversion(ContextVk *contextVk,
+     return angle::Result::Continue;
+ }
+ 
+-void CalculateOffsetAndVertexCountForDirtyRange(BufferVk *bufferVk,
+-                                                VertexConversionBuffer *conversion,
+-                                                const angle::Format &srcFormat,
+-                                                const angle::Format &dstFormat,
+-                                                const RangeDeviceSize &dirtyRange,
+-                                                uint32_t *srcOffsetOut,
+-                                                uint32_t *dstOffsetOut,
+-                                                uint32_t *numVerticesOut)
++angle::Result CalculateOffsetAndVertexCountForDirtyRange(ContextVk *contextVk,
++                                                         BufferVk *bufferVk,
++                                                         VertexConversionBuffer *conversion,
++                                                         const angle::Format &srcFormat,
++                                                         const angle::Format &dstFormat,
++                                                         const RangeDeviceSize &dirtyRange,
++                                                         uint32_t *srcOffsetOut,
++                                                         uint32_t *dstOffsetOut,
++                                                         uint32_t *numVerticesOut)
+ {
+     ASSERT(!dirtyRange.empty());
+     unsigned srcFormatSize = srcFormat.pixelBytes;
+@@ -400,41 +421,56 @@ void CalculateOffsetAndVertexCountForDirtyRange(BufferVk *bufferVk,
+     size_t srcOffset = conversion->getCacheKey().offset;
+     size_t dstOffset = 0;
+ 
+-    GLint64 srcLength = bufferVk->getSize() - srcOffset;
++    VkDeviceSize srcBufferSize = bufferVk->getSize();
++    uint64_t srcLength         = srcBufferSize - srcOffset;
++
++    uint64_t currentSrcOffset = srcOffset;
++    uint64_t currentDstOffset = dstOffset;
++    uint64_t currentSrcLength = srcLength;
+ 
+     // Adjust offset to the begining of the dirty range
+     if (dirtyRange.low() > srcOffset)
+     {
+-        size_t vertexCountToSkip = (static_cast<size_t>(dirtyRange.low()) - srcOffset) / srcStride;
+-        size_t srcBytesToSkip    = vertexCountToSkip * srcStride;
+-        size_t dstBytesToSkip    = vertexCountToSkip * dstStride;
+-        srcOffset += srcBytesToSkip;
+-        srcLength -= srcBytesToSkip;
+-        dstOffset += dstBytesToSkip;
++        uint64_t vertexCountToSkip =
++            (static_cast<uint64_t>(dirtyRange.low()) - srcOffset) / srcStride;
++        uint64_t srcBytesToSkip = vertexCountToSkip * srcStride;
++        uint64_t dstBytesToSkip = vertexCountToSkip * dstStride;
++
++        currentSrcOffset += srcBytesToSkip;
++        currentSrcLength -= srcBytesToSkip;
++        currentDstOffset += dstBytesToSkip;
+     }
+ 
+     // Adjust dstOffset to align to 4 bytes. The GPU convert code path always write a uint32_t and
+     // must aligned at 4 bytes. We could possibly make it able to store at unaligned uint32_t but
+     // performance will be worse than just convert a few extra data.
+-    while ((dstOffset % 4) != 0)
++    while ((currentDstOffset % 4) != 0)
+     {
+-        dstOffset -= dstStride;
+-        srcOffset -= srcStride;
+-        srcLength += srcStride;
++        ASSERT(currentDstOffset >= dstStride && currentSrcOffset >= srcStride);
++        currentDstOffset -= dstStride;
++        currentSrcOffset -= srcStride;
++        currentSrcLength += srcStride;
+     }
+ 
+     // Adjust length
+-    if (dirtyRange.high() < static_cast<VkDeviceSize>(bufferVk->getSize()))
++    if (dirtyRange.high() < srcBufferSize)
+     {
+-        srcLength = dirtyRange.high() - srcOffset;
++        ASSERT(dirtyRange.high() >= currentSrcOffset);
++        currentSrcLength = dirtyRange.high() - currentSrcOffset;
+     }
+ 
+     // Calculate numVertices to convert
+-    size_t numVertices = GetVertexCountForRange(srcLength, srcFormatSize, srcStride);
++    size_t numVertices = GetVertexCountForRange(currentSrcLength, srcFormatSize, srcStride);
++
++    ANGLE_VK_CHECK_MATH(contextVk, numVertices <= std::numeric_limits<uint32_t>::max());
++    ANGLE_VK_CHECK_MATH(contextVk, currentSrcOffset <= std::numeric_limits<uint32_t>::max());
++    ANGLE_VK_CHECK_MATH(contextVk, currentDstOffset <= std::numeric_limits<uint32_t>::max());
+ 
+     *numVerticesOut = static_cast<uint32_t>(numVertices);
+-    *srcOffsetOut   = static_cast<uint32_t>(srcOffset);
+-    *dstOffsetOut   = static_cast<uint32_t>(dstOffset);
++    *srcOffsetOut   = static_cast<uint32_t>(currentSrcOffset);
++    *dstOffsetOut   = static_cast<uint32_t>(currentDstOffset);
++
++    return angle::Result::Continue;
+ }
+ }  // anonymous namespace
+ 
+@@ -785,9 +821,9 @@ angle::Result VertexArrayVk::convertVertexBufferGPU(ContextVk *contextVk,
+             }
+ 
+             uint32_t srcOffset, dstOffset, numVertices;
+-            CalculateOffsetAndVertexCountForDirtyRange(srcBuffer, conversion, srcFormat, dstFormat,
+-                                                       dirtyRange, &srcOffset, &dstOffset,
+-                                                       &numVertices);
++            ANGLE_TRY(CalculateOffsetAndVertexCountForDirtyRange(
++                contextVk, srcBuffer, conversion, srcFormat, dstFormat, dirtyRange, &srcOffset,
++                &dstOffset, &numVertices));
+             if (params.vertexCount == 0)
+             {
+                 params.vertexCount = numVertices;
+@@ -858,9 +894,9 @@ angle::Result VertexArrayVk::convertVertexBufferCPU(ContextVk *contextVk,
+             // Use numVertices instead of maxNumVertices to calculate bytesToCopy to avoid buffer
+             // overrun.
+             uint32_t srcOffset, dstOffset, numVertices;
+-            CalculateOffsetAndVertexCountForDirtyRange(srcBuffer, conversion, srcFormat, dstFormat,
+-                                                       dirtyRange, &srcOffset, &dstOffset,
+-                                                       &numVertices);
++            ANGLE_TRY(CalculateOffsetAndVertexCountForDirtyRange(
++                contextVk, srcBuffer, conversion, srcFormat, dstFormat, dirtyRange, &srcOffset,
++                &dstOffset, &numVertices));
+             ASSERT(numVertices <= maxNumVertices);
+ 
+             if (numVertices > 0)
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 2168880db38e55e2b9af589d464757baa5bc414b..dd28ba27cbe7f818adc42c5571f02c7b5e3f15ec 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -2081,6 +2081,10 @@
+ 438268609 WGPU : CopyTextureVariationsTest.Copy*Texture/ES2_WebGPU__AToRGB* = SKIP
+ 438268609 WGPU : CopyTextureVariationsTest.Copy*Texture/ES2_WebGPU__LToRGB* = SKIP
+ 438268609 WGPU : CopyTextureVariationsTest.Copy*Texture/ES2_WebGPU__LAToRGB* = SKIP
++
++// WebGPU/Dawn default buffer allocation limit (256MB) is smaller than the 512MB required for this test.
++522063116 WGPU : VertexAttributeTest.VertexBufferConversionOverflow/* = SKIP
++
+ // WGPU y-flip transforms have a bug when run on NVIDIA GPUs on Linux or Windows.
+ 468025322 NVIDIA WGPU : CopyTextureVariationsTest.Copy*Texture/ES2_WebGPU__*YFlip* = SKIP
+ 

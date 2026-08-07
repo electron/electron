@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Test User <chikamune@google.com>
+Date: Thu, 25 Jun 2026 22:27:43 -0700
+Subject: Bugfix: This CL fixes a bug reported in crbug.com/497491557
+
+Analysis Document:
+https://docs.google.com/document/d/16iYyG4o-2tAOFEJ1mIkzk6_EQmxMbjM9sX40sLNBUiE/edit?resourcekey=0-JEFuIGKb8N7MgyRLpV9TtA&tab=t.0#heading=h.25s5vbi8dmhl
+
+Bug: 497491557
+Change-Id: I788105707bec3c840395a00fc1817e84f219fe5f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7901928
+Commit-Queue: Minoru Chikamune <chikamune@chromium.org>
+Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1652905}
+
+diff --git a/content/browser/preloading/prefetch/prefetch_service.cc b/content/browser/preloading/prefetch/prefetch_service.cc
+index b98c1999cfc288fd1b55a56458cd22152225ee52..8dc6c0c087642abde3e6236aac5c6b9bb7b77fa3 100644
+--- a/content/browser/preloading/prefetch/prefetch_service.cc
++++ b/content/browser/preloading/prefetch/prefetch_service.cc
+@@ -844,9 +844,17 @@ void PrefetchService::CheckEligibilityOfPrefetch(
+   // check for service workers and existing cookies.
+   StoragePartition* default_storage_partition =
+       browser_context_->GetDefaultStoragePartition();
+-  if (default_storage_partition !=
+-      browser_context_->GetStoragePartitionForUrl(params.url,
+-                                                  /*can_create=*/false)) {
++  StoragePartition* initiator_storage_partition = default_storage_partition;
++  if (auto* renderer_info = params.request().GetRendererInitiatorInfo()) {
++    if (auto* rfh = renderer_info->GetRenderFrameHost()) {
++      initiator_storage_partition = rfh->GetStoragePartition();
++    }
++  }
++
++  if (initiator_storage_partition != default_storage_partition ||
++      default_storage_partition !=
++          browser_context_->GetStoragePartitionForUrl(params.url,
++                                                      /*can_create=*/false)) {
+     std::move(params).Finish(
+         PreloadingEligibility::kNonDefaultStoragePartition);
+     return;

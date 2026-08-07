@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 10 Jun 2026 22:27:34 -0400
+Subject: Vulkan: Fix MSRTT when all attachments are disabled
+
+The render pass was considered single-sampled in that case when the
+render pass starts, which is incorrect.  This was caught by an ASSERT
+when resolve attachments were being added to this
+mistakenly-single-sampled attachment.
+
+Bug: chromium:513920298
+Change-Id: I0886bf0c5e075729188dc53de678effaf6fa352c
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7921634
+Reviewed-by: Charlie Lao <cclao@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
+index 3275117115cd7ec9594abe2fec9d95ff231a570a..eec10c4080ff7130305bfc5002c718201008cd44 100644
+--- a/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
++++ b/src/libANGLE/renderer/vulkan/FramebufferVk.cpp
+@@ -2889,7 +2889,7 @@ void FramebufferVk::updateRenderPassDesc(ContextVk *contextVk)
+     {
+         // Update descriptions regarding multisampled-render-to-texture use.
+         bool isRenderToTexture = false;
+-        for (size_t colorIndexGL : mState.getEnabledDrawBuffers())
++        for (size_t colorIndexGL : mState.getColorAttachmentsMask())
+         {
+             const gl::FramebufferAttachment *color = mState.getColorAttachment(colorIndexGL);
+             ASSERT(color);
+@@ -4053,7 +4053,7 @@ GLint FramebufferVk::getSamplesImpl() const
+ {
+     const gl::FramebufferAttachment *lastAttachment = nullptr;
+ 
+-    for (size_t colorIndexGL : mState.getEnabledDrawBuffers() & mState.getColorAttachmentsMask())
++    for (size_t colorIndexGL : mState.getColorAttachmentsMask())
+     {
+         const gl::FramebufferAttachment *color = mState.getColorAttachment(colorIndexGL);
+         ASSERT(color);

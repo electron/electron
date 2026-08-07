@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Amirali Abdolrashidi <abdolrashidi@google.com>
+Date: Tue, 16 Jun 2026 18:04:22 -0700
+Subject: Vulkan: Fix layer index/count for update from FBO
+
+  Currently, if glCopyTexSubImage3D() is called with a non-zero
+z-offset and the CanCopyWithDraw() path (in copySubImageImpl()) is
+not taken, stageSubresourceUpdateFromFramebuffer() in ImageHelper is
+called, in which the buffer-to-image struct `copyToImage` is used to
+stage an update. However, since the baseLayer in the ImageIndex object
+(`index`) for the 3D texture has been initialized to the z-offset,
+the related values in the struct (baseArrayLayer and layerCount) are
+set up incorrectly.
+
+* Updated stageSubresourceUpdateFromFramebuffer() so baseArrayLayer
+  and layerCount are set to 0 and 1 unless the image is an array type,
+  in which case the data from `index` is applied.
+
+* Added unit test to CopyTexImageTestES3: Snorm3DTextureNonZeroOffset
+  * It copies from an FBO bound to an RGBA8 SNORM texture to a non-zero
+    z-offset of a 3D RGB8 SNORM texture.
+    * The SNORM formats take the CPU readback path on some platforms.
+      (stageSubresourceUpdateFromFramebuffer())
+
+Bug: chromium:523495723
+Change-Id: I08bf787dca05d74a5ab22983dfd0563a0eff002d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7966117
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Amirali Abdolrashidi <abdolrashidi@google.com>
+
+diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+index e202a835a79611fd270c8bf9046a5bcc212a00a9..96649c84cf8ef0d371fb2f4eb1be368d8ade3ee5 100644
+--- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
+@@ -9399,6 +9399,17 @@ angle::Result ImageHelper::stageSubresourceUpdateFromFramebuffer(
+ 
+     gl::LevelIndex updateLevelGL(index.getLevelIndex());
+ 
++    // If the image is not an array type, the base layer index and layer count should be 0 and 1
++    // respectively.
++    uint32_t layerIndex = index.hasLayer() ? index.getLayerIndex() : 0;
++    uint32_t layerCount = index.getLayerCount();
++    if (index.getType() == gl::TextureType::_3D)
++    {
++        ASSERT(static_cast<uint32_t>(dstOffset.z) == layerIndex);
++        layerIndex = 0;
++        layerCount = 1;
++    }
++
+     // 3- enqueue the destination image subresource update
+     VkBufferImageCopy copyToImage               = {};
+     copyToImage.bufferOffset                    = static_cast<VkDeviceSize>(stagingOffset);
+@@ -9406,8 +9417,8 @@ angle::Result ImageHelper::stageSubresourceUpdateFromFramebuffer(
+     copyToImage.bufferImageHeight               = clippedRectangle.height;
+     copyToImage.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+     copyToImage.imageSubresource.mipLevel       = updateLevelGL.get();
+-    copyToImage.imageSubresource.baseArrayLayer = index.hasLayer() ? index.getLayerIndex() : 0;
+-    copyToImage.imageSubresource.layerCount     = index.getLayerCount();
++    copyToImage.imageSubresource.baseArrayLayer = layerIndex;
++    copyToImage.imageSubresource.layerCount     = layerCount;
+     gl_vk::GetOffset(dstOffset, &copyToImage.imageOffset);
+     gl_vk::GetExtent(dstExtent, &copyToImage.imageExtent);
+ 

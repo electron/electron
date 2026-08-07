@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Tue, 23 Jun 2026 10:51:44 -0400
+Subject: MSL/AST: Handle non-unary/binary expr in loop-forward-progress
+
+Bug: chromium:517543052
+Change-Id: Idf3bb42ea56e9fd62cad2bd914f9221ff32226e0
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7977471
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+Auto-Submit: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+index 98a4c8ca63918659ad0133f80101c0625a069baf..24688eb383795851ffdeaaecb56d8c0e28caaaaf 100644
+--- a/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
++++ b/src/compiler/translator/tree_ops/msl/EnsureLoopForwardProgress.cpp
+@@ -157,6 +157,10 @@ const TVariable *computeFiniteLoopVariable(TIntermLoop *loop)
+                 return nullptr;
+         }
+     }
++    else
++    {
++        return nullptr;
++    }
+     return variable;
+ }
+ 

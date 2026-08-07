@@ -1,0 +1,121 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Mon, 1 Jun 2026 13:38:11 -0400
+Subject: Vulkan: Fix texture copy after base level change
+
+glCopy*TextureCHROMIUM does not sync the source texture, but the texture
+may not be complete, but there should have been _some_ sort of sync to
+take BASE level etc changes into account.
+
+Since the source texture is required to be
+framebuffer-attachment-complete, we can simply take a render target from
+the texture, which syncs it as if it was attached to a framebuffer.
+
+Bug: chromium:516837126
+Change-Id: Ia3b9bf03cfd8c2f432d12c6e2eef7b7d5343d450
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7886847
+Reviewed-by: Charlie Lao <cclao@google.com>
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+index 4c1eb3a4957a510b1ae6f82b9b4952d93e0c71f9..6f5085c5c00ef01532e4c23d8d08e18479196818 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
++++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
+@@ -1501,7 +1501,13 @@ angle::Result TextureVk::copyTexture(const gl::Context *context,
+     const gl::InternalFormat &dstFormatInfo = gl::GetInternalFormatInfo(internalFormat, type);
+     const vk::Format &dstVkFormat = renderer->getFormat(dstFormatInfo.sizedInternalFormat);
+ 
+-    ANGLE_TRY(sourceVk->ensureImageInitialized(contextVk, ImageMipLevels::EnabledLevels));
++    // The source image must be framebuffer-attachment-complete, so sync it as if a render target is
++    // needed.
++    {
++        ANGLE_TRY(sourceVk->syncAsAttachmentRenderTarget(
++            context, gl::ImageIndex::MakeFromType(source->getType(), sourceLevelGL), 0));
++        ANGLE_TRY(sourceVk->ensureImageInitialized(contextVk, ImageMipLevels::EnabledLevels));
++    }
+ 
+     // Fall back to renderable format if copy cannot be done in transfer.  Must be done before
+     // the dst format is accessed anywhere (in |redefineLevel| and |copySubTextureImpl|).
+@@ -1533,8 +1539,12 @@ angle::Result TextureVk::copySubTexture(const gl::Context *context,
+     const gl::InternalFormat &dstFormatInfo =
+         *mState.getImageDesc(target, dstLevelGL.get()).format.info;
+ 
+-    ANGLE_TRY(
+-        vk::GetImpl(source)->ensureImageInitialized(contextVk, ImageMipLevels::EnabledLevels));
++    {
++        TextureVk *sourceVk = vk::GetImpl(source);
++        ANGLE_TRY(sourceVk->syncAsAttachmentRenderTarget(
++            context, gl::ImageIndex::MakeFromType(source->getType(), srcLevelGL), 0));
++        ANGLE_TRY(sourceVk->ensureImageInitialized(contextVk, ImageMipLevels::EnabledLevels));
++    }
+ 
+     // Fall back to renderable format if copy cannot be done in transfer.  Must be done before
+     // the dst format is accessed anywhere (in |copySubTextureImpl|).
+@@ -3290,15 +3300,10 @@ angle::Result TextureVk::releaseTexImage(const gl::Context *context)
+     return angle::Result::Continue;
+ }
+ 
+-angle::Result TextureVk::getAttachmentRenderTarget(const gl::Context *context,
+-                                                   GLenum binding,
+-                                                   const gl::ImageIndex &imageIndex,
+-                                                   GLsizei samples,
+-                                                   FramebufferAttachmentRenderTarget **rtOut)
++angle::Result TextureVk::syncAsAttachmentRenderTarget(const gl::Context *context,
++                                                      const gl::ImageIndex &imageIndex,
++                                                      GLsizei samples)
+ {
+-    GLint requestedLevel = imageIndex.getLevelIndex();
+-    ASSERT(requestedLevel >= 0);
+-
+     ContextVk *contextVk = vk::GetImpl(context);
+ 
+     // Sync the texture's image.  See comment on this function in the header.
+@@ -3314,6 +3319,21 @@ angle::Result TextureVk::getAttachmentRenderTarget(const gl::Context *context,
+                             ImageMipLevels::EnabledLevels));
+     }
+ 
++    return angle::Result::Continue;
++}
++
++angle::Result TextureVk::getAttachmentRenderTarget(const gl::Context *context,
++                                                   GLenum binding,
++                                                   const gl::ImageIndex &imageIndex,
++                                                   GLsizei samples,
++                                                   FramebufferAttachmentRenderTarget **rtOut)
++{
++    ContextVk *contextVk = vk::GetImpl(context);
++    GLint requestedLevel = imageIndex.getLevelIndex();
++    ASSERT(requestedLevel >= 0);
++
++    ANGLE_TRY(syncAsAttachmentRenderTarget(context, imageIndex, samples));
++
+     const bool hasRenderToTextureEXT =
+         contextVk->getFeatures().supportsMultisampledRenderToSingleSampled.enabled;
+ 
+diff --git a/src/libANGLE/renderer/vulkan/TextureVk.h b/src/libANGLE/renderer/vulkan/TextureVk.h
+index faccd9d833279eba70dd2a4abf6d07b843b7ea16..1d9c13d8e5ecf4b78b4807a9fc2953366732f8a5 100644
+--- a/src/libANGLE/renderer/vulkan/TextureVk.h
++++ b/src/libANGLE/renderer/vulkan/TextureVk.h
+@@ -392,6 +392,9 @@ class TextureVk : public TextureImpl, public angle::ObserverInterface
+                         uint32_t imageLevelOffset,
+                         uint32_t imageLayerOffset,
+                         bool selfOwned);
++    angle::Result syncAsAttachmentRenderTarget(const gl::Context *context,
++                                               const gl::ImageIndex &imageIndex,
++                                               GLsizei samples);
+ 
+     vk::ImageViewHelper &getImageViews() { return mImageView; }
+     const vk::ImageViewHelper &getImageViews() const { return mImageView; }
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index b0ca3422298a7f4b3facc1b7eb0e74967623099e..2168880db38e55e2b9af589d464757baa5bc414b 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -115,6 +115,7 @@
+ 448658624 WIN INTEL VULKAN : GLSLTestLoops.ForContinueInSwitchComplex/* = SKIP
+ 448658624 WIN INTEL VULKAN : GLSLTest_ES31.ConstantPrecisionPropagation/* = SKIP
+ 452159379 WIN INTEL VULKAN : ProgramBinaryTest.ReturnedBinaryTwiceShouldMatch/* = SKIP
++519062400 WIN INTEL OPENGL : CopyTextureTestES3.ChangeBaseLevel/* = SKIP
+ 
+ 42266241 PIXEL6 VULKAN : VertexAttributeTestES31.MismatchingSignsChangingAttributeType/* = SKIP
+ 42266241 PIXEL6 VULKAN : VertexAttributeTestES31.MismatchingSignsChangingProgramType/* = SKIP

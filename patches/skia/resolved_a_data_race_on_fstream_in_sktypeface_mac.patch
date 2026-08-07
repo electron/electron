@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: alexisdavidc <alexisdavidc@google.com>
+Date: Fri, 12 Jun 2026 13:28:34 -0400
+Subject: Resolved a Data Race on fStream in SkTypeface_Mac
+
+There was a data race in SkTypeface_Mac where `onOpenStream`
+and `onOpenExistingStream` would race to read/write `fStream`. While `onOpenStream` would begin initializing `fStream` on one thread, a separate thread could be calling `onOpenExistingStream` to try to read `fStream` before it was done initializing.
+
+The issue was resolved by applying a mutex on `fStream`.
+
+The cl introducing this bug (https://skia-review.git.corp.google.com/c/skia/+/204720) was focused on caching the typefaces received with a global process wide `gTFCache` to save on performance and memory. The issue arose in that since the SkTypeface_Mac could be accessed across threads, it became thread unsafe.
+
+A test was added to this CL but removed as it was too large and took too long. It helps us keep it in the patch history for reference.
+
+Bug: b/520535595
+Change-Id: Id28aeed3d67a5a5246d22681f2c7ab0e6c133558
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/1264296
+Commit-Queue: Alexis Cruz-Ayala <alexisdavidc@google.com>
+Reviewed-by: Kaylee Lubick <kjlubick@google.com>
+
+diff --git a/src/ports/SkTypeface_mac_ct.cpp b/src/ports/SkTypeface_mac_ct.cpp
+index 40b0ea4aa77a79627ad828fc1a3b4f7e01f9cb01..45fc3e4c9dc07297b6ba08a62375fdfc8b1f3f82 100644
+--- a/src/ports/SkTypeface_mac_ct.cpp
++++ b/src/ports/SkTypeface_mac_ct.cpp
+@@ -604,9 +604,9 @@ static SK_SFNT_ULONG get_font_type_tag(CTFontRef ctFont) {
+ std::unique_ptr<SkStreamAsset> SkTypeface_Mac::onOpenStream(int* ttcIndex) const {
+     *ttcIndex = 0;
+ 
+-    fInitStream([this]{
++    SkAutoSharedMutexExclusive sm(fStreamMutex);
+     if (fStream) {
+-        return;
++        return fStream->duplicate();
+     }
+ 
+     SK_SFNT_ULONG fontType = get_font_type_tag(fFontRef.get());
+@@ -704,12 +704,12 @@ std::unique_ptr<SkStreamAsset> SkTypeface_Mac::onOpenStream(int* ttcIndex) const
+         ++entry;
+     }
+     fStream = std::make_unique<SkMemoryStream>(std::move(streamData));
+-    });
+     return fStream->duplicate();
+ }
+ 
+ std::unique_ptr<SkStreamAsset> SkTypeface_Mac::onOpenExistingStream(int* ttcIndex) const {
+     *ttcIndex = 0;
++    SkAutoSharedMutexShared sm(fStreamMutex);
+     return fStream ? fStream->duplicate() : nullptr;
+ }
+ 
+@@ -1221,7 +1221,7 @@ sk_sp<SkTypeface> SkTypeface_Mac::onMakeClone(const SkFontArguments& args) const
+     if (!ctVariant) {
+         return nullptr;
+     }
+-
++    SkAutoSharedMutexShared sm(fStreamMutex);
+     return SkTypeface_Mac::Make(std::move(ctVariant), ctVariation.opsz,
+                                 fStream ? fStream->duplicate() : nullptr);
+ }
+diff --git a/src/ports/SkTypeface_mac_ct.h b/src/ports/SkTypeface_mac_ct.h
+index 629c7a664531ee2da8b029374ce4ec8a62cd8639..0ff62a524ed075731c4924c4bd8f7199e7664cd8 100644
+--- a/src/ports/SkTypeface_mac_ct.h
++++ b/src/ports/SkTypeface_mac_ct.h
+@@ -19,6 +19,7 @@
+ #include "include/core/SkStream.h"
+ #include "include/core/SkTypeface.h"
+ #include "include/private/base/SkOnce.h"
++#include "src/base/SkSharedMutex.h"
+ #include "src/utils/mac/SkUniqueCFRef.h"
+ 
+ #ifdef SK_BUILD_FOR_MAC
+@@ -129,8 +130,8 @@ protected:
+ private:
+     mutable std::unique_ptr<SkStreamAsset> fStream;
+     mutable SkUniqueCFRef<CFArrayRef> fVariationAxes;
++    mutable SkSharedMutex fStreamMutex;
+     bool fIsFromStream;
+-    mutable SkOnce fInitStream;
+     mutable SkOnce fInitVariationAxes;
+ 
+     using INHERITED = SkTypeface;

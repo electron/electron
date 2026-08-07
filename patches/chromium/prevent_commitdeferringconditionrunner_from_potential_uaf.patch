@@ -1,0 +1,232 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lingqi Chi <lingqi@chromium.org>
+Date: Wed, 1 Jul 2026 18:43:58 -0700
+Subject: prevent CommitDeferringConditionRunner from potential UAF
+
+ResumeProcessing was designed to be called asynchronously, but
+synchronous Mojo calls may invoke it synchronously. When this happens, a
+Use-After-Free can occur.
+
+For example, consider two conditions, A and B,
+with a callstack like:
+
+ProcessConditions(B) ... => Deletes condition A
+ResumeProcessing
+A->WillCommitNavigation ... => (consumes the closure)
+ProcessConditions(A)
+
+When execution returns to the frame of ProcessConditions(A), it finds
+that condition A has already been freed.
+
+This CL allows ResumeProcessing to handle synchronous execution safely
+to avoid the UAF.
+
+Fixed: 502293787
+Change-Id: Ibaa249fae7919aba06f3b5f40da627d50b3e262e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7867471
+Commit-Queue: Lingqi Chi <lingqi@chromium.org>
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1655855}
+
+diff --git a/content/browser/renderer_host/commit_deferring_condition_runner.cc b/content/browser/renderer_host/commit_deferring_condition_runner.cc
+index 0bb195f6e519a4bf3afc9526dc9cde6b0726589d..d7b38d1c820a13add733ef6f8a9ee9441c45f36e 100644
+--- a/content/browser/renderer_host/commit_deferring_condition_runner.cc
++++ b/content/browser/renderer_host/commit_deferring_condition_runner.cc
+@@ -89,6 +89,11 @@ CommitDeferringConditionRunner::GetDeferringConditionForTesting() const {
+ }
+ 
+ void CommitDeferringConditionRunner::ResumeProcessing() {
++  if (is_in_will_commit_navigation_) {
++    was_resumed_synchronously_ = true;
++    return;
++  }
++
+   DCHECK(is_deferred_);
+   is_deferred_ = false;
+   // End `condition->TraceEventName()` trace event.
+@@ -209,8 +214,32 @@ void CommitDeferringConditionRunner::ProcessConditions() {
+                        weak_factory_.GetWeakPtr());
+     CommitDeferringCondition* condition = (*conditions_.begin()).get();
+     is_deferred_ = false;
+-    switch (condition->WillCommitNavigation(std::move(resume_closure))) {
++    is_in_will_commit_navigation_ = true;
++    was_resumed_synchronously_ = false;
++
++    base::WeakPtr<CommitDeferringConditionRunner> weak_self =
++        weak_factory_.GetWeakPtr();
++    CommitDeferringCondition::Result result =
++        condition->WillCommitNavigation(std::move(resume_closure));
++    // DO NOT ADD CODE before performing the `weak_self` check.
++    // The previous call to `WillCommitNavigation()` may have caused the
++    // destruction of the `NavigationRequest` that owns this
++    // `CommitDeferringConditionRunner`.
++    if (!weak_self) {
++      // The runner was deleted, which indicates the navigation was cancelled.
++      CHECK_NE(result, CommitDeferringCondition::Result::kProceed);
++      return;
++    }
++    is_in_will_commit_navigation_ = false;
++
++    switch (result) {
+       case CommitDeferringCondition::Result::kDefer:
++        // If the resume_closure has been called synchronously, treat it as
++        // kProceed.
++        is_in_will_commit_navigation_ = false;
++        if (was_resumed_synchronously_) {
++          break;
++        }
+         is_deferred_ = true;
+         TRACE_EVENT_BEGIN("navigation", "CommitDeferringConditionRunning",
+                           perfetto::Track::FromPointer(this));
+@@ -218,14 +247,10 @@ void CommitDeferringConditionRunner::ProcessConditions() {
+                           perfetto::DynamicString(condition->TraceEventName()),
+                           perfetto::Track::FromPointer(this));
+         return;
+-      // TODO(crbug.com/40270812): Also add instant tracing for the condition
+-      // that is being resolved synchronously.
+       case CommitDeferringCondition::Result::kCancelled:
+-        // DO NOT ADD CODE after this. The previous call to
+-        // `WillCommitNavigation()` may have caused the destruction of the
+-        // `NavigationRequest` that owns this `CommitDeferringConditionRunner`.
+         return;
+       case CommitDeferringCondition::Result::kProceed:
++        is_in_will_commit_navigation_ = false;
+         break;
+     }
+ 
+diff --git a/content/browser/renderer_host/commit_deferring_condition_runner.h b/content/browser/renderer_host/commit_deferring_condition_runner.h
+index 24a52fbbbbaf1b7a172a0a445c2cb95d05480e68..f06c94bca794673c201374030658b2150968eebb 100644
+--- a/content/browser/renderer_host/commit_deferring_condition_runner.h
++++ b/content/browser/renderer_host/commit_deferring_condition_runner.h
+@@ -122,9 +122,9 @@ class CONTENT_EXPORT CommitDeferringConditionRunner {
+       CommitDeferringCondition::NavigationType navigation_type,
+       std::optional<FrameTreeNodeId> candidate_prerender_frame_tree_node_id);
+ 
+-  // Called asynchronously to resume iterating through
+-  // CommitDeferringConditions after one has been deferred. A callback for this
+-  // method is passed into each condition when WillCommitNavigation is called.
++  // Resume iterating through CommitDeferringConditions after one has been
++  // deferred. A callback for this method is passed into each condition when
++  // WillCommitNavigation is called.
+   void ResumeProcessing();
+ 
+   void ProcessConditions();
+@@ -153,6 +153,13 @@ class CONTENT_EXPORT CommitDeferringConditionRunner {
+   // True when we're blocked waiting on a call to ResumeProcessing.
+   bool is_deferred_ = false;
+ 
++  // True while the runner is calling WillCommitNavigation on a condition.
++  bool is_in_will_commit_navigation_ = false;
++
++  // True if ResumeProcessing was called synchronously while
++  // `is_in_will_commit_navigation_` is true.
++  bool was_resumed_synchronously_ = false;
++
+   base::WeakPtrFactory<CommitDeferringConditionRunner> weak_factory_{this};
+ };
+ 
+diff --git a/content/browser/renderer_host/commit_deferring_condition_runner_unittest.cc b/content/browser/renderer_host/commit_deferring_condition_runner_unittest.cc
+index 503d110038123c4eab4faebb4c743fe5a96162a3..8e0cbb233d511fe57afe5edadd688c412da27765 100644
+--- a/content/browser/renderer_host/commit_deferring_condition_runner_unittest.cc
++++ b/content/browser/renderer_host/commit_deferring_condition_runner_unittest.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "content/browser/renderer_host/commit_deferring_condition_runner.h"
+ 
++#include "base/memory/raw_ptr.h"
+ #include "content/public/browser/commit_deferring_condition.h"
+ #include "content/public/test/mock_navigation_handle.h"
+ #include "content/public/test/test_renderer_host.h"
+@@ -31,6 +32,9 @@ class CommitDeferringConditionRunnerTest
+ 
+   CommitDeferringConditionRunner* runner() { return runner_.get(); }
+ 
++ protected:
++  std::unique_ptr<CommitDeferringConditionRunner> runner_;
++
+  private:
+   // CommitDeferringConditionRunner::Delegate:
+   void OnCommitDeferringConditionChecksComplete(
+@@ -43,7 +47,6 @@ class CommitDeferringConditionRunnerTest
+     was_delegate_notified_ = true;
+   }
+ 
+-  std::unique_ptr<CommitDeferringConditionRunner> runner_;
+   bool was_delegate_notified_ = false;
+ };
+ 
+@@ -223,4 +226,74 @@ TEST_F(CommitDeferringConditionRunnerTest, MultipleConditionsWithCancelled) {
+   EXPECT_FALSE(is_deferring());
+ }
+ 
++class SynchronousResumeCondition : public CommitDeferringCondition {
++ public:
++  explicit SynchronousResumeCondition(NavigationHandle& handle,
++                                      bool* was_invoked_ptr)
++      : CommitDeferringCondition(handle), was_invoked_ptr_(was_invoked_ptr) {}
++  Result WillCommitNavigation(base::OnceClosure resume_closure) override {
++    *was_invoked_ptr_ = true;
++    std::move(resume_closure).Run();
++    return Result::kDefer;
++  }
++  const char* TraceEventName() const override {
++    return "SynchronousResumeCondition";
++  }
++
++ private:
++  raw_ptr<bool> was_invoked_ptr_;
++};
++
++// Test that if a condition calls the resume closure synchronously, the runner
++// correctly handles it and proceeds to the next condition or notified the
++// delegate.
++// Regression test for https://crbug.com/502293787.
++TEST_F(CommitDeferringConditionRunnerTest, BasicSyncResume) {
++  MockNavigationHandle handle;
++  bool was_invoked = false;
++  auto condition =
++      std::make_unique<SynchronousResumeCondition>(handle, &was_invoked);
++  runner()->AddConditionForTesting(std::move(condition));
++
++  MockHandleConditionWrapper condition2(
++      CommitDeferringCondition::Result::kProceed);
++  runner()->AddConditionForTesting(condition2.PassToDelegate());
++
++  runner()->ProcessChecks();
++  EXPECT_TRUE(was_delegate_notified());
++  EXPECT_TRUE(was_invoked);
++  EXPECT_FALSE(is_deferring());
++}
++
++class DeletingCondition : public CommitDeferringCondition {
++ public:
++  DeletingCondition(NavigationHandle& handle,
++                    base::OnceClosure delete_runner_callback)
++      : CommitDeferringCondition(handle),
++        delete_runner_callback_(std::move(delete_runner_callback)) {}
++  Result WillCommitNavigation(base::OnceClosure resume_closure) override {
++    std::move(delete_runner_callback_).Run();
++    return Result::kCancelled;
++  }
++  const char* TraceEventName() const override { return "DeletingCondition"; }
++
++ private:
++  base::OnceClosure delete_runner_callback_;
++};
++
++// Test that if a condition deletes the runner during WillCommitNavigation, the
++// runner handles it safely.
++TEST_F(CommitDeferringConditionRunnerTest, DeleteRunnerDuringCall) {
++  MockNavigationHandle handle;
++  auto condition = std::make_unique<DeletingCondition>(
++      handle, base::BindOnce(
++                  [](std::unique_ptr<CommitDeferringConditionRunner>* runner) {
++                    runner->reset();
++                  },
++                  &runner_));
++  runner()->AddConditionForTesting(std::move(condition));
++  runner()->ProcessChecks();
++  EXPECT_EQ(runner(), nullptr);
++}
++
+ }  // namespace content
