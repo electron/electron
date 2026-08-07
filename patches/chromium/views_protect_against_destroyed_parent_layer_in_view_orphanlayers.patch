@@ -1,0 +1,161 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keren Zhu <kerenzhu@chromium.org>
+Date: Wed, 10 Jun 2026 12:21:06 -0700
+Subject: views: protect against destroyed parent layer in View::OrphanLayers()
+
+View::OrphanLayers() iterates through layers and removes them from their
+parent. Layer::Remove() can synchronously trigger LayerAnimationObserver
+callbacks, which may cause the parent layer to be deleted. This change
+adds a WeakPtr check to ensure the parent layer is still valid before
+attempting to remove subsequent layers.
+
+There is no evidence that any existing observers does this but it is
+good to be protected against.
+
+Fixed: 513228974
+Change-Id: I6c1272d225f43213d78cbd20057d717bb0aac69f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7914212
+Commit-Queue: Keren Zhu <kerenzhu@chromium.org>
+Reviewed-by: Dana Fried <dfried@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1644805}
+
+diff --git a/ui/views/view.cc b/ui/views/view.cc
+index 223a77831247f6abb706f4dde467b1a7cf50db6f..9797049c5b61c4bb2b899f6e638427f25c6b5f2c 100644
+--- a/ui/views/view.cc
++++ b/ui/views/view.cc
+@@ -3681,24 +3681,14 @@ bool View::UpdateParentLayers() {
+ void View::OrphanLayers() {
+   if (layer()) {
+     if (ui::Layer* parent = layer()->parent()) {
++      base::WeakPtr<ui::Layer> weak_parent = layer()->parent()->AsWeakPtr();
+       for (ui::Layer* layer : GetLayersInOrder()) {
+-        // TODO(http://b/319941708): Please remove the below crash keys once the
+-        // the crash is fixed. It seems one of the layers returned by
+-        // `GetLayersInOrder()` is not a sibling of this view's `layer()` (i.e.
+-        // the parent is different).
+-        SCOPED_CRASH_KEY_BOOL("OrphanLayers", "layer_valid", !!layer);
+-        SCOPED_CRASH_KEY_BOOL("OrphanLayers", "layer_is_sibling",
+-                              layer->parent() == parent);
+-        SCOPED_CRASH_KEY_STRING256("OrphanLayers", "this_layer_name",
+-                                   this->layer()->name());
+-        SCOPED_CRASH_KEY_STRING256("OrphanLayers", "parent_layer_name",
+-                                   parent->name());
+-        SCOPED_CRASH_KEY_STRING256("OrphanLayers", "sibling_layer_name",
+-                                   layer->name());
+-        SCOPED_CRASH_KEY_STRING256("OrphanLayers", "widget_name",
+-                                   GetWidget() ? GetWidget()->GetName() : "");
+-        SCOPED_CRASH_KEY_STRING256("OrphanLayers", "view_class_name",
+-                                   GetClassName());
++        // Layer::Remove() will stop any layer animation on the parent, notify
++        // LayerAnimationObserver::OnLayerAnimationAborted(). If the observer
++        // deletes the layer, the weak_parent will become null.
++        if (!weak_parent) {
++          break;
++        }
+         parent->Remove(layer);
+       }
+     }
+diff --git a/ui/views/view_unittest.cc b/ui/views/view_unittest.cc
+index c15ec1160a30d2d07bd65a68d50c117084fdb325..40e5f18d27f90accea9610c9a5ef674ae9d0e36f 100644
+--- a/ui/views/view_unittest.cc
++++ b/ui/views/view_unittest.cc
+@@ -42,6 +42,9 @@
+ #include "ui/compositor/compositor.h"
+ #include "ui/compositor/compositor_switches.h"
+ #include "ui/compositor/layer.h"
++#include "ui/compositor/layer_animation_element.h"
++#include "ui/compositor/layer_animation_observer.h"
++#include "ui/compositor/layer_animation_sequence.h"
+ #include "ui/compositor/layer_animator.h"
+ #include "ui/compositor/paint_context.h"
+ #include "ui/compositor/test/draw_waiter_for_test.h"
+@@ -54,6 +57,7 @@
+ #include "ui/events/types/event_type.h"
+ #include "ui/gfx/canvas.h"
+ #include "ui/gfx/geometry/transform.h"
++#include "ui/gfx/scoped_animation_duration_scale_mode.h"
+ #include "ui/native_theme/native_theme.h"
+ #include "ui/strings/grit/ui_strings.h"
+ #include "ui/views/background.h"
+@@ -6198,6 +6202,81 @@ TEST_F(ViewLayerTest, LayerBeneathRemovedOnDestruction) {
+   delete view;
+ }
+ 
++// View::OrphanLayers() captures a bare ui::Layer* `parent` local and loops
++// over GetLayersInOrder() calling parent->Remove(layer) on each iteration.
++// Layer::Remove() synchronously calls StopAnimatingProperty(BOUNDS), which
++// fires LayerAnimationObserver callbacks that may free `parent`.
++// Tests that this does not cause a crash.
++TEST_F(ViewLayerTest, DestroyParentLayerOnLayerAnimationAborted) {
++  // Ensure the BOUNDS animation has non-zero duration so it is still running
++  // when Layer::Remove() calls StopAnimatingProperty().
++  gfx::ScopedAnimationDurationScaleMode duration_mode(
++      gfx::ScopedAnimationDurationScaleMode::NORMAL_DURATION);
++
++  // The container View only exists so we can call RemoveChildView() to reach
++  // the (private) OrphanLayers(). It has no layer of its own.
++  auto container = std::make_unique<View>();
++
++  // The View whose OrphanLayers() will be invoked.
++  View* target = container->AddChildView(std::make_unique<View>());
++  target->SetPaintToLayer();
++
++  // The parent layer is heap-owned by the test (NOT by any View) so the
++  // observer can free it without a surviving raw_ptr<> quarantining the slot.
++  auto parent_layer = std::make_unique<ui::Layer>();
++  parent_layer->SetName("parent_layer");
++  parent_layer->Add(target->layer());
++
++  // A region layer below `target`'s layer makes GetLayersInOrder() return two
++  // entries so OrphanLayers() loops more than once. This mirrors production
++  // ink-drop region layers (InkDropHost::AddInkDropLayer).
++  auto region_layer = std::make_unique<ui::Layer>();
++  region_layer->SetName("region_layer");
++  target->AddLayerToRegion(region_layer.get(), LayerRegion::kBelow);
++  ASSERT_EQ(region_layer->parent(), parent_layer.get());
++  ASSERT_EQ(target->layer()->parent(), parent_layer.get());
++  ASSERT_EQ(target->GetLayersInOrder().size(), 2u);
++
++  // Observer that frees `parent_layer` when the BOUNDS animation is aborted.
++  class ParentLayerDestroyer : public ui::LayerAnimationObserver {
++   public:
++    explicit ParentLayerDestroyer(std::unique_ptr<ui::Layer>* parent_layer)
++        : parent_layer_(parent_layer) {}
++    void OnLayerAnimationEnded(ui::LayerAnimationSequence*) override {
++      abortion_observed_ = true;
++      parent_layer_->reset();
++    }
++    void OnLayerAnimationAborted(ui::LayerAnimationSequence*) override {
++      abortion_observed_ = true;
++      parent_layer_->reset();
++    }
++    void OnLayerAnimationScheduled(ui::LayerAnimationSequence*) override {}
++
++    bool abortion_observed() const { return abortion_observed_; }
++
++   private:
++    bool abortion_observed_ = false;
++    raw_ptr<std::unique_ptr<ui::Layer>> parent_layer_;
++  };
++  ParentLayerDestroyer observer(&parent_layer);
++
++  // Start a BOUNDS animation on `region_layer` carrying the destructive
++  // observer.
++  ui::LayerAnimator* animator = region_layer->GetAnimator();
++  animator->set_disable_timer_for_test(true);
++  auto sequence = std::make_unique<ui::LayerAnimationSequence>(
++      ui::LayerAnimationElement::CreateBoundsElement(gfx::Rect(0, 0, 50, 50),
++                                                     base::Seconds(1)));
++  sequence->AddObserver(&observer);
++  animator->StartAnimation(sequence.release());
++  ASSERT_TRUE(animator->is_animating());
++
++  std::unique_ptr<View> owned_target = container->RemoveChildViewT(target);
++  // Not reached under ASAN if View::OrphanLayers() is not guarded against
++  // destroyed parent layer during layer-removal loop.
++  EXPECT_TRUE(observer.abortion_observed());
++}
++
+ TEST_F(ViewLayerTest, LayerBeneathVisibilityUpdated) {
+   View root;
+   root.SetPaintToLayer();

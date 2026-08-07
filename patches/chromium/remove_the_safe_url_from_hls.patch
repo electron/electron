@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Wed, 17 Jun 2026 18:35:29 -0700
+Subject: Remove the "safe url" from HLS
+
+The origin blocking logic was re-implemented to use the post-redirection
+uri instead of the manifest-declared uri, so this concept isn't needed
+anymore.
+
+Bug: 517550034
+Bug: 517623783
+Change-Id: If4e6f6b290db7bb2c0c2a70e7fea06e381f0ca65
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7947648
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1648738}
+
+diff --git a/media/formats/hls/media_segment.h b/media/formats/hls/media_segment.h
+index d371b20cb077e3d5d70e028d33acc4167cb9f10e..41c390cedc98016648e780b1b76479ff39c5887a 100644
+--- a/media/formats/hls/media_segment.h
++++ b/media/formats/hls/media_segment.h
+@@ -67,7 +67,6 @@ class MEDIA_EXPORT MediaSegment : public base::RefCounted<MediaSegment> {
+     XKeyTagMethod GetMethod() const { return method_; }
+     std::vector<uint8_t> GetKey() const { return key_; }
+     XKeyTagKeyFormat GetKeyFormat() const { return format_; }
+-
+     bool NeedsKeyFetch() const { return key_.empty(); }
+ 
+     // Gets the InitializationVector, if it exists. If there is no IV, but the
