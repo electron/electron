@@ -153,6 +153,8 @@ void MenuDelegate::ScheduleSwitchToButton(views::MenuButton* button) {
         FROM_HERE, base::BindOnce(&MenuDelegate::CancelSelf,
                                     weak_factory_.GetWeakPtr()));
   }
+}
+
 void MenuDelegate::CancelSelf() {
   if (menu_runner_)
     menu_runner_->Cancel();
