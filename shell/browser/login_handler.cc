@@ -85,13 +85,10 @@ void LoginHandler::EmitEvent(
   auto details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("url", url);
   details.Set("pid", process_id);
+  details.Set("isRequestForMainFrame", is_request_for_primary_main_frame);
   details.Set("isRequestForNavigation", is_request_for_navigation);
   details.Set("firstAuthAttempt", first_auth_attempt);
   details.Set("responseHeaders", response_headers.get());
-
-  // This parameter isn't documented in the Electron API because:
-  // https://github.com/electron/electron/pull/46630#pullrequestreview-2862305353
-  details.Set("isMainFrame", is_request_for_primary_main_frame);
 
   auto weak_this = weak_factory_.GetWeakPtr();
   bool default_prevented = false;
