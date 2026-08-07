@@ -340,6 +340,8 @@ class NativeWindowViews : public NativeWindow,
       forwarding_windows_;
   static HHOOK mouse_hook_;
   bool forwarding_mouse_messages_ = false;
+  bool was_forwarded_mouse_in_window_ = false;
+  bool allow_forwarded_mouse_leave_ = false;
   HWND legacy_window_ = nullptr;
   bool layered_ = false;
 

@@ -733,9 +733,16 @@ LRESULT CALLBACK NativeWindowViews::SubclassProc(HWND hwnd,
       // the messages. As to why this is caught for the legacy window and not
       // the actual browser window is simply that the legacy window somehow
       // makes use of these events; posting to the main window didn't work.
-      if (window->forwarding_mouse_messages_) {
+      //
+      // `allow_forwarded_mouse_leave_` is a one-time flag when mouse is leaving
+      // window when forward mode is enabled, it will allow the Chromium
+      // receives the message once, when mouse leaves the window in the forward
+      // mode.
+      if (window->forwarding_mouse_messages_ &&
+          !window->allow_forwarded_mouse_leave_) {
         return 0;
       }
+      window->allow_forwarded_mouse_leave_ = false;
       break;
     }
   }
@@ -764,9 +771,16 @@ LRESULT CALLBACK NativeWindowViews::MouseHookProc(int n_code,
       POINT p = reinterpret_cast<MSLLHOOKSTRUCT*>(l_param)->pt;
       ScreenToClient(window->legacy_window_, &p);
       if (PtInRect(&client_rect, p)) {
+        window->was_forwarded_mouse_in_window_ = true;
+        window->allow_forwarded_mouse_leave_ = false;
         WPARAM w = 0;  // No virtual keys pressed for our purposes
         LPARAM l = MAKELPARAM(p.x, p.y);
         PostMessage(window->legacy_window_, WM_MOUSEMOVE, w, l);
+      } else if (window->was_forwarded_mouse_in_window_) {
+        window->was_forwarded_mouse_in_window_ = false;
+        window->allow_forwarded_mouse_leave_ = true;
+        // Still sending one event to make sure Chromium receives it.
+        PostMessage(window->legacy_window_, WM_MOUSELEAVE, 0, 0);
       }
     }
   }
