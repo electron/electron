@@ -536,8 +536,7 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
     };
     static base::NoDestructor<ShutdownWatchdogDelegate> delegate;
     static base::NoDestructor<base::Watchdog> watchdog(
-        base::Seconds(10), "OzoneShutdown", /*enabled=*/true,
-        delegate.get());
+        base::Seconds(10), "OzoneShutdown", /*enabled=*/true, delegate.get());
     watchdog->Arm();
     if (Browser* browser = Browser::Get())
       browser->ExitWithCode(content::RESULT_CODE_NORMAL_EXIT);
