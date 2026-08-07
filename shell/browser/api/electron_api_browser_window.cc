@@ -267,9 +267,26 @@ void BrowserWindow::BlurWebView() {
 }
 
 v8::Local<v8::Value> BrowserWindow::GetWebContents(v8::Isolate* isolate) {
-  if (web_contents_.IsEmpty())
+  // WebContentsDestroyed() clears |api_web_contents_| but leaves the wrapper in
+  // |web_contents_| alive, so both have to be checked here.
+  if (web_contents_.IsEmpty() || !api_web_contents_)
     return v8::Null(isolate);
   return v8::Local<v8::Value>::New(isolate, web_contents_);
+}
+
+// static
+void BrowserWindow::GetWebContentsCallback(
+    const v8::FunctionCallbackInfo<v8::Value>& info) {
+  v8::Isolate* const isolate = info.GetIsolate();
+  BrowserWindow* self = nullptr;
+  // Conversion fails once the window has been destroyed, because the wrapper's
+  // internal field has been cleared. That is exactly when this property should
+  // read as null instead of throwing.
+  if (!gin::ConvertFromV8(isolate, info.This(), &self)) {
+    info.GetReturnValue().SetNull();
+    return;
+  }
+  info.GetReturnValue().Set(self->GetWebContents(isolate));
 }
 
 void BrowserWindow::OnWindowShow() {
@@ -335,8 +352,18 @@ void BrowserWindow::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(gin::StringToV8(isolate, "BrowserWindow"));
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
       .SetMethod("focusOnWebView", &BrowserWindow::FocusOnWebView)
-      .SetMethod("blurWebView", &BrowserWindow::BlurWebView)
-      .SetProperty("webContents", &BrowserWindow::GetWebContents);
+      .SetMethod("blurWebView", &BrowserWindow::BlurWebView);
+
+  // |webContents| is bound by hand rather than with SetProperty() because
+  // SetProperty() routes member functions through CallbackTraits, which sets
+  // InvokerOptions::holder_is_first_argument. ArgumentHolder then rejects a
+  // destroyed holder with "Object has been destroyed" before the getter runs,
+  // and this property is documented to return null for a destroyed window.
+  auto getter = v8::FunctionTemplate::New(
+      isolate, &BrowserWindow::GetWebContentsCallback);
+  getter->RemovePrototype();
+  prototype->PrototypeTemplate()->SetAccessorProperty(
+      gin::StringToSymbol(isolate, "webContents"), getter);
 }
 
 // static

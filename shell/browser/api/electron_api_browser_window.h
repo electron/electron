@@ -76,6 +76,10 @@ class BrowserWindow : public BaseWindow,
  private:
   // Helpers.
 
+  // Getter for the |webContents| accessor installed by BuildPrototype().
+  static void GetWebContentsCallback(
+      const v8::FunctionCallbackInfo<v8::Value>& info);
+
   v8::Global<v8::Value> web_contents_;
   bool web_contents_shown_ = false;
   v8::Global<v8::Value> web_contents_view_;
