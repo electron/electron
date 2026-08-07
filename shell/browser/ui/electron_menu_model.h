@@ -87,6 +87,8 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
 
   void SetToolTip(size_t index, const std::u16string& toolTip);
   std::u16string GetToolTipAt(size_t index);
+  void SetFontType(size_t index, const std::u16string& fontType);
+  std::u16string GetFontTypeAt(size_t index);
   void SetCustomType(size_t index, const std::u16string& customType);
   std::u16string GetCustomTypeAt(size_t index);
   std::u16string GetAccessibilityLabelAt(size_t index) const;
@@ -129,8 +131,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   std::optional<SharingItem> sharing_item_;
 #endif
 
-  base::flat_map<int, std::u16string> toolTips_;  // command id -> tooltip
-  base::flat_map<int, std::u16string> roles_;     // command id -> role
+  base::flat_map<int, std::u16string> toolTips_;   // command id -> tooltip
+  base::flat_map<int, std::u16string> fontTypes_;  // command id -> font type
+  base::flat_map<int, std::u16string> roles_;      // command id -> role
   base::flat_map<int, std::u16string>
       customTypes_;  // command id -> custom type
   base::ObserverList<Observer> observers_;

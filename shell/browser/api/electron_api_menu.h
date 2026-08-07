@@ -126,6 +126,7 @@ class Menu : public gin::Wrappable<Menu>,
   void SetIcon(int index, const gfx::Image& image);
   void SetSublabel(int index, const std::u16string& sublabel);
   void SetToolTip(int index, const std::u16string& toolTip);
+  void SetFontType(int index, const std::u16string& fontType);
   void SetRole(int index, const std::u16string& role);
   void SetCustomType(int index, const std::u16string& customType);
   void Clear();
