@@ -172,3 +172,4 @@ cherry-pick-3e51b8b158a7.patch
 cherry-pick-ff0ac0afcd21.patch
 cherry-pick-cf330da50ddd.patch
 cherry-pick-5e974e82ba31.patch
+fix_do_not_skip_still-launching_renderers_when_initializing_spellcheck.patch
