@@ -1,0 +1,291 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Le Hoang Quyen <lehoangquyen@chromium.org>
+Date: Wed, 20 May 2026 22:03:31 +0800
+Subject: skip init if the scissored clear covers all attachments
+
+Bug: chromium:513043537
+Change-Id: I6f53b1070a0256c65fa3b14c5f737f096f60b93d
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/7858435
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Commit-Queue: Quyen Le <lehoangquyen@google.com>
+
+diff --git a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp
+index b89fcd0039115fccbc4e175c99501d9faf80551f..fb028313a9180eb2fbca3597d1c9d5a2fa2ceacb 100644
+--- a/src/libANGLE/Framebuffer.cpp
++++ b/src/libANGLE/Framebuffer.cpp
+@@ -377,6 +377,22 @@ bool HasSupportedStencilBitCount(const Framebuffer *framebuffer)
+     return !stencilAttachment || stencilAttachment->getStencilSize() == 8;
+ }
+ 
++angle::Result CheckAttachmentEnclosed(const Context *context,
++                                      const FramebufferAttachment &attachment,
++                                      const Rectangle &area,
++                                      bool *enclosedOut)
++{
++    *enclosedOut = true;
++    if (attachment.isAttached())
++    {
++        ANGLE_TRY(attachment.ensureSizeResolved(context));
++
++        Extents size = attachment.getSize();
++        *enclosedOut = area.encloses(Rectangle(0, 0, size.width, size.height));
++    }
++    return angle::Result::Continue;
++}
++
+ }  // anonymous namespace
+ 
+ FramebufferStatus FramebufferStatus::Complete()
+@@ -1660,35 +1676,46 @@ angle::Result Framebuffer::invalidate(const Context *context,
+     return mImpl->invalidate(context, count, attachments);
+ }
+ 
+-bool Framebuffer::partialClearNeedsInit(const Context *context,
+-                                        DrawBufferMask color,
+-                                        bool depth,
+-                                        bool stencil)
++angle::Result Framebuffer::partialClearNeedsInit(const Context *context,
++                                                 DrawBufferMask color,
++                                                 bool depth,
++                                                 bool stencil,
++                                                 bool *needsInitOut)
+ {
+     const auto &glState = context->getState();
+ 
+     if (!glState.isRobustResourceInitEnabled())
+     {
+-        return false;
++        *needsInitOut = false;
++        return angle::Result::Continue;
+     }
+ 
+     if (depth && context->getFrontendFeatures().forceDepthAttachmentInitOnClear.enabled)
+     {
+-        return true;
++        *needsInitOut = true;
++        return angle::Result::Continue;
+     }
+ 
+     // Scissors can affect clearing.
+-    // TODO(jmadill): Check for complete scissor overlap.
+     if (glState.isScissorTestEnabled())
+     {
+-        return true;
++        const Rectangle &scissor = glState.getScissor();
++        bool allEnclosed         = false;
++        ANGLE_TRY(
++            checkAllAttachmentsEnclosedBy(context, scissor, color, depth, stencil, &allEnclosed));
++        if (!allEnclosed)
++        {
++            *needsInitOut = true;
++            return angle::Result::Continue;
++        }
+     }
+ 
+     // If colors masked, we must clear before we clear. Do a simple check.
+     // TODO(jmadill): Filter out unused color channels from the test.
+     if (color.any() && glState.anyActiveDrawBufferChannelMasked())
+     {
+-        return true;
++        *needsInitOut = true;
++        return angle::Result::Continue;
+     }
+ 
+     if (stencil)
+@@ -1705,7 +1732,8 @@ bool Framebuffer::partialClearNeedsInit(const Context *context,
+ 
+         if (((differentFwdMasks | differentBackMasks) & 0xFF) != 0)
+         {
+-            return true;
++            *needsInitOut = true;
++            return angle::Result::Continue;
+         }
+     }
+ 
+@@ -1713,21 +1741,25 @@ bool Framebuffer::partialClearNeedsInit(const Context *context,
+     // some layers but marks the entire mip as initialized.
+     if (depth && mState.mDepthAttachment.hasLayer())
+     {
+-        return true;
++        *needsInitOut = true;
++        return angle::Result::Continue;
+     }
+     if (stencil && mState.mStencilAttachment.hasLayer())
+     {
+-        return true;
++        *needsInitOut = true;
++        return angle::Result::Continue;
+     }
+     for (size_t colorIndex : color)
+     {
+         if (mState.mColorAttachments[colorIndex].hasLayer())
+         {
+-            return true;
++            *needsInitOut = true;
++            return angle::Result::Continue;
+         }
+     }
+ 
+-    return false;
++    *needsInitOut = false;
++    return angle::Result::Continue;
+ }
+ 
+ angle::Result Framebuffer::invalidateSub(const Context *context,
+@@ -2536,7 +2568,10 @@ angle::Result Framebuffer::ensureClearAttachmentsInitialized(const Context *cont
+     // but are explicitly masked out here for clarity.
+     const DrawBufferMask colorAttachmentsNeedingInit(mState.mResourceNeedsInit.bits() &
+                                                      DrawBufferMask().set().bits());
+-    if (partialClearNeedsInit(context, colorAttachmentsNeedingInit, depth, stencil))
++    bool needsInit = false;
++    ANGLE_TRY(
++        partialClearNeedsInit(context, colorAttachmentsNeedingInit, depth, stencil, &needsInit));
++    if (needsInit)
+     {
+         ANGLE_TRY(ensureDrawAttachmentsInitialized(context));
+     }
+@@ -2611,8 +2646,9 @@ angle::Result Framebuffer::ensureClearBufferAttachmentsInitialized(const Context
+             break;
+     }
+ 
+-    if (partialBufferClearNeedsInit(context, buffer, clearColorAttachments) &&
+-        (clearColorAttachments.any() || clearDepth || clearStencil))
++    bool needsInit = false;
++    ANGLE_TRY(partialBufferClearNeedsInit(context, buffer, clearColorAttachments, &needsInit));
++    if (needsInit && (clearColorAttachments.any() || clearDepth || clearStencil))
+     {
+         ANGLE_TRY(mImpl->ensureAttachmentsInitialized(context, clearColorAttachments, clearDepth,
+                                                       clearStencil));
+@@ -2740,6 +2776,51 @@ void Framebuffer::markAttachmentsInitialized(const DrawBufferMask &color, bool d
+     }
+ }
+ 
++// Checks if the given area encloses all requested attachments.
++angle::Result Framebuffer::checkAllAttachmentsEnclosedBy(const Context *context,
++                                                         const Rectangle &area,
++                                                         DrawBufferMask colorMask,
++                                                         bool depth,
++                                                         bool stencil,
++                                                         bool *allEnclosedOut) const
++{
++    *allEnclosedOut = false;
++
++    for (size_t colorIndex : colorMask)
++    {
++        bool enclosed = false;
++        ANGLE_TRY(CheckAttachmentEnclosed(context, mState.mColorAttachments[colorIndex], area,
++                                          &enclosed));
++        if (!enclosed)
++        {
++            return angle::Result::Continue;
++        }
++    }
++
++    if (depth)
++    {
++        bool enclosed = false;
++        ANGLE_TRY(CheckAttachmentEnclosed(context, mState.mDepthAttachment, area, &enclosed));
++        if (!enclosed)
++        {
++            return angle::Result::Continue;
++        }
++    }
++
++    if (stencil)
++    {
++        bool enclosed = false;
++        ANGLE_TRY(CheckAttachmentEnclosed(context, mState.mStencilAttachment, area, &enclosed));
++        if (!enclosed)
++        {
++            return angle::Result::Continue;
++        }
++    }
++
++    *allEnclosedOut = true;
++    return angle::Result::Continue;
++}
++
+ Box Framebuffer::getDimensions() const
+ {
+     return mState.getDimensions();
+@@ -2801,28 +2882,31 @@ GLuint Framebuffer::getSupportedFoveationFeatures() const
+     return mState.mFoveationState.getSupportedFoveationFeatures();
+ }
+ 
+-bool Framebuffer::partialBufferClearNeedsInit(const Context *context,
+-                                              GLenum bufferType,
+-                                              DrawBufferMask drawBuffers)
++angle::Result Framebuffer::partialBufferClearNeedsInit(const Context *context,
++                                                       GLenum bufferType,
++                                                       DrawBufferMask drawBuffers,
++                                                       bool *needsInitOut)
+ {
++    *needsInitOut = false;
++
+     if (!context->isRobustResourceInitEnabled() || mState.mResourceNeedsInit.none())
+     {
+-        return false;
++        return angle::Result::Continue;
+     }
+ 
+     switch (bufferType)
+     {
+         case GL_COLOR:
+-            return partialClearNeedsInit(context, drawBuffers, false, false);
++            return partialClearNeedsInit(context, drawBuffers, false, false, needsInitOut);
+         case GL_DEPTH:
+-            return partialClearNeedsInit(context, {}, true, false);
++            return partialClearNeedsInit(context, {}, true, false, needsInitOut);
+         case GL_STENCIL:
+-            return partialClearNeedsInit(context, {}, false, true);
++            return partialClearNeedsInit(context, {}, false, true, needsInitOut);
+         case GL_DEPTH_STENCIL:
+-            return partialClearNeedsInit(context, {}, true, true);
++            return partialClearNeedsInit(context, {}, true, true, needsInitOut);
+         default:
+             UNREACHABLE();
+-            return false;
++            return angle::Result::Stop;
+     }
+ }
+ 
+diff --git a/src/libANGLE/Framebuffer.h b/src/libANGLE/Framebuffer.h
+index 199bf7efda69a3e5176816736bc5dfd8c25f6bfb..a38b0d4c83a9014becb56e577331736af2e9133e 100644
+--- a/src/libANGLE/Framebuffer.h
++++ b/src/libANGLE/Framebuffer.h
+@@ -532,19 +532,28 @@ class Framebuffer final : public angle::ObserverInterface,
+ 
+     void markAttachmentsInitialized(const DrawBufferMask &color, bool depth, bool stencil);
+ 
++    angle::Result checkAllAttachmentsEnclosedBy(const Context *context,
++                                                const Rectangle &area,
++                                                DrawBufferMask colorMask,
++                                                bool depth,
++                                                bool stencil,
++                                                bool *allEnclosedOut) const;
++
+     // Checks that we have a partially masked clear:
+     // * some color channels are masked out
+     // * some stencil values are masked out
+     // * scissor test partially overlaps the framebuffer
+     // * any attachment is an arrayed texture, but the framebuffer attachment doesn't completely
+     // cover it
+-    bool partialClearNeedsInit(const Context *context,
+-                               DrawBufferMask color,
+-                               bool depth,
+-                               bool stencil);
+-    bool partialBufferClearNeedsInit(const Context *context,
+-                                     GLenum bufferType,
+-                                     DrawBufferMask drawBuffers);
++    angle::Result partialClearNeedsInit(const Context *context,
++                                        DrawBufferMask color,
++                                        bool depth,
++                                        bool stencil,
++                                        bool *needsInitOut);
++    angle::Result partialBufferClearNeedsInit(const Context *context,
++                                              GLenum bufferType,
++                                              DrawBufferMask drawBuffers,
++                                              bool *needsInitOut);
+ 
+     FramebufferAttachment *getAttachmentFromSubjectIndex(angle::SubjectIndex index);
+ 

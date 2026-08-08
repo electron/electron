@@ -1,0 +1,113 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Mon, 22 Jun 2026 10:59:08 +0200
+Subject: [wasm-streaming] Terminate any pending validation job...
+
+...when receiving a ContextDisposedNotification.
+
+Bug: 523030583
+Change-Id: Iee732c5e62ca63f473548209f285049126a87a65
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/7967983
+Commit-Queue: Jakob Kummerow <jkummerow@chromium.org>
+Auto-Submit: Jakob Kummerow <jkummerow@chromium.org>
+Reviewed-by: Clemens Backes <clemensb@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#108145}
+
+diff --git a/src/wasm/module-compiler.cc b/src/wasm/module-compiler.cc
+index 52b846bf6014e68a085d4549d6ef1460371804a8..f564d18d552ec9da14dd6dab92e69a24d5bc594f 100644
+--- a/src/wasm/module-compiler.cc
++++ b/src/wasm/module-compiler.cc
+@@ -2514,6 +2514,7 @@ class ValidateFunctionsStreamingJob final : public JobTask {
+ class AsyncStreamingProcessor final : public StreamingProcessor {
+  public:
+   explicit AsyncStreamingProcessor(AsyncCompileJob* job);
++  ~AsyncStreamingProcessor() override;
+ 
+   void InitializeIsolateSpecificInfo(Isolate* isolate) override {
+     job_->InitializeIsolateSpecificInfo(isolate);
+@@ -3094,6 +3095,15 @@ AsyncStreamingProcessor::AsyncStreamingProcessor(AsyncCompileJob* job)
+       job_(job),
+       compilation_unit_builder_(nullptr) {}
+ 
++AsyncStreamingProcessor::~AsyncStreamingProcessor() {
++  // When we receive a ContextDisposedNotification before the stream ends,
++  // we might still have a running validation job. Terminate that before
++  // freeing {validate_functions_job_data_}.
++  if (validate_functions_job_handle_) {
++    validate_functions_job_handle_->Cancel();
++  }
++}
++
+ // Process the module header.
+ bool AsyncStreamingProcessor::ProcessModuleHeader(
+     base::Vector<const uint8_t> bytes) {
+diff --git a/test/unittests/wasm/streaming-decoder-unittest.cc b/test/unittests/wasm/streaming-decoder-unittest.cc
+index 26494f8be4cec4b05f16722b7eddcd73486fbf77..8177a1ad3689b264da9de7e8f3cd8b060d9e61f8 100644
+--- a/test/unittests/wasm/streaming-decoder-unittest.cc
++++ b/test/unittests/wasm/streaming-decoder-unittest.cc
+@@ -2,16 +2,13 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
+-#include "test/unittests/test-utils.h"
+-
+-#include "src/objects/objects-inl.h"
+-
+-#include "src/wasm/module-decoder.h"
+ #include "src/wasm/streaming-decoder.h"
+ 
+-#include "src/objects/descriptor-array.h"
+-#include "src/objects/dictionary.h"
++#include "src/wasm/module-decoder.h"
++#include "src/wasm/wasm-engine.h"
++#include "test/common/flag-utils.h"
+ #include "test/common/wasm/wasm-macro-gen.h"
++#include "test/unittests/test-utils.h"
+ 
+ namespace v8 {
+ namespace internal {
+@@ -661,6 +658,44 @@ TEST_F(WasmStreamingDecoderTest, InvalidSectionCode) {
+   ExpectFailure(base::ArrayVector(data));
+ }
+ 
++class EmptyResolver : public CompilationResultResolver {
++ public:
++  void OnCompilationSucceeded(DirectHandle<WasmModuleObject> module) override {}
++  void OnCompilationFailed(DirectHandle<JSAny> error_reason) override {}
++};
++
++using WasmStreamingCompilationTest = TestWithNativeContext;
++
++TEST_F(WasmStreamingCompilationTest, ContextDisposeDuringValidation) {
++  FlagScope<bool> async_compilation(&v8_flags.wasm_async_compilation, true);
++  FlagScope<bool> lazy_compilation(&v8_flags.wasm_lazy_compilation, true);
++
++  std::shared_ptr<EmptyResolver> resolver = std::make_shared<EmptyResolver>();
++  WasmEnabledFeatures features = WasmEnabledFeatures::FromIsolate(isolate());
++
++  std::shared_ptr<StreamingDecoder> stream =
++      GetWasmEngine()->StartStreamingCompilation(
++          features, CompileTimeImports{}, "WebAssembly.compileStreaming()",
++          resolver);
++  stream->InitializeIsolateSpecificInfo(isolate());
++
++  const uint8_t data[] = {
++      0x00, 0x61, 0x73, 0x6d,  // wasm magic
++      0x01, 0x00, 0x00, 0x00,  // wasm version
++      0x01, 0x04,              // Type section, length: 4
++      0x01, 0x60, 0x00, 0x00,  // One type, signature, no params, no results
++      0x03, 0x02,              // Function section, length: 2
++      0x01, 0x00,              // One function, type $sig0
++      0x0a, 0x04,              // Code section, length: 4
++      0x01, 0x02, 0x00, 0x0b,  // One function, length: 2, unreachable, end
++  };
++
++  stream->OnBytesReceived(base::VectorOf(data));
++
++  // Dispose context. This triggered crbug.com/523030583 before the fix.
++  v8_isolate()->ContextDisposedNotification(ContextDependants::kNoDependants);
++}
++
+ }  // namespace wasm
+ }  // namespace internal
+ }  // namespace v8

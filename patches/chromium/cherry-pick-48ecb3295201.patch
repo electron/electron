@@ -1,0 +1,176 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Liam Brady <lbrady@google.com>
+Date: Wed, 10 Jun 2026 14:20:37 -0700
+Subject: Add an original URL variable to NavigationRequest.
+
+We plan to sanitize `commit_params_->original_url` to be just the
+origin. This is being done to mitigate potential risks with sensitive
+cross-origin information from URL parameters making it to a renderer
+process. However, this effort uncovered a problem with `original_url`.
+At the moment, this variable serves two purposes:
+
+1. Be a source of truth for browser-side logic (such as CSP checks and
+   WebView URL load overriding checks).
+2. Be provided to the renderer for renderer-specific logic in a safe
+   way.
+
+Sanitizing this value breaks #1, but keeping the value unsanitized makes
+constraints, this CL splits `original_url` into a sanitized version that
+lives in `commit_params_` (with the sanitization feature enabled) and a
+new unsanitized version that lives directly in NavigationRequest.
+
+Change-Id: Ib904f1d14ab0e53b7a77a5e28869f99e0104c847
+Bug: 495463654
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7910944
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Liam Brady <lbrady@google.com>
+Cr-Commit-Position: refs/heads/main@{#1644883}
+
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index c30711ae742722993f02640eeceb2eb5e80c35c2..b5a8b4cc1fe33f8c24a1f21e256eba38ce698637 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -1821,6 +1821,7 @@ NavigationRequest::NavigationRequest(
+       embedder_shared_storage_context_(embedder_shared_storage_context),
+       has_ad_auction_headers_attribute_(frame_tree_node->ad_auction_headers()),
+       request_method_(common_params_->method),
++      original_url_(common_params_->url),
+       prerender_host_id_(
+           GetPrerenderHostRegistry().GetPrerenderHostIdForNavigation(this)),
+       network_restrictions_id_(std::nullopt) {
+@@ -1830,6 +1831,7 @@ NavigationRequest::NavigationRequest(
+         !common_params_->initiator_base_url->is_empty());
+   CHECK(!blink::IsRendererDebugURL(common_params_->url));
+   CHECK(common_params_->method == "POST" || !common_params_->post_data);
++  CHECK_EQ(common_params_->url, original_url_);
+   if (base::FeatureList::IsEnabled(
+           features::kSanitizeOriginalUrlDuringNavigation)) {
+     // TODO(crbug.com/495463654): We need to get the origin of the original_url
+@@ -2843,6 +2845,7 @@ void NavigationRequest::OnFencedFrameURLMappingComplete(
+   const GURL& mapped_url_value =
+       properties->mapped_url()->GetValueIgnoringVisibility();
+   common_params_->url = mapped_url_value;
++  original_url_ = mapped_url_value;
+   if (base::FeatureList::IsEnabled(
+           features::kSanitizeOriginalUrlDuringNavigation)) {
+     // It is safe to convert GURL to an Origin and back in the code below
+@@ -2898,8 +2901,7 @@ void NavigationRequest::BeginNavigationImpl() {
+ 
+   if (!GetContentClient()->browser()->ShouldOverrideUrlLoading(
+           frame_tree_node_->frame_tree_node_id(),
+-          commit_params_->is_browser_initiated, commit_params_->original_url,
+-          commit_params_->original_method,
++          commit_params_->is_browser_initiated, original_url_, request_method_,
+           common_params_->has_possibly_filtered_user_gesture, false,
+           frame_tree_node_->IsOutermostMainFrame(),
+           frame_tree_node_->frame_tree().is_prerendering(),
+@@ -6012,7 +6014,7 @@ void NavigationRequest::AddResourceTimingEntryForFailedSubframeNavigation(
+   GetParentFrame()->AddResourceTimingEntryForFailedSubframeNavigation(
+       frame_tree_node(), common_params().navigation_start,
+       commit_params().navigation_timing->redirect_end,
+-      commit_params().original_url, common_params().url,
++      original_url_, common_params().url,
+       std::move(response_head), allow_response_details, status);
+ }
+ 
+@@ -7657,9 +7659,8 @@ bool NavigationRequest::IsAllowedByCSPDirective(
+     url = common_params_->url;
+   }
+   network::CSPCheckResult result = context->IsAllowedByCsp(
+-      policies, directive, url, commit_params_->original_url,
+-      has_followed_redirect, common_params_->source_location, disposition,
+-      is_opaque_fenced_frame);
++      policies, directive, url, original_url_, has_followed_redirect,
++      common_params_->source_location, disposition, is_opaque_fenced_frame);
+   if (result.WouldBlockIfWildcardDoesNotMatchWs()) {
+     GetContentClient()->browser()->LogWebFeatureForCurrentPage(
+         GetParentFrame(),
+@@ -7812,6 +7813,7 @@ net::Error NavigationRequest::CheckContentSecurityPolicy(
+       } else {
+         commit_params_->original_url = common_params_->url;
+       }
++      original_url_ = common_params_->url;
+     }
+   }
+ 
+diff --git a/content/browser/renderer_host/navigation_request.h b/content/browser/renderer_host/navigation_request.h
+index abd0e8d9c9989aaaaa510a927e6af39239a65622..0ccbeea3b7322f3fd6accd814805637f927a2e7f 100644
+--- a/content/browser/renderer_host/navigation_request.h
++++ b/content/browser/renderer_host/navigation_request.h
+@@ -1484,6 +1484,8 @@ class CONTENT_EXPORT NavigationRequest
+ 
+   bool is_ad_tagged() const { return is_ad_tagged_; }
+ 
++  const GURL& original_url() const { return original_url_; }
++
+   // Called when the browser process is about to process beforeunload handlers
+   // for this navigation, including sending an IPC to the renderer process to
+   // run beforeunload handlers when necessary.
+@@ -3527,6 +3529,12 @@ class CONTENT_EXPORT NavigationRequest
+   // The initial request method of the request, before any redirects.
+   std::string request_method_;
+ 
++  // The original request URL for this navigation, before any redirects and
++  // after any mapping steps and HTTPS upgrades. Used for internal browser
++  // checks to avoid using sanitized versions sent to the renderer in
++  // `commit_params`.
++  GURL original_url_;
++
+   // Set to true if `this` started as a same-document navigation but couldn't
+   // commit, and was restarted as a cross-document navigation. See
+   // `blink::mojom::CommitResult::RestartCrossDocument`.
+diff --git a/content/browser/renderer_host/navigation_request_unittest.cc b/content/browser/renderer_host/navigation_request_unittest.cc
+index 8a8acf35cbaa740d0e03b3f6bb0ea333f444ed8f..fdc038f2bb341fa60ded229c26a943a75d5a0f69 100644
+--- a/content/browser/renderer_host/navigation_request_unittest.cc
++++ b/content/browser/renderer_host/navigation_request_unittest.cc
+@@ -971,6 +971,7 @@ TEST_F(NavigationRequestTest, SanitizeRedirectsForCommitRelativeLocation) {
+   // The original navigation URL should be sanitized to origin when
+   // kSanitizeOriginalUrlDuringNavigation is enabled.
+   EXPECT_EQ(GURL("https://a.com/"), commit_params->original_url);
++  EXPECT_EQ(start_url, request->original_url());
+ }
+ 
+ // Test to ensure that relative Location headers on non-standard schemes are
+@@ -1040,6 +1041,7 @@ TEST_F(NavigationRequestTest, SanitizeRedirectsForCommitNonStandardRelative) {
+   // The original navigation URL should be sanitized to origin when
+   // kSanitizeOriginalUrlDuringNavigation is enabled.
+   EXPECT_EQ(GURL("chrome-foo://history/"), commit_params->original_url);
++  EXPECT_EQ(start_url, request->original_url());
+ }
+ 
+ // Test to ensure that hostless non-standard schemes (like data:) are handled
+@@ -1091,6 +1093,7 @@ TEST_F(NavigationRequestTest, SanitizeRedirectsForCommitHostlessNonStandard) {
+   // The original navigation URL should be sanitized to origin when
+   // kSanitizeOriginalUrlDuringNavigation is enabled.
+   EXPECT_EQ(GURL("https://a.com/"), commit_params->original_url);
++  EXPECT_EQ(start_url, request->original_url());
+ }
+ 
+ // Test to ensure that SanitizeRedirectsForCommit is called when a navigation
+@@ -1133,6 +1136,7 @@ TEST_F(NavigationRequestTest, SanitizeRedirectsForCommitErrorPage) {
+   // The original navigation URL should be sanitized to origin when
+   // kSanitizeOriginalUrlDuringNavigation is enabled.
+   EXPECT_EQ(GURL("https://a.com/"), commit_params.original_url);
++  EXPECT_EQ(start_url, request->original_url());
+ }
+ 
+ TEST_F(NavigationRequestTest, AbortsDeletedNavigationInProgress) {
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index a5abac103692cb6ddbe1fe994668d14d5c38784b..44ff26546c1c8f498784afca1c26deb45ccb9e87 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -18524,10 +18524,10 @@ void RenderFrameHostImpl::
+                         request->WasInitiatedByLinkClick());
+ 
+   SCOPED_CRASH_KEY_STRING256("VerifyDidCommit", "original_req_url",
+-                             request->commit_params().original_url.spec());
+-  SCOPED_CRASH_KEY_BOOL("VerifyDidCommit", "original_same_doc",
+-                        request->commit_params().original_url.EqualsIgnoringRef(
+-                            GetLastCommittedURL()));
++                             request->original_url().spec());
++  SCOPED_CRASH_KEY_BOOL(
++      "VerifyDidCommit", "original_same_doc",
++      request->original_url().EqualsIgnoringRef(GetLastCommittedURL()));
+ 
+   SCOPED_CRASH_KEY_BOOL(
+       "VerifyDidCommit", "on_initial_empty_doc",

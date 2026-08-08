@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rohan Raja <roraja@microsoft.com>
+Date: Mon, 15 Jun 2026 05:59:22 -0700
+Subject: Fix data race in ClipboardFormatType on Windows
+
+ClipboardFormatType::FileContentAtIndexType() inserts into a
+process-global std::map<LONG, ClipboardFormatType> from both the browser
+UI thread (SetFileContents, drag-over predicates) and base::ThreadPool
+workers (ExtractVirtualFiles -> CopyFileContentsToHGlobal) without any
+synchronization.
+
+Serialize entry into FileContentAtIndexType() with a function-local
+static base::NoDestructor<base::Lock> taken via base::AutoLock. This
+matches the existing locking pattern used elsewhere in
+ui/base/clipboard/ (Clipboard::ClipboardMapLock() in clipboard.cc,
+clipboard_android.cc, clipboard_non_backed.cc).
+
+Bug: 517350808
+Change-Id: I97c18ed25c782d8c43458020f8913623c7a20ba1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7885158
+Reviewed-by: Rakesh Goulikar <ragoulik@microsoft.com>
+Reviewed-by: Sambamurthy Bandaru <sambamurthy.bandaru@microsoft.com>
+Commit-Queue: Rohan Raja <roraja@microsoft.com>
+Cr-Commit-Position: refs/heads/main@{#1646746}
+
+diff --git a/ui/base/clipboard/clipboard_format_type_win.cc b/ui/base/clipboard/clipboard_format_type_win.cc
+index 37c824c7dddab37f57695e3860731e372822e6e3..d8bd43f79334bc71a69c76ad4143e5d7cfe9c023 100644
+--- a/ui/base/clipboard/clipboard_format_type_win.cc
++++ b/ui/base/clipboard/clipboard_format_type_win.cc
+@@ -15,6 +15,7 @@
+ #include "base/strings/string_number_conversions.h"
+ #include "base/strings/string_util.h"
+ #include "base/strings/utf_string_conversions.h"
++#include "base/synchronization/lock.h"
+ #include "ui/base/clipboard/clipboard_constants.h"
+ 
+ namespace ui {
+@@ -250,6 +251,13 @@ std::map<LONG, ClipboardFormatType>& ClipboardFormatType::FileContentTypeMap() {
+ // static
+ const ClipboardFormatType& ClipboardFormatType::FileContentAtIndexType(
+     LONG index) {
++  // FileContentTypeMap() is accessed from both the browser UI thread and
++  // base::ThreadPool workers during virtual-file drag-and-drop, so serialize
++  // map mutation. base::NoDestructor only makes construction thread-safe;
++  // std::map::insert itself is not.
++  static base::NoDestructor<base::Lock> map_lock;
++  base::AutoLock auto_lock(*map_lock);
++
+   auto& index_to_type_map = FileContentTypeMap();
+ 
+   auto insert_or_assign_result = index_to_type_map.insert(

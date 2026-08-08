@@ -1,0 +1,905 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Liam Brady <lbrady@google.com>
+Date: Tue, 30 Jun 2026 16:06:48 -0700
+Subject: Restore original URL for resource timing and observers
+
+This CL restores the unsanitized original URL in the browser-side
+ResourceLoadComplete and in the renderer-side iframe ResourceTiming.
+
+When URL sanitization is enabled, the renderer only receives an
+origin-only version of the original URL for cross-origin navigations. To
+ensure features like Resource Timing continue to function correctly,
+this change:
+
+- Stores the full original URL in DocumentAssociatedData at commit time.
+- Restores the unsanitized URL in the browser process before notifying
+  observers.
+- Updates the ResourceLoadComplete observer to pass this
+  browser-provided original URL explicitly.
+- Restores the unsanitized URL for iframe subresource timing in Blink
+  using fallback timing information. This is information the embedder's
+  renderer already has access to.
+- Removes an early return in `HTMLFrameOwnerElement::AddResourceTiming`.
+  The bug mentioned in the comment is marked as closed, and the name
+  check is no longer necessary.
+
+Bug: 495463654
+Change-Id: Iab6229717e956889b893f3047d5dfae593d1ec7a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7948022
+Commit-Queue: Liam Brady <lbrady@google.com>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Owners-Override: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: Noam Rosenthal <nrosenthal@google.com>
+Cr-Commit-Position: refs/heads/main@{#1655126}
+
+diff --git a/chrome/browser/net/http_auth_cache_status.cc b/chrome/browser/net/http_auth_cache_status.cc
+index 29784d29d71802488e22399a94e3866f387c9ba8..5492998bba97ddb1ec3d3dd26e7fc160eb16b278 100644
+--- a/chrome/browser/net/http_auth_cache_status.cc
++++ b/chrome/browser/net/http_auth_cache_status.cc
+@@ -36,6 +36,7 @@ HttpAuthCacheStatus::~HttpAuthCacheStatus() = default;
+ void HttpAuthCacheStatus::ResourceLoadComplete(
+     content::RenderFrameHost* render_frame_host,
+     const content::GlobalRequestID& request_id,
++    const GURL& original_url,
+     const blink::mojom::ResourceLoadInfo& resource_load_info) {
+   if (!resource_load_info.did_use_server_http_auth) {
+     return;
+diff --git a/chrome/browser/net/http_auth_cache_status.h b/chrome/browser/net/http_auth_cache_status.h
+index 8b0b4251c976bdb1a008424644c3770115b2ad75..4d3764cade8637787bf1d7cd30c82f1cb73d68a4 100644
+--- a/chrome/browser/net/http_auth_cache_status.h
++++ b/chrome/browser/net/http_auth_cache_status.h
+@@ -40,6 +40,7 @@ class HttpAuthCacheStatus
+   void ResourceLoadComplete(
+       content::RenderFrameHost* render_frame_host,
+       const content::GlobalRequestID& request_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) override;
+ 
+  private:
+diff --git a/chrome/browser/net/http_auth_cache_status_unittest.cc b/chrome/browser/net/http_auth_cache_status_unittest.cc
+index c61b8b4c554ed4f889fae167f659a1a2ab491f20..38796f08273eabfbaf873e9f3a7e9661af3c3408 100644
+--- a/chrome/browser/net/http_auth_cache_status_unittest.cc
++++ b/chrome/browser/net/http_auth_cache_status_unittest.cc
+@@ -56,9 +56,10 @@ class HttpAuthCacheStatusTest : public ChromeRenderViewHostTestHarness {
+ TEST_F(HttpAuthCacheStatusTest, UseCounterNotIncrementedSamePartition) {
+   NavigateAndCommit(GURL("https://www.google.com/"));
+   // Simulate a subresource load with HTTP Auth.
++  const GURL subresource_url("https://www.google.com/subresource");
+   http_auth_cache_status_->ResourceLoadComplete(
+-      main_rfh(), content::GlobalRequestID(),
+-      *CreateResourceLoadInfo(GURL("https://www.google.com/subresource"),
++      main_rfh(), content::GlobalRequestID(), subresource_url,
++      *CreateResourceLoadInfo(subresource_url,
+                               /*did_use_server_http_auth=*/true));
+ 
+   histogram_tester_.ExpectBucketCount(
+@@ -74,9 +75,10 @@ TEST_F(HttpAuthCacheStatusTest, UseCounterNotIncrementedSamePartition) {
+ TEST_F(HttpAuthCacheStatusTest, UseCounterNotIncrementedNoHttpAuth) {
+   NavigateAndCommit(GURL("https://www.google.com/"));
+   // Simulate a subresource load without HTTP Auth.
++  const GURL subresource_url("https://www.google.com/subresource");
+   http_auth_cache_status_->ResourceLoadComplete(
+-      main_rfh(), content::GlobalRequestID(),
+-      *CreateResourceLoadInfo(GURL("https://www.google.com/subresource"),
++      main_rfh(), content::GlobalRequestID(), subresource_url,
++      *CreateResourceLoadInfo(subresource_url,
+                               /*did_use_server_http_auth=*/false));
+ 
+   histogram_tester_.ExpectBucketCount(
+@@ -92,9 +94,10 @@ TEST_F(HttpAuthCacheStatusTest, UseCounterNotIncrementedNoHttpAuth) {
+ TEST_F(HttpAuthCacheStatusTest, UseCounterIncrementedCrossPartition) {
+   NavigateAndCommit(GURL("https://www.google.com/"));
+   // Simulate a cross-origin subresource load with HTTP Auth.
++  const GURL subresource_url("https://www.example.com/subresource");
+   http_auth_cache_status_->ResourceLoadComplete(
+-      main_rfh(), content::GlobalRequestID(),
+-      *CreateResourceLoadInfo(GURL("https://www.example.com/subresource"),
++      main_rfh(), content::GlobalRequestID(), subresource_url,
++      *CreateResourceLoadInfo(subresource_url,
+                               /*did_use_server_http_auth=*/true));
+   histogram_tester_.ExpectBucketCount(
+       "Blink.UseCounter.Features",
+diff --git a/chrome/browser/net/network_request_metrics_browsertest.cc b/chrome/browser/net/network_request_metrics_browsertest.cc
+index 55e31295749e87f8846f5cacebb0091c5bb34693..87c148a418e3b96815ad28105723dd86984d3c71 100644
+--- a/chrome/browser/net/network_request_metrics_browsertest.cc
++++ b/chrome/browser/net/network_request_metrics_browsertest.cc
+@@ -93,6 +93,7 @@ class WaitForMainFrameResourceObserver : public content::WebContentsObserver {
+   void ResourceLoadComplete(
+       RenderFrameHost* render_frame_host,
+       const content::GlobalRequestID& request_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) override {
+     EXPECT_EQ(network::mojom::RequestDestination::kDocument,
+               resource_load_info.request_destination);
+diff --git a/chrome/browser/password_manager/chrome_password_manager_client.cc b/chrome/browser/password_manager/chrome_password_manager_client.cc
+index bec72ff96a8dcbbe7400b3a8aeba39f8c0669561..9cf755b1fe1c05013d85a0d5869aa124bb694476 100644
+--- a/chrome/browser/password_manager/chrome_password_manager_client.cc
++++ b/chrome/browser/password_manager/chrome_password_manager_client.cc
+@@ -1922,6 +1922,7 @@ void ChromePasswordManagerClient::WebContentsDestroyed() {
+ void ChromePasswordManagerClient::ResourceLoadComplete(
+     content::RenderFrameHost* render_frame_host,
+     const content::GlobalRequestID& request_id,
++    const GURL& original_url,
+     const blink::mojom::ResourceLoadInfo& resource_load_info) {
+   if (resource_load_info.method == "POST" &&
+       resource_load_info.http_status_code >= 400 &&
+@@ -1929,7 +1930,7 @@ void ChromePasswordManagerClient::ResourceLoadComplete(
+     password_manager_.OnResourceLoadingFailed(
+         password_manager::ContentPasswordManagerDriver::GetForRenderFrameHost(
+             render_frame_host),
+-        resource_load_info.original_url);
++        original_url);
+   }
+ }
+ 
+diff --git a/chrome/browser/password_manager/chrome_password_manager_client.h b/chrome/browser/password_manager/chrome_password_manager_client.h
+index 54d51c0b02dc2cda86b49565bfa6665880ff609e..6f48e38b12b627ce906044916518ff8df833ae57 100644
+--- a/chrome/browser/password_manager/chrome_password_manager_client.h
++++ b/chrome/browser/password_manager/chrome_password_manager_client.h
+@@ -442,6 +442,7 @@ class ChromePasswordManagerClient
+   void ResourceLoadComplete(
+       content::RenderFrameHost* render_frame_host,
+       const content::GlobalRequestID& request_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) override;
+ 
+   // autofill::AutofillManager::Observer:
+diff --git a/chrome/browser/predictors/loading_data_collector.cc b/chrome/browser/predictors/loading_data_collector.cc
+index 785f266847c6f6a5f8864b85f0403756d69c6803..271e003997b38a2c496a04b1703bb6967ff53763 100644
+--- a/chrome/browser/predictors/loading_data_collector.cc
++++ b/chrome/browser/predictors/loading_data_collector.cc
+@@ -278,6 +278,7 @@ void LoadingDataCollector::RecordFinishNavigation(
+ 
+ void LoadingDataCollector::RecordResourceLoadComplete(
+     NavigationId navigation_id,
++    const GURL& original_url,
+     const blink::mojom::ResourceLoadInfo& resource_load_info) {
+   auto nav_it = inflight_navigations_.find(navigation_id);
+   if (nav_it == inflight_navigations_.end())
+diff --git a/chrome/browser/predictors/loading_data_collector.h b/chrome/browser/predictors/loading_data_collector.h
+index e1de8b0cadcdfa8eca7cd84b9436f478f4e94f7f..0e17c449e39f392c5c9dc641d32396dcc9d167b0 100644
+--- a/chrome/browser/predictors/loading_data_collector.h
++++ b/chrome/browser/predictors/loading_data_collector.h
+@@ -136,6 +136,7 @@ class LoadingDataCollector {
+                                       bool is_error_page);
+   virtual void RecordResourceLoadComplete(
+       NavigationId navigation_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info);
+ 
+   // Called when a preconnect is initiated for the navigation.
+diff --git a/chrome/browser/predictors/loading_data_collector_unittest.cc b/chrome/browser/predictors/loading_data_collector_unittest.cc
+index babcd231b27e8309c9d5bff40acfde842fb6fe79..6e687d5844851b2b05a52bf74e690536c5733384 100644
+--- a/chrome/browser/predictors/loading_data_collector_unittest.cc
++++ b/chrome/browser/predictors/loading_data_collector_unittest.cc
+@@ -281,45 +281,55 @@ TEST_F(LoadingDataCollectorTest, SimpleNavigation) {
+ 
+   std::vector<blink::mojom::ResourceLoadInfoPtr> resources;
+   resources.push_back(CreateResourceLoadInfo("http://www.google.com"));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+   resources.push_back(
+       CreateResourceLoadInfo("http://google.com/style1.css",
+                              network::mojom::RequestDestination::kStyle));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+   resources.push_back(
+       CreateResourceLoadInfo("http://google.com/script1.js",
+                              network::mojom::RequestDestination::kScript));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+   resources.push_back(
+       CreateResourceLoadInfo("http://google.com/script2.js",
+                              network::mojom::RequestDestination::kScript));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+   resources.push_back(
+       CreateResourceLoadInfo("http://google.com/script1.js",
+                              network::mojom::RequestDestination::kScript));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+   resources.push_back(
+       CreateResourceLoadInfo("http://google.com/image1.png",
+                              network::mojom::RequestDestination::kImage));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+   resources.push_back(
+       CreateResourceLoadInfo("http://google.com/image2.png",
+                              network::mojom::RequestDestination::kImage));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+   resources.push_back(
+       CreateResourceLoadInfo("http://google.com/style2.css",
+                              network::mojom::RequestDestination::kStyle));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+   resources.push_back(
+       CreateResourceLoadInfo("http://static.google.com/style2-no-store.css",
+                              network::mojom::RequestDestination::kStyle,
+                              /*always_access_network=*/true));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+   resources.push_back(CreateResourceLoadInfoWithRedirects(
+       {"http://reader.google.com/style.css",
+        "http://dev.null.google.com/style.css"},
+       network::mojom::RequestDestination::kStyle));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+ 
+   auto summary = CreatePageRequestSummary("http://www.google.com",
+                                           "http://www.google.com", resources);
+@@ -333,12 +343,14 @@ TEST_F(LoadingDataCollectorTest, SimpleNavigation) {
+   resources.push_back(
+       CreateResourceLoadInfo("http://static.google.com/style-3.css",
+                              network::mojom::RequestDestination::kStyle));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+   resources.push_back(CreateResourceLoadInfoWithRedirects(
+       {"http://reader.google.com/style2.css",
+        "http://dev.null.google.com/style2.css"},
+       network::mojom::RequestDestination::kStyle));
+-  collector_->RecordResourceLoadComplete(navigation_id, *resources.back());
++  collector_->RecordResourceLoadComplete(
++      navigation_id, resources.back()->original_url, *resources.back());
+ 
+   // Prefetches/preconnects seen after the load event should be ignored and not
+   // recorded.
+@@ -375,7 +387,8 @@ TEST_F(LoadingDataCollectorTest, SimpleRedirect) {
+                                      /* is_error_page */ false);
+   EXPECT_EQ(1U, collector_->inflight_navigations_.size());
+   EXPECT_EQ(url, collector_->inflight_navigations_[navigation_id]->initial_url);
+-  collector_->RecordResourceLoadComplete(navigation_id, *main_frame);
++  collector_->RecordResourceLoadComplete(navigation_id,
++                                         main_frame->original_url, *main_frame);
+ 
+   std::vector<blink::mojom::ResourceLoadInfoPtr> resources;
+   resources.push_back(std::move(main_frame));
+@@ -471,7 +484,8 @@ TEST_F(LoadingDataCollectorTest, RecordResourceLoadComplete) {
+   auto resource1 =
+       CreateResourceLoadInfo("http://google.com/style1.css",
+                              network::mojom::RequestDestination::kStyle);
+-  collector_->RecordResourceLoadComplete(navigation_id, *resource1);
++  collector_->RecordResourceLoadComplete(navigation_id, resource1->original_url,
++                                         *resource1);
+   EXPECT_TRUE(collector_->inflight_navigations_.empty());
+ 
+   // Add an inflight navigation.
+@@ -486,9 +500,12 @@ TEST_F(LoadingDataCollectorTest, RecordResourceLoadComplete) {
+   auto resource3 =
+       CreateResourceLoadInfo("http://google.com/script2.js",
+                              network::mojom::RequestDestination::kScript);
+-  collector_->RecordResourceLoadComplete(navigation_id, *resource1);
+-  collector_->RecordResourceLoadComplete(navigation_id, *resource2);
+-  collector_->RecordResourceLoadComplete(navigation_id, *resource3);
++  collector_->RecordResourceLoadComplete(navigation_id, resource1->original_url,
++                                         *resource1);
++  collector_->RecordResourceLoadComplete(navigation_id, resource2->original_url,
++                                         *resource2);
++  collector_->RecordResourceLoadComplete(navigation_id, resource3->original_url,
++                                         *resource3);
+ 
+   EXPECT_EQ(1U, collector_->inflight_navigations_.size());
+ }
+diff --git a/chrome/browser/predictors/loading_predictor_tab_helper.cc b/chrome/browser/predictors/loading_predictor_tab_helper.cc
+index 8542a27a6231c4bf364942493bfa39f4289c9a82..8ca6067a4f55a26d5828c5b0c1eb4e03039da34a 100644
+--- a/chrome/browser/predictors/loading_predictor_tab_helper.cc
++++ b/chrome/browser/predictors/loading_predictor_tab_helper.cc
+@@ -516,6 +516,7 @@ void LoadingPredictorTabHelper::DidFinishNavigation(
+ void LoadingPredictorTabHelper::ResourceLoadComplete(
+     content::RenderFrameHost* render_frame_host,
+     const content::GlobalRequestID& request_id,
++    const GURL& original_url,
+     const blink::mojom::ResourceLoadInfo& resource_load_info) {
+   DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   if (!predictor_)
+@@ -530,7 +531,7 @@ void LoadingPredictorTabHelper::ResourceLoadComplete(
+     return;
+ 
+   predictor_->loading_data_collector()->RecordResourceLoadComplete(
+-      page_data->navigation_id_, resource_load_info);
++      page_data->navigation_id_, original_url, resource_load_info);
+ }
+ 
+ void LoadingPredictorTabHelper::DidLoadResourceFromMemoryCache(
+@@ -557,7 +558,7 @@ void LoadingPredictorTabHelper::DidLoadResourceFromMemoryCache(
+   resource_load_info.network_info =
+       blink::mojom::CommonNetworkInfo::New(false, false, std::nullopt);
+   predictor_->loading_data_collector()->RecordResourceLoadComplete(
+-      page_data->navigation_id_, resource_load_info);
++      page_data->navigation_id_, url, resource_load_info);
+ }
+ 
+ void LoadingPredictorTabHelper::DocumentOnLoadCompletedInPrimaryMainFrame() {
+diff --git a/chrome/browser/predictors/loading_predictor_tab_helper.h b/chrome/browser/predictors/loading_predictor_tab_helper.h
+index 74039800b92ea180c81a351ebcfe335ef738df9b..79e8d6daebdd17624dd940ec91aef69c07aa332b 100644
+--- a/chrome/browser/predictors/loading_predictor_tab_helper.h
++++ b/chrome/browser/predictors/loading_predictor_tab_helper.h
+@@ -57,6 +57,7 @@ class LoadingPredictorTabHelper
+   void ResourceLoadComplete(
+       content::RenderFrameHost* render_frame_host,
+       const content::GlobalRequestID& request_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) override;
+   void DidLoadResourceFromMemoryCache(
+       content::RenderFrameHost* render_frame_host,
+diff --git a/chrome/browser/predictors/loading_predictor_tab_helper_unittest.cc b/chrome/browser/predictors/loading_predictor_tab_helper_unittest.cc
+index 1aad1f3c613de69d99dd8e5c717210b3b0be4c10..32876478a9eaa4a8b6b6cb250271b3eefa54a3a0 100644
+--- a/chrome/browser/predictors/loading_predictor_tab_helper_unittest.cc
++++ b/chrome/browser/predictors/loading_predictor_tab_helper_unittest.cc
+@@ -52,8 +52,10 @@ class MockLoadingDataCollector : public LoadingDataCollector {
+                void(NavigationId, ukm::SourceId, const GURL&, base::TimeTicks));
+ 
+   MOCK_METHOD3(RecordFinishNavigation, void(NavigationId, const GURL&, bool));
+-  MOCK_METHOD2(RecordResourceLoadComplete,
+-               void(NavigationId, const blink::mojom::ResourceLoadInfo&));
++  MOCK_METHOD3(RecordResourceLoadComplete,
++               void(NavigationId,
++                    const GURL&,
++                    const blink::mojom::ResourceLoadInfo&));
+   MOCK_METHOD1(RecordMainFrameLoadComplete, void(NavigationId));
+   MOCK_METHOD2(RecordPageDestroyed,
+                void(NavigationId,
+@@ -276,9 +278,11 @@ TEST_P(LoadingPredictorTabHelperTest, ResourceLoadComplete) {
+ 
+   auto resource_load_info = CreateResourceLoadInfo(
+       "http://test.org/script.js", network::mojom::RequestDestination::kScript);
+-  EXPECT_CALL(*mock_collector_,
+-              RecordResourceLoadComplete(_, Eq(ByRef(*resource_load_info))));
++  EXPECT_CALL(*mock_collector_, RecordResourceLoadComplete(
++                                    _, Eq(resource_load_info->original_url),
++                                    Eq(ByRef(*resource_load_info))));
+   tab_helper_->ResourceLoadComplete(main_rfh(), content::GlobalRequestID(),
++                                    resource_load_info->original_url,
+                                     *resource_load_info);
+ }
+ 
+@@ -296,6 +300,7 @@ TEST_P(LoadingPredictorTabHelperTest, ResourceLoadCompleteInSubFrame) {
+                              network::mojom::RequestDestination::kScript,
+                              /*always_access_network=*/false);
+   tab_helper_->ResourceLoadComplete(subframe, content::GlobalRequestID(),
++                                    resource_load_info->original_url,
+                                     *resource_load_info);
+ }
+ 
+@@ -309,7 +314,8 @@ TEST_P(LoadingPredictorTabHelperTest, LoadResourceFromMemoryCache) {
+   resource_load_info->mime_type = "application/javascript";
+   resource_load_info->network_info->network_accessed = false;
+   EXPECT_CALL(*mock_collector_,
+-              RecordResourceLoadComplete(_, Eq(ByRef(*resource_load_info))));
++              RecordResourceLoadComplete(_, resource_load_info->original_url,
++                                         Eq(ByRef(*resource_load_info))));
+   tab_helper_->DidLoadResourceFromMemoryCache(
+       main_rfh(), GURL("http://test.org/script.js"), "application/javascript",
+       network::mojom::RequestDestination::kScript);
+@@ -797,6 +803,7 @@ class TestLoadingDataCollector : public LoadingDataCollector {
+                               bool is_error_page) override {}
+   void RecordResourceLoadComplete(
+       NavigationId navigation_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) override {
+     ++count_resource_loads_completed_;
+     EXPECT_EQ(expected_request_priority_, resource_load_info.request_priority);
+@@ -861,6 +868,7 @@ TEST_P(LoadingPredictorTabHelperTestCollectorTest, ResourceLoadComplete) {
+   auto resource_load_info = CreateResourceLoadInfo(
+       "http://test.org/script.js", network::mojom::RequestDestination::kScript);
+   tab_helper_->ResourceLoadComplete(main_rfh(), content::GlobalRequestID(),
++                                    resource_load_info->original_url,
+                                     *resource_load_info);
+   EXPECT_EQ(1u, test_collector_->count_resource_loads_completed());
+ 
+@@ -869,6 +877,7 @@ TEST_P(LoadingPredictorTabHelperTestCollectorTest, ResourceLoadComplete) {
+   resource_load_info = CreateLowPriorityResourceLoadInfo(
+       "http://test.org/script.js", network::mojom::RequestDestination::kScript);
+   tab_helper_->ResourceLoadComplete(main_rfh(), content::GlobalRequestID(),
++                                    resource_load_info->original_url,
+                                     *resource_load_info);
+   EXPECT_EQ(2u, test_collector_->count_resource_loads_completed());
+ }
+@@ -910,12 +919,14 @@ TEST_P(LoadingPredictorTabHelperTestCollectorFencedFramesTest,
+   auto resource_load_info = CreateResourceLoadInfo(
+       "http://test.org/script.js", network::mojom::RequestDestination::kScript);
+   tab_helper_->ResourceLoadComplete(main_rfh(), content::GlobalRequestID(),
++                                    resource_load_info->original_url,
+                                     *resource_load_info);
+   EXPECT_EQ(1u, test_collector_->count_resource_loads_completed());
+ 
+   // Load a sub resource on the fenced frame and do not record it.
+   tab_helper_->ResourceLoadComplete(
+-      fenced_frame_root, content::GlobalRequestID(), *resource_load_info);
++      fenced_frame_root, content::GlobalRequestID(),
++      resource_load_info->original_url, *resource_load_info);
+   EXPECT_EQ(1u, test_collector_->count_resource_loads_completed());
+ }
+ 
+diff --git a/chrome/browser/renderer_context_menu/render_view_context_menu_browsertest.cc b/chrome/browser/renderer_context_menu/render_view_context_menu_browsertest.cc
+index c037fab10d5a27d540bd075cd419de71786507e1..02a56b73ce846212f849ef5a4a83ec6affa89733 100644
+--- a/chrome/browser/renderer_context_menu/render_view_context_menu_browsertest.cc
++++ b/chrome/browser/renderer_context_menu/render_view_context_menu_browsertest.cc
+@@ -3198,8 +3198,9 @@ class LoadImageRequestObserver : public content::WebContentsObserver {
+   void ResourceLoadComplete(
+       content::RenderFrameHost* render_frame_host,
+       const content::GlobalRequestID& request_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) override {
+-    if (resource_load_info.original_url.GetPath() == path_) {
++    if (original_url.GetPath() == path_) {
+       ASSERT_TRUE(resource_load_info.raw_body_bytes.is_positive());
+       ASSERT_EQ(resource_load_info.mime_type, "image/png");
+       run_loop_.Quit();
+diff --git a/chromecast/browser/cast_web_contents_impl.cc b/chromecast/browser/cast_web_contents_impl.cc
+index 77233a02d60b9644b4df684673e26211274256db..408af6fb01012f4344bfce177962d468931c1413 100644
+--- a/chromecast/browser/cast_web_contents_impl.cc
++++ b/chromecast/browser/cast_web_contents_impl.cc
+@@ -894,6 +894,7 @@ void CastWebContentsImpl::NotifyPageState() {
+ void CastWebContentsImpl::ResourceLoadComplete(
+     content::RenderFrameHost* render_frame_host,
+     const content::GlobalRequestID& request_id,
++    const GURL& original_url,
+     const blink::mojom::ResourceLoadInfo& resource_load_info) {
+   if (!web_contents_ ||
+       render_frame_host != web_contents_->GetPrimaryMainFrame()) {
+@@ -907,7 +908,7 @@ void CastWebContentsImpl::ResourceLoadComplete(
+       metrics::CastMetricsHelper::GetInstance();
+   metrics_helper->RecordApplicationEventWithValue(
+       "Cast.Platform.ResourceRequestError", net_error);
+-  LOG(ERROR) << "Resource \"" << resource_load_info.original_url << "\""
++  LOG(ERROR) << "Resource \"" << original_url << "\""
+              << " failed to load with net_error=" << net_error
+              << ", description=" << net::ErrorToShortString(net_error);
+   shell::CastBrowserProcess::GetInstance()->connectivity_checker()->Check();
+diff --git a/chromecast/browser/cast_web_contents_impl.h b/chromecast/browser/cast_web_contents_impl.h
+index 15062e8265f39ea7e7f32aae81b7d3547ce55780..8c396a9fb63677ea98d04db58786e0ea994d9639 100644
+--- a/chromecast/browser/cast_web_contents_impl.h
++++ b/chromecast/browser/cast_web_contents_impl.h
+@@ -131,6 +131,7 @@ class CastWebContentsImpl : public CastWebContents,
+   void ResourceLoadComplete(
+       content::RenderFrameHost* render_frame_host,
+       const content::GlobalRequestID& request_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) override;
+   void InnerWebContentsCreated(
+       content::WebContents* inner_web_contents) override;
+diff --git a/components/page_load_metrics/browser/metrics_web_contents_observer.cc b/components/page_load_metrics/browser/metrics_web_contents_observer.cc
+index fbad44e1ff9f4e986fb746cb61877959ca1dfad0..5ff106a68e9fd388bb956c6f0a3dc09afb8d0fd3 100644
+--- a/components/page_load_metrics/browser/metrics_web_contents_observer.cc
++++ b/components/page_load_metrics/browser/metrics_web_contents_observer.cc
+@@ -473,6 +473,7 @@ PageLoadTracker* MetricsWebContentsObserver::GetTrackerOrNullForRequest(
+ void MetricsWebContentsObserver::ResourceLoadComplete(
+     content::RenderFrameHost* render_frame_host,
+     const content::GlobalRequestID& request_id,
++    const GURL& original_url,
+     const blink::mojom::ResourceLoadInfo& resource_load_info) {
+   if (!ShouldTrackScheme(resource_load_info.final_url.scheme())) {
+     return;
+diff --git a/components/page_load_metrics/browser/metrics_web_contents_observer.h b/components/page_load_metrics/browser/metrics_web_contents_observer.h
+index 02cd3469fdc560ad16a35e6433b90e6d3ec46005..50fb35e5088db04f9842d285a93c3f5539e74ea5 100644
+--- a/components/page_load_metrics/browser/metrics_web_contents_observer.h
++++ b/components/page_load_metrics/browser/metrics_web_contents_observer.h
+@@ -118,6 +118,7 @@ class MetricsWebContentsObserver
+   void ResourceLoadComplete(
+       content::RenderFrameHost* render_frame_host,
+       const content::GlobalRequestID& request_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) override;
+   void FrameReceivedUserActivation(
+       content::RenderFrameHost* render_frame_host) override;
+diff --git a/components/page_load_metrics/browser/metrics_web_contents_observer_unittest.cc b/components/page_load_metrics/browser/metrics_web_contents_observer_unittest.cc
+index f8979d7d265a95cf8c7671531fcad768eafd5d57..c32876b1a75a671b377a12c8b62d66b7d7e0eed7 100644
+--- a/components/page_load_metrics/browser/metrics_web_contents_observer_unittest.cc
++++ b/components/page_load_metrics/browser/metrics_web_contents_observer_unittest.cc
+@@ -1017,7 +1017,7 @@ TEST_P(MetricsWebContentsObserverTest, OnLoadedResource_MainFrame) {
+   const auto request_id = navigation_simulator->GetGlobalRequestID();
+ 
+   observer()->ResourceLoadComplete(
+-      web_contents()->GetPrimaryMainFrame(), request_id,
++      web_contents()->GetPrimaryMainFrame(), request_id, main_resource_url,
+       *CreateResourceLoadInfo(main_resource_url,
+                               network::mojom::RequestDestination::kFrame));
+   EXPECT_EQ(1u, loaded_resources().size());
+@@ -1029,7 +1029,7 @@ TEST_P(MetricsWebContentsObserverTest, OnLoadedResource_MainFrame) {
+   // Deliver a second main frame resource. This one should be ignored, since the
+   // specified |request_id| is no longer associated with any tracked page loads.
+   observer()->ResourceLoadComplete(
+-      web_contents()->GetPrimaryMainFrame(), request_id,
++      web_contents()->GetPrimaryMainFrame(), request_id, main_resource_url,
+       *CreateResourceLoadInfo(main_resource_url,
+                               network::mojom::RequestDestination::kFrame));
+   EXPECT_EQ(1u, loaded_resources().size());
+@@ -1043,6 +1043,7 @@ TEST_P(MetricsWebContentsObserverTest, OnLoadedResource_Subresource) {
+   GURL loaded_resource_url("http://www.other.com/");
+   observer()->ResourceLoadComplete(
+       web_contents()->GetPrimaryMainFrame(), content::GlobalRequestID(),
++      loaded_resource_url,
+       *CreateResourceLoadInfo(loaded_resource_url,
+                               network::mojom::RequestDestination::kScript));
+ 
+@@ -1063,9 +1064,10 @@ TEST_P(MetricsWebContentsObserverTest,
+       web_contents(), GURL(kDefaultTestUrl2));
+ 
+   DCHECK(!old_rfh->IsActive());
++  GURL other_url("http://www.other.com/");
+   observer()->ResourceLoadComplete(
+-      old_rfh, content::GlobalRequestID(),
+-      *CreateResourceLoadInfo(GURL("http://www.other.com/"),
++      old_rfh, content::GlobalRequestID(), other_url,
++      *CreateResourceLoadInfo(other_url,
+                               network::mojom::RequestDestination::kScript));
+ 
+   EXPECT_TRUE(loaded_resources().empty());
+diff --git a/components/page_load_metrics/browser/observers/page_load_metrics_observer_tester.cc b/components/page_load_metrics/browser/observers/page_load_metrics_observer_tester.cc
+index 39159556ed4af24b4e40134f73d021c1975d9ea2..d620f152047389b75d1ff8e898b4c5bd042507ef 100644
+--- a/components/page_load_metrics/browser/observers/page_load_metrics_observer_tester.cc
++++ b/components/page_load_metrics/browser/observers/page_load_metrics_observer_tester.cc
+@@ -335,7 +335,8 @@ void PageLoadMetricsObserverTester::SimulateLoadedResource(
+     resource_load_info.load_timing_info.request_start = base::TimeTicks::Now();
+ 
+   metrics_web_contents_observer_->ResourceLoadComplete(
+-      web_contents()->GetPrimaryMainFrame(), request_id, resource_load_info);
++      web_contents()->GetPrimaryMainFrame(), request_id,
++      resource_load_info.original_url, resource_load_info);
+ }
+ 
+ void PageLoadMetricsObserverTester::SimulateFrameReceivedUserActivation(
+diff --git a/content/browser/renderer_host/document_associated_data.h b/content/browser/renderer_host/document_associated_data.h
+index 4af08c7efa8065e2e8fef5de7d36e5dcdaf2770d..07a0c0408ac743caca48c6e84d189ece049f4bbc 100644
+--- a/content/browser/renderer_host/document_associated_data.h
++++ b/content/browser/renderer_host/document_associated_data.h
+@@ -104,6 +104,18 @@ class DocumentAssociatedData : public base::SupportsUserData {
+     pending_did_stop_loading_for_prerendering_ = true;
+   }
+ 
++  // Stores the original URL of the navigation that committed this document.
++  // When `kSanitizeOriginalUrlDuringNavigation` is enabled, the renderer
++  // process only receives an origin-sanitized version of the original URL, but
++  // they then provide that sanitized value to browser-side features (such as
++  // observers) that still expect the full URL. Since `NavigationRequest` is
++  // destroyed upon commit, we preserve the original URL for the document's
++  // lifetime.
++  const GURL& original_url() const { return original_url_; }
++  void set_original_url(const GURL& original_url) {
++    original_url_ = original_url;
++  }
++
+   // Reporting API:
+   //
+   // Contains the reporting source token for this document, which will be
+@@ -219,6 +231,7 @@ class DocumentAssociatedData : public base::SupportsUserData {
+   bool is_discarded_ = false;
+   std::optional<GURL> pending_did_finish_load_url_for_prerendering_;
+   bool pending_did_stop_loading_for_prerendering_ = false;
++  GURL original_url_;
+   std::vector<raw_ptr<internal::DocumentServiceBase, VectorExperimental>>
+       services_;
+   scoped_refptr<NavigationOrDocumentHandle> navigation_or_document_handle_;
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index c1610b6bd5ac08eee79df3735a723efbeb951b2b..c30711ae742722993f02640eeceb2eb5e80c35c2 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -1832,8 +1832,14 @@ NavigationRequest::NavigationRequest(
+   CHECK(common_params_->method == "POST" || !common_params_->post_data);
+   if (base::FeatureList::IsEnabled(
+           features::kSanitizeOriginalUrlDuringNavigation)) {
+-    CHECK_EQ(common_params_->url.DeprecatedGetOriginAsURL(),
+-             commit_params_->original_url);
++    // TODO(crbug.com/495463654): We need to get the origin of the original_url
++    // here because the NavigationRequestTest helpers directly set original_url
++    // without triggering paths that may sanitize it. This will no longer be an
++    // issue once original_url is converted to be an original_origin.
++    // TODO(523555340): CHECK-exclusion: Convert to a CHECK once we are
++    // confident it won't be triggered.
++    DCHECK_EQ(common_params_->url.DeprecatedGetOriginAsURL(),
++              commit_params_->original_url.DeprecatedGetOriginAsURL());
+   } else {
+     CHECK_EQ(common_params_->url, commit_params_->original_url);
+   }
+diff --git a/content/browser/renderer_host/render_frame_host_delegate.h b/content/browser/renderer_host/render_frame_host_delegate.h
+index bab2a9c6c85f5b488a383d0d69b045e15fde50c7..8ef947b2398ab25849c9e51e5a38cacc82cbde63 100644
+--- a/content/browser/renderer_host/render_frame_host_delegate.h
++++ b/content/browser/renderer_host/render_frame_host_delegate.h
+@@ -479,6 +479,7 @@ class CONTENT_EXPORT RenderFrameHostDelegate {
+   virtual void ResourceLoadComplete(
+       RenderFrameHostImpl* render_frame_host,
+       const GlobalRequestID& request_id,
++      const GURL& original_url,
+       blink::mojom::ResourceLoadInfoPtr resource_load_info) {}
+ 
+   // Request to print a frame that is in a different process than its parent.
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index 7a4d9078ecb039b124b1b33465e0589105e37855..a5abac103692cb6ddbe1fe994668d14d5c38784b 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -11755,10 +11755,16 @@ void RenderFrameHostImpl::SubresourceResponseStarted(
+ void RenderFrameHostImpl::ResourceLoadComplete(
+     blink::mojom::ResourceLoadInfoPtr resource_load_info) {
+   GlobalRequestID global_request_id;
++  GURL original_url = resource_load_info->original_url;
+   const bool is_frame_request =
+       blink::IsRequestDestinationFrame(resource_load_info->request_destination);
+   if (main_frame_request_ids_.first == resource_load_info->request_id) {
+     global_request_id = main_frame_request_ids_.second;
++    // With kSanitizeOriginalUrlDuringNavigation enabled, the renderer only has
++    // access to the sanitized original origin for privacy reasons. We restore
++    // the actual original URL here in the browser so that observers (like
++    // tests) see the correct full URLs.
++    original_url = document_associated_data_->original_url();
+   } else if (is_frame_request) {
+     // The load complete message for the main resource arrived before
+     // |DidCommitProvisionalLoad()|. We save the load info so
+@@ -11767,7 +11773,7 @@ void RenderFrameHostImpl::ResourceLoadComplete(
+     deferred_main_frame_load_info_ = std::move(resource_load_info);
+     return;
+   }
+-  delegate_->ResourceLoadComplete(this, global_request_id,
++  delegate_->ResourceLoadComplete(this, global_request_id, original_url,
+                                   std::move(resource_load_info));
+ }
+ 
+@@ -16629,6 +16635,15 @@ void RenderFrameHostImpl::DidCommitNewDocument(
+ 
+   TakeNewDocumentPropertiesFromNavigation(navigation_request);
+ 
++  // Store the unsanitized original URL of the navigation in the
++  // document-associated data. The renderer only receives a sanitized version
++  // (e.g., origin-only) of the original URL when the
++  // `kSanitizeOriginalUrlDuringNavigation` feature is enabled, but browser-side
++  // observers still expect the full unsanitized original URL after the load
++  // completes (and after the RFH loses access to the navigation request).
++  document_associated_data_->set_original_url(
++      navigation_request->original_url());
++
+   // Set embedded documents' cross-origin-opener-policy from their top level:
+   //  - Use top level's policy if they are same-origin.
+   //  - Use the default policy otherwise.
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 0cd1a754a73adf901c179825ee8c44307e407f2a..8fcea8528de4c10a6a2b730f130f6c5fdc9c92a8 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -8340,6 +8340,7 @@ void WebContentsImpl::ViewSource(RenderFrameHostImpl* frame) {
+ void WebContentsImpl::ResourceLoadComplete(
+     RenderFrameHostImpl* render_frame_host,
+     const GlobalRequestID& request_id,
++    const GURL& original_url,
+     blink::mojom::ResourceLoadInfoPtr resource_load_info) {
+   OPTIONAL_TRACE_EVENT2("content", "WebContentsImpl::ResourceLoadComplete",
+                         "render_frame_host", render_frame_host, "request_id",
+@@ -8347,7 +8348,7 @@ void WebContentsImpl::ResourceLoadComplete(
+   const blink::mojom::ResourceLoadInfo& resource_load_info_ref =
+       *resource_load_info;
+   observers_.NotifyObservers(&WebContentsObserver::ResourceLoadComplete,
+-                             render_frame_host, request_id,
++                             render_frame_host, request_id, original_url,
+                              resource_load_info_ref);
+ }
+ 
+diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
+index a558779a41a8a916ec45b8aea8e182b6ebe46cfc..dc66040d56e564c18d64ffe1ee25b1e0396bcdc2 100644
+--- a/content/browser/web_contents/web_contents_impl.h
++++ b/content/browser/web_contents/web_contents_impl.h
+@@ -839,7 +839,8 @@ class CONTENT_EXPORT WebContentsImpl
+   void ResourceLoadComplete(
+       RenderFrameHostImpl* render_frame_host,
+       const GlobalRequestID& request_id,
+-      blink::mojom::ResourceLoadInfoPtr resource_load_information) override;
++      const GURL& original_url,
++      blink::mojom::ResourceLoadInfoPtr resource_load_info) override;
+   void OnCookiesAccessed(RenderFrameHostImpl*,
+                          const CookieAccessDetails& details) override;
+   void OnTrustTokensAccessed(RenderFrameHostImpl*,
+diff --git a/content/browser/web_contents/web_contents_impl_browsertest.cc b/content/browser/web_contents/web_contents_impl_browsertest.cc
+index 057dd95ca3ad33a9b2c13bbcb6c3c94c4078eb92..25244d502fc72239075aa8a5c18afa97d198988a 100644
+--- a/content/browser/web_contents/web_contents_impl_browsertest.cc
++++ b/content/browser/web_contents/web_contents_impl_browsertest.cc
+@@ -799,18 +799,20 @@ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
+                             page_destination_url /* expected_commit_url */));
+ 
+   ASSERT_EQ(2U, observer.resource_load_entries().size());
++  const auto& resource_load_entry = observer.resource_load_entries()[0];
+   const blink::mojom::ResourceLoadInfoPtr& page_load_info =
+-      observer.resource_load_entries()[0].resource_load_info;
++      resource_load_entry.resource_load_info;
+   EXPECT_EQ(page_destination_url, page_load_info->final_url);
+-  EXPECT_EQ(page_original_url, page_load_info->original_url);
++  EXPECT_EQ(page_original_url, resource_load_entry.original_url);
+ 
+   GURL image_destination_url(embedded_test_server()->GetURL("/blank.jpg"));
+   GURL image_original_url(
+       embedded_test_server()->GetURL("/server-redirect?blank.jpg"));
++  const auto& image_load_entry = observer.resource_load_entries()[1];
+   const blink::mojom::ResourceLoadInfoPtr& image_load_info =
+-      observer.resource_load_entries()[1].resource_load_info;
++      image_load_entry.resource_load_info;
+   EXPECT_EQ(image_destination_url, image_load_info->final_url);
+-  EXPECT_EQ(image_original_url, image_load_info->original_url);
++  EXPECT_EQ(image_original_url, image_load_entry.original_url);
+ }
+ 
+ IN_PROC_BROWSER_TEST_F(WebContentsImplBrowserTest,
+diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
+index 722e19b8fec5977bfc9a197c1ea3f8d6ba5615ae..f3eb15182b4430d99a370be36aa20c33fceee6da 100644
+--- a/content/public/browser/web_contents_observer.h
++++ b/content/public/browser/web_contents_observer.h
+@@ -503,9 +503,15 @@ class CONTENT_EXPORT WebContentsObserver : public base::CheckedObserver {
+   // This method is invoked when a resource associate with the frame
+   // |render_frame_host| has been loaded, successfully or not. |request_id| will
+   // only be populated for main frame resources.
++  // |original_url| is the unsanitized original URL of the resource request
++  // tracked by the browser process. |resource_load_info| comes directly from
++  // the renderer process. When `kSanitizeOriginalUrlDuringNavigation` is
++  // enabled, |resource_load_info.original_url| may be sanitized to be just the
++  // origin, while |original_url| is always the full URL.
+   virtual void ResourceLoadComplete(
+       RenderFrameHost* render_frame_host,
+       const GlobalRequestID& request_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) {}
+ 
+   // Called when document reads or sets a cookie (either via document.cookie or
+diff --git a/content/public/test/mock_web_contents_observer.h b/content/public/test/mock_web_contents_observer.h
+index 7a65a4e341435290c98f46db075e1f63c1258d3b..7c25e250f89716dc42bf2d47087fb159fd866908 100644
+--- a/content/public/test/mock_web_contents_observer.h
++++ b/content/public/test/mock_web_contents_observer.h
+@@ -121,6 +121,7 @@ class MockWebContentsObserver : public WebContentsObserver {
+               ResourceLoadComplete,
+               (RenderFrameHost* render_frame_host,
+                const GlobalRequestID& request_id,
++               const GURL& original_url,
+                const blink::mojom::ResourceLoadInfo& resource_load_info),
+               (override));
+   MOCK_METHOD(void,
+diff --git a/content/public/test/resource_load_observer.cc b/content/public/test/resource_load_observer.cc
+index abd7af3a9f175de586c8986b6d218e5b42fd3757..f2593ab0aa242716d9a67eaa15d23f7b6563b89b 100644
+--- a/content/public/test/resource_load_observer.cc
++++ b/content/public/test/resource_load_observer.cc
+@@ -20,8 +20,10 @@ namespace content {
+ 
+ ResourceLoadObserver::ResourceLoadEntry::ResourceLoadEntry(
+     blink::mojom::ResourceLoadInfoPtr resource_load_info,
++    const GURL& original_url,
+     bool resource_is_associated_with_main_frame)
+     : resource_load_info(std::move(resource_load_info)),
++      original_url(original_url),
+       resource_is_associated_with_main_frame(
+           resource_is_associated_with_main_frame) {}
+ 
+@@ -59,7 +61,7 @@ void ResourceLoadObserver::CheckResourceLoaded(
+   bool resource_load_info_found = false;
+   for (const auto& resource_load_entry : resource_load_entries_) {
+     const auto& resource_load_info = resource_load_entry.resource_load_info;
+-    if (resource_load_info->original_url != original_url) {
++    if (resource_load_entry.original_url != original_url) {
+       continue;
+     }
+ 
+@@ -114,7 +116,7 @@ void ResourceLoadObserver::CheckResourceLoaded(
+ blink::mojom::ResourceLoadInfoPtr* ResourceLoadObserver::GetResource(
+     const GURL& original_url) {
+   for (auto& entry : resource_load_entries_) {
+-    if (entry.resource_load_info->original_url == original_url) {
++    if (entry.original_url == original_url) {
+       return &entry.resource_load_info;
+     }
+   }
+@@ -129,7 +131,7 @@ void ResourceLoadObserver::Reset() {
+ void ResourceLoadObserver::WaitForResourceCompletion(const GURL& original_url) {
+   // If we've already seen the resource, return immediately.
+   for (const auto& entry : resource_load_entries_) {
+-    if (entry.resource_load_info->original_url == original_url) {
++    if (entry.original_url == original_url) {
+       return;
+     }
+   }
+@@ -145,10 +147,12 @@ void ResourceLoadObserver::WaitForResourceCompletion(const GURL& original_url) {
+ void ResourceLoadObserver::ResourceLoadComplete(
+     content::RenderFrameHost* render_frame_host,
+     const GlobalRequestID& request_id,
++    const GURL& original_url,
+     const blink::mojom::ResourceLoadInfo& resource_load_info) {
+   EXPECT_NE(nullptr, render_frame_host);
+-  resource_load_entries_.emplace_back(ResourceLoadEntry(
+-      resource_load_info.Clone(), render_frame_host->IsInPrimaryMainFrame()));
++  resource_load_entries_.emplace_back(
++      ResourceLoadEntry(resource_load_info.Clone(), original_url,
++                        render_frame_host->IsInPrimaryMainFrame()));
+   // Sorts entries with request start time since the resource loading time is
+   // not deterministic.
+   std::sort(resource_load_entries_.begin(), resource_load_entries_.end(),
+@@ -158,7 +162,7 @@ void ResourceLoadObserver::ResourceLoadComplete(
+             });
+   // Have we been waiting for this resource? If so, run the callback.
+   if (waiting_original_url_.is_valid() &&
+-      resource_load_info.original_url == waiting_original_url_) {
++      original_url == waiting_original_url_) {
+     waiting_original_url_ = GURL();
+     std::move(waiting_callback_).Run();
+   }
+diff --git a/content/public/test/resource_load_observer.h b/content/public/test/resource_load_observer.h
+index de0ea612424f6b28c5252d1a4a706662fdc63a58..e45c6a4eb97827cf128022e517d7ae3051950fc5 100644
+--- a/content/public/test/resource_load_observer.h
++++ b/content/public/test/resource_load_observer.h
+@@ -23,6 +23,7 @@ class ResourceLoadObserver : public WebContentsObserver {
+  public:
+   struct ResourceLoadEntry {
+     ResourceLoadEntry(blink::mojom::ResourceLoadInfoPtr resource_load_info,
++                      const GURL& original_url,
+                       bool resource_is_associated_with_main_frame);
+     ~ResourceLoadEntry();
+     ResourceLoadEntry(ResourceLoadEntry&&);
+@@ -31,6 +32,7 @@ class ResourceLoadObserver : public WebContentsObserver {
+     ResourceLoadEntry& operator=(const ResourceLoadEntry&) = delete;
+ 
+     blink::mojom::ResourceLoadInfoPtr resource_load_info;
++    GURL original_url;
+     bool resource_is_associated_with_main_frame;
+   };
+ 
+@@ -77,6 +79,7 @@ class ResourceLoadObserver : public WebContentsObserver {
+   void ResourceLoadComplete(
+       content::RenderFrameHost* render_frame_host,
+       const GlobalRequestID& request_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) override;
+   void DidLoadResourceFromMemoryCache(
+       content::RenderFrameHost* render_frame_host,
+diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
+index 9c1fb0b2ed4f013ef6108a9844b22f6bfe697621..c5169428184d7c914bb1590c6fefb5702eebeaf7 100644
+--- a/fuchsia_web/webengine/browser/frame_impl.cc
++++ b/fuchsia_web/webengine/browser/frame_impl.cc
+@@ -1638,6 +1638,7 @@ void FrameImpl::DidFirstVisuallyNonEmptyPaint() {
+ void FrameImpl::ResourceLoadComplete(
+     content::RenderFrameHost* render_frame_host,
+     const content::GlobalRequestID& request_id,
++    const GURL& original_url,
+     const blink::mojom::ResourceLoadInfo& resource_load_info) {
+   int net_error = resource_load_info.net_error;
+   if (net_error != net::OK) {
+diff --git a/fuchsia_web/webengine/browser/frame_impl.h b/fuchsia_web/webengine/browser/frame_impl.h
+index 756d4192271d6a65cfe8e1511737c565b543cb1f..e3621f06ec5d899108a35b5dd29d93c223a5d067 100644
+--- a/fuchsia_web/webengine/browser/frame_impl.h
++++ b/fuchsia_web/webengine/browser/frame_impl.h
+@@ -347,6 +347,7 @@ class WEB_ENGINE_EXPORT FrameImpl : public fuchsia::web::Frame,
+   void ResourceLoadComplete(
+       content::RenderFrameHost* render_frame_host,
+       const content::GlobalRequestID& request_id,
++      const GURL& original_url,
+       const blink::mojom::ResourceLoadInfo& resource_load_info) override;
+   void MediaStartedPlaying(const MediaPlayerInfo& video_type,
+                            const content::MediaPlayerId& id) override;
+diff --git a/third_party/blink/renderer/core/html/html_frame_owner_element.cc b/third_party/blink/renderer/core/html/html_frame_owner_element.cc
+index f724533448cdcff534c71d44d539197e572683d7..6cc769f87224f836861f9e809a64c2f351770a31 100644
+--- a/third_party/blink/renderer/core/html/html_frame_owner_element.cc
++++ b/third_party/blink/renderer/core/html/html_frame_owner_element.cc
+@@ -544,18 +544,13 @@ void HTMLFrameOwnerElement::AddResourceTiming(
+     return;
+   }
+ 
+-  // This would only happen in rare cases, where the frame is navigated from the
+-  // outside, e.g. by a web extension or window.open() with target, and that
+-  // navigation would cancel the container-initiated navigation. This safeguard
+-  // would make this type of race harmless.
+-  // TODO(crbug.com/1410705): fix this properly by moving IFrame reporting to
+-  // the browser side.
+-  if (fallback_timing_info_->name != info->name) {
+-    return;
+-  }
+-
+   info->initiator_url = fallback_timing_info_->initiator_url;
+ 
++  // When the kSanitizeOriginalUrlDuringNavigation feature is enabled, the
++  // original URL will be sanitized in the child frame's commit parameters.
++  // Restore it from the fallback info.
++  info->name = fallback_timing_info_->name;
++
+   DOMWindowPerformance::performance(*GetDocument().domWindow())
+       ->AddResourceTiming(std::move(info), localName());
+   DidReportResourceTiming();
