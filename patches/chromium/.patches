@@ -160,3 +160,12 @@ build_disable_llvm_unroll-add-parallel-reductions_on_apple_targets.patch
 fix_ignore_non-occluding_windows_in_the_mac_occlusion_checker.patch
 fix_guard_webstoreprivateapi_factory_against_null_delegate.patch
 fix_source_linux_portal_accent_color_via_ossettingsprovider.patch
+cherry-pick-0a7f7bb85681.patch
+cherry-pick-183560e1564f.patch
+cherry-pick-526fd4a0352b.patch
+cherry-pick-5c2010f1a7ea.patch
+cherry-pick-888082723cb8.patch
+cherry-pick-8e07d98887a9.patch
+cherry-pick-aeebc5710a1c.patch
+cherry-pick-bbaee6555e7b.patch
+cherry-pick-ece2fa50a313.patch

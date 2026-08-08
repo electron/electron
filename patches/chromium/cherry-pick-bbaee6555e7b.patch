@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Fri, 31 Jul 2026 15:01:30 -0700
+Subject: [M152] media: Reject HEVC non-first slice segment when prior slice is
+ missing
+
+Original change's description:
+> media: Reject HEVC non-first slice segment when prior slice is missing
+>
+> Disallow non-first slice segments (first_slice_segment_in_pic_flag == 0)
+> when no prior slice header exists (e.g. after mid-stream SPS/PPS
+> updates). Enforce this in H265Parser::ParseSliceHeader() when
+> validate_extended_bitstream_ is set, and in
+> H265Decoder::PreprocessCurrentSlice() when curr_pic_ is null.
+>
+> Bug: 536470854
+> Change-Id: Ie7f159fbb9cdb229f516f0e46699a22aedefa184
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8160680
+> Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+> Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1669582}
+
+(cherry picked from commit 5dc7ba4f4e4770e36b567afbf457740e227d9edb)
+
+Bug: 540248491,536470854
+Change-Id: Ie7f159fbb9cdb229f516f0e46699a22aedefa184
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8170341
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/7977@{#331}
+Cr-Branched-From: b7fe14017379ddffae396d944fb8b59a5896c261-refs/heads/main@{#1669021}
+
+diff --git a/media/gpu/h265_decoder.cc b/media/gpu/h265_decoder.cc
+index 1a1b0a4a83a852460ff332587847f6847c8ee438..750a4ad7c3a3b66412b8fb4b79bd88380df2d568 100644
+--- a/media/gpu/h265_decoder.cc
++++ b/media/gpu/h265_decoder.cc
+@@ -703,6 +703,10 @@ H265Decoder::H265Accelerator::Status H265Decoder::PreprocessCurrentSlice() {
+       return result;
+ 
+     DCHECK(!curr_pic_);
++  } else if (!curr_pic_) {
++    DVLOG(1) << "Received slice segment with first_slice_segment_in_pic_flag "
++             << "equal to 0 without an active picture";
++    return H265Accelerator::Status::kFail;
+   }
+ 
+   return H265Accelerator::Status::kOk;
+diff --git a/media/parsers/h265_parser.cc b/media/parsers/h265_parser.cc
+index 22d15ce11aca7f0da0feafb717fc8ef2f62b53fe..8d65703e307562447942c71caca6805afa3c6ae1 100644
+--- a/media/parsers/h265_parser.cc
++++ b/media/parsers/h265_parser.cc
+@@ -1156,6 +1156,11 @@ H265Parser::Result H265Parser::ParseSliceHeader(const H265NALU& nalu,
+       std::min(shdr->temporal_id, sps->sps_max_sub_layers_minus1);
+ 
+   if (!shdr->first_slice_segment_in_pic_flag) {
++    if (validate_extended_bitstream_ && !prior_shdr) {
++      DVLOG(1) << "First slice segment in picture must have "
++               << "first_slice_segment_in_pic_flag equal to 1";
++      return kInvalidStream;
++    }
+     if (pps->dependent_slice_segments_enabled_flag)
+       READ_BOOL_OR_RETURN(&shdr->dependent_slice_segment_flag);
+     READ_BITS_OR_RETURN(base::bits::Log2Ceiling(sps->pic_size_in_ctbs_y),
+diff --git a/media/parsers/h265_parser_unittest.cc b/media/parsers/h265_parser_unittest.cc
+index 5f0274c4fbb36b1a3162c1516dcb3cb92bb45d63..2b97717142dfd1da869859060da8f4e070d3c1bc 100644
+--- a/media/parsers/h265_parser_unittest.cc
++++ b/media/parsers/h265_parser_unittest.cc
+@@ -924,4 +924,28 @@ TEST_F(H265CrossSliceTest, AcceptsMatchingShortTermRefPicSet) {
+             H265Parser::kOk);
+ }
+ 
++TEST_F(H265CrossSliceTest, RejectsNonFirstSliceSegmentWithoutPriorSliceHeader) {
++  H26xAnnexBBitstreamBuilder builder;
++  BuildSpsAndPps(builder);
++  AppendSecondSlice(builder, H265NALU::IDR_W_RADL);
++  builder.Flush();
++  parser_.SetStream(builder.data());
++
++  H265NALU nalu;
++  int sps_id;
++  int pps_id;
++  ASSERT_EQ(parser_.AdvanceToNextNALU(&nalu), H265Parser::kOk);
++  ASSERT_EQ(nalu.nal_unit_type, H265NALU::SPS_NUT);
++  ASSERT_EQ(parser_.ParseSPS(&sps_id), H265Parser::kOk);
++  ASSERT_EQ(parser_.AdvanceToNextNALU(&nalu), H265Parser::kOk);
++  ASSERT_EQ(nalu.nal_unit_type, H265NALU::PPS_NUT);
++  ASSERT_EQ(parser_.ParsePPS(nalu, &pps_id), H265Parser::kOk);
++
++  ASSERT_EQ(parser_.AdvanceToNextNALU(&nalu), H265Parser::kOk);
++  ASSERT_EQ(nalu.nal_unit_type, H265NALU::IDR_W_RADL);
++  H265SliceHeader shdr;
++  EXPECT_EQ(parser_.ParseSliceHeader(nalu, &shdr, nullptr),
++            H265Parser::kInvalidStream);
++}
++
+ }  // namespace media
