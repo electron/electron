@@ -4,7 +4,7 @@
 
 #include "shell/browser/api/electron_api_clipboard.h"
 
-#include <windows.h>  // NOLINT(build/include_order)
+#include <windows.h>
 
 #include <cstdint>
 #include <string>
