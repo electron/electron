@@ -6,9 +6,6 @@
 
 #include <windows.h>  // windows.h must be included first
 
-#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
-
-#include <atlbase.h>
 #include <comdef.h>
 #include <commdlg.h>
 #include <dwmapi.h>
@@ -27,8 +24,10 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
+#include "base/win/atl.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_com_initializer.h"
+#include "base/win/shlwapi.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/electron_paths.h"
 #include "ui/base/win/shell.h"
