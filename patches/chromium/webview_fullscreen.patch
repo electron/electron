@@ -18,7 +18,7 @@ diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/b
 index e0b4f417c37f012b14476e62acb0fa66c991de91..3938359abdd379cc7a8f485841850898516499b5 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -9481,6 +9481,17 @@ void RenderFrameHostImpl::EnterFullscreen(
+@@ -9502,6 +9502,17 @@ void RenderFrameHostImpl::EnterFullscreen(
      }
    }
  
@@ -37,10 +37,10 @@ index e0b4f417c37f012b14476e62acb0fa66c991de91..3938359abdd379cc7a8f485841850898
    if (had_fullscreen_token && !GetView()->HasFocus()) {
      GetView()->Focus();
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a5069c5e2182c158d522baff32dc8b5ce8ed7089..4dff5667d5ff0bccb233d6db3286c04686c20403 100644
+index 80a161c3d62d459a68d0a06c143671063ca63ad2..01c1f158bfc3cb108793d715a60c9d2617bdc049 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4670,21 +4670,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
+@@ -4677,21 +4677,25 @@ KeyboardEventProcessingResult WebContentsImpl::PreHandleKeyboardEvent(
      const input::NativeWebKeyboardEvent& event) {
    OPTIONAL_TRACE_EVENT0(TRACE_DISABLED_BY_DEFAULT("content.verbose"),
                          "WebContentsImpl::PreHandleKeyboardEvent");

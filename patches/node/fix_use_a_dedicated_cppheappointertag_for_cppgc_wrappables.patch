@@ -63,7 +63,7 @@ index fe6300a5d5d2d6602a84cbd33736c2133041d1b0..b9153306b6cbc34d076c0eb5b32ecce3
   * This is a helper mixin with a BaseObject-like interface to help
   * implementing wrapper objects managed by V8's cppgc (Oilpan) library.
 diff --git a/src/env.cc b/src/env.cc
-index 10266fd1233d9b117eefbbbb4f455289b002785a..ce6dd5b7394c63e50cbc250a7eca7048a873a8b9 100644
+index c1fa104fa25bd5919e405a3df94f3701d0e234a2..17fb7dcbbf5838b7448ea29a82c2dcbab532b4ea 100644
 --- a/src/env.cc
 +++ b/src/env.cc
 @@ -611,8 +611,7 @@ IsolateData::~IsolateData() {}

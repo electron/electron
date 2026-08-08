@@ -90,7 +90,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index ef1de973c57969f7980ae57a368e5f4fdd266df4..3fe726210324493e8c77c283454fbfc7b85badda 100644
+index d20e9956242887ace4bdc794fe327516ecd5bc1d..69efb9929d6036ebf9b1990be3452bdb9024fe5d 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -180,6 +180,8 @@ viz_component("service") {
@@ -564,7 +564,7 @@ index 399fba1a3d4e601dc2cdd5f1f4def8b7fd7a3011..8bcbe0d26c80323155d536c0d3a177a1
    gpu::SyncPointManager* GetSyncPointManager() override;
    gpu::Scheduler* GetGpuScheduler() override;
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 236c555933a572f8d3d2165db8f3b0425f187321..d265f0c597c993845e806163f084b7d09fa2e04d 100644
+index 330f658ab414cc940704a7596623487c6e419a8c..55845aaf9b1481179e41f7f5fc9e843f3f747bdd 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -394,8 +394,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(

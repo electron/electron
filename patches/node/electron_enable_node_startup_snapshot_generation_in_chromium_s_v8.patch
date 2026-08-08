@@ -158,7 +158,7 @@ index 664f878c0671db76cbf68116d224606243ddf501..4ed6d6ecf12ea92129f4d7b7fdb59bcb
    return nullptr;
  }
 diff --git a/src/node_snapshotable.cc b/src/node_snapshotable.cc
-index 8561933060ac30e3559d7ce2ac633d25f1e4d6ec..79dad674d21bc82096830eaf5a5100b0220b6cf4 100644
+index ae0613fdf35efcdb4b5917b9ecb3ad12d7bf4976..bc48096932b0a1004aec4317dc0c265bd6f1c045 100644
 --- a/src/node_snapshotable.cc
 +++ b/src/node_snapshotable.cc
 @@ -866,6 +866,19 @@ const std::vector<intptr_t>& SnapshotBuilder::CollectExternalReferences() {
