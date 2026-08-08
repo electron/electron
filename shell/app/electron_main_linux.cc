@@ -16,7 +16,7 @@
 #include "shell/app/uv_stdio_fix.h"
 #include "shell/common/electron_command_line.h"
 #include "shell/common/electron_constants.h"
-#include "uv.h"
+#include "shell/common/uv_includes.h"
 
 namespace {
 
