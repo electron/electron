@@ -734,6 +734,7 @@ filenames = {
     "shell/common/skia_util.cc",
     "shell/common/skia_util.h",
     "shell/common/thread_restrictions.h",
+    "shell/common/uv_includes.h",
     "shell/common/v8_util.cc",
     "shell/common/v8_util.h",
     "shell/common/world_ids.h",

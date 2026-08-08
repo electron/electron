@@ -8,7 +8,7 @@
 #include <memory>
 #include <optional>
 
-#include "uv.h"  // NOLINT(build/include_directory)
+#include "shell/common/uv_includes.h"
 #include "v8/include/v8-locker.h"
 
 namespace gin {
