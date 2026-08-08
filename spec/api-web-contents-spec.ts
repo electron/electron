@@ -2298,6 +2298,196 @@ describe('webContents module', () => {
     });
   });
 
+  describe('caretBrowsingEnabled', () => {
+    afterEach(closeAllWindows);
+
+    it('defaults to false', () => {
+      const w = new BrowserWindow({ show: false });
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('can be toggled via the property', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+
+      w.webContents.caretBrowsingEnabled = false;
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('stays enabled when set to the same value repeatedly', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    // Test that repeated calls aren't incorrectly incrementing/decrementing the underlying refcount
+    it('can be enabled repeatedly without poisoning future calls', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+      w.webContents.caretBrowsingEnabled = true;
+
+      w.webContents.caretBrowsingEnabled = false;
+      expect(w.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    // Test that repeated calls aren't incorrectly decrementing the underlying refcount
+    it('can be disabled repeatedly without poisoning future calls', () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.caretBrowsingEnabled = true;
+
+      w.webContents.caretBrowsingEnabled = false;
+      w.webContents.caretBrowsingEnabled = false;
+      w.webContents.caretBrowsingEnabled = false;
+
+      w.webContents.caretBrowsingEnabled = true;
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    it('persists across navigation', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.caretBrowsingEnabled = true;
+
+      await w.loadURL('about:blank');
+
+      expect(w.webContents.caretBrowsingEnabled).to.be.true();
+    });
+
+    it('tracks each WebContents independently', () => {
+      const w1 = new BrowserWindow({ show: false });
+      const w2 = new BrowserWindow({ show: false });
+
+      w1.webContents.caretBrowsingEnabled = true;
+      w2.webContents.caretBrowsingEnabled = true;
+
+      w1.webContents.caretBrowsingEnabled = false;
+
+      expect(w1.webContents.caretBrowsingEnabled).to.be.false();
+      expect(w2.webContents.caretBrowsingEnabled).to.be.true();
+
+      w2.webContents.caretBrowsingEnabled = false;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    it('can be enabled again after a WebContents is destroyed with it enabled', async () => {
+      const w1 = new BrowserWindow({ show: false });
+      w1.webContents.caretBrowsingEnabled = true;
+
+      const destroyed = once(w1.webContents, 'destroyed');
+      w1.close();
+      await destroyed;
+
+      const w2 = new BrowserWindow({ show: false });
+      w2.webContents.caretBrowsingEnabled = true;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.true();
+
+      w2.webContents.caretBrowsingEnabled = false;
+      expect(w2.webContents.caretBrowsingEnabled).to.be.false();
+    });
+
+    describe('renderer-side caret movement', () => {
+      const pressRight = (w: BrowserWindow, times: number) => {
+        for (let i = 0; i < times; i++) {
+          w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Right' });
+          w.webContents.sendInputEvent({ type: 'keyUp', keyCode: 'Right' });
+        }
+      };
+
+      // Blink needs a starting selection to move away from
+      const collapseSelectionToStart = (w: BrowserWindow) =>
+        w.webContents.executeJavaScript(`
+        {
+          const textNode = document.getElementById('prose').firstChild;
+          getSelection().collapse(textNode, 0);
+        }
+      `);
+
+      it('moves the caret through non-editable text when enabled', async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'caret-browsing.html'));
+        w.focus();
+        w.webContents.focus();
+
+        w.webContents.caretBrowsingEnabled = true;
+
+        let offset = 0;
+        await waitUntil(
+          async () => {
+            await collapseSelectionToStart(w);
+            pressRight(w, 3);
+            offset = await w.webContents.executeJavaScript('getSelection().anchorOffset');
+            return offset === 3;
+          },
+          { rate: 100, timeout: 3000 }
+        );
+
+        expect(offset).to.equal(3);
+      });
+
+      it('does not move the caret through non-editable text when disabled', async () => {
+        const w = new BrowserWindow({ show: true });
+        await w.loadFile(path.join(fixturesPath, 'pages', 'caret-browsing.html'));
+        w.focus();
+        w.webContents.focus();
+
+        w.webContents.caretBrowsingEnabled = false;
+
+        // Initialize to something other than 0 to ensure the awaited code actually gets
+        // a selection.
+        let offset = -1;
+        await waitUntil(
+          async () => {
+            await collapseSelectionToStart(w);
+            pressRight(w, 3);
+            offset = await w.webContents.executeJavaScript('getSelection().anchorOffset');
+            return offset === 3;
+          },
+          { rate: 100, timeout: 3000 }
+        ).catch(() => {});
+
+        expect(offset).to.equal(0);
+      });
+    });
+
+    describe('guest preference inheritance', () => {
+      it('inherits caretBrowsingEnabled in a guest webview', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+        w.webContents.caretBrowsingEnabled = true;
+
+        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+        const [, guest] = await created;
+
+        expect(guest.getType()).to.equal('webview');
+        expect(guest.caretBrowsingEnabled).to.be.true();
+      });
+
+      it('releases exactly one reference when an inherited preference is disabled', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+        w.webContents.caretBrowsingEnabled = true;
+
+        const created = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
+        w.loadURL('data:text/html,<webview src="data:text/html,hi"></webview>');
+        const [, guest] = await created;
+
+        expect(guest.caretBrowsingEnabled).to.be.true();
+
+        w.webContents.caretBrowsingEnabled = false;
+
+        // The setter updates the process-wide refcount as a side effect. Improper
+        // book-keeping would take the count below zero, which aborts the process
+        // under dcheck_always_on rather than failing an assertion here.
+        guest.caretBrowsingEnabled = false;
+      });
+    });
+  });
+
   describe('zoom api', () => {
     const hostZoomMap: Record<string, number> = {
       host1: 0.3,
