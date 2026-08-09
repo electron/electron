@@ -1,5 +1,4 @@
 import { createTokenAuth } from '@octokit/auth-token';
-import got from 'got';
 
 import { ElectronReleaseRepo } from './types';
 
@@ -14,11 +13,15 @@ async function getActionsIdToken(): Promise<string> {
       'ACTIONS_ID_TOKEN_REQUEST_URL/_TOKEN not set — the job needs `permissions: id-token: write` to mint an OIDC token for the sudowoodo exchange'
     );
   }
-  const { value } = await got(ACTIONS_ID_TOKEN_REQUEST_URL + '&audience=' + SUDOWOODO_OIDC_AUDIENCE, {
+  const resp = await fetch(ACTIONS_ID_TOKEN_REQUEST_URL + '&audience=' + SUDOWOODO_OIDC_AUDIENCE, {
     headers: {
       authorization: 'Bearer ' + ACTIONS_ID_TOKEN_REQUEST_TOKEN
     }
-  }).json<{ value: string }>();
+  });
+  if (!resp.ok) {
+    throw new Error(`Failed to request an Actions OIDC token, got status: ${resp.status}`);
+  }
+  const { value } = (await resp.json()) as { value: string };
   return value;
 }
 
@@ -32,18 +35,18 @@ async function ensureToken(repo: ElectronReleaseRepo) {
 
       if (SUDOWOODO_EXCHANGE_URL) {
         const idToken = await getActionsIdToken();
-        const resp = await got.post(SUDOWOODO_EXCHANGE_URL + '?repo=' + repo, {
+        const resp = await fetch(SUDOWOODO_EXCHANGE_URL + '?repo=' + repo, {
+          method: 'POST',
           headers: {
             Authorization: 'Bearer ' + idToken
-          },
-          throwHttpErrors: false
+          }
         });
-        if (resp.statusCode !== 200) {
-          console.error('bad sudowoodo exchange response code:', resp.statusCode);
+        if (resp.status !== 200) {
+          console.error('bad sudowoodo exchange response code:', resp.status);
           throw new Error('non-200 status code received from sudowoodo exchange function');
         }
         try {
-          return JSON.parse(resp.body).token;
+          return JSON.parse(await resp.text()).token;
         } catch {
           // Swallow as the error could include the token
           throw new Error('Unexpected error parsing sudowoodo exchange response');

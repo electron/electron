@@ -1,5 +1,3 @@
-import got from 'got';
-
 import * as url from 'node:url';
 
 const HASHER_FUNCTION_HOST = 'electron-hasher.azurewebsites.net';
@@ -19,29 +17,20 @@ export async function getUrlHash(targetUrl: string, algorithm = 'sha256', attemp
     search: search.toString()
   });
   try {
-    const resp = await got(functionUrl, {
-      throwHttpErrors: false
-    });
-    if (resp.statusCode !== 200) {
-      console.error('bad hasher function response:', resp.body.trim());
+    const resp = await fetch(functionUrl);
+    const body = await resp.text();
+    if (resp.status !== 200) {
+      console.error('bad hasher function response:', body.trim());
       throw new Error('non-200 status code received from hasher function');
     }
-    if (!resp.body) throw new Error('Successful lambda call but failed to get valid hash');
+    if (!body) throw new Error('Successful lambda call but failed to get valid hash');
 
     // response shape should be { hash: 'xyz', invocationId: "abc"}
-    const { hash } = JSON.parse(resp.body.trim());
+    const { hash } = JSON.parse(body.trim());
     return hash;
   } catch (err) {
     if (attempts > 1) {
-      const { response } = err as any;
-      if (response?.body) {
-        console.error(`Failed to get URL hash for ${targetUrl} - we will retry`, {
-          statusCode: response.statusCode,
-          body: JSON.parse(response.body)
-        });
-      } else {
-        console.error(`Failed to get URL hash for ${targetUrl} - we will retry`, err);
-      }
+      console.error(`Failed to get URL hash for ${targetUrl} - we will retry`, err);
       return getUrlHash(targetUrl, algorithm, attempts - 1);
     }
     throw err;

@@ -2,7 +2,6 @@
 
 import { BlobServiceClient } from '@azure/storage-blob';
 import { Octokit } from '@octokit/rest';
-import got from 'got';
 import { gte } from 'semver';
 
 import { execSync, ExecSyncOptions } from 'node:child_process';
@@ -380,19 +379,18 @@ async function verifyDraftGitHubReleaseAssets(release: MinimalRelease) {
       const { url, headers } = requestOptions;
       headers.authorization = `token ${((await octokit.auth()) as { token: string }).token}`;
 
-      const response = await got(url, {
-        followRedirect: false,
+      const response = await fetch(url, {
+        redirect: 'manual',
         method: 'HEAD',
-        headers: headers as any,
-        throwHttpErrors: false
+        headers: headers as Record<string, string>
       });
 
-      if (response.statusCode !== 302 && response.statusCode !== 301) {
+      if (response.status !== 302 && response.status !== 301) {
         console.error('Failed to HEAD github asset: ' + url);
-        throw new Error("Unexpected status HEAD'ing github asset: " + response.statusCode);
+        throw new Error("Unexpected status HEAD'ing github asset: " + response.status);
       }
 
-      return { url: response.headers.location!, file: asset.name };
+      return { url: response.headers.get('location')!, file: asset.name };
     })
   ).catch((err) => {
     console.error(`${fail} Error downloading files from GitHub`, err);
@@ -403,17 +401,15 @@ async function verifyDraftGitHubReleaseAssets(release: MinimalRelease) {
 }
 
 async function getShaSumMappingFromUrl(shaSumFileUrl: string, fileNamePrefix: string) {
-  const response = await got(shaSumFileUrl, {
-    throwHttpErrors: false
-  });
+  const response = await fetch(shaSumFileUrl);
+  const raw = await response.text();
 
-  if (response.statusCode !== 200) {
+  if (response.status !== 200) {
     console.error('Failed to fetch SHASUM mapping: ' + shaSumFileUrl);
-    console.error('Bad SHASUM mapping response: ' + response.body.trim());
-    throw new Error('Unexpected status fetching SHASUM mapping: ' + response.statusCode);
+    console.error('Bad SHASUM mapping response: ' + raw.trim());
+    throw new Error('Unexpected status fetching SHASUM mapping: ' + response.status);
   }
 
-  const raw = response.body;
   return raw
     .split('\n')
     .map((line) => line.trim())
