@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lukasz Anforowicz <lukasza@chromium.org>
+Date: Wed, 1 Apr 2026 09:30:04 -0700
+Subject: [mhtml] Use `FLAG_APPEND` instead of `FLAG_WRITE` in
+ `CreateMHTMLFile`,
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+MHTML files are always written sequentially - there is no need to seek
+within the file and therefore `FLAG_APPEND` can be used.
+
+This CL also augments the `DCHECK`s that have been introduced in
+https://codereview.chromium.org/314023002/, so that they also allow
+`FLAG_APPEND`.  `FLAG_APPEND` also results in `O_RDWR` or `O_WRONLY`
+[1], so the original concern from this 2014 CL is still addressed.
+
+[1] https://source.chromium.org/chromium/chromium/src/+/main:base/files/file_posix.cc;l=604-608;drc=b3a0fa5691682590fcbab672868c0b34beec7052
+
+Fixed: 496628298
+Change-Id: I46f2723a1eb7f6be43c7c40a78358bd85ea53d09
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/7708242
+Commit-Queue: Łukasz Anforowicz <lukasza@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1608595}
+
+diff --git a/base/files/file_posix.cc b/base/files/file_posix.cc
+index 9a19153a0abe935e90d17362de47274f7a40e3b0..f67c179f55a2840a5b1dabdf2f9d4f323bdb442e 100644
+--- a/base/files/file_posix.cc
++++ b/base/files/file_posix.cc
+@@ -571,7 +571,7 @@ void File::DoInitialize(const FilePath& path, uint32_t flags) {
+ 
+   if (flags & FLAG_CREATE_ALWAYS) {
+     DCHECK(!open_flags);
+-    DCHECK(flags & FLAG_WRITE);
++    DCHECK(flags & (FLAG_WRITE | FLAG_APPEND));
+     open_flags = O_CREAT | O_TRUNC;
+   }
+ 
+diff --git a/base/files/file_unittest.cc b/base/files/file_unittest.cc
+index 6f7cb8996bba5a476066668c758fcdc8e148e3b5..80604d3dc572b09155895bcd42df7352c47e6d4e 100644
+--- a/base/files/file_unittest.cc
++++ b/base/files/file_unittest.cc
+@@ -526,6 +526,49 @@ TEST(FileTest, Append) {
+   }
+ }
+ 
++// Test whether `FLAG_APPEND` really works - i.e. that Chromium's
++// platform-specific code correctly uses the APIs provided by the OS for locking
++// down the capabilities of a file handle.
++TEST(FileTest, AppendEffectiveness) {
++  ScopedTempDir temp_dir;
++  ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
++  FilePath file_path = temp_dir.GetPath().AppendASCII("append_file_cant_seek");
++  File file(file_path, File::FLAG_CREATE | File::FLAG_APPEND);
++  ASSERT_TRUE(file.IsValid());
++
++  // Write "test" to the file.
++  const std::string_view kTestData = "test";
++  std::optional<size_t> bytes_written = file.Write(0, as_byte_span(kTestData));
++  EXPECT_TRUE(bytes_written.has_value());
++  EXPECT_EQ(kTestData.size(), bytes_written.value());
++
++  // Attempt to `Seek` should fail because of `FLAG_APPEND` used above.
++  //
++  // We ignore the returned value because it is irrelevant - the real
++  // verification is whether the seek actually happened which is
++  // verified via `ReadFileToString` below.
++  std::ignore = file.Seek(File::FROM_BEGIN, /*offset=*/0);
++
++  // Write "foo" to the file.
++  const std::string_view kFooData = "foo";
++  bytes_written = file.WriteAtCurrentPos(as_byte_span(kFooData));
++  EXPECT_TRUE(bytes_written.has_value());
++  EXPECT_EQ(kFooData.size(), bytes_written.value());
++
++  // Try to write "bar" at offset 0.  We expect that the offset is ignored
++  // (explicitly in `file_posix.cc`, implicitly/by-the-OS in `file_win.cc`).
++  const std::string_view kBarData = "bar";
++  bytes_written = file.Write(/*offset=*/0, as_byte_span(kBarData));
++  EXPECT_TRUE(bytes_written.has_value());
++  EXPECT_EQ(kBarData.size(), bytes_written.value());
++
++  // Close the file and re-read the contents to verify that happened above.
++  file.Close();
++  std::string actual_contents;
++  EXPECT_TRUE(ReadFileToString(file_path, &actual_contents));
++  EXPECT_EQ("testfoobar", actual_contents);
++}
++
+ TEST(FileTest, Length) {
+   ScopedTempDir temp_dir;
+   ASSERT_TRUE(temp_dir.CreateUniqueTempDir());
+diff --git a/base/files/file_win.cc b/base/files/file_win.cc
+index d2477f85b41e21cfcc92ee6ea702457227467e49..e2df9eaa458fec4d200f77c7dc342fdbf5f373b3 100644
+--- a/base/files/file_win.cc
++++ b/base/files/file_win.cc
+@@ -408,7 +408,7 @@ void File::DoInitialize(const FilePath& path, uint32_t flags) {
+ 
+   if (flags & FLAG_CREATE_ALWAYS) {
+     DCHECK(!disposition);
+-    DCHECK(flags & FLAG_WRITE);
++    DCHECK(flags & (FLAG_WRITE | FLAG_APPEND));
+     disposition = CREATE_ALWAYS;
+   }
+ 
+diff --git a/content/browser/download/mhtml_generation_manager.cc b/content/browser/download/mhtml_generation_manager.cc
+index 52b2fc833e84601b212e5c19b940ba24c136e409..16c576e691b00e5956b61b515eb76305ce8adf23 100644
+--- a/content/browser/download/mhtml_generation_manager.cc
++++ b/content/browser/download/mhtml_generation_manager.cc
+@@ -89,10 +89,13 @@ base::File CreateMHTMLFile(const base::FilePath& file_path) {
+   // SECURITY NOTE: A file descriptor to the file created below will be passed
+   // to multiple renderer processes which (in out-of-process iframes mode) can
+   // act on behalf of separate web principals.  Therefore it is important to
+-  // only allow writing to the file and forbid reading from the file (as this
++  // only allow appending to the file and forbid reading from the file (as this
+   // would allow reading content generated by other renderers / other web
++  // principals) and forbid seeking/overwriting earlier file contents (as this
++  // would allow overwriting content generated by other renderers / other web
+   // principals).
+-  uint32_t file_flags = base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE;
++  uint32_t file_flags =
++      base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_APPEND;
+ 
+   base::File browser_file(file_path, file_flags);
+   if (!browser_file.IsValid()) {
