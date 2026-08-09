@@ -14,7 +14,6 @@
     "@electron/typescript-definitions": "^9.2.0",
     "@hurdlegroup/robotjs": "^0.12.3",
     "@octokit/rest": "^22.0.1",
-    "@primer/octicons": "^10.0.0",
     "@sentry/cli": "1.72.0",
     "@types/minimist": "^1.2.5",
     "@types/node": "^24.9.0",

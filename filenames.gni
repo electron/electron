@@ -8,17 +8,15 @@ filenames = {
   default_app_static_sources = [
     "default_app/icon.png",
     "default_app/index.html",
+    "default_app/octicon/LICENSE",
+    "default_app/octicon/book-24.svg",
+    "default_app/octicon/build.css",
+    "default_app/octicon/code-square-24.svg",
+    "default_app/octicon/gift-24.svg",
+    "default_app/octicon/mark-github-16.svg",
+    "default_app/octicon/star-fill-24.svg",
     "default_app/package.json",
     "default_app/styles.css",
-  ]
-
-  default_app_octicon_sources = [
-    "node_modules/@primer/octicons/build/build.css",
-    "node_modules/@primer/octicons/build/svg/book-24.svg",
-    "node_modules/@primer/octicons/build/svg/code-square-24.svg",
-    "node_modules/@primer/octicons/build/svg/gift-24.svg",
-    "node_modules/@primer/octicons/build/svg/mark-github-16.svg",
-    "node_modules/@primer/octicons/build/svg/star-fill-24.svg",
   ]
 
   lib_sources_linux = [
