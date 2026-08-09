@@ -43,7 +43,6 @@
     "url": "^0.11.4",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
-    "wrapper-webpack-plugin": "^2.2.0",
     "yaml": "^2.8.1"
   },
   "private": true,

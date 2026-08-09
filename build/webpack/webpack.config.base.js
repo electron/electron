@@ -1,11 +1,18 @@
 const TerserPlugin = require('terser-webpack-plugin');
 const webpack = require('webpack');
-const WrapperPlugin = require('wrapper-webpack-plugin');
 
 const fs = require('node:fs');
 const path = require('node:path');
 
 const electronRoot = path.resolve(__dirname, '../..');
+
+// Wraps the emitted bundle in `header` / `footer`. BannerPlugin instances run
+// in registration order, so wrapping twice nests the later wrapper outside the
+// earlier one.
+const wrapBundle = (header, footer) => [
+  new webpack.BannerPlugin({ banner: header, raw: true }),
+  new webpack.BannerPlugin({ banner: footer, raw: true, footer: true })
+];
 
 class AccessDependenciesPlugin {
   apply(compiler) {
@@ -98,29 +105,29 @@ module.exports = ({
 
     if (wrapInitWithProfilingTimeout) {
       plugins.push(
-        new WrapperPlugin({
-          header: 'function ___electron_webpack_init__() {',
-          footer: `
+        ...wrapBundle(
+          'function ___electron_webpack_init__() {',
+          `
 };
 if ((globalThis.process || binding.process).argv.includes("--profile-electron-init")) {
   setTimeout(___electron_webpack_init__, 0);
 } else {
   ___electron_webpack_init__();
 }`
-        })
+        )
       );
     }
 
     if (wrapInitWithTryCatch) {
       plugins.push(
-        new WrapperPlugin({
-          header: 'try {',
-          footer: `
+        ...wrapBundle(
+          'try {',
+          `
 } catch (err) {
   console.error('Electron ${outputFilename} script failed to run');
   console.error(err);
 }`
-        })
+        )
       );
     }
 
