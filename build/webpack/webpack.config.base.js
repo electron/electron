@@ -62,8 +62,6 @@ module.exports = ({
       }
     }
 
-    const ignoredModules = [];
-
     const plugins = [];
 
     if (onlyPrintingGraph) {
@@ -154,10 +152,6 @@ if ((globalThis.process || binding.process).argv.includes("--profile-electron-in
       },
       module: {
         rules: [
-          {
-            test: (moduleName) => !onlyPrintingGraph && ignoredModules.includes(moduleName),
-            loader: 'null-loader'
-          },
           {
             test: /\.ts$/,
             loader: 'ts-loader',

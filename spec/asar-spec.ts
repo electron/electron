@@ -3096,6 +3096,13 @@ describe('asar package', function () {
           fs.mkdirSync(p);
         }).to.throw(/ENOTDIR/);
       });
+
+      itremote('throws error when calling recursively inside asar archive', function () {
+        const p = path.join(asarDir, 'a.asar', 'not-exist');
+        expect(() => {
+          fs.mkdirSync(p, { recursive: true });
+        }).to.throw(/ENOTDIR/);
+      });
     });
 
     describe('fs.exists', function () {
@@ -3604,17 +3611,6 @@ describe('asar package', function () {
     itremote('does not touch global fs object', function () {
       const gfs = require('graceful-fs');
       expect(fs.readdir).to.not.equal(gfs.readdir);
-    });
-  });
-
-  describe('mkdirp module', function () {
-    itremote('throws error when calling inside asar archive', function () {
-      const mkdirp = require('mkdirp');
-
-      const p = path.join(asarDir, 'a.asar', 'not-exist');
-      expect(() => {
-        mkdirp.sync(p);
-      }).to.throw(/ENOTDIR/);
     });
   });
 
