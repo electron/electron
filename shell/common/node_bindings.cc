@@ -56,9 +56,8 @@
 #include "v8/include/v8-statistics.h"
 
 #if !IS_MAS_BUILD()
-#include "base/strings/safe_sprintf.h"
-#include "components/crash/core/common/crash_key.h"
 #include "shell/common/crash_keys.h"
+#include "shell/common/v8_oom_diagnostics.h"
 #endif
 
 #define ELECTRON_BROWSER_BINDINGS(V)      \
@@ -198,45 +197,10 @@ void V8OOMErrorCallback(const char* location, const v8::OOMDetails& details) {
   }
 
 #if !IS_MAS_BUILD()
-  // We are inside V8's out-of-memory handler, possibly on a worker thread:
-  // record crash keys through fixed-size storage that never allocates,
-  // rather than electron::crash_keys::SetCrashKey (which grows deques).
-  static crash_reporter::CrashKeyString<8> is_heap_oom_key(
-      "electron.v8-oom.is_heap_oom");
-  is_heap_oom_key.Set(details.is_heap_oom ? "1" : "0");
-  static crash_reporter::CrashKeyString<128> location_key(
-      "electron.v8-oom.location");
-  if (location)
-    location_key.Set(location);
-
-  static crash_reporter::CrashKeyString<256> detail_key(
-      "electron.v8-oom.detail");
-  if (details.detail)
-    detail_key.Set(details.detail);
-
   // TryGetCurrent() instead of GetCurrent() to avoid FATAL if no isolate.
   v8::Isolate* isolate = v8::Isolate::TryGetCurrent();
-  if (isolate) {
-    v8::HeapStatistics stats;
-    isolate->GetHeapStatistics(&stats);
-    char buf[24];
-    static crash_reporter::CrashKeyString<24> heap_used_key(
-        "electron.v8-oom.heap.used");
-    base::strings::SafeSPrintf(buf, "%d", stats.used_heap_size());
-    heap_used_key.Set(buf);
-    static crash_reporter::CrashKeyString<24> heap_total_key(
-        "electron.v8-oom.heap.total");
-    base::strings::SafeSPrintf(buf, "%d", stats.total_heap_size());
-    heap_total_key.Set(buf);
-    static crash_reporter::CrashKeyString<24> heap_limit_key(
-        "electron.v8-oom.heap.limit");
-    base::strings::SafeSPrintf(buf, "%d", stats.heap_size_limit());
-    heap_limit_key.Set(buf);
-    static crash_reporter::CrashKeyString<24> heap_available_key(
-        "electron.v8-oom.heap.total_available");
-    base::strings::SafeSPrintf(buf, "%d", stats.total_available_size());
-    heap_available_key.Set(buf);
-  }
+  electron::v8_oom::RecordErrorDetails(isolate, location, details);
+  electron::v8_oom::RecordHeapDiagnostics(isolate);
 #endif
 
   OOM_CRASH(0);
