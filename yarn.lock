@@ -425,7 +425,6 @@ __metadata:
     url: "npm:^0.11.4"
     webpack: "npm:^5.104.1"
     webpack-cli: "npm:^6.0.1"
-    wrapper-webpack-plugin: "npm:^2.2.0"
     yaml: "npm:^2.8.1"
   dependenciesMeta:
     "@sentry/cli":
@@ -9989,15 +9988,6 @@ __metadata:
     string-width: "npm:^7.0.0"
     strip-ansi: "npm:^7.1.0"
   checksum: 10c0/a139b818da9573677548dd463bd626a5a5286271211eb6e4e82f34a4f643191d74e6d4a9bb0a3c26ec90e6f904f679e0569674ac099ea12378a8b98e20706066
-  languageName: node
-  linkType: hard
-
-"wrapper-webpack-plugin@npm:^2.2.0":
-  version: 2.2.2
-  resolution: "wrapper-webpack-plugin@npm:2.2.2"
-  peerDependencies:
-    webpack: ">=2"
-  checksum: 10c0/0b04a24d455654deaca7065e5fed77d9201f5ac6359029296b2fc973b88b971fee63ff5f18fb58872ccf5ac623017f1eb362d75782fd32ad6dd2e6e70d422465
   languageName: node
   linkType: hard
 
