@@ -1,0 +1,158 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Wed, 29 Jul 2026 11:28:40 +0200
+Subject: [M144] [scopes] Check parameter semantics when reusing a cached
+ ScopeInfo
+
+Original change's description:
+> [scopes] Check parameter semantics when reusing a cached ScopeInfo
+>
+> The reuse check only compared scope type and context layout, so a cached
+> ScopeInfo describing non-simple parameters could be attached to a
+> function that was compiled with simple parameters. The mapped arguments
+> path then allocated a strict arguments object and installed the larger
+> fast aliased arguments map on it.
+>
+> Fixed: 536271629
+> Change-Id: I625c3add35f8e9324ce3f54a5bf46ff4a7d69e86
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8159583
+> Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#108933}
+
+(cherry picked from commit b80a7539b736c985e0fb9790ec76006f6f1d801f)
+
+Bug: 542401760,536271629
+Change-Id: I625c3add35f8e9324ce3f54a5bf46ff4a7d69e86
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8208141
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/14.4@{#131}
+Cr-Branched-From: 80acc26727d5a34e77dabeebe7c9213ec1bd4768-refs/heads/14.4.258@{#1}
+Cr-Branched-From: ce7e597e90f6df3fa4b6df224bc613b80c635450-refs/heads/main@{#104020}
+
+diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
+index f7cc25027cf177d2578f2fc8c2290b44e5ceaef5..6a997cf5ccccf11c5355c5201c984b3fcc27a4bd 100644
+--- a/src/ast/scopes.cc
++++ b/src/ast/scopes.cc
+@@ -2684,6 +2684,12 @@ void Scope::AllocateScopeInfosRecursively(
+     CHECK_EQ(scope_info_->scope_type(), scope_type_);
+     CHECK_EQ(scope_info_->HasContext(), NeedsContext());
+     CHECK_EQ(scope_info_->ContextLength(), num_heap_slots_);
++    if (is_function_scope()) {
++      DeclarationScope* function_scope = AsDeclarationScope();
++      CHECK_EQ(scope_info_->HasSimpleParameters(),
++               function_scope->has_simple_parameters());
++      CHECK_EQ(scope_info_->ParameterCount(), function_scope->num_parameters());
++    }
+ #ifdef DEBUG
+     // Consume the scope info.
+     it->second = {};
+diff --git a/src/objects/scope-info.h b/src/objects/scope-info.h
+index 5132327cd5e9e37f599cc6400b2ab5d28d5f995b..5747cac204a64bade95dd9b36d40805c78a541b6 100644
+--- a/src/objects/scope-info.h
++++ b/src/objects/scope-info.h
+@@ -118,8 +118,8 @@ class ScopeInfo : public TorqueGeneratedScopeInfo<ScopeInfo, HeapObject> {
+ 
+   V8_EXPORT_PRIVATE bool HasInferredFunctionName() const;
+ 
+-  void SetFunctionName(Tagged<UnionOf<Smi, String>> name);
+-  void SetInferredFunctionName(Tagged<String> name);
++  V8_EXPORT_PRIVATE void SetFunctionName(Tagged<UnionOf<Smi, String>> name);
++  V8_EXPORT_PRIVATE void SetInferredFunctionName(Tagged<String> name);
+ 
+   // Does this scope belong to a function?
+   bool HasPositionInfo() const;
+diff --git a/src/runtime/runtime-scopes.cc b/src/runtime/runtime-scopes.cc
+index 99acba02be025df60fa0d854b37e5f95a3f644e7..5f3a3063d6c17ee16229fef9b5c7039e288a3882 100644
+--- a/src/runtime/runtime-scopes.cc
++++ b/src/runtime/runtime-scopes.cc
+@@ -552,7 +552,7 @@ DirectHandle<JSObject> NewSloppyArguments(Isolate* isolate,
+                                           DirectHandle<JSFunction> callee,
+                                           T parameters, int argument_count) {
+   CHECK(!IsDerivedConstructor(callee->shared()->kind()));
+-  DCHECK(callee->shared()->has_simple_parameters());
++  CHECK(callee->shared()->has_simple_parameters());
+   DirectHandle<JSObject> result =
+       isolate->factory()->NewArgumentsObject(callee, argument_count);
+ 
+diff --git a/test/unittests/BUILD.gn b/test/unittests/BUILD.gn
+index 7e7dfb30e168c8456e8bdfd24b102153fe0116fb..eb1ecb1d9ad88f0453864122ac59da556edcc4f5 100644
+--- a/test/unittests/BUILD.gn
++++ b/test/unittests/BUILD.gn
+@@ -466,6 +466,7 @@ v8_source_set("v8_unittests_sources") {
+     "profiler/circular-queue-unittest.cc",
+     "profiler/strings-storage-unittest.cc",
+     "regexp/regexp-unittest.cc",
++    "regress/regress-536271629-unittest.cc",
+     "regress/regress-crbug-1041240-unittest.cc",
+     "regress/regress-crbug-1056054-unittest.cc",
+     "regress/regress-crbug-938251-unittest.cc",
+diff --git a/test/unittests/regress/regress-536271629-unittest.cc b/test/unittests/regress/regress-536271629-unittest.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..57c944dfdb11f70fadeaa4f97559d9ef9bf79030
+--- /dev/null
++++ b/test/unittests/regress/regress-536271629-unittest.cc
+@@ -0,0 +1,60 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "src/execution/isolate.h"
++#include "src/objects/js-function-inl.h"
++#include "src/objects/scope-info.h"
++#include "src/objects/shared-function-info-inl.h"
++#include "test/unittests/test-utils.h"
++
++namespace v8 {
++namespace internal {
++
++using SloppyArgumentsScopeInfoTest = TestWithContext;
++
++namespace {
++
++DirectHandle<JSFunction> GetFunction(v8::Local<v8::Context> context,
++                                     v8::Local<v8::Object> global,
++                                     v8::Local<v8::String> name) {
++  return Cast<JSFunction>(v8::Utils::OpenDirectHandle(
++      *global->Get(context, name).ToLocalChecked()));
++}
++
++}  // namespace
++
++// A SharedFunctionInfo whose ScopeInfo says that the parameters are not simple
++// must never end up on the mapped arguments path: the arguments object would be
++// allocated with the strict arguments map and then be given the larger fast
++// aliased arguments map.
++TEST_F(SloppyArgumentsScopeInfoTest, MappedArgumentsWithNonSimpleScopeInfo) {
++  v8::HandleScope scope(isolate());
++
++  RunJS(
++      "function nonSimple(a, b = 0) { var g = () => a; return arguments[0]; }"
++      "function duplicate(a, a) { var g = () => a; return arguments[0]; }"
++      "nonSimple(1, 2);"
++      "duplicate(1, 2);");
++
++  v8::Local<v8::Object> global = context()->Global();
++  DirectHandle<JSFunction> non_simple =
++      GetFunction(context(), global, NewString("nonSimple"));
++  DirectHandle<JSFunction> duplicate =
++      GetFunction(context(), global, NewString("duplicate"));
++
++  DirectHandle<ScopeInfo> non_simple_scope_info(
++      non_simple->shared()->scope_info(), i_isolate());
++  CHECK(!non_simple_scope_info->HasSimpleParameters());
++  CHECK(duplicate->shared()->scope_info()->HasSimpleParameters());
++  CHECK(duplicate->shared()->has_duplicate_parameters());
++
++  // Emulate the incompatible ScopeInfo that a mismatched code cache can install
++  // on an otherwise simple-parameter function.
++  duplicate->shared()->SetScopeInfo(*non_simple_scope_info);
++
++  EXPECT_DEATH_IF_SUPPORTED(RunJS("duplicate(1, 2)"), "");
++}
++
++}  // namespace internal
++}  // namespace v8

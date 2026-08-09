@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Wed, 29 Jul 2026 17:43:31 +0200
+Subject: [M150] [parser] Use creation-time scope in
+ VariableDeclarationParsingScope
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Original change's description:
+> [parser] Use creation-time scope in VariableDeclarationParsingScope
+>
+> When parsing variable declarations that have destructuring, inner expressions within destructuring patterns can push child scopes (such as ClassScope) onto parser()->scope(), e.g. `let [class x{...x}]`
+>
+> If VariableDeclarationParsingScope::Declare uses parser()->scope()
+> dynamically at declaration time, variables from the outer binding
+> pattern are declared in the inner ClassScope instead of the outer scope
+> where the VariableDeclarationParsingScope was created. This causes scope
+> pollution and name collision DCHECK failures when ClassScope later
+> declares its internal class binding.
+>
+> This CL fixes the issue by capturing scope_ = parser->scope() at
+> construction time in VariableDeclarationParsingScope and passing scope_
+> to DeclareVariable.
+>
+> TAG=agy
+> CONV=a1d36d0b-e7d9-488d-9a5b-3e7b1a1e5870
+>
+> Fixed: 526380803
+> Change-Id: Iedeb8d7f2fdb770b86afe84a058bb91ced246f16
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8167021
+> Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+> Reviewed-by: Olivier Flückiger <olivf@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#108953}
+
+(cherry picked from commit 2a21c756031083b4abcd0e3077790d485e270e14)
+
+Bug: 541111408,526380803
+Change-Id: Iedeb8d7f2fdb770b86afe84a058bb91ced246f16
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8180731
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.0@{#47}
+Cr-Branched-From: 0c6c73eea6994260f0a1d88469708360ea60c660-refs/heads/15.0.245@{#1}
+Cr-Branched-From: 03d64f40934c058cd1c6d7e5cead5b757a4faedd-refs/heads/main@{#107679}
+
+diff --git a/src/parsing/expression-scope.h b/src/parsing/expression-scope.h
+index 2a8a7f90762ede0069109c86633d18329f327af2..7fb15aa6e7b05f47bf369ff99c2f706d8c6afbd1 100644
+--- a/src/parsing/expression-scope.h
++++ b/src/parsing/expression-scope.h
+@@ -368,7 +368,8 @@ class VariableDeclarationParsingScope : public ExpressionScope<Types> {
+                                      ? ExpressionScopeT::kLexicalDeclaration
+                                      : ExpressionScopeT::kVarDeclaration),
+         mode_(mode),
+-        names_(names) {}
++        names_(names),
++        scope_(parser->scope()) {}
+ 
+   VariableDeclarationParsingScope(const VariableDeclarationParsingScope&) =
+       delete;
+@@ -379,10 +380,9 @@ class VariableDeclarationParsingScope : public ExpressionScope<Types> {
+     VariableKind kind = NORMAL_VARIABLE;
+     bool was_added;
+     Variable* var = this->parser()->DeclareVariable(
+-        name, kind, mode_, Variable::DefaultInitializationFlag(mode_),
+-        this->parser()->scope(), &was_added, pos);
+-    if (was_added &&
+-        this->parser()->scope()->num_var() > kMaxNumFunctionLocals) {
++        name, kind, mode_, Variable::DefaultInitializationFlag(mode_), scope_,
++        &was_added, pos);
++    if (was_added && scope_->num_var() > kMaxNumFunctionLocals) {
+       this->parser()->ReportMessage(MessageTemplate::kTooManyVariables);
+     }
+     if (names_) names_->Add(name, this->parser()->zone());
+@@ -426,6 +426,7 @@ class VariableDeclarationParsingScope : public ExpressionScope<Types> {
+ 
+   VariableMode mode_;
+   ZonePtrList<const AstRawString>* names_;
++  Scope* scope_;
+ };
+ 
+ template <typename Types>
+diff --git a/test/mjsunit/regress/regress-526380803-1.js b/test/mjsunit/regress/regress-526380803-1.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c4662fca70721548ef42674ce557d6e61b8da5fe
+--- /dev/null
++++ b/test/mjsunit/regress/regress-526380803-1.js
+@@ -0,0 +1,5 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++assertThrows(() => eval("let[class x{...x}]"), SyntaxError);
+diff --git a/test/mjsunit/regress/regress-526380803-2.js b/test/mjsunit/regress/regress-526380803-2.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..bcede54c978e3bc81d29f4b78ccb24f15adba691
+--- /dev/null
++++ b/test/mjsunit/regress/regress-526380803-2.js
+@@ -0,0 +1,9 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++function testScopeResolutionInPatternDefault() {
++  let [c = class A { field = x; }, x] = [undefined, 42];
++  assertEquals(42, new c().field);
++}
++testScopeResolutionInPatternDefault();
