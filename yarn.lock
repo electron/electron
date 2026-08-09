@@ -402,7 +402,6 @@ __metadata:
     "@types/node": "npm:^24.9.0"
     "@types/semver": "npm:^7.5.8"
     "@types/stream-json": "npm:^1.7.8"
-    "@types/temp": "npm:^0.9.4"
     "@xmldom/xmldom": "npm:^0.9.10"
     buffer: "npm:^6.0.3"
     events: "npm:^3.2.0"
@@ -420,7 +419,6 @@ __metadata:
     semver: "npm:^7.6.3"
     stream-json: "npm:^1.9.1"
     tap-xunit: "npm:^2.4.1"
-    temp: "npm:^0.9.4"
     ts-loader: "npm:^8.0.2"
     ts-node: "npm:6.2.0"
     typescript: "npm:^5.8.3"
@@ -1799,15 +1797,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/basic-auth@npm:^1.1.8":
-  version: 1.1.8
-  resolution: "@types/basic-auth@npm:1.1.8"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10c0/6eaca98493546a384267eb83a2a2d89555fa541b794efa5173450ddad983f5d179534980f9e98477a57c865adcb48f8350569efe078a05ecf2c087bf3bd112c2
-  languageName: node
-  linkType: hard
-
 "@types/body-parser@npm:*":
   version: 1.19.6
   resolution: "@types/body-parser@npm:1.19.6"
@@ -2199,15 +2188,6 @@ __metadata:
     "@types/node": "npm:*"
     "@types/stream-chain": "npm:*"
   checksum: 10c0/c88f4dca65332d3847b37b16a60dc9d9a7401a6c47b0553e5a424e35f989757afeede32397b1a9ee9c1e5ba4a013832d2938fa60590e2b1dffa848185ac33b93
-  languageName: node
-  linkType: hard
-
-"@types/temp@npm:^0.9.4":
-  version: 0.9.4
-  resolution: "@types/temp@npm:0.9.4"
-  dependencies:
-    "@types/node": "npm:*"
-  checksum: 10c0/901fc8e7815b4bcdc47d1ed4273f13f2e3353ef57b33a81ee325e975989fbb32264f398a190b337360192b27b130eeceedfebd06a4eb195965affd3ff45698b7
   languageName: node
   linkType: hard
 
@@ -2852,15 +2832,6 @@ __metadata:
   bin:
     baseline-browser-mapping: dist/cli.js
   checksum: 10c0/569928db78bcd081953d7db79e4243a59a579a34b4ae1806b9b42d3b7f84e5bc40e6e82ae4fa06e7bef8291bf747b33b3f9ef5d3c6e1e420cb129d9295536129
-  languageName: node
-  linkType: hard
-
-"basic-auth@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "basic-auth@npm:2.0.1"
-  dependencies:
-    safe-buffer: "npm:5.1.2"
-  checksum: 10c0/05f56db3a0fc31c89c86b605231e32ee143fb6ae38dc60616bc0970ae6a0f034172def99e69d3aed0e2c9e7cac84e2d63bc51a0b5ff6ab5fc8808cc8b29923c1
   languageName: node
   linkType: hard
 
@@ -3820,7 +3791,6 @@ __metadata:
     "@electron-ci/virtual-display": "npm:*"
     "@electron/fuses": "npm:^2.1.2"
     "@electron/packager": "npm:^20.0.4"
-    "@types/basic-auth": "npm:^1.1.8"
     "@types/busboy": "npm:^1.5.4"
     "@types/chai": "npm:^4.3.19"
     "@types/chai-as-promised": "npm:^7.1.3"
@@ -3830,7 +3800,6 @@ __metadata:
     "@types/send": "npm:^0.14.5"
     "@types/w3c-web-serial": "npm:^1.0.7"
     "@types/ws": "npm:^8.18.1"
-    basic-auth: "npm:^2.0.1"
     busboy: "npm:^1.6.0"
     chai: "npm:^4.2.0"
     chai-as-promised: "npm:^7.1.1"
@@ -3844,7 +3813,6 @@ __metadata:
     pdfjs-dist: "npm:4.10.38"
     ps-list: "npm:^7.0.0"
     send: "npm:^0.19.0"
-    uuid: "npm:^14.0.1"
     winreg: "npm:1.2.4"
     ws: "npm:^8.21.0"
     yargs: "npm:^16.0.3"
@@ -8463,17 +8431,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"rimraf@npm:~2.6.2":
-  version: 2.6.3
-  resolution: "rimraf@npm:2.6.3"
-  dependencies:
-    glob: "npm:^7.1.3"
-  bin:
-    rimraf: ./bin.js
-  checksum: 10c0/f1e646f8c567795f2916aef7aadf685b543da6b9a53e482bb04b07472c7eef2b476045ba1e29f401c301c66b630b22b815ab31fdd60c5e1ae6566ff523debf45
-  languageName: node
-  linkType: hard
-
 "roarr@npm:^2.15.3":
   version: 2.15.4
   resolution: "roarr@npm:2.15.4"
@@ -8508,17 +8465,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"safe-buffer@npm:5.1.2, safe-buffer@npm:~5.1.0, safe-buffer@npm:~5.1.1":
-  version: 5.1.2
-  resolution: "safe-buffer@npm:5.1.2"
-  checksum: 10c0/780ba6b5d99cc9a40f7b951d47152297d0e260f0df01472a1b99d4889679a4b94a13d644f7dbc4f022572f09ae9005fa2fbb93bbbd83643316f365a3e9a45b21
-  languageName: node
-  linkType: hard
-
 "safe-buffer@npm:^5.1.1":
   version: 5.2.1
   resolution: "safe-buffer@npm:5.2.1"
   checksum: 10c0/6501914237c0a86e9675d4e51d89ca3c21ffd6a31642efeba25ad65720bce6921c9e7e974e5be91a786b25aa058b5303285d3c15dbabf983a919f5f630d349f3
+  languageName: node
+  linkType: hard
+
+"safe-buffer@npm:~5.1.0, safe-buffer@npm:~5.1.1":
+  version: 5.1.2
+  resolution: "safe-buffer@npm:5.1.2"
+  checksum: 10c0/780ba6b5d99cc9a40f7b951d47152297d0e260f0df01472a1b99d4889679a4b94a13d644f7dbc4f022572f09ae9005fa2fbb93bbbd83643316f365a3e9a45b21
   languageName: node
   linkType: hard
 
@@ -9240,16 +9197,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"temp@npm:^0.9.4":
-  version: 0.9.4
-  resolution: "temp@npm:0.9.4"
-  dependencies:
-    mkdirp: "npm:^0.5.1"
-    rimraf: "npm:~2.6.2"
-  checksum: 10c0/7a1cd75efa65b9ca97fc0dfa752673842d23fa41d9c641a447d86ca986eb7662f0d17771e1edf8d0149e76de3c6e7005faf2ccaa3baf64811c86d1d1a951dda7
-  languageName: node
-  linkType: hard
-
 "terser-webpack-plugin@npm:^5.3.16":
   version: 5.4.0
   resolution: "terser-webpack-plugin@npm:5.4.0"
@@ -9700,15 +9647,6 @@ __metadata:
   version: 1.0.2
   resolution: "util-deprecate@npm:1.0.2"
   checksum: 10c0/41a5bdd214df2f6c3ecf8622745e4a366c4adced864bc3c833739791aeeeb1838119af7daed4ba36428114b5c67dcda034a79c882e97e43c03e66a4dd7389942
-  languageName: node
-  linkType: hard
-
-"uuid@npm:^14.0.1":
-  version: 14.0.1
-  resolution: "uuid@npm:14.0.1"
-  bin:
-    uuid: dist-node/bin/uuid
-  checksum: 10c0/2d961289097cb68c37d93d1da0b5c3aafc1eb9948a455cca8d0ae53a099b2fe583b8933254a84097f700e6bac2e23033364904df0467c22551d5d9611febcaf6
   languageName: node
   linkType: hard
 
