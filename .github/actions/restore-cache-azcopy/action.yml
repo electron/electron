@@ -3,10 +3,20 @@ description: 'Restores Electron src cache via AZCopy'
 inputs:
   target-platform:
     description: 'Target platform, should be linux, win, macos'
+  mode:
+    description: >-
+      Which phase(s) to run. "all" (default) downloads, decompresses and swaps
+      the cache into src in one pass. "download" only downloads and decompresses
+      into temp-cache/ — it never touches src, so it is safe to run as a
+      background step. "swap" only swaps a previously downloaded temp-cache/src
+      into place (destructive: rm -rf src + rm -rf src/electron) and must not
+      run concurrently with anything that reads or writes src.
+    default: all
 runs:
   using: "composite"
   steps:
   - name: Obtain SAS Key
+    if: ${{ inputs.mode != 'swap' }}
     continue-on-error: true
     uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
     with:
@@ -14,6 +24,7 @@ runs:
       key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-1
       enableCrossOsArchive: true
   - name: Obtain SAS Key
+    if: ${{ inputs.mode != 'swap' }}
     continue-on-error: true
     uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
     with:
@@ -24,6 +35,7 @@ runs:
     # The cache will always exist here as a result of the checkout job
     # Either it was uploaded to Azure in the checkout job for this commit
     # or it was uploaded in the checkout job for a previous commit.
+    if: ${{ inputs.mode != 'swap' }}
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     with:
       timeout_minutes: 30
@@ -50,10 +62,11 @@ runs:
       AZURE_AKS_CACHE_SHARE_NAME: linux-cache
       AZURE_AKS_WIN_CACHE_SHARE_NAME: windows-cache
   - name: Clean SAS Key
+    if: ${{ inputs.mode != 'swap' }}
     shell: bash
     run: rm -f sas-token
   - name: Unzip and Ensure Src Cache
-    if: ${{ inputs.target-platform == 'macos' }}
+    if: ${{ inputs.target-platform == 'macos' && inputs.mode == 'all' }}
     shell: bash
     run: |
       echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
@@ -83,8 +96,46 @@ runs:
       echo "Wiping Electron Directory"
       rm -rf src/electron
 
+  - name: Unzip Src Cache (macOS)
+    if: ${{ inputs.target-platform == 'macos' && inputs.mode == 'download' }}
+    shell: bash
+    run: |
+      echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
+      if [ `du $DEPSHASH.tar | cut -f1` = "0" ]; then
+        echo "Cache is empty - exiting"
+        exit 1
+      fi
+
+      mkdir temp-cache
+      zstd -d --long=30 -c $DEPSHASH.tar | tar -xf - -C temp-cache
+      echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
+
+      if [ ! -d "temp-cache/src" ]; then
+        echo "Cache was not correctly restored - exiting"
+        exit 1
+      fi
+
+      echo "Deleting zip file"
+      rm -rf $DEPSHASH.tar
+
+  - name: Move Src Cache (macOS)
+    if: ${{ inputs.target-platform == 'macos' && inputs.mode == 'swap' }}
+    shell: bash
+    run: |
+      echo "Relocating Cache"
+      rm -rf src
+      mv temp-cache/src src
+
+      if [ ! -d "src/third_party/blink" ]; then
+        echo "Cache was not correctly restored - exiting"
+        exit 1
+      fi
+
+      echo "Wiping Electron Directory"
+      rm -rf src/electron
+
   - name: Unzip and Ensure Src Cache (Windows)
-    if: ${{ inputs.target-platform == 'win' }}
+    if: ${{ inputs.target-platform == 'win' && inputs.mode != 'swap' }}
     shell: bash
     run: |
       echo "Downloaded cache is $(du -sh $DEPSHASH.tar | cut -f1)"
@@ -98,7 +149,7 @@ runs:
       rm -f $DEPSHASH.tar
 
   - name: Move Src Cache (Windows)
-    if: ${{ inputs.target-platform == 'win' }}
+    if: ${{ inputs.target-platform == 'win' && inputs.mode != 'download' }}
     uses: nick-fields/retry@ad984534de44a9489a53aefd81eb77f87c70dc60 # v4.0.0
     with:
       timeout_minutes: 30

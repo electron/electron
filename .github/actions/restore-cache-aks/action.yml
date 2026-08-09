@@ -3,10 +3,20 @@ description: 'Restores Electron src cache via AKS'
 inputs:
   target-platform:
     description: 'Target platform, should be linux, win, macos'
+  mode:
+    description: >-
+      Which phase(s) to run. "all" (default) locates, decompresses and swaps
+      the cache into src in one pass. "download" only locates and decompresses
+      into temp-cache/ — it never touches src, so it is safe to run as a
+      background step. "swap" only swaps a previously downloaded temp-cache/src
+      into place (destructive: rm -rf src + rm -rf src/electron) and must not
+      run concurrently with anything that reads or writes src.
+    default: all
 runs:
   using: "composite"
   steps:
   - name: Restore and Ensure Src Cache
+    if: ${{ inputs.mode == 'all' }}
     shell: bash
     run: |
       if [ "${{ inputs.target-platform }}" = "win" ]; then
@@ -39,6 +49,56 @@ runs:
         rm -rf src
         mv temp-cache/src src
       fi
+
+      if [ ! -d "src/third_party/blink" ]; then
+        echo "Cache was not correctly restored - exiting"
+        exit 1
+      fi
+
+      echo "Wiping Electron Directory"
+      rm -rf src/electron
+
+  - name: Unzip Src Cache
+    if: ${{ inputs.mode == 'download' }}
+    shell: bash
+    run: |
+      if [ "${{ inputs.target-platform }}" = "win" ]; then
+        cache_path=/mnt/win-cache/$DEPSHASH.tar
+      else
+        cache_path=/mnt/cross-instance-cache/$DEPSHASH.tar
+      fi
+
+      echo "Using cache key: $DEPSHASH"
+      echo "Checking for cache in: $cache_path"
+      if [ ! -f "$cache_path" ]; then
+        echo "Cache Does Not Exist for $DEPSHASH - exiting"
+        exit 1
+      else
+        echo "Found Cache for $DEPSHASH at $cache_path"
+      fi
+
+      echo "Persisted cache is $(du -sh $cache_path | cut -f1)"
+      if [ `du  $cache_path | cut -f1` = "0" ]; then
+        echo "Cache is empty - exiting"
+        exit 1
+      fi
+
+      mkdir temp-cache
+      zstd -d --long=30 -c $cache_path | tar -xf - -C temp-cache
+      echo "Unzipped cache is $(du -sh temp-cache/src | cut -f1)"
+
+      if [ ! -d "temp-cache/src" ]; then
+        echo "Cache was not correctly restored - exiting"
+        exit 1
+      fi
+
+  - name: Move Src Cache
+    if: ${{ inputs.mode == 'swap' }}
+    shell: bash
+    run: |
+      echo "Relocating Cache"
+      rm -rf src
+      mv temp-cache/src src
 
       if [ ! -d "src/third_party/blink" ]; then
         echo "Cache was not correctly restored - exiting"

@@ -152,8 +152,6 @@ jobs:
           node-version: 22.21.x
           cache: yarn
           cache-dependency-path: src/electron/yarn.lock
-      - name: Install Dependencies
-        uses: ./src/electron/.github/actions/install-dependencies
       - name: Install AZCopy
         if: ${{ inputs.target-platform == 'macos' }}
         run: brew install azcopy
@@ -167,24 +165,46 @@ jobs:
           fi
 
           echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
-      - name: Set Chromium Git Cookie
-        uses: ./src/electron/.github/actions/set-chromium-cookie
-      - name: Install Build Tools
-        uses: ./src/electron/.github/actions/install-build-tools
       - name: Generate DEPS Hash
         run: |
           node src/electron/script/generate-deps-hash.js
           DEPSHASH=v2-src-cache-$(cat src/electron/.depshash)
           echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
           echo "CACHE_PATH=$DEPSHASH.tar" >> $GITHUB_ENV
-      - name: Restore src cache via AZCopy
+      - name: Download src cache via AZCopy
+        if: ${{ inputs.target-platform != 'linux' }}
+        id: src-cache-download-azcopy
+        background: true
+        uses: ./src/electron/.github/actions/restore-cache-azcopy
+        with:
+          target-platform: ${{ inputs.target-platform }}
+          mode: download
+      - name: Download src cache via AKS
+        if: ${{ inputs.target-platform == 'linux' }}
+        id: src-cache-download-aks
+        background: true
+        uses: ./src/electron/.github/actions/restore-cache-aks
+        with:
+          mode: download
+      - name: Install Dependencies
+        uses: ./src/electron/.github/actions/install-dependencies
+      - name: Set Chromium Git Cookie
+        uses: ./src/electron/.github/actions/set-chromium-cookie
+      - name: Install Build Tools
+        uses: ./src/electron/.github/actions/install-build-tools
+      - name: Wait for src cache download
+        wait-all: null
+      - name: Swap src cache into place (AZCopy)
         if: ${{ inputs.target-platform != 'linux' }}
         uses: ./src/electron/.github/actions/restore-cache-azcopy
         with:
           target-platform: ${{ inputs.target-platform }}
-      - name: Restore src cache via AKS
+          mode: swap
+      - name: Swap src cache into place (AKS)
         if: ${{ inputs.target-platform == 'linux' }}
         uses: ./src/electron/.github/actions/restore-cache-aks
+        with:
+          mode: swap
       - name: Checkout Electron
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
