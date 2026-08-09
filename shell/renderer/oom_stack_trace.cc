@@ -174,7 +174,8 @@ size_t NearHeapLimitCallback(void* data,
   if (current_heap_limit >= kCageLimit - kHeapBump) {
     // The bump will be clamped by V8 to the cage ceiling, leaving no
     // headroom for the interrupt to fire. Record what we can now.
-    v8_oom::RecordJsStack(isolate, heap_info + " (at cage limit, stack unavailable)");
+    v8_oom::RecordJsStack(isolate,
+                          heap_info + " (at cage limit, stack unavailable)");
     LOG(INFO) << "Near V8 cage limit; stack trace capture may not succeed";
   }
 
