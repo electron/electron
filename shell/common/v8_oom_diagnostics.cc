@@ -55,8 +55,7 @@ bool RecordHeapDiagnostics(v8::Isolate* isolate) {
   static NumberKey heap_physical_key("electron.v8-oom.heap.total_physical");
   static NumberKey heap_malloced_key("electron.v8-oom.heap.malloced_memory");
   static NumberKey heap_external_key("electron.v8-oom.heap.external_memory");
-  static NumberKey native_contexts_key(
-      "electron.v8-oom.heap.native_contexts");
+  static NumberKey native_contexts_key("electron.v8-oom.heap.native_contexts");
   static NumberKey detached_contexts_key(
       "electron.v8-oom.heap.detached_contexts");
   static crash_reporter::CrashKeyString<8> utilization_key(
