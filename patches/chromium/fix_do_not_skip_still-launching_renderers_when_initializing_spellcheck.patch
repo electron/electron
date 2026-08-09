@@ -42,10 +42,10 @@ so this patch can be removed once Chromium rolls past that revision.
 Refs https://github.com/electron/electron/issues/50327
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index eb92410b15a3828f60d1c0c94edf7a62b5871a97..54ab0e67286f251df33113e00bef79cb62c7df64 100644
+index e76e70b116152c10630bacc58ab90ff1baad8c0f..5c4d131cc0a24dc31ef2655599bed91d59cbe684 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
-@@ -863,8 +863,14 @@ void SpellcheckService::InitForAllRenderers() {
+@@ -853,8 +853,14 @@ void SpellcheckService::InitForAllRenderers() {
    for (auto it = content::RenderProcessHost::AllHostsIterator(); !it.IsAtEnd();
         it.Advance()) {
      content::RenderProcessHost* process = it.GetCurrentValue();
