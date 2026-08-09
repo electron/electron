@@ -1,9 +1,11 @@
-import { dialog, BaseWindow, BrowserWindow } from 'electron/main';
+import { app, dialog, BaseWindow, BrowserWindow } from 'electron/main';
 
 import { expect } from 'chai';
+import * as dbus from 'dbus-native';
 
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
+import { promisify } from 'node:util';
 
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
@@ -96,11 +98,14 @@ describe('dialog module', () => {
 
     // parentless message boxes are synchronous on macOS
     // dangling message boxes on windows cause a DCHECK: https://source.chromium.org/chromium/chromium/src/+/main:base/win/message_window.cc;drc=7faa4bf236a866d007dc5672c9ce42660e67a6a6;l=68
-    ifit(process.platform !== 'darwin' && process.platform !== 'win32')('should not throw for a parentless message box', () => {
-      expect(() => {
-        dialog.showMessageBox({ message: 'i am message' });
-      }).to.not.throw();
-    });
+    ifit(process.platform !== 'darwin' && process.platform !== 'win32')(
+      'should not throw for a parentless message box',
+      () => {
+        expect(() => {
+          dialog.showMessageBox({ message: 'i am message' });
+        }).to.not.throw();
+      }
+    );
 
     ifit(process.platform !== 'win32')('should not throw for valid cases', () => {
       expect(() => {
@@ -245,256 +250,34 @@ describe('dialog module', () => {
     });
   });
 
-  ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('end-to-end dialog interaction (macOS)', () => {
-    let dialogHelper: any;
+  ifdescribe(process.platform === 'darwin' && !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)(
+    'end-to-end dialog interaction (macOS)',
+    () => {
+      let dialogHelper: any;
 
-    before(() => {
-      dialogHelper = require('@electron-ci/dialog-helper');
-    });
+      before(() => {
+        dialogHelper = require('@electron-ci/dialog-helper');
+      });
 
-    afterEach(closeAllWindows);
+      afterEach(closeAllWindows);
 
-    // Poll for a sheet to appear on the given window.
-    async function waitForSheet (w: BrowserWindow): Promise<void> {
-      const handle = w.getNativeWindowHandle();
-      for (let i = 0; i < 50; i++) {
-        const info = dialogHelper.getDialogInfo(handle);
-        if (info.type !== 'none') return;
-        await setTimeout(100);
+      // Poll for a sheet to appear on the given window.
+      async function waitForSheet(w: BrowserWindow): Promise<void> {
+        const handle = w.getNativeWindowHandle();
+        for (let i = 0; i < 50; i++) {
+          const info = dialogHelper.getDialogInfo(handle);
+          if (info.type !== 'none') return;
+          await setTimeout(100);
+        }
+        throw new Error('Timed out waiting for dialog sheet to appear');
       }
-      throw new Error('Timed out waiting for dialog sheet to appear');
-    }
 
-    describe('showMessageBox', () => {
-      it('shows the correct message and buttons', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'Test message',
-          buttons: ['OK', 'Cancel']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-
-        expect(info.type).to.equal('message-box');
-        expect(info.message).to.equal('Test message');
-
-        const buttons = JSON.parse(info.buttons);
-        expect(buttons).to.include('OK');
-        expect(buttons).to.include('Cancel');
-
-        dialogHelper.clickMessageBoxButton(handle, 0);
-        await p;
-      });
-
-      it('shows detail text', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'Main message',
-          detail: 'Extra detail text',
-          buttons: ['OK']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-
-        expect(info.message).to.equal('Main message');
-        expect(info.detail).to.equal('Extra detail text');
-
-        dialogHelper.clickMessageBoxButton(handle, 0);
-        await p;
-      });
-
-      it('returns the correct response when a specific button is clicked', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'Choose a button',
-          buttons: ['First', 'Second', 'Third']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        dialogHelper.clickMessageBoxButton(handle, 1);
-
-        const result = await p;
-        expect(result.response).to.equal(1);
-      });
-
-      it('returns the correct response when the last button is clicked', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'Choose a button',
-          buttons: ['Yes', 'No', 'Maybe']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        dialogHelper.clickMessageBoxButton(handle, 2);
-
-        const result = await p;
-        expect(result.response).to.equal(2);
-      });
-
-      it('shows a single button when no buttons are specified', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'No buttons specified'
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-
-        expect(info.type).to.equal('message-box');
-        // macOS adds a default "OK" button when none are specified.
-        const buttons = JSON.parse(info.buttons);
-        expect(buttons).to.have.lengthOf(1);
-
-        dialogHelper.clickMessageBoxButton(handle, 0);
-        const result = await p;
-        expect(result.response).to.equal(0);
-      });
-
-      it('renders checkbox with the correct label and initial state', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'Checkbox test',
-          buttons: ['OK'],
-          checkboxLabel: 'Do not show again',
-          checkboxChecked: false
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-
-        expect(info.checkboxLabel).to.equal('Do not show again');
-        expect(info.checkboxChecked).to.be.false();
-
-        dialogHelper.clickMessageBoxButton(handle, 0);
-        const result = await p;
-        expect(result.checkboxChecked).to.be.false();
-      });
-
-      it('returns checkboxChecked as true when checkbox is initially checked', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'Pre-checked checkbox',
-          buttons: ['OK'],
-          checkboxLabel: 'Remember my choice',
-          checkboxChecked: true
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-
-        expect(info.checkboxLabel).to.equal('Remember my choice');
-        expect(info.checkboxChecked).to.be.true();
-
-        dialogHelper.clickMessageBoxButton(handle, 0);
-        const result = await p;
-        expect(result.checkboxChecked).to.be.true();
-      });
-
-      it('can toggle checkbox and returns updated state', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'Toggle test',
-          buttons: ['OK'],
-          checkboxLabel: 'Toggle me',
-          checkboxChecked: false
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-
-        // Verify initially unchecked.
-        let info = dialogHelper.getDialogInfo(handle);
-        expect(info.checkboxChecked).to.be.false();
-
-        // Click the checkbox to check it.
-        dialogHelper.clickCheckbox(handle);
-        info = dialogHelper.getDialogInfo(handle);
-        expect(info.checkboxChecked).to.be.true();
-
-        dialogHelper.clickMessageBoxButton(handle, 0);
-        const result = await p;
-        expect(result.checkboxChecked).to.be.true();
-      });
-
-      it('strips access keys on macOS with normalizeAccessKeys', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'Access key test',
-          buttons: ['&Save', '&Cancel'],
-          normalizeAccessKeys: true
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-
-        // On macOS, ampersands are stripped by normalizeAccessKeys.
-        const buttons = JSON.parse(info.buttons);
-        expect(buttons).to.include('Save');
-        expect(buttons).to.include('Cancel');
-        expect(buttons).not.to.include('&Save');
-        expect(buttons).not.to.include('&Cancel');
-
-        dialogHelper.clickMessageBoxButton(handle, 0);
-        await p;
-      });
-
-      it('respects defaultId by making it the default button', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'Default button test',
-          buttons: ['One', 'Two', 'Three'],
-          defaultId: 2
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-
-        const info = dialogHelper.getDialogInfo(handle);
-        const buttons = JSON.parse(info.buttons);
-        expect(buttons).to.deep.equal(['One', 'Two', 'Three']);
-
-        dialogHelper.clickMessageBoxButton(handle, 2);
-        const result = await p;
-        expect(result.response).to.equal(2);
-      });
-
-      it('respects cancelId and returns it when cancelled via signal', async () => {
-        const controller = new AbortController();
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showMessageBox(w, {
-          message: 'Cancel ID test',
-          buttons: ['OK', 'Dismiss', 'Abort'],
-          cancelId: 2,
-          signal: controller.signal
-        });
-
-        await waitForSheet(w);
-        controller.abort();
-
-        const result = await p;
-        expect(result.response).to.equal(2);
-      });
-
-      it('works with all message box types', async () => {
-        const types: Array<'none' | 'info' | 'warning' | 'error' | 'question'> =
-          ['none', 'info', 'warning', 'error', 'question'];
-
-        for (const type of types) {
+      describe('showMessageBox', () => {
+        it('shows the correct message and buttons', async () => {
           const w = new BrowserWindow({ show: false });
           const p = dialog.showMessageBox(w, {
-            message: `Type: ${type}`,
-            type,
-            buttons: ['OK']
+            message: 'Test message',
+            buttons: ['OK', 'Cancel']
           });
 
           await waitForSheet(w);
@@ -502,526 +285,853 @@ describe('dialog module', () => {
           const info = dialogHelper.getDialogInfo(handle);
 
           expect(info.type).to.equal('message-box');
-          expect(info.message).to.equal(`Type: ${type}`);
+          expect(info.message).to.equal('Test message');
+
+          const buttons = JSON.parse(info.buttons);
+          expect(buttons).to.include('OK');
+          expect(buttons).to.include('Cancel');
 
           dialogHelper.clickMessageBoxButton(handle, 0);
           await p;
-          w.destroy();
-          // Allow the event loop to settle between iterations to avoid
-          // Chromium DCHECK failures from rapid window lifecycle churn.
-          await setTimeout(100);
-        }
+        });
+
+        it('shows detail text', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showMessageBox(w, {
+            message: 'Main message',
+            detail: 'Extra detail text',
+            buttons: ['OK']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+
+          expect(info.message).to.equal('Main message');
+          expect(info.detail).to.equal('Extra detail text');
+
+          dialogHelper.clickMessageBoxButton(handle, 0);
+          await p;
+        });
+
+        it('returns the correct response when a specific button is clicked', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showMessageBox(w, {
+            message: 'Choose a button',
+            buttons: ['First', 'Second', 'Third']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          dialogHelper.clickMessageBoxButton(handle, 1);
+
+          const result = await p;
+          expect(result.response).to.equal(1);
+        });
+
+        it('returns the correct response when the last button is clicked', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showMessageBox(w, {
+            message: 'Choose a button',
+            buttons: ['Yes', 'No', 'Maybe']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          dialogHelper.clickMessageBoxButton(handle, 2);
+
+          const result = await p;
+          expect(result.response).to.equal(2);
+        });
+
+        it('shows a single button when no buttons are specified', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showMessageBox(w, {
+            message: 'No buttons specified'
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+
+          expect(info.type).to.equal('message-box');
+          // macOS adds a default "OK" button when none are specified.
+          const buttons = JSON.parse(info.buttons);
+          expect(buttons).to.have.lengthOf(1);
+
+          dialogHelper.clickMessageBoxButton(handle, 0);
+          const result = await p;
+          expect(result.response).to.equal(0);
+        });
+
+        it('renders checkbox with the correct label and initial state', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showMessageBox(w, {
+            message: 'Checkbox test',
+            buttons: ['OK'],
+            checkboxLabel: 'Do not show again',
+            checkboxChecked: false
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+
+          expect(info.checkboxLabel).to.equal('Do not show again');
+          expect(info.checkboxChecked).to.be.false();
+
+          dialogHelper.clickMessageBoxButton(handle, 0);
+          const result = await p;
+          expect(result.checkboxChecked).to.be.false();
+        });
+
+        it('returns checkboxChecked as true when checkbox is initially checked', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showMessageBox(w, {
+            message: 'Pre-checked checkbox',
+            buttons: ['OK'],
+            checkboxLabel: 'Remember my choice',
+            checkboxChecked: true
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+
+          expect(info.checkboxLabel).to.equal('Remember my choice');
+          expect(info.checkboxChecked).to.be.true();
+
+          dialogHelper.clickMessageBoxButton(handle, 0);
+          const result = await p;
+          expect(result.checkboxChecked).to.be.true();
+        });
+
+        it('can toggle checkbox and returns updated state', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showMessageBox(w, {
+            message: 'Toggle test',
+            buttons: ['OK'],
+            checkboxLabel: 'Toggle me',
+            checkboxChecked: false
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+
+          // Verify initially unchecked.
+          let info = dialogHelper.getDialogInfo(handle);
+          expect(info.checkboxChecked).to.be.false();
+
+          // Click the checkbox to check it.
+          dialogHelper.clickCheckbox(handle);
+          info = dialogHelper.getDialogInfo(handle);
+          expect(info.checkboxChecked).to.be.true();
+
+          dialogHelper.clickMessageBoxButton(handle, 0);
+          const result = await p;
+          expect(result.checkboxChecked).to.be.true();
+        });
+
+        it('strips access keys on macOS with normalizeAccessKeys', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showMessageBox(w, {
+            message: 'Access key test',
+            buttons: ['&Save', '&Cancel'],
+            normalizeAccessKeys: true
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+
+          // On macOS, ampersands are stripped by normalizeAccessKeys.
+          const buttons = JSON.parse(info.buttons);
+          expect(buttons).to.include('Save');
+          expect(buttons).to.include('Cancel');
+          expect(buttons).not.to.include('&Save');
+          expect(buttons).not.to.include('&Cancel');
+
+          dialogHelper.clickMessageBoxButton(handle, 0);
+          await p;
+        });
+
+        it('respects defaultId by making it the default button', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showMessageBox(w, {
+            message: 'Default button test',
+            buttons: ['One', 'Two', 'Three'],
+            defaultId: 2
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+
+          const info = dialogHelper.getDialogInfo(handle);
+          const buttons = JSON.parse(info.buttons);
+          expect(buttons).to.deep.equal(['One', 'Two', 'Three']);
+
+          dialogHelper.clickMessageBoxButton(handle, 2);
+          const result = await p;
+          expect(result.response).to.equal(2);
+        });
+
+        it('respects cancelId and returns it when cancelled via signal', async () => {
+          const controller = new AbortController();
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showMessageBox(w, {
+            message: 'Cancel ID test',
+            buttons: ['OK', 'Dismiss', 'Abort'],
+            cancelId: 2,
+            signal: controller.signal
+          });
+
+          await waitForSheet(w);
+          controller.abort();
+
+          const result = await p;
+          expect(result.response).to.equal(2);
+        });
+
+        it('works with all message box types', async () => {
+          const types: Array<'none' | 'info' | 'warning' | 'error' | 'question'> = [
+            'none',
+            'info',
+            'warning',
+            'error',
+            'question'
+          ];
+
+          for (const type of types) {
+            const w = new BrowserWindow({ show: false });
+            const p = dialog.showMessageBox(w, {
+              message: `Type: ${type}`,
+              type,
+              buttons: ['OK']
+            });
+
+            await waitForSheet(w);
+            const handle = w.getNativeWindowHandle();
+            const info = dialogHelper.getDialogInfo(handle);
+
+            expect(info.type).to.equal('message-box');
+            expect(info.message).to.equal(`Type: ${type}`);
+
+            dialogHelper.clickMessageBoxButton(handle, 0);
+            await p;
+            w.destroy();
+            // Allow the event loop to settle between iterations to avoid
+            // Chromium DCHECK failures from rapid window lifecycle churn.
+            await setTimeout(100);
+          }
+        });
+      });
+
+      describe('showOpenDialog', () => {
+        it('can cancel an open dialog', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            title: 'Test Open',
+            properties: ['openFile']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.type).to.equal('open-dialog');
+
+          dialogHelper.cancelFileDialog(handle);
+
+          const result = await p;
+          expect(result.canceled).to.be.true();
+          expect(result.filePaths).to.have.lengthOf(0);
+        });
+
+        it('sets a custom button label', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            buttonLabel: 'Select This',
+            properties: ['openFile']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.prompt).to.equal('Select This');
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('sets a message on the dialog', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            message: 'Choose a file to import',
+            properties: ['openFile']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.panelMessage).to.equal('Choose a file to import');
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('defaults to openFile with canChooseFiles enabled', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            properties: ['openFile']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.canChooseFiles).to.be.true();
+          expect(info.canChooseDirectories).to.be.false();
+          expect(info.allowsMultipleSelection).to.be.false();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('enables directory selection with openDirectory', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            properties: ['openDirectory']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.canChooseDirectories).to.be.true();
+          // openFile is not set, so canChooseFiles should be false
+          expect(info.canChooseFiles).to.be.false();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('enables both file and directory selection together', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            properties: ['openFile', 'openDirectory']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.canChooseFiles).to.be.true();
+          expect(info.canChooseDirectories).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('enables multiple selection with multiSelections', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            properties: ['openFile', 'multiSelections']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.allowsMultipleSelection).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('shows hidden files with showHiddenFiles', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            properties: ['openFile', 'showHiddenFiles']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.showsHiddenFiles).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('does not show hidden files by default', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            properties: ['openFile']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.showsHiddenFiles).to.be.false();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('disables alias resolution with noResolveAliases', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            properties: ['openFile', 'noResolveAliases']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.resolvesAliases).to.be.false();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('resolves aliases by default', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            properties: ['openFile']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.resolvesAliases).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('treats packages as directories with treatPackageAsDirectory', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            properties: ['openFile', 'treatPackageAsDirectory']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.treatsPackagesAsDirectories).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('enables directory creation with createDirectory', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            properties: ['openFile', 'createDirectory']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.canCreateDirectories).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('sets the default path directory', async () => {
+          const defaultDir = path.join(__dirname, 'fixtures');
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            defaultPath: defaultDir,
+            properties: ['openFile']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.directory).to.equal(defaultDir);
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('applies multiple properties simultaneously', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            title: 'Multi-Property Test',
+            buttonLabel: 'Pick',
+            message: 'Select items',
+            properties: [
+              'openFile',
+              'openDirectory',
+              'multiSelections',
+              'showHiddenFiles',
+              'createDirectory',
+              'treatPackageAsDirectory',
+              'noResolveAliases'
+            ]
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+
+          expect(info.type).to.equal('open-dialog');
+          expect(info.prompt).to.equal('Pick');
+          expect(info.panelMessage).to.equal('Select items');
+          expect(info.canChooseFiles).to.be.true();
+          expect(info.canChooseDirectories).to.be.true();
+          expect(info.allowsMultipleSelection).to.be.true();
+          expect(info.showsHiddenFiles).to.be.true();
+          expect(info.canCreateDirectories).to.be.true();
+          expect(info.treatsPackagesAsDirectories).to.be.true();
+          expect(info.resolvesAliases).to.be.false();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('can accept an open dialog and return a file path', async () => {
+          const targetDir = path.join(__dirname, 'fixtures');
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showOpenDialog(w, {
+            defaultPath: targetDir,
+            properties: ['openDirectory']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+
+          dialogHelper.acceptFileDialog(handle);
+
+          const result = await p;
+          expect(result.canceled).to.be.false();
+          expect(result.filePaths).to.have.lengthOf(1);
+          expect(result.filePaths[0]).to.equal(targetDir);
+        });
+      });
+
+      describe('showSaveDialog', () => {
+        it('can cancel a save dialog', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            title: 'Test Save'
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.type).to.equal('save-dialog');
+
+          dialogHelper.cancelFileDialog(handle);
+
+          const result = await p;
+          expect(result.canceled).to.be.true();
+          expect(result.filePath).to.equal('');
+        });
+
+        it('can accept a save dialog with a filename', async () => {
+          const defaultDir = path.join(__dirname, 'fixtures');
+          const filename = 'test-save-output.txt';
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            title: 'Test Save',
+            defaultPath: path.join(defaultDir, filename)
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+
+          dialogHelper.acceptFileDialog(handle);
+
+          const result = await p;
+          expect(result.canceled).to.be.false();
+          expect(result.filePath).to.equal(path.join(defaultDir, filename));
+        });
+
+        it('sets a custom button label', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            buttonLabel: 'Export'
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.prompt).to.equal('Export');
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('sets a message on the dialog', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            message: 'Choose where to save'
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.panelMessage).to.equal('Choose where to save');
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('sets a custom name field label', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            nameFieldLabel: 'Export As:'
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.nameFieldLabel).to.equal('Export As:');
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('sets the default filename from defaultPath', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            defaultPath: path.join(__dirname, 'fixtures', 'my-document.txt')
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.nameFieldValue).to.equal('my-document.txt');
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('sets the default directory from defaultPath', async () => {
+          const defaultDir = path.join(__dirname, 'fixtures');
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            defaultPath: path.join(defaultDir, 'some-file.txt')
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.directory).to.equal(defaultDir);
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('hides the tag field when showsTagField is false', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            showsTagField: false
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.showsTagField).to.be.false();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('shows the tag field by default', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {});
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.showsTagField).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('enables directory creation with createDirectory', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            properties: ['createDirectory']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.canCreateDirectories).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('shows hidden files with showHiddenFiles', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            properties: ['showHiddenFiles']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.showsHiddenFiles).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('does not show hidden files by default', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {});
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.showsHiddenFiles).to.be.false();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('treats packages as directories with treatPackageAsDirectory', async () => {
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            properties: ['treatPackageAsDirectory']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+          expect(info.treatsPackagesAsDirectories).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+
+        it('applies multiple options simultaneously', async () => {
+          const defaultDir = path.join(__dirname, 'fixtures');
+          const w = new BrowserWindow({ show: false });
+          const p = dialog.showSaveDialog(w, {
+            buttonLabel: 'Save Now',
+            message: 'Pick a location',
+            nameFieldLabel: 'File Name:',
+            defaultPath: path.join(defaultDir, 'output.txt'),
+            showsTagField: false,
+            properties: ['showHiddenFiles', 'createDirectory']
+          });
+
+          await waitForSheet(w);
+          const handle = w.getNativeWindowHandle();
+          const info = dialogHelper.getDialogInfo(handle);
+
+          expect(info.type).to.equal('save-dialog');
+          expect(info.prompt).to.equal('Save Now');
+          expect(info.panelMessage).to.equal('Pick a location');
+          expect(info.nameFieldLabel).to.equal('File Name:');
+          expect(info.nameFieldValue).to.equal('output.txt');
+          expect(info.directory).to.equal(defaultDir);
+          expect(info.showsTagField).to.be.false();
+          expect(info.showsHiddenFiles).to.be.true();
+          expect(info.canCreateDirectories).to.be.true();
+
+          dialogHelper.cancelFileDialog(handle);
+          await p;
+        });
+      });
+    }
+  );
+
+  // Asserts on the D-Bus requests received by the mock xdg-desktop-portal
+  // FileChooser that script/dbus_mock.py hosts on the fake session bus. The
+  // mock records each request and auto-cancels the dialog.
+  ifdescribe(
+    process.platform === 'linux' &&
+      process.arch !== 'ia32' &&
+      !process.arch.startsWith('arm') &&
+      !!process.env.DBUS_SESSION_BUS_ADDRESS
+  )('file dialogs (Linux portal)', () => {
+    let bus: any;
+    let getCalls: () => Promise<any[]>;
+    let clearCalls: () => Promise<void>;
+
+    before(async () => {
+      bus = dbus.sessionBus();
+      const service = bus.getService('org.freedesktop.portal.Desktop');
+      const getInterface = promisify(service.getInterface.bind(service));
+      const mock: any = await getInterface('/org/freedesktop/portal/desktop', 'org.freedesktop.DBus.Mock');
+      getCalls = promisify(mock.GetCalls.bind(mock));
+      clearCalls = promisify(mock.ClearCalls.bind(mock));
+    });
+
+    after(() => {
+      bus?.connection.end();
+    });
+
+    beforeEach(async () => {
+      await clearCalls();
+    });
+
+    // A call is [timestamp, methodName, [parent_window, title, options]];
+    // args and dict values are [signature, [value]] variant pairs.
+    function getLoggedOptions(call: any) {
+      const options: Record<string, any> = {};
+      for (const entry of call[2][2][1][0]) {
+        options[entry[0]] = entry[1][1][0];
+      }
+      return options;
+    }
+
+    // current_folder is an 'ay' (null-terminated byte array).
+    function getCurrentFolder(options: Record<string, any>) {
+      const bytes = Buffer.from(options.current_folder);
+      const nul = bytes.indexOf(0);
+      return bytes.toString('utf8', 0, nul === -1 ? bytes.length : nul);
+    }
+
+    async function getSingleCall(method: string) {
+      const calls = (await getCalls()).filter((call) => call[1] === method);
+      expect(calls).to.have.lengthOf(1);
+      return calls[0];
+    }
+
+    describe('showSaveDialog', () => {
+      it('sends the defaultPath as current_folder and current_name', async () => {
+        const defaultDir = path.join(__dirname, 'fixtures');
+        const { canceled } = await dialog.showSaveDialog({
+          defaultPath: path.join(defaultDir, 'save-target.txt')
+        });
+        expect(canceled).to.be.true();
+
+        const options = getLoggedOptions(await getSingleCall('SaveFile'));
+        expect(options.current_name).to.equal('save-target.txt');
+        expect(getCurrentFolder(options)).to.equal(defaultDir);
+      });
+
+      // https://github.com/electron/electron/issues/52051
+      it('sends an absolute current_folder for a directory-less defaultPath', async () => {
+        const { canceled } = await dialog.showSaveDialog({
+          defaultPath: 'test.jpeg'
+        });
+        expect(canceled).to.be.true();
+
+        const options = getLoggedOptions(await getSingleCall('SaveFile'));
+        expect(options.current_name).to.equal('test.jpeg');
+        const currentFolder = getCurrentFolder(options);
+        expect(currentFolder).to.satisfy(path.isAbsolute);
+        expect([app.getPath('downloads'), app.getPath('home')]).to.include(currentFolder);
       });
     });
 
     describe('showOpenDialog', () => {
-      it('can cancel an open dialog', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          title: 'Test Open',
+      it('sends an absolute current_folder for a directory-less defaultPath', async () => {
+        const { canceled } = await dialog.showOpenDialog({
+          defaultPath: 'test.jpeg',
           properties: ['openFile']
         });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.type).to.equal('open-dialog');
-
-        dialogHelper.cancelFileDialog(handle);
-
-        const result = await p;
-        expect(result.canceled).to.be.true();
-        expect(result.filePaths).to.have.lengthOf(0);
-      });
-
-      it('sets a custom button label', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          buttonLabel: 'Select This',
-          properties: ['openFile']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.prompt).to.equal('Select This');
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('sets a message on the dialog', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          message: 'Choose a file to import',
-          properties: ['openFile']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.panelMessage).to.equal('Choose a file to import');
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('defaults to openFile with canChooseFiles enabled', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          properties: ['openFile']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.canChooseFiles).to.be.true();
-        expect(info.canChooseDirectories).to.be.false();
-        expect(info.allowsMultipleSelection).to.be.false();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('enables directory selection with openDirectory', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          properties: ['openDirectory']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.canChooseDirectories).to.be.true();
-        // openFile is not set, so canChooseFiles should be false
-        expect(info.canChooseFiles).to.be.false();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('enables both file and directory selection together', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          properties: ['openFile', 'openDirectory']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.canChooseFiles).to.be.true();
-        expect(info.canChooseDirectories).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('enables multiple selection with multiSelections', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          properties: ['openFile', 'multiSelections']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.allowsMultipleSelection).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('shows hidden files with showHiddenFiles', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          properties: ['openFile', 'showHiddenFiles']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.showsHiddenFiles).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('does not show hidden files by default', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          properties: ['openFile']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.showsHiddenFiles).to.be.false();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('disables alias resolution with noResolveAliases', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          properties: ['openFile', 'noResolveAliases']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.resolvesAliases).to.be.false();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('resolves aliases by default', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          properties: ['openFile']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.resolvesAliases).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('treats packages as directories with treatPackageAsDirectory', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          properties: ['openFile', 'treatPackageAsDirectory']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.treatsPackagesAsDirectories).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('enables directory creation with createDirectory', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          properties: ['openFile', 'createDirectory']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.canCreateDirectories).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('sets the default path directory', async () => {
-        const defaultDir = path.join(__dirname, 'fixtures');
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          defaultPath: defaultDir,
-          properties: ['openFile']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.directory).to.equal(defaultDir);
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('applies multiple properties simultaneously', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          title: 'Multi-Property Test',
-          buttonLabel: 'Pick',
-          message: 'Select items',
-          properties: [
-            'openFile',
-            'openDirectory',
-            'multiSelections',
-            'showHiddenFiles',
-            'createDirectory',
-            'treatPackageAsDirectory',
-            'noResolveAliases'
-          ]
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-
-        expect(info.type).to.equal('open-dialog');
-        expect(info.prompt).to.equal('Pick');
-        expect(info.panelMessage).to.equal('Select items');
-        expect(info.canChooseFiles).to.be.true();
-        expect(info.canChooseDirectories).to.be.true();
-        expect(info.allowsMultipleSelection).to.be.true();
-        expect(info.showsHiddenFiles).to.be.true();
-        expect(info.canCreateDirectories).to.be.true();
-        expect(info.treatsPackagesAsDirectories).to.be.true();
-        expect(info.resolvesAliases).to.be.false();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('can accept an open dialog and return a file path', async () => {
-        const targetDir = path.join(__dirname, 'fixtures');
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showOpenDialog(w, {
-          defaultPath: targetDir,
-          properties: ['openDirectory']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-
-        dialogHelper.acceptFileDialog(handle);
-
-        const result = await p;
-        expect(result.canceled).to.be.false();
-        expect(result.filePaths).to.have.lengthOf(1);
-        expect(result.filePaths[0]).to.equal(targetDir);
-      });
-    });
-
-    describe('showSaveDialog', () => {
-      it('can cancel a save dialog', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          title: 'Test Save'
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.type).to.equal('save-dialog');
-
-        dialogHelper.cancelFileDialog(handle);
-
-        const result = await p;
-        expect(result.canceled).to.be.true();
-        expect(result.filePath).to.equal('');
-      });
-
-      it('can accept a save dialog with a filename', async () => {
-        const defaultDir = path.join(__dirname, 'fixtures');
-        const filename = 'test-save-output.txt';
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          title: 'Test Save',
-          defaultPath: path.join(defaultDir, filename)
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-
-        dialogHelper.acceptFileDialog(handle);
-
-        const result = await p;
-        expect(result.canceled).to.be.false();
-        expect(result.filePath).to.equal(path.join(defaultDir, filename));
-      });
-
-      it('sets a custom button label', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          buttonLabel: 'Export'
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.prompt).to.equal('Export');
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('sets a message on the dialog', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          message: 'Choose where to save'
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.panelMessage).to.equal('Choose where to save');
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('sets a custom name field label', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          nameFieldLabel: 'Export As:'
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.nameFieldLabel).to.equal('Export As:');
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('sets the default filename from defaultPath', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          defaultPath: path.join(__dirname, 'fixtures', 'my-document.txt')
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.nameFieldValue).to.equal('my-document.txt');
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('sets the default directory from defaultPath', async () => {
-        const defaultDir = path.join(__dirname, 'fixtures');
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          defaultPath: path.join(defaultDir, 'some-file.txt')
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.directory).to.equal(defaultDir);
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('hides the tag field when showsTagField is false', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          showsTagField: false
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.showsTagField).to.be.false();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('shows the tag field by default', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {});
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.showsTagField).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('enables directory creation with createDirectory', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          properties: ['createDirectory']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.canCreateDirectories).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('shows hidden files with showHiddenFiles', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          properties: ['showHiddenFiles']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.showsHiddenFiles).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('does not show hidden files by default', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {});
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.showsHiddenFiles).to.be.false();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('treats packages as directories with treatPackageAsDirectory', async () => {
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          properties: ['treatPackageAsDirectory']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-        expect(info.treatsPackagesAsDirectories).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
-      });
-
-      it('applies multiple options simultaneously', async () => {
-        const defaultDir = path.join(__dirname, 'fixtures');
-        const w = new BrowserWindow({ show: false });
-        const p = dialog.showSaveDialog(w, {
-          buttonLabel: 'Save Now',
-          message: 'Pick a location',
-          nameFieldLabel: 'File Name:',
-          defaultPath: path.join(defaultDir, 'output.txt'),
-          showsTagField: false,
-          properties: ['showHiddenFiles', 'createDirectory']
-        });
-
-        await waitForSheet(w);
-        const handle = w.getNativeWindowHandle();
-        const info = dialogHelper.getDialogInfo(handle);
-
-        expect(info.type).to.equal('save-dialog');
-        expect(info.prompt).to.equal('Save Now');
-        expect(info.panelMessage).to.equal('Pick a location');
-        expect(info.nameFieldLabel).to.equal('File Name:');
-        expect(info.nameFieldValue).to.equal('output.txt');
-        expect(info.directory).to.equal(defaultDir);
-        expect(info.showsTagField).to.be.false();
-        expect(info.showsHiddenFiles).to.be.true();
-        expect(info.canCreateDirectories).to.be.true();
-
-        dialogHelper.cancelFileDialog(handle);
-        await p;
+        expect(canceled).to.be.true();
+
+        const options = getLoggedOptions(await getSingleCall('OpenFile'));
+        const currentFolder = getCurrentFolder(options);
+        expect(currentFolder).to.satisfy(path.isAbsolute);
+        expect([app.getPath('downloads'), app.getPath('home')]).to.include(currentFolder);
       });
     });
   });

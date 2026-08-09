@@ -50,6 +50,7 @@ struct NotificationOptions {
   std::u16string close_button_text;
   std::u16string toast_xml;
   std::string group_id;
+  std::u16string group_title;
 
   NotificationOptions();
   NotificationOptions(const NotificationOptions&);
@@ -57,6 +58,21 @@ struct NotificationOptions {
   NotificationOptions(NotificationOptions&&);
   NotificationOptions& operator=(NotificationOptions&&);
   ~NotificationOptions();
+};
+
+struct NotificationInfo {
+  std::string id;
+  std::string title;
+  std::string subtitle;
+  std::string body;
+  std::string group_id;
+
+  NotificationInfo();
+  ~NotificationInfo();
+  NotificationInfo(const NotificationInfo&);
+  NotificationInfo& operator=(const NotificationInfo&);
+  NotificationInfo(NotificationInfo&&) noexcept;
+  NotificationInfo& operator=(NotificationInfo&&) noexcept;
 };
 
 class Notification {
@@ -74,6 +90,11 @@ class Notification {
   // Removes the notification if it was not fully removed during dismissal,
   // as can happen on some platforms including Windows.
   virtual void Remove() {}
+
+  // Restores a previously delivered notification for event handling without
+  // re-showing it. Sets up platform state so interaction events (click, reply,
+  // etc.) route to this object.
+  virtual void Restore() {}
 
   // Should be called by derived classes.
   void NotificationClicked();

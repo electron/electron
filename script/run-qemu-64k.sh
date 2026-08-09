@@ -22,7 +22,7 @@ fi
 echo "Installing QEMU system emulation and tools"
 sudo apt-get update && sudo apt-get install -y qemu-system-arm binutils
 
-KERNEL_URL="http://ports.ubuntu.com/ubuntu-ports/pool/main/l/linux/linux-image-unsigned-6.8.0-90-generic-64k_6.8.0-90.91_arm64.deb"
+KERNEL_URL="http://ports.ubuntu.com/ubuntu-ports/pool/main/l/linux/linux-image-unsigned-6.8.0-130-generic-64k_6.8.0-130.130_arm64.deb"
 KERNEL_DIR=$(mktemp -d)
 ROOTFS_DIR=$(mktemp -d)
 
@@ -43,7 +43,7 @@ wait $CURL_PID
 
 echo "Extracting kernel"
 (cd "$KERNEL_DIR" && ar x kernel.deb && tar xf data.tar*)
-VMLINUZ="$KERNEL_DIR/boot/vmlinuz-6.8.0-90-generic-64k"
+VMLINUZ="$KERNEL_DIR/boot/vmlinuz-6.8.0-130-generic-64k"
 if [ ! -f "$VMLINUZ" ]; then
 	echo "Error: Could not find kernel at $VMLINUZ"
 	exit 1

@@ -10,7 +10,6 @@
 #include <string>
 
 #include "base/containers/flat_set.h"
-#include "base/files/file_enumerator.h"
 #include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/nix/xdg_util.h"
@@ -126,8 +125,8 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
       base::BindRepeating(&LibnotifyNotification::OnNotificationClosed,
                           base::Unretained(this)));
 
-  // NB: On Unity and on any other DE using Notify-OSD, adding a notification
-  // action will cause the notification to display as a modal dialog box.
+  // NB: On any DE using Notify-OSD, adding a notification action will cause
+  // the notification to display as a modal dialog box.
   if (NotifierSupportsActions()) {
     GetLibNotifyLoader().notify_notification_add_action(
         notification_, "default", "View", OnNotificationView, this, nullptr);

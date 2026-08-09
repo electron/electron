@@ -46,7 +46,7 @@ if (feedUrl === 'remain-open') {
     } else {
       setTimeout(() => {
         autoUpdater.checkForUpdates();
-      }, 1000);
+      }, 5000);
     }
   });
 

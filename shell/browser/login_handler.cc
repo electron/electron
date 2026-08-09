@@ -10,13 +10,14 @@
 #include "content/public/browser/browser_thread.h"
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
+#include "net/http/http_response_headers.h"
 #include "shell/browser/api/electron_api_app.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
-#include "shell/common/gin_converters/value_converter.h"
 
 using content::BrowserThread;
 
@@ -84,14 +85,13 @@ void LoginHandler::EmitEvent(
   auto details = gin::Dictionary::CreateEmpty(isolate);
   details.Set("url", url);
   details.Set("pid", process_id);
-
-  // These parameters aren't documented, and I'm not sure that they're useful,
-  // but we might as well stick 'em on the details object. If it turns out they
-  // are useful, we can add them to the docs :)
-  details.Set("isMainFrame", is_request_for_primary_main_frame);
   details.Set("isRequestForNavigation", is_request_for_navigation);
   details.Set("firstAuthAttempt", first_auth_attempt);
   details.Set("responseHeaders", response_headers.get());
+
+  // This parameter isn't documented in the Electron API because:
+  // https://github.com/electron/electron/pull/46630#pullrequestreview-2862305353
+  details.Set("isMainFrame", is_request_for_primary_main_frame);
 
   auto weak_this = weak_factory_.GetWeakPtr();
   bool default_prevented = false;
@@ -100,6 +100,17 @@ void LoginHandler::EmitEvent(
         api_web_contents->Emit("login", std::move(details), auth_info,
                                base::BindOnce(&LoginHandler::CallbackFromJS,
                                               weak_factory_.GetWeakPtr()));
+  } else if (auto* utility_process =
+                 api::UtilityProcessWrapper::FromProcessId(process_id);
+             utility_process && utility_process->has_session()) {
+    // Route auth to the utility process wrapper when the request originated
+    // from a utility process with a session and
+    // respondToAuthRequestsFromMainProcess. Without a session, auth falls
+    // through to app.on('login') for backward compatibility.
+    default_prevented =
+        utility_process->Emit("login", std::move(details), auth_info,
+                              base::BindOnce(&LoginHandler::CallbackFromJS,
+                                             weak_factory_.GetWeakPtr()));
   } else {
     default_prevented =
         api::App::Get()->Emit("login", nullptr, std::move(details), auth_info,

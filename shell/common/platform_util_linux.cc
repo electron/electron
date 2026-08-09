@@ -6,7 +6,6 @@
 
 #include <fcntl.h>
 
-#include <stdio.h>
 #include <memory>
 #include <optional>
 #include <queue>
@@ -15,7 +14,6 @@
 
 #include <gdk/gdk.h>
 
-#include "base/cancelable_callback.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/files/scoped_file.h"
@@ -27,8 +25,6 @@
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/run_loop.h"
-#include "base/strings/escape.h"
-#include "base/strings/string_util.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/types/expected.h"

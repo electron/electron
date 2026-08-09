@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "base/memory/singleton.h"
 #include "base/task/single_thread_task_runner.h"
 #include "gpu/config/gpu_info_collector.h"
 #include "shell/browser/api/gpu_info_enumerator.h"
@@ -52,7 +51,7 @@ void GPUInfoManager::OnGpuInfoUpdate() {
 void GPUInfoManager::CompleteInfoFetcher(
     gin_helper::Promise<base::Value> promise) {
   complete_info_promise_set_.emplace_back(std::move(promise));
-  gpu_data_manager_->RequestDx12VulkanVideoGpuInfoIfNeeded(
+  gpu_data_manager_->RequestGpuInfoIfNeeded(
       content::GpuDataManagerImpl::kGpuInfoRequestAll, /* delayed */ false);
 }
 

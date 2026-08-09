@@ -13,9 +13,30 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
         framework: path.join(contentsPath, 'Frameworks', 'Electron Framework.framework', 'Electron Framework'),
         helpers: {
           main: path.join(contentsPath, 'Frameworks', 'Electron Helper.app', 'Contents', 'MacOS', 'Electron Helper'),
-          gpu: path.join(contentsPath, 'Frameworks', 'Electron Helper (GPU).app', 'Contents', 'MacOS', 'Electron Helper (GPU)'),
-          plugin: path.join(contentsPath, 'Frameworks', 'Electron Helper (Plugin).app', 'Contents', 'MacOS', 'Electron Helper (Plugin)'),
-          renderer: path.join(contentsPath, 'Frameworks', 'Electron Helper (Renderer).app', 'Contents', 'MacOS', 'Electron Helper (Renderer)')
+          gpu: path.join(
+            contentsPath,
+            'Frameworks',
+            'Electron Helper (GPU).app',
+            'Contents',
+            'MacOS',
+            'Electron Helper (GPU)'
+          ),
+          plugin: path.join(
+            contentsPath,
+            'Frameworks',
+            'Electron Helper (Plugin).app',
+            'Contents',
+            'MacOS',
+            'Electron Helper (Plugin)'
+          ),
+          renderer: path.join(
+            contentsPath,
+            'Frameworks',
+            'Electron Helper (Renderer).app',
+            'Contents',
+            'MacOS',
+            'Electron Helper (Renderer)'
+          )
         }
       };
     };
@@ -96,7 +117,7 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
       if (foundPrivateAPIs.length > 0) {
         throw new Error(
           `Found private macOS APIs in main process:\n${foundPrivateAPIs.join('\n')}\n\n` +
-          'These APIs are not allowed in Mac App Store builds and will cause rejection.'
+            'These APIs are not allowed in Mac App Store builds and will cause rejection.'
         );
       }
 
@@ -113,8 +134,7 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
 
       if (frameworks.includes('PrivateFrameworks')) {
         throw new Error(
-          'Found linkage to PrivateFrameworks which is not allowed in Mac App Store builds:\n' +
-          frameworks
+          'Found linkage to PrivateFrameworks which is not allowed in Mac App Store builds:\n' + frameworks
         );
       }
     });
@@ -129,8 +149,8 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
       if (foundAPIs.length > 0) {
         throw new Error(
           `Found private macOS APIs in Electron Framework:\n${foundAPIs.join('\n')}\n\n` +
-          'These APIs are not allowed in Mac App Store builds and will cause rejection.\n' +
-          'See patches/chromium/mas_avoid_private_macos_api_usage.patch.patch'
+            'These APIs are not allowed in Mac App Store builds and will cause rejection.\n' +
+            'See patches/chromium/mas_avoid_private_macos_api_usage.patch.patch'
         );
       }
     });
@@ -151,13 +171,11 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
       }
 
       if (Object.keys(allFoundAPIs).length > 0) {
-        const errorLines = Object.entries(allFoundAPIs).map(([helper, apis]) =>
-          `${helper}:\n  ${apis.join('\n  ')}`
-        );
+        const errorLines = Object.entries(allFoundAPIs).map(([helper, apis]) => `${helper}:\n  ${apis.join('\n  ')}`);
 
         throw new Error(
           `Found private macOS APIs in helper processes:\n\n${errorLines.join('\n\n')}\n\n` +
-          'These APIs are not allowed in Mac App Store builds and will cause rejection.'
+            'These APIs are not allowed in Mac App Store builds and will cause rejection.'
         );
       }
     });
@@ -166,10 +184,7 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
       this.timeout(60000);
 
       // Check for private Objective-C classes (appear as _OBJC_CLASS_$_ClassName)
-      const privateClasses = [
-        'NSAccessibilityRemoteUIElement',
-        'CAContext'
-      ];
+      const privateClasses = ['NSAccessibilityRemoteUIElement', 'CAContext'];
 
       const binaries = getElectronBinaries();
       const binariesToCheck = [
@@ -207,13 +222,13 @@ ifdescribe(process.platform === 'darwin' && process.mas)('Mac App Store build', 
       }
 
       if (Object.keys(foundClasses).length > 0) {
-        const errorLines = Object.entries(foundClasses).map(([binary, classes]) =>
-          `${binary}:\n  ${classes.join('\n  ')}`
+        const errorLines = Object.entries(foundClasses).map(
+          ([binary, classes]) => `${binary}:\n  ${classes.join('\n  ')}`
         );
 
         throw new Error(
           `Found references to private Objective-C classes:\n\n${errorLines.join('\n\n')}\n\n` +
-          'These are not allowed in Mac App Store builds and will cause rejection.'
+            'These are not allowed in Mac App Store builds and will cause rejection.'
         );
       }
     });

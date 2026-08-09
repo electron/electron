@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Mon, 1 Jun 2026 11:39:31 -0400
+Subject: chore: silence sign-compare warning in sessionVarintGetSafe
+
+Upstream sqlite compares signed 'int nBuf' against 'sizeof(aCopy)'
+(size_t). Electron builds with -Wsign-compare as an error, so cast
+nBuf to size_t to silence the warning. Callers always pass a
+non-negative value so this preserves behavior.
+
+This patch can be removed once sqlite fixes the comparison upstream.
+
+diff --git a/deps/sqlite/sqlite3.c b/deps/sqlite/sqlite3.c
+index 0c83f247e8946411adfbfba8f7e5f1dbd3f279bd..5c346fe3cff192fddc810326cdeaa4b463316e14 100644
+--- a/deps/sqlite/sqlite3.c
++++ b/deps/sqlite/sqlite3.c
+@@ -233701,7 +233701,7 @@ static int sessionVarintGetSafe(const u8 *aBuf, int nBuf, int *piVal){
+   u8 aCopy[9];
+   const u8 *aRead = aBuf;
+   memset(aCopy, 0, sizeof(aCopy));
+-  if( nBuf<sizeof(aCopy) ){
++  if( (size_t)nBuf<sizeof(aCopy) ){
+     memcpy(aCopy, aBuf, nBuf);
+     aRead = aCopy;
+   }

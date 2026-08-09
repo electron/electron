@@ -9,7 +9,6 @@
 #include <optional>
 #include <utility>
 
-#include "base/barrier_closure.h"
 #include "base/base_paths.h"
 #include "base/command_line.h"
 #include "base/containers/to_vector.h"
@@ -34,9 +33,9 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/cors_origin_pattern_setter.h"
 #include "content/public/browser/host_zoom_map.h"
+#include "content/public/browser/page.h"
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/render_process_host.h"
-#include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents_media_capture_id.h"
 #include "gin/arguments.h"
@@ -129,7 +128,8 @@ media::mojom::CaptureHandlePtr CreateCaptureHandle(
     return nullptr;
   }
 
-  const auto& captured_config = captured->GetCaptureHandleConfig();
+  const auto& captured_config =
+      captured->GetPrimaryPage().GetCaptureHandleConfig();
   if (!captured_config.all_origins_permitted &&
       std::ranges::none_of(
           captured_config.permitted_origins,
@@ -359,7 +359,7 @@ ElectronBrowserContext::ElectronBrowserContext(
     base::DictValue options)
     : in_memory_pref_store_(new ValueMapPrefStore),
       storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
-      protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
+      protocol_registry_(base::WrapUnique(new ProtocolRegistry(this))),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
   // Read options.
@@ -500,6 +500,11 @@ void ElectronBrowserContext::InitPrefs() {
   // Unique uuid for global shortcuts.
   registry->RegisterStringPref(electron::kElectronGlobalShortcutsUuid,
                                std::string());
+
+#if BUILDFLAG(IS_MAC)
+  registry->RegisterStringPref(electron::kWebAuthnTouchIdMetadataSecretPrefName,
+                               std::string());
+#endif
 }
 
 void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {
@@ -805,6 +810,14 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           GetAudioDesktopMediaId(request.requested_audio_device_ids));
       devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &id)) {
+      if (request.restrict_own_audio &&
+          id == media::AudioDeviceDescription::kLoopbackInputDeviceId) {
+#if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN) || BUILDFLAG(IS_CHROMEOS)
+        id = media::AudioDeviceDescription::kLoopbackWithoutChromeId;
+#else
+        id = media::AudioDeviceDescription::kLoopbackInputDeviceId;
+#endif
+      }
       blink::MediaStreamDevice audio_device(request.audio_type, id,
                                             "System audio");
       audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(

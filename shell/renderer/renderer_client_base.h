@@ -58,7 +58,7 @@ class RendererClientBase : public content::ContentRendererClient
 
   virtual void DidCreateScriptContext(v8::Isolate* isolate,
                                       v8::Local<v8::Context> context,
-                                      content::RenderFrame* render_frame) = 0;
+                                      content::RenderFrame* render_frame);
   virtual void WillReleaseScriptContext(v8::Isolate* isolate,
                                         v8::Local<v8::Context> context,
                                         content::RenderFrame* render_frame) = 0;
@@ -100,6 +100,7 @@ class RendererClientBase : public content::ContentRendererClient
   void RenderThreadStarted() override;
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
   void RenderFrameCreated(content::RenderFrame*) override;
+  void SetPendingCreateNewWindowStartupData(mojo_base::BigBuffer data) override;
   bool OverrideCreatePlugin(content::RenderFrame* render_frame,
                             const blink::WebPluginParams& params,
                             blink::WebPlugin** plugin) override;
@@ -116,8 +117,6 @@ class RendererClientBase : public content::ContentRendererClient
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame) override;
 
-  bool AllowScriptExtensionForServiceWorker(
-      const url::Origin& script_origin) override;
   void DidInitializeServiceWorkerContextOnWorkerThread(
       blink::WebServiceWorkerContextProxy* context_proxy,
       const GURL& service_worker_scope,
@@ -141,6 +140,10 @@ class RendererClientBase : public content::ContentRendererClient
       const GURL& service_worker_scope,
       const GURL& script_url,
       const blink::ServiceWorkerToken& service_worker_token) override;
+  void WorkerScriptReadyForEvaluationOnWorkerThread(
+      v8::Local<v8::Context> context) override;
+  void WillDestroyWorkerContextOnWorkerThread(
+      v8::Local<v8::Context> context) override;
   void WebViewCreated(blink::WebView* web_view,
                       bool was_created_by_renderer,
                       const url::Origin* outermost_origin) override;
@@ -150,6 +153,9 @@ class RendererClientBase : public content::ContentRendererClient
   std::unique_ptr<extensions::ExtensionsClient> extensions_client_;
   std::unique_ptr<ElectronExtensionsRendererClient> extensions_renderer_client_;
 #endif
+
+  // Receives the per-process service-worker startup data push from the
+  // browser, replacing the BROWSER_SANDBOX_LOAD sync IPC for SW preload realms.
 
   std::string renderer_client_id_;
   // An increasing ID used for identifying an V8 context in this process.

@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "base/functional/bind.h"
-#include "content/public/browser/browser_task_traits.h"
+#include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
 
 #import <CommonCrypto/CommonCrypto.h>
@@ -100,11 +100,14 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
     (SKPaymentDiscount*)paymentDiscount {
   in_app_purchase::PaymentDiscount paymentDiscountStruct;
 
-  paymentDiscountStruct.identifier = [paymentDiscount.identifier UTF8String];
+  paymentDiscountStruct.identifier =
+      base::SysNSStringToUTF8(paymentDiscount.identifier);
   paymentDiscountStruct.keyIdentifier =
-      [paymentDiscount.keyIdentifier UTF8String];
-  paymentDiscountStruct.nonce = [[paymentDiscount.nonce UUIDString] UTF8String];
-  paymentDiscountStruct.signature = [paymentDiscount.signature UTF8String];
+      base::SysNSStringToUTF8(paymentDiscount.keyIdentifier);
+  paymentDiscountStruct.nonce =
+      base::SysNSStringToUTF8(paymentDiscount.nonce.UUIDString);
+  paymentDiscountStruct.signature =
+      base::SysNSStringToUTF8(paymentDiscount.signature);
   paymentDiscountStruct.timestamp = [paymentDiscount.timestamp intValue];
 
   return paymentDiscountStruct;
@@ -119,7 +122,8 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
   in_app_purchase::Payment paymentStruct;
 
   if (payment.productIdentifier != nil) {
-    paymentStruct.productIdentifier = [payment.productIdentifier UTF8String];
+    paymentStruct.productIdentifier =
+        base::SysNSStringToUTF8(payment.productIdentifier);
   }
 
   if (payment.quantity >= 1) {
@@ -128,7 +132,7 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
 
   if (payment.applicationUsername != nil) {
     paymentStruct.applicationUsername =
-        [payment.applicationUsername UTF8String];
+        base::SysNSStringToUTF8(payment.applicationUsername);
   }
 
   if (payment.paymentDiscount != nil) {
@@ -150,29 +154,29 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
 
   if (transaction.transactionIdentifier != nil) {
     transactionStruct.transactionIdentifier =
-        [transaction.transactionIdentifier UTF8String];
+        base::SysNSStringToUTF8(transaction.transactionIdentifier);
   }
 
   if (transaction.transactionDate != nil) {
-    transactionStruct.transactionDate =
-        [[self dateToISOString:transaction.transactionDate] UTF8String];
+    transactionStruct.transactionDate = base::SysNSStringToUTF8(
+        [self dateToISOString:transaction.transactionDate]);
   }
 
   if (transaction.originalTransaction != nil) {
-    transactionStruct.originalTransactionIdentifier =
-        [transaction.originalTransaction.transactionIdentifier UTF8String];
+    transactionStruct.originalTransactionIdentifier = base::SysNSStringToUTF8(
+        transaction.originalTransaction.transactionIdentifier);
   }
 
   if (transaction.error != nil) {
     transactionStruct.errorCode = (int)transaction.error.code;
     transactionStruct.errorMessage =
-        [[transaction.error localizedDescription] UTF8String];
+        base::SysNSStringToUTF8(transaction.error.localizedDescription);
   }
 
   if (transaction.transactionState < 5) {
-    transactionStruct.transactionState =
-        [[@[ @"purchasing", @"purchased", @"failed", @"restored", @"deferred" ]
-            objectAtIndex:transaction.transactionState] UTF8String];
+    transactionStruct.transactionState = base::SysNSStringToUTF8(
+        [@[ @"purchasing", @"purchased", @"failed", @"restored", @"deferred" ]
+            objectAtIndex:transaction.transactionState]);
   }
 
   if (transaction.payment != nil) {

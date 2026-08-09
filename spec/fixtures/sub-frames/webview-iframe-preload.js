@@ -5,9 +5,13 @@ if (process.isMainFrame) {
     const webview = document.createElement('webview');
     webview.src = 'about:blank';
     webview.setAttribute('webpreferences', 'contextIsolation=no');
-    webview.addEventListener('did-finish-load', () => {
-      ipcRenderer.send('webview-loaded');
-    }, { once: true });
+    webview.addEventListener(
+      'did-finish-load',
+      () => {
+        ipcRenderer.send('webview-loaded');
+      },
+      { once: true }
+    );
     document.body.appendChild(webview);
   });
 } else {

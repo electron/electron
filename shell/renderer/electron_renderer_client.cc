@@ -18,19 +18,19 @@
 #include "shell/common/v8_util.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
-#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
-#include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_global_scope.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_settings.h"  // nogncheck
+#include "third_party/blink/renderer/core/workers/worklet_global_scope.h"  // nogncheck
 
 namespace electron {
 
 ElectronRendererClient::ElectronRendererClient()
-    : node_bindings_{NodeBindings::Create(
-          NodeBindings::BrowserEnvironment::kRenderer)},
+    : node_bindings_{
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)},
       electron_bindings_{
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {}
 
@@ -71,6 +71,9 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
   node::Environment* env = GetEnvironment(render_frame);
   if (env) {
     v8::Context::Scope context_scope(env->context());
+    v8::MicrotasksScope microtasks_scope(env->isolate(),
+                                         env->context()->GetMicrotaskQueue(),
+                                         v8::MicrotasksScope::kRunMicrotasks);
     gin_helper::EmitEvent(env->isolate(), env->process_object(),
                           "document-end");
   }
@@ -85,6 +88,9 @@ void ElectronRendererClient::DidCreateScriptContext(
     v8::Isolate* const isolate,
     v8::Local<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
+  RendererClientBase::DidCreateScriptContext(isolate, renderer_context,
+                                             render_frame);
+
   // TODO(zcbenz): Do not create Node environment if node integration is not
   // enabled.
 
@@ -123,25 +129,12 @@ void ElectronRendererClient::DidCreateScriptContext(
       base::BindRepeating(&ElectronRendererClient::UndeferLoad,
                           base::Unretained(this), render_frame));
 
-  // We need to use the Blink implementation of fetch in the renderer process
-  // Node.js deletes the global fetch function when their fetch implementation
-  // is disabled, so we need to save and re-add it after the Node.js environment
-  // is loaded. See corresponding change in node/init.ts.
-  v8::Local<v8::Object> global = renderer_context->Global();
-
-  std::vector<std::string> keys = {"fetch",   "Response", "FormData",
-                                   "Request", "Headers",  "EventSource"};
-  for (const auto& key : keys) {
-    v8::MaybeLocal<v8::Value> value =
-        global->Get(renderer_context, gin::StringToV8(isolate, key));
-    if (!value.IsEmpty()) {
-      std::string blink_key = "blink" + key;
-      global
-          ->Set(renderer_context, gin::StringToV8(isolate, blink_key),
-                value.ToLocalChecked())
-          .Check();
-    }
-  }
+  // CreateEnvironment calls SetIsolateUpForNode which unconditionally
+  // registers Node's WebAssembly streaming callback. With kNoBrowserGlobals
+  // the JS side of that callback is never installed, so it would crash on
+  // use; restore Blink's implementation so WebAssembly.compileStreaming
+  // keeps working with Blink's fetch.
+  blink::WasmResponseExtensions::Initialize(isolate);
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module.
@@ -206,10 +199,19 @@ bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
   // owing to an inability to customize sandbox policies in these workers
   // given that they're run out-of-process.
   // Also avoid creating a Node.js environment for worklet global scope
-  // created on the main thread.
+  // created on the main thread — those share the page's V8 context where
+  // Node is already wired up.
   if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope() ||
       ec->IsMainThreadWorkletGlobalScope())
     return false;
+
+  // Off-main-thread worklets (AudioWorklet, PaintWorklet, AnimationWorklet,
+  // SharedStorageWorklet) have their own dedicated worker thread but do not
+  // derive from WorkerGlobalScope, so check for them separately and read the
+  // flag from WorkletGlobalScope, which copies it out of the same
+  // WorkerSettings as dedicated workers do.
+  if (auto* wlgs = blink::DynamicTo<blink::WorkletGlobalScope>(ec))
+    return wlgs->NodeIntegrationInWorker();
 
   auto* wgs = blink::DynamicTo<blink::WorkerGlobalScope>(ec);
   if (!wgs)
@@ -228,25 +230,30 @@ bool WorkerHasNodeIntegration(blink::ExecutionContext* ec) {
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
+  RendererClientBase::WorkerScriptReadyForEvaluationOnWorkerThread(context);
+
   auto* ec = blink::ExecutionContext::From(context);
   if (!WorkerHasNodeIntegration(ec))
     return;
 
   auto* current = WebWorkerObserver::GetCurrent();
-  if (current)
-    return;
-  WebWorkerObserver::Create()->WorkerScriptReadyForEvaluation(context);
+  if (!current)
+    current = WebWorkerObserver::Create();
+  current->WorkerScriptReadyForEvaluation(context);
 }
 
 void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
   auto* ec = blink::ExecutionContext::From(context);
-  if (!WorkerHasNodeIntegration(ec))
-    return;
+  if (WorkerHasNodeIntegration(ec)) {
+    auto* current = WebWorkerObserver::GetCurrent();
+    if (current)
+      current->ContextWillDestroy(context);
+  }
 
-  auto* current = WebWorkerObserver::GetCurrent();
-  if (current)
-    current->ContextWillDestroy(context);
+  // Call base class last: OOM callback deregistration must happen after
+  // all other cleanup that might still trigger V8 heap operations.
+  RendererClientBase::WillDestroyWorkerContextOnWorkerThread(context);
 }
 
 void ElectronRendererClient::SetUpWebAssemblyTrapHandler() {

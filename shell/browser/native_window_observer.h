@@ -94,7 +94,7 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnWindowLeaveFullScreen() {}
   virtual void OnWindowEnterHtmlFullScreen() {}
   virtual void OnWindowLeaveHtmlFullScreen() {}
-  virtual void OnWindowAlwaysOnTopChanged() {}
+  virtual void OnWindowAlwaysOnTopChanged(bool is_always_on_top) {}
   virtual void OnTouchBarItemResult(const std::string& item_id,
                                     const base::DictValue& details) {}
   virtual void OnNewWindowForTab() {}
@@ -110,6 +110,8 @@ class NativeWindowObserver : public base::CheckedObserver {
   virtual void OnExecuteAppCommand(std::string_view command_name) {}
 
   virtual void UpdateWindowControlsOverlay(const gfx::Rect& bounding_rect) {}
+
+  virtual void OnWindowStateRestored() {}
 };
 
 }  // namespace electron

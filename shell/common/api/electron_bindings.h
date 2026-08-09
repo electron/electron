@@ -8,7 +8,6 @@
 #include <list>
 #include <memory>
 
-#include "base/memory/scoped_refptr.h"
 #include "base/process/process_metrics.h"
 #include "services/resource_coordinator/public/mojom/memory_instrumentation/memory_instrumentation.mojom-forward.h"
 #include "shell/common/node_bindings.h"
@@ -57,7 +56,6 @@ class ElectronBindings {
   static void Crash();
 
   static void DidReceiveMemoryDump(
-      v8::Global<v8::Context> context,
       gin_helper::Promise<gin_helper::Dictionary> promise,
       base::ProcessId target_pid,
       memory_instrumentation::mojom::RequestOutcome outcome,

@@ -10,8 +10,8 @@
 #include <vector>
 
 #include "base/containers/span.h"
-#include "base/memory/raw_ptr.h"
 #include "v8-microtask-queue.h"
+#include "v8/include/cppgc/macros.h"
 #include "v8/include/v8-forward.h"
 
 namespace node {
@@ -57,6 +57,11 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::LocalVector<v8::String>* parameters,
     v8::LocalVector<v8::Value>* arguments);
 
+// Feeds the build-time js2c code cache to the Environment's BuiltinLoader
+// so the *_init bundles are consumed. Call once, after CreateEnvironment and
+// before LoadEnvironment.
+void FeedEnvironmentCodeCache(node::Environment* env);
+
 // Wrapper for node::CreateEnvironment that logs failure
 node::Environment* CreateEnvironment(v8::Isolate* isolate,
                                      node::IsolateData* isolate_data,
@@ -65,6 +70,8 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
                                      const std::vector<std::string>& exec_args,
                                      node::EnvironmentFlags::Flags env_flags,
                                      std::string_view process_type = "");
+
+v8::Local<v8::Object> CreateAbortController(v8::Isolate* isolate);
 
 // A scope that temporarily changes the microtask policy to explicit. Use this
 // anywhere that can trigger Node.js or uv_run().
@@ -75,6 +82,8 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
 // `kExplicit` while the scope is active, then restores the original policy
 // when it's destroyed.
 class ExplicitMicrotasksScope {
+  CPPGC_STACK_ALLOCATED();
+
  public:
   explicit ExplicitMicrotasksScope(v8::MicrotaskQueue* queue);
   ~ExplicitMicrotasksScope();
@@ -83,7 +92,7 @@ class ExplicitMicrotasksScope {
   ExplicitMicrotasksScope& operator=(const ExplicitMicrotasksScope&) = delete;
 
  private:
-  base::raw_ptr<v8::MicrotaskQueue> microtask_queue_;
+  v8::MicrotaskQueue* microtask_queue_;
   v8::MicrotasksPolicy original_policy_;
 };
 

@@ -16,19 +16,14 @@ namespace electron {
 
 namespace {
 
-const int kResizeInsideBoundsSize = 5;
 const int kResizeAreaCornerSize = 16;
 
 }  // namespace
 
-FramelessView::FramelessView() = default;
+FramelessView::FramelessView(NativeWindowViews* window, views::Widget* frame)
+    : window_{window}, frame_{frame} {}
 
 FramelessView::~FramelessView() = default;
-
-void FramelessView::Init(NativeWindowViews* window, views::Widget* frame) {
-  window_ = window;
-  frame_ = frame;
-}
 
 gfx::Insets FramelessView::RestoredFrameBorderInsets() const {
   return gfx::Insets();
@@ -122,12 +117,6 @@ gfx::Size FramelessView::GetMaximumSize() const {
     return gfx::Size();
   return window_->GetMaximumSize();
 }
-
-#if BUILDFLAG(IS_LINUX)
-LinuxFrameLayout* FramelessView::GetLinuxFrameLayout() const {
-  return nullptr;
-}
-#endif
 
 BEGIN_METADATA(FramelessView)
 END_METADATA

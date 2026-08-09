@@ -204,6 +204,22 @@ Set the security origin, content security policy and name of the isolated world.
 > [!NOTE]
 > If the `csp` is specified, then the `securityOrigin` also has to be specified.
 
+### `webFrame.getIsolatedWorlds()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50633
+```
+-->
+
+Returns `Integer[]` - The IDs of isolated worlds that currently exist for this
+frame. This does not include the main world (ID `0`) or Electron's preload world (ID `999`).
+
+This can be used to discover existing isolated worlds before calling APIs such
+as `webFrame.executeJavaScriptInIsolatedWorld(...)` or
+`contextBridge.exposeInIsolatedWorld(...)`.
+
 ### `webFrame.getResourceUsage()`
 
 Returns `Object`:
@@ -304,6 +320,25 @@ spellchecker, false otherwise. If no dictionary is loaded, always return false.
 
 Returns `string[]` - A list of suggested words for a given word. If the word
 is spelled correctly, the result will be empty.
+
+## Events
+
+### Event: 'isolated-world-created'
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/50633
+```
+-->
+
+Returns:
+
+* `worldId` Integer - The ID of the isolated world that was just created.
+
+Emitted when a new isolated world is created for `webFrame`. This event
+does not fire for the main world (ID `0`) or Electron's preload world
+(ID `999`).
 
 ## Properties
 

@@ -4,6 +4,9 @@
 
 #include "shell/common/api/electron_api_shared_texture.h"
 
+#include <string>
+#include <vector>
+
 #include "base/base64.h"
 #include "base/command_line.h"
 #include "base/numerics/byte_conversions.h"
@@ -49,32 +52,45 @@ bool IsBrowserProcess() {
 gpu::ContextSupport* GetContextSupport() {
   if (IsBrowserProcess()) {
     auto* factory = content::ImageTransportFactory::GetInstance();
-    return factory->GetContextFactory()
-        ->SharedMainThreadRasterContextProvider()
-        ->ContextSupport();
+    if (!factory)
+      return nullptr;
+
+    scoped_refptr<viz::RasterContextProvider> provider =
+        factory->GetContextFactory()->SharedMainThreadRasterContextProvider();
+    return provider ? provider->ContextSupport() : nullptr;
   } else {
-    return blink::SharedGpuContext::ContextProviderWrapper()
-        ->ContextProvider()
-        .ContextSupport();
+    base::WeakPtr<blink::WebGraphicsContext3DProviderWrapper> wrapper =
+        blink::SharedGpuContext::ContextProviderWrapper();
+    if (!wrapper)
+      return nullptr;
+
+    auto& context_provider = wrapper->ContextProvider();
+    if (context_provider.IsContextLost())
+      return nullptr;
+
+    return context_provider.ContextSupport();
   }
 }
 
 gpu::SharedImageInterface* GetSharedImageInterface() {
   if (IsBrowserProcess()) {
     auto* factory = content::ImageTransportFactory::GetInstance();
-    return factory->GetContextFactory()
-        ->SharedMainThreadRasterContextProvider()
-        ->SharedImageInterface();
+    if (!factory)
+      return nullptr;
+
+    scoped_refptr<viz::RasterContextProvider> provider =
+        factory->GetContextFactory()->SharedMainThreadRasterContextProvider();
+    return provider ? provider->SharedImageInterface() : nullptr;
   } else {
-    return blink::SharedGpuContext::SharedImageInterfaceProvider()
-        ->SharedImageInterface();
+    auto* provider = blink::SharedGpuContext::SharedImageInterfaceProvider();
+    return provider ? provider->SharedImageInterface() : nullptr;
   }
 }
 
 std::string GetBase64StringFromSyncToken(gpu::SyncToken& sync_token) {
   if (!sync_token.verified_flush()) {
-    auto* sii = GetSharedImageInterface();
-    sii->VerifySyncToken(sync_token);
+    if (auto* sii = GetSharedImageInterface())
+      sii->VerifySyncToken(sync_token);
   }
 
   auto sync_token_data = base::Base64Encode(UNSAFE_BUFFERS(
@@ -127,6 +143,8 @@ std::string TransferVideoPixelFormatToString(media::VideoPixelFormat format) {
       return "rgbaf16";
     case media::PIXEL_FORMAT_NV12:
       return "nv12";
+    case media::PIXEL_FORMAT_NV16:
+      return "nv16";
     case media::PIXEL_FORMAT_P010LE:
       return "p010le";
     default:
@@ -235,7 +253,7 @@ v8::Local<v8::Value> ImportedSharedTextureWrapper::CreateVideoFrame(
   scoped_refptr<media::VideoFrame> raw_frame =
       media::VideoFrame::WrapSharedImage(
           ist->pixel_format, si, ist->frame_creation_sync_token, std::move(cb),
-          ist->coded_size, ist->visible_rect, ist->coded_size,
+          ist->visible_rect, ist->coded_size,
           base::Microseconds(ist->timestamp));
 
   raw_frame->set_color_space(si->color_space());
@@ -310,7 +328,7 @@ void ImportedSharedTexture::UpdateReleaseSyncToken(
   base::AutoLock locker(release_sync_token_lock_);
 
   auto* sii = GetSharedImageInterface();
-  if (release_sync_token.HasData()) {
+  if (sii && release_sync_token.HasData()) {
     // If we already have a release sync token, we need to wait for it
     // to be signaled before we can set the new one.
     sii->WaitSyncToken(release_sync_token);
@@ -323,16 +341,21 @@ void ImportedSharedTexture::UpdateReleaseSyncToken(
 void ImportedSharedTexture::SetupReleaseSyncTokenCallback() {
   base::AutoLock locker(release_sync_token_lock_);
 
-  auto* sii = GetSharedImageInterface();
   if (!release_sync_token.HasData()) {
-    release_sync_token = sii->GenUnverifiedSyncToken();
+    if (auto* sii = GetSharedImageInterface())
+      release_sync_token = sii->GenUnverifiedSyncToken();
   }
 
-  client_shared_image->UpdateDestructionSyncToken(release_sync_token);
+  if (release_sync_token.HasData())
+    client_shared_image->UpdateDestructionSyncToken(release_sync_token);
 
   if (release_callback) {
-    GetContextSupport()->SignalSyncToken(release_sync_token,
-                                         std::move(release_callback));
+    if (auto* context_support = GetContextSupport()) {
+      context_support->SignalSyncToken(release_sync_token,
+                                       std::move(release_callback));
+    } else {
+      std::move(release_callback).Run();
+    }
   }
 }
 
@@ -392,6 +415,12 @@ void ImportedTextureStartTransferSharedTexture(
     return;
   }
 
+  if (!GetSharedImageInterface()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to start shared texture transfer: GPU is not available");
+    return;
+  }
+
   auto ret = wrapper->ist->StartTransferSharedTexture(isolate);
   info.GetReturnValue().Set(ret);
 }
@@ -427,6 +456,12 @@ void ImportedTextureGetFrameCreationSyncToken(
     return;
   }
 
+  if (!GetSharedImageInterface()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to get frame creation sync token: GPU is not available");
+    return;
+  }
+
   auto ret = wrapper->ist->GetFrameCreationSyncToken(isolate);
   info.GetReturnValue().Set(ret);
 }
@@ -447,6 +482,12 @@ void ImportedTextureSetReleaseSyncToken(
   if (info.Length() < 1 || !info[0]->IsObject()) {
     gin_helper::ErrorThrower(isolate).ThrowTypeError(
         "Expected an options object with a syncToken property.");
+    return;
+  }
+
+  if (!GetSharedImageInterface()) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to set release sync token: GPU is not available");
     return;
   }
 
@@ -577,6 +618,8 @@ struct Converter<ImportSharedTextureInfo> {
         out->pixel_format = media::PIXEL_FORMAT_RGBAF16;
       else if (pixel_format_str == "nv12")
         out->pixel_format = media::PIXEL_FORMAT_NV12;
+      else if (pixel_format_str == "nv16")
+        out->pixel_format = media::PIXEL_FORMAT_NV16;
       else if (pixel_format_str == "p010le")
         out->pixel_format = media::PIXEL_FORMAT_P010LE;
       else
@@ -724,6 +767,12 @@ v8::Local<v8::Value> ImportSharedTexture(v8::Isolate* isolate,
   }
 
   auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to import shared texture: GPU is not available");
+    return v8::Null(isolate);
+  }
+
   gpu::SharedImageUsageSet shared_image_usage =
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_APPLE)
       gpu::SHARED_IMAGE_USAGE_GLES2_READ | gpu::SHARED_IMAGE_USAGE_GLES2_WRITE |
@@ -791,6 +840,12 @@ v8::Local<v8::Value> FinishTransferSharedTexture(v8::Isolate* isolate,
                                                                     &message);
 
   auto* sii = GetSharedImageInterface();
+  if (!sii) {
+    gin_helper::ErrorThrower(isolate).ThrowError(
+        "Failed to finish shared texture transfer: GPU is not available");
+    return v8::Null(isolate);
+  }
+
   auto si = sii->ImportSharedImage(std::move(exported));
 
   auto source_st = GetSyncTokenFromBase64String(sync_token_data);

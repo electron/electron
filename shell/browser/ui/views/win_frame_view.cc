@@ -25,19 +25,15 @@
 
 namespace electron {
 
-WinFrameView::WinFrameView() = default;
-
-WinFrameView::~WinFrameView() = default;
-
-void WinFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
-  window_ = window;
-  frame_ = frame;
-
+WinFrameView::WinFrameView(NativeWindowViews* window, views::Widget* frame)
+    : FramelessView{window, frame} {
   if (window->IsWindowControlsOverlayEnabled()) {
     caption_button_container_ =
         AddChildView(std::make_unique<WinCaptionButtonContainer>(this));
   }
 }
+
+WinFrameView::~WinFrameView() = default;
 
 void WinFrameView::InvalidateCaptionButtons() {
   if (!caption_button_container_)
@@ -228,14 +224,15 @@ void WinFrameView::LayoutCaptionButtons() {
   int custom_height = window()->titlebar_overlay_height();
   int height = TitlebarHeight(custom_height);
 
-  // TODO(mlaurencin): This -1 creates a 1 pixel margin between the right
-  // edge of the button container and the edge of the window, allowing for this
-  // edge portion to return the correct hit test and be manually resized
-  // properly. Alternatives can be explored, but the differences in view
-  // structures between Electron and Chromium may result in this as the best
-  // option.
-  int variable_width =
-      IsMaximized() ? preferred_size.width() : preferred_size.width() - 1;
+  // Insets place the resize hit targets outside of the frame, so the caption
+  // buttons can go right at the edge. Without insets, the resize hit
+  // targets are inside the frame, and a 1px margin is needed to click and drag
+  // next to the button container. The margin can be removed if support is added
+  // for insets on non-thick frames.
+  int variable_width = !RestoredFrameBorderInsets().IsEmpty()
+                           ? preferred_size.width()
+                           : (IsMaximized() ? preferred_size.width()
+                                            : preferred_size.width() - 1);
   caption_button_container_->SetBounds(width() - preferred_size.width(),
                                        WindowTopY(), variable_width, height);
 
@@ -260,27 +257,53 @@ void WinFrameView::LayoutWindowControlsOverlay() {
   window()->NotifyLayoutWindowControlsOverlay();
 }
 
-bool WinFrameView::GetShouldPaintAsActive() {
+bool WinFrameView::GetShouldPaintAsActive() const {
   return ShouldPaintAsActive();
 }
 
 gfx::Size WinFrameView::GetMinimumSize() const {
   if (!window_)
     return gfx::Size();
-  // Chromium expects minimum size to be in content dimensions on Windows
-  // because it adds the frame border automatically in OnGetMinMaxInfo.
+  // Chromium expects minimum size to be in content dimensions on Windows.
+  // If WidgetSizeIsClientSize() is true, it will account for frame borders and
+  // insets automatically.
   return window_->GetContentMinimumSize();
 }
 
 gfx::Size WinFrameView::GetMaximumSize() const {
   if (!window_)
     return gfx::Size();
-  // Chromium expects minimum size to be in content dimensions on Windows
-  // because it adds the frame border automatically in OnGetMinMaxInfo.
+  // See comment in GetMinimumSize().
   gfx::Size size = window_->GetContentMaximumSize();
   // Electron public APIs returns (0, 0) when maximum size is not set, but it
   // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
   return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
+}
+
+int WinFrameView::ResizingBorderHitTest(const gfx::Point& point) {
+  if (RestoredFrameBorderInsets().IsEmpty())
+    return FramelessView::ResizingBorderHitTest(point);
+
+  // With insets, side/bottom resize targets sit outside the frame and are
+  // handled by WM_NCHITTEST, so the internal hit test can be zero-ed out.
+  // The exception is the top edge for frameless windows, which still need
+  // an inner resize band since there is no non-client titlebar to provide one.
+  const gfx::Insets inside =
+      window_->has_frame()
+          ? gfx::Insets()
+          : gfx::Insets::TLBR(kResizeInsideBoundsSize, 0, 0, 0);
+  return ResizingBorderHitTestImpl(point, inside);
+}
+
+gfx::Insets WinFrameView::RestoredFrameBorderInsets() const {
+  if (window_->has_frame() || !window_->has_thick_frame())
+    return {};
+
+  // TODO(mitchchn): despite the name, this method gives the correct
+  // DPI-adjusted insets for the sides, not the top, when restored.
+  const int thickness = FrameTopBorderThickness(/*restored=*/true);
+  // Inverse of ResizingBorderHitTest: resize insets go on sides but not top.
+  return gfx::Insets::TLBR(0, thickness, thickness, thickness);
 }
 
 BEGIN_METADATA(WinFrameView)

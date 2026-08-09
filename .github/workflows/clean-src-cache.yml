@@ -12,15 +12,28 @@ on:
 permissions: {}
 
 jobs:
-  clean-src-cache:
+  setup:
     if: github.repository == 'electron/electron'
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+    - name: Set Build Image SHA
+      id: build-image-sha
+      uses: ./.github/actions/build-image-sha
+
+  clean-src-cache:
+    needs: setup
     runs-on: electron-arc-centralus-linux-amd64-32core
     permissions:
       contents: read
     env:
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
     container:
-      image: ghcr.io/electron/build:bc2f48b2415a670de18d13605b1cf0eb5fdbaae1
+      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
       options: --user root
       volumes:
         - /mnt/cross-instance-cache:/mnt/cross-instance-cache
@@ -86,7 +99,7 @@ jobs:
         echo "cross-instance-cache: free before=${CROSS_FREE_BEFORE_GB}GB, after=${CROSS_FREE_AFTER_GB}GB, freed=${CROSS_FREED_GB}GB, total=${CROSS_TOTAL_GB}GB"
         echo "win-cache: free before=${WIN_FREE_BEFORE_GB}GB, after=${WIN_FREE_AFTER_GB}GB, freed=${WIN_FREED_GB}GB, total=${WIN_TOTAL_GB}GB"
 
-        curl -s -X POST "https://api.datadoghq.com/api/v2/series" \
+        if curl -sS -X POST "https://api.datadoghq.com/api/v2/series" \
           -H "Content-Type: application/json" \
           -H "DD-API-KEY: ${DD_API_KEY}" \
           -d @- << EOF
@@ -151,5 +164,8 @@ jobs:
           ]
         }
         EOF
-
-        echo "Disk space metrics logged to Datadog"
+        then
+          echo "Disk space metrics logged to Datadog"
+        else
+          echo "::warning::Datadog metrics upload failed"
+        fi

@@ -4,13 +4,14 @@
 
 #include "shell/browser/net/electron_url_loader_factory.h"
 
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 #include "base/containers/fixed_flat_map.h"
+#include "base/memory/self_deleting.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
@@ -26,11 +27,15 @@
 #include "net/http/http_status_code.h"
 #include "net/http/http_util.h"
 #include "net/url_request/redirect_util.h"
+#include "services/network/public/cpp/cors/cors.h"
+#include "services/network/public/cpp/cors/cors_error_status.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/cpp/simple_url_loader.h"
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/url_loader_completion_status.h"
+#include "services/network/public/mojom/cors.mojom.h"
+#include "services/network/public/mojom/fetch_api.mojom.h"
 #include "services/network/public/mojom/url_loader.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
@@ -46,6 +51,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "third_party/blink/public/mojom/loader/resource_load_info.mojom-shared.h"
+#include "url/url_util.h"
 
 #include "shell/common/node_includes.h"
 
@@ -187,9 +193,9 @@ void OnWrite(std::unique_ptr<WriteData> write_data, MojoResult result) {
   network::URLLoaderCompletionStatus status(net::ERR_FAILED);
   if (result == MOJO_RESULT_OK) {
     status = network::URLLoaderCompletionStatus(net::OK);
-    status.encoded_data_length = write_data->data.size();
-    status.encoded_body_length = write_data->data.size();
-    status.decoded_body_length = write_data->data.size();
+    status.encoded_data_length = base::ByteSize(write_data->data.size());
+    status.encoded_body_length = base::ByteSize(write_data->data.size());
+    status.decoded_body_length = base::ByteSize(write_data->data.size());
   }
   write_data->client->OnComplete(status);
 }
@@ -294,9 +300,7 @@ class URLPipeLoader : public network::mojom::URLLoader,
 
   // URLLoader:
   void FollowRedirect(
-      const std::vector<std::string>& removed_headers,
-      const net::HttpRequestHeaders& modified_headers,
-      const net::HttpRequestHeaders& modified_cors_exempt_headers,
+      network::HttpRequestHeadersUpdateParams headers_update_params,
       const std::optional<GURL>& new_url) override {}
   void SetPriority(net::RequestPriority priority,
                    int32_t intra_priority_value) override {}
@@ -340,18 +344,19 @@ ElectronURLLoaderFactory::RedirectedRequest::RedirectedRequest(
 ElectronURLLoaderFactory::RedirectedRequest::~RedirectedRequest() = default;
 
 void ElectronURLLoaderFactory::RedirectedRequest::FollowRedirect(
-    const std::vector<std::string>& removed_headers,
-    const net::HttpRequestHeaders& modified_headers,
-    const net::HttpRequestHeaders& modified_cors_exempt_headers,
+    network::HttpRequestHeadersUpdateParams headers_update_params,
     const std::optional<GURL>& new_url) {
   // Update |request_| with info from the redirect, so that it's accurate
   // The following references code in WorkerScriptLoader::FollowRedirect
   bool should_clear_upload = false;
-  net::RedirectUtil::UpdateHttpRequest(
-      request_.url, request_.method, redirect_info_, removed_headers,
-      modified_headers, &request_.headers, &should_clear_upload);
-  request_.cors_exempt_headers.MergeFrom(modified_cors_exempt_headers);
-  for (const std::string& name : removed_headers)
+  net::RedirectUtil::UpdateHttpRequest(request_.url, request_.method,
+                                       redirect_info_,
+                                       headers_update_params.removed_headers,
+                                       headers_update_params.modified_headers,
+                                       &request_.headers, &should_clear_upload);
+  request_.cors_exempt_headers.MergeFrom(
+      headers_update_params.modified_cors_exempt_headers);
+  for (const std::string& name : headers_update_params.removed_headers)
     request_.cors_exempt_headers.RemoveHeader(name);
 
   if (should_clear_upload)
@@ -391,14 +396,17 @@ void ElectronURLLoaderFactory::RedirectedRequest::DeleteThis() {
 
 // static
 mojo::PendingRemote<network::mojom::URLLoaderFactory>
-ElectronURLLoaderFactory::Create(ProtocolType type,
-                                 const ProtocolHandler& handler) {
+ElectronURLLoaderFactory::Create(
+    ProtocolType type,
+    const ProtocolHandler& handler,
+    base::WeakPtr<ElectronBrowserContext> browser_context) {
   mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote;
 
   // The ElectronURLLoaderFactory will delete itself when there are no more
   // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
-  new ElectronURLLoaderFactory(type, handler,
-                               pending_remote.InitWithNewPipeAndPassReceiver());
+  base::MakeSelfDeleting<ElectronURLLoaderFactory>(
+      type, handler, std::move(browser_context),
+      pending_remote.InitWithNewPipeAndPassReceiver());
 
   return pending_remote;
 }
@@ -406,10 +414,13 @@ ElectronURLLoaderFactory::Create(ProtocolType type,
 ElectronURLLoaderFactory::ElectronURLLoaderFactory(
     ProtocolType type,
     const ProtocolHandler& handler,
-    mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-    : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)),
+    base::WeakPtr<ElectronBrowserContext> browser_context,
+    mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver,
+    base::SelfDeletingPassKey key)
+    : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver), key),
       type_(type),
-      handler_(handler) {}
+      handler_(handler),
+      browser_context_(std::move(browser_context)) {}
 
 ElectronURLLoaderFactory::~ElectronURLLoaderFactory() = default;
 
@@ -422,6 +433,26 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
+  // Subresource requests for registered protocols reach this factory via the
+  // renderer's per-scheme URLLoaderFactoryBundle entry, which bypasses the
+  // network service's CorsURLLoaderFactory entirely. Replicate the
+  // kCorsDisabledScheme gate from CorsURLLoader::StartRequest so a cross-origin
+  // page cannot read responses from a scheme registered with
+  // {supportFetchAPI: true} but without {corsEnabled: true}. Browser-initiated
+  // requests (no |request_initiator|) are trusted and skipped.
+  if (request.request_initiator &&
+      network::cors::ShouldCheckCors(request.url, request.request_initiator,
+                                     request.mode) &&
+      !std::ranges::contains(url::GetCorsEnabledSchemes(),
+                             request.url.GetScheme())) {
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(
+        network::URLLoaderCompletionStatus(network::CorsErrorStatus(
+            network::mojom::CorsError::kCorsDisabledScheme)));
+    return;
+  }
+
   // |StartLoading| is used for both intercepted and registered protocols,
   // and on redirects it needs a factory to use to create a loader for the
   // new request. So in this case, this factory is the target factory.
@@ -432,7 +463,8 @@ void ElectronURLLoaderFactory::CreateLoaderAndStart(
       request,
       base::BindOnce(&ElectronURLLoaderFactory::StartLoading, std::move(loader),
                      request_id, options, request, std::move(client),
-                     traffic_annotation, std::move(target_factory), type_));
+                     traffic_annotation, std::move(target_factory), type_,
+                     browser_context_));
 }
 
 // static
@@ -457,6 +489,7 @@ void ElectronURLLoaderFactory::StartLoading(
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
     mojo::PendingRemote<network::mojom::URLLoaderFactory> target_factory,
     ProtocolType type,
+    base::WeakPtr<ElectronBrowserContext> browser_context,
     gin::Arguments* args) {
   // Send network error when there is no argument passed.
   //
@@ -481,6 +514,16 @@ void ElectronURLLoaderFactory::StartLoading(
   }
 
   network::mojom::URLResponseHeadPtr head = ToResponseHead(dict);
+
+  // For cross-origin no-cors loads (e.g. <img>, fetch({mode:'no-cors'})), the
+  // body must not be script-readable; tag the response as opaque so Blink
+  // applies opaque filtering. CorsURLLoader normally does this, but per-scheme
+  // factories bypass it.
+  if (request.mode == network::mojom::RequestMode::kNoCors &&
+      request.request_initiator &&
+      !request.request_initiator->IsSameOriginWith(request.url)) {
+    head->response_type = network::mojom::FetchResponseType::kOpaque;
+  }
 
   // Handle redirection.
   //
@@ -573,7 +616,7 @@ void ElectronURLLoaderFactory::StartLoading(
     case ProtocolType::kHttp:
       if (GURL url; !dict.IsEmpty() && dict.Get("url", &url) && url.is_valid())
         StartLoadingHttp(std::move(client), std::move(loader), request,
-                         traffic_annotation, dict);
+                         traffic_annotation, std::move(browser_context), dict);
       else
         OnComplete(std::move(client), request_id,
                    network::URLLoaderCompletionStatus(net::ERR_FAILED));
@@ -606,7 +649,8 @@ void ElectronURLLoaderFactory::StartLoading(
         // |response.path|.
         if (GURL url; dict.Get("url", &url))
           StartLoadingHttp(std::move(client), std::move(loader), request,
-                           traffic_annotation, dict);
+                           traffic_annotation, std::move(browser_context),
+                           dict);
         else if (base::FilePath path; dict.Get("path", &path))
           StartLoadingFile(std::move(client), std::move(loader),
                            std::move(head), request, path, dict);
@@ -660,6 +704,7 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     const network::ResourceRequest& original_request,
     const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
+    base::WeakPtr<ElectronBrowserContext> serving_browser_context,
     const gin_helper::Dictionary& dict) {
   auto request = std::make_unique<network::ResourceRequest>();
   request->headers = original_request.headers;
@@ -675,11 +720,19 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
       request->method != net::HttpRequestHeaders::kHeadMethod)
     dict.Get("uploadData", &upload_data);
 
-  gin_helper::Handle<api::Session> session;
-  auto* browser_context =
-      dict.Get("session", &session) && !session.IsEmpty()
-          ? session->browser_context()
-          : ElectronBrowserContext::GetDefaultBrowserContext();
+  // Default to the session this protocol handler was registered on when one
+  // isn't specified in the response.
+  api::Session* session = nullptr;
+  ElectronBrowserContext* browser_context =
+      dict.Get("session", &session) && session ? session->browser_context()
+                                               : serving_browser_context.get();
+  if (!browser_context) {
+    mojo::Remote<network::mojom::URLLoaderClient> client_remote(
+        std::move(client));
+    client_remote->OnComplete(
+        network::URLLoaderCompletionStatus(net::ERR_FAILED));
+    return;
+  }
 
   new URLPipeLoader(
       browser_context->GetURLLoaderFactory(), std::move(request),

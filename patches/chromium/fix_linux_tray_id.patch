@@ -13,10 +13,10 @@ https://github.com/electron/electron/pull/48675#issuecomment-3452781711
 for more info.
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index 72a61f80eb5dfafe2609ec9e3f8f34c7c84f7abe..af68cc7486c450f9b9765f562fab71855686cc2e 100644
+index 951ee684c6b02ddc4cae65b2997722457c1ec9dd..b1adb3bb230d64533b0e9d5cedd18bf6efa4c077 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-@@ -133,8 +133,9 @@ int NextServiceId() {
+@@ -136,8 +136,9 @@ int NextServiceId() {
    return ++status_icon_count;
  }
  
@@ -27,10 +27,10 @@ index 72a61f80eb5dfafe2609ec9e3f8f34c7c84f7abe..af68cc7486c450f9b9765f562fab7185
 +      {app_name, "_status_icon_", base::NumberToString(service_id)});
  }
  
- using DbusImage = std::tuple</*width=*/int32_t,
-@@ -224,12 +225,13 @@ base::FilePath WriteIconFile(size_t icon_file_id,
- 
- }  // namespace
+ dbus::ObjectPath ObjectPathFromId(const std::string& path, int service_id) {
+@@ -436,12 +437,13 @@ class StatusIconLinuxDbus::Multiplexer {
+   scoped_refptr<dbus::ExportedObject> item_;
+ };
  
 -StatusIconLinuxDbus::StatusIconLinuxDbus()
 +StatusIconLinuxDbus::StatusIconLinuxDbus(const std::string_view app_name)
@@ -44,21 +44,21 @@ index 72a61f80eb5dfafe2609ec9e3f8f34c7c84f7abe..af68cc7486c450f9b9765f562fab7185
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    CheckStatusNotifierWatcherHasOwner();
  }
-@@ -405,7 +407,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
-   properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyCategory,
-                                 kPropertyValueCategory, false);
-   properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyId,
--                                PropertyIdFromId(service_id_), false);
-+                                PropertyIdFromId(service_id_, app_name_),
-+                                false);
-   properties_->SetProperty<"s">(kInterfaceStatusNotifierItem,
-                                 kPropertyOverlayIconName, "", false);
-   properties_->SetProperty<"s">(kInterfaceStatusNotifierItem, kPropertyStatus,
+@@ -604,7 +606,8 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(
+   SetProperty<"s">(kPropertyAttentionIconName, "", false);
+   SetProperty<"s">(kPropertyAttentionMovieName, "", false);
+   SetProperty<"s">(kPropertyCategory, kPropertyValueCategory, false);
+-  SetProperty<"s">(kPropertyId, PropertyIdFromId(service_id_), false);
++  SetProperty<"s">(kPropertyId, PropertyIdFromId(service_id_, app_name_),
++                   false);
+   SetProperty<"s">(kPropertyOverlayIconName, "", false);
+   SetProperty<"s">(kPropertyStatus, kPropertyValueStatus, false);
+   SetProperty<"s">(kPropertyTitle, "", false);
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-index 5457f98158a094a5b8768352d2868e3005afd395..13ac4e51019ea68fdccd17aac8a4855bde50964b 100644
+index b692109cb926c1ac9de533587436b57897fbb533..9c60fc96bed04f3d40bb2837904d08af0e36f32a 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-@@ -37,7 +37,7 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+@@ -38,7 +38,7 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
                              public ui::SimpleMenuModel::Delegate,
                              public base::RefCounted<StatusIconLinuxDbus> {
   public:
@@ -67,7 +67,7 @@ index 5457f98158a094a5b8768352d2868e3005afd395..13ac4e51019ea68fdccd17aac8a4855b
  
    StatusIconLinuxDbus(const StatusIconLinuxDbus&) = delete;
    StatusIconLinuxDbus& operator=(const StatusIconLinuxDbus&) = delete;
-@@ -135,6 +135,8 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+@@ -160,6 +160,8 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
    size_t icon_file_id_ = 0;
    base::FilePath icon_file_;
  

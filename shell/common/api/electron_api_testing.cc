@@ -186,6 +186,24 @@ void ClearHeldCallbacksForTesting() {
   GetCallbackTestingHelper().ClearAllHeldCallbacks();
 }
 
+// Intentionally allows exit-time destructor so that PromiseBase's destructor
+// runs after CppHeap teardown.
+std::optional<gin_helper::Promise<void>>& GetHeldPromise() {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wexit-time-destructors"
+  static std::optional<gin_helper::Promise<void>> held_promise;
+#pragma clang diagnostic pop
+  return held_promise;
+}
+
+void HoldPromiseForTesting(gin::Arguments* args) {
+  GetHeldPromise().emplace(args->isolate());
+}
+
+void ClearHeldPromiseForTesting() {
+  GetHeldPromise().reset();
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -211,6 +229,8 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("invokeHeldOnceCallbackForTesting",
                  &InvokeHeldOnceCallbackForTesting);
   dict.SetMethod("clearHeldCallbacksForTesting", &ClearHeldCallbacksForTesting);
+  dict.SetMethod("holdPromiseForTesting", &HoldPromiseForTesting);
+  dict.SetMethod("clearHeldPromiseForTesting", &ClearHeldPromiseForTesting);
 }
 
 }  // namespace

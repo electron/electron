@@ -9,10 +9,10 @@
 #import <Cocoa/Cocoa.h>
 
 #include "base/containers/flat_map.h"
+#include "base/logging.h"
 #include "base/mac/mac_util.h"
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -80,7 +80,7 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
 
     // TODO(@codebytere): This behavior violates HIG & should be deprecated.
     if (settings.cancel_id == settings.default_id) {
-      [(NSButton*)[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
+      [[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
     }
   }
 

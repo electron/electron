@@ -14,36 +14,41 @@ type SharedTextureImportedWrapper = {
   texture: Electron.SharedTextureImported;
   allReferencesReleased: AllReleasedCallback | undefined;
   mainReference: boolean;
-  rendererFrameReferences: Map<number, { count: number, reference: Electron.WebFrameMain }>;
-}
+  rendererFrameReferences: Map<number, { count: number; reference: Electron.WebFrameMain }>;
+};
 
-ipcMain.handle(IPC_MESSAGES.IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN, (event: Electron.IpcMainInvokeEvent, textureId: string) => {
-  const frameTreeNodeId = event.frameTreeNodeId ?? event.sender.mainFrame.frameTreeNodeId;
-  wrapperReleaseFromRenderer(textureId, frameTreeNodeId);
-});
+ipcMain.handle(
+  IPC_MESSAGES.IMPORT_SHARED_TEXTURE_RELEASE_RENDERER_TO_MAIN,
+  (event: Electron.IpcMainInvokeEvent, textureId: string) => {
+    const frameTreeNodeId = event.frameTreeNodeId ?? event.sender.mainFrame.frameTreeNodeId;
+    wrapperReleaseFromRenderer(textureId, frameTreeNodeId);
+  }
+);
 
 let checkManagedSharedTexturesInterval: NodeJS.Timeout | null = null;
 
-function scheduleCheckManagedSharedTextures () {
+function scheduleCheckManagedSharedTextures() {
   if (checkManagedSharedTexturesInterval === null) {
     checkManagedSharedTexturesInterval = setInterval(checkManagedSharedTextures, 1000);
   }
 }
 
-function unscheduleCheckManagedSharedTextures () {
+function unscheduleCheckManagedSharedTextures() {
   if (checkManagedSharedTexturesInterval !== null) {
     clearInterval(checkManagedSharedTexturesInterval);
     checkManagedSharedTexturesInterval = null;
   }
 }
 
-function checkManagedSharedTextures () {
+function checkManagedSharedTextures() {
   const texturesToRemoveTracking = new Set<string>();
   for (const [, wrapper] of managedSharedTextures) {
     for (const [frameTreeNodeId, entry] of wrapper.rendererFrameReferences) {
       const frame = entry.reference;
       if (!frame || frame.isDestroyed()) {
-        console.error(`The imported shared texture ${wrapper.texture.textureId} is referenced by a destroyed webContent/webFrameMain, this means a imported shared texture in renderer process is not released before the process is exited. Releasing that dangling reference now.`);
+        console.error(
+          `The imported shared texture ${wrapper.texture.textureId} is referenced by a destroyed webContent/webFrameMain, this means a imported shared texture in renderer process is not released before the process is exited. Releasing that dangling reference now.`
+        );
         wrapper.rendererFrameReferences.delete(frameTreeNodeId);
       }
     }
@@ -65,7 +70,7 @@ function checkManagedSharedTextures () {
   }
 }
 
-function wrapperReleaseFromRenderer (id: string, frameTreeNodeId: number) {
+function wrapperReleaseFromRenderer(id: string, frameTreeNodeId: number) {
   const wrapper = managedSharedTextures.get(id);
   if (!wrapper) {
     throw new Error(`Shared texture with id ${id} not found`);
@@ -92,7 +97,7 @@ function wrapperReleaseFromRenderer (id: string, frameTreeNodeId: number) {
   }
 }
 
-function wrapperReleaseFromMain (id: string) {
+function wrapperReleaseFromMain(id: string) {
   const wrapper = managedSharedTextures.get(id);
   if (!wrapper) {
     throw new Error(`Shared texture with id ${id} not found`);
@@ -108,14 +113,18 @@ function wrapperReleaseFromMain (id: string) {
   }
 }
 
-async function sendSharedTexture (options: Electron.SendSharedTextureOptions, ...args: any[]) {
+async function sendSharedTexture(options: Electron.SendSharedTextureOptions, ...args: any[]) {
   const imported = options.importedSharedTexture;
   const transfer = imported.subtle.startTransferSharedTexture();
 
   let timeoutHandle: NodeJS.Timeout | null = null;
   const timeoutPromise = new Promise<never>((resolve, reject) => {
     timeoutHandle = setTimeout(() => {
-      reject(new Error(`transfer shared texture timed out after ${transferTimeout}ms, ensure you have registered receiver at renderer process.`));
+      reject(
+        new Error(
+          `transfer shared texture timed out after ${transferTimeout}ms, ensure you have registered receiver at renderer process.`
+        )
+      );
     }, transferTimeout);
   });
 
@@ -124,13 +133,14 @@ async function sendSharedTexture (options: Electron.SendSharedTextureOptions, ..
     throw new Error('`frame` should be provided');
   }
 
-  const invokePromise: Promise<Electron.SharedTextureSyncToken> = ipcMainInternalUtils.invokeInWebFrameMain<Electron.SharedTextureSyncToken>(
-    targetFrame,
-    IPC_MESSAGES.IMPORT_SHARED_TEXTURE_TRANSFER_MAIN_TO_RENDERER,
-    transfer,
-    imported.textureId,
-    ...args
-  );
+  const invokePromise: Promise<Electron.SharedTextureSyncToken> =
+    ipcMainInternalUtils.invokeInWebFrameMain<Electron.SharedTextureSyncToken>(
+      targetFrame,
+      IPC_MESSAGES.IMPORT_SHARED_TEXTURE_TRANSFER_MAIN_TO_RENDERER,
+      transfer,
+      imported.textureId,
+      ...args
+    );
 
   try {
     const syncToken = await Promise.race([invokePromise, timeoutPromise]);
@@ -159,7 +169,7 @@ async function sendSharedTexture (options: Electron.SendSharedTextureOptions, ..
   scheduleCheckManagedSharedTextures();
 }
 
-function importSharedTexture (options: Electron.ImportSharedTextureOptions) {
+function importSharedTexture(options: Electron.ImportSharedTextureOptions) {
   const id = randomUUID();
   const imported = sharedTextureNative.importSharedTexture(Object.assign(options.textureInfo, { id }));
   const ret: Electron.SharedTextureImported = {

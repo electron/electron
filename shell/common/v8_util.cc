@@ -16,6 +16,7 @@
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
 #include "third_party/blink/public/common/messaging/web_message_port.h"
 #include "ui/gfx/image/image_skia.h"
+#include "ui/gfx/image/image_skia_rep.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(IS_LINUX) && (defined(ARCH_CPU_X86_64) || defined(ARCH_CPU_ARM64))
@@ -227,7 +228,7 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
       image_skia.AddRepresentation(gfx::ImageSkiaRep(bitmap, scale));
     }
     gfx::Image image(image_skia);
-    return new api::NativeImage(isolate, image);
+    return api::NativeImage::Create(isolate, image);
   }
 
   raw_ptr<v8::Isolate> isolate_;

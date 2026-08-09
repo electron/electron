@@ -1,7 +1,7 @@
 enum Test {
   A,
   B,
-  C,
+  C
 }
 
 console.log(Test.A);

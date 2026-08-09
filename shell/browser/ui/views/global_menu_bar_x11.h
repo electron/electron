@@ -22,14 +22,14 @@ class Accelerator;
 
 namespace electron {
 
-// Controls the Mac style menu bar on Unity.
+// Controls a global menu bar exported over D-Bus via libdbusmenu.
 //
-// Unity has an Apple-like menu bar at the top of the screen that changes
-// depending on the active window. In the GTK port, we had a hidden GtkMenuBar
-// object in each GtkWindow which existed only to be scrapped by the
-// libdbusmenu-gtk code. Since we don't have GtkWindows anymore, we need to
-// interface directly with the lower level libdbusmenu-glib, which we
-// opportunistically dlopen() since not everyone is running Ubuntu.
+// Some Linux desktops support an Apple-like menu bar at the top of the screen
+// (or in a window decoration) that is populated from D-Bus. In the GTK port,
+// we had a hidden GtkMenuBar object in each GtkWindow which existed only to
+// be scrapped by the libdbusmenu-gtk code. Since we don't have GtkWindows
+// anymore, we need to interface directly with the lower level libdbusmenu-glib,
+// which we opportunistically dlopen() since not every distribution ships it.
 //
 // This class is like the chrome's corresponding one, but it generates the menu
 // from menu models instead, and it is also per-window specific.

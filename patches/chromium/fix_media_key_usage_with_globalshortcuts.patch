@@ -11,10 +11,10 @@ counter to the design of globalShortcuts, and so we need to instead
 use `ui::MediaKeysListener`.
 
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index 42e37564e585987d367921568f0f1d2b7507f953..9baf89efbade01e8b60c579255f10799914e144f 100644
+index 885e248ce02046d4f64f1aa44aa4c44265f9eecd..671a6a0c44fd2f7b3c3cf4eb63c5d478552c76cd 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -87,7 +87,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
+@@ -81,7 +81,11 @@ bool MediaKeysListenerManagerImpl::StartWatchingMediaKey(
        CanActiveMediaSessionControllerReceiveEvents();
  
    // Tell the underlying MediaKeysListener to listen for the key.
@@ -27,7 +27,7 @@ index 42e37564e585987d367921568f0f1d2b7507f953..9baf89efbade01e8b60c579255f10799
        !media_keys_listener_->StartWatchingMediaKey(key_code)) {
      return false;
    }
-@@ -361,6 +365,20 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
+@@ -355,6 +359,20 @@ void MediaKeysListenerManagerImpl::StartListeningForMediaKeysIfNecessary() {
          this, ui::MediaKeysListener::Scope::kGlobal);
      DCHECK(media_keys_listener_);
    }

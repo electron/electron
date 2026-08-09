@@ -8,12 +8,13 @@
 #include <optional>
 
 #include "base/memory/raw_ptr.h"
-#include "base/memory/weak_ptr.h"
 #include "base/values.h"
+#include "gin/weak_cell.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "net/log/net_log_capture_mode.h"
 #include "services/network/public/mojom/net_log.mojom.h"
+#include "shell/common/gc_plugin.h"
 #include "shell/common/gin_helper/promise.h"
 
 namespace base {
@@ -56,6 +57,7 @@ class NetLog final : public gin::Wrappable<NetLog> {
       v8::Isolate* isolate) override;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
+  void Trace(cppgc::Visitor*) const override;
 
   v8::Local<v8::Promise> StartLogging(base::FilePath log_path,
                                       gin::Arguments* args);
@@ -74,13 +76,15 @@ class NetLog final : public gin::Wrappable<NetLog> {
  private:
   raw_ptr<ElectronBrowserContext> browser_context_;
 
+  GC_PLUGIN_IGNORE(
+      "Context tracking of remote is not needed in the browser process.")
   mojo::Remote<network::mojom::NetLogExporter> net_log_exporter_;
 
   std::optional<gin_helper::Promise<void>> pending_start_promise_;
 
   scoped_refptr<base::TaskRunner> file_task_runner_;
 
-  base::WeakPtrFactory<NetLog> weak_ptr_factory_{this};
+  gin::WeakCellFactory<NetLog> weak_factory_{this};
 };
 
 }  // namespace api

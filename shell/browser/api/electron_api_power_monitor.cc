@@ -7,9 +7,9 @@
 #include "base/power_monitor/power_monitor.h"
 #include "base/power_monitor/power_observer.h"
 #include "gin/data_object_builder.h"
-#include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/idle/idle.h"
 #include "v8/include/cppgc/allocation.h"
@@ -59,16 +59,10 @@ struct Converter<base::PowerThermalObserver::DeviceThermalState> {
 
 namespace electron::api {
 
-const gin::WrapperInfo PowerMonitor::kWrapperInfo = {
-    {gin::kEmbedderNativeGin},
-    gin::kElectronPowerMonitor};
+const gin::WrapperInfo PowerMonitor::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronPowerMonitor);
 
 PowerMonitor::PowerMonitor() {
-#if BUILDFLAG(IS_MAC)
-  Browser::Get()->SetShutdownHandler(base::BindRepeating(
-      &PowerMonitor::ShouldShutdown, base::Unretained(this)));
-#endif
-
   auto* power_monitor = base::PowerMonitor::GetInstance();
   power_monitor->AddPowerStateObserver(this);
   power_monitor->AddPowerSuspendObserver(this);
@@ -82,10 +76,6 @@ PowerMonitor::PowerMonitor() {
 PowerMonitor::~PowerMonitor() {
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   DestroyPlatformSpecificMonitors();
-#endif
-
-#if BUILDFLAG(IS_MAC)
-  Browser::Get()->SetShutdownHandler(base::RepeatingCallback<bool()>());
 #endif
 
   auto* power_monitor = base::PowerMonitor::GetInstance();

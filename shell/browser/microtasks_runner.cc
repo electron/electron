@@ -5,7 +5,6 @@
 
 #include "shell/browser/microtasks_runner.h"
 
-#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/common/node_includes.h"
 #include "v8/include/v8.h"
 

@@ -3,8 +3,10 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 
-async function main () {
-  const { values: { 'upload-stats': uploadStats } } = parseArgs({
+async function main() {
+  const {
+    values: { 'upload-stats': uploadStats }
+  } = parseArgs({
     options: {
       'upload-stats': {
         type: 'boolean',

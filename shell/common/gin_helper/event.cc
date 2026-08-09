@@ -5,6 +5,7 @@
 #include "shell/common/gin_helper/event.h"
 
 #include "gin/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
@@ -30,8 +31,8 @@ Event::Event() = default;
 
 Event::~Event() = default;
 
-gin::WrapperInfo Event::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                        gin::kElectronEvent};
+gin::WrapperInfo Event::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronEvent);
 
 const gin::WrapperInfo* Event::wrapper_info() const {
   return &kWrapperInfo;

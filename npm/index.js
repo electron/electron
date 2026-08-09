@@ -4,7 +4,7 @@ const path = require('path');
 
 const pathFile = path.join(__dirname, 'path.txt');
 
-function downloadElectron () {
+function downloadElectron() {
   console.log('Downloading Electron binary...');
   const result = spawnSync(process.execPath, [path.join(__dirname, 'install.js')], {
     stdio: 'inherit'
@@ -22,7 +22,7 @@ function downloadElectron () {
  *
  * @returns the path to the Electron executable to run
  */
-function getElectronPath () {
+function getElectronPath() {
   let executablePath;
   if (fs.existsSync(pathFile)) {
     executablePath = fs.readFileSync(pathFile, 'utf-8');

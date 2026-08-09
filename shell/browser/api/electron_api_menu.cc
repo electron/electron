@@ -20,8 +20,10 @@
 #include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "ui/base/models/image_model.h"
+#include "v8/include/cppgc/persistent.h"
 
 #if BUILDFLAG(IS_MAC)
 
@@ -50,8 +52,8 @@ struct Converter<SharingItem> {
 
 namespace electron::api {
 
-const gin::WrapperInfo Menu::kWrapperInfo = {{gin::kEmbedderNativeGin},
-                                             gin::kElectronMenu};
+const gin::WrapperInfo Menu::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronMenu);
 
 Menu::Menu(gin::Arguments* args)
     : model_(std::make_unique<ElectronMenuModel>(this)) {
@@ -69,6 +71,11 @@ Menu::Menu(gin::Arguments* args)
 
 Menu::~Menu() {
   RemoveModelObserver();
+}
+
+void Menu::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<Menu>::Trace(visitor);
+  visitor->Trace(parent_);
 }
 
 void Menu::RemoveModelObserver() {
@@ -108,6 +115,18 @@ std::u16string Menu::GetLabelForCommandId(int command_id) const {
   v8::HandleScope scope(isolate);
   v8::Local<v8::Value> val = gin_helper::CallMethod(
       isolate, const_cast<Menu*>(this), "_getLabelForCommandId", command_id);
+  std::u16string label;
+  if (!gin::ConvertFromV8(isolate, val, &label))
+    label.clear();
+  return label;
+}
+
+std::u16string Menu::GetAccessibilityLabelForCommandId(int command_id) const {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  v8::Local<v8::Value> val =
+      gin_helper::CallMethod(isolate, const_cast<Menu*>(this),
+                             "_getAccessibilityLabelForCommandId", command_id);
   std::u16string label;
   if (!gin::ConvertFromV8(isolate, val, &label))
     label.clear();
@@ -189,20 +208,11 @@ void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
 }
 
 base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
-  // return ((callback, ref) => { callback() }).bind(null, callback, this)
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  v8::Local<v8::Object> self;
-  if (GetWrapper(isolate).ToLocal(&self)) {
-    v8::Global<v8::Value> ref(isolate, self);
-    return base::BindOnce(
-        [](base::OnceClosure callback, v8::Global<v8::Value> ref) {
-          std::move(callback).Run();
-        },
-        std::move(callback), std::move(ref));
-  } else {
-    return base::DoNothing();
-  }
+  return base::BindOnce(
+      [](base::OnceClosure callback, cppgc::Persistent<Menu> prevent_gc) {
+        std::move(callback).Run();
+      },
+      std::move(callback), cppgc::Persistent<Menu>(this));
 }
 
 void Menu::InsertItemAt(int index,
@@ -271,8 +281,8 @@ std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
 }
 
 void Menu::OnMenuWillClose() {
-  keep_alive_.Clear();
   Emit("menu-will-close");
+  keep_alive_.Clear();
 }
 
 void Menu::OnMenuWillShow() {

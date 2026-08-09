@@ -23,10 +23,8 @@
 #include "base/path_service.h"
 #include "base/strings/cstring_view.h"
 #include "base/strings/strcat_win.h"
-#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/registry.h"
-#include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "chrome/browser/icon_manager.h"
 #include "electron/electron_version.h"
@@ -607,7 +605,7 @@ bool Browser::SetBadgeCount(std::optional<int> count) {
   std::string badge_alt_string;
   if (count.has_value()) {
     badge_count_ = count.value();
-    badge_alt_string = (uint64_t)badge_count_ <= badging::kMaxBadgeContent
+    badge_alt_string = badge_count_ <= badging::kMaxBadgeContent
                            // Case 1.
                            ? l10n_util::GetPluralStringFUTF8(
                                  IDS_BADGE_UNREAD_NOTIFICATIONS, badge_count_)

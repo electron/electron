@@ -16,7 +16,7 @@ const messageContainsSecurityWarning = (event: Event, level: number, message: st
 };
 
 const isLoaded = (event: Event, level: number, message: string) => {
-  return (message === 'loaded');
+  return message === 'loaded';
 };
 
 describe('security warnings', () => {
@@ -38,9 +38,7 @@ describe('security warnings', () => {
         }
 
         const file = await fs.readFile(filename, 'binary');
-        const cspHeaders = [
-          ...(useCsp ? ['script-src \'self\' \'unsafe-inline\''] : [])
-        ];
+        const cspHeaders = [...(useCsp ? ["script-src 'self' 'unsafe-inline'"] : [])];
         response.writeHead(200, { 'Content-Security-Policy': cspHeaders });
         response.write(file, 'binary');
       } catch {

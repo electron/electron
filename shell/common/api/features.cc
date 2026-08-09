@@ -25,6 +25,10 @@ bool IsPrintingEnabled() {
   return BUILDFLAG(ENABLE_PRINTING);
 }
 
+bool IsPromptAPIEnabled() {
+  return BUILDFLAG(ENABLE_PROMPT_API);
+}
+
 bool IsExtensionsEnabled() {
   return BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS);
 }
@@ -48,6 +52,7 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isFakeLocationProviderEnabled",
                  &IsFakeLocationProviderEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
+  dict.SetMethod("isPromptAPIEnabled", &IsPromptAPIEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
   dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
 }

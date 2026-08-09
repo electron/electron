@@ -1,5 +1,4 @@
-import { clipboard } from 'electron/common';
-import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
+import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents, clipboard } from 'electron/main';
 
 import { expect } from 'chai';
 
@@ -10,8 +9,15 @@ import { setTimeout } from 'node:timers/promises';
 import * as url from 'node:url';
 
 import { emittedNTimes } from './lib/events-helpers';
-import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { containsText, readPDF } from './lib/pdf-helpers';
+import { defer, ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
+
+const features = process._linkedBinding('electron_common_features');
+
+async function clipboardHasImageType(): Promise<boolean> {
+  return clipboard.has('image/png');
+}
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -19,12 +25,14 @@ describe('webFrameMain module', () => {
 
   const fileUrl = (filename: string) => url.pathToFileURL(path.join(subframesPath, filename)).href;
 
-  type Server = { server: http.Server, url: string, crossOriginUrl: string }
+  type Server = { server: http.Server; url: string; crossOriginUrl: string };
 
   /** Creates an HTTP server whose handler embeds the given iframe src. */
-  const createServer = async (options: {
-    headers?: Record<string, string>
-  } = {}): Promise<Server> => {
+  const createServer = async (
+    options: {
+      headers?: Record<string, string>;
+    } = {}
+  ): Promise<Server> => {
     const server = http.createServer((req, res) => {
       if (options.headers) {
         for (const [k, v] of Object.entries(options.headers)) {
@@ -89,7 +97,7 @@ describe('webFrameMain module', () => {
     });
 
     it('can traverse all frames in root', () => {
-      const urls = webFrame.framesInSubtree.map(frame => frame.url);
+      const urls = webFrame.framesInSubtree.map((frame) => frame.url);
       expect(urls).to.deep.equal([
         fileUrl('frame-with-frame-container.html'),
         fileUrl('frame-with-frame.html'),
@@ -98,11 +106,8 @@ describe('webFrameMain module', () => {
     });
 
     it('can traverse all frames in subtree', () => {
-      const urls = webFrame.frames[0].framesInSubtree.map(frame => frame.url);
-      expect(urls).to.deep.equal([
-        fileUrl('frame-with-frame.html'),
-        fileUrl('frame.html')
-      ]);
+      const urls = webFrame.frames[0].framesInSubtree.map((frame) => frame.url);
+      expect(urls).to.deep.equal([fileUrl('frame-with-frame.html'), fileUrl('frame.html')]);
     });
 
     describe('cross-origin', () => {
@@ -170,7 +175,7 @@ describe('webFrameMain module', () => {
       expect(childWebContents.mainFrame.origin).to.equal('file://');
     });
 
-    it('should show parent frame\'s origin when about:blank child window opened through cross-origin subframe', async () => {
+    it("should show parent frame's origin when about:blank child window opened through cross-origin subframe", async () => {
       const w = new BrowserWindow({ show: false });
       const serverA = await createServer();
       const serverB = await createServer();
@@ -214,9 +219,7 @@ describe('webFrameMain module', () => {
 
       expect(webFrame.visibilityState).to.equal('visible');
       w.hide();
-      await expect(
-        waitUntil(() => webFrame.visibilityState === 'hidden')
-      ).to.eventually.be.fulfilled();
+      await expect(waitUntil(() => webFrame.visibilityState === 'hidden')).to.eventually.be.fulfilled();
     });
   });
 
@@ -247,18 +250,11 @@ describe('webFrameMain module', () => {
       const webFrame = w.webContents.mainFrame;
       const p = () => webFrame.executeJavaScript('new Promise((r,e) => setTimeout(e("error!"), 500));');
       await expect(p()).to.be.eventually.rejectedWith('error!');
-      const errorTypes = new Set([
-        Error,
-        ReferenceError,
-        EvalError,
-        RangeError,
-        SyntaxError,
-        TypeError,
-        URIError
-      ]);
+      const errorTypes = new Set([Error, ReferenceError, EvalError, RangeError, SyntaxError, TypeError, URIError]);
       for (const error of errorTypes) {
-        await expect(webFrame.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`))
-          .to.eventually.be.rejectedWith(/Error/);
+        await expect(
+          webFrame.executeJavaScript(`Promise.reject(new ${error.name}("Wamp-wamp"))`)
+        ).to.eventually.be.rejectedWith(/Error/);
       }
     });
 
@@ -535,6 +531,78 @@ describe('webFrameMain module', () => {
     });
   });
 
+  ifdescribe(features.isPrintingEnabled())('WebFrame.printToPDF', () => {
+    let server: http.Server;
+    let serverUrl: string;
+    let w: BrowserWindow;
+
+    before(async () => {
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        if (req.url === '/frame') {
+          res.end('<p>This text lives in the iframe document</p>');
+        } else {
+          res.end('<p>This text lives in the parent document</p><iframe src="/frame"></iframe>');
+        }
+      });
+      serverUrl = (await listen(server)).url;
+    });
+
+    after(() => {
+      server.close();
+    });
+
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false });
+    });
+
+    it('can print an iframe, excluding the parent document', async () => {
+      await w.loadURL(serverUrl);
+
+      const iframe = w.webContents.mainFrame.frames[0];
+      const data = await iframe.printToPDF({});
+      expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+
+      const pdfInfo = await readPDF(data);
+      expect(containsText(pdfInfo.textContent, /This text lives in the iframe document/)).to.be.true();
+      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).to.be.false();
+    });
+
+    it('can print the main frame', async () => {
+      await w.loadURL(serverUrl);
+
+      const data = await w.webContents.mainFrame.printToPDF({});
+      const pdfInfo = await readPDF(data);
+      expect(containsText(pdfInfo.textContent, /This text lives in the parent document/)).to.be.true();
+    });
+
+    it('does not crash when called on multiple frames in parallel', async () => {
+      await w.loadURL(serverUrl);
+
+      const frames = [w.webContents.mainFrame, ...w.webContents.mainFrame.frames];
+      const results = await Promise.all(frames.map((frame) => frame.printToPDF({})));
+      for (const data of results) {
+        expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
+      }
+    });
+
+    it('rejects on incorrectly typed parameters', async () => {
+      await w.loadURL(serverUrl);
+
+      const iframe = w.webContents.mainFrame.frames[0];
+      await expect(iframe.printToPDF({ landscape: [] as any })).to.eventually.be.rejected();
+    });
+
+    it('rejects when the render frame is disposed', async () => {
+      await w.loadURL(serverUrl);
+
+      const iframe = w.webContents.mainFrame.frames[0];
+      w.webContents.destroy();
+      await waitUntil(() => iframe.isDestroyed());
+      await expect(iframe.printToPDF({})).to.eventually.be.rejected();
+    });
+  });
+
   describe('webFrameMain.copyVideoFrameAt', () => {
     const insertVideoInFrame = async (frame: WebFrameMain) => {
       const videoFilePath = url.pathToFileURL(path.join(fixtures, 'cat-spin.mp4')).href;
@@ -549,26 +617,30 @@ describe('webFrameMain module', () => {
     };
 
     const getFramePosition = async (frame: WebFrameMain) => {
-      const point = await frame.executeJavaScript(`(${() => {
-        const iframe = document.querySelector('iframe');
-        if (!iframe) return;
-        const rect = iframe.getBoundingClientRect();
-        return { x: Math.floor(rect.x), y: Math.floor(rect.y) };
-      }})()`) as Electron.Point;
+      const point = (await frame.executeJavaScript(
+        `(${() => {
+          const iframe = document.querySelector('iframe');
+          if (!iframe) return;
+          const rect = iframe.getBoundingClientRect();
+          return { x: Math.floor(rect.x), y: Math.floor(rect.y) };
+        }})()`
+      )) as Electron.Point;
       expect(point).to.be.an('object');
       return point;
     };
 
     const copyVideoFrameInFrame = async (frame: WebFrameMain) => {
-      const point = await frame.executeJavaScript(`(${() => {
-        const video = document.querySelector('video');
-        if (!video) return;
-        const rect = video.getBoundingClientRect();
-        return {
-          x: Math.floor(rect.x + rect.width / 2),
-          y: Math.floor(rect.y + rect.height / 2)
-        };
-      }})()`) as Electron.Point;
+      const point = (await frame.executeJavaScript(
+        `(${() => {
+          const video = document.querySelector('video');
+          if (!video) return;
+          const rect = video.getBoundingClientRect();
+          return {
+            x: Math.floor(rect.x + rect.width / 2),
+            y: Math.floor(rect.y + rect.height / 2)
+          };
+        }})()`
+      )) as Electron.Point;
 
       expect(point).to.be.an('object');
 
@@ -579,19 +651,20 @@ describe('webFrameMain module', () => {
         point.y += framePosition.y;
       }
 
-      expect(clipboard.readImage().isEmpty()).to.be.true();
+      expect(await clipboardHasImageType()).to.be.false();
       // wait for video to load
-      await frame.executeJavaScript(`(${() => {
-        const video = document.querySelector('video');
-        if (!video) return;
-        return new Promise(resolve => {
-          if (video.readyState >= 4) resolve(null);
-          else video.addEventListener('canplaythrough', resolve, { once: true });
-        });
-      }})()`);
+      await frame.executeJavaScript(
+        `(${() => {
+          const video = document.querySelector('video');
+          if (!video) return;
+          return new Promise((resolve) => {
+            if (video.readyState >= 4) resolve(null);
+            else video.addEventListener('canplaythrough', resolve, { once: true });
+          });
+        }})()`
+      );
       frame.copyVideoFrameAt(point.x, point.y);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
-      expect(clipboard.readImage().isEmpty()).to.be.false();
+      await waitUntil(clipboardHasImageType);
     };
 
     beforeEach(() => {
@@ -606,7 +679,7 @@ describe('webFrameMain module', () => {
       await w.webContents.loadFile(path.join(fixtures, 'blank.html'));
       await insertVideoInFrame(w.webContents.mainFrame);
       await copyVideoFrameInFrame(w.webContents.mainFrame);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      await waitUntil(clipboardHasImageType);
     });
 
     ifit(!(process.platform === 'win32' && process.env.CI))('copies video frame in subframe', async () => {
@@ -616,7 +689,7 @@ describe('webFrameMain module', () => {
       expect(subframe).to.exist();
       await insertVideoInFrame(subframe);
       await copyVideoFrameInFrame(subframe);
-      await waitUntil(() => clipboard.availableFormats().includes('image/png'));
+      await waitUntil(clipboardHasImageType);
     });
   });
 
@@ -631,7 +704,9 @@ describe('webFrameMain module', () => {
 
     it('emits when nested frames are created', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = emittedNTimes(w.webContents, 'frame-created', 2) as Promise<[any, Electron.FrameCreatedDetails][]>;
+      const promise = emittedNTimes(w.webContents, 'frame-created', 2) as Promise<
+        [any, Electron.FrameCreatedDetails][]
+      >;
       w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
       const [[, mainDetails], [, nestedDetails]] = await promise;
       expect(mainDetails.frame).to.equal(w.webContents.mainFrame);
@@ -669,7 +744,7 @@ describe('webFrameMain module', () => {
 
     it('emits for sub frame', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = new Promise<void>(resolve => {
+      const promise = new Promise<void>((resolve) => {
         w.webContents.on('frame-created', (e, { frame }) => {
           frame!.on('dom-ready', () => {
             if (frame!.name === 'frameA') {

@@ -38,6 +38,10 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
                            public NotificationDelegate {
  public:
   static bool IsSupported();
+  static v8::Local<v8::Promise> GetHistory(v8::Isolate* isolate);
+  static void Remove(gin::Arguments* args);
+  static void RemoveAll();
+  static void RemoveGroup(const std::string& group_id);
 
 #if BUILDFLAG(IS_WIN)
   // Register a callback to handle all notification activations.
@@ -79,12 +83,18 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   explicit Notification(gin::Arguments* args);
   ~Notification() override;
 
+  // Private constructor for restored notifications (used by GetHistory).
+  // Does not set presenter_ or parse options — only populates fields from
+  // the delivered notification info.
+  explicit Notification(const NotificationInfo& info);
+
   void Show();
   void Close();
 
   // Prop Getters
   const std::string& id() const { return id_; }
   const std::string& group_id() const { return group_id_; }
+  const std::u16string& group_title() const { return group_title_; }
   const std::u16string& title() const { return title_; }
   const std::u16string& subtitle() const { return subtitle_; }
   const std::u16string& body() const { return body_; }
@@ -117,6 +127,7 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
  private:
   std::string id_;
   std::string group_id_;
+  std::u16string group_title_;
   std::u16string title_;
   std::u16string subtitle_;
   std::u16string body_;
@@ -130,6 +141,7 @@ class Notification final : public gin_helper::DeprecatedWrappable<Notification>,
   std::vector<electron::NotificationAction> actions_;
   std::u16string close_button_text_;
   std::u16string toast_xml_;
+  bool is_restored_ = false;
 
   raw_ptr<electron::NotificationPresenter> presenter_;
 

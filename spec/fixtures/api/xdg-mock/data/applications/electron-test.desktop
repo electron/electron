@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=Electron Test
+Exec=/usr/bin/true %u
+Type=Application
+MimeType=x-scheme-handler/electron-test-linux;

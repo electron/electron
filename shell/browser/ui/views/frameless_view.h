@@ -10,10 +10,6 @@
 #include "ui/gfx/geometry/insets.h"
 #include "ui/views/window/non_client_view.h"
 
-#if BUILDFLAG(IS_LINUX)
-#include "shell/browser/ui/views/linux_frame_layout.h"
-#endif
-
 namespace views {
 class Widget;
 }
@@ -26,14 +22,15 @@ class FramelessView : public views::FrameView {
   METADATA_HEADER(FramelessView, views::FrameView)
 
  public:
-  FramelessView();
+  FramelessView(NativeWindowViews* window, views::Widget* frame);
   ~FramelessView() override;
 
   // disable copy
   FramelessView(const FramelessView&) = delete;
   FramelessView& operator=(const FramelessView&) = delete;
 
-  virtual void Init(NativeWindowViews* window, views::Widget* frame);
+  // Width in DIPs of the inside resize border for frameless windows.
+  static constexpr int kResizeInsideBoundsSize = 5;
 
   // Returns whether the |point| is on frameless window's resizing border.
   virtual int ResizingBorderHitTest(const gfx::Point& point);
@@ -45,10 +42,6 @@ class FramelessView : public views::FrameView {
   // Any insets from the (transparent) widget bounds to the logical/opaque
   // bounds of the view, used for CSD and resize targets on some platforms.
   virtual gfx::Insets RestoredFrameBorderInsets() const;
-
-#if BUILDFLAG(IS_LINUX)
-  virtual LinuxFrameLayout* GetLinuxFrameLayout() const;
-#endif
 
   NativeWindowViews* window() const { return window_; }
   views::Widget* frame() const { return frame_; }
@@ -80,8 +73,8 @@ class FramelessView : public views::FrameView {
   gfx::Size GetMaximumSize() const override;
 
   // Not owned.
-  raw_ptr<NativeWindowViews> window_ = nullptr;
-  raw_ptr<views::Widget> frame_ = nullptr;
+  const raw_ptr<NativeWindowViews> window_;
+  const raw_ptr<views::Widget> frame_;
 };
 
 }  // namespace electron

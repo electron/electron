@@ -1,6 +1,6 @@
 const { app, Menu } = require('electron');
 
-function output (value) {
+function output(value) {
   process.stdout.write(JSON.stringify(value));
   process.stdout.end();
 

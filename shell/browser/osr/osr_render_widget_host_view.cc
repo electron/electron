@@ -9,7 +9,6 @@
 #include <optional>
 #include <utility>
 
-#include "base/functional/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
 #include "base/memory/raw_ptr.h"
@@ -27,12 +26,12 @@
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/common/input/synthetic_gesture.h"  // nogncheck
 #include "content/common/input/synthetic_gesture_target.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/context_factory.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/osr/osr_host_display_client.h"
+#include "shell/browser/osr/osr_video_consumer.h"
 #include "third_party/blink/public/common/input/web_input_event.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "ui/compositor/compositor.h"
@@ -193,9 +192,9 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   compositor_allocator_.GenerateId();
   compositor_surface_id_ = compositor_allocator_.GetCurrentLocalSurfaceId();
 
-  root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
+  root_layer_ = std::make_unique<ui::LayerSolidColor>();
 
-  root_layer()->SetColor(background_color_);
+  root_layer()->SetColor(SkColor4f::FromColor(background_color_));
 
   ui::ContextFactory* context_factory = content::GetContextFactory();
   compositor_ = std::make_unique<ui::Compositor>(
@@ -352,11 +351,6 @@ bool OffScreenRenderWidgetHostView::IsShowing() {
   return is_showing_;
 }
 
-void OffScreenRenderWidgetHostView::EnsureSurfaceSynchronizedForWebTest() {
-  ++latest_capture_sequence_number_;
-  SynchronizeVisualProperties();
-}
-
 gfx::Rect OffScreenRenderWidgetHostView::GetViewBounds() {
   if (IsPopupWidget())
     return popup_position_;
@@ -440,7 +434,7 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
 
   ResizeRootLayer(true);
   SetPainting(parent_host_view_->is_painting());
-  Show();
+  ShowWithVisibility(content::PageVisibilityState::kVisible);
 }
 
 input::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
@@ -479,10 +473,6 @@ void OffScreenRenderWidgetHostView::Destroy() {
   delete this;
 }
 
-uint32_t OffScreenRenderWidgetHostView::GetCaptureSequenceNumber() const {
-  return latest_capture_sequence_number_;
-}
-
 void OffScreenRenderWidgetHostView::CopyFromSurface(
     const gfx::Rect& src_rect,
     const gfx::Size& output_size,
@@ -492,7 +482,7 @@ void OffScreenRenderWidgetHostView::CopyFromSurface(
       src_rect, output_size, base::TimeDelta(), std::move(callback));
 }
 
-gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInRootWindow() {
+gfx::Rect OffScreenRenderWidgetHostView::GetBoundsInScreen() {
   return gfx::Rect(size_);
 }
 
@@ -504,6 +494,10 @@ OffScreenRenderWidgetHostView::GetDisplayFeature() {
 viz::SurfaceId OffScreenRenderWidgetHostView::GetCurrentSurfaceId() const {
   return delegated_frame_host() ? delegated_frame_host()->GetCurrentSurfaceId()
                                 : viz::SurfaceId();
+}
+
+bool OffScreenRenderWidgetHostView::HasSavedCompositorFrame() const {
+  return delegated_frame_host() && delegated_frame_host()->HasSavedFrame();
 }
 
 std::unique_ptr<content::SyntheticGestureTarget>
@@ -574,7 +568,8 @@ void OffScreenRenderWidgetHostView::CancelWidget() {
       parent_host_view_->set_popup_host_view(nullptr);
     } else if (parent_host_view_->child_host_view_ == this) {
       parent_host_view_->set_child_host_view(nullptr);
-      parent_host_view_->Show();
+      parent_host_view_->ShowWithVisibility(
+          content::PageVisibilityState::kVisible);
     } else {
       parent_host_view_->RemoveGuestHostView(this);
     }
@@ -1026,7 +1021,7 @@ void OffScreenRenderWidgetHostView::UpdateBackgroundColorFromRenderer(
     return;
   background_color_ = color;
 
-  root_layer()->SetColor(color);
+  root_layer()->SetColor(SkColor4f::FromColor(color));
 }
 
 void OffScreenRenderWidgetHostView::NotifyHostAndDelegateOnWasShown(

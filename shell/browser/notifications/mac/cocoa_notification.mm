@@ -31,7 +31,10 @@ CocoaNotification::CocoaNotification(NotificationDelegate* delegate,
     : Notification(delegate, presenter) {}
 
 CocoaNotification::~CocoaNotification() {
-  if (notification_request_)
+  // Don't remove from Notification Center if this was a restored notification.
+  // Restored notifications are observed, not owned — destruction should just
+  // disconnect the event handler, not remove the visible notification.
+  if (notification_request_ && !is_restored_)
     [[UNUserNotificationCenter currentNotificationCenter]
         removeDeliveredNotificationsWithIdentifiers:@[
           notification_request_.identifier
@@ -204,7 +207,7 @@ void CocoaNotification::ScheduleNotification(
                        << [error.localizedDescription UTF8String];
            }
            std::string error_description =
-               [error.localizedDescription UTF8String];
+               base::SysNSStringToUTF8(error.localizedDescription);
            task_runner->PostTask(
                FROM_HERE, base::BindOnce(
                               [](base::WeakPtr<Notification> weak_self,
@@ -234,7 +237,7 @@ void CocoaNotification::ScheduleNotification(
 }
 
 void CocoaNotification::Dismiss() {
-  if (notification_request_)
+  if (notification_request_ && !is_restored_)
     [[UNUserNotificationCenter currentNotificationCenter]
         removeDeliveredNotificationsWithIdentifiers:@[
           notification_request_.identifier
@@ -243,6 +246,24 @@ void CocoaNotification::Dismiss() {
   NotificationDismissed();
 
   notification_request_ = nil;
+}
+
+void CocoaNotification::Restore() {
+  // Create a minimal UNNotificationRequest with just the identifier so that
+  // GetNotification() can match this object when the user interacts with the
+  // notification in Notification Center.
+  NSString* identifier = base::SysUTF8ToNSString(notification_id());
+  UNMutableNotificationContent* content =
+      [[UNMutableNotificationContent alloc] init];
+  notification_request_ =
+      [UNNotificationRequest requestWithIdentifier:identifier
+                                           content:content
+                                           trigger:nil];
+  is_restored_ = true;
+
+  if (electron::debug_notifications) {
+    LOG(INFO) << "Notification restored (" << [identifier UTF8String] << ")";
+  }
 }
 
 void CocoaNotification::NotificationDisplayed() {

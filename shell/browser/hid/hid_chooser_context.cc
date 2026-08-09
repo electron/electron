@@ -15,6 +15,7 @@
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/device_service.h"
+#include "electron/buildflags/buildflags.h"
 #include "services/device/public/cpp/hid/hid_blocklist.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
 #include "shell/browser/api/electron_api_session.h"

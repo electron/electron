@@ -25,6 +25,27 @@ included in the `electron` package:
 npx install-electron --no
 ```
 
+## Installing prereleases
+
+Electron [distributes experimental releases of future major versions](./electron-timelines.md)
+via npm as well.
+
+Nightly builds contain the latest changes from the `main` branch:
+
+```sh
+npm install electron-nightly --save-dev
+```
+
+Alpha and beta builds contain changes slated for the next major version:
+
+```sh
+npm install electron@alpha --save-dev
+npm install electron@beta --save-dev
+```
+
+> [!TIP]
+> For more information on available Electron releases, see the [Release Status dashboard](https://releases.electronjs.org).
+
 ## Running Electron ad-hoc
 
 If you're in a pinch and would prefer to not use `npm install` in your local
@@ -52,9 +73,7 @@ Supported architectures are a subset of Node.js [`process.arch`](https://nodejs.
 values, and include:
 
 * `x64` (Intel Mac and 64-bit Windows)
-* `ia32` (32-bit Windows)
 * `arm64` (Apple silicon, Windows on ARM, ARM64 Linux)
-* `arm` (32-bit ARM)
 
 In addition to changing the architecture, you can also specify the platform
 (e.g., `win32`, `linux`, etc.) using the `--platform` flag:

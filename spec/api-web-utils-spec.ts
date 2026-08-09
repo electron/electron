@@ -23,7 +23,9 @@ describe('webUtils module', () => {
       });
       defer(() => w.close());
       await w.loadFile(path.resolve(fixtures, 'pages', 'file-input.html'));
-      const pathFromWebUtils = await w.webContents.executeJavaScript('require("electron").webUtils.getPathForFile(new Blob([1, 2, 3]))');
+      const pathFromWebUtils = await w.webContents.executeJavaScript(
+        'require("electron").webUtils.getPathForFile(new Blob([1, 2, 3]))'
+      );
       expect(pathFromWebUtils).to.equal('');
     });
 
@@ -41,13 +43,17 @@ describe('webUtils module', () => {
       const { debugger: debug } = w.webContents;
       debug.attach();
       try {
-        const { root: { nodeId } } = await debug.sendCommand('DOM.getDocument');
+        const {
+          root: { nodeId }
+        } = await debug.sendCommand('DOM.getDocument');
         const { nodeId: inputNodeId } = await debug.sendCommand('DOM.querySelector', { nodeId, selector: 'input' });
         await debug.sendCommand('DOM.setFileInputFiles', {
           files: [__filename],
           nodeId: inputNodeId
         });
-        const pathFromWebUtils = await w.webContents.executeJavaScript('require("electron").webUtils.getPathForFile(document.querySelector("input").files[0])');
+        const pathFromWebUtils = await w.webContents.executeJavaScript(
+          'require("electron").webUtils.getPathForFile(document.querySelector("input").files[0])'
+        );
         expect(pathFromWebUtils).to.equal(__filename);
       } finally {
         debug.detach();

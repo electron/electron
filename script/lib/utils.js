@@ -1,9 +1,8 @@
-const chalk = require('chalk');
-
 const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { styleText } = require('node:util');
 
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
@@ -11,10 +10,10 @@ const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 const CHROMIUM_VERSION_DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const pass = chalk.green('✓');
-const fail = chalk.red('✗');
+const pass = styleText('green', '✓');
+const fail = styleText('red', '✗');
 
-function getElectronExec () {
+function getElectronExec() {
   const OUT_DIR = getOutDir();
   switch (process.platform) {
     case 'darwin':
@@ -28,7 +27,7 @@ function getElectronExec () {
   }
 }
 
-function getOutDir (options = {}) {
+function getOutDir(options = {}) {
   const shouldLog = options.shouldLog || false;
   const presetDirs = ['Testing', 'Release', 'Default', 'Debug'];
 
@@ -56,14 +55,16 @@ function getOutDir (options = {}) {
 
   // If we got here, it means process.env.ELECTRON_OUT_DIR was not
   // set and none of the preset options could be found in /out, so throw
-  throw new Error(`No valid out directory found; use one of ${presetDirs.join(',')} or set process.env.ELECTRON_OUT_DIR`);
+  throw new Error(
+    `No valid out directory found; use one of ${presetDirs.join(',')} or set process.env.ELECTRON_OUT_DIR`
+  );
 }
 
-function getAbsoluteElectronExec () {
+function getAbsoluteElectronExec() {
   return path.resolve(SRC_DIR, getElectronExec());
 }
 
-function handleGitCall (args, gitDir) {
+function handleGitCall(args, gitDir) {
   const result = childProcess.spawnSync('git', args, {
     cwd: gitDir,
     encoding: 'utf8',
@@ -77,7 +78,7 @@ function handleGitCall (args, gitDir) {
   }
 }
 
-async function getCurrentBranch (gitDir) {
+async function getCurrentBranch(gitDir) {
   const RELEASE_BRANCH_PATTERN = /^\d+-x-y$/;
   const MAIN_BRANCH_PATTERN = /^main$/;
   const ORIGIN_MAIN_BRANCH_PATTERN = /^origin\/main$/;
@@ -85,14 +86,14 @@ async function getCurrentBranch (gitDir) {
   let branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir);
   if (!MAIN_BRANCH_PATTERN.test(branch) && !RELEASE_BRANCH_PATTERN.test(branch)) {
     const lastCommit = await handleGitCall(['rev-parse', 'HEAD'], gitDir);
-    const branches = (await handleGitCall([
-      'branch',
-      '--contains',
-      lastCommit,
-      '--remote'
-    ], gitDir)).split('\n');
+    const branches = (await handleGitCall(['branch', '--contains', lastCommit, '--remote'], gitDir)).split('\n');
 
-    branch = branches.find(b => MAIN_BRANCH_PATTERN.test(b.trim()) || ORIGIN_MAIN_BRANCH_PATTERN.test(b.trim()) || RELEASE_BRANCH_PATTERN.test(b.trim()));
+    branch = branches.find(
+      (b) =>
+        MAIN_BRANCH_PATTERN.test(b.trim()) ||
+        ORIGIN_MAIN_BRANCH_PATTERN.test(b.trim()) ||
+        RELEASE_BRANCH_PATTERN.test(b.trim())
+    );
     if (!branch) {
       console.log(`${fail} no release branch exists for this ref`);
       process.exit(1);
@@ -102,22 +103,18 @@ async function getCurrentBranch (gitDir) {
   return branch.trim();
 }
 
-function chunkFilenames (filenames, offset = 0) {
+function chunkFilenames(filenames, offset = 0) {
   // Windows has a max command line length of 2047 characters, so we can't
   // provide too many filenames without going over that. To work around that,
   // chunk up a list of filenames such that it won't go over that limit when
   // used as args. Other platforms may have higher limits, but 4095 might be
   // the limit on Linux systems according to `termios(3)`, so cap it there.
-  const MAX_FILENAME_ARGS_LENGTH =
-    (os.platform() === 'win32' ? 2047 : 4095) - offset;
+  const MAX_FILENAME_ARGS_LENGTH = (os.platform() === 'win32' ? 2047 : 4095) - offset;
 
   return filenames.reduce(
     (chunkedFilenames, filename) => {
       const currChunk = chunkedFilenames[chunkedFilenames.length - 1];
-      const currChunkLength = currChunk.reduce(
-        (totalLength, _filename) => totalLength + _filename.length + 1,
-        0
-      );
+      const currChunkLength = currChunk.reduce((totalLength, _filename) => totalLength + _filename.length + 1, 0);
       if (currChunkLength + filename.length + 1 > MAX_FILENAME_ARGS_LENGTH) {
         chunkedFilenames.push([filename]);
       } else {
@@ -133,24 +130,21 @@ function chunkFilenames (filenames, offset = 0) {
  * @param {string} top
  * @param {(filename: string) => boolean} test
  * @returns {Promise<string[]>}
-*/
-async function findMatchingFiles (top, test) {
-  return fs.promises.readdir(top, { encoding: 'utf8', recursive: true })
-    .then(files => {
-      return files
-        .filter(name => path.basename(name) !== '.bin')
-        .filter(name => test(name))
-        .map(name => path.join(top, name));
-    });
+ */
+async function findMatchingFiles(top, test) {
+  return fs.promises.readdir(top, { encoding: 'utf8', recursive: true }).then((files) => {
+    return files
+      .filter((name) => path.basename(name) !== '.bin')
+      .filter((name) => test(name))
+      .map((name) => path.join(top, name));
+  });
 }
 
-function compareVersions (v1, v2) {
+function compareVersions(v1, v2) {
   const [split1, split2] = [v1.split('.'), v2.split('.')];
 
   if (split1.length !== split2.length) {
-    throw new Error(
-      `Expected version strings to have same number of sections: ${split1} and ${split2}`
-    );
+    throw new Error(`Expected version strings to have same number of sections: ${split1} and ${split2}`);
   }
   for (let i = 0; i < split1.length; i++) {
     const p1 = parseInt(split1[i], 10);
@@ -164,8 +158,61 @@ function compareVersions (v1, v2) {
   return 0;
 }
 
-function getChromiumVersionFromDEPS (depsContent) {
+function getChromiumVersionFromDEPS(depsContent) {
   return CHROMIUM_VERSION_DEPS_REGEX.exec(depsContent)?.[1] ?? null;
+}
+
+function getDepotToolsEnv() {
+  let depotToolsEnv;
+
+  const findDepotToolsOnPath = () => {
+    const result = childProcess.spawnSync(os.platform() === 'win32' ? 'where' : 'which', ['gclient']);
+
+    if (result.status === 0) {
+      return process.env;
+    }
+  };
+
+  const checkForBuildTools = () => {
+    const result = childProcess.spawnSync('electron-build-tools', ['show', 'env', '--json'], { shell: true });
+
+    if (result.status === 0) {
+      return {
+        ...process.env,
+        ...JSON.parse(result.stdout.toString().trim())
+      };
+    }
+  };
+
+  try {
+    depotToolsEnv = checkForBuildTools();
+    if (!depotToolsEnv) depotToolsEnv = findDepotToolsOnPath();
+  } catch {}
+
+  if (!depotToolsEnv) {
+    throw new Error("Couldn't find depot_tools, ensure it's on your PATH");
+  }
+
+  const result = childProcess.spawnSync(
+    'python3',
+    [
+      '-c',
+      '\'from lib.util import get_chromium_buildtools_path_value; print(get_chromium_buildtools_path_value() or "")\''
+    ],
+    { env: depotToolsEnv, shell: true, encoding: 'utf8', cwd: path.join(ELECTRON_DIR, 'script') }
+  );
+  if (result.status !== 0) {
+    throw new Error(result.stderr);
+  }
+
+  const chromiumBuildtoolsPathValue = result.status === 0 ? result.stdout.trim() : null;
+
+  // Only set CHROMIUM_BUILDTOOLS_PATH if we're on an older version of depot_tools which requires it
+  if (chromiumBuildtoolsPathValue) {
+    depotToolsEnv.CHROMIUM_BUILDTOOLS_PATH = chromiumBuildtoolsPathValue;
+  }
+
+  return depotToolsEnv;
 }
 
 module.exports = {
@@ -174,6 +221,7 @@ module.exports = {
   findMatchingFiles,
   getChromiumVersionFromDEPS,
   getCurrentBranch,
+  getDepotToolsEnv,
   getElectronExec,
   getOutDir,
   getAbsoluteElectronExec,

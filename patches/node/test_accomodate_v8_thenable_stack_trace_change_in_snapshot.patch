@@ -12,23 +12,22 @@ See:
 https://chromium-review.googlesource.com/c/v8/v8/+/6826001
 
 diff --git a/test/fixtures/test-runner/output/describe_it.snapshot b/test/fixtures/test-runner/output/describe_it.snapshot
-index cae467f6487ffef4fbe94da229e30c2537fe9e95..f1240a6a99dafc18ad51d413719df58b757893ab 100644
+index 4df2c20a45f3b7c06172d5c5a2045c3dc066824e..9be9d988f0ffa9c4b84dce321935cfca3719a3fa 100644
 --- a/test/fixtures/test-runner/output/describe_it.snapshot
 +++ b/test/fixtures/test-runner/output/describe_it.snapshot
-@@ -726,6 +726,8 @@ not ok 60 - timeouts
+@@ -659,6 +659,7 @@ not ok 60 - timeouts
        code: 'ERR_TEST_FAILURE'
        stack: |-
-         *
-+        *
-+        *
+         Object.<anonymous> (<project-root>/test/fixtures/test-runner/output/describe_it.js:372:50)
++        <node-internal-frames>
        ...
      1..2
  not ok 61 - successful thenable
-@@ -748,6 +750,7 @@ not ok 62 - rejected thenable
+@@ -681,6 +682,7 @@ not ok 62 - rejected thenable
    code: 'ERR_TEST_FAILURE'
    stack: |-
-     *
-+    *
+     Object.<anonymous> (<project-root>/test/fixtures/test-runner/output/describe_it.js:393:48)
++    <node-internal-frames>
    ...
  # Subtest: async describe function
      # Subtest: it inside describe 1

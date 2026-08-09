@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_APP_H_
 
 #include <memory>
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -244,6 +243,8 @@ class App final : public gin::Wrappable<App>,
 #if BUILDFLAG(IS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
                            const std::string& policy);
+  void ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
+                         gin::Arguments* args);
   bool MoveToApplicationsFolder(gin_helper::ErrorThrower, gin::Arguments* args);
   bool IsInApplicationsFolder();
   v8::Local<v8::Value> GetDockAPI(v8::Isolate* isolate);
@@ -272,6 +273,12 @@ class App final : public gin::Wrappable<App>,
   // Get the toast activator CLSID.
   v8::Local<v8::Value> GetToastActivatorCLSID(v8::Isolate* isolate);
 #endif  // BUILDFLAG(IS_WIN)
+
+  // Backing storage for the additional data passed to
+  // requestSingleInstanceLock(). ProcessSingleton stores this as a non-owning
+  // base::raw_span, so it must outlive `process_singleton_`. Declared before
+  // `process_singleton_` so it is destroyed after it.
+  std::vector<uint8_t> single_instance_additional_data_;
 
   std::unique_ptr<ProcessSingleton> process_singleton_;
 

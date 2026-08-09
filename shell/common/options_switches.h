@@ -107,6 +107,19 @@ inline constexpr std::string_view kFocusable = "focusable";
 // The WebPreferences.
 inline constexpr std::string_view kWebPreferences = "webPreferences";
 
+// Window state persistence for BaseWindow
+inline constexpr std::string_view kWindowStatePersistence =
+    "windowStatePersistence";
+
+// Identifier for the window provided by the application
+inline constexpr std::string_view kName = "name";
+
+// Whether to save the window bounds
+inline constexpr std::string_view kBounds = "bounds";
+
+// Whether to save the window display mode
+inline constexpr std::string_view kDisplayMode = "displayMode";
+
 // Add a vibrancy effect to the browser window
 inline constexpr std::string_view kVibrancyType = "vibrancy";
 
@@ -137,6 +150,9 @@ inline constexpr std::string_view kOverlayHeight = "height";
 
 // The factor of which page should be zoomed.
 inline constexpr std::string_view kZoomFactor = "zoomFactor";
+
+// The zoom mode for the web contents.
+inline constexpr std::string_view kZoomMode = "zoomMode";
 
 // Script that will be loaded by guest WebContents before other scripts.
 inline constexpr std::string_view kPreloadScript = "preload";

@@ -1,13 +1,39 @@
-import { BrowserWindow, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron/main';
+import {
+  BaseWindow,
+  BrowserWindow,
+  WebContentsView,
+  app,
+  Menu,
+  MenuItem,
+  MenuItemConstructorOptions
+} from 'electron/main';
 
 import { expect } from 'chai';
 
-import { ifit, ifdescribe } from './lib/spec-helpers';
-import { closeAllWindows } from './lib/window-helpers';
-import { roleList, execute } from '../lib/browser/api/menu-item-roles';
+import { once } from 'node:events';
 
-function keys<Key extends string, Value> (record: Record<Key, Value>) {
+/* oxlint-disable-next-line no-restricted-imports */
+import { roleList } from '../lib/browser/api/menu-item-roles';
+import { ifit, ifdescribe } from './lib/spec-helpers';
+import { closeAllWindows, cleanupWebContents } from './lib/window-helpers';
+
+function keys<Key extends string, Value>(record: Record<Key, Value>) {
   return Object.keys(record) as Key[];
+}
+
+// Helper to execute a menu item by its role
+function executeByRole(role: MenuItemConstructorOptions['role'], win: BaseWindow, wc: Electron.WebContents) {
+  let handledByRole = true;
+  const menu = Menu.buildFromTemplate([
+    {
+      role,
+      click: () => {
+        handledByRole = false;
+      }
+    }
+  ]);
+  menu.items[0].click({}, win, wc);
+  return handledByRole;
 }
 
 describe('MenuItems', () => {
@@ -19,7 +45,7 @@ describe('MenuItems', () => {
         role: 'close',
         sublabel: 'goodbye',
         accelerator: 'CmdOrControl+Q',
-        click: () => { },
+        click: () => {},
         enabled: true,
         visible: true,
         checked: false,
@@ -36,7 +62,10 @@ describe('MenuItems', () => {
       expect(item).to.have.property('enabled').that.is.a('boolean').and.is.true('item is enabled');
       expect(item).to.have.property('visible').that.is.a('boolean').and.is.true('item is visible');
       expect(item).to.have.property('checked').that.is.a('boolean').and.is.false('item is not checked');
-      expect(item).to.have.property('registerAccelerator').that.is.a('boolean').and.is.true('item can register accelerator');
+      expect(item)
+        .to.have.property('registerAccelerator')
+        .that.is.a('boolean')
+        .and.is.true('item can register accelerator');
       expect(item).to.have.property('type').that.is.a('string').equal('normal');
       expect(item).to.have.property('commandId').that.is.a('number');
       expect(item).to.have.property('toolTip').that.is.a('string');
@@ -105,29 +134,33 @@ describe('MenuItems', () => {
   });
 
   describe('MenuItem.click', () => {
-    it('should be called with the item object passed', done => {
-      const menu = Menu.buildFromTemplate([{
-        label: 'text',
-        click: (item) => {
-          try {
-            expect(item.constructor.name).to.equal('MenuItem');
-            expect(item.label).to.equal('text');
-            done();
-          } catch (e) {
-            done(e);
+    it('should be called with the item object passed', (done) => {
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'text',
+          click: (item) => {
+            try {
+              expect(item.constructor.name).to.equal('MenuItem');
+              expect(item.label).to.equal('text');
+              done();
+            } catch (e) {
+              done(e);
+            }
           }
         }
-      }]);
+      ]);
       menu._executeCommand({}, menu.items[0].commandId);
     });
   });
 
   describe('MenuItem with checked/radio property', () => {
     it('clicking an checkbox item should flip the checked property', () => {
-      const menu = Menu.buildFromTemplate([{
-        label: 'text',
-        type: 'checkbox'
-      }]);
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'text',
+          type: 'checkbox'
+        }
+      ]);
 
       expect(menu.items[0].checked).to.be.false('menu item checked');
       menu._executeCommand({}, menu.items[0].commandId);
@@ -135,10 +168,12 @@ describe('MenuItems', () => {
     });
 
     it('clicking an radio item should always make checked property true', () => {
-      const menu = Menu.buildFromTemplate([{
-        label: 'text',
-        type: 'radio'
-      }]);
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'text',
+          type: 'radio'
+        }
+      ]);
 
       menu._executeCommand({}, menu.items[0].commandId);
       expect(menu.items[0].checked).to.be.true('menu item checked');
@@ -151,9 +186,9 @@ describe('MenuItems', () => {
 
       const findRadioGroups = (template: MenuItemConstructorOptions[]) => {
         const groups = [];
-        let cur: { begin?: number, end?: number } | null = null;
+        let cur: { begin?: number; end?: number } | null = null;
         for (let i = 0; i <= template.length; i++) {
-          if (cur && ((i === template.length) || (template[i].type !== 'radio'))) {
+          if (cur && (i === template.length || template[i].type !== 'radio')) {
             cur.end = i;
             groups.push(cur);
             cur = null;
@@ -245,7 +280,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 });
       const item = new MenuItem({ role: 'asdfghjkl' as any });
 
-      const canExecute = execute(item.role as any, win, win.webContents);
+      const canExecute = executeByRole(item.role as any, win, win.webContents);
       expect(canExecute).to.be.false('can execute');
     });
 
@@ -253,7 +288,7 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 });
       const item = new MenuItem({ role: 'reload' });
 
-      const canExecute = execute(item.role as any, win, win.webContents);
+      const canExecute = executeByRole(item.role as any, win, win.webContents);
       expect(canExecute).to.be.true('can execute');
     });
 
@@ -261,16 +296,18 @@ describe('MenuItems', () => {
       const win = new BrowserWindow({ show: false, width: 200, height: 200 });
       const item = new MenuItem({ role: 'resetZoom' });
 
-      const canExecute = execute(item.role as any, win, win.webContents);
+      const canExecute = executeByRole(item.role as any, win, win.webContents);
       expect(canExecute).to.be.true('can execute');
     });
 
     ifit(process.platform === 'win32')('does not execute minimize role when minimizable false', () => {
       const win = new BrowserWindow({ minimizable: false });
-      const menu = Menu.buildFromTemplate([{
-        label: 'text',
-        role: 'minimize'
-      }]);
+      const menu = Menu.buildFromTemplate([
+        {
+          label: 'text',
+          role: 'minimize'
+        }
+      ]);
 
       Menu.setApplicationMenu(menu);
       menu._executeCommand({}, menu.items[0].commandId);
@@ -298,10 +335,12 @@ describe('MenuItems', () => {
   describe('MenuItem with invalid type', () => {
     it('throws an exception', () => {
       expect(() => {
-        Menu.buildFromTemplate([{
-          label: 'text',
-          type: 'not-a-type' as any
-        }]);
+        Menu.buildFromTemplate([
+          {
+            label: 'text',
+            type: 'not-a-type' as any
+          }
+        ]);
       }).to.throw(/Unknown menu item type: not-a-type/);
     });
   });
@@ -309,17 +348,19 @@ describe('MenuItems', () => {
   describe('MenuItem with submenu type and missing submenu', () => {
     it('throws an exception', () => {
       expect(() => {
-        Menu.buildFromTemplate([{
-          label: 'text',
-          type: 'submenu'
-        }]);
+        Menu.buildFromTemplate([
+          {
+            label: 'text',
+            type: 'submenu'
+          }
+        ]);
       }).to.throw(/Invalid submenu/);
     });
   });
 
   describe('MenuItem role', () => {
     it('returns undefined for items without default accelerator', () => {
-      const list = keys(roleList).filter(key => !roleList[key].accelerator);
+      const list = keys(roleList).filter((key) => !roleList[key].accelerator);
 
       for (const role of list) {
         const item = new MenuItem({ role: role as any });
@@ -336,7 +377,7 @@ describe('MenuItems', () => {
     });
 
     it('returns the correct default accelerator', () => {
-      const list = keys(roleList).filter(key => roleList[key].accelerator);
+      const list = keys(roleList).filter((key) => roleList[key].accelerator);
 
       for (const role of list) {
         const item = new MenuItem({ role: role as any });
@@ -377,9 +418,11 @@ describe('MenuItems', () => {
     it('overrides default layout when submenu is specified', () => {
       const item = new MenuItem({
         role: 'appMenu',
-        submenu: [{
-          role: 'close'
-        }]
+        submenu: [
+          {
+            role: 'close'
+          }
+        ]
       });
       expect(item.label).to.equal(app.name);
       expect(item.submenu!.items[0].role).to.equal('close');
@@ -401,9 +444,11 @@ describe('MenuItems', () => {
     it('overrides default layout when submenu is specified', () => {
       const item = new MenuItem({
         role: 'fileMenu',
-        submenu: [{
-          role: 'about'
-        }]
+        submenu: [
+          {
+            role: 'about'
+          }
+        ]
       });
       expect(item.label).to.equal('File');
       expect(item.submenu!.items[0].role).to.equal('about');
@@ -446,9 +491,11 @@ describe('MenuItems', () => {
     it('overrides default layout when submenu is specified', () => {
       const item = new MenuItem({
         role: 'editMenu',
-        submenu: [{
-          role: 'close'
-        }]
+        submenu: [
+          {
+            role: 'close'
+          }
+        ]
       });
       expect(item.label).to.equal('Edit');
       expect(item.submenu!.items[0].role).to.equal('close');
@@ -474,12 +521,128 @@ describe('MenuItems', () => {
     it('overrides default layout when submenu is specified', () => {
       const item = new MenuItem({
         role: 'viewMenu',
-        submenu: [{
-          role: 'close'
-        }]
+        submenu: [
+          {
+            role: 'close'
+          }
+        ]
       });
       expect(item.label).to.equal('View');
       expect(item.submenu!.items[0].role).to.equal('close');
+    });
+  });
+
+  describe('MenuItem toggleDevTools role', () => {
+    afterEach(closeAllWindows);
+    afterEach(cleanupWebContents);
+
+    it('toggles devtools on the focused webContents', async () => {
+      const w = new BaseWindow({ show: false });
+      const wcv = new WebContentsView();
+      w.setContentView(wcv);
+      await wcv.webContents.loadURL('about:blank');
+
+      const opened = once(wcv.webContents, 'devtools-opened');
+      expect(executeByRole('toggleDevTools', w, wcv.webContents)).to.be.true();
+      await opened;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.true();
+
+      const closed = once(wcv.webContents, 'devtools-closed');
+      executeByRole('toggleDevTools', w, wcv.webContents);
+      await closed;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.false();
+    });
+
+    it('toggles parent devtools when invoked with the devtools webContents', async () => {
+      const w = new BaseWindow({ show: false });
+      const wcv = new WebContentsView();
+      w.setContentView(wcv);
+      await wcv.webContents.loadURL('about:blank');
+
+      const opened = once(wcv.webContents, 'devtools-opened');
+      wcv.webContents.openDevTools({ mode: 'bottom' });
+      await opened;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.true();
+
+      const devToolsWc = wcv.webContents.devToolsWebContents!;
+      expect(devToolsWc).to.not.be.null();
+
+      const closed = once(wcv.webContents, 'devtools-closed');
+      expect(executeByRole('toggleDevTools', w, devToolsWc)).to.be.true();
+      await closed;
+      expect(wcv.webContents.isDevToolsOpened()).to.be.false();
+    });
+  });
+
+  describe('MenuItem reload roles', () => {
+    afterEach(closeAllWindows);
+    afterEach(cleanupWebContents);
+
+    const title = 'TEST';
+    const htmlUrl = `data:text/html,<html><head><title>${title}</title></head><body></body></html>`;
+
+    const changeTitle = async (wcv: WebContentsView) => {
+      const changedTitle = 'CHANGED';
+      await wcv.webContents.executeJavaScript(`document.title = '${changedTitle}'`);
+      expect(wcv.webContents.getTitle()).to.equal(changedTitle);
+    };
+
+    const testReloadRole = async (role: 'reload' | 'forceReload') => {
+      const w = new BaseWindow({ show: false });
+      const wcv = new WebContentsView();
+      w.contentView.addChildView(wcv);
+
+      await wcv.webContents.loadURL(htmlUrl);
+      await changeTitle(wcv);
+
+      const didStartLoading = once(wcv.webContents, 'did-start-loading');
+      expect(executeByRole(role, w, wcv.webContents)).to.be.true();
+      await didStartLoading;
+      await once(wcv.webContents, 'did-finish-load');
+
+      // If the page was reloaded, the title should have been reset.
+      expect(wcv.webContents.getTitle()).to.equal(title);
+    };
+
+    const testReloadRoleOnDevToolsWebContents = async (role: 'reload' | 'forceReload') => {
+      const w = new BaseWindow({ show: false });
+      const wcv = new WebContentsView();
+      w.contentView.addChildView(wcv);
+
+      await wcv.webContents.loadURL(htmlUrl);
+      await changeTitle(wcv);
+
+      const opened = once(wcv.webContents, 'devtools-opened');
+      wcv.webContents.openDevTools();
+      await opened;
+
+      const didStartLoading = once(wcv.webContents, 'did-start-loading');
+      expect(executeByRole(role, w, wcv.webContents.devToolsWebContents!)).to.be.true();
+      await didStartLoading;
+      await once(wcv.webContents, 'did-finish-load');
+
+      // If the page was reloaded, the title should have been reset.
+      expect(wcv.webContents.getTitle()).to.equal(title);
+    };
+
+    describe('reload role', () => {
+      it('reloads the focused webContents', async () => {
+        await testReloadRole('reload');
+      });
+
+      it('reloads the parent webContents when called on DevTools webContents', async () => {
+        await testReloadRoleOnDevToolsWebContents('reload');
+      });
+    });
+
+    describe('forceReload role', () => {
+      it('reloads the focused webContents', async () => {
+        await testReloadRole('forceReload');
+      });
+
+      it('reloads the parent webContents when called on DevTools webContents', async () => {
+        await testReloadRoleOnDevToolsWebContents('forceReload');
+      });
     });
   });
 
@@ -512,18 +675,22 @@ describe('MenuItems', () => {
 
   describe('MenuItem with custom properties in constructor', () => {
     it('preserves the custom properties', () => {
-      const template = [{
-        label: 'menu 1',
-        customProp: 'foo',
-        submenu: []
-      }];
+      const template = [
+        {
+          label: 'menu 1',
+          customProp: 'foo',
+          submenu: []
+        }
+      ];
 
       const menu = Menu.buildFromTemplate(template);
-      menu.items[0].submenu!.append(new MenuItem({
-        label: 'item 1',
-        customProp: 'bar',
-        overrideProperty: 'oops not allowed'
-      } as any));
+      menu.items[0].submenu!.append(
+        new MenuItem({
+          label: 'item 1',
+          customProp: 'bar',
+          overrideProperty: 'oops not allowed'
+        } as any)
+      );
 
       expect((menu.items[0] as any).customProp).to.equal('foo');
       expect(menu.items[0].submenu!.items[0].label).to.equal('item 1');
@@ -534,7 +701,7 @@ describe('MenuItems', () => {
 
   describe('MenuItem accelerators', () => {
     const isDarwin = () => {
-      return (process.platform === 'darwin');
+      return process.platform === 'darwin';
     };
 
     it('should display modifiers correctly for simple keys', () => {

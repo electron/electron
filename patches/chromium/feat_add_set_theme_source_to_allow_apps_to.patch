@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 0e47893681f9cb55b29564288842613c08ec9159..926daa45671d98344cdbfe592f7233683cc09adc 100644
+index f3c3f48681854900e8de6af4f344fe35fa1a64c8..44ac07723692f1f4aec1f8fa3ea1dc1dc4b95a85 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -503,6 +503,8 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -505,6 +505,8 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
    }
  
    PreferredColorScheme preferred_color_scheme() const {
@@ -25,7 +25,7 @@ index 0e47893681f9cb55b29564288842613c08ec9159..926daa45671d98344cdbfe592f723368
      return preferred_color_scheme_;
    }
    void set_preferred_color_scheme(PreferredColorScheme preferred_color_scheme) {
-@@ -534,6 +536,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -536,6 +538,24 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
      caret_blink_interval_ = caret_blink_interval;
    }
  
@@ -50,7 +50,7 @@ index 0e47893681f9cb55b29564288842613c08ec9159..926daa45671d98344cdbfe592f723368
   protected:
    explicit NativeTheme(SystemTheme system_theme = SystemTheme::kDefault);
    virtual ~NativeTheme();
-@@ -612,6 +632,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
+@@ -615,6 +635,7 @@ class COMPONENT_EXPORT(NATIVE_THEME) NativeTheme {
    ColorProviderKey::UserColorSource preferred_color_source_ =
        ColorProviderKey::UserColorSource::kAccent;
    base::TimeDelta caret_blink_interval_;

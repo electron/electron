@@ -157,6 +157,12 @@ class NodeBindings {
   // Notify embed thread to start polling after environment is loaded.
   void StartPolling();
 
+  // Stop the embed thread and polling without destroying handles or the loop.
+  // After this call, PrepareEmbedThread + StartPolling can restart them.
+  // Used by pooled worklets that need to pause the embed thread during
+  // environment teardown but reuse the same NodeBindings for the next context.
+  void StopPolling();
+
   node::IsolateData* isolate_data(v8::Local<v8::Context> context) const;
 
   // Gets/sets the environment to wrap uv loop.
@@ -224,6 +230,11 @@ class NodeBindings {
 
   // Indicates whether polling thread has been created.
   bool initialized_ = false;
+
+  // Whether PrepareEmbedThread has initialized the semaphore and async handle.
+  // Unlike |initialized_|, this is never reset — the handles live until the
+  // destructor.
+  bool embed_thread_prepared_ = false;
 
   // Indicates whether the app code has finished loading
   // for ESM this is async after the module is loaded

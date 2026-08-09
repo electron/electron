@@ -14,12 +14,8 @@
 #include "base/strings/string_number_conversions.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/devtools_agent_host.h"
-#include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/devtools_socket_factory.h"
-#include "content/public/browser/favicon_status.h"
-#include "content/public/browser/navigation_entry.h"
 #include "content/public/common/content_switches.h"
-#include "content/public/common/url_constants.h"
 #include "electron/grit/electron_resources.h"
 #include "net/base/net_errors.h"
 #include "net/socket/stream_socket.h"
@@ -105,7 +101,8 @@ void DevToolsManagerDelegate::HandleCommand(
     content::DevToolsAgentHostClientChannel* channel,
     base::span<const uint8_t> message,
     NotHandledCallback callback) {
-  crdtp::Dispatchable dispatchable(crdtp::SpanFrom(message));
+  crdtp::Dispatchable dispatchable(crdtp::SpanFrom(message), std::string_view(),
+                                   crdtp::FallthroughCallback());
   DCHECK(dispatchable.ok());
   if (crdtp::SpanEquals(crdtp::SpanFrom(kBrowserCloseMethod),
                         dispatchable.Method())) {
@@ -135,6 +132,10 @@ std::string DevToolsManagerDelegate::GetDiscoveryPageHTML() {
 }
 
 bool DevToolsManagerDelegate::HasBundledFrontendResources() {
+  return true;
+}
+
+bool DevToolsManagerDelegate::ShouldUseBundledFrontendResources() {
   return true;
 }
 

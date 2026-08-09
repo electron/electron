@@ -4,10 +4,9 @@
 
 #include "shell/browser/extensions/api/extension_action/extension_action_api.h"
 
-#include <stddef.h>
-
 #include <utility>
 
+#include "base/logging.h"
 #include "base/no_destructor.h"
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_prefs.h"

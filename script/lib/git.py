@@ -104,22 +104,38 @@ def am(repo, patch_data, threeway=False, directory=None, exclude=None,
       proc.stdin.write(patch_data.encode('utf-8'))
       proc.stdin.close()
     if output_prefix is not None:
+      output_lines = []
       writer = threading.Thread(target=feed_stdin)
       writer.start()
       for line in proc.stdout:
+        decoded = line.decode("utf-8", "replace")
+        output_lines.append(decoded)
         try:
-          sys.stdout.write(
-            f'{output_prefix}{line.decode("utf-8", "replace")}')
+          sys.stdout.write(f'{output_prefix}{decoded}')
           sys.stdout.flush()
         except BrokenPipeError:
-          pass
+          # stdout is broken; fall back to stderr so diagnostic output
+          # (e.g. conflict details) is not silently lost.
+          try:
+            sys.stderr.write(f'{output_prefix}{decoded}')
+            sys.stderr.flush()
+          except BrokenPipeError:
+            pass
       writer.join()
       proc.wait()
     else:
-      feed_stdin()
+      output_lines = None
+      try:
+        feed_stdin()
+      except BrokenPipeError:
+        pass  # git am exited early; returncode check below will catch the failure
       proc.wait()
     if proc.returncode != 0:
-      raise RuntimeError(f"Command {command} returned {proc.returncode}")
+      detail = (''.join(output_lines) if output_lines else '')
+      raise RuntimeError(
+        f"Command {command} returned {proc.returncode}"
+        + (f"\n{detail}" if detail else '')
+      )
 
 
 def import_patches(repo, ref=UPSTREAM_HEAD, **kwargs):

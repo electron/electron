@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 
-#include "electron/buildflags/buildflags.h"
 #include "extensions/browser/guest_view/extensions_guest_view_manager_delegate.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
 #include "printing/buildflags/buildflags.h"
@@ -15,6 +14,7 @@
 #include "shell/browser/extensions/api/management/electron_management_api_delegate.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #include "shell/browser/extensions/electron_messaging_delegate.h"
+#include "shell/common/gin_helper/handle.h"
 #include "v8/include/v8.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)

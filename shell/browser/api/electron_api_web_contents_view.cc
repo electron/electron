@@ -16,6 +16,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -82,6 +83,8 @@ void WebContentsView::ApplyBorderRadius() {
 }
 
 int WebContentsView::NonClientHitTest(const gfx::Point& point) {
+  if (!view() || !view()->GetVisible())
+    return HTNOWHERE;
   if (api_web_contents_) {
     auto* iwc = api_web_contents_->inspectable_web_contents();
     if (!iwc)

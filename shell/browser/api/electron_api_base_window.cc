@@ -10,15 +10,18 @@
 #include <vector>
 
 #include "base/task/single_thread_task_runner.h"
-#include "content/public/common/color_parser.h"
-#include "electron/buildflags/buildflags.h"
+#include "components/prefs/scoped_user_pref_update.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/browser_process_impl.h"
+#include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
@@ -44,7 +47,7 @@
 #include "shell/browser/ui/win/taskbar_host.h"
 #include "ui/base/win/shell.h"
 #elif BUILDFLAG(IS_LINUX)
-#include "shell/browser/ui/views/opaque_frame_view.h"
+#include "shell/browser/ui/views/electron_frame_view_linux.h"
 #include "ui/gfx/image/image_skia.h"
 #endif
 
@@ -170,7 +173,7 @@ void BaseWindow::OnWindowClosed() {
   // We can not call Destroy here because we need to call Emit first, but we
   // also do not want any method to be used, so just mark as destroyed here.
   MarkDestroyed();
-
+  window_->FlushWindowState();
   Emit("closed");
 
   parent_window_.Reset();
@@ -261,6 +264,7 @@ void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
 }
 
 void BaseWindow::OnWindowResize() {
+  window_->DebouncedSaveWindowState();
   Emit("resize");
 }
 
@@ -276,6 +280,7 @@ void BaseWindow::OnWindowWillMove(const gfx::Rect& new_bounds,
 }
 
 void BaseWindow::OnWindowMove() {
+  window_->DebouncedSaveWindowState();
   Emit("move");
 }
 
@@ -321,8 +326,8 @@ void BaseWindow::OnWindowLeaveHtmlFullScreen() {
   Emit("leave-html-full-screen");
 }
 
-void BaseWindow::OnWindowAlwaysOnTopChanged() {
-  Emit("always-on-top-changed", IsAlwaysOnTop());
+void BaseWindow::OnWindowAlwaysOnTopChanged(const bool is_always_on_top) {
+  Emit("always-on-top-changed", is_always_on_top);
 }
 
 void BaseWindow::OnExecuteAppCommand(const std::string_view command_name) {
@@ -342,6 +347,10 @@ void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
   if (Emit("system-context-menu", gfx::Point(x, y))) {
     *prevent_default = true;
   }
+}
+
+void BaseWindow::OnWindowStateRestored() {
+  EmitEventSoon("persisted-state-restored");
 }
 
 #if BUILDFLAG(IS_WIN)
@@ -732,10 +741,10 @@ bool BaseWindow::IsFocusable() const {
 
 void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   auto context = isolate->GetCurrentContext();
-  gin_helper::Handle<Menu> menu;
+  Menu* menu = nullptr;
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
-      gin::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
+      gin::ConvertFromV8(isolate, value, &menu) && menu) {
     // We only want to update the menu if the menu has a non-zero item count,
     // or we risk crashes.
     if (menu->model()->GetItemCount() == 0) {
@@ -744,7 +753,7 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
       window_->SetMenu(menu->model());
     }
 
-    menu_.Reset(isolate, menu.ToV8());
+    menu_ = menu;
   } else if (value->IsNull()) {
     RemoveMenu();
   } else {
@@ -754,7 +763,7 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
 }
 
 void BaseWindow::RemoveMenu() {
-  menu_.Reset();
+  menu_.Clear();
   window_->SetMenu(nullptr);
 }
 
@@ -1153,11 +1162,61 @@ void BaseWindow::SetTitleBarOverlay(const gin_helper::Dictionary& options,
 #endif
 
 // static
+void BaseWindow::ClearPersistedState(const std::string& window_name) {
+  if (window_name.empty()) {
+    LOG(WARNING) << "Cannot clear persisted window state: window name is empty";
+    return;
+  }
+
+  if (auto* browser_process =
+          electron::ElectronBrowserMainParts::Get()->browser_process()) {
+    DCHECK(browser_process);
+    if (auto* prefs = browser_process->local_state()) {
+      ScopedDictPrefUpdate update(prefs, electron::kWindowStates);
+
+      if (!update->Remove(window_name)) {
+        LOG(WARNING) << "Window state '" << window_name
+                     << "' not found, nothing to clear";
+      }
+    }
+  }
+}
+
+// static
 gin_helper::WrappableBase* BaseWindow::New(gin::Arguments* const args) {
   auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
+  std::string error_message;
+  if (!IsWindowNameValid(options, &error_message)) {
+    // Window name is already in use throw an error and do not create the window
+    args->ThrowTypeError(error_message);
+    return nullptr;
+  }
+
   return new BaseWindow(args, options);
+}
+
+// static
+bool BaseWindow::IsWindowNameValid(const gin_helper::Dictionary& options,
+                                   std::string* error_message) {
+  std::string window_name;
+  if (options.Get(options::kName, &window_name) && !window_name.empty()) {
+    // Check if window name is already in use by another window
+    // Window names must be unique for state persistence to work correctly
+    const auto& windows = electron::WindowList::GetWindows();
+    bool name_in_use = std::any_of(windows.begin(), windows.end(),
+                                   [&window_name](const auto* const window) {
+                                     return window->GetName() == window_name;
+                                   });
+
+    if (name_in_use) {
+      *error_message = "Window name '" + window_name +
+                       "' is already in use. Window names must be unique.";
+      return false;
+    }
+  }
+  return true;
 }
 
 // static
@@ -1351,6 +1410,8 @@ void Initialize(v8::Local<v8::Object> exports,
                                          .ToLocalChecked());
   constructor.SetMethod("fromId", &BaseWindow::FromWeakMapID);
   constructor.SetMethod("getAllWindows", &BaseWindow::GetAll);
+  constructor.SetMethod("clearPersistedState",
+                        &BaseWindow::ClearPersistedState);
 
   gin_helper::Dictionary dict(isolate, exports);
   dict.Set("BaseWindow", constructor);

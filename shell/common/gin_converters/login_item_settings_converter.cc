@@ -4,10 +4,6 @@
 
 #include "shell/common/gin_converters/login_item_settings_converter.h"
 
-#if BUILDFLAG(IS_MAC)
-#include "base/mac/mac_util.h"
-#endif
-
 #include "shell/browser/browser.h"
 #include "shell/common/gin_helper/dictionary.h"
 
@@ -31,7 +27,7 @@ bool Converter<electron::LaunchItem>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<electron::LaunchItem>::ToV8(
     v8::Isolate* isolate,
-    electron::LaunchItem val) {
+    const electron::LaunchItem& val) {
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("name", val.name);
   dict.Set("path", val.path);
@@ -51,7 +47,6 @@ bool Converter<electron::LoginItemSettings>::FromV8(
     return false;
 
   dict.Get("openAtLogin", &(out->open_at_login));
-  dict.Get("openAsHidden", &(out->open_as_hidden));
   dict.Get("path", &(out->path));
   dict.Get("args", &(out->args));
 #if BUILDFLAG(IS_WIN)
@@ -66,20 +61,18 @@ bool Converter<electron::LoginItemSettings>::FromV8(
 
 v8::Local<v8::Value> Converter<electron::LoginItemSettings>::ToV8(
     v8::Isolate* isolate,
-    electron::LoginItemSettings val) {
+    const electron::LoginItemSettings& val) {
   auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 #if BUILDFLAG(IS_WIN)
   dict.Set("launchItems", val.launch_items);
-  dict.Set("executableWillLaunchAtLogin", val.executable_will_launch_at_login);
 #elif BUILDFLAG(IS_MAC)
-  if (base::mac::MacOSMajorVersion() >= 13)
-    dict.Set("status", val.status);
+  dict.Set("status", val.status);
 #endif
+  // Always emit `executableWillLaunchAtLogin` so callers don't see undefined
+  // on non-Windows platforms; the value is only meaningful on Windows.
+  dict.Set("executableWillLaunchAtLogin", val.executable_will_launch_at_login);
   dict.Set("openAtLogin", val.open_at_login);
-  dict.Set("openAsHidden", val.open_as_hidden);
-  dict.Set("restoreState", val.restore_state);
   dict.Set("wasOpenedAtLogin", val.opened_at_login);
-  dict.Set("wasOpenedAsHidden", val.opened_as_hidden);
   return dict.GetHandle();
 }
 

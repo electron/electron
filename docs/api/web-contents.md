@@ -226,7 +226,16 @@ Returns:
     Only defined when the window is being created by a form that set
     `target=_blank`.
   * `disposition` string - Can be `default`, `foreground-tab`,
-    `background-tab`, `new-window` or `other`.
+    `background-tab`, `new-window` or `other`. Corresponds to the manner
+    an associated link was clicked. See Chromium's
+    [WindowOpenDisposition](https://source.chromium.org/chromium/chromium/src/+/main:ui/base/window_open_disposition.h).
+    * `default` - Indicates Chromium deems in-window navigation valid
+      for a window open call.
+    * `foreground-tab` - Corresponds to a left click or shift + middle click.
+    * `background-tab` - Corresponds to a middle click or ctrl/cmd + click.
+    * `new-window` - Corresponds to a shift + left click.
+    * `other` - A catch-all for the remaining Chromium dispositions not
+      handled by Electron.
 
 Emitted _after_ successful creation of a window via `window.open` in the renderer.
 Not emitted if the creation of the window is canceled from
@@ -679,6 +688,10 @@ Returns:
 * `event` Event
 * `authenticationResponseDetails` Object
   * `url` URL
+  * `pid` number
+  * `isRequestForNavigation` boolean - Indicates whether the request is for a navigation.
+  * `firstAuthAttempt` boolean - Indicates whether this is the first authentication attempt.
+  * `responseHeaders` Record\<string, string | string[]\> (optional) - The headers returned in the response.
 * `authInfo` Object
   * `isProxy` boolean
   * `scheme` string
@@ -1449,8 +1462,17 @@ Ignore application menu shortcuts while this web contents is focused.
     * `url` string - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` string - Name of the window provided in `window.open()`
     * `features` string - Comma separated list of window features provided to `window.open()`.
-    * `disposition` string - Can be `default`, `foreground-tab`, `background-tab`,
-      `new-window` or `other`.
+    * `disposition` string - Can be `default`, `foreground-tab`,
+      `background-tab`, `new-window` or `other`. Corresponds to the manner
+      an associated link was clicked. See Chromium's
+      [WindowOpenDisposition](https://source.chromium.org/chromium/chromium/src/+/main:ui/base/window_open_disposition.h).
+      * `default` - Indicates Chromium deems in-window navigation valid
+        for a window open call.
+      * `foreground-tab` - Corresponds to a left click or shift + middle click.
+      * `background-tab` - Corresponds to a middle click or ctrl/cmd + click.
+      * `new-window` - Corresponds to a shift + left click.
+      * `other` - A catch-all for the remaining Chromium dispositions not
+        handled by Electron.
     * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
       passed to the new window. May or may not result in the `Referer` header being
       sent, depending on the referrer policy.
@@ -1533,13 +1555,51 @@ limits of 300% and 50% of original size, respectively. The formula for this is
 `scale := 1.2 ^ level`.
 
 > [!NOTE]
-> The zoom policy at the Chromium level is same-origin, meaning that the
-> zoom level for a specific domain propagates across all instances of windows with
-> the same domain. Differentiating the window URLs will make zoom work per-window.
+> The zoom policy at the Chromium level is same-origin by default, meaning that
+> the zoom level for a specific domain propagates across all instances of windows
+> with the same domain. To use per-webContents zoom instead, set the zoom mode to
+> `'isolated'` via [`contents.setZoomMode('isolated')`](#contentssetzoommodemode).
 
 #### `contents.getZoomLevel()`
 
 Returns `number` - the current zoom level.
+
+#### `contents.setZoomMode(mode)`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/49962
+```
+-->
+
+* `mode` string - Can be `default`, `isolated`, `manual`, or `disabled`.
+
+Sets the zoom mode for this web contents.
+
+* `default` - Zoom changes are handled automatically on a per-origin basis.
+  Other webContents navigated to the same origin will share the same zoom level.
+* `isolated` - Zoom changes are handled automatically but on a per-webContents basis.
+  This webContents will not be affected by zoom changes in other webContents, and vice versa.
+* `manual` - Automatic zoom handling is disabled. The `zoom-changed` event
+  will still be dispatched, but the page will not actually be zoomed.
+  The zoom level can be managed manually by the application.
+* `disabled` - All zooming in this webContents is disabled. The webContents will revert
+  to the default zoom level and all zoom changes will be ignored.
+
+The `isolated` and `manual` zoom modes persist across navigations.
+
+#### `contents.getZoomMode()`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/49962
+```
+-->
+
+Returns `string` - The current zoom mode. Can be `default`, `isolated`,
+`manual`, or `disabled`.
 
 #### `contents.setVisualZoomLevelLimits(minimumLevel, maximumLevel)`
 
@@ -1804,24 +1864,7 @@ win.webContents.print(options, (success, errorType) => {
 
 #### `contents.printToPDF(options)`
 
-* `options` Object
-  * `landscape` boolean (optional) - Paper orientation.`true` for landscape, `false` for portrait. Defaults to false.
-  * `displayHeaderFooter` boolean (optional) - Whether to display header and footer. Defaults to false.
-  * `printBackground` boolean (optional) - Whether to print background graphics. Defaults to false.
-  * `scale` number(optional)  - Scale of the webpage rendering. Defaults to 1.
-  * `pageSize` string | Size (optional) - Specify page size of the generated PDF. Can be `A0`, `A1`, `A2`, `A3`,
-  `A4`, `A5`, `A6`, `Legal`, `Letter`, `Tabloid`, `Ledger`, or an Object containing `height` and `width` in inches. Defaults to `Letter`.
-  * `margins` Object (optional)
-    * `top` number (optional) - Top margin in inches. Defaults to 1cm (~0.4 inches).
-    * `bottom` number (optional) - Bottom margin in inches. Defaults to 1cm (~0.4 inches).
-    * `left` number (optional) - Left margin in inches. Defaults to 1cm (~0.4 inches).
-    * `right` number (optional) - Right margin in inches. Defaults to 1cm (~0.4 inches).
-  * `pageRanges` string (optional) - Page ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
-  * `headerTemplate` string (optional) - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: `date` (formatted print date), `title` (document title), `url` (document location), `pageNumber` (current page number) and `totalPages` (total pages in the document). For example, `<span class=title></span>` would generate span containing the title.
-  * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
-  * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
-  * `generateTaggedPDF` boolean (optional) _Experimental_ - Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.
-  * `generateDocumentOutline` boolean (optional) _Experimental_ - Whether or not to generate a PDF document outline from content headers. Defaults to false.
+* `options` [PrintToPDFOptions](structures/print-to-pdf-options.md?inline)
 
 Returns `Promise<Buffer>` - Resolves with the generated PDF data.
 
@@ -1930,7 +1973,7 @@ Opens the DevTools.
 When `contents` is a `<webview>` tag, the `mode` would be `detach` by default,
 explicitly passing an empty `mode` can force using last used dock state.
 
-On Windows, if Windows Control Overlay is enabled, DevTools will be opened with `mode: 'detach'`.
+On Windows, if Window Control Overlay is enabled, DevTools will be opened with `mode: 'detach'`.
 
 #### `contents.closeDevTools()`
 
@@ -2275,6 +2318,20 @@ Returns `Integer` - The Chromium internal `pid` of the associated renderer. Can
 be compared to the `frameProcessId` passed by frame specific navigation events
 (e.g. `did-frame-navigate`)
 
+#### `contents.clone()`
+
+Returns `WebContents` - A cloned WebContents instance. This method creates a copy
+of the WebContents with the following attributes:
+
+* **WebPreferences** - All preferences from the original WebContents are copied
+* **SiteInstance** - Uses the same SiteInstance as the original. This means the cloned WebContents will reuse the same render process as the original when loading same-origin pages, and only spawn a new render process for cross-origin navigations. This process allocation behavior is consistent with window.open and tab duplication in Chromium. For more details, see [Chromium's Site Isolation](https://www.chromium.org/developers/design-documents/site-isolation/) design document.
+* **Opener relationship** - Inherits the opener (window.opener) relationship
+* **Navigation state** - Copies the navigation history and controller state
+
+The cloned WebContents is an independent instance with its own lifecycle that can be destroyed separately and will not contain any open web pages.
+
+This API is useful for use cases where you want to create a new WebContents that shares the same render process with the original for same-origin content, while maintaining full lifecycle independence. Additionally, reusing the existing render process can help optimize memory usage and page load speed to a certain extent, as it eliminates the overhead of spawning and initializing a new render process from scratch.
+
 #### `contents.takeHeapSnapshot(filePath)`
 
 * `filePath` string - Path to the output file.
@@ -2372,6 +2429,20 @@ The original size is 0 and each increment above or below represents zooming 20% 
 A `number` property that determines the zoom factor for this web contents.
 
 The zoom factor is the zoom percent divided by 100, so 300% = 3.0.
+
+#### `contents.zoomMode`
+
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/49962
+```
+-->
+
+A `string` property that determines the zoom mode for this web contents.
+
+See [`contents.setZoomMode`](#contentssetzoommodemode) for a description of the
+available modes.
 
 #### `contents.frameRate`
 

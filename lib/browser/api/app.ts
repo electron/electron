@@ -41,7 +41,8 @@ Object.assign(app, {
   commandLine: {
     hasSwitch: (theSwitch: string) => commandLine.hasSwitch(String(theSwitch)),
     getSwitchValue: (theSwitch: string) => commandLine.getSwitchValue(String(theSwitch)),
-    appendSwitch: (theSwitch: string, value?: string) => commandLine.appendSwitch(String(theSwitch), typeof value === 'undefined' ? value : String(value)),
+    appendSwitch: (theSwitch: string, value?: string) =>
+      commandLine.appendSwitch(String(theSwitch), typeof value === 'undefined' ? value : String(value)),
     appendArgument: (arg: string) => commandLine.appendArgument(String(arg)),
     removeSwitch: (theSwitch: string) => commandLine.removeSwitch(String(theSwitch))
   } as Electron.CommandLine
@@ -50,10 +51,10 @@ Object.assign(app, {
 // we define this here because it'd be overly complicated to
 // do in native land
 Object.defineProperty(app, 'applicationMenu', {
-  get () {
+  get() {
     return Menu.getApplicationMenu();
   },
-  set (menu: Electron.Menu | null) {
+  set(menu: Electron.Menu | null) {
     return Menu.setApplicationMenu(menu);
   }
 });
@@ -111,22 +112,28 @@ if (process.platform === 'linux') {
 const events = ['certificate-error', 'select-client-certificate'];
 for (const name of events) {
   app.on(name as 'certificate-error', (event, webContents, ...args: any[]) => {
-    webContents.emit(name, event, ...args);
+    // webContents is null for net module / utility process requests.
+    if (webContents) webContents.emit(name, event, ...args);
   });
 }
 
 app._clientCertRequestPasswordHandler = null;
-app.setClientCertRequestPasswordHandler = function (handler: (params: Electron.ClientCertRequestParams) => Promise<string>) {
+app.setClientCertRequestPasswordHandler = function (
+  handler: (params: Electron.ClientCertRequestParams) => Promise<string>
+) {
   app._clientCertRequestPasswordHandler = handler;
 };
 
-app.on('-client-certificate-request-password', async (event: Electron.Event<Electron.ClientCertRequestParams>, callback: (password: string) => void) => {
-  event.preventDefault();
-  const { hostname, tokenName, isRetry } = event;
-  if (!app._clientCertRequestPasswordHandler) {
-    callback('');
-    return;
+app.on(
+  '-client-certificate-request-password',
+  async (event: Electron.Event<Electron.ClientCertRequestParams>, callback: (password: string) => void) => {
+    event.preventDefault();
+    const { hostname, tokenName, isRetry } = event;
+    if (!app._clientCertRequestPasswordHandler) {
+      callback('');
+      return;
+    }
+    const password = await app._clientCertRequestPasswordHandler({ hostname, tokenName, isRetry });
+    callback(password);
   }
-  const password = await app._clientCertRequestPasswordHandler({ hostname, tokenName, isRetry });
-  callback(password);
-});
+);

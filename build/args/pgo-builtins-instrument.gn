@@ -1,0 +1,17 @@
+import("release.gn")
+
+# Build d8 with builtins basic-block profiling for V8 builtins PGO profile
+# generation (see script/pgo/README.md). This build must use Electron's exact
+# V8 configuration: builtin block-graph hashes depend on V8 codegen flags
+# (e.g. the promise/async-hooks flags Electron sets for Node.js compatibility),
+# and profiles generated with a different configuration are rejected by
+# mksnapshot when consumed.
+v8_enable_builtins_profiling = true
+
+# C++ PGO is irrelevant for builtins profile generation - builtin block counts
+# are execution counts, not timing - so skip it to keep the d8 build fast.
+chrome_pgo_phase = 0
+
+# Profile generation must be unbiased: no existing builtins profile may be
+# applied while generating a new one.
+v8_builtins_profiling_log_file = ""

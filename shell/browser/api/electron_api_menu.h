@@ -8,13 +8,13 @@
 #include <memory>
 #include <string>
 
-#include "base/memory/raw_ptr.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "ui/base/mojom/menu_source_type.mojom-forward.h"
+#include "v8/include/cppgc/member.h"
 
 namespace gin {
 class Arguments;
@@ -45,6 +45,7 @@ class Menu : public gin::Wrappable<Menu>,
   static const gin::WrapperInfo kWrapperInfo;
   const gin::WrapperInfo* wrapper_info() const override;
   const char* GetHumanReadableName() const override;
+  void Trace(cppgc::Visitor*) const override;
 
   // gin_helper::Constructible
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
@@ -74,6 +75,8 @@ class Menu : public gin::Wrappable<Menu>,
   bool IsCommandIdEnabled(int command_id) const override;
   bool IsCommandIdVisible(int command_id) const override;
   std::u16string GetLabelForCommandId(int command_id) const override;
+  std::u16string GetAccessibilityLabelForCommandId(
+      int command_id) const override;
   std::u16string GetSecondaryLabelForCommandId(int command_id) const override;
   ui::ImageModel GetIconForCommandId(int command_id) const override;
   bool ShouldCommandIdWorkWhenHidden(int command_id) const override;
@@ -102,9 +105,6 @@ class Menu : public gin::Wrappable<Menu>,
   virtual void ClosePopupAt(int32_t window_id) = 0;
   virtual std::u16string GetAcceleratorTextAtForTesting(int index) const;
 
-  std::unique_ptr<ElectronMenuModel> model_;
-  raw_ptr<Menu> parent_ = nullptr;
-
   // Observable:
   void OnMenuWillClose() override;
   void OnMenuWillShow() override;
@@ -132,6 +132,10 @@ class Menu : public gin::Wrappable<Menu>,
   int GetIndexOfCommandId(int command_id) const;
   int GetItemCount() const;
 
+  std::unique_ptr<ElectronMenuModel> model_;
+  cppgc::Member<Menu> parent_;
+
+  // Keep active menus alive even if they've been replaced.
   gin_helper::SelfKeepAlive<Menu> keep_alive_{nullptr};
 };
 

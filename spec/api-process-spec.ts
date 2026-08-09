@@ -10,7 +10,9 @@ import { defer } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('process module', () => {
-  function generateSpecs (invoke: <T extends (...args: any[]) => any>(fn: T, ...args: Parameters<T>) => Promise<ReturnType<T>>) {
+  function generateSpecs(
+    invoke: <T extends (...args: any[]) => any>(fn: T, ...args: Parameters<T>) => Promise<ReturnType<T>>
+  ) {
     describe('process.getCreationTime()', () => {
       it('returns a creation time', async () => {
         const creationTime = await invoke(() => process.getCreationTime());
@@ -53,6 +55,9 @@ describe('process module', () => {
         const systemMemoryInfo = await invoke(() => process.getSystemMemoryInfo());
         expect(systemMemoryInfo.free).to.be.a('number');
         expect(systemMemoryInfo.total).to.be.a('number');
+        if (process.platform === 'linux') {
+          expect(systemMemoryInfo.available).to.be.a('number').greaterThan(0);
+        }
       });
     });
 
@@ -113,7 +118,7 @@ describe('process module', () => {
     after(closeAllWindows);
 
     generateSpecs((fn, ...args) => {
-      const jsonArgs = args.map(value => JSON.stringify(value)).join(',');
+      const jsonArgs = args.map((value) => JSON.stringify(value)).join(',');
       return w.webContents.executeJavaScript(`(${fn.toString()})(${jsonArgs})`);
     });
 

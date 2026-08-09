@@ -12,7 +12,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/uuid.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"
 #include "shell/browser/ui/cocoa/electron_menu_controller.h"

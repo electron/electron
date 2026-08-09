@@ -31,6 +31,15 @@ NotificationAction::NotificationAction(NotificationAction&&) noexcept = default;
 NotificationAction& NotificationAction::operator=(
     NotificationAction&&) noexcept = default;
 
+NotificationInfo::NotificationInfo() = default;
+NotificationInfo::~NotificationInfo() = default;
+NotificationInfo::NotificationInfo(const NotificationInfo&) = default;
+NotificationInfo& NotificationInfo::operator=(const NotificationInfo&) =
+    default;
+NotificationInfo::NotificationInfo(NotificationInfo&&) noexcept = default;
+NotificationInfo& NotificationInfo::operator=(NotificationInfo&&) noexcept =
+    default;
+
 Notification::Notification(NotificationDelegate* delegate,
                            NotificationPresenter* presenter)
     : delegate_(delegate), presenter_(presenter) {}

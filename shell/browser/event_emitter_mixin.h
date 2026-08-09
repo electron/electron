@@ -12,8 +12,7 @@
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event.h"
-#include "shell/common/gin_helper/event_emitter.h"
-#include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/event_emitter_caller.h"
 
 namespace gin_helper {
 

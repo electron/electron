@@ -1,6 +1,6 @@
 const { app, BrowserWindow } = require('electron');
 
-async function createWindow () {
+async function createWindow() {
   const mainWindow = new BrowserWindow({
     webPreferences: {
       nodeIntegrationInWorker: true

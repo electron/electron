@@ -10,15 +10,17 @@
 #include <utility>
 #include <vector>
 
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "base/nix/xdg_util.h"
+#include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/task/single_thread_task_runner.h"
+#include "base/threading/watchdog.h"
+#include "base/time/time.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_switches.h"
@@ -29,14 +31,12 @@
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_child_process_host_delegate.h"
 #include "content/public/browser/browser_child_process_host_iterator.h"
+#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_data.h"
-#include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/device_service.h"
 #include "content/public/browser/download_manager.h"
-#include "content/public/browser/first_party_sets_handler.h"
 #include "content/public/browser/web_ui_controller_factory.h"
-#include "content/public/common/content_features.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/common/process_type.h"
 #include "content/public/common/result_codes.h"
@@ -59,7 +59,6 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
-#include "shell/common/gin_helper/trackable_object.h"
 #include "shell/common/logging.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
@@ -80,7 +79,6 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/environment.h"
-#include "chrome/browser/ui/views/dark_mode_manager_linux.h"
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/bluez_dbus_manager.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
@@ -89,6 +87,7 @@
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
+#include "ui/linux/dark_mode_manager_linux.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/linux_ui_factory.h"
 #include "ui/linux/linux_ui_getter.h"
@@ -214,14 +213,6 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
 #if BUILDFLAG(IS_POSIX)
   HandleSIGCHLD();
 #endif
-#if BUILDFLAG(IS_OZONE)
-  // Initialize Ozone platform and add required feature flags as per platform's
-  // properties.
-#if BUILDFLAG(IS_LINUX)
-  ui::SetOzonePlatformForLinuxIfNeeded(*base::CommandLine::ForCurrentProcess());
-#endif
-  ui::OzonePlatform::PreEarlyInitialization();
-#endif  // BUILDFLAG(IS_OZONE)
 #if BUILDFLAG(IS_MAC)
   screen_ = std::make_unique<display::ScopedNativeScreen>();
 #endif
@@ -254,11 +245,22 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   v8::Isolate* const isolate = js_env_->isolate();
   v8::HandleScope scope(isolate);
 
-  node_bindings_->Initialize(isolate, isolate->GetCurrentContext());
+  // Electron: when the embedded Node startup snapshot is being consumed,
+  // JavascriptEnvironment did not create a context (it comes from
+  // Context::FromSnapshot inside node::CreateEnvironment) -- pass empty.
+  v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+  node_bindings_->Initialize(isolate, context);
   // Create the global environment.
   node_env_ = node_bindings_->CreateEnvironment(
-      isolate, isolate->GetCurrentContext(), js_env_->platform(),
+      isolate, context, js_env_->platform(),
       js_env_->max_young_generation_size_in_bytes());
+
+  // Enter the snapshot-deserialized main context (it was created inside
+  // CreateEnvironment, not in JavascriptEnvironment's ctor).
+  if (context.IsEmpty()) {
+    node_env_->context()->Enter();
+  }
 
   node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
 
@@ -520,8 +522,21 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   std::string app_name = electron::Browser::Get()->GetName();
 #endif
 #if BUILDFLAG(IS_LINUX)
-  auto shutdown_cb =
-      base::BindOnce([] { LOG(FATAL) << "Failed to shutdown."; });
+  // The display server connection is gone (X IO error / compositor lost):
+  // exit like Chrome's SessionEnding(), with an off-thread watchdog that
+  // crashes us if exiting hangs on the dead display connection.
+  auto shutdown_cb = base::BindOnce([] {
+    class ShutdownWatchdogDelegate : public base::Watchdog::Delegate {
+     public:
+      void Alarm() override { LOG(FATAL) << "Failed to shutdown."; }
+    };
+    static base::NoDestructor<ShutdownWatchdogDelegate> delegate;
+    static base::NoDestructor<base::Watchdog> watchdog(
+        base::Seconds(10), "OzoneShutdown", /*enabled=*/true, delegate.get());
+    watchdog->Arm();
+    if (Browser* browser = Browser::Get())
+      browser->ExitWithCode(content::RESULT_CODE_NORMAL_EXIT);
+  });
   ui::OzonePlatform::GetInstance()->PostCreateMainMessageLoop(
       std::move(shutdown_cb),
       content::GetUIThreadTaskRunner({content::BrowserTaskType::kUserInput}));
@@ -603,7 +618,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
       auto& process = it.GetData().GetProcess();
       if (!process.IsValid())
         continue;
-      auto utility_process_wrapper =
+      auto* utility_process_wrapper =
           api::UtilityProcessWrapper::FromProcessId(process.Pid());
       if (utility_process_wrapper)
         utility_process_wrapper->Shutdown(0 /* exit_code */);
@@ -618,6 +633,8 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   node_bindings_->set_uv_env(nullptr);
   node_env_.reset();
 
+  browser_.reset();
+  js_env_.reset();
   ElectronBrowserContext::DestroyAllContexts();
 
   fake_browser_process_->PostMainMessageLoopRun();
@@ -626,9 +643,6 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 #if BUILDFLAG(IS_LINUX)
   ui::OzonePlatform::GetInstance()->PostMainMessageLoopRun();
 #endif
-
-  browser_.reset();
-  js_env_.reset();
 }
 
 #if !BUILDFLAG(IS_MAC)

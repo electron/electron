@@ -11,6 +11,7 @@
 #include "shell/browser/api/electron_api_system_preferences.h"
 
 #include "base/containers/fixed_flat_map.h"
+#include "base/logging.h"
 #include "base/win/core_winrt_util.h"
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
@@ -200,7 +201,7 @@ LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
                                             WPARAM wparam,
                                             LPARAM lparam) {
   if (message == WM_DWMCOLORIZATIONCOLORCHANGED) {
-    DWORD new_color = (DWORD)wparam;
+    DWORD new_color = static_cast<DWORD>(wparam);
     std::string new_color_string = hexColorDWORDToRGBA(new_color);
     if (new_color_string != current_color_) {
       Emit("accent-color-changed", hexColorDWORDToRGBA(new_color));

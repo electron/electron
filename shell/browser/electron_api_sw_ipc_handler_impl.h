@@ -8,7 +8,6 @@
 #include <string>
 
 #include "base/memory/weak_ptr.h"
-#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_process_host_observer.h"
 #include "content/public/common/child_process_id.h"
 #include "electron/shell/common/api/api.mojom.h"

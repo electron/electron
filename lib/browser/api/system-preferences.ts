@@ -10,7 +10,10 @@ if ('getEffectiveAppearance' in systemPreferences) {
 }
 
 if ('accessibilityDisplayShouldReduceTransparency' in systemPreferences) {
-  const reduceTransparencyDeprecated = deprecate.warnOnce('systemPreferences.accessibilityDisplayShouldReduceTransparency', 'nativeTheme.prefersReducedTransparency');
+  const reduceTransparencyDeprecated = deprecate.warnOnce(
+    'systemPreferences.accessibilityDisplayShouldReduceTransparency',
+    'nativeTheme.prefersReducedTransparency'
+  );
   const nativeReduceTransparency = systemPreferences.accessibilityDisplayShouldReduceTransparency;
   Object.defineProperty(systemPreferences, 'accessibilityDisplayShouldReduceTransparency', {
     get: () => {

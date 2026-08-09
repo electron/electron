@@ -17,6 +17,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "content/public/common/content_switches.h"
+#include "electron/buildflags/buildflags.h"
 #include "net/base/filename_util.h"
 #include "sandbox/policy/switches.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -304,6 +305,35 @@ WebContentsPreferences* WebContentsPreferences::From(
   if (!web_contents)
     return nullptr;
   return FromWebContents(web_contents);
+}
+
+// static
+bool WebContentsPreferences::IsSandboxed(
+    const gin_helper::Dictionary& web_preferences) {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableSandbox)) {
+    return true;
+  }
+  bool sandbox;
+  if (web_preferences.Get(options::kSandbox, &sandbox))
+    return sandbox;
+  bool node_integration = false;
+  bool node_integration_in_worker = false;
+  web_preferences.Get(options::kNodeIntegration, &node_integration);
+  web_preferences.Get(options::kNodeIntegrationInWorker,
+                      &node_integration_in_worker);
+  return !(node_integration || node_integration_in_worker);
+}
+
+// static
+bool WebContentsPreferences::ShouldUseSandbox(
+    content::WebContents* web_contents) {
+  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kEnableSandbox)) {
+    return true;
+  }
+  auto* prefs = From(web_contents);
+  return !prefs || prefs->IsSandboxed();
 }
 
 void WebContentsPreferences::AppendCommandLineSwitches(

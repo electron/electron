@@ -6,10 +6,10 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index 870c721e8048f70e47bb79cd0b94f8afe1eea50a..14bc85e912fe6ad90656086b2aa1f7b501aece07 100644
+index e9d02975508c72da0e3872653142d5e187995bb8..53aa563e38d28437f437a5663abfe87a913585a3 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -226,6 +226,7 @@ vs-chromium-project.txt
+@@ -229,6 +229,7 @@ vs-chromium-project.txt
  /data
  /delegate_execute
  /device/serial/device_serial_mojo.xml
@@ -18,12 +18,12 @@ index 870c721e8048f70e47bb79cd0b94f8afe1eea50a..14bc85e912fe6ad90656086b2aa1f7b5
  /google_apis/gcm/gcm.xml
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 0b3cc63da588d371a6416f8158ad79014c6364c3..a33362e439d5d9cb4f3f0ff4ec77d14f3bda9387 100644
+index 540c9f72af0f5152aa1ae52f4b15acd902066e8a..8a0860523617c49930a29f66116ff6212406dd71 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -45,7 +45,9 @@
- /directxsdk
+@@ -46,7 +46,9 @@
  /dragonbox/src
+ /disarm/src
  /edk2
 +/electron_node
  /elfutils/src
@@ -31,7 +31,7 @@ index 0b3cc63da588d371a6416f8158ad79014c6364c3..a33362e439d5d9cb4f3f0ff4ec77d14f
  /espresso/lib/
  /eyesfree/src
  /fast_float/src
-@@ -94,6 +96,7 @@
+@@ -96,6 +98,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -39,7 +39,7 @@ index 0b3cc63da588d371a6416f8158ad79014c6364c3..a33362e439d5d9cb4f3f0ff4ec77d14f
  /ninja
  /node/*.tar.gz
  /node/linux/
-@@ -139,7 +142,7 @@
+@@ -141,7 +144,7 @@
  /spirv-cross/src
  /spirv-headers/src
  /spirv-tools/src

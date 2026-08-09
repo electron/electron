@@ -27,8 +27,8 @@ update process. Apps that need to disable ATS can add the
 `NSAllowsArbitraryLoads` key to their app's plist.
 
 > [!IMPORTANT]
-> Your application must be signed for automatic updates on macOS.
-> This is a requirement of `Squirrel.Mac`.
+> Your application must be [signed](../tutorial/code-signing.md#macos-apis-that-require-code-signing)
+> for automatic updates on macOS. This is a requirement of `Squirrel.Mac`.
 
 ### Windows
 

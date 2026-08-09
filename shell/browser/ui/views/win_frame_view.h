@@ -23,10 +23,9 @@ class WinFrameView : public FramelessView {
   METADATA_HEADER(WinFrameView, FramelessView)
 
  public:
-  WinFrameView();
+  WinFrameView(NativeWindowViews* window, views::Widget* frame);
   ~WinFrameView() override;
 
-  void Init(NativeWindowViews* window, views::Widget* frame) override;
   void InvalidateCaptionButtons() override;
 
   // views::FrameView:
@@ -35,6 +34,10 @@ class WinFrameView : public FramelessView {
   int NonClientHitTest(const gfx::Point& point) override;
   gfx::Size GetMinimumSize() const override;
   gfx::Size GetMaximumSize() const override;
+
+  // views::FramelessView:
+  int ResizingBorderHitTest(const gfx::Point& point) override;
+  gfx::Insets RestoredFrameBorderInsets() const override;
 
   WinCaptionButtonContainer* caption_button_container() {
     return caption_button_container_;
@@ -47,7 +50,7 @@ class WinFrameView : public FramelessView {
   int TitlebarMaximizedVisualHeight() const;
 
   // Returns true if the frame should be painted as active.
-  bool GetShouldPaintAsActive();
+  [[nodiscard]] bool GetShouldPaintAsActive() const;
 
  protected:
   // views::View:

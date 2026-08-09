@@ -5,16 +5,21 @@
 
 #include "shell/common/mac/codesign_util.h"
 
+#include <CoreFoundation/CoreFoundation.h>
+#include <Security/Security.h>
+#include <mach/mach.h>
+#include <unistd.h>
+
 #include <optional>
 
 #include "base/apple/foundation_util.h"
+#include "base/apple/mach_logging.h"
 #include "base/apple/osstatus_logging.h"
 #include "base/apple/scoped_cftyperef.h"
 
-#include <CoreFoundation/CoreFoundation.h>
-#include <Security/Security.h>
-
 namespace electron {
+
+namespace {
 
 std::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
   base::apple::ScopedCFTypeRef<SecStaticCodeRef> static_code;
@@ -59,13 +64,42 @@ std::optional<bool> IsUnsignedOrAdHocSigned(SecCodeRef code) {
   return false;
 }
 
-bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
+}  // namespace
+
+std::optional<audit_token_t> GetParentProcessAuditToken() {
+  pid_t parent_pid = getppid();
+
+  // task_name_for_pid() yields a name port (not a control port), so it does
+  // not require any special entitlement. Same approach as Chromium's
+  // remoting/host/webauthn/remote_webauthn_caller_security_utils.cc.
+  task_name_t parent_task;
+  kern_return_t kr =
+      task_name_for_pid(mach_task_self(), parent_pid, &parent_task);
+  if (kr != KERN_SUCCESS) {
+    MACH_LOG(ERROR, kr) << "task_name_for_pid";
+    return std::nullopt;
+  }
+
+  audit_token_t token;
+  mach_msg_type_number_t size = TASK_AUDIT_TOKEN_COUNT;
+  kr = task_info(parent_task, TASK_AUDIT_TOKEN,
+                 reinterpret_cast<task_info_t>(&token), &size);
+  mach_port_deallocate(mach_task_self(), parent_task);
+  if (kr != KERN_SUCCESS) {
+    MACH_LOG(ERROR, kr) << "task_info(TASK_AUDIT_TOKEN)";
+    return std::nullopt;
+  }
+
+  return token;
+}
+
+bool ProcessSignatureIsSameWithCurrentApp(audit_token_t audit_token) {
   // Get and check the code signature of current app.
   base::apple::ScopedCFTypeRef<SecCodeRef> self_code;
   OSStatus status =
       SecCodeCopySelf(kSecCSDefaultFlags, self_code.InitializeInto());
   if (status != errSecSuccess) {
-    OSSTATUS_LOG(ERROR, status) << "SecCodeCopyGuestWithAttributes";
+    OSSTATUS_LOG(ERROR, status) << "SecCodeCopySelf";
     return false;
   }
   std::optional<bool> not_signed = IsUnsignedOrAdHocSigned(self_code.get());
@@ -77,11 +111,15 @@ bool ProcessSignatureIsSameWithCurrentApp(pid_t pid) {
     // Current app is not signed.
     return true;
   }
-  // Get the code signature of process.
-  base::apple::ScopedCFTypeRef<CFNumberRef> process_cf(
-      CFNumberCreate(nullptr, kCFNumberIntType, &pid));
-  const void* attribute_keys[] = {kSecGuestAttributePid};
-  const void* attribute_values[] = {process_cf.get()};
+  // Get the code signature of process. kSecGuestAttributeAudit is preferred
+  // over kSecGuestAttributePid because the audit token is bound to a single
+  // process instance and cannot be spoofed by PID reuse or by the target
+  // exec()ing into a different image after the lookup.
+  base::apple::ScopedCFTypeRef<CFDataRef> audit_token_cf(
+      CFDataCreate(nullptr, reinterpret_cast<const UInt8*>(&audit_token),
+                   sizeof(audit_token_t)));
+  const void* attribute_keys[] = {kSecGuestAttributeAudit};
+  const void* attribute_values[] = {audit_token_cf.get()};
   base::apple::ScopedCFTypeRef<CFDictionaryRef> attributes(CFDictionaryCreate(
       nullptr, attribute_keys, attribute_values, std::size(attribute_keys),
       &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks));

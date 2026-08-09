@@ -198,12 +198,10 @@ NotifyIcon* NotifyIconHost::CreateNotifyIcon(std::optional<base::Uuid> guid) {
       guid_str = guid_str.substr(1, guid_str.length() - 2);
     }
 
-    unsigned char* uid_cstr = (unsigned char*)guid_str.c_str();
+    auto* uid_cstr = reinterpret_cast<unsigned char*>(guid_str.data());
     RPC_STATUS result = UuidFromStringA(uid_cstr, &uid);
     if (result != RPC_S_INVALID_STRING_UUID) {
-      for (NotifyIcons::const_iterator i(notify_icons_.begin());
-           i != notify_icons_.end(); ++i) {
-        auto* current_win_icon = static_cast<NotifyIcon*>(*i);
+      for (const NotifyIcon* current_win_icon : notify_icons_) {
         if (current_win_icon->guid() == uid) {
           LOG(WARNING)
               << "Guid already in use. Existing tray entry will be replaced.";
@@ -256,9 +254,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     NotifyIcon* win_icon = nullptr;
 
     // Find the selected status icon.
-    for (NotifyIcons::const_iterator i(notify_icons_.begin());
-         i != notify_icons_.end(); ++i) {
-      auto* current_win_icon = static_cast<NotifyIcon*>(*i);
+    for (NotifyIcon* current_win_icon : notify_icons_) {
       if (current_win_icon->icon_id() == wparam) {
         win_icon = current_win_icon;
         break;

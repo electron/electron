@@ -11,7 +11,7 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/modules/esm/utils.js b/lib/internal/modules/esm/utils.js
-index 0af25ebbf6c3f2b790238e32f01addfb648e4e52..bd726088f7480853b8507c39668cc4716c4ce61f 100644
+index 5019477c55e5ff1121a2b51168f12e008d54d59e..8eb390fbe16401a7abf836030233832925ab5c9e 100644
 --- a/lib/internal/modules/esm/utils.js
 +++ b/lib/internal/modules/esm/utils.js
 @@ -35,7 +35,7 @@ const {

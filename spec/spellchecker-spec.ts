@@ -19,7 +19,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
 
   let w: BrowserWindow;
 
-  async function rightClick () {
+  async function rightClick() {
     const contextMenuPromise = once(w.webContents, 'context-menu');
     w.webContents.sendInputEvent({
       type: 'mouseDown',
@@ -33,11 +33,11 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
   // When the page is just loaded, the spellchecker might not be ready yet. Since
   // there is no event to know the state of spellchecker, the only reliable way
   // to detect spellchecker is to keep checking with a busy loop.
-  async function rightClickUntil (fn: (params: Electron.ContextMenuParams) => boolean) {
+  async function rightClickUntil(fn: (params: Electron.ContextMenuParams) => boolean) {
     const now = Date.now();
     const timeout = (process.env.IS_ASAN ? 180 : 10) * 1000;
     let contextMenuParams = await rightClick();
-    while (!fn(contextMenuParams) && (Date.now() - now < timeout)) {
+    while (!fn(contextMenuParams) && Date.now() - now < timeout) {
       await setTimeout(100);
       contextMenuParams = await rightClick();
     }
@@ -94,7 +94,9 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
       ifit(shouldRun)('should detect correctly spelled words as correct', async () => {
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typography"');
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
-        const contextMenuParams = await rightClickUntil((contextMenuParams) => contextMenuParams.selectionText.length > 0);
+        const contextMenuParams = await rightClickUntil(
+          (contextMenuParams) => contextMenuParams.selectionText.length > 0
+        );
         expect(contextMenuParams.misspelledWord).to.eq('');
         expect(contextMenuParams.dictionarySuggestions).to.have.lengthOf(0);
       });
@@ -102,21 +104,28 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
       ifit(shouldRun)('should detect incorrectly spelled words as incorrect', async () => {
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
-        const contextMenuParams = await rightClickUntil((contextMenuParams) => contextMenuParams.misspelledWord.length > 0);
+        const contextMenuParams = await rightClickUntil(
+          (contextMenuParams) => contextMenuParams.misspelledWord.length > 0
+        );
         expect(contextMenuParams.misspelledWord).to.eq('typograpy');
         expect(contextMenuParams.dictionarySuggestions).to.have.length.of.at.least(1);
       });
 
-      ifit(shouldRun)('should detect incorrectly spelled words as incorrect after disabling all languages and re-enabling', async () => {
-        w.webContents.session.setSpellCheckerLanguages([]);
-        await setTimeout(500);
-        w.webContents.session.setSpellCheckerLanguages(['en-US']);
-        await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
-        await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
-        const contextMenuParams = await rightClickUntil((contextMenuParams) => contextMenuParams.misspelledWord.length > 0);
-        expect(contextMenuParams.misspelledWord).to.eq('typograpy');
-        expect(contextMenuParams.dictionarySuggestions).to.have.length.of.at.least(1);
-      });
+      ifit(shouldRun)(
+        'should detect incorrectly spelled words as incorrect after disabling all languages and re-enabling',
+        async () => {
+          w.webContents.session.setSpellCheckerLanguages([]);
+          await setTimeout(500);
+          w.webContents.session.setSpellCheckerLanguages(['en-US']);
+          await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
+          await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
+          const contextMenuParams = await rightClickUntil(
+            (contextMenuParams) => contextMenuParams.misspelledWord.length > 0
+          );
+          expect(contextMenuParams.misspelledWord).to.eq('typograpy');
+          expect(contextMenuParams.dictionarySuggestions).to.have.length.of.at.least(1);
+        }
+      );
 
       ifit(shouldRun)('should expose webFrame spellchecker correctly', async () => {
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
@@ -178,7 +187,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
         describe('ses.listWordsFromSpellCheckerDictionary', () => {
           it('should successfully list words in custom dictionary', async () => {
             const words = ['foo', 'bar', 'baz'];
-            const results = words.map(word => ses.addWordToSpellCheckerDictionary(word));
+            const results = words.map((word) => ses.addWordToSpellCheckerDictionary(word));
             expect(results).to.eql([true, true, true]);
 
             const wordList = await ses.listWordsInSpellCheckerDictionary();

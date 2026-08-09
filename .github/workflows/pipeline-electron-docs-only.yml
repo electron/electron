@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:  
-  GCLIENT_EXTRA_ARGS: --custom-var=checkout_arm=True --custom-var=checkout_arm64=True
+  GCLIENT_EXTRA_ARGS: --custom-var=checkout_arm64=True
 
 jobs:
   docs-only:
@@ -27,7 +27,7 @@ jobs:
     container: ${{ fromJSON(inputs.container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -43,7 +43,7 @@ jobs:
       with:
         target-platform: linux
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0

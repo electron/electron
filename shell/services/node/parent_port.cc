@@ -14,18 +14,28 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/v8_util.h"
 #include "third_party/blink/public/common/messaging/transferable_message_mojom_traits.h"
 #include "third_party/blink/public/mojom/blob/blob.mojom.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/cppgc/persistent.h"
+#include "v8/include/v8-cppgc.h"
 
 namespace electron {
 
-gin::DeprecatedWrapperInfo ParentPort::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo ParentPort::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronParentPort);
 
 ParentPort* ParentPort::GetInstance() {
-  static ParentPort* instance = new ParentPort();
-  return instance;
+  static base::NoDestructor<cppgc::Persistent<ParentPort>> instance([] {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    return cppgc::Persistent<ParentPort>(
+        cppgc::MakeGarbageCollected<ParentPort>(
+            isolate->GetCppHeap()->GetAllocationHandle()));
+  }());
+  return instance->Get();
 }
 
 ParentPort::ParentPort() = default;
@@ -107,22 +117,25 @@ bool ParentPort::Accept(mojo::Message* mojo_message) {
 }
 
 // static
-gin_helper::Handle<ParentPort> ParentPort::Create(v8::Isolate* isolate) {
-  return gin_helper::CreateHandle(isolate, ParentPort::GetInstance());
+ParentPort* ParentPort::Create(v8::Isolate* isolate) {
+  return ParentPort::GetInstance();
 }
 
 // static
 gin::ObjectTemplateBuilder ParentPort::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::DeprecatedWrappable<ParentPort>::GetObjectTemplateBuilder(
-             isolate)
+  return gin::ObjectTemplateBuilder(isolate, GetClassName())
       .SetMethod("postMessage", &ParentPort::PostMessage)
       .SetMethod("start", &ParentPort::Start)
       .SetMethod("pause", &ParentPort::Pause);
 }
 
-const char* ParentPort::GetTypeName() {
-  return "ParentPort";
+const gin::WrapperInfo* ParentPort::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* ParentPort::GetHumanReadableName() const {
+  return "Electron / ParentPort";
 }
 
 }  // namespace electron

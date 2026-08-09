@@ -7,10 +7,10 @@
 
 #include <memory>
 
+#include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/connector.h"
 #include "mojo/public/cpp/bindings/message.h"
-#include "shell/common/gin_helper/cleaned_up_at_exit.h"
-#include "shell/common/gin_helper/wrappable.h"
+#include "shell/common/gc_plugin.h"
 #include "third_party/blink/public/common/messaging/message_port_descriptor.h"
 
 namespace v8 {
@@ -24,22 +24,17 @@ namespace gin {
 class Arguments;
 }  // namespace gin
 
-namespace gin_helper {
-template <typename T>
-class Handle;
-}  // namespace gin_helper
-
 namespace electron {
 
-// There is only a single instance of this class
-// for the lifetime of a Utility Process which
-// also means that GC lifecycle is ignored by this class.
-class ParentPort final : public gin_helper::DeprecatedWrappable<ParentPort>,
-                         public gin_helper::CleanedUpAtExit,
+// There is only a single instance of this class for the lifetime of a Utility
+// Process. It is allocated on the V8 cppgc heap and kept alive for the entire
+// process lifetime by a leaked cppgc::Persistent root, so it is never
+// garbage collected.
+class ParentPort final : public gin::Wrappable<ParentPort>,
                          private mojo::MessageReceiver {
  public:
   static ParentPort* GetInstance();
-  static gin_helper::Handle<ParentPort> Create(v8::Isolate* isolate);
+  static ParentPort* Create(v8::Isolate* isolate);
 
   ParentPort(const ParentPort&) = delete;
   ParentPort& operator=(const ParentPort&) = delete;
@@ -48,11 +43,13 @@ class ParentPort final : public gin_helper::DeprecatedWrappable<ParentPort>,
   ~ParentPort() override;
   void Initialize(blink::MessagePortDescriptor port);
 
-  // gin_helper::Wrappable
-  static gin::DeprecatedWrapperInfo kWrapperInfo;
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  static const char* GetClassName() { return "ParentPort"; }
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override;
-  const char* GetTypeName() override;
+  const gin::WrapperInfo* wrapper_info() const override;
+  const char* GetHumanReadableName() const override;
 
   void Close();
 
@@ -65,6 +62,9 @@ class ParentPort final : public gin_helper::DeprecatedWrappable<ParentPort>,
   bool Accept(mojo::Message* mojo_message) override;
 
   bool connector_closed_ = false;
+  GC_PLUGIN_IGNORE(
+      "Context tracking of the connector is not needed in the utility "
+      "process.")
   std::unique_ptr<mojo::Connector> connector_;
   blink::MessagePortDescriptor port_;
 };

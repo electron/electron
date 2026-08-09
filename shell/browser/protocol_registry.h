@@ -8,6 +8,7 @@
 #include <string>
 #include <string_view>
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/content_browser_client.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 
@@ -16,6 +17,8 @@ class BrowserContext;
 }
 
 namespace electron {
+
+class ElectronBrowserContext;
 
 class ProtocolRegistry {
  public:
@@ -54,7 +57,9 @@ class ProtocolRegistry {
  private:
   friend class ElectronBrowserContext;
 
-  ProtocolRegistry();
+  explicit ProtocolRegistry(ElectronBrowserContext* browser_context);
+
+  const raw_ptr<ElectronBrowserContext> browser_context_;
 
   HandlersMap handlers_;
   HandlersMap intercept_handlers_;

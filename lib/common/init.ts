@@ -3,7 +3,7 @@ import * as util from 'util';
 
 import type * as stream from 'stream';
 
-type AnyFn = (...args: any[]) => any
+type AnyFn = (...args: any[]) => any;
 
 // setImmediate and process.nextTick makes use of uv_check and uv_prepare to
 // run the callbacks, however since we only run uv loop on requests, the
@@ -11,7 +11,7 @@ type AnyFn = (...args: any[]) => any
 // which would delay the callbacks for arbitrary long time. So we should
 // initiatively activate the uv loop once setImmediate and process.nextTick is
 // called.
-const wrapWithActivateUvLoop = function <T extends AnyFn> (func: T): T {
+const wrapWithActivateUvLoop = function <T extends AnyFn>(func: T): T {
   return wrap(func, function (func) {
     return function (this: any, ...args: any[]) {
       process.activateUvLoop();
@@ -26,7 +26,7 @@ const wrapWithActivateUvLoop = function <T extends AnyFn> (func: T): T {
  *
  * Refs: https://github.com/Microsoft/TypeScript/issues/1863
  */
-function wrap <T extends AnyFn> (func: T, wrapper: (fn: AnyFn) => T) {
+function wrap<T extends AnyFn>(func: T, wrapper: (fn: AnyFn) => T) {
   const wrapped = wrapper(func);
   if ((func as any)[util.promisify.custom]) {
     (wrapped as any)[util.promisify.custom] = wrapper((func as any)[util.promisify.custom]);
@@ -55,8 +55,7 @@ timers.setInterval = wrapWithActivateUvLoop(timers.setInterval);
 // only in the process that runs node event loop alongside chromium
 // event loop. We skip renderer with nodeIntegration here because node globals
 // are deleted in these processes, see renderer/init.js for reference.
-if (process.type === 'browser' ||
-    process.type === 'utility') {
+if (process.type === 'browser' || process.type === 'utility') {
   global.setTimeout = timers.setTimeout;
   global.setInterval = timers.setInterval;
 }
@@ -69,7 +68,7 @@ if (process.platform === 'win32') {
   Object.defineProperty(process, 'stdin', {
     configurable: false,
     enumerable: true,
-    get () {
+    get() {
       return stdin;
     }
   });
@@ -108,7 +107,11 @@ const originalResolveFilename = Module._resolveFilename;
 // renderer process regardless of the names, they're superficial for TypeScript
 // only.
 const electronModuleNames = new Set([
-  'electron', 'electron/main', 'electron/renderer', 'electron/common', 'electron/utility'
+  'electron',
+  'electron/main',
+  'electron/renderer',
+  'electron/common',
+  'electron/utility'
 ]);
 Module._resolveFilename = function (request, parent, isMain, options) {
   if (electronModuleNames.has(request)) {

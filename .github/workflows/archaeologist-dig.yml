@@ -13,11 +13,11 @@ jobs:
       contents: read
     steps:
       - name: Checkout Electron
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
       - name: Setup Node.js/npm
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 24.12.x
       - name: Setting Up Dig Site
@@ -49,7 +49,7 @@ jobs:
           sha-file: .dig-old
           filename: electron.old.d.ts
       - name: Upload artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f #v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
         with:
           name: artifacts
           path: electron/artifacts
@@ -70,4 +70,13 @@ jobs:
             echo "## No Changes" > $GITHUB_STEP_SUMMARY
             echo "We couldn't see any changes in the \`electron.d.ts\` artifact" >> $GITHUB_STEP_SUMMARY
           fi
+          cp "$GITHUB_STEP_SUMMARY" "$GITHUB_WORKSPACE/audit-results.md"
         working-directory: ./electron/artifacts
+      - name: Upload audit results artifact
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a #v7.0.1
+        with:
+          name: audit-results.md
+          path: audit-results.md
+          archive: false
+          if-no-files-found: warn

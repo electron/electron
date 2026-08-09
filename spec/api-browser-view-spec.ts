@@ -16,8 +16,7 @@ describe('BrowserView module', () => {
   let w: BrowserWindow;
   let view: BrowserView;
 
-  const getSessionWebContents = () =>
-    webContents.getAllWebContents().filter(wc => wc.session === ses);
+  const getSessionWebContents = () => webContents.getAllWebContents().filter((wc) => wc.session === ses);
 
   beforeEach(() => {
     expect(getSessionWebContents().length).to.equal(0, 'expected no webContents to exist');

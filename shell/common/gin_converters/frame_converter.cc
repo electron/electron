@@ -8,6 +8,7 @@
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/common/gin_helper/accessor.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/node_util.h"
 
 namespace gin {
@@ -25,7 +26,11 @@ v8::Local<v8::Value> Converter<content::RenderFrameHost*>::ToV8(
     content::RenderFrameHost* val) {
   if (!val)
     return v8::Null(isolate);
-  return electron::api::WebFrameMain::From(isolate, val).ToV8();
+  v8::Local<v8::Value> value;
+  if (!TryConvertToV8(isolate, electron::api::WebFrameMain::From(isolate, val),
+                      &value))
+    return v8::Null(isolate);
+  return value;
 }
 
 // static

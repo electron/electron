@@ -67,10 +67,7 @@ struct LaunchItem {
 
 struct LoginItemSettings {
   bool open_at_login = false;
-  bool open_as_hidden = false;
-  bool restore_state = false;
   bool opened_at_login = false;
-  bool opened_as_hidden = false;
   std::u16string path;
   std::vector<std::u16string> args;
 
@@ -84,9 +81,12 @@ struct LoginItemSettings {
   std::wstring name;
 
   // used in browser::getLoginItemSettings
-  bool executable_will_launch_at_login = false;
   std::vector<LaunchItem> launch_items;
 #endif
+
+  // used in browser::getLoginItemSettings; only meaningful on Windows but
+  // always emitted so consumers don't observe `undefined`.
+  bool executable_will_launch_at_login = false;
 
   LoginItemSettings();
   ~LoginItemSettings();
@@ -110,6 +110,9 @@ class Browser : private WindowListObserver {
 
   // Exit the application immediately and set exit code.
   void Exit(gin::Arguments* args);
+
+  // Same as Exit() but callable from native code (no gin arguments).
+  void ExitWithCode(int code);
 
   // Cleanup everything and shutdown the application gracefully.
   void Shutdown();
@@ -161,11 +164,9 @@ class Browser : private WindowListObserver {
 
   std::u16string GetApplicationNameForProtocol(const GURL& url);
 
-#if !BUILDFLAG(IS_LINUX)
   // get the name, icon and path for an application
   v8::Local<v8::Promise> GetApplicationInfoForProtocol(v8::Isolate* isolate,
                                                        const GURL& url);
-#endif
 
   // Set/Get the badge count.
   bool SetBadgeCount(std::optional<int> count);
@@ -175,9 +176,6 @@ class Browser : private WindowListObserver {
   v8::Local<v8::Value> GetLoginItemSettings(const LoginItemSettings& options);
 
 #if BUILDFLAG(IS_MAC)
-  // Set the handler which decides whether to shutdown.
-  void SetShutdownHandler(base::RepeatingCallback<bool()> handler);
-
   // Returns whether the application is active.
   bool IsActive();
 
@@ -292,11 +290,6 @@ class Browser : private WindowListObserver {
   PCWSTR GetAppUserModelID();
 #endif  // BUILDFLAG(IS_WIN)
 
-#if BUILDFLAG(IS_LINUX)
-  // Whether Unity launcher is running.
-  bool IsUnityRunning();
-#endif  // BUILDFLAG(IS_LINUX)
-
   // Tell the application to open a file.
   bool OpenFile(const std::string& file_path);
 
@@ -368,7 +361,10 @@ class Browser : private WindowListObserver {
   void OnWindowAllClosed() override;
 
   // Observers of the browser.
-  base::ObserverList<BrowserObserver> observers_;
+  base::ObserverList<BrowserObserver,
+                     false,
+                     base::ObserverListReentrancyPolicy::kAllowReentrancy>
+      observers_;
 
   // Tracks tasks requesting file icons.
   base::CancelableTaskTracker cancelable_task_tracker_;

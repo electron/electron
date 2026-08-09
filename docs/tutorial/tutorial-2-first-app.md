@@ -183,16 +183,16 @@ by creating a barebones web page in an `index.html` file in the root folder of y
 <!DOCTYPE html>
 <html>
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <meta
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'"
-    />
+    >
     <meta
       http-equiv="X-Content-Security-Policy"
       content="default-src 'self'; script-src 'self'"
-    />
+    >
     <title>Hello from Electron renderer!</title>
   </head>
   <body>

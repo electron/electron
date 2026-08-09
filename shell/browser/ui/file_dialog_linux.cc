@@ -5,9 +5,9 @@
 #include <algorithm>
 #include <vector>
 
-#include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
+#include "base/logging.h"
 #include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/javascript_environment.h"
@@ -59,6 +59,17 @@ ui::SelectFileDialog::FileTypeInfo GetFilterInfo(const Filters& filters) {
   return file_type_info;
 }
 
+// A relative defaultPath (e.g. a bare filename) would make the file chooser
+// open at the unusable relative directory ".", so anchor it to the default
+// directory instead.
+base::FilePath GetDefaultDialogPath(const DialogSettings& settings) {
+  if (settings.default_path.empty())
+    return electron::GetDefaultPath();
+  if (settings.default_path.IsAbsolute())
+    return settings.default_path;
+  return electron::GetDefaultPath().Append(settings.default_path);
+}
+
 void LogIfNeededAboutUnsupportedPortalFeature(const DialogSettings& settings) {
   if (!settings.default_path.empty() && IsPortalAvailable() &&
       GetPortalVersion() < 4) {
@@ -82,9 +93,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
-    base::FilePath default_path = settings.default_path.empty()
-                                      ? electron::GetDefaultPath()
-                                      : settings.default_path;
+    base::FilePath default_path = GetDefaultDialogPath(settings);
 
     dialog_->SelectFile(ui::SelectFileDialog::SELECT_SAVEAS_FILE,
                         base::UTF8ToUTF16(settings.title), default_path,
@@ -113,9 +122,7 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
     ui::SelectFileDialog::FileTypeInfo file_info =
         GetFilterInfo(settings.filters);
     ApplySettings(settings);
-    base::FilePath default_path = settings.default_path.empty()
-                                      ? electron::GetDefaultPath()
-                                      : settings.default_path;
+    base::FilePath default_path = GetDefaultDialogPath(settings);
 
     dialog_->SelectFile(
         GetDialogType(settings.properties), base::UTF8ToUTF16(settings.title),
@@ -203,10 +210,6 @@ class FileChooserDialog : public ui::SelectFileDialog::Listener {
         settings.properties & SAVE_DIALOG_SHOW_OVERWRITE_CONFIRMATION);
     dialog_->SetMultipleSelectionsAllowed(settings.properties &
                                           OPEN_DIALOG_MULTI_SELECTIONS);
-    int hidden_flag = type_ == DialogType::SAVE
-                          ? static_cast<int>(SAVE_DIALOG_SHOW_HIDDEN_FILES)
-                          : static_cast<int>(OPEN_DIALOG_SHOW_HIDDEN_FILES);
-    dialog_->SetHiddenShown(settings.properties & hidden_flag);
   }
 
   DialogType type_;

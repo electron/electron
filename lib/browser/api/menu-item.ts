@@ -30,6 +30,7 @@ const MenuItem = function (this: any, options: any) {
 
   this.overrideProperty('icon');
   this.overrideProperty('label', roles.getDefaultLabel(this.role));
+  this.overrideProperty('accessibilityLabel', '');
   this.overrideProperty('sublabel', '');
   this.overrideProperty('toolTip', '');
   this.overrideProperty('enabled', true);
@@ -56,8 +57,7 @@ const MenuItem = function (this: any, options: any) {
   const click = options.click;
   this.click = (event: KeyboardEvent, focusedWindow: BaseWindow, focusedWebContents: WebContents) => {
     // Manually flip the checked flags when clicked.
-    if (!roles.shouldOverrideCheckStatus(this.role) &&
-        (this.type === 'checkbox' || this.type === 'radio')) {
+    if (!roles.shouldOverrideCheckStatus(this.role) && (this.type === 'checkbox' || this.type === 'radio')) {
       this.checked = !this.checked;
     }
 
