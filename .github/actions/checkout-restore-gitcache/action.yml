@@ -1,0 +1,23 @@
+name: 'Checkout Restore Gitcache'
+description: 'Restores the shared git cache tar into GIT_CACHE_PATH for gclient sync'
+
+# One of the small composites that .github/actions/checkout (serial) and
+# .github/workflows/pipeline-segment-electron-checkout.yml (parallel
+# background steps) are both assembled from. Needs GIT_CACHE_PATH and
+# CACHE_DRIVE from checkout-prepare; callers gate this on the prepare
+# composite's cache-exists output being 'false'.
+
+runs:
+  using: "composite"
+  steps:
+  - name: Restore gitcache
+    shell: bash
+    run: |
+      GIT_CACHE_TAR="$CACHE_DRIVE/gitcache.tar"
+      if [ ! -f "$GIT_CACHE_TAR" ]; then
+        echo "Git cache tar file does not exist, skipping restore"
+        exit 0
+      fi
+      echo "Restoring git cache from $GIT_CACHE_TAR to $GIT_CACHE_PATH"
+      mkdir -p $GIT_CACHE_PATH
+      tar -xf $GIT_CACHE_TAR -C $GIT_CACHE_PATH

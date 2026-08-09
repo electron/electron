@@ -14,7 +14,15 @@ const filesToHash = [
   path.resolve(__dirname, '../DEPS'),
   path.resolve(__dirname, '../yarn.lock'),
   path.resolve(__dirname, '../script/sysroots.json'),
-  path.resolve(__dirname, '../.github/actions/checkout/action.yml')
+  // The checkout step bodies live in the small checkout-* composites (the
+  // checkout composite is a thin wrapper over them), so hash them all to
+  // keep busting the src cache when any checkout step changes.
+  path.resolve(__dirname, '../.github/actions/checkout/action.yml'),
+  path.resolve(__dirname, '../.github/actions/checkout-prepare/action.yml'),
+  path.resolve(__dirname, '../.github/actions/checkout-generate-sas/action.yml'),
+  path.resolve(__dirname, '../.github/actions/checkout-restore-gitcache/action.yml'),
+  path.resolve(__dirname, '../.github/actions/checkout-sync/action.yml'),
+  path.resolve(__dirname, '../.github/actions/checkout-wait-ssh/action.yml')
 ];
 
 const addAllFiles = (dir) => {

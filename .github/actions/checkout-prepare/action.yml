@@ -1,0 +1,76 @@
+name: 'Checkout Prepare'
+description: 'Serial setup ahead of the parallelizable checkout work: git cache path, Chromium cookie, DEPS hash and src cache probe'
+
+# One of the small composites that .github/actions/checkout (serial) and
+# .github/workflows/pipeline-segment-electron-checkout.yml (parallel
+# background steps) are both assembled from, so that every checkout step
+# body lives in exactly one place. script/generate-deps-hash.js hashes
+# these composites to version the src cache.
+
+inputs:
+  target-platform:
+    description: 'Target platform, should be linux, win, macos'
+  use-cache:
+    description: 'Whether to persist the cache to the shared drive'
+    required: false
+    default: 'true'
+outputs:
+  cache-exists:
+    description: 'Whether a src cache already exists for the current DEPS hash'
+    value: ${{ steps.check-cache.outputs.cache_exists }}
+runs:
+  using: "composite"
+  steps:
+  - name: Set GIT_CACHE_PATH to make gclient to use the cache
+    shell: bash
+    run: |
+      echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
+  - name: Set Chromium Git Cookie
+    uses: ./src/electron/.github/actions/set-chromium-cookie
+  - name: Generate DEPS Hash
+    shell: bash
+    run: |
+      node src/electron/script/generate-deps-hash.js
+      DEPSHASH="v2-src-cache-$(cat src/electron/.depshash)"
+      echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
+      echo "CACHE_FILE=$DEPSHASH.tar" >> $GITHUB_ENV
+      if [ "${{ inputs.target-platform }}" = "win" ]; then
+        echo "CACHE_DRIVE=/mnt/win-cache" >> $GITHUB_ENV
+      else
+        echo "CACHE_DRIVE=/mnt/cross-instance-cache" >> $GITHUB_ENV
+      fi
+  - name: Check If Cache Exists
+    id: check-cache
+    shell: bash
+    run: |
+      if [[ "${{ inputs.use-cache }}" == "false" ]]; then
+        echo "Not using cache this time..."
+        echo "cache_exists=false" >> $GITHUB_OUTPUT
+      else
+        cache_path=$CACHE_DRIVE/$CACHE_FILE
+        echo "Using cache key: $DEPSHASH"
+        echo "Checking for cache in: $cache_path"
+        if [ ! -f "$cache_path" ] || [ `du $cache_path | cut -f1` = "0" ]; then
+          echo "cache_exists=false" >> $GITHUB_OUTPUT
+          echo "Cache Does Not Exist for $DEPSHASH"
+        else
+          echo "cache_exists=true" >> $GITHUB_OUTPUT
+          echo "Cache Already Exists for $DEPSHASH, Skipping.."
+        fi
+      fi
+  - name: Check cross instance cache disk space
+    if: steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache  == 'true'
+    shell: bash
+    run: |
+      # if there is less than 35 GB free space then creating the cache might fail so exit early
+      freespace=`df -m $CACHE_DRIVE | grep -w $CACHE_DRIVE | awk '{print $4}'`
+      freespace_human=`df -h $CACHE_DRIVE | grep -w $CACHE_DRIVE | awk '{print $4}'`
+      if [ $freespace -le 35000 ]; then
+        echo "The cross mount cache has $freespace_human free space which is not enough - exiting"
+        exit 1
+      else
+        echo "The cross mount cache has $freespace_human free space - continuing"
+      fi
+  - name: Add patch conflict problem matcher
+    shell: bash
+    run: echo "::add-matcher::src/electron/.github/problem-matchers/patch-conflict.json"

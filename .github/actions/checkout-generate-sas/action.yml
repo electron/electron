@@ -1,0 +1,19 @@
+name: 'Checkout Generate SAS Key'
+description: 'Generates a SAS token for the src cache item via the sas sidecar'
+
+# One of the small composites that .github/actions/checkout (serial) and
+# .github/workflows/pipeline-segment-electron-checkout.yml (parallel
+# background steps) are both assembled from. Needs CACHE_FILE from
+# checkout-prepare; callers gate this on generate-sas-token == 'true'.
+# The generated ./sas-token is uploaded by checkout-sync's Save SAS Key.
+
+inputs:
+  target-platform:
+    description: 'Target platform, should be linux, win, macos'
+runs:
+  using: "composite"
+  steps:
+  - name: Generate SAS Key
+    shell: bash
+    run: |
+      curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$CACHE_FILE?platform=${{ inputs.target-platform }}&getAccountName=true" > sas-token

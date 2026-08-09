@@ -124,35 +124,23 @@ jobs:
     secrets: inherit
 
   # Checkout Jobs
+  # These use the flattened pipeline-segment-electron-checkout.yml (rather
+  # than the .github/actions/checkout composite used by the release/publish
+  # and pgo workflows) so the setup ahead of Gclient Sync can run as
+  # parallel background steps.
   checkout-macos:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-macos}}
-    runs-on: electron-arc-centralus-linux-amd64-32core
+    uses: ./.github/workflows/pipeline-segment-electron-checkout.yml
     permissions:
       contents: read
-    container:
-      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
-      options: --user root
-      volumes:
-        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
-        - /var/run/sas:/var/run/sas
-    env:
-      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    outputs:
+    with:
+      target-platform: macos
+      generate-sas-token: 'true'
+      checkout-runs-on: electron-arc-centralus-linux-amd64-32core
+      checkout-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache","/var/run/sas:/var/run/sas"]}'
       build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
-    steps:
-    - name: Checkout Electron
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        path: src/electron
-        fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
-      with:
-        generate-sas-token: 'true'
-        target-platform: macos
+    secrets: inherit
 
   # No plain src gate here: the docs-only compile needs this checkout even
   # when src is false. pgo-only changes have no consumer for it, so they
@@ -160,66 +148,29 @@ jobs:
   checkout-linux:
     needs: setup
     if: ${{ (needs.setup.outputs.src == 'true' || needs.setup.outputs.docs-only == 'true') && !inputs.skip-linux }}
-    runs-on: electron-arc-centralus-linux-amd64-32core
+    uses: ./.github/workflows/pipeline-segment-electron-checkout.yml
     permissions:
       contents: read
-    container:
-      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
-      options: --user root
-      volumes:
-        - /mnt/cross-instance-cache:/mnt/cross-instance-cache
-        - /var/run/sas:/var/run/sas
-    env:
-      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
-      DD_API_KEY: ${{ secrets.DD_API_KEY }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm64=True'
-      PATCH_UP_APP_CREDS: ${{ secrets.PATCH_UP_APP_CREDS }}
-    outputs:
-      build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
-    steps:
-    - name: Checkout Electron
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        path: src/electron
-        fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
-      with:
-        target-platform: linux
+    with:
+      target-platform: linux
+      checkout-runs-on: electron-arc-centralus-linux-amd64-32core
+      checkout-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache","/var/run/sas:/var/run/sas"]}'
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
+    secrets: inherit
 
   checkout-windows:
     needs: setup
     if: ${{ needs.setup.outputs.src == 'true' && !inputs.skip-windows }}
-    runs-on: electron-arc-centralus-linux-amd64-32core
+    uses: ./.github/workflows/pipeline-segment-electron-checkout.yml
     permissions:
       contents: read
-    container:
-      image: ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}
-      options: --user root --device /dev/fuse --cap-add SYS_ADMIN
-      volumes:
-        - /mnt/win-cache:/mnt/win-cache
-        - /var/run/sas:/var/run/sas
-    env:
-      CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
-      CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING }}
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_win=True'
-      TARGET_OS: 'win'
-      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN: '1'
-    outputs:
-      build-image-sha: ${{ needs.setup.outputs.build-image-sha}}
-    steps:
-    - name: Checkout Electron
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        path: src/electron
-        fetch-depth: 0
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Checkout & Sync & Save
-      uses: ./src/electron/.github/actions/checkout
-      with:
-        generate-sas-token: 'true'
-        target-platform: win
+    with:
+      target-platform: win
+      generate-sas-token: 'true'
+      checkout-runs-on: electron-arc-centralus-linux-amd64-32core
+      checkout-container: '{"image":"ghcr.io/electron/build:${{ needs.setup.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache","/var/run/sas:/var/run/sas"]}'
+      build-image-sha: ${{ needs.setup.outputs.build-image-sha }}
+    secrets: inherit
 
   # Build the patched siso binary for each CI build host (windows-amd64,
   # linux-amd64, darwin-arm64) in parallel with the checkout jobs. Each host is

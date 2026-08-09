@@ -1,0 +1,143 @@
+name: Pipeline Segment - Electron Checkout
+
+# Parallelized variant of .github/actions/checkout used by the build.yml
+# checkout jobs. Both are assembled from the same small checkout-*
+# composites (checkout-prepare, install-dependencies, install-build-tools,
+# checkout-generate-sas, checkout-restore-gitcache, checkout-sync,
+# checkout-wait-ssh) so every step body lives in exactly one place; here
+# the mutually independent pre-sync composites run as background steps
+# instead of serially. Composite actions cannot declare background steps
+# themselves (though a composite can BE a background step), which is why
+# the parallelism lives at workflow level.
+#
+# The serial composite is still used by apply-patches.yml,
+# release-build.yml, linux/macos/windows-publish.yml and pgo-generation.yml.
+# script/generate-deps-hash.js hashes the checkout-* composite action.yml
+# files (not this workflow) to version the src cache, so step-body changes
+# bust the cache from their single home in the composites.
+
+on:
+  workflow_call:
+    inputs:
+      target-platform:
+        type: string
+        description: 'Target platform, should be linux, win, macos'
+        required: true
+      checkout-runs-on:
+        type: string
+        description: 'What host to run the checkout on'
+        required: true
+      checkout-container:
+        type: string
+        description: 'JSON container information for aks runs-on'
+        required: true
+      build-image-sha:
+        type: string
+        description: 'SHA for electron/build image, echoed back for downstream jobs'
+        required: true
+      generate-sas-token:
+        type: string
+        description: 'Whether to generate and persist a SAS token for the item in the cache'
+        required: false
+        default: 'false'
+      use-cache:
+        type: string
+        description: 'Whether to persist the cache to the shared drive'
+        required: false
+        default: 'true'
+      is-release:
+        type: string
+        description: 'Whether this checkout is for a release build'
+        required: false
+        default: 'false'
+    outputs:
+      build-image-sha:
+        description: 'The build image SHA the checkout was run with'
+        value: ${{ jobs.checkout.outputs.build-image-sha }}
+
+permissions: {}
+
+env:
+  CHROMIUM_GIT_COOKIE: ${{ secrets.CHROMIUM_GIT_COOKIE }}
+  CHROMIUM_GIT_COOKIE_WINDOWS_STRING: ${{ inputs.target-platform == 'win' && secrets.CHROMIUM_GIT_COOKIE_WINDOWS_STRING || '' }}
+  DD_API_KEY: ${{ inputs.target-platform == 'linux' && secrets.DD_API_KEY || '' }}
+  PATCH_UP_APP_CREDS: ${{ inputs.target-platform == 'linux' && secrets.PATCH_UP_APP_CREDS || '' }}
+  GCLIENT_EXTRA_ARGS: ${{ inputs.target-platform == 'macos' && '--custom-var=checkout_mac=True --custom-var=host_os=mac' || (inputs.target-platform == 'linux' && '--custom-var=checkout_arm64=True' || '--custom-var=checkout_win=True') }}
+
+jobs:
+  checkout:
+    runs-on: ${{ inputs.checkout-runs-on }}
+    permissions:
+      contents: read
+    container: ${{ fromJSON(inputs.checkout-container) }}
+    defaults:
+      run:
+        shell: bash
+    outputs:
+      build-image-sha: ${{ inputs.build-image-sha }}
+    steps:
+    - name: Checkout Electron
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        path: src/electron
+        fetch-depth: 0
+        ref: ${{ github.event.pull_request.head.sha }}
+    # Must run before Install Build Tools starts: e d / depot_tools read
+    # ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN, and Gclient Sync reads TARGET_OS.
+    - name: Set Windows environment variables
+      if: ${{ inputs.target-platform == 'win' }}
+      run: |
+        echo "TARGET_OS=win" >> $GITHUB_ENV
+        echo "ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=1" >> $GITHUB_ENV
+    # Serial prologue: git cache path, Chromium cookie, DEPS hash and the
+    # src cache probe. Its DEPSHASH / CACHE_FILE / CACHE_DRIVE /
+    # GIT_CACHE_PATH exports must be in place before the background steps
+    # below launch, and its cache-exists output gates them and Gclient Sync.
+    - name: Prepare Checkout
+      id: prepare
+      uses: ./src/electron/.github/actions/checkout-prepare
+      with:
+        target-platform: ${{ inputs.target-platform }}
+        use-cache: ${{ inputs.use-cache }}
+    # The next four steps are mutually independent and only Gclient Sync
+    # consumes their results, so they overlap and are fenced by the wait-all
+    # below:
+    #  - Install Dependencies writes src/electron/node_modules + the yarn cache
+    #  - Install Build Tools writes ~/.electron_build_tools and exports PATH
+    #    entries (only visible after the wait, first consumed by Gclient Sync)
+    #  - Generate SAS Key writes ./sas-token
+    #  - Restore gitcache writes $GIT_CACHE_PATH (./git-cache), which Gclient
+    #    Sync reads and so must complete before it
+    - name: Install Dependencies
+      id: install-deps
+      uses: ./src/electron/.github/actions/install-dependencies
+      background: true
+    - name: Install Build Tools
+      id: install-build-tools
+      uses: ./src/electron/.github/actions/install-build-tools
+      background: true
+    - name: Generate SAS Key
+      id: generate-sas-key
+      if: ${{ inputs.generate-sas-token == 'true' }}
+      background: true
+      uses: ./src/electron/.github/actions/checkout-generate-sas
+      with:
+        target-platform: ${{ inputs.target-platform }}
+    - name: Restore gitcache
+      id: restore-gitcache
+      if: steps.prepare.outputs.cache-exists == 'false'
+      background: true
+      uses: ./src/electron/.github/actions/checkout-restore-gitcache
+    - name: Wait for setup steps to finish
+      wait-all:
+    - name: Sync and Save Cache
+      uses: ./src/electron/.github/actions/checkout-sync
+      with:
+        target-platform: ${{ inputs.target-platform }}
+        generate-sas-token: ${{ inputs.generate-sas-token }}
+        use-cache: ${{ inputs.use-cache }}
+        is-release: ${{ inputs.is-release }}
+        cache-exists: ${{ steps.prepare.outputs.cache-exists }}
+    - name: Wait for active SSH sessions
+      if: always() && !cancelled()
+      uses: ./src/electron/.github/actions/checkout-wait-ssh

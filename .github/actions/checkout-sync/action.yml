@@ -1,0 +1,163 @@
+name: 'Checkout Sync'
+description: 'Runs gclient sync and the post-sync tail: patch checks, cache minimize/compress/persist and SAS key save'
+
+# One of the small composites that .github/actions/checkout (serial) and
+# .github/workflows/pipeline-segment-electron-checkout.yml (parallel
+# background steps) are both assembled from, so that every checkout step
+# body lives in exactly one place. Runs strictly after checkout-prepare,
+# install-dependencies, install-build-tools, checkout-generate-sas and
+# checkout-restore-gitcache; cache-exists must be fed from the prepare
+# composite's output because a composite cannot see its caller's steps
+# context. script/generate-deps-hash.js hashes these composites to
+# version the src cache.
+
+inputs:
+  target-platform:
+    description: 'Target platform, should be linux, win, macos'
+  generate-sas-token:
+    description: 'Whether to generate and persist a SAS token for the item in the cache'
+    required: false
+    default: 'false'
+  use-cache:
+    description: 'Whether to persist the cache to the shared drive'
+    required: false
+    default: 'true'
+  is-release:
+    description: 'Whether this checkout is for a release build'
+    required: false
+    default: 'false'
+  cache-exists:
+    description: 'cache-exists output of the checkout-prepare composite'
+    required: true
+runs:
+  using: "composite"
+  steps:
+  - name: Save SAS Key
+    if: ${{ inputs.generate-sas-token == 'true' }}
+    uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+    with:
+      path: sas-token
+      key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-${{ github.run_attempt }}
+      enableCrossOsArchive: true
+  - name: Gclient Sync
+    if: inputs.cache-exists == 'false'
+    shell: bash
+    run: |
+      e d gclient config \
+        --name "src/electron" \
+        --unmanaged \
+        ${GCLIENT_EXTRA_ARGS} \
+        "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
+
+      if [ "$TARGET_OS" != "" ]; then
+        echo "target_os=['$TARGET_OS']" >> ./.gclient
+      fi
+
+      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=0 DEPOT_TOOLS_WIN_TOOLCHAIN=0 ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags
+      if [[ "${{ inputs.is-release }}" != "true" ]]; then
+        # Re-export all the patches to check if there were changes.
+        python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
+        cd src/electron
+        git update-index --refresh || true
+        if ! git diff-index --quiet HEAD --; then
+          # There are changes to the patches. Make a git commit with the updated patches
+          if node ./script/patch-up.js; then
+            echo
+            echo "======================================================================"
+            echo "Changes to the patches when applying, we have auto-pushed the diff to the current branch"
+            echo "A new CI job will kick off shortly"
+            echo "======================================================================"
+            exit 1
+          else
+            git add patches
+            GIT_COMMITTER_NAME="PatchUp" GIT_COMMITTER_EMAIL="73610968+patchup[bot]@users.noreply.github.com" git commit -m "chore: update patches" --author="PatchUp <73610968+patchup[bot]@users.noreply.github.com>"
+            # Export it
+            mkdir -p ../../patches
+            git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
+            echo
+            echo "======================================================================"
+            echo "There were changes to the patches when applying."
+            echo "Check the CI artifacts for a patch you can apply to fix it."
+            echo "======================================================================"
+            echo
+            cat ../../patches/update-patches.patch
+            exit 1
+          fi
+        else
+          echo "No changes to patches detected"
+        fi
+      fi
+  - name: Remove patch conflict problem matchers
+    shell: bash
+    run: |
+      echo "::remove-matcher owner=merge-conflict::"
+      echo "::remove-matcher owner=patch-conflict::"
+      echo "::remove-matcher owner=patch-needs-update::"
+  - name: Upload patches stats
+    if: ${{ inputs.target-platform == 'linux' && github.ref == 'refs/heads/main' }}
+    shell: bash
+    run: |
+      node src/electron/script/patches-stats.mjs --upload-stats || true
+  # delete all .git directories under src/ except for
+  # third_party/angle/ and third_party/dawn/ because of build time generation of files
+  # gen/angle/commit.h depends on third_party/angle/.git/HEAD
+  # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
+  # and dawn/common/Version_autogen.h depends on  third_party/dawn/.git/HEAD
+  # https://dawn-review.googlesource.com/c/dawn/+/83901
+  # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
+  - name: Delete .git directories under src to free space
+    if: ${{ inputs.cache-exists == 'false' && inputs.use-cache == 'true' }}
+    shell: bash
+    run: |
+      cd src
+      ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
+  - name: Minimize Cache Size for Upload
+    if: ${{ inputs.cache-exists == 'false' && inputs.use-cache == 'true' }}
+    shell: bash
+    run: |
+      rm -rf src/android_webview
+      rm -rf src/ios/chrome
+      rm -rf src/third_party/blink/perf_tests
+      rm -rf src/chrome/test/data/xr/webvr_info
+      rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
+      rm -rf src/third_party/swift-toolchain
+      rm -rf src/third_party/swiftshader/tests/regres/testlists
+      cp src/electron/.github/actions/checkout/action.yml ./
+      rm -rf src/electron
+      mkdir -p src/electron/.github/actions/checkout
+      mv action.yml src/electron/.github/actions/checkout
+  - name: Compress Src Directory
+    if: ${{ inputs.cache-exists == 'false' && inputs.use-cache == 'true' }}
+    shell: bash
+    run: |
+      echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
+      # Named .tar but zstd-compressed; the sas-sidecar's filename allowlist
+      # only permits .tar/.tgz so we keep the extension and decode on restore.
+      tar -cf - src | zstd -T0 --long=30 -f -o $CACHE_FILE
+      echo "Compressed src to $(du -sh $CACHE_FILE | cut -f1 -d' ')"
+  - name: Persist Src Cache
+    if: ${{ inputs.cache-exists == 'false' && inputs.use-cache == 'true' }}
+    shell: bash
+    run: |
+      final_cache_path=$CACHE_DRIVE/$CACHE_FILE
+      # Upload to a run-unique temp name first so concurrent readers never
+      # observe a partially-written file, and an interrupted copy can't leave
+      # a truncated file at the final path. Orphaned temp files get swept by
+      # the clean-orphaned-cache-uploads workflow.
+      tmp_cache_path=$final_cache_path.upload-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+      echo "Uploading to temp path: $tmp_cache_path"
+      cp ./$CACHE_FILE $tmp_cache_path
+
+      echo "Using cache key: $DEPSHASH"
+      if [ -f "$final_cache_path" ]; then
+        echo "Cache already persisted at $final_cache_path by a concurrent run; discarding ours"
+        rm -f $tmp_cache_path
+      else
+        mv -f $tmp_cache_path $final_cache_path
+        echo "Cache key persisted in $final_cache_path"
+      fi
+
+      if [ ! -f "$final_cache_path" ]; then
+        echo "Cache key not found"
+        exit 1
+      fi

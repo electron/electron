@@ -1,5 +1,14 @@
 name: 'Checkout'
 description: 'Checks out Electron and stores it in the AKS Cache'
+
+# Thin serial wrapper over the small checkout-* composites (checkout-prepare,
+# install-dependencies, install-build-tools, checkout-generate-sas,
+# checkout-restore-gitcache, checkout-sync, checkout-wait-ssh) so every step
+# body lives in exactly one place. The build.yml checkout jobs use the same
+# composites via .github/workflows/pipeline-segment-electron-checkout.yml,
+# where the mutually independent pre-sync composites run as parallel
+# background steps instead of serially.
+
 inputs:
   generate-sas-token:
     description: 'Whether to generate and persist a SAS token for the item in the cache'
@@ -10,218 +19,40 @@ inputs:
     required: false
     default: 'true'
   target-platform:
-    description: 'Target platform, should be linux, win, macos'    
+    description: 'Target platform, should be linux, win, macos'
+  is-release:
+    description: 'Whether this checkout is for a release build'
+    required: false
+    default: 'false'
 runs:
   using: "composite"
   steps:
-  - name: Set GIT_CACHE_PATH to make gclient to use the cache
-    shell: bash
-    run: |
-      echo "GIT_CACHE_PATH=$(pwd)/git-cache" >> $GITHUB_ENV
+  - name: Prepare Checkout
+    id: prepare
+    uses: ./src/electron/.github/actions/checkout-prepare
+    with:
+      target-platform: ${{ inputs.target-platform }}
+      use-cache: ${{ inputs.use-cache }}
   - name: Install Dependencies
     uses: ./src/electron/.github/actions/install-dependencies
-  - name: Set Chromium Git Cookie
-    uses: ./src/electron/.github/actions/set-chromium-cookie
   - name: Install Build Tools
     uses: ./src/electron/.github/actions/install-build-tools
-  - name: Generate DEPS Hash
-    shell: bash
-    run: |
-      node src/electron/script/generate-deps-hash.js
-      DEPSHASH="v2-src-cache-$(cat src/electron/.depshash)"
-      echo "DEPSHASH=$DEPSHASH" >> $GITHUB_ENV
-      echo "CACHE_FILE=$DEPSHASH.tar" >> $GITHUB_ENV
-      if [ "${{ inputs.target-platform }}" = "win" ]; then
-        echo "CACHE_DRIVE=/mnt/win-cache" >> $GITHUB_ENV
-      else
-        echo "CACHE_DRIVE=/mnt/cross-instance-cache" >> $GITHUB_ENV
-      fi
   - name: Generate SAS Key
     if: ${{ inputs.generate-sas-token == 'true' }}
-    shell: bash
-    run: |
-      curl --unix-socket /var/run/sas/sas.sock --fail "http://foo/$CACHE_FILE?platform=${{ inputs.target-platform }}&getAccountName=true" > sas-token
-  - name: Save SAS Key
-    if: ${{ inputs.generate-sas-token == 'true' }}
-    uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+    uses: ./src/electron/.github/actions/checkout-generate-sas
     with:
-      path: sas-token
-      key: sas-key-${{ inputs.target-platform }}-${{ github.run_number }}-${{ github.run_attempt }}
-      enableCrossOsArchive: true
-  - name: Check If Cache Exists
-    id: check-cache
-    shell: bash
-    run: |
-      if [[ "${{ inputs.use-cache }}" == "false" ]]; then
-        echo "Not using cache this time..."
-        echo "cache_exists=false" >> $GITHUB_OUTPUT
-      else
-        cache_path=$CACHE_DRIVE/$CACHE_FILE
-        echo "Using cache key: $DEPSHASH"
-        echo "Checking for cache in: $cache_path"
-        if [ ! -f "$cache_path" ] || [ `du $cache_path | cut -f1` = "0" ]; then
-          echo "cache_exists=false" >> $GITHUB_OUTPUT
-          echo "Cache Does Not Exist for $DEPSHASH"
-        else
-          echo "cache_exists=true" >> $GITHUB_OUTPUT
-          echo "Cache Already Exists for $DEPSHASH, Skipping.."
-        fi
-      fi
-  - name: Check cross instance cache disk space
-    if: steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache  == 'true'
-    shell: bash
-    run: |    
-      # if there is less than 35 GB free space then creating the cache might fail so exit early
-      freespace=`df -m $CACHE_DRIVE | grep -w $CACHE_DRIVE | awk '{print $4}'`
-      freespace_human=`df -h $CACHE_DRIVE | grep -w $CACHE_DRIVE | awk '{print $4}'`
-      if [ $freespace -le 35000 ]; then
-        echo "The cross mount cache has $freespace_human free space which is not enough - exiting"
-        exit 1
-      else
-        echo "The cross mount cache has $freespace_human free space - continuing"
-      fi
-  - name: Add patch conflict problem matcher
-    shell: bash
-    run: echo "::add-matcher::src/electron/.github/problem-matchers/patch-conflict.json"
+      target-platform: ${{ inputs.target-platform }}
   - name: Restore gitcache
-    if: steps.check-cache.outputs.cache_exists == 'false'
-    shell: bash
-    run: |
-      GIT_CACHE_TAR="$CACHE_DRIVE/gitcache.tar"
-      if [ ! -f "$GIT_CACHE_TAR" ]; then
-        echo "Git cache tar file does not exist, skipping restore"
-        exit 0
-      fi
-      echo "Restoring git cache from $GIT_CACHE_TAR to $GIT_CACHE_PATH"
-      mkdir -p $GIT_CACHE_PATH
-      tar -xf $GIT_CACHE_TAR -C $GIT_CACHE_PATH
-  - name: Gclient Sync
-    if: steps.check-cache.outputs.cache_exists == 'false'
-    shell: bash
-    run: |
-      e d gclient config \
-        --name "src/electron" \
-        --unmanaged \
-        ${GCLIENT_EXTRA_ARGS} \
-        "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY"
-
-      if [ "$TARGET_OS" != "" ]; then
-        echo "target_os=['$TARGET_OS']" >> ./.gclient
-      fi
-
-      ELECTRON_DEPOT_TOOLS_WIN_TOOLCHAIN=0 DEPOT_TOOLS_WIN_TOOLCHAIN=0 ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 e d gclient sync --with_branch_heads --with_tags
-      if [[ "${{ inputs.is-release }}" != "true" ]]; then
-        # Re-export all the patches to check if there were changes.
-        python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
-        cd src/electron
-        git update-index --refresh || true
-        if ! git diff-index --quiet HEAD --; then
-          # There are changes to the patches. Make a git commit with the updated patches
-          if node ./script/patch-up.js; then
-            echo
-            echo "======================================================================"
-            echo "Changes to the patches when applying, we have auto-pushed the diff to the current branch"
-            echo "A new CI job will kick off shortly"
-            echo "======================================================================"
-            exit 1
-          else
-            git add patches
-            GIT_COMMITTER_NAME="PatchUp" GIT_COMMITTER_EMAIL="73610968+patchup[bot]@users.noreply.github.com" git commit -m "chore: update patches" --author="PatchUp <73610968+patchup[bot]@users.noreply.github.com>"
-            # Export it
-            mkdir -p ../../patches
-            git format-patch -1 --stdout --keep-subject --no-stat --full-index > ../../patches/update-patches.patch
-            echo
-            echo "======================================================================"
-            echo "There were changes to the patches when applying."
-            echo "Check the CI artifacts for a patch you can apply to fix it."
-            echo "======================================================================"
-            echo
-            cat ../../patches/update-patches.patch
-            exit 1
-          fi
-        else
-          echo "No changes to patches detected"
-        fi
-      fi
-  - name: Remove patch conflict problem matchers
-    shell: bash
-    run: |
-      echo "::remove-matcher owner=merge-conflict::"
-      echo "::remove-matcher owner=patch-conflict::"
-      echo "::remove-matcher owner=patch-needs-update::"
-  - name: Upload patches stats
-    if: ${{ inputs.target-platform == 'linux' && github.ref == 'refs/heads/main' }}
-    shell: bash
-    run: |
-      node src/electron/script/patches-stats.mjs --upload-stats || true
-  # delete all .git directories under src/ except for
-  # third_party/angle/ and third_party/dawn/ because of build time generation of files
-  # gen/angle/commit.h depends on third_party/angle/.git/HEAD
-  # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
-  # and dawn/common/Version_autogen.h depends on  third_party/dawn/.git/HEAD
-  # https://dawn-review.googlesource.com/c/dawn/+/83901
-  # TODO: maybe better to always leave out */.git/HEAD file for all targets ?
-  - name: Delete .git directories under src to free space
-    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
-    shell: bash
-    run: |
-      cd src
-      ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
-  - name: Minimize Cache Size for Upload
-    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
-    shell: bash
-    run: |
-      rm -rf src/android_webview
-      rm -rf src/ios/chrome
-      rm -rf src/third_party/blink/perf_tests
-      rm -rf src/chrome/test/data/xr/webvr_info
-      rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
-      rm -rf src/third_party/swift-toolchain
-      rm -rf src/third_party/swiftshader/tests/regres/testlists
-      cp src/electron/.github/actions/checkout/action.yml ./
-      rm -rf src/electron
-      mkdir -p src/electron/.github/actions/checkout
-      mv action.yml src/electron/.github/actions/checkout
-  - name: Compress Src Directory
-    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
-    shell: bash
-    run: |
-      echo "Uncompressed src size: $(du -sh src | cut -f1 -d' ')"
-      # Named .tar but zstd-compressed; the sas-sidecar's filename allowlist
-      # only permits .tar/.tgz so we keep the extension and decode on restore.
-      tar -cf - src | zstd -T0 --long=30 -f -o $CACHE_FILE
-      echo "Compressed src to $(du -sh $CACHE_FILE | cut -f1 -d' ')"
-  - name: Persist Src Cache
-    if: ${{ steps.check-cache.outputs.cache_exists == 'false' && inputs.use-cache == 'true' }}
-    shell: bash
-    run: |
-      final_cache_path=$CACHE_DRIVE/$CACHE_FILE
-      # Upload to a run-unique temp name first so concurrent readers never
-      # observe a partially-written file, and an interrupted copy can't leave
-      # a truncated file at the final path. Orphaned temp files get swept by
-      # the clean-orphaned-cache-uploads workflow.
-      tmp_cache_path=$final_cache_path.upload-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
-      echo "Uploading to temp path: $tmp_cache_path"
-      cp ./$CACHE_FILE $tmp_cache_path
-
-      echo "Using cache key: $DEPSHASH"
-      if [ -f "$final_cache_path" ]; then
-        echo "Cache already persisted at $final_cache_path by a concurrent run; discarding ours"
-        rm -f $tmp_cache_path
-      else
-        mv -f $tmp_cache_path $final_cache_path
-        echo "Cache key persisted in $final_cache_path"
-      fi
-
-      if [ ! -f "$final_cache_path" ]; then
-        echo "Cache key not found"
-        exit 1
-      fi
+    if: steps.prepare.outputs.cache-exists == 'false'
+    uses: ./src/electron/.github/actions/checkout-restore-gitcache
+  - name: Sync and Save Cache
+    uses: ./src/electron/.github/actions/checkout-sync
+    with:
+      target-platform: ${{ inputs.target-platform }}
+      generate-sas-token: ${{ inputs.generate-sas-token }}
+      use-cache: ${{ inputs.use-cache }}
+      is-release: ${{ inputs.is-release }}
+      cache-exists: ${{ steps.prepare.outputs.cache-exists }}
   - name: Wait for active SSH sessions
-    shell: bash
     if: always() && !cancelled()
-    run: |
-      while [ -f /var/.ssh-lock ]
-      do
-        sleep 60
-      done
+    uses: ./src/electron/.github/actions/checkout-wait-ssh

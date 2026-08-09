@@ -1,0 +1,20 @@
+name: 'Checkout Wait For SSH'
+description: 'Blocks job teardown while an ssh-debug session is active'
+
+# One of the small composites that .github/actions/checkout (serial) and
+# .github/workflows/pipeline-segment-electron-checkout.yml (parallel
+# background steps) are both assembled from. Callers invoke it with
+# `if: always() && !cancelled()` so a debug session survives step failures;
+# it lives outside checkout-sync because the sync steps must NOT run after
+# a failure while this one must.
+
+runs:
+  using: "composite"
+  steps:
+  - name: Wait for active SSH sessions
+    shell: bash
+    run: |
+      while [ -f /var/.ssh-lock ]
+      do
+        sleep 60
+      done
