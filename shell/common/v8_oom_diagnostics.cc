@@ -19,18 +19,20 @@ namespace electron::v8_oom {
 
 namespace {
 
-// Whichever isolate hits an OOM first owns the keys; a null isolate can own
-// them too (V8's OOM error callback may run without a current isolate).
-std::atomic<bool> g_claimed{false};
-std::atomic<v8::Isolate*> g_owner{nullptr};
+// Whichever isolate hits an OOM first owns the keys. V8 also reports
+// process-level allocation failures with no current isolate (possibly off
+// the main thread); those claim under a sentinel.
+char g_no_isolate;
+std::atomic<const void*> g_owner{nullptr};
 
 bool ClaimFor(v8::Isolate* isolate) {
-  bool expected = false;
-  if (g_claimed.compare_exchange_strong(expected, true)) {
-    g_owner.store(isolate);
+  const void* current = isolate ? static_cast<const void*>(isolate)
+                                : static_cast<const void*>(&g_no_isolate);
+  const void* expected = nullptr;
+  if (g_owner.compare_exchange_strong(expected, current)) {
     return true;
   }
-  return g_owner.load() == isolate;
+  return expected == current;
 }
 
 using NumberKey = crash_reporter::CrashKeyString<24>;
