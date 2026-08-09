@@ -1,0 +1,135 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: vikas soni <vikassoni@chromium.org>
+Date: Tue, 28 Jul 2026 10:20:54 -0700
+Subject: [M150] [GPU Security] Widen CompoundImageBacking content id to
+ 64-bit.
+
+Original change's description:
+> [GPU Security] Widen CompoundImageBacking content id to 64-bit.
+>
+> CompoundImageBacking uses content_id_ (initialized to 1) to track which
+> element holds the latest content, with 0 serving as the sentinel value
+> for uninitialized elements. If content_id_ wraps around 32-bit uint
+> space, it collides with 0, causing untouched GPU sub-backings to be
+> incorrectly reported as having current content.
+>
+> Widen latest_content_id_ and ElementHolder::content_id_ from uint32_t to
+> uint64_t so overflow is impossible in practice. Add a regression test
+> verifying that crossing the 32-bit boundary does not skip the required
+> shm->GPU upload on first access.
+>
+> Bug: 536666274
+> Change-Id: I5f5d0056ae5a85baae14d64c08c103fdaf53cb46
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8127906
+> Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+> Commit-Queue: vikas soni <vikassoni@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1666452}
+
+(cherry picked from commit 75e83658911b277adcea35242890db6ffae7f371)
+
+Bug: 538008878,536666274
+Change-Id: I5f5d0056ae5a85baae14d64c08c103fdaf53cb46
+
+diff --git a/gpu/command_buffer/service/shared_image/compound_image_backing.h b/gpu/command_buffer/service/shared_image/compound_image_backing.h
+index 74549a6d1aaed9113ceadf5d8f9102d404b38aeb..d4fe4e4dc7f250774cf36d15a10cc3590bb9d03c 100644
+--- a/gpu/command_buffer/service/shared_image/compound_image_backing.h
++++ b/gpu/command_buffer/service/shared_image/compound_image_backing.h
+@@ -333,7 +333,7 @@ class GPU_GLES2_EXPORT CompoundImageBacking
+     SharedImageBacking* GetBacking();
+ 
+     AccessStreamSet access_streams;
+-    uint32_t content_id_ = 0;
++    uint64_t content_id_ = 0;
+ 
+     CreateBackingCallback create_callback;
+     std::unique_ptr<SharedImageBacking> backing;
+@@ -458,7 +458,8 @@ class GPU_GLES2_EXPORT CompoundImageBacking
+   // factory from any thread.
+   scoped_refptr<SharedImageFactoryRef> shared_image_factory_;
+ 
+-  uint32_t latest_content_id_ GUARDED_BY(lock_) = 1;
++  // 64-bit so it never wraps back to a stale element's content id in practice.
++  uint64_t latest_content_id_ GUARDED_BY(lock_) = 1;
+ 
+   // Holds all of the "element" backings that make up this compound backing. For
+   // each there is a backing, set of streams and tracking for latest content.
+diff --git a/gpu/command_buffer/service/shared_image/compound_image_backing_unittest.cc b/gpu/command_buffer/service/shared_image/compound_image_backing_unittest.cc
+index 30d68503d8f5350d6fdbdf328f6d8bebad477d09..16513d0c6397da48eec5295f5ba677fe916b1d81 100644
+--- a/gpu/command_buffer/service/shared_image/compound_image_backing_unittest.cc
++++ b/gpu/command_buffer/service/shared_image/compound_image_backing_unittest.cc
+@@ -4,6 +4,9 @@
+ 
+ #include "gpu/command_buffer/service/shared_image/compound_image_backing.h"
+ 
++#include <cstdint>
++#include <limits>
++
+ #include "components/viz/common/resources/shared_image_format.h"
+ #include "components/viz/common/resources/shared_image_format_utils.h"
+ #include "gpu/command_buffer/common/shared_image_info.h"
+@@ -143,6 +146,15 @@ class CompoundImageBackingTest : public testing::Test {
+     return false;
+   }
+ 
++  // Advances the latest content id, keeping the shared memory element as the
++  // one holding the latest content. Used to exercise content id values that
++  // would otherwise require many Update() calls to reach.
++  void AdvanceShmContentId(CompoundImageBacking* backing,
++                           uint64_t content_id) NO_THREAD_SAFETY_ANALYSIS {
++    backing->latest_content_id_ = content_id;
++    backing->GetShmElement().content_id_ = content_id;
++  }
++
+   // Construct a CompoundImageBacking via the WrapExternalBacking constructor
+   // (private). This mirrors CompoundImageBacking::WrapExternalBacking exactly,
+   // minus the SharedImageFactory consultation.
+@@ -359,6 +371,49 @@ TEST_F(CompoundImageBackingTest, UploadOnAccess) {
+   EXPECT_TRUE(gpu_backing->GetUploadFromMemoryCalledAndReset());
+ }
+ 
++TEST_F(CompoundImageBackingTest, UploadOnFirstAccessAfterManyUpdates) {
++  auto backing = CreateCompoundBacking(
++      {SHARED_IMAGE_USAGE_GLES2_READ, SHARED_IMAGE_USAGE_DISPLAY_READ});
++  auto* compound_backing = static_cast<CompoundImageBacking*>(backing.get());
++
++  auto factory_rep =
++      manager_.Register(std::move(backing), &memory_type_tracker_);
++
++  // Simulate the state reached after a very large number of shared memory
++  // updates before any GPU access has occurred.
++  AdvanceShmContentId(compound_backing,
++                      std::numeric_limits<uint32_t>::max() - 1);
++
++  EXPECT_TRUE(GetShmHasLatestContent(compound_backing));
++  EXPECT_FALSE(GetGpuHasLatestContent(compound_backing));
++
++  // A further update should keep the shared memory element as the sole holder
++  // of the latest content and never mark the untouched GPU element as current.
++  compound_backing->Update(nullptr);
++  EXPECT_TRUE(GetShmHasLatestContent(compound_backing));
++  EXPECT_FALSE(GetGpuHasLatestContent(compound_backing));
++
++  compound_backing->Update(nullptr);
++  EXPECT_TRUE(GetShmHasLatestContent(compound_backing));
++  EXPECT_FALSE(GetGpuHasLatestContent(compound_backing));
++
++  // The first GPU read access must still trigger an upload from shared memory.
++  auto gl_rep = manager_.ProduceGLTexturePassthrough(
++      compound_backing->mailbox(), &memory_type_tracker_);
++  ASSERT_TRUE(gl_rep);
++  {
++    auto access = gl_rep->BeginScopedAccess(
++        GLTextureImageRepresentationBase::kReadAccessMode,
++        SharedImageRepresentation::AllowUnclearedAccess::kNo);
++    EXPECT_TRUE(access);
++  }
++
++  ASSERT_TRUE(HasGpuBacking(compound_backing));
++  auto* gpu_backing = GetGpuBacking(compound_backing);
++  EXPECT_TRUE(gpu_backing->GetUploadFromMemoryCalledAndReset());
++  EXPECT_TRUE(GetGpuHasLatestContent(compound_backing));
++}
++
+ TEST_F(CompoundImageBackingTest, ReadbackToMemory) {
+   auto backing = CreateCompoundBacking({SHARED_IMAGE_USAGE_GLES2_READ});
+   auto* compound_backing = static_cast<CompoundImageBacking*>(backing.get());
