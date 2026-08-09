@@ -1471,17 +1471,25 @@ Using `basic` should be preferred if only basic information like `vendorId` or `
 
 Promise is rejected if the GPU is completely disabled, i.e. no hardware and software implementations are available.
 
-### `app.setBadgeCount([count])` _macOS_
+### `app.setBadgeCount([count])` _Linux_ _macOS_
 
-* `count` Integer (optional) - If a value is provided, set the badge to the provided value otherwise, on macOS, display a plain white dot (e.g. unknown number of notifications).
+* `count` Integer (optional) - If a value is provided, set the badge to the provided value otherwise, on macOS, display a plain white dot (e.g. unknown number of notifications). On Linux, if a value is not provided the badge will not display.
 
 Returns `boolean` - Whether the call succeeded.
 
-Sets the Dock icon counter badge for current app. Setting the count to `0` will hide the
+Sets the counter badge for current app. Setting the count to `0` will hide the
 badge.
 
+On macOS, it shows on the Dock icon. On Linux, it shows on docks and taskbars that support the LauncherEntry D-Bus API,
+
 > [!NOTE]
-> You need to ensure that your application has the permission
+> On Linux, the badge is associated with the app's `.desktop` file, so
+> [`app.setDesktopName`](#appsetdesktopnamename-linux) (or the `desktopName`
+> field in `package.json`) must match the name of the app's actual `.desktop`
+> file.
+
+> [!NOTE]
+> On macOS, you need to ensure that your application has the permission
 > to display notifications for this method to work.
 
 ### `app.getBadgeCount()` _macOS_
@@ -1867,12 +1875,12 @@ This API must be called after the `ready` event is emitted.
 A `Menu | null` property that returns [`Menu`](menu.md) if one has been set and `null` otherwise.
 Users can pass a [Menu](menu.md) to set this property.
 
-### `app.badgeCount` _macOS_
+### `app.badgeCount` _Linux_ _macOS_
 
-An `Integer` property that returns the badge count for current app. Setting the count to `0` will hide the badge. Setting this with any nonzero integer shows the count on the Dock icon.
+An `Integer` property that returns the badge count for current app. Setting the count to `0` will hide the badge. Setting this with any nonzero integer shows the count on the Dock icon on macOS, or on the launcher on Linux.
 
 > [!NOTE]
-> You need to ensure that your application has the permission
+> On macOS, you need to ensure that your application has the permission
 > to display notifications for this property to take effect.
 
 ### `app.commandLine` _Readonly_
