@@ -72,10 +72,10 @@ index c5fba518aeb1a7632a7e6af72bc4c7e1ef91ac8d..74db0e1ccc58dc8abd5ebd90c3dd23cf
      ]
  }
 diff --git a/src/libANGLE/Framebuffer.cpp b/src/libANGLE/Framebuffer.cpp
-index b89fcd0039115fccbc4e175c99501d9faf80551f..93fbfe3d3813b0a48b88d3b766bc52532367e8d5 100644
+index fb028313a9180eb2fbca3597d1c9d5a2fa2ceacb..2b5c927fde093526a640baf5ed742733308419e5 100644
 --- a/src/libANGLE/Framebuffer.cpp
 +++ b/src/libANGLE/Framebuffer.cpp
-@@ -2288,6 +2288,18 @@ void Framebuffer::onSubjectStateChange(angle::SubjectIndex index, angle::Subject
+@@ -2320,6 +2320,18 @@ void Framebuffer::onSubjectStateChange(angle::SubjectIndex index, angle::Subject
              return;
          }
  
@@ -273,10 +273,10 @@ index dfaf0052020bf98168f10eff2062c3e3bc85168f..648ee83dce0cda8fb7be30b6ec3d325b
      ANGLE_FEATURE_CONDITION(features, limitMaxBufferSizeTo1gb, isApple && isIntel);
  }
 diff --git a/src/tests/capture_replay_tests/capture_replay_expectations.txt b/src/tests/capture_replay_tests/capture_replay_expectations.txt
-index 5623896357538e62b89ca560a633ac3437b9d31d..980ca649be985f3e485b6a97de2a1ffdcd9b8660 100644
+index 63a832dd414f8e4ccd6eefdf0c7d6acf1ce421d5..f0bfcb6a2979a27f5c2409590f5822f24a17c930 100644
 --- a/src/tests/capture_replay_tests/capture_replay_expectations.txt
 +++ b/src/tests/capture_replay_tests/capture_replay_expectations.txt
-@@ -271,3 +271,6 @@
+@@ -272,3 +272,6 @@
  
  # Crashes on win and linux trace bots
  372059358 : MultisampleTestES3.CopyTexImage2DFromMsaaDefaultFbo/* = SKIP_FOR_CAPTURE

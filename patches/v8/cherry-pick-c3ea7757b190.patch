@@ -78,7 +78,7 @@ index 3a92926d03b3aec18f4d7398c5fdbd1d69dc0d61..d6add8752784eb31b59402fab66db251
    }
  
 diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
-index bc70cc54b284ffc2bdd280ced5f41f61f35080f0..fce263647dd4ec9402b1cf4685c898a8821674d8 100644
+index cbf2e4dfe98579ef9ecaeb3a736aafe2903cbd24..9dd7aa47dc87da0c144f76edbb9694e38ead0596 100644
 --- a/test/mjsunit/mjsunit.status
 +++ b/test/mjsunit/mjsunit.status
 @@ -256,6 +256,9 @@

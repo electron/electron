@@ -394,10 +394,10 @@ index 3afdecead883fb7c9f92c2f655ba42e3000e3c5f..0209cf52132f299c32c96f6293ac170d
  
  // Test that verifies that Content-Type http header is correctly sent
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 6a97b305959dc75d396ab63bb52c1be3ef6d0502..f73b53b7fea3304d37ec6f1074b629cb92b1aa8b 100644
+index b5a8b4cc1fe33f8c24a1f21e256eba38ce698637..04f180011dc7648a697451fa29f98a7de7c22680 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -3469,6 +3469,14 @@ void NavigationRequest::ResetStateForSiteInstanceChange() {
+@@ -3511,6 +3511,14 @@ void NavigationRequest::ResetStateForSiteInstanceChange() {
    // ISNs and DSNs are process-specific.
    frame_entry_item_sequence_number_ = -1;
    frame_entry_document_sequence_number_ = -1;
@@ -412,7 +412,7 @@ index 6a97b305959dc75d396ab63bb52c1be3ef6d0502..f73b53b7fea3304d37ec6f1074b629cb
  }
  
  void NavigationRequest::RegisterSubresourceOverride(
-@@ -3765,10 +3773,10 @@ void NavigationRequest::OnRequestRedirected(
+@@ -3807,10 +3815,10 @@ void NavigationRequest::OnRequestRedirected(
      return;
    }
  

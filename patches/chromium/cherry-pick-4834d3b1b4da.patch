@@ -70,10 +70,10 @@ index c3c261c500063f668507a0ecd219c9ac8177a085..ca5f697fb267c2898f8f4e57e7a89688
 +
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/html/html_slot_element.cc b/third_party/blink/renderer/core/html/html_slot_element.cc
-index deb9ad3e28fdae23725f0da94e804a78c00b0330..339a83c34b9228534e5bb4068029ff16546010c9 100644
+index 98220012f4eeeef8808cc72b59b14e605c8a3964..4230b9f5bc7e7c0f1e207dc434becd910e82b7bf 100644
 --- a/third_party/blink/renderer/core/html/html_slot_element.cc
 +++ b/third_party/blink/renderer/core/html/html_slot_element.cc
-@@ -357,7 +357,9 @@ AtomicString HTMLSlotElement::GetName() const {
+@@ -358,7 +358,9 @@ AtomicString HTMLSlotElement::GetName() const {
  }
  
  void HTMLSlotElement::AttachLayoutTreeForSlotChildren(AttachContext& context) {
@@ -84,7 +84,7 @@ index deb9ad3e28fdae23725f0da94e804a78c00b0330..339a83c34b9228534e5bb4068029ff16
      child->AttachLayoutTree(context);
    }
  }
-@@ -391,7 +393,9 @@ void HTMLSlotElement::RebuildDistributedChildrenLayoutTrees(
+@@ -392,7 +394,9 @@ void HTMLSlotElement::RebuildDistributedChildrenLayoutTrees(
  
    // This loop traverses the nodes from right to left for the same reason as the
    // one described in ContainerNode::RebuildChildrenLayoutTrees().
@@ -95,7 +95,7 @@ index deb9ad3e28fdae23725f0da94e804a78c00b0330..339a83c34b9228534e5bb4068029ff16
      RebuildLayoutTreeForChild(child, whitespace_attacher);
    }
  }
-@@ -500,7 +504,9 @@ void HTMLSlotElement::RemovedFrom(ContainerNode& insertion_point) {
+@@ -501,7 +505,9 @@ void HTMLSlotElement::RemovedFrom(ContainerNode& insertion_point) {
  void HTMLSlotElement::RecalcStyleForSlotChildren(
      const StyleRecalcChange change,
      const StyleRecalcContext& style_recalc_context) {
