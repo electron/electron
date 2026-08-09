@@ -55,6 +55,7 @@ jobs:
     outputs:
         docs: ${{ fromJSON(steps.filter.outputs.results).docs }}
         src: ${{ fromJSON(steps.filter.outputs.results).src }}
+        native: ${{ fromJSON(steps.filter.outputs.results).native }}
         build-image-sha: ${{ steps.build-image-sha.outputs.build-image-sha }}
         docs-only: ${{ steps.set-output.outputs.docs-only }}
         pgo-only: ${{ steps.set-output.outputs.pgo-only }}
@@ -70,12 +71,21 @@ jobs:
       id: filter
       with:
         filters: |
+          # Only files that cannot possibly affect build output may join the
+          # docs-only set (this list AND the matching src exclusion below).
+          # Never add .github/workflows/** or .github/actions/** here - CI
+          # changes can affect builds (e.g. the checkout action feeds the
+          # DEPS hash).
           docs:
             - 'docs/**'
             - '.claude/**'
+            - '.github/CODEOWNERS'
             - '.github/ISSUE_TEMPLATE/**'
             - '.github/PULL_REQUEST_TEMPLATE.md'
             - '.github/config.yml'
+            - '.github/copilot-instructions.md'
+            - '.github/dependabot.yml'
+            - '.github/faraday.yml'
             - README.md
             - SECURITY.md
             - CONTRIBUTING.md
@@ -83,7 +93,25 @@ jobs:
           pgo:
             - 'build/pgo_profiles/*.pgo.txt'
           src:
-            - '!{docs/**,.claude/**,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,README.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,build/pgo_profiles/*.pgo.txt}'
+            - '!{docs/**,.claude/**,.github/CODEOWNERS,.github/ISSUE_TEMPLATE/**,.github/PULL_REQUEST_TEMPLATE.md,.github/config.yml,.github/copilot-instructions.md,.github/dependabot.yml,.github/faraday.yml,README.md,SECURITY.md,CONTRIBUTING.md,CODE_OF_CONDUCT.md,build/pgo_profiles/*.pgo.txt}'
+          # Changes that can affect compiled native code (C/C++/Objective-C,
+          # GN build config, patches, and the Chromium checkout inputs).
+          # Currently gates clang-tidy; designed to be reused by future
+          # native-only gates (e.g. gn-check, node/nan tests).
+          native:
+            - '**/*.c'
+            - '**/*.cc'
+            - '**/*.cpp'
+            - '**/*.h'
+            - '**/*.hpp'
+            - '**/*.mm'
+            - '**/*.gn'
+            - '**/*.gni'
+            - '.clang-tidy'
+            - 'patches/**'
+            - 'chromium_src/**'
+            - 'build/**'
+            - DEPS
     - name: Set Build Image SHA
       id: build-image-sha
       uses: ./.github/actions/build-image-sha
@@ -310,6 +338,11 @@ jobs:
       enable-ssh: ${{ inputs.enable-ssh || false }}
     secrets: inherit
   
+  # macos-arm64, linux-x64, and windows-x64 carry the clang-tidy legs. When a
+  # change touches no native code (per setup's native filter), run-clang-tidy
+  # skips the clang-tidy job inside the reusable workflow - like the lint
+  # skip above, the check is still reported as skipped, which branch
+  # protection treats as satisfied.
   macos-arm64:
     permissions:
       contents: read
@@ -320,6 +353,7 @@ jobs:
     with:
       build-runs-on: macos-15-xlarge
       clang-tidy-runs-on: macos-15-xlarge
+      run-clang-tidy: ${{ needs.setup.outputs.native == 'true' }}
       test-runs-on: macos-15
       target-platform: macos
       target-arch: arm64
@@ -341,6 +375,7 @@ jobs:
     with:
       build-runs-on: electron-arc-centralus-linux-amd64-32core
       clang-tidy-runs-on: electron-arc-centralus-linux-amd64-8core
+      run-clang-tidy: ${{ needs.setup.outputs.native == 'true' }}
       test-runs-on: electron-arc-centralus-linux-amd64-4core
       build-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
       clang-tidy-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-linux.outputs.build-image-sha }}","options":"--user root","volumes":["/mnt/cross-instance-cache:/mnt/cross-instance-cache"]}'
@@ -419,6 +454,7 @@ jobs:
     with:
       build-runs-on: electron-arc-centralus-windows-amd64-16core
       clang-tidy-runs-on: electron-arc-centralus-linux-amd64-8core
+      run-clang-tidy: ${{ needs.setup.outputs.native == 'true' }}
       test-runs-on: windows-latest
       clang-tidy-container: '{"image":"ghcr.io/electron/build:${{ needs.checkout-windows.outputs.build-image-sha }}","options":"--user root --device /dev/fuse --cap-add SYS_ADMIN","volumes":["/mnt/win-cache:/mnt/win-cache"]}'
       target-platform: win
