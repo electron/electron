@@ -396,7 +396,6 @@ __metadata:
     "@electron/typescript-definitions": "npm:^9.2.0"
     "@hurdlegroup/robotjs": "npm:^0.12.3"
     "@octokit/rest": "npm:^22.0.1"
-    "@primer/octicons": "npm:^10.0.0"
     "@sentry/cli": "npm:3.6.2"
     "@types/minimist": "npm:^1.2.5"
     "@types/node": "npm:^24.9.0"
@@ -1620,15 +1619,6 @@ __metadata:
   version: 0.11.0
   resolution: "@pkgjs/parseargs@npm:0.11.0"
   checksum: 10c0/5bd7576bb1b38a47a7fc7b51ac9f38748e772beebc56200450c4a817d712232b8f1d3ef70532c80840243c657d491cf6a6be1e3a214cff907645819fdc34aadd
-  languageName: node
-  linkType: hard
-
-"@primer/octicons@npm:^10.0.0":
-  version: 10.0.0
-  resolution: "@primer/octicons@npm:10.0.0"
-  dependencies:
-    object-assign: "npm:^4.1.1"
-  checksum: 10c0/1f33f09149c07705224c9e5b890034127551a8bda2fc318adca8c2d1e52ee9e46b149cf125f7e8dddce4a2cb51625d7d46c718827c9cd1d68c0b6895231fe436
   languageName: node
   linkType: hard
 
