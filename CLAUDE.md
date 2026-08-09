@@ -162,7 +162,7 @@ If no artifact exists (e.g. the 3-way merge itself failed), fall back to `e sync
 e test                    # Run full test suite
 ```
 
-**Test frameworks:** Mocha, Chai, Sinon
+**Test frameworks:** Mocha, Chai
 
 ## Build Configuration
 
