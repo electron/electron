@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@anthropic.com>
+Date: Sat, 4 Apr 2026 11:21:37 -0700
+Subject: fix: resolve target bundle path once at start of install
+
+The target bundle URL is read from the serialized request on disk and was
+re-evaluated at multiple points in the install signal chain. Resolve it to
+a canonical path once up front, reject requests whose path is not already
+canonical, and thread the resolved URL through the rest of the chain so
+every step operates on the same location that validation saw.
+
+Also resolve the running application's bundle URL on the write side in
+SQRLUpdater so the serialized request always carries a canonical path.
+
+diff --git a/Squirrel/SQRLInstaller.m b/Squirrel/SQRLInstaller.m
+index 8969cfda03efd5a11bfe0c531e2702ff12a3f610..6a4e821c332db013dddd966b14f014cadfd6952d 100644
+--- a/Squirrel/SQRLInstaller.m
++++ b/Squirrel/SQRLInstaller.m
+@@ -9,6 +9,9 @@
+ #import "SQRLInstaller.h"
+ 
+ #import <libkern/OSAtomic.h>
++#import <mach-o/dyld.h>
++#import <sys/param.h>
++#import <unistd.h>
+ #import <ReactiveObjC/EXTScope.h>
+ #import <ReactiveObjC/NSEnumerator+RACSequenceAdditions.h>
+ #import <ReactiveObjC/NSObject+RACPropertySubscribing.h>
+@@ -307,6 +310,48 @@ - (RACSignal *)renameIfNeeded:(SQRLShipItRequest *)request updateBundleURL:(NSUR
+ - (RACSignal *)installRequest:(SQRLShipItRequest *)request {
+ 	NSParameterAssert(request != nil);
+ 
++	// Resolve the target bundle path exactly once and use the canonical URL for
++	// every step of the install chain. The request is read from disk, so the
++	// path it carries is untrusted; every downstream step that re-resolves it
++	// must see the same location that validation saw.
++	NSURL *resolvedTargetURL = request.targetBundleURL.URLByResolvingSymlinksInPath.URLByStandardizingPath;
++	if (![resolvedTargetURL.path isEqual:request.targetBundleURL.URLByStandardizingPath.path]) {
++		NSDictionary *errorInfo = @{
++			NSLocalizedDescriptionKey: NSLocalizedString(@"Target bundle path is not canonical", nil),
++			NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The target bundle path must not traverse symbolic links.", nil),
++		};
++		return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:errorInfo]];
++	}
++	request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:resolvedTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation useUpdateBundleName:request.useUpdateBundleName];
++
++	// When running privileged, the target must be the app bundle that contains
++	// this installer. This pins the install to a location whose ancestors the
++	// user that wrote the request cannot modify.
++	if (geteuid() == 0) {
++		NSString *expectedTargetPath = nil;
++		char rawPath[PATH_MAX] = {0};
++		char canonicalPath[PATH_MAX] = {0};
++		uint32_t rawPathSize = sizeof(rawPath);
++		if (_NSGetExecutablePath(rawPath, &rawPathSize) == 0 && realpath(rawPath, canonicalPath) != NULL) {
++			NSArray<NSString *> *components = @(canonicalPath).pathComponents;
++			for (NSInteger i = (NSInteger)components.count - 1; i >= 0; i--) {
++				if ([components[(NSUInteger)i] hasSuffix:@".app"]) {
++					NSURL *expectedURL = [NSURL fileURLWithPath:[NSString pathWithComponents:[components subarrayWithRange:NSMakeRange(0, (NSUInteger)i + 1)]]];
++					expectedTargetPath = expectedURL.URLByStandardizingPath.path;
++					break;
++				}
++			}
++		}
++		if (expectedTargetPath == nil || ![resolvedTargetURL.path isEqual:expectedTargetPath]) {
++			NSLog(@"Privileged install rejected: target %@ does not match installer bundle %@", resolvedTargetURL.path, expectedTargetPath);
++			NSDictionary *errorInfo = @{
++				NSLocalizedDescriptionKey: NSLocalizedString(@"Target bundle does not match installer location", nil),
++				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"When running with elevated privileges, the target bundle must be the application that contains this installer.", nil),
++			};
++			return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:errorInfo]];
++		}
++	}
++
+ 	return [[[[self
+ 		prepareAndValidateUpdateBundleURLForRequest:request]
+ 		flattenMap:^(NSURL *updateBundleURL) {
+diff --git a/Squirrel/SQRLUpdater.m b/Squirrel/SQRLUpdater.m
+index 41856e5754228d33982db72f97f2ff241615a357..f75042af341140643e864845a212d743b85ec188 100644
+--- a/Squirrel/SQRLUpdater.m
++++ b/Squirrel/SQRLUpdater.m
+@@ -340,7 +340,7 @@ - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQ
+ 		defer:^{
+ 			@strongify(self);
+ 
+-			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
++			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL.URLByResolvingSymlinksInPath;
+ 
+ 			BOOL targetWritable = [self canWriteToURL:targetURL];
+ 			BOOL parentWritable = [self canWriteToURL:targetURL.URLByDeletingLastPathComponent];
+@@ -843,12 +843,13 @@ - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
+ 	return [[[[RACSignal
+ 		defer:^{
+ 			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
+-			NSBundle *appBundle = [NSBundle bundleWithURL:currentApplication.bundleURL];
++			NSURL *targetBundleURL = currentApplication.bundleURL.URLByResolvingSymlinksInPath;
++			NSBundle *appBundle = [NSBundle bundleWithURL:targetBundleURL];
+ 			// Only use the update bundle's name if the user hasn't renamed the
+ 			// app themselves.
+-			BOOL useUpdateBundleName = [appBundle.sqrl_executableName isEqual:currentApplication.bundleURL.lastPathComponent.stringByDeletingPathExtension];
++			BOOL useUpdateBundleName = [appBundle.sqrl_executableName isEqual:targetBundleURL.lastPathComponent.stringByDeletingPathExtension];
+ 
+-			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:currentApplication.bundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:useUpdateBundleName];
++			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:targetBundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:useUpdateBundleName];
+ 			return [request writeUsingURL:self.shipItStateURL];
+ 		}]
+ 		then:^{
