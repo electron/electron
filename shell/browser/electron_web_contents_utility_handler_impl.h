@@ -10,7 +10,6 @@
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/shell/common/web_contents_utility.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
-#include "shell/browser/api/electron_api_web_contents.h"
 
 namespace content {
 class RenderFrameHost;
@@ -44,6 +43,9 @@ class ElectronWebContentsUtilityHandlerImpl
       mojom::PermissionName name,
       const blink::LocalFrameToken& frame_token,
       CanAccessClipboardDeprecatedCallback callback) override;
+  void SetPreloadCodeCache(const std::string& id,
+                           const std::vector<uint8_t>& source_hash,
+                           mojo_base::BigBuffer cache) override;
 
   base::WeakPtr<ElectronWebContentsUtilityHandlerImpl> GetWeakPtr() {
     return weak_factory_.GetWeakPtr();

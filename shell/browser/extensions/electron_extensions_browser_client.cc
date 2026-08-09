@@ -8,13 +8,11 @@
 #include <utility>
 
 #include "base/functional/bind.h"
-#include "base/memory/ptr_util.h"
 #include "base/path_service.h"
 #include "chrome/browser/extensions/chrome_url_request_util.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/version_info/version_info.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_frame_host.h"
@@ -160,6 +158,12 @@ bool ElectronExtensionsBrowserClient::IsExtensionIncognitoEnabled(
   return false;
 }
 
+bool ElectronExtensionsBrowserClient::IsExtensionIncognitoEnabled(
+    const extensions::Extension* extension,
+    content::BrowserContext* context) const {
+  return false;
+}
+
 bool ElectronExtensionsBrowserClient::CanExtensionCrossIncognito(
     const extensions::Extension* extension,
     content::BrowserContext* context) const {
@@ -201,10 +205,11 @@ void ElectronExtensionsBrowserClient::LoadResourceFromResourceBundle(
     const base::FilePath& resource_relative_path,
     int resource_id,
     scoped_refptr<net::HttpResponseHeaders> headers,
-    mojo::PendingRemote<network::mojom::URLLoaderClient> client) {
+    mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+    content::BrowserContext* browser_context) {
   extensions::chrome_url_request_util::LoadResourceFromResourceBundle(
       request, std::move(loader), resource_relative_path, resource_id,
-      std::move(headers), std::move(client));
+      std::move(headers), std::move(client), browser_context);
 }
 
 namespace {

@@ -351,10 +351,12 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   // reader support, but we'll delay that action until there are no more state
   // change requests within a two-second window. Cancel any pending
   // performSelector:..., and schedule a new one to restart the countdown.
-  [NSObject cancelPreviousPerformRequestsWithTarget:self
-                                           selector:@selector
-                                           (enableScreenReaderCompleteMode)
-                                             object:nil];
+  [NSObject
+      cancelPreviousPerformRequestsWithTarget:self
+                                     selector:
+                                         @selector(
+                                             enableScreenReaderCompleteMode)
+                                       object:nil];
 
   if (_AXEnhancedUserInterfaceRequests > 0) {
     const float kTwoSecondDelay = 2.0;

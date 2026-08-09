@@ -7,7 +7,6 @@
 #include "shell/browser/api/electron_api_safe_storage.h"
 
 #include "base/functional/bind.h"
-#include "base/run_loop.h"
 #include "components/os_crypt/async/browser/os_crypt_async.h"
 #include "components/os_crypt/sync/os_crypt.h"
 #include "gin/object_template_builder.h"
@@ -83,11 +82,11 @@ void SafeStorage::EnsureAsyncEncryptorRequested() {
     return;
   encryptor_requested_ = true;
   g_browser_process->os_crypt_async()->GetInstance(
-      base::BindOnce(&SafeStorage::OnOsCryptReady, base::Unretained(this)),
-      os_crypt_async::Encryptor::Option::kEncryptSyncCompat);
+      base::BindOnce(&SafeStorage::OnOsCryptReady, base::Unretained(this)));
 }
 
-void SafeStorage::OnOsCryptReady(os_crypt_async::Encryptor encryptor) {
+void SafeStorage::OnOsCryptReady(
+    scoped_refptr<os_crypt_async::Encryptor> encryptor) {
   encryptor_ = std::move(encryptor);
   is_available_ = true;
 

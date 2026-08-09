@@ -15,7 +15,6 @@
 
 #include "chrome/browser/browser_process.h"
 #include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
-#include "components/prefs/value_map_pref_store.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/network_quality_tracker.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
@@ -27,6 +26,7 @@
 #endif
 
 class PrefService;
+class ValueMapPrefStore;
 
 namespace printing {
 class PrintJobManager;
@@ -77,7 +77,6 @@ class BrowserProcessImpl : public BrowserProcess {
   GlobalFeatures* GetFeatures() override;
   void CreateGlobalFeaturesForTesting() {}
   void EndSession() override {}
-  void FlushLocalStateAndReply(base::OnceClosure reply) override {}
   bool IsShuttingDown() override;
   ui::UnownedUserDataHost& GetUnownedUserDataHost() override;
   const ui::UnownedUserDataHost& GetUnownedUserDataHost() const override;

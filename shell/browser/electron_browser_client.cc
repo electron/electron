@@ -18,6 +18,7 @@
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/memory/self_deleting.h"
 #include "base/no_destructor.h"
 #include "base/notreached.h"
 #include "base/path_service.h"
@@ -33,8 +34,7 @@
 #include "components/network_hints/common/network_hints.mojom.h"
 #include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
-#include "content/public/browser/browser_main_runner.h"
-#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/login_delegate.h"
 #include "content/public/browser/navigation_throttle_registry.h"
@@ -42,6 +42,7 @@
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_view_host.h"
+#include "content/public/browser/security_principal.h"
 #include "content/public/browser/service_worker_version_base_info.h"
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/tts_controller.h"
@@ -64,6 +65,7 @@
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
 #include "printing/buildflags/buildflags.h"
+#include "sandbox/policy/switches.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
@@ -107,7 +109,9 @@
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
+#include "shell/browser/preload_script.h"
 #include "shell/browser/protocol_registry.h"
+#include "shell/browser/renderer_startup_data.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/tracing/electron_tracing_delegate.h"
@@ -235,11 +239,19 @@
 #include "ui/webui/resources/cr_components/help_bubble/help_bubble.mojom.h"  // nogncheck
 #endif
 
+#if BUILDFLAG(ENABLE_PROMPT_API)
+#include "shell/browser/ai/proxying_ai_manager.h"
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
 using content::BrowserThread;
 
 namespace electron {
 
 namespace {
+
+#if BUILDFLAG(ENABLE_PROMPT_API)
+const char kAIManagerUserDataKey[] = "ai_manager";
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
 
 ElectronBrowserClient* g_browser_client = nullptr;
 
@@ -259,7 +271,8 @@ void BindNetworkHintsHandler(
 }
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-// Used by the GetPrivilegeRequiredByUrl() and GetProcessPrivilege() functions
+// Used by the GetPrivilegeRequiredBySecurityPrincipal() and
+// GetProcessPrivilege() functions
 // below.  Extension, and isolated apps require different privileges to be
 // granted to their RenderProcessHosts.  This classification allows us to make
 // sure URLs are served by hosts with the right set of privileges.
@@ -279,17 +292,11 @@ bool AllowFileAccess(const std::string& extension_id,
              extension_id);
 }
 
-RenderProcessHostPrivilege GetPrivilegeRequiredByUrl(const GURL& url) {
-  // Default to a normal renderer cause it is lower privileged. This should only
-  // occur if the URL on a site instance is either malformed, or uninitialized.
-  // If it is malformed, then there is no need for better privileges anyways.
-  // If it is uninitialized, but eventually settles on being an a scheme other
-  // than normal webrenderer, the navigation logic will correct us out of band
-  // anyways.
-  if (!url.is_valid())
-    return RenderProcessHostPrivilege::kNormal;
-
-  if (!url.SchemeIs(extensions::kExtensionScheme))
+RenderProcessHostPrivilege GetPrivilegeRequiredBySecurityPrincipal(
+    const content::SecurityPrincipal& principal) {
+  // Default to a normal renderer cause it is lower privileged. Extensions
+  // require a privileged extension process.
+  if (!principal.SchemeIs(extensions::kExtensionScheme))
     return RenderProcessHostPrivilege::kNormal;
 
   return RenderProcessHostPrivilege::kExtension;
@@ -318,6 +325,21 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
     return nullptr;
 
   return registry->enabled_extensions().GetByID(effective_url.GetHost());
+}
+
+const extensions::Extension* GetEnabledExtensionFromSecurityPrincipal(
+    content::BrowserContext* context,
+    const content::SecurityPrincipal& principal) {
+  if (!principal.SchemeIs(extensions::kExtensionScheme))
+    return nullptr;
+
+  extensions::ExtensionRegistry* registry =
+      extensions::ExtensionRegistry::Get(context);
+  if (!registry)
+    return nullptr;
+
+  return registry->enabled_extensions().GetByID(
+      extensions::ExtensionId(principal.GetHost()));
 }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
@@ -393,6 +415,14 @@ content::SiteInstance* ElectronBrowserClient::GetSiteInstanceFromAffinity(
 bool ElectronBrowserClient::IsRendererSubFrame(
     content::ChildProcessId process_id) const {
   return renderer_is_subframe_.contains(process_id);
+}
+
+std::optional<bool> ElectronBrowserClient::IsRendererProcessSandboxed(
+    content::ChildProcessId process_id) const {
+  const auto iter = renderer_process_sandboxed_.find(process_id);
+  if (iter == std::end(renderer_process_sandboxed_))
+    return std::nullopt;
+  return iter->second;
 }
 
 void ElectronBrowserClient::RenderProcessWillLaunch(
@@ -616,6 +646,9 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
             command_line, IsRendererSubFrame(unsafe_process_id));
     }
 
+    renderer_process_sandboxed_[unsafe_process_id] =
+        !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
+
     // Service worker processes should only run preloads if one has been
     // registered prior to startup.
     auto* render_process_host = content::RenderProcessHost::FromID(process_id);
@@ -707,10 +740,14 @@ bool ElectronBrowserClient::CanCreateWindow(
       // <webview> without allowpopups attribute should return
       // null from window.open calls
       return false;
-    } else {
-      *no_javascript_access = false;
-      return true;
     }
+    *no_javascript_access = false;
+    if (auto* api_web_contents = api::WebContents::From(web_contents)) {
+      return api_web_contents->OnWillCreateWindow(
+          opener, target_url, frame_name, raw_features, disposition, referrer,
+          body, opener_suppressed, no_javascript_access);
+    }
+    return true;
   }
 
   if (delegate_) {
@@ -722,6 +759,58 @@ bool ElectronBrowserClient::CanCreateWindow(
   }
 
   return false;
+}
+
+std::optional<mojo_base::BigBuffer>
+ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
+    content::RenderFrameHost* new_window_main_frame,
+    const GURL& target_url) {
+  // A window.open() popup's synchronous about:blank fires
+  // DidCreateScriptContext — and runs the preload — before any async push can
+  // land. We've just run setWindowOpenHandler so the popup's WebContents has
+  // its (possibly overridden) preload set; attach it to the reply.
+  //
+  // Only the about:blank document needs this. A popup that navigates
+  // (window.open(url)) does not run the preload on its initial document and
+  // gets a normal ElectronFrameStartup push at ReadyToCommitNavigation, so
+  // building the data here for it would be pure waste.
+  if (!target_url.is_empty() && !target_url.IsAboutBlank())
+    return std::nullopt;
+
+  auto* web_contents =
+      content::WebContents::FromRenderFrameHost(new_window_main_frame);
+  if (!web_contents)
+    return std::nullopt;
+  if (!WebContentsPreferences::ShouldUseSandbox(web_contents))
+    return std::nullopt;
+
+  mojom::RendererStartupDataPtr data;
+  {
+    ScopedAllowBlockingForElectron allow_blocking;
+    data = renderer_startup_data::BuildForFrame(new_window_main_frame);
+  }
+  // Opaque blob — Chromium can't depend on Electron's mojom types.
+  return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
+}
+
+std::optional<mojo_base::BigBuffer>
+ElectronBrowserClient::GetServiceWorkerStartupData(
+    content::BrowserContext* browser_context,
+    const GURL& scope) {
+  // Only the service-worker preload realm consumes this, and it's only created
+  // when SW preloads are registered. Skip the asar reads + serialization
+  // otherwise — this runs on every service worker start.
+  auto* session_prefs = SessionPreferences::FromBrowserContext(browser_context);
+  if (!session_prefs || !session_prefs->HasServiceWorkerPreloadScript())
+    return std::nullopt;
+
+  mojom::RendererStartupDataPtr data;
+  {
+    ScopedAllowBlockingForElectron allow_blocking;
+    data = renderer_startup_data::Build(
+        browser_context, PreloadScript::ScriptType::kServiceWorker);
+  }
+  return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
 }
 
 std::unique_ptr<content::VideoOverlayWindow>
@@ -767,7 +856,7 @@ void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
         extensions::ExtensionRegistry::Get(browser_context);
     const extensions::Extension* extension =
         registry->enabled_extensions().GetExtensionOrAppByURL(
-            site_instance->GetSiteURL());
+            site_instance->GetSecurityPrincipal().GetDeprecatedSiteURL());
     if (!extension)
       return;
 
@@ -779,7 +868,7 @@ void ElectronBrowserClient::SiteInstanceGotProcessAndSite(
 
 bool ElectronBrowserClient::IsSuitableHost(
     content::RenderProcessHost* process_host,
-    const GURL& site_url) {
+    const content::SecurityPrincipal& security_principal) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   auto* browser_context = process_host->GetBrowserContext();
   extensions::ProcessMap* process_map =
@@ -787,23 +876,26 @@ bool ElectronBrowserClient::IsSuitableHost(
 
   // Otherwise, just make sure the process privilege matches the privilege
   // required by the site.
-  const auto privilege_required = GetPrivilegeRequiredByUrl(site_url);
+  const auto privilege_required =
+      GetPrivilegeRequiredBySecurityPrincipal(security_principal);
   return GetProcessPrivilege(process_host, process_map) == privilege_required;
 #else
-  return content::ContentBrowserClient::IsSuitableHost(process_host, site_url);
+  return content::ContentBrowserClient::IsSuitableHost(process_host,
+                                                       security_principal);
 #endif
 }
 
 bool ElectronBrowserClient::ShouldUseProcessPerSite(
     content::BrowserContext* browser_context,
-    const GURL& effective_url) {
+    const content::SecurityPrincipal& security_principal) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   const extensions::Extension* extension =
-      GetEnabledExtensionFromEffectiveURL(browser_context, effective_url);
+      GetEnabledExtensionFromSecurityPrincipal(browser_context,
+                                               security_principal);
   return extension != nullptr;
 #else
-  return content::ContentBrowserClient::ShouldUseProcessPerSite(browser_context,
-                                                                effective_url);
+  return content::ContentBrowserClient::ShouldUseProcessPerSite(
+      browser_context, security_principal);
 #endif
 }
 
@@ -902,6 +994,7 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
   content::ChildProcessId process_id = host->GetID();
   pending_processes_.erase(process_id);
   renderer_is_subframe_.erase(process_id);
+  renderer_process_sandboxed_.erase(process_id);
   host->RemoveObserver(this);
 }
 
@@ -1156,8 +1249,8 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
 
     // The FileURLLoaderFactory will delete itself when there are no more
     // receivers - see the SelfDeletingURLLoaderFactory::OnDisconnect method.
-    new FileURLLoaderFactory(child_id,
-                             pending_remote.InitWithNewPipeAndPassReceiver());
+    base::MakeSelfDeleting<FileURLLoaderFactory>(
+        child_id, pending_remote.InitWithNewPipeAndPassReceiver());
 
     return pending_remote;
   }
@@ -1166,12 +1259,14 @@ class FileURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
   FileURLLoaderFactory(const FileURLLoaderFactory&) = delete;
   FileURLLoaderFactory& operator=(const FileURLLoaderFactory&) = delete;
 
- private:
-  explicit FileURLLoaderFactory(
+  FileURLLoaderFactory(
       int child_id,
-      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver)
-      : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver)),
+      mojo::PendingReceiver<network::mojom::URLLoaderFactory> factory_receiver,
+      base::SelfDeletingPassKey key)
+      : network::SelfDeletingURLLoaderFactory(std::move(factory_receiver), key),
         child_id_(child_id) {}
+
+ private:
   ~FileURLLoaderFactory() override = default;
 
   // network::mojom::URLLoaderFactory:
@@ -1270,7 +1365,7 @@ void ElectronBrowserClient::RegisterNonNetworkSubresourceURLLoaderFactories(
   // gets approval from ChildProcessSecurityPolicy. Keep this logic in sync with
   // ExtensionWebContentsObserver::RenderFrameCreated.
   extensions::Manifest::Type type = extension->GetType();
-  if (type == extensions::Manifest::TYPE_EXTENSION &&
+  if (type == extensions::Manifest::Type::kExtension &&
       AllowFileAccess(extension->id(), web_contents->GetBrowserContext())) {
     factories->emplace(url::kFileScheme,
                        FileURLLoaderFactory::Create(render_process_id));
@@ -1346,7 +1441,8 @@ void ElectronBrowserClient::CreateWebSocket(
     const net::SiteForCookies& site_for_cookies,
     const std::optional<std::string>& user_agent,
     mojo::PendingRemote<network::mojom::WebSocketHandshakeClient>
-        handshake_client) {
+        handshake_client,
+    WebSocketOptions options) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto* browser_context = frame->GetProcess()->GetBrowserContext();
@@ -1360,9 +1456,9 @@ void ElectronBrowserClient::CreateWebSocket(
         extensions::WebRequestAPI>::Get(browser_context);
 
     if (web_request_api && web_request_api->MayHaveProxies()) {
-      web_request_api->ProxyWebSocket(frame, std::move(factory), url,
-                                      site_for_cookies, user_agent,
-                                      std::move(handshake_client));
+      web_request_api->ProxyWebSocket(
+          frame, std::move(factory), url, site_for_cookies, user_agent,
+          std::move(handshake_client), std::move(options.header_client));
       return;
     }
   }
@@ -1439,6 +1535,7 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
   new ProxyingURLLoaderFactory{
       web_request,
       protocol_registry->intercept_handlers(),
+      static_cast<ElectronBrowserContext*>(browser_context)->GetWeakPtr(),
       render_process_id,
       frame_host ? frame_host->GetRoutingID() : IPC::mojom::kRoutingIdNone,
       &next_id_,
@@ -1621,6 +1718,26 @@ void ElectronBrowserClient::
 #endif
 }
 
+#if BUILDFLAG(ENABLE_PROMPT_API)
+// Refs
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/chrome_content_browser_client.cc;l=8724-8737;drc=74754be9d4550a487df006a51a33318245d37301
+void ElectronBrowserClient::BindAIManager(
+    content::BrowserContext* browser_context,
+    base::SupportsUserData* context_user_data,
+    content::RenderFrameHost* rfh,
+    mojo::PendingReceiver<blink::mojom::AIManager> receiver) {
+  if (!context_user_data->GetUserData(kAIManagerUserDataKey)) {
+    context_user_data->SetUserData(
+        kAIManagerUserDataKey,
+        std::make_unique<ProxyingAIManager>(browser_context, rfh));
+  }
+
+  ProxyingAIManager* ai_manager = static_cast<ProxyingAIManager*>(
+      context_user_data->GetUserData(kAIManagerUserDataKey));
+  ai_manager->AddReceiver(std::move(receiver));
+}
+#endif  // BUILDFLAG(ENABLE_PROMPT_API)
+
 std::string ElectronBrowserClient::GetApplicationLocale() {
   return BrowserThread::CurrentlyOn(BrowserThread::IO)
              ? *g_io_thread_application_locale
@@ -1757,7 +1874,9 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForFrame(
   if (!web_contents)
     return;
 
-  const GURL& site = render_frame_host->GetSiteInstance()->GetSiteURL();
+  const GURL& site = render_frame_host->GetSiteInstance()
+                         ->GetSecurityPrincipal()
+                         .GetDeprecatedSiteURL();
   if (!site.SchemeIs(extensions::kExtensionScheme))
     return;
 

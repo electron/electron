@@ -1,6 +1,6 @@
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 
-import * as auth from 'basic-auth';
+import auth from 'basic-auth';
 import { expect } from 'chai';
 
 import { once } from 'node:events';
@@ -666,6 +666,14 @@ describe('<webview> tag', function () {
       w = new BrowserWindow({
         show: false,
         webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false }
+      });
+      // Cross-scripting the popup requires it to share the webview's
+      // unsandboxed process, so opt the child out of the default sandbox.
+      w.webContents.on('did-attach-webview', (_event, webviewContents) => {
+        webviewContents.setWindowOpenHandler(() => ({
+          action: 'allow',
+          overrideBrowserWindowOptions: { webPreferences: { sandbox: false } }
+        }));
       });
       await w.loadURL('about:blank');
     });

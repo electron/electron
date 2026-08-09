@@ -12,6 +12,7 @@ const target = path.resolve(__dirname, '../.github/workflows/pipeline-segment-el
 const baseContents = fs.readFileSync(base, 'utf-8');
 
 const parsedBase = yaml.parse(baseContents);
+parsedBase.name = 'Pipeline Segment - Electron Publish';
 parsedBase.jobs.build.permissions = {
   'artifact-metadata': 'write',
   attestations: 'write',

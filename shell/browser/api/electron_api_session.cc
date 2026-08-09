@@ -14,7 +14,6 @@
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/map_util.h"
-#include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/memory/weak_ptr.h"
@@ -35,7 +34,6 @@
 #include "components/proxy_config/proxy_prefs.h"
 #include "content/browser/code_cache/generated_code_cache_context.h"  // nogncheck
 #include "content/browser/storage_partition_impl.h"  // nogncheck
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/browsing_data_filter_builder.h"
 #include "content/public/browser/browsing_data_remover.h"
@@ -44,7 +42,9 @@
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/preconnect_manager.h"
 #include "content/public/browser/preconnect_request.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/storage_partition.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/arguments.h"
 #include "gin/converter.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -68,6 +68,7 @@
 #include "shell/browser/api/electron_api_net_log.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/api/electron_api_service_worker_context.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/browser.h"
@@ -104,6 +105,8 @@
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "url/origin.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-traced-handle.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "shell/browser/api/electron_api_extensions.h"
@@ -608,12 +611,15 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
     return;
 
   v8::HandleScope handle_scope(isolate_);
-  auto handle = DownloadItem::FromOrCreate(isolate_, item);
+  auto* handle = DownloadItem::FromOrCreate(isolate_, item);
+  v8::Local<v8::Object> handle_object;
+  if (!handle->GetWrapper(isolate_).ToLocal(&handle_object))
+    return;
   if (item->GetState() == download::DownloadItem::INTERRUPTED)
     handle->SetSavePath(item->GetTargetFilePath());
   content::WebContents* web_contents =
       content::DownloadItemUtils::GetWebContents(item);
-  bool prevent_default = Emit("will-download", handle, web_contents);
+  bool prevent_default = Emit("will-download", handle_object, web_contents);
   if (prevent_default) {
     item->Cancel(true);
     item->Remove();
@@ -1134,6 +1140,9 @@ std::string Session::RegisterPreloadScript(
   }
 
   preload_scripts.push_back(new_preload_script);
+  // A service worker that starts after this point picks up the new preload
+  // automatically — GetServiceWorkerStartupData() rebuilds from
+  // SessionPreferences on every StartWorker.
   return new_preload_script.id;
 }
 
@@ -1289,7 +1298,9 @@ v8::Local<v8::Promise> Session::GetSharedDictionaryInfo(
                            item->expiration.InMillisecondsF());
                   dict.Set("lastUsedTime", item->last_used_time);
                   dict.Set("size", item->size);
-                  dict.Set("hash", net::HashValue(item->hash).ToString());
+                  dict.Set("hash",
+                           net::HashValue(net::HASH_VALUE_SHA256, item->hash)
+                               .ToString());
 
                   result.push_back(dict);
                 }
@@ -1377,6 +1388,15 @@ NetLog* Session::NetLog(v8::Isolate* isolate) {
     net_log_ = NetLog::Create(isolate, browser_context());
   }
   return net_log_;
+}
+
+UtilityProcessWrapper* Session::LocalAIHandler() {
+  return local_ai_handler_;
+}
+
+base::CallbackListSubscription Session::AddAIHandlerChangedCallback(
+    base::RepeatingClosure callback) {
+  return local_ai_handler_changed_callbacks_.Add(std::move(callback));
 }
 
 static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
@@ -1553,6 +1573,20 @@ v8::Local<v8::Value> Session::ClearData(gin::Arguments* const args) {
                      std::move(origins), filter_mode, origin_matching_mode);
 
   return promise_handle;
+}
+
+void Session::RegisterLocalAIHandler(gin_helper::ErrorThrower thrower,
+                                     v8::Local<v8::Value> val) {
+  auto* isolate = JavascriptEnvironment::GetIsolate();
+  UtilityProcessWrapper* handler = nullptr;
+
+  if (!(val->IsNull() || gin::ConvertFromV8(isolate, val, &handler))) {
+    thrower.ThrowTypeError("Must pass null or UtilityProcess");
+    return;
+  }
+
+  local_ai_handler_ = handler;
+  local_ai_handler_changed_callbacks_.Notify();
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -1841,6 +1875,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setCodeCachePath", &Session::SetCodeCachePath)
       .SetMethod("clearCodeCaches", &Session::ClearCodeCaches)
       .SetMethod("clearData", &Session::ClearData)
+      .SetMethod("_registerLocalAIHandler", &Session::RegisterLocalAIHandler)
       .SetProperty("cookies", &Session::Cookies)
       .SetProperty("extensions", &Session::Extensions)
       .SetProperty("netLog", &Session::NetLog)
@@ -1860,6 +1895,7 @@ void Session::Trace(cppgc::Visitor* visitor) const {
   visitor->Trace(service_worker_context_);
   visitor->Trace(web_request_);
   visitor->Trace(weak_factory_);
+  visitor->Trace(local_ai_handler_);
 }
 
 const gin::WrapperInfo* Session::wrapper_info() const {

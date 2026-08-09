@@ -236,6 +236,13 @@ async function main(): Promise<boolean> {
           return false;
         }
 
+        // Build-only host tool compiled in v8_snapshot_toolchain; its
+        // transitively-included generated buildflag headers aren't present
+        // for clang-tidy in CI.
+        if (filename.endsWith('/electron_natives_codecache_main.cc')) {
+          return false;
+        }
+
         return /.*\.(?:cc|mm)$/.test(filename);
       }))
     );

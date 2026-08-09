@@ -230,6 +230,66 @@ describe('debugger module', () => {
       }
     });
 
+    it('reports network requests for a new document after a main-frame navigation', async () => {
+      server = http.createServer((req, res) => {
+        if (req.url === '/page') {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.end(
+            '<!DOCTYPE html><html><head>' +
+              '<link rel="stylesheet" href="/style.css">' +
+              '<script src="/script.js"></script>' +
+              '</head><body>page</body></html>'
+          );
+        } else if (req.url === '/style.css') {
+          res.setHeader('Content-Type', 'text/css; charset=utf-8');
+          res.end('body { color: red; }');
+        } else if (req.url === '/script.js') {
+          res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
+          res.end('void 0;');
+        } else {
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          res.end('<!DOCTYPE html><html><body>start</body></html>');
+        }
+      });
+
+      const { url } = await listen(server);
+      await w.loadURL(`${url}/start`);
+      w.webContents.debugger.attach();
+      try {
+        await w.webContents.debugger.sendCommand('Network.enable');
+        await w.webContents.debugger.sendCommand('Page.enable');
+        await w.webContents.debugger.sendCommand('Target.setAutoAttach', {
+          autoAttach: true,
+          flatten: true,
+          waitForDebuggerOnStart: false
+        });
+
+        const requestedUrls = new Set<string>();
+        const loadEvent = new Promise<void>((resolve) => {
+          w.webContents.debugger.on('message', (_event, method, params) => {
+            if (method === 'Network.requestWillBeSent') {
+              requestedUrls.add(params.request.url);
+            } else if (method === 'Page.loadEventFired') {
+              resolve();
+            }
+          });
+        });
+
+        // This navigation swaps the main-frame RenderFrameHost under
+        // RenderDocument. Before the fix, the debugger tore down and rebound its
+        // session here, dropping these subresource requests.
+        await w.loadURL(`${url}/page`);
+
+        await loadEvent;
+        expect(requestedUrls).to.include(`${url}/style.css`);
+        expect(requestedUrls).to.include(`${url}/script.js`);
+      } finally {
+        if (w.webContents.debugger.isAttached()) {
+          w.webContents.debugger.detach();
+        }
+      }
+    });
+
     it('can get and set cookies using the Storage API', async () => {
       await w.webContents.loadURL('about:blank');
       w.webContents.debugger.attach('1.1');

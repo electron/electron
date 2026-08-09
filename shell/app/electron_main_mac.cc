@@ -16,7 +16,6 @@
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
 #include <mach-o/dyld.h>
-#include <cstdio>
 
 #include "sandbox/mac/seatbelt_exec.h"  // nogncheck
 #endif

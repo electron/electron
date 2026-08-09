@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/scoped_refptr.h"
 #include "build/build_config.h"
 #include "components/os_crypt/async/common/encryptor.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -58,7 +59,7 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
   // constructor would touch the OS keychain even when safeStorage is unused.
   void EnsureAsyncEncryptorRequested();
 
-  void OnOsCryptReady(os_crypt_async::Encryptor encryptor);
+  void OnOsCryptReady(scoped_refptr<os_crypt_async::Encryptor> encryptor);
 
   bool IsEncryptionAvailable();
 
@@ -86,7 +87,7 @@ class SafeStorage final : public gin_helper::DeprecatedWrappable<SafeStorage> {
   bool encryptor_requested_ = false;
   bool is_available_ = false;
 
-  std::optional<os_crypt_async::Encryptor> encryptor_;
+  scoped_refptr<os_crypt_async::Encryptor> encryptor_;
 
   // Pending encrypt operations waiting for encryptor to be ready.
   struct PendingEncrypt {

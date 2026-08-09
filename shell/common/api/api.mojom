@@ -5,6 +5,39 @@ import "ui/gfx/geometry/mojom/geometry.mojom";
 import "third_party/blink/public/mojom/messaging/cloneable_message.mojom";
 import "third_party/blink/public/mojom/messaging/transferable_message.mojom";
 
+// A preload script and its contents, pushed to the renderer ahead of the
+// document that needs it.
+struct PreloadScriptData {
+  string id;
+  string file_path;
+  // UTF-8 contents. array<uint8> rather than BigBuffer so RendererStartupData
+  // can be flat-serialized into an opaque blob for the CreateNewWindowReply
+  // path.
+  array<uint8> contents;
+  // Set if the file could not be read; surfaced via the 'preload-error' event.
+  string? error;
+  // V8 code cache, produced by the first renderer to compile this preload and
+  // persisted under userData/Code Cache/electron-preload/. Only shipped when
+  // its recorded source hash matches |contents|.
+  array<uint8>? code_cache;
+};
+
+// Everything a sandboxed renderer needs to bootstrap a preload environment.
+// process.arch/platform/version/versions are intentionally not here — they're
+// filled renderer-side from node::per_process::metadata.
+struct RendererStartupData {
+  array<PreloadScriptData> preload_scripts;
+  // Browser process.env, captured fresh per push.
+  map<string, string> environment;
+  string helper_exec_path;
+};
+
+// Per-frame associated interface ordered against content.mojom.Frame, so
+// SetStartupData() arrives before the CommitNavigation that follows it.
+interface ElectronFrameStartup {
+  SetStartupData(RendererStartupData data);
+};
+
 interface ElectronRenderer {
   Message(
       bool internal,

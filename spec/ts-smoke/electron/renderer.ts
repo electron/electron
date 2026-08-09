@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-import { clipboard, crashReporter, shell } from 'electron/common';
+import { crashReporter, nativeImage, shell } from 'electron/common';
 import { ipcRenderer, webFrame } from 'electron/renderer';
 
 // In renderer process (web page).
@@ -19,7 +19,7 @@ ipcRenderer.addListener('test', () => {});
 ipcRenderer.removeListener('test', () => {});
 ipcRenderer.removeAllListeners('test');
 
-ipcRenderer.on('asynchronous-reply', (event, arg: any) => {
+ipcRenderer.on('asynchronous-reply', (event, arg: string) => {
   console.log(arg); // prints "pong"
   event.sender.send('another-message', 'Hello World!');
 });
@@ -59,22 +59,6 @@ webFrame.executeJavaScript('return true;', true).then((result: boolean) => conso
 
 console.log(webFrame.getResourceUsage());
 webFrame.clearCache();
-
-// clipboard
-// https://github.com/electron/electron/blob/main/docs/api/clipboard.md
-
-clipboard.writeText('Example String');
-clipboard.writeText('Example String', 'selection');
-console.log(clipboard.readText('selection'));
-console.log(clipboard.availableFormats());
-clipboard.clear();
-
-clipboard.write({
-  html: '<html></html>',
-  text: 'Hello World!',
-  bookmark: 'Bookmark name',
-  image: clipboard.readImage()
-});
 
 // crash-reporter
 // https://github.com/electron/electron/blob/main/docs/api/crash-reporter.md
@@ -119,7 +103,7 @@ function getSources(options: Electron.SourcesOptions) {
 }
 
 function gotStream(stream: any) {
-  (document.querySelector('video') as HTMLVideoElement).src = URL.createObjectURL(stream);
+  document.querySelector('video')!.src = URL.createObjectURL(stream);
 }
 
 function getUserMediaError(error: Error) {
@@ -129,7 +113,7 @@ function getUserMediaError(error: Error) {
 // nativeImage
 // https://github.com/electron/electron/blob/main/docs/api/native-image.md
 
-const image = clipboard.readImage();
+const image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 console.log(image.getSize());
 
 // https://github.com/electron/electron/blob/main/docs/api/process.md

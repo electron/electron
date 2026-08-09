@@ -1,10 +1,12 @@
 /* eslint-disable */
 
-import { clipboard, crashReporter, nativeImage, shell } from 'electron/common';
+import { crashReporter, nativeImage, shell } from 'electron/common';
 import {
   app,
   autoUpdater,
   BrowserWindow,
+  ClipboardItem,
+  clipboard,
   contentTracing,
   dialog,
   desktopCapturer,
@@ -21,7 +23,8 @@ import {
   session,
   systemPreferences,
   webContents,
-  TouchBar
+  TouchBar,
+  utilityProcess
 } from 'electron/main';
 
 import * as path from 'node:path';
@@ -31,7 +34,7 @@ import * as path from 'node:path';
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the javascript object is GCed.
-let mainWindow: Electron.BrowserWindow = null;
+let mainWindow: Electron.BrowserWindow | null = null;
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {
@@ -125,7 +128,7 @@ app.whenReady().then(() => {
   mainWindow.loadURL('https://github.com');
 
   mainWindow.webContents.on('did-finish-load', function () {
-    mainWindow.webContents.savePage('/tmp/test.html', 'HTMLComplete').then(() => {
+    mainWindow?.webContents.savePage('/tmp/test.html', 'HTMLComplete').then(() => {
       console.log('Page saved successfully');
     });
   });
@@ -140,10 +143,10 @@ app.whenReady().then(() => {
     console.log('Debugger detached due to : ', reason);
   });
 
-  mainWindow.webContents.debugger.on('message', function (event, method, params: any) {
+  mainWindow.webContents.debugger.on('message', function (event, method, params) {
     if (method === 'Network.requestWillBeSent') {
       if (params.request.url === 'https://www.github.com') {
-        mainWindow.webContents.debugger.detach();
+        mainWindow?.webContents.debugger.detach();
       }
     }
   });
@@ -160,7 +163,7 @@ app.whenReady().then(() => {
 app.commandLine.appendSwitch('enable-web-bluetooth');
 
 app.whenReady().then(() => {
-  mainWindow.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
+  mainWindow?.webContents.on('select-bluetooth-device', (event, deviceList, callback) => {
     event.preventDefault();
 
     const result = (() => {
@@ -188,21 +191,18 @@ app.getLocale();
 app.addRecentDocument('/Users/USERNAME/Desktop/work.type');
 app.clearRecentDocuments();
 const dockMenu = Menu.buildFromTemplate([
-  <Electron.MenuItemConstructorOptions>{
+  {
     label: 'New Window',
     click: () => {
       console.log('New Window');
     }
   },
-  <Electron.MenuItemConstructorOptions>{
+  {
     label: 'New Window with Settings',
-    submenu: [
-      <Electron.MenuItemConstructorOptions>{ label: 'Basic' },
-      <Electron.MenuItemConstructorOptions>{ label: 'Pro' }
-    ]
+    submenu: [{ label: 'Basic' }, { label: 'Pro' }]
   },
-  <Electron.MenuItemConstructorOptions>{ label: 'New Command...' },
-  <Electron.MenuItemConstructorOptions>{
+  { label: 'New Command...' },
+  {
     label: 'Edit',
     submenu: [
       {
@@ -240,13 +240,13 @@ const dockMenu = Menu.buildFromTemplate([
 app.dock?.setMenu(dockMenu);
 app.dock?.setBadge('foo');
 const dockid = app.dock?.bounce('informational');
-app.dock?.cancelBounce(dockid);
+if (dockid) app.dock?.cancelBounce(dockid);
 app.dock?.setIcon('/path/to/icon.png');
 
 app.setBadgeCount(app.getBadgeCount() + 1);
 
 app.setUserTasks([
-  <Electron.Task>{
+  {
     program: process.execPath,
     arguments: '--new-window',
     iconPath: process.execPath,
@@ -320,13 +320,10 @@ app.setJumpList([
   }
 ]);
 
-if (app.isUnityRunning()) {
-  console.log('unity running');
-}
 if (app.isAccessibilitySupportEnabled()) {
   console.log('a11y running');
 }
-app.setLoginItemSettings({ openAtLogin: true, openAsHidden: false });
+app.setLoginItemSettings({ openAtLogin: true });
 console.log(app.getLoginItemSettings().wasOpenedAtLogin);
 app.setAboutPanelOptions({
   applicationName: 'Test',
@@ -344,7 +341,7 @@ app.whenReady().then(() => {
 });
 app.on('accessibility-support-changed', (_, enabled) => console.log('accessibility: ' + enabled));
 
-ipcMain.on('online-status-changed', (event, status: any) => {
+ipcMain.on('online-status-changed', (event, status: string) => {
   console.log(status);
 });
 
@@ -486,7 +483,7 @@ autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName, releaseDa
 // BrowserWindow
 // https://github.com/electron/electron/blob/main/docs/api/browser-window.md
 
-let win3 = new BrowserWindow({ width: 800, height: 600, show: false });
+let win3: BrowserWindow | null = new BrowserWindow({ width: 800, height: 600, show: false });
 win3.on('closed', () => {
   win3 = null;
 });
@@ -494,8 +491,8 @@ win3.on('closed', () => {
 win3.loadURL('https://github.com');
 win3.show();
 
-const toolbarRect = document.getElementById('toolbar').getBoundingClientRect();
-win3.setSheetOffset(toolbarRect.height);
+const toolbarRect = document.getElementById('toolbar')?.getBoundingClientRect();
+if (toolbarRect) win3.setSheetOffset(toolbarRect.height);
 
 let window = new BrowserWindow();
 window.setProgressBar(0.5);
@@ -599,17 +596,17 @@ globalShortcut.unregisterAll();
 // ipcMain
 // https://github.com/electron/electron/blob/main/docs/api/ipc-main.md
 
-ipcMain.handle('ping-pong', (event, arg: any) => {
+ipcMain.handle('ping-pong', (event, arg: string) => {
   console.log(arg); // prints "ping"
   return 'pong';
 });
 
-ipcMain.on('asynchronous-message', (event, arg: any) => {
+ipcMain.on('asynchronous-message', (event, arg: string) => {
   console.log(arg); // prints "ping"
   event.sender.send('asynchronous-reply', 'pong');
 });
 
-ipcMain.on('synchronous-message', (event, arg: any) => {
+ipcMain.on('synchronous-message', (event, arg: string) => {
   console.log(arg); // prints "ping"
   event.returnValue = 'pong';
 });
@@ -655,7 +652,7 @@ const pos = screen.getCursorScreenPoint();
 menu.popup({ x: pos.x, y: pos.y });
 
 // main.js
-const template = <Electron.MenuItemConstructorOptions[]>[
+const template: Electron.MenuItemConstructorOptions[] = [
   {
     label: 'Electron',
     submenu: [
@@ -682,7 +679,7 @@ const template = <Electron.MenuItemConstructorOptions[]>[
       {
         label: 'Hide Others',
         accelerator: 'Command+Shift+H',
-        role: 'hideothers'
+        role: 'hideOthers'
       },
       {
         label: 'Show All',
@@ -734,7 +731,7 @@ const template = <Electron.MenuItemConstructorOptions[]>[
       {
         label: 'Select All',
         accelerator: 'Command+A',
-        role: 'selectall'
+        role: 'selectAll'
       }
     ]
   },
@@ -997,7 +994,7 @@ app.whenReady().then(() => {
 // tray
 // https://github.com/electron/electron/blob/main/docs/api/tray.md
 
-let appIcon: Electron.Tray = null;
+let appIcon: Electron.Tray | null = null;
 app.whenReady().then(() => {
   appIcon = new Tray('/path/to/my/icon');
   const contextMenu = Menu.buildFromTemplate([
@@ -1040,22 +1037,33 @@ app.whenReady().then(() => {
 // clipboard
 // https://github.com/electron/electron/blob/main/docs/api/clipboard.md
 
-clipboard.writeText('Example String');
-clipboard.writeText('Example String', 'selection');
-clipboard.writeBookmark('foo', 'http://example.com');
-clipboard.writeBookmark('foo', 'http://example.com', 'selection');
-clipboard.writeFindText('foo');
-console.log(clipboard.readText('selection'));
-console.log(clipboard.readFindText());
-console.log(clipboard.availableFormats());
-console.log(clipboard.readBookmark().title);
-clipboard.clear();
+(async () => {
+  await clipboard.writeText('Example String');
+  const text: string = await clipboard.readText();
+  console.log(text);
+  clipboard.clear();
 
-clipboard.write({
-  html: '<html></html>',
-  text: 'Hello World!',
-  image: clipboard.readImage()
-});
+  // clipboard.write takes an array of `ClipboardItem` instances. Each is
+  // constructed with a MIME-keyed record whose values are a Blob or a
+  // string (or a { title, url } object for the bookmark MIME type).
+  await clipboard.write([
+    new ClipboardItem({
+      'text/plain': 'Hello World!',
+      'text/html': '<html></html>',
+      'image/png': new Blob([Buffer.from('89504e470d0a1a0a', 'hex')], { type: 'image/png' }),
+      'electron application/bookmark': { title: 'Electron', url: 'https://electronjs.org' }
+    })
+  ]);
+  const items = await clipboard.read();
+  for (const item of items) {
+    for (const type of item.types) {
+      // `getType` resolves to a Blob for every MIME type except
+      // `electron application/bookmark`, which resolves to a `{ title, url }`.
+      const payload = await item.getType(type);
+      console.log(type, 'url' in payload ? payload.url : payload.size);
+    }
+  }
+})();
 
 // crash-reporter
 // https://github.com/electron/electron/blob/main/docs/api/crash-reporter.md
@@ -1082,7 +1090,7 @@ appIcon2.destroy();
 const window2 = new BrowserWindow({ icon: '/Users/somebody/images/window.png' });
 console.log(window2.id);
 
-const image = clipboard.readImage();
+const image = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 console.log(image.getSize());
 
 const appIcon3 = new Tray(image);
@@ -1124,7 +1132,7 @@ app.whenReady().then(() => {
 
 app.whenReady().then(() => {
   const displays = screen.getAllDisplays();
-  let externalDisplay: any = null;
+  let externalDisplay: Electron.Display | null = null;
   for (const i in displays) {
     if (displays[i].bounds.x > 0 || displays[i].bounds.y > 0) {
       externalDisplay = displays[i];
@@ -1304,10 +1312,13 @@ const filter = {
   urls: ['https://*.github.com/*', '*://electron.github.io']
 };
 
-session.defaultSession.webRequest.onBeforeSendHeaders(filter, function (details: any, callback: any) {
+session.defaultSession.webRequest.onBeforeSendHeaders(filter, function (details, callback) {
   details.requestHeaders['User-Agent'] = 'MyAgent';
   callback({ cancel: false, requestHeaders: details.requestHeaders });
 });
+
+session.defaultSession.registerLocalAIHandler(utilityProcess.fork(path.join(__dirname, 'ai-handler.js')));
+session.defaultSession.registerLocalAIHandler(null);
 
 app.whenReady().then(function () {
   const protocol = session.defaultSession.protocol;
@@ -1369,4 +1380,4 @@ const touchBar = new TouchBar({
   items: [new TouchBar.TouchBarButton({ label: '' }), new TouchBar.TouchBarLabel({ label: '' })]
 });
 
-mainWindow.setTouchBar(touchBar);
+win4.setTouchBar(touchBar);

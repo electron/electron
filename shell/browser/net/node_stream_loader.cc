@@ -79,11 +79,21 @@ void NodeStreamLoader::NotifyError() {
 }
 
 void NodeStreamLoader::NotifyReadable() {
-  if (!readable_)
-    ReadMore();
-  else if (is_reading_)
-    has_read_waiting_ = true;
+  if (readable_) {
+    // 'readable' was emitted from within stream.read(), so remember to read
+    // again once the in-progress read completes.
+    if (is_reading_)
+      has_read_waiting_ = true;
+    return;
+  }
+
+  // `readable_` must be set before ReadMore(): it clears the flag itself when
+  // read() comes up empty, and a re-entrant 'readable' emitted from within
+  // read() needs to see `true` so that it records `has_read_waiting_`.
   readable_ = true;
+
+  // ReadMore() may delete `this`, so it must be the last thing we do.
+  ReadMore();
 }
 
 void NodeStreamLoader::NotifyComplete(int result) {
@@ -96,7 +106,7 @@ void NodeStreamLoader::NotifyComplete(int result) {
 
   network::URLLoaderCompletionStatus status(result);
   status.completion_time = base::TimeTicks::Now();
-  status.decoded_body_length = bytes_written_;
+  status.decoded_body_length = base::ByteSize(bytes_written_);
   client_->OnComplete(status);
   delete this;
 }

@@ -1,0 +1,95 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <clavin@electronjs.org>
+Date: Fri, 12 Jun 2026 17:55:13 -0700
+Subject: fix: use a dedicated CppHeapPointerTag for cppgc wrappables
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+V8 removed CppHeapPointerTag::kDefaultTag for sandbox-enabled builds in
+https://chromium-review.googlesource.com/c/v8/v8/+/7907082 — embedders
+that enable the sandbox must use specific tags for wrapped types.
+Upstream Node.js builds with the sandbox disabled and still compiles
+against kDefaultTag; Electron enables the sandbox, so define a
+Node-specific tag. Node.js never unwraps through v8::Object::Unwrap
+(it unwraps via internal fields), so a single tag suffices. The value
+(0x5000) is provided by the EMBEDDER_CPPHEAP_POINTER_TAG define on the
+libnode GN target so that consumers such as Electron can static_assert
+at compile time that their own tags stay below it; it sits outside the
+tag ranges used by Blink and gin, which share isolates with Node.js in
+renderer processes.
+
+diff --git a/src/cppgc_helpers-inl.h b/src/cppgc_helpers-inl.h
+index 0e52bf5a6f4837d0f4bfed83987c6903796fda55..68c70153b96cc3e62db1b5dc74ac4026fa306271 100644
+--- a/src/cppgc_helpers-inl.h
++++ b/src/cppgc_helpers-inl.h
+@@ -16,7 +16,7 @@ void CppgcMixin::Wrap(T* ptr, Realm* realm, v8::Local<v8::Object> obj) {
+   ptr->traced_reference_ = v8::TracedReference<v8::Object>(isolate, obj);
+   // Note that ptr must be of concrete type T in Wrap.
+   auto* wrappable = static_cast<v8::Object::Wrappable*>(ptr);
+-  v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(isolate, obj, wrappable);
++  v8::Object::Wrap<kNodeCppHeapPointerTag>(isolate, obj, wrappable);
+   // Keep the layout consistent with BaseObjects.
+   obj->SetAlignedPointerInInternalField(
+       kEmbedderType, realm->isolate_data()->embedder_id_for_cppgc(), 0);
+diff --git a/src/cppgc_helpers.h b/src/cppgc_helpers.h
+index fe6300a5d5d2d6602a84cbd33736c2133041d1b0..b9153306b6cbc34d076c0eb5b32ecce3c5de98de 100644
+--- a/src/cppgc_helpers.h
++++ b/src/cppgc_helpers.h
+@@ -19,6 +19,25 @@ class Environment;
+ class Realm;
+ class CppgcWrapperListNode;
+ 
++// Tag for Node.js wrappables in the V8 CppHeapPointer table. V8 removed
++// CppHeapPointerTag::kDefaultTag for sandbox-enabled builds
++// (https://chromium-review.googlesource.com/c/v8/v8/+/7907082): embedders
++// that enable the sandbox must tag each wrapped type. Node.js never unwraps
++// through v8::Object::Unwrap (it unwraps via internal fields), so a single tag
++// suffices. The value comes from the EMBEDDER_CPPHEAP_POINTER_TAG define on
++// the libnode GN target (see unofficial.gni); it sits above the tags used by
++// Blink, gin, and Electron (which extends gin and static_asserts against the
++// same define in shell/common/gin_helper/wrappable_pointer_tags.h) and below
++// V8's internal tag range; all of those share isolates with Node.js in
++// Electron's renderers. The static_assert below pins the upper bound and
++// Electron's static_assert pins the lower bound.
++constexpr v8::CppHeapPointerTag kNodeCppHeapPointerTag =
++    static_cast<v8::CppHeapPointerTag>(EMBEDDER_CPPHEAP_POINTER_TAG);
++static_assert(
++    static_cast<uint16_t>(kNodeCppHeapPointerTag) <
++        static_cast<uint16_t>(v8::CppHeapPointerTag::kFirstV8InternalTag),
++    "Node.js cppgc wrappable tag must stay below V8's internal tag range.");
++
+ /**
+  * This is a helper mixin with a BaseObject-like interface to help
+  * implementing wrapper objects managed by V8's cppgc (Oilpan) library.
+diff --git a/src/env.cc b/src/env.cc
+index 10266fd1233d9b117eefbbbb4f455289b002785a..ce6dd5b7394c63e50cbc250a7eca7048a873a8b9 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -611,8 +611,7 @@ IsolateData::~IsolateData() {}
+ void SetCppgcReference(Isolate* isolate,
+                        Local<Object> object,
+                        v8::Object::Wrappable* wrappable) {
+-  v8::Object::Wrap<v8::CppHeapPointerTag::kDefaultTag>(
+-      isolate, object, wrappable);
++  v8::Object::Wrap<kNodeCppHeapPointerTag>(isolate, object, wrappable);
+ }
+ 
+ void IsolateData::MemoryInfo(MemoryTracker* tracker) const {
+diff --git a/unofficial.gni b/unofficial.gni
+index e6ff9a302624ca829739e5b38385fa5c050e6fd4..f54840a3cf67c9fe3c016ac830deb21c6880e7c9 100644
+--- a/unofficial.gni
++++ b/unofficial.gni
+@@ -63,6 +63,12 @@ template("node_gn_build") {
+     defines = [
+       "NODE_WANT_INTERNALS=1",
+       "NODE_EMBEDDER_MODULE_VERSION=$node_module_version",
++
++      # CppHeapPointerTag value used for Node.js cppgc wrappables (see
++      # src/cppgc_helpers.h). Exposed to libnode consumers so embedders that
++      # define their own tags (e.g. Electron) can static_assert against it at
++      # compile time.
++      "EMBEDDER_CPPHEAP_POINTER_TAG=0x5000",
+     ]
+     configs = [
+       ":node_features",

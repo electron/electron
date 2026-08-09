@@ -9,7 +9,7 @@ on:
         required: true
       target-arch:
         type: string
-        description: 'Arch to build for, can be x64, arm64 or arm'
+        description: 'Arch to build for, can be x64 or arm64'
         required: true
       test-runs-on:
         type: string
@@ -52,7 +52,7 @@ jobs:
     container: ${{ fromJSON(inputs.test-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0
@@ -108,7 +108,7 @@ jobs:
     container: ${{ fromJSON(inputs.test-container) }}
     steps:
     - name: Checkout Electron
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         path: src/electron
         fetch-depth: 0

@@ -6,6 +6,7 @@
 
 #include <algorithm>
 
+#include "base/functional/callback.h"
 #include "shell/browser/notifications/notification.h"
 
 namespace electron {
@@ -48,6 +49,20 @@ void NotificationPresenter::GetDeliveredNotifications(
     GetDeliveredNotificationsCallback callback) {
   // Default: return empty list. Overridden on macOS.
   std::move(callback).Run({});
+}
+
+void NotificationPresenter::RemoveDeliveredNotifications(
+    const std::vector<std::string>& identifiers) {
+  // Default: no-op. Overridden on macOS.
+}
+
+void NotificationPresenter::RemoveAllDeliveredNotifications() {
+  // Default: no-op. Overridden on macOS.
+}
+
+void NotificationPresenter::RemoveDeliveredNotificationsByGroupId(
+    const std::string& group_id) {
+  // Default: no-op. Overridden on macOS.
 }
 
 }  // namespace electron

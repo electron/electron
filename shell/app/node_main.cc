@@ -12,7 +12,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/containers/fixed_flat_set.h"
 #include "base/environment.h"
@@ -21,11 +20,9 @@
 #include "base/strings/cstring_view.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
-#include "content/public/common/content_switches.h"
 #include "electron/fuses.h"
 #include "electron/mas.h"
-#include "gin/array_buffer.h"
-#include "gin/public/isolate_holder.h"
+#include "gin/converter.h"
 #include "gin/v8_initializer.h"
 #include "shell/app/uv_task_runner.h"
 #include "shell/browser/javascript_environment.h"
@@ -262,11 +259,9 @@ int NodeMain() {
     uv_loop_configure(loop, UV_METRICS_IDLE_TIME);
 
     // Initialize gin::IsolateHolder.
-    bool setup_wasm_streaming =
-        node::per_process::cli_options->get_per_isolate_options()
-            ->get_per_env_options()
-            ->experimental_fetch;
-    JavascriptEnvironment gin_env(loop, setup_wasm_streaming);
+    // Node.js now exposes fetch unconditionally, so WASM streaming (which
+    // relies on the fetch Response object) is always set up here.
+    JavascriptEnvironment gin_env(loop, /*setup_wasm_streaming=*/true);
 
     v8::Isolate* isolate = gin_env.isolate();
 
@@ -310,6 +305,7 @@ int NodeMain() {
     }
 
     v8::HandleScope scope(isolate);
+    electron::util::FeedEnvironmentCodeCache(env);
     node::LoadEnvironment(env, node::StartExecutionCallback{}, &OnNodePreload);
 
     // Potential reasons we get Nothing here may include: the env

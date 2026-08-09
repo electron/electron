@@ -22,10 +22,10 @@ Additionally:
    invisible in trace viewers.
 
 diff --git a/src/builtins/builtins-trace.cc b/src/builtins/builtins-trace.cc
-index 76e9675d795bd6f65ec1b9c8a524b713160de7cc..ee0967847236b665d2e61b90128c6b4e79b74ea8 100644
+index 5acfb72e44683eb35b70ed13d7a8a730a75feb62..cdc36ec311b0be2516a36b699f4df88a8af9583b 100644
 --- a/src/builtins/builtins-trace.cc
 +++ b/src/builtins/builtins-trace.cc
-@@ -183,37 +183,44 @@ BUILTIN(Trace) {
+@@ -184,37 +184,44 @@ BUILTIN(Trace) {
    }
  
  #if defined(V8_USE_PERFETTO)

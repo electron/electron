@@ -4,7 +4,6 @@
 
 #include "shell/browser/file_system_access/file_system_access_web_contents_helper.h"
 
-#include "content/public/browser/browser_context.h"
 #include "content/public/browser/navigation_handle.h"
 #include "shell/browser/file_system_access/file_system_access_permission_context.h"
 #include "shell/browser/file_system_access/file_system_access_permission_context_factory.h"

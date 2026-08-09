@@ -8,8 +8,8 @@
 #include <memory>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "shell/browser/ui/electron_menu_model.h"
 #include "ui/views/controls/menu/menu_delegate.h"
 
 namespace gfx {
@@ -23,6 +23,7 @@ class Button;
 
 namespace electron {
 
+class ElectronMenuModel;
 class MenuBar;
 
 class MenuDelegate : public views::MenuDelegate {
@@ -71,6 +72,7 @@ class MenuDelegate : public views::MenuDelegate {
                                       views::MenuButton** button) override;
 
  private:
+  void CancelSelf();
   raw_ptr<MenuBar> menu_bar_;
   int id_ = -1;
   std::unique_ptr<views::MenuDelegate> adapter_;
@@ -81,6 +83,7 @@ class MenuDelegate : public views::MenuDelegate {
   bool hold_first_switch_ = false;
 
   base::ObserverList<Observer>::Unchecked observers_;
+  base::WeakPtrFactory<MenuDelegate> weak_factory_{this};
 };
 
 }  // namespace electron

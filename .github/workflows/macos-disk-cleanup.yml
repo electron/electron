@@ -26,10 +26,9 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           sparse-checkout: |
-            .github/actions/install-homebrew
             .github/actions/free-space-macos
           sparse-checkout-cone-mode: false
 
@@ -41,9 +40,6 @@ jobs:
           df -h /
           FREE_SPACE_BEFORE=$(df -k / | tail -1 | awk '{print $4}')
           echo "free_kb=$FREE_SPACE_BEFORE" >> $GITHUB_OUTPUT
-
-      - name: Install pinned Homebrew
-        uses: ./.github/actions/install-homebrew
 
       - name: Free Space on macOS
         uses: ./.github/actions/free-space-macos
@@ -75,7 +71,7 @@ jobs:
           echo "Free space after: ${FREE_AFTER_GB}GB"
           echo "Space freed: ${SPACE_FREED_GB}GB"
 
-          curl -s -X POST "https://api.datadoghq.com/api/v2/series" \
+          if curl -sS -X POST "https://api.datadoghq.com/api/v2/series" \
             -H "Content-Type: application/json" \
             -H "DD-API-KEY: ${DD_API_KEY}" \
             -d @- << EOF
@@ -105,5 +101,8 @@ jobs:
             ]
           }
           EOF
-
-          echo "Disk space metrics logged to Datadog"
+          then
+            echo "Disk space metrics logged to Datadog"
+          else
+            echo "::warning::Datadog metrics upload failed"
+          fi

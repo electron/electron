@@ -1,9 +1,8 @@
-const chalk = require('chalk');
-
 const childProcess = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { styleText } = require('node:util');
 
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
@@ -11,8 +10,8 @@ const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 const CHROMIUM_VERSION_DEPS_REGEX = /chromium_version':\n +'(.+?)',/m;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const pass = chalk.green('✓');
-const fail = chalk.red('✗');
+const pass = styleText('green', '✓');
+const fail = styleText('red', '✗');
 
 function getElectronExec() {
   const OUT_DIR = getOutDir();
@@ -194,8 +193,23 @@ function getDepotToolsEnv() {
     throw new Error("Couldn't find depot_tools, ensure it's on your PATH");
   }
 
-  if (!('CHROMIUM_BUILDTOOLS_PATH' in depotToolsEnv)) {
-    throw new Error('CHROMIUM_BUILDTOOLS_PATH environment variable must be set');
+  const result = childProcess.spawnSync(
+    'python3',
+    [
+      '-c',
+      '\'from lib.util import get_chromium_buildtools_path_value; print(get_chromium_buildtools_path_value() or "")\''
+    ],
+    { env: depotToolsEnv, shell: true, encoding: 'utf8', cwd: path.join(ELECTRON_DIR, 'script') }
+  );
+  if (result.status !== 0) {
+    throw new Error(result.stderr);
+  }
+
+  const chromiumBuildtoolsPathValue = result.status === 0 ? result.stdout.trim() : null;
+
+  // Only set CHROMIUM_BUILDTOOLS_PATH if we're on an older version of depot_tools which requires it
+  if (chromiumBuildtoolsPathValue) {
+    depotToolsEnv.CHROMIUM_BUILDTOOLS_PATH = chromiumBuildtoolsPathValue;
   }
 
   return depotToolsEnv;

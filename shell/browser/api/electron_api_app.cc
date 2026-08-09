@@ -27,6 +27,7 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/chrome_paths.h"
+#include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "components/proxy_config/proxy_prefs.h"
@@ -34,11 +35,13 @@
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_child_process_host.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_data.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/network_service_instance.h"
 #include "content/public/browser/render_frame_host.h"
+#include "content/public/common/content_switches.h"
 #include "crypto/crypto_buildflags.h"
 #include "electron/mas.h"
 #include "media/audio/audio_manager.h"
@@ -98,11 +101,14 @@
 #if BUILDFLAG(IS_MAC)
 #include <CoreFoundation/CoreFoundation.h>
 #include "base/no_destructor.h"
+#include "base/strings/utf_string_conversions.h"
 #include "content/browser/mac_helpers.h"
+#include "device/fido/strings/grit/fido_strings.h"
 #include "shell/browser/electron_child_process_host_flags.h"
 #include "shell/browser/ui/cocoa/electron_bundle_mover.h"
 #include "shell/browser/webauthn/electron_authenticator_request_delegate.h"
 #include "shell/common/process_util.h"
+#include "ui/base/resource/resource_bundle.h"
 #endif
 
 #if BUILDFLAG(IS_LINUX)
@@ -466,14 +472,8 @@ void OnClientCertificateSelected(
     std::shared_ptr<content::ClientCertificateDelegate> delegate,
     std::shared_ptr<net::ClientCertIdentityList> identities,
     gin::Arguments* const args) {
-  if (args->Length() == 2) {
-    delegate->ContinueWithCertificate(nullptr, nullptr);
-    return;
-  }
-
   v8::Local<v8::Value> val;
-  args->GetNext(&val);
-  if (val->IsNull()) {
+  if (!args->GetNext(&val) || val.IsEmpty() || val->IsNullOrUndefined()) {
     delegate->ContinueWithCertificate(nullptr, nullptr);
     return;
   }
@@ -594,6 +594,7 @@ void App::OnQuit() {
   Emit("quit", exitCode);
 
   if (process_singleton_) {
+    ScopedAllowBlockingForElectron allow_blocking;
     process_singleton_->Cleanup();
     process_singleton_.reset();
   }
@@ -777,15 +778,20 @@ base::OnceClosure App::SelectClientCertificate(
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
+  // |web_contents| is null for requests that did not originate from a renderer
+  // (e.g. net.fetch / utilityProcess); surface those with a null WebContents.
+  v8::Local<v8::Value> web_contents_value =
+      web_contents ? WebContents::FromOrCreate(isolate, web_contents).ToV8()
+                   : v8::Null(isolate).As<v8::Value>();
   bool prevent_default =
-      Emit("select-client-certificate",
-           WebContents::FromOrCreate(isolate, web_contents),
+      Emit("select-client-certificate", web_contents_value,
            cert_request_info->host_and_port.ToString(), std::move(client_certs),
            base::BindOnce(&OnClientCertificateSelected, isolate,
                           shared_delegate, shared_identities));
 
-  // Default to first certificate from the platform store.
-  if (!prevent_default) {
+  // Default to first certificate from the platform store. The JS callback may
+  // have already run synchronously and moved the identity out, so guard for it.
+  if (!prevent_default && (*shared_identities)[0]) {
     scoped_refptr<net::X509Certificate> cert =
         (*shared_identities)[0]->certificate();
     net::ClientCertIdentity::SelfOwningAcquirePrivateKey(
@@ -1056,16 +1062,22 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
 
   blink::CloneableMessage additional_data_message;
   args->GetNext(&additional_data_message);
+  // ProcessSingleton keeps a non-owning base::raw_span to this data, so it must
+  // outlive `process_singleton_`. Copy it into a member that is destroyed after
+  // `process_singleton_` to avoid a dangling span.
+  single_instance_additional_data_.assign(
+      additional_data_message.encoded_message.begin(),
+      additional_data_message.encoded_message.end());
 #if BUILDFLAG(IS_WIN)
   const std::string program_name = electron::Browser::Get()->GetName();
   bool app_is_sandboxed =
       IsSandboxEnabled(base::CommandLine::ForCurrentProcess());
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      program_name, user_dir, additional_data_message.encoded_message,
+      program_name, user_dir, single_instance_additional_data_,
       app_is_sandboxed, base::BindRepeating(NotificationCallbackWrapper, cb));
 #else
   process_singleton_ = std::make_unique<ProcessSingleton>(
-      user_dir, additional_data_message.encoded_message,
+      user_dir, single_instance_additional_data_,
       base::BindRepeating(NotificationCallbackWrapper, cb));
 #endif
 
@@ -1090,6 +1102,7 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
     case ProcessSingleton::NotifyResult::LOCK_ERROR:
     case ProcessSingleton::NotifyResult::PROFILE_IN_USE:
     case ProcessSingleton::NotifyResult::PROCESS_NOTIFIED: {
+      ScopedAllowBlockingForElectron allow_blocking;
       process_singleton_.reset();
       return false;
     }
@@ -1098,6 +1111,7 @@ bool App::RequestSingleInstanceLock(gin::Arguments* args) {
 
 void App::ReleaseSingleInstanceLock() {
   if (process_singleton_) {
+    ScopedAllowBlockingForElectron allow_blocking;
     process_singleton_->Cleanup();
     process_singleton_.reset();
   }
@@ -1146,6 +1160,14 @@ void App::DisableHardwareAcceleration(gin_helper::ErrorThrower thrower) {
         "before app is ready");
     return;
   }
+
+  // Append --disable-gpu to the command line so that all Chromium subsystems
+  // that check the switch (e.g. GpuProcessHost, viz compositor) respect the
+  // decision.  The switch must be set before GpuDataManager is initialised
+  // because InitializeGpuModes() reads it to decide which GPU modes to add.
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  if (!command_line->HasSwitch(::switches::kDisableGpu))
+    command_line->AppendSwitch(::switches::kDisableGpu);
 
   // If the GpuDataManager is already initialized, disable hardware
   // acceleration immediately. Otherwise, set a flag to disable it in
@@ -1683,8 +1705,37 @@ void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
           "non-empty string");
       return;
     }
+
+    // Optional: lets apps customize the macOS Touch ID prompt. The OS renders
+    // it as `"<App Name>" is trying to <promptReason>`. A `$1` placeholder, if
+    // present, is replaced with the relying party ID; otherwise the string is
+    // used verbatim. The default, IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON, is
+    // "verify your identity on $1".
+    std::string prompt_reason;
+    if (touch_id.Has("promptReason")) {
+      if (!touch_id.Get("promptReason", &prompt_reason) ||
+          prompt_reason.empty()) {
+        thrower.ThrowTypeError(
+            "configureWebAuthn: 'touchID.promptReason' must be a non-empty "
+            "string");
+        return;
+      }
+    }
+
     ElectronWebAuthenticationDelegate::SetTouchIdKeychainAccessGroup(
         std::move(keychain_access_group));
+
+    if (!prompt_reason.empty()) {
+      ui::ResourceBundle::GetSharedInstance().OverrideLocaleStringResource(
+          IDS_WEBAUTHN_TOUCH_ID_PROMPT_REASON,
+          base::UTF8ToUTF16(prompt_reason));
+    }
+  }
+
+  bool platform_passkeys = false;
+  if (options.Get("platformPasskeys", &platform_passkeys)) {
+    ElectronWebAuthenticationDelegate::SetPlatformPasskeysEnabled(
+        platform_passkeys);
   }
 }
 
@@ -1817,7 +1868,8 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   content::GetNetworkService()->ConfigureStubHostResolver(
       enable_built_in_resolver, enable_happy_eyeballs_v3, secure_dns_mode,
       doh_config, additional_dns_query_types_enabled,
-      {} /*fallback_doh_nameservers*/);
+      {} /*fallback_doh_nameservers*/,
+      false /*insecure_dns_via_platform_apis_enabled*/);
 }
 
 // static
@@ -1938,10 +1990,6 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
                  base::BindRepeating(&Browser::SetUserTasks, browser))
       .SetMethod("getJumpListSettings", &App::GetJumpListSettings)
       .SetMethod("setJumpList", &App::SetJumpList)
-#endif
-#if BUILDFLAG(IS_LINUX)
-      .SetMethod("isUnityRunning",
-                 base::BindRepeating(&Browser::IsUnityRunning, browser))
 #endif
       .SetProperty("isPackaged", &App::IsPackaged)
       .SetMethod("setAppPath", &App::SetAppPath)

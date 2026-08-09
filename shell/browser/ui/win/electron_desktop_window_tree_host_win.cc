@@ -5,12 +5,10 @@
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 
 #include "base/win/windows_version.h"
-#include "electron/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/win/dark_mode.h"
-#include "ui/base/win/hwnd_metrics.h"
 
 namespace electron {
 
@@ -200,49 +198,12 @@ bool ElectronDesktopWindowTreeHostWin::HandleIMEMessage(UINT message,
                                                            l_param, result);
 }
 
-void ElectronDesktopWindowTreeHostWin::HandleVisibilityChanged(bool visible) {
-  if (native_window_view_->widget())
-    native_window_view_->widget()->OnNativeWidgetVisibilityChanged(visible);
-
-  if (visible)
-    UpdateAllowScreenshots();
-}
-
-void ElectronDesktopWindowTreeHostWin::SetAllowScreenshots(bool allow) {
-  if (allow_screenshots_ == allow)
-    return;
-
-  allow_screenshots_ = allow;
-
-  // If the window is not visible, do not set the window display affinity
-  // because `SetWindowDisplayAffinity` will attempt to compose the window,
-  if (!IsVisible())
-    return;
-
-  UpdateAllowScreenshots();
-}
-
 // Refs https://chromium-review.googlesource.com/c/chromium/src/+/7095963
 // Chromium's fullscreen handler conflicts with ours and results in incorrect
 // restoration.
 void ElectronDesktopWindowTreeHostWin::Restore() {
   ::SendMessage(GetAcceleratedWidget(), WM_SYSCOMMAND,
                 static_cast<WPARAM>(SC_RESTORE), 0);
-}
-
-void ElectronDesktopWindowTreeHostWin::UpdateAllowScreenshots() {
-  bool allowed = views::DesktopWindowTreeHostWin::AreScreenshotsAllowed();
-  if (allowed == allow_screenshots_)
-    return;
-
-  // On some older Windows versions, setting the display affinity
-  // to WDA_EXCLUDEFROMCAPTURE won't prevent the window from being
-  // captured - setting WS_EX_LAYERED mitigates this issue.
-  if (base::win::GetVersion() < base::win::Version::WIN11_22H2)
-    native_window_view_->SetLayered();
-  ::SetWindowDisplayAffinity(
-      GetAcceleratedWidget(),
-      allow_screenshots_ ? WDA_NONE : WDA_EXCLUDEFROMCAPTURE);
 }
 
 void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(

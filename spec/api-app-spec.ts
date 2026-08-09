@@ -1,7 +1,6 @@
 import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, utilityProcess } from 'electron/main';
 
 import { assert, expect } from 'chai';
-import * as semver from 'semver';
 
 import * as cp from 'node:child_process';
 import { once } from 'node:events';
@@ -121,6 +120,22 @@ describe('app module', () => {
 
         expect(app.getName()).to.equal('electron-test-name');
       });
+    });
+  });
+
+  ifdescribe(process.platform === 'linux')('app.setDesktopName(name)', () => {
+    it('sets the desktop name to the CHROME_DESKTOP environment variable', () => {
+      const original = process.env.CHROME_DESKTOP;
+      defer(() => {
+        if (original === undefined) {
+          delete process.env.CHROME_DESKTOP;
+        } else {
+          process.env.CHROME_DESKTOP = original;
+        }
+      });
+
+      app.setDesktopName('electron-test-set-desktop-name.desktop');
+      expect(process.env.CHROME_DESKTOP).to.equal('electron-test-set-desktop-name.desktop');
     });
   });
 
@@ -340,6 +355,19 @@ describe('app module', () => {
       await testArgumentPassing({
         args: ['--send-data', '--data-content="data"'],
         expectedAdditionalData: 'data'
+      });
+    });
+
+    it('preserves NUL followed by whitespace in additional data', async () => {
+      // The real invariant here is the V8-serialized format of the data. Using
+      // a string here is just a convenient way to test the invariant.
+      const expectedAdditionalData = {
+        value: 'foo\0\tbar'
+      };
+
+      await testArgumentPassing({
+        args: ['--send-data', `--data-content=${JSON.stringify(expectedAdditionalData)}`],
+        expectedAdditionalData
       });
     });
 
@@ -632,8 +660,7 @@ describe('app module', () => {
   });
 
   describe('app.badgeCount', () => {
-    const platformIsNotSupported =
-      process.platform === 'win32' || (process.platform === 'linux' && !app.isUnityRunning());
+    const platformIsNotSupported = process.platform === 'win32' || process.platform === 'linux';
 
     const expectedBadgeCount = 42;
 
@@ -702,8 +729,6 @@ describe('app module', () => {
       '/f',
       '/d'
     ];
-    const productVersion = isMac ? cp.execSync('sw_vers -productVersion').toString().trim() : '';
-    const isVenturaOrHigher = semver.gt(semver.coerce(productVersion) || '0.0.0', '13.0.0');
 
     beforeEach(() => {
       app.setLoginItemSettings({ openAtLogin: false });
@@ -722,21 +747,15 @@ describe('app module', () => {
 
       const settings = app.getLoginItemSettings();
       expect(settings.openAtLogin).to.equal(true);
-      expect(settings.openAsHidden).to.equal(false);
       expect(settings.wasOpenedAtLogin).to.equal(false);
-      expect(settings.wasOpenedAsHidden).to.equal(false);
-      expect(settings.restoreState).to.equal(false);
-      if (isVenturaOrHigher) expect(settings.status).to.equal('enabled');
+      expect(settings.status).to.equal('enabled');
     });
 
     ifit(isWin)('sets and returns the app as a login item (windows)', () => {
       app.setLoginItemSettings({ openAtLogin: true, enabled: true });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -753,10 +772,7 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: true, enabled: false });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: false,
         launchItems: [
           {
@@ -765,41 +781,6 @@ describe('app module', () => {
             args: [],
             scope: 'user',
             enabled: false
-          }
-        ]
-      });
-    });
-
-    ifit(!isWin)('adds a login item that loads in hidden mode', () => {
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
-
-      const settings = app.getLoginItemSettings();
-      expect(settings.openAtLogin).to.equal(true);
-
-      const hasOpenAsHidden = process.platform === 'darwin' && !isVenturaOrHigher;
-      expect(settings.openAsHidden).to.equal(hasOpenAsHidden);
-      expect(settings.wasOpenedAtLogin).to.equal(false);
-      expect(settings.wasOpenedAsHidden).to.equal(false);
-      expect(settings.restoreState).to.equal(false);
-      if (isVenturaOrHigher) expect(settings.status).to.equal('enabled');
-    });
-
-    ifit(isWin)('adds a login item that loads in hidden mode (windows)', () => {
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
-      expect(app.getLoginItemSettings()).to.deep.equal({
-        openAtLogin: true,
-        openAsHidden: false,
-        wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
-        executableWillLaunchAtLogin: true,
-        launchItems: [
-          {
-            name: 'electron.app.Electron',
-            path: process.execPath,
-            args: [],
-            scope: 'user',
-            enabled: true
           }
         ]
       });
@@ -815,21 +796,8 @@ describe('app module', () => {
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
     });
 
-    ifit(isMac)('correctly sets and unsets the LoginItem as hidden', () => {
-      expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
-      expect(app.getLoginItemSettings().openAsHidden).to.equal(false);
-
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: true });
-      expect(app.getLoginItemSettings().openAtLogin).to.equal(true);
-      expect(app.getLoginItemSettings().openAsHidden).to.equal(!isVenturaOrHigher);
-
-      app.setLoginItemSettings({ openAtLogin: true, openAsHidden: false });
-      expect(app.getLoginItemSettings().openAtLogin).to.equal(true);
-      expect(app.getLoginItemSettings().openAsHidden).to.equal(false);
-    });
-
     ifdescribe(isMac)('using SMAppService', () => {
-      ifit(isVenturaOrHigher)('can set a login item', () => {
+      it('can set a login item', () => {
         app.setLoginItemSettings({
           openAtLogin: true,
           type: 'mainAppService'
@@ -838,15 +806,12 @@ describe('app module', () => {
         expect(app.getLoginItemSettings()).to.deep.equal({
           status: 'enabled',
           openAtLogin: true,
-          openAsHidden: false,
-          restoreState: false,
           wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false,
           executableWillLaunchAtLogin: false
         });
       });
 
-      ifit(isVenturaOrHigher)('throws when setting non-default type with no name', () => {
+      it('throws when setting non-default type with no name', () => {
         expect(() => {
           app.setLoginItemSettings({
             openAtLogin: true,
@@ -855,7 +820,7 @@ describe('app module', () => {
         }).to.throw(/'name' is required when type is not mainAppService/);
       });
 
-      ifit(isVenturaOrHigher)('throws when getting non-default type with no name', () => {
+      it('throws when getting non-default type with no name', () => {
         expect(() => {
           app.getLoginItemSettings({
             type: 'daemonService'
@@ -863,7 +828,7 @@ describe('app module', () => {
         }).to.throw(/'name' is required when type is not mainAppService/);
       });
 
-      ifit(isVenturaOrHigher)('can unset a login item', () => {
+      it('can unset a login item', () => {
         app.setLoginItemSettings({
           openAtLogin: true,
           type: 'mainAppService'
@@ -877,10 +842,7 @@ describe('app module', () => {
         expect(app.getLoginItemSettings()).to.deep.equal({
           status: 'not-registered',
           openAtLogin: false,
-          openAsHidden: false,
-          restoreState: false,
           wasOpenedAtLogin: false,
-          wasOpenedAsHidden: false,
           executableWillLaunchAtLogin: false
         });
       });
@@ -921,10 +883,7 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -947,10 +906,7 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: false, name: 'additionalEntry' });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: true,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -969,10 +925,7 @@ describe('app module', () => {
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg2'] });
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: false,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -996,10 +949,7 @@ describe('app module', () => {
     ifit(isWin)('finds launch items independent of path quotation or casing', () => {
       const expectation = {
         openAtLogin: false,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -1049,10 +999,7 @@ describe('app module', () => {
       await once(appProcess, 'exit');
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: false,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: false,
         launchItems: [
           {
@@ -1069,10 +1016,7 @@ describe('app module', () => {
     ifit(isWin)('detects enabled by TaskManager', async () => {
       const expectation = {
         openAtLogin: false,
-        openAsHidden: false,
         wasOpenedAtLogin: false,
-        wasOpenedAsHidden: false,
-        restoreState: false,
         executableWillLaunchAtLogin: true,
         launchItems: [
           {
@@ -1915,13 +1859,33 @@ describe('app module', () => {
       expect(device).to.be.an('object').and.to.have.property('deviceId').that.is.a('number').not.lessThan(0);
     };
 
-    it('succeeds with basic GPUInfo', async () => {
-      const gpuInfo = await getGPUInfo('basic');
+    // On a headless runner with no usable GPU
+    // (e.g. CI, where ANGLE is statically linked on Linux), the GPU process
+    // fails to initialize and GPU access is disabled. Treat that as a skip
+    // rather than a failure.
+    const isGpuUnavailable = (error: Error) =>
+      /GPU access (?:not allowed|is disabled)/i.test(error.message) ||
+      /Exiting GPU process due to errors during initialization/i.test(error.message);
+
+    it('succeeds with basic GPUInfo', async function () {
+      let gpuInfo;
+      try {
+        gpuInfo = await getGPUInfo('basic');
+      } catch (error) {
+        if (isGpuUnavailable(error as Error)) return this.skip();
+        throw error;
+      }
       await verifyBasicGPUInfo(gpuInfo);
     });
 
-    it('succeeds with complete GPUInfo', async () => {
-      const completeInfo = await getGPUInfo('complete');
+    it('succeeds with complete GPUInfo', async function () {
+      let completeInfo;
+      try {
+        completeInfo = await getGPUInfo('complete');
+      } catch (error) {
+        if (isGpuUnavailable(error as Error)) return this.skip();
+        throw error;
+      }
       if (process.platform === 'linux') {
         // For linux and macOS complete info is same as basic info
         await verifyBasicGPUInfo(completeInfo);
@@ -1946,93 +1910,90 @@ describe('app module', () => {
     });
   });
 
-  ifdescribe(!(process.platform === 'linux' && (process.arch === 'arm64' || process.arch === 'arm')))(
-    'sandbox options',
-    () => {
-      let appProcess: cp.ChildProcess = null as any;
-      let server: net.Server = null as any;
-      const socketPath =
-        process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
+  ifdescribe(!(process.platform === 'linux' && process.arch === 'arm64'))('sandbox options', () => {
+    let appProcess: cp.ChildProcess = null as any;
+    let server: net.Server = null as any;
+    const socketPath =
+      process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
 
-      beforeEach(function (done) {
-        fs.unlink(socketPath, () => {
-          server = net.createServer();
-          server.listen(socketPath);
-          done();
+    beforeEach(function (done) {
+      fs.unlink(socketPath, () => {
+        server = net.createServer();
+        server.listen(socketPath);
+        done();
+      });
+    });
+
+    afterEach((done) => {
+      if (appProcess != null) appProcess.kill();
+
+      if (server) {
+        server.close(() => {
+          if (process.platform === 'win32') {
+            done();
+          } else {
+            fs.unlink(socketPath, () => done());
+          }
         });
-      });
+      } else {
+        done();
+      }
+    });
 
-      afterEach((done) => {
-        if (appProcess != null) appProcess.kill();
+    describe('when app.enableSandbox() is called', () => {
+      it('adds --enable-sandbox to all renderer processes', (done) => {
+        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+        appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
 
-        if (server) {
-          server.close(() => {
-            if (process.platform === 'win32') {
-              done();
-            } else {
-              fs.unlink(socketPath, () => done());
-            }
-          });
-        } else {
-          done();
-        }
-      });
+        server.once('error', (error) => {
+          done(error);
+        });
 
-      describe('when app.enableSandbox() is called', () => {
-        it('adds --enable-sandbox to all renderer processes', (done) => {
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
+        server.on('connection', (client) => {
+          client.once('data', (data) => {
+            const argv = JSON.parse(data.toString());
+            expect(argv.sandbox).to.include('--enable-sandbox');
+            expect(argv.sandbox).to.not.include('--no-sandbox');
 
-          server.once('error', (error) => {
-            done(error);
-          });
+            expect(argv.noSandbox).to.include('--enable-sandbox');
+            expect(argv.noSandbox).to.not.include('--no-sandbox');
 
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).to.include('--enable-sandbox');
-              expect(argv.sandbox).to.not.include('--no-sandbox');
+            expect(argv.noSandboxDevtools).to.equal(true);
+            expect(argv.sandboxDevtools).to.equal(true);
 
-              expect(argv.noSandbox).to.include('--enable-sandbox');
-              expect(argv.noSandbox).to.not.include('--no-sandbox');
-
-              expect(argv.noSandboxDevtools).to.equal(true);
-              expect(argv.sandboxDevtools).to.equal(true);
-
-              done();
-            });
+            done();
           });
         });
       });
+    });
 
-      describe('when the app is launched with --enable-sandbox', () => {
-        it('adds --enable-sandbox to all renderer processes', (done) => {
-          const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
-          appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
+    describe('when the app is launched with --enable-sandbox', () => {
+      it('adds --enable-sandbox to all renderer processes', (done) => {
+        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+        appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
 
-          server.once('error', (error) => {
-            done(error);
-          });
+        server.once('error', (error) => {
+          done(error);
+        });
 
-          server.on('connection', (client) => {
-            client.once('data', (data) => {
-              const argv = JSON.parse(data.toString());
-              expect(argv.sandbox).to.include('--enable-sandbox');
-              expect(argv.sandbox).to.not.include('--no-sandbox');
+        server.on('connection', (client) => {
+          client.once('data', (data) => {
+            const argv = JSON.parse(data.toString());
+            expect(argv.sandbox).to.include('--enable-sandbox');
+            expect(argv.sandbox).to.not.include('--no-sandbox');
 
-              expect(argv.noSandbox).to.include('--enable-sandbox');
-              expect(argv.noSandbox).to.not.include('--no-sandbox');
+            expect(argv.noSandbox).to.include('--enable-sandbox');
+            expect(argv.noSandbox).to.not.include('--no-sandbox');
 
-              expect(argv.noSandboxDevtools).to.equal(true);
-              expect(argv.sandboxDevtools).to.equal(true);
+            expect(argv.noSandboxDevtools).to.equal(true);
+            expect(argv.sandboxDevtools).to.equal(true);
 
-              done();
-            });
+            done();
           });
         });
       });
-    }
-  );
+    });
+  });
 
   describe('disableDomainBlockingFor3DAPIs() API', () => {
     it('throws when called after app is ready', () => {

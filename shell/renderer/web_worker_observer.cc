@@ -8,13 +8,13 @@
 #include <utility>
 
 #include "base/no_destructor.h"
-#include "base/strings/strcat.h"
 #include "base/threading/thread_local.h"
 #include "gin/converter.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 
 namespace electron {
@@ -101,24 +101,12 @@ void WebWorkerObserver::InitializeNewEnvironment(
   std::shared_ptr<node::Environment> env =
       node_bindings_->CreateEnvironment(isolate, worker_context, nullptr);
 
-  // We need to use the Blink implementation of fetch in web workers
-  // Node.js deletes the global fetch function when their fetch implementation
-  // is disabled, so we need to save and re-add it after the Node.js environment
-  // is loaded. See corresponding change in node/init.ts.
-  v8::Local<v8::Object> global = worker_context->Global();
-
-  for (const std::string_view key :
-       {"fetch", "Response", "FormData", "Request", "Headers", "EventSource"}) {
-    v8::MaybeLocal<v8::Value> value =
-        global->Get(worker_context, gin::StringToV8(isolate, key));
-    if (!value.IsEmpty()) {
-      std::string blink_key = base::StrCat({"blink", key});
-      global
-          ->Set(worker_context, gin::StringToV8(isolate, blink_key),
-                value.ToLocalChecked())
-          .Check();
-    }
-  }
+  // CreateEnvironment calls SetIsolateUpForNode which unconditionally
+  // registers Node's WebAssembly streaming callback. With kNoBrowserGlobals
+  // the JS side of that callback is never installed, so it would crash on
+  // use; restore Blink's implementation so WebAssembly.compileStreaming
+  // keeps working with Blink's fetch.
+  blink::WasmResponseExtensions::Initialize(isolate);
 
   // We do not want to crash Web Workers on unhandled rejections.
   env->options()->unhandled_rejections = "warn-with-error-code";
@@ -199,10 +187,10 @@ void WebWorkerObserver::ShareEnvironmentWithContext(
         .Check();
   }
 
-  // Restore the Blink implementations of web APIs that Node.js may
-  // have deleted. For first-context init this is done by the node_init script
-  // but we can't run that for shared contexts (it calls internalBinding).
-  // Instead, copy the blink-prefixed values set during first init.
+  // Ensure the Blink implementations of fetch and friends are available in
+  // the new pooled context. Node.js no longer touches these globals when
+  // kNoBrowserGlobals is set, but some worklet global scopes do not expose
+  // them at all; fall back to the original context's bindings in that case.
   for (const std::string_view key :
        {"fetch", "Response", "FormData", "Request", "Headers", "EventSource"}) {
     // First, check if the new context has a working Blink version.
@@ -211,7 +199,6 @@ void WebWorkerObserver::ShareEnvironmentWithContext(
     if (!blink_value.IsEmpty() && !blink_value.ToLocalChecked()->IsUndefined())
       continue;
     // If not, copy from the original context.
-    std::string blink_key = base::StrCat({"blink", key});
     v8::Local<v8::Value> orig_value;
     if (original_global->Get(original_context, gin::StringToV8(isolate, key))
             .ToLocal(&orig_value) &&

@@ -7,10 +7,10 @@ Instead of disabling the tests, flag them as flaky so they still run
 but don't cause CI failures on flakes.
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 73a866bbef8b75e9f351ad9b1d3b0fd7850fca86..a052cc735a5660cb1b8b2875bb24c205ad7ecf94 100644
+index 5c7fe47927611f79cfc660e6cfce78a9fc17f19f..68c43aeab035eaf3c34d15dd885c6afee8cffe79 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -5,6 +5,16 @@ prefix parallel
+@@ -5,6 +5,19 @@ prefix parallel
  # sample-test                        : PASS,FLAKY
  
  [true] # This section applies to all platforms
@@ -24,6 +24,9 @@ index 73a866bbef8b75e9f351ad9b1d3b0fd7850fca86..a052cc735a5660cb1b8b2875bb24c205
 +test-cluster-bind-privileged-port: PASS, FLAKY
 +test-cluster-shared-handle-bind-privileged-port: PASS, FLAKY
 +test-debugger-random-port-with-inspect-port: PASS, FLAKY
++# Flaky under parallel runs in Electron: copying the Electron binary into a
++# standalone .app and code-signing it races with dyld framework resolution.
++test-macos-app-sandbox: PASS, FLAKY
  # https://github.com/nodejs/node/issues/52273
  test-shadow-realm-gc: SKIP
  test-shadow-realm-gc-module: SKIP
@@ -50,3 +53,18 @@ index 627e61911d15cad151bfdf5af83c6ada93e62ba8..01e820390ecc039c7ae104a94e88c36c
  # https://github.com/nodejs/node/issues/44898
  test-watch-mode: PASS, FLAKY
  test-watch-mode-inspect: PASS, FLAKY
+diff --git a/test/test-runner/test-runner.status b/test/test-runner/test-runner.status
+index e8b4ff2d32248c3d55c6324e61b0b29d723db782..efacb984b9800a65b73cb622c2113329302bcaf6 100644
+--- a/test/test-runner/test-runner.status
++++ b/test/test-runner/test-runner.status
+@@ -9,3 +9,10 @@ prefix test-runner
+ # https://github.com/nodejs/node/pull/54888#issuecomment-2351128116
+ # TODO(pmarchini): This test is failing when isolation is set to none and must be fixed.
+ test-watch-create-isolation-none: SKIP
++
++# Watch-mode tests race under parallel load in Electron: the watcher fires an
++# extra re-run before the assertion, so the expected single-run output
++# ("tests 1") arrives with accumulated subtests. They pass in isolation.
++test-run-watch-repeatedly: PASS, FLAKY
++test-run-watch-run-duration: PASS, FLAKY
++test-run-watch-without-file: PASS, FLAKY

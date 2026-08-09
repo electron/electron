@@ -16,8 +16,8 @@
 #include "base/containers/fixed_flat_set.h"
 #include "base/containers/span.h"
 #include "base/dcheck_is_on.h"
+#include "base/logging.h"
 #include "base/memory/raw_ptr.h"
-#include "base/metrics/histogram.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -31,14 +31,13 @@
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
 #include "content/public/browser/browser_context.h"
-#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/host_zoom_map.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_view_host.h"
-#include "content/public/browser/shared_cors_origin_access_list.h"
 #include "content/public/browser/storage_partition.h"
 #include "ipc/constants.mojom.h"
 #include "net/http/http_response_headers.h"
@@ -48,17 +47,18 @@
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/url_response_head.mojom.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/browser/ui/message_box.h"
 #include "shell/common/application_info.h"
 #include "shell/common/gin_helper/handle.h"
 #include "shell/common/platform_util.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
-#include "third_party/blink/public/common/logging/logging_utils.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "ui/display/display.h"
 #include "ui/display/screen.h"
@@ -674,7 +674,8 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
 
 void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
   if (managed_devtools_web_contents_)
-    view_->SetContentsResizingStrategy(DevToolsContentsResizingStrategy{rect});
+    view_->SetContentsResizingStrategy(
+        DevToolsContentsResizingStrategy{devtools::DockSide::kNone, rect});
 }
 
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
@@ -733,10 +734,13 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
             std::move(pending_remote)));
   } else if (const auto* const protocol_handler =
                  protocol_registry->FindRegistered(gurl.scheme())) {
+    auto* browser_context = static_cast<ElectronBrowserContext*>(
+        GetDevToolsWebContents()->GetBrowserContext());
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             ElectronURLLoaderFactory::Create(protocol_handler->first,
-                                             protocol_handler->second)));
+                                             protocol_handler->second,
+                                             browser_context->GetWeakPtr())));
   } else {
     auto* partition = GetDevToolsWebContents()
                           ->GetBrowserContext()
@@ -1081,6 +1085,73 @@ void InspectableWebContents::EnumerateDirectory(
   if (delegate)
     delegate->EnumerateDirectory(source, std::move(listener), path);
 }
+
+bool InspectableWebContents::HandleContextMenu(
+    content::RenderFrameHost& render_frame_host,
+    const content::ContextMenuParams& params) {
+  // Context menu requests from the DevTools frontend
+  // (InspectorFrontendHost.showContextMenuAtPoint) arrive here with the menu
+  // items in |params.custom_items|. Show them as a native menu anchored to
+  // whichever window hosts the DevTools view.
+  if (view_)
+    view_->ShowDevToolsContextMenu(params);
+  return true;
+}
+
+content::JavaScriptDialogManager*
+InspectableWebContents::GetJavaScriptDialogManager(
+    content::WebContents* source) {
+  return this;
+}
+
+void InspectableWebContents::RunJavaScriptDialog(
+    content::WebContents* web_contents,
+    content::RenderFrameHost* rfh,
+    content::JavaScriptDialogType dialog_type,
+    const std::u16string& message_text,
+    const std::u16string& default_prompt_text,
+    DialogClosedCallback callback,
+    bool* did_suppress_message) {
+  // The DevTools frontend uses window.confirm() for destructive actions
+  // (e.g. deleting all breakpoints) and window.alert() for notices. Prompts
+  // are not used; suppress them.
+  if (dialog_type == content::JAVASCRIPT_DIALOG_TYPE_PROMPT) {
+    *did_suppress_message = true;
+    return;
+  }
+
+  const bool is_confirm =
+      dialog_type == content::JAVASCRIPT_DIALOG_TYPE_CONFIRM;
+
+  MessageBoxSettings settings;
+  settings.message = base::UTF16ToUTF8(message_text);
+  settings.buttons = {"OK"};
+  settings.default_id = 0;
+  settings.cancel_id = 0;
+  if (is_confirm) {
+    settings.buttons.push_back("Cancel");
+    settings.cancel_id = 1;
+  }
+
+  ShowMessageBox(settings,
+                 base::BindOnce(
+                     [](DialogClosedCallback callback, int code, bool) {
+                       std::move(callback).Run(code == 0, std::u16string());
+                     },
+                     std::move(callback)));
+}
+
+void InspectableWebContents::RunBeforeUnloadDialog(
+    content::WebContents* web_contents,
+    content::RenderFrameHost* rfh,
+    bool is_reload,
+    DialogClosedCallback callback) {
+  // The DevTools frontend doesn't use beforeunload handlers; always proceed.
+  std::move(callback).Run(true, std::u16string());
+}
+
+void InspectableWebContents::CancelDialogs(content::WebContents* web_contents,
+                                           bool reset_state) {}
 
 void InspectableWebContents::OnWebContentsFocused(
     content::RenderWidgetHost* render_widget_host) {

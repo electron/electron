@@ -12,7 +12,6 @@
 #include "base/functional/callback.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "net/base/apple/url_conversions.h"
 #include "shell/browser/mac/electron_application.h"
@@ -300,7 +299,15 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     return MakeEmptySubmenu();
   NSMenu* menu = [[NSMenu alloc] init];
   menu.autoenablesItems = NO;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  // +[NSSharingService sharingServicesForItems:] is deprecated in macOS 13,
+  // but the replacement is not adequate for our usage. It creates a menu item
+  // that shows a picker that we're not in control of, and conflicts with
+  // existing menu items. See https://crbug.com/40846334 for the investigation
+  // into the replacement API and why it can't be used.
   NSArray* services = [NSSharingService sharingServicesForItems:items];
+#pragma clang diagnostic pop
   for (NSSharingService* service in services)
     [menu addItem:[self menuItemForService:service withItems:items]];
   menu.delegate = self;
@@ -528,6 +535,22 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     item.image = icon.GetImage().ToNSImage();
   } else {
     item.image = nil;
+    // Since macOS Tahoe introduced default menu icons, some role-based
+    // menu items receive a system-provided icon. When we clear `item.image`
+    // (set it to nil) AppKit may remove or fail to restore the role's
+    // default icon. To ensure the correct icon is shown, we force AppKit to
+    // refresh the item by reassigning its action selector (clear then set),
+    // which causes the menu item to update its displayed icon.
+    std::u16string role = model->GetRoleAt(index);
+    if (!role.empty()) {
+      for (const Role& pair : kRolesMap) {
+        if (role == base::ASCIIToUTF16(pair.role)) {
+          item.action = nil;
+          item.action = pair.selector;
+          break;
+        }
+      }
+    }
   }
 }
 

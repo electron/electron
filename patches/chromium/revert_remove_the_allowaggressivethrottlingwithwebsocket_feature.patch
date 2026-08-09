@@ -6,10 +6,10 @@ Subject: Revert "Remove the AllowAggressiveThrottlingWithWebSocket feature."
 This reverts commit 615c1810a187840ffeb04096087efff86edb37de.
 
 diff --git a/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc b/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
-index 25e4f863564b7bcf5d06bb70d9fe7ae3ca9c4802..8a2a46ec9475692905ada8fa42680bce76877684 100644
+index 47fdffc31a59746d991661220d738030049cd179..db7b6ac6c99f5f3fd8d48f1df6631efa51fdd3ff 100644
 --- a/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
 +++ b/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
-@@ -103,6 +103,17 @@ enum WebSocketOpCode {
+@@ -105,6 +105,17 @@ enum WebSocketOpCode {
    kOpCodeBinary = 0x2,
  };
  
@@ -27,7 +27,7 @@ index 25e4f863564b7bcf5d06bb70d9fe7ae3ca9c4802..8a2a46ec9475692905ada8fa42680bce
  }  // namespace
  
  WebSocketChannelImpl::MessageDataDeleter::MessageDataDeleter(
-@@ -299,7 +310,11 @@ bool WebSocketChannelImpl::Connect(const KURL& url, const String& protocol) {
+@@ -303,7 +314,11 @@ bool WebSocketChannelImpl::Connect(const KURL& url, const String& protocol) {
        // reset even if the `WebSocketChannel` is closed.
        feature_handle_for_scheduler_ = scheduler->RegisterFeature(
            SchedulingPolicy::Feature::kWebSocket,

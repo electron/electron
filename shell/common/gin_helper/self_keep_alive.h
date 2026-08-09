@@ -7,6 +7,7 @@
 
 #include "gin/weak_cell.h"
 #include "shell/common/gc_plugin.h"
+#include "v8/include/cppgc/persistent.h"
 
 namespace gin_helper {
 

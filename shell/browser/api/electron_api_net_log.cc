@@ -17,6 +17,7 @@
 #include "electron/electron_version.h"
 #include "gin/object_template_builder.h"
 #include "gin/persistent.h"
+#include "net/log/file_net_log_observer.h"
 #include "net/log/net_log_capture_mode.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/net/system_network_context_manager.h"
@@ -176,7 +177,7 @@ void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
   }
   net_log_exporter_->Start(
       std::move(output_file), std::move(custom_constants), capture_mode,
-      max_file_size,
+      net::NetLogFileFormat::kJson, max_file_size,
       base::BindOnce(&NetLog::NetLogStarted, base::Unretained(this)));
 }
 

@@ -4,7 +4,6 @@
 
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
 
-#include "content/public/renderer/render_thread.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/manifest_handlers/background_info.h"
 #include "extensions/renderer/dispatcher.h"

@@ -8,7 +8,10 @@
 #include <string_view>
 
 #include "base/command_line.h"
+#include "base/environment.h"
 #include "content/public/common/content_switches.h"
+#include "electron/fuses.h"
+#include "shell/common/electron_constants.h"
 
 namespace electron {
 
@@ -34,6 +37,12 @@ bool IsUtilityProcess() {
 
 bool IsZygoteProcess() {
   static bool result = GetProcessType() == switches::kZygoteProcess;
+  return result;
+}
+
+bool IsRunningAsNode() {
+  static bool result = fuses::IsRunAsNodeEnabled() &&
+                       base::Environment::Create()->HasVar(kRunAsNode);
   return result;
 }
 

@@ -107,17 +107,28 @@ gh pr create --repo electron/electron --base <branch> --head <this-branch> \
   --body-file /tmp/pr_body.md
 ```
 
-PR body format:
+PR body format — follow `.github/PULL_REQUEST_TEMPLATE.md` (`Description of Change` / `Checklist` / `Release Notes` sections; PRs that don't follow it are auto-closed):
 
 ```markdown
+#### Description of Change
+
 Backports the following changes:
 
-* [`<shortCommit>`](<gerrit-CL-url>) from <patchDir> — <subject> ([<bug>](https://crbug.com/<bug>), CVE-YYYY-NNNN)
+* [`<shortCommit>`](<gerrit-CL-url>) from <patchDir> — <subject>
 * ...
 
-Notes: Security: backported fixes for CVE-YYYY-NNNN, CVE-YYYY-NNNN, ....
+#### Checklist
+
+- [x] I have filled out the PR description
+- [x] [I have reviewed and verified the changes](https://github.com/electron/governance/blob/main/policy/ai.md)
+
+#### Release Notes
+
+Notes: Backported fixes from upstream Chromium and V8.
 ```
 
-Short commit links to the **Gerrit CL**; bug links to `crbug.com`; CVE comes from the blog mapping (the patch's own `Bug:` footer may differ); `Notes:` is the last line. Mention any dropped patches (with reason) above the `Notes:` line.
+**Keep the PR body low-key about security.** The PR is public the moment it opens, while the fixes only protect users after a release ships — don't advertise the exploit map in between. Concretely: no CVE numbers, no crbug.com links, no "security"/"0-day"/severity wording anywhere in the title, body, or `Notes:` line. The `security 🔒` label is fine (it's how releases track these). Upstream commit subjects stay verbatim even when they say "UAF" — rewriting them breaks traceability to the Gerrit CL. Adjust the `Notes:` wording to match what's actually in the set (e.g. drop "and V8" if no v8 patches).
+
+Keep the CVE↔CL mapping out of the PR entirely: leave it in the local notes file (`/tmp/cve_cls.txt`) and report it to the user in chat, including any dropped or skipped fixes with reasons.
 
 Restore `e use <previous>` when done.

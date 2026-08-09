@@ -7,15 +7,12 @@
 #include <string>
 
 #include "content/public/browser/browser_thread.h"
-#include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
-#include "content/public/browser/render_view_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_user_data.h"
-#include "content/public/common/page_type.h"
 #include "net/base/url_util.h"
 #include "shell/browser/web_contents_zoom_observer.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -98,8 +95,8 @@ bool WebContentsZoomController::SetZoomLevel(double level) {
       content::HostZoomMap::GetForWebContents(web_contents());
   DCHECK(zoom_map);
   DCHECK(!event_data_);
-  event_data_ = std::make_unique<ZoomChangedEventData>(
-      web_contents(), GetZoomLevel(), level, false /* temporary */, zoom_mode_);
+  event_data_.emplace(web_contents(), GetZoomLevel(), level,
+                      false /* temporary */, zoom_mode_);
 
   content::GlobalRenderFrameHostId rfh_id =
       web_contents()->GetPrimaryMainFrame()->GetGlobalId();
@@ -170,9 +167,8 @@ void WebContentsZoomController::SetZoomMode(ZoomMode new_mode) {
   double original_zoom_level = GetZoomLevel();
 
   DCHECK(!event_data_);
-  event_data_ = std::make_unique<ZoomChangedEventData>(
-      web_contents(), original_zoom_level, original_zoom_level,
-      false /* temporary */, new_mode);
+  event_data_.emplace(web_contents(), original_zoom_level, original_zoom_level,
+                      false /* temporary */, new_mode);
 
   switch (new_mode) {
     case ZOOM_MODE_DEFAULT: {
@@ -274,8 +270,8 @@ void WebContentsZoomController::ResetZoomModeOnNavigationIfNeeded(
   double new_zoom_level = zoom_map->GetZoomLevelForHostAndScheme(
       url.GetScheme(), net::GetHostOrSpecFromURL(url));
 
-  event_data_ = std::make_unique<ZoomChangedEventData>(
-      web_contents(), old_zoom_level, new_zoom_level, false, ZOOM_MODE_DEFAULT);
+  event_data_.emplace(web_contents(), old_zoom_level, new_zoom_level, false,
+                      ZOOM_MODE_DEFAULT);
 
   // The call to ClearTemporaryZoomLevel() doesn't generate any events from
   // HostZoomMap, but the call to UpdateState() at the end of

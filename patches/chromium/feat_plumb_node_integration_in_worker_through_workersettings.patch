@@ -10,7 +10,7 @@ relying on a process-wide command line switch. The value is also
 propagated to nested workers via WorkerSettings::Copy.
 
 diff --git a/third_party/blink/renderer/core/workers/dedicated_worker.cc b/third_party/blink/renderer/core/workers/dedicated_worker.cc
-index 7ea6daec53a497bf867d799e041bf6ae7191ef7b..15940624940d5c629c40319f45c59282713bec17 100644
+index bc8726d68af801c093bc4baf266c7d3271638df8..519530ba218afa6be4654e1ff7d0d623b9a4429e 100644
 --- a/third_party/blink/renderer/core/workers/dedicated_worker.cc
 +++ b/third_party/blink/renderer/core/workers/dedicated_worker.cc
 @@ -37,6 +37,7 @@
@@ -21,7 +21,7 @@ index 7ea6daec53a497bf867d799e041bf6ae7191ef7b..15940624940d5c629c40319f45c59282
  #include "third_party/blink/renderer/core/inspector/inspector_trace_events.h"
  #include "third_party/blink/renderer/core/inspector/main_thread_debugger.h"
  #include "third_party/blink/renderer/core/loader/document_loader.h"
-@@ -572,6 +573,12 @@ DedicatedWorker::CreateGlobalScopeCreationParams(
+@@ -530,6 +531,12 @@ DedicatedWorker::CreateGlobalScopeCreationParams(
      auto* frame = window->GetFrame();
      parent_devtools_token = frame->GetDevToolsFrameToken();
      settings = std::make_unique<WorkerSettings>(frame->GetSettings());
@@ -114,7 +114,7 @@ index 45c60dd2c44b05fdd279f759069383479823c7f2..33a2a0337efb9a46293e11d0d09b3fc1
    GenericFontFamilySettings generic_font_family_settings_;
  };
 diff --git a/third_party/blink/renderer/core/workers/worklet_global_scope.cc b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
-index b5300dea97f20d72a807543a6da0baf61d21955f..a7030c1ba6851b26c765c7b05cd26e1453866719 100644
+index 2d5d6bb086bb8540af6c229e4b8d8b5fa47af873..483c959bb17c3ceb350d606f709097cb2aa92e38 100644
 --- a/third_party/blink/renderer/core/workers/worklet_global_scope.cc
 +++ b/third_party/blink/renderer/core/workers/worklet_global_scope.cc
 @@ -32,6 +32,7 @@

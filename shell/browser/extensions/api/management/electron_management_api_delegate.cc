@@ -22,9 +22,7 @@
 #include "extensions/browser/extension_system.h"
 #include "extensions/common/api/management.h"
 #include "extensions/common/extension.h"
-#include "services/data_decoder/public/cpp/data_decoder.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
-#include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
 
 namespace {
 class ManagementSetEnabledFunctionInstallPromptDelegate
@@ -211,9 +209,3 @@ GURL ElectronManagementAPIDelegate::GetEffectiveUpdateURL(
   // TODO(codebytere): we do not currently support ExtensionManagement.
   return {};
 }
-
-void ElectronManagementAPIDelegate::ShowMv2DeprecationReEnableDialog(
-    content::BrowserContext* context,
-    content::WebContents* web_contents,
-    const extensions::Extension& extension,
-    base::OnceCallback<void(bool)> done_callback) const {}

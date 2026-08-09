@@ -13,7 +13,11 @@ const ELECTRON_DIR = resolve(__dirname, '..');
 const CL_REGEX =
   /https:\/\/chromium-review\.googlesource\.com\/c\/(chromium\/src|devtools\/devtools-frontend|v8\/v8)\/\+\/(\d+)(#\S+)?/g;
 const ROLLER_BRANCH_PATTERN = /^roller\/chromium\/(.+)$/;
+const MERGE_MSG_REGEX = /^Merge (?:remote-tracking )?branch '([^']+)'(?: of \S+)?(?: into (.+))?$/;
 const DEPS_BUMP_MSG_REGEX = /^chore: bump chromium in DEPS to (\S+)$/;
+const PATCHES_UPDATE_MSG = 'chore: update patches';
+const LIBCXX_FILENAMES_UPDATE_MSG = 'chore: update libc++ filenames';
+const LIBCXX_FILENAMES_FILE = 'filenames.libcxx.gni';
 
 function getCurrentBranch() {
   // In CI, use `GITHUB_HEAD_REF` since we checkout the PR branch in detached HEAD state
@@ -70,6 +74,45 @@ function getChangedFilesForCommit(sha) {
       .trim()
       .split('\n')
       .filter(Boolean);
+  } catch {
+    return null;
+  }
+}
+
+function getCommitParents(sha) {
+  try {
+    const output = execSync(`git rev-list --parents -n 1 ${sha}`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8'
+    }).trim();
+    // Output format: "<commit> [<parent1> <parent2> ...]"
+    return output.split(/\s+/).slice(1).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function getMergeCombinedDiff(sha) {
+  try {
+    // A dense combined diff (--cc) only shows hunks that differ from *all*
+    // parents, so a clean merge (no conflict resolution or "evil merge"
+    // changes of its own) produces empty output.
+    return execSync(`git diff-tree --cc -r --no-commit-id ${sha}`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8',
+      maxBuffer: 100 * 1024 * 1024
+    });
+  } catch {
+    return null;
+  }
+}
+
+function getCommitDiffForFile(sha, filename) {
+  try {
+    return execSync(`git show --format= ${sha} -- ${filename}`, {
+      cwd: ELECTRON_DIR,
+      encoding: 'utf8'
+    });
   } catch {
     return null;
   }
@@ -140,7 +183,8 @@ async function getGerritPatchDetails(clUrl) {
     const currentRevision = data.current_revision;
     return {
       commitSha: currentRevision,
-      project: data.project
+      project: data.project,
+      subject: data.subject
     };
   } catch {
     return null;
@@ -221,6 +265,61 @@ async function main() {
       continue;
     }
 
+    // Validate merge commits (e.g. "Merge branch 'main' into roller/chromium/main")
+    const mergeMatch = MERGE_MSG_REGEX.exec(firstLine);
+    const parents = getCommitParents(commit.sha);
+    const isMergeCommit = parents.length > 1;
+
+    if (mergeMatch || isMergeCommit) {
+      let commitValid = true;
+
+      if (!isMergeCommit) {
+        console.error(`  ❌ Commit message looks like a merge but the commit has a single parent`);
+        hasErrors = true;
+        commitValid = false;
+      } else if (!mergeMatch) {
+        console.error(`  ❌ Merge commit message does not match the expected format`);
+        console.error(`     Expected: "Merge branch '${targetBranch}' into ${currentBranch}"`);
+        console.error(`     Got:      "${firstLine}"`);
+        hasErrors = true;
+        commitValid = false;
+      } else {
+        // The merged-in branch must be the base (target) branch
+        const mergedBranch = mergeMatch[1].replace(/^origin\//, '');
+        if (mergedBranch !== targetBranch) {
+          console.error(
+            `  ❌ Merge commit merges in '${mergeMatch[1]}' but expected the base branch '${targetBranch}'`
+          );
+          hasErrors = true;
+          commitValid = false;
+        }
+      }
+
+      // Must be an "empty" merge — only merging in the base branch, with no
+      // direct changes of its own (no conflict resolution or evil-merge edits)
+      // If merge conflicts were resolved, the commit should stat that with `Skip-Lint`
+      if (isMergeCommit) {
+        const combinedDiff = getMergeCombinedDiff(commit.sha);
+        if (combinedDiff === null) {
+          console.error(`  ❌ Could not determine the combined diff for merge commit`);
+          hasErrors = true;
+          commitValid = false;
+        } else if (combinedDiff.trim().length > 0) {
+          const files = [...combinedDiff.matchAll(/^diff --(?:cc|combined) (.+)$/gm)].map((m) => m[1]);
+          const filesDesc = files.length > 0 ? files.join(', ') : 'unknown';
+          console.error(`  ❌ Merge commit is not empty — it introduces direct changes to: ${filesDesc}`);
+          console.error(`     If this is intentional use Skip-Lint in the commit message to explain`);
+          hasErrors = true;
+          commitValid = false;
+        }
+      }
+
+      if (commitValid) {
+        console.log(`  ✅ Merge commit is valid`);
+      }
+      continue;
+    }
+
     // Validate Chromium version bump commits
     const parentVersion = getParentChromiumVersion(commit.sha);
     const commitVersion = getChromiumVersionForCommit(commit.sha);
@@ -261,6 +360,78 @@ async function main() {
       continue;
     }
 
+    // Validate "chore: update patches" commits
+    if (firstLine === PATCHES_UPDATE_MSG) {
+      let commitValid = true;
+
+      // Must have no commit message body
+      const bodyLines = commit.message.trim().split('\n').slice(1);
+      const nonEmptyBodyLines = bodyLines.filter((line) => line.trim().length > 0);
+      if (nonEmptyBodyLines.length > 0) {
+        console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit must not have a commit message body`);
+        hasErrors = true;
+        commitValid = false;
+      }
+
+      const changedFiles = getChangedFilesForCommit(commit.sha);
+      if (!changedFiles || changedFiles.length === 0) {
+        console.error(`  ❌ Could not determine changed files for "${PATCHES_UPDATE_MSG}" commit`);
+        hasErrors = true;
+        continue;
+      }
+
+      // Must only contain non-content changes to files under patches/
+      // Mirrors the logic in build-tools `e patches --commit-updates`
+      for (const filename of changedFiles) {
+        if (!filename.startsWith('patches/')) {
+          console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit modifies non-patch file: ${filename}`);
+          hasErrors = true;
+          commitValid = false;
+          continue;
+        }
+
+        const fileDiff = getCommitDiffForFile(commit.sha, filename);
+        if (fileDiff === null) {
+          console.error(`  ❌ Could not get diff for ${filename}`);
+          hasErrors = true;
+          commitValid = false;
+          continue;
+        }
+
+        const changedLines = fileDiff.matchAll(/^[-+].*$/gm);
+        for (const line of changedLines) {
+          if (!line[0].match(/^[-+](--|\+\+|index|@@) /)) {
+            console.error(`  ❌ "${PATCHES_UPDATE_MSG}" commit contains content changes in ${filename}`);
+            hasErrors = true;
+            commitValid = false;
+            break;
+          }
+        }
+      }
+
+      if (commitValid) {
+        console.log(`  ✅ "${PATCHES_UPDATE_MSG}" commit is valid`);
+      }
+      continue;
+    }
+
+    // Validate "chore: update libc++ filenames" commits
+    if (firstLine === LIBCXX_FILENAMES_UPDATE_MSG) {
+      const changedFiles = getChangedFilesForCommit(commit.sha);
+
+      if (!changedFiles || changedFiles.length !== 1 || changedFiles[0] !== LIBCXX_FILENAMES_FILE) {
+        const filesDesc = changedFiles ? changedFiles.join(', ') : 'unknown';
+        console.error(
+          `  ❌ "${LIBCXX_FILENAMES_UPDATE_MSG}" commit must only modify ${LIBCXX_FILENAMES_FILE}, but changes: ${filesDesc}`
+        );
+        hasErrors = true;
+      } else {
+        console.log(`  ✅ "${LIBCXX_FILENAMES_UPDATE_MSG}" commit is valid`);
+      }
+
+      continue;
+    }
+
     const cls = [...commit.message.matchAll(CL_REGEX)].map((match) => ({
       url: match[0],
       fullRepo: match[1],
@@ -269,8 +440,11 @@ async function main() {
     }));
 
     if (cls.length === 0) {
-      // No CLs in this commit, skip
-      console.log(`  ⏭️  No CLs found`);
+      console.error(`  ❌ Commit does not match any allowed pattern and references no CLs`);
+      console.error(
+        `     Allowed: fixup! commit, merge commit, "chore: bump chromium in DEPS to <version>", "${PATCHES_UPDATE_MSG}", "${LIBCXX_FILENAMES_UPDATE_MSG}", or a commit referencing one or more CLs`
+      );
+      hasErrors = true;
       continue;
     }
 
@@ -351,8 +525,28 @@ async function main() {
         continue;
       }
 
-      checkedCLs.set(cl.url, { valid: true });
+      checkedCLs.set(cl.url, { valid: true, subject: gerritDetails.subject });
       console.log(`  ✅ CL ${cl.clNumber}: version ${chromiumVersion} is within range`);
+    }
+
+    // If exactly one CL is referenced (excluding #nolint), the commit title
+    // must be the CL number followed by the CL subject.
+    const enforceableCLs = cls.filter((cl) => cl.fragment !== '#nolint');
+    if (enforceableCLs.length === 1) {
+      const cl = enforceableCLs[0];
+      const cached = checkedCLs.get(cl.url);
+      const clSubject = cached?.subject;
+      if (clSubject) {
+        const expectedTitle = `${cl.clNumber}: ${clSubject}`;
+        if (firstLine !== expectedTitle) {
+          console.error(`  ❌ Commit title does not match the expected format for referenced CL ${cl.clNumber}`);
+          console.error(`     Expected: "${expectedTitle}"`);
+          console.error(`     Got:      "${firstLine}"`);
+          hasErrors = true;
+        } else {
+          console.log(`  ✅ Commit title matches CL ${cl.clNumber} subject`);
+        }
+      }
     }
   }
 
@@ -360,7 +554,8 @@ async function main() {
   if (hasErrors) {
     console.log('  NOTE: Add "Skip-Lint: <reason>" to a commit message to skip linting that commit.');
   }
-  process.exit(hasErrors ? 1 : 0);
+  // TODO(dsanders11): Remove the exit code guard once we're confident Claude follows the guidelines
+  process.exit(hasErrors && process.env.CI ? 1 : 0);
 }
 
 if ((await fs.realpath(process.argv[1])) === fileURLToPath(import.meta.url)) {

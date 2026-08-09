@@ -73,9 +73,7 @@ Supported architectures are a subset of Node.js [`process.arch`](https://nodejs.
 values, and include:
 
 * `x64` (Intel Mac and 64-bit Windows)
-* `ia32` (32-bit Windows)
 * `arm64` (Apple silicon, Windows on ARM, ARM64 Linux)
-* `arm` (32-bit ARM)
 
 In addition to changing the architecture, you can also specify the platform
 (e.g., `win32`, `linux`, etc.) using the `--platform` flag:

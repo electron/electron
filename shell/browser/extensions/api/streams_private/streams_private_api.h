@@ -7,12 +7,15 @@
 
 #include <string>
 
+#include "base/memory/scoped_refptr.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "third_party/blink/public/mojom/loader/transferrable_url_loader.mojom-forward.h"
 
 class GURL;
 
 namespace extensions {
+
+class MimeHandlerBodyCache;
 
 // TODO(devlin): This is now only used for the MimeTypesHandler API. We should
 // rename and move it to make that clear. https://crbug.com/890401.
@@ -31,7 +34,8 @@ class StreamsPrivateAPI {
       blink::mojom::TransferrableURLLoaderPtr transferrable_loader,
       const GURL& original_url,
       const std::string& internal_id,
-      const std::string& mime_type);
+      const std::string& mime_type,
+      scoped_refptr<MimeHandlerBodyCache> body_cache);
 };
 
 }  // namespace extensions

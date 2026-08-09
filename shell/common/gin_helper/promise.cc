@@ -5,7 +5,6 @@
 #include <string>
 #include <string_view>
 
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/process_util.h"

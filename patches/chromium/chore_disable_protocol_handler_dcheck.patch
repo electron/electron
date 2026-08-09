@@ -10,10 +10,10 @@ handlers. A DCHECK causes Electron to crash until we provide our own
 registry. This patch disables the check until we support this.
 
 diff --git a/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc b/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc
-index 7f26a1c3a63c8717705cbf6fe09ca3812450e15d..81b038bc8a1e16d9d7c71b7d74451a2601a2e238 100644
+index 53baad04b031422db60bc8284f8d3a963209f063..e0eabf8413128f934030d3bb851c38a9f80ff5e0 100644
 --- a/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc
 +++ b/extensions/browser/api/protocol_handlers/protocol_handlers_manager.cc
-@@ -140,7 +140,6 @@ void ProtocolHandlersManager::ProtocolHandlersSanityCheck() {
+@@ -150,7 +150,6 @@ void ProtocolHandlersManager::ProtocolHandlersSanityCheck() {
            browser_context_);
    // Can be null for tests using dummy profiles.
    if (!ph_registry) {

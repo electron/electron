@@ -244,7 +244,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 - (void)buttonAction:(id)sender {
   NSString* item_id =
       [NSString stringWithFormat:@"%ld", ((NSButton*)sender).tag];
-  window_->NotifyTouchBarItemInteraction([item_id UTF8String], {});
+  window_->NotifyTouchBarItemInteraction(base::SysNSStringToUTF8(item_id), {});
 }
 
 - (void)colorPickerAction:(id)sender {
@@ -256,7 +256,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
       electron::ToRGBHex(skia::NSDeviceColorToSkColor(color));
   base::DictValue details;
   details.Set("color", hex_color);
-  window_->NotifyTouchBarItemInteraction([item_id UTF8String],
+  window_->NotifyTouchBarItemInteraction(base::SysNSStringToUTF8(item_id),
                                          std::move(details));
 }
 
@@ -266,7 +266,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
                                   withPrefix:SliderIdentifier];
   base::DictValue details;
   details.Set("value", [((NSSliderTouchBarItem*)sender).slider intValue]);
-  window_->NotifyTouchBarItemInteraction([item_id UTF8String],
+  window_->NotifyTouchBarItemInteraction(base::SysNSStringToUTF8(item_id),
                                          std::move(details));
 }
 
@@ -285,7 +285,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
       "isSelected",
       [((NSSegmentedControl*)sender)
           isSelectedForSegment:((NSSegmentedControl*)sender).selectedSegment]);
-  window_->NotifyTouchBarItemInteraction([item_id UTF8String],
+  window_->NotifyTouchBarItemInteraction(base::SysNSStringToUTF8(item_id),
                                          std::move(details));
 }
 
@@ -294,8 +294,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   base::DictValue details;
   details.Set("selectedIndex", static_cast<int>(selectedIndex));
   details.Set("type", "select");
-  window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String],
-                                         std::move(details));
+  window_->NotifyTouchBarItemInteraction(
+      base::SysNSStringToUTF8(scrubber.identifier), std::move(details));
 }
 
 - (void)scrubber:(NSScrubber*)scrubber
@@ -303,8 +303,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   base::DictValue details;
   details.Set("highlightedIndex", static_cast<int>(highlightedIndex));
   details.Set("type", "highlight");
-  window_->NotifyTouchBarItemInteraction([scrubber.identifier UTF8String],
-                                         std::move(details));
+  window_->NotifyTouchBarItemInteraction(
+      base::SysNSStringToUTF8(scrubber.identifier), std::move(details));
 }
 
 - (NSTouchBarItemIdentifier)identifierFromID:(const std::string&)item_id
@@ -344,7 +344,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (NSTouchBarItem*)makeButtonForID:(NSString*)id
                     withIdentifier:(NSString*)identifier {
-  std::string s_id([id UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(id);
   if (![self hasItemWithID:s_id])
     return nil;
 
@@ -404,7 +404,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (NSTouchBarItem*)makeLabelForID:(NSString*)id
                    withIdentifier:(NSString*)identifier {
-  std::string s_id([id UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(id);
   if (![self hasItemWithID:s_id])
     return nil;
 
@@ -441,7 +441,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (NSTouchBarItem*)makeColorPickerForID:(NSString*)id
                          withIdentifier:(NSString*)identifier {
-  std::string s_id([id UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(id);
   if (![self hasItemWithID:s_id])
     return nil;
 
@@ -478,7 +478,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (NSTouchBarItem*)makeSliderForID:(NSString*)id
                     withIdentifier:(NSString*)identifier {
-  std::string s_id([id UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(id);
   if (![self hasItemWithID:s_id])
     return nil;
 
@@ -507,7 +507,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (NSTouchBarItem*)makePopoverForID:(NSString*)id
                      withIdentifier:(NSString*)identifier {
-  std::string s_id([id UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(id);
   if (![self hasItemWithID:s_id])
     return nil;
 
@@ -547,7 +547,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (NSTouchBarItem*)makeGroupForID:(NSString*)id
                    withIdentifier:(NSString*)identifier {
-  std::string s_id([id UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(id);
   if (![self hasItemWithID:s_id])
     return nil;
 
@@ -597,7 +597,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (NSTouchBarItem*)makeSegmentedControlForID:(NSString*)id
                               withIdentifier:(NSString*)identifier {
-  std::string s_id([id UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(id);
   if (![self hasItemWithID:s_id])
     return nil;
 
@@ -682,7 +682,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (NSTouchBarItem*)makeScrubberForID:(NSString*)id
                       withIdentifier:(NSString*)identifier {
-  std::string s_id([id UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(id);
   if (![self hasItemWithID:s_id])
     return nil;
 
@@ -760,7 +760,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSInteger)numberOfItemsForScrubber:(NSScrubber*)scrubber {
-  std::string s_id([[scrubber identifier] UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(scrubber.identifier);
   if (![self hasItemWithID:s_id])
     return 0;
 
@@ -775,7 +775,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 
 - (NSScrubberItemView*)scrubber:(NSScrubber*)scrubber
              viewForItemAtIndex:(NSInteger)index {
-  std::string s_id([[scrubber identifier] UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(scrubber.identifier);
   if (![self hasItemWithID:s_id])
     return nil;
 
@@ -822,7 +822,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   NSInteger margin = 15;
   NSSize defaultSize = NSMakeSize(width, height);
 
-  std::string s_id([[scrubber identifier] UTF8String]);
+  std::string s_id = base::SysNSStringToUTF8(scrubber.identifier);
   if (![self hasItemWithID:s_id])
     return defaultSize;
 

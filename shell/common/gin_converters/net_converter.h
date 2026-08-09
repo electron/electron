@@ -94,7 +94,7 @@ struct Converter<network::ResourceRequest> {
 template <>
 struct Converter<electron::VerifyRequestParams> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   electron::VerifyRequestParams val);
+                                   const electron::VerifyRequestParams& val);
 };
 
 template <>
@@ -161,7 +161,9 @@ struct Converter<std::vector<std::pair<K, V>>> {
     v8::Local<v8::Context> context = isolate->GetCurrentContext();
     v8::Local<v8::Object> obj = value.As<v8::Object>();
     v8::Local<v8::Array> keys = obj->GetPropertyNames(context).ToLocalChecked();
-    for (uint32_t i = 0; i < keys->Length(); ++i) {
+    const uint32_t length = keys->Length();
+    out->reserve(length);
+    for (uint32_t i = 0; i < length; ++i) {
       v8::Local<v8::Value> v8key;
       if (!keys->Get(context, i).ToLocal(&v8key))
         return false;
@@ -173,7 +175,7 @@ struct Converter<std::vector<std::pair<K, V>>> {
       if (!ConvertFromV8(isolate, v8key, &key) ||
           !ConvertFromV8(isolate, v8value, &out_value))
         return false;
-      (*out).emplace_back(std::move(key), std::move(out_value));
+      out->emplace_back(std::move(key), std::move(out_value));
     }
     return true;
   }

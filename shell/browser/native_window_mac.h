@@ -253,7 +253,7 @@ class NativeWindowMac : public NativeWindow,
 
   void UpdateZoomButton();
 
-  std::optional<int> FrameViewNonClientHitTest(const gfx::Point& point);
+  int FrameViewNonClientHitTest(const gfx::Point& point);
 
   ElectronNSWindow* window_;  // Weak ref, managed by widget_.
 

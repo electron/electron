@@ -4,8 +4,6 @@
 
 #include "shell/browser/extensions/api/extension_action/extension_action_api.h"
 
-#include <stddef.h>
-
 #include <utility>
 
 #include "base/logging.h"
