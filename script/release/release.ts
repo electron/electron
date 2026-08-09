@@ -4,10 +4,10 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import { Octokit } from '@octokit/rest';
 import got from 'got';
 import { gte } from 'semver';
-import { track as trackTemp } from 'temp';
 
 import { execSync, ExecSyncOptions } from 'node:child_process';
-import { statSync, createReadStream, writeFileSync, close } from 'node:fs';
+import { statSync, createReadStream, writeFileSync, mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { styleText } from 'node:util';
 
@@ -16,8 +16,6 @@ import { ELECTRON_DIR } from '../lib/utils';
 import { getUrlHash } from './get-url-hash';
 import { createGitHubTokenStrategy } from './github-token';
 import { ELECTRON_ORG, ELECTRON_REPO, ElectronReleaseRepo, NIGHTLY_REPO } from './types';
-
-const temp = trackTemp();
 
 const pass = styleText('green', '✓');
 const fail = styleText('red', '✗');
@@ -273,7 +271,7 @@ async function createReleaseShasums(release: MinimalRelease) {
   const checksums = await mergeShasums(pkgVersion);
 
   console.log(`${pass} Generated release SHASUMS.`);
-  const filePath = await saveShaSumFile(checksums, fileName);
+  const filePath = saveShaSumFile(checksums, fileName);
 
   console.log(`${pass} Created ${fileName} file.`);
   await uploadShasumFile(filePath, fileName, release.id);
@@ -300,23 +298,14 @@ async function uploadShasumFile(filePath: string, fileName: string, releaseId: n
 }
 
 function saveShaSumFile(checksums: string, fileName: string) {
-  return new Promise<string>((resolve) => {
-    temp.open(fileName, (err, info) => {
-      if (err) {
-        console.error(`${fail} Could not create ${fileName} file`);
-        process.exit(1);
-      } else {
-        writeFileSync(info.fd, checksums);
-        close(info.fd, (err) => {
-          if (err) {
-            console.error(`${fail} Could close ${fileName} file`);
-            process.exit(1);
-          }
-          resolve(info.path);
-        });
-      }
-    });
-  });
+  try {
+    const filePath = join(mkdtempSync(join(tmpdir(), 'electron-release-')), fileName);
+    writeFileSync(filePath, checksums);
+    return filePath;
+  } catch (err) {
+    console.error(`${fail} Could not create ${fileName} file`, err);
+    return process.exit(1);
+  }
 }
 
 async function publishRelease(release: MinimalRelease) {

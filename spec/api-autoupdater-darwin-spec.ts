@@ -3,9 +3,9 @@ import { autoUpdater, systemPreferences } from 'electron';
 import { expect } from 'chai';
 import express from 'express';
 import psList from 'ps-list';
-import * as uuid from 'uuid';
 
 import * as cp from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import { AddressInfo } from 'node:net';
@@ -992,7 +992,7 @@ ifdescribe(shouldRunCodesignTests)('autoUpdater behavior', function () {
             endFixture: 'update'
           },
           async (appPath, updateZipPath) => {
-            const randomID = uuid.v4();
+            const randomID = randomUUID();
             cp.spawnSync('xattr', ['-w', 'spec-id', randomID, appPath]);
             server.get('/update-file', (req, res) => {
               res.download(updateZipPath);

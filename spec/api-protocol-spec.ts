@@ -1,9 +1,9 @@
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
 
 import { expect } from 'chai';
-import { v4 } from 'uuid';
 
 import * as ChildProcess from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
@@ -389,7 +389,7 @@ describe('protocol module', () => {
       defer(() => server.close());
       const { url } = await listen(server);
 
-      const ses = session.fromPartition(`protocol-response-url-session-${v4()}`);
+      const ses = session.fromPartition(`protocol-response-url-session-${randomUUID()}`);
       let upstreamSeenByHandlingSession = false;
       let upstreamSeenByDefaultSession = false;
       ses.webRequest.onBeforeRequest((details, callback) => {
@@ -937,15 +937,15 @@ describe('protocol module', () => {
     after(() => protocol.unregisterProtocol(serviceWorkerScheme));
 
     it('should fail when registering invalid service worker', async () => {
-      await contents.loadURL(`${serviceWorkerScheme}://${v4()}.com`);
+      await contents.loadURL(`${serviceWorkerScheme}://${randomUUID()}.com`);
       await expect(
-        contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.notjs', {scope: './'})`)
+        contents.executeJavaScript(`navigator.serviceWorker.register('${randomUUID()}.notjs', {scope: './'})`)
       ).to.be.rejected();
     });
 
     it('should be able to register service worker for custom scheme', async () => {
-      await contents.loadURL(`${serviceWorkerScheme}://${v4()}.com`);
-      await contents.executeJavaScript(`navigator.serviceWorker.register('${v4()}.js', {scope: './'})`);
+      await contents.loadURL(`${serviceWorkerScheme}://${randomUUID()}.com`);
+      await contents.executeJavaScript(`navigator.serviceWorker.register('${randomUUID()}.js', {scope: './'})`);
     });
   });
 

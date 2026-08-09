@@ -142,6 +142,12 @@ function promisify(_f: Function): any {
   /* dummy for typescript */
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function tempPath(): string {
+  /* dummy for typescript */
+  return '';
+}
+
 describe('asar package', function () {
   const fixtures = path.join(__dirname, 'fixtures');
   const asarDir = path.join(fixtures, 'test.asar');
@@ -166,6 +172,9 @@ describe('asar package', function () {
       path = require('node:path')
       fixtures = ${JSON.stringify(fixtures)}
       asarDir = ${JSON.stringify(asarDir)}
+
+      // Returns a path to a not-yet-existing file inside a fresh temp directory.
+      tempPath = () => path.join(fs.mkdtempSync(path.join(require('node:os').tmpdir(), 'electron-asar-spec-')), 'file')
 
       // This is used instead of util.promisify for some tests to dodge the
       // util.promisify.custom behavior.
@@ -356,8 +365,7 @@ describe('asar package', function () {
     describe('fs.copyFile', function () {
       itremote('copies a normal file', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         await new Promise<void>((resolve, reject) => {
           fs.copyFile(p, dest, (err) => {
             if (err) reject(err);
@@ -369,8 +377,7 @@ describe('asar package', function () {
 
       itremote('copies a unpacked file', async function () {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         await new Promise<void>((resolve, reject) => {
           fs.copyFile(p, dest, (err) => {
             if (err) reject(err);
@@ -384,16 +391,14 @@ describe('asar package', function () {
     describe('fs.promises.copyFile', function () {
       itremote('copies a normal file', async function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         await fs.promises.copyFile(p, dest);
         expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
       });
 
       itremote('copies a unpacked file', async function () {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         await fs.promises.copyFile(p, dest);
         expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
       });
@@ -402,16 +407,14 @@ describe('asar package', function () {
     describe('fs.copyFileSync', function () {
       itremote('copies a normal file', function () {
         const p = path.join(asarDir, 'a.asar', 'file1');
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         fs.copyFileSync(p, dest);
         expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
       });
 
       itremote('copies a unpacked file', function () {
         const p = path.join(asarDir, 'unpack.asar', 'a.txt');
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         fs.copyFileSync(p, dest);
         expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
       });
@@ -421,8 +424,7 @@ describe('asar package', function () {
       itremote('copies a normal file', function () {
         if (!fs.cpSync) return;
         const p = path.join(asarDir, 'a.asar', 'file1');
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         fs.cpSync(p, dest);
         expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
       });
@@ -432,8 +434,7 @@ describe('asar package', function () {
       itremote('copies a normal file', async function () {
         if (!fs.cp) return;
         const p = path.join(asarDir, 'a.asar', 'file1');
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         await new Promise<void>((resolve, reject) => {
           fs.cp(p, dest, (err) => (err ? reject(err) : resolve()));
         });
@@ -445,8 +446,7 @@ describe('asar package', function () {
       itremote('copies a normal file', async function () {
         if (!fs.promises.cp) return;
         const p = path.join(asarDir, 'a.asar', 'file1');
-        const temp = require('temp').track();
-        const dest = temp.path();
+        const dest = tempPath();
         await fs.promises.cp(p, dest);
         expect(fs.readFileSync(p).equals(fs.readFileSync(dest))).to.be.true();
       });
