@@ -194,8 +194,12 @@ runs:
         # Needed for msdia140.dll on 64-bit windows
         cd src
         export PATH="$PATH:$(pwd)/third_party/llvm-build/Release+Asserts/bin"
+    # symbols.zip / pdb.zip / dsym archives are only consumed by the release
+    # uploader; every testing/PGO build passes generate-symbols: false and this
+    # was still spending 8-13 minutes per Windows build zipping PDBs nobody reads.
     - name: Zip Symbols ${{ inputs.step-suffix }}
       shell: bash
+      if: ${{ inputs.generate-symbols == 'true' }}
       run: |
         cd src
         export BUILD_PATH="$(pwd)/out/Default"
