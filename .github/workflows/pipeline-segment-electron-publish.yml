@@ -278,6 +278,30 @@ jobs:
           codesign -s - "$SISO_BIN" || true
           echo "SISO_PATH=$SISO_BIN" >> "$GITHUB_ENV"
           echo "Using custom siso binary at $SISO_BIN"
+      - name: Set siso state cache key
+        run: >
+          echo "SISO_STATE_KEY=siso-state-v1-${{ inputs.target-platform }}-${{
+          inputs.target-arch }}-${{ inputs.target-variant }}-${{
+          inputs.gn-build-type }}-${{ inputs.is-asan }}" >> $GITHUB_ENV
+      - name: Restore siso state
+        id: restore-siso-state
+        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7
+        with:
+          path: |
+            src/out/Default/.siso_deps
+            src/out/Default/.siso_fs_state
+          key: ${{ env.SISO_STATE_KEY }}-${{ env.DEPSHASH }}-${{ github.run_id }}-${{
+            github.run_attempt }}
+          restore-keys: |
+            ${{ env.SISO_STATE_KEY }}-${{ env.DEPSHASH }}-
+            ${{ env.SISO_STATE_KEY }}-
+      - name: Report restored siso state
+        run: >
+          echo "matched key: '${{
+          steps.restore-siso-state.outputs.cache-matched-key }}'"
+
+          ls -la src/out/Default/.siso_deps src/out/Default/.siso_fs_state
+          2>/dev/null || echo "no siso state restored (cold)"
       - name: Build Electron
         if: ${{ inputs.target-platform != 'macos' || (inputs.target-variant == 'all' ||
           inputs.target-variant == 'darwin') }}
@@ -317,3 +341,24 @@ jobs:
           upload-to-storage: ${{ inputs.upload-to-storage }}
           step-suffix: (mas)
           publish: ${{ inputs.publish }}
+      - name: Report siso state reuse
+        if: ${{ !cancelled() }}
+        run: >
+          cd src/out/Default
+
+          ls -la .siso_deps .siso_fs_state 2>/dev/null || true
+
+          for f in siso*.0.INFO siso*.INFO; do
+            [ -e "$f" ] || continue
+            echo "===== $f"
+            grep -E 'load state done|deps_log|deps log|depslog|fastdeps|fast deps|scandeps|ninja_deps|fs state|missing_digests|set state done' "$f" | head -60 || true
+          done
+      - name: Save siso state
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7
+        with:
+          path: |
+            src/out/Default/.siso_deps
+            src/out/Default/.siso_fs_state
+          key: ${{ env.SISO_STATE_KEY }}-${{ env.DEPSHASH }}-${{ github.run_id }}-${{
+            github.run_attempt }}
