@@ -15,7 +15,7 @@ Rather than disabling builtins PGO entirely, warn and skip mismatched
 builtins so all other builtins still benefit from PGO.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index f6c35bc02d6728a182b075e914eb379018a45ff1..a8bfa1eef96e35926eb5f0a764221ee18f6d54d5 100644
+index 3e77061656fd9332772eb05bd1a2e1fc7757cde1..24f572719736f6b38ad16d240a788502df68ee96 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -2896,9 +2896,11 @@ template("run_mksnapshot") {
