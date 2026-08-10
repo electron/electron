@@ -25,7 +25,7 @@ runs:
       if [ "$(expr substr $(uname -s) 1 10)" == "MSYS_NT-10" ]; then
         e d cipd.bat --version
         cp "C:\Python311\python.exe" "C:\Python311\python3.exe"
-        echo "C:\Users\ContainerAdministrator\.electron_build_tools\third_party\depot_tools" >> $GITHUB_PATH
+        echo "$(cygpath -w "$HOME/.electron_build_tools/third_party/depot_tools")" >> $GITHUB_PATH
       else
         echo "$HOME/.electron_build_tools/third_party/depot_tools" >> $GITHUB_PATH
         echo "$HOME/.electron_build_tools/third_party/depot_tools/python-bin" >> $GITHUB_PATH
