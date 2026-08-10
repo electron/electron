@@ -34,7 +34,7 @@ inputs:
     required: false
     default: 'true'
   generate-test-artifacts:
-    description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots, mksnapshot fixup). Only disable when no test job consumes this build.'
+    description: 'Generate artifacts only consumed by test jobs (src artifacts, cross-arch snapshots; mksnapshot fixup on non-release builds). Only disable when no test job consumes this build.'
     required: false
     default: 'true'
   publish:
@@ -186,9 +186,12 @@ runs:
           fi
           electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.$target_os.${{ inputs.target-arch }}.manifest
         fi
+    # mksnapshot_args is consumed by both the mksnapshot tests and by
+    # @electron/mksnapshot from the released mksnapshot.zip, so this is needed
+    # whenever either tests or a release consume this build.
     - name: Fixup Mksnapshot ${{ inputs.step-suffix }}
       shell: bash
-      if: ${{ inputs.generate-test-artifacts == 'true' }}
+      if: ${{ inputs.generate-test-artifacts == 'true' || inputs.is-release == 'true' }}
       run: |
         cd src
         ELECTRON_DEPOT_TOOLS_DISABLE_LOG=1 e d gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
