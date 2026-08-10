@@ -1543,7 +1543,7 @@ added:
 
 * `enabled` boolean
 
-Sets whether caret browsing is enabled on the current web page.
+Sets whether [caret browsing](#contentscaretbrowsingenabled) is enabled on the current web page.
 
 #### `contents.isCaretBrowsingEnabled()`
 
@@ -1554,7 +1554,7 @@ added:
 ```
 -->
 
-Returns `boolean` - Whether caret browsing is enabled for this page.
+Returns `boolean` - Whether [caret browsing](#contentscaretbrowsingenabled) is enabled for this page.
 
 #### `contents.setZoomFactor(factor)`
 
