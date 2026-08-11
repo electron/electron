@@ -80,10 +80,10 @@ index 39fa45f0a0f9076bd7ac0be6f455dd540a276512..3d0381d463eed73470b28085830f2a23
        content::WebContents* source,
        const content::OpenURLParams& params,
 diff --git a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
-index f47327e90b5d913606933e33b6461e3497e772b0..6cff4e6f0420b1ac36a1c32cddd9624e34d4dba3 100644
+index 03d9c96ddf5aec2f630b0e46e03f958e7d1a016d..d74e662fd99c1c6ce4a87085b86d5e967bd3ee03 100644
 --- a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
 +++ b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.cc
-@@ -868,8 +868,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -871,8 +871,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -93,7 +93,7 @@ index f47327e90b5d913606933e33b6461e3497e772b0..6cff4e6f0420b1ac36a1c32cddd9624e
    if (actor::HasActorTaskPreventingNewWebContents(opener)) {
      // If an ExecutionEngine is acting on the opener, prevent it from creating a
      // new WebContents. We'll instead force the navigation to happen in the same
-@@ -892,7 +891,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -895,7 +894,7 @@ bool BrowserWebContentsDelegate::IsWebContentsCreationOverridden(
        window_container_type ==
            content::mojom::WindowContainerType::BACKGROUND &&
        browser_->GetBrowserForMigrationOnly()->ShouldCreateBackgroundContents(
@@ -103,10 +103,10 @@ index f47327e90b5d913606933e33b6461e3497e772b0..6cff4e6f0420b1ac36a1c32cddd9624e
  
  content::WebContents* BrowserWebContentsDelegate::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
-index bce625caa12f779aae56a6b846e1beb5da7b69db..f8015232c55c455f0b45fc3b41615b1732f7d509 100644
+index 47769ccc253b99b220340e6d204fad7f887dc7ac..cf4bd2f52ffac957965e142aafd68d66f0681f60 100644
 --- a/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
 +++ b/chrome/browser/ui/browser_web_contents_delegate/browser_web_contents_delegate.h
-@@ -162,8 +162,7 @@ class BrowserWebContentsDelegate : public content::WebContentsDelegate {
+@@ -164,8 +164,7 @@ class BrowserWebContentsDelegate : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

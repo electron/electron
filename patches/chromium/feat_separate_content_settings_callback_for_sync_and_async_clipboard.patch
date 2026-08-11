@@ -130,7 +130,7 @@ index 36410ff29d9c82e59f93fbb82968064bd330dfde..6c3f994e0b184f78bd9442002bb4dfae
    virtual void PassiveInsecureContentFound(const WebURL&) {}
  
 diff --git a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
-index 5276383d5228f472442eb6217b6260ad8513309b..9d78a7af4f3730b4c4e22b7378f7b070912b897e 100644
+index 70022df0744e19ece95ccfc65b4c738f9470989b..501ad4512ec551fcafae98d2d9f77161d68e9215 100644
 --- a/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 +++ b/third_party/blink/renderer/core/editing/commands/clipboard_commands.cc
 @@ -127,7 +127,7 @@ bool ClipboardCommands::CanReadClipboard(LocalFrame& frame,
