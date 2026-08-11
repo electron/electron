@@ -16,15 +16,14 @@ export const webViewEvents: Record<string, readonly string[]> = {
   'will-navigate': ['url'],
   'did-start-navigation': ['url', 'isInPlace', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
   'did-redirect-navigation': ['url', 'isInPlace', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
-  'did-navigate': ['url', 'httpResponseCode', 'httpStatusText', 'responseHeaders'],
+  'did-navigate': ['url', 'httpResponseCode', 'httpStatusText'],
   'did-frame-navigate': [
     'url',
     'httpResponseCode',
     'httpStatusText',
     'isMainFrame',
     'frameProcessId',
-    'frameRoutingId',
-    'responseHeaders'
+    'frameRoutingId'
   ],
   'did-navigate-in-page': ['url', 'isMainFrame', 'frameProcessId', 'frameRoutingId'],
   '-focus-change': ['focus'],
@@ -40,4 +39,10 @@ export const webViewEvents: Record<string, readonly string[]> = {
   'found-in-page': ['result'],
   'did-change-theme-color': ['themeColor'],
   'update-target-url': ['url']
+} as const;
+
+// Properties forwarded from the event object rather than from positional arguments.
+export const webViewEventProperties: Record<string, readonly string[]> = {
+  'did-navigate': ['responseHeaders'],
+  'did-frame-navigate': ['responseHeaders']
 } as const;

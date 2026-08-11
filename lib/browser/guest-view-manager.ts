@@ -1,7 +1,7 @@
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { parseWebViewWebPreferences } from '@electron/internal/browser/parse-features-string';
-import { webViewEvents } from '@electron/internal/browser/web-view-events';
+import { webViewEvents, webViewEventProperties } from '@electron/internal/browser/web-view-events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import {
   syncMethods,
@@ -148,18 +148,21 @@ const createGuest = function (
     }
   };
 
-  const makeProps = (eventKey: string, args: any[]) => {
+  const makeProps = (eventKey: string, event: Record<string, any>, args: any[]) => {
     const props: Record<string, any> = {};
     for (const [index, prop] of webViewEvents[eventKey].entries()) {
       props[prop] = args[index];
+    }
+    for (const prop of webViewEventProperties[eventKey] ?? []) {
+      props[prop] = event[prop];
     }
     return props;
   };
 
   // Dispatch events to embedder.
   for (const event of supportedWebViewEvents) {
-    guest.on(event as any, function (_, ...args: any[]) {
-      sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, event, makeProps(event, args));
+    guest.on(event as any, function (e: Record<string, any>, ...args: any[]) {
+      sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, event, makeProps(event, e, args));
     });
   }
 
