@@ -14,6 +14,7 @@ description: 'Ensures proper binaries are in place'
 # 10. Fix node binary on Windows
 # 11. Fix rc binary on Windows
 # 12. Fix clang-format binary on Windows
+# 13. Install the host typescript-go (tsc v7) binary on macOS
 inputs:
   target-platform:
     description: 'Target platform, should be linux, win, macos'
@@ -39,6 +40,27 @@ runs:
         installation-dir: third_party/esbuild
         target-platform: ${{ inputs.target-platform }}
         package: infra/3pp/tools/esbuild/${platform}
+    # ts_library() runs the host tsgo binary (//third_party/typescript/tsgo.gni),
+    # which DEPS only fetches when host_os == "mac".
+    # Refs https://chromium-review.googlesource.com/c/chromium/src/+/8104602
+    - name: Fix typescript-go (macOS arm64)
+      if: ${{ inputs.target-platform == 'macos' && runner.arch == 'ARM64' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: typescript-go
+        deps-file: src/DEPS
+        installation-dir: src/third_party/typescript/mac-arm64/src
+        target-platform: ${{ inputs.target-platform }}
+        package: chromium/third_party/typescript/mac-arm64
+    - name: Fix typescript-go (macOS x64)
+      if: ${{ inputs.target-platform == 'macos' && runner.arch == 'X64' }}
+      uses: ./src/electron/.github/actions/cipd-install
+      with:
+        dependency: typescript-go
+        deps-file: src/DEPS
+        installation-dir: src/third_party/typescript/mac-amd64/src
+        target-platform: ${{ inputs.target-platform }}
+        package: chromium/third_party/typescript/mac-amd64
     - name: Fix rollup
       if: ${{ inputs.target-platform != 'linux' }}
       uses: ./src/electron/.github/actions/cipd-install
