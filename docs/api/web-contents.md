@@ -405,18 +405,24 @@ check out the `will-redirect` event above.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/52420
-    description: "Added `responseHeaders`."
+    description: "Added the navigation details, including `frame` and `responseHeaders`, as properties of the event object."
 ```
 -->
 
 Returns:
 
-* `event` Event
+* `details` Event\<\>
+  * `url` string - The URL the frame navigated to.
+  * `httpResponseCode` Integer - The HTTP response status code, or `-1` for non HTTP navigations.
+  * `httpStatusText` string - The HTTP response status text. Empty for non HTTP navigations.
+  * `isMainFrame` boolean - Always `true` for this event.
+  * `frame` WebFrameMain | null - The frame that navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `responseHeaders` Record\<string, string[]\> - The HTTP response headers, keyed by lowercased header
+    name. Empty for non HTTP navigations.
 * `url` string
 * `httpResponseCode` Integer - -1 for non HTTP navigations
 * `httpStatusText` string - empty for non HTTP navigations
-* `responseHeaders` Record\<string, string[]\> - The HTTP response headers keyed
-  by lowercased header name - empty for non HTTP navigations
 
 Emitted when a main frame navigation is done.
 
@@ -430,21 +436,27 @@ this purpose.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/52420
-    description: "Added `responseHeaders`."
+    description: "Added the navigation details, including `frame` and `responseHeaders`, as properties of the event object."
 ```
 -->
 
 Returns:
 
-* `event` Event
+* `details` Event\<\>
+  * `url` string - The URL the frame navigated to.
+  * `httpResponseCode` Integer - The HTTP response status code, or `-1` for non HTTP navigations.
+  * `httpStatusText` string - The HTTP response status text. Empty for non HTTP navigations.
+  * `isMainFrame` boolean - True if the navigation took place in a main frame.
+  * `frame` WebFrameMain | null - The frame that navigated.
+    May be `null` if accessed after the frame has either navigated or been destroyed.
+  * `responseHeaders` Record\<string, string[]\> - The HTTP response headers, keyed by lowercased header
+    name. Empty for non HTTP navigations.
 * `url` string
 * `httpResponseCode` Integer - -1 for non HTTP navigations
 * `httpStatusText` string - empty for non HTTP navigations,
 * `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
-* `responseHeaders` Record\<string, string[]\> - The HTTP response headers keyed
-  by lowercased header name - empty for non HTTP navigations
 
 Emitted when any frame navigation is done.
 
