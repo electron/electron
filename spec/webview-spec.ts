@@ -1702,6 +1702,22 @@ describe('<webview> tag', function () {
         const event = await loadWebViewAndWaitForEvent(w, { src: pageUrl }, 'did-navigate');
         expect(event.url).to.equal(pageUrl);
       });
+
+      it('includes the http response details', async () => {
+        const server = http.createServer((req, res) => {
+          res.setHeader('x-custom-header', 'value');
+          res.end();
+        });
+        const { url } = await listen(server);
+        defer(() => {
+          server.close();
+        });
+        const event = await loadWebViewAndWaitForEvent(w, { src: `${url}/` }, 'did-navigate');
+        expect(event.url).to.equal(`${url}/`);
+        expect(event.httpResponseCode).to.equal(200);
+        expect(event.httpStatusText).to.equal('OK');
+        expect(event.responseHeaders['x-custom-header']).to.deep.equal(['value']);
+      });
     });
 
     describe('did-navigate-in-page event', () => {

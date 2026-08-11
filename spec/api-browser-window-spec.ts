@@ -1149,26 +1149,29 @@ describe('BrowserWindow module', () => {
           server.close();
         });
 
-        it('provides response headers on did-navigate and did-frame-navigate', async () => {
+        it('provides navigation details on the did-navigate and did-frame-navigate event objects', async () => {
           const didFrameNavigate = once(w.webContents, 'did-frame-navigate');
           const didNavigate = once(w.webContents, 'did-navigate');
-          w.loadURL(url);
-          const [, , frameHttpResponseCode, , , , , frameResponseHeaders] = await didFrameNavigate;
-          expect(frameHttpResponseCode).to.equal(200);
-          expect(frameResponseHeaders['x-single-header']).to.deep.equal(['single']);
-          expect(frameResponseHeaders['x-multi-header']).to.deep.equal(['multi1', 'multi2']);
-          const [, , httpResponseCode, , responseHeaders] = await didNavigate;
-          expect(httpResponseCode).to.equal(200);
-          expect(responseHeaders['x-single-header']).to.deep.equal(['single']);
-          expect(responseHeaders['x-multi-header']).to.deep.equal(['multi1', 'multi2']);
+          w.loadURL(url + '/');
+          for (const [event, ...args] of [await didFrameNavigate, await didNavigate]) {
+            expect(event.url).to.equal(url + '/');
+            expect(event.httpResponseCode).to.equal(200);
+            expect(event.httpStatusText).to.equal('OK');
+            expect(event.isMainFrame).to.be.true();
+            expect(event.frame).to.equal(w.webContents.mainFrame);
+            expect(event.responseHeaders['x-single-header']).to.deep.equal(['single']);
+            expect(event.responseHeaders['x-multi-header']).to.deep.equal(['multi1', 'multi2']);
+            expect(args.slice(0, 3)).to.deep.equal([url + '/', 200, 'OK']);
+          }
         });
 
         it('provides empty response headers for non HTTP navigations', async () => {
           const didNavigate = once(w.webContents, 'did-navigate');
           w.loadURL('about:blank');
-          const [, , httpResponseCode, , responseHeaders] = await didNavigate;
-          expect(httpResponseCode).to.equal(-1);
-          expect(responseHeaders).to.deep.equal({});
+          const [event] = await didNavigate;
+          expect(event.httpResponseCode).to.equal(-1);
+          expect(event.httpStatusText).to.equal('');
+          expect(event.responseHeaders).to.deep.equal({});
         });
       });
 
