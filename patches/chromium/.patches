@@ -227,3 +227,4 @@ cherry-pick-8bdffb2b29f0.patch
 cherry-pick-5f51bc193d29.patch
 cherry-pick-7ac3a935b453.patch
 cherry-pick-48ecb3295201.patch
+fix_don_t_read_a_stale_last-error_in_replacefile_on_windows.patch
