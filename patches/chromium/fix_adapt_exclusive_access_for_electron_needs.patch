@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 5b198cf05cbfca501341e57dfc37f7b1368058b2..7a773de48377869dcfa287ccc19d503c5d9b75e9 100644
+index 5b198cf05cbfca501341e57dfc37f7b1368058b2..8bb5909d1da55eae391e147eeff5e69c096688f7 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -48,7 +48,7 @@
@@ -52,7 +52,7 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..7a773de48377869dcfa287ccc19d503c
  }
  #endif  // !BUILDFLAG(IS_ANDROID)
  
-@@ -413,8 +415,7 @@ void FullscreenController::WindowFullscreenStateChanged() {
+@@ -413,14 +415,14 @@ void FullscreenController::WindowFullscreenStateChanged() {
  #endif  // DCHECK_IS_ON()
    tab_fullscreen_target_display_id_ = display::kInvalidDisplayId;
    started_fullscreen_transition_ = false;
@@ -62,7 +62,34 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..7a773de48377869dcfa287ccc19d503c
    if (!IsTabFullscreen()) {
      // Activate any popup windows created while content fullscreen, after exit.
      popunder_preventer_.reset();
-@@ -575,9 +576,12 @@ void FullscreenController::EnterFullscreenModeInternal(
+   }
+ #endif  // !BUILDFLAG(IS_ANDROID)
+ 
++#if 0
+   if (browser_command_controller_) {
+     browser_command_controller_->FullscreenStateChanged();
+   }
+@@ -428,9 +430,11 @@ void FullscreenController::WindowFullscreenStateChanged() {
+     bookmark_bar_controller_->UpdateBookmarkBarState(
+         BookmarkBarController::StateChangeReason::kToggleFullscreen);
+   }
++#endif
+ }
+ 
+ void FullscreenController::FullscreenTopUIStateChanged() {
++#if 0
+   if (browser_command_controller_) {
+     browser_command_controller_->FullscreenStateChanged();
+   }
+@@ -438,6 +442,7 @@ void FullscreenController::FullscreenTopUIStateChanged() {
+     bookmark_bar_controller_->UpdateBookmarkBarState(
+         BookmarkBarController::StateChangeReason::kToolbarOptionChange);
+   }
++#endif
+ }
+ 
+ void FullscreenController::RunOrDeferUntilTransitionIsComplete(
+@@ -575,9 +580,12 @@ void FullscreenController::EnterFullscreenModeInternal(
    fullscreen_parameters_ = fullscreen_tab_params;
    started_fullscreen_transition_ = true;
    toggled_into_fullscreen_ = true;
@@ -75,7 +102,7 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..7a773de48377869dcfa287ccc19d503c
    if (option == FullscreenInternalOption::kTab) {
      origin = GetRequestingOrigin();
      tab_fullscreen_ = true;
-@@ -615,6 +619,7 @@ void FullscreenController::EnterFullscreenModeInternal(
+@@ -615,6 +623,7 @@ void FullscreenController::EnterFullscreenModeInternal(
        origin = url::Origin::Create(extension_url_.value());
      }
    }
@@ -83,7 +110,7 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..7a773de48377869dcfa287ccc19d503c
  
    fullscreen_start_time_ = base::TimeTicks::Now();
    if (option == FullscreenInternalOption::kBrowser) {
-@@ -636,6 +641,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -636,6 +645,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
      return;
    }
  
@@ -91,7 +118,7 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..7a773de48377869dcfa287ccc19d503c
    // `fullscreen_start_time_` is null if a fullscreen tab moves to a new window.
    if (fullscreen_start_time_ && exclusive_access_tab()) {
      ukm::SourceId source_id =
-@@ -647,13 +653,14 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -647,13 +657,14 @@ void FullscreenController::ExitFullscreenModeInternal() {
          .Record(ukm::UkmRecorder::Get());
      fullscreen_start_time_.reset();
    }
@@ -108,7 +135,7 @@ index 5b198cf05cbfca501341e57dfc37f7b1368058b2..7a773de48377869dcfa287ccc19d503c
    // state_prior_to_tab_fullscreen_ to match them else other logic using
    // state_prior_to_tab_fullscreen_ will be incorrect.
    // On Android the state of fullscreen is keep in the Java Fullscreen
-@@ -663,7 +670,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
+@@ -663,7 +674,7 @@ void FullscreenController::ExitFullscreenModeInternal() {
    if (!weak_ptr) {
      return;
    }
