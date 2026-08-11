@@ -177,6 +177,8 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
@@ -200,6 +202,8 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit
 
@@ -222,5 +226,7 @@ jobs:
       is-release: true
       gn-build-type: release
       generate-symbols: true
+      # No test job consumes these builds - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       upload-to-storage: '0'
     secrets: inherit

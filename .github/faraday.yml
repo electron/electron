@@ -7,6 +7,9 @@ trusted-bots:
   # Backport PRs to release branches.
   - login: trop[bot]
     id: 37223003
+  # Chrome security cherry-pick PRs to release branches.
+  - login: electron-security-backports[bot]
+    id: 312726202
   # PGO profile roll PRs; trusted only when every changed file is
   # under build/pgo_profiles/.
   - login: electron-pgo-updater[bot]
