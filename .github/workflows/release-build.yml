@@ -220,7 +220,7 @@ jobs:
           - target-arch: arm64
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
       target-platform: win
       target-arch: ${{ matrix.target-arch }}
       is-release: true
