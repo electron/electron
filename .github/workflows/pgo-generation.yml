@@ -282,7 +282,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: [checkout-windows, build-siso-windows]
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
       target-platform: win
       target-arch: x64
       is-release: false
@@ -301,7 +301,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: [checkout-windows, build-siso-windows]
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
       target-platform: win
       target-arch: x86
       is-release: false
@@ -320,7 +320,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: [checkout-windows, build-siso-windows]
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
       target-platform: win
       target-arch: arm64
       is-release: false
