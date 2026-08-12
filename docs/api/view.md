@@ -121,12 +121,12 @@ changes:
 -->
 
 * `borderRadius` Integer | Object - Border radius. When an `Integer`, it is applied
-  uniformly to all four corners. When an `Object`, it can contain the following
-  properties (all optional, default `0`):
-  * `topLeft` Integer (optional) - Radius of the top-left corner, in pixels.
-  * `topRight` Integer (optional) - Radius of the top-right corner, in pixels.
-  * `bottomRight` Integer (optional) - Radius of the bottom-right corner, in pixels.
-  * `bottomLeft` Integer (optional) - Radius of the bottom-left corner, in pixels.
+  uniformly to all four corners. When an `Object`, it must contain the following
+  properties:
+  * `topLeft` Integer - Radius of the top-left corner, in pixels.
+  * `topRight` Integer - Radius of the top-right corner, in pixels.
+  * `bottomRight` Integer - Radius of the bottom-right corner, in pixels.
+  * `bottomLeft` Integer - Radius of the bottom-left corner, in pixels.
 
 > [!NOTE]
 > The area cutout of the view's border still captures clicks.

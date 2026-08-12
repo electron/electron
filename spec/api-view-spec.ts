@@ -88,13 +88,19 @@ describe('View', () => {
     v.setBorderRadius({ topLeft: 0, topRight: 0, bottomRight: 0, bottomLeft: 0 });
   });
 
-  it('defaults missing per-corner keys to zero', () => {
+  it('throws when per-corner keys are missing', () => {
     w = new BaseWindow({ show: false });
     const v = new View();
     w.setContentView(v);
-    v.setBorderRadius({ topLeft: 5 });
-    v.setBorderRadius({ bottomRight: 12 });
-    v.setBorderRadius({});
+    const borderRadiusError = /must be an integer or an object/;
+    const borderRadius = { topLeft: 5, topRight: 5, bottomRight: 5, bottomLeft: 5 };
+    const keys = ['topLeft', 'topRight', 'bottomRight', 'bottomLeft'] as const;
+
+    for (const key of keys) {
+      const missing = { ...borderRadius } as Partial<typeof borderRadius>;
+      delete missing[key];
+      expect(() => v.setBorderRadius(missing as any)).to.throw(TypeError, borderRadiusError);
+    }
   });
 
   it('clamps negative and oversize per-corner radii', () => {
@@ -112,14 +118,14 @@ describe('View', () => {
     v.setBorderRadius(8);
     v.setBorderRadius({ topLeft: 16, topRight: 16, bottomRight: 0, bottomLeft: 0 });
     v.setBorderRadius(0);
-    v.setBorderRadius({});
   });
 
   it('throws on invalid border radius input', () => {
     w = new BaseWindow({ show: false });
     const v = new View();
     w.setContentView(v);
-    expect(() => v.setBorderRadius('not valid' as any)).to.throw(/number or/);
+    expect(() => v.setBorderRadius('not valid' as any)).to.throw(TypeError, /must be an integer or an object/);
+    expect(() => v.setBorderRadius(1.5 as any)).to.throw(TypeError, /must be an integer or an object/);
   });
 
   describe('view.getVisible|setVisible', () => {

@@ -67,6 +67,9 @@ class View : public gin_helper::EventEmitter<View>,
   // Should delete the |view_| in destructor.
   void set_delete_view(bool should) { delete_view_ = should; }
 
+  void ApplyBorderRadius();
+  virtual void OnBorderRadiusApplied(const gfx::RoundedCornersF& border_radii);
+
  private:
   using ChildPair = std::pair<raw_ptr<views::View>, v8::Global<v8::Object>>;
 
@@ -77,7 +80,6 @@ class View : public gin_helper::EventEmitter<View>,
                           views::View* child) override;
 
   ui::Layer* GetLayer();
-  void ApplyBorderRadius();
   void ReorderChildView(gin_helper::Handle<View> child, size_t index);
 
   std::vector<ChildPair> child_views_;

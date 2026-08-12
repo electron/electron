@@ -172,6 +172,10 @@ struct Converter<gfx::Tween::Type> {
 
 namespace electron::api {
 
+constexpr char kBorderRadiusTypeError[] =
+    "`borderRadius` must be an integer or an object with integer `topLeft`, "
+    "`topRight`, `bottomRight`, and `bottomLeft` properties";
+
 using LayoutCallback = base::RepeatingCallback<views::ProposedLayout(
     const views::SizeBounds& size_bounds)>;
 
@@ -488,31 +492,35 @@ void View::SetBackgroundColor(std::optional<WrappedSkColor> color) {
 
 void View::SetBorderRadius(gin_helper::ErrorThrower thrower,
                            v8::Local<v8::Value> value) {
-  v8::Isolate* const isolate = JavascriptEnvironment::GetIsolate();
+  v8::Isolate* const isolate = thrower.isolate();
   if (value->IsNumber()) {
     int radius = 0;
-    if (!gin::ConvertFromV8(isolate, value, &radius))
+    if (!gin::ConvertFromV8(isolate, value, &radius)) {
+      thrower.ThrowTypeError(kBorderRadiusTypeError);
       return;
+    }
     border_radii_ = gfx::RoundedCornersF(static_cast<float>(radius));
   } else if (value->IsObject()) {
     gin_helper::Dictionary dict;
-    if (!gin::ConvertFromV8(isolate, value, &dict))
+    if (!gin::ConvertFromV8(isolate, value, &dict)) {
+      thrower.ThrowTypeError(kBorderRadiusTypeError);
       return;
+    }
     int top_left = 0;
     int top_right = 0;
     int bottom_right = 0;
     int bottom_left = 0;
-    dict.Get("topLeft", &top_left);
-    dict.Get("topRight", &top_right);
-    dict.Get("bottomRight", &bottom_right);
-    dict.Get("bottomLeft", &bottom_left);
+    if (!dict.Get("topLeft", &top_left) || !dict.Get("topRight", &top_right) ||
+        !dict.Get("bottomRight", &bottom_right) ||
+        !dict.Get("bottomLeft", &bottom_left)) {
+      thrower.ThrowTypeError(kBorderRadiusTypeError);
+      return;
+    }
     border_radii_ = gfx::RoundedCornersF(
         static_cast<float>(top_left), static_cast<float>(top_right),
         static_cast<float>(bottom_right), static_cast<float>(bottom_left));
   } else {
-    thrower.ThrowTypeError(
-        "setBorderRadius requires a number or an object with topLeft, "
-        "topRight, bottomRight, and/or bottomLeft properties");
+    thrower.ThrowTypeError(kBorderRadiusTypeError);
     return;
   }
   ApplyBorderRadius();
@@ -537,6 +545,7 @@ void View::ApplyBorderRadius() {
 
   if (r.IsEmpty() || size.IsEmpty()) {
     view_->SetClipPath(SkPath());
+    OnBorderRadiusApplied(r);
     return;
   }
 
@@ -549,7 +558,10 @@ void View::ApplyBorderRadius() {
   SkRRect rrect;
   rrect.setRectRadii(rect, radii);
   view_->SetClipPath(SkPath::RRect(rrect));
+  OnBorderRadiusApplied(r);
 }
+
+void View::OnBorderRadiusApplied(const gfx::RoundedCornersF&) {}
 
 void View::SetBackgroundBlur(int blur_radius) {
   if (!view_)

@@ -61,7 +61,7 @@ class WebContentsView : public View,
  private:
   static gin_helper::WrappableBase* New(gin::Arguments* args);
 
-  void ApplyBorderRadius();
+  void OnBorderRadiusApplied(const gfx::RoundedCornersF& border_radii) override;
 
   // Keep a reference to v8 wrapper.
   v8::Global<v8::Value> web_contents_;

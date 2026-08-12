@@ -17,6 +17,7 @@
 #include "shell/common/gin_helper/constructor.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
+#include "shell/common/gin_helper/handle.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -73,13 +74,13 @@ void WebContentsView::SetBackgroundColor(std::optional<WrappedSkColor> color) {
 void WebContentsView::SetBorderRadius(gin_helper::ErrorThrower thrower,
                                       v8::Local<v8::Value> value) {
   View::SetBorderRadius(thrower, value);
-  ApplyBorderRadius();
 }
 
-void WebContentsView::ApplyBorderRadius() {
-  if (border_radii().has_value() && api_web_contents_ && view()->GetWidget()) {
+void WebContentsView::OnBorderRadiusApplied(
+    const gfx::RoundedCornersF& border_radii) {
+  if (api_web_contents_ && view()->GetWidget()) {
     auto* view = api_web_contents_->inspectable_web_contents()->GetView();
-    view->SetCornerRadii(border_radii().value());
+    view->SetCornerRadii(border_radii);
   }
 }
 
