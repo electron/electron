@@ -871,7 +871,14 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
   }
   if (!render_widget_host_)
     return;
-  render_widget_host_->ForwardWheelEvent(event);
+  render_widget_host_->ForwardWheelEvent(mouse_wheel_event);
+}
+
+void OffScreenRenderWidgetHostView::GestureEventAck(
+    const blink::WebGestureEvent& event,
+    blink::mojom::InputEventResultSource,
+    blink::mojom::InputEventResultState ack_result) {
+  mouse_wheel_phase_handler_.GestureEventAck(event, ack_result);
 }
 
 void OffScreenRenderWidgetHostView::SetPainting(bool painting) {
