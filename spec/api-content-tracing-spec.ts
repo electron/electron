@@ -2,6 +2,7 @@ import { app, contentTracing, EnableHeapProfilingOptions, TraceConfig, TraceCate
 
 import { expect } from 'chai';
 
+import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -28,11 +29,16 @@ ifdescribe(!['arm', 'arm64'].includes(process.arch) || process.platform !== 'lin
     return resultFilePath;
   };
 
-  const outputFilePath = path.join(app.getPath('temp'), 'trace.json');
+  // Every test attempt (including mocha retries) writes to its own file. A
+  // previous attempt that timed out can still have a trace endpoint writing to
+  // its output path in the background, and two endpoints finalizing the same
+  // path race on the final rename.
+  let outputFilePath: string;
   beforeEach(() => {
-    if (fs.existsSync(outputFilePath)) {
-      fs.unlinkSync(outputFilePath);
-    }
+    outputFilePath = path.join(app.getPath('temp'), `electron-content-tracing-${randomUUID()}.json`);
+  });
+  afterEach(() => {
+    fs.rmSync(outputFilePath, { force: true });
   });
 
   describe('startRecording', function () {
