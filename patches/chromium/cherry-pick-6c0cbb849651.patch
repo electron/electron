@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mason Freed <masonf@chromium.org>
+Date: Thu, 30 Jul 2026 14:57:52 -0700
+Subject: Sanitize presentation attribute cache hash using EnsureValidHash
+
+ComputePresentationAttributeCacheHash returns HashInts without using
+EnsureValidHash to filter out HashTraits sentinel values (0 and
+0xFFFFFFFF).
+
+When the computed hash happens to equal 0xFFFFFFFF (DeletedValue),
+HeapHashMap stores the Member in a bucket treated as a deleted
+sentinel. During garbage collection, Oilpan skips tracing deleted
+buckets, allowing the entry to be swept while the map retains a
+reference to it. A subsequent cache lookup for the same element key
+then returns a freed CSSPropertyValueSet pointer, leading to a
+use-after-free.
+
+This patch wraps the output of HashInts in EnsureValidHash in
+ComputePresentationAttributeCacheHash, matching the pattern used by
+ElementDataCache and MatchedPropertiesCache.
+
+Fixed: 540482895
+Change-Id: I0f23507e31a76b62556a4fd8588784665ac336d4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8178803
+Auto-Submit: Mason Freed <masonf@chromium.org>
+Reviewed-by: Joey Arhar <jarhar@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1671442}
+
+diff --git a/third_party/blink/renderer/core/dom/presentation_attribute_style.cc b/third_party/blink/renderer/core/dom/presentation_attribute_style.cc
+index 97325b069f84b73468b1c3a7a492d4f9cc2ecf5a..7447c6d0701d4e06fd32e6960c49c2bb7b6cbd51 100644
+--- a/third_party/blink/renderer/core/dom/presentation_attribute_style.cc
++++ b/third_party/blink/renderer/core/dom/presentation_attribute_style.cc
+@@ -40,6 +40,7 @@
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+ #include "third_party/blink/renderer/platform/wtf/hash_functions.h"
+ #include "third_party/blink/renderer/platform/wtf/hash_map.h"
++#include "third_party/blink/renderer/platform/wtf/hash_traits.h"
+ 
+ namespace blink {
+ 
+@@ -91,7 +92,8 @@ static unsigned ComputePresentationAttributeCacheHash(
+   DCHECK(key.attributes_and_values.size());
+   unsigned attribute_hash =
+       StringHasher::HashMemory(base::as_byte_span(key.attributes_and_values));
+-  return HashInts(key.tag_name->ExistingHash(), attribute_hash);
++  return EnsureValidHash(
++      HashInts(key.tag_name->ExistingHash(), attribute_hash));
+ }
+ 
+ static unsigned MakePresentationAttributeCacheKey(
+diff --git a/third_party/blink/renderer/platform/wtf/hash_traits.h b/third_party/blink/renderer/platform/wtf/hash_traits.h
+index 77aeac8a7432d0ef4f0cfcdf3ebe3fe479cc3c4a..a9f42934f516809c43f0c61640d4f74323540370 100644
+--- a/third_party/blink/renderer/platform/wtf/hash_traits.h
++++ b/third_party/blink/renderer/platform/wtf/hash_traits.h
+@@ -390,6 +390,15 @@ struct GenericHashTraits<std::unique_ptr<T>>
+ template <typename T>
+ struct HashTraits : GenericHashTraits<T> {};
+ 
++// Helper to avoid HashTraits<unsigned> sentinel values (0 and 0xFFFFFFFF)
++// by turning them into 1.
++constexpr unsigned EnsureValidHash(unsigned hash) {
++  return (hash == HashTraits<unsigned>::EmptyValue() ||
++          hash == HashTraits<unsigned>::DeletedValue())
++             ? 1
++             : hash;
++}
++
+ // This hash traits type requires the following methods in class T, unless
+ // the corresponding hash traits method is overridden:
+ //   // Computes the hash code, for GetHash().
