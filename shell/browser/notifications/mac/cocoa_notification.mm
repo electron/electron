@@ -207,7 +207,7 @@ void CocoaNotification::ScheduleNotification(
                        << [error.localizedDescription UTF8String];
            }
            std::string error_description =
-               [error.localizedDescription UTF8String];
+               base::SysNSStringToUTF8(error.localizedDescription);
            task_runner->PostTask(
                FROM_HERE, base::BindOnce(
                               [](base::WeakPtr<Notification> weak_self,

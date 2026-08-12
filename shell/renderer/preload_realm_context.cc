@@ -102,12 +102,6 @@ class PreloadRealmLifetimeController
                : v8::MaybeLocal<v8::Context>();
   }
 
-  v8::Isolate* GetInitiatorIsolate() {
-    return initiator_script_state_->ContextIsValid()
-               ? initiator_script_state_->GetIsolate()
-               : nullptr;
-  }
-
   electron::ServiceWorkerData* service_worker_data() {
     return service_worker_data_;
   }
@@ -242,17 +236,15 @@ class PreloadRealmLifetimeController
 
 }  // namespace
 
-v8::MaybeLocal<v8::Context> GetInitiatorContext(v8::Local<v8::Context> context,
-                                                v8::Isolate* target_isolate) {
+v8::MaybeLocal<v8::Context> GetInitiatorContext(
+    v8::Local<v8::Context> context) {
   DCHECK(!context.IsEmpty());
-  DCHECK(target_isolate);
   blink::ExecutionContext* execution_context =
       blink::ExecutionContext::From(context);
   if (!execution_context->IsShadowRealmGlobalScope())
     return v8::MaybeLocal<v8::Context>();
   auto* controller = PreloadRealmLifetimeController::From(context);
   if (controller) {
-    target_isolate = controller->GetInitiatorIsolate();
     return controller->GetInitiatorContext();
   }
   return v8::MaybeLocal<v8::Context>();
