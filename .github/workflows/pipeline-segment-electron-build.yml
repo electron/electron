@@ -68,6 +68,11 @@ on:
         required: false
         type: boolean
         default: false
+      is-coverage:
+        description: 'Building with Clang source-based code coverage'
+        required: false
+        type: boolean
+        default: false
       upload-out-gen-artifacts:
         description: 'Whether to upload the src/gen artifacts'
         required: false
@@ -110,7 +115,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.is-release }}-${{ github.ref_protected == true && github.run_id || github.ref }}
+  group: electron-build-${{ inputs.target-platform }}-${{ inputs.target-arch }}-${{ inputs.target-variant }}-${{ inputs.is-asan }}-${{ inputs.is-ubsan }}-${{ inputs.is-coverage }}-${{ inputs.is-release }}-${{ github.ref_protected == true && github.run_id || github.ref }}
   cancel-in-progress: ${{ github.ref_protected != true }}
 
 env:
@@ -188,12 +193,18 @@ jobs:
           GN_EXTRA_ARGS='is_asan=true is_lsan=true v8_enable_verify_heap=true'
         elif [ "$IS_UBSAN" = true ]; then
           GN_EXTRA_ARGS='is_ubsan=true is_ubsan_no_recover=true'
+        elif [ "${{ inputs.is-coverage }}" = true ]; then
+          GN_EXTRA_ARGS='use_clang_coverage=true'
         fi
         echo "GN_EXTRA_ARGS=$GN_EXTRA_ARGS" >> $GITHUB_ENV
     - name: Set GN_EXTRA_ARGS for macOS UBSan
       if: ${{ inputs.target-platform == 'macos' && inputs.is-ubsan }}
       run: |
         echo "GN_EXTRA_ARGS=is_ubsan=true is_ubsan_no_recover=true" >> $GITHUB_ENV
+    - name: Set GN_EXTRA_ARGS for macOS Coverage
+      if: ${{ inputs.target-platform == 'macos' && inputs.is-coverage }}
+      run: |
+        echo "GN_EXTRA_ARGS=use_clang_coverage=true" >> $GITHUB_ENV
     - name: Set Chromium Git Cookie
       uses: ./src/electron/.github/actions/set-chromium-cookie
     - name: Install Build Tools
@@ -259,6 +270,17 @@ jobs:
       run: |
         (cd src/electron && git checkout .) && node src/electron/script/generate-deps-hash.js
         echo "DEPSHASH=$(cat src/electron/.depshash)" >> $GITHUB_ENV
+    # llvm-profdata/llvm-cov ship in a separate clang package that the src
+    # cache does not carry (gclient's checkout_clang_coverage_tools is off).
+    # Stage them inside third_party/llvm-build so move-artifacts.sh picks them
+    # up into src_artifacts for the test and report jobs.
+    - name: Download Coverage Tools
+      if: ${{ inputs.is-coverage }}
+      run: |
+        # --output-dir is required: the default location replaces the clang install.
+        python3 src/tools/clang/scripts/update.py --package=coverage_tools --output-dir="$RUNNER_TEMP/coverage-tools"
+        cp "$RUNNER_TEMP/coverage-tools/bin/llvm-profdata" "$RUNNER_TEMP/coverage-tools/bin/llvm-cov" \
+          src/third_party/llvm-build/Release+Asserts/bin/
     - name: Free up space (macOS)
       if: ${{ inputs.target-platform == 'macos' }}
       uses: ./src/electron/.github/actions/free-space-macos
