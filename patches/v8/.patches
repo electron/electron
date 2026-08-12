@@ -8,3 +8,4 @@ interpreter_elide_unreachable_catch_blocks_and_consider.patch
 cherry-pick-a90507bd38f7.patch
 cherry-pick-9068d5fc068f.patch
 cherry-pick-2ef100a053c5.patch
+cherry-pick-383120c3acd3.patch

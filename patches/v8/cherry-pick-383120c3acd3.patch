@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Thu, 30 Jul 2026 15:39:51 +0200
+Subject: [string] Fix UAF in TwoStringsToSlices with external strings
+
+TwoStringsToSlices converted s1 to a slice before converting s2. For an
+external s1 that slice is a raw pointer into the resource with no tagged
+owner (NewOffHeapConstSlice stores kZeroBitPattern), so it keeps nothing
+alive. Converting s2 can flatten it, and the allocation in
+StringSlowFlatten can collect s1 and dispose its resource, leaving the
+slice dangling for the subsequent search.
+
+Flatten both strings up front instead. Afterwards StringToSlice cannot
+allocate: its ConsString arm is the only allocating one, and the
+SlicedString/ThinString arms walk to parents that are already direct.
+
+Fixed: 535000102
+Change-Id: Ic438a73fa3ae9f1fad36d4db01d298cc3252b595
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8176583
+Auto-Submit: Jakob Linke <jgruber@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#108978}
+
+diff --git a/src/objects/string.tq b/src/objects/string.tq
+index 0165da42e98b9634fa697a67493e3170ead42955..f7cb50a778a255f25177164a29dd95197904b4e0 100644
+--- a/src/objects/string.tq
++++ b/src/objects/string.tq
+@@ -325,6 +325,11 @@ macro StringToSlice(string: String): never labels OneByte(ConstSlice<char8>),
+ // Dispatch on the slice type of two different strings.
+ macro TwoStringsToSlices<Result: type, Functor: type>(
+     s1: String, s2: String, f: Functor): Result {
++  // Flatten both strings before taking either slice. A slice into an external
++  // string is a raw pointer that doesn't keep the string alive, so flattening
++  // s2 while holding s1's slice could collect s1 and free its resource.
++  const s1 = Flatten(s1);
++  const s2 = Flatten(s2);
+   try {
+     StringToSlice(s1) otherwise FirstOneByte, FirstTwoByte;
+   } label FirstOneByte(s1Slice: ConstSlice<char8>) {
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index bc70cc54b284ffc2bdd280ced5f41f61f35080f0..cbf2e4dfe98579ef9ecaeb3a736aafe2903cbd24 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -2565,6 +2565,7 @@
+   'regress/wasm/regress-483269968': [SKIP],
+   'compiler/regress-347724915': [SKIP],
+   'regress/regress-crbug-418520151': [SKIP],
++  'regress/regress-535000102': [SKIP],
+ 
+   # TODO(v8:14581): Re-enable this test once TransitionElementsKindOrCheckMap is
+   # supported by the Maglev->Turboshaft graph builder.
+diff --git a/test/mjsunit/regress/regress-535000102.js b/test/mjsunit/regress/regress-535000102.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b7584bc6b4a9c800c37c5028a712d29563af25b3
+--- /dev/null
++++ b/test/mjsunit/regress/regress-535000102.js
+@@ -0,0 +1,43 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --expose-gc --expose-externalize-string
++// Flags: --gc-global
++
++// String.prototype.indexOf takes a slice of the receiver before flattening the
++// search string. A slice into an external string is a raw pointer that doesn't
++// keep the string alive, so the allocation done while flattening the search
++// string could collect the receiver and free its resource.
++//
++// External strings are only disposed by major GCs, so the flattening allocation
++// has to hit one. --gc-global just makes that deterministic; the bug also
++// reproduces under ordinary old space pressure.
++
++let subject = null;
++
++function makeExternal(s) {
++  const str = createExternalizableString(s);
++  externalizeString(str, true);
++  return str;
++}
++
++function indexOfAndDropSubject(search) {
++  const s = subject;
++  subject = null;
++  // Make the allocation that flattens {search} trigger a GC.
++  %SimulateNewspaceFull();
++  return s.indexOf(search);
++}
++
++%PrepareFunctionForOptimization(indexOfAndDropSubject);
++for (let i = 0; i < 3; i++) {
++  subject = makeExternal('a'.repeat(64));
++  indexOfAndDropSubject('b' + 'c');
++}
++%OptimizeFunctionOnNextCall(indexOfAndDropSubject);
++
++subject = makeExternal('A'.repeat(20 * 1024));
++// A cons string, so that indexOf has to flatten it.
++const search = 'B'.repeat(1024) + 'C'.repeat(1024);
++assertEquals(-1, indexOfAndDropSubject(search));
