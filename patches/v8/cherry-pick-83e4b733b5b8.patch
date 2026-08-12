@@ -1,0 +1,116 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Linke <jgruber@chromium.org>
+Date: Thu, 30 Jul 2026 15:39:51 +0200
+Subject: [M152] [string] Fix UAF in TwoStringsToSlices with external strings
+
+Original change's description:
+> [string] Fix UAF in TwoStringsToSlices with external strings
+>
+> TwoStringsToSlices converted s1 to a slice before converting s2. For an
+> external s1 that slice is a raw pointer into the resource with no tagged
+> owner (NewOffHeapConstSlice stores kZeroBitPattern), so it keeps nothing
+> alive. Converting s2 can flatten it, and the allocation in
+> StringSlowFlatten can collect s1 and dispose its resource, leaving the
+> slice dangling for the subsequent search.
+>
+> Flatten both strings up front instead. Afterwards StringToSlice cannot
+> allocate: its ConsString arm is the only allocating one, and the
+> SlicedString/ThinString arms walk to parents that are already direct.
+>
+> Fixed: 535000102
+> Change-Id: Ic438a73fa3ae9f1fad36d4db01d298cc3252b595
+> Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8176583
+> Auto-Submit: Jakob Linke <jgruber@chromium.org>
+> Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+> Commit-Queue: Jakob Linke <jgruber@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#108978}
+
+(cherry picked from commit 383120c3acd389f21cae65add09b75230ee929d7)
+
+Bug: 542457362,535000102
+Change-Id: Ic438a73fa3ae9f1fad36d4db01d298cc3252b595
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/8223046
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com <chrome-cherry-picker@chops-service-accounts.iam.gserviceaccount.com>
+Commit-Queue: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/15.2@{#13}
+Cr-Branched-From: a8fe17c242678787f03a8a2b77424aa06cf865c4-refs/heads/15.2.124@{#1}
+Cr-Branched-From: 0e6ea09ef6f15ebd7f78555c0648c8b632ce3013-refs/heads/main@{#108894}
+
+diff --git a/src/objects/string.tq b/src/objects/string.tq
+index a506d11e8785faa8e34edff46a8af39a838e683a..2ac2c80f7fb2d5c689e4c5b6a66badde86f063c9 100644
+--- a/src/objects/string.tq
++++ b/src/objects/string.tq
+@@ -330,6 +330,11 @@ macro StringToSlice(string: String): never labels OneByte(ConstSlice<char8>),
+ // Dispatch on the slice type of two different strings.
+ macro TwoStringsToSlices<Result: type, Functor: type>(
+     s1: String, s2: String, f: Functor): Result {
++  // Flatten both strings before taking either slice. A slice into an external
++  // string is a raw pointer that doesn't keep the string alive, so flattening
++  // s2 while holding s1's slice could collect s1 and free its resource.
++  const s1 = Flatten(s1);
++  const s2 = Flatten(s2);
+   try {
+     StringToSlice(s1) otherwise FirstOneByte, FirstTwoByte;
+   } label FirstOneByte(s1Slice: ConstSlice<char8>) {
+diff --git a/test/mjsunit/mjsunit.status b/test/mjsunit/mjsunit.status
+index 3efca2026276db8f9f1db6857183e63c51092ab0..7f7cc38c02207d1a8a76adf3aeb68ca51cf383e9 100644
+--- a/test/mjsunit/mjsunit.status
++++ b/test/mjsunit/mjsunit.status
+@@ -2751,6 +2751,7 @@
+   'regress/wasm/regress-483269968': [SKIP],
+   'compiler/regress-347724915': [SKIP],
+   'regress/regress-crbug-418520151': [SKIP],
++  'regress/regress-535000102': [SKIP],
+ 
+   # TODO(v8:14581): Re-enable this test once TransitionElementsKindOrCheckMap is
+   # supported by the Maglev->Turboshaft graph builder.
+diff --git a/test/mjsunit/regress/regress-535000102.js b/test/mjsunit/regress/regress-535000102.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..b7584bc6b4a9c800c37c5028a712d29563af25b3
+--- /dev/null
++++ b/test/mjsunit/regress/regress-535000102.js
+@@ -0,0 +1,43 @@
++// Copyright 2026 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax --expose-gc --expose-externalize-string
++// Flags: --gc-global
++
++// String.prototype.indexOf takes a slice of the receiver before flattening the
++// search string. A slice into an external string is a raw pointer that doesn't
++// keep the string alive, so the allocation done while flattening the search
++// string could collect the receiver and free its resource.
++//
++// External strings are only disposed by major GCs, so the flattening allocation
++// has to hit one. --gc-global just makes that deterministic; the bug also
++// reproduces under ordinary old space pressure.
++
++let subject = null;
++
++function makeExternal(s) {
++  const str = createExternalizableString(s);
++  externalizeString(str, true);
++  return str;
++}
++
++function indexOfAndDropSubject(search) {
++  const s = subject;
++  subject = null;
++  // Make the allocation that flattens {search} trigger a GC.
++  %SimulateNewspaceFull();
++  return s.indexOf(search);
++}
++
++%PrepareFunctionForOptimization(indexOfAndDropSubject);
++for (let i = 0; i < 3; i++) {
++  subject = makeExternal('a'.repeat(64));
++  indexOfAndDropSubject('b' + 'c');
++}
++%OptimizeFunctionOnNextCall(indexOfAndDropSubject);
++
++subject = makeExternal('A'.repeat(20 * 1024));
++// A cons string, so that indexOf has to flatten it.
++const search = 'B'.repeat(1024) + 'C'.repeat(1024);
++assertEquals(-1, indexOfAndDropSubject(search));
