@@ -204,7 +204,10 @@ jobs:
         # abnormal exits and sandboxed processes the suite produces.
         echo "LLVM_PROFILE_FILE=$COVERAGE_PROFILE_DIR/electron.%4m%c.profraw" >> $GITHUB_ENV
         # Instrumented binaries run several times slower than a normal build.
+        # MOCHA_TIMEOUT only raises the suite default; specs that call
+        # this.timeout() explicitly scale themselves off IS_COVERAGE.
         echo "MOCHA_TIMEOUT=180000" >> $GITHUB_ENV
+        echo "IS_COVERAGE=true" >> $GITHUB_ENV
     - name: Download Generated Artifacts
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
       with:
