@@ -10,6 +10,7 @@
 
 #include "base/files/file_util.h"
 #include "base/functional/callback_helpers.h"
+#include "base/task/bind_post_task.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_config.h"
@@ -86,7 +87,7 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
           promise.Resolve(path);
         }
       },
-      std::move(promise), *file_path);
+      std::move(promise), file_path.value_or(base::FilePath()));
 
   auto* instance = TracingController::GetInstance();
   if (!instance->IsTracing()) {
@@ -94,8 +95,13 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
         .Run("Failed to stop tracing - no trace in progress"sv);
   } else if (file_path) {
     auto split_callback = base::SplitOnceCallback(std::move(resolve_or_reject));
+    // The file endpoint hands this closure to a thread pool sequence and, if
+    // it fails to write the trace file, drops it there without running it. The
+    // promise it owns must be destroyed on the thread that created it, so make
+    // sure both running and destroying the closure happen back on this thread.
     auto endpoint = TracingController::CreateFileEndpoint(
-        *file_path, base::BindOnce(std::move(split_callback.first), ""sv));
+        *file_path, base::BindPostTaskToCurrentDefault(
+                        base::BindOnce(std::move(split_callback.first), ""sv)));
     if (!instance->StopTracing(endpoint)) {
       std::move(split_callback.second).Run("Failed to stop tracing"sv);
     }
