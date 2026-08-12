@@ -515,27 +515,6 @@ ui::Compositor* OffScreenRenderWidgetHostView::GetCompositor() {
   return compositor_.get();
 }
 
-content::RenderWidgetHostViewBase*
-OffScreenRenderWidgetHostView::CreateViewForWidget(
-    content::RenderWidgetHost* render_widget_host,
-    content::RenderWidgetHost* embedder_render_widget_host,
-    content::WebContentsView* web_contents_view) {
-  if (auto* rwhv = render_widget_host->GetView())
-    return static_cast<content::RenderWidgetHostViewBase*>(rwhv);
-
-  OffScreenRenderWidgetHostView* embedder_host_view = nullptr;
-  if (embedder_render_widget_host) {
-    embedder_host_view = static_cast<OffScreenRenderWidgetHostView*>(
-        embedder_render_widget_host->GetView());
-  }
-
-  return new OffScreenRenderWidgetHostView(
-      transparent_, offscreen_use_shared_texture_,
-      offscreen_shared_texture_pixel_format_, offscreen_device_scale_factor_,
-      true, embedder_host_view->frame_rate(), callback_, render_widget_host,
-      embedder_host_view, size());
-}
-
 const viz::FrameSinkId& OffScreenRenderWidgetHostView::GetFrameSinkId() const {
   return delegated_frame_host()->frame_sink_id();
 }
