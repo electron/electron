@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Justin Lulejian <jlulejian@chromium.org>
+Date: Thu, 30 Jul 2026 13:05:24 -0700
+Subject: [Extensions] Prevent UAF in EventEmitter::DispatchSync
+
+Prior to this commit, an issue occurred during synchronous event
+dispatch in EventEmitter::DispatchSync(). An event listener could throw
+an exception where its custom stack getter invalidates and tears down
+the v8::Context during exception handling
+(ExceptionHandler::HandleException()). When this happened, the dispatch
+loop continued without verifying if the context was still valid. As a
+result, subsequent listeners in the loop attempted to execute using a
+dangling, heap-freed JSRunner pointer, causing a renderer
+heap-use-after-free read.
+
+After this commit, EventEmitter::DispatchSync() checks whether the
+v8::Context is still valid immediately after exception handling. If the
+context was invalidated during error inspection, event dispatch safely
+breaks out without attempting to dispatch to remaining listeners or
+dereferencing freed per-context data. Any prior listener (if any) return
+values are still returned to interested observers.
+
+TAG=agy
+CONV=7010bfb3-0b53-48c6-a45c-eefea11623ec
+
+Fixed: 536676756
+Change-Id: Ie4c03c7d65526f98f3b417b1d7a7367b89ae432b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/8130654
+Commit-Queue: Devlin Cronin <rdevlin.cronin@chromium.org>
+Commit-Queue: Justin Lulejian <jlulejian@chromium.org>
+Auto-Submit: Justin Lulejian <jlulejian@chromium.org>
+Reviewed-by: Devlin Cronin <rdevlin.cronin@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1671354}
+
+diff --git a/extensions/renderer/bindings/event_emitter.cc b/extensions/renderer/bindings/event_emitter.cc
+index 01de9a8d018a68c92af7508adc2f5fcfb1316232..93e6080a69db90eeba03c6a7381018075cd56ef8 100644
+--- a/extensions/renderer/bindings/event_emitter.cc
++++ b/extensions/renderer/bindings/event_emitter.cc
+@@ -300,6 +300,16 @@ v8::Local<v8::Value> EventEmitter::DispatchSync(
+       }
+       exception_handler_->HandleException(context, "Error in event handler",
+                                           &try_catch);
++      // `ExceptionHandler:HandleException()` can run arbitrary JS code (e.g. if
++      // the thrown error defines a custom `stack` property getter), which might
++      // invalidate and tear down `context`. In this case, bail out to avoid
++      // executing remaining listeners on a destroyed context or dereferencing
++      // freed per-context data. We `break` so that any previous listeners
++      // return values are sent back to interested callers.
++      if (!binding::IsContextValid(context)) {
++        context.Clear();
++        break;
++      }
+       try_catch.Reset();
+     }
+   }
