@@ -33,6 +33,11 @@ on:
         description: 'JSON container information to run clang-tidy on'
         required: false
         default: '{"image":null}'
+      run-clang-tidy:
+        type: boolean
+        description: 'Run the clang-tidy job; when false the job is skipped but its check is still reported as skipped'
+        required: false
+        default: true
       test-container:
         type: string
         description: 'JSON container information for testing'
@@ -98,6 +103,7 @@ jobs:
     permissions:
       contents: read
     needs: build
+    if: ${{ inputs.run-clang-tidy }}
     with:
       clang-tidy-runs-on: ${{ inputs.clang-tidy-runs-on }}
       clang-tidy-container: ${{ inputs.clang-tidy-container }}
