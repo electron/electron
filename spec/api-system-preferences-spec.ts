@@ -261,6 +261,18 @@ describe('systemPreferences module', () => {
     });
   });
 
+  ifdescribe(process.platform === 'darwin')('systemPreferences.promptTouchID(reason)', () => {
+    it('rejects an empty reason', async () => {
+      await expect(systemPreferences.promptTouchID('')).to.eventually.be.rejectedWith('reason must be non-empty');
+    });
+
+    it('rejects a reason that is not valid UTF-8', async () => {
+      await expect(systemPreferences.promptTouchID('\uD800')).to.eventually.be.rejectedWith(
+        'reason must be valid UTF-8'
+      );
+    });
+  });
+
   ifdescribe(process.platform === 'darwin')('systemPreferences.isTrustedAccessibilityClient(prompt)', () => {
     it('returns a boolean', () => {
       const trusted = systemPreferences.isTrustedAccessibilityClient(false);
