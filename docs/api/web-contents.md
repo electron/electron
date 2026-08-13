@@ -405,7 +405,8 @@ check out the `will-redirect` event above.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/52420
-    description: "Added the navigation details, including `frame` and `responseHeaders`, as properties of the event object."
+    description: "Added `frame`, `responseHeaders` and the other navigation details to the event object; deprecated the arguments."
+    breaking-changes-header: deprecated-arguments-in-did-navigate-and-did-frame-navigate-events-on-webcontents
 ```
 -->
 
@@ -420,9 +421,9 @@ Returns:
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `responseHeaders` Record\<string, string[]\> - The HTTP response headers, keyed by lowercased header
     name. Empty for non HTTP navigations.
-* `url` string
-* `httpResponseCode` Integer - -1 for non HTTP navigations
-* `httpStatusText` string - empty for non HTTP navigations
+* `url` string _Deprecated_
+* `httpResponseCode` Integer _Deprecated_ - -1 for non HTTP navigations
+* `httpStatusText` string _Deprecated_ - empty for non HTTP navigations
 
 Emitted when a main frame navigation is done.
 
@@ -436,7 +437,8 @@ this purpose.
 ```YAML history
 changes:
   - pr-url: https://github.com/electron/electron/pull/52420
-    description: "Added the navigation details, including `frame` and `responseHeaders`, as properties of the event object."
+    description: "Added `frame`, `responseHeaders` and the other navigation details to the event object; deprecated the arguments."
+    breaking-changes-header: deprecated-arguments-in-did-navigate-and-did-frame-navigate-events-on-webcontents
 ```
 -->
 
@@ -451,12 +453,12 @@ Returns:
     May be `null` if accessed after the frame has either navigated or been destroyed.
   * `responseHeaders` Record\<string, string[]\> - The HTTP response headers, keyed by lowercased header
     name. Empty for non HTTP navigations.
-* `url` string
-* `httpResponseCode` Integer - -1 for non HTTP navigations
-* `httpStatusText` string - empty for non HTTP navigations,
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
+* `url` string _Deprecated_
+* `httpResponseCode` Integer _Deprecated_ - -1 for non HTTP navigations
+* `httpStatusText` string _Deprecated_ - empty for non HTTP navigations
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted when any frame navigation is done.
 
