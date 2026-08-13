@@ -138,14 +138,16 @@ patches/{target}/*.patch  →  [e sync --3]  →  target repo commits
 
 **Fixing patch conflicts on an existing PR:**
 
-If asked to fix a patch conflict on a branch that already has an open PR, check the PR's failed **Apply Patches** CI run for an `update-patches` artifact before running `e sync` locally. CI has already performed the 3-way merge and exported the resolved patch diff — applying it is much faster than a full local sync.
+If asked to fix a patch conflict on a branch that already has an open PR, check the PR's failed **Apply Patches** CI run for an `update-patches.patch` artifact before running `e sync` locally. CI has already performed the 3-way merge and exported the resolved patch diff — applying it is much faster than a full local sync.
 
 ```bash
-# Find the failed Apply Patches run for the PR and download the artifact
+# Find the failed Apply Patches run for the PR, then fetch its artifact. The
+# artifact is uploaded unarchived (name `update-patches.patch`), so
+# `gh run download` rejects it as "not a valid zip"; the artifact zip endpoint
+# returns the raw patch instead.
 gh run list --repo electron/electron --branch <pr-branch> --workflow "Apply Patches" --limit 1
-gh run download <run-id> --repo electron/electron --name update-patches
-
-# Apply the CI-generated fix, then push
+gh api repos/electron/electron/actions/runs/<run-id>/artifacts --jq '.artifacts[] | select(.name == "update-patches.patch") | .id'
+gh api repos/electron/electron/actions/artifacts/<artifact-id>/zip > update-patches.patch
 git am update-patches.patch
 git push
 ```

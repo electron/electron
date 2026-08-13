@@ -600,7 +600,7 @@ ElectronBrowserContext::CreateURLLoaderFactoryBuilder() {
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
           url::Origin(), net::IsolationInfo(), std::nullopt,
           ukm::kInvalidSourceIdObj, factory_builder, &header_client, nullptr,
-          nullptr, nullptr, nullptr);
+          nullptr, nullptr, nullptr, /*is_for_network_service=*/false);
 
   return std::make_pair(std::move(factory_builder), std::move(header_client));
 }

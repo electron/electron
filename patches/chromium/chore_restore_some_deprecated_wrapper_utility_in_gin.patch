@@ -9,7 +9,7 @@ Patch can be removed once cppgc migration is complete
 https://github.com/electron/electron/issues/47922
 
 diff --git a/gin/BUILD.gn b/gin/BUILD.gn
-index ed562a2d424f2c0eed81aa6300644f146b5cb17f..44f8c84563692364346afbd5041aaf4287d78bba 100644
+index ac87f68f7ed7cb3eb20d505a59b5edb9f74b4280..9499f2415cbda98b00e1d6c9ca8a58fb8cc43a01 100644
 --- a/gin/BUILD.gn
 +++ b/gin/BUILD.gn
 @@ -79,6 +79,7 @@ component("gin") {
