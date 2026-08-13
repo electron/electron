@@ -164,3 +164,4 @@ fix_do_not_skip_still-launching_renderers_when_initializing_spellcheck.patch
 fix_don_t_read_a_stale_last-error_in_replacefile_on_windows.patch
 cherry-pick-1c9a63b45bd6.patch
 cherry-pick-b4daba374467.patch
+cherry-pick-aeebc5710a1c.patch
