@@ -19,10 +19,10 @@ index 2c95ac99be70b0750372e9c858753bf519498e3d..5ab30502fd232196739ca2b450e35cc9
    Local<Module> module = obj->module_.Get(isolate);
    if (module->GetStatus() < Module::kInstantiated) {
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index c69ff16bd85427d3c26d8b42029c8ebb618dea41..17d820b567f395eaf6479404236b650bbfe233df 100644
+index 4aa790405fcdb028146c6e24baeedb9cf822ed50..a896e918f85731c3084385d94a3bbdf6cfa779d9 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -453,7 +453,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
+@@ -456,7 +456,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
    // args.GetIsolate()->GetCurrentContext() and take the pointer at
    // ContextEmbedderIndex::kContextifyContext, as V8 is supposed to
    // push the creation context before invoking these callbacks.
@@ -31,7 +31,7 @@ index c69ff16bd85427d3c26d8b42029c8ebb618dea41..17d820b567f395eaf6479404236b650b
  }
  
  ContextifyContext* ContextifyContext::Get(Local<Object> object) {
-@@ -598,10 +598,21 @@ Intercepted ContextifyContext::PropertySetterCallback(
+@@ -602,10 +602,21 @@ Intercepted ContextifyContext::PropertySetterCallback(
      return Intercepted::kNo;
    }
  
@@ -53,7 +53,7 @@ index c69ff16bd85427d3c26d8b42029c8ebb618dea41..17d820b567f395eaf6479404236b650b
    bool is_contextual_store = ctx->global_proxy() != args.This();
  
    // Indicator to not return before setting (undeclared) function declarations
-@@ -618,7 +629,7 @@ Intercepted ContextifyContext::PropertySetterCallback(
+@@ -622,7 +633,7 @@ Intercepted ContextifyContext::PropertySetterCallback(
        !is_function) {
      return Intercepted::kNo;
    }
@@ -76,7 +76,7 @@ index 20338324dfaaf3de977027ab7f9028aba0925050..541c1580f7b29cb2bdd4bbdc5e056b46
      THROW_ERR_INVALID_INVOCATION(isolate);
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index dd101708c1dd08ca3770bc78319b04c19fcd3f2b..522d3c24cfba70c448bef5319268504c52694150 100644
+index 0c0c8833bf636411292d8635928c82715cb28689..f661cb8066f5a82ebf01dcf4d31ce98ab2ce49de 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -758,7 +758,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(

@@ -15,7 +15,6 @@
 #include "base/containers/fixed_flat_map.h"
 #include "base/containers/span.h"
 #include "base/memory/raw_ptr.h"
-#include "base/notreached.h"
 #include "base/sequence_checker.h"
 #include "content/public/browser/global_request_id.h"
 #include "content/public/common/url_utils.h"
@@ -35,7 +34,6 @@
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "services/network/public/mojom/http_raw_headers.mojom.h"
-#include "services/network/public/mojom/shared_storage.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
@@ -48,7 +46,6 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
@@ -500,15 +497,6 @@ void SimpleURLLoaderWrapper::OnClearSiteData(
 void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
     network::mojom::LoadInfoPtr info,
     OnLoadingStateUpdateCallback callback) {
-  std::move(callback).Run();
-}
-
-void SimpleURLLoaderWrapper::OnSharedStorageHeaderReceived(
-    const url::Origin& request_origin,
-    std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
-        methods,
-    const std::optional<std::string>& with_lock,
-    OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }
 

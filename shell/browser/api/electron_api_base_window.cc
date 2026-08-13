@@ -11,8 +11,6 @@
 
 #include "base/task/single_thread_task_runner.h"
 #include "components/prefs/scoped_user_pref_update.h"
-#include "content/public/common/color_parser.h"
-#include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_view.h"

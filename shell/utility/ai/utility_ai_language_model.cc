@@ -6,12 +6,11 @@
 
 #include <string_view>
 
-#include "base/logging.h"
+#include "base/check.h"
+#include "base/functional/callback_helpers.h"
 #include "base/no_destructor.h"
-#include "base/notimplemented.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/node_includes.h"

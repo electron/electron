@@ -13,6 +13,16 @@ dereferenced a null delegate and crashed at startup.
 
 Skip building the factory when no delegate is available.
 
+This was proposed upstream at
+https://chromium-review.googlesource.com/c/chromium/src/+/8153762 but was
+rejected: Chromium generally does not accept patches that only support a
+specific embedder configuration, since guarding against embedder-specific
+state (such as a possibly-null delegate) is not tenable for the project to
+maintain and could mask genuine Chromium bugs. The upstream guidance is for
+Electron to keep patching this code or to provide a "stub" delegate
+implementation instead.  Since Electron does not support the webstorePrivate
+API, it is more concise to carry this patch.
+
 diff --git a/extensions/browser/api/webstore_private/webstore_private_api.cc b/extensions/browser/api/webstore_private/webstore_private_api.cc
 index 7702598c7136bb482abaca5d58a84788e2d0469b..fe048d37126c5465a8d8aa8bb2539a86a013bde4 100644
 --- a/extensions/browser/api/webstore_private/webstore_private_api.cc

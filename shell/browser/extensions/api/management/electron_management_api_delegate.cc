@@ -23,7 +23,6 @@
 #include "extensions/common/api/management.h"
 #include "extensions/common/extension.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
-#include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
 
 namespace {
 class ManagementSetEnabledFunctionInstallPromptDelegate

@@ -16,6 +16,12 @@ v8_enable_snapshot_native_code_counters = false
 # we use this api
 v8_enable_javascript_promise_hooks = true
 
+# Node's inspector dispatches protocol messages (and runs JS handlers) from
+# v8::Isolate::RequestInterrupt callbacks. V8 defaults this check to off only
+# when build_with_node is set, which Electron's build does not define.
+# TODO: remove once https://github.com/nodejs/node/pull/65028 is picked up.
+v8_disallow_js_in_api_interrupts_is_checked = false
+
 enable_cdm_host_verification = false
 ffmpeg_branding = "Chrome"
 proprietary_codecs = true
@@ -72,6 +78,16 @@ enable_linux_installer = false
 
 # Disable "Save to Drive" feature in PDF viewer
 enable_pdf_save_to_drive = false
+
+# Blink's crowdsourced V8 compile hints producer randomly selects 0.5% of
+# renderer processes (Windows only) to compile every http(s) script from
+# source -- deliberately not consuming an existing code cache, and neither
+# consuming nor producing local compile hints -- so that it can record which
+# functions were compiled to UKM. The consumer half lives in chrome/browser
+# and needs OptimizationGuide, and there is no UKM backend here, so this only
+# ever costs a cold-cache page load. Build the stub producer (as Android
+# does) instead.
+produce_v8_compile_hints = false
 
 # Track which grit resource IDs the linked binary actually references and
 # repack the locale .pak files with only those strings. Enabled for both

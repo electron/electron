@@ -13,7 +13,6 @@
 #include "base/mac/mac_util.h"
 #include "base/no_destructor.h"
 #include "base/strings/sys_string_conversions.h"
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window.h"
 #include "skia/ext/skia_utils_mac.h"

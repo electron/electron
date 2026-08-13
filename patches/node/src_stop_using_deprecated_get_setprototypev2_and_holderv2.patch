@@ -109,10 +109,10 @@ index c9588880d05435ab9f4e23fcff74c93309664270..ee4bc2bc270831cf057ddec0896a92dc
    Local<Object> os_constants =
        Object::New(isolate, Null(isolate), nullptr, nullptr, 0);
 diff --git a/src/node_contextify.cc b/src/node_contextify.cc
-index 17d820b567f395eaf6479404236b650bbfe233df..808e28db0f4c1d410fdf97013eaa65ed0c15fd78 100644
+index a896e918f85731c3084385d94a3bbdf6cfa779d9..9135bff90f473366b43cc827f25599821fd80000 100644
 --- a/src/node_contextify.cc
 +++ b/src/node_contextify.cc
-@@ -453,7 +453,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
+@@ -456,7 +456,7 @@ ContextifyContext* ContextifyContext::Get(const PropertyCallbackInfo<T>& args) {
    // args.GetIsolate()->GetCurrentContext() and take the pointer at
    // ContextEmbedderIndex::kContextifyContext, as V8 is supposed to
    // push the creation context before invoking these callbacks.
@@ -157,7 +157,7 @@ index b7062241d590e36f797babffb5945060ef759322..853c1ef5512ce4476b96cef67b53da84
            .IsNothing()) {
      return;
 diff --git a/src/node_sqlite.cc b/src/node_sqlite.cc
-index 522d3c24cfba70c448bef5319268504c52694150..9b8fef3a2246e6133abb0930390aa3ea1bfbdb1a 100644
+index f661cb8066f5a82ebf01dcf4d31ce98ab2ce49de..b57a83c1d869d018db6212d8d9ff115c266b109a 100644
 --- a/src/node_sqlite.cc
 +++ b/src/node_sqlite.cc
 @@ -758,7 +758,7 @@ Intercepted DatabaseSyncLimits::LimitsGetter(

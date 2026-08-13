@@ -7,6 +7,7 @@
 #include <wrl/client.h>
 
 #include "base/logging.h"
+#include "base/process/process.h"
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
 #include "base/win/registry.h"
 #include "base/win/scoped_handle.h"
@@ -17,6 +18,7 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/ui/views/win_frame_view.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
 #include "skia/ext/skia_utils_win.h"
@@ -428,10 +430,25 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
       return prevent_default;
     }
     case WM_ENDSESSION: {
+      static bool session_ended = false;
+      if (!w_param || session_ended)
+        return false;
+      session_ended = true;
       std::vector<std::string> reasons = EndSessionToStringVec(l_param);
-      if (w_param) {
-        NotifyWindowEndSession(reasons);
+      // The OS kills us and our child processes right after this returns, so
+      // every window hears about the end of the session now.
+      std::vector<base::WeakPtr<NativeWindow>> windows;
+      for (NativeWindow* window : WindowList::GetWindows())
+        windows.push_back(window->GetWeakPtr());
+      for (const auto& window : windows) {
+        if (window)
+          window->NotifyWindowEndSession(reasons);
       }
+      // Then leave immediately (as Chrome's SessionEnding() does) instead of
+      // lingering while Windows tears our children down, unless the app
+      // already began its own quit from a session-end handler.
+      if (!Browser::Get()->is_quitting())
+        base::Process::TerminateCurrentProcessImmediately(0);
       return false;
     }
     case WM_PARENTNOTIFY: {

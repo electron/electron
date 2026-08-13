@@ -39,10 +39,10 @@ Three classes of fixes, all of which give the affected symbols strong
 Observed on macOS arm64 official builds; latent on Linux/Windows.
 
 diff --git a/src/env.cc b/src/env.cc
-index 79a309661aff7ebb18f96e64d0d2b860ab80dc57..10266fd1233d9b117eefbbbb4f455289b002785a 100644
+index 168b6a812a87cf2d700afc71c205493c968fc540..c1fa104fa25bd5919e405a3df94f3701d0e234a2 100644
 --- a/src/env.cc
 +++ b/src/env.cc
-@@ -2266,4 +2266,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
+@@ -2273,4 +2273,8 @@ v8::CpuProfile* Environment::StopCpuProfile(v8::ProfilerId profile_id) {
    return profile;
  }
  
@@ -126,10 +126,10 @@ index 71226c74e5aa3d01603cce5852465a6fe011a9f7..230ae0b42a629e48879c2392954e5183
  
  NODE_BINDING_PER_ISOLATE_INIT(
 diff --git a/src/node_http2.cc b/src/node_http2.cc
-index 55bca557a81e4de72286ed42d0df63acf610ab64..ee99a87efab1cab915694b5b0c7bb1ca3ce24c7d 100644
+index 5dfc425230e62c000e7fe4d6654d712ed1e7fed9..8ba6e5144af7d778a66cfe1652d587d5c24b59fb 100644
 --- a/src/node_http2.cc
 +++ b/src/node_http2.cc
-@@ -3656,6 +3656,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
+@@ -3675,6 +3675,13 @@ void Http2Session::MaybeNotifyGracefulCloseComplete() {
    return;
  }
  }  // namespace http2
@@ -144,7 +144,7 @@ index 55bca557a81e4de72286ed42d0df63acf610ab64..ee99a87efab1cab915694b5b0c7bb1ca
  
  NODE_BINDING_CONTEXT_AWARE_INTERNAL(http2, node::http2::Initialize)
 diff --git a/src/node_http2.h b/src/node_http2.h
-index 28245d7b98e06bee467c5f91dd9caf1cfdbfdda0..a4575619b26346d05ba9a1a4a245937a3b30b414 100644
+index 0bb2b0cb2891c8581dbba8cd2d9ebb5cc1e0decc..9ade5f81850da33d2de54225c91bf4306bb3933e 100644
 --- a/src/node_http2.h
 +++ b/src/node_http2.h
 @@ -144,6 +144,96 @@ struct Http2RcBufferPointerTraits {

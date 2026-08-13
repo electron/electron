@@ -549,6 +549,89 @@ describe('protocol module', () => {
         await hasEndedPromise;
       });
 
+      it('keeps reading after a read yields no data', async () => {
+        registerStreamProtocol(protocolName, (request, callback) => {
+          const body = new stream.Readable({
+            objectMode: true,
+            read() {}
+          });
+          // Not a Buffer, so the loader treats this read as yielding nothing
+          // and goes back to waiting for the next 'readable' event. The real
+          // data only shows up later, so the request stalls forever unless the
+          // loader re-arms itself for that second event.
+          body.push('not a buffer');
+          setImmediate(() => {
+            body.push(Buffer.from(text));
+            body.push(null);
+          });
+          callback({
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/plain' },
+            data: body
+          });
+        });
+
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
+      });
+
+      it('keeps reading when readable is emitted during the first read', async () => {
+        registerStreamProtocol(protocolName, (request, callback) => {
+          const chunks: (string | Buffer)[] = ['not a buffer', Buffer.from(text)];
+          const body = new stream.Readable({
+            objectMode: true,
+            read() {
+              // Queues the next chunk while the loader is still inside read(),
+              // so 'readable' re-emits before that read completes. The first
+              // read yields a non-Buffer, so the loader has to remember that
+              // re-entrant event or the request stalls forever.
+              process.nextTick(() => this.push(chunks.shift() ?? null));
+            }
+          });
+          callback({
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/plain' },
+            data: body
+          });
+        });
+
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
+      });
+
+      it('completes cleanly when the stream errors from within read()', async () => {
+        // A stream can emit 'error' synchronously from _read(). That reaches
+        // the loader while it is inside read(), so it defers completion. The
+        // chunk that comes back then isn't a Buffer, so the loader treats the
+        // read as empty and completes - destroying itself - while it is still
+        // unwinding out of its 'readable' handler, leaving it touching freed
+        // memory on the way out. Only a sanitized build reports the bad
+        // access; unsanitized builds just pass.
+        let pushed = false;
+        const body = new stream.Readable({
+          objectMode: true,
+          read() {
+            if (pushed) {
+              this.emit('error', new Error('read failed'));
+              return;
+            }
+            pushed = true;
+            // Not a Buffer, so the loader treats this read as yielding nothing
+            this.push('not a buffer');
+          }
+        });
+
+        registerStreamProtocol(protocolName, (request, callback) => {
+          callback({
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/plain' },
+            data: body
+          });
+        });
+
+        await expect(ajax(protocolName + '://fake-host')).to.eventually.be.rejected();
+      });
+
       it('destroys response streams when aborted before completion', async () => {
         const events = new EventEmitter();
         registerStreamProtocol(protocolName, (request, callback) => {

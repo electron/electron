@@ -8,6 +8,7 @@
 #include <utility>
 
 #include "base/containers/fixed_flat_map.h"
+#include "base/functional/callback_helpers.h"
 #include "base/notimplemented.h"
 #include "mojo/public/cpp/bindings/unique_receiver_set.h"
 #include "shell/browser/javascript_environment.h"
@@ -548,7 +549,8 @@ void UtilityAIManager::CanCreateSemanticEmbedder(
 
 void UtilityAIManager::CreateSemanticEmbedder(
     mojo::PendingRemote<blink::mojom::AIManagerCreateSemanticEmbedderClient>
-        client) {
+        client,
+    mojo::PendingRemote<on_device_model::mojom::DownloadObserver> monitor) {
   NOTIMPLEMENTED();
 }
 

@@ -10,9 +10,9 @@
 #include <optional>
 #include <vector>
 
-#include "shell/common/gin_converters/guid_converter.h"
+#include "base/uuid.h"
 
-const GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
+inline constexpr GUID GUID_DEFAULT = {0, 0, 0, {0, 0, 0, 0, 0, 0, 0, 0}};
 
 namespace electron {
 

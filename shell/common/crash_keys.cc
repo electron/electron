@@ -15,7 +15,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "components/crash/core/common/crash_key.h"
 #include "content/public/common/content_switches.h"
-#include "electron/buildflags/buildflags.h"
 #include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"

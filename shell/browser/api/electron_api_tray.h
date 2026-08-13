@@ -10,11 +10,11 @@
 #include <string>
 #include <vector>
 
+#include "base/uuid.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/tray_icon_observer.h"
-#include "shell/common/gin_converters/guid_converter.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
 

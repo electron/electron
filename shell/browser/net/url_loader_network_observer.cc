@@ -6,7 +6,6 @@
 
 #include "base/functional/bind.h"
 #include "content/public/browser/browser_thread.h"
-#include "services/network/public/mojom/shared_storage.mojom.h"
 #include "shell/browser/login_handler.h"
 #include "shell/browser/net/client_certificate_responder_delegate.h"
 
@@ -114,15 +113,6 @@ void URLLoaderNetworkObserver::OnClearSiteData(
 void URLLoaderNetworkObserver::OnLoadingStateUpdate(
     network::mojom::LoadInfoPtr info,
     OnLoadingStateUpdateCallback callback) {
-  std::move(callback).Run();
-}
-
-void URLLoaderNetworkObserver::OnSharedStorageHeaderReceived(
-    const url::Origin& request_origin,
-    std::vector<network::mojom::SharedStorageModifierMethodWithOptionsPtr>
-        methods,
-    const std::optional<std::string>& with_lock,
-    OnSharedStorageHeaderReceivedCallback callback) {
   std::move(callback).Run();
 }
 

@@ -7,7 +7,6 @@
 
 #include <vector>
 
-#include "base/files/file_path.h"
 #include "base/supports_user_data.h"
 #include "shell/browser/preload_script.h"
 

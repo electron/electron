@@ -57,6 +57,7 @@
 
 #if !IS_MAS_BUILD()
 #include "shell/common/crash_keys.h"
+#include "shell/common/v8_oom_diagnostics.h"
 #endif
 
 #define ELECTRON_BROWSER_BINDINGS(V)      \
@@ -86,6 +87,8 @@
   V(electron_browser_screen)              \
   V(electron_browser_system_preferences)  \
   V(electron_browser_base_window)         \
+  V(electron_browser_clipboard)           \
+  V(electron_browser_clipboard_item)      \
   V(electron_browser_tray)                \
   V(electron_browser_utility_process)     \
   V(electron_browser_view)                \
@@ -98,7 +101,6 @@
 
 #define ELECTRON_COMMON_BINDINGS(V)   \
   V(electron_common_asar)             \
-  V(electron_common_clipboard)        \
   V(electron_common_command_line)     \
   V(electron_common_crashpad_support) \
   V(electron_common_environment)      \
@@ -203,33 +205,10 @@ void V8OOMErrorCallback(const char* location, const v8::OOMDetails& details) {
   }
 
 #if !IS_MAS_BUILD()
-  electron::crash_keys::SetCrashKey("electron.v8-oom.is_heap_oom",
-                                    base::NumberToString(details.is_heap_oom));
-  if (location) {
-    electron::crash_keys::SetCrashKey("electron.v8-oom.location", location);
-  }
-  if (details.detail) {
-    electron::crash_keys::SetCrashKey("electron.v8-oom.detail", details.detail);
-  }
-
   // TryGetCurrent() instead of GetCurrent() to avoid FATAL if no isolate.
   v8::Isolate* isolate = v8::Isolate::TryGetCurrent();
-  if (isolate) {
-    v8::HeapStatistics stats;
-    isolate->GetHeapStatistics(&stats);
-    electron::crash_keys::SetCrashKey(
-        "electron.v8-oom.heap.used",
-        base::NumberToString(stats.used_heap_size()));
-    electron::crash_keys::SetCrashKey(
-        "electron.v8-oom.heap.total",
-        base::NumberToString(stats.total_heap_size()));
-    electron::crash_keys::SetCrashKey(
-        "electron.v8-oom.heap.limit",
-        base::NumberToString(stats.heap_size_limit()));
-    electron::crash_keys::SetCrashKey(
-        "electron.v8-oom.heap.total_available",
-        base::NumberToString(stats.total_available_size()));
-  }
+  electron::v8_oom::RecordErrorDetails(isolate, location, details);
+  electron::v8_oom::RecordHeapDiagnostics(isolate);
 #endif
 
   OOM_CRASH(0);

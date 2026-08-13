@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/functional/callback_forward.h"
-#include "base/memory/weak_ptr.h"
 #include "extensions/common/extension_id.h"
 #include "gin/per_isolate_data.h"
 #include "gin/weak_cell.h"

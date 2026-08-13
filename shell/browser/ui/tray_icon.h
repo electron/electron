@@ -5,16 +5,21 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_H_
 #define ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_H_
 
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
-#include "shell/browser/ui/electron_menu_model.h"
+#include "base/uuid.h"
 #include "shell/browser/ui/tray_icon_observer.h"
-#include "shell/common/gin_converters/guid_converter.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/image/image.h"
 
 namespace electron {
+
+class ElectronMenuModel;
 
 class TrayIcon {
  public:

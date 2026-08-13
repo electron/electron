@@ -34,8 +34,7 @@
 #include "components/network_hints/common/network_hints.mojom.h"
 #include "content/browser/keyboard_lock/keyboard_lock_service_impl.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
-#include "content/public/browser/browser_main_runner.h"
-#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/login_delegate.h"
 #include "content/public/browser/navigation_throttle_registry.h"
@@ -66,6 +65,7 @@
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
 #include "printing/buildflags/buildflags.h"
+#include "sandbox/policy/switches.h"
 #include "services/device/public/cpp/geolocation/geolocation_system_permission_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
@@ -109,7 +109,6 @@
 #include "shell/browser/network_hints_handler_impl.h"
 #include "shell/browser/notifications/notification_presenter.h"
 #include "shell/browser/notifications/platform_notification_service.h"
-#include "shell/browser/preload_code_cache.h"
 #include "shell/browser/preload_script.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/renderer_startup_data.h"
@@ -125,7 +124,6 @@
 #include "shell/browser/window_list.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
-#include "shell/common/asar/asar_util.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
@@ -419,6 +417,14 @@ bool ElectronBrowserClient::IsRendererSubFrame(
   return renderer_is_subframe_.contains(process_id);
 }
 
+std::optional<bool> ElectronBrowserClient::IsRendererProcessSandboxed(
+    content::ChildProcessId process_id) const {
+  const auto iter = renderer_process_sandboxed_.find(process_id);
+  if (iter == std::end(renderer_process_sandboxed_))
+    return std::nullopt;
+  return iter->second;
+}
+
 void ElectronBrowserClient::RenderProcessWillLaunch(
     content::RenderProcessHost* host) {
   // Remove in case the host is reused after a crash, otherwise noop.
@@ -640,6 +646,9 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
             command_line, IsRendererSubFrame(unsafe_process_id));
     }
 
+    renderer_process_sandboxed_[unsafe_process_id] =
+        !command_line->HasSwitch(sandbox::policy::switches::kNoSandbox);
+
     // Service worker processes should only run preloads if one has been
     // registered prior to startup.
     auto* render_process_host = content::RenderProcessHost::FromID(process_id);
@@ -731,10 +740,14 @@ bool ElectronBrowserClient::CanCreateWindow(
       // <webview> without allowpopups attribute should return
       // null from window.open calls
       return false;
-    } else {
-      *no_javascript_access = false;
-      return true;
     }
+    *no_javascript_access = false;
+    if (auto* api_web_contents = api::WebContents::From(web_contents)) {
+      return api_web_contents->OnWillCreateWindow(
+          opener, target_url, frame_name, raw_features, disposition, referrer,
+          body, opener_suppressed, no_javascript_access);
+    }
+    return true;
   }
 
   if (delegate_) {
@@ -770,34 +783,11 @@ ElectronBrowserClient::GetExtraCreateNewWindowReplyData(
     return std::nullopt;
   if (!WebContentsPreferences::ShouldUseSandbox(web_contents))
     return std::nullopt;
-  auto* web_prefs = WebContentsPreferences::From(web_contents);
 
   mojom::RendererStartupDataPtr data;
   {
     ScopedAllowBlockingForElectron allow_blocking;
-    data = renderer_startup_data::Build(web_contents->GetBrowserContext(),
-                                        PreloadScript::ScriptType::kWebFrame);
-    std::optional<base::FilePath> preload;
-    if (web_prefs)
-      preload = web_prefs->GetPreloadPath();
-    if (preload && preload->IsAbsolute()) {
-      auto ps = mojom::PreloadScriptData::New();
-      ps->id = preload_code_cache::IdForWebPreferencesPreload(*preload);
-      ps->file_path = preload->AsUTF8Unsafe();
-      std::string contents;
-      if (asar::ReadFileToString(*preload, &contents)) {
-        ps->contents.assign(contents.begin(), contents.end());
-        std::vector<uint8_t> cache =
-            preload_code_cache::Get(ps->id, ps->contents);
-        if (!cache.empty())
-          ps->code_cache = std::move(cache);
-      } else {
-        ps->contents.clear();
-        ps->error =
-            "ENOENT: no such file or directory, open '" + ps->file_path + "'";
-      }
-      data->preload_scripts.push_back(std::move(ps));
-    }
+    data = renderer_startup_data::BuildForFrame(new_window_main_frame);
   }
   // Opaque blob — Chromium can't depend on Electron's mojom types.
   return mojo_base::BigBuffer(mojom::RendererStartupData::Serialize(&data));
@@ -1004,6 +994,7 @@ void ElectronBrowserClient::RenderProcessHostDestroyed(
   content::ChildProcessId process_id = host->GetID();
   pending_processes_.erase(process_id);
   renderer_is_subframe_.erase(process_id);
+  renderer_process_sandboxed_.erase(process_id);
   host->RemoveObserver(this);
 }
 
@@ -1495,7 +1486,8 @@ void ElectronBrowserClient::WillCreateURLLoaderFactory(
     bool* bypass_redirect_checks,
     bool* disable_secure_dns,
     network::mojom::URLLoaderFactoryOverridePtr* factory_override,
-    scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner) {
+    scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner,
+    bool is_for_network_service) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto* const web_request =

@@ -43,8 +43,11 @@
 #include "shell/common/gin_helper/pinnable.h"
 #include "shell/common/gin_helper/wrappable.h"
 #include "third_party/skia/include/core/SkRegion.h"
-#include "ui/base/models/image_model.h"
 #include "v8/include/cppgc/persistent.h"
+
+#if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)
+#include "ui/base/models/image_model.h"
+#endif
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/mojom/view_type.mojom-forward.h"
@@ -269,6 +272,20 @@ class WebContents final : public ExclusiveAccessContext,
 #endif
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
+
+  // Called for renderer-initiated window creation before the child
+  // WebContents exists. Runs the window open handler and decides whether the
+  // child must be isolated from the opener's process.
+  bool OnWillCreateWindow(
+      content::RenderFrameHost* opener,
+      const GURL& target_url,
+      const std::string& frame_name,
+      const std::string& raw_features,
+      WindowOpenDisposition disposition,
+      const content::Referrer& referrer,
+      const scoped_refptr<network::ResourceRequestBody>& body,
+      bool opener_suppressed,
+      bool* no_javascript_access);
 
   // DevTools workspace api.
   void AddWorkSpace(v8::Isolate* isolate, const base::FilePath& path);
@@ -502,23 +519,6 @@ class WebContents final : public ExclusiveAccessContext,
 #endif
 
   // content::WebContentsDelegate:
-  bool IsWebContentsCreationOverridden(
-      content::RenderFrameHost* opener,
-      content::SiteInstance* source_site_instance,
-      content::mojom::WindowContainerType window_container_type,
-      const GURL& opener_url,
-      const content::mojom::CreateNewWindowParams& params) override;
-  content::WebContents* CreateCustomWebContents(
-      content::RenderFrameHost* opener,
-      content::SiteInstance* source_site_instance,
-      bool is_new_browsing_instance,
-      const GURL& opener_url,
-      const std::string& frame_name,
-      const GURL& target_url,
-      WindowOpenDisposition disposition,
-      const blink::mojom::WindowFeatures& window_features,
-      const content::StoragePartitionConfig& partition_config,
-      content::SessionStorageNamespace* session_storage_namespace) override;
   void WebContentsCreatedWithFullParams(
       content::WebContents* source_contents,
       int opener_render_process_id,

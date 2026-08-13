@@ -8,13 +8,11 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include "base/containers/flat_map.h"
 #include "base/containers/flat_set.h"
 #include "base/memory/raw_ptr.h"
-#include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/frame_tree_node_id.h"
 #include "content/public/browser/render_process_host_observer.h"
@@ -22,7 +20,6 @@
 #include "electron/buildflags/buildflags.h"
 #include "net/ssl/client_cert_identity.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
-#include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
 
 namespace base {
 class FilePath;
@@ -70,6 +67,11 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   // Returns the WebContents for pending render processes.
   content::WebContents* GetWebContentsFromProcessID(
       content::ChildProcessId process_id);
+
+  // Whether the given renderer process was launched with the OS sandbox
+  // enabled. Returns nullopt if the launch state of the process is unknown.
+  std::optional<bool> IsRendererProcessSandboxed(
+      content::ChildProcessId process_id) const;
 
   NotificationPresenter* GetNotificationPresenter();
 
@@ -275,8 +277,8 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       bool* bypass_redirect_checks,
       bool* disable_secure_dns,
       network::mojom::URLLoaderFactoryOverridePtr* factory_override,
-      scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner)
-      override;
+      scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner,
+      bool is_for_network_service) override;
   std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
   WillCreateURLLoaderRequestInterceptors(
       content::NavigationUIData* navigation_ui_data,
@@ -382,6 +384,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       pending_processes_;
 
   base::flat_set<content::ChildProcessId> renderer_is_subframe_;
+
+  // Sandbox state each renderer process was launched with.
+  base::flat_map<content::ChildProcessId, bool> renderer_process_sandboxed_;
 
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;

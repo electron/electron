@@ -29,10 +29,10 @@ index b6da61a76551f1de95b8cfb0a1167b14040f3dd1..9413492f8e0fd6c5371c66329e1ad6d4
  
    // Returns the http referrer of original request which initited this load.
 diff --git a/third_party/blink/renderer/core/loader/document_loader.h b/third_party/blink/renderer/core/loader/document_loader.h
-index e0a7887446412f76eb159a326466bfe421532c45..5cbbd283f39c1405bc87a713ed1afac7ab078de7 100644
+index d36cf49fbb7a83d53c0746803d52b54641df4275..f3251d9a1c26f7c31260ca942cf2468b08da145b 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.h
 +++ b/third_party/blink/renderer/core/loader/document_loader.h
-@@ -327,7 +327,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
+@@ -329,7 +329,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
        std::optional<scheduler::TaskAttributionId> task_state_id,
        bool should_skip_screenshot);
  

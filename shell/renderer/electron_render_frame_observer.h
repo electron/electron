@@ -6,13 +6,12 @@
 #define ELECTRON_SHELL_RENDERER_ELECTRON_RENDER_FRAME_OBSERVER_H_
 
 #include <set>
-#include <string>
 #include <vector>
 
 #include "base/functional/callback.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_observer_tracker.h"
-#include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/public/web/web_meaningful_layout.h"
 
 namespace electron {
 

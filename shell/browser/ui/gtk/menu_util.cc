@@ -15,7 +15,6 @@
 #include "chrome/app/chrome_command_ids.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/gtk_util.h"
-#include "third_party/skia/include/core/SkBitmap.h"
 #include "ui/base/accelerators/accelerator.h"
 #include "ui/base/accelerators/menu_label_accelerator_util_linux.h"
 #include "ui/base/models/image_model.h"

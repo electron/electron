@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
@@ -17,7 +18,6 @@
 #include "gin/wrappable.h"
 #include "services/network/public/mojom/host_resolver.mojom-forward.h"
 #include "services/network/public/mojom/ssl_config.mojom-forward.h"
-#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/ipc_dispatcher.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/constructible.h"
@@ -58,6 +58,7 @@ class Extensions;
 class NetLog;
 class Protocol;
 class ServiceWorkerContext;
+class UtilityProcessWrapper;
 class WebRequest;
 
 class Session final : public gin::Wrappable<Session>,

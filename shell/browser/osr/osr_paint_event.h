@@ -6,14 +6,11 @@
 #ifndef ELECTRON_SHELL_BROWSER_OSR_OSR_PAINT_EVENT_H
 #define ELECTRON_SHELL_BROWSER_OSR_OSR_PAINT_EVENT_H
 
-#include "base/functional/callback_helpers.h"
 #include "content/public/common/widget_type.h"
 #include "media/base/video_types.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "services/viz/privileged/mojom/compositing/frame_sink_video_capture.mojom.h"
 #include "third_party/skia/include/core/SkCanvas.h"
-#include "ui/gfx/canvas.h"
-#include "ui/gfx/native_ui_types.h"
 
 #include <cstdint>
 

@@ -12,6 +12,7 @@
 
 #include "base/containers/span.h"
 #include "base/functional/callback.h"
+#include "base/functional/callback_helpers.h"
 #include "base/memory/memory_pressure_listener_registry.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
@@ -20,15 +21,13 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
-#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_converters/file_path_converter.h"
-#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -37,10 +36,8 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/web_contents_utility.mojom.h"
-#include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
 #include "shell/renderer/electron_render_frame_observer.h"
@@ -174,8 +171,8 @@ class ScriptExecutionCallback {
       v8::Local<v8::Context> source_context =
           result->GetCreationContextChecked(isolate);
       maybe_result = PassValueToOtherContext(
-          isolate, source_context, promise_.isolate(), promise_.GetContext(),
-          result, source_context->Global(), false, BridgeErrorTarget::kSource);
+          isolate, source_context, promise_.GetContext(), result,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }

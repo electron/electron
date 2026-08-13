@@ -27,6 +27,7 @@
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/chrome_paths.h"
+#include "components/prefs/value_map_pref_store.h"
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "components/proxy_config/proxy_prefs.h"
@@ -34,6 +35,7 @@
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/browser_accessibility_state.h"
 #include "content/public/browser/browser_child_process_host.h"
+#include "content/public/browser/browser_thread.h"
 #include "content/public/browser/child_process_data.h"
 #include "content/public/browser/client_certificate_delegate.h"
 #include "content/public/browser/gpu_data_manager.h"
@@ -45,6 +47,7 @@
 #include "media/audio/audio_manager.h"
 #include "net/dns/public/dns_over_https_config.h"
 #include "net/dns/public/dns_over_https_server_config.h"
+#include "net/dns/public/insecure_dns_mode.h"
 #include "net/dns/public/util.h"
 #include "net/ssl/client_cert_identity.h"
 #include "net/ssl/ssl_cert_request_info.h"
@@ -1729,6 +1732,12 @@ void App::ConfigureWebAuthn(gin_helper::ErrorThrower thrower,
           base::UTF8ToUTF16(prompt_reason));
     }
   }
+
+  bool platform_passkeys = false;
+  if (options.Get("platformPasskeys", &platform_passkeys)) {
+    ElectronWebAuthenticationDelegate::SetPlatformPasskeysEnabled(
+        platform_passkeys);
+  }
 }
 
 int DockBounce(gin::Arguments* args) {
@@ -1858,10 +1867,10 @@ void ConfigureHostResolver(v8::Isolate* isolate,
   // Configure the stub resolver. This must be done after the system
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
-      enable_built_in_resolver, enable_happy_eyeballs_v3, secure_dns_mode,
-      doh_config, additional_dns_query_types_enabled,
-      {} /*fallback_doh_nameservers*/,
-      false /*insecure_dns_via_platform_apis_enabled*/);
+      enable_built_in_resolver ? net::InsecureDnsMode::kEnabledBuiltIn
+                               : net::InsecureDnsMode::kDisabled,
+      enable_happy_eyeballs_v3, secure_dns_mode, doh_config,
+      additional_dns_query_types_enabled, {} /*fallback_doh_nameservers*/);
 }
 
 // static

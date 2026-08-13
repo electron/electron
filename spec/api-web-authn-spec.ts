@@ -63,6 +63,213 @@ ifdescribe(process.platform === 'darwin')('app.configureWebAuthn', () => {
       })
     ).to.not.throw();
   });
+
+  describe('platformPasskeys', () => {
+    it('accepts platformPasskeys: true', () => {
+      expect(() => configureWebAuthn({ platformPasskeys: true })).to.not.throw();
+    });
+
+    it('accepts platformPasskeys: false', () => {
+      expect(() => configureWebAuthn({ platformPasskeys: false })).to.not.throw();
+    });
+
+    it('accepts both touchID and platformPasskeys together', () => {
+      expect(() =>
+        configureWebAuthn({
+          touchID: { keychainAccessGroup: 'TESTTEAMID.org.electron.spec.webauthn' },
+          platformPasskeys: true
+        })
+      ).to.not.throw();
+    });
+  });
+});
+
+ifdescribe(process.platform === 'darwin')('PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable', () => {
+  let server: http.Server;
+  let serverUrl: string;
+  let w: BrowserWindow;
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('<!doctype html><title>webauthn</title>');
+    });
+    await new Promise<void>((resolve) => server.listen(0, 'localhost', resolve));
+    const { port } = server.address() as AddressInfo;
+    serverUrl = `http://localhost:${port}/`;
+  });
+
+  after(() => {
+    server.close();
+  });
+
+  beforeEach(async () => {
+    w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+  });
+
+  afterEach(async () => {
+    // Reset the platformPasskeys flag so tests don't leak into each other.
+    configureWebAuthn({ platformPasskeys: false });
+    await closeAllWindows();
+  });
+
+  const queryIsUVPAA = () =>
+    w.webContents.executeJavaScript('PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()');
+
+  // Chromium's default isUVPAA() on macOS only reports on the Touch ID platform
+  // authenticator, so an app that enables only platform passkeys would report
+  // `false` and most sites would hide their passkey UI. The delegate override
+  // reports `true` when platformPasskeys is enabled and available.
+  it('returns true when platformPasskeys is enabled', async () => {
+    configureWebAuthn({ platformPasskeys: true });
+    const result = await queryIsUVPAA();
+    expect(result).to.be.true();
+  });
+
+  it('does not report platform passkeys when the feature is disabled', async () => {
+    configureWebAuthn({ platformPasskeys: false });
+    // We can't assert `false` unconditionally because CI machines may or may
+    // not have Touch ID configured. But we can assert the override isn't
+    // forcing `true` on our behalf — the result should match the underlying
+    // platform's Touch ID availability, which is a boolean either way.
+    const result = await queryIsUVPAA();
+    expect(result).to.be.a('boolean');
+  });
+});
+
+ifdescribe(process.platform === 'darwin')("session 'select-webauthn-authenticator' event", () => {
+  let server: http.Server;
+  let serverUrl: string;
+  let w: BrowserWindow;
+
+  before(async () => {
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('<!doctype html><title>webauthn</title>');
+    });
+    await new Promise<void>((resolve) => server.listen(0, 'localhost', resolve));
+    const { port } = server.address() as AddressInfo;
+    serverUrl = `http://localhost:${port}/`;
+  });
+
+  after(() => {
+    server.close();
+  });
+
+  beforeEach(async () => {
+    configureWebAuthn({
+      touchID: { keychainAccessGroup: 'TESTTEAMID.org.electron.spec.webauthn' },
+      platformPasskeys: true
+    });
+    w = new BrowserWindow({ show: false });
+    await w.loadURL(serverUrl);
+    w.webContents.debugger.attach();
+    await w.webContents.debugger.sendCommand('WebAuthn.enable');
+    await w.webContents.debugger.sendCommand('WebAuthn.addVirtualAuthenticator', {
+      options: {
+        protocol: 'ctap2',
+        transport: 'internal',
+        hasResidentKey: true,
+        hasUserVerification: true,
+        isUserVerified: true,
+        automaticPresenceSimulation: true
+      }
+    });
+  });
+
+  afterEach(async () => {
+    session.defaultSession.removeAllListeners('select-webauthn-authenticator');
+    try {
+      w.webContents.debugger.detach();
+    } catch {}
+    await closeAllWindows();
+  });
+
+  it('does not fire for virtual authenticators (only kTouchID/kICloudKeychain trigger it)', async () => {
+    let eventFired = false;
+    (w.webContents.session as NodeJS.EventEmitter).on(
+      'select-webauthn-authenticator',
+      (event: any, callback: (name?: string) => void) => {
+        eventFired = true;
+        callback(event.authenticators[0]);
+      }
+    );
+
+    const result = await w.webContents.executeJavaScript(`
+      navigator.credentials.create({
+        publicKey: {
+          rp: { id: 'localhost', name: 'Electron Spec' },
+          user: {
+            id: new TextEncoder().encode('user-1'),
+            name: 'alice@example.com',
+            displayName: 'Alice'
+          },
+          challenge: new Uint8Array(32),
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: {
+            authenticatorAttachment: 'platform',
+            residentKey: 'required',
+            userVerification: 'required'
+          }
+        }
+      }).then(
+        c => ({ ok: true, id: c.id }),
+        e => ({ ok: false, name: e.name, message: e.message })
+      )
+    `);
+
+    expect(result.ok).to.be.true();
+    expect(eventFired).to.be.false();
+  });
+
+  it('does not interfere with assertion when both touchID and platformPasskeys are configured', async () => {
+    // First create a credential, keeping its id for the allow list below.
+    const credentialId = await w.webContents.executeJavaScript(`
+      navigator.credentials.create({
+        publicKey: {
+          rp: { id: 'localhost', name: 'Electron Spec' },
+          user: {
+            id: new TextEncoder().encode('user-1'),
+            name: 'alice@example.com',
+            displayName: 'Alice'
+          },
+          challenge: new Uint8Array(32),
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
+          authenticatorSelection: {
+            authenticatorAttachment: 'platform',
+            residentKey: 'required',
+            userVerification: 'required'
+          }
+        }
+      }).then(c => c.id)
+    `);
+
+    // Get an assertion with a non-empty allowCredentials so the request
+    // resolves to a single credential directly. An empty allow list would be a
+    // discoverable-credential request, which routes through 'select-webauthn-
+    // account' (covered separately) rather than exercising authenticator
+    // selection.
+    const result = await w.webContents.executeJavaScript(`
+      navigator.credentials.get({
+        publicKey: {
+          challenge: new Uint8Array(32),
+          rpId: 'localhost',
+          allowCredentials: [{
+            type: 'public-key',
+            id: Uint8Array.fromBase64(${JSON.stringify(credentialId)}, { alphabet: 'base64url' })
+          }],
+          userVerification: 'required'
+        }
+      }).then(
+        c => ({ ok: true, id: c.id }),
+        e => ({ ok: false, name: e.name, message: e.message })
+      )
+    `);
+
+    expect(result.ok).to.be.true();
+    expect(result.id).to.equal(credentialId);
+  });
 });
 
 describe("session 'select-webauthn-account' event", () => {

@@ -39,7 +39,7 @@ index 57a9f0227b847f608a2a90de3491323f23c844f4..b6341ff8dc1e26dfcffa3a5110e4b556
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 79096f75fb9dddde105775e4c3c04a8dd61ccd6c..cfe8dbf99b99094f138aaf5879ab840bda040ef0 100644
+index b57b208f9fa6b3219c6d7aac4673d2d58bea3195..10909c6c4ac8e26abdcc411abd4adc34062dc75b 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1630,6 +1630,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
@@ -54,10 +54,10 @@ index 79096f75fb9dddde105775e4c3c04a8dd61ccd6c..cfe8dbf99b99094f138aaf5879ab840b
      if (mouse_event_callback.Run(mouse_event)) {
        return;
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 114c1284d2b829e970f79efd64c437460f1ddff4..4e0ea09046d125b221b48120c0bdfeeb83f6b36c 100644
+index d383754f12b0073d19e64fbd1e645dd0979977bd..a339c3894049061ee7d6cb8e379160df12c28642 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4608,6 +4608,12 @@ void WebContentsImpl::RenderWidgetWasResized(
+@@ -4660,6 +4660,12 @@ void WebContentsImpl::RenderWidgetWasResized(
                               width_changed);
  }
  
@@ -71,10 +71,10 @@ index 114c1284d2b829e970f79efd64c437460f1ddff4..4e0ea09046d125b221b48120c0bdfeeb
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 73f5b3f93822e2b40610669263db82db15964a20..dc107be0f4288e8305622fff6599d215584f6710 100644
+index 142138017810a5b02264e0cf6ea3cd05d2dbaa16..02e522ea6e996a74133cd8479a8e661ee7b92853 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1147,6 +1147,7 @@ class CONTENT_EXPORT WebContentsImpl
+@@ -1160,6 +1160,7 @@ class CONTENT_EXPORT WebContentsImpl
  
    double GetPendingZoomLevel(RenderWidgetHostImpl* rwh) override;
  

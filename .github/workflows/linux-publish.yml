@@ -59,13 +59,15 @@ jobs:
     - name: Checkout & Sync & Save
       uses: ./src/electron/.github/actions/checkout
 
-  # Build the patched siso binaries in parallel with checkout-linux; the
+  # Build the patched siso binary in parallel with checkout-linux; the
   # publish jobs consume the linux-amd64 artifact via SISO_PATH.
   build-siso:
     needs: setup
     uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
+    with:
+      host: linux-amd64
 
   publish-x64:
     uses: ./.github/workflows/pipeline-segment-electron-publish.yml
@@ -83,6 +85,8 @@ jobs:
       target-arch: x64
       is-release: true
       publish: true
+      # No test job consumes a publish build - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}
@@ -104,6 +108,8 @@ jobs:
       target-arch: arm64
       is-release: true
       publish: true
+      # No test job consumes a publish build - skip src_artifacts / cross-arch snapshots.
+      generate-test-artifacts: false
       gn-build-type: release
       generate-symbols: true
       upload-to-storage: ${{ inputs.upload-to-storage }}

@@ -71,6 +71,8 @@ jobs:
       BUILD_TYPE: ${{ matrix.build-type }}
       TARGET_ARCH: ${{ inputs.target-arch }}
       ARTIFACT_KEY: ${{ matrix.build-type }}_${{ inputs.target-arch }}
+      # depot_tools' unbootstrapped python3 wrapper (crrev.com/c/8162440) breaks system python3 resolution; bypass it
+      DEPOT_TOOLS_PYTHON_BYPASS: 1
     steps:
     - name: Setup Node.js/npm
       if: ${{ inputs.target-platform == 'win' }}
@@ -326,7 +328,12 @@ jobs:
           if [ "${{ inputs.is-asan }}" == "true" ]; then
             cd ..
             ASAN_SYMBOLIZE="$PWD/tools/valgrind/asan/asan_symbolize.py --executable-path=$PWD/out/Default/electron"
-            export ASAN_OPTIONS="symbolize=0 handle_abort=1"
+            # symbolize=1 is required for leak suppressions to work: LSan can
+            # only match "leak:" entries against function and file names, and
+            # with symbolization off it has neither, which silently disables
+            # both Chromium's built-in list and lsan_suppressions.txt.
+            export ASAN_OPTIONS="detect_leaks=1 handle_abort=1 symbolize=1 strip_path_prefix=/../../ external_symbolizer_path=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer"
+            export LSAN_OPTIONS="suppressions=$PWD/electron/build/lsan_suppressions.txt"
             export G_SLICE=always-malloc
             export NSS_DISABLE_ARENA_FREE_LIST=1
             export NSS_DISABLE_UNLOAD=1

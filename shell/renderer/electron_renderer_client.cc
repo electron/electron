@@ -18,12 +18,10 @@
 #include "shell/common/v8_util.h"
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/web_worker_observer.h"
-#include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_wasm_response_extensions.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
-#include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_global_scope.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worker_settings.h"  // nogncheck
 #include "third_party/blink/renderer/core/workers/worklet_global_scope.h"  // nogncheck

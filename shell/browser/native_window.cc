@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "base/memory/ptr_util.h"
-#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "components/prefs/pref_service.h"
@@ -21,7 +20,7 @@
 #include "shell/browser/browser_process_impl.h"
 #include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/electron_browser_main_parts.h"
-#include "shell/browser/ui/drag_util.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/electron_constants.h"
@@ -147,6 +146,18 @@ NativeWindow::NativeWindow(const int32_t base_window_id,
   }
 
   WindowList::AddWindow(this);
+}
+
+InspectableWebContentsView* NativeWindow::primary_web_contents_view() {
+  return static_cast<InspectableWebContentsView*>(
+      primary_web_contents_view_.view());
+}
+
+void NativeWindow::InitPrimaryWebContentsView(
+    InspectableWebContentsView* view) {
+  CHECK(view);
+  CHECK(!primary_web_contents_view_);
+  primary_web_contents_view_.SetView(view);
 }
 
 NativeWindow::~NativeWindow() {

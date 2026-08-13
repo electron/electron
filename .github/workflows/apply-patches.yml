@@ -88,9 +88,31 @@ jobs:
         if-no-files-found: ignore
         archive: false
 
-  build-siso:
+  # Validate that the siso patches still apply and build for each CI build host.
+  # Each host is a separate job so a re-run for one host only re-runs that host.
+  build-siso-macos:
     needs: setup
     if: ${{ needs.setup.outputs.has-siso-patches == 'true' }}
     uses: ./.github/workflows/pipeline-segment-build-siso.yml
     permissions:
       contents: read
+    with:
+      host: darwin-arm64
+
+  build-siso-linux:
+    needs: setup
+    if: ${{ needs.setup.outputs.has-siso-patches == 'true' }}
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+    with:
+      host: linux-amd64
+
+  build-siso-windows:
+    needs: setup
+    if: ${{ needs.setup.outputs.has-siso-patches == 'true' }}
+    uses: ./.github/workflows/pipeline-segment-build-siso.yml
+    permissions:
+      contents: read
+    with:
+      host: windows-amd64
