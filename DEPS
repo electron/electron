@@ -16,7 +16,7 @@ vars = {
   'sparkle_version':
     '79bc9e872948e47877e76f194cb0c8e0412b0b90',
   'engflow_reclient_configs_version':
-    '955335c30a752e9ef7bff375baab5e0819b6c00d',
+    '9f7f859ebb01f4f8da1087dd93d9dfe8c1c611a6',
 
   'pyyaml_version': '3.12',
 
