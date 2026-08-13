@@ -43,7 +43,7 @@ class NoOpHeaderClient final : public network::mojom::TrustedHeaderClient {
   void OnBeforeSendHeaders(const GURL& request_url,
                            const net::HttpRequestHeaders& headers,
                            OnBeforeSendHeadersCallback callback) override {
-    std::move(callback).Run(net::OK, std::nullopt);
+    std::move(callback).Run(net::OK, std::nullopt, std::nullopt);
   }
 
   void OnHeadersReceived(const std::string& headers,
@@ -121,7 +121,7 @@ ProxyingURLLoaderFactory::InProgressRequest::~InProgressRequest() {
   }
   if (on_before_send_headers_callback_) {
     std::move(on_before_send_headers_callback_)
-        .Run(net::ERR_ABORTED, std::nullopt);
+        .Run(net::ERR_ABORTED, std::nullopt, std::nullopt);
   }
   if (on_headers_received_callback_) {
     std::move(on_headers_received_callback_)
@@ -367,7 +367,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnBeforeSendHeaders(
     const net::HttpRequestHeaders& headers,
     OnBeforeSendHeadersCallback callback) {
   if (!current_request_uses_header_client_) {
-    std::move(callback).Run(net::OK, std::nullopt);
+    std::move(callback).Run(net::OK, std::nullopt, std::nullopt);
     return;
   }
 
@@ -566,7 +566,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToSendHeaders(
   if (current_request_uses_header_client_) {
     DCHECK(on_before_send_headers_callback_);
     std::move(on_before_send_headers_callback_)
-        .Run(error_code, request_.headers);
+        .Run(error_code, request_.headers, std::nullopt);
   } else if (pending_follow_redirect_params_) {
     pending_follow_redirect_params_->removed_headers.insert(
         pending_follow_redirect_params_->removed_headers.end(),
@@ -780,6 +780,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     api::WebRequest* web_request,
     const HandlersMap& intercepted_handlers,
+    base::WeakPtr<ElectronBrowserContext> browser_context,
     int render_process_id,
     int frame_routing_id,
     uint64_t* request_id_generator,
@@ -792,6 +793,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
     : web_request_{web_request},
       intercepted_handlers_(intercepted_handlers),
+      browser_context_(std::move(browser_context)),
       render_process_id_(render_process_id),
       frame_routing_id_(frame_routing_id),
       request_id_generator_(request_id_generator),
@@ -848,7 +850,7 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
     auto it = intercepted_handlers_->find(request.url.scheme());
     if (it != intercepted_handlers_->end()) {
       override_target_factory.Bind(ElectronURLLoaderFactory::Create(
-          it->second.first, it->second.second));
+          it->second.first, it->second.second, browser_context_));
     }
   }
 

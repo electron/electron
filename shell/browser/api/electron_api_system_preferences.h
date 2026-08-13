@@ -5,10 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_
 
-#include <memory>
 #include <string>
 
-#include "base/functional/bind.h"
 #include "base/values.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/wrappable.h"

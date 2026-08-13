@@ -11,19 +11,6 @@ allocated with strdup() so the cast is safe.
 
 This patch can be removed once libuv fixes the qualifier upstream.
 
-diff --git a/deps/uv/src/uv-common.c b/deps/uv/src/uv-common.c
-index e5a7632909fc6592124b1b89d5ccfbe794ebd4a5..f1e8928d37ebf47225dbfd394fbf1163e1d9f666 100644
---- a/deps/uv/src/uv-common.c
-+++ b/deps/uv/src/uv-common.c
-@@ -957,7 +957,7 @@ void uv_free_cpu_info(uv_cpu_info_t* cpu_infos, int count) {
-   int i;
- 
-   for (i = 0; i < count; i++)
--    uv__free(cpu_infos[i].model);
-+    uv__free((char*) cpu_infos[i].model);
- 
-   uv__free(cpu_infos);
- #endif  /* __linux__ */
 diff --git a/deps/uv/src/win/util.c b/deps/uv/src/win/util.c
 index fec07b269f7d3825158f60c333789323d9159de5..650d6edde3a6ea653ca209a5cd015dcc7f556ef0 100644
 --- a/deps/uv/src/win/util.c

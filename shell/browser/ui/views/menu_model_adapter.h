@@ -6,10 +6,11 @@
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_MENU_MODEL_ADAPTER_H_
 
 #include "base/memory/raw_ptr.h"
-#include "shell/browser/ui/electron_menu_model.h"
 #include "ui/views/controls/menu/menu_model_adapter.h"
 
 namespace electron {
+
+class ElectronMenuModel;
 
 class MenuModelAdapter : public views::MenuModelAdapter {
  public:

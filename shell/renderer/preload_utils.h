@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-#include "shell/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom-forward.h"
 #include "v8/include/v8-forward.h"
 
 namespace content {

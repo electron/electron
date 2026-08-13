@@ -9,8 +9,8 @@
 #include <vector>
 
 #include "base/containers/flat_map.h"
-#include "base/memory/raw_ptr.h"
 #include "content/public/browser/context_menu_params.h"
+#include "content/public/browser/web_contents_observer.h"
 #include "third_party/blink/public/mojom/context_menu/context_menu.mojom-forward.h"
 #include "ui/menus/simple_menu_model.h"
 
@@ -30,7 +30,10 @@ namespace electron {
 // from the Blink-provided items in |params.custom_items| and selections are
 // reported back to the frontend through the standard custom context menu
 // plumbing (DevToolsAPI.contextMenuItemSelected / contextMenuCleared).
-class DevToolsContextMenu : private ui::SimpleMenuModel::Delegate {
+// Observes the DevTools WebContents so the menu closes, without touching the
+// dying WebContents, if it is destroyed while the menu is open.
+class DevToolsContextMenu : private content::WebContentsObserver,
+                            private ui::SimpleMenuModel::Delegate {
  public:
   DevToolsContextMenu(content::WebContents* devtools_web_contents,
                       const content::ContextMenuParams& params);
@@ -69,6 +72,8 @@ class DevToolsContextMenu : private ui::SimpleMenuModel::Delegate {
 
   void OnMenuClosed();
 
+  void WebContentsDestroyed() override;
+
   // ui::SimpleMenuModel::Delegate:
   bool IsCommandIdChecked(int command_id) const override;
   bool IsCommandIdEnabled(int command_id) const override;
@@ -79,7 +84,6 @@ class DevToolsContextMenu : private ui::SimpleMenuModel::Delegate {
     bool checked = false;
   };
 
-  raw_ptr<content::WebContents> web_contents_;
   content::ContextMenuParams params_;
 
   bool menu_open_ = false;

@@ -5,7 +5,6 @@
 #include "shell/browser/ui/win/electron_desktop_window_tree_host_win.h"
 
 #include "base/win/windows_version.h"
-#include "electron/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/win_frame_view.h"

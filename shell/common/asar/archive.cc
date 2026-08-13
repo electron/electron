@@ -245,7 +245,8 @@ bool Archive::Init() {
     // more below ensure we read them in preference order from most secure to
     // least
     if (integrity->algorithm != HashAlgorithm::kNone) {
-      ValidateIntegrityOrDie(base::as_byte_span(header), *integrity);
+      ValidateIntegrityOrDie(base::as_byte_span(header), *integrity,
+                             "<header>");
     } else {
       LOG(FATAL) << "No eligible hash for validatable asar archive: "
                  << RelativePath().value();
@@ -387,6 +388,26 @@ bool Archive::CopyFileOut(const base::FilePath& path, base::FilePath* out) {
   *out = temp_file->path();
   external_files_[path.value()] = std::move(temp_file);
   return true;
+}
+
+bool Archive::ReadFileAt(uint64_t offset, base::span<uint8_t> buf) {
+  if (!file_.IsValid())
+    return false;
+
+  // Concurrent reads of |file_| are safe as long as every reader passes an
+  // explicit offset (POSIX uses pread(); on Windows the offset is passed via
+  // OVERLAPPED, though the shared file position still advances). All in-tree
+  // readers of this handle - here, ScopedTemporaryFile::InitFromFile(), and
+  // the fs wrapper reading GetUnsafeFD() - do so; the only current-position
+  // reads happen in Init(), before the archive is shared.
+  electron::ScopedAllowBlockingForElectron allow_blocking;
+  return file_.ReadAndCheck(offset, buf);
+}
+
+base::File Archive::DuplicateFile() {
+  // Duplicate() on an invalid file returns an invalid file.
+  electron::ScopedAllowBlockingForElectron allow_blocking;
+  return file_.Duplicate();
 }
 
 int Archive::GetUnsafeFD() const {

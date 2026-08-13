@@ -6,10 +6,10 @@ Subject: fix: Wayland test crash on teardown
 Allows Wayland test job to teardown the connection without crashing when trying to update the pointer
 
 diff --git a/ui/ozone/platform/wayland/host/wayland_connection.cc b/ui/ozone/platform/wayland/host/wayland_connection.cc
-index 4c44eaeebe091906a1676da106faa9072819b67e..224f6abfe06794d31fc4d876c8242dab79ba075d 100644
+index 1ab81633d4606c996c785a5fbb409d53de027d51..370889cf1ddd2ce548f1ae0469cfd3494187fa13 100644
 --- a/ui/ozone/platform/wayland/host/wayland_connection.cc
 +++ b/ui/ozone/platform/wayland/host/wayland_connection.cc
-@@ -426,7 +426,7 @@ std::vector<TouchscreenDevice> WaylandConnection::CreateTouchscreenDevices()
+@@ -430,7 +430,7 @@ std::vector<TouchscreenDevice> WaylandConnection::CreateTouchscreenDevices()
  }
  
  void WaylandConnection::UpdateCursor() {

@@ -1,0 +1,76 @@
+name: Pull Request Merged
+
+on:
+  pull_request_target:
+    types: [closed]
+
+# SECURITY: This workflow uses pull_request_target and has access to secrets.
+# Do NOT checkout or run code from the PR head. All code execution must use
+# the base branch only. Adding a ref to PR head would expose secrets to
+# untrusted code.
+permissions: {}
+
+jobs:
+  add-major-version-label:
+    name: Add major version label to merged PR
+    if: ${{ github.repository == 'electron/electron' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      repository-projects: write  # Required for labels
+    steps:
+      - name: Add Major Version Label
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: electron/electron
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          LATEST_RELEASE_MAJOR=$(git ls-remote --heads https://github.com/electron/electron.git '*-x-y' \
+            | grep -E 'refs/heads/[0-9]+-x-y$' \
+            | sed -E 's#.*refs/heads/([0-9]+)-x-y$#\1#' \
+            | sort -rn \
+            | head -n1)
+
+          if [[ -z "$LATEST_RELEASE_MAJOR" ]]; then
+            echo "Could not determine latest release branch"
+            exit 1
+          fi
+
+          # main is always one major ahead of the most recent release branch
+          MAJOR=$((LATEST_RELEASE_MAJOR + 1))
+          echo "Current major version is $MAJOR"
+
+          gh pr edit "$PR_NUMBER" --add-label "$MAJOR-x-y"
+
+  add-to-release-project-board:
+    name: Add merged PR to release project board
+    if: ${{ github.repository == 'electron/electron' && github.event.pull_request.merged == true && endsWith(github.event.pull_request.base.ref, '-x-y') }}
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
+          org: electron
+      - name: Find Release Project Board
+        uses: dsanders11/project-actions/find-project@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        id: find-release-board
+        with:
+          include-closed: true
+          title: ${{ github.event.pull_request.base.ref }}
+          token: ${{ steps.generate-token.outputs.token }}
+      - name: Add Merged PR to Release Project Board
+        if: ${{ steps.find-release-board.outputs.number && steps.find-release-board.outputs.closed == 'false' }}
+        uses: dsanders11/project-actions/add-item@4b06452b0128cf601dac14399aa668a8eed2d684 # v2.0.1
+        with:
+          project-number: ${{ steps.find-release-board.outputs.number }}
+          field: Semver
+          field-value: ${{ case(
+            contains(github.event.pull_request.labels.*.name, 'semver/major'), 'Major',
+            contains(github.event.pull_request.labels.*.name, 'semver/minor'), 'Minor',
+            contains(github.event.pull_request.labels.*.name, 'semver/patch'), 'Patch',
+            contains(github.event.pull_request.labels.*.name, 'semver/none'), 'None',
+            'Unknown') }}
+          token: ${{ steps.generate-token.outputs.token }}

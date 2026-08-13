@@ -10,9 +10,9 @@
 #include "components/viz/common/resources/shared_image_format_utils.h"
 #include "mojo/public/cpp/system/platform_handle.h"
 #include "skia/ext/platform_canvas.h"
-#include "third_party/skia/include/core/SkColor.h"
-#include "third_party/skia/include/core/SkRect.h"
-#include "third_party/skia/src/core/SkDevice.h"
+#include "third_party/skia/include/core/SkBitmap.h"
+#include "third_party/skia/include/core/SkCanvas.h"
+#include "third_party/skia/include/core/SkPixmap.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "skia/ext/skia_utils_win.h"

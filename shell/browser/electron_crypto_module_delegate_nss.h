@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_CRYPTO_MODULE_DELEGATE_NSS_H_
 
 #include "base/synchronization/waitable_event.h"
-#include "base/threading/thread_restrictions.h"
 #include "crypto/nss_crypto_module_delegate.h"
 #include "net/base/host_port_pair.h"
 

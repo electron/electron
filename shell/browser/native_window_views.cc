@@ -20,10 +20,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/containers/fixed_flat_set.h"
 #include "base/memory/raw_ref.h"
-#include "base/numerics/ranges.h"
-#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/common/color_parser.h"
 #include "shell/browser/api/electron_api_system_preferences.h"
@@ -55,7 +52,6 @@
 #include "ui/views/window/client_view.h"
 #include "ui/views/window/frame_view.h"
 #include "ui/views/window/non_client_view.h"
-#include "ui/wm/core/shadow_types.h"
 #include "ui/wm/core/window_util.h"
 
 #if BUILDFLAG(IS_LINUX)
@@ -63,7 +59,9 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/linux/x11_util.h"
 #include "shell/browser/ui/electron_desktop_window_tree_host_linux.h"
+#include "shell/browser/ui/views/electron_frame_view_layout_linux.h"
 #include "shell/browser/ui/views/electron_frame_view_linux.h"
+#include "shell/browser/ui/views/freedesktop_nav_button_provider.h"
 #include "shell/browser/ui/views/native_frame_view.h"
 #include "shell/browser/ui/views/native_frame_view_linux.h"
 #include "shell/common/platform_util.h"
@@ -85,6 +83,9 @@
 #endif
 
 #elif BUILDFLAG(IS_WIN)
+#include "base/containers/fixed_flat_map.h"
+#include "base/containers/fixed_flat_set.h"
+#include "base/numerics/ranges.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
 #include "shell/browser/ui/views/win_frame_view.h"
@@ -271,6 +272,15 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   const int width = options.ValueOrDefault(options::kWidth, 800);
   const int height = options.ValueOrDefault(options::kHeight, 600);
   gfx::Rect bounds{0, 0, width, height};
+  // If an explicit position is provided, place the HWND on the target monitor
+  // at creation time. On Windows, DesktopWindowTreeHostWin::SetBoundsInDIP
+  // resolves the display from the bounds' DIP position (with a null window),
+  // so the very first DIP->pixel conversion picks up the correct per-monitor
+  // scale factor. Without this, the HWND is created at (0,0) using
+  // primary-monitor DPI and later repositioned, producing the
+  // secondary-creation deflation symptom.
+  if (int x, y; options.Get(options::kX, &x) && options.Get(options::kY, &y))
+    bounds.set_origin({x, y});
   widget_size_ = bounds.size();
 
   has_shadow_ = options.ValueOrDefault(options::kHasShadow, true);
@@ -406,6 +416,10 @@ NativeWindowViews::NativeWindowViews(const int32_t base_window_id,
   if (window_type == "toolbar")
     ex_style |= WS_EX_TOOLWINDOW;
   ::SetWindowLong(GetAcceleratedWidget(), GWL_EXSTYLE, ex_style);
+#endif
+
+#if BUILDFLAG(IS_LINUX)
+  options.Get(options::kRoundedCorners, &rounded_corner_);
 #endif
 
   if (has_frame() && !has_client_frame()) {
@@ -588,6 +602,8 @@ void NativeWindowViews::Show() {
   if (is_modal() && NativeWindow::parent() && !widget()->IsVisible())
     static_cast<NativeWindowViews*>(parent())->IncrementChildModals();
 
+  FlushPendingDisplayMode();
+
   widget()->native_widget_private()->Show(GetRestoredState(), gfx::Rect());
 
   // explicitly focus the window
@@ -607,6 +623,8 @@ void NativeWindowViews::Show() {
 }
 
 void NativeWindowViews::ShowInactive() {
+  FlushPendingDisplayMode();
+
   widget()->ShowInactive();
 
   NotifyWindowShow();
@@ -1320,31 +1338,30 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
 }
 
 void NativeWindowViews::SetHasShadow(bool has_shadow) {
+  // Shadows are now drawn by CSD (Linux) or DWM (Windows) instead of Aura,
+  // so we no longer call wm::SetShadowElevation and similar to avoid
+  // artifacts. https://github.com/electron/electron/issues/51456.
+
 #if BUILDFLAG(IS_LINUX)
   auto* efvl = views::AsViewClass<ElectronFrameViewLinux>(
       widget()->non_client_view()->frame_view());
-  gfx::Rect visible_bounds;
   if (efvl) {
     // Shrink by the old frame border insets to isolate the visible area.
-    visible_bounds = widget()->GetWindowBoundsInScreen();
+    gfx::Rect visible_bounds = widget()->GetWindowBoundsInScreen();
     visible_bounds.Inset(GetRestoredFrameBorderInsets());
+
+    has_shadow_ = has_shadow;
+    efvl->SetWantsFrame(!IsTranslucent() &&
+                        (has_shadow || IsWindowControlsOverlayEnabled()));
+
+    // Grow by the new frame border insets to preserve the visible area.
+    visible_bounds.Inset(-GetRestoredFrameBorderInsets());
+    widget()->SetBounds(visible_bounds);
+    return;
   }
 #endif
 
   has_shadow_ = has_shadow;
-  wm::SetShadowElevation(GetNativeWindow(),
-                         has_shadow ? wm::kShadowElevationInactiveWindow
-                                    : wm::kShadowElevationNone);
-
-#if BUILDFLAG(IS_LINUX)
-  if (efvl) {
-    efvl->SetWantsFrame(!IsTranslucent() &&
-                        (has_shadow || IsWindowControlsOverlayEnabled()));
-    // Grow by the new frame border insets to preserve the visible area.
-    visible_bounds.Inset(-GetRestoredFrameBorderInsets());
-    widget()->SetBounds(visible_bounds);
-  }
-#endif
 }
 
 bool NativeWindowViews::HasShadow() const {
@@ -1972,8 +1989,24 @@ std::unique_ptr<views::FrameView> NativeWindowViews::CreateFrameView(
 #if BUILDFLAG(IS_WIN)
   return std::make_unique<WinFrameView>(this, widget);
 #else
-  if (!has_frame())
-    return std::make_unique<ElectronFrameViewLinux>(this, widget);
+  if (!has_frame()) {
+    // With WCO enabled, use native-looking self-drawn caption buttons when
+    // the desktop environment supports them; otherwise the frame view falls
+    // back to vector-icon buttons.
+    std::unique_ptr<FreedesktopNavButtonProvider> freedesktop;
+    if (IsWindowControlsOverlayEnabled())
+      freedesktop = FreedesktopNavButtonProvider::CreateIfAvailable();
+    FreedesktopNavButtonProvider* freedesktop_provider = freedesktop.get();
+    std::unique_ptr<ui::NavButtonProvider> nav_button_provider =
+        std::move(freedesktop);
+    // The layout needs the raw provider pointer while the frame view takes
+    // ownership, so construct it first.
+    auto* layout =
+        new ElectronFrameViewLayoutLinux(this, nav_button_provider.get());
+    return std::make_unique<ElectronFrameViewLinux>(
+        this, widget, std::move(nav_button_provider), layout,
+        freedesktop_provider);
+  }
 
   if (has_client_frame()) {
     auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);

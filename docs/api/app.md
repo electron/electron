@@ -326,7 +326,7 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
 Returns:
 
 * `event` Event
-* `webContents` [WebContents](web-contents.md)
+* `webContents` [WebContents](web-contents.md) (optional)
 * `url` URL
 * `certificateList` [Certificate[]](structures/certificate.md)
 * `callback` Function
@@ -338,6 +338,14 @@ The `url` corresponds to the navigation entry requesting the client certificate
 and `callback` can be called with an entry filtered from the list. Using
 `event.preventDefault()` prevents the application from using the first
 certificate from the store.
+
+`webContents` is `null` when the request does not originate from a renderer
+process, for example when using [`net.request`](net.md#netrequestoptions) or
+[`net.fetch`](net.md#netfetchinput-init) in the main process, or from a
+[utility process](utility-process.md) created with
+`respondToAuthRequestsFromMainProcess: true`. For utility processes created
+without that flag, `net` requests proceed without a client certificate and this
+event is not emitted.
 
 ```js
 const { app } = require('electron')
@@ -357,6 +365,9 @@ Returns:
 * `authenticationResponseDetails` Object
   * `url` URL
   * `pid` number
+  * `isRequestForNavigation` boolean - Indicates whether the request is for a navigation.
+  * `firstAuthAttempt` boolean - Indicates whether this is the first authentication attempt.
+  * `responseHeaders` Record\<string, string | string[]\> (optional) - The headers returned in the response.
 * `authInfo` Object
   * `isProxy` boolean
   * `scheme` string
@@ -438,10 +449,10 @@ because it was crashed or killed. It does not include renderer processes.
 Returns:
 
 * `event` Event
-* `accessibilitySupportEnabled` boolean - `true` when Chrome's accessibility
+* `accessibilitySupportEnabled` boolean - `true` when Chromium's accessibility
   support is enabled, `false` otherwise.
 
-Emitted when Chrome's accessibility support changes. This event fires when
+Emitted when Chromium's accessibility support changes. This event fires when
 assistive technologies, such as screen readers, are enabled or disabled.
 See https://www.chromium.org/developers/design-documents/accessibility for more
 details.
@@ -1248,6 +1259,13 @@ This API must be called after the `ready` event is emitted.
 
 ### `app.configureWebAuthn(options)` _macOS_
 
+<!--
+```YAML history
+added:
+  - pr-url: https://github.com/electron/electron/pull/51563
+```
+-->
+
 * `options` Object
   * `touchID` Object (optional) - Enables the Touch ID / Secure Enclave platform
     authenticator for [Web Authentication](https://www.w3.org/TR/webauthn-2/)
@@ -1262,6 +1280,10 @@ This API must be called after the `ready` event is emitted.
       lowercase sentence fragment. An optional `$1` placeholder is replaced
       with the relying party ID (e.g. `example.com`) of the request being
       authenticated. Defaults to `verify your identity on $1`.
+  * `platformPasskeys` boolean (optional) - Enables passkeys via Apple's
+    `ASAuthorizationController`. When enabled, passkey operations present the
+    system credential provider sheet (iCloud Keychain, 1Password, Bitwarden,
+    etc.) and credentials sync across the user's devices.
 
 Configures platform authenticators for the Web Authentication API
 (`navigator.credentials.create()` / `navigator.credentials.get()`). Until this
@@ -1273,6 +1295,12 @@ keychain and bound to this device's Secure Enclave. Electron automatically
 generates and persists a per-[`session`](session.md) metadata secret so that
 credentials created in one partition are not visible to another.
 
+When `platformPasskeys` is `true`, passkey operations use Apple's
+`ASAuthorizationController` which delegates to the system's configured
+Credential Provider Extensions. This enables the same passkey experience as
+Safari — credentials are available across all devices signed into the same
+account.
+
 ```js
 const { app } = require('electron')
 
@@ -1280,11 +1308,12 @@ app.configureWebAuthn({
   touchID: {
     keychainAccessGroup: 'A1B2C3D4E5.com.example.app.webauthn',
     promptReason: 'sign in to $1'
-  }
+  },
+  platformPasskeys: true
 })
 ```
 
-With the matching entitlement in your app's `entitlements.plist`:
+With the matching entitlements in your app's `entitlements.plist`:
 
 ```xml
 <key>keychain-access-groups</key>
@@ -1292,6 +1321,73 @@ With the matching entitlement in your app's `entitlements.plist`:
   <string>A1B2C3D4E5.com.example.app.webauthn</string>
 </array>
 ```
+
+For platform passkeys, your app needs the Associated Domains entitlement plus an
+application identifier, both in the same `entitlements.plist`:
+
+```xml
+<key>com.apple.developer.associated-domains</key>
+<array>
+  <string>webcredentials:example.com</string>
+</array>
+<!-- Must match the App ID in your provisioning profile: <TEAM_ID>.<BUNDLE_ID>. -->
+<key>com.apple.application-identifier</key>
+<string>A1B2C3D4E5.com.example.app</string>
+```
+
+Listing these entitlements is **not** sufficient on its own — unlike most
+entitlements, `com.apple.developer.associated-domains` is _provisioning-profile
+backed_. For platform passkeys to work, **all** of the following must hold:
+
+* In the [Apple Developer portal](https://developer.apple.com/account/resources/identifiers/list),
+  your App ID (`com.example.app`) has the **Associated Domains** capability
+  enabled, and you have created a provisioning profile for that App ID.
+* That provisioning profile is **embedded in the built app bundle** at
+  `Contents/embedded.provisionprofile`. This is what authorizes the
+  associated-domains entitlement at runtime; without an embedded profile macOS
+  silently ignores the `webcredentials` association and the request fails. (Xcode
+  and [`@electron/osx-sign`](https://github.com/electron/osx-sign) embed the
+  profile for you; if you sign manually, copy it into the bundle before signing.)
+* The app is signed (ad-hoc / unsigned builds do not qualify). Both distribution
+  and development signing work — for development builds, use the developer-mode
+  path described below.
+* `com.apple.application-identifier` matches the profile's App ID. Without it,
+  `ASAuthorizationController` fails with "The calling process does not have an
+  application identifier" — this is `ASAuthorizationError` code 1004.
+* The relying party's domain (`example.com` above) serves a valid
+  [`apple-app-site-association`](https://developer.apple.com/documentation/xcode/supporting-associated-domains)
+  file over HTTPS at `/.well-known/apple-app-site-association` containing a
+  `webcredentials` entry whose `apps` array lists this app's
+  `<TEAM_ID>.<BUNDLE_ID>`.
+* The relying party ID of each request matches that associated domain.
+
+If these aren't satisfied, `ASAuthorizationController` fails before it can
+present the passkey sheet. The request surfaces to the page as a bare
+`NotAllowedError` with no further detail (Electron logs an explanatory message
+to the DevTools console on this path). Because the association is domain-based,
+platform passkeys always require a real associated domain and its AASA file —
+there is no `localhost` rpId escape hatch as there is in browsers.
+
+To test against your domain with a development-signed build (before shipping a
+distribution profile), append `?mode=developer` to the entitlement value and
+enable developer mode on the machine with `swcutil developer-mode -e true`. This
+makes macOS fetch the AASA directly from the domain — bypassing Apple's CDN
+cache — and honor the association for a development-signed app. You still need
+the embedded development provisioning profile described above:
+
+```xml
+<key>com.apple.developer.associated-domains</key>
+<array>
+  <string>webcredentials:example.com?mode=developer</string>
+</array>
+```
+
+> [!NOTE]
+> Because the request is fulfilled by the system credential provider (not a
+> browser), the `clientDataJSON` returned to the page reports
+> `origin: "https://<rpId>"` — the associated domain — rather than the page's
+> own origin. Relying-party servers that enforce a strict `expectedOrigin`
+> allowlist must include `https://<rpId>` for verification to succeed.
 
 > [!NOTE]
 > Touch ID WebAuthn credentials are device-bound and are not synced via iCloud
@@ -1394,9 +1490,17 @@ Returns `Integer` - The current value displayed in the counter badge.
 
 ### `app.getLoginItemSettings([options])` _macOS_ _Windows_
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/52351
+    description: "Removed `openAsHidden`, `wasOpenedAsHidden` and `restoreState` fields from return value."
+```
+-->
+
 * `options` Object (optional)
-  * `type` string (optional) _macOS_ - Can be `mainAppService`, `agentService`, `daemonService`, or `loginItemService`. Defaults to `mainAppService`. Only available on macOS 13 and up. See [app.setLoginItemSettings](app.md#appsetloginitemsettingssettings-macos-windows) for more information about each type.
-  * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default. Only available on macOS 13 and up.
+  * `type` string (optional) _macOS_ - Can be `mainAppService`, `agentService`, `daemonService`, or `loginItemService`. Defaults to `mainAppService`. See [app.setLoginItemSettings](app.md#appsetloginitemsettingssettings-macos-windows) for more information about each type.
+  * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default.
   * `path` string (optional) _Windows_ - The executable path to compare against. Defaults to `process.execPath`.
   * `args` string[] (optional) _Windows_ - The command-line arguments to compare against. Defaults to an empty array.
 
@@ -1406,10 +1510,7 @@ need to pass the same arguments here for `openAtLogin` to be set correctly.
 Returns `Object`:
 
 * `openAtLogin` boolean - `true` if the app is set to open at login.
-* `openAsHidden` boolean _macOS_ _Deprecated_ - `true` if the app is set to open as hidden at login. This does not work on macOS 13 and up.
 * `wasOpenedAtLogin` boolean _macOS_ - `true` if the app was opened at login automatically.
-* `wasOpenedAsHidden` boolean _macOS_ _Deprecated_ - `true` if the app was opened as a hidden login item. This indicates that the app should not open any windows at startup. This setting is not available on [MAS builds][mas-builds] or on macOS 13 and up.
-* `restoreState` boolean _macOS_ _Deprecated_ - `true` if the app was opened as a login item that should restore the state from the previous session. This indicates that the app should restore the windows that were open the last time the app was closed. This setting is not available on [MAS builds][mas-builds] or on macOS 13 and up.
 * `status` string _macOS_ - can be `not-registered`, `enabled`, `requires-approval`, or `not-found`.
 * `executableWillLaunchAtLogin` boolean _Windows_ - `true` if app is set to open at login and its run key is not deactivated. This differs from `openAtLogin` as it ignores the `args` option, this property will be true if the given executable would be launched at login with **any** arguments.
 * `launchItems` Object[] _Windows_
@@ -1421,16 +1522,28 @@ Returns `Object`:
 
 ### `app.setLoginItemSettings(settings)` _macOS_ _Windows_
 
+<!--
+```YAML history
+changes:
+  - pr-url: https://github.com/electron/electron/pull/52351
+    description: "Removed `openAsHidden` option."
+```
+-->
+
+> [!IMPORTANT]
+> On macOS, your app should be [code signed and notarized](../tutorial/code-signing.md#macos-apis-that-require-code-signing)
+> for login item settings to work reliably. When an app isn't packaged, code signed,
+> and notarized, `openAtLogin` may silently fail to take effect.
+
 * `settings` Object
   * `openAtLogin` boolean (optional) - `true` to open the app at login, `false` to remove
     the app as a login item. Defaults to `false`.
-  * `openAsHidden` boolean (optional) _macOS_ _Deprecated_ - `true` to open the app as hidden. Defaults to `false`. The user can edit this setting from the System Preferences so `app.getLoginItemSettings().wasOpenedAsHidden` should be checked when the app is opened to know the current value. This setting is not available on [MAS builds][mas-builds] or on macOS 13 and up.
-  * `type` string (optional) _macOS_ - The type of service to add as a login item. Defaults to `mainAppService`. Only available on macOS 13 and up.
+  * `type` string (optional) _macOS_ - The type of service to add as a login item. Defaults to `mainAppService`.
     * `mainAppService` - The primary application.
     * `agentService` - The property list name for a launch agent. The property list name must correspond to a property list in the app’s `Contents/Library/LaunchAgents` directory.
     * `daemonService` string (optional) _macOS_ - The property list name for a launch agent. The property list name must correspond to a property list in the app’s `Contents/Library/LaunchDaemons` directory.
     * `loginItemService` string (optional) _macOS_ - The property list name for a login item service. The property list name must correspond to a property list in the app’s `Contents/Library/LoginItems` directory.
-  * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default. Only available on macOS 13 and up.
+  * `serviceName` string (optional) _macOS_ - The name of the service. Required if `type` is non-default.
   * `path` string (optional) _Windows_ - The executable to launch at login.
     Defaults to `process.execPath`.
   * `args` string[] (optional) _Windows_ - The command-line arguments to pass to
@@ -1466,11 +1579,11 @@ app.setLoginItemSettings({
 })
 ```
 
-For more information about setting different services as login items on macOS 13 and up, see [`SMAppService`](https://developer.apple.com/documentation/servicemanagement/smappservice?language=objc).
+For more information about setting different services as login items on macOS, see [`SMAppService`](https://developer.apple.com/documentation/servicemanagement/smappservice?language=objc).
 
 ### `app.isAccessibilitySupportEnabled()` _macOS_ _Windows_
 
-Returns `boolean` - `true` if Chrome's accessibility support is enabled,
+Returns `boolean` - `true` if Chromium's accessibility support is enabled,
 `false` otherwise. This API will return `true` if the use of assistive
 technologies, such as screen readers, has been detected. See
 https://www.chromium.org/developers/design-documents/accessibility for more
@@ -1480,7 +1593,7 @@ details.
 
 * `enabled` boolean - Enable or disable [accessibility tree](https://developers.google.com/web/fundamentals/accessibility/semantics-builtin/the-accessibility-tree) rendering
 
-Manually enables Chrome's accessibility support, allowing to expose accessibility switch to users in application settings. See [Chromium's accessibility docs](https://www.chromium.org/developers/design-documents/accessibility) for more
+Manually enables Chromium's accessibility support, allowing to expose accessibility switch to users in application settings. See [Chromium's accessibility docs](https://www.chromium.org/developers/design-documents/accessibility) for more
 details. Disabled by default.
 
 This API must be called after the `ready` event is emitted.
@@ -1611,7 +1724,7 @@ fs.readFileSync(filepath)
 stopAccessingSecurityScopedResource()
 ```
 
-Start accessing a security scoped resource. With this method Electron applications that are packaged for the Mac App Store may reach outside their sandbox to access files chosen by the user. See [Apple's documentation](https://developer.apple.com/library/content/documentation/Security/Conceptual/AppSandboxDesignGuide/AppSandboxInDepth/AppSandboxInDepth.html#//apple_ref/doc/uid/TP40011183-CH3-SW16) for a description of how this system works.
+Start accessing a security scoped resource. With this method, Electron applications that are packaged for the Mac App Store may reach outside their sandbox to access files chosen by the user. See [Apple's documentation](https://developer.apple.com/documentation/professional-video-applications/enabling-security-scoped-bookmark-and-url-access) for a description of how this system works.
 
 ### `app.enableSandbox()`
 
@@ -1740,7 +1853,7 @@ app.setClientCertRequestPasswordHandler(async ({ hostname, tokenName, isRetry })
 
 ### `app.accessibilitySupportEnabled` _macOS_ _Windows_
 
-A `boolean` property that's `true` if Chrome's accessibility support is enabled, `false` otherwise. This property will be `true` if the use of assistive technologies, such as screen readers, has been detected. Setting this property to `true` manually enables Chrome's accessibility support, allowing developers to expose accessibility switch to users in application settings.
+A `boolean` property that's `true` if Chromium's accessibility support is enabled, `false` otherwise. This property will be `true` if the use of assistive technologies, such as screen readers, has been detected. Setting this property to `true` manually enables Chromium's accessibility support, allowing developers to expose accessibility switch to users in application settings.
 
 See [Chromium's accessibility docs](https://www.chromium.org/developers/design-documents/accessibility) for more details. Disabled by default.
 
@@ -1789,7 +1902,6 @@ A `string` property that returns the app's [Toast Activator CLSID][toast-activat
 [LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/documentation/coreservices/1441725-lscopydefaulthandlerforurlscheme?language=objc
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
-[mas-builds]: ../tutorial/mac-app-store-submission-guide.md
 [Squirrel-Windows]: https://github.com/Squirrel/Squirrel.Windows
 [JumpListBeginListMSDN]: https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-icustomdestinationlist-beginlist
 [about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc

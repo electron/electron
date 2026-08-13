@@ -2,6 +2,7 @@
 # Use of this source code is governed by the MIT license that can be
 # found in the LICENSE file.
 
+import("//build/config/features.gni")
 import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
@@ -247,11 +248,22 @@ static_library("chrome") {
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc",
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h",
     ]
-    sources += [
-      "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
-      "//chrome/browser/ui/views/dark_mode_manager_linux.h",
+    public_deps += [
+      "//components/dbus",
+      "//ui/linux:dark_mode_manager",
     ]
-    public_deps += [ "//components/dbus" ]
+    if (use_aura && use_dbus) {
+      sources += [
+        "//chrome/browser/ui/views/eye_dropper/eye_dropper_portal.cc",
+        "//chrome/browser/ui/views/eye_dropper/eye_dropper_portal.h",
+      ]
+      deps += [
+        "//build/config/linux/dbus:buildflags",
+        "//dbus",
+        "//ui/aura",
+        "//ui/linux:linux_ui",
+      ]
+    }
   }
 
   if (is_win) {
@@ -391,6 +403,7 @@ static_library("chrome") {
         "//chrome/browser/plugins/pdf_iframe_navigation_throttle.h",
       ]
       deps += [
+        "//chrome/browser/resources/pdf:resources",
         "//components/pdf/browser",
         "//components/pdf/renderer",
         "//components/zoom",

@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_PROMISE_H_
 
-#include <string>
 #include <string_view>
 #include <tuple>
 #include <type_traits>
@@ -87,6 +86,9 @@ class PromiseBase {
   v8::Maybe<bool> ResolveWith(v8::Local<v8::Value> value);
 
   struct SettleScope {
+    CPPGC_STACK_ALLOCATED();
+
+   public:
     explicit SettleScope(const PromiseBase& base);
     ~SettleScope();
 

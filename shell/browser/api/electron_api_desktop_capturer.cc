@@ -21,16 +21,20 @@
 #include "chrome/browser/media/webrtc/window_icon_util.h"
 #include "content/public/browser/desktop_capture.h"
 #include "gin/object_template_builder.h"
+#include "gin/persistent.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/handle.h"
+#include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capture_options.h"
 #include "third_party/webrtc/modules/desktop_capture/desktop_capturer.h"
 #include "ui/base/ozone_buildflags.h"
+#include "v8/include/cppgc/allocation.h"
+#include "v8/include/v8-cppgc.h"
 
 #if BUILDFLAG(IS_WIN)
 #include "third_party/webrtc/modules/desktop_capture/win/dxgi_duplicator_controller.h"
@@ -229,8 +233,8 @@ struct Converter<electron::api::DesktopCapturer::Source> {
 
 namespace electron::api {
 
-gin::DeprecatedWrapperInfo DesktopCapturer::kWrapperInfo = {
-    gin::kEmbedderNativeGin};
+const gin::WrapperInfo DesktopCapturer::kWrapperInfo =
+    electron::MakeWrapperInfo(electron::kElectronDesktopCapturer);
 
 // Observer that forwards DesktopMediaListObserver events back to
 // the owning DesktopCapturer, tagging them with the list type so
@@ -240,7 +244,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
   ListObserver(DesktopCapturer* capturer,
                DesktopMediaList* list,
                bool need_thumbnails)
-      : capturer_{capturer},
+      : capturer_{capturer->WeakCallbackTarget()},
         list_{list},
         list_type_{list->GetMediaListType()},
         is_delegated_{list->IsSourceListDelegated()},
@@ -270,8 +274,7 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
     notified_ = true;
     base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
         FROM_HERE,
-        base::BindOnce(&DesktopCapturer::OnListReady,
-                       capturer_->weak_ptr_factory_.GetWeakPtr(), list_type_));
+        base::BindOnce(&DesktopCapturer::OnListReady, capturer_, list_type_));
   }
 
   // DesktopMediaListObserver:
@@ -294,11 +297,10 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
   }
   void OnDelegatedSourceListDismissed() override {
     base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-        FROM_HERE, base::BindOnce(&DesktopCapturer::HandleFailure,
-                                  capturer_->weak_ptr_factory_.GetWeakPtr()));
+        FROM_HERE, base::BindOnce(&DesktopCapturer::HandleFailure, capturer_));
   }
 
-  raw_ptr<DesktopCapturer> capturer_;
+  cppgc::Persistent<gin::WeakCell<DesktopCapturer>> capturer_;
   raw_ptr<DesktopMediaList> list_;
   DesktopMediaList::Type list_type_;
   bool is_delegated_ = false;
@@ -310,6 +312,13 @@ class DesktopCapturer::ListObserver : public DesktopMediaListObserver {
 DesktopCapturer::DesktopCapturer() = default;
 
 DesktopCapturer::~DesktopCapturer() = default;
+
+cppgc::Persistent<gin::WeakCell<DesktopCapturer>>
+DesktopCapturer::WeakCallbackTarget() {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  return gin::WrapPersistent(
+      weak_factory_.GetWeakCell(isolate->GetCppHeap()->GetAllocationHandle()));
+}
 
 void DesktopCapturer::FinalizeList(std::unique_ptr<ListObserver>& observer,
                                    std::unique_ptr<DesktopMediaList>& list) {
@@ -417,9 +426,9 @@ void DesktopCapturer::StartHandling(bool capture_window,
       (window_capturer_ && window_capturer_->IsSourceListDelegated()) ||
       (screen_capturer_ && screen_capturer_->IsSourceListDelegated());
   if (!any_delegated) {
-    deadline_.Start(FROM_HERE, kDesktopCapturerReadyTimeout,
-                    base::BindOnce(&DesktopCapturer::OnReadyTimeout,
-                                   weak_ptr_factory_.GetWeakPtr()));
+    deadline_.Start(
+        FROM_HERE, kDesktopCapturerReadyTimeout,
+        base::BindOnce(&DesktopCapturer::OnReadyTimeout, WeakCallbackTarget()));
   }
 }
 
@@ -557,7 +566,7 @@ void DesktopCapturer::HandleSuccess() {
   window_observer_.reset();
   screen_observer_.reset();
 
-  Unpin();
+  keep_alive_.Clear();
 }
 
 void DesktopCapturer::HandleFailure() {
@@ -576,18 +585,13 @@ void DesktopCapturer::HandleFailure() {
   window_observer_.reset();
   screen_observer_.reset();
 
-  Unpin();
+  keep_alive_.Clear();
 }
 
 // static
-gin_helper::Handle<DesktopCapturer> DesktopCapturer::Create(
-    v8::Isolate* isolate) {
-  auto handle = gin_helper::CreateHandle(isolate, new DesktopCapturer());
-
-  // Keep reference alive until capturing has finished.
-  handle->Pin(isolate);
-
-  return handle;
+DesktopCapturer* DesktopCapturer::Create(v8::Isolate* isolate) {
+  return cppgc::MakeGarbageCollected<DesktopCapturer>(
+      isolate->GetCppHeap()->GetAllocationHandle());
 }
 
 // static
@@ -599,13 +603,21 @@ bool DesktopCapturer::IsDisplayMediaSystemPickerAvailable() {
 
 gin::ObjectTemplateBuilder DesktopCapturer::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
-  return gin_helper::DeprecatedWrappable<
-             DesktopCapturer>::GetObjectTemplateBuilder(isolate)
+  return gin::Wrappable<DesktopCapturer>::GetObjectTemplateBuilder(isolate)
       .SetMethod("startHandling", &DesktopCapturer::StartHandling);
 }
 
-const char* DesktopCapturer::GetTypeName() {
-  return "DesktopCapturer";
+void DesktopCapturer::Trace(cppgc::Visitor* visitor) const {
+  gin::Wrappable<DesktopCapturer>::Trace(visitor);
+  visitor->Trace(weak_factory_);
+}
+
+const gin::WrapperInfo* DesktopCapturer::wrapper_info() const {
+  return &kWrapperInfo;
+}
+
+const char* DesktopCapturer::GetHumanReadableName() const {
+  return "Electron / DesktopCapturer";
 }
 
 }  // namespace electron::api

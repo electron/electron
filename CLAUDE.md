@@ -138,14 +138,16 @@ patches/{target}/*.patch  →  [e sync --3]  →  target repo commits
 
 **Fixing patch conflicts on an existing PR:**
 
-If asked to fix a patch conflict on a branch that already has an open PR, check the PR's failed **Apply Patches** CI run for an `update-patches` artifact before running `e sync` locally. CI has already performed the 3-way merge and exported the resolved patch diff — applying it is much faster than a full local sync.
+If asked to fix a patch conflict on a branch that already has an open PR, check the PR's failed **Apply Patches** CI run for an `update-patches.patch` artifact before running `e sync` locally. CI has already performed the 3-way merge and exported the resolved patch diff — applying it is much faster than a full local sync.
 
 ```bash
-# Find the failed Apply Patches run for the PR and download the artifact
+# Find the failed Apply Patches run for the PR, then fetch its artifact. The
+# artifact is uploaded unarchived (name `update-patches.patch`), so
+# `gh run download` rejects it as "not a valid zip"; the artifact zip endpoint
+# returns the raw patch instead.
 gh run list --repo electron/electron --branch <pr-branch> --workflow "Apply Patches" --limit 1
-gh run download <run-id> --repo electron/electron --name update-patches
-
-# Apply the CI-generated fix, then push
+gh api repos/electron/electron/actions/runs/<run-id>/artifacts --jq '.artifacts[] | select(.name == "update-patches.patch") | .id'
+gh api repos/electron/electron/actions/artifacts/<artifact-id>/zip > update-patches.patch
 git am update-patches.patch
 git push
 ```
@@ -264,6 +266,15 @@ GitHub Actions workflows in `.github/workflows/`:
 - `build.yml` - Main build workflow
 - `pipeline-electron-lint.yml` - Linting
 - `pipeline-segment-electron-test.yml` - Testing
+
+### Reading audit findings
+
+These workflows upload their findings as a build artifact named `audit-results.md` because GitHub Actions step summaries cannot be read via the API:
+
+- `.github/workflows/audit-branch-ci.yml` - Table of release-branch CI runs that errored
+- `.github/workflows/archaeologist-dig.yml` - The `electron.d.ts` diff report ("Changes Detected" patch, or a no-changes note)
+
+The artifact is uploaded unarchived (`archive: false`), so it downloads as raw markdown — no unzipping needed. Agents should list the run's artifacts (`GET /repos/electron/electron/actions/runs/{run_id}/artifacts`), find the one named `audit-results.md`, and fetch its `archive_download_url` to read the findings directly.
 
 ## Common Issues
 

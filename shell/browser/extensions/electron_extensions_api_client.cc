@@ -7,7 +7,6 @@
 #include <memory>
 #include <string>
 
-#include "electron/buildflags/buildflags.h"
 #include "extensions/browser/guest_view/extensions_guest_view_manager_delegate.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest_delegate.h"
 #include "printing/buildflags/buildflags.h"

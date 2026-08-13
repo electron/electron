@@ -141,7 +141,6 @@ combo's instrumented build runs its own benchmarks:
 | Profile | Collection host |
 |---|---|
 | linux-x64 | x64 ARC runner (build container) |
-| linux-arm | arm64 ARC runner (arm32v7 test container) |
 | linux-arm64 | `ubuntu-22.04-arm` (arm64v8 test container) |
 | win-x64 | `windows-latest` |
 | win-x86 | `windows-latest` (WOW64) |

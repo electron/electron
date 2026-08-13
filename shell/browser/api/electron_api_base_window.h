@@ -12,12 +12,17 @@
 #include <string_view>
 #include <vector>
 
-#include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/common/api/electron_api_native_image.h"
 #include "shell/common/gin_helper/trackable_object.h"
 #include "v8/include/cppgc/persistent.h"
+
+#if BUILDFLAG(IS_MAC)
+#include <optional>
+
+#include "ui/gfx/geometry/point.h"
+#endif
 
 namespace gin {
 class Arguments;
@@ -45,6 +50,13 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 
   static void BuildPrototype(v8::Isolate* isolate,
                              v8::Local<v8::FunctionTemplate> prototype);
+
+  // Clears window state from the Local State JSON file in
+  // app.getPath('userData') via PrefService.
+  static void ClearPersistedState(const std::string& window_name);
+
+  static bool IsWindowNameValid(const gin_helper::Dictionary& options,
+                                std::string* error_message);
 
   const NativeWindow* window() const { return window_.get(); }
   NativeWindow* window() { return window_.get(); }
@@ -97,6 +109,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                             const base::DictValue& details) override;
   void OnNewWindowForTab() override;
   void OnSystemContextMenu(int x, int y, bool* prevent_default) override;
+  void OnWindowStateRestored() override;
 #if BUILDFLAG(IS_WIN)
   void OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) override;
 #endif

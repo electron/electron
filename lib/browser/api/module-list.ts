@@ -8,6 +8,7 @@ export const browserModuleList: ElectronInternal.ModuleEntry[] = [
   { name: 'BrowserView', loader: () => require('./browser-view') },
   { name: 'BrowserWindow', loader: () => require('./browser-window') },
   { name: 'clipboard', loader: () => require('./clipboard') },
+  { name: 'ClipboardItem', loader: () => require('./clipboard-item') },
   { name: 'contentTracing', loader: () => require('./content-tracing') },
   { name: 'crashReporter', loader: () => require('./crash-reporter') },
   { name: 'desktopCapturer', loader: () => require('./desktop-capturer') },

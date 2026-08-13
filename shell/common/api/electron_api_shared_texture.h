@@ -5,9 +5,6 @@
 #ifndef ELECTRON_SHELL_COMMON_API_ELECTRON_API_SHARED_TEXTURE_H_
 #define ELECTRON_SHELL_COMMON_API_ELECTRON_API_SHARED_TEXTURE_H_
 
-#include <string>
-#include <vector>
-
 #include "v8/include/v8-forward.h"
 
 namespace electron::api::shared_texture {

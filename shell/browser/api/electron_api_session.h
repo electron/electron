@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/callback_list.h"
 #include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/download_manager.h"
@@ -57,6 +58,7 @@ class Extensions;
 class NetLog;
 class Protocol;
 class ServiceWorkerContext;
+class UtilityProcessWrapper;
 class WebRequest;
 
 class Session final : public gin::Wrappable<Session>,
@@ -168,12 +170,17 @@ class Session final : public gin::Wrappable<Session>,
   api::ServiceWorkerContext* ServiceWorkerContext();
   WebRequest* WebRequest(v8::Isolate* isolate);
   api::NetLog* NetLog(v8::Isolate* isolate);
+  api::UtilityProcessWrapper* LocalAIHandler();
+  base::CallbackListSubscription AddAIHandlerChangedCallback(
+      base::RepeatingClosure callback);
   void Preconnect(const gin_helper::Dictionary& options, gin::Arguments* args);
   v8::Local<v8::Promise> CloseAllConnections();
   v8::Local<v8::Value> GetPath(v8::Isolate* isolate);
   void SetCodeCachePath(gin::Arguments* args);
   v8::Local<v8::Promise> ClearCodeCaches(const gin_helper::Dictionary& options);
   v8::Local<v8::Value> ClearData(gin::Arguments* args);
+  void RegisterLocalAIHandler(gin_helper::ErrorThrower thrower,
+                              v8::Local<v8::Value> val);
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   base::Value GetSpellCheckerLanguages();
   void SetSpellCheckerLanguages(gin_helper::ErrorThrower thrower,
@@ -214,8 +221,11 @@ class Session final : public gin::Wrappable<Session>,
   cppgc::Member<api::NetLog> net_log_;
   cppgc::Member<api::ServiceWorkerContext> service_worker_context_;
   cppgc::Member<api::WebRequest> web_request_;
+  cppgc::WeakMember<api::UtilityProcessWrapper> local_ai_handler_;
 
   raw_ptr<v8::Isolate> isolate_;
+
+  base::RepeatingClosureList local_ai_handler_changed_callbacks_;
 
   // The profile id to enable the network throttler.
   base::UnguessableToken network_emulation_token_;

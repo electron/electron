@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/browser/render_process_host.h"
@@ -17,9 +16,7 @@
 
 NetworkHintsHandlerImpl::NetworkHintsHandlerImpl(
     content::RenderFrameHost* frame_host)
-    : network_hints::SimpleNetworkHintsHandlerImpl(
-          frame_host->GetProcess()->GetDeprecatedID(),
-          frame_host->GetRoutingID()),
+    : network_hints::SimpleNetworkHintsHandlerImpl(frame_host->GetGlobalId()),
       browser_context_(frame_host->GetProcess()->GetBrowserContext()) {}
 
 NetworkHintsHandlerImpl::~NetworkHintsHandlerImpl() = default;

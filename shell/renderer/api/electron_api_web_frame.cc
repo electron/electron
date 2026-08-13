@@ -4,12 +4,15 @@
 
 #include <limits>
 #include <memory>
+#include <set>
 #include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
 
 #include "base/containers/span.h"
+#include "base/functional/callback.h"
+#include "base/functional/callback_helpers.h"
 #include "base/memory/memory_pressure_listener_registry.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
@@ -18,15 +21,13 @@
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_frame_observer.h"
 #include "content/public/renderer/render_frame_visitor.h"
+#include "electron/buildflags/buildflags.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "services/service_manager/public/cpp/interface_provider.h"
-#include "shell/common/api/api.mojom.h"
 #include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
-#include "shell/common/gin_converters/file_path_converter.h"
-#include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -35,12 +36,11 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/node_util.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/web_contents_utility.mojom.h"
-#include "shell/renderer/api/context_bridge/object_cache.h"
 #include "shell/renderer/api/electron_api_context_bridge.h"
 #include "shell/renderer/api/electron_api_spell_check_client.h"
+#include "shell/renderer/electron_render_frame_observer.h"
 #include "shell/renderer/renderer_client_base.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -171,8 +171,8 @@ class ScriptExecutionCallback {
       v8::Local<v8::Context> source_context =
           result->GetCreationContextChecked(isolate);
       maybe_result = PassValueToOtherContext(
-          isolate, source_context, promise_.isolate(), promise_.GetContext(),
-          result, source_context->Global(), false, BridgeErrorTarget::kSource);
+          isolate, source_context, promise_.GetContext(), result,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }
@@ -374,8 +374,11 @@ class WebFrameRenderer final
         .SetMethod("executeJavaScript", &WebFrameRenderer::ExecuteJavaScript)
         .SetMethod("executeJavaScriptInIsolatedWorld",
                    &WebFrameRenderer::ExecuteJavaScriptInIsolatedWorld)
+        .SetMethod("getIsolatedWorlds", &WebFrameRenderer::GetIsolatedWorlds)
         .SetMethod("setIsolatedWorldInfo",
                    &WebFrameRenderer::SetIsolatedWorldInfo)
+        .SetMethod("_setIsolatedWorldCreationCallback",
+                   &WebFrameRenderer::SetIsolatedWorldCreationCallback)
         .SetMethod("getResourceUsage", &WebFrameRenderer::GetResourceUsage)
         .SetMethod("clearCache", &WebFrameRenderer::ClearCache)
         .SetMethod("setSpellCheckProvider",
@@ -766,6 +769,29 @@ class WebFrameRenderer final
         blink::mojom::PromiseResultOption::kDoNotWait);
 
     return handle;
+  }
+
+  std::vector<int> GetIsolatedWorlds(v8::Isolate* isolate) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "getIsolatedWorlds", &render_frame))
+      return {};
+
+    auto* observer = ElectronRenderFrameObserver::Get(render_frame);
+    return observer ? observer->GetIsolatedWorlds() : std::vector<int>{};
+  }
+
+  void SetIsolatedWorldCreationCallback(
+      v8::Isolate* isolate,
+      base::RepeatingCallback<void(int)> callback) {
+    content::RenderFrame* render_frame;
+    if (!MaybeGetRenderFrame(isolate, "_setIsolatedWorldCreationCallback",
+                             &render_frame)) {
+      return;
+    }
+
+    auto* observer = ElectronRenderFrameObserver::Get(render_frame);
+    if (observer)
+      observer->SetIsolatedWorldCreatedCallback(std::move(callback));
   }
 
   void SetIsolatedWorldInfo(v8::Isolate* isolate,

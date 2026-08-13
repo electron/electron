@@ -4,7 +4,7 @@
 
 #include "shell/browser/session_preferences.h"
 
-#include "base/logging.h"
+#include "base/check.h"
 #include "base/memory/ptr_util.h"
 #include "content/public/browser/browser_context.h"
 

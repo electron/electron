@@ -4,13 +4,10 @@
 
 #include "shell/common/node_util.h"
 
-#include <cstdlib>
-
 #include "base/compiler_specific.h"
 #include "base/containers/to_value_list.h"
 #include "base/json/json_writer.h"
 #include "base/logging.h"
-#include "base/memory/ptr_util.h"
 #include "base/no_destructor.h"
 #include "base/strings/strcat.h"
 #include "base/strings/string_number_conversions.h"
@@ -167,6 +164,22 @@ node::Environment* CreateEnvironment(v8::Isolate* isolate,
   }
 
   return env;
+}
+
+v8::Local<v8::Object> CreateAbortController(v8::Isolate* isolate) {
+  auto context = isolate->GetCurrentContext();
+  auto global_object = context->Global();
+
+  auto value =
+      global_object->Get(context, gin::StringToV8(isolate, "AbortController"))
+          .ToLocalChecked();
+  DCHECK(!value.IsEmpty() && value->IsObject());
+
+  DCHECK(value->IsFunction());
+  auto constructor = value.As<v8::Function>();
+  auto instance =
+      constructor->NewInstance(context, 0, nullptr).ToLocalChecked();
+  return instance;
 }
 
 ExplicitMicrotasksScope::ExplicitMicrotasksScope(v8::MicrotaskQueue* queue)

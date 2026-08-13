@@ -31,7 +31,7 @@ Electron has a few additional concepts to consider because it interfaces with No
 ### Renderer processes
 
 When renderer processes in Electron are sandboxed, they behave in the same way as a
-regular Chrome renderer would. A sandboxed renderer won't have a Node.js
+regular Chromium renderer would. A sandboxed renderer won't have a Node.js
 environment initialized.
 
 Therefore, when the sandbox is enabled, renderer processes can only perform privileged

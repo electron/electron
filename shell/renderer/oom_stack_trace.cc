@@ -12,11 +12,10 @@
 #include "base/logging.h"
 #include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
-#include "base/strings/string_number_conversions.h"
 #include "base/threading/thread_local.h"
 #include "electron/mas.h"
 #include "gin/per_isolate_data.h"
-#include "shell/common/crash_keys.h"
+#include "shell/common/v8_oom_diagnostics.h"
 #include "third_party/abseil-cpp/absl/strings/str_format.h"
 #include "v8/include/v8-exception.h"
 #include "v8/include/v8-internal.h"
@@ -119,9 +118,7 @@ void CaptureStackOnInterrupt(v8::Isolate* isolate, void* data) {
 
   std::string js_stack = FormatStackTrace(isolate, stack);
   if (!js_stack.empty()) {
-#if !IS_MAS_BUILD()
-    crash_keys::SetCrashKey("electron.v8-oom.stack", js_stack);
-#endif
+    v8_oom::RecordJsStack(isolate, js_stack);
     LOG(ERROR) << "\n<--- JS stacktrace (captured at safe point) --->\n"
                << js_stack;
   }
@@ -150,57 +147,8 @@ size_t NearHeapLimitCallback(void* data,
                                           stats.heap_size_limit() / 1048576.0);
   LOG(ERROR) << "\n<--- Near heap limit --->\n" << heap_info;
 
-#if !IS_MAS_BUILD()
-  crash_keys::SetCrashKey("electron.v8-oom.stack",
-                          heap_info + " (stack pending)");
-
-  crash_keys::SetCrashKey("electron.v8-oom.heap.used",
-                          base::NumberToString(stats.used_heap_size()));
-  crash_keys::SetCrashKey("electron.v8-oom.heap.total",
-                          base::NumberToString(stats.total_heap_size()));
-  crash_keys::SetCrashKey("electron.v8-oom.heap.limit",
-                          base::NumberToString(stats.heap_size_limit()));
-  crash_keys::SetCrashKey("electron.v8-oom.heap.total_available",
-                          base::NumberToString(stats.total_available_size()));
-  crash_keys::SetCrashKey("electron.v8-oom.heap.total_physical",
-                          base::NumberToString(stats.total_physical_size()));
-  crash_keys::SetCrashKey("electron.v8-oom.heap.malloced_memory",
-                          base::NumberToString(stats.malloced_memory()));
-  crash_keys::SetCrashKey("electron.v8-oom.heap.external_memory",
-                          base::NumberToString(stats.external_memory()));
-  crash_keys::SetCrashKey(
-      "electron.v8-oom.heap.native_contexts",
-      base::NumberToString(stats.number_of_native_contexts()));
-  crash_keys::SetCrashKey(
-      "electron.v8-oom.heap.detached_contexts",
-      base::NumberToString(stats.number_of_detached_contexts()));
-
-  double utilization = stats.heap_size_limit() > 0
-                           ? static_cast<double>(stats.used_heap_size()) /
-                                 stats.heap_size_limit() * 100.0
-                           : 100.0;
-  crash_keys::SetCrashKey("electron.v8-oom.heap.utilization_pct",
-                          absl::StrFormat("%.1f", utilization));
-
-  v8::HeapSpaceStatistics space_stats;
-  for (size_t i = 0; i < isolate->NumberOfHeapSpaces(); i++) {
-    isolate->GetHeapSpaceStatistics(&space_stats, i);
-    if (std::string_view(space_stats.space_name()) == "old_space") {
-      crash_keys::SetCrashKey(
-          "electron.v8-oom.old_space.used",
-          base::NumberToString(space_stats.space_used_size()));
-      crash_keys::SetCrashKey("electron.v8-oom.old_space.size",
-                              base::NumberToString(space_stats.space_size()));
-    } else if (std::string_view(space_stats.space_name()) ==
-               "large_object_space") {
-      crash_keys::SetCrashKey(
-          "electron.v8-oom.lo_space.used",
-          base::NumberToString(space_stats.space_used_size()));
-      crash_keys::SetCrashKey("electron.v8-oom.lo_space.size",
-                              base::NumberToString(space_stats.space_size()));
-    }
-  }
-#endif
+  v8_oom::RecordJsStack(isolate, heap_info + " (stack pending)");
+  v8_oom::RecordHeapDiagnostics(isolate);
 
   // Request an interrupt to capture the JS stack at the next safe point,
   // where optimized frames have deoptimization data available.
@@ -226,10 +174,8 @@ size_t NearHeapLimitCallback(void* data,
   if (current_heap_limit >= kCageLimit - kHeapBump) {
     // The bump will be clamped by V8 to the cage ceiling, leaving no
     // headroom for the interrupt to fire. Record what we can now.
-#if !IS_MAS_BUILD()
-    crash_keys::SetCrashKey("electron.v8-oom.stack",
-                            heap_info + " (at cage limit, stack unavailable)");
-#endif
+    v8_oom::RecordJsStack(isolate,
+                          heap_info + " (at cage limit, stack unavailable)");
     LOG(INFO) << "Near V8 cage limit; stack trace capture may not succeed";
   }
 

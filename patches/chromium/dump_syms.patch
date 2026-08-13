@@ -8,7 +8,7 @@ this but it is not a blocker for releasing Electron.  This patch removes
 tthe hard fail on dylib resolve failure from dump_syms
 
 diff --git a/components/crash/content/tools/generate_breakpad_symbols.py b/components/crash/content/tools/generate_breakpad_symbols.py
-index 4abe32d47113da6ea61262a68a0a82716bb418d1..f43c788a5cc5da62484c4560b232f3e677f971e5 100755
+index 8c2af2b98735ea07c5549fe8a3d9749689c30a88..f6bee4a0af698441d3fae04f70a58e6ac898d7af 100755
 --- a/components/crash/content/tools/generate_breakpad_symbols.py
 +++ b/components/crash/content/tools/generate_breakpad_symbols.py
 @@ -207,7 +207,7 @@ def GetSharedLibraryDependenciesMac(binary, exe_path):

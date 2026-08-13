@@ -28,7 +28,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
-#include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/wrappable_pointer_tags.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/node_util.h"
@@ -38,21 +37,22 @@
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkColorSpace.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
-#include "third_party/skia/include/core/SkPixelRef.h"
-#include "ui/base/layout.h"
 #include "ui/base/resource/resource_scale_factor.h"
 #include "ui/base/webui/web_ui_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
 #include "ui/gfx/color_space.h"
+#include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/size.h"
 #include "ui/gfx/image/image_skia.h"
 #include "ui/gfx/image/image_skia_operations.h"
+#include "ui/gfx/image/image_skia_rep.h"
 #include "ui/gfx/image/image_util.h"
 #include "v8/include/cppgc/allocation.h"
 #include "v8/include/v8-cppgc.h"
 
 #if BUILDFLAG(IS_WIN)
+#include "base/files/scoped_temp_dir.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/common/asar/archive.h"
 #include "ui/gfx/win/icon_util.h"
@@ -108,15 +108,34 @@ bool IsTemplateFilename(const base::FilePath& path) {
 #if BUILDFLAG(IS_WIN)
 base::win::ScopedGDIObject<HICON> ReadICOFromPath(int size,
                                                   const base::FilePath& path) {
-  // If file is in asar archive, we extract it to a temp file so LoadImage can
-  // load it.
+  ScopedAllowBlockingForElectron allow_blocking;
+  base::ScopedTempDir temp_dir;
   base::FilePath asar_path, relative_path;
   base::FilePath image_path(path);
   if (asar::GetAsarArchivePath(image_path, &asar_path, &relative_path)) {
     std::shared_ptr<asar::Archive> archive =
         asar::GetOrCreateAsarArchive(asar_path);
-    if (archive)
-      archive->CopyFileOut(relative_path, &image_path);
+    asar::Archive::FileInfo info;
+    if (!archive || !archive->GetFileInfo(relative_path, &info))
+      return {};
+
+    if (info.unpacked) {
+      // Unpacked icons already exist beside the ASAR, so load that real file.
+      if (!archive->CopyFileOut(relative_path, &image_path))
+        return {};
+    } else {
+      // LoadImage needs a real file. Keep this copy scoped so it is deleted
+      // as soon as Windows has created the HICON.
+      std::string contents;
+      if (!asar::ReadFileToString(image_path, &contents) ||
+          !temp_dir.CreateUniqueTempDir()) {
+        return {};
+      }
+
+      image_path = temp_dir.GetPath().Append(FILE_PATH_LITERAL("image.ico"));
+      if (!base::WriteFile(image_path, contents))
+        return {};
+    }
   }
 
   // Load the icon from file.
