@@ -116,7 +116,7 @@ index 0d1d81ec7d6b27891a5135961f4c630df82819df..325d2691357372b31df78781b6e453e2
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 09171e03df2d7d6547db98107f5ad52880915d63..3ab275ba60cbe8688ed1942594a07b82e639c4ba 100644
+index 09171e03df2d7d6547db98107f5ad52880915d63..7fe20ea21858483838324c44c8e1455eb3927bfd 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2566,6 +2566,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
@@ -130,7 +130,7 @@ index 09171e03df2d7d6547db98107f5ad52880915d63..3ab275ba60cbe8688ed1942594a07b82
    bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
                              !old_state->is_in_back_forward_cache;
    bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
-@@ -4240,10 +4244,23 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -4240,10 +4244,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -145,11 +145,9 @@ index 09171e03df2d7d6547db98107f5ad52880915d63..3ab275ba60cbe8688ed1942594a07b82
      bool is_initial_state) {
    DCHECK(GetPage());
 +
-+  if (!scheduler_throttling_allowed_) {
-+    GetPage()->SetVisibilityState(mojom::blink::PageVisibilityState::kVisible, is_initial_state);
-+    GetPage()->GetPageScheduler()->SetPageVisible(true);
-+    return;
-+  }
++  // If backgroundThrottling is disabled, the page is always visible.
++  if (!scheduler_throttling_allowed_)
++    visibility_state = mojom::blink::PageVisibilityState::kVisible;
 +
    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
    // Do not throttle if the page should be painting.
