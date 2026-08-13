@@ -12,10 +12,10 @@ that the new window is created in its own BrowsingInstance (and process).
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 253d0b87abea9818fba84ac7446a86fe474b9dac..6b7ee13cf42dab6e1f1594544f44a5cb8b853f5e 100644
+index e0388836dddd5c50975860fd95612a870b3c2534..7fc00c4193b96f62f0aa36bbfd6ee69cc563c414 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10555,6 +10555,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10562,6 +10562,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -23,7 +23,7 @@ index 253d0b87abea9818fba84ac7446a86fe474b9dac..6b7ee13cf42dab6e1f1594544f44a5cb
            effective_transient_activation_state, params->opener_suppressed,
            &no_javascript_access);
  
-@@ -10565,6 +10566,11 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -10572,6 +10573,11 @@ void RenderFrameHostImpl::CreateNewWindow(
      return;
    }
  
@@ -107,7 +107,7 @@ index 52637f87e7aa996224aa3c0dbb38a733310dbe22..846dffe9a12108180aa9d73e496380f3
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 6b778abfafae316fa163c0ff996e87de335d0ef6..91f2b997c93ed7fedbb815b08a218adbc384c55d 100644
+index 2e429789489a7dc2c1c4a9b4ce3d62666cb11c12..2b9585ba9f60ee5b74a189b949033a70017e1b91 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -202,6 +202,7 @@ class TrustedURLLoaderHeaderClient;
