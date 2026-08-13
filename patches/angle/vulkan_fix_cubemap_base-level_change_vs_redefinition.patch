@@ -153,10 +153,10 @@ index 0abc107affae3744feabfe0cefd618e5a6cee443..748581888416657949b61771959ead7c
  432303915 WIN D3D11 : GLSLTest.VerifyMaxVertexUniformVectors/* = SKIP
  432303915 WIN D3D11 : GLSLTest.VerifyMaxVertexUniformVectorsWithSamplers/* = SKIP
 diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
-index ea78e32538855c8e37dfb1a5e462133a0e2d31cb..7b62b206c6ae9c610392b284b8aa0d7ddb8bfead 100644
+index c624af4b60369b706d3301cec7679faaf99aa995..fa82373d96d061821e0bf95a3e01ad602be85010 100644
 --- a/src/tests/gl_tests/TextureTest.cpp
 +++ b/src/tests/gl_tests/TextureTest.cpp
-@@ -14066,6 +14066,84 @@ TEST_P(TextureCubeTestES3,
+@@ -14407,6 +14407,84 @@ TEST_P(TextureCubeTestES3,
      incompatibleCubeFacesThenSingleFaceCompatibleUploadAndIncompatibleAgain(GL_ALPHA);
  }
  

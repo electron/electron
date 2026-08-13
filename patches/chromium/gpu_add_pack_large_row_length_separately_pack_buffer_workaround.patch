@@ -24,10 +24,10 @@ Reviewed-by: Zhenyao Mo <zmo@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1663552}
 
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index 827d3e6cf6cba404a931d5d43460f8ce7aa9f1b8..6c3a5c0603d2ce6f93772b41f94a02d80e330f8e 100644
+index d2cde67dde467981be80f9356d8af8aead4ef4e3..832feeb90681155b2e3ee65495839aaa7092df1f 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-@@ -11579,6 +11579,13 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
+@@ -11631,6 +11631,13 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
          uint32_t leading_bytes = static_cast<uint32_t>(-x) * group_size;
          UNSAFE_TODO(pixels += leading_bytes);
        }
@@ -41,7 +41,7 @@ index 827d3e6cf6cba404a931d5d43460f8ce7aa9f1b8..6c3a5c0603d2ce6f93772b41f94a02d8
        for (GLint iy = rect.y(); iy < rect.bottom(); ++iy) {
          bool reset_row_length = false;
          if (iy + 1 == max_y && pixels_shm_id == 0 &&
-@@ -11596,6 +11603,9 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
+@@ -11648,6 +11655,9 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
          }
          UNSAFE_TODO(pixels += padded_row_size);
        }
@@ -51,7 +51,7 @@ index 827d3e6cf6cba404a931d5d43460f8ce7aa9f1b8..6c3a5c0603d2ce6f93772b41f94a02d8
      }
    } else {
      if (async && features().use_async_readpixels &&
-@@ -11641,7 +11651,17 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
+@@ -11693,7 +11703,17 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32_t immediate_data_size,
        }
      }
      if (pixels_shm_id == 0 &&
@@ -223,14 +223,13 @@ index 73855bd805641fd237bc8100fc1896234ef6f8bf..604272f6ae78d4e71ec3e333d1ceb26f
 +
  }  // namespace gpu
 diff --git a/gpu/config/gpu_driver_bug_list.json b/gpu/config/gpu_driver_bug_list.json
-index bf3b843470edc4039da07e6478a17b96ea0a8b68..bc7c66a9a918f1ab86eadce2afae262a5afa9126 100644
+index ee9f1835ff8d42b5a295cbabc9df1ba5d45a7717..84c9a8d22e982675dc5f2bd70788427f079b5c86 100644
 --- a/gpu/config/gpu_driver_bug_list.json
 +++ b/gpu/config/gpu_driver_bug_list.json
-@@ -3852,6 +3852,15 @@
-       "features": [
+@@ -3853,6 +3853,15 @@
          "reattach_fbo_depth_stencil_on_reallocation"
        ]
-+    },
+     },
 +    {
 +      "id": 484,
 +      "cr_bugs": [529867799],
@@ -239,14 +238,15 @@ index bf3b843470edc4039da07e6478a17b96ea0a8b68..bc7c66a9a918f1ab86eadce2afae262a
 +      "features": [
 +        "pack_large_row_length_separately_pack_buffer"
 +      ]
-     }
-   ]
- }
++    },
+     {
+       "id": 486,
+       "cr_bugs": [534903095],
 diff --git a/gpu/config/gpu_workaround_list.txt b/gpu/config/gpu_workaround_list.txt
-index eabd15522ea122deaa02a90cebf8340621c5141b..095a212161ab5cdc5e5d9e48da469d0a4b64fdb1 100644
+index b054fffbfecddf540c4fcb473a4cd5457e92f20e..28e3cac4c0769cb38aac8ab4ea38b080ea606c06 100644
 --- a/gpu/config/gpu_workaround_list.txt
 +++ b/gpu/config/gpu_workaround_list.txt
-@@ -106,6 +106,7 @@ msaa_is_slow
+@@ -107,6 +107,7 @@ msaa_is_slow
  msaa_is_slow_2
  multisample_renderbuffer_resize_emulation
  no_downscaled_overlay_promotion

@@ -28,10 +28,10 @@ Reviewed-by: Thomas Smith <thomsmit@google.com>
 Commit-Queue: Greg Daniel <egdaniel@google.com>
 
 diff --git a/src/gpu/ganesh/GrDrawingManager.cpp b/src/gpu/ganesh/GrDrawingManager.cpp
-index 28a50ae4626b7d1e019793a9e14b9738c31bfb0d..0a9c4f145602621923f2f00890fd8fd25c9ee653 100644
+index 6aa1644e2ad3e3684ca130f90c5b4d298a904e2c..1e1967d9dfbcae7f02ba47432eddde7a0fe01c41 100644
 --- a/src/gpu/ganesh/GrDrawingManager.cpp
 +++ b/src/gpu/ganesh/GrDrawingManager.cpp
-@@ -507,8 +507,9 @@ static void resolve_and_mipmap(GrGpu* gpu, GrSurfaceProxy* proxy) {
+@@ -509,8 +509,9 @@ static void resolve_and_mipmap(GrGpu* gpu, GrSurfaceProxy* proxy) {
      if (auto* textureProxy = proxy->asTextureProxy()) {
          if (textureProxy->mipmapsAreDirty()) {
              SkASSERT(textureProxy->peekTexture());
@@ -126,7 +126,7 @@ index 04aa4d10671cecf6bdd9135cc9785001d959393d..7d56470d8f2f7e6fa4fea9626185a61f
      const char* name() const final { return "TextureResolve"; }
  #endif
 diff --git a/tests/GrSurfaceResolveTest.cpp b/tests/GrSurfaceResolveTest.cpp
-index e72fd3007a68b4f9f021f3d74e8e6f7ef8a44c30..00d07ba7695e625262643355e8596617d77f7ecb 100644
+index 95b198a466a9adb938d18b9e468f5fcbf72e54b1..41fa9780a5463ea022d1718f24c98b314730165a 100644
 --- a/tests/GrSurfaceResolveTest.cpp
 +++ b/tests/GrSurfaceResolveTest.cpp
 @@ -21,18 +21,23 @@
@@ -153,9 +153,9 @@ index e72fd3007a68b4f9f021f3d74e8e6f7ef8a44c30..00d07ba7695e625262643355e8596617
  #include "src/gpu/ganesh/GrSamplerState.h"
  #include "src/gpu/ganesh/GrSurfaceProxy.h"
  #include "src/gpu/ganesh/GrSurfaceProxyView.h"
-@@ -356,3 +361,154 @@ DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(NonmippedDrawBeforeMippedDraw,
-         }
-     }
+@@ -478,3 +483,154 @@ DEF_GANESH_TEST_FOR_RENDERING_CONTEXTS(SurfaceResolveAfterFailedFlush,
+                     "Invalid resolve after a failed flush: expected 0x%x, actual 0x%x",
+                     kBaseline, pixel);
  }
 +
 +namespace {

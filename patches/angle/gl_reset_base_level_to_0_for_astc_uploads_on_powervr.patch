@@ -22,10 +22,10 @@ Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
 Reviewed-by: Geoff Lang <geofflang@chromium.org>
 
 diff --git a/include/platform/autogen/FeaturesGL_autogen.h b/include/platform/autogen/FeaturesGL_autogen.h
-index 70f97545d81862773e922568b7eca43227115560..6b2a39a3cc958bc264bff9fffb960f2ccf73b702 100644
+index 81c3ed9224aebf6c6ff9573742a24fedad169eb7..de7fd5cf152cb729a51037e8b43bc20ce949a7c2 100644
 --- a/include/platform/autogen/FeaturesGL_autogen.h
 +++ b/include/platform/autogen/FeaturesGL_autogen.h
-@@ -242,6 +242,12 @@ struct FeaturesGL : FeatureSetBase
+@@ -248,6 +248,12 @@ struct FeaturesGL : FeatureSetBase
          &members,
      };
  
@@ -39,12 +39,12 @@ index 70f97545d81862773e922568b7eca43227115560..6b2a39a3cc958bc264bff9fffb960f2c
          "limitMax3dArrayTextureSizeTo1024",
          FeatureCategory::OpenGLWorkarounds,
 diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
-index 8e6b5ada1624545d05ff34defbe60463ddd001da..ea11e81693bc38b4452d9334a03db9b47d540d86 100644
+index 940db0db5105e9ed2dce935ac567d1e5ec95a25c..7c6362dca18417f789a8750eb488adaf5ad3daaf 100644
 --- a/include/platform/gl_features.json
 +++ b/include/platform/gl_features.json
-@@ -291,6 +291,15 @@
+@@ -300,6 +300,15 @@
              ],
-             "issue": "https://crbug.com/705865"
+             "issue": "https://crbug.com/528131119"
          },
 +        {
 +            "name": "reset_base_level_for_ASTC_sub_image",
@@ -59,10 +59,10 @@ index 8e6b5ada1624545d05ff34defbe60463ddd001da..ea11e81693bc38b4452d9334a03db9b4
              "name": "limit_max_3d_array_texture_size_to_1024",
              "category": "Workarounds",
 diff --git a/src/libANGLE/renderer/gl/TextureGL.cpp b/src/libANGLE/renderer/gl/TextureGL.cpp
-index 93c6854644e14d25d17ad0d121fa0f3420d84508..6f25ad13db924a3c5cc78367946444b6d2e717f6 100644
+index 0c168999911befcdf0d12ce9ed7c8d65e5484ddc..0f50a2626f642b4b0a476fcdf867339b4d58d373 100644
 --- a/src/libANGLE/renderer/gl/TextureGL.cpp
 +++ b/src/libANGLE/renderer/gl/TextureGL.cpp
-@@ -670,6 +670,13 @@ angle::Result TextureGL::setCompressedSubImage(const gl::Context *context,
+@@ -681,6 +681,13 @@ angle::Result TextureGL::setCompressedSubImage(const gl::Context *context,
  
      stateManager->bindTexture(getType(), mTextureID);
      ANGLE_TRY(stateManager->setPixelUnpackState(context, unpack));
@@ -77,23 +77,24 @@ index 93c6854644e14d25d17ad0d121fa0f3420d84508..6f25ad13db924a3c5cc78367946444b6
      {
          ASSERT(area.z == 0 && area.depth == 1);
 diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-index 5e61a84c2e1e125d214e3d46d84f783745c5fb15..9f6f9733f6ab7dedd0d175e89d218991fe5781dc 100644
+index 5f66c0bf8625a528a871fdd0599ac0d03b15c7c9..d64c3b223f82eede8409267961b5538200e89ced 100644
 --- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
 +++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
-@@ -2436,6 +2436,8 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
-     ANGLE_FEATURE_CONDITION(features, resetTexImage2DBaseLevel,
-                             IsApple() && isIntel && GetMacOSVersion() >= OSVersion(10, 12, 4));
+@@ -2438,6 +2438,9 @@ void InitializeFeatures(const FunctionsGL *functions, angle::FeaturesGL *feature
  
+     ANGLE_FEATURE_CONDITION(features, recreateImmutableTextureOnBaseLevelIncrease,
+                             IsPowerVR(vendor));
++
 +    ANGLE_FEATURE_CONDITION(features, resetBaseLevelForASTCSubImage, IsPowerVR(vendor));
 +
      ANGLE_FEATURE_CONDITION(features, adjustSrcDstRegionForBlitFramebuffer,
                              IsLinux() || (IsAndroid() && isNvidia) || (IsWindows() && isNvidia) ||
                                  (IsApple() && functions->standard == STANDARD_GL_ES));
 diff --git a/src/tests/gl_tests/TextureTest.cpp b/src/tests/gl_tests/TextureTest.cpp
-index 7b62b206c6ae9c610392b284b8aa0d7ddb8bfead..a642abc135e5abf5f7a28df578ebf2c1809b8438 100644
+index fa82373d96d061821e0bf95a3e01ad602be85010..7c381d5077ca64b59cd9dc39210d0e672dfb0304 100644
 --- a/src/tests/gl_tests/TextureTest.cpp
 +++ b/src/tests/gl_tests/TextureTest.cpp
-@@ -9916,6 +9916,114 @@ TEST_P(Texture2DTestES3, ASTCDecodeModeDrawTexture)
+@@ -10257,6 +10257,114 @@ TEST_P(Texture2DTestES3, ASTCDecodeModeDrawTexture)
      }
  }
  
@@ -209,10 +210,10 @@ index 7b62b206c6ae9c610392b284b8aa0d7ddb8bfead..a642abc135e5abf5f7a28df578ebf2c1
  TEST_P(Texture2DTestES3, ASTCDecodeModeSwitch)
  {
 diff --git a/util/autogen/angle_features_autogen.cpp b/util/autogen/angle_features_autogen.cpp
-index e809fe16d1db5b0bd2cf65e1cd449f5fb94020c5..143caf54ae5961d73b50af7bed73b763609cfe1b 100644
+index 999795142756e6a557d96161d5f09c2507c9e79d..7706958a3c191b0fad8a3aff9715b05b19fbc661 100644
 --- a/util/autogen/angle_features_autogen.cpp
 +++ b/util/autogen/angle_features_autogen.cpp
-@@ -285,6 +285,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
+@@ -286,6 +286,7 @@ constexpr PackedEnumMap<Feature, const char *> kFeatureNames = {{
      {Feature::RemoveInvariantAndCentroidForESSL3, "removeInvariantAndCentroidForESSL3"},
      {Feature::RequireGpuFamily2, "requireGpuFamily2"},
      {Feature::RescopeGlobalVariables, "rescopeGlobalVariables"},
@@ -221,10 +222,10 @@ index e809fe16d1db5b0bd2cf65e1cd449f5fb94020c5..143caf54ae5961d73b50af7bed73b763
      {Feature::ResetTexImage2DBaseLevel, "resetTexImage2DBaseLevel"},
      {Feature::ResyncDepthRangeOnClipControl, "resyncDepthRangeOnClipControl"},
 diff --git a/util/autogen/angle_features_autogen.h b/util/autogen/angle_features_autogen.h
-index b24a4810faa89d6920d5a6b783441efe6fdfc152..6c79ce8fbfe9b539ede7407f458b6e83112027dd 100644
+index d2d600fab40906b20aefb662dd6cdd7fd44cc277..1c6bf4a062228fea78ed0cf23cc8622e1d6d1901 100644
 --- a/util/autogen/angle_features_autogen.h
 +++ b/util/autogen/angle_features_autogen.h
-@@ -285,6 +285,7 @@ enum class Feature
+@@ -286,6 +286,7 @@ enum class Feature
      RemoveInvariantAndCentroidForESSL3,
      RequireGpuFamily2,
      RescopeGlobalVariables,

@@ -152,11 +152,11 @@ index 4ff9737a6bc8d226f427f4fd5d9cfd8fecf7d617..f67f1e9dfc6e1ab6b8a764decc8fcee3
        "windows/mf_video_processor_accelerator_unittest.cc",
        "windows/scoped_d3d_buffers_unittest.cc",
 diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
-index 82034a756afcd3a91150b3aa141a1f00076e1dc8..27e105c47b21853a1c0c3e995e933b81779150bc 100644
+index f5c16e2ed4a5b55db56fdb1f2d4508d28a0a3096..65bd05a4c585583e1236ed2ee4aa3c04b513b37b 100644
 --- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
 +++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.cc
-@@ -344,6 +344,18 @@ MediaFoundationVideoEncodeAccelerator::
-   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+@@ -345,6 +345,18 @@ MediaFoundationVideoEncodeAccelerator::
+   pending_input_queue_.clear();
  }
  
 +void MediaFoundationVideoEncodeAccelerator::InitializeForTesting(
@@ -174,7 +174,7 @@ index 82034a756afcd3a91150b3aa141a1f00076e1dc8..27e105c47b21853a1c0c3e995e933b81
  VideoEncodeAccelerator::SupportedProfiles
  MediaFoundationVideoEncodeAccelerator::GetSupportedProfiles() {
    TRACE_EVENT0("gpu,startup",
-@@ -441,8 +453,9 @@ EncoderStatus MediaFoundationVideoEncodeAccelerator::Initialize(
+@@ -442,8 +454,9 @@ EncoderStatus MediaFoundationVideoEncodeAccelerator::Initialize(
    gop_length_ = config.gop_length.value_or(kDefaultGOPLength);
    low_latency_mode_ = config.require_low_delay;
  
@@ -185,7 +185,7 @@ index 82034a756afcd3a91150b3aa141a1f00076e1dc8..27e105c47b21853a1c0c3e995e933b81
  
    input_since_keyframe_count_ = 0;
    zero_layer_counter_ = 0;
-@@ -803,6 +816,22 @@ void MediaFoundationVideoEncodeAccelerator::QueueInput(
+@@ -804,6 +817,22 @@ void MediaFoundationVideoEncodeAccelerator::QueueInput(
      scoped_refptr<media::VideoFrame> frame,
      const VideoEncoder::EncodeOptions& options,
      bool discard_output) {
@@ -209,7 +209,7 @@ index 82034a756afcd3a91150b3aa141a1f00076e1dc8..27e105c47b21853a1c0c3e995e933b81
    auto hr = MFCreateSample(&result.input_sample);
    if (FAILED(hr)) {
 diff --git a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
-index 746b4cd68f847544ed75ec37fb6e1ee7e71f8cf7..c12661ef35152d0156b7e17599e77864cf769ea1 100644
+index 3e0cc7ab16dbcaf60d4d3f8b34833ee8c9d77f6b..25c96c87030aabb3d2ec915ba3c2a92ef5117c5c 100644
 --- a/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
 +++ b/media/gpu/windows/media_foundation_video_encode_accelerator_win.h
 @@ -109,6 +109,12 @@ class MEDIA_GPU_EXPORT MediaFoundationVideoEncodeAccelerator

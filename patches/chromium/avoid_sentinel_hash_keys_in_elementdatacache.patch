@@ -205,23 +205,3 @@ index 0000000000000000000000000000000000000000..15f4b671819b7d239447aa4f822b674e
 +
 +}  // namespace
 +}  // namespace blink
-diff --git a/third_party/blink/renderer/platform/wtf/hash_traits.h b/third_party/blink/renderer/platform/wtf/hash_traits.h
-index 9c54faa0de475d12d3f8b220a5aede1599fd1c49..eeda8d2a0791249a03883c5b4d600ffe84d3f10b 100644
---- a/third_party/blink/renderer/platform/wtf/hash_traits.h
-+++ b/third_party/blink/renderer/platform/wtf/hash_traits.h
-@@ -389,6 +389,15 @@ struct GenericHashTraits<std::unique_ptr<T>>
- template <typename T>
- struct HashTraits : GenericHashTraits<T> {};
- 
-+// Helper to avoid HashTraits<unsigned> sentinel values (0 and 0xFFFFFFFF)
-+// by turning them into 1.
-+constexpr unsigned EnsureValidHash(unsigned hash) {
-+  return (hash == HashTraits<unsigned>::EmptyValue() ||
-+          hash == HashTraits<unsigned>::DeletedValue())
-+             ? 1
-+             : hash;
-+}
-+
- // This hash traits type requires the following methods in class T, unless
- // the corresponding hash traits method is overridden:
- //   // Computes the hash code, for GetHash().
