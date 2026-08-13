@@ -456,6 +456,17 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
+  if (reason.empty()) {
+    promise.RejectWithErrorMessage("reason must be non-empty");
+    return handle;
+  }
+
+  NSString* localized_reason = base::SysUTF8ToNSString(reason);
+  if (!localized_reason) {
+    promise.RejectWithErrorMessage("reason must be valid UTF-8");
+    return handle;
+  }
+
   LAContext* context = [[LAContext alloc] init];
   base::apple::ScopedCFTypeRef<SecAccessControlRef> access_control =
       base::apple::ScopedCFTypeRef<SecAccessControlRef>(
@@ -471,12 +482,12 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
   [context
       evaluateAccessControl:access_control.get()
                   operation:LAAccessControlOperationUseKeySign
-            localizedReason:[NSString stringWithUTF8String:reason.c_str()]
+            localizedReason:localized_reason
                       reply:^(BOOL success, NSError* error) {
                         // NOLINTBEGIN(bugprone-use-after-move)
                         if (!success) {
-                          std::string err_msg = std::string(
-                              [error.localizedDescription UTF8String]);
+                          std::string err_msg = base::SysNSStringToUTF8(
+                              error.localizedDescription);
                           runner->PostTask(
                               FROM_HERE,
                               base::BindOnce(

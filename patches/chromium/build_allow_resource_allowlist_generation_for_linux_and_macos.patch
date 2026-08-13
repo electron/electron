@@ -27,7 +27,7 @@ with two gaps:
   embed their members' contents, so the raw scan finds the markers.
 
 diff --git a/build/toolchain/apple/linker_driver.py b/build/toolchain/apple/linker_driver.py
-index e5163d91889f0c2565fb4e16c38f400720643184..09a9c76ea216073f073547caa5fcce4e1fa913c0 100755
+index 95afea74f361c4c9ef831edb1326b1a0ffba21c6..ca5a46468794c90caa0a4af8e59a2e9a931f81c2 100755
 --- a/build/toolchain/apple/linker_driver.py
 +++ b/build/toolchain/apple/linker_driver.py
 @@ -7,6 +7,7 @@
@@ -51,11 +51,11 @@ index e5163d91889f0c2565fb4e16c38f400720643184..09a9c76ea216073f073547caa5fcce4e
 +#    extract the resource allowlist from the link inputs without paying for
 +#    a link. Mirrors the flag of the same name in gcc_solink_wrapper.py.
  
+ 
  class LinkerDriver(object):
-     def __init__(self, args):
-@@ -175,6 +184,14 @@ class LinkerDriver(object):
-             raise ValueError(
-                 'Could not find path to linker output (-o or --output)')
+@@ -179,6 +188,14 @@ class LinkerDriver(object):
+                 'Could not find path to linker output (-o or --output)'
+             )
  
 +        # Instead of linking, record all inputs to the output file. This is
 +        # used by enable_resource_allowlist_generation in order to avoid
@@ -68,9 +68,9 @@ index e5163d91889f0c2565fb4e16c38f400720643184..09a9c76ea216073f073547caa5fcce4e
          # We want to link rlibs as --whole-archive if they are part of a unit
          # test target. This is determined by switch
          # `-LinkWrapper,add-whole-archive`.
-@@ -267,6 +284,59 @@ class LinkerDriver(object):
+@@ -275,6 +292,59 @@ class LinkerDriver(object):
          if not found:
-             raise ValueError('Unknown linker driver argument: %s' % (arg, ))
+             raise ValueError('Unknown linker driver argument: %s' % (arg,))
  
 +    def _collect_inputs_only(self):
 +        """Records the linker command's input files (object files and static
@@ -128,7 +128,7 @@ index e5163d91889f0c2565fb4e16c38f400720643184..09a9c76ea216073f073547caa5fcce4e
      def prepare_object_path_lto(self, arg):
          """Linker driver pre-action for -Wcrl,object_path_lto.
  
-@@ -549,6 +619,27 @@ def _remove_path(path):
+@@ -563,6 +633,27 @@ def _remove_path(path):
              os.unlink(path)
  
  

@@ -162,10 +162,10 @@ index f4ebbefe2590a610e3c505dfc78ce0c409731d40..fbaf1fd9431c1acb41320fa620bd6e92
  
    // The display of the opener window, cached during
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index ee24c117427603da970ff66e52f1b982f3603a9c..443df1a2c044bf8e1ad280e695d26c7ba8e8459f 100644
+index fe1fa0df448bf9011a1a6439768cd75b3d9f2763..da1db8a5f527fa1b2636cd5c06b863b7e0495061 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -413,11 +413,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -417,11 +417,13 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
  
  #endif  // BUILDFLAG(IS_WIN)
  

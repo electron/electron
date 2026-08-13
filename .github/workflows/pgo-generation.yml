@@ -262,7 +262,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: [checkout-windows, build-siso-windows]
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
       target-platform: win
       target-arch: x64
       is-release: false
@@ -281,7 +281,7 @@ jobs:
     uses: ./.github/workflows/pipeline-segment-electron-build.yml
     needs: [checkout-windows, build-siso-windows]
     with:
-      build-runs-on: electron-arc-centralus-windows-amd64-16core
+      build-runs-on: garm-windows-x64-32core
       target-platform: win
       target-arch: arm64
       is-release: false
@@ -592,7 +592,7 @@ jobs:
         name: pgo-v8-builtins-profiles
         path: profiles
     - name: Azure Login
-      uses: azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43
+      uses: azure/login@f5d393ae46f8fde4be8b75f32e3fc50e654ad0ca
       with:
         client-id: ${{ secrets.AZURE_OIDC_CLIENT_ID }}
         tenant-id: ${{ secrets.AZURE_OIDC_TENANT_ID }}

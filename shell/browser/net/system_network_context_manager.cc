@@ -20,6 +20,7 @@
 #include "electron/fuses.h"
 #include "mojo/public/cpp/bindings/pending_receiver.h"
 #include "net/dns/public/dns_over_https_config.h"
+#include "net/dns/public/insecure_dns_mode.h"
 #include "net/dns/public/util.h"
 #include "net/net_buildflags.h"
 #include "services/cert_verifier/public/mojom/cert_verifier_service_factory.mojom.h"
@@ -263,11 +264,12 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
   // Configure the stub resolver. This must be done after the system
   // NetworkContext is created, but before anything has the chance to use it.
   content::GetNetworkService()->ConfigureStubHostResolver(
-      base::FeatureList::IsEnabled(net::features::kAsyncDns),
+      base::FeatureList::IsEnabled(net::features::kAsyncDns)
+          ? net::InsecureDnsMode::kEnabledBuiltIn
+          : net::InsecureDnsMode::kDisabled,
       base::FeatureList::IsEnabled(net::features::kHappyEyeballsV3),
       default_secure_dns_mode, doh_config, additional_dns_query_types_enabled,
-      {} /*fallback_doh_nameservers*/,
-      false /*insecure_dns_via_platform_apis_enabled*/);
+      {} /*fallback_doh_nameservers*/);
 }
 
 network::mojom::NetworkContextParamsPtr

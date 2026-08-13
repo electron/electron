@@ -22,10 +22,10 @@ This patch can be removed once the upstream fix
 (llvm/llvm-project#201066) ships in the bundled clang.
 
 diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
-index 01943b9ddb80c3de2a830d453bf882fe868dbebc..c9362cc679e515387e16d4134b5fdd39269b7aad 100644
+index 7e870dbce55ac0968d51b65157509a37b581e4cf..c5a254de74de2249a805c063ae49da102840d3a6 100644
 --- a/build/config/compiler/BUILD.gn
 +++ b/build/config/compiler/BUILD.gn
-@@ -794,6 +794,16 @@ config("compiler") {
+@@ -796,6 +796,16 @@ config("compiler") {
        }
      }
  
