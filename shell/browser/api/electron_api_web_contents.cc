@@ -2536,14 +2536,16 @@ void WebContents::DidFinishNavigation(
         return event_object;
       };
 
-      EmitWithoutEvent("did-frame-navigate", make_event(), url,
+      // The positional arguments are deprecated. web-contents.ts re-emits
+      // these as the public events and warns when a listener uses them.
+      EmitWithoutEvent("-did-frame-navigate", make_event(), url,
                        http_response_code, http_status_text, is_main_frame,
                        frame_process_id, frame_routing_id);
       if (is_main_frame) {
         // Ensure zoom is updated before JS handlers see the event.
         if (auto* zc = GetZoomController())
           zc->ProcessNavigationZoom(navigation_handle);
-        EmitWithoutEvent("did-navigate", make_event(), url, http_response_code,
+        EmitWithoutEvent("-did-navigate", make_event(), url, http_response_code,
                          http_status_text);
       }
     }

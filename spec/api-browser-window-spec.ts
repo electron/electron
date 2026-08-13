@@ -11,7 +11,6 @@ import {
   protocol,
   screen,
   webContents,
-  webFrameMain,
   session,
   systemPreferences,
   WebContents,
@@ -890,31 +889,27 @@ describe('BrowserWindow module', () => {
 
         it('can be prevented when navigating subframe', (done) => {
           let willNavigate = false;
-          w.webContents.on(
-            'did-frame-navigate',
-            (_event, _url, _httpResponseCode, _httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
-              if (isMainFrame) return;
+          w.webContents.on('did-frame-navigate', ({ isMainFrame, frame }) => {
+            if (isMainFrame) return;
+            expect(frame).to.not.be.null();
 
-              w.webContents.once('will-frame-navigate', (e) => {
-                willNavigate = true;
-                e.preventDefault();
-              });
+            w.webContents.once('will-frame-navigate', (e) => {
+              willNavigate = true;
+              e.preventDefault();
+            });
 
-              w.webContents.on('did-stop-loading', () => {
-                const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-                expect(frame).to.not.be.undefined();
-                if (willNavigate) {
-                  // i.e. it shouldn't have had '?navigated' appended to it.
-                  try {
-                    expect(frame!.url.endsWith('/navigate-iframe-immediately')).to.be.true();
-                    done();
-                  } catch (e) {
-                    done(e);
-                  }
+            w.webContents.on('did-stop-loading', () => {
+              if (willNavigate) {
+                // i.e. it shouldn't have had '?navigated' appended to it.
+                try {
+                  expect(frame!.url.endsWith('/navigate-iframe-immediately')).to.be.true();
+                  done();
+                } catch (e) {
+                  done(e);
                 }
-              });
-            }
-          );
+              }
+            });
+          });
           w.loadURL(
             `data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe-immediately"></iframe>`
           );

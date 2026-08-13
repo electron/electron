@@ -503,6 +503,14 @@ const consoleMessageDeprecated = deprecate.warnOnceMessage(
   "'console-message' arguments are deprecated and will be removed. Please use Event<WebContentsConsoleMessageEventParams> object instead."
 );
 
+const didNavigateDeprecated = deprecate.warnOnceMessage(
+  "'did-navigate' arguments are deprecated and will be removed. Please use Event<WebContentsDidNavigateEventParams> object instead."
+);
+
+const didFrameNavigateDeprecated = deprecate.warnOnceMessage(
+  "'did-frame-navigate' arguments are deprecated and will be removed. Please use Event<WebContentsDidFrameNavigateEventParams> object instead."
+);
+
 // Add JavaScript wrappers for WebContents class.
 WebContents.prototype._init = function () {
   const prefs = this.getLastWebPreferences() || {};
@@ -846,6 +854,27 @@ WebContents.prototype._init = function () {
     }
     this.emit('console-message', event, (event as any)._level, event.message, event.lineNumber, event.sourceId);
   });
+
+  // TODO(issacgerges): remove deprecated 'did-navigate' and 'did-frame-navigate' arguments
+  this.on(
+    '-did-navigate' as any,
+    (event: Electron.Event<Electron.WebContentsDidNavigateEventParams>, ...args: any[]) => {
+      if (this.listeners('did-navigate').some((listener) => listener.length > 1)) {
+        didNavigateDeprecated();
+      }
+      this.emit('did-navigate', event, ...args);
+    }
+  );
+
+  this.on(
+    '-did-frame-navigate' as any,
+    (event: Electron.Event<Electron.WebContentsDidFrameNavigateEventParams>, ...args: any[]) => {
+      if (this.listeners('did-frame-navigate').some((listener) => listener.length > 1)) {
+        didFrameNavigateDeprecated();
+      }
+      this.emit('did-frame-navigate', event, ...args);
+    }
+  );
 
   this.on('-unresponsive' as any, (event: Electron.Event<any>) => {
     const shouldEmit = !event.shouldIgnore && event.visible && event.rendererInitialized;
