@@ -7,7 +7,7 @@ V8 changed v8::External::New and v8::External::Value to require
 an ExternalPointerTypeTag parameter.
 
 diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
-index 5cb6d98406ada00186289cc471726fa2a5ae711d..a6dc3b5864d0e98fa604e12f1c132c8089d1efe8 100644
+index 6e4ff1d34f65ed82454f5aed34eeb4feae99e8d8..f341221fbd55708a496c07a7fd4c7d97fa9694fb 100644
 --- a/nan_callbacks_12_inl.h
 +++ b/nan_callbacks_12_inl.h
 @@ -215,7 +215,7 @@ void FunctionCallbackWrapper(const v8::FunctionCallbackInfo<v8::Value> &info) {
