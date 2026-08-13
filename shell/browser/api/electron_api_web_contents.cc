@@ -3609,6 +3609,7 @@ void WebContents::DidFinishNavigation(
         return event_object;
       };
 
+      // TODO(issacgerges): remove the deprecated positional arguments.
       EmitWithoutEvent("did-frame-navigate", make_event(), url,
                        http_response_code, http_status_text, is_main_frame,
                        frame_process_id, frame_routing_id);
