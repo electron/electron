@@ -39,7 +39,7 @@ index 57a9f0227b847f608a2a90de3491323f23c844f4..b6341ff8dc1e26dfcffa3a5110e4b556
    // event before sending it to the renderer. See enum for details on return
    // value.
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index b57b208f9fa6b3219c6d7aac4673d2d58bea3195..10909c6c4ac8e26abdcc411abd4adc34062dc75b 100644
+index c4cc713dc414007e309234b09274b59dc86781af..193b6c317588d3f20fab9d828d2d955de87e46ba 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -1630,6 +1630,10 @@ void RenderWidgetHostImpl::ForwardMouseEventWithLatencyInfo(
@@ -71,7 +71,7 @@ index d383754f12b0073d19e64fbd1e645dd0979977bd..a339c3894049061ee7d6cb8e379160df
                                            const gfx::PointF& client_pt) {
    if (delegate_) {
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 142138017810a5b02264e0cf6ea3cd05d2dbaa16..02e522ea6e996a74133cd8479a8e661ee7b92853 100644
+index 98a2740d8933d9e55c202a419a228cb500186da9..5183c445b4f1eab5a1811e52009c9cb6e2846a74 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
 @@ -1160,6 +1160,7 @@ class CONTENT_EXPORT WebContentsImpl

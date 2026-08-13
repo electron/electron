@@ -206,7 +206,7 @@ index 5e7a66aafbbe6c388ac0ec780ef1eb0994bb3976..7d1cba20bc810f841519802339e91f5f
    if (!WriteToSocket(socket.fd(), to_send)) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index b60a546b39b0fe2747e5bbe5716b693b7ffe09bd..edc9b6b7942420dd83b3362bd41b30f1b3d04830 100644
+index 53fdcaf36552091e0b03297ee0d524b729cf8324..59dd345b19c7c812919c211b76aceec1bf067f8e 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -9,6 +9,7 @@
@@ -276,7 +276,7 @@ index b60a546b39b0fe2747e5bbe5716b693b7ffe09bd..edc9b6b7942420dd83b3362bd41b30f1
    return true;
  }
  
-@@ -340,9 +363,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -342,9 +365,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -288,7 +288,7 @@ index b60a546b39b0fe2747e5bbe5716b693b7ffe09bd..edc9b6b7942420dd83b3362bd41b30f1
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -366,7 +391,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -368,7 +393,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  
