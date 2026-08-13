@@ -2,6 +2,7 @@
 # Use of this source code is governed by the MIT license that can be
 # found in the LICENSE file.
 
+import("//build/config/features.gni")
 import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
@@ -251,6 +252,18 @@ static_library("chrome") {
       "//components/dbus",
       "//ui/linux:dark_mode_manager",
     ]
+    if (use_aura && use_dbus) {
+      sources += [
+        "//chrome/browser/ui/views/eye_dropper/eye_dropper_portal.cc",
+        "//chrome/browser/ui/views/eye_dropper/eye_dropper_portal.h",
+      ]
+      deps += [
+        "//build/config/linux/dbus:buildflags",
+        "//dbus",
+        "//ui/aura",
+        "//ui/linux:linux_ui",
+      ]
+    }
   }
 
   if (is_win) {

@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "base/message_loop/message_pump_apple.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "base/uuid.h"
@@ -266,8 +265,6 @@
   }
 
   if (menuController_ && ![menuController_ isMenuOpen]) {
-    // Ensure the UI can update while the menu is fading out.
-    base::ScopedPumpMessagesInPrivateModes pump_private;
     [[statusItem_ button] performClick:self];
   }
 }

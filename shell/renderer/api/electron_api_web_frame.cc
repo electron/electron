@@ -171,8 +171,8 @@ class ScriptExecutionCallback {
       v8::Local<v8::Context> source_context =
           result->GetCreationContextChecked(isolate);
       maybe_result = PassValueToOtherContext(
-          isolate, source_context, promise_.isolate(), promise_.GetContext(),
-          result, source_context->Global(), false, BridgeErrorTarget::kSource);
+          isolate, source_context, promise_.GetContext(), result,
+          source_context->Global(), false, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }

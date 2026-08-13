@@ -81,7 +81,6 @@
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/object_template_builder.h"
-#include "gin/wrappable.h"
 #include "media/base/mime_util.h"
 #include "mojo/public/cpp/base/big_buffer.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
@@ -4212,7 +4211,7 @@ content::RenderFrameHost* WebContents::FocusedFrame() {
 
 void WebContents::NotifyUserActivation() {
   content::RenderFrameHost* frame = web_contents()->GetPrimaryMainFrame();
-  if (frame)
+  if (frame && frame->IsRenderFrameLive())
     frame->NotifyUserActivation(
         blink::mojom::UserActivationNotificationType::kInteraction);
 }

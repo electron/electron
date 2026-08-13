@@ -61,7 +61,7 @@ index 78aa9d6bfbb55f6b66faa572ea289fefc3ead74a..a1dc6a14c2594c19095bf2454a9eafd7
  
  // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index 492a0822181aebbede38f7783a457b820ce4f8d1..878e5245266cfd4ea96bdbf8ca20c7ae0ac9a80e 100644
+index 040af949c4a11827bb63748ce25778c3fc978bd5..40a1157726193a079c826493e4a0600599834cce 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
 @@ -65,6 +65,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -87,7 +87,7 @@ index 492a0822181aebbede38f7783a457b820ce4f8d1..878e5245266cfd4ea96bdbf8ca20c7ae
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index 6414b5b306d48da66c216683c68af1627330eba4..5bde1851fb5914ddb7a580a63405cc61ca25a9da 100644
+index 185e4ade1261083eeb1546077447dcca7d96fd0b..6d61fe95a388b6abec2edafe060ba53730d4b3cd 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -107,7 +107,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -113,7 +113,7 @@ index 6414b5b306d48da66c216683c68af1627330eba4..5bde1851fb5914ddb7a580a63405cc61
  }
  
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index 34b4e7c1b449312e9cb517be192a39a6b5286e3c..4f39415717f423b9a87f83779851e08bf5481b8c 100644
+index a8221428815c0a1c5268d7c598b8d54a5b0d5010..f61772869063ae3223c651e37d16c93a7cb0e005 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
 @@ -26,6 +26,8 @@
@@ -166,6 +166,70 @@ index 34b4e7c1b449312e9cb517be192a39a6b5286e3c..4f39415717f423b9a87f83779851e08b
          base::BindOnce(&ChildProcessLauncherHelper::
                             FinishStartSandboxedProcessOnLauncherThread,
                         this));
+diff --git a/content/browser/sandboxed_process_launcher_delegate.cc b/content/browser/sandboxed_process_launcher_delegate.cc
+index 1d7706bf0525c24bd5fc87021e980370d43320a7..dedf61981c2a7749b34b18a9b75d4d9fc2170da3 100644
+--- a/content/browser/sandboxed_process_launcher_delegate.cc
++++ b/content/browser/sandboxed_process_launcher_delegate.cc
+@@ -87,11 +87,23 @@ ZygoteCommunication* SandboxedProcessLauncherDelegate::GetZygote() {
+ }
+ #endif  // BUILDFLAG(USE_ZYGOTE)
+ 
+-#if BUILDFLAG(IS_POSIX)
+ base::EnvironmentMap SandboxedProcessLauncherDelegate::GetEnvironment() {
+   return base::EnvironmentMap();
+ }
+-#endif  // BUILDFLAG(IS_POSIX)
++
++bool SandboxedProcessLauncherDelegate::ShouldInheritEnvironment() {
++  return true;
++}
++
++base::FilePath SandboxedProcessLauncherDelegate::GetCurrentDirectory() {
++  return base::FilePath();
++}
++
++#if BUILDFLAG(IS_WIN)
++bool SandboxedProcessLauncherDelegate::ShouldShowFeedbackCursor() {
++  return true;
++}
++#endif  // #if BUILDFLAG(IS_WIN)
+ 
+ #if BUILDFLAG(IS_MAC)
+ 
+diff --git a/content/browser/sandboxed_process_launcher_delegate.h b/content/browser/sandboxed_process_launcher_delegate.h
+index a92c1795611d0d1e9271444f7517c6460a9e4b48..1b54db8249cb6968cdcc2af7c7d878995ef34045 100644
+--- a/content/browser/sandboxed_process_launcher_delegate.h
++++ b/content/browser/sandboxed_process_launcher_delegate.h
+@@ -9,6 +9,7 @@
+ #include <string>
+ 
+ #include "base/environment.h"
++#include "base/files/file_path.h"
+ #include "base/process/process.h"
+ #include "build/build_config.h"
+ #include "content/common/content_export.h"
+@@ -63,10 +64,19 @@ class CONTENT_EXPORT SandboxedProcessLauncherDelegate
+   virtual ZygoteCommunication* GetZygote();
+ #endif  // BUILDFLAG(USE_ZYGOTE)
+ 
+-#if BUILDFLAG(IS_POSIX)
+   // Override this if the process needs a non-empty environment map.
+   virtual base::EnvironmentMap GetEnvironment();
+-#endif  // BUILDFLAG(IS_POSIX)
++
++  // Override this if the process should not inherit parent environment.
++  virtual bool ShouldInheritEnvironment();
++
++  // Specifies the directory to change to before executing the process.
++  virtual base::FilePath GetCurrentDirectory();
++
++#if BUILDFLAG(IS_WIN)
++  // Override this if the process should not trigger mouse cursor feedback.
++  virtual bool ShouldShowFeedbackCursor();
++#endif  // #if BUILDFLAG(IS_WIN)
+ 
+ #if BUILDFLAG(IS_MAC)
+   // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/content/browser/service_host/service_process_host_impl.cc b/content/browser/service_host/service_process_host_impl.cc
 index 84d75f122a8207df452770e371e107a4fdf21933..fe074df053cfe701a087d141e29d53b85235216c 100644
 --- a/content/browser/service_host/service_process_host_impl.cc
@@ -193,10 +257,10 @@ index 84d75f122a8207df452770e371e107a4fdf21933..fe074df053cfe701a087d141e29d53b8
  
    UtilityProcessHost::Start(std::move(utility_options),
 diff --git a/content/browser/service_host/utility_process_host.cc b/content/browser/service_host/utility_process_host.cc
-index e61d4e83128c3076b33d85511c48abb08c8422af..3c4248e1394035f7dc81bb9103643ff6418ea760 100644
+index 0ea6fa7b923555eb913eb5abd6db16dd3dd76052..85b27b672841b3a9ec1358d0ea65ce70abb16717 100644
 --- a/content/browser/service_host/utility_process_host.cc
 +++ b/content/browser/service_host/utility_process_host.cc
-@@ -256,13 +256,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
+@@ -255,13 +255,13 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithFileToPreload(
  }
  #endif  // BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
  
@@ -213,7 +277,7 @@ index e61d4e83128c3076b33d85511c48abb08c8422af..3c4248e1394035f7dc81bb9103643ff6
  
  #if BUILDFLAG(USE_ZYGOTE)
  UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
-@@ -272,6 +272,45 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
+@@ -271,6 +271,45 @@ UtilityProcessHost::Options& UtilityProcessHost::Options::WithZygoteForTesting(
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -377,7 +441,7 @@ index 18a070048449b2fb56996241c9cebc565f59dee9..9f77589c95ceb47b98fa9b8068c43aad
      // Whether or not to bind viz::mojom::Gpu to the utility process.
      bool allowed_gpu_;
 diff --git a/content/browser/service_host/utility_sandbox_delegate.cc b/content/browser/service_host/utility_sandbox_delegate.cc
-index fe37bb3d1787120735eeb569a7bea6344e3d6b89..f1803cd7f661009db406ec281d161c9967ef2f17 100644
+index 7faf2cae029cb4748564a9ee55d6da9e7f388b51..89eeaf7206ebd7b6aa83cf80bcedc749c76a7b91 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.cc
 +++ b/content/browser/service_host/utility_sandbox_delegate.cc
 @@ -39,17 +39,19 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -452,7 +516,7 @@ index fe37bb3d1787120735eeb569a7bea6344e3d6b89..f1803cd7f661009db406ec281d161c99
  
  }  // namespace content
 diff --git a/content/browser/service_host/utility_sandbox_delegate.h b/content/browser/service_host/utility_sandbox_delegate.h
-index ee2df2f709b17571747f53efc208ea9d234d076f..e20e5d5233db5bf1bbb81560bbf3d403cd6f79c2 100644
+index 6c8d6f754358170e0ec7c20d064332f7bbcae7db..0a7c2d8610d9746887eeeedaad557b3e585c2e81 100644
 --- a/content/browser/service_host/utility_sandbox_delegate.h
 +++ b/content/browser/service_host/utility_sandbox_delegate.h
 @@ -36,7 +36,9 @@ class CONTENT_EXPORT UtilitySandboxedProcessLauncherDelegate
@@ -519,70 +583,6 @@ index ee2df2f709b17571747f53efc208ea9d234d076f..e20e5d5233db5bf1bbb81560bbf3d403
  };
  }  // namespace content
  
-diff --git a/content/public/browser/sandboxed_process_launcher_delegate.cc b/content/public/browser/sandboxed_process_launcher_delegate.cc
-index 939a9a2e90f799afa3c1aeb4d3247d860aa128cf..96606f9d5b8be1bd30bbbdcce355c1fcf61a96e4 100644
---- a/content/public/browser/sandboxed_process_launcher_delegate.cc
-+++ b/content/public/browser/sandboxed_process_launcher_delegate.cc
-@@ -88,11 +88,23 @@ ZygoteCommunication* SandboxedProcessLauncherDelegate::GetZygote() {
- }
- #endif  // BUILDFLAG(USE_ZYGOTE)
- 
--#if BUILDFLAG(IS_POSIX)
- base::EnvironmentMap SandboxedProcessLauncherDelegate::GetEnvironment() {
-   return base::EnvironmentMap();
- }
--#endif  // BUILDFLAG(IS_POSIX)
-+
-+bool SandboxedProcessLauncherDelegate::ShouldInheritEnvironment() {
-+  return true;
-+}
-+
-+base::FilePath SandboxedProcessLauncherDelegate::GetCurrentDirectory() {
-+  return base::FilePath();
-+}
-+
-+#if BUILDFLAG(IS_WIN)
-+bool SandboxedProcessLauncherDelegate::ShouldShowFeedbackCursor() {
-+  return true;
-+}
-+#endif  // #if BUILDFLAG(IS_WIN)
- 
- #if BUILDFLAG(IS_MAC)
- 
-diff --git a/content/public/browser/sandboxed_process_launcher_delegate.h b/content/public/browser/sandboxed_process_launcher_delegate.h
-index 4159eef9e1f54c82ac0d8ad6437925dd3c6fa3ec..b835257f686635b91f80c2d6651fb735b866ab7f 100644
---- a/content/public/browser/sandboxed_process_launcher_delegate.h
-+++ b/content/public/browser/sandboxed_process_launcher_delegate.h
-@@ -9,6 +9,7 @@
- #include <string>
- 
- #include "base/environment.h"
-+#include "base/files/file_path.h"
- #include "base/files/scoped_file.h"
- #include "base/process/process.h"
- #include "build/build_config.h"
-@@ -65,10 +66,19 @@ class CONTENT_EXPORT SandboxedProcessLauncherDelegate
-   virtual ZygoteCommunication* GetZygote();
- #endif  // BUILDFLAG(USE_ZYGOTE)
- 
--#if BUILDFLAG(IS_POSIX)
-   // Override this if the process needs a non-empty environment map.
-   virtual base::EnvironmentMap GetEnvironment();
--#endif  // BUILDFLAG(IS_POSIX)
-+
-+  // Override this if the process should not inherit parent environment.
-+  virtual bool ShouldInheritEnvironment();
-+
-+  // Specifies the directory to change to before executing the process.
-+  virtual base::FilePath GetCurrentDirectory();
-+
-+#if BUILDFLAG(IS_WIN)
-+  // Override this if the process should not trigger mouse cursor feedback.
-+  virtual bool ShouldShowFeedbackCursor();
-+#endif  // #if BUILDFLAG(IS_WIN)
- 
- #if BUILDFLAG(IS_MAC)
-   // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/content/public/browser/service_process_host.cc b/content/public/browser/service_process_host.cc
 index fd7dd495ee9b513244793d3b65bf161e00a23fba..3d3be6843e8fab0827265f34193954cdf000b1bc 100644
 --- a/content/public/browser/service_process_host.cc

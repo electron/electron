@@ -15,7 +15,6 @@
 #include "extensions/browser/safe_browsing_delegate.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/mojom/fetch_api.mojom.h"
-#include "url/origin.h"
 
 namespace extensions {
 class ExtensionsAPIClient;
@@ -33,6 +32,10 @@ class PendingReceiver;
 template <typename T>
 class PendingRemote;
 }  // namespace mojo
+
+namespace url {
+class Origin;
+}  // namespace url
 
 namespace electron {
 

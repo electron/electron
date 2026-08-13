@@ -1,0 +1,97 @@
+name: PR Blocked Automation
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+
+# SECURITY: This workflow uses pull_request_target and has access to secrets.
+# Do NOT checkout or run code from the PR head. All code execution must use
+# the base branch only. Adding a ref to PR head would expose secrets to
+# untrusted code.
+permissions: {}
+
+jobs:
+  need-tests:
+    name: Tests Needed
+    if: >-
+      github.event_name == 'pull_request_target'
+      && github.event.action == 'labeled'
+      && github.event.label.name == 'blocked/need-tests'
+    runs-on: ubuntu-slim
+    permissions: {}
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          org: electron
+      - name: Comment on pull request
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          GH_REPO: electron/electron
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body-file - <<'EOF'
+          <!-- blocked/need-tests -->
+
+          Hello. Thanks for contributing to Electron!
+
+          This pull request needs automated tests before it can move forward. A useful regression test fails without the change and passes with it. Checking existing specs for a similar API or behavior is often the easiest place to start.
+
+          Electron's [testing guide][testing-guide] explains how to run the test suite and individual tests. The [pull request guide][pull-request-guide] also covers the project's testing expectations.
+
+          [testing-guide]: https://github.com/electron/electron/blob/main/docs/development/testing.md
+          [pull-request-guide]: https://github.com/electron/electron/blob/main/docs/development/pull-requests.md#step-7-test
+          EOF
+
+  need-issue:
+    name: Issue Needed
+    if: >-
+      github.event_name == 'pull_request_target'
+      && github.event.action == 'labeled'
+      && github.event.label.name == 'blocked/need-issue'
+    runs-on: ubuntu-slim
+    permissions: {}
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@5f70a3726af01b612f29aac96d05aa524389c9e9 # v2.1.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          org: electron
+      - name: Comment on pull request
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          GH_REPO: electron/electron
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr comment "$PR_NUMBER" --body-file - <<'EOF'
+          <!-- blocked/need-issue -->
+
+          Hello. Thanks for contributing to Electron!
+
+          Before this pull request can move forward, it needs an associated issue that fully documents the issue and includes a minimal reproduction. [Electron Fiddle][electron-fiddle] is often the easiest way to create and share a small reproduction.
+
+          Please [open an issue][new-issue], then link it from this pull request with a supported closing keyword such as `Fixes #12345`. Electron's [issue guide][issue-guide] explains what makes a useful report. GitHub documents [how to link a pull request to an issue][linking-guide]. Once the issue is linked, this label will be removed automatically.
+
+          [electron-fiddle]: https://www.electronjs.org/fiddle
+          [new-issue]: https://github.com/electron/electron/issues/new/choose
+          [issue-guide]: https://github.com/electron/electron/blob/main/docs/development/issues.md#submitting-a-bug-report
+          [linking-guide]: https://docs.github.com/issues/tracking-your-work-with-issues/using-issues/linking-a-pull-request-to-an-issue
+          EOF
+
+  blocked:
+    name: Blocked
+    needs: [need-tests, need-issue]
+    if: >-
+      always()
+      && github.repository == 'electron/electron'
+      && github.event_name == 'pull_request_target'
+      && (contains(github.event.pull_request.labels.*.name, 'blocked/need-tests')
+        || contains(github.event.pull_request.labels.*.name, 'blocked/need-issue'))
+    runs-on: ubuntu-slim
+    permissions: {}
+    steps:
+      - name: Fail if the pull request is blocked
+        run: exit 1
